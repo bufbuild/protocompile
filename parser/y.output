@@ -1,0 +1,7795 @@
+
+state 0
+	$accept: .file $end 
+	file: .    (4)
+
+	$end  reduce 4 (src line 155)
+	error  shift 14
+	_SYNTAX  shift 4
+	_IMPORT  shift 15
+	_PACKAGE  shift 16
+	_OPTION  shift 17
+	_ENUM  shift 19
+	_MESSAGE  shift 18
+	_EXTEND  shift 20
+	_SERVICE  shift 21
+	';'  shift 13
+	.  error
+
+	file  goto 1
+	syntax  goto 2
+	fileDecl  goto 5
+	fileDecls  goto 3
+	import  goto 6
+	package  goto 7
+	option  goto 8
+	message  goto 9
+	enum  goto 10
+	extend  goto 11
+	service  goto 12
+
+state 1
+	$accept:  file.$end 
+
+	$end  accept
+	.  error
+
+
+state 2
+	file:  syntax.    (1)
+	file:  syntax.fileDecls 
+
+	$end  reduce 1 (src line 143)
+	error  shift 14
+	_IMPORT  shift 15
+	_PACKAGE  shift 16
+	_OPTION  shift 17
+	_ENUM  shift 19
+	_MESSAGE  shift 18
+	_EXTEND  shift 20
+	_SERVICE  shift 21
+	';'  shift 13
+	.  error
+
+	fileDecl  goto 5
+	fileDecls  goto 22
+	import  goto 6
+	package  goto 7
+	option  goto 8
+	message  goto 9
+	enum  goto 10
+	extend  goto 11
+	service  goto 12
+
+state 3
+	file:  fileDecls.    (2)
+	fileDecls:  fileDecls.fileDecl 
+
+	$end  reduce 2 (src line 147)
+	error  shift 14
+	_IMPORT  shift 15
+	_PACKAGE  shift 16
+	_OPTION  shift 17
+	_ENUM  shift 19
+	_MESSAGE  shift 18
+	_EXTEND  shift 20
+	_SERVICE  shift 21
+	';'  shift 13
+	.  error
+
+	fileDecl  goto 23
+	import  goto 6
+	package  goto 7
+	option  goto 8
+	message  goto 9
+	enum  goto 10
+	extend  goto 11
+	service  goto 12
+
+state 4
+	syntax:  _SYNTAX.'=' stringLit ';' 
+
+	'='  shift 24
+	.  error
+
+
+state 5
+	fileDecls:  fileDecl.    (6)
+
+	.  reduce 6 (src line 165)
+
+
+state 6
+	fileDecl:  import.    (7)
+
+	.  reduce 7 (src line 173)
+
+
+state 7
+	fileDecl:  package.    (8)
+
+	.  reduce 8 (src line 176)
+
+
+state 8
+	fileDecl:  option.    (9)
+
+	.  reduce 9 (src line 179)
+
+
+state 9
+	fileDecl:  message.    (10)
+
+	.  reduce 10 (src line 182)
+
+
+state 10
+	fileDecl:  enum.    (11)
+
+	.  reduce 11 (src line 185)
+
+
+state 11
+	fileDecl:  extend.    (12)
+
+	.  reduce 12 (src line 188)
+
+
+state 12
+	fileDecl:  service.    (13)
+
+	.  reduce 13 (src line 191)
+
+
+state 13
+	fileDecl:  ';'.    (14)
+
+	.  reduce 14 (src line 194)
+
+
+14: shift/reduce conflict (shift 25(0), red'n 16(0)) on ';'
+state 14
+	fileDecl:  error.';' 
+	fileDecl:  error.    (16)
+
+	';'  shift 25
+	.  reduce 16 (src line 200)
+
+
+state 15
+	import:  _IMPORT.stringLit ';' 
+	import:  _IMPORT._WEAK stringLit ';' 
+	import:  _IMPORT._PUBLIC stringLit ';' 
+
+	_STRING_LIT  shift 29
+	_WEAK  shift 27
+	_PUBLIC  shift 28
+	.  error
+
+	stringLit  goto 26
+
+state 16
+	package:  _PACKAGE.ident ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 31
+	ident  goto 30
+
+state 17
+	option:  _OPTION.optionName '=' constant ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'('  shift 78
+	.  error
+
+	optionNameComponent  goto 76
+	optionName  goto 75
+	name  goto 77
+
+state 18
+	message:  _MESSAGE.name '{' messageDecls '}' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 79
+
+state 19
+	enum:  _ENUM.name '{' enumDecls '}' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 80
+
+state 20
+	extend:  _EXTEND.typeIdent '{' extendDecls '}' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 81
+
+state 21
+	service:  _SERVICE.name '{' serviceDecls '}' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 84
+
+state 22
+	file:  syntax fileDecls.    (3)
+	fileDecls:  fileDecls.fileDecl 
+
+	$end  reduce 3 (src line 151)
+	error  shift 14
+	_IMPORT  shift 15
+	_PACKAGE  shift 16
+	_OPTION  shift 17
+	_ENUM  shift 19
+	_MESSAGE  shift 18
+	_EXTEND  shift 20
+	_SERVICE  shift 21
+	';'  shift 13
+	.  error
+
+	fileDecl  goto 23
+	import  goto 6
+	package  goto 7
+	option  goto 8
+	message  goto 9
+	enum  goto 10
+	extend  goto 11
+	service  goto 12
+
+state 23
+	fileDecls:  fileDecls fileDecl.    (5)
+
+	.  reduce 5 (src line 158)
+
+
+state 24
+	syntax:  _SYNTAX '='.stringLit ';' 
+
+	_STRING_LIT  shift 29
+	.  error
+
+	stringLit  goto 85
+
+state 25
+	fileDecl:  error ';'.    (15)
+
+	.  reduce 15 (src line 197)
+
+
+state 26
+	import:  _IMPORT stringLit.';' 
+
+	';'  shift 86
+	.  error
+
+
+state 27
+	import:  _IMPORT _WEAK.stringLit ';' 
+
+	_STRING_LIT  shift 29
+	.  error
+
+	stringLit  goto 87
+
+state 28
+	import:  _IMPORT _PUBLIC.stringLit ';' 
+
+	_STRING_LIT  shift 29
+	.  error
+
+	stringLit  goto 88
+
+state 29
+	stringLit:  _STRING_LIT.    (42)
+	stringLit:  _STRING_LIT.stringLit 
+
+	_STRING_LIT  shift 29
+	.  reduce 42 (src line 298)
+
+	stringLit  goto 89
+
+state 30
+	package:  _PACKAGE ident.';' 
+
+	';'  shift 90
+	.  error
+
+
+state 31
+	ident:  name.    (22)
+	ident:  name.'.' ident 
+
+	'.'  shift 91
+	.  reduce 22 (src line 222)
+
+
+state 32
+	name:  _NAME.    (201)
+
+	.  reduce 201 (src line 914)
+
+
+state 33
+	name:  _SYNTAX.    (202)
+
+	.  reduce 202 (src line 915)
+
+
+state 34
+	name:  _IMPORT.    (203)
+
+	.  reduce 203 (src line 916)
+
+
+state 35
+	name:  _WEAK.    (204)
+
+	.  reduce 204 (src line 917)
+
+
+state 36
+	name:  _PUBLIC.    (205)
+
+	.  reduce 205 (src line 918)
+
+
+state 37
+	name:  _PACKAGE.    (206)
+
+	.  reduce 206 (src line 919)
+
+
+state 38
+	name:  _OPTION.    (207)
+
+	.  reduce 207 (src line 920)
+
+
+state 39
+	name:  _TRUE.    (208)
+
+	.  reduce 208 (src line 921)
+
+
+state 40
+	name:  _FALSE.    (209)
+
+	.  reduce 209 (src line 922)
+
+
+state 41
+	name:  _INF.    (210)
+
+	.  reduce 210 (src line 923)
+
+
+state 42
+	name:  _NAN.    (211)
+
+	.  reduce 211 (src line 924)
+
+
+state 43
+	name:  _REPEATED.    (212)
+
+	.  reduce 212 (src line 925)
+
+
+state 44
+	name:  _OPTIONAL.    (213)
+
+	.  reduce 213 (src line 926)
+
+
+state 45
+	name:  _REQUIRED.    (214)
+
+	.  reduce 214 (src line 927)
+
+
+state 46
+	name:  _DOUBLE.    (215)
+
+	.  reduce 215 (src line 928)
+
+
+state 47
+	name:  _FLOAT.    (216)
+
+	.  reduce 216 (src line 929)
+
+
+state 48
+	name:  _INT32.    (217)
+
+	.  reduce 217 (src line 930)
+
+
+state 49
+	name:  _INT64.    (218)
+
+	.  reduce 218 (src line 931)
+
+
+state 50
+	name:  _UINT32.    (219)
+
+	.  reduce 219 (src line 932)
+
+
+state 51
+	name:  _UINT64.    (220)
+
+	.  reduce 220 (src line 933)
+
+
+state 52
+	name:  _SINT32.    (221)
+
+	.  reduce 221 (src line 934)
+
+
+state 53
+	name:  _SINT64.    (222)
+
+	.  reduce 222 (src line 935)
+
+
+state 54
+	name:  _FIXED32.    (223)
+
+	.  reduce 223 (src line 936)
+
+
+state 55
+	name:  _FIXED64.    (224)
+
+	.  reduce 224 (src line 937)
+
+
+state 56
+	name:  _SFIXED32.    (225)
+
+	.  reduce 225 (src line 938)
+
+
+state 57
+	name:  _SFIXED64.    (226)
+
+	.  reduce 226 (src line 939)
+
+
+state 58
+	name:  _BOOL.    (227)
+
+	.  reduce 227 (src line 940)
+
+
+state 59
+	name:  _STRING.    (228)
+
+	.  reduce 228 (src line 941)
+
+
+state 60
+	name:  _BYTES.    (229)
+
+	.  reduce 229 (src line 942)
+
+
+state 61
+	name:  _GROUP.    (230)
+
+	.  reduce 230 (src line 943)
+
+
+state 62
+	name:  _ONEOF.    (231)
+
+	.  reduce 231 (src line 944)
+
+
+state 63
+	name:  _MAP.    (232)
+
+	.  reduce 232 (src line 945)
+
+
+state 64
+	name:  _EXTENSIONS.    (233)
+
+	.  reduce 233 (src line 946)
+
+
+state 65
+	name:  _TO.    (234)
+
+	.  reduce 234 (src line 947)
+
+
+state 66
+	name:  _MAX.    (235)
+
+	.  reduce 235 (src line 948)
+
+
+state 67
+	name:  _RESERVED.    (236)
+
+	.  reduce 236 (src line 949)
+
+
+state 68
+	name:  _ENUM.    (237)
+
+	.  reduce 237 (src line 950)
+
+
+state 69
+	name:  _MESSAGE.    (238)
+
+	.  reduce 238 (src line 951)
+
+
+state 70
+	name:  _EXTEND.    (239)
+
+	.  reduce 239 (src line 952)
+
+
+state 71
+	name:  _SERVICE.    (240)
+
+	.  reduce 240 (src line 953)
+
+
+state 72
+	name:  _RPC.    (241)
+
+	.  reduce 241 (src line 954)
+
+
+state 73
+	name:  _STREAM.    (242)
+
+	.  reduce 242 (src line 955)
+
+
+state 74
+	name:  _RETURNS.    (243)
+
+	.  reduce 243 (src line 956)
+
+
+state 75
+	option:  _OPTION optionName.'=' constant ';' 
+
+	'='  shift 92
+	.  error
+
+
+state 76
+	optionName:  optionNameComponent.    (25)
+	optionName:  optionNameComponent.'.' optionName 
+
+	'.'  shift 93
+	.  reduce 25 (src line 235)
+
+
+state 77
+	optionNameComponent:  name.    (27)
+
+	.  reduce 27 (src line 242)
+
+
+state 78
+	optionNameComponent:  '('.typeIdent ')' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 94
+
+state 79
+	message:  _MESSAGE name.'{' messageDecls '}' 
+
+	'{'  shift 95
+	.  error
+
+
+state 80
+	enum:  _ENUM name.'{' enumDecls '}' 
+
+	'{'  shift 96
+	.  error
+
+
+state 81
+	extend:  _EXTEND typeIdent.'{' extendDecls '}' 
+
+	'{'  shift 97
+	.  error
+
+
+state 82
+	typeIdent:  ident.    (73)
+
+	.  reduce 73 (src line 458)
+
+
+state 83
+	typeIdent:  '.'.ident 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 31
+	ident  goto 98
+
+state 84
+	service:  _SERVICE name.'{' serviceDecls '}' 
+
+	'{'  shift 99
+	.  error
+
+
+state 85
+	syntax:  _SYNTAX '=' stringLit.';' 
+
+	';'  shift 100
+	.  error
+
+
+state 86
+	import:  _IMPORT stringLit ';'.    (18)
+
+	.  reduce 18 (src line 208)
+
+
+state 87
+	import:  _IMPORT _WEAK stringLit.';' 
+
+	';'  shift 101
+	.  error
+
+
+state 88
+	import:  _IMPORT _PUBLIC stringLit.';' 
+
+	';'  shift 102
+	.  error
+
+
+state 89
+	stringLit:  _STRING_LIT stringLit.    (43)
+
+	.  reduce 43 (src line 301)
+
+
+state 90
+	package:  _PACKAGE ident ';'.    (21)
+
+	.  reduce 21 (src line 218)
+
+
+state 91
+	ident:  name '.'.ident 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 31
+	ident  goto 103
+
+state 92
+	option:  _OPTION optionName '='.constant ';' 
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'+'  shift 113
+	'-'  shift 112
+	.  error
+
+	constant  goto 104
+	scalarConstant  goto 105
+	aggregate  goto 106
+	numLit  goto 108
+	name  goto 109
+	stringLit  goto 107
+
+state 93
+	optionName:  optionNameComponent '.'.optionName 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'('  shift 78
+	.  error
+
+	optionNameComponent  goto 76
+	optionName  goto 115
+	name  goto 77
+
+state 94
+	optionNameComponent:  '(' typeIdent.')' 
+
+	')'  shift 116
+	.  error
+
+
+95: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+95: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+95: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+95: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+95: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+95: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+95: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+95: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+95: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+95: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+95: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+95: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+95: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+95: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+95: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+95: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+95: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+95: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+95: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+95: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+95: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+95: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+95: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+95: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+95: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+95: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+95: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+95: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+95: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+95: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+95: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+95: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+95: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+95: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+95: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+95: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+95: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+95: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+95: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+95: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+95: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+95: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+95: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+95: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+95: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+95: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 95
+	message:  _MESSAGE name '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 117
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+96: shift/reduce conflict (shift 151(0), red'n 146(0)) on error
+96: shift/reduce conflict (shift 32(0), red'n 146(0)) on _NAME
+96: shift/reduce conflict (shift 33(0), red'n 146(0)) on _SYNTAX
+96: shift/reduce conflict (shift 34(0), red'n 146(0)) on _IMPORT
+96: shift/reduce conflict (shift 35(0), red'n 146(0)) on _WEAK
+96: shift/reduce conflict (shift 36(0), red'n 146(0)) on _PUBLIC
+96: shift/reduce conflict (shift 37(0), red'n 146(0)) on _PACKAGE
+96: shift/reduce conflict (shift 139(0), red'n 146(0)) on _OPTION
+96: shift/reduce conflict (shift 39(0), red'n 146(0)) on _TRUE
+96: shift/reduce conflict (shift 40(0), red'n 146(0)) on _FALSE
+96: shift/reduce conflict (shift 41(0), red'n 146(0)) on _INF
+96: shift/reduce conflict (shift 42(0), red'n 146(0)) on _NAN
+96: shift/reduce conflict (shift 43(0), red'n 146(0)) on _REPEATED
+96: shift/reduce conflict (shift 44(0), red'n 146(0)) on _OPTIONAL
+96: shift/reduce conflict (shift 45(0), red'n 146(0)) on _REQUIRED
+96: shift/reduce conflict (shift 46(0), red'n 146(0)) on _DOUBLE
+96: shift/reduce conflict (shift 47(0), red'n 146(0)) on _FLOAT
+96: shift/reduce conflict (shift 48(0), red'n 146(0)) on _INT32
+96: shift/reduce conflict (shift 49(0), red'n 146(0)) on _INT64
+96: shift/reduce conflict (shift 50(0), red'n 146(0)) on _UINT32
+96: shift/reduce conflict (shift 51(0), red'n 146(0)) on _UINT64
+96: shift/reduce conflict (shift 52(0), red'n 146(0)) on _SINT32
+96: shift/reduce conflict (shift 53(0), red'n 146(0)) on _SINT64
+96: shift/reduce conflict (shift 54(0), red'n 146(0)) on _FIXED32
+96: shift/reduce conflict (shift 55(0), red'n 146(0)) on _FIXED64
+96: shift/reduce conflict (shift 56(0), red'n 146(0)) on _SFIXED32
+96: shift/reduce conflict (shift 57(0), red'n 146(0)) on _SFIXED64
+96: shift/reduce conflict (shift 58(0), red'n 146(0)) on _BOOL
+96: shift/reduce conflict (shift 59(0), red'n 146(0)) on _STRING
+96: shift/reduce conflict (shift 60(0), red'n 146(0)) on _BYTES
+96: shift/reduce conflict (shift 61(0), red'n 146(0)) on _GROUP
+96: shift/reduce conflict (shift 62(0), red'n 146(0)) on _ONEOF
+96: shift/reduce conflict (shift 63(0), red'n 146(0)) on _MAP
+96: shift/reduce conflict (shift 64(0), red'n 146(0)) on _EXTENSIONS
+96: shift/reduce conflict (shift 65(0), red'n 146(0)) on _TO
+96: shift/reduce conflict (shift 66(0), red'n 146(0)) on _MAX
+96: shift/reduce conflict (shift 153(0), red'n 146(0)) on _RESERVED
+96: shift/reduce conflict (shift 68(0), red'n 146(0)) on _ENUM
+96: shift/reduce conflict (shift 69(0), red'n 146(0)) on _MESSAGE
+96: shift/reduce conflict (shift 70(0), red'n 146(0)) on _EXTEND
+96: shift/reduce conflict (shift 71(0), red'n 146(0)) on _SERVICE
+96: shift/reduce conflict (shift 72(0), red'n 146(0)) on _RPC
+96: shift/reduce conflict (shift 73(0), red'n 146(0)) on _STREAM
+96: shift/reduce conflict (shift 74(0), red'n 146(0)) on _RETURNS
+96: shift/reduce conflict (shift 150(0), red'n 146(0)) on ';'
+state 96
+	enum:  _ENUM name '{'.enumDecls '}' 
+	enumDecls: .    (146)
+
+	error  shift 151
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 153
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 150
+	'}'  reduce 146 (src line 698)
+	.  error
+
+	option  goto 147
+	name  goto 152
+	enumReserved  goto 149
+	reservedNames  goto 154
+	enumDecl  goto 146
+	enumDecls  goto 145
+	enumValue  goto 148
+
+97: shift/reduce conflict (shift 160(0), red'n 175(0)) on error
+97: shift/reduce conflict (shift 32(0), red'n 175(0)) on _NAME
+97: shift/reduce conflict (shift 33(0), red'n 175(0)) on _SYNTAX
+97: shift/reduce conflict (shift 34(0), red'n 175(0)) on _IMPORT
+97: shift/reduce conflict (shift 35(0), red'n 175(0)) on _WEAK
+97: shift/reduce conflict (shift 36(0), red'n 175(0)) on _PUBLIC
+97: shift/reduce conflict (shift 37(0), red'n 175(0)) on _PACKAGE
+97: shift/reduce conflict (shift 38(0), red'n 175(0)) on _OPTION
+97: shift/reduce conflict (shift 39(0), red'n 175(0)) on _TRUE
+97: shift/reduce conflict (shift 40(0), red'n 175(0)) on _FALSE
+97: shift/reduce conflict (shift 41(0), red'n 175(0)) on _INF
+97: shift/reduce conflict (shift 42(0), red'n 175(0)) on _NAN
+97: shift/reduce conflict (shift 133(0), red'n 175(0)) on _REPEATED
+97: shift/reduce conflict (shift 132(0), red'n 175(0)) on _OPTIONAL
+97: shift/reduce conflict (shift 131(0), red'n 175(0)) on _REQUIRED
+97: shift/reduce conflict (shift 46(0), red'n 175(0)) on _DOUBLE
+97: shift/reduce conflict (shift 47(0), red'n 175(0)) on _FLOAT
+97: shift/reduce conflict (shift 48(0), red'n 175(0)) on _INT32
+97: shift/reduce conflict (shift 49(0), red'n 175(0)) on _INT64
+97: shift/reduce conflict (shift 50(0), red'n 175(0)) on _UINT32
+97: shift/reduce conflict (shift 51(0), red'n 175(0)) on _UINT64
+97: shift/reduce conflict (shift 52(0), red'n 175(0)) on _SINT32
+97: shift/reduce conflict (shift 53(0), red'n 175(0)) on _SINT64
+97: shift/reduce conflict (shift 54(0), red'n 175(0)) on _FIXED32
+97: shift/reduce conflict (shift 55(0), red'n 175(0)) on _FIXED64
+97: shift/reduce conflict (shift 56(0), red'n 175(0)) on _SFIXED32
+97: shift/reduce conflict (shift 57(0), red'n 175(0)) on _SFIXED64
+97: shift/reduce conflict (shift 58(0), red'n 175(0)) on _BOOL
+97: shift/reduce conflict (shift 59(0), red'n 175(0)) on _STRING
+97: shift/reduce conflict (shift 60(0), red'n 175(0)) on _BYTES
+97: shift/reduce conflict (shift 61(0), red'n 175(0)) on _GROUP
+97: shift/reduce conflict (shift 62(0), red'n 175(0)) on _ONEOF
+97: shift/reduce conflict (shift 63(0), red'n 175(0)) on _MAP
+97: shift/reduce conflict (shift 64(0), red'n 175(0)) on _EXTENSIONS
+97: shift/reduce conflict (shift 65(0), red'n 175(0)) on _TO
+97: shift/reduce conflict (shift 66(0), red'n 175(0)) on _MAX
+97: shift/reduce conflict (shift 67(0), red'n 175(0)) on _RESERVED
+97: shift/reduce conflict (shift 68(0), red'n 175(0)) on _ENUM
+97: shift/reduce conflict (shift 69(0), red'n 175(0)) on _MESSAGE
+97: shift/reduce conflict (shift 70(0), red'n 175(0)) on _EXTEND
+97: shift/reduce conflict (shift 71(0), red'n 175(0)) on _SERVICE
+97: shift/reduce conflict (shift 72(0), red'n 175(0)) on _RPC
+97: shift/reduce conflict (shift 73(0), red'n 175(0)) on _STREAM
+97: shift/reduce conflict (shift 74(0), red'n 175(0)) on _RETURNS
+97: shift/reduce conflict (shift 159(0), red'n 175(0)) on ';'
+97: shift/reduce conflict (shift 83(0), red'n 175(0)) on '.'
+state 97
+	extend:  _EXTEND typeIdent '{'.extendDecls '}' 
+	extendDecls: .    (175)
+
+	error  shift 160
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 159
+	'}'  reduce 175 (src line 808)
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 157
+	group  goto 158
+	extendDecl  goto 156
+	extendDecls  goto 155
+
+state 98
+	typeIdent:  '.' ident.    (74)
+
+	.  reduce 74 (src line 461)
+
+
+99: shift/reduce conflict (shift 166(0), red'n 184(0)) on error
+99: shift/reduce conflict (shift 17(0), red'n 184(0)) on _OPTION
+99: shift/reduce conflict (shift 167(0), red'n 184(0)) on _RPC
+99: shift/reduce conflict (shift 165(0), red'n 184(0)) on ';'
+state 99
+	service:  _SERVICE name '{'.serviceDecls '}' 
+	serviceDecls: .    (184)
+
+	error  shift 166
+	_OPTION  shift 17
+	_RPC  shift 167
+	';'  shift 165
+	'}'  reduce 184 (src line 846)
+	.  error
+
+	option  goto 163
+	serviceDecl  goto 162
+	serviceDecls  goto 161
+	rpc  goto 164
+
+state 100
+	syntax:  _SYNTAX '=' stringLit ';'.    (17)
+
+	.  reduce 17 (src line 204)
+
+
+state 101
+	import:  _IMPORT _WEAK stringLit ';'.    (19)
+
+	.  reduce 19 (src line 211)
+
+
+state 102
+	import:  _IMPORT _PUBLIC stringLit ';'.    (20)
+
+	.  reduce 20 (src line 214)
+
+
+state 103
+	ident:  name '.' ident.    (23)
+
+	.  reduce 23 (src line 225)
+
+
+state 104
+	option:  _OPTION optionName '=' constant.';' 
+
+	';'  shift 168
+	.  error
+
+
+state 105
+	constant:  scalarConstant.    (29)
+
+	.  reduce 29 (src line 249)
+
+
+state 106
+	constant:  aggregate.    (30)
+
+	.  reduce 30 (src line 250)
+
+
+state 107
+	scalarConstant:  stringLit.    (31)
+
+	.  reduce 31 (src line 252)
+
+
+state 108
+	scalarConstant:  numLit.    (32)
+
+	.  reduce 32 (src line 255)
+
+
+state 109
+	scalarConstant:  name.    (33)
+
+	.  reduce 33 (src line 256)
+
+
+state 110
+	aggregate:  '{'.aggFields '}' 
+	aggFields: .    (47)
+
+	error  shift 172
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'}'  reduce 47 (src line 324)
+	'['  shift 175
+	.  error
+
+	aggName  goto 173
+	name  goto 174
+	aggFieldEntry  goto 171
+	aggField  goto 170
+	aggFields  goto 169
+
+state 111
+	numLit:  _FLOAT_LIT.    (34)
+
+	.  reduce 34 (src line 266)
+
+
+state 112
+	numLit:  '-'._FLOAT_LIT 
+	numLit:  '-'._INF 
+	numLit:  '-'._INT_LIT 
+
+	_INT_LIT  shift 178
+	_FLOAT_LIT  shift 176
+	_INF  shift 177
+	.  error
+
+
+state 113
+	numLit:  '+'._FLOAT_LIT 
+	numLit:  '+'._INF 
+	numLit:  '+'._INT_LIT 
+
+	_INT_LIT  shift 181
+	_FLOAT_LIT  shift 179
+	_INF  shift 180
+	.  error
+
+
+state 114
+	numLit:  _INT_LIT.    (39)
+
+	.  reduce 39 (src line 283)
+
+
+state 115
+	optionName:  optionNameComponent '.' optionName.    (26)
+
+	.  reduce 26 (src line 238)
+
+
+state 116
+	optionNameComponent:  '(' typeIdent ')'.    (28)
+
+	.  reduce 28 (src line 245)
+
+
+state 117
+	message:  _MESSAGE name '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 182
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 118
+	messageDecls:  messageDecl.    (157)
+
+	.  reduce 157 (src line 739)
+
+
+state 119
+	messageDecl:  field.    (159)
+
+	.  reduce 159 (src line 750)
+
+
+state 120
+	messageDecl:  enum.    (160)
+
+	.  reduce 160 (src line 753)
+
+
+state 121
+	messageDecl:  message.    (161)
+
+	.  reduce 161 (src line 756)
+
+
+state 122
+	messageDecl:  extend.    (162)
+
+	.  reduce 162 (src line 759)
+
+
+state 123
+	messageDecl:  extensions.    (163)
+
+	.  reduce 163 (src line 762)
+
+
+state 124
+	messageDecl:  group.    (164)
+
+	.  reduce 164 (src line 765)
+
+
+state 125
+	messageDecl:  option.    (165)
+
+	.  reduce 165 (src line 768)
+
+
+state 126
+	messageDecl:  oneof.    (166)
+
+	.  reduce 166 (src line 771)
+
+
+state 127
+	messageDecl:  mapField.    (167)
+
+	.  reduce 167 (src line 774)
+
+
+state 128
+	messageDecl:  msgReserved.    (168)
+
+	.  reduce 168 (src line 777)
+
+
+state 129
+	messageDecl:  ';'.    (169)
+
+	.  reduce 169 (src line 780)
+
+
+130: shift/reduce conflict (shift 184(0), red'n 171(0)) on ';'
+state 130
+	messageDecl:  error.';' 
+	messageDecl:  error.    (171)
+
+	';'  shift 184
+	.  reduce 171 (src line 786)
+
+
+131: shift/reduce conflict (shift 32(0), red'n 214(0)) on _NAME
+131: shift/reduce conflict (shift 33(0), red'n 214(0)) on _SYNTAX
+131: shift/reduce conflict (shift 34(0), red'n 214(0)) on _IMPORT
+131: shift/reduce conflict (shift 35(0), red'n 214(0)) on _WEAK
+131: shift/reduce conflict (shift 36(0), red'n 214(0)) on _PUBLIC
+131: shift/reduce conflict (shift 37(0), red'n 214(0)) on _PACKAGE
+131: shift/reduce conflict (shift 38(0), red'n 214(0)) on _OPTION
+131: shift/reduce conflict (shift 39(0), red'n 214(0)) on _TRUE
+131: shift/reduce conflict (shift 40(0), red'n 214(0)) on _FALSE
+131: shift/reduce conflict (shift 41(0), red'n 214(0)) on _INF
+131: shift/reduce conflict (shift 42(0), red'n 214(0)) on _NAN
+131: shift/reduce conflict (shift 43(0), red'n 214(0)) on _REPEATED
+131: shift/reduce conflict (shift 44(0), red'n 214(0)) on _OPTIONAL
+131: shift/reduce conflict (shift 45(0), red'n 214(0)) on _REQUIRED
+131: shift/reduce conflict (shift 46(0), red'n 214(0)) on _DOUBLE
+131: shift/reduce conflict (shift 47(0), red'n 214(0)) on _FLOAT
+131: shift/reduce conflict (shift 48(0), red'n 214(0)) on _INT32
+131: shift/reduce conflict (shift 49(0), red'n 214(0)) on _INT64
+131: shift/reduce conflict (shift 50(0), red'n 214(0)) on _UINT32
+131: shift/reduce conflict (shift 51(0), red'n 214(0)) on _UINT64
+131: shift/reduce conflict (shift 52(0), red'n 214(0)) on _SINT32
+131: shift/reduce conflict (shift 53(0), red'n 214(0)) on _SINT64
+131: shift/reduce conflict (shift 54(0), red'n 214(0)) on _FIXED32
+131: shift/reduce conflict (shift 55(0), red'n 214(0)) on _FIXED64
+131: shift/reduce conflict (shift 56(0), red'n 214(0)) on _SFIXED32
+131: shift/reduce conflict (shift 57(0), red'n 214(0)) on _SFIXED64
+131: shift/reduce conflict (shift 58(0), red'n 214(0)) on _BOOL
+131: shift/reduce conflict (shift 59(0), red'n 214(0)) on _STRING
+131: shift/reduce conflict (shift 60(0), red'n 214(0)) on _BYTES
+131: shift/reduce conflict (shift 186(0), red'n 214(0)) on _GROUP
+131: shift/reduce conflict (shift 62(0), red'n 214(0)) on _ONEOF
+131: shift/reduce conflict (shift 63(0), red'n 214(0)) on _MAP
+131: shift/reduce conflict (shift 64(0), red'n 214(0)) on _EXTENSIONS
+131: shift/reduce conflict (shift 65(0), red'n 214(0)) on _TO
+131: shift/reduce conflict (shift 66(0), red'n 214(0)) on _MAX
+131: shift/reduce conflict (shift 67(0), red'n 214(0)) on _RESERVED
+131: shift/reduce conflict (shift 68(0), red'n 214(0)) on _ENUM
+131: shift/reduce conflict (shift 69(0), red'n 214(0)) on _MESSAGE
+131: shift/reduce conflict (shift 70(0), red'n 214(0)) on _EXTEND
+131: shift/reduce conflict (shift 71(0), red'n 214(0)) on _SERVICE
+131: shift/reduce conflict (shift 72(0), red'n 214(0)) on _RPC
+131: shift/reduce conflict (shift 73(0), red'n 214(0)) on _STREAM
+131: shift/reduce conflict (shift 74(0), red'n 214(0)) on _RETURNS
+131: shift/reduce conflict (shift 83(0), red'n 214(0)) on '.'
+state 131
+	field:  _REQUIRED.typeIdent name '=' _INT_LIT ';' 
+	field:  _REQUIRED.typeIdent name '=' _INT_LIT compactOptions ';' 
+	group:  _REQUIRED._GROUP name '=' _INT_LIT '{' messageDecls '}' 
+	group:  _REQUIRED._GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _REQUIRED.    (214)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 186
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 185
+
+132: shift/reduce conflict (shift 32(0), red'n 213(0)) on _NAME
+132: shift/reduce conflict (shift 33(0), red'n 213(0)) on _SYNTAX
+132: shift/reduce conflict (shift 34(0), red'n 213(0)) on _IMPORT
+132: shift/reduce conflict (shift 35(0), red'n 213(0)) on _WEAK
+132: shift/reduce conflict (shift 36(0), red'n 213(0)) on _PUBLIC
+132: shift/reduce conflict (shift 37(0), red'n 213(0)) on _PACKAGE
+132: shift/reduce conflict (shift 38(0), red'n 213(0)) on _OPTION
+132: shift/reduce conflict (shift 39(0), red'n 213(0)) on _TRUE
+132: shift/reduce conflict (shift 40(0), red'n 213(0)) on _FALSE
+132: shift/reduce conflict (shift 41(0), red'n 213(0)) on _INF
+132: shift/reduce conflict (shift 42(0), red'n 213(0)) on _NAN
+132: shift/reduce conflict (shift 43(0), red'n 213(0)) on _REPEATED
+132: shift/reduce conflict (shift 44(0), red'n 213(0)) on _OPTIONAL
+132: shift/reduce conflict (shift 45(0), red'n 213(0)) on _REQUIRED
+132: shift/reduce conflict (shift 46(0), red'n 213(0)) on _DOUBLE
+132: shift/reduce conflict (shift 47(0), red'n 213(0)) on _FLOAT
+132: shift/reduce conflict (shift 48(0), red'n 213(0)) on _INT32
+132: shift/reduce conflict (shift 49(0), red'n 213(0)) on _INT64
+132: shift/reduce conflict (shift 50(0), red'n 213(0)) on _UINT32
+132: shift/reduce conflict (shift 51(0), red'n 213(0)) on _UINT64
+132: shift/reduce conflict (shift 52(0), red'n 213(0)) on _SINT32
+132: shift/reduce conflict (shift 53(0), red'n 213(0)) on _SINT64
+132: shift/reduce conflict (shift 54(0), red'n 213(0)) on _FIXED32
+132: shift/reduce conflict (shift 55(0), red'n 213(0)) on _FIXED64
+132: shift/reduce conflict (shift 56(0), red'n 213(0)) on _SFIXED32
+132: shift/reduce conflict (shift 57(0), red'n 213(0)) on _SFIXED64
+132: shift/reduce conflict (shift 58(0), red'n 213(0)) on _BOOL
+132: shift/reduce conflict (shift 59(0), red'n 213(0)) on _STRING
+132: shift/reduce conflict (shift 60(0), red'n 213(0)) on _BYTES
+132: shift/reduce conflict (shift 188(0), red'n 213(0)) on _GROUP
+132: shift/reduce conflict (shift 62(0), red'n 213(0)) on _ONEOF
+132: shift/reduce conflict (shift 63(0), red'n 213(0)) on _MAP
+132: shift/reduce conflict (shift 64(0), red'n 213(0)) on _EXTENSIONS
+132: shift/reduce conflict (shift 65(0), red'n 213(0)) on _TO
+132: shift/reduce conflict (shift 66(0), red'n 213(0)) on _MAX
+132: shift/reduce conflict (shift 67(0), red'n 213(0)) on _RESERVED
+132: shift/reduce conflict (shift 68(0), red'n 213(0)) on _ENUM
+132: shift/reduce conflict (shift 69(0), red'n 213(0)) on _MESSAGE
+132: shift/reduce conflict (shift 70(0), red'n 213(0)) on _EXTEND
+132: shift/reduce conflict (shift 71(0), red'n 213(0)) on _SERVICE
+132: shift/reduce conflict (shift 72(0), red'n 213(0)) on _RPC
+132: shift/reduce conflict (shift 73(0), red'n 213(0)) on _STREAM
+132: shift/reduce conflict (shift 74(0), red'n 213(0)) on _RETURNS
+132: shift/reduce conflict (shift 83(0), red'n 213(0)) on '.'
+state 132
+	field:  _OPTIONAL.typeIdent name '=' _INT_LIT ';' 
+	field:  _OPTIONAL.typeIdent name '=' _INT_LIT compactOptions ';' 
+	group:  _OPTIONAL._GROUP name '=' _INT_LIT '{' messageDecls '}' 
+	group:  _OPTIONAL._GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _OPTIONAL.    (213)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 188
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 187
+
+133: shift/reduce conflict (shift 32(0), red'n 212(0)) on _NAME
+133: shift/reduce conflict (shift 33(0), red'n 212(0)) on _SYNTAX
+133: shift/reduce conflict (shift 34(0), red'n 212(0)) on _IMPORT
+133: shift/reduce conflict (shift 35(0), red'n 212(0)) on _WEAK
+133: shift/reduce conflict (shift 36(0), red'n 212(0)) on _PUBLIC
+133: shift/reduce conflict (shift 37(0), red'n 212(0)) on _PACKAGE
+133: shift/reduce conflict (shift 38(0), red'n 212(0)) on _OPTION
+133: shift/reduce conflict (shift 39(0), red'n 212(0)) on _TRUE
+133: shift/reduce conflict (shift 40(0), red'n 212(0)) on _FALSE
+133: shift/reduce conflict (shift 41(0), red'n 212(0)) on _INF
+133: shift/reduce conflict (shift 42(0), red'n 212(0)) on _NAN
+133: shift/reduce conflict (shift 43(0), red'n 212(0)) on _REPEATED
+133: shift/reduce conflict (shift 44(0), red'n 212(0)) on _OPTIONAL
+133: shift/reduce conflict (shift 45(0), red'n 212(0)) on _REQUIRED
+133: shift/reduce conflict (shift 46(0), red'n 212(0)) on _DOUBLE
+133: shift/reduce conflict (shift 47(0), red'n 212(0)) on _FLOAT
+133: shift/reduce conflict (shift 48(0), red'n 212(0)) on _INT32
+133: shift/reduce conflict (shift 49(0), red'n 212(0)) on _INT64
+133: shift/reduce conflict (shift 50(0), red'n 212(0)) on _UINT32
+133: shift/reduce conflict (shift 51(0), red'n 212(0)) on _UINT64
+133: shift/reduce conflict (shift 52(0), red'n 212(0)) on _SINT32
+133: shift/reduce conflict (shift 53(0), red'n 212(0)) on _SINT64
+133: shift/reduce conflict (shift 54(0), red'n 212(0)) on _FIXED32
+133: shift/reduce conflict (shift 55(0), red'n 212(0)) on _FIXED64
+133: shift/reduce conflict (shift 56(0), red'n 212(0)) on _SFIXED32
+133: shift/reduce conflict (shift 57(0), red'n 212(0)) on _SFIXED64
+133: shift/reduce conflict (shift 58(0), red'n 212(0)) on _BOOL
+133: shift/reduce conflict (shift 59(0), red'n 212(0)) on _STRING
+133: shift/reduce conflict (shift 60(0), red'n 212(0)) on _BYTES
+133: shift/reduce conflict (shift 190(0), red'n 212(0)) on _GROUP
+133: shift/reduce conflict (shift 62(0), red'n 212(0)) on _ONEOF
+133: shift/reduce conflict (shift 63(0), red'n 212(0)) on _MAP
+133: shift/reduce conflict (shift 64(0), red'n 212(0)) on _EXTENSIONS
+133: shift/reduce conflict (shift 65(0), red'n 212(0)) on _TO
+133: shift/reduce conflict (shift 66(0), red'n 212(0)) on _MAX
+133: shift/reduce conflict (shift 67(0), red'n 212(0)) on _RESERVED
+133: shift/reduce conflict (shift 68(0), red'n 212(0)) on _ENUM
+133: shift/reduce conflict (shift 69(0), red'n 212(0)) on _MESSAGE
+133: shift/reduce conflict (shift 70(0), red'n 212(0)) on _EXTEND
+133: shift/reduce conflict (shift 71(0), red'n 212(0)) on _SERVICE
+133: shift/reduce conflict (shift 72(0), red'n 212(0)) on _RPC
+133: shift/reduce conflict (shift 73(0), red'n 212(0)) on _STREAM
+133: shift/reduce conflict (shift 74(0), red'n 212(0)) on _RETURNS
+133: shift/reduce conflict (shift 83(0), red'n 212(0)) on '.'
+state 133
+	field:  _REPEATED.typeIdent name '=' _INT_LIT ';' 
+	field:  _REPEATED.typeIdent name '=' _INT_LIT compactOptions ';' 
+	group:  _REPEATED._GROUP name '=' _INT_LIT '{' messageDecls '}' 
+	group:  _REPEATED._GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _REPEATED.    (212)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 190
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 189
+
+state 134
+	field:  typeIdent.name '=' _INT_LIT ';' 
+	field:  typeIdent.name '=' _INT_LIT compactOptions ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 191
+
+135: shift/reduce conflict (shift 32(0), red'n 237(0)) on _NAME
+135: shift/reduce conflict (shift 33(0), red'n 237(0)) on _SYNTAX
+135: shift/reduce conflict (shift 34(0), red'n 237(0)) on _IMPORT
+135: shift/reduce conflict (shift 35(0), red'n 237(0)) on _WEAK
+135: shift/reduce conflict (shift 36(0), red'n 237(0)) on _PUBLIC
+135: shift/reduce conflict (shift 37(0), red'n 237(0)) on _PACKAGE
+135: shift/reduce conflict (shift 38(0), red'n 237(0)) on _OPTION
+135: shift/reduce conflict (shift 39(0), red'n 237(0)) on _TRUE
+135: shift/reduce conflict (shift 40(0), red'n 237(0)) on _FALSE
+135: shift/reduce conflict (shift 41(0), red'n 237(0)) on _INF
+135: shift/reduce conflict (shift 42(0), red'n 237(0)) on _NAN
+135: shift/reduce conflict (shift 43(0), red'n 237(0)) on _REPEATED
+135: shift/reduce conflict (shift 44(0), red'n 237(0)) on _OPTIONAL
+135: shift/reduce conflict (shift 45(0), red'n 237(0)) on _REQUIRED
+135: shift/reduce conflict (shift 46(0), red'n 237(0)) on _DOUBLE
+135: shift/reduce conflict (shift 47(0), red'n 237(0)) on _FLOAT
+135: shift/reduce conflict (shift 48(0), red'n 237(0)) on _INT32
+135: shift/reduce conflict (shift 49(0), red'n 237(0)) on _INT64
+135: shift/reduce conflict (shift 50(0), red'n 237(0)) on _UINT32
+135: shift/reduce conflict (shift 51(0), red'n 237(0)) on _UINT64
+135: shift/reduce conflict (shift 52(0), red'n 237(0)) on _SINT32
+135: shift/reduce conflict (shift 53(0), red'n 237(0)) on _SINT64
+135: shift/reduce conflict (shift 54(0), red'n 237(0)) on _FIXED32
+135: shift/reduce conflict (shift 55(0), red'n 237(0)) on _FIXED64
+135: shift/reduce conflict (shift 56(0), red'n 237(0)) on _SFIXED32
+135: shift/reduce conflict (shift 57(0), red'n 237(0)) on _SFIXED64
+135: shift/reduce conflict (shift 58(0), red'n 237(0)) on _BOOL
+135: shift/reduce conflict (shift 59(0), red'n 237(0)) on _STRING
+135: shift/reduce conflict (shift 60(0), red'n 237(0)) on _BYTES
+135: shift/reduce conflict (shift 61(0), red'n 237(0)) on _GROUP
+135: shift/reduce conflict (shift 62(0), red'n 237(0)) on _ONEOF
+135: shift/reduce conflict (shift 63(0), red'n 237(0)) on _MAP
+135: shift/reduce conflict (shift 64(0), red'n 237(0)) on _EXTENSIONS
+135: shift/reduce conflict (shift 65(0), red'n 237(0)) on _TO
+135: shift/reduce conflict (shift 66(0), red'n 237(0)) on _MAX
+135: shift/reduce conflict (shift 67(0), red'n 237(0)) on _RESERVED
+135: shift/reduce conflict (shift 68(0), red'n 237(0)) on _ENUM
+135: shift/reduce conflict (shift 69(0), red'n 237(0)) on _MESSAGE
+135: shift/reduce conflict (shift 70(0), red'n 237(0)) on _EXTEND
+135: shift/reduce conflict (shift 71(0), red'n 237(0)) on _SERVICE
+135: shift/reduce conflict (shift 72(0), red'n 237(0)) on _RPC
+135: shift/reduce conflict (shift 73(0), red'n 237(0)) on _STREAM
+135: shift/reduce conflict (shift 74(0), red'n 237(0)) on _RETURNS
+state 135
+	enum:  _ENUM.name '{' enumDecls '}' 
+	name:  _ENUM.    (237)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 237 (src line 950)
+
+	name  goto 80
+
+136: shift/reduce conflict (shift 32(0), red'n 238(0)) on _NAME
+136: shift/reduce conflict (shift 33(0), red'n 238(0)) on _SYNTAX
+136: shift/reduce conflict (shift 34(0), red'n 238(0)) on _IMPORT
+136: shift/reduce conflict (shift 35(0), red'n 238(0)) on _WEAK
+136: shift/reduce conflict (shift 36(0), red'n 238(0)) on _PUBLIC
+136: shift/reduce conflict (shift 37(0), red'n 238(0)) on _PACKAGE
+136: shift/reduce conflict (shift 38(0), red'n 238(0)) on _OPTION
+136: shift/reduce conflict (shift 39(0), red'n 238(0)) on _TRUE
+136: shift/reduce conflict (shift 40(0), red'n 238(0)) on _FALSE
+136: shift/reduce conflict (shift 41(0), red'n 238(0)) on _INF
+136: shift/reduce conflict (shift 42(0), red'n 238(0)) on _NAN
+136: shift/reduce conflict (shift 43(0), red'n 238(0)) on _REPEATED
+136: shift/reduce conflict (shift 44(0), red'n 238(0)) on _OPTIONAL
+136: shift/reduce conflict (shift 45(0), red'n 238(0)) on _REQUIRED
+136: shift/reduce conflict (shift 46(0), red'n 238(0)) on _DOUBLE
+136: shift/reduce conflict (shift 47(0), red'n 238(0)) on _FLOAT
+136: shift/reduce conflict (shift 48(0), red'n 238(0)) on _INT32
+136: shift/reduce conflict (shift 49(0), red'n 238(0)) on _INT64
+136: shift/reduce conflict (shift 50(0), red'n 238(0)) on _UINT32
+136: shift/reduce conflict (shift 51(0), red'n 238(0)) on _UINT64
+136: shift/reduce conflict (shift 52(0), red'n 238(0)) on _SINT32
+136: shift/reduce conflict (shift 53(0), red'n 238(0)) on _SINT64
+136: shift/reduce conflict (shift 54(0), red'n 238(0)) on _FIXED32
+136: shift/reduce conflict (shift 55(0), red'n 238(0)) on _FIXED64
+136: shift/reduce conflict (shift 56(0), red'n 238(0)) on _SFIXED32
+136: shift/reduce conflict (shift 57(0), red'n 238(0)) on _SFIXED64
+136: shift/reduce conflict (shift 58(0), red'n 238(0)) on _BOOL
+136: shift/reduce conflict (shift 59(0), red'n 238(0)) on _STRING
+136: shift/reduce conflict (shift 60(0), red'n 238(0)) on _BYTES
+136: shift/reduce conflict (shift 61(0), red'n 238(0)) on _GROUP
+136: shift/reduce conflict (shift 62(0), red'n 238(0)) on _ONEOF
+136: shift/reduce conflict (shift 63(0), red'n 238(0)) on _MAP
+136: shift/reduce conflict (shift 64(0), red'n 238(0)) on _EXTENSIONS
+136: shift/reduce conflict (shift 65(0), red'n 238(0)) on _TO
+136: shift/reduce conflict (shift 66(0), red'n 238(0)) on _MAX
+136: shift/reduce conflict (shift 67(0), red'n 238(0)) on _RESERVED
+136: shift/reduce conflict (shift 68(0), red'n 238(0)) on _ENUM
+136: shift/reduce conflict (shift 69(0), red'n 238(0)) on _MESSAGE
+136: shift/reduce conflict (shift 70(0), red'n 238(0)) on _EXTEND
+136: shift/reduce conflict (shift 71(0), red'n 238(0)) on _SERVICE
+136: shift/reduce conflict (shift 72(0), red'n 238(0)) on _RPC
+136: shift/reduce conflict (shift 73(0), red'n 238(0)) on _STREAM
+136: shift/reduce conflict (shift 74(0), red'n 238(0)) on _RETURNS
+state 136
+	message:  _MESSAGE.name '{' messageDecls '}' 
+	name:  _MESSAGE.    (238)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 238 (src line 951)
+
+	name  goto 79
+
+137: shift/reduce conflict (shift 32(0), red'n 239(0)) on _NAME
+137: shift/reduce conflict (shift 33(0), red'n 239(0)) on _SYNTAX
+137: shift/reduce conflict (shift 34(0), red'n 239(0)) on _IMPORT
+137: shift/reduce conflict (shift 35(0), red'n 239(0)) on _WEAK
+137: shift/reduce conflict (shift 36(0), red'n 239(0)) on _PUBLIC
+137: shift/reduce conflict (shift 37(0), red'n 239(0)) on _PACKAGE
+137: shift/reduce conflict (shift 38(0), red'n 239(0)) on _OPTION
+137: shift/reduce conflict (shift 39(0), red'n 239(0)) on _TRUE
+137: shift/reduce conflict (shift 40(0), red'n 239(0)) on _FALSE
+137: shift/reduce conflict (shift 41(0), red'n 239(0)) on _INF
+137: shift/reduce conflict (shift 42(0), red'n 239(0)) on _NAN
+137: shift/reduce conflict (shift 43(0), red'n 239(0)) on _REPEATED
+137: shift/reduce conflict (shift 44(0), red'n 239(0)) on _OPTIONAL
+137: shift/reduce conflict (shift 45(0), red'n 239(0)) on _REQUIRED
+137: shift/reduce conflict (shift 46(0), red'n 239(0)) on _DOUBLE
+137: shift/reduce conflict (shift 47(0), red'n 239(0)) on _FLOAT
+137: shift/reduce conflict (shift 48(0), red'n 239(0)) on _INT32
+137: shift/reduce conflict (shift 49(0), red'n 239(0)) on _INT64
+137: shift/reduce conflict (shift 50(0), red'n 239(0)) on _UINT32
+137: shift/reduce conflict (shift 51(0), red'n 239(0)) on _UINT64
+137: shift/reduce conflict (shift 52(0), red'n 239(0)) on _SINT32
+137: shift/reduce conflict (shift 53(0), red'n 239(0)) on _SINT64
+137: shift/reduce conflict (shift 54(0), red'n 239(0)) on _FIXED32
+137: shift/reduce conflict (shift 55(0), red'n 239(0)) on _FIXED64
+137: shift/reduce conflict (shift 56(0), red'n 239(0)) on _SFIXED32
+137: shift/reduce conflict (shift 57(0), red'n 239(0)) on _SFIXED64
+137: shift/reduce conflict (shift 58(0), red'n 239(0)) on _BOOL
+137: shift/reduce conflict (shift 59(0), red'n 239(0)) on _STRING
+137: shift/reduce conflict (shift 60(0), red'n 239(0)) on _BYTES
+137: shift/reduce conflict (shift 61(0), red'n 239(0)) on _GROUP
+137: shift/reduce conflict (shift 62(0), red'n 239(0)) on _ONEOF
+137: shift/reduce conflict (shift 63(0), red'n 239(0)) on _MAP
+137: shift/reduce conflict (shift 64(0), red'n 239(0)) on _EXTENSIONS
+137: shift/reduce conflict (shift 65(0), red'n 239(0)) on _TO
+137: shift/reduce conflict (shift 66(0), red'n 239(0)) on _MAX
+137: shift/reduce conflict (shift 67(0), red'n 239(0)) on _RESERVED
+137: shift/reduce conflict (shift 68(0), red'n 239(0)) on _ENUM
+137: shift/reduce conflict (shift 69(0), red'n 239(0)) on _MESSAGE
+137: shift/reduce conflict (shift 70(0), red'n 239(0)) on _EXTEND
+137: shift/reduce conflict (shift 71(0), red'n 239(0)) on _SERVICE
+137: shift/reduce conflict (shift 72(0), red'n 239(0)) on _RPC
+137: shift/reduce conflict (shift 73(0), red'n 239(0)) on _STREAM
+137: shift/reduce conflict (shift 74(0), red'n 239(0)) on _RETURNS
+137: shift/reduce conflict (shift 83(0), red'n 239(0)) on '.'
+state 137
+	extend:  _EXTEND.typeIdent '{' extendDecls '}' 
+	name:  _EXTEND.    (239)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 81
+
+state 138
+	extensions:  _EXTENSIONS.tagRanges ';' 
+	extensions:  _EXTENSIONS.tagRanges compactOptions ';' 
+	name:  _EXTENSIONS.    (233)
+
+	_INT_LIT  shift 194
+	.  reduce 233 (src line 946)
+
+	tagRange  goto 193
+	tagRanges  goto 192
+
+139: shift/reduce conflict (shift 32(0), red'n 207(0)) on _NAME
+139: shift/reduce conflict (shift 33(0), red'n 207(0)) on _SYNTAX
+139: shift/reduce conflict (shift 34(0), red'n 207(0)) on _IMPORT
+139: shift/reduce conflict (shift 35(0), red'n 207(0)) on _WEAK
+139: shift/reduce conflict (shift 36(0), red'n 207(0)) on _PUBLIC
+139: shift/reduce conflict (shift 37(0), red'n 207(0)) on _PACKAGE
+139: shift/reduce conflict (shift 38(0), red'n 207(0)) on _OPTION
+139: shift/reduce conflict (shift 39(0), red'n 207(0)) on _TRUE
+139: shift/reduce conflict (shift 40(0), red'n 207(0)) on _FALSE
+139: shift/reduce conflict (shift 41(0), red'n 207(0)) on _INF
+139: shift/reduce conflict (shift 42(0), red'n 207(0)) on _NAN
+139: shift/reduce conflict (shift 43(0), red'n 207(0)) on _REPEATED
+139: shift/reduce conflict (shift 44(0), red'n 207(0)) on _OPTIONAL
+139: shift/reduce conflict (shift 45(0), red'n 207(0)) on _REQUIRED
+139: shift/reduce conflict (shift 46(0), red'n 207(0)) on _DOUBLE
+139: shift/reduce conflict (shift 47(0), red'n 207(0)) on _FLOAT
+139: shift/reduce conflict (shift 48(0), red'n 207(0)) on _INT32
+139: shift/reduce conflict (shift 49(0), red'n 207(0)) on _INT64
+139: shift/reduce conflict (shift 50(0), red'n 207(0)) on _UINT32
+139: shift/reduce conflict (shift 51(0), red'n 207(0)) on _UINT64
+139: shift/reduce conflict (shift 52(0), red'n 207(0)) on _SINT32
+139: shift/reduce conflict (shift 53(0), red'n 207(0)) on _SINT64
+139: shift/reduce conflict (shift 54(0), red'n 207(0)) on _FIXED32
+139: shift/reduce conflict (shift 55(0), red'n 207(0)) on _FIXED64
+139: shift/reduce conflict (shift 56(0), red'n 207(0)) on _SFIXED32
+139: shift/reduce conflict (shift 57(0), red'n 207(0)) on _SFIXED64
+139: shift/reduce conflict (shift 58(0), red'n 207(0)) on _BOOL
+139: shift/reduce conflict (shift 59(0), red'n 207(0)) on _STRING
+139: shift/reduce conflict (shift 60(0), red'n 207(0)) on _BYTES
+139: shift/reduce conflict (shift 61(0), red'n 207(0)) on _GROUP
+139: shift/reduce conflict (shift 62(0), red'n 207(0)) on _ONEOF
+139: shift/reduce conflict (shift 63(0), red'n 207(0)) on _MAP
+139: shift/reduce conflict (shift 64(0), red'n 207(0)) on _EXTENSIONS
+139: shift/reduce conflict (shift 65(0), red'n 207(0)) on _TO
+139: shift/reduce conflict (shift 66(0), red'n 207(0)) on _MAX
+139: shift/reduce conflict (shift 67(0), red'n 207(0)) on _RESERVED
+139: shift/reduce conflict (shift 68(0), red'n 207(0)) on _ENUM
+139: shift/reduce conflict (shift 69(0), red'n 207(0)) on _MESSAGE
+139: shift/reduce conflict (shift 70(0), red'n 207(0)) on _EXTEND
+139: shift/reduce conflict (shift 71(0), red'n 207(0)) on _SERVICE
+139: shift/reduce conflict (shift 72(0), red'n 207(0)) on _RPC
+139: shift/reduce conflict (shift 73(0), red'n 207(0)) on _STREAM
+139: shift/reduce conflict (shift 74(0), red'n 207(0)) on _RETURNS
+state 139
+	option:  _OPTION.optionName '=' constant ';' 
+	name:  _OPTION.    (207)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'('  shift 78
+	.  reduce 207 (src line 920)
+
+	optionNameComponent  goto 76
+	optionName  goto 75
+	name  goto 77
+
+140: shift/reduce conflict (shift 32(0), red'n 231(0)) on _NAME
+140: shift/reduce conflict (shift 33(0), red'n 231(0)) on _SYNTAX
+140: shift/reduce conflict (shift 34(0), red'n 231(0)) on _IMPORT
+140: shift/reduce conflict (shift 35(0), red'n 231(0)) on _WEAK
+140: shift/reduce conflict (shift 36(0), red'n 231(0)) on _PUBLIC
+140: shift/reduce conflict (shift 37(0), red'n 231(0)) on _PACKAGE
+140: shift/reduce conflict (shift 38(0), red'n 231(0)) on _OPTION
+140: shift/reduce conflict (shift 39(0), red'n 231(0)) on _TRUE
+140: shift/reduce conflict (shift 40(0), red'n 231(0)) on _FALSE
+140: shift/reduce conflict (shift 41(0), red'n 231(0)) on _INF
+140: shift/reduce conflict (shift 42(0), red'n 231(0)) on _NAN
+140: shift/reduce conflict (shift 43(0), red'n 231(0)) on _REPEATED
+140: shift/reduce conflict (shift 44(0), red'n 231(0)) on _OPTIONAL
+140: shift/reduce conflict (shift 45(0), red'n 231(0)) on _REQUIRED
+140: shift/reduce conflict (shift 46(0), red'n 231(0)) on _DOUBLE
+140: shift/reduce conflict (shift 47(0), red'n 231(0)) on _FLOAT
+140: shift/reduce conflict (shift 48(0), red'n 231(0)) on _INT32
+140: shift/reduce conflict (shift 49(0), red'n 231(0)) on _INT64
+140: shift/reduce conflict (shift 50(0), red'n 231(0)) on _UINT32
+140: shift/reduce conflict (shift 51(0), red'n 231(0)) on _UINT64
+140: shift/reduce conflict (shift 52(0), red'n 231(0)) on _SINT32
+140: shift/reduce conflict (shift 53(0), red'n 231(0)) on _SINT64
+140: shift/reduce conflict (shift 54(0), red'n 231(0)) on _FIXED32
+140: shift/reduce conflict (shift 55(0), red'n 231(0)) on _FIXED64
+140: shift/reduce conflict (shift 56(0), red'n 231(0)) on _SFIXED32
+140: shift/reduce conflict (shift 57(0), red'n 231(0)) on _SFIXED64
+140: shift/reduce conflict (shift 58(0), red'n 231(0)) on _BOOL
+140: shift/reduce conflict (shift 59(0), red'n 231(0)) on _STRING
+140: shift/reduce conflict (shift 60(0), red'n 231(0)) on _BYTES
+140: shift/reduce conflict (shift 61(0), red'n 231(0)) on _GROUP
+140: shift/reduce conflict (shift 62(0), red'n 231(0)) on _ONEOF
+140: shift/reduce conflict (shift 63(0), red'n 231(0)) on _MAP
+140: shift/reduce conflict (shift 64(0), red'n 231(0)) on _EXTENSIONS
+140: shift/reduce conflict (shift 65(0), red'n 231(0)) on _TO
+140: shift/reduce conflict (shift 66(0), red'n 231(0)) on _MAX
+140: shift/reduce conflict (shift 67(0), red'n 231(0)) on _RESERVED
+140: shift/reduce conflict (shift 68(0), red'n 231(0)) on _ENUM
+140: shift/reduce conflict (shift 69(0), red'n 231(0)) on _MESSAGE
+140: shift/reduce conflict (shift 70(0), red'n 231(0)) on _EXTEND
+140: shift/reduce conflict (shift 71(0), red'n 231(0)) on _SERVICE
+140: shift/reduce conflict (shift 72(0), red'n 231(0)) on _RPC
+140: shift/reduce conflict (shift 73(0), red'n 231(0)) on _STREAM
+140: shift/reduce conflict (shift 74(0), red'n 231(0)) on _RETURNS
+state 140
+	oneof:  _ONEOF.name '{' ooDecls '}' 
+	name:  _ONEOF.    (231)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 231 (src line 944)
+
+	name  goto 195
+
+state 141
+	mapField:  mapType.name '=' _INT_LIT ';' 
+	mapField:  mapType.name '=' _INT_LIT compactOptions ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 196
+
+state 142
+	msgReserved:  _RESERVED.tagRanges ';' 
+	reservedNames:  _RESERVED.fieldNames ';' 
+	name:  _RESERVED.    (236)
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 194
+	.  reduce 236 (src line 949)
+
+	fieldNames  goto 198
+	tagRange  goto 193
+	tagRanges  goto 197
+	stringLit  goto 199
+
+state 143
+	msgReserved:  reservedNames.    (137)
+
+	.  reduce 137 (src line 660)
+
+
+state 144
+	mapType:  _MAP.'<' keyType ',' typeIdent '>' 
+	name:  _MAP.    (232)
+
+	'<'  shift 200
+	.  reduce 232 (src line 945)
+
+
+state 145
+	enum:  _ENUM name '{' enumDecls.'}' 
+	enumDecls:  enumDecls.enumDecl 
+
+	error  shift 151
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 153
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 150
+	'}'  shift 201
+	.  error
+
+	option  goto 147
+	name  goto 152
+	enumReserved  goto 149
+	reservedNames  goto 154
+	enumDecl  goto 202
+	enumValue  goto 148
+
+state 146
+	enumDecls:  enumDecl.    (145)
+
+	.  reduce 145 (src line 691)
+
+
+state 147
+	enumDecl:  option.    (147)
+
+	.  reduce 147 (src line 702)
+
+
+state 148
+	enumDecl:  enumValue.    (148)
+
+	.  reduce 148 (src line 705)
+
+
+state 149
+	enumDecl:  enumReserved.    (149)
+
+	.  reduce 149 (src line 708)
+
+
+state 150
+	enumDecl:  ';'.    (150)
+
+	.  reduce 150 (src line 711)
+
+
+151: shift/reduce conflict (shift 203(0), red'n 152(0)) on ';'
+state 151
+	enumDecl:  error.';' 
+	enumDecl:  error.    (152)
+
+	';'  shift 203
+	.  reduce 152 (src line 717)
+
+
+state 152
+	enumValue:  name.'=' intLit ';' 
+	enumValue:  name.'=' intLit compactOptions ';' 
+
+	'='  shift 204
+	.  error
+
+
+state 153
+	enumReserved:  _RESERVED.enumRanges ';' 
+	reservedNames:  _RESERVED.fieldNames ';' 
+	name:  _RESERVED.    (236)
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 208
+	'-'  shift 209
+	.  reduce 236 (src line 949)
+
+	intLit  goto 207
+	fieldNames  goto 198
+	enumRange  goto 206
+	enumRanges  goto 205
+	stringLit  goto 199
+
+state 154
+	enumReserved:  reservedNames.    (139)
+
+	.  reduce 139 (src line 666)
+
+
+state 155
+	extend:  _EXTEND typeIdent '{' extendDecls.'}' 
+	extendDecls:  extendDecls.extendDecl 
+
+	error  shift 160
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 159
+	'}'  shift 210
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 157
+	group  goto 158
+	extendDecl  goto 211
+
+state 156
+	extendDecls:  extendDecl.    (174)
+
+	.  reduce 174 (src line 801)
+
+
+state 157
+	extendDecl:  field.    (176)
+
+	.  reduce 176 (src line 812)
+
+
+state 158
+	extendDecl:  group.    (177)
+
+	.  reduce 177 (src line 815)
+
+
+state 159
+	extendDecl:  ';'.    (178)
+
+	.  reduce 178 (src line 818)
+
+
+160: shift/reduce conflict (shift 212(0), red'n 180(0)) on ';'
+state 160
+	extendDecl:  error.';' 
+	extendDecl:  error.    (180)
+
+	';'  shift 212
+	.  reduce 180 (src line 824)
+
+
+state 161
+	service:  _SERVICE name '{' serviceDecls.'}' 
+	serviceDecls:  serviceDecls.serviceDecl 
+
+	error  shift 166
+	_OPTION  shift 17
+	_RPC  shift 167
+	';'  shift 165
+	'}'  shift 213
+	.  error
+
+	option  goto 163
+	serviceDecl  goto 214
+	rpc  goto 164
+
+state 162
+	serviceDecls:  serviceDecl.    (183)
+
+	.  reduce 183 (src line 839)
+
+
+state 163
+	serviceDecl:  option.    (185)
+
+	.  reduce 185 (src line 853)
+
+
+state 164
+	serviceDecl:  rpc.    (186)
+
+	.  reduce 186 (src line 856)
+
+
+state 165
+	serviceDecl:  ';'.    (187)
+
+	.  reduce 187 (src line 859)
+
+
+166: shift/reduce conflict (shift 215(0), red'n 189(0)) on ';'
+state 166
+	serviceDecl:  error.';' 
+	serviceDecl:  error.    (189)
+
+	';'  shift 215
+	.  reduce 189 (src line 865)
+
+
+state 167
+	rpc:  _RPC.name rpcType _RETURNS rpcType ';' 
+	rpc:  _RPC.name rpcType _RETURNS rpcType '{' rpcDecls '}' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 216
+
+state 168
+	option:  _OPTION optionName '=' constant ';'.    (24)
+
+	.  reduce 24 (src line 229)
+
+
+state 169
+	aggregate:  '{' aggFields.'}' 
+
+	'}'  shift 217
+	.  error
+
+
+ 170: reduce/reduce conflict  (red'ns 45 and 47) on '}'
+ 170: reduce/reduce conflict  (red'ns 45 and 47) on '>'
+state 170
+	aggFields:  aggField.    (45)
+	aggFields:  aggField.aggFields 
+	aggFields: .    (47)
+
+	error  shift 172
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'}'  reduce 45 (src line 310)
+	'>'  reduce 45 (src line 310)
+	'['  shift 175
+	.  error
+
+	aggName  goto 173
+	name  goto 174
+	aggFieldEntry  goto 171
+	aggField  goto 170
+	aggFields  goto 218
+
+state 171
+	aggField:  aggFieldEntry.    (48)
+	aggField:  aggFieldEntry.',' 
+	aggField:  aggFieldEntry.';' 
+
+	';'  shift 220
+	','  shift 219
+	.  reduce 48 (src line 328)
+
+
+state 172
+	aggField:  error.',' 
+	aggField:  error.';' 
+	aggField:  error.    (53)
+
+	';'  shift 222
+	','  shift 221
+	.  reduce 53 (src line 355)
+
+
+state 173
+	aggFieldEntry:  aggName.':' scalarConstant 
+	aggFieldEntry:  aggName.':' '[' ']' 
+	aggFieldEntry:  aggName.':' '[' constantList ']' 
+	aggFieldEntry:  aggName.':' '[' error ']' 
+	aggFieldEntry:  aggName.':' aggregate 
+	aggFieldEntry:  aggName.aggregate 
+	aggFieldEntry:  aggName.':' '<' aggFields '>' 
+	aggFieldEntry:  aggName.'<' aggFields '>' 
+	aggFieldEntry:  aggName.':' '<' error '>' 
+	aggFieldEntry:  aggName.'<' error '>' 
+
+	':'  shift 223
+	'{'  shift 110
+	'<'  shift 225
+	.  error
+
+	aggregate  goto 224
+
+state 174
+	aggName:  name.    (64)
+
+	.  reduce 64 (src line 425)
+
+
+state 175
+	aggName:  '['.typeIdent ']' 
+	aggName:  '['.error ']' 
+
+	error  shift 227
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 226
+
+state 176
+	numLit:  '-' _FLOAT_LIT.    (35)
+
+	.  reduce 35 (src line 269)
+
+
+state 177
+	numLit:  '-' _INF.    (38)
+
+	.  reduce 38 (src line 279)
+
+
+state 178
+	numLit:  '-' _INT_LIT.    (41)
+
+	.  reduce 41 (src line 289)
+
+
+state 179
+	numLit:  '+' _FLOAT_LIT.    (36)
+
+	.  reduce 36 (src line 272)
+
+
+state 180
+	numLit:  '+' _INF.    (37)
+
+	.  reduce 37 (src line 275)
+
+
+state 181
+	numLit:  '+' _INT_LIT.    (40)
+
+	.  reduce 40 (src line 286)
+
+
+state 182
+	message:  _MESSAGE name '{' messageDecls '}'.    (155)
+
+	.  reduce 155 (src line 728)
+
+
+state 183
+	messageDecls:  messageDecls messageDecl.    (156)
+
+	.  reduce 156 (src line 732)
+
+
+state 184
+	messageDecl:  error ';'.    (170)
+
+	.  reduce 170 (src line 783)
+
+
+state 185
+	field:  _REQUIRED typeIdent.name '=' _INT_LIT ';' 
+	field:  _REQUIRED typeIdent.name '=' _INT_LIT compactOptions ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 228
+
+186: shift/reduce conflict (shift 32(0), red'n 230(0)) on _NAME
+186: shift/reduce conflict (shift 33(0), red'n 230(0)) on _SYNTAX
+186: shift/reduce conflict (shift 34(0), red'n 230(0)) on _IMPORT
+186: shift/reduce conflict (shift 35(0), red'n 230(0)) on _WEAK
+186: shift/reduce conflict (shift 36(0), red'n 230(0)) on _PUBLIC
+186: shift/reduce conflict (shift 37(0), red'n 230(0)) on _PACKAGE
+186: shift/reduce conflict (shift 38(0), red'n 230(0)) on _OPTION
+186: shift/reduce conflict (shift 39(0), red'n 230(0)) on _TRUE
+186: shift/reduce conflict (shift 40(0), red'n 230(0)) on _FALSE
+186: shift/reduce conflict (shift 41(0), red'n 230(0)) on _INF
+186: shift/reduce conflict (shift 42(0), red'n 230(0)) on _NAN
+186: shift/reduce conflict (shift 43(0), red'n 230(0)) on _REPEATED
+186: shift/reduce conflict (shift 44(0), red'n 230(0)) on _OPTIONAL
+186: shift/reduce conflict (shift 45(0), red'n 230(0)) on _REQUIRED
+186: shift/reduce conflict (shift 46(0), red'n 230(0)) on _DOUBLE
+186: shift/reduce conflict (shift 47(0), red'n 230(0)) on _FLOAT
+186: shift/reduce conflict (shift 48(0), red'n 230(0)) on _INT32
+186: shift/reduce conflict (shift 49(0), red'n 230(0)) on _INT64
+186: shift/reduce conflict (shift 50(0), red'n 230(0)) on _UINT32
+186: shift/reduce conflict (shift 51(0), red'n 230(0)) on _UINT64
+186: shift/reduce conflict (shift 52(0), red'n 230(0)) on _SINT32
+186: shift/reduce conflict (shift 53(0), red'n 230(0)) on _SINT64
+186: shift/reduce conflict (shift 54(0), red'n 230(0)) on _FIXED32
+186: shift/reduce conflict (shift 55(0), red'n 230(0)) on _FIXED64
+186: shift/reduce conflict (shift 56(0), red'n 230(0)) on _SFIXED32
+186: shift/reduce conflict (shift 57(0), red'n 230(0)) on _SFIXED64
+186: shift/reduce conflict (shift 58(0), red'n 230(0)) on _BOOL
+186: shift/reduce conflict (shift 59(0), red'n 230(0)) on _STRING
+186: shift/reduce conflict (shift 60(0), red'n 230(0)) on _BYTES
+186: shift/reduce conflict (shift 61(0), red'n 230(0)) on _GROUP
+186: shift/reduce conflict (shift 62(0), red'n 230(0)) on _ONEOF
+186: shift/reduce conflict (shift 63(0), red'n 230(0)) on _MAP
+186: shift/reduce conflict (shift 64(0), red'n 230(0)) on _EXTENSIONS
+186: shift/reduce conflict (shift 65(0), red'n 230(0)) on _TO
+186: shift/reduce conflict (shift 66(0), red'n 230(0)) on _MAX
+186: shift/reduce conflict (shift 67(0), red'n 230(0)) on _RESERVED
+186: shift/reduce conflict (shift 68(0), red'n 230(0)) on _ENUM
+186: shift/reduce conflict (shift 69(0), red'n 230(0)) on _MESSAGE
+186: shift/reduce conflict (shift 70(0), red'n 230(0)) on _EXTEND
+186: shift/reduce conflict (shift 71(0), red'n 230(0)) on _SERVICE
+186: shift/reduce conflict (shift 72(0), red'n 230(0)) on _RPC
+186: shift/reduce conflict (shift 73(0), red'n 230(0)) on _STREAM
+186: shift/reduce conflict (shift 74(0), red'n 230(0)) on _RETURNS
+state 186
+	group:  _REQUIRED _GROUP.name '=' _INT_LIT '{' messageDecls '}' 
+	group:  _REQUIRED _GROUP.name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _GROUP.    (230)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 230 (src line 943)
+
+	name  goto 229
+
+state 187
+	field:  _OPTIONAL typeIdent.name '=' _INT_LIT ';' 
+	field:  _OPTIONAL typeIdent.name '=' _INT_LIT compactOptions ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 230
+
+188: shift/reduce conflict (shift 32(0), red'n 230(0)) on _NAME
+188: shift/reduce conflict (shift 33(0), red'n 230(0)) on _SYNTAX
+188: shift/reduce conflict (shift 34(0), red'n 230(0)) on _IMPORT
+188: shift/reduce conflict (shift 35(0), red'n 230(0)) on _WEAK
+188: shift/reduce conflict (shift 36(0), red'n 230(0)) on _PUBLIC
+188: shift/reduce conflict (shift 37(0), red'n 230(0)) on _PACKAGE
+188: shift/reduce conflict (shift 38(0), red'n 230(0)) on _OPTION
+188: shift/reduce conflict (shift 39(0), red'n 230(0)) on _TRUE
+188: shift/reduce conflict (shift 40(0), red'n 230(0)) on _FALSE
+188: shift/reduce conflict (shift 41(0), red'n 230(0)) on _INF
+188: shift/reduce conflict (shift 42(0), red'n 230(0)) on _NAN
+188: shift/reduce conflict (shift 43(0), red'n 230(0)) on _REPEATED
+188: shift/reduce conflict (shift 44(0), red'n 230(0)) on _OPTIONAL
+188: shift/reduce conflict (shift 45(0), red'n 230(0)) on _REQUIRED
+188: shift/reduce conflict (shift 46(0), red'n 230(0)) on _DOUBLE
+188: shift/reduce conflict (shift 47(0), red'n 230(0)) on _FLOAT
+188: shift/reduce conflict (shift 48(0), red'n 230(0)) on _INT32
+188: shift/reduce conflict (shift 49(0), red'n 230(0)) on _INT64
+188: shift/reduce conflict (shift 50(0), red'n 230(0)) on _UINT32
+188: shift/reduce conflict (shift 51(0), red'n 230(0)) on _UINT64
+188: shift/reduce conflict (shift 52(0), red'n 230(0)) on _SINT32
+188: shift/reduce conflict (shift 53(0), red'n 230(0)) on _SINT64
+188: shift/reduce conflict (shift 54(0), red'n 230(0)) on _FIXED32
+188: shift/reduce conflict (shift 55(0), red'n 230(0)) on _FIXED64
+188: shift/reduce conflict (shift 56(0), red'n 230(0)) on _SFIXED32
+188: shift/reduce conflict (shift 57(0), red'n 230(0)) on _SFIXED64
+188: shift/reduce conflict (shift 58(0), red'n 230(0)) on _BOOL
+188: shift/reduce conflict (shift 59(0), red'n 230(0)) on _STRING
+188: shift/reduce conflict (shift 60(0), red'n 230(0)) on _BYTES
+188: shift/reduce conflict (shift 61(0), red'n 230(0)) on _GROUP
+188: shift/reduce conflict (shift 62(0), red'n 230(0)) on _ONEOF
+188: shift/reduce conflict (shift 63(0), red'n 230(0)) on _MAP
+188: shift/reduce conflict (shift 64(0), red'n 230(0)) on _EXTENSIONS
+188: shift/reduce conflict (shift 65(0), red'n 230(0)) on _TO
+188: shift/reduce conflict (shift 66(0), red'n 230(0)) on _MAX
+188: shift/reduce conflict (shift 67(0), red'n 230(0)) on _RESERVED
+188: shift/reduce conflict (shift 68(0), red'n 230(0)) on _ENUM
+188: shift/reduce conflict (shift 69(0), red'n 230(0)) on _MESSAGE
+188: shift/reduce conflict (shift 70(0), red'n 230(0)) on _EXTEND
+188: shift/reduce conflict (shift 71(0), red'n 230(0)) on _SERVICE
+188: shift/reduce conflict (shift 72(0), red'n 230(0)) on _RPC
+188: shift/reduce conflict (shift 73(0), red'n 230(0)) on _STREAM
+188: shift/reduce conflict (shift 74(0), red'n 230(0)) on _RETURNS
+state 188
+	group:  _OPTIONAL _GROUP.name '=' _INT_LIT '{' messageDecls '}' 
+	group:  _OPTIONAL _GROUP.name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _GROUP.    (230)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 230 (src line 943)
+
+	name  goto 231
+
+state 189
+	field:  _REPEATED typeIdent.name '=' _INT_LIT ';' 
+	field:  _REPEATED typeIdent.name '=' _INT_LIT compactOptions ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 232
+
+190: shift/reduce conflict (shift 32(0), red'n 230(0)) on _NAME
+190: shift/reduce conflict (shift 33(0), red'n 230(0)) on _SYNTAX
+190: shift/reduce conflict (shift 34(0), red'n 230(0)) on _IMPORT
+190: shift/reduce conflict (shift 35(0), red'n 230(0)) on _WEAK
+190: shift/reduce conflict (shift 36(0), red'n 230(0)) on _PUBLIC
+190: shift/reduce conflict (shift 37(0), red'n 230(0)) on _PACKAGE
+190: shift/reduce conflict (shift 38(0), red'n 230(0)) on _OPTION
+190: shift/reduce conflict (shift 39(0), red'n 230(0)) on _TRUE
+190: shift/reduce conflict (shift 40(0), red'n 230(0)) on _FALSE
+190: shift/reduce conflict (shift 41(0), red'n 230(0)) on _INF
+190: shift/reduce conflict (shift 42(0), red'n 230(0)) on _NAN
+190: shift/reduce conflict (shift 43(0), red'n 230(0)) on _REPEATED
+190: shift/reduce conflict (shift 44(0), red'n 230(0)) on _OPTIONAL
+190: shift/reduce conflict (shift 45(0), red'n 230(0)) on _REQUIRED
+190: shift/reduce conflict (shift 46(0), red'n 230(0)) on _DOUBLE
+190: shift/reduce conflict (shift 47(0), red'n 230(0)) on _FLOAT
+190: shift/reduce conflict (shift 48(0), red'n 230(0)) on _INT32
+190: shift/reduce conflict (shift 49(0), red'n 230(0)) on _INT64
+190: shift/reduce conflict (shift 50(0), red'n 230(0)) on _UINT32
+190: shift/reduce conflict (shift 51(0), red'n 230(0)) on _UINT64
+190: shift/reduce conflict (shift 52(0), red'n 230(0)) on _SINT32
+190: shift/reduce conflict (shift 53(0), red'n 230(0)) on _SINT64
+190: shift/reduce conflict (shift 54(0), red'n 230(0)) on _FIXED32
+190: shift/reduce conflict (shift 55(0), red'n 230(0)) on _FIXED64
+190: shift/reduce conflict (shift 56(0), red'n 230(0)) on _SFIXED32
+190: shift/reduce conflict (shift 57(0), red'n 230(0)) on _SFIXED64
+190: shift/reduce conflict (shift 58(0), red'n 230(0)) on _BOOL
+190: shift/reduce conflict (shift 59(0), red'n 230(0)) on _STRING
+190: shift/reduce conflict (shift 60(0), red'n 230(0)) on _BYTES
+190: shift/reduce conflict (shift 61(0), red'n 230(0)) on _GROUP
+190: shift/reduce conflict (shift 62(0), red'n 230(0)) on _ONEOF
+190: shift/reduce conflict (shift 63(0), red'n 230(0)) on _MAP
+190: shift/reduce conflict (shift 64(0), red'n 230(0)) on _EXTENSIONS
+190: shift/reduce conflict (shift 65(0), red'n 230(0)) on _TO
+190: shift/reduce conflict (shift 66(0), red'n 230(0)) on _MAX
+190: shift/reduce conflict (shift 67(0), red'n 230(0)) on _RESERVED
+190: shift/reduce conflict (shift 68(0), red'n 230(0)) on _ENUM
+190: shift/reduce conflict (shift 69(0), red'n 230(0)) on _MESSAGE
+190: shift/reduce conflict (shift 70(0), red'n 230(0)) on _EXTEND
+190: shift/reduce conflict (shift 71(0), red'n 230(0)) on _SERVICE
+190: shift/reduce conflict (shift 72(0), red'n 230(0)) on _RPC
+190: shift/reduce conflict (shift 73(0), red'n 230(0)) on _STREAM
+190: shift/reduce conflict (shift 74(0), red'n 230(0)) on _RETURNS
+state 190
+	group:  _REPEATED _GROUP.name '=' _INT_LIT '{' messageDecls '}' 
+	group:  _REPEATED _GROUP.name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _GROUP.    (230)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 230 (src line 943)
+
+	name  goto 233
+
+state 191
+	field:  typeIdent name.'=' _INT_LIT ';' 
+	field:  typeIdent name.'=' _INT_LIT compactOptions ';' 
+
+	'='  shift 234
+	.  error
+
+
+state 192
+	extensions:  _EXTENSIONS tagRanges.';' 
+	extensions:  _EXTENSIONS tagRanges.compactOptions ';' 
+
+	';'  shift 235
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 236
+
+state 193
+	tagRanges:  tagRange.    (124)
+	tagRanges:  tagRange.',' tagRanges 
+
+	','  shift 238
+	.  reduce 124 (src line 615)
+
+
+state 194
+	tagRange:  _INT_LIT.    (126)
+	tagRange:  _INT_LIT._TO _INT_LIT 
+	tagRange:  _INT_LIT._TO _MAX 
+
+	_TO  shift 239
+	.  reduce 126 (src line 622)
+
+
+state 195
+	oneof:  _ONEOF name.'{' ooDecls '}' 
+
+	'{'  shift 240
+	.  error
+
+
+state 196
+	mapField:  mapType name.'=' _INT_LIT ';' 
+	mapField:  mapType name.'=' _INT_LIT compactOptions ';' 
+
+	'='  shift 241
+	.  error
+
+
+state 197
+	msgReserved:  _RESERVED tagRanges.';' 
+
+	';'  shift 242
+	.  error
+
+
+state 198
+	reservedNames:  _RESERVED fieldNames.';' 
+
+	';'  shift 243
+	.  error
+
+
+state 199
+	fieldNames:  stringLit.    (141)
+	fieldNames:  stringLit.',' fieldNames 
+
+	','  shift 244
+	.  reduce 141 (src line 673)
+
+
+state 200
+	mapType:  _MAP '<'.keyType ',' typeIdent '>' 
+
+	_INT32  shift 246
+	_INT64  shift 247
+	_UINT32  shift 248
+	_UINT64  shift 249
+	_SINT32  shift 250
+	_SINT64  shift 251
+	_FIXED32  shift 252
+	_FIXED64  shift 253
+	_SFIXED32  shift 254
+	_SFIXED64  shift 255
+	_BOOL  shift 256
+	_STRING  shift 257
+	.  error
+
+	keyType  goto 245
+
+state 201
+	enum:  _ENUM name '{' enumDecls '}'.    (143)
+
+	.  reduce 143 (src line 680)
+
+
+state 202
+	enumDecls:  enumDecls enumDecl.    (144)
+
+	.  reduce 144 (src line 684)
+
+
+state 203
+	enumDecl:  error ';'.    (151)
+
+	.  reduce 151 (src line 714)
+
+
+state 204
+	enumValue:  name '='.intLit ';' 
+	enumValue:  name '='.intLit compactOptions ';' 
+
+	_INT_LIT  shift 208
+	'-'  shift 209
+	.  error
+
+	intLit  goto 258
+
+state 205
+	enumReserved:  _RESERVED enumRanges.';' 
+
+	';'  shift 259
+	.  error
+
+
+state 206
+	enumRanges:  enumRange.    (129)
+	enumRanges:  enumRange.',' enumRanges 
+
+	','  shift 260
+	.  reduce 129 (src line 632)
+
+
+state 207
+	enumRange:  intLit.    (131)
+	enumRange:  intLit._TO intLit 
+	enumRange:  intLit._TO _MAX 
+
+	_TO  shift 261
+	.  reduce 131 (src line 639)
+
+
+state 208
+	intLit:  _INT_LIT.    (134)
+
+	.  reduce 134 (src line 649)
+
+
+state 209
+	intLit:  '-'._INT_LIT 
+
+	_INT_LIT  shift 262
+	.  error
+
+
+state 210
+	extend:  _EXTEND typeIdent '{' extendDecls '}'.    (172)
+
+	.  reduce 172 (src line 790)
+
+
+state 211
+	extendDecls:  extendDecls extendDecl.    (173)
+
+	.  reduce 173 (src line 794)
+
+
+state 212
+	extendDecl:  error ';'.    (179)
+
+	.  reduce 179 (src line 821)
+
+
+state 213
+	service:  _SERVICE name '{' serviceDecls '}'.    (181)
+
+	.  reduce 181 (src line 828)
+
+
+state 214
+	serviceDecls:  serviceDecls serviceDecl.    (182)
+
+	.  reduce 182 (src line 832)
+
+
+state 215
+	serviceDecl:  error ';'.    (188)
+
+	.  reduce 188 (src line 862)
+
+
+state 216
+	rpc:  _RPC name.rpcType _RETURNS rpcType ';' 
+	rpc:  _RPC name.rpcType _RETURNS rpcType '{' rpcDecls '}' 
+
+	'('  shift 264
+	.  error
+
+	rpcType  goto 263
+
+state 217
+	aggregate:  '{' aggFields '}'.    (44)
+
+	.  reduce 44 (src line 305)
+
+
+state 218
+	aggFields:  aggField aggFields.    (46)
+
+	.  reduce 46 (src line 317)
+
+
+state 219
+	aggField:  aggFieldEntry ','.    (49)
+
+	.  reduce 49 (src line 335)
+
+
+state 220
+	aggField:  aggFieldEntry ';'.    (50)
+
+	.  reduce 50 (src line 342)
+
+
+state 221
+	aggField:  error ','.    (51)
+
+	.  reduce 51 (src line 349)
+
+
+state 222
+	aggField:  error ';'.    (52)
+
+	.  reduce 52 (src line 352)
+
+
+state 223
+	aggFieldEntry:  aggName ':'.scalarConstant 
+	aggFieldEntry:  aggName ':'.'[' ']' 
+	aggFieldEntry:  aggName ':'.'[' constantList ']' 
+	aggFieldEntry:  aggName ':'.'[' error ']' 
+	aggFieldEntry:  aggName ':'.aggregate 
+	aggFieldEntry:  aggName ':'.'<' aggFields '>' 
+	aggFieldEntry:  aggName ':'.'<' error '>' 
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'<'  shift 268
+	'+'  shift 113
+	'-'  shift 112
+	'['  shift 266
+	.  error
+
+	scalarConstant  goto 265
+	aggregate  goto 267
+	numLit  goto 108
+	name  goto 109
+	stringLit  goto 107
+
+state 224
+	aggFieldEntry:  aggName aggregate.    (59)
+
+	.  reduce 59 (src line 393)
+
+
+state 225
+	aggFieldEntry:  aggName '<'.aggFields '>' 
+	aggFieldEntry:  aggName '<'.error '>' 
+	aggFields: .    (47)
+
+	error  shift 270
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'>'  reduce 47 (src line 324)
+	'['  shift 175
+	.  error
+
+	aggName  goto 173
+	name  goto 174
+	aggFieldEntry  goto 171
+	aggField  goto 170
+	aggFields  goto 269
+
+state 226
+	aggName:  '[' typeIdent.']' 
+
+	']'  shift 271
+	.  error
+
+
+state 227
+	aggName:  '[' error.']' 
+
+	']'  shift 272
+	.  error
+
+
+state 228
+	field:  _REQUIRED typeIdent name.'=' _INT_LIT ';' 
+	field:  _REQUIRED typeIdent name.'=' _INT_LIT compactOptions ';' 
+
+	'='  shift 273
+	.  error
+
+
+state 229
+	group:  _REQUIRED _GROUP name.'=' _INT_LIT '{' messageDecls '}' 
+	group:  _REQUIRED _GROUP name.'=' _INT_LIT compactOptions '{' messageDecls '}' 
+
+	'='  shift 274
+	.  error
+
+
+state 230
+	field:  _OPTIONAL typeIdent name.'=' _INT_LIT ';' 
+	field:  _OPTIONAL typeIdent name.'=' _INT_LIT compactOptions ';' 
+
+	'='  shift 275
+	.  error
+
+
+state 231
+	group:  _OPTIONAL _GROUP name.'=' _INT_LIT '{' messageDecls '}' 
+	group:  _OPTIONAL _GROUP name.'=' _INT_LIT compactOptions '{' messageDecls '}' 
+
+	'='  shift 276
+	.  error
+
+
+state 232
+	field:  _REPEATED typeIdent name.'=' _INT_LIT ';' 
+	field:  _REPEATED typeIdent name.'=' _INT_LIT compactOptions ';' 
+
+	'='  shift 277
+	.  error
+
+
+state 233
+	group:  _REPEATED _GROUP name.'=' _INT_LIT '{' messageDecls '}' 
+	group:  _REPEATED _GROUP name.'=' _INT_LIT compactOptions '{' messageDecls '}' 
+
+	'='  shift 278
+	.  error
+
+
+state 234
+	field:  typeIdent name '='._INT_LIT ';' 
+	field:  typeIdent name '='._INT_LIT compactOptions ';' 
+
+	_INT_LIT  shift 279
+	.  error
+
+
+state 235
+	extensions:  _EXTENSIONS tagRanges ';'.    (122)
+
+	.  reduce 122 (src line 606)
+
+
+state 236
+	extensions:  _EXTENSIONS tagRanges compactOptions.';' 
+
+	';'  shift 280
+	.  error
+
+
+state 237
+	compactOptions:  '['.compactOptionDecls ']' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'('  shift 78
+	.  error
+
+	compactOption  goto 282
+	compactOptionDecls  goto 281
+	optionNameComponent  goto 76
+	optionName  goto 283
+	name  goto 77
+
+state 238
+	tagRanges:  tagRange ','.tagRanges 
+
+	_INT_LIT  shift 194
+	.  error
+
+	tagRange  goto 193
+	tagRanges  goto 284
+
+state 239
+	tagRange:  _INT_LIT _TO._INT_LIT 
+	tagRange:  _INT_LIT _TO._MAX 
+
+	_INT_LIT  shift 285
+	_MAX  shift 286
+	.  error
+
+
+240: shift/reduce conflict (shift 293(0), red'n 96(0)) on error
+240: shift/reduce conflict (shift 32(0), red'n 96(0)) on _NAME
+240: shift/reduce conflict (shift 33(0), red'n 96(0)) on _SYNTAX
+240: shift/reduce conflict (shift 34(0), red'n 96(0)) on _IMPORT
+240: shift/reduce conflict (shift 35(0), red'n 96(0)) on _WEAK
+240: shift/reduce conflict (shift 36(0), red'n 96(0)) on _PUBLIC
+240: shift/reduce conflict (shift 37(0), red'n 96(0)) on _PACKAGE
+240: shift/reduce conflict (shift 139(0), red'n 96(0)) on _OPTION
+240: shift/reduce conflict (shift 39(0), red'n 96(0)) on _TRUE
+240: shift/reduce conflict (shift 40(0), red'n 96(0)) on _FALSE
+240: shift/reduce conflict (shift 41(0), red'n 96(0)) on _INF
+240: shift/reduce conflict (shift 42(0), red'n 96(0)) on _NAN
+240: shift/reduce conflict (shift 43(0), red'n 96(0)) on _REPEATED
+240: shift/reduce conflict (shift 44(0), red'n 96(0)) on _OPTIONAL
+240: shift/reduce conflict (shift 45(0), red'n 96(0)) on _REQUIRED
+240: shift/reduce conflict (shift 46(0), red'n 96(0)) on _DOUBLE
+240: shift/reduce conflict (shift 47(0), red'n 96(0)) on _FLOAT
+240: shift/reduce conflict (shift 48(0), red'n 96(0)) on _INT32
+240: shift/reduce conflict (shift 49(0), red'n 96(0)) on _INT64
+240: shift/reduce conflict (shift 50(0), red'n 96(0)) on _UINT32
+240: shift/reduce conflict (shift 51(0), red'n 96(0)) on _UINT64
+240: shift/reduce conflict (shift 52(0), red'n 96(0)) on _SINT32
+240: shift/reduce conflict (shift 53(0), red'n 96(0)) on _SINT64
+240: shift/reduce conflict (shift 54(0), red'n 96(0)) on _FIXED32
+240: shift/reduce conflict (shift 55(0), red'n 96(0)) on _FIXED64
+240: shift/reduce conflict (shift 56(0), red'n 96(0)) on _SFIXED32
+240: shift/reduce conflict (shift 57(0), red'n 96(0)) on _SFIXED64
+240: shift/reduce conflict (shift 58(0), red'n 96(0)) on _BOOL
+240: shift/reduce conflict (shift 59(0), red'n 96(0)) on _STRING
+240: shift/reduce conflict (shift 60(0), red'n 96(0)) on _BYTES
+240: shift/reduce conflict (shift 295(0), red'n 96(0)) on _GROUP
+240: shift/reduce conflict (shift 62(0), red'n 96(0)) on _ONEOF
+240: shift/reduce conflict (shift 63(0), red'n 96(0)) on _MAP
+240: shift/reduce conflict (shift 64(0), red'n 96(0)) on _EXTENSIONS
+240: shift/reduce conflict (shift 65(0), red'n 96(0)) on _TO
+240: shift/reduce conflict (shift 66(0), red'n 96(0)) on _MAX
+240: shift/reduce conflict (shift 67(0), red'n 96(0)) on _RESERVED
+240: shift/reduce conflict (shift 68(0), red'n 96(0)) on _ENUM
+240: shift/reduce conflict (shift 69(0), red'n 96(0)) on _MESSAGE
+240: shift/reduce conflict (shift 70(0), red'n 96(0)) on _EXTEND
+240: shift/reduce conflict (shift 71(0), red'n 96(0)) on _SERVICE
+240: shift/reduce conflict (shift 72(0), red'n 96(0)) on _RPC
+240: shift/reduce conflict (shift 73(0), red'n 96(0)) on _STREAM
+240: shift/reduce conflict (shift 74(0), red'n 96(0)) on _RETURNS
+240: shift/reduce conflict (shift 292(0), red'n 96(0)) on ';'
+240: shift/reduce conflict (shift 83(0), red'n 96(0)) on '.'
+state 240
+	oneof:  _ONEOF name '{'.ooDecls '}' 
+	ooDecls: .    (96)
+
+	error  shift 293
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 295
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 292
+	'}'  reduce 96 (src line 545)
+	'.'  shift 83
+	.  error
+
+	option  goto 289
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 294
+	oneofField  goto 290
+	oneofGroup  goto 291
+	ooDecl  goto 288
+	ooDecls  goto 287
+
+state 241
+	mapField:  mapType name '='._INT_LIT ';' 
+	mapField:  mapType name '='._INT_LIT compactOptions ';' 
+
+	_INT_LIT  shift 296
+	.  error
+
+
+state 242
+	msgReserved:  _RESERVED tagRanges ';'.    (136)
+
+	.  reduce 136 (src line 656)
+
+
+state 243
+	reservedNames:  _RESERVED fieldNames ';'.    (140)
+
+	.  reduce 140 (src line 668)
+
+
+state 244
+	fieldNames:  stringLit ','.fieldNames 
+
+	_STRING_LIT  shift 29
+	.  error
+
+	fieldNames  goto 297
+	stringLit  goto 199
+
+state 245
+	mapType:  _MAP '<' keyType.',' typeIdent '>' 
+
+	','  shift 298
+	.  error
+
+
+state 246
+	keyType:  _INT32.    (110)
+
+	.  reduce 110 (src line 593)
+
+
+state 247
+	keyType:  _INT64.    (111)
+
+	.  reduce 111 (src line 594)
+
+
+state 248
+	keyType:  _UINT32.    (112)
+
+	.  reduce 112 (src line 595)
+
+
+state 249
+	keyType:  _UINT64.    (113)
+
+	.  reduce 113 (src line 596)
+
+
+state 250
+	keyType:  _SINT32.    (114)
+
+	.  reduce 114 (src line 597)
+
+
+state 251
+	keyType:  _SINT64.    (115)
+
+	.  reduce 115 (src line 598)
+
+
+state 252
+	keyType:  _FIXED32.    (116)
+
+	.  reduce 116 (src line 599)
+
+
+state 253
+	keyType:  _FIXED64.    (117)
+
+	.  reduce 117 (src line 600)
+
+
+state 254
+	keyType:  _SFIXED32.    (118)
+
+	.  reduce 118 (src line 601)
+
+
+state 255
+	keyType:  _SFIXED64.    (119)
+
+	.  reduce 119 (src line 602)
+
+
+state 256
+	keyType:  _BOOL.    (120)
+
+	.  reduce 120 (src line 603)
+
+
+state 257
+	keyType:  _STRING.    (121)
+
+	.  reduce 121 (src line 604)
+
+
+state 258
+	enumValue:  name '=' intLit.';' 
+	enumValue:  name '=' intLit.compactOptions ';' 
+
+	';'  shift 299
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 300
+
+state 259
+	enumReserved:  _RESERVED enumRanges ';'.    (138)
+
+	.  reduce 138 (src line 662)
+
+
+state 260
+	enumRanges:  enumRange ','.enumRanges 
+
+	_INT_LIT  shift 208
+	'-'  shift 209
+	.  error
+
+	intLit  goto 207
+	enumRange  goto 206
+	enumRanges  goto 301
+
+state 261
+	enumRange:  intLit _TO.intLit 
+	enumRange:  intLit _TO._MAX 
+
+	_INT_LIT  shift 208
+	_MAX  shift 303
+	'-'  shift 209
+	.  error
+
+	intLit  goto 302
+
+state 262
+	intLit:  '-' _INT_LIT.    (135)
+
+	.  reduce 135 (src line 652)
+
+
+state 263
+	rpc:  _RPC name rpcType._RETURNS rpcType ';' 
+	rpc:  _RPC name rpcType._RETURNS rpcType '{' rpcDecls '}' 
+
+	_RETURNS  shift 304
+	.  error
+
+
+state 264
+	rpcType:  '('._STREAM typeIdent ')' 
+	rpcType:  '('.typeIdent ')' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 305
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 306
+
+state 265
+	aggFieldEntry:  aggName ':' scalarConstant.    (54)
+
+	.  reduce 54 (src line 359)
+
+
+state 266
+	aggFieldEntry:  aggName ':' '['.']' 
+	aggFieldEntry:  aggName ':' '['.constantList ']' 
+	aggFieldEntry:  aggName ':' '['.error ']' 
+
+	error  shift 309
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'<'  shift 311
+	'+'  shift 113
+	'-'  shift 112
+	']'  shift 307
+	.  error
+
+	constant  goto 310
+	scalarConstant  goto 105
+	aggregate  goto 106
+	numLit  goto 108
+	name  goto 109
+	constantList  goto 308
+	stringLit  goto 107
+
+state 267
+	aggFieldEntry:  aggName ':' aggregate.    (58)
+
+	.  reduce 58 (src line 386)
+
+
+state 268
+	aggFieldEntry:  aggName ':' '<'.aggFields '>' 
+	aggFieldEntry:  aggName ':' '<'.error '>' 
+	aggFields: .    (47)
+
+	error  shift 313
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'>'  reduce 47 (src line 324)
+	'['  shift 175
+	.  error
+
+	aggName  goto 173
+	name  goto 174
+	aggFieldEntry  goto 171
+	aggField  goto 170
+	aggFields  goto 312
+
+state 269
+	aggFieldEntry:  aggName '<' aggFields.'>' 
+
+	'>'  shift 314
+	.  error
+
+
+270: shift/reduce conflict (shift 315(0), red'n 53(0)) on '>'
+state 270
+	aggField:  error.',' 
+	aggField:  error.';' 
+	aggField:  error.    (53)
+	aggFieldEntry:  aggName '<' error.'>' 
+
+	';'  shift 222
+	','  shift 221
+	'>'  shift 315
+	.  reduce 53 (src line 355)
+
+
+state 271
+	aggName:  '[' typeIdent ']'.    (65)
+
+	.  reduce 65 (src line 428)
+
+
+state 272
+	aggName:  '[' error ']'.    (66)
+
+	.  reduce 66 (src line 431)
+
+
+state 273
+	field:  _REQUIRED typeIdent name '='._INT_LIT ';' 
+	field:  _REQUIRED typeIdent name '='._INT_LIT compactOptions ';' 
+
+	_INT_LIT  shift 316
+	.  error
+
+
+state 274
+	group:  _REQUIRED _GROUP name '='._INT_LIT '{' messageDecls '}' 
+	group:  _REQUIRED _GROUP name '='._INT_LIT compactOptions '{' messageDecls '}' 
+
+	_INT_LIT  shift 317
+	.  error
+
+
+state 275
+	field:  _OPTIONAL typeIdent name '='._INT_LIT ';' 
+	field:  _OPTIONAL typeIdent name '='._INT_LIT compactOptions ';' 
+
+	_INT_LIT  shift 318
+	.  error
+
+
+state 276
+	group:  _OPTIONAL _GROUP name '='._INT_LIT '{' messageDecls '}' 
+	group:  _OPTIONAL _GROUP name '='._INT_LIT compactOptions '{' messageDecls '}' 
+
+	_INT_LIT  shift 319
+	.  error
+
+
+state 277
+	field:  _REPEATED typeIdent name '='._INT_LIT ';' 
+	field:  _REPEATED typeIdent name '='._INT_LIT compactOptions ';' 
+
+	_INT_LIT  shift 320
+	.  error
+
+
+state 278
+	group:  _REPEATED _GROUP name '='._INT_LIT '{' messageDecls '}' 
+	group:  _REPEATED _GROUP name '='._INT_LIT compactOptions '{' messageDecls '}' 
+
+	_INT_LIT  shift 321
+	.  error
+
+
+state 279
+	field:  typeIdent name '=' _INT_LIT.';' 
+	field:  typeIdent name '=' _INT_LIT.compactOptions ';' 
+
+	';'  shift 322
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 323
+
+state 280
+	extensions:  _EXTENSIONS tagRanges compactOptions ';'.    (123)
+
+	.  reduce 123 (src line 610)
+
+
+state 281
+	compactOptions:  '[' compactOptionDecls.']' 
+
+	']'  shift 324
+	.  error
+
+
+state 282
+	compactOptionDecls:  compactOption.    (84)
+	compactOptionDecls:  compactOption.',' compactOptionDecls 
+
+	','  shift 325
+	.  reduce 84 (src line 495)
+
+
+state 283
+	compactOption:  optionName.'=' constant 
+
+	'='  shift 326
+	.  error
+
+
+state 284
+	tagRanges:  tagRange ',' tagRanges.    (125)
+
+	.  reduce 125 (src line 618)
+
+
+state 285
+	tagRange:  _INT_LIT _TO _INT_LIT.    (127)
+
+	.  reduce 127 (src line 625)
+
+
+state 286
+	tagRange:  _INT_LIT _TO _MAX.    (128)
+
+	.  reduce 128 (src line 628)
+
+
+state 287
+	oneof:  _ONEOF name '{' ooDecls.'}' 
+	ooDecls:  ooDecls.ooDecl 
+
+	error  shift 293
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 295
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 292
+	'}'  shift 327
+	'.'  shift 83
+	.  error
+
+	option  goto 289
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 294
+	oneofField  goto 290
+	oneofGroup  goto 291
+	ooDecl  goto 328
+
+state 288
+	ooDecls:  ooDecl.    (95)
+
+	.  reduce 95 (src line 538)
+
+
+state 289
+	ooDecl:  option.    (97)
+
+	.  reduce 97 (src line 549)
+
+
+state 290
+	ooDecl:  oneofField.    (98)
+
+	.  reduce 98 (src line 552)
+
+
+state 291
+	ooDecl:  oneofGroup.    (99)
+
+	.  reduce 99 (src line 555)
+
+
+state 292
+	ooDecl:  ';'.    (100)
+
+	.  reduce 100 (src line 558)
+
+
+293: shift/reduce conflict (shift 329(0), red'n 102(0)) on ';'
+state 293
+	ooDecl:  error.';' 
+	ooDecl:  error.    (102)
+
+	';'  shift 329
+	.  reduce 102 (src line 564)
+
+
+state 294
+	oneofField:  typeIdent.name '=' _INT_LIT ';' 
+	oneofField:  typeIdent.name '=' _INT_LIT compactOptions ';' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  error
+
+	name  goto 330
+
+295: shift/reduce conflict (shift 32(0), red'n 230(0)) on _NAME
+295: shift/reduce conflict (shift 33(0), red'n 230(0)) on _SYNTAX
+295: shift/reduce conflict (shift 34(0), red'n 230(0)) on _IMPORT
+295: shift/reduce conflict (shift 35(0), red'n 230(0)) on _WEAK
+295: shift/reduce conflict (shift 36(0), red'n 230(0)) on _PUBLIC
+295: shift/reduce conflict (shift 37(0), red'n 230(0)) on _PACKAGE
+295: shift/reduce conflict (shift 38(0), red'n 230(0)) on _OPTION
+295: shift/reduce conflict (shift 39(0), red'n 230(0)) on _TRUE
+295: shift/reduce conflict (shift 40(0), red'n 230(0)) on _FALSE
+295: shift/reduce conflict (shift 41(0), red'n 230(0)) on _INF
+295: shift/reduce conflict (shift 42(0), red'n 230(0)) on _NAN
+295: shift/reduce conflict (shift 43(0), red'n 230(0)) on _REPEATED
+295: shift/reduce conflict (shift 44(0), red'n 230(0)) on _OPTIONAL
+295: shift/reduce conflict (shift 45(0), red'n 230(0)) on _REQUIRED
+295: shift/reduce conflict (shift 46(0), red'n 230(0)) on _DOUBLE
+295: shift/reduce conflict (shift 47(0), red'n 230(0)) on _FLOAT
+295: shift/reduce conflict (shift 48(0), red'n 230(0)) on _INT32
+295: shift/reduce conflict (shift 49(0), red'n 230(0)) on _INT64
+295: shift/reduce conflict (shift 50(0), red'n 230(0)) on _UINT32
+295: shift/reduce conflict (shift 51(0), red'n 230(0)) on _UINT64
+295: shift/reduce conflict (shift 52(0), red'n 230(0)) on _SINT32
+295: shift/reduce conflict (shift 53(0), red'n 230(0)) on _SINT64
+295: shift/reduce conflict (shift 54(0), red'n 230(0)) on _FIXED32
+295: shift/reduce conflict (shift 55(0), red'n 230(0)) on _FIXED64
+295: shift/reduce conflict (shift 56(0), red'n 230(0)) on _SFIXED32
+295: shift/reduce conflict (shift 57(0), red'n 230(0)) on _SFIXED64
+295: shift/reduce conflict (shift 58(0), red'n 230(0)) on _BOOL
+295: shift/reduce conflict (shift 59(0), red'n 230(0)) on _STRING
+295: shift/reduce conflict (shift 60(0), red'n 230(0)) on _BYTES
+295: shift/reduce conflict (shift 61(0), red'n 230(0)) on _GROUP
+295: shift/reduce conflict (shift 62(0), red'n 230(0)) on _ONEOF
+295: shift/reduce conflict (shift 63(0), red'n 230(0)) on _MAP
+295: shift/reduce conflict (shift 64(0), red'n 230(0)) on _EXTENSIONS
+295: shift/reduce conflict (shift 65(0), red'n 230(0)) on _TO
+295: shift/reduce conflict (shift 66(0), red'n 230(0)) on _MAX
+295: shift/reduce conflict (shift 67(0), red'n 230(0)) on _RESERVED
+295: shift/reduce conflict (shift 68(0), red'n 230(0)) on _ENUM
+295: shift/reduce conflict (shift 69(0), red'n 230(0)) on _MESSAGE
+295: shift/reduce conflict (shift 70(0), red'n 230(0)) on _EXTEND
+295: shift/reduce conflict (shift 71(0), red'n 230(0)) on _SERVICE
+295: shift/reduce conflict (shift 72(0), red'n 230(0)) on _RPC
+295: shift/reduce conflict (shift 73(0), red'n 230(0)) on _STREAM
+295: shift/reduce conflict (shift 74(0), red'n 230(0)) on _RETURNS
+state 295
+	oneofGroup:  _GROUP.name '=' _INT_LIT '{' messageDecls '}' 
+	oneofGroup:  _GROUP.name '=' _INT_LIT compactOptions '{' messageDecls '}' 
+	name:  _GROUP.    (230)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	.  reduce 230 (src line 943)
+
+	name  goto 331
+
+state 296
+	mapField:  mapType name '=' _INT_LIT.';' 
+	mapField:  mapType name '=' _INT_LIT.compactOptions ';' 
+
+	';'  shift 332
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 333
+
+state 297
+	fieldNames:  stringLit ',' fieldNames.    (142)
+
+	.  reduce 142 (src line 676)
+
+
+state 298
+	mapType:  _MAP '<' keyType ','.typeIdent '>' 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  error
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 334
+
+state 299
+	enumValue:  name '=' intLit ';'.    (153)
+
+	.  reduce 153 (src line 721)
+
+
+state 300
+	enumValue:  name '=' intLit compactOptions.';' 
+
+	';'  shift 335
+	.  error
+
+
+state 301
+	enumRanges:  enumRange ',' enumRanges.    (130)
+
+	.  reduce 130 (src line 635)
+
+
+state 302
+	enumRange:  intLit _TO intLit.    (132)
+
+	.  reduce 132 (src line 642)
+
+
+state 303
+	enumRange:  intLit _TO _MAX.    (133)
+
+	.  reduce 133 (src line 645)
+
+
+state 304
+	rpc:  _RPC name rpcType _RETURNS.rpcType ';' 
+	rpc:  _RPC name rpcType _RETURNS.rpcType '{' rpcDecls '}' 
+
+	'('  shift 264
+	.  error
+
+	rpcType  goto 336
+
+305: shift/reduce conflict (shift 83(0), red'n 242(0)) on '.'
+state 305
+	rpcType:  '(' _STREAM.typeIdent ')' 
+	name:  _STREAM.    (242)
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'.'  shift 83
+	.  reduce 242 (src line 955)
+
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 337
+
+state 306
+	rpcType:  '(' typeIdent.')' 
+
+	')'  shift 338
+	.  error
+
+
+state 307
+	aggFieldEntry:  aggName ':' '[' ']'.    (55)
+
+	.  reduce 55 (src line 366)
+
+
+state 308
+	aggFieldEntry:  aggName ':' '[' constantList.']' 
+
+	']'  shift 339
+	.  error
+
+
+state 309
+	aggFieldEntry:  aggName ':' '[' error.']' 
+
+	']'  shift 340
+	.  error
+
+
+state 310
+	constantList:  constant.    (67)
+	constantList:  constant.',' constantList 
+
+	','  shift 341
+	.  reduce 67 (src line 435)
+
+
+state 311
+	constantList:  '<'.aggFields '>' 
+	constantList:  '<'.aggFields '>' ',' constantList 
+	constantList:  '<'.error '>' 
+	constantList:  '<'.error '>' ',' constantList 
+	aggFields: .    (47)
+
+	error  shift 343
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'>'  reduce 47 (src line 324)
+	'['  shift 175
+	.  error
+
+	aggName  goto 173
+	name  goto 174
+	aggFieldEntry  goto 171
+	aggField  goto 170
+	aggFields  goto 342
+
+state 312
+	aggFieldEntry:  aggName ':' '<' aggFields.'>' 
+
+	'>'  shift 344
+	.  error
+
+
+313: shift/reduce conflict (shift 345(0), red'n 53(0)) on '>'
+state 313
+	aggField:  error.',' 
+	aggField:  error.';' 
+	aggField:  error.    (53)
+	aggFieldEntry:  aggName ':' '<' error.'>' 
+
+	';'  shift 222
+	','  shift 221
+	'>'  shift 345
+	.  reduce 53 (src line 355)
+
+
+state 314
+	aggFieldEntry:  aggName '<' aggFields '>'.    (61)
+
+	.  reduce 61 (src line 409)
+
+
+state 315
+	aggFieldEntry:  aggName '<' error '>'.    (63)
+
+	.  reduce 63 (src line 421)
+
+
+state 316
+	field:  _REQUIRED typeIdent name '=' _INT_LIT.';' 
+	field:  _REQUIRED typeIdent name '=' _INT_LIT.compactOptions ';' 
+
+	';'  shift 346
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 347
+
+state 317
+	group:  _REQUIRED _GROUP name '=' _INT_LIT.'{' messageDecls '}' 
+	group:  _REQUIRED _GROUP name '=' _INT_LIT.compactOptions '{' messageDecls '}' 
+
+	'{'  shift 348
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 349
+
+state 318
+	field:  _OPTIONAL typeIdent name '=' _INT_LIT.';' 
+	field:  _OPTIONAL typeIdent name '=' _INT_LIT.compactOptions ';' 
+
+	';'  shift 350
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 351
+
+state 319
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT.'{' messageDecls '}' 
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT.compactOptions '{' messageDecls '}' 
+
+	'{'  shift 352
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 353
+
+state 320
+	field:  _REPEATED typeIdent name '=' _INT_LIT.';' 
+	field:  _REPEATED typeIdent name '=' _INT_LIT.compactOptions ';' 
+
+	';'  shift 354
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 355
+
+state 321
+	group:  _REPEATED _GROUP name '=' _INT_LIT.'{' messageDecls '}' 
+	group:  _REPEATED _GROUP name '=' _INT_LIT.compactOptions '{' messageDecls '}' 
+
+	'{'  shift 356
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 357
+
+state 322
+	field:  typeIdent name '=' _INT_LIT ';'.    (78)
+
+	.  reduce 78 (src line 474)
+
+
+state 323
+	field:  typeIdent name '=' _INT_LIT compactOptions.';' 
+
+	';'  shift 358
+	.  error
+
+
+state 324
+	compactOptions:  '[' compactOptionDecls ']'.    (83)
+
+	.  reduce 83 (src line 490)
+
+
+state 325
+	compactOptionDecls:  compactOption ','.compactOptionDecls 
+
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'('  shift 78
+	.  error
+
+	compactOption  goto 282
+	compactOptionDecls  goto 359
+	optionNameComponent  goto 76
+	optionName  goto 283
+	name  goto 77
+
+state 326
+	compactOption:  optionName '='.constant 
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'+'  shift 113
+	'-'  shift 112
+	.  error
+
+	constant  goto 360
+	scalarConstant  goto 105
+	aggregate  goto 106
+	numLit  goto 108
+	name  goto 109
+	stringLit  goto 107
+
+state 327
+	oneof:  _ONEOF name '{' ooDecls '}'.    (93)
+
+	.  reduce 93 (src line 527)
+
+
+state 328
+	ooDecls:  ooDecls ooDecl.    (94)
+
+	.  reduce 94 (src line 531)
+
+
+state 329
+	ooDecl:  error ';'.    (101)
+
+	.  reduce 101 (src line 561)
+
+
+state 330
+	oneofField:  typeIdent name.'=' _INT_LIT ';' 
+	oneofField:  typeIdent name.'=' _INT_LIT compactOptions ';' 
+
+	'='  shift 361
+	.  error
+
+
+state 331
+	oneofGroup:  _GROUP name.'=' _INT_LIT '{' messageDecls '}' 
+	oneofGroup:  _GROUP name.'=' _INT_LIT compactOptions '{' messageDecls '}' 
+
+	'='  shift 362
+	.  error
+
+
+state 332
+	mapField:  mapType name '=' _INT_LIT ';'.    (107)
+
+	.  reduce 107 (src line 582)
+
+
+state 333
+	mapField:  mapType name '=' _INT_LIT compactOptions.';' 
+
+	';'  shift 363
+	.  error
+
+
+state 334
+	mapType:  _MAP '<' keyType ',' typeIdent.'>' 
+
+	'>'  shift 364
+	.  error
+
+
+state 335
+	enumValue:  name '=' intLit compactOptions ';'.    (154)
+
+	.  reduce 154 (src line 724)
+
+
+state 336
+	rpc:  _RPC name rpcType _RETURNS rpcType.';' 
+	rpc:  _RPC name rpcType _RETURNS rpcType.'{' rpcDecls '}' 
+
+	';'  shift 365
+	'{'  shift 366
+	.  error
+
+
+state 337
+	rpcType:  '(' _STREAM typeIdent.')' 
+
+	')'  shift 367
+	.  error
+
+
+state 338
+	rpcType:  '(' typeIdent ')'.    (193)
+
+	.  reduce 193 (src line 879)
+
+
+state 339
+	aggFieldEntry:  aggName ':' '[' constantList ']'.    (56)
+
+	.  reduce 56 (src line 374)
+
+
+state 340
+	aggFieldEntry:  aggName ':' '[' error ']'.    (57)
+
+	.  reduce 57 (src line 383)
+
+
+state 341
+	constantList:  constant ','.constantList 
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'<'  shift 311
+	'+'  shift 113
+	'-'  shift 112
+	.  error
+
+	constant  goto 310
+	scalarConstant  goto 105
+	aggregate  goto 106
+	numLit  goto 108
+	name  goto 109
+	constantList  goto 368
+	stringLit  goto 107
+
+state 342
+	constantList:  '<' aggFields.'>' 
+	constantList:  '<' aggFields.'>' ',' constantList 
+
+	'>'  shift 369
+	.  error
+
+
+343: shift/reduce conflict (shift 370(0), red'n 53(0)) on '>'
+state 343
+	aggField:  error.',' 
+	aggField:  error.';' 
+	aggField:  error.    (53)
+	constantList:  '<' error.'>' 
+	constantList:  '<' error.'>' ',' constantList 
+
+	';'  shift 222
+	','  shift 221
+	'>'  shift 370
+	.  reduce 53 (src line 355)
+
+
+state 344
+	aggFieldEntry:  aggName ':' '<' aggFields '>'.    (60)
+
+	.  reduce 60 (src line 400)
+
+
+state 345
+	aggFieldEntry:  aggName ':' '<' error '>'.    (62)
+
+	.  reduce 62 (src line 418)
+
+
+state 346
+	field:  _REQUIRED typeIdent name '=' _INT_LIT ';'.    (75)
+
+	.  reduce 75 (src line 465)
+
+
+state 347
+	field:  _REQUIRED typeIdent name '=' _INT_LIT compactOptions.';' 
+
+	';'  shift 371
+	.  error
+
+
+348: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+348: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+348: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+348: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+348: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+348: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+348: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+348: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+348: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+348: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+348: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+348: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+348: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+348: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+348: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+348: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+348: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+348: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+348: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+348: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+348: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+348: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+348: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+348: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+348: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+348: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+348: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+348: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+348: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+348: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+348: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+348: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+348: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+348: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+348: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+348: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+348: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+348: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+348: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+348: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+348: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+348: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+348: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+348: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+348: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+348: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 348
+	group:  _REQUIRED _GROUP name '=' _INT_LIT '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 372
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 349
+	group:  _REQUIRED _GROUP name '=' _INT_LIT compactOptions.'{' messageDecls '}' 
+
+	'{'  shift 373
+	.  error
+
+
+state 350
+	field:  _OPTIONAL typeIdent name '=' _INT_LIT ';'.    (76)
+
+	.  reduce 76 (src line 468)
+
+
+state 351
+	field:  _OPTIONAL typeIdent name '=' _INT_LIT compactOptions.';' 
+
+	';'  shift 374
+	.  error
+
+
+352: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+352: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+352: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+352: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+352: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+352: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+352: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+352: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+352: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+352: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+352: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+352: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+352: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+352: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+352: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+352: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+352: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+352: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+352: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+352: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+352: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+352: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+352: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+352: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+352: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+352: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+352: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+352: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+352: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+352: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+352: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+352: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+352: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+352: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+352: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+352: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+352: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+352: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+352: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+352: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+352: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+352: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+352: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+352: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+352: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+352: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 352
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 375
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 353
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT compactOptions.'{' messageDecls '}' 
+
+	'{'  shift 376
+	.  error
+
+
+state 354
+	field:  _REPEATED typeIdent name '=' _INT_LIT ';'.    (77)
+
+	.  reduce 77 (src line 471)
+
+
+state 355
+	field:  _REPEATED typeIdent name '=' _INT_LIT compactOptions.';' 
+
+	';'  shift 377
+	.  error
+
+
+356: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+356: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+356: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+356: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+356: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+356: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+356: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+356: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+356: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+356: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+356: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+356: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+356: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+356: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+356: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+356: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+356: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+356: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+356: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+356: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+356: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+356: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+356: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+356: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+356: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+356: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+356: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+356: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+356: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+356: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+356: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+356: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+356: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+356: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+356: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+356: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+356: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+356: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+356: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+356: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+356: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+356: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+356: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+356: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+356: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+356: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 356
+	group:  _REPEATED _GROUP name '=' _INT_LIT '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 378
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 357
+	group:  _REPEATED _GROUP name '=' _INT_LIT compactOptions.'{' messageDecls '}' 
+
+	'{'  shift 379
+	.  error
+
+
+state 358
+	field:  typeIdent name '=' _INT_LIT compactOptions ';'.    (82)
+
+	.  reduce 82 (src line 486)
+
+
+state 359
+	compactOptionDecls:  compactOption ',' compactOptionDecls.    (85)
+
+	.  reduce 85 (src line 498)
+
+
+state 360
+	compactOption:  optionName '=' constant.    (86)
+
+	.  reduce 86 (src line 502)
+
+
+state 361
+	oneofField:  typeIdent name '='._INT_LIT ';' 
+	oneofField:  typeIdent name '='._INT_LIT compactOptions ';' 
+
+	_INT_LIT  shift 380
+	.  error
+
+
+state 362
+	oneofGroup:  _GROUP name '='._INT_LIT '{' messageDecls '}' 
+	oneofGroup:  _GROUP name '='._INT_LIT compactOptions '{' messageDecls '}' 
+
+	_INT_LIT  shift 381
+	.  error
+
+
+state 363
+	mapField:  mapType name '=' _INT_LIT compactOptions ';'.    (108)
+
+	.  reduce 108 (src line 585)
+
+
+state 364
+	mapType:  _MAP '<' keyType ',' typeIdent '>'.    (109)
+
+	.  reduce 109 (src line 589)
+
+
+state 365
+	rpc:  _RPC name rpcType _RETURNS rpcType ';'.    (190)
+
+	.  reduce 190 (src line 869)
+
+
+366: shift/reduce conflict (shift 386(0), red'n 196(0)) on error
+366: shift/reduce conflict (shift 17(0), red'n 196(0)) on _OPTION
+366: shift/reduce conflict (shift 385(0), red'n 196(0)) on ';'
+state 366
+	rpc:  _RPC name rpcType _RETURNS rpcType '{'.rpcDecls '}' 
+	rpcDecls: .    (196)
+
+	error  shift 386
+	_OPTION  shift 17
+	';'  shift 385
+	'}'  reduce 196 (src line 897)
+	.  error
+
+	option  goto 384
+	rpcDecl  goto 383
+	rpcDecls  goto 382
+
+state 367
+	rpcType:  '(' _STREAM typeIdent ')'.    (192)
+
+	.  reduce 192 (src line 876)
+
+
+state 368
+	constantList:  constant ',' constantList.    (68)
+
+	.  reduce 68 (src line 438)
+
+
+state 369
+	constantList:  '<' aggFields '>'.    (69)
+	constantList:  '<' aggFields '>'.',' constantList 
+
+	','  shift 387
+	.  reduce 69 (src line 441)
+
+
+state 370
+	constantList:  '<' error '>'.    (71)
+	constantList:  '<' error '>'.',' constantList 
+
+	','  shift 388
+	.  reduce 71 (src line 451)
+
+
+state 371
+	field:  _REQUIRED typeIdent name '=' _INT_LIT compactOptions ';'.    (79)
+
+	.  reduce 79 (src line 477)
+
+
+state 372
+	group:  _REQUIRED _GROUP name '=' _INT_LIT '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 389
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+373: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+373: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+373: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+373: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+373: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+373: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+373: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+373: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+373: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+373: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+373: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+373: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+373: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+373: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+373: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+373: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+373: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+373: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+373: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+373: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+373: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+373: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+373: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+373: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+373: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+373: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+373: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+373: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+373: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+373: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+373: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+373: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+373: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+373: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+373: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+373: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+373: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+373: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+373: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+373: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+373: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+373: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+373: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+373: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+373: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+373: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 373
+	group:  _REQUIRED _GROUP name '=' _INT_LIT compactOptions '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 390
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 374
+	field:  _OPTIONAL typeIdent name '=' _INT_LIT compactOptions ';'.    (80)
+
+	.  reduce 80 (src line 480)
+
+
+state 375
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 391
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+376: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+376: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+376: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+376: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+376: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+376: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+376: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+376: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+376: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+376: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+376: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+376: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+376: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+376: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+376: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+376: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+376: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+376: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+376: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+376: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+376: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+376: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+376: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+376: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+376: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+376: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+376: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+376: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+376: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+376: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+376: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+376: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+376: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+376: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+376: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+376: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+376: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+376: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+376: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+376: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+376: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+376: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+376: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+376: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+376: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+376: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 376
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT compactOptions '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 392
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 377
+	field:  _REPEATED typeIdent name '=' _INT_LIT compactOptions ';'.    (81)
+
+	.  reduce 81 (src line 483)
+
+
+state 378
+	group:  _REPEATED _GROUP name '=' _INT_LIT '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 393
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+379: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+379: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+379: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+379: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+379: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+379: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+379: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+379: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+379: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+379: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+379: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+379: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+379: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+379: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+379: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+379: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+379: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+379: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+379: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+379: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+379: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+379: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+379: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+379: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+379: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+379: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+379: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+379: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+379: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+379: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+379: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+379: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+379: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+379: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+379: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+379: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+379: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+379: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+379: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+379: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+379: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+379: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+379: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+379: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+379: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+379: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 379
+	group:  _REPEATED _GROUP name '=' _INT_LIT compactOptions '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 394
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 380
+	oneofField:  typeIdent name '=' _INT_LIT.';' 
+	oneofField:  typeIdent name '=' _INT_LIT.compactOptions ';' 
+
+	';'  shift 395
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 396
+
+state 381
+	oneofGroup:  _GROUP name '=' _INT_LIT.'{' messageDecls '}' 
+	oneofGroup:  _GROUP name '=' _INT_LIT.compactOptions '{' messageDecls '}' 
+
+	'{'  shift 397
+	'['  shift 237
+	.  error
+
+	compactOptions  goto 398
+
+state 382
+	rpc:  _RPC name rpcType _RETURNS rpcType '{' rpcDecls.'}' 
+	rpcDecls:  rpcDecls.rpcDecl 
+
+	error  shift 386
+	_OPTION  shift 17
+	';'  shift 385
+	'}'  shift 399
+	.  error
+
+	option  goto 384
+	rpcDecl  goto 400
+
+state 383
+	rpcDecls:  rpcDecl.    (195)
+
+	.  reduce 195 (src line 890)
+
+
+state 384
+	rpcDecl:  option.    (197)
+
+	.  reduce 197 (src line 901)
+
+
+state 385
+	rpcDecl:  ';'.    (198)
+
+	.  reduce 198 (src line 904)
+
+
+386: shift/reduce conflict (shift 401(0), red'n 200(0)) on ';'
+state 386
+	rpcDecl:  error.';' 
+	rpcDecl:  error.    (200)
+
+	';'  shift 401
+	.  reduce 200 (src line 910)
+
+
+state 387
+	constantList:  '<' aggFields '>' ','.constantList 
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'<'  shift 311
+	'+'  shift 113
+	'-'  shift 112
+	.  error
+
+	constant  goto 310
+	scalarConstant  goto 105
+	aggregate  goto 106
+	numLit  goto 108
+	name  goto 109
+	constantList  goto 402
+	stringLit  goto 107
+
+state 388
+	constantList:  '<' error '>' ','.constantList 
+
+	_STRING_LIT  shift 29
+	_INT_LIT  shift 114
+	_FLOAT_LIT  shift 111
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 38
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 43
+	_OPTIONAL  shift 44
+	_REQUIRED  shift 45
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 62
+	_MAP  shift 63
+	_EXTENSIONS  shift 64
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 67
+	_ENUM  shift 68
+	_MESSAGE  shift 69
+	_EXTEND  shift 70
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	'{'  shift 110
+	'<'  shift 311
+	'+'  shift 113
+	'-'  shift 112
+	.  error
+
+	constant  goto 310
+	scalarConstant  goto 105
+	aggregate  goto 106
+	numLit  goto 108
+	name  goto 109
+	constantList  goto 403
+	stringLit  goto 107
+
+state 389
+	group:  _REQUIRED _GROUP name '=' _INT_LIT '{' messageDecls '}'.    (87)
+
+	.  reduce 87 (src line 508)
+
+
+state 390
+	group:  _REQUIRED _GROUP name '=' _INT_LIT compactOptions '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 404
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 391
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT '{' messageDecls '}'.    (88)
+
+	.  reduce 88 (src line 511)
+
+
+state 392
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT compactOptions '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 405
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 393
+	group:  _REPEATED _GROUP name '=' _INT_LIT '{' messageDecls '}'.    (89)
+
+	.  reduce 89 (src line 514)
+
+
+state 394
+	group:  _REPEATED _GROUP name '=' _INT_LIT compactOptions '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 406
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 395
+	oneofField:  typeIdent name '=' _INT_LIT ';'.    (103)
+
+	.  reduce 103 (src line 568)
+
+
+state 396
+	oneofField:  typeIdent name '=' _INT_LIT compactOptions.';' 
+
+	';'  shift 407
+	.  error
+
+
+397: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+397: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+397: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+397: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+397: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+397: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+397: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+397: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+397: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+397: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+397: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+397: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+397: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+397: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+397: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+397: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+397: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+397: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+397: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+397: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+397: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+397: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+397: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+397: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+397: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+397: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+397: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+397: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+397: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+397: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+397: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+397: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+397: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+397: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+397: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+397: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+397: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+397: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+397: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+397: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+397: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+397: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+397: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+397: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+397: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+397: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 397
+	oneofGroup:  _GROUP name '=' _INT_LIT '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 408
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 398
+	oneofGroup:  _GROUP name '=' _INT_LIT compactOptions.'{' messageDecls '}' 
+
+	'{'  shift 409
+	.  error
+
+
+state 399
+	rpc:  _RPC name rpcType _RETURNS rpcType '{' rpcDecls '}'.    (191)
+
+	.  reduce 191 (src line 872)
+
+
+state 400
+	rpcDecls:  rpcDecls rpcDecl.    (194)
+
+	.  reduce 194 (src line 883)
+
+
+state 401
+	rpcDecl:  error ';'.    (199)
+
+	.  reduce 199 (src line 907)
+
+
+state 402
+	constantList:  '<' aggFields '>' ',' constantList.    (70)
+
+	.  reduce 70 (src line 446)
+
+
+state 403
+	constantList:  '<' error '>' ',' constantList.    (72)
+
+	.  reduce 72 (src line 454)
+
+
+state 404
+	group:  _REQUIRED _GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}'.    (90)
+
+	.  reduce 90 (src line 517)
+
+
+state 405
+	group:  _OPTIONAL _GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}'.    (91)
+
+	.  reduce 91 (src line 520)
+
+
+state 406
+	group:  _REPEATED _GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}'.    (92)
+
+	.  reduce 92 (src line 523)
+
+
+state 407
+	oneofField:  typeIdent name '=' _INT_LIT compactOptions ';'.    (104)
+
+	.  reduce 104 (src line 571)
+
+
+state 408
+	oneofGroup:  _GROUP name '=' _INT_LIT '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 410
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+409: shift/reduce conflict (shift 130(0), red'n 158(0)) on error
+409: shift/reduce conflict (shift 32(0), red'n 158(0)) on _NAME
+409: shift/reduce conflict (shift 33(0), red'n 158(0)) on _SYNTAX
+409: shift/reduce conflict (shift 34(0), red'n 158(0)) on _IMPORT
+409: shift/reduce conflict (shift 35(0), red'n 158(0)) on _WEAK
+409: shift/reduce conflict (shift 36(0), red'n 158(0)) on _PUBLIC
+409: shift/reduce conflict (shift 37(0), red'n 158(0)) on _PACKAGE
+409: shift/reduce conflict (shift 139(0), red'n 158(0)) on _OPTION
+409: shift/reduce conflict (shift 39(0), red'n 158(0)) on _TRUE
+409: shift/reduce conflict (shift 40(0), red'n 158(0)) on _FALSE
+409: shift/reduce conflict (shift 41(0), red'n 158(0)) on _INF
+409: shift/reduce conflict (shift 42(0), red'n 158(0)) on _NAN
+409: shift/reduce conflict (shift 133(0), red'n 158(0)) on _REPEATED
+409: shift/reduce conflict (shift 132(0), red'n 158(0)) on _OPTIONAL
+409: shift/reduce conflict (shift 131(0), red'n 158(0)) on _REQUIRED
+409: shift/reduce conflict (shift 46(0), red'n 158(0)) on _DOUBLE
+409: shift/reduce conflict (shift 47(0), red'n 158(0)) on _FLOAT
+409: shift/reduce conflict (shift 48(0), red'n 158(0)) on _INT32
+409: shift/reduce conflict (shift 49(0), red'n 158(0)) on _INT64
+409: shift/reduce conflict (shift 50(0), red'n 158(0)) on _UINT32
+409: shift/reduce conflict (shift 51(0), red'n 158(0)) on _UINT64
+409: shift/reduce conflict (shift 52(0), red'n 158(0)) on _SINT32
+409: shift/reduce conflict (shift 53(0), red'n 158(0)) on _SINT64
+409: shift/reduce conflict (shift 54(0), red'n 158(0)) on _FIXED32
+409: shift/reduce conflict (shift 55(0), red'n 158(0)) on _FIXED64
+409: shift/reduce conflict (shift 56(0), red'n 158(0)) on _SFIXED32
+409: shift/reduce conflict (shift 57(0), red'n 158(0)) on _SFIXED64
+409: shift/reduce conflict (shift 58(0), red'n 158(0)) on _BOOL
+409: shift/reduce conflict (shift 59(0), red'n 158(0)) on _STRING
+409: shift/reduce conflict (shift 60(0), red'n 158(0)) on _BYTES
+409: shift/reduce conflict (shift 61(0), red'n 158(0)) on _GROUP
+409: shift/reduce conflict (shift 140(0), red'n 158(0)) on _ONEOF
+409: shift/reduce conflict (shift 144(0), red'n 158(0)) on _MAP
+409: shift/reduce conflict (shift 138(0), red'n 158(0)) on _EXTENSIONS
+409: shift/reduce conflict (shift 65(0), red'n 158(0)) on _TO
+409: shift/reduce conflict (shift 66(0), red'n 158(0)) on _MAX
+409: shift/reduce conflict (shift 142(0), red'n 158(0)) on _RESERVED
+409: shift/reduce conflict (shift 135(0), red'n 158(0)) on _ENUM
+409: shift/reduce conflict (shift 136(0), red'n 158(0)) on _MESSAGE
+409: shift/reduce conflict (shift 137(0), red'n 158(0)) on _EXTEND
+409: shift/reduce conflict (shift 71(0), red'n 158(0)) on _SERVICE
+409: shift/reduce conflict (shift 72(0), red'n 158(0)) on _RPC
+409: shift/reduce conflict (shift 73(0), red'n 158(0)) on _STREAM
+409: shift/reduce conflict (shift 74(0), red'n 158(0)) on _RETURNS
+409: shift/reduce conflict (shift 129(0), red'n 158(0)) on ';'
+409: shift/reduce conflict (shift 83(0), red'n 158(0)) on '.'
+state 409
+	oneofGroup:  _GROUP name '=' _INT_LIT compactOptions '{'.messageDecls '}' 
+	messageDecls: .    (158)
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  reduce 158 (src line 746)
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 118
+	messageDecls  goto 411
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 410
+	oneofGroup:  _GROUP name '=' _INT_LIT '{' messageDecls '}'.    (105)
+
+	.  reduce 105 (src line 575)
+
+
+state 411
+	oneofGroup:  _GROUP name '=' _INT_LIT compactOptions '{' messageDecls.'}' 
+	messageDecls:  messageDecls.messageDecl 
+
+	error  shift 130
+	_NAME  shift 32
+	_SYNTAX  shift 33
+	_IMPORT  shift 34
+	_WEAK  shift 35
+	_PUBLIC  shift 36
+	_PACKAGE  shift 37
+	_OPTION  shift 139
+	_TRUE  shift 39
+	_FALSE  shift 40
+	_INF  shift 41
+	_NAN  shift 42
+	_REPEATED  shift 133
+	_OPTIONAL  shift 132
+	_REQUIRED  shift 131
+	_DOUBLE  shift 46
+	_FLOAT  shift 47
+	_INT32  shift 48
+	_INT64  shift 49
+	_UINT32  shift 50
+	_UINT64  shift 51
+	_SINT32  shift 52
+	_SINT64  shift 53
+	_FIXED32  shift 54
+	_FIXED64  shift 55
+	_SFIXED32  shift 56
+	_SFIXED64  shift 57
+	_BOOL  shift 58
+	_STRING  shift 59
+	_BYTES  shift 60
+	_GROUP  shift 61
+	_ONEOF  shift 140
+	_MAP  shift 144
+	_EXTENSIONS  shift 138
+	_TO  shift 65
+	_MAX  shift 66
+	_RESERVED  shift 142
+	_ENUM  shift 135
+	_MESSAGE  shift 136
+	_EXTEND  shift 137
+	_SERVICE  shift 71
+	_RPC  shift 72
+	_STREAM  shift 73
+	_RETURNS  shift 74
+	';'  shift 129
+	'}'  shift 412
+	'.'  shift 83
+	.  error
+
+	option  goto 125
+	name  goto 31
+	ident  goto 82
+	typeIdent  goto 134
+	field  goto 119
+	oneof  goto 126
+	group  goto 124
+	mapField  goto 127
+	mapType  goto 141
+	message  goto 121
+	messageDecl  goto 183
+	msgReserved  goto 128
+	reservedNames  goto 143
+	extensions  goto 123
+	enum  goto 120
+	extend  goto 122
+
+state 412
+	oneofGroup:  _GROUP name '=' _INT_LIT compactOptions '{' messageDecls '}'.    (106)
+
+	.  reduce 106 (src line 578)
+
+
+78 terminals, 63 nonterminals
+244 grammar rules, 413/8000 states
+1089 shift/reduce, 2 reduce/reduce conflicts reported
+112 working sets used
+memory: parser 586/120000
+142 extra closures
+3435 shift entries, 25 exceptions
+210 goto entries
+359 entries saved by goto default
+Optimizer space used: output 2179/120000
+2179 table entries, 291 zero
+maximum spread: 68, maximum offset: 411
