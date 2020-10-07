@@ -3,9 +3,9 @@ package linker
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
+
+	"github.com/jhump/protocompile/walk"
 )
 
 type File interface {
@@ -26,13 +26,20 @@ func NewFile(f protoreflect.FileDescriptor, deps Files) (File, error) {
 }
 
 func newFile(f protoreflect.FileDescriptor, deps Files) (File, error) {
-	var reg protoregistry.Files
-	if err := reg.RegisterFile(f); err != nil {
+	descs := map[protoreflect.FullName]protoreflect.Descriptor{}
+	err := walk.Descriptors(f, func(d protoreflect.Descriptor) error {
+		if _, ok := descs[d.FullName()]; ok {
+			return fmt.Errorf("file %q contains multiple elements with the name %s", f.Path(), d.FullName())
+		}
+		descs[d.FullName()] = d
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return file{
 		FileDescriptor: f,
-		res:            &reg,
+		descs:          descs,
 		deps:           deps,
 	}, nil
 }
@@ -78,16 +85,12 @@ func newFileRecursive(fd protoreflect.FileDescriptor, seen map[protoreflect.File
 
 type file struct {
 	protoreflect.FileDescriptor
-	res  protodesc.Resolver
+	descs map[protoreflect.FullName]protoreflect.Descriptor
 	deps Files
 }
 
 func (f file) FindDescriptorByName(name protoreflect.FullName) protoreflect.Descriptor {
-	d, err := f.res.FindDescriptorByName(name)
-	if err != nil {
-		return nil
-	}
-	return d
+	return f.descs[name]
 }
 
 func (f file) FindImportByPath(path string) File {
