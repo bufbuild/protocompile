@@ -218,78 +218,80 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 		}
 	}
 
-	return walk.DescriptorProtosEnterAndExit(fd, func(fqn protoreflect.FullName, d proto.Message) error {
-		switch d := d.(type) {
-		case *descriptorpb.DescriptorProto:
-			scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, "message", fqn, d.Options.UninterpretedOption, scopes); err != nil {
-					return err
-				}
-			}
-			// walk only visits descriptors, so we need to loop over extension ranges ourselves
-			for _, er := range d.ExtensionRange {
-				if er.Options != nil {
-					erName := protoreflect.FullName(fmt.Sprintf("%s:%d-%d", fqn, er.GetStart(), er.GetEnd()-1))
-					if err := r.resolveOptions(handler, "extension range", erName, er.Options.UninterpretedOption, scopes); err != nil {
+	return walk.DescriptorProtosEnterAndExit(fd,
+		func(fqn protoreflect.FullName, d proto.Message) error {
+			switch d := d.(type) {
+			case *descriptorpb.DescriptorProto:
+				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, "message", fqn, d.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
-			}
-		case *descriptorpb.FieldDescriptorProto:
-			elemType := "field"
-			if d.GetExtendee() != "" {
-				elemType = "extension"
-			}
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, elemType, fqn, d.Options.UninterpretedOption, scopes); err != nil {
+				// walk only visits descriptors, so we need to loop over extension ranges ourselves
+				for _, er := range d.ExtensionRange {
+					if er.Options != nil {
+						erName := protoreflect.FullName(fmt.Sprintf("%s:%d-%d", fqn, er.GetStart(), er.GetEnd()-1))
+						if err := r.resolveOptions(handler, "extension range", erName, er.Options.UninterpretedOption, scopes); err != nil {
+							return err
+						}
+					}
+				}
+			case *descriptorpb.FieldDescriptorProto:
+				elemType := "field"
+				if d.GetExtendee() != "" {
+					elemType = "extension"
+				}
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, elemType, fqn, d.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+				if err := r.resolveFieldTypes(handler, s, fqn, d, scopes); err != nil {
+					return err
+				}
+			case *descriptorpb.OneofDescriptorProto:
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, "one-of", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+			case *descriptorpb.EnumDescriptorProto:
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, "enum", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+			case *descriptorpb.EnumValueDescriptorProto:
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, "enum value", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+			case *descriptorpb.ServiceDescriptorProto:
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, "service", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+			case *descriptorpb.MethodDescriptorProto:
+				if d.Options != nil {
+					if err := r.resolveOptions(handler, "method", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+				if err := r.resolveMethodTypes(handler, fqn, d, scopes); err != nil {
 					return err
 				}
 			}
-			if err := r.resolveFieldTypes(handler, s, fqn, d, scopes); err != nil {
-				return err
-			}
-		case *descriptorpb.OneofDescriptorProto:
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, "one-of", fqn, d.Options.UninterpretedOption, scopes); err != nil {
-					return err
-				}
-			}
-		case *descriptorpb.EnumDescriptorProto:
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, "enum", fqn, d.Options.UninterpretedOption, scopes); err != nil {
-					return err
-				}
-			}
-		case *descriptorpb.EnumValueDescriptorProto:
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, "enum value", fqn, d.Options.UninterpretedOption, scopes); err != nil {
-					return err
-				}
-			}
-		case *descriptorpb.ServiceDescriptorProto:
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, "service", fqn, d.Options.UninterpretedOption, scopes); err != nil {
-					return err
-				}
-			}
-		case *descriptorpb.MethodDescriptorProto:
-			if d.Options != nil {
-				if err := r.resolveOptions(handler, "method", fqn, d.Options.UninterpretedOption, scopes); err != nil {
-					return err
-				}
-			}
-			if err := r.resolveMethodTypes(handler, fqn, d, scopes); err != nil {
-				return err
-			}
-		}
-		return nil
-	},
+			return nil
+		},
 		func(fqn protoreflect.FullName, d proto.Message) error {
 			if _, ok := d.(*descriptorpb.DescriptorProto); ok {
 				// pop message scope on exit
 				scopes = scopes[:len(scopes)-1]
 			}
+			return nil
 		})
 }
 

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"unicode"
 	"unicode/utf8"
 )
@@ -75,4 +76,34 @@ func GetMaxTag(isMessageSet bool) int32 {
 		return MaxMessageSetTag
 	}
 	return MaxNormalTag
+}
+
+func WriteEscapedBytes(buf *bytes.Buffer, b []byte) {
+	for _, c := range b {
+		switch c {
+		case '\n':
+			buf.WriteString("\\n")
+		case '\r':
+			buf.WriteString("\\r")
+		case '\t':
+			buf.WriteString("\\t")
+		case '"':
+			buf.WriteString("\\\"")
+		case '\'':
+			buf.WriteString("\\'")
+		case '\\':
+			buf.WriteString("\\\\")
+		default:
+			if c >= 0x20 && c <= 0x7f && c != '"' && c != '\\' {
+				// simple printable characters
+				buf.WriteByte(c)
+			} else {
+				// use octal escape for all other values
+				buf.WriteRune('\\')
+				buf.WriteByte('0' + ((c >> 6) & 0x7))
+				buf.WriteByte('0' + ((c >> 3) & 0x7))
+				buf.WriteByte('0' + (c & 0x7))
+			}
+		}
+	}
 }

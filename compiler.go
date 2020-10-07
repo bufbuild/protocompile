@@ -61,8 +61,8 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) ([]protoreflect
 	descs := make([]protoreflect.FileDescriptor, len(files))
 	for i, r := range results {
 		select {
-		case <- r.ready:
-		case <- ctx.Done():
+		case <-r.ready:
+		case <-ctx.Done():
 			return nil, ctx.Err()
 		}
 		if r.err != nil {
@@ -188,12 +188,12 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 		// now we wait for them all to be computed
 		for i, res := range results {
 			select {
-			case <- res.ready:
+			case <-res.ready:
 				if res.err != nil {
 					return nil, res.err
 				}
 				deps[i] = res.res
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
 		}
@@ -233,7 +233,7 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 		return nil, err
 	}
 
-	return parser.ToFileDescriptorProto(name, file, true, t.e.h)
+	return parser.ResultFromAST(name, file, true, t.e.h)
 }
 
 func (t *task) asAST(name string, r SearchResult) (*ast.FileNode, error) {

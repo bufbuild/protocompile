@@ -3,6 +3,7 @@ package reporter
 import (
 	"errors"
 	"fmt"
+
 	"github.com/jhump/protocompile/ast"
 )
 

@@ -998,7 +998,7 @@ func (s *svcDescriptors) Len() int {
 
 func (s *svcDescriptors) Get(i int) protoreflect.ServiceDescriptor {
 	svc := s.svcs[i]
-	return s.file.asServiceDescriptor(svc, s.file, i, s.prefix + svc.GetName())
+	return s.file.asServiceDescriptor(svc, s.file, i, s.prefix+svc.GetName())
 }
 
 func (s *svcDescriptors) ByName(n protoreflect.Name) protoreflect.ServiceDescriptor {
@@ -1077,7 +1077,7 @@ func (m *mtdDescriptors) Len() int {
 
 func (m *mtdDescriptors) Get(i int) protoreflect.MethodDescriptor {
 	mtd := m.mtds[i]
-	return m.file.asMethodDescriptor(mtd, m.file, m.parent, i, m.prefix + mtd.GetName())
+	return m.file.asMethodDescriptor(mtd, m.file, m.parent, i, m.prefix+mtd.GetName())
 }
 
 func (m *mtdDescriptors) ByName(n protoreflect.Name) protoreflect.MethodDescriptor {

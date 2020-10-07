@@ -15,6 +15,7 @@ import (
 	"github.com/jhump/protocompile/ast"
 	"github.com/jhump/protocompile/internal"
 	"github.com/jhump/protocompile/linker"
+	"github.com/jhump/protocompile/parser"
 	"github.com/jhump/protocompile/reporter"
 )
 
@@ -160,7 +161,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		scope := fmt.Sprintf("field %s", fqn)
 
 		// process json_name pseudo-option
-		if index, err := interp.findOption(scope, uo, "json_name"); err != nil && !r.lenient {
+		if index, err := internal.FindOption(interp.linked, interp.reporter, scope, uo, "json_name"); err != nil && !interp.lenient {
 			return err
 		} else if index >= 0 {
 			opt := uo[index]
@@ -170,7 +171,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 			if on, ok := optNode.(*ast.OptionNode); ok {
 				interp.index[on] = []int32{-1, internal.Field_jsonNameTag}
 			}
-			uo = removeOption(uo, index)
+			uo = internal.RemoveOption(uo, index)
 			if opt.StringValue == nil {
 				if err := interp.reporter.HandleErrorf(optNode.GetValue().Start(), "%s: expecting string value for json_name option", scope); err != nil {
 					return err
@@ -181,7 +182,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		}
 
 		// and process default pseudo-option
-		if index, err := interp.processDefaultOption(scope, fqn, fld, uo); err != nil && !r.lenient {
+		if index, err := interp.processDefaultOption(scope, fqn, fld, uo); err != nil && !interp.lenient {
 			return err
 		} else if index >= 0 {
 			// attribute source code info
@@ -189,7 +190,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 			if on, ok := optNode.(*ast.OptionNode); ok {
 				interp.index[on] = []int32{-1, internal.Field_defaultTag}
 			}
-			uo = removeOption(uo, index)
+			uo = internal.RemoveOption(uo, index)
 		}
 
 		if len(uo) == 0 {
@@ -205,7 +206,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 }
 
 func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *descriptorpb.FieldDescriptorProto, uos []*descriptorpb.UninterpretedOption) (defaultIndex int, err error) {
-	found, err := interp.findOption(scope, uos, "default")
+	found, err := internal.FindOption(interp.linked, interp.reporter, scope, uos, "default")
 	if err != nil || found == -1 {
 		return -1, err
 	}
@@ -222,8 +223,8 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 		return -1, interp.reporter.HandleErrorf(val.Start(), "%s: default value cannot be a message", scope)
 	}
 	mc := &messageContext{
-		res:         res,
-		file:        res.fd,
+		res:         interp.linked,
+		file:        interp.linked.Proto(),
 		elementName: fqn,
 		elementType: descriptorType(fld),
 		option:      opt,
@@ -274,7 +275,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 
 func encodeDefaultBytes(b []byte) string {
 	var buf bytes.Buffer
-	writeEscapedBytes(&buf, b)
+	internal.WriteEscapedBytes(&buf, b)
 	return buf.String()
 }
 
@@ -318,7 +319,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		msg = proto.Clone(opts).ProtoReflect()
 	}
 
-	mc := &messageContext{res: res, file: res.fd, elementName: fqn, elementType: descriptorType(element)}
+	mc := &messageContext{res: interp.linked, file: interp.linked.Proto(), elementName: fqn, elementType: descriptorType(element)}
 	var remain []*descriptorpb.UninterpretedOption
 	for _, uo := range uninterpreted {
 		node := interp.linked.OptionNode(uo)
@@ -679,36 +680,8 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 	return nil
 }
 
-func (interp *interpreter) findOption(scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
-	found := -1
-	for i, opt := range opts {
-		if len(opt.Name) != 1 {
-			continue
-		}
-		if opt.Name[0].GetIsExtension() || opt.Name[0].GetNamePart() != name {
-			continue
-		}
-		if found >= 0 {
-			optNode := interp.linked.OptionNode(opt)
-			return -1, interp.reporter.HandleErrorf(optNode.GetName().Start(), "%s: option %s cannot be defined more than once", scope, name)
-		}
-		found = i
-	}
-	return found, nil
-}
-
-func removeOption(uo []*descriptorpb.UninterpretedOption, indexToRemove int) []*descriptorpb.UninterpretedOption {
-	if indexToRemove == 0 {
-		return uo[1:]
-	} else if indexToRemove == len(uo)-1 {
-		return uo[:len(uo)-1]
-	} else {
-		return append(uo[:indexToRemove], uo[indexToRemove+1:]...)
-	}
-}
-
 type messageContext struct {
-	res         *parseResult
+	res         parser.Result
 	file        *descriptorpb.FileDescriptorProto
 	elementType string
 	elementName string
@@ -724,7 +697,7 @@ func (c *messageContext) String() string {
 	if c.option != nil && c.option.Name != nil {
 		ctx.WriteString("option ")
 		writeOptionName(&ctx, c.option.Name)
-		if c.res.nodes == nil {
+		if c.res.AST() == nil {
 			// if we have no source position info, try to provide as much context
 			// as possible (if nodes != nil, we don't need this because any errors
 			// will actually have file and line numbers)
@@ -827,7 +800,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 						// may need to qualify with package name
 						pkg := mc.file.GetPackage()
 						if pkg != "" {
-							ffld = interp.linked.ResolveExtension(protoreflect.FullName(pkg+"."+n))
+							ffld = interp.linked.ResolveExtension(protoreflect.FullName(pkg + "." + n))
 						}
 					}
 				} else {
@@ -960,5 +933,33 @@ func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descript
 		return nil, reporter.Errorf(val.Start(), "%vexpecting float, got %s", mc, valueKind(v))
 	default:
 		return nil, reporter.Errorf(val.Start(), "%vunrecognized field type: %s", mc, fldType)
+	}
+}
+
+func descriptorType(m proto.Message) string {
+	switch m := m.(type) {
+	case *descriptorpb.DescriptorProto:
+		return "message"
+	case *descriptorpb.DescriptorProto_ExtensionRange:
+		return "extension range"
+	case *descriptorpb.FieldDescriptorProto:
+		if m.GetExtendee() == "" {
+			return "field"
+		} else {
+			return "extension"
+		}
+	case *descriptorpb.EnumDescriptorProto:
+		return "enum"
+	case *descriptorpb.EnumValueDescriptorProto:
+		return "enum value"
+	case *descriptorpb.ServiceDescriptorProto:
+		return "service"
+	case *descriptorpb.MethodDescriptorProto:
+		return "method"
+	case *descriptorpb.FileDescriptorProto:
+		return "file"
+	default:
+		// shouldn't be possible
+		return fmt.Sprintf("%T", m)
 	}
 }

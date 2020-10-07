@@ -46,7 +46,7 @@ func (r reporterFuncs) Warning(err ErrorWithPos) {
 }
 
 type Handler struct {
-	reporter  Reporter
+	reporter Reporter
 
 	mu           sync.Mutex
 	errsReported bool

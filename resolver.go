@@ -87,3 +87,16 @@ func (r *SourceResolver) FindFileByPath(path string) (SearchResult, error) {
 	}
 	return SearchResult{}, e
 }
+
+func WithStandardImports(r Resolver) Resolver {
+	return ResolverFunc(func(name string) (SearchResult, error) {
+		res, err := r.FindFileByPath(name)
+		if err != nil {
+			// error from given resolver? see if it's a known standard file
+			if d, ok := standardImports[name]; ok {
+				return SearchResult{Desc: d}, nil
+			}
+		}
+		return res, err
+	})
+}

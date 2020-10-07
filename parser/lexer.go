@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/jhump/protocompile/ast"
+	"github.com/jhump/protocompile/reporter"
 )
 
 type runeReader struct {
@@ -64,7 +65,7 @@ func (rr *runeReader) endMark() string {
 type protoLex struct {
 	filename string
 	input    *runeReader
-	errs     *errorHandler
+	handler  *reporter.Handler
 	res      *ast.FileNode
 
 	lineNo int
@@ -83,7 +84,7 @@ type protoLex struct {
 
 var utf8Bom = []byte{0xEF, 0xBB, 0xBF}
 
-func newLexer(in io.Reader, filename string, errs *errorHandler) *protoLex {
+func newLexer(in io.Reader, filename string, handler *reporter.Handler) *protoLex {
 	br := bufio.NewReader(in)
 
 	// if file has UTF8 byte order marker preface, consume it
@@ -95,7 +96,7 @@ func newLexer(in io.Reader, filename string, errs *errorHandler) *protoLex {
 	return &protoLex{
 		input:    &runeReader{rr: br},
 		filename: filename,
-		errs:     errs,
+		handler:  handler,
 	}
 }
 
@@ -144,8 +145,8 @@ var keywords = map[string]int{
 	"returns":    _RETURNS,
 }
 
-func (l *protoLex) cur() SourcePos {
-	return SourcePos{
+func (l *protoLex) cur() ast.SourcePos {
+	return ast.SourcePos{
 		Filename: l.filename,
 		Offset:   l.offset,
 		Line:     l.lineNo + 1,
@@ -172,9 +173,9 @@ func (l *protoLex) adjustPos(consumedChars ...rune) {
 	}
 }
 
-func (l *protoLex) prev() *SourcePos {
+func (l *protoLex) prev() *ast.SourcePos {
 	if l.prevSym == nil {
-		return &SourcePos{
+		return &ast.SourcePos{
 			Filename: l.filename,
 			Offset:   0,
 			Line:     1,
@@ -185,7 +186,7 @@ func (l *protoLex) prev() *SourcePos {
 }
 
 func (l *protoLex) Lex(lval *protoSymType) int {
-	if l.errs.err != nil {
+	if l.handler.ReporterError() != nil {
 		// if error reporter already returned non-nil error,
 		// we can skip the rest of the input
 		return 0
@@ -211,7 +212,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			// we don't call setError because we don't want it wrapped
 			// with a source position because it's I/O, not syntax
 			lval.err = err
-			_ = l.errs.handleError(err)
+			_ = l.handler.HandleError(err)
 			return _ERROR
 		}
 
@@ -384,7 +385,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 
 func (l *protoLex) posRange() ast.PosRange {
 	return ast.PosRange{
-		Start: SourcePos{
+		Start: ast.SourcePos{
 			Filename: l.filename,
 			Offset:   l.prevOffset,
 			Line:     l.prevLineNo + 1,
@@ -801,12 +802,12 @@ func (l *protoLex) skipToEndOfBlockComment() bool {
 	}
 }
 
-func (l *protoLex) addSourceError(err error) ErrorWithPos {
-	ewp, ok := err.(ErrorWithPos)
+func (l *protoLex) addSourceError(err error) reporter.ErrorWithPos {
+	ewp, ok := err.(reporter.ErrorWithPos)
 	if !ok {
-		ewp = ErrorWithSourcePos{Pos: l.prev(), Underlying: err}
+		ewp = reporter.Error(l.prev(), err)
 	}
-	_ = l.errs.handleError(ewp)
+	_ = l.handler.HandleError(ewp)
 	return ewp
 }
 
