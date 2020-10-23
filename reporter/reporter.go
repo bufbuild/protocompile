@@ -60,7 +60,7 @@ func NewHandler(rep Reporter) *Handler {
 	return &Handler{reporter: rep}
 }
 
-func (h *Handler) HandleErrorf(pos *ast.SourcePos, format string, args ...interface{}) error {
+func (h *Handler) HandleErrorf(pos ast.SourcePos, format string, args ...interface{}) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -88,7 +88,7 @@ func (h *Handler) HandleError(err error) error {
 	return err
 }
 
-func (h *Handler) HandleWarning(pos *ast.SourcePos, err error) {
+func (h *Handler) HandleWarning(pos ast.SourcePos, err error) {
 	// no need for lock; warnings don't interact with mutable fields
 	h.reporter.Warning(errorWithSourcePos{pos: pos, underlying: err})
 }

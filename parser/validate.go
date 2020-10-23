@@ -109,7 +109,7 @@ func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md 
 		if rsvd[i].start >= exts[j].start && rsvd[i].start < exts[j].end ||
 			exts[j].start >= rsvd[i].start && exts[j].start < rsvd[i].end {
 
-			var pos *ast.SourcePos
+			var pos ast.SourcePos
 			if rsvd[i].start >= exts[j].start && rsvd[i].start < exts[j].end {
 				pos = rsvd[i].node.Start()
 			} else {

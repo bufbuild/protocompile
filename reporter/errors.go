@@ -24,11 +24,11 @@ type ErrorWithPos interface {
 	Unwrap() error
 }
 
-func Error(pos *ast.SourcePos, err error) ErrorWithPos {
+func Error(pos ast.SourcePos, err error) ErrorWithPos {
 	return errorWithSourcePos{pos: pos, underlying: err}
 }
 
-func Errorf(pos *ast.SourcePos, format string, args ...interface{}) ErrorWithPos {
+func Errorf(pos ast.SourcePos, format string, args ...interface{}) ErrorWithPos {
 	return errorWithSourcePos{pos: pos, underlying: fmt.Errorf(format, args...)}
 }
 
@@ -44,7 +44,7 @@ func Errorf(pos *ast.SourcePos, format string, args ...interface{}) ErrorWithPos
 // SourcePos should always be set and never nil.
 type errorWithSourcePos struct {
 	underlying error
-	pos        *ast.SourcePos
+	pos        ast.SourcePos
 }
 
 func (e errorWithSourcePos) Error() string {
@@ -55,10 +55,7 @@ func (e errorWithSourcePos) Error() string {
 // GetPosition implements the ErrorWithPos interface, supplying a location in
 // proto source that caused the error.
 func (e errorWithSourcePos) GetPosition() ast.SourcePos {
-	if e.pos == nil {
-		return ast.SourcePos{Filename: "<input>"}
-	}
-	return *e.pos
+	return e.pos
 }
 
 // Unwrap implements the ErrorWithPos interface, supplying the underlying

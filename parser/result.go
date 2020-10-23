@@ -574,7 +574,7 @@ func (r *result) asServiceDescriptor(svc *ast.ServiceNode) *descriptorpb.Service
 	return sd
 }
 
-func checkTag(pos *ast.SourcePos, v uint64, maxTag int32) error {
+func checkTag(pos ast.SourcePos, v uint64, maxTag int32) error {
 	if v < 1 {
 		return reporter.Errorf(pos, "tag number %d must be greater than zero", v)
 	} else if v > uint64(maxTag) {

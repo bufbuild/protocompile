@@ -173,9 +173,9 @@ func (l *protoLex) adjustPos(consumedChars ...rune) {
 	}
 }
 
-func (l *protoLex) prev() *ast.SourcePos {
+func (l *protoLex) prev() ast.SourcePos {
 	if l.prevSym == nil {
-		return &ast.SourcePos{
+		return ast.SourcePos{
 			Filename: l.filename,
 			Offset:   0,
 			Line:     1,

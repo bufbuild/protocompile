@@ -2,15 +2,15 @@ package ast
 
 // UnknownPos is a placeholder position when only the source file
 // name is known.
-func UnknownPos(filename string) *SourcePos {
-	return &SourcePos{Filename: filename}
+func UnknownPos(filename string) SourcePos {
+	return SourcePos{Filename: filename}
 }
 
 // NoSourceNode is a placeholder AST node that implements numerous
 // interfaces in this package. It can be used to represent an AST
 // element for a file whose source is not available.
 type NoSourceNode struct {
-	pos *SourcePos
+	pos SourcePos
 }
 
 // NewNoSourceNode creates a new NoSourceNode for the given filename.
@@ -18,11 +18,11 @@ func NewNoSourceNode(filename string) NoSourceNode {
 	return NoSourceNode{pos: UnknownPos(filename)}
 }
 
-func (n NoSourceNode) Start() *SourcePos {
+func (n NoSourceNode) Start() SourcePos {
 	return n.pos
 }
 
-func (n NoSourceNode) End() *SourcePos {
+func (n NoSourceNode) End() SourcePos {
 	return n.pos
 }
 

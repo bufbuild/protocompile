@@ -16,8 +16,8 @@ import (
 type Symbols struct {
 	mu      sync.Mutex
 	files   map[protoreflect.FileDescriptor]struct{}
-	symbols map[protoreflect.FullName]*ast.SourcePos
-	exts    map[protoreflect.FullName]map[protoreflect.FieldNumber]*ast.SourcePos
+	symbols map[protoreflect.FullName]ast.SourcePos
+	exts    map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos
 }
 
 func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handler) error {
@@ -83,17 +83,17 @@ func (s *Symbols) checkFileLocked(f protoreflect.FileDescriptor, handler *report
 	})
 }
 
-func sourcePositionFor(f protoreflect.FileDescriptor, d protoreflect.Descriptor) *ast.SourcePos {
+func sourcePositionFor(f protoreflect.FileDescriptor, d protoreflect.Descriptor) ast.SourcePos {
 	//TODO: f.SourceLocations().ByDescriptor(d)
 	return ast.UnknownPos(f.Path())
 }
 
 func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
 	if s.symbols == nil {
-		s.symbols = map[protoreflect.FullName]*ast.SourcePos{}
+		s.symbols = map[protoreflect.FullName]ast.SourcePos{}
 	}
 	if s.exts == nil {
-		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]*ast.SourcePos{}
+		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
 	_ = walk.Descriptors(f, func(d protoreflect.Descriptor) error {
 		pos := sourcePositionFor(f, d)
@@ -108,7 +108,7 @@ func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
 		extendee := fld.ContainingMessage().FullName()
 		tags := s.exts[extendee]
 		if tags == nil {
-			tags = map[protoreflect.FieldNumber]*ast.SourcePos{}
+			tags = map[protoreflect.FieldNumber]ast.SourcePos{}
 			s.exts[extendee] = tags
 		}
 		tags[fld.Number()] = pos
@@ -181,10 +181,10 @@ func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter
 
 func (s *Symbols) importResultLocked(r *result, populatePool bool) {
 	if s.symbols == nil {
-		s.symbols = map[protoreflect.FullName]*ast.SourcePos{}
+		s.symbols = map[protoreflect.FullName]ast.SourcePos{}
 	}
 	if s.exts == nil {
-		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]*ast.SourcePos{}
+		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
 	_ = walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
 		pos := r.Node(d).Start()
@@ -201,17 +201,17 @@ func (s *Symbols) importResultLocked(r *result, populatePool bool) {
 	s.files[r] = struct{}{}
 }
 
-func (s *Symbols) addExtension(extendee protoreflect.FullName, tag protoreflect.FieldNumber, pos *ast.SourcePos, handler *reporter.Handler) error {
+func (s *Symbols) addExtension(extendee protoreflect.FullName, tag protoreflect.FieldNumber, pos ast.SourcePos, handler *reporter.Handler) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.exts == nil {
-		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]*ast.SourcePos{}
+		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
 
 	usedExtTags := s.exts[extendee]
 	if usedExtTags == nil {
-		usedExtTags = map[protoreflect.FieldNumber]*ast.SourcePos{}
+		usedExtTags = map[protoreflect.FieldNumber]ast.SourcePos{}
 		s.exts[extendee] = usedExtTags
 	}
 	if existing, ok := usedExtTags[tag]; ok {

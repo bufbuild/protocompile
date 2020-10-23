@@ -556,18 +556,18 @@ type SyntheticMapField struct {
 func NewSyntheticMapField(ident IdentValueNode, tagNum uint64) *SyntheticMapField {
 	tag := &UintLiteralNode{
 		terminalNode: terminalNode{
-			posRange: PosRange{Start: *ident.Start(), End: *ident.End()},
+			posRange: PosRange{Start: ident.Start(), End: ident.End()},
 		},
 		Val: tagNum,
 	}
 	return &SyntheticMapField{Ident: ident, Tag: tag}
 }
 
-func (n *SyntheticMapField) Start() *SourcePos {
+func (n *SyntheticMapField) Start() SourcePos {
 	return n.Ident.Start()
 }
 
-func (n *SyntheticMapField) End() *SourcePos {
+func (n *SyntheticMapField) End() SourcePos {
 	return n.Ident.End()
 }
 

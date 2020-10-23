@@ -6,8 +6,8 @@ package ast
 // about all prior comments (attached as leading comments) and
 // optional subsequent comments (attached as trailing comments).
 type Node interface {
-	Start() *SourcePos
-	End() *SourcePos
+	Start() SourcePos
+	End() SourcePos
 	LeadingComments() []Comment
 	TrailingComments() []Comment
 }
@@ -89,12 +89,12 @@ type terminalNode struct {
 	raw               string
 }
 
-func (n *terminalNode) Start() *SourcePos {
-	return &n.posRange.Start
+func (n *terminalNode) Start() SourcePos {
+	return n.posRange.Start
 }
 
-func (n *terminalNode) End() *SourcePos {
-	return &n.posRange.End
+func (n *terminalNode) End() SourcePos {
+	return n.posRange.End
 }
 
 func (n *terminalNode) LeadingComments() []Comment {
@@ -135,11 +135,11 @@ func (n *compositeNode) Children() []Node {
 	return n.children
 }
 
-func (n *compositeNode) Start() *SourcePos {
+func (n *compositeNode) Start() SourcePos {
 	return n.children[0].Start()
 }
 
-func (n *compositeNode) End() *SourcePos {
+func (n *compositeNode) End() SourcePos {
 	return n.children[len(n.children)-1].End()
 }
 

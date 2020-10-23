@@ -427,7 +427,7 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	})
 }
 
-func makeSpan(start, end *ast.SourcePos) []int32 {
+func makeSpan(start, end ast.SourcePos) []int32 {
 	if start.Line == end.Line {
 		return []int32{int32(start.Line) - 1, int32(start.Col) - 1, int32(end.Col) - 1}
 	}
