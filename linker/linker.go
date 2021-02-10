@@ -10,6 +10,15 @@ import (
 	"github.com/jhump/protocompile/reporter"
 )
 
+// Link handles linking a parsed descriptor proto into a fully-linked descriptor.
+// If the given parser.Result has imports, they must all be present in the given
+// dependencies. The symbols value is optional and may be nil. The handler value
+// is used to report any link errors. If any such errors are reported, this
+// function returns a non-nil error. The Result value returned also implements
+// protoreflect.FileDescriptor.
+//
+// Note that linking does NOT interpret options. So options messages in the
+// returned value have all values stored in UninterpretedOptions fields.
 func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *reporter.Handler) (Result, error) {
 	prefix := parsed.Proto().GetPackage()
 	if prefix != "" {
@@ -52,10 +61,24 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	return r, handler.Error()
 }
 
+// Result is the result of linking. This is a protoreflect.FileDescriptor, but
+// with some additional methods for exposing additional information, such as the
+// for accessing the input AST or file descriptor. It also provides Resolve*
+// methods, for looking up enums, messages, and extensions that are defined in
+// the protobuf source file this result represents.
 type Result interface {
 	File
 	parser.Result
+	// ResolveEnumType returns an enum descriptor for the given named enum that
+	// is defined in this file. If no such element is defined in this file, or
+	// if the named element is not an enum, nil is returned.
 	ResolveEnumType(protoreflect.FullName) protoreflect.EnumDescriptor
+	// ResolveMessageType returns a message descriptor for the given named
+	// message that is defined in this file. If no such element is defined in
+	// this file, or if the named element is not a message, nil is returned.
 	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
+	// ResolveExtension returns an extension descriptor for the given named
+	// extension that is defined in this file. If no such element is defined in
+	// this file, or if the named element is not an extension, nil is returned.
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
 }

@@ -19,6 +19,10 @@ import (
 	"github.com/jhump/protocompile/reporter"
 )
 
+// Index is a mapping of AST nodes that define options to a corresponding path
+// into the containing file descriptor. The path is a sequence of field tags
+// and indexes that define a traversal path from the root (the file descriptor)
+// to the resolved option field.
 type Index map[*ast.OptionNode][]int32
 
 type interpreter struct {
@@ -28,6 +32,15 @@ type interpreter struct {
 	index    Index
 }
 
+// InterpretOptions interprets options in the given linked result, returning
+// an index that can be used to generate source code info. This step mutates
+// the linked result's underlying proto to move option elements out of the
+// "uninterpreted_option" fields and into proper option fields and extensions.
+// If lenient is true, then errors interpreting options are ignored and any
+// uninterpretable options will remain in "uninterpreted_option" fields. The
+// given handler is used to report errors and warnings (errors will not be
+// reported when in lenient mode). If any errors are reported, this function
+// returns a non-nil error.
 func InterpretOptions(lenient bool, linked linker.Result, handler *reporter.Handler) (Index, error) {
 	interp := interpreter{
 		linked:   linked,

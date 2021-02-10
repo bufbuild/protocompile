@@ -17,14 +17,51 @@ import (
 	"github.com/jhump/protocompile/sourceinfo"
 )
 
+// Compiler handles compilation tasks, to turn protobuf source files, or other
+// intermediate representations, into fully linked descriptors.
+//
+// The compilation process involves five steps for each protobuf source file:
+//   1. Parsing the source into an AST (abstract syntax tree).
+//   2. Converting the AST into descriptor protos.
+//   3. Linking descriptor protos into fully linked descriptors.
+//   4. Interpreting options.
+//   5. Computing source code information.
+//
+// With fully linked descriptors, code generators and protoc plugins could be
+// invoked (those that step is not implemented by this package and not a
+// responsibility of this type).
 type Compiler struct {
+	// Resolves path/file names into source code or intermediate representions
+	// for protobuf source files. This is how the compiler loads the files to
+	// be compiled as well as all dependencies. This field is the only required
+	// field.
 	Resolver       Resolver
+	// The maximum parallelism to use when compiling. If unspecified or set to
+	// a non-positive value, then min(runtime.NumCPU(), runtime.GOMAXPROCS(-1))
+	// will be used.
 	MaxParallelism int
+	// A custom error and warning reporter. If unspecified a default reporter
+	// is used. A default reporter fails the compilation after encountering any
+	// errors and ignores all warnings.
 	Reporter       reporter.Reporter
 
+	// If true, source code information will be included in the resulting
+	// descriptors. Source code information is metadata in the file descriptor
+	// that provides position information (i.e. the line and column where file
+	// elements were defined) as well as comments.
+	//
+	// If Resolver returns descriptors or descriptor protos for a file, then
+	// those descriptors will not be modified. If they do not already include
+	// source code info, they will be left that way when the compile operation
+	// concludes. Similarly, if they already have source code info but this flag
+	// is false, existing info will be left in place.
 	IncludeSourceInfo bool
 }
 
+// Compile compiles the given file names into fully-linked descriptors. The
+// compiler's resolver is used to locate source code (or intermediate artifacts
+// such as parsed ASTs or descriptor protos) and then do what is necessary to
+// transform that into descriptors (parsing, linking, etc).
 func (c *Compiler) Compile(ctx context.Context, files ...string) ([]protoreflect.FileDescriptor, error) {
 	if len(files) == 0 {
 		return nil, nil
@@ -151,8 +188,12 @@ func (e *executor) doCompile(ctx context.Context, file string, r *result) {
 	r.complete(desc)
 }
 
+// A compilation task. The executor has a semaphore that limits the number
+// of concurrent, running tasks.
 type task struct {
 	e        *executor
+	// If true, this task needs to acquire a semaphore permit before running.
+	// If false, this task needs to release its semaphore permit on completion.
 	released bool
 }
 

@@ -13,6 +13,12 @@ import (
 	"github.com/jhump/protocompile/walk"
 )
 
+// Symbols is a symbol table that maps names for all program elements to their
+// location in source. It also tracks extension tag numbers. This can be used
+// to enforce uniqueness for symbol names and tag numbers across many files and
+// many link operations.
+//
+// This type is thread-safe.
 type Symbols struct {
 	mu      sync.Mutex
 	files   map[protoreflect.FileDescriptor]struct{}
@@ -20,6 +26,11 @@ type Symbols struct {
 	exts    map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos
 }
 
+// Import populates the symbol table with all symbols/elements and extension
+// tags present in the given file descriptor. If is nil or if fd has already
+// been imported into s, this returns immediately without doing anything. If any
+// collisions in symbol names or extension tags are identified, an error will be
+// returned and the symbol table will not be updated.
 func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handler) error {
 	if s == nil {
 		return nil

@@ -12,6 +12,10 @@ import (
 	"github.com/jhump/protocompile/options"
 )
 
+// GenerateSourceInfo generates source code info for the given AST. If the given
+// opts is present, it can generate source code info for interpreted options.
+// Otherwise, any options in the AST will get source code info as uninterpreted
+// options.
 func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.SourceCodeInfo {
 	if file == nil {
 		return nil
@@ -141,6 +145,7 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 		case *ast.MapFieldNode:
 			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.Message_fieldsTag, fieldIndex))
 			fieldIndex++
+			nestedMsgIndex++
 		case *ast.OneOfNode:
 			generateSourceCodeInfoForOneOf(opts, sci, child, &fieldIndex, &nestedMsgIndex, append(path, internal.Message_fieldsTag), append(dup(path), internal.Message_nestedMessagesTag), append(dup(path), internal.Message_oneOfsTag, oneOfIndex))
 			oneOfIndex++

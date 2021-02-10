@@ -22,10 +22,20 @@ type result struct {
 	nodes map[proto.Message]ast.Node
 }
 
+// ResultWithoutAST returns a parse result that has no AST. All methods for
+// looking up AST nodes return a placeholder node that contains only the filename
+// in position information.
 func ResultWithoutAST(proto *descriptorpb.FileDescriptorProto) Result {
 	return &result{proto: proto}
 }
 
+// ResultFromAST constructs a descriptor proto from the given AST. The returned
+// result includes the descriptor proto and also contains an index that can be
+// used to lookup AST node information for elements in the descriptor proto
+// hierarchy. If validate is true, some basic validation is performed, to make
+// sure the resulting descriptor proto is valid per protobuf rules and semantics.
+// The given handler is used to report any errors or warnings encountered. If any
+// errors are reported, this function returns a non-nil error.
 func ResultFromAST(filename string, file *ast.FileNode, validate bool, handler *reporter.Handler) (Result, error) {
 	r := &result{file: file}
 	r.createFileDescriptor(filename, file, handler)

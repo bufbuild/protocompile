@@ -7,10 +7,28 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// Descriptors walks all descriptors in the given file using a depth-first
+// traversal, calling the given function for each descriptor in the hierarchy.
+// The walk ends when traversal is complete or when the function returns an
+// error. If the function returns an error, that is returned as the result of the
+// walk operation.
+//
+// Descriptors are visited using a pre-order traversal, where the function is
+// called for a descriptor before it is called for any of its descendants.
 func Descriptors(file protoreflect.FileDescriptor, fn func(protoreflect.Descriptor) error) error {
 	return DescriptorsEnterAndExit(file, fn, nil)
 }
 
+// DescriptorsEnterAndExit walks all descriptors in the given file using a
+// depth-first traversal, calling the given functions on entry and on exit
+// for each descriptor in the hierarchy. The walk ends when traversal is
+// complete or when a function returns an error. If a function returns an error,
+// that is returned as the result of the walk operation.
+//
+// The enter function is called using a pre-order traversal, where the function
+// is called for a descriptor before it is called for any of its descendants.
+// The exit function is called using a post-order traversal, where the function
+// is called for a descriptor only after it is called for any descendants.
 func DescriptorsEnterAndExit(file protoreflect.FileDescriptor, enter, exit func(protoreflect.Descriptor) error) error {
 	for i := 0; i < file.Messages().Len(); i++ {
 		msg := file.Messages().Get(i)
@@ -140,6 +158,11 @@ func enumDescriptor(en protoreflect.EnumDescriptor, enter, exit func(protoreflec
 	return nil
 }
 
+// DescriptorProtosWithPath walks all descriptor protos in the given file using
+// a depth-first traversal, calling the given function for each descriptor proto
+// in the hierarchy along with its source info path. This is the same as
+// DescriptorProtos except the callback will also receive a source info path
+// for the element.
 func DescriptorProtosWithPath(file *descriptorpb.FileDescriptorProto, fn func(protoreflect.FullName, protoreflect.SourcePath, proto.Message) error) error {
 	return DescriptorProtosWithPathEnterAndExit(file, fn, nil)
 }
@@ -149,10 +172,29 @@ func DescriptorProtosWithPathEnterAndExit(file *descriptorpb.FileDescriptorProto
 	return w.walkDescriptorProtos(file)
 }
 
+// DescriptorProtos walks all descriptor protos in the given file using a
+// depth-first traversal, calling the given function for each descriptor proto
+// in the hierarchy. The walk ends when traversal is complete or when the
+// function returns an error. If the function returns an error, that is
+// returned as the result of the walk operation.
+//
+// Descriptor protos are visited using a pre-order traversal, where the function
+// is called for a descriptor before it is called for any of its descendants.
 func DescriptorProtos(file *descriptorpb.FileDescriptorProto, fn func(protoreflect.FullName, proto.Message) error) error {
 	return DescriptorProtosEnterAndExit(file, fn, nil)
 }
 
+// DescriptorProtosEnterAndExit walks all descriptor protos in the given file
+// using a depth-first traversal, calling the given functions on entry and on
+// exit for each descriptor in the hierarchy. The walk ends when traversal is
+// complete or when a function returns an error. If a function returns an error,
+// that is returned as the result of the walk operation.
+//
+// The enter function is called using a pre-order traversal, where the function
+// is called for a descriptor proto before it is called for any of its
+// descendants. The exit function is called using a post-order traversal, where
+// the function is called for a descriptor proto only after it is called for any
+// descendants.
 func DescriptorProtosEnterAndExit(file *descriptorpb.FileDescriptorProto, enter, exit func(protoreflect.FullName, proto.Message) error) error {
 	enterWithPath := func(n protoreflect.FullName, p protoreflect.SourcePath, m proto.Message) error {
 		return enter(n, m)

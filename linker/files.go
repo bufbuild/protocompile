@@ -8,12 +8,20 @@ import (
 	"github.com/jhump/protocompile/walk"
 )
 
+// File is a protoreflect.FileDescriptor that includes some helpful methods for
+// looking up elements in the descriptor.
 type File interface {
 	protoreflect.FileDescriptor
+	// FindDescriptorByName returns the given named element that is defined in
+	// this file. If no such element exists, nil is returned.
 	FindDescriptorByName(name protoreflect.FullName) protoreflect.Descriptor
-	FindImportByPath(string) File
+	// FindImportsByPath returns the File corresponding to the given import path.
+	// If this file does not import the given path, nil is returned.
+	FindImportByPath(path string) File
 }
 
+// NewFile converts a protoreflect.FileDescriptor to a File. The given deps must
+// contain all dependencies/imports of f. Also see NewFileRecursive.
 func NewFile(f protoreflect.FileDescriptor, deps Files) (File, error) {
 	for i := 0; i < f.Imports().Len(); i++ {
 		imprt := f.Imports().Get(i)
@@ -44,6 +52,9 @@ func newFile(f protoreflect.FileDescriptor, deps Files) (File, error) {
 	}, nil
 }
 
+// NewFileRecursive recursively converts a protoreflect.FileDescriptor to a File.
+// If f has any dependencies/imports, they are converted, too, including any and
+// all transitive dependencies.
 func NewFileRecursive(f protoreflect.FileDescriptor) (File, error) {
 	if file, ok := f.(File); ok {
 		return file, nil
@@ -99,8 +110,12 @@ func (f file) FindImportByPath(path string) File {
 
 var _ File = file{}
 
+// Files represents a set of protobuf files. It is a slice of File values, but
+// also provides a method for easily looking up files by path and name.
 type Files []File
 
+// FindFileByPath finds a file in f that has the given path and name. If f
+// contains no such file, nil is returned.
 func (f Files) FindFileByPath(path string) File {
 	for _, file := range f {
 		if file.Path() == path {
