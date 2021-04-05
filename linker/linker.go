@@ -63,22 +63,31 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 
 // Result is the result of linking. This is a protoreflect.FileDescriptor, but
 // with some additional methods for exposing additional information, such as the
-// for accessing the input AST or file descriptor. It also provides Resolve*
-// methods, for looking up enums, messages, and extensions that are defined in
-// the protobuf source file this result represents.
+// for accessing the input AST or file descriptor.
+//
+// It also provides Resolve* methods, for looking up enums, messages, and
+// extensions that are available to the protobuf source file this result
+// represents. An element is "available" if it meets any of the following
+// criteria:
+//  1. The element is defined in this file itself.
+//  2. The element is defined in a file that is directly imported by this file.
+//  3. The element is "available" to a file that is directly imported by this
+//     file as a public import.
+// Other elements, even if the transitive closure of this file, are not
+// available and thus won't be returned by these methods.
 type Result interface {
 	File
 	parser.Result
 	// ResolveEnumType returns an enum descriptor for the given named enum that
-	// is defined in this file. If no such element is defined in this file, or
-	// if the named element is not an enum, nil is returned.
+	// is available in this file. If no such element is available or if the
+	// named element is not an enum, nil is returned.
 	ResolveEnumType(protoreflect.FullName) protoreflect.EnumDescriptor
 	// ResolveMessageType returns a message descriptor for the given named
-	// message that is defined in this file. If no such element is defined in
-	// this file, or if the named element is not a message, nil is returned.
+	// message that is available in this file. If no such element is available
+	// or if the named element is not a message, nil is returned.
 	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
 	// ResolveExtension returns an extension descriptor for the given named
-	// extension that is defined in this file. If no such element is defined in
-	// this file, or if the named element is not an extension, nil is returned.
+	// extension that is available in this file. If no such element is available
+	// or if the named element is not an extension, nil is returned.
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
 }

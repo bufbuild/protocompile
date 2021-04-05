@@ -2,12 +2,12 @@ package protocompile
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"runtime"
 	"sync"
 
 	"golang.org/x/sync/semaphore"
-	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/jhump/protocompile/ast"
 	"github.com/jhump/protocompile/linker"
@@ -28,14 +28,14 @@ import (
 //   5. Computing source code information.
 //
 // With fully linked descriptors, code generators and protoc plugins could be
-// invoked (those that step is not implemented by this package and not a
+// invoked (though that step is not implemented by this package and not a
 // responsibility of this type).
 type Compiler struct {
 	// Resolves path/file names into source code or intermediate representions
 	// for protobuf source files. This is how the compiler loads the files to
 	// be compiled as well as all dependencies. This field is the only required
 	// field.
-	Resolver       Resolver
+	Resolver Resolver
 	// The maximum parallelism to use when compiling. If unspecified or set to
 	// a non-positive value, then min(runtime.NumCPU(), runtime.GOMAXPROCS(-1))
 	// will be used.
@@ -43,7 +43,7 @@ type Compiler struct {
 	// A custom error and warning reporter. If unspecified a default reporter
 	// is used. A default reporter fails the compilation after encountering any
 	// errors and ignores all warnings.
-	Reporter       reporter.Reporter
+	Reporter reporter.Reporter
 
 	// If true, source code information will be included in the resulting
 	// descriptors. Source code information is metadata in the file descriptor
@@ -62,7 +62,7 @@ type Compiler struct {
 // compiler's resolver is used to locate source code (or intermediate artifacts
 // such as parsed ASTs or descriptor protos) and then do what is necessary to
 // transform that into descriptors (parsing, linking, etc).
-func (c *Compiler) Compile(ctx context.Context, files ...string) ([]protoreflect.FileDescriptor, error) {
+func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, error) {
 	if len(files) == 0 {
 		return nil, nil
 	}
@@ -95,7 +95,7 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) ([]protoreflect
 		results[i] = e.compile(ctx, f)
 	}
 
-	descs := make([]protoreflect.FileDescriptor, len(files))
+	descs := make([]linker.File, len(files))
 	for i, r := range results {
 		select {
 		case <-r.ready:
@@ -206,6 +206,9 @@ func (t *task) release() {
 
 func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.File, error) {
 	if r.Desc != nil {
+		if r.Desc.Path() != name {
+			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.Desc.Path())
+		}
 		return linker.NewFileRecursive(r.Desc)
 	}
 
@@ -254,7 +257,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	if err != nil {
 		return nil, err
 	}
-	optsIndex, err := options.InterpretOptions(false, file, t.e.h)
+	optsIndex, err := options.InterpretOptions(file, t.e.h)
 	if err != nil {
 		return nil, err
 	}
@@ -266,6 +269,9 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 
 func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error) {
 	if r.Proto != nil {
+		if r.Proto.GetName() != name {
+			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.Proto.GetName())
+		}
 		return parser.ResultWithoutAST(r.Proto), nil
 	}
 
@@ -274,11 +280,14 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 		return nil, err
 	}
 
-	return parser.ResultFromAST(name, file, true, t.e.h)
+	return parser.ResultFromAST(file, true, t.e.h)
 }
 
 func (t *task) asAST(name string, r SearchResult) (*ast.FileNode, error) {
 	if r.AST != nil {
+		if r.AST.Start().Filename != name {
+			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.AST.Start().Filename)
+		}
 		return r.AST, nil
 	}
 

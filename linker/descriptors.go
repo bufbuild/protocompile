@@ -1,6 +1,7 @@
 package linker
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
+	"github.com/jhump/protocompile/internal"
 	"github.com/jhump/protocompile/parser"
 )
 
@@ -27,6 +29,8 @@ type result struct {
 	deps           Files
 	descriptors    map[proto.Message]protoreflect.Descriptor
 	usedImports    map[string]struct{}
+	optionBytes    map[proto.Message][]byte
+	srcLocs        []protoreflect.SourceLocation
 }
 
 var _ protoreflect.FileDescriptor = (*result)(nil)
@@ -99,7 +103,58 @@ func (r *result) Services() protoreflect.ServiceDescriptors {
 }
 
 func (r *result) SourceLocations() protoreflect.SourceLocations {
-	return srcLocs{}
+	srcInfoProtos := r.Proto().GetSourceCodeInfo().Location
+	if r.srcLocs == nil && len(srcInfoProtos) > 0 {
+		r.srcLocs = asSourceLocations(srcInfoProtos)
+	}
+	return srcLocs{file: r, locs: r.srcLocs}
+}
+
+func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []protoreflect.SourceLocation {
+	locs := make([]protoreflect.SourceLocation, len(srcInfoProtos))
+	prev := map[string]*protoreflect.SourceLocation{}
+	for i, loc := range srcInfoProtos {
+		var stLin, stCol, enLin, enCol int
+		if len(loc.Span) == 3 {
+			stLin, stCol, enCol = int(loc.Span[0]), int(loc.Span[1]), int(loc.Span[2])
+			enLin = stLin
+		} else{
+			stLin, stCol, enLin, enCol = int(loc.Span[0]), int(loc.Span[1]), int(loc.Span[2]), int(loc.Span[3])
+		}
+		locs[i] = protoreflect.SourceLocation{
+			Path:                    loc.Path,
+			LeadingComments:         loc.GetLeadingComments(),
+			LeadingDetachedComments: loc.GetLeadingDetachedComments(),
+			TrailingComments:        loc.GetTrailingComments(),
+			StartLine:               stLin,
+			StartColumn:             stCol,
+			EndLine:                 enLin,
+			EndColumn:               enCol,
+		}
+		str := pathStr(loc.Path)
+		pr := prev[str]
+		if pr != nil {
+			pr.Next = i
+		}
+		prev[str] = &locs[i]
+	}
+	return locs
+}
+
+func pathStr(p protoreflect.SourcePath) string {
+	var buf bytes.Buffer
+	for _, v := range p {
+		fmt.Fprintf(&buf, "%x:", v)
+	}
+	return buf.String()
+}
+
+func (r *result) AddOptionBytes(opts []byte) {
+	pm := r.Proto().Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %q", r.Path()))
+	}
+	r.optionBytes[pm] = append(r.optionBytes[pm], opts...)
 }
 
 type fileImports struct {
@@ -131,25 +186,123 @@ func (f *fileImports) Get(i int) protoreflect.FileImport {
 	return protoreflect.FileImport{FileDescriptor: desc, IsPublic: isPublic, IsWeak: isWeak}
 }
 
-// TODO
 type srcLocs struct {
 	protoreflect.SourceLocations
+	file *result
+	locs []protoreflect.SourceLocation
 }
 
 func (s srcLocs) Len() int {
-	return 0
+	return len(s.locs)
 }
 
-func (s srcLocs) Get(_ int) protoreflect.SourceLocation {
-	panic("index out of bounds")
+func (s srcLocs) Get(i int) protoreflect.SourceLocation {
+	return s.locs[i]
 }
 
-func (s srcLocs) ByPath(_ protoreflect.SourcePath) protoreflect.SourceLocation {
+func (s srcLocs) ByPath(p protoreflect.SourcePath) protoreflect.SourceLocation {
+	// TODO: binary search for p
 	return protoreflect.SourceLocation{}
 }
 
-func (s srcLocs) ByDescriptor(_ protoreflect.Descriptor) protoreflect.SourceLocation {
-	return protoreflect.SourceLocation{}
+func (s srcLocs) ByDescriptor(d protoreflect.Descriptor) protoreflect.SourceLocation {
+	if d.ParentFile() != s.file {
+		return protoreflect.SourceLocation{}
+	}
+	path, ok := computePath(d)
+	if !ok {
+		return protoreflect.SourceLocation{}
+	}
+	return s.ByPath(path)
+}
+
+func computePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
+	_, ok := d.(protoreflect.FileDescriptor)
+	if ok {
+		return nil, true
+	}
+	var path protoreflect.SourcePath
+	for {
+		p := d.Parent()
+		switch d := d.(type) {
+		case protoreflect.FileDescriptor:
+			return reverse(path), true
+		case protoreflect.MessageDescriptor:
+			path = append(path, int32(d.Index()))
+			switch p.(type) {
+			case protoreflect.FileDescriptor:
+				path = append(path, internal.File_messagesTag)
+			case protoreflect.MessageDescriptor:
+				path = append(path, internal.Message_nestedMessagesTag)
+			default:
+				return nil, false
+			}
+		case protoreflect.FieldDescriptor:
+			path = append(path, int32(d.Index()))
+			switch p.(type) {
+			case protoreflect.FileDescriptor:
+				if d.IsExtension() {
+					path = append(path, internal.File_extensionsTag)
+				} else {
+					return nil, false
+				}
+			case protoreflect.MessageDescriptor:
+				if d.IsExtension() {
+					path = append(path, internal.Message_extensionsTag)
+				} else {
+					path = append(path, internal.Message_fieldsTag)
+				}
+			default:
+				return nil, false
+			}
+		case protoreflect.OneofDescriptor:
+			path = append(path, int32(d.Index()))
+			if _, ok := p.(protoreflect.MessageDescriptor); ok {
+				path = append(path, internal.Message_oneOfsTag)
+			} else {
+				return nil, false
+			}
+		case protoreflect.EnumDescriptor:
+			path = append(path, int32(d.Index()))
+			switch p.(type) {
+			case protoreflect.FileDescriptor:
+				path = append(path, internal.File_enumsTag)
+			case protoreflect.MessageDescriptor:
+				path = append(path, internal.Message_enumsTag)
+			default:
+				return nil, false
+			}
+		case protoreflect.EnumValueDescriptor:
+			path = append(path, int32(d.Index()))
+			if _, ok := p.(protoreflect.EnumDescriptor); ok {
+				path = append(path, internal.Enum_valuesTag)
+			} else {
+				return nil, false
+			}
+		case protoreflect.ServiceDescriptor:
+			path = append(path, int32(d.Index()))
+			if _, ok := p.(protoreflect.FileDescriptor); ok {
+				path = append(path, internal.File_servicesTag)
+			} else {
+				return nil, false
+			}
+		case protoreflect.MethodDescriptor:
+			path = append(path, int32(d.Index()))
+			if _, ok := p.(protoreflect.ServiceDescriptor); ok {
+				path = append(path, internal.Service_methodsTag)
+			} else {
+				return nil, false
+			}
+		}
+		d = p
+	}
+}
+
+func reverse(p protoreflect.SourcePath) protoreflect.SourcePath {
+	for i, j := 0, len(p)-1; i < j; i, j = i+1, j-1 {
+		p[i], p[j] = p[j], p[i]
+	}
+	return p
 }
 
 type msgDescriptors struct {
@@ -276,6 +429,22 @@ func (m *msgDescriptor) Messages() protoreflect.MessageDescriptors {
 
 func (m *msgDescriptor) Extensions() protoreflect.ExtensionDescriptors {
 	return &extDescriptors{file: m.file, parent: m, exts: m.proto.GetExtension(), prefix: m.fqn + "."}
+}
+
+func (m *msgDescriptor) AddOptionBytes(opts []byte) {
+	pm := m.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", m.FullName()))
+	}
+	m.file.optionBytes[pm] = append(m.file.optionBytes[pm], opts...)
+}
+
+func (m *msgDescriptor) AddExtensionRangeOptionBytes(i int, opts []byte) {
+	pm := m.proto.ExtensionRange[i].Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s:extension_range[%d]", m.FullName(), i))
+	}
+	m.file.optionBytes[pm] = append(m.file.optionBytes[pm], opts...)
 }
 
 type names struct {
@@ -467,6 +636,14 @@ func (e *enumDescriptor) ReservedRanges() protoreflect.EnumRanges {
 	return enumRanges{s: e.proto.ReservedRange}
 }
 
+func (e *enumDescriptor) AddOptionBytes(opts []byte) {
+	pm := e.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", e.FullName()))
+	}
+	e.file.optionBytes[pm] = append(e.file.optionBytes[pm], opts...)
+}
+
 type enumRanges struct {
 	protoreflect.EnumRanges
 	s []*descriptorpb.EnumDescriptorProto_EnumReservedRange
@@ -580,6 +757,14 @@ func (e *enValDescriptor) Options() protoreflect.ProtoMessage {
 
 func (e *enValDescriptor) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(e.proto.GetNumber())
+}
+
+func (e *enValDescriptor) AddOptionBytes(opts []byte) {
+	pm := e.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", e.FullName()))
+	}
+	e.file.optionBytes[pm] = append(e.file.optionBytes[pm], opts...)
 }
 
 type extDescriptors struct {
@@ -894,6 +1079,14 @@ func (f *fldDescriptor) Descriptor() protoreflect.ExtensionDescriptor {
 	return f
 }
 
+func (f *fldDescriptor) AddOptionBytes(opts []byte) {
+	pm := f.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", f.FullName()))
+	}
+	f.file.optionBytes[pm] = append(f.file.optionBytes[pm], opts...)
+}
+
 type oneofDescriptors struct {
 	protoreflect.OneofDescriptors
 	file   *result
@@ -985,6 +1178,14 @@ func (o *oneofDescriptor) Fields() protoreflect.FieldDescriptors {
 	return &fldDescriptors{file: o.file, parent: o.parent, fields: fields, prefix: o.parent.fqn + "."}
 }
 
+func (o *oneofDescriptor) AddOptionBytes(opts []byte) {
+	pm := o.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", o.FullName()))
+	}
+	o.file.optionBytes[pm] = append(o.file.optionBytes[pm], opts...)
+}
+
 type svcDescriptors struct {
 	protoreflect.ServiceDescriptors
 	file   *result
@@ -1061,6 +1262,14 @@ func (s *svcDescriptor) Options() protoreflect.ProtoMessage {
 
 func (s *svcDescriptor) Methods() protoreflect.MethodDescriptors {
 	return &mtdDescriptors{file: s.file, parent: s, mtds: s.proto.GetMethod(), prefix: s.fqn + "."}
+}
+
+func (s *svcDescriptor) AddOptionBytes(opts []byte) {
+	pm := s.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", s.FullName()))
+	}
+	s.file.optionBytes[pm] = append(s.file.optionBytes[pm], opts...)
 }
 
 type mtdDescriptors struct {
@@ -1155,8 +1364,20 @@ func (m *mtdDescriptor) IsStreamingServer() bool {
 	return m.proto.GetServerStreaming()
 }
 
+func (m *mtdDescriptor) AddOptionBytes(opts []byte) {
+	pm := m.proto.Options
+	if pm == nil {
+		panic(fmt.Sprintf("options is nil for %s", m.FullName()))
+	}
+	m.file.optionBytes[pm] = append(m.file.optionBytes[pm], opts...)
+}
+
 func (r *result) FindImportByPath(path string) File {
 	return r.deps.FindFileByPath(path)
+}
+
+func (r *result) FindExtensionByNumber(msg protoreflect.FullName, tag protoreflect.FieldNumber) protoreflect.ExtensionTypeDescriptor {
+	return findExtension(r, msg, tag)
 }
 
 func (r *result) FindDescriptorByName(name protoreflect.FullName) protoreflect.Descriptor {
@@ -1166,4 +1387,8 @@ func (r *result) FindDescriptorByName(name protoreflect.FullName) protoreflect.D
 		return nil
 	}
 	return r.toDescriptor(fqn, d)
+}
+
+func (r *result) importsAsFiles() Files {
+	return r.deps
 }

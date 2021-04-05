@@ -32,12 +32,19 @@ func ResultWithoutAST(proto *descriptorpb.FileDescriptorProto) Result {
 // ResultFromAST constructs a descriptor proto from the given AST. The returned
 // result includes the descriptor proto and also contains an index that can be
 // used to lookup AST node information for elements in the descriptor proto
-// hierarchy. If validate is true, some basic validation is performed, to make
-// sure the resulting descriptor proto is valid per protobuf rules and semantics.
+// hierarchy.
+//
+// If validate is true, some basic validation is performed, to make sure the
+// resulting descriptor proto is valid per protobuf rules and semantics. Only
+// some language elements can be validated since some rules and semantics can
+// only be checked after all symbols are all resolved, which happens in the
+// linking step.
+//
 // The given handler is used to report any errors or warnings encountered. If any
 // errors are reported, this function returns a non-nil error.
-func ResultFromAST(filename string, file *ast.FileNode, validate bool, handler *reporter.Handler) (Result, error) {
-	r := &result{file: file}
+func ResultFromAST(file *ast.FileNode, validate bool, handler *reporter.Handler) (Result, error) {
+	filename := file.Start().Filename
+	r := &result{file: file, nodes: map[proto.Message]ast.Node{}}
 	r.createFileDescriptor(filename, file, handler)
 	if validate {
 		validateBasic(r, handler)

@@ -57,6 +57,9 @@ func (e extTypeDesc) Descriptor() protoreflect.ExtensionDescriptor {
 }
 
 func (r *result) resolveElement(name protoreflect.FullName) protoreflect.Descriptor {
+	if len(name) > 0 && name[0] == '.' {
+		name = name[1:]
+	}
 	importedFd, res := resolveElement(r, name, false, nil)
 	if importedFd != nil {
 		r.markUsed(importedFd.Path())

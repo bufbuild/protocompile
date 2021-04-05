@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/jhump/protoreflect/internal/testutil"
+	"github.com/stretchr/testify/assert"
 )
 
 // The single visitor returned has all functions set to record the method call.
@@ -500,7 +500,7 @@ func TestVisitorAll(t *testing.T) {
 		var call string
 		v, all := testVisitors(&call)
 		_, _ = v.Visit(n)
-		testutil.Eq(t, expectedCalls[0], call)
+		assert.Equal(t, expectedCalls[0], call)
 		var allCalls []string
 		for _, v := range all {
 			call = ""
@@ -511,7 +511,7 @@ func TestVisitorAll(t *testing.T) {
 		}
 		sort.Strings(allCalls)
 		sort.Strings(expectedCalls)
-		testutil.Eq(t, expectedCalls, allCalls)
+		assert.Equal(t, expectedCalls, allCalls)
 	}
 }
 
@@ -526,119 +526,119 @@ func TestVisitorPriorityOrder(t *testing.T) {
 
 	v.VisitStringLiteralNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "StringValueNode", call)
+	assert.Equal(t, "StringValueNode", call)
 	call = ""
 	v.VisitStringValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "ValueNode", call)
+	assert.Equal(t, "ValueNode", call)
 	call = ""
 	v.VisitValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "TerminalNode", call)
+	assert.Equal(t, "TerminalNode", call)
 	call = ""
 	v.VisitTerminalNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "Node", call)
+	assert.Equal(t, "Node", call)
 	call = ""
 	v.VisitNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "", call)
+	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*CompoundStringLiteralNode)(nil)
 
 	v.VisitCompoundStringLiteralNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "StringValueNode", call)
+	assert.Equal(t, "StringValueNode", call)
 	call = ""
 	v.VisitStringValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "ValueNode", call)
+	assert.Equal(t, "ValueNode", call)
 	call = ""
 	v.VisitValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "CompositeNode", call)
+	assert.Equal(t, "CompositeNode", call)
 	call = ""
 	v.VisitCompositeNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "Node", call)
+	assert.Equal(t, "Node", call)
 	call = ""
 	v.VisitNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "", call)
+	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*UintLiteralNode)(nil)
 
 	v.VisitUintLiteralNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "IntValueNode", call)
+	assert.Equal(t, "IntValueNode", call)
 	call = ""
 	v.VisitIntValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "FloatValueNode", call)
+	assert.Equal(t, "FloatValueNode", call)
 	call = ""
 	v.VisitFloatValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "ValueNode", call)
+	assert.Equal(t, "ValueNode", call)
 	call = ""
 	v.VisitValueNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "TerminalNode", call)
+	assert.Equal(t, "TerminalNode", call)
 	call = ""
 	v.VisitTerminalNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "Node", call)
+	assert.Equal(t, "Node", call)
 	call = ""
 	v.VisitNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "", call)
+	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*GroupNode)(nil)
 
 	v.VisitGroupNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "FieldDeclNode", call)
+	assert.Equal(t, "FieldDeclNode", call)
 	call = ""
 	v.VisitFieldDeclNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "MessageDeclNode", call)
+	assert.Equal(t, "MessageDeclNode", call)
 	call = ""
 	v.VisitMessageDeclNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "CompositeNode", call)
+	assert.Equal(t, "CompositeNode", call)
 	call = ""
 	v.VisitCompositeNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "Node", call)
+	assert.Equal(t, "Node", call)
 	call = ""
 	v.VisitNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "", call)
+	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*MapFieldNode)(nil)
 
 	v.VisitMapFieldNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "FieldDeclNode", call)
+	assert.Equal(t, "FieldDeclNode", call)
 	call = ""
 	v.VisitFieldDeclNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "MessageDeclNode", call)
+	assert.Equal(t, "MessageDeclNode", call)
 	call = ""
 	v.VisitMessageDeclNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "CompositeNode", call)
+	assert.Equal(t, "CompositeNode", call)
 	call = ""
 	v.VisitCompositeNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "Node", call)
+	assert.Equal(t, "Node", call)
 	call = ""
 	v.VisitNode = nil
 	_, _ = v.Visit(n)
-	testutil.Eq(t, "", call)
+	assert.Equal(t, "", call)
 }
 
 //func TestDoGenerate(t *testing.T) {

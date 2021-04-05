@@ -1,135 +1,139 @@
-package sourceinfo
+package sourceinfo_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"io"
 	"io/ioutil"
 	"testing"
 
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/dynamicpb"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/jhump/protocompile"
+	"github.com/jhump/protocompile/linker"
 )
 
 // If true, re-generates the golden output file
 const regenerateMode = false
 
 func TestSourceCodeInfo(t *testing.T) {
-	p := Parser{ImportPaths: []string{"../../internal/testprotos"}, IncludeSourceCodeInfo: true}
-	fds, err := p.ParseFiles("desc_test_comments.proto", "desc_test_complex.proto")
-	testutil.Ok(t, err)
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"../internal/testprotos"},
+		}),
+		IncludeSourceInfo: true,
+	}
+	fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto", "desc_test_complex.proto")
+	if !assert.Nil(t, err) {
+		return
+	}
 	// also test that imported files have source code info
 	// (desc_test_comments.proto imports desc_test_options.proto)
-	var importedFd *desc.FileDescriptor
-	for _, dep := range fds[0].GetDependencies() {
-		if dep.GetName() == "desc_test_options.proto" {
-			importedFd = dep
-			break
-		}
+	importedFd := fds[0].FindImportByPath("desc_test_options.proto")
+	if !assert.NotNil(t, importedFd) {
+		return
 	}
-	testutil.Require(t, importedFd != nil)
 
 	// create description of source code info
 	// (human readable so diffs in source control are comprehensible)
 	var buf bytes.Buffer
 	for _, fd := range fds {
-		printSourceCodeInfo(t, fd, &buf)
+		printSourceCodeInfo(fd, &buf)
 	}
-	printSourceCodeInfo(t, importedFd, &buf)
+	printSourceCodeInfo(importedFd, &buf)
 	actual := buf.String()
 
 	if regenerateMode {
 		// re-generate the file
 		err = ioutil.WriteFile("test-source-info.txt", buf.Bytes(), 0666)
-		testutil.Ok(t, err)
+		if !assert.Nil(t, err) {
+			return
+		}
 	}
 
 	b, err := ioutil.ReadFile("test-source-info.txt")
-	testutil.Ok(t, err)
+	if !assert.Nil(t, err) {
+		return
+	}
 	golden := string(b)
 
-	testutil.Eq(t, golden, actual, "wrong source code info")
+	assert.Equal(t, golden, actual, "wrong source code info")
 }
 
 // NB: this function can be used to manually inspect the source code info for a
 // descriptor, in a manner that is much easier to read and check than raw
 // descriptor form.
-func printSourceCodeInfo(t *testing.T, fd *desc.FileDescriptor, out io.Writer) {
-	fmt.Fprintf(out, "---- %s ----\n", fd.GetName())
-	md, err := desc.LoadMessageDescriptorForMessage(fd.AsProto())
-	testutil.Ok(t, err)
-	er := &dynamic.ExtensionRegistry{}
-	er.AddExtensionsFromFileRecursively(fd)
-	mf := dynamic.NewMessageFactoryWithExtensionRegistry(er)
-	dfd := mf.NewDynamicMessage(md)
-	err = dfd.ConvertFrom(fd.AsProto())
-	testutil.Ok(t, err)
+func printSourceCodeInfo(fd linker.File, out io.Writer) {
+	fmt.Fprintf(out, "---- %s ----\n", fd.Path())
 
-	for _, loc := range fd.AsFileDescriptorProto().GetSourceCodeInfo().GetLocation() {
+	var fdMsg *descriptorpb.FileDescriptorProto
+	if r, ok := fd.(linker.Result); ok {
+		fdMsg = r.Proto()
+	} else {
+		fdMsg = protodesc.ToFileDescriptorProto(fd)
+	}
+
+	for i := 0; i < fd.SourceLocations().Len(); i++ {
+		loc := fd.SourceLocations().Get(i)
 		var buf bytes.Buffer
-		findLocation(mf, dfd, md, loc.Path, &buf)
+		findLocation(linker.ResolverFromFile(fd), fdMsg.ProtoReflect(), fdMsg.ProtoReflect().Descriptor(), loc.Path, &buf)
 		fmt.Fprintf(out, "\n\n%s:\n", buf.String())
-		if len(loc.Span) == 3 {
-			fmt.Fprintf(out, "%s:%d:%d\n", fd.GetName(), loc.Span[0]+1, loc.Span[1]+1)
-			fmt.Fprintf(out, "%s:%d:%d\n", fd.GetName(), loc.Span[0]+1, loc.Span[2]+1)
-		} else {
-			fmt.Fprintf(out, "%s:%d:%d\n", fd.GetName(), loc.Span[0]+1, loc.Span[1]+1)
-			fmt.Fprintf(out, "%s:%d:%d\n", fd.GetName(), loc.Span[2]+1, loc.Span[3]+1)
-		}
+		fmt.Fprintf(out, "%s:%d:%d\n", fd.Path(), loc.StartLine+1, loc.StartColumn+1)
+		fmt.Fprintf(out, "%s:%d:%d\n", fd.Path(), loc.EndLine+1, loc.EndColumn+1)
 		if len(loc.LeadingDetachedComments) > 0 {
 			for i, comment := range loc.LeadingDetachedComments {
 				fmt.Fprintf(out, "    Leading detached comment [%d]:\n%s\n", i, comment)
 			}
 		}
-		if loc.LeadingComments != nil {
-			fmt.Fprintf(out, "    Leading comments:\n%s\n", loc.GetLeadingComments())
+		if loc.LeadingComments != "" {
+			fmt.Fprintf(out, "    Leading comments:\n%s\n", loc.LeadingComments)
 		}
-		if loc.TrailingComments != nil {
-			fmt.Fprintf(out, "    Trailing comments:\n%s\n", loc.GetTrailingComments())
+		if loc.TrailingComments != "" {
+			fmt.Fprintf(out, "    Trailing comments:\n%s\n", loc.TrailingComments)
 		}
 	}
 }
 
-func findLocation(mf *dynamic.MessageFactory, msg *dynamic.Message, md *desc.MessageDescriptor, path []int32, buf *bytes.Buffer) {
+func findLocation(res protoregistry.ExtensionTypeResolver, msg protoreflect.Message, md protoreflect.MessageDescriptor, path []int32, buf *bytes.Buffer) {
 	if len(path) == 0 {
 		return
 	}
 
-	var fld *desc.FieldDescriptor
-	if msg != nil {
-		fld = msg.FindFieldDescriptor(path[0])
-	} else {
-		fld = md.FindFieldByNumber(path[0])
-		if fld == nil {
-			fld = mf.GetExtensionRegistry().FindExtension(md.GetFullyQualifiedName(), path[0])
-		}
-	}
+	tag := protoreflect.FieldNumber(path[0])
+	fld := md.Fields().ByNumber(tag)
 	if fld == nil {
-		panic(fmt.Sprintf("could not find field with tag %d in message of type %s", path[0], msg.XXX_MessageName()))
+		ext, err := res.FindExtensionByNumber(md.FullName(), tag)
+		if err != nil {
+			panic(fmt.Sprintf("could not find field with tag %d in message of type %s", path[0], msg.Descriptor().FullName()))
+		}
+		fld = ext.TypeDescriptor()
 	}
 
-	fmt.Fprintf(buf, " > %s", fld.GetName())
+	fmt.Fprintf(buf, " > %s", fld.Name())
 	path = path[1:]
 	idx := -1
-	if fld.IsRepeated() && len(path) > 0 {
+	if fld.Cardinality() == protoreflect.Repeated && len(path) > 0 {
 		idx = int(path[0])
 		fmt.Fprintf(buf, "[%d]", path[0])
 		path = path[1:]
 	}
 
 	if len(path) > 0 {
-		var next proto.Message
+		var next protoreflect.Message
 		if msg != nil {
+			fldVal := msg.Get(fld)
 			if idx >= 0 {
-				if idx < msg.FieldLength(fld) {
-					next = msg.GetRepeatedField(fld, idx).(proto.Message)
+				l := fldVal.List()
+				if idx < l.Len() {
+					next = l.Get(idx).Message()
 				}
 			} else {
-				if m, ok := msg.GetField(fld).(proto.Message); ok {
-					next = m
-				} else {
-					panic(fmt.Sprintf("path traverses into non-message type %T: %s -> %v", msg.GetField(fld), buf.String(), path))
-				}
+				next = fldVal.Message()
 			}
 		}
 
@@ -137,15 +141,6 @@ func findLocation(mf *dynamic.MessageFactory, msg *dynamic.Message, md *desc.Mes
 			buf.WriteString(" !!! ")
 		}
 
-		if dm, ok := next.(*dynamic.Message); ok || next == nil {
-			findLocation(mf, dm, fld.GetMessageType(), path, buf)
-		} else {
-			dm := mf.NewDynamicMessage(fld.GetMessageType())
-			err := dm.ConvertFrom(next)
-			if err != nil {
-				panic(err.Error())
-			}
-			findLocation(mf, dm, fld.GetMessageType(), path, buf)
-		}
+		findLocation(res, next, fld.Message(), path, buf)
 	}
 }

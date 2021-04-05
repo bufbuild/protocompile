@@ -27,7 +27,7 @@ type Symbols struct {
 }
 
 // Import populates the symbol table with all symbols/elements and extension
-// tags present in the given file descriptor. If is nil or if fd has already
+// tags present in the given file descriptor. If s is nil or if fd has already
 // been imported into s, this returns immediately without doing anything. If any
 // collisions in symbol names or extension tags are identified, an error will be
 // returned and the symbol table will not be updated.
@@ -69,7 +69,7 @@ func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handl
 
 func (s *Symbols) checkFileLocked(f protoreflect.FileDescriptor, handler *reporter.Handler) error {
 	return walk.Descriptors(f, func(d protoreflect.Descriptor) error {
-		pos := sourcePositionFor(f, d)
+		pos := sourcePositionFor(d)
 		if existing, ok := s.symbols[d.FullName()]; ok {
 			if err := handler.HandleErrorf(pos, "symbol %q already defined at %v", d.FullName(), existing); err != nil {
 				return err
@@ -94,9 +94,10 @@ func (s *Symbols) checkFileLocked(f protoreflect.FileDescriptor, handler *report
 	})
 }
 
-func sourcePositionFor(f protoreflect.FileDescriptor, d protoreflect.Descriptor) ast.SourcePos {
-	//TODO: f.SourceLocations().ByDescriptor(d)
-	return ast.UnknownPos(f.Path())
+func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
+	//TODO: d.ParentFile().SourceLocations().ByDescriptor(d)
+	d.ParentFile()
+	return ast.UnknownPos(d.ParentFile().Path())
 }
 
 func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
@@ -107,7 +108,7 @@ func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
 		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
 	_ = walk.Descriptors(f, func(d protoreflect.Descriptor) error {
-		pos := sourcePositionFor(f, d)
+		pos := sourcePositionFor(d)
 		name := d.FullName()
 		s.symbols[name] = pos
 

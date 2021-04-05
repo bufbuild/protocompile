@@ -69,15 +69,6 @@ func CreatePrefixList(pkg string) []string {
 	return prefixes
 }
 
-// GetMaxTag returns the max tag number allowed, based on whether a message uses
-// message set wire format or not.
-func GetMaxTag(isMessageSet bool) int32 {
-	if isMessageSet {
-		return MaxMessageSetTag
-	}
-	return MaxNormalTag
-}
-
 func WriteEscapedBytes(buf *bytes.Buffer, b []byte) {
 	for _, c := range b {
 		switch c {

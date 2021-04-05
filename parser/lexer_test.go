@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"github.com/jhump/protocompile/reporter"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
@@ -179,16 +181,20 @@ foo
 			n = sym.b
 			val = nil
 		}
-		testutil.Eq(t, exp.t, tok, "case %d: wrong token type (case %v)", i, exp.v)
-		testutil.Eq(t, exp.v, val, "case %d: wrong token value", i)
-		testutil.Eq(t, exp.line, n.Start().Line, "case %d: wrong line number", i)
-		testutil.Eq(t, exp.col, n.Start().Col, "case %d: wrong column number", i)
-		testutil.Eq(t, exp.line, n.End().Line, "case %d: wrong end line number", i)
-		testutil.Eq(t, exp.col+exp.span, n.End().Col, "case %d: wrong end column number", i)
-		if exp.trailCount > 0 {
-			testutil.Eq(t, exp.trailCount, len(prev.TrailingComments()), "case %d: wrong number of trailing comments", i)
+		if !assert.Equal(t, exp.t, tok, "case %d: wrong token type (case %v)", i, exp.v) {
+			break
 		}
-		testutil.Eq(t, len(exp.comments)-exp.trailCount, len(n.LeadingComments()), "case %d: wrong number of comments", i)
+		if !assert.Equal(t, exp.v, val, "case %d: wrong token value", i) {
+			break
+		}
+		assert.Equal(t, exp.line, n.Start().Line, "case %d: wrong line number", i)
+		assert.Equal(t, exp.col, n.Start().Col, "case %d: wrong column number", i)
+		assert.Equal(t, exp.line, n.End().Line, "case %d: wrong end line number", i)
+		assert.Equal(t, exp.col+exp.span, n.End().Col, "case %d: wrong end column number", i)
+		if exp.trailCount > 0 {
+			assert.Equal(t, exp.trailCount, len(prev.TrailingComments()), "case %d: wrong number of trailing comments", i)
+		}
+		assert.Equal(t, len(exp.comments)-exp.trailCount, len(n.LeadingComments()), "case %d: wrong number of comments", i)
 		for ci := range exp.comments {
 			var c ast.Comment
 			if ci < exp.trailCount {
@@ -196,7 +202,7 @@ foo
 			} else {
 				c = n.LeadingComments()[ci-exp.trailCount]
 			}
-			testutil.Eq(t, exp.comments[ci], c.Text, "case %d, comment #%d: unexpected text", i, ci+1)
+			assert.Equal(t, exp.comments[ci], c.Text, "case %d, comment #%d: unexpected text", i, ci+1)
 		}
 		prev = n
 	}
@@ -205,12 +211,13 @@ foo
 	}
 	// Now we check final state of lexer for unattached comments and final whitespace
 	// One of the final comments get associated as trailing comment for final token
-	testutil.Eq(t, 1, len(prev.TrailingComments()), "last token: wrong number of trailing comments")
+	assert.Equal(t, 1, len(prev.TrailingComments()), "last token: wrong number of trailing comments")
 	finalComments := l.eof.LeadingComments()
-	testutil.Eq(t, 2, len(finalComments), "wrong number of final remaining comments")
-	testutil.Eq(t, "// comment attached to no tokens (upcoming token is EOF!)\n", finalComments[0].Text, "incorrect final comment text")
-	testutil.Eq(t, "/* another comment followed by some final whitespace*/", finalComments[1].Text, "incorrect final comment text")
-	testutil.Eq(t, "\n\n\t\n\t", l.eof.LeadingWhitespace(), "incorrect final whitespace")
+	if assert.Equal(t, 2, len(finalComments), "wrong number of final remaining comments") {
+		assert.Equal(t, "// comment attached to no tokens (upcoming token is EOF!)\n", finalComments[0].Text, "incorrect final comment text")
+		assert.Equal(t, "/* another comment followed by some final whitespace*/", finalComments[1].Text, "incorrect final comment text")
+	}
+	assert.Equal(t, "\n\n\t\n\t", l.eof.LeadingWhitespace(), "incorrect final whitespace")
 }
 
 func TestLexerErrors(t *testing.T) {
@@ -233,12 +240,13 @@ func TestLexerErrors(t *testing.T) {
 		l := newTestLexer(strings.NewReader(tc.str))
 		var sym protoSymType
 		tok := l.Lex(&sym)
-		testutil.Eq(t, _ERROR, tok)
-		testutil.Require(t, sym.err != nil)
-		testutil.Require(t, strings.Contains(sym.err.Error(), tc.errMsg), "case %d: expected message to contain %q but does not: %q", i, tc.errMsg, sym.err.Error())
+		if assert.Equal(t, _ERROR, tok) {
+			assert.True(t, sym.err != nil)
+			assert.True(t, strings.Contains(sym.err.Error(), tc.errMsg), "case %d: expected message to contain %q but does not: %q", i, tc.errMsg, sym.err.Error())
+		}
 	}
 }
 
 func newTestLexer(in io.Reader) *protoLex {
-	return newLexer(in, "test.proto", newErrorHandler(nil, nil))
+	return newLexer(in, "test.proto", reporter.NewHandler(nil))
 }

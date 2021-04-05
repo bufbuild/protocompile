@@ -1,3 +1,8 @@
+// Package sourceinfo contains the logic for computing source code info for a
+// file descriptor.
+//
+// The inputs to the computation are an AST for a file as well as the index of
+// interpreted options for that file.
 package sourceinfo
 
 import (

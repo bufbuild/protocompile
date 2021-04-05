@@ -1,10 +1,10 @@
 package parser
 
 import (
+	"github.com/jhump/protocompile/reporter"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
-
-	"github.com/jhump/protoreflect/internal/testutil"
 )
 
 func TestBasicValidation(t *testing.T) {
@@ -277,14 +277,18 @@ func TestBasicValidation(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		errs := newErrorHandler(nil, nil)
-		_ = parseProto("test.proto", strings.NewReader(tc.contents), errs, true, true)
-		err := errs.getError()
+		errs := reporter.NewHandler(nil)
+		if ast, err := Parse("test.proto", strings.NewReader(tc.contents), errs); err == nil {
+			_, _ = ResultFromAST(ast, true, errs)
+		}
+
+		err := errs.Error()
 		if tc.succeeds {
-			testutil.Ok(t, err, "case #%d should succeed", i)
+			assert.Nil(t, err, "case #%d should succeed", i)
 		} else {
-			testutil.Nok(t, err, "case #%d should fail", i)
-			testutil.Eq(t, tc.errMsg, err.Error(), "case #%d bad error message", i)
+			if assert.NotNil(t, err, "case #%d should fail", i) {
+				assert.Equal(t, tc.errMsg, err.Error(), "case #%d bad error message", i)
+			}
 		}
 	}
 }

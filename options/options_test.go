@@ -2,9 +2,9 @@ package options
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
+	"github.com/jhump/protocompile/parser"
+	"github.com/jhump/protocompile/reporter"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 
@@ -27,7 +27,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"test.proto:(must.link)": "FOO",
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Eq(t, "foo.bar", fd.GetOptions().GetGoPackage())
+				assert.Equal(t, "foo.bar", fd.GetOptions().GetGoPackage())
 			},
 		},
 		{
@@ -37,7 +37,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test:(must.link)": 1.234,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Require(t, fd.GetMessageType()[0].GetOptions().GetDeprecated())
+				assert.True(t, fd.GetMessageType()[0].GetOptions().GetDeprecated())
 			},
 		},
 		{
@@ -48,9 +48,9 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test.uid:(must.link)#1": 20202,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Eq(t, "fubar", fd.GetMessageType()[0].GetField()[0].GetDefaultValue())
-				testutil.Eq(t, "UID", fd.GetMessageType()[0].GetField()[0].GetJsonName())
-				testutil.Require(t, fd.GetMessageType()[0].GetField()[0].GetOptions().GetDeprecated())
+				assert.Equal(t, "fubar", fd.GetMessageType()[0].GetField()[0].GetDefaultValue())
+				assert.Equal(t, "UID", fd.GetMessageType()[0].GetField()[0].GetJsonName())
+				assert.True(t, fd.GetMessageType()[0].GetField()[0].GetOptions().GetDeprecated())
 			},
 		},
 		{
@@ -61,8 +61,8 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test.uid:default":     ident("ONE"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Eq(t, "UID", fd.GetMessageType()[0].GetField()[0].GetJsonName())
-				testutil.Require(t, fd.GetMessageType()[0].GetField()[0].GetOptions().GetDeprecated())
+				assert.Equal(t, "UID", fd.GetMessageType()[0].GetField()[0].GetJsonName())
+				assert.True(t, fd.GetMessageType()[0].GetField()[0].GetOptions().GetDeprecated())
 			},
 		},
 		{
@@ -88,8 +88,8 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test:(must.link)": 123.456,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Require(t, fd.GetEnumType()[0].GetOptions().GetDeprecated())
-				testutil.Require(t, fd.GetEnumType()[0].GetOptions().GetAllowAlias())
+				assert.True(t, fd.GetEnumType()[0].GetOptions().GetDeprecated())
+				assert.True(t, fd.GetEnumType()[0].GetOptions().GetAllowAlias())
 			},
 		},
 		{
@@ -99,7 +99,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test.ZERO:(must.link)": -222,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Require(t, fd.GetEnumType()[0].GetValue()[0].GetOptions().GetDeprecated())
+				assert.True(t, fd.GetEnumType()[0].GetValue()[0].GetOptions().GetDeprecated())
 			},
 		},
 		{
@@ -109,7 +109,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test:(must.link)": aggregate("{ foo: 1 foo: 2 bar: 3 }"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Require(t, fd.GetService()[0].GetOptions().GetDeprecated())
+				assert.True(t, fd.GetService()[0].GetOptions().GetDeprecated())
 			},
 		},
 		{
@@ -119,35 +119,31 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 				"Test.Foo:(must.link)": ident("FOO"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
-				testutil.Require(t, fd.GetService()[0].GetMethod()[0].GetOptions().GetDeprecated())
+				assert.True(t, fd.GetService()[0].GetMethod()[0].GetOptions().GetDeprecated())
 			},
 		},
 	}
 
 	for i, tc := range testCases {
-		p := Parser{
-			Accessor:                        accessorFor("test.proto", tc.contents),
-			ValidateUnlinkedFiles:           true,
-			InterpretOptionsInUnlinkedFiles: true,
+		h := reporter.NewHandler(nil)
+		ast, err := parser.Parse("test.proto", strings.NewReader(tc.contents), h)
+		if !assert.Nil(t, err, "case #%d failed to parse", i) {
+			continue
 		}
-		fds, err := p.ParseFilesButDoNotLink("test.proto")
-		testutil.Ok(t, err, "case #%d failed to parse", i)
-		testutil.Eq(t, 1, len(fds), "case #%d produced wrong number of descriptor protos", i)
+		res, err := parser.ResultFromAST(ast, true, h)
+		if !assert.Nil(t, err, "case #%d failed to produce descriptor proto", i) {
+			continue
+		}
+		_, err = InterpretUnlinkedOptions(res)
+		if !assert.Nil(t, err, "case #%d failed to interpret options", i) {
+			continue
+		}
 		actual := map[string]interface{}{}
-		buildUninterpretedMapForFile(fds[0], actual)
-		testutil.Eq(t, tc.uninterpreted, actual, "case #%d resulted in wrong uninterpreted options", i)
+		buildUninterpretedMapForFile(res.Proto(), actual)
+		assert.Equal(t, tc.uninterpreted, actual, "case #%d resulted in wrong uninterpreted options", i)
 		if tc.checkInterpreted != nil {
-			tc.checkInterpreted(t, fds[0])
+			tc.checkInterpreted(t, res.Proto())
 		}
-	}
-}
-
-func accessorFor(name, contents string) FileAccessor {
-	return func(n string) (io.ReadCloser, error) {
-		if n == name {
-			return ioutil.NopCloser(strings.NewReader(contents)), nil
-		}
-		return nil, os.ErrNotExist
 	}
 }
 

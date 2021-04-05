@@ -1,3 +1,23 @@
+// Package walk provides helper functions for traversing all elements in a
+// protobuf file descriptor. There are versions both for traversing "rich"
+// descriptors (protoreflect.Descriptor) and for traversing the underlying
+// "raw" descriptor protos.
+//
+// Enter And Exit
+//
+// This package includes variants of the functions that accept two callback
+// functions. These variants have names ending with "EnterAndExit". One function
+// is called as each element is visited ("enter") and the other is called after
+// the element and all of its descendants have been visited ("exit"). This
+// can be useful when you need to track state that is scoped to the visitation
+// of a single element.
+//
+// Source Path
+//
+// When traversing raw descriptor protos, this package include variants whose
+// callback accepts a protoreflect.SourcePath. These variants have names that
+// include "WithPath". This path can be used to locate corresponding data in the
+// file's source code info (if present).
 package walk
 
 import (
@@ -159,14 +179,18 @@ func enumDescriptor(en protoreflect.EnumDescriptor, enter, exit func(protoreflec
 }
 
 // DescriptorProtosWithPath walks all descriptor protos in the given file using
-// a depth-first traversal, calling the given function for each descriptor proto
-// in the hierarchy along with its source info path. This is the same as
-// DescriptorProtos except the callback will also receive a source info path
-// for the element.
+// a depth-first traversal. This is the same as DescriptorProtos except that the
+// callback function, fn, receives a protoreflect.SourcePath, that indicates the
+// path for the element in the file's source code info.
 func DescriptorProtosWithPath(file *descriptorpb.FileDescriptorProto, fn func(protoreflect.FullName, protoreflect.SourcePath, proto.Message) error) error {
 	return DescriptorProtosWithPathEnterAndExit(file, fn, nil)
 }
 
+// DescriptorProtosWithPathEnterAndExit walks all descriptor protos in the given
+// file using a depth-first traversal. This is the same as
+// DescriptorProtosEnterAndExit except that the callback function, fn, receives
+// a protoreflect.SourcePath, that indicates the path for the element in the
+// file's source code info.
 func DescriptorProtosWithPathEnterAndExit(file *descriptorpb.FileDescriptorProto, enter, exit func(protoreflect.FullName, protoreflect.SourcePath, proto.Message) error) error {
 	w := &protoWalker{usePath: true, enter: enter, exit: exit}
 	return w.walkDescriptorProtos(file)

@@ -1,3 +1,14 @@
+// Package options contains the logic for interpreting options. The parse step
+// of compilation stores the options in uninterpreted form, which contains raw
+// identifiers and literal values.
+//
+// The process of interpreting an option is to resolve identifiers, by examining
+// descriptors for the Options types and their available extensions (custom
+// options). As field names are resolved, the values can be type-checked against
+// the types indicated in field descriptors.
+//
+// On success, the various fields and extensions of the options message are
+// populated and the field holding the uninterpreted form is cleared.
 package options
 
 import (
@@ -26,30 +37,83 @@ import (
 type Index map[*ast.OptionNode][]int32
 
 type interpreter struct {
-	linked   linker.Result
+	file     file
 	lenient  bool
 	reporter *reporter.Handler
 	index    Index
+}
+
+type file interface {
+	parser.Result
+	ResolveEnumType(protoreflect.FullName) protoreflect.EnumDescriptor
+	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
+	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
+}
+
+type noResolveFile struct {
+	parser.Result
+}
+
+func (n noResolveFile) ResolveEnumType(name protoreflect.FullName) protoreflect.EnumDescriptor {
+	return nil
+}
+
+func (n noResolveFile) ResolveMessageType(name protoreflect.FullName) protoreflect.MessageDescriptor {
+	return nil
+}
+
+func (n noResolveFile) ResolveExtension(name protoreflect.FullName) protoreflect.ExtensionTypeDescriptor {
+	return nil
 }
 
 // InterpretOptions interprets options in the given linked result, returning
 // an index that can be used to generate source code info. This step mutates
 // the linked result's underlying proto to move option elements out of the
 // "uninterpreted_option" fields and into proper option fields and extensions.
-// If lenient is true, then errors interpreting options are ignored and any
-// uninterpretable options will remain in "uninterpreted_option" fields. The
-// given handler is used to report errors and warnings (errors will not be
-// reported when in lenient mode). If any errors are reported, this function
-// returns a non-nil error.
-func InterpretOptions(lenient bool, linked linker.Result, handler *reporter.Handler) (Index, error) {
+//
+// The given handler is used to report errors and warnings. If any errors are
+// reported, this function returns a non-nil error.
+func InterpretOptions(linked linker.Result, handler *reporter.Handler) (Index, error) {
+	return interpretOptions(false, linked, handler)
+}
+
+// InterpretOptionsLenient interprets options in a lenient/best-effort way in
+// the given linked result, returning an index that can be used to generate
+// source code info. This step mutates the linked result's underlying proto to
+// move option elements out of the "uninterpreted_option" fields and into proper
+// option fields and extensions.
+//
+// In lenient more, errors resolving option names and type errors are ignored.
+// Any options that are uninterpretable (due to such errors) will remain in the
+// "uninterpreted_option" fields.
+func InterpretOptionsLenient(linked linker.Result) (Index, error) {
+	return interpretOptions(true, linked, reporter.NewHandler(nil))
+}
+
+// InterpretUnlinkedOptions does a best-effort attempt to interpret options in
+// the given parsed result, returning an index that can be used to generate
+// source code info. This step mutates the parsed result's underlying proto to
+// move option elements out of the "uninterpreted_option" fields and into proper
+// option fields and extensions.
+//
+// This is the same as InterpretOptionsLenient except that it accepts an
+// unlinked result. Because the file is unlinked, custom options cannot be
+// interpreted. Other errors resolving option names or type errors will be
+// effectively ignored. Any options that are uninterpretable (due to such
+// errors) will remain in the "uninterpreted_option" fields.
+func InterpretUnlinkedOptions(parsed parser.Result) (Index, error) {
+	return interpretOptions(true, noResolveFile{parsed}, reporter.NewHandler(nil))
+}
+
+func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index, error) {
 	interp := interpreter{
-		linked:   linked,
+		file:     file,
 		lenient:  lenient,
 		reporter: handler,
 		index:    Index{},
 	}
 
-	fd := linked.Proto()
+	fd := file.Proto()
 	prefix := fd.GetPackage()
 	if prefix != "" {
 		prefix += "."
@@ -174,11 +238,11 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		scope := fmt.Sprintf("field %s", fqn)
 
 		// process json_name pseudo-option
-		if index, err := internal.FindOption(interp.linked, interp.reporter, scope, uo, "json_name"); err != nil && !interp.lenient {
+		if index, err := internal.FindOption(interp.file, interp.reporter, scope, uo, "json_name"); err != nil && !interp.lenient {
 			return err
 		} else if index >= 0 {
 			opt := uo[index]
-			optNode := interp.linked.OptionNode(opt)
+			optNode := interp.file.OptionNode(opt)
 
 			// attribute source code info
 			if on, ok := optNode.(*ast.OptionNode); ok {
@@ -199,7 +263,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 			return err
 		} else if index >= 0 {
 			// attribute source code info
-			optNode := interp.linked.OptionNode(uo[index])
+			optNode := interp.file.OptionNode(uo[index])
 			if on, ok := optNode.(*ast.OptionNode); ok {
 				interp.index[on] = []int32{-1, internal.Field_defaultTag}
 			}
@@ -219,12 +283,12 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 }
 
 func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *descriptorpb.FieldDescriptorProto, uos []*descriptorpb.UninterpretedOption) (defaultIndex int, err error) {
-	found, err := internal.FindOption(interp.linked, interp.reporter, scope, uos, "default")
+	found, err := internal.FindOption(interp.file, interp.reporter, scope, uos, "default")
 	if err != nil || found == -1 {
 		return -1, err
 	}
 	opt := uos[found]
-	optNode := interp.linked.OptionNode(opt)
+	optNode := interp.file.OptionNode(opt)
 	if fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
 		return -1, interp.reporter.HandleErrorf(optNode.GetName().Start(), "%s: default value cannot be set because field is repeated", scope)
 	}
@@ -236,15 +300,15 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 		return -1, interp.reporter.HandleErrorf(val.Start(), "%s: default value cannot be a message", scope)
 	}
 	mc := &messageContext{
-		res:         interp.linked,
-		file:        interp.linked.Proto(),
+		res:         interp.file,
+		file:        interp.file.Proto(),
 		elementName: fqn,
 		elementType: descriptorType(fld),
 		option:      opt,
 	}
 	var v interface{}
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
-		ed := interp.linked.ResolveEnumType(protoreflect.FullName(fld.GetTypeName()))
+		ed := interp.file.ResolveEnumType(protoreflect.FullName(fld.GetTypeName()))
 		ev, err := interp.enumFieldValue(mc, ed, val)
 		if err != nil {
 			return -1, interp.reporter.HandleError(err)
@@ -321,10 +385,10 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	optsFqn := string(opts.ProtoReflect().Descriptor().FullName())
 	var msg protoreflect.Message
 	// see if the parse included an override copy for these options
-	if md := interp.linked.ResolveMessageType(protoreflect.FullName(optsFqn)); md != nil {
+	if md := interp.file.ResolveMessageType(protoreflect.FullName(optsFqn)); md != nil {
 		dm := newDynamic(md)
 		if err := cloneInto(dm, opts); err != nil {
-			node := interp.linked.Node(element)
+			node := interp.file.Node(element)
 			return nil, interp.reporter.HandleError(reporter.Error(node.Start(), err))
 		}
 		msg = dm
@@ -332,10 +396,10 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		msg = proto.Clone(opts).ProtoReflect()
 	}
 
-	mc := &messageContext{res: interp.linked, file: interp.linked.Proto(), elementName: fqn, elementType: descriptorType(element)}
+	mc := &messageContext{res: interp.file, file: interp.file.Proto(), elementName: fqn, elementType: descriptorType(element)}
 	var remain []*descriptorpb.UninterpretedOption
 	for _, uo := range uninterpreted {
-		node := interp.linked.OptionNode(uo)
+		node := interp.file.OptionNode(uo)
 		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == "uninterpreted_option" {
 			if interp.lenient {
 				remain = append(remain, uo)
@@ -379,7 +443,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	}
 
 	if err := validateRecursive(msg, ""); err != nil {
-		node := interp.linked.Node(element)
+		node := interp.file.Node(element)
 		if err := interp.reporter.HandleErrorf(node.Start(), "error in %s options: %v", descriptorType(element), err); err != nil {
 			return nil, err
 		}
@@ -387,7 +451,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 
 	// now try to convert into the passed in message and fail if not successful
 	if err := cloneInto(opts, msg.Interface()); err != nil {
-		node := interp.linked.Node(element)
+		node := interp.file.Node(element)
 		return nil, interp.reporter.HandleError(reporter.Error(node.Start(), err))
 	}
 
@@ -396,40 +460,20 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 
 func cloneInto(dest proto.Message, src proto.Message) error {
 	proto.Reset(dest)
-	// NB: It would be nice if we could use the code below, to lean on proto.Merge
-	//  when the two messages have the same descriptor. (It doesn't work if the
-	//  descriptors aren't identical, i.e. pointer equality. And they differ when
-	//  the parse job includes a custom copy of descriptor.proto. So one will be
-	//  a custom-parsed descriptor and the other the compiled-in descriptor.)
-	//
-	//  However, this means the final messages *recognize* all fields. This is
-	//  problematic because of the weird order in which the v2 runtime emits
-	//  fields when doing "deterministic marshal". The result is a serialized
-	//  form that is distinctly different from protoc. While there are some known
-	//  cases where we can't perfectly mimic protoc, we try our best (and there
-	//  exist tests in downstream consumers of protoparse that verify that the
-	//  output matches protoc, to have faith in protoparse). So, sadly, that means
-	//  we have to marshal to bytes in our own deterministic order, and then
-	//  unmarshal that data into unrecognized fields. (Which is already written
-	//  in correct order, so the final descriptor is correct.)
-	//
-	//if destV2.ProtoReflect().Descriptor() == src.ProtoReflect().Descriptor() {
-	//	protov2.Merge(destV2, src)
-	//	if err := protov2.CheckInitialized(destV2); err != nil {
-	//		return err
-	//	}
-	//	return nil
-	//}
-
-	// different descriptors means we must serialize and de-serialize in order to merge values
-	// NB: we don't use deterministic marshal because that uses a weird order of fields, so
-	// instead we've wrapped all dynamic messages with logic that emits fields in the right
-	// order.
-	data, err := proto.Marshal(src)
-	if err != nil {
-		return err
+	if dest.ProtoReflect().Descriptor() == src.ProtoReflect().Descriptor() {
+		proto.Merge(dest, src)
+		if err := proto.CheckInitialized(dest); err != nil {
+			return err
+		}
+		return nil
 	}
-	return proto.Unmarshal(data, dest)
+	// TODO: will this work if src.descriptor != dest.descriptor?
+	destRef := dest.ProtoReflect()
+	src.ProtoReflect().Range(func(f protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		destRef.Set(f, v)
+		return true
+	})
+	return nil
 }
 
 func newDynamic(md protoreflect.MessageDescriptor) *deterministicDynamic {
@@ -571,13 +615,13 @@ func validateRecursive(msg protoreflect.Message, prefix string) error {
 func (interp *interpreter) interpretField(mc *messageContext, element proto.Message, msg protoreflect.Message, opt *descriptorpb.UninterpretedOption, nameIndex int, pathPrefix []int32) (path []int32, err error) {
 	var fld protoreflect.FieldDescriptor
 	nm := opt.GetName()[nameIndex]
-	node := interp.linked.OptionNamePartNode(nm)
+	node := interp.file.OptionNamePartNode(nm)
 	if nm.GetIsExtension() {
 		extName := nm.GetNamePart()
 		if extName[0] == '.' {
 			extName = extName[1:] /* skip leading dot */
 		}
-		fld = interp.linked.ResolveExtension(protoreflect.FullName(extName))
+		fld = interp.file.ResolveExtension(protoreflect.FullName(extName))
 		if fld == nil {
 			return nil, interp.reporter.HandleErrorf(node.Start(),
 				"%vunrecognized extension %s of %s",
@@ -601,7 +645,7 @@ func (interp *interpreter) interpretField(mc *messageContext, element proto.Mess
 
 	if len(opt.GetName()) > nameIndex+1 {
 		nextnm := opt.GetName()[nameIndex+1]
-		nextnode := interp.linked.OptionNamePartNode(nextnm)
+		nextnode := interp.file.OptionNamePartNode(nextnm)
 		k := fld.Kind()
 		if k != protoreflect.MessageKind && k != protoreflect.GroupKind {
 			return nil, interp.reporter.HandleErrorf(nextnode.Start(),
@@ -625,7 +669,7 @@ func (interp *interpreter) interpretField(mc *messageContext, element proto.Mess
 		return interp.interpretField(mc, element, fdm, opt, nameIndex+1, path)
 	}
 
-	optNode := interp.linked.OptionNode(opt)
+	optNode := interp.file.OptionNode(opt)
 	if err := interp.setOptionField(mc, msg, fld, node, optNode.GetValue()); err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
@@ -808,12 +852,12 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 				var ffld protoreflect.FieldDescriptor
 				if a.Name.IsExtension() {
 					n := string(a.Name.Name.AsIdentifier())
-					ffld = interp.linked.ResolveExtension(protoreflect.FullName(n))
+					ffld = interp.file.ResolveExtension(protoreflect.FullName(n))
 					if ffld == nil {
 						// may need to qualify with package name
 						pkg := mc.file.GetPackage()
 						if pkg != "" {
-							ffld = interp.linked.ResolveExtension(protoreflect.FullName(pkg + "." + n))
+							ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))
 						}
 					}
 				} else {
