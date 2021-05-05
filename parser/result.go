@@ -437,9 +437,10 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	// now that we have options, we can see if this uses messageset wire format, which
 	// impacts how we validate tag numbers in any fields in the message
 	maxTag := int32(internal.MaxNormalTag)
-	if isMessageSet, err := r.isMessageSetWireFormat("message "+msgd.GetName(), msgd, handler); err != nil {
+	messageSetOpt, err := r.isMessageSetWireFormat("message "+msgd.GetName(), msgd, handler)
+	if err != nil {
 		return
-	} else if isMessageSet {
+	} else if messageSetOpt != nil {
 		maxTag = internal.MaxTag // higher limit for messageset wire format
 	}
 
@@ -511,33 +512,44 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		}
 	}
 
+	if messageSetOpt != nil {
+		if len(msgd.Field) > 0 {
+			node := r.FieldNode(msgd.Field[0])
+			_ = handler.HandleErrorf(node.Start(), "messages with message-set wire format cannot contain non-extension fields")
+		}
+		if len(msgd.ExtensionRange) == 0 {
+			node := r.OptionNode(messageSetOpt)
+			_ = handler.HandleErrorf(node.Start(), "messages with message-set wire format must contain at least one extension range")
+		}
+	}
+
 	// process any proto3_optional fields
 	if isProto3 {
-		internal.ProcessProto3OptionalFields(msgd)
+		r.processProto3OptionalFields(msgd)
 	}
 }
 
-func (r *result) isMessageSetWireFormat(scope string, md *descriptorpb.DescriptorProto, handler *reporter.Handler) (bool, error) {
+func (r *result) isMessageSetWireFormat(scope string, md *descriptorpb.DescriptorProto, handler *reporter.Handler) (*descriptorpb.UninterpretedOption, error) {
 	uo := md.GetOptions().GetUninterpretedOption()
 	index, err := internal.FindOption(r, handler, scope, uo, "message_set_wire_format")
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if index == -1 {
-		// no such option, so default to false
-		return false, nil
+		// no such option
+		return nil, nil
 	}
 
 	opt := uo[index]
-	optNode := r.OptionNode(opt)
 
 	switch opt.GetIdentifierValue() {
 	case "true":
-		return true, nil
+		return opt, nil
 	case "false":
-		return false, nil
+		return nil, nil
 	default:
-		return false, handler.HandleErrorf(optNode.GetValue().Start(), "%s: expecting bool value for message_set_wire_format option", scope)
+		optNode := r.OptionNode(opt)
+		return nil, handler.HandleErrorf(optNode.GetValue().Start(), "%s: expecting bool value for message_set_wire_format option", scope)
 	}
 }
 
@@ -649,6 +661,64 @@ func elementToString(v interface{}, buf *bytes.Buffer) {
 		buf.WriteString("]")
 	case []*ast.MessageFieldNode:
 		aggToString(v, buf)
+	}
+}
+
+// ProcessProto3OptionalFields adds synthetic oneofs to the given message descriptor
+// for each proto3 optional field. It also updates the fields to have the correct
+// oneof index reference.
+func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto) {
+	// add synthetic oneofs to the given message descriptor for each proto3
+	// optional field, and update each field to have correct oneof index
+	var allNames map[string]struct{}
+	for _, fd := range msgd.Field {
+		if fd.GetProto3Optional() {
+			// lazy init the set of all names
+			if allNames == nil {
+				allNames = map[string]struct{}{}
+				for _, fd := range msgd.Field {
+					allNames[fd.GetName()] = struct{}{}
+				}
+				for _, fd := range msgd.Extension {
+					allNames[fd.GetName()] = struct{}{}
+				}
+				for _, ed := range msgd.EnumType {
+					allNames[ed.GetName()] = struct{}{}
+					for _, evd := range ed.Value {
+						allNames[evd.GetName()] = struct{}{}
+					}
+				}
+				for _, fd := range msgd.NestedType {
+					allNames[fd.GetName()] = struct{}{}
+				}
+				for _, n := range msgd.ReservedName {
+					allNames[n] = struct{}{}
+				}
+			}
+
+			// Compute a name for the synthetic oneof. This uses the same
+			// algorithm as used in protoc:
+			//  https://github.com/protocolbuffers/protobuf/blob/74ad62759e0a9b5a21094f3fb9bb4ebfaa0d1ab8/src/google/protobuf/compiler/parser.cc#L785-L803
+			ooName := fd.GetName()
+			if !strings.HasPrefix(ooName, "_") {
+				ooName = "_" + ooName
+			}
+			for {
+				_, ok := allNames[ooName]
+				if !ok {
+					// found a unique name
+					allNames[ooName] = struct{}{}
+					break
+				}
+				ooName = "X" + ooName
+			}
+
+			fd.OneofIndex = proto.Int32(int32(len(msgd.OneofDecl)))
+			ood := &descriptorpb.OneofDescriptorProto{Name: proto.String(ooName)}
+			msgd.OneofDecl = append(msgd.OneofDecl, ood)
+			ooident := r.FieldNode(fd).FieldName().(*ast.IdentNode)
+			r.putOneOfNode(ood, ast.NewSyntheticOneOf(ooident))
+		}
 	}
 }
 
@@ -770,7 +840,7 @@ func (r *result) putFieldNode(f *descriptorpb.FieldDescriptorProto, n ast.FieldD
 	r.nodes[f] = n
 }
 
-func (r *result) putOneOfNode(o *descriptorpb.OneofDescriptorProto, n *ast.OneOfNode) {
+func (r *result) putOneOfNode(o *descriptorpb.OneofDescriptorProto, n ast.Node) {
 	r.nodes[o] = n
 }
 

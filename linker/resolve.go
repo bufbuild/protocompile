@@ -138,10 +138,32 @@ func (r *result) findParent(fqn string) (protoreflect.Descriptor, int) {
 			if en.GetName() == names[0] {
 				return r, i
 			}
+			for j, env := range en.Value {
+				if env.GetName() == names[0] {
+					return r.asEnumDescriptor(en, r, r, i, r.prefix+en.GetName()), j
+				}
+			}
 		}
 		for i, ext := range r.Proto().Extension {
 			if ext.GetName() == names[0] {
 				return r, i
+			}
+		}
+	}
+	for i, svc := range r.Proto().Service {
+		if svc.GetName() == names[0] {
+			if len(names) == 1 {
+				return r, i
+			} else {
+				if len(names) != 2 {
+					return nil, 0
+				}
+				sd := r.asServiceDescriptor(svc, r, i, r.prefix+svc.GetName())
+				for j, mtd := range svc.Method {
+					if mtd.GetName() == names[1] {
+						return sd, j
+					}
+				}
 			}
 		}
 	}
@@ -151,17 +173,22 @@ func (r *result) findParent(fqn string) (protoreflect.Descriptor, int) {
 				return r, i
 			}
 			md := r.asMessageDescriptor(msg, r, r, i, r.prefix+msg.GetName())
-			return r.findParentMessage(md, names[1:])
+			return r.findParentInMessage(md, names[1:])
 		}
 	}
 	return nil, 0
 }
 
-func (r *result) findParentMessage(msg *msgDescriptor, names []string) (protoreflect.MessageDescriptor, int) {
+func (r *result) findParentInMessage(msg *msgDescriptor, names []string) (protoreflect.Descriptor, int) {
 	if len(names) == 1 {
 		for i, en := range msg.proto.EnumType {
 			if en.GetName() == names[0] {
 				return msg, i
+			}
+			for j, env := range en.Value {
+				if env.GetName() == names[0] {
+					return r.asEnumDescriptor(en, msg.file, msg, i, msg.fqn+"."+en.GetName()), j
+				}
 			}
 		}
 		for i, ext := range msg.proto.Extension {
@@ -174,6 +201,11 @@ func (r *result) findParentMessage(msg *msgDescriptor, names []string) (protoref
 				return msg, i
 			}
 		}
+		for i, ood := range msg.proto.OneofDecl {
+			if ood.GetName() == names[0] {
+				return msg, i
+			}
+		}
 	}
 	for i, nested := range msg.proto.NestedType {
 		if nested.GetName() == names[0] {
@@ -181,7 +213,7 @@ func (r *result) findParentMessage(msg *msgDescriptor, names []string) (protoref
 				return msg, i
 			}
 			md := r.asMessageDescriptor(nested, msg.file, msg, i, msg.fqn+"."+nested.GetName())
-			return r.findParentMessage(md, names[1:])
+			return r.findParentInMessage(md, names[1:])
 		}
 	}
 	return nil, 0

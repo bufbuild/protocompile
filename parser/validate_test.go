@@ -31,6 +31,18 @@ func TestBasicValidation(t *testing.T) {
 			succeeds: true,
 		},
 		{
+			contents: `message Foo { option message_set_wire_format = true; extensions 1 to 100; }`,
+			succeeds: true,
+		},
+		{
+			contents: `message Foo { optional double bar = 536870912; option message_set_wire_format = true; }`,
+			errMsg:   "test.proto:1:15: messages with message-set wire format cannot contain non-extension fields",
+		},
+		{
+			contents: `message Foo { option message_set_wire_format = true; }`,
+			errMsg:   "test.proto:1:15: messages with message-set wire format must contain at least one extension range",
+		},
+		{
 			contents: `message Foo { oneof bar { group Baz = 1 [deprecated=true] { optional int32 abc = 1; } } }`,
 			succeeds: true,
 		},
@@ -120,7 +132,7 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `syntax = "proto3"; import "google/protobuf/descriptor.proto"; extend google.protobuf.MessageOptions { optional string s = 50000; }`,
-			errMsg:   `test.proto:1:103: field s: label 'optional' is not allowed on extensions in proto3`,
+			succeeds: true, // proto3_optional for extensions
 		},
 		{
 			contents: `syntax = "proto3"; message Foo { required string s = 1; }`,
@@ -149,6 +161,14 @@ func TestBasicValidation(t *testing.T) {
 		{
 			contents: `enum Foo { option allow_alias = true; V1 = 1; V2 = 1; }`,
 			succeeds: true,
+		},
+		{
+			contents: `enum Foo { option allow_alias = false; V1 = 1; V2 = 2; }`,
+			succeeds: true,
+		},
+		{
+			contents: `enum Foo { option allow_alias = true; V1 = 1; V2 = 2; }`,
+			errMsg:   `test.proto:1:33: enum Foo: allow_alias is true but no values are aliases`,
 		},
 		{
 			contents: `syntax = "proto3"; enum Foo { V1 = 0; reserved 1 to 20; reserved "V2"; }`,
@@ -249,6 +269,70 @@ func TestBasicValidation(t *testing.T) {
 		{
 			contents: `message Foo { oneof foo { group bar = 1 { } } }`,
 			errMsg:   `test.proto:1:33: group bar should have a name that starts with a capital letter`,
+		},
+		{
+			contents: `enum Foo { option = 1; }`,
+			errMsg:   `test.proto:1:19: syntax error: unexpected '='`,
+		},
+		{
+			contents: `enum Foo { reserved = 1; }`,
+			errMsg:   `test.proto:1:21: syntax error: unexpected '=', expecting string literal or int literal or '-'`,
+		},
+		{
+			contents: `syntax = "proto3"; enum message { unset = 0; } message Foo { message bar = 1; }`,
+			errMsg:   `test.proto:1:74: syntax error: unexpected '=', expecting '{'`,
+		},
+		{
+			contents: `syntax = "proto3"; enum enum { unset = 0; } message Foo { enum bar = 1; }`,
+			errMsg:   `test.proto:1:68: syntax error: unexpected '=', expecting '{'`,
+		},
+		{
+			contents: `syntax = "proto3"; enum reserved { unset = 0; } message Foo { reserved bar = 1; }`,
+			errMsg:   `test.proto:1:72: syntax error: unexpected identifier, expecting string literal or int literal`,
+		},
+		{
+			contents: `syntax = "proto3"; enum extend { unset = 0; } message Foo { extend bar = 1; }`,
+			errMsg:   `test.proto:1:72: syntax error: unexpected '=', expecting '{'`,
+		},
+		{
+			contents: `syntax = "proto3"; enum oneof { unset = 0; } message Foo { oneof bar = 1; }`,
+			errMsg:   `test.proto:1:70: syntax error: unexpected '=', expecting '{'`,
+		},
+		{
+			contents: `syntax = "proto3"; enum optional { unset = 0; } message Foo { optional bar = 1; }`,
+			errMsg:   `test.proto:1:76: syntax error: unexpected '='`,
+		},
+		{
+			contents: `syntax = "proto3"; enum repeated { unset = 0; } message Foo { repeated bar = 1; }`,
+			errMsg:   `test.proto:1:76: syntax error: unexpected '='`,
+		},
+		{
+			contents: `syntax = "proto3"; enum required { unset = 0; } message Foo { required bar = 1; }`,
+			errMsg:   `test.proto:1:76: syntax error: unexpected '='`,
+		},
+		{
+			contents: `syntax = "proto3"; import "google/protobuf/descriptor.proto"; enum optional { unset = 0; } extend google.protobuf.MethodOptions { optional bar = 22222; }`,
+			errMsg:   `test.proto:1:144: syntax error: unexpected '='`,
+		},
+		{
+			contents: `syntax = "proto3"; import "google/protobuf/descriptor.proto"; enum repeated { unset = 0; } extend google.protobuf.MethodOptions { repeated bar = 22222; }`,
+			errMsg:   `test.proto:1:144: syntax error: unexpected '='`,
+		},
+		{
+			contents: `syntax = "proto3"; import "google/protobuf/descriptor.proto"; enum required { unset = 0; } extend google.protobuf.MethodOptions { required bar = 22222; }`,
+			errMsg:   `test.proto:1:144: syntax error: unexpected '='`,
+		},
+		{
+			contents: `syntax = "proto3"; enum optional { unset = 0; } message Foo { oneof bar { optional bar = 1; } }`,
+			errMsg:   `test.proto:1:75: syntax error: unexpected "optional"`,
+		},
+		{
+			contents: `syntax = "proto3"; enum repeated { unset = 0; } message Foo { oneof bar { repeated bar = 1; } }`,
+			errMsg:   `test.proto:1:75: syntax error: unexpected "repeated"`,
+		},
+		{
+			contents: `syntax = "proto3"; enum required { unset = 0; } message Foo { oneof bar { required bar = 1; } }`,
+			errMsg:   `test.proto:1:75: syntax error: unexpected "required"`,
 		},
 		{
 			contents: ``,

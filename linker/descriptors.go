@@ -103,7 +103,7 @@ func (r *result) Services() protoreflect.ServiceDescriptors {
 }
 
 func (r *result) SourceLocations() protoreflect.SourceLocations {
-	srcInfoProtos := r.Proto().GetSourceCodeInfo().Location
+	srcInfoProtos := r.Proto().GetSourceCodeInfo().GetLocation()
 	if r.srcLocs == nil && len(srcInfoProtos) > 0 {
 		r.srcLocs = asSourceLocations(srcInfoProtos)
 	}
@@ -917,11 +917,19 @@ func (f *fldDescriptor) HasJSONName() bool {
 }
 
 func (f *fldDescriptor) JSONName() string {
-	return f.proto.GetJsonName()
+	if f.IsExtension() {
+		return f.TextName()
+	} else {
+		return f.proto.GetJsonName()
+	}
 }
 
 func (f *fldDescriptor) TextName() string {
-	return string(f.Name())
+	if f.IsExtension() {
+		return fmt.Sprintf("[%s]", f.FullName())
+	} else {
+		return string(f.Name())
+	}
 }
 
 func (f *fldDescriptor) HasPresence() bool {

@@ -8,8 +8,8 @@ import "fmt"
 //  - *FieldNode
 //  - *GroupNode
 //  - *MapFieldNode
-// This also allows NoSourceNode to be used in place of one of the above
-// for some usages.
+// This also allows NoSourceNode and SyntheticMapField to be used in place of
+// one of the above for some usages.
 type FieldDeclNode interface {
 	Node
 	FieldLabel() Node
@@ -384,6 +384,36 @@ var _ OneOfElement = (*OptionNode)(nil)
 var _ OneOfElement = (*FieldNode)(nil)
 var _ OneOfElement = (*GroupNode)(nil)
 var _ OneOfElement = (*EmptyDeclNode)(nil)
+
+// SyntheticOneOf is not an actual node in the AST but a synthetic node
+// that represents the oneof implied by a proto3 optional field.
+type SyntheticOneOf struct {
+	Ident IdentValueNode
+}
+
+var _ Node = (*SyntheticOneOf)(nil)
+
+// NewSyntheticOneOf creates a new *SyntheticOneOf for the given identifier
+// (the name of the proto3 optional field).
+func NewSyntheticOneOf(ident IdentValueNode) *SyntheticOneOf {
+	return &SyntheticOneOf{Ident: ident}
+}
+
+func (n *SyntheticOneOf) Start() SourcePos {
+	return n.Ident.Start()
+}
+
+func (n *SyntheticOneOf) End() SourcePos {
+	return n.Ident.End()
+}
+
+func (n *SyntheticOneOf) LeadingComments() []Comment {
+	return nil
+}
+
+func (n *SyntheticOneOf) TrailingComments() []Comment {
+	return nil
+}
 
 // MapTypeNode represents the type declaration for a map field. It defines
 // both the key and value types for the map. Example:

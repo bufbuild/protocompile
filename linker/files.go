@@ -351,7 +351,7 @@ type hasExtensionsAndMessages interface {
 
 func findExtension(d hasExtensionsAndMessages, message protoreflect.FullName, field protoreflect.FieldNumber) protoreflect.ExtensionTypeDescriptor {
 	for i := 0; i < d.Extensions().Len(); i++ {
-		if extType := checkExtension(d.Extensions().Get(i), message, field); extType != nil {
+		if extType := isExtensionMatch(d.Extensions().Get(i), message, field); extType != nil {
 			return extType
 		}
 	}
@@ -365,7 +365,7 @@ func findExtension(d hasExtensionsAndMessages, message protoreflect.FullName, fi
 	return nil // could not be found
 }
 
-func checkExtension(ext protoreflect.ExtensionDescriptor, message protoreflect.FullName, field protoreflect.FieldNumber) protoreflect.ExtensionTypeDescriptor {
+func isExtensionMatch(ext protoreflect.ExtensionDescriptor, message protoreflect.FullName, field protoreflect.FieldNumber) protoreflect.ExtensionTypeDescriptor {
 	if ext.Number() != field || ext.ContainingMessage().FullName() != message {
 		return nil
 	}

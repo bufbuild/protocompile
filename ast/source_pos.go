@@ -20,6 +20,8 @@ func (pos SourcePos) String() string {
 // the span of some region of source, such as a single token or
 // a sub-tree of the AST.
 type PosRange struct {
+	// TODO: these should be methods, backed by unexported fields
+	//  which allows us to change the representation to be more efficient
 	Start, End SourcePos
 }
 
@@ -27,7 +29,7 @@ type PosRange struct {
 // the position of the comment and its contents.
 type Comment struct {
 	// The location of the comment in the source file.
-	PosRange
+	PosRange // TODO: don't embed since that makes an exported field
 	// Any whitespace between the prior lexical element (either a token
 	// or other comment) and this comment.
 	LeadingWhitespace string
@@ -36,3 +38,4 @@ type Comment struct {
 	// the trailing newline rune in Text.
 	Text string
 }
+

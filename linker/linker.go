@@ -20,6 +20,9 @@ import (
 // Note that linking does NOT interpret options. So options messages in the
 // returned value have all values stored in UninterpretedOptions fields.
 func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *reporter.Handler) (Result, error) {
+	if symbols == nil {
+		symbols = &Symbols{}
+	}
 	prefix := parsed.Proto().GetPackage()
 	if prefix != "" {
 		prefix += "."
@@ -90,4 +93,9 @@ type Result interface {
 	// extension that is available in this file. If no such element is available
 	// or if the named element is not an extension, nil is returned.
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
+	// ValidateExtensions runs some validation checks on extensions that can only
+	// be done after files are linked and options are interpreted. Any errors or
+	// warnings encountered will be reported via the given handler. If any error
+	// is reported, this function returns a non-nil error.
+	ValidateExtensions(handler *reporter.Handler) error
 }

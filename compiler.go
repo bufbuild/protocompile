@@ -1,6 +1,7 @@
 package protocompile
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -112,9 +113,17 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 }
 
 type result struct {
+	name  string
 	ready chan struct{}
-	res   linker.File
-	err   error
+
+	// produces a linker.File or error, only available when ready is closed
+	res linker.File
+	err error
+
+	mu sync.Mutex
+	// the results that are dependencies of this result; this result is
+	// blocked, waiting on these dependencies to complete
+	blockedOn []string
 }
 
 func (r *result) fail(err error) {
@@ -125,6 +134,18 @@ func (r *result) fail(err error) {
 func (r *result) complete(f linker.File) {
 	r.res = f
 	close(r.ready)
+}
+
+func (r *result) setBlockedOn(deps []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.blockedOn = deps
+}
+
+func (r *result) getBlockedOn() []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.blockedOn
 }
 
 type executor struct {
@@ -147,6 +168,7 @@ func (e *executor) compile(ctx context.Context, file string) *result {
 	}
 
 	r = &result{
+		name:  file,
 		ready: make(chan struct{}),
 	}
 	e.results[file] = r
@@ -157,7 +179,7 @@ func (e *executor) compile(ctx context.Context, file string) *result {
 }
 
 func (e *executor) doCompile(ctx context.Context, file string, r *result) {
-	t := task{e: e}
+	t := task{e: e, r: r}
 	if err := e.s.Acquire(ctx, 1); err != nil {
 		r.fail(err)
 		return
@@ -191,10 +213,13 @@ func (e *executor) doCompile(ctx context.Context, file string, r *result) {
 // A compilation task. The executor has a semaphore that limits the number
 // of concurrent, running tasks.
 type task struct {
-	e        *executor
+	e *executor
 	// If true, this task needs to acquire a semaphore permit before running.
 	// If false, this task needs to release its semaphore permit on completion.
 	released bool
+
+	// the result that is populated by this task
+	r *result
 }
 
 func (t *task) release() {
@@ -219,9 +244,24 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 
 	var deps []linker.File
 	if len(parseRes.Proto().Dependency) > 0 {
+		t.r.setBlockedOn(parseRes.Proto().Dependency)
+
 		results := make([]*result, len(parseRes.Proto().Dependency))
+		checked := map[string]struct{}{}
 		for i, dep := range parseRes.Proto().Dependency {
-			results[i] = t.e.compile(ctx, dep)
+			pos := findImportPos(parseRes, dep)
+			if name == dep {
+				// doh! file imports itself
+				handleImportCycle(t.e.h, pos, []string{name}, dep)
+				return nil, t.e.h.Error()
+			}
+
+			res := t.e.compile(ctx, dep)
+			// check for dependency cycle to prevent deadlock
+			if err := t.e.checkForDependencyCycle(res, []string{name, dep}, pos, checked); err != nil {
+				return nil, err
+			}
+			results[i] = res
 		}
 		deps = make([]linker.File, len(results))
 
@@ -242,7 +282,9 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 			}
 		}
 
-		// all deps resolved; reacquire semaphore so we can proceed
+		// all deps resolved
+		t.r.setBlockedOn(nil)
+		// reacquire semaphore so we can proceed
 		if err := t.e.s.Acquire(ctx, 1); err != nil {
 			return nil, err
 		}
@@ -250,6 +292,62 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 	}
 
 	return t.link(parseRes, deps)
+}
+
+func (e *executor) checkForDependencyCycle(res *result, sequence []string, pos ast.SourcePos, checked map[string]struct{}) error {
+	if _, ok := checked[res.name]; ok {
+		// already checked this one
+		return nil
+	}
+	checked[res.name] = struct{}{}
+	deps := res.getBlockedOn()
+	for _, dep := range deps {
+		// is this a cycle?
+		for _, file := range sequence {
+			if file == dep {
+				handleImportCycle(e.h, pos, sequence, dep)
+				return e.h.Error()
+			}
+		}
+
+		e.mu.Lock()
+		depRes := e.results[dep]
+		e.mu.Unlock()
+		if depRes == nil {
+			continue
+		}
+		if err := e.checkForDependencyCycle(depRes, append(sequence, dep), pos, checked); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func handleImportCycle(h *reporter.Handler, pos ast.SourcePos, importSequence []string, dep string) {
+	var buf bytes.Buffer
+	buf.WriteString("cycle found in imports: ")
+	for _, imp := range importSequence {
+		fmt.Fprintf(&buf, "%q -> ", imp)
+	}
+	fmt.Fprintf(&buf, "%q", dep)
+	h.HandleErrorf(pos, buf.String())
+}
+
+func findImportPos(res parser.Result, dep string) ast.SourcePos {
+	root := res.AST()
+	if root == nil {
+		// this will report a valid position even w/out AST
+		return res.FileNode().Start()
+	}
+	for _, decl := range root.Decls {
+		if imp, ok := decl.(*ast.ImportNode); ok {
+			if imp.Name.AsString() == dep {
+				return imp.Start()
+			}
+		}
+	}
+	// this should never happen...
+	return res.FileNode().Start()
 }
 
 func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, error) {
@@ -261,6 +359,11 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	if err != nil {
 		return nil, err
 	}
+	// now that options are interpreted, we can do some additional checks
+	if err := file.ValidateExtensions(t.e.h); err != nil {
+		return nil, err
+	}
+
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
 		parseRes.Proto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)
 	}

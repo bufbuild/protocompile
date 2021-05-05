@@ -177,21 +177,22 @@ func validateEnum(res *result, isProto3 bool, name protoreflect.FullName, ed *de
 	}
 
 	allowAlias := false
+	var allowAliasOpt *descriptorpb.UninterpretedOption
 	if index, err := internal.FindOption(res, handler, scope, ed.Options.GetUninterpretedOption(), "allow_alias"); err != nil {
 		return err
 	} else if index >= 0 {
-		opt := ed.Options.UninterpretedOption[index]
+		allowAliasOpt = ed.Options.UninterpretedOption[index]
 		valid := false
-		if opt.IdentifierValue != nil {
-			if opt.GetIdentifierValue() == "true" {
+		if allowAliasOpt.IdentifierValue != nil {
+			if allowAliasOpt.GetIdentifierValue() == "true" {
 				allowAlias = true
 				valid = true
-			} else if opt.GetIdentifierValue() == "false" {
+			} else if allowAliasOpt.GetIdentifierValue() == "false" {
 				valid = true
 			}
 		}
 		if !valid {
-			optNode := res.OptionNode(opt)
+			optNode := res.OptionNode(allowAliasOpt)
 			if err := handler.HandleErrorf(optNode.GetValue().Start(), "%s: expecting bool value for allow_alias option", scope); err != nil {
 				return err
 			}
@@ -205,17 +206,27 @@ func validateEnum(res *result, isProto3 bool, name protoreflect.FullName, ed *de
 		}
 	}
 
-	if !allowAlias {
-		// make sure all value numbers are distinct
-		vals := map[int32]string{}
-		for _, evd := range ed.Value {
-			if existing := vals[evd.GetNumber()]; existing != "" {
+	// check for aliases
+	vals := map[int32]string{}
+	hasAlias := false
+	for _, evd := range ed.Value {
+		existing := vals[evd.GetNumber()]
+		if existing != "" {
+			if allowAlias {
+				hasAlias = true
+			} else {
 				evNode := res.EnumValueNode(evd)
 				if err := handler.HandleErrorf(evNode.GetNumber().Start(), "%s: values %s and %s both have the same numeric value %d; use allow_alias option if intentional", scope, existing, evd.GetName(), evd.GetNumber()); err != nil {
 					return err
 				}
 			}
-			vals[evd.GetNumber()] = evd.GetName()
+		}
+		vals[evd.GetNumber()] = evd.GetName()
+	}
+	if allowAlias && !hasAlias {
+		optNode := res.OptionNode(allowAliasOpt)
+		if err := handler.HandleErrorf(optNode.GetValue().Start(), "%s: allow_alias is true but no values are aliases", scope); err != nil {
+			return err
 		}
 	}
 
@@ -270,10 +281,6 @@ func validateField(res *result, isProto3 bool, name protoreflect.FullName, fld *
 			}
 		} else if fld.Label != nil && fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REQUIRED {
 			if err := handler.HandleErrorf(node.FieldLabel().Start(), "%s: label 'required' is not allowed in proto3", scope); err != nil {
-				return err
-			}
-		} else if fld.Extendee != nil && fld.Label != nil && fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
-			if err := handler.HandleErrorf(node.FieldLabel().Start(), "%s: label 'optional' is not allowed on extensions in proto3", scope); err != nil {
 				return err
 			}
 		}
