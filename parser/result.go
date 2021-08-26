@@ -664,7 +664,7 @@ func elementToString(v interface{}, buf *bytes.Buffer) {
 	}
 }
 
-// ProcessProto3OptionalFields adds synthetic oneofs to the given message descriptor
+// processProto3OptionalFields adds synthetic oneofs to the given message descriptor
 // for each proto3 optional field. It also updates the fields to have the correct
 // oneof index reference.
 func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto) {
