@@ -378,6 +378,10 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			l.input.unreadRune(cn)
 		}
 
+		if c > 127 {
+			l.setError(lval, errors.New("invalid character"))
+			return _ERROR
+		}
 		l.setRune(lval, c)
 		return int(c)
 	}
