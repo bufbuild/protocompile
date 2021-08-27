@@ -304,6 +304,8 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 					}
 				}
 			case *descriptorpb.ServiceDescriptorProto:
+				// not a message, but same scoping rules for nested elements as if it were
+				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
 				if d.Options != nil {
 					if err := r.resolveOptions(handler, "service", fqn, d.Options.UninterpretedOption, scopes); err != nil {
 						return err
@@ -322,7 +324,8 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 			return nil
 		},
 		func(fqn protoreflect.FullName, d proto.Message) error {
-			if _, ok := d.(*descriptorpb.DescriptorProto); ok {
+			switch d.(type) {
+			case *descriptorpb.DescriptorProto, *descriptorpb.ServiceDescriptorProto:
 				// pop message scope on exit
 				scopes = scopes[:len(scopes)-1]
 			}
@@ -416,7 +419,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.FullName, mtd *descriptorpb.MethodDescriptorProto, scopes []scope) error {
 	scope := fmt.Sprintf("method %s", fqn)
 	node := r.MethodNode(mtd)
-	dsc := r.resolve(mtd.GetInputType(), true, scopes)
+	dsc := r.resolve(mtd.GetInputType(), false, scopes)
 	if dsc == nil {
 		if err := handler.HandleErrorf(node.GetInputType().Start(), "%s: unknown request type %s", scope, mtd.GetInputType()); err != nil {
 			return err
@@ -435,7 +438,7 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 	}
 
 	// TODO: make input and output type resolution more DRY
-	dsc = r.resolve(mtd.GetOutputType(), true, scopes)
+	dsc = r.resolve(mtd.GetOutputType(), false, scopes)
 	if dsc == nil {
 		if err := handler.HandleErrorf(node.GetOutputType().Start(), "%s: unknown response type %s", scope, mtd.GetOutputType()); err != nil {
 			return err

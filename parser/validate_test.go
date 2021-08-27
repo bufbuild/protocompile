@@ -356,6 +356,10 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `0.0.0.0.0`,
+			errMsg:   `test.proto:1:1: invalid syntax in float value: 0.0.0.0.0`,
+		},
+		{
+			contents: `0.0`,
 			errMsg:   `test.proto:1:1: syntax error: unexpected float literal`,
 		},
 	}
