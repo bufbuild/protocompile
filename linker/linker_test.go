@@ -172,6 +172,15 @@ func TestLinkerValidation(t *testing.T) {
 	}{
 		{
 			map[string]string{
+				"foo.proto":  `syntax = "proto3"; package namespace.a; import "foo2.proto"; import "foo3.proto"; import "foo4.proto"; message Foo{ b.Bar a = 1; b.Baz b = 2; b.Buzz c = 3; }`,
+				"foo2.proto": `syntax = "proto3"; package namespace.b; message Bar{}`,
+				"foo3.proto": `syntax = "proto3"; package namespace.b; message Baz{}`,
+				"foo4.proto": `syntax = "proto3"; package namespace.b; message Buzz{}`,
+			},
+			"", // should succeed
+		},
+		{
+			map[string]string{
 				"foo.proto": "import \"foo2.proto\"; message fubar{}",
 			},
 			`foo.proto:1:8: file not found: foo2.proto`,
@@ -244,7 +253,7 @@ func TestLinkerValidation(t *testing.T) {
 				"foo2.proto": "package fu.baz; import \"foo3.proto\"; message fizzle{ }",
 				"foo3.proto": "package fu.baz; message baz{ }",
 			},
-			"foo.proto:1:70: field fu.baz.foobar.a: unknown type baz",
+			"foo.proto:1:70: field fu.baz.foobar.a: unknown type baz; resolved to fu.baz which is not defined; consider using a leading dot",
 		},
 		{
 			map[string]string{
@@ -491,6 +500,12 @@ func TestLinkerValidation(t *testing.T) {
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to max; } extend Foo { optional Foo bar = 536870912; }",
 			},
 			"", // should succeed
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3"; package com.google; import "google/protobuf/wrappers.proto"; message Foo { google.protobuf.StringValue str = 1; }`,
+			},
+			"foo.proto:1:95: field com.google.Foo.str: unknown type google.protobuf.StringValue; resolved to com.google.protobuf.StringValue which is not defined; consider using a leading dot",
 		},
 	}
 	for i, tc := range testCases {

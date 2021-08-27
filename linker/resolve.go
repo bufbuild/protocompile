@@ -81,7 +81,7 @@ func resolveElement(f File, fqn protoreflect.FullName, publicImportsOnly bool, c
 	}
 	checked = append(checked, path)
 
-	r := f.FindDescriptorByName(fqn)
+	r := resolveElementInFile(fqn, f)
 	if r != nil {
 		// not imported, but present in f
 		return nil, r
@@ -336,9 +336,12 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 	elemType := "field"
 	if fld.GetExtendee() != "" {
 		elemType = "extension"
-		dsc := r.resolve(fld.GetExtendee(), isMessage, scopes)
+		dsc := r.resolve(fld.GetExtendee(), true, scopes)
 		if dsc == nil {
 			return handler.HandleErrorf(node.FieldExtendee().Start(), "unknown extendee type %s", fld.GetExtendee())
+		}
+		if isSentinelDescriptor(dsc) {
+			return handler.HandleErrorf(node.FieldExtendee().Start(), "unknown extendee type %s; resolved to %s which is not defined; consider using a leading dot", fld.GetExtendee(), dsc.FullName())
 		}
 		extd, ok := dsc.(protoreflect.MessageDescriptor)
 		if !ok {
@@ -379,9 +382,12 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		return nil
 	}
 
-	dsc := r.resolve(fld.GetTypeName(), isType, scopes)
+	dsc := r.resolve(fld.GetTypeName(), true, scopes)
 	if dsc == nil {
 		return handler.HandleErrorf(node.FieldType().Start(), "%s: unknown type %s", scope, fld.GetTypeName())
+	}
+	if isSentinelDescriptor(dsc) {
+		return handler.HandleErrorf(node.FieldType().Start(), "%s: unknown type %s; resolved to %s which is not defined; consider using a leading dot", scope, fld.GetTypeName(), dsc.FullName())
 	}
 	switch dsc := dsc.(type) {
 	case protoreflect.MessageDescriptor:
@@ -410,9 +416,13 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.FullName, mtd *descriptorpb.MethodDescriptorProto, scopes []scope) error {
 	scope := fmt.Sprintf("method %s", fqn)
 	node := r.MethodNode(mtd)
-	dsc := r.resolve(mtd.GetInputType(), isMessage, scopes)
+	dsc := r.resolve(mtd.GetInputType(), true, scopes)
 	if dsc == nil {
 		if err := handler.HandleErrorf(node.GetInputType().Start(), "%s: unknown request type %s", scope, mtd.GetInputType()); err != nil {
+			return err
+		}
+	} else if isSentinelDescriptor(dsc) {
+		if err := handler.HandleErrorf(node.GetInputType().Start(), "%s: unknown request type %s; resolved to %s which is not defined; consider using a leading dot", scope, mtd.GetInputType(), dsc.FullName()); err != nil {
 			return err
 		}
 	} else if _, ok := dsc.(protoreflect.MessageDescriptor); !ok {
@@ -424,9 +434,14 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 		mtd.InputType = proto.String("." + string(dsc.FullName()))
 	}
 
-	dsc = r.resolve(mtd.GetOutputType(), isMessage, scopes)
+	// TODO: make input and output type resolution more DRY
+	dsc = r.resolve(mtd.GetOutputType(), true, scopes)
 	if dsc == nil {
 		if err := handler.HandleErrorf(node.GetOutputType().Start(), "%s: unknown response type %s", scope, mtd.GetOutputType()); err != nil {
+			return err
+		}
+	} else if isSentinelDescriptor(dsc) {
+		if err := handler.HandleErrorf(node.GetInputType().Start(), "%s: unknown response type %s; resolved to %s which is not defined; consider using a leading dot", scope, mtd.GetOutputType(), dsc.FullName()); err != nil {
 			return err
 		}
 	} else if _, ok := dsc.(protoreflect.MessageDescriptor); !ok {
@@ -451,9 +466,15 @@ opts:
 		for _, nm := range opt.Name {
 			if nm.GetIsExtension() {
 				node := r.OptionNamePartNode(nm)
-				dsc := r.resolve(nm.GetNamePart(), isField, scopes)
+				dsc := r.resolve(nm.GetNamePart(), false, scopes)
 				if dsc == nil {
 					if err := handler.HandleErrorf(node.Start(), "%sunknown extension %s", scope, nm.GetNamePart()); err != nil {
+						return err
+					}
+					continue opts
+				}
+				if isSentinelDescriptor(dsc) {
+					if err := handler.HandleErrorf(node.Start(), "%sunknown extension %s; resolved to %s which is not defined; consider using a leading dot", scope, nm.GetNamePart(), dsc.FullName()); err != nil {
 						return err
 					}
 					continue opts
@@ -477,18 +498,23 @@ opts:
 	return nil
 }
 
-func (r *result) resolve(name string, allowed func(protoreflect.Descriptor) bool, scopes []scope) protoreflect.Descriptor {
+func (r *result) resolve(name string, onlyTypes bool, scopes []scope) protoreflect.Descriptor {
 	if strings.HasPrefix(name, ".") {
 		// already fully-qualified
 		return r.resolveElement(protoreflect.FullName(name[1:]))
 	}
 	// unqualified, so we look in the enclosing (last) scope first and move
 	// towards outermost (first) scope, trying to resolve the symbol
+	pos := strings.IndexByte(name, '.')
+	firstName := name
+	if pos > 0 {
+		firstName = name[:pos]
+	}
 	var bestGuess protoreflect.Descriptor
 	for i := len(scopes) - 1; i >= 0; i-- {
-		d := scopes[i](name)
+		d := scopes[i](firstName, name)
 		if d != nil {
-			if allowed(d) {
+			if !onlyTypes || isType(d) {
 				return d
 			} else if bestGuess == nil {
 				bestGuess = d
@@ -501,16 +527,6 @@ func (r *result) resolve(name string, allowed func(protoreflect.Descriptor) bool
 	return bestGuess
 }
 
-func isField(d protoreflect.Descriptor) bool {
-	_, ok := d.(protoreflect.FieldDescriptor)
-	return ok
-}
-
-func isMessage(d protoreflect.Descriptor) bool {
-	_, ok := d.(protoreflect.MessageDescriptor)
-	return ok
-}
-
 func isType(d protoreflect.Descriptor) bool {
 	switch d.(type) {
 	case protoreflect.MessageDescriptor, protoreflect.EnumDescriptor:
@@ -521,22 +537,27 @@ func isType(d protoreflect.Descriptor) bool {
 
 // scope represents a lexical scope in a proto file in which messages and enums
 // can be declared.
-type scope func(symbol string) protoreflect.Descriptor
+type scope func(firstName, fullName string) protoreflect.Descriptor
 
 func fileScope(r *result) scope {
 	// we search symbols in this file, but also symbols in other files that have
 	// the same package as this file or a "parent" package (in protobuf,
 	// packages are a hierarchy like C++ namespaces)
 	prefixes := internal.CreatePrefixList(r.Proto().GetPackage())
-	return func(name string) protoreflect.Descriptor {
+	querySymbol := func(n string) protoreflect.Descriptor {
+		return r.resolveElement(protoreflect.FullName(n))
+	}
+	return func(firstName, fullName string) protoreflect.Descriptor {
 		for _, prefix := range prefixes {
-			var n string
+			var n1, n string
 			if prefix == "" {
-				n = name
+				// exhausted all prefixes, so it must be in this one
+				n1, n = fullName, fullName
 			} else {
-				n = prefix + "." + name
+				n = prefix + "." + fullName
+				n1 = prefix + "." + firstName
 			}
-			d := r.resolveElement(protoreflect.FullName(n))
+			d := resolveElementRelative(n1, n, querySymbol)
 			if d != nil {
 				return d
 			}
@@ -546,11 +567,133 @@ func fileScope(r *result) scope {
 }
 
 func messageScope(r *result, messageName protoreflect.FullName) scope {
-	return func(name string) protoreflect.Descriptor {
-		n := string(messageName) + "." + name
-		if d, ok := r.descriptorPool[n]; ok {
-			return r.toDescriptor(n, d)
-		}
-		return nil
+	querySymbol := func(n string) protoreflect.Descriptor {
+		return resolveElementInFile(protoreflect.FullName(n), r)
+	}
+	return func(firstName, fullName string) protoreflect.Descriptor {
+		n1 := string(messageName) + "." + firstName
+		n := string(messageName) + "." + fullName
+		return resolveElementRelative(n1, n, querySymbol)
 	}
 }
+
+func resolveElementRelative(firstName, fullName string, query func(name string) protoreflect.Descriptor) protoreflect.Descriptor {
+	d := query(firstName)
+	if d == nil {
+		return nil
+	}
+	if firstName == fullName {
+		return d
+	}
+	if !isAggregateDescriptor(d) {
+		// can't possibly find the rest of full name if
+		// the first name indicated a leaf descriptor
+		return nil
+	}
+	d = query(fullName)
+	if d == nil {
+		return newSentinelDescriptor(fullName)
+	}
+	return d
+}
+
+func resolveElementInFile(name protoreflect.FullName, f File) protoreflect.Descriptor {
+	d := f.FindDescriptorByName(name)
+	if d != nil {
+		return d
+	}
+
+	if matchesPkgNamespace(name, f.Package()) {
+		// this sentinel means the name is a valid namespace but
+		// does not refer to a descriptor
+		return newSentinelDescriptor(string(name))
+	}
+	return nil
+}
+
+func matchesPkgNamespace(fqn, pkg protoreflect.FullName) bool {
+	if pkg == "" {
+		return false
+	}
+	if fqn == pkg {
+		return true
+	}
+	if len(pkg) > len(fqn) && strings.HasPrefix(string(pkg), string(fqn)) {
+		// if char after fqn is a dot, then fqn is a namespace
+		if pkg[len(fqn)] == '.' {
+			return true
+		}
+	}
+	return false
+}
+
+func isAggregateDescriptor(d protoreflect.Descriptor) bool {
+	if isSentinelDescriptor(d) {
+		// this indicates the name matched a package, not a
+		// descriptor, but a package is an aggregate so
+		// we return true
+		return true
+	}
+	switch d.(type) {
+	case protoreflect.MessageDescriptor, protoreflect.EnumDescriptor, protoreflect.ServiceDescriptor:
+		return true
+	default:
+		return false
+	}
+}
+
+func isSentinelDescriptor(d protoreflect.Descriptor) bool {
+	_, ok := d.(*sentinelDescriptor)
+	return ok
+}
+
+func newSentinelDescriptor(name string) protoreflect.Descriptor {
+	return &sentinelDescriptor{name: name}
+}
+
+// sentinelDescriptor is a placeholder descriptor. It is used instead of nil to
+// distinguish between two situations:
+//  1. The given name could not be found.
+//  2. The given name *cannot* be a valid result so stop seraching.
+// In these cases, attempts to resolve an element name will return nil for the
+// first case and will return a sentinelDescriptor in the second. The sentinel
+// contains the fully-qualified name which caused the search to stop (which may
+// be a prefix of the actual name being resolved).
+type sentinelDescriptor struct {
+	protoreflect.Descriptor
+	name string
+}
+
+func (p *sentinelDescriptor) ParentFile() protoreflect.FileDescriptor {
+	return nil
+}
+
+func (p *sentinelDescriptor) Parent() protoreflect.Descriptor {
+	return nil
+}
+
+func (p *sentinelDescriptor) Index() int {
+	return 0
+}
+
+func (p *sentinelDescriptor) Syntax() protoreflect.Syntax {
+	return 0
+}
+
+func (p *sentinelDescriptor) Name() protoreflect.Name {
+	return protoreflect.Name(p.name)
+}
+
+func (p *sentinelDescriptor) FullName() protoreflect.FullName {
+	return protoreflect.FullName(p.name)
+}
+
+func (p sentinelDescriptor) IsPlaceholder() bool {
+	return false
+}
+
+func (p sentinelDescriptor) Options() protoreflect.ProtoMessage {
+	return nil
+}
+
+var _ protoreflect.Descriptor = (*sentinelDescriptor)(nil)

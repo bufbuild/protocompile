@@ -2,6 +2,7 @@ package linker
 
 import (
 	"fmt"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -62,6 +63,23 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	}
 
 	return r, handler.Error()
+}
+
+func namespacesFromPackage(pkg string) map[string]struct{} {
+	if pkg == "" {
+		return nil
+	}
+	offs := 0
+	pkgs := map[string]struct{}{}
+	pkgs[pkg] = struct{}{}
+	for {
+		pos := strings.IndexByte(pkg[offs:], '.')
+		if pos == -1 {
+			return pkgs
+		}
+		pkgs[pkg[:offs+pos]] = struct{}{}
+		offs = offs + pos + 1
+	}
 }
 
 // Result is the result of linking. This is a protoreflect.FileDescriptor, but
