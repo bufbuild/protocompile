@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -125,6 +126,19 @@ func (r *SourceResolver) accessFile(path string) (io.ReadCloser, error) {
 		return r.Accessor(path)
 	}
 	return os.Open(path)
+}
+
+// SourceAccessorFromMap returns a function that can be used as the Accessor
+// field of a SourceResolver that uses the given map to load source. The map
+// keys are file names and the values are the corresponding file contents.
+func SourceAccessorFromMap(srcs map[string]string) func(string) (io.ReadCloser, error) {
+	return func(path string) (io.ReadCloser, error) {
+		src, ok := srcs[path]
+		if !ok {
+			return nil, os.ErrNotExist
+		}
+		return io.NopCloser(strings.NewReader(src)), nil
+	}
 }
 
 // WithStandardImports returns a new resolver that knows about the same standard
