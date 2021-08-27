@@ -22,8 +22,13 @@ import (
 type Symbols struct {
 	mu      sync.Mutex
 	files   map[protoreflect.FileDescriptor]struct{}
-	symbols map[protoreflect.FullName]ast.SourcePos
+	symbols map[protoreflect.FullName]symbolEntry
 	exts    map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos
+}
+
+type symbolEntry struct {
+	pos         ast.SourcePos
+	isEnumValue bool
 }
 
 // Import populates the symbol table with all symbols/elements and extension
@@ -67,11 +72,22 @@ func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handl
 	return nil
 }
 
+func reportSymbolCollision(pos ast.SourcePos, fqn protoreflect.FullName, additionIsEnumVal bool, existing symbolEntry, handler *reporter.Handler) error {
+	// because of weird scoping for enum values, provide more context in error message
+	// if this conflict is with an enum value
+	var suffix string
+	if additionIsEnumVal || existing.isEnumValue {
+		suffix = "; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum"
+	}
+	return handler.HandleErrorf(pos, "symbol %q already defined at %v%s", fqn, existing.pos, suffix)
+}
+
 func (s *Symbols) checkFileLocked(f protoreflect.FileDescriptor, handler *reporter.Handler) error {
 	return walk.Descriptors(f, func(d protoreflect.Descriptor) error {
 		pos := sourcePositionFor(d)
 		if existing, ok := s.symbols[d.FullName()]; ok {
-			if err := handler.HandleErrorf(pos, "symbol %q already defined at %v", d.FullName(), existing); err != nil {
+			_, isEnumVal := d.(protoreflect.EnumValueDescriptor)
+			if err := reportSymbolCollision(pos, d.FullName(), isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
@@ -102,7 +118,7 @@ func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
 
 func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
 	if s.symbols == nil {
-		s.symbols = map[protoreflect.FullName]ast.SourcePos{}
+		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
 	if s.exts == nil {
 		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
@@ -110,7 +126,8 @@ func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
 	_ = walk.Descriptors(f, func(d protoreflect.Descriptor) error {
 		pos := sourcePositionFor(d)
 		name := d.FullName()
-		s.symbols[name] = pos
+		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
+		s.symbols[name] = symbolEntry{pos: pos, isEnumValue: isEnumValue}
 
 		fld, ok := d.(protoreflect.FieldDescriptor)
 		if !ok || !fld.IsExtension() {
@@ -161,7 +178,8 @@ func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter
 	return walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
 		pos := r.Node(d).Start()
 		if existing, ok := s.symbols[fqn]; ok {
-			if err := handler.HandleErrorf(pos, "symbol %q already defined at %v", fqn, existing); err != nil {
+			_, isEnumVal := d.(*descriptorpb.EnumValueDescriptorProto)
+			if err := reportSymbolCollision(pos, fqn, isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
@@ -193,14 +211,15 @@ func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter
 
 func (s *Symbols) importResultLocked(r *result, populatePool bool) {
 	if s.symbols == nil {
-		s.symbols = map[protoreflect.FullName]ast.SourcePos{}
+		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
 	if s.exts == nil {
 		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
 	_ = walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
 		pos := r.Node(d).Start()
-		s.symbols[fqn] = pos
+		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
+		s.symbols[fqn] = symbolEntry{pos: pos, isEnumValue: isEnumValue}
 		if populatePool {
 			r.descriptorPool[string(fqn)] = d
 		}
