@@ -2,8 +2,6 @@ package linker
 
 import (
 	"fmt"
-	"strings"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
@@ -65,23 +63,6 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	return r, handler.Error()
 }
 
-func namespacesFromPackage(pkg string) map[string]struct{} {
-	if pkg == "" {
-		return nil
-	}
-	offs := 0
-	pkgs := map[string]struct{}{}
-	pkgs[pkg] = struct{}{}
-	for {
-		pos := strings.IndexByte(pkg[offs:], '.')
-		if pos == -1 {
-			return pkgs
-		}
-		pkgs[pkg[:offs+pos]] = struct{}{}
-		offs = offs + pos + 1
-	}
-}
-
 // Result is the result of linking. This is a protoreflect.FileDescriptor, but
 // with some additional methods for exposing additional information, such as the
 // for accessing the input AST or file descriptor.
@@ -116,4 +97,28 @@ type Result interface {
 	// warnings encountered will be reported via the given handler. If any error
 	// is reported, this function returns a non-nil error.
 	ValidateExtensions(handler *reporter.Handler) error
+	// CheckForUnusedImports is used to report warnings for unused imports. This
+	// should be called after options have been interpreted. Otherwise, the logic
+	// could incorrectly report imports as unused if the only symbol used were a
+	// custom option.
+	CheckForUnusedImports(handler *reporter.Handler)
+}
+
+// ErrorUnusedImport may be passed to a warning reporter when an unused
+// import is detected. The error the reporter receives will be wrapped
+// with source position that indicates the file and line where the import
+// statement appeared.
+type ErrorUnusedImport interface {
+	error
+	UnusedImport() string
+}
+
+type errUnusedImport string
+
+func (e errUnusedImport) Error() string {
+	return fmt.Sprintf("import %q not used", string(e))
+}
+
+func (e errUnusedImport) UnusedImport() string {
+	return string(e)
 }

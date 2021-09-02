@@ -363,6 +363,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	if err := file.ValidateExtensions(t.e.h); err != nil {
 		return nil, err
 	}
+	file.CheckForUnusedImports(t.e.h)
 
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
 		parseRes.Proto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)

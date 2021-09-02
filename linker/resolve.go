@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
+	"github.com/jhump/protocompile/ast"
 	"github.com/jhump/protocompile/internal"
 	"github.com/jhump/protocompile/reporter"
 	"github.com/jhump/protocompile/walk"
@@ -69,6 +70,36 @@ func (r *result) resolveElement(name protoreflect.FullName) protoreflect.Descrip
 
 func (r *result) markUsed(importPath string) {
 	r.usedImports[importPath] = struct{}{}
+}
+
+func (r *result) CheckForUnusedImports(handler *reporter.Handler) {
+	fd := r.Proto()
+	node, _ := r.FileNode().(*ast.FileNode)
+	for i, dep := range fd.Dependency {
+		if _, ok := r.usedImports[dep]; !ok {
+			isPublic := false
+			// it's fine if it's a public import
+			for _, j := range fd.PublicDependency {
+				if i == int(j) {
+					isPublic = true
+					break
+				}
+			}
+			if isPublic {
+				continue
+			}
+			pos := ast.UnknownPos(fd.GetName())
+			if node != nil {
+				for _, decl := range node.Decls {
+					imp, ok := decl.(*ast.ImportNode)
+					if ok && imp.Name.AsString() == dep {
+						pos = imp.Start()
+					}
+				}
+			}
+			handler.HandleWarning(pos, errUnusedImport(dep))
+		}
+	}
 }
 
 func resolveElement(f File, fqn protoreflect.FullName, publicImportsOnly bool, checked []string) (imported File, d protoreflect.Descriptor) {
