@@ -14,359 +14,359 @@ import (
 // can be used to enumerate ALL matching function calls.
 //
 // This function is generated via commented-out code at the bottom of this file.
-func testVisitors(methodCalled *string) (*Visitor, []*Visitor) {
-	v := &Visitor{
-		VisitEnumNode: func(*EnumNode) (bool, *Visitor) {
+func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
+	v := &SimpleVisitor{
+		DoVisitEnumNode: func(*EnumNode) error {
 			*methodCalled = "*EnumNode"
-			return false, nil
+			return nil
 		},
-		VisitEnumValueNode: func(*EnumValueNode) (bool, *Visitor) {
+		DoVisitEnumValueNode: func(*EnumValueNode) error {
 			*methodCalled = "*EnumValueNode"
-			return false, nil
+			return nil
 		},
-		VisitFieldDeclNode: func(FieldDeclNode) (bool, *Visitor) {
+		DoVisitFieldDeclNode: func(FieldDeclNode) error {
 			*methodCalled = "FieldDeclNode"
-			return false, nil
+			return nil
 		},
-		VisitFieldNode: func(*FieldNode) (bool, *Visitor) {
+		DoVisitFieldNode: func(*FieldNode) error {
 			*methodCalled = "*FieldNode"
-			return false, nil
+			return nil
 		},
-		VisitGroupNode: func(*GroupNode) (bool, *Visitor) {
+		DoVisitGroupNode: func(*GroupNode) error {
 			*methodCalled = "*GroupNode"
-			return false, nil
+			return nil
 		},
-		VisitOneOfNode: func(*OneOfNode) (bool, *Visitor) {
+		DoVisitOneOfNode: func(*OneOfNode) error {
 			*methodCalled = "*OneOfNode"
-			return false, nil
+			return nil
 		},
-		VisitMapTypeNode: func(*MapTypeNode) (bool, *Visitor) {
+		DoVisitMapTypeNode: func(*MapTypeNode) error {
 			*methodCalled = "*MapTypeNode"
-			return false, nil
+			return nil
 		},
-		VisitMapFieldNode: func(*MapFieldNode) (bool, *Visitor) {
+		DoVisitMapFieldNode: func(*MapFieldNode) error {
 			*methodCalled = "*MapFieldNode"
-			return false, nil
+			return nil
 		},
-		VisitFileNode: func(*FileNode) (bool, *Visitor) {
+		DoVisitFileNode: func(*FileNode) error {
 			*methodCalled = "*FileNode"
-			return false, nil
+			return nil
 		},
-		VisitSyntaxNode: func(*SyntaxNode) (bool, *Visitor) {
+		DoVisitSyntaxNode: func(*SyntaxNode) error {
 			*methodCalled = "*SyntaxNode"
-			return false, nil
+			return nil
 		},
-		VisitImportNode: func(*ImportNode) (bool, *Visitor) {
+		DoVisitImportNode: func(*ImportNode) error {
 			*methodCalled = "*ImportNode"
-			return false, nil
+			return nil
 		},
-		VisitPackageNode: func(*PackageNode) (bool, *Visitor) {
+		DoVisitPackageNode: func(*PackageNode) error {
 			*methodCalled = "*PackageNode"
-			return false, nil
+			return nil
 		},
-		VisitIdentValueNode: func(IdentValueNode) (bool, *Visitor) {
+		DoVisitIdentValueNode: func(IdentValueNode) error {
 			*methodCalled = "IdentValueNode"
-			return false, nil
+			return nil
 		},
-		VisitIdentNode: func(*IdentNode) (bool, *Visitor) {
+		DoVisitIdentNode: func(*IdentNode) error {
 			*methodCalled = "*IdentNode"
-			return false, nil
+			return nil
 		},
-		VisitCompoundIdentNode: func(*CompoundIdentNode) (bool, *Visitor) {
+		DoVisitCompoundIdentNode: func(*CompoundIdentNode) error {
 			*methodCalled = "*CompoundIdentNode"
-			return false, nil
+			return nil
 		},
-		VisitKeywordNode: func(*KeywordNode) (bool, *Visitor) {
+		DoVisitKeywordNode: func(*KeywordNode) error {
 			*methodCalled = "*KeywordNode"
-			return false, nil
+			return nil
 		},
-		VisitMessageDeclNode: func(MessageDeclNode) (bool, *Visitor) {
+		DoVisitMessageDeclNode: func(MessageDeclNode) error {
 			*methodCalled = "MessageDeclNode"
-			return false, nil
+			return nil
 		},
-		VisitMessageNode: func(*MessageNode) (bool, *Visitor) {
+		DoVisitMessageNode: func(*MessageNode) error {
 			*methodCalled = "*MessageNode"
-			return false, nil
+			return nil
 		},
-		VisitExtendNode: func(*ExtendNode) (bool, *Visitor) {
+		DoVisitExtendNode: func(*ExtendNode) error {
 			*methodCalled = "*ExtendNode"
-			return false, nil
+			return nil
 		},
-		VisitNode: func(Node) (bool, *Visitor) {
+		DoVisitNode: func(Node) error {
 			*methodCalled = "Node"
-			return false, nil
+			return nil
 		},
-		VisitTerminalNode: func(TerminalNode) (bool, *Visitor) {
+		DoVisitTerminalNode: func(TerminalNode) error {
 			*methodCalled = "TerminalNode"
-			return false, nil
+			return nil
 		},
-		VisitCompositeNode: func(CompositeNode) (bool, *Visitor) {
+		DoVisitCompositeNode: func(CompositeNode) error {
 			*methodCalled = "CompositeNode"
-			return false, nil
+			return nil
 		},
-		VisitRuneNode: func(*RuneNode) (bool, *Visitor) {
+		DoVisitRuneNode: func(*RuneNode) error {
 			*methodCalled = "*RuneNode"
-			return false, nil
+			return nil
 		},
-		VisitEmptyDeclNode: func(*EmptyDeclNode) (bool, *Visitor) {
+		DoVisitEmptyDeclNode: func(*EmptyDeclNode) error {
 			*methodCalled = "*EmptyDeclNode"
-			return false, nil
+			return nil
 		},
-		VisitOptionNode: func(*OptionNode) (bool, *Visitor) {
+		DoVisitOptionNode: func(*OptionNode) error {
 			*methodCalled = "*OptionNode"
-			return false, nil
+			return nil
 		},
-		VisitOptionNameNode: func(*OptionNameNode) (bool, *Visitor) {
+		DoVisitOptionNameNode: func(*OptionNameNode) error {
 			*methodCalled = "*OptionNameNode"
-			return false, nil
+			return nil
 		},
-		VisitFieldReferenceNode: func(*FieldReferenceNode) (bool, *Visitor) {
+		DoVisitFieldReferenceNode: func(*FieldReferenceNode) error {
 			*methodCalled = "*FieldReferenceNode"
-			return false, nil
+			return nil
 		},
-		VisitCompactOptionsNode: func(*CompactOptionsNode) (bool, *Visitor) {
+		DoVisitCompactOptionsNode: func(*CompactOptionsNode) error {
 			*methodCalled = "*CompactOptionsNode"
-			return false, nil
+			return nil
 		},
-		VisitExtensionRangeNode: func(*ExtensionRangeNode) (bool, *Visitor) {
+		DoVisitExtensionRangeNode: func(*ExtensionRangeNode) error {
 			*methodCalled = "*ExtensionRangeNode"
-			return false, nil
+			return nil
 		},
-		VisitRangeNode: func(*RangeNode) (bool, *Visitor) {
+		DoVisitRangeNode: func(*RangeNode) error {
 			*methodCalled = "*RangeNode"
-			return false, nil
+			return nil
 		},
-		VisitReservedNode: func(*ReservedNode) (bool, *Visitor) {
+		DoVisitReservedNode: func(*ReservedNode) error {
 			*methodCalled = "*ReservedNode"
-			return false, nil
+			return nil
 		},
-		VisitServiceNode: func(*ServiceNode) (bool, *Visitor) {
+		DoVisitServiceNode: func(*ServiceNode) error {
 			*methodCalled = "*ServiceNode"
-			return false, nil
+			return nil
 		},
-		VisitRPCNode: func(*RPCNode) (bool, *Visitor) {
+		DoVisitRPCNode: func(*RPCNode) error {
 			*methodCalled = "*RPCNode"
-			return false, nil
+			return nil
 		},
-		VisitRPCTypeNode: func(*RPCTypeNode) (bool, *Visitor) {
+		DoVisitRPCTypeNode: func(*RPCTypeNode) error {
 			*methodCalled = "*RPCTypeNode"
-			return false, nil
+			return nil
 		},
-		VisitValueNode: func(ValueNode) (bool, *Visitor) {
+		DoVisitValueNode: func(ValueNode) error {
 			*methodCalled = "ValueNode"
-			return false, nil
+			return nil
 		},
-		VisitStringValueNode: func(StringValueNode) (bool, *Visitor) {
+		DoVisitStringValueNode: func(StringValueNode) error {
 			*methodCalled = "StringValueNode"
-			return false, nil
+			return nil
 		},
-		VisitStringLiteralNode: func(*StringLiteralNode) (bool, *Visitor) {
+		DoVisitStringLiteralNode: func(*StringLiteralNode) error {
 			*methodCalled = "*StringLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitCompoundStringLiteralNode: func(*CompoundStringLiteralNode) (bool, *Visitor) {
+		DoVisitCompoundStringLiteralNode: func(*CompoundStringLiteralNode) error {
 			*methodCalled = "*CompoundStringLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitIntValueNode: func(IntValueNode) (bool, *Visitor) {
+		DoVisitIntValueNode: func(IntValueNode) error {
 			*methodCalled = "IntValueNode"
-			return false, nil
+			return nil
 		},
-		VisitUintLiteralNode: func(*UintLiteralNode) (bool, *Visitor) {
+		DoVisitUintLiteralNode: func(*UintLiteralNode) error {
 			*methodCalled = "*UintLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitPositiveUintLiteralNode: func(*PositiveUintLiteralNode) (bool, *Visitor) {
+		DoVisitPositiveUintLiteralNode: func(*PositiveUintLiteralNode) error {
 			*methodCalled = "*PositiveUintLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitNegativeIntLiteralNode: func(*NegativeIntLiteralNode) (bool, *Visitor) {
+		DoVisitNegativeIntLiteralNode: func(*NegativeIntLiteralNode) error {
 			*methodCalled = "*NegativeIntLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitFloatValueNode: func(FloatValueNode) (bool, *Visitor) {
+		DoVisitFloatValueNode: func(FloatValueNode) error {
 			*methodCalled = "FloatValueNode"
-			return false, nil
+			return nil
 		},
-		VisitFloatLiteralNode: func(*FloatLiteralNode) (bool, *Visitor) {
+		DoVisitFloatLiteralNode: func(*FloatLiteralNode) error {
 			*methodCalled = "*FloatLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitSpecialFloatLiteralNode: func(*SpecialFloatLiteralNode) (bool, *Visitor) {
+		DoVisitSpecialFloatLiteralNode: func(*SpecialFloatLiteralNode) error {
 			*methodCalled = "*SpecialFloatLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitSignedFloatLiteralNode: func(*SignedFloatLiteralNode) (bool, *Visitor) {
+		DoVisitSignedFloatLiteralNode: func(*SignedFloatLiteralNode) error {
 			*methodCalled = "*SignedFloatLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitBoolLiteralNode: func(*BoolLiteralNode) (bool, *Visitor) {
+		DoVisitBoolLiteralNode: func(*BoolLiteralNode) error {
 			*methodCalled = "*BoolLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitArrayLiteralNode: func(*ArrayLiteralNode) (bool, *Visitor) {
+		DoVisitArrayLiteralNode: func(*ArrayLiteralNode) error {
 			*methodCalled = "*ArrayLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitMessageLiteralNode: func(*MessageLiteralNode) (bool, *Visitor) {
+		DoVisitMessageLiteralNode: func(*MessageLiteralNode) error {
 			*methodCalled = "*MessageLiteralNode"
-			return false, nil
+			return nil
 		},
-		VisitMessageFieldNode: func(*MessageFieldNode) (bool, *Visitor) {
+		DoVisitMessageFieldNode: func(*MessageFieldNode) error {
 			*methodCalled = "*MessageFieldNode"
-			return false, nil
+			return nil
 		},
 	}
-	others := []*Visitor{
+	others := []*SimpleVisitor{
 		{
-			VisitEnumNode: v.VisitEnumNode,
+			DoVisitEnumNode: v.DoVisitEnumNode,
 		},
 		{
-			VisitEnumValueNode: v.VisitEnumValueNode,
+			DoVisitEnumValueNode: v.DoVisitEnumValueNode,
 		},
 		{
-			VisitFieldDeclNode: v.VisitFieldDeclNode,
+			DoVisitFieldDeclNode: v.DoVisitFieldDeclNode,
 		},
 		{
-			VisitFieldNode: v.VisitFieldNode,
+			DoVisitFieldNode: v.DoVisitFieldNode,
 		},
 		{
-			VisitGroupNode: v.VisitGroupNode,
+			DoVisitGroupNode: v.DoVisitGroupNode,
 		},
 		{
-			VisitOneOfNode: v.VisitOneOfNode,
+			DoVisitOneOfNode: v.DoVisitOneOfNode,
 		},
 		{
-			VisitMapTypeNode: v.VisitMapTypeNode,
+			DoVisitMapTypeNode: v.DoVisitMapTypeNode,
 		},
 		{
-			VisitMapFieldNode: v.VisitMapFieldNode,
+			DoVisitMapFieldNode: v.DoVisitMapFieldNode,
 		},
 		{
-			VisitFileNode: v.VisitFileNode,
+			DoVisitFileNode: v.DoVisitFileNode,
 		},
 		{
-			VisitSyntaxNode: v.VisitSyntaxNode,
+			DoVisitSyntaxNode: v.DoVisitSyntaxNode,
 		},
 		{
-			VisitImportNode: v.VisitImportNode,
+			DoVisitImportNode: v.DoVisitImportNode,
 		},
 		{
-			VisitPackageNode: v.VisitPackageNode,
+			DoVisitPackageNode: v.DoVisitPackageNode,
 		},
 		{
-			VisitIdentValueNode: v.VisitIdentValueNode,
+			DoVisitIdentValueNode: v.DoVisitIdentValueNode,
 		},
 		{
-			VisitIdentNode: v.VisitIdentNode,
+			DoVisitIdentNode: v.DoVisitIdentNode,
 		},
 		{
-			VisitCompoundIdentNode: v.VisitCompoundIdentNode,
+			DoVisitCompoundIdentNode: v.DoVisitCompoundIdentNode,
 		},
 		{
-			VisitKeywordNode: v.VisitKeywordNode,
+			DoVisitKeywordNode: v.DoVisitKeywordNode,
 		},
 		{
-			VisitMessageDeclNode: v.VisitMessageDeclNode,
+			DoVisitMessageDeclNode: v.DoVisitMessageDeclNode,
 		},
 		{
-			VisitMessageNode: v.VisitMessageNode,
+			DoVisitMessageNode: v.DoVisitMessageNode,
 		},
 		{
-			VisitExtendNode: v.VisitExtendNode,
+			DoVisitExtendNode: v.DoVisitExtendNode,
 		},
 		{
-			VisitNode: v.VisitNode,
+			DoVisitNode: v.DoVisitNode,
 		},
 		{
-			VisitTerminalNode: v.VisitTerminalNode,
+			DoVisitTerminalNode: v.DoVisitTerminalNode,
 		},
 		{
-			VisitCompositeNode: v.VisitCompositeNode,
+			DoVisitCompositeNode: v.DoVisitCompositeNode,
 		},
 		{
-			VisitRuneNode: v.VisitRuneNode,
+			DoVisitRuneNode: v.DoVisitRuneNode,
 		},
 		{
-			VisitEmptyDeclNode: v.VisitEmptyDeclNode,
+			DoVisitEmptyDeclNode: v.DoVisitEmptyDeclNode,
 		},
 		{
-			VisitOptionNode: v.VisitOptionNode,
+			DoVisitOptionNode: v.DoVisitOptionNode,
 		},
 		{
-			VisitOptionNameNode: v.VisitOptionNameNode,
+			DoVisitOptionNameNode: v.DoVisitOptionNameNode,
 		},
 		{
-			VisitFieldReferenceNode: v.VisitFieldReferenceNode,
+			DoVisitFieldReferenceNode: v.DoVisitFieldReferenceNode,
 		},
 		{
-			VisitCompactOptionsNode: v.VisitCompactOptionsNode,
+			DoVisitCompactOptionsNode: v.DoVisitCompactOptionsNode,
 		},
 		{
-			VisitExtensionRangeNode: v.VisitExtensionRangeNode,
+			DoVisitExtensionRangeNode: v.DoVisitExtensionRangeNode,
 		},
 		{
-			VisitRangeNode: v.VisitRangeNode,
+			DoVisitRangeNode: v.DoVisitRangeNode,
 		},
 		{
-			VisitReservedNode: v.VisitReservedNode,
+			DoVisitReservedNode: v.DoVisitReservedNode,
 		},
 		{
-			VisitServiceNode: v.VisitServiceNode,
+			DoVisitServiceNode: v.DoVisitServiceNode,
 		},
 		{
-			VisitRPCNode: v.VisitRPCNode,
+			DoVisitRPCNode: v.DoVisitRPCNode,
 		},
 		{
-			VisitRPCTypeNode: v.VisitRPCTypeNode,
+			DoVisitRPCTypeNode: v.DoVisitRPCTypeNode,
 		},
 		{
-			VisitValueNode: v.VisitValueNode,
+			DoVisitValueNode: v.DoVisitValueNode,
 		},
 		{
-			VisitStringValueNode: v.VisitStringValueNode,
+			DoVisitStringValueNode: v.DoVisitStringValueNode,
 		},
 		{
-			VisitStringLiteralNode: v.VisitStringLiteralNode,
+			DoVisitStringLiteralNode: v.DoVisitStringLiteralNode,
 		},
 		{
-			VisitCompoundStringLiteralNode: v.VisitCompoundStringLiteralNode,
+			DoVisitCompoundStringLiteralNode: v.DoVisitCompoundStringLiteralNode,
 		},
 		{
-			VisitIntValueNode: v.VisitIntValueNode,
+			DoVisitIntValueNode: v.DoVisitIntValueNode,
 		},
 		{
-			VisitUintLiteralNode: v.VisitUintLiteralNode,
+			DoVisitUintLiteralNode: v.DoVisitUintLiteralNode,
 		},
 		{
-			VisitPositiveUintLiteralNode: v.VisitPositiveUintLiteralNode,
+			DoVisitPositiveUintLiteralNode: v.DoVisitPositiveUintLiteralNode,
 		},
 		{
-			VisitNegativeIntLiteralNode: v.VisitNegativeIntLiteralNode,
+			DoVisitNegativeIntLiteralNode: v.DoVisitNegativeIntLiteralNode,
 		},
 		{
-			VisitFloatValueNode: v.VisitFloatValueNode,
+			DoVisitFloatValueNode: v.DoVisitFloatValueNode,
 		},
 		{
-			VisitFloatLiteralNode: v.VisitFloatLiteralNode,
+			DoVisitFloatLiteralNode: v.DoVisitFloatLiteralNode,
 		},
 		{
-			VisitSpecialFloatLiteralNode: v.VisitSpecialFloatLiteralNode,
+			DoVisitSpecialFloatLiteralNode: v.DoVisitSpecialFloatLiteralNode,
 		},
 		{
-			VisitSignedFloatLiteralNode: v.VisitSignedFloatLiteralNode,
+			DoVisitSignedFloatLiteralNode: v.DoVisitSignedFloatLiteralNode,
 		},
 		{
-			VisitBoolLiteralNode: v.VisitBoolLiteralNode,
+			DoVisitBoolLiteralNode: v.DoVisitBoolLiteralNode,
 		},
 		{
-			VisitArrayLiteralNode: v.VisitArrayLiteralNode,
+			DoVisitArrayLiteralNode: v.DoVisitArrayLiteralNode,
 		},
 		{
-			VisitMessageLiteralNode: v.VisitMessageLiteralNode,
+			DoVisitMessageLiteralNode: v.DoVisitMessageLiteralNode,
 		},
 		{
-			VisitMessageFieldNode: v.VisitMessageFieldNode,
+			DoVisitMessageFieldNode: v.DoVisitMessageFieldNode,
 		},
 	}
 	return v, others
@@ -499,12 +499,12 @@ func TestVisitorAll(t *testing.T) {
 	for n, expectedCalls := range testCases {
 		var call string
 		v, all := testVisitors(&call)
-		_, _ = v.Visit(n)
+		_ = Visit(n, v)
 		assert.Equal(t, expectedCalls[0], call)
 		var allCalls []string
 		for _, v := range all {
 			call = ""
-			_, _ = v.Visit(n)
+			_ = Visit(n, v)
 			if call != "" {
 				allCalls = append(allCalls, call)
 			}
@@ -524,120 +524,120 @@ func TestVisitorPriorityOrder(t *testing.T) {
 	v, _ := testVisitors(&call)
 	n = (*StringLiteralNode)(nil)
 
-	v.VisitStringLiteralNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitStringLiteralNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "StringValueNode", call)
 	call = ""
-	v.VisitStringValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitStringValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "ValueNode", call)
 	call = ""
-	v.VisitValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "TerminalNode", call)
 	call = ""
-	v.VisitTerminalNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitTerminalNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "Node", call)
 	call = ""
-	v.VisitNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*CompoundStringLiteralNode)(nil)
 
-	v.VisitCompoundStringLiteralNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitCompoundStringLiteralNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "StringValueNode", call)
 	call = ""
-	v.VisitStringValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitStringValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "ValueNode", call)
 	call = ""
-	v.VisitValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "CompositeNode", call)
 	call = ""
-	v.VisitCompositeNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitCompositeNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "Node", call)
 	call = ""
-	v.VisitNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*UintLiteralNode)(nil)
 
-	v.VisitUintLiteralNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitUintLiteralNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "IntValueNode", call)
 	call = ""
-	v.VisitIntValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitIntValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "FloatValueNode", call)
 	call = ""
-	v.VisitFloatValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitFloatValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "ValueNode", call)
 	call = ""
-	v.VisitValueNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitValueNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "TerminalNode", call)
 	call = ""
-	v.VisitTerminalNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitTerminalNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "Node", call)
 	call = ""
-	v.VisitNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*GroupNode)(nil)
 
-	v.VisitGroupNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitGroupNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "FieldDeclNode", call)
 	call = ""
-	v.VisitFieldDeclNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitFieldDeclNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "MessageDeclNode", call)
 	call = ""
-	v.VisitMessageDeclNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitMessageDeclNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "CompositeNode", call)
 	call = ""
-	v.VisitCompositeNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitCompositeNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "Node", call)
 	call = ""
-	v.VisitNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "", call)
 
 	v, _ = testVisitors(&call)
 	n = (*MapFieldNode)(nil)
 
-	v.VisitMapFieldNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitMapFieldNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "FieldDeclNode", call)
 	call = ""
-	v.VisitFieldDeclNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitFieldDeclNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "MessageDeclNode", call)
 	call = ""
-	v.VisitMessageDeclNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitMessageDeclNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "CompositeNode", call)
 	call = ""
-	v.VisitCompositeNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitCompositeNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "Node", call)
 	call = ""
-	v.VisitNode = nil
-	_, _ = v.Visit(n)
+	v.DoVisitNode = nil
+	_ = Visit(n, v)
 	assert.Equal(t, "", call)
 }
 
@@ -718,26 +718,26 @@ func TestVisitorPriorityOrder(t *testing.T) {
 //`
 //	strs := strings.Split(types, "\n")
 //	fmt.Println(`func testVisitors(methodCalled *string) (*Visitor, []*Visitor) {`)
-//	fmt.Println(`	v := &Visitor{`)
+//	fmt.Println(`	v := &SimpleVisitor{`)
 //	for _, str := range strs {
 //		if str == "" {
 //			continue
 //		}
 //		name := strings.TrimPrefix(str, "*")
-//		fmt.Printf(`		Visit%s: func(%s) (bool, *Visitor) {`, name, str); fmt.Println()
+//		fmt.Printf(`		DoVisit%s: func(%s) error {`, name, str); fmt.Println()
 //		fmt.Printf(`			*methodCalled = "%s"`, str); fmt.Println()
-//		fmt.Println(`			return false, nil`)
+//		fmt.Println(`			return nil`)
 //		fmt.Println(`		},`)
 //	}
 //	fmt.Println(`	}`)
-//	fmt.Println(`	others := []*Visitor{`)
+//	fmt.Println(`	others := []*SimpleVisitor{`)
 //	for _, str := range strs {
 //		if str == "" {
 //			continue
 //		}
 //		name := strings.TrimPrefix(str, "*")
 //		fmt.Println(`		{`)
-//		fmt.Printf(`			Visit%s: v.Visit%s,`, name, name); fmt.Println()
+//		fmt.Printf(`			DoVisit%s: v.DoVisit%s,`, name, name); fmt.Println()
 //		fmt.Println(`		},`)
 //	}
 //	fmt.Println(`	}`)

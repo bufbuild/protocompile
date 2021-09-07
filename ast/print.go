@@ -12,33 +12,22 @@ func Print(w io.Writer, node Node) error {
 	if !ok {
 		sw = &strWriter{w}
 	}
-	var err error
-	Walk(node, func(n Node) (bool, VisitFunc) {
-		if err != nil {
-			return false, nil
-		}
-		token, ok := n.(TerminalNode)
-		if !ok {
-			return true, nil
-		}
+	err := Walk(node, &SimpleVisitor{
+		DoVisitTerminalNode: func(token TerminalNode) error {
+			if err := printComments(sw, token.LeadingComments()); err != nil {
+				return err
+			}
 
-		err = printComments(sw, token.LeadingComments())
-		if err != nil {
-			return false, nil
-		}
+			if _, err := sw.WriteString(token.LeadingWhitespace()); err != nil {
+				return err
+			}
 
-		_, err = sw.WriteString(token.LeadingWhitespace())
-		if err != nil {
-			return false, nil
-		}
+			if _, err := sw.WriteString(token.RawText()); err != nil {
+				return err
+			}
 
-		_, err = sw.WriteString(token.RawText())
-		if err != nil {
-			return false, nil
-		}
-
-		err = printComments(sw, token.TrailingComments())
-		return false, nil
+			return printComments(sw, token.TrailingComments())
+		},
 	})
 	if err != nil {
 		return err
