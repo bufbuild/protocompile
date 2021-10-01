@@ -862,6 +862,24 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					}
 				} else {
 					ffld = fmd.Fields().ByName(protoreflect.Name(a.Name.Value()))
+					// Groups are indicated in the text format by the group name (which is
+					// camel-case), NOT the field name (which is lower-case).
+					// ...but only regular fields, not extensions that are groups...
+					if ffld != nil && ffld.Kind() == protoreflect.GroupKind && ffld.Message().Name() != protoreflect.Name(a.Name.Value()) {
+						// this is kind of silly to fail here, but this mimics protoc behavior
+						return protoreflect.Value{}, reporter.Errorf(val.Start(), "%vfield %s not found (did you mean the group named %s?)", mc, a.Name.Value(), ffld.Message().Name())
+					}
+					if ffld == nil {
+						// could be a group name
+						for i := 0; i < fmd.Fields().Len(); i++ {
+							fd := fmd.Fields().Get(i)
+							if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(a.Name.Value()) {
+								// found it!
+								ffld = fd
+								break
+							}
+						}
+					}
 				}
 				if ffld == nil {
 					return protoreflect.Value{}, reporter.Errorf(val.Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
