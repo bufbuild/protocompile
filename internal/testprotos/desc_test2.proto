@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-option go_package = "github.com/jhump/protoreflect/internal/testprotos";
+option go_package = "github.com/jhump/protocompile/internal/testprotos";
 
 package testprotos;
 
@@ -26,11 +26,11 @@ message Frobnitz {
 }
 
 message Whatchamacallit {
-	required jhump.protoreflect.desc.Foo foos = 1;
+	required jhump.protocompile.test.Foo foos = 1;
 }
 
 message Whatzit {
-	repeated jhump.protoreflect.desc.Bar gyzmeau = 1;
+	repeated jhump.protocompile.test.Bar gyzmeau = 1;
 }
 
 extend TopLevel {

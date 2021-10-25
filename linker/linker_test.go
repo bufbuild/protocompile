@@ -137,7 +137,12 @@ func checkFiles(t *testing.T, act, exp protoreflect.FileDescriptor, checked map[
 	checkFileDescriptor(t, actProto, expProto)
 
 	for i := 0; i < act.Imports().Len(); i++ {
-		checkFiles(t, act.Imports().Get(i), exp.Imports().Get(i), checked)
+		actDep := act.Imports().Get(i)
+		expDep := exp.Imports().Get(i)
+		if actDep.Name() == expDep.Name() && actDep.Name() == "google/protobuf/descriptor.proto" {
+			continue
+		}
+		checkFiles(t, actDep, expDep, checked)
 	}
 }
 
