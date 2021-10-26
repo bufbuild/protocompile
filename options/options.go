@@ -467,13 +467,15 @@ func cloneInto(dest proto.Message, src proto.Message) error {
 		}
 		return nil
 	}
-	// TODO: will this work if src.descriptor != dest.descriptor?
-	destRef := dest.ProtoReflect()
-	src.ProtoReflect().Range(func(f protoreflect.FieldDescriptor, v protoreflect.Value) bool {
-		destRef.Set(f, v)
-		return true
-	})
-	return nil
+
+	// If descriptors are not the same, we could have field descriptors in src that
+	// don't match the ones in dest. There's no easy/sane way to handle that. So we
+	// just marshal to bytes and back to do this
+	data, err := proto.Marshal(src)
+	if err != nil {
+		return err
+	}
+	return proto.Unmarshal(data, dest)
 }
 
 func newDynamic(md protoreflect.MessageDescriptor) *deterministicDynamic {

@@ -11,10 +11,16 @@ import (
 
 // Link handles linking a parsed descriptor proto into a fully-linked descriptor.
 // If the given parser.Result has imports, they must all be present in the given
-// dependencies. The symbols value is optional and may be nil. The handler value
-// is used to report any link errors. If any such errors are reported, this
-// function returns a non-nil error. The Result value returned also implements
-// protoreflect.FileDescriptor.
+// dependencies.
+//
+// The symbols value is optional and may be nil. If it is not nil, it must be the
+// same instance used to create and link all of the given result's dependencies
+// (or otherwise already have all dependencies imported). Otherwise, linking may
+// fail with spurious errors resolving symbols.
+//
+// The handler value is used to report any link errors. If any such errors are
+// reported, this function returns a non-nil error. The Result value returned
+// also implements protoreflect.FileDescriptor.
 //
 // Note that linking does NOT interpret options. So options messages in the
 // returned value have all values stored in UninterpretedOptions fields.
@@ -31,6 +37,9 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 		dep := dependencies.FindFileByPath(imp)
 		if dep == nil {
 			return nil, fmt.Errorf("dependencies is missing import %q", imp)
+		}
+		if err := symbols.Import(dep, handler); err != nil {
+			return nil, err
 		}
 	}
 

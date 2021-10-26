@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -40,9 +41,9 @@ func TestErrorReporting(t *testing.T) {
 	}
 
 	testCases := []struct {
-		fileNames    []string
-		files        map[string]string
-		expectedErrs []string
+		fileNames       []string
+		files           map[string]string
+		expectedErrs    [][]string
 	}{
 		{
 			// multiple syntax errors
@@ -58,11 +59,12 @@ func TestErrorReporting(t *testing.T) {
 					}
 					`,
 			},
-			expectedErrs: []string{
-				"test.proto:5:41: syntax error: unexpected \"enum\", expecting ';'",
-				"test.proto:5:69: syntax error: unexpected ';', expecting '='",
-				"test.proto:7:53: syntax error: unexpected '='",
-				`test.proto:2:50: syntax value must be "proto2" or "proto3"`,
+			expectedErrs: [][]string{
+				{
+					"test.proto:5:41: syntax error: unexpected \"enum\", expecting ';'",
+					"test.proto:5:69: syntax error: unexpected ';', expecting '='",
+					"test.proto:7:53: syntax error: unexpected '='",
+				},
 			},
 		},
 		{
@@ -74,18 +76,19 @@ func TestErrorReporting(t *testing.T) {
 					message Foo {
 						string foo = 0;
 					}
-					enum State { C }
+					enum State { C = 0; }
 					enum Bar {
 						BAZ = 1;
 						BUZZ = 1;
 					}
 					`,
 			},
-			expectedErrs: []string{
-				"test.proto:6:56: syntax error: unexpected '}', expecting '='",
-				"test.proto:4:62: tag number 0 must be greater than zero",
-				"test.proto:8:55: enum Bar: proto3 requires that first value in enum have numeric value of 0",
-				"test.proto:9:56: enum Bar: values BAZ and BUZZ both have the same numeric value 1; use allow_alias option if intentional",
+			expectedErrs: [][]string{
+				{
+					"test.proto:4:62: tag number 0 must be greater than zero",
+					"test.proto:8:55: enum Bar: proto3 requires that first value in enum have numeric value of 0",
+					"test.proto:9:56: enum Bar: values BAZ and BUZZ both have the same numeric value 1; use allow_alias option if intentional",
+				},
 			},
 		},
 		{
@@ -107,12 +110,12 @@ func TestErrorReporting(t *testing.T) {
 					}
 					`,
 			},
-			expectedErrs: []string{
-				"test.proto:8:49: duplicate symbol BAZ: already defined as enum value; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum",
-				"test.proto:10:41: duplicate symbol Bar: already defined as enum",
-				"test.proto:12:49: duplicate symbol Bar.Foobar: already defined as method",
-				"test.proto:12:61: method Bar.Foobar: unknown request type Frob",
-				"test.proto:12:76: method Bar.Foobar: unknown response type Nitz",
+			expectedErrs: [][]string{
+				{
+					"test.proto:8:49: symbol \"BAZ\" already defined at test.proto:7:49; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum",
+					"test.proto:10:49: symbol \"Bar\" already defined at test.proto:6:46",
+					"test.proto:12:53: symbol \"Bar.Foobar\" already defined at test.proto:11:53",
+				},
 			},
 		},
 		{
@@ -139,11 +142,23 @@ func TestErrorReporting(t *testing.T) {
 					}
 					`,
 			},
-			expectedErrs: []string{
-				"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
-				"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
-				"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
-				"test2.proto:4:49: field Baz.foo: label 'required' is not allowed in proto3",
+			expectedErrs: [][]string{
+				// order depends on order of processing and reporting
+				{
+					"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
+					"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
+					"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
+				},
+				{
+					"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
+					"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
+					"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
+				},
+				{
+					"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
+					"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
+					"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
+				},
 			},
 		},
 		{
@@ -152,7 +167,6 @@ func TestErrorReporting(t *testing.T) {
 			files: map[string]string{
 				"test1.proto": `
 					syntax = "proto3";
-					import "test2.proto";
 					message Foo {
 						string foo = 1;
 					}
@@ -167,15 +181,32 @@ func TestErrorReporting(t *testing.T) {
 						BAZ = 0;
 					}
 					service Foo {
-						rpc DoSomething (Empty) returns (Foo);
+						rpc DoSomething (Empty) returns (Empty);
 					}
 					`,
 			},
-			expectedErrs: []string{
-				"test2.proto:4:41: duplicate symbol Bar: already defined as service in \"test1.proto\"",
-				"test2.proto:7:41: duplicate symbol Foo: already defined as message in \"test1.proto\"",
-				"test1.proto:8:75: method Bar.Frob: unknown response type Nitz",
-				"test2.proto:8:82: method Foo.DoSomething: invalid response type: Foo is a service, not a message",
+			// because files are compiled concurrently, the order of processing can
+			// impact the actual errors reported
+			expectedErrs: [][]string{
+				{
+					// if test2.proto processed first
+					"test1.proto:3:49: symbol \"Foo\" already defined at test2.proto:7:49",
+					"test1.proto:6:49: symbol \"Bar\" already defined at test2.proto:4:46",
+				},
+				{
+					// if test.proto processed first and reports first
+					"test1.proto:7:59: method Bar.Frob: unknown request type Empty",
+					"test1.proto:7:75: method Bar.Frob: unknown response type Nitz",
+					"test2.proto:4:46: symbol \"Bar\" already defined at test1.proto:6:49",
+					"test2.proto:7:49: symbol \"Foo\" already defined at test1.proto:3:49",
+				},
+				{
+					// if test.proto processed first but reports second
+					"test2.proto:4:46: symbol \"Bar\" already defined at test1.proto:6:49",
+					"test2.proto:7:49: symbol \"Foo\" already defined at test1.proto:3:49",
+					"test1.proto:7:59: method Bar.Frob: unknown request type Empty",
+					"test1.proto:7:75: method Bar.Frob: unknown response type Nitz",
+				},
 			},
 		},
 	}
@@ -198,18 +229,14 @@ func TestErrorReporting(t *testing.T) {
 
 		// returns sentinel, but all actual errors in reported
 		assert.Equal(t, reporter.ErrInvalidSource, err, "case #%d: parse should have failed with invalid source error", i+1)
-		assert.Equal(t, len(tc.expectedErrs), count, "case #%d: parse should have called reporter %d times", i+1, len(tc.expectedErrs))
-		if assert.Equal(t, len(tc.expectedErrs), len(reported), "case #%d: wrong number of errors reported", i+1) {
-			for j := range tc.expectedErrs {
-				if !assert.Equal(t, tc.expectedErrs[j], reported[j].Error(), "case #%d: parse error[%d] have %q; instead got %q", i+1, j, tc.expectedErrs[j], reported[j].Error()) {
-					continue
-				}
-				split := strings.SplitN(tc.expectedErrs[j], ":", 4)
-				if assert.Equal(t, 4, len(split), "case #%d: expected %q [%d] to contain at least 4 elements split by :", i+1, tc.expectedErrs[j], j) {
-					assert.Equal(t, split[3], " "+reported[j].Unwrap().Error(), "case #%d: parse error underlying[%d] have %q; instead got %q", i+1, j, split[3], reported[j].Unwrap().Error())
-				}
+		var match []string
+		for _, errs := range tc.expectedErrs {
+			if reflect.DeepEqual(errs, reportedMsgs) {
+				match = errs
+				break
 			}
 		}
+		assert.NotNil(t, match, "case #%d: reported errors do not match expected", i+1)
 
 		count = 0
 		compiler.Reporter = reporter.NewReporter(failFastReporter(&count), nil)
@@ -218,16 +245,32 @@ func TestErrorReporting(t *testing.T) {
 		assert.Equal(t, 1, count, "case #%d: parse should have called reporter only once", i+1)
 
 		count = 0
-		compiler.Reporter = reporter.NewReporter(limitedErrReporter(3, &count), nil)
+		compiler.Reporter = reporter.NewReporter(limitedErrReporter(2, &count), nil)
 		_, err = compiler.Compile(ctx, tc.fileNames...)
-		if len(tc.expectedErrs) > 3 {
+		if count > 2 {
 			assert.Equal(t, tooManyErrors, err, "case #%d: parse should have failed with too many errors", i+1)
-			assert.Equal(t, 4, count, "case #%d: parse should have called reporter 4 times", i+1)
+			assert.Equal(t, 3, count, "case #%d: parse should have called reporter 3 times", i+1)
+			// this should only be possible if one of the errors scenarios expects >2 errors
+			max := 0
+			for _, errs := range tc.expectedErrs {
+				if len(errs) > max {
+					max = len(errs)
+				}
+			}
+			assert.True(t, max > 2, "case #%d: should not have called reporter so many times (%d), max expected errors only %d", i+1, count, max)
 		} else {
 			// less than threshold means reporter always returned nil,
 			// so parse returns ErrInvalidSource sentinel
 			assert.Equal(t, reporter.ErrInvalidSource, err, "case #%d: parse should have failed with invalid source error", i+1)
-			assert.Equal(t, len(tc.expectedErrs), count, "case #%d: parse should have called reporter %d times", i+1, len(tc.expectedErrs))
+			// the number of errors reported should match some error scenario
+			okay := false
+			for _, errs := range tc.expectedErrs {
+				if len(errs) == count {
+					okay = true
+					break
+				}
+			}
+			assert.True(t, okay, "case #%d: parse called reporter unexpected number of times (%d)", i+1, count)
 		}
 	}
 }
@@ -361,16 +404,19 @@ func TestWarningReporting(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			compiler := Compiler{
-				Resolver: &SourceResolver{Accessor: SourceAccessorFromMap(testCase.sources)},
+				Resolver: WithStandardImports(&SourceResolver{Accessor: SourceAccessorFromMap(testCase.sources)}),
 				Reporter: reporter.NewReporter(nil, rep),
 			}
 			msgs = nil
 			_, err := compiler.Compile(ctx, "test.proto")
 			assert.Nil(t, err)
 
-			actualNotices := make([]string, len(msgs))
-			for j, msg := range msgs {
-				actualNotices[j] = fmt.Sprintf("%s: %s", msg.pos, msg.text)
+			var actualNotices []string
+			if len(msgs) > 0 {
+				actualNotices = make([]string, len(msgs))
+				for j, msg := range msgs {
+					actualNotices[j] = fmt.Sprintf("%s: %s", msg.pos, msg.text)
+				}
 			}
 			assert.Equal(t, testCase.expectedNotices, actualNotices)
 		})

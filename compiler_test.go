@@ -189,7 +189,7 @@ message Foo {
 	})
 
 	compiler := Compiler{
-		Resolver:          &SourceResolver{Accessor: accessor},
+		Resolver:          WithStandardImports(&SourceResolver{Accessor: accessor}),
 		IncludeSourceInfo: true,
 	}
 	ctx := context.Background()

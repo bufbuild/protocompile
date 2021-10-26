@@ -63,10 +63,12 @@ func (r reporterFuncs) Warning(err ErrorWithPos) {
 }
 
 // Handler is used by protocompile operations for handling errors and warnings.
+// This type is thread-safe. It uses a mutex to serialize calls to its reporter
+// so that reporter instances do not have to be thread-safe (unless re-used
+// across multiple handlers).
 type Handler struct {
-	reporter Reporter
-
 	mu           sync.Mutex
+	reporter     Reporter
 	errsReported bool
 	err          error
 }
@@ -87,16 +89,7 @@ func NewHandler(rep Reporter) *Handler {
 // to HandleError or HandleErrorf), that same error is returned and the given
 // error is not reported.
 func (h *Handler) HandleErrorf(pos ast.SourcePos, format string, args ...interface{}) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if h.err != nil {
-		return h.err
-	}
-	h.errsReported = true
-	err := h.reporter.Error(Errorf(pos, format, args...))
-	h.err = err
-	return err
+	return h.HandleError(Errorf(pos, format, args...))
 }
 
 // HandleError handles the given error. If the given err is an ErrorWithPos, it
@@ -125,7 +118,11 @@ func (h *Handler) HandleError(err error) error {
 // HandleWarning handles a warning with the given source position. This will
 // delegate to the handler's configured reporter.
 func (h *Handler) HandleWarning(pos ast.SourcePos, err error) {
-	// no need for lock; warnings don't interact with mutable fields
+	// even though we aren't touching mutable fields, we acquire lock anyway so
+	// that underlying reporter does not have to be thread-safe
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	h.reporter.Warning(errorWithSourcePos{pos: pos, underlying: err})
 }
 

@@ -91,12 +91,25 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 		results: map[string]*result{},
 	}
 
+	// We lock now and create all tasks under lock to make sure that no
+	// async task can create a duplicate result. For example, if files
+	// contains both "foo.proto" and "bar.proto", then there is a race
+	// after we start compiling "foo.proto" between this loop and the
+	// async compilation task to create the result for "bar.proto". But
+	// we need to know if the file is directly requested for compilation,
+	// so we need this loop to define the result. So this loop holds the
+	// lock the whole time so async tasks can't create a result first.
 	results := make([]*result, len(files))
-	for i, f := range files {
-		results[i] = e.compile(ctx, f)
-	}
+	func() {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		for i, f := range files {
+			results[i] = e.compileLocked(ctx, f, true)
+		}
+	}()
 
 	descs := make([]linker.File, len(files))
+	var firstError error
 	for i, r := range results {
 		select {
 		case <-r.ready:
@@ -104,17 +117,28 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 			return nil, ctx.Err()
 		}
 		if r.err != nil {
-			return nil, r.err
+			if firstError == nil {
+				firstError = r.err
+			}
 		}
 		descs[i] = r.res
 	}
 
-	return descs, nil
+	if err := h.Error(); err != nil {
+		return descs, err
+	}
+	// this should probably never happen; if any task returned an
+	// error, h.Error() should be non-nil
+	return descs, firstError
 }
 
 type result struct {
 	name  string
 	ready chan struct{}
+
+	// true if this file was explicitly provided to the compiler; otherwise
+	// this file is an import that is implicitly included
+	explicitFile bool
 
 	// produces a linker.File or error, only available when ready is closed
 	res linker.File
@@ -162,20 +186,38 @@ type executor struct {
 func (e *executor) compile(ctx context.Context, file string) *result {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+
+	return e.compileLocked(ctx, file, false)
+}
+
+func (e *executor) compileLocked(ctx context.Context, file string, explicitFile bool) *result {
 	r := e.results[file]
 	if r != nil {
 		return r
 	}
 
 	r = &result{
-		name:  file,
-		ready: make(chan struct{}),
+		name:         file,
+		ready:        make(chan struct{}),
+		explicitFile: explicitFile,
 	}
 	e.results[file] = r
 	go func() {
 		e.doCompile(ctx, file, r)
 	}()
 	return r
+}
+
+type errFailedToResolve struct {
+	err error
+}
+
+func (e errFailedToResolve) Error() string {
+	return e.err.Error()
+}
+
+func (e errFailedToResolve) Unwrap() error {
+	return e.err
 }
 
 func (e *executor) doCompile(ctx context.Context, file string, r *result) {
@@ -274,10 +316,12 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 			select {
 			case <-res.ready:
 				if res.err != nil {
-					if _, ok := res.err.(reporter.ErrorWithPos); !ok {
-						// if we don't already have a source position, use the position
-						// of the filename in the import statement
-						return nil, reporter.Error(findImportPos(parseRes, res.name), res.err)
+					if rerr, ok := res.err.(errFailedToResolve); ok {
+						// We don't report errors to get file from resolver to handler since
+						// it's usually considered immediately fatal. However, if the reason
+						// we were resolving is due to an import, turn this into an error with
+						// source position that pinpoints the import statement and report it.
+						return nil, reporter.Error(findImportPos(parseRes, res.name), rerr.err)
 					}
 					return nil, res.err
 				}
@@ -368,7 +412,9 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	if err := file.ValidateExtensions(t.e.h); err != nil {
 		return nil, err
 	}
-	file.CheckForUnusedImports(t.e.h)
+	if t.r.explicitFile {
+		file.CheckForUnusedImports(t.e.h)
+	}
 
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
 		parseRes.Proto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)

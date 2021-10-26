@@ -46,16 +46,28 @@ func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handl
 		fd = f.FileDescriptor
 	}
 
-	if res, ok := fd.(*result); ok {
-		return s.importResult(res, false, true, handler)
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	return s.importLocked(fd, handler)
+}
+
+func (s *Symbols) importLocked(fd protoreflect.FileDescriptor, handler *reporter.Handler) error {
 	if _, ok := s.files[fd]; ok {
 		// already imported
 		return nil
+	}
+
+	// make sure deps are imported
+	for i := 0; i < fd.Imports().Len(); i++ {
+		imp := fd.Imports().Get(i)
+		if err := s.importLocked(imp.FileDescriptor, handler); err != nil {
+			return err
+		}
+	}
+
+	if res, ok := fd.(*result); ok {
+		return s.importResultLocked(res, false, true, handler)
 	}
 
 	// first pass: check for conflicts
@@ -67,7 +79,7 @@ func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handl
 	}
 
 	// second pass: commit all symbols
-	s.importFileLocked(fd)
+	s.commitFileLocked(fd)
 
 	return nil
 }
@@ -130,7 +142,7 @@ func isZeroLoc(loc protoreflect.SourceLocation) bool {
 		loc.EndColumn == 0
 }
 
-func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
+func (s *Symbols) commitFileLocked(f protoreflect.FileDescriptor) {
 	if s.symbols == nil {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
@@ -174,6 +186,10 @@ func (s *Symbols) importResult(r *result, populatePool bool, checkExts bool, han
 		return nil
 	}
 
+	return s.importResultLocked(r, populatePool, checkExts, handler)
+}
+
+func (s *Symbols) importResultLocked(r *result, populatePool bool, checkExts bool, handler *reporter.Handler) error {
 	// first pass: check for conflicts
 	if err := s.checkResultLocked(r, checkExts, handler); err != nil {
 		return err
@@ -183,7 +199,7 @@ func (s *Symbols) importResult(r *result, populatePool bool, checkExts bool, han
 	}
 
 	// second pass: commit all symbols
-	s.importResultLocked(r, populatePool)
+	s.commitResultLocked(r, populatePool)
 
 	return nil
 }
@@ -259,7 +275,7 @@ func nameStart(n ast.Node) ast.SourcePos {
 	}
 }
 
-func (s *Symbols) importResultLocked(r *result, populatePool bool) {
+func (s *Symbols) commitResultLocked(r *result, populatePool bool) {
 	if s.symbols == nil {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
