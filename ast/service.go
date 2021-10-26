@@ -81,6 +81,7 @@ var _ ServiceElement = (*EmptyDeclNode)(nil)
 // for some usages.
 type RPCDeclNode interface {
 	Node
+	GetName() Node
 	GetInputType() Node
 	GetOutputType() Node
 }
@@ -206,6 +207,10 @@ func NewRPCNodeWithBody(keyword *KeywordNode, name *IdentNode, input *RPCTypeNod
 		Decls:      decls,
 		CloseBrace: closeBrace,
 	}
+}
+
+func (n *RPCNode) GetName() Node {
+	return n.Name
 }
 
 func (n *RPCNode) GetInputType() Node {

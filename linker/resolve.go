@@ -380,7 +380,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		extd, ok := dsc.(protoreflect.MessageDescriptor)
 		if !ok {
 			otherType := descriptorType(dsc)
-			return handler.HandleErrorf(node.FieldExtendee().Start(), "extendee is invalid: %s is a %s, not a message", fqn, otherType)
+			return handler.HandleErrorf(node.FieldExtendee().Start(), "extendee is invalid: %s is a %s, not a message", dsc.FullName(), otherType)
 		}
 		fld.Extendee = proto.String("." + string(dsc.FullName()))
 		// make sure the tag number is in range
@@ -394,12 +394,12 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 			}
 		}
 		if !found {
-			if err := handler.HandleErrorf(node.FieldTag().Start(), "%s: tag %d is not in valid range for extended type %s", scope, tag, fqn); err != nil {
+			if err := handler.HandleErrorf(node.FieldTag().Start(), "%s: tag %d is not in valid range for extended type %s", scope, tag, dsc.FullName()); err != nil {
 				return err
 			}
 		} else {
 			// make sure tag is not a duplicate
-			if err := s.addExtension(dsc.FullName(), tag, node.Start(), handler); err != nil {
+			if err := s.addExtension(dsc.FullName(), tag, node.FieldTag().Start(), handler); err != nil {
 				return err
 			}
 		}

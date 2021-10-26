@@ -274,6 +274,11 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 			select {
 			case <-res.ready:
 				if res.err != nil {
+					if _, ok := res.err.(reporter.ErrorWithPos); !ok {
+						// if we don't already have a source position, use the position
+						// of the filename in the import statement
+						return nil, reporter.Error(findImportPos(parseRes, res.name), res.err)
+					}
 					return nil, res.err
 				}
 				deps[i] = res.res
@@ -342,7 +347,7 @@ func findImportPos(res parser.Result, dep string) ast.SourcePos {
 	for _, decl := range root.Decls {
 		if imp, ok := decl.(*ast.ImportNode); ok {
 			if imp.Name.AsString() == dep {
-				return imp.Start()
+				return imp.Name.Start()
 			}
 		}
 	}

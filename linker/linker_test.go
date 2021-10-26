@@ -3,8 +3,6 @@ package linker_test
 import (
 	"context"
 	"fmt"
-	"github.com/jhump/protocompile/parser"
-	"github.com/jhump/protocompile/reporter"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -34,13 +32,12 @@ func TestSimpleLink(t *testing.T) {
 		return
 	}
 
-	files := loadDescriptorSet(t, "../internal/testprotos/desc_test_complex.protoset", fds.AsResolver())
 	res := fds[0].(linker.Result)
-	exp := files.FindFileByPath(res.Path())
-	checkFiles(t, res, exp, map[string]struct{}{})
+	fdset := loadDescriptorSet(t, "../internal/testprotos/desc_test_complex.protoset", fds.AsResolver())
+	checkFiles(t, res, (*fdsProtoSet)(fdset), map[string]struct{}{})
 }
 
-func loadDescriptorSet(t *testing.T, path string, res linker.Resolver) linker.Files {
+func loadDescriptorSet(t *testing.T, path string, res linker.Resolver) *descriptorpb.FileDescriptorSet {
 	data, err := ioutil.ReadFile(path)
 	if !assert.Nil(t, err) {
 		t.Fail()
@@ -50,18 +47,7 @@ func loadDescriptorSet(t *testing.T, path string, res linker.Resolver) linker.Fi
 	if !assert.Nil(t, err) {
 		t.Fail()
 	}
-
-	var files linker.Files
-	h := reporter.NewHandler(nil)
-	for _, fd := range fdset.File {
-		r, err := linker.Link(parser.ResultWithoutAST(fd), files, nil, h)
-		if !assert.Nil(t, err) {
-			t.Fail()
-		}
-		files = append(files, r)
-	}
-
-	return files
+	return &fdset
 }
 
 func TestMultiFileLink(t *testing.T) {
@@ -76,13 +62,8 @@ func TestMultiFileLink(t *testing.T) {
 			continue
 		}
 
-		exp, err := protoregistry.GlobalFiles.FindFileByPath(name)
-		if !assert.Nil(t, err) {
-			continue
-		}
-
 		res := fds[0].(linker.Result)
-		checkFiles(t, res, exp, map[string]struct{}{})
+		checkFiles(t, res, (*regProtoSet)(protoregistry.GlobalFiles), map[string]struct{}{})
 	}
 }
 
@@ -97,58 +78,30 @@ func TestProto3Optional(t *testing.T) {
 		return
 	}
 
-	data, err := ioutil.ReadFile("../internal/testprotos/desc_test_proto3_optional.protoset")
-	if !assert.Nil(t, err) {
-		return
-	}
-	var fdset descriptorpb.FileDescriptorSet
-	err = proto.UnmarshalOptions{Resolver: fds.AsResolver()}.Unmarshal(data, &fdset)
-	if !assert.Nil(t, err) {
-		return
-	}
-
-	var files linker.Files
-	h := reporter.NewHandler(nil)
-	for _, fd := range fdset.File {
-		r, err := linker.Link(parser.ResultWithoutAST(fd), files, nil, h)
-		if !assert.Nil(t, err) {
-			return
-		}
-		files = append(files, r)
-	}
-	exp := files.FindFileByPath(fds[0].Path())
-	if !assert.NotNil(t, exp) {
-		return
-	}
+	fdset := loadDescriptorSet(t, "../internal/testprotos/desc_test_proto3_optional.protoset", fds.AsResolver())
 
 	res := fds[0].(linker.Result)
-	checkFiles(t, res, exp, map[string]struct{}{})
+	checkFiles(t, res, (*fdsProtoSet)(fdset), map[string]struct{}{})
 }
 
-func checkFiles(t *testing.T, act, exp protoreflect.FileDescriptor, checked map[string]struct{}) {
+func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet fileProtoSet, checked map[string]struct{}) {
 	if _, ok := checked[act.Path()]; ok {
 		// already checked
 		return
 	}
 	checked[act.Path()] = struct{}{}
 
-	expProto := toProto(exp)
+	expProto := expSet.findFile(act.Path())
 	actProto := toProto(act)
 	checkFileDescriptor(t, actProto, expProto)
 
 	for i := 0; i < act.Imports().Len(); i++ {
-		actDep := act.Imports().Get(i)
-		expDep := exp.Imports().Get(i)
-		if actDep.Name() == expDep.Name() && actDep.Name() == "google/protobuf/descriptor.proto" {
-			continue
-		}
-		checkFiles(t, actDep, expDep, checked)
+		checkFiles(t, act.Imports().Get(i), expSet, checked)
 	}
 }
 
 func checkFileDescriptor(t *testing.T, act, exp *descriptorpb.FileDescriptorProto) {
 	assert.True(t, proto.Equal(exp, act), "linked descriptor did not match output from protoc:\nwanted: %s\ngot: %s", toString(exp), toString(act))
-
 }
 
 func toProto(f protoreflect.FileDescriptor) *descriptorpb.FileDescriptorProto {
@@ -168,6 +121,36 @@ func toString(m proto.Message) string {
 		panic(err)
 	}
 	return string(js)
+}
+
+type fileProtoSet interface {
+	findFile(name string) *descriptorpb.FileDescriptorProto
+}
+
+type fdsProtoSet descriptorpb.FileDescriptorSet
+
+var _ fileProtoSet = &fdsProtoSet{}
+
+func (fps *fdsProtoSet) findFile(name string) *descriptorpb.FileDescriptorProto {
+	files := (*descriptorpb.FileDescriptorSet)(fps).File
+	for _, fd := range files {
+		if fd.GetName() == name {
+			return fd
+		}
+	}
+	return nil
+}
+
+type regProtoSet protoregistry.Files
+
+var _ fileProtoSet = &regProtoSet{}
+
+func (fps *regProtoSet) findFile(name string) *descriptorpb.FileDescriptorProto {
+	f, err := (*protoregistry.Files)(fps).FindFileByPath(name)
+	if err != nil {
+		return nil
+	}
+	return toProto(f)
 }
 
 func TestLinkerValidation(t *testing.T) {
@@ -195,32 +178,36 @@ func TestLinkerValidation(t *testing.T) {
 				"foo.proto":  "import \"foo2.proto\"; message fubar{}",
 				"foo2.proto": "import \"foo.proto\"; message baz{}",
 			},
-			`foo.proto:1:8: cycle found in imports: "foo.proto" -> "foo2.proto" -> "foo.proto"`,
+			// since files are compiled concurrently, there are two possible outcomes
+			`foo.proto:1:8: cycle found in imports: "foo.proto" -> "foo2.proto" -> "foo.proto"` +
+				` || foo2.proto:1:8: cycle found in imports: "foo2.proto" -> "foo.proto" -> "foo2.proto"`,
 		},
 		{
 			map[string]string{
 				"foo.proto": "enum foo { bar = 1; baz = 2; } enum fu { bar = 1; baz = 2; }",
 			},
-			`foo.proto:1:42: duplicate symbol bar: already defined as enum value; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum`,
+			`foo.proto:1:42: symbol "bar" already defined at foo.proto:1:12; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum`,
 		},
 		{
 			map[string]string{
 				"foo.proto": "message foo {} enum foo { V = 0; }",
 			},
-			"foo.proto:1:16: duplicate symbol foo: already defined as message",
+			`foo.proto:1:21: symbol "foo" already defined at foo.proto:1:9`,
 		},
 		{
 			map[string]string{
 				"foo.proto": "message foo { optional string a = 1; optional string a = 2; }",
 			},
-			"foo.proto:1:38: duplicate symbol foo.a: already defined as field",
+			`foo.proto:1:54: symbol "foo.a" already defined at foo.proto:1:31`,
 		},
 		{
 			map[string]string{
 				"foo.proto":  "message foo {}",
 				"foo2.proto": "enum foo { V = 0; }",
 			},
-			"foo2.proto:1:1: duplicate symbol foo: already defined as message in \"foo.proto\"",
+			// since files are compiled concurrently, there are two possible outcomes
+			"foo.proto:1:9: symbol \"foo\" already defined at foo2.proto:1:6" +
+				" || foo2.proto:1:6: symbol \"foo\" already defined at foo.proto:1:9",
 		},
 		{
 			map[string]string{
@@ -238,7 +225,7 @@ func TestLinkerValidation(t *testing.T) {
 			map[string]string{
 				"foo.proto": "message foo { extensions 1 to 2; } extend foo { optional string a = 1; } extend foo { optional int32 b = 1; }",
 			},
-			"foo.proto:1:106: field b: duplicate extension: a and b are both using tag 1",
+			"foo.proto:1:106: extension with tag 1 for message foo already defined at foo.proto:1:69",
 		},
 		{
 			map[string]string{
@@ -443,7 +430,7 @@ func TestLinkerValidation(t *testing.T) {
 					"option (f) = { a: \"a\" };\n" +
 					"option (f) = { a: \"b\" };",
 			},
-			"foo.proto:6:8: option (f): non-repeated option field f already set",
+			"foo.proto:6:8: option (f): non-repeated option field (f) already set",
 		},
 		{
 			map[string]string{
@@ -623,6 +610,7 @@ func TestLinkerValidation(t *testing.T) {
 			"foo.proto:6:30: message Baz: option (foo): field Bar not found",
 		},
 	}
+
 	for i, tc := range testCases {
 		t.Log("test case", i+1)
 		acc := func(filename string) (io.ReadCloser, error) {
@@ -649,8 +637,18 @@ func TestLinkerValidation(t *testing.T) {
 			}
 		} else if err == nil {
 			t.Errorf("case %d: expecting validation error %q; instead got no error", i, tc.errMsg)
-		} else if err.Error() != tc.errMsg {
-			t.Errorf("case %d: expecting validation error %q; instead got: %q", i, tc.errMsg, err)
+		} else {
+			msgs := strings.Split(tc.errMsg, " || ")
+			found := false
+			for _, errMsg := range msgs {
+				if err.Error() == errMsg {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("case %d: expecting validation error %q; instead got: %q", i, tc.errMsg, err)
+			}
 		}
 	}
 }

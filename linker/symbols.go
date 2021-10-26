@@ -111,9 +111,23 @@ func (s *Symbols) checkFileLocked(f protoreflect.FileDescriptor, handler *report
 }
 
 func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
-	//TODO: d.ParentFile().SourceLocations().ByDescriptor(d)
-	d.ParentFile()
-	return ast.UnknownPos(d.ParentFile().Path())
+	loc := d.ParentFile().SourceLocations().ByDescriptor(d)
+	if isZeroLoc(loc) {
+		return ast.UnknownPos(d.ParentFile().Path())
+	}
+	return ast.SourcePos{
+		Filename: d.ParentFile().Path(),
+		Line:     loc.StartLine,
+		Col:      loc.StartColumn,
+	}
+}
+
+func isZeroLoc(loc protoreflect.SourceLocation) bool {
+	return loc.Path == nil &&
+		loc.StartLine == 0 &&
+		loc.StartColumn == 0 &&
+		loc.EndLine == 0 &&
+		loc.EndColumn == 0
 }
 
 func (s *Symbols) importFileLocked(f protoreflect.FileDescriptor) {
@@ -175,14 +189,29 @@ func (s *Symbols) importResult(r *result, populatePool bool, checkExts bool, han
 }
 
 func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter.Handler) error {
+	resultSyms := map[protoreflect.FullName]symbolEntry{}
 	return walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		pos := r.Node(d).Start()
+		_, isEnumVal := d.(*descriptorpb.EnumValueDescriptorProto)
+		node := r.Node(d)
+		pos := nameStart(node)
+		// check symbols already in this symbol table
 		if existing, ok := s.symbols[fqn]; ok {
-			_, isEnumVal := d.(*descriptorpb.EnumValueDescriptorProto)
 			if err := reportSymbolCollision(pos, fqn, isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
+
+		// also check symbols from this result (that are not yet in symbol table)
+		if existing, ok := resultSyms[fqn]; ok {
+			if err := reportSymbolCollision(pos, fqn, isEnumVal, existing, handler); err != nil {
+				return err
+			}
+		}
+		resultSyms[fqn] = symbolEntry{
+			pos:         pos,
+			isEnumValue: isEnumVal,
+		}
+
 		if !checkExts {
 			return nil
 		}
@@ -199,6 +228,7 @@ func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter
 		extendeeFqn := protoreflect.FullName(strings.TrimPrefix(extendee, "."))
 		if tags, ok := s.exts[extendeeFqn]; ok {
 			if existing, ok := tags[protoreflect.FieldNumber(fld.GetNumber())]; ok {
+				pos := node.(ast.FieldDeclNode).FieldTag().Start()
 				if err := handler.HandleErrorf(pos, "extension with tag %d for message %s already defined at %v", fld.GetNumber(), extendeeFqn, existing); err != nil {
 					return err
 				}
@@ -209,6 +239,26 @@ func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter
 	})
 }
 
+func nameStart(n ast.Node) ast.SourcePos {
+	// TODO: maybe ast package needs a NamedNode interface to simplify this?
+	switch n := n.(type) {
+	case ast.FieldDeclNode:
+		return n.FieldName().Start()
+	case ast.MessageDeclNode:
+		return n.MessageName().Start()
+	case ast.EnumValueDeclNode:
+		return n.GetName().Start()
+	case *ast.EnumNode:
+		return n.Name.Start()
+	case *ast.ServiceNode:
+		return n.Name.Start()
+	case ast.RPCDeclNode:
+		return n.GetName().Start()
+	default:
+		return n.Start()
+	}
+}
+
 func (s *Symbols) importResultLocked(r *result, populatePool bool) {
 	if s.symbols == nil {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
@@ -217,7 +267,7 @@ func (s *Symbols) importResultLocked(r *result, populatePool bool) {
 		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
 	_ = walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		pos := r.Node(d).Start()
+		pos := nameStart(r.Node(d))
 		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
 		s.symbols[fqn] = symbolEntry{pos: pos, isEnumValue: isEnumValue}
 		if populatePool {
