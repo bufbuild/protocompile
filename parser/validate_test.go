@@ -1,10 +1,12 @@
 package parser
 
 import (
-	"github.com/jhump/protocompile/reporter"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/jhump/protocompile/reporter"
 )
 
 func TestBasicValidation(t *testing.T) {

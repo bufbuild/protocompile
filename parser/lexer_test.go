@@ -1,13 +1,14 @@
 package parser
 
 import (
-	"github.com/jhump/protocompile/reporter"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/jhump/protocompile/ast"
+	"github.com/jhump/protocompile/reporter"
 )
 
 func TestLexer(t *testing.T) {

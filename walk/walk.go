@@ -21,10 +21,11 @@
 package walk
 
 import (
-	"github.com/jhump/protocompile/internal"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/jhump/protocompile/internal"
 )
 
 // Descriptors walks all descriptors in the given file using a depth-first

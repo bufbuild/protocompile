@@ -2,6 +2,7 @@ package linker
 
 import (
 	"fmt"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 

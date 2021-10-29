@@ -2,13 +2,14 @@ package options
 
 import (
 	"fmt"
-	"github.com/jhump/protocompile/parser"
-	"github.com/jhump/protocompile/reporter"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/jhump/protocompile/parser"
+	"github.com/jhump/protocompile/reporter"
 )
 
 type ident string
