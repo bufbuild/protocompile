@@ -2,6 +2,7 @@ package protocompile
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -205,4 +206,15 @@ message Foo {
 	ext = fds[0].Extensions().ByName("bar")
 	barVal := md.Options().ProtoReflect().Get(ext)
 	assert.Equal(t, int64(123), barVal.Int())
+}
+
+func TestPanicHandling(t *testing.T) {
+	c := Compiler{
+		Resolver: ResolverFunc(func(string) (SearchResult, error) {
+			panic(errors.New("mui mui bad"))
+		}),
+	}
+	_, err := c.Compile(context.Background(), "test.proto")
+	panicErr := err.(PanicError)
+	t.Logf("%v\n\n%v", panicErr, panicErr.Stack)
 }

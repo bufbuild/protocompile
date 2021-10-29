@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -118,7 +119,6 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 			return nil, ctx.Err()
 		}
 		if r.err != nil {
-			fmt.Printf("got error for %q: %v\n", r.name, r.err)
 			if firstError == nil {
 				firstError = r.err
 			}
@@ -205,9 +205,48 @@ func (e *executor) compileLocked(ctx context.Context, file string, explicitFile 
 	}
 	e.results[file] = r
 	go func() {
+		defer func() {
+			if p := recover(); p != nil {
+				if r.err == nil {
+					// TODO: strip top frames from stack trace so that the panic is
+					//  the top of the trace?
+					panicErr := PanicError{File: file, Value: p, Stack: string(debug.Stack())}
+					r.fail(panicErr)
+				}
+				// TODO: if r.err != nil, then this task has already
+				//  failed and there's nothing we can really do to
+				//  communicate this panic to parent goroutine. This
+				//  means the panic must have happened *after* the
+				//  failure was already recorded (or during?)
+				//  It would be nice to do something else here, like
+				//  send the compiler an out-of-band error? Or log?
+			}
+		}()
 		e.doCompile(ctx, file, r)
 	}()
 	return r
+}
+
+// PanicError is an error value that represents a recovered panic. It includes
+// the value returned by recover() as well as the stack trace.
+//
+// This should generally only be seen if a Resolver implementation panics.
+//
+// An error returned by a Compiler may wrap a PanicError, so you may need to
+// use errors.As(...) to access panic details.
+type PanicError struct {
+	// The file that was being processed when the panic occurred
+	File  string
+	// The value returned by recover()
+	Value interface{}
+	// A formatted stack trace
+	Stack string
+}
+
+// Error implements the error interface. It does NOT include the stack trace.
+// Use a type assertion and query the Stack field directly to access that.
+func (p PanicError) Error() string {
+	return fmt.Sprintf("panic handling %q: %v", p.File, p.Value)
 }
 
 type errFailedToResolve struct {
