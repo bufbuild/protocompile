@@ -420,7 +420,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		}
 		mc.option = uo
 		path, err := interp.interpretField(mc, element, msg, uo, 0, nil)
-		if err != nil {
+		if err != nil || path == nil {
 			if interp.lenient {
 				remain = append(remain, uo)
 				continue
@@ -672,6 +672,14 @@ func (interp *interpreter) interpretField(mc *messageContext, element proto.Mess
 			v := msg.Mutable(fld)
 			fdm = v.Message()
 		} else {
+			if ood := fld.ContainingOneof(); ood != nil {
+				existingFld := msg.WhichOneof(ood)
+				if existingFld != nil && existingFld.Number() != fld.Number() {
+					return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
+						"%voneof %q already has field %q set",
+						mc, ood.Name(), fieldName(existingFld))
+				}
+			}
 			fdm = newDynamic(fld.Message())
 			msg.Set(fld, protoreflect.ValueOfMessage(fdm))
 		}
