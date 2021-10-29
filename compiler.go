@@ -397,18 +397,17 @@ func handleImportCycle(h *reporter.Handler, pos ast.SourcePos, importSequence []
 func findImportPos(res parser.Result, dep string) ast.SourcePos {
 	root := res.AST()
 	if root == nil {
-		// this will report a valid position even w/out AST
-		return res.FileNode().Start()
+		return ast.UnknownPos(res.FileNode().Name())
 	}
 	for _, decl := range root.Decls {
 		if imp, ok := decl.(*ast.ImportNode); ok {
 			if imp.Name.AsString() == dep {
-				return imp.Name.Start()
+				return root.NodeInfo(imp.Name).Start()
 			}
 		}
 	}
 	// this should never happen...
-	return res.FileNode().Start()
+	return ast.UnknownPos(res.FileNode().Name())
 }
 
 func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, error) {
@@ -452,8 +451,8 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 
 func (t *task) asAST(name string, r SearchResult) (*ast.FileNode, error) {
 	if r.AST != nil {
-		if r.AST.Start().Filename != name {
-			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.AST.Start().Filename)
+		if r.AST.Name() != name {
+			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.AST.Name())
 		}
 		return r.AST, nil
 	}

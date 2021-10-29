@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jhump/protocompile/ast"
 	"github.com/jhump/protocompile/reporter"
 )
 
 func TestLexer(t *testing.T) {
-	l := newTestLexer(strings.NewReader(`
+	handler := reporter.NewHandler(nil)
+	l := newTestLexer(t, strings.NewReader(`
 	// comment
 
 	/*
@@ -79,7 +81,7 @@ foo
 	/* another comment followed by some final whitespace*/
 
 	
-	`))
+	`), handler)
 
 	var prev ast.Node
 	var sym protoSymType
@@ -189,45 +191,53 @@ foo
 			n = sym.b
 			val = nil
 		}
-		if !assert.Equal(t, exp.t, tok, "case %d: wrong token type (expecting %v, got %v)", i, exp.v, val) {
+		if !assert.Equal(t, exp.t, tok, "case %d: wrong token type (expecting %+v, got %+v)", i, exp.v, val) {
 			break
 		}
 		if !assert.Equal(t, exp.v, val, "case %d: wrong token value", i) {
 			break
 		}
-		assert.Equal(t, exp.line, n.Start().Line, "case %d: wrong line number", i)
-		assert.Equal(t, exp.col, n.Start().Col, "case %d: wrong column number (on line %d)", i, exp.line)
-		assert.Equal(t, exp.line, n.End().Line, "case %d: wrong end line number", i)
-		assert.Equal(t, exp.col+exp.span, n.End().Col, "case %d: wrong end column number", i)
+		nodeInfo := l.info.NodeInfo(n)
+		var prevNodeInfo ast.NodeInfo
+		if prev != nil {
+			prevNodeInfo = l.info.NodeInfo(prev)
+		}
+		assert.Equal(t, exp.line, nodeInfo.Start().Line, "case %d: wrong line number", i)
+		assert.Equal(t, exp.col, nodeInfo.Start().Col, "case %d: wrong column number (on line %d)", i, exp.line)
+		assert.Equal(t, exp.line, nodeInfo.End().Line, "case %d: wrong end line number", i)
+		assert.Equal(t, exp.col+exp.span, nodeInfo.End().Col, "case %d: wrong end column number", i)
 		actualTrailCount := 0
 		if prev != nil {
-			actualTrailCount = len(prev.TrailingComments())
+			actualTrailCount = prevNodeInfo.TrailingComments().Len()
 		}
 		assert.Equal(t, exp.trailCount, actualTrailCount, "case %d: wrong number of trailing comments", i)
-		assert.Equal(t, len(exp.comments)-exp.trailCount, len(n.LeadingComments()), "case %d: wrong number of comments", i)
+		assert.Equal(t, len(exp.comments)-exp.trailCount, nodeInfo.LeadingComments().Len(), "case %d: wrong number of comments", i)
 		for ci := range exp.comments {
 			var c ast.Comment
 			if ci < exp.trailCount {
-				c = prev.TrailingComments()[ci]
+				c = prevNodeInfo.TrailingComments().Index(ci)
 			} else {
-				c = n.LeadingComments()[ci-exp.trailCount]
+				c = nodeInfo.LeadingComments().Index(ci - exp.trailCount)
 			}
-			assert.Equal(t, exp.comments[ci], c.Text, "case %d, comment #%d: unexpected text", i, ci+1)
+			assert.Equal(t, exp.comments[ci], c.RawText(), "case %d, comment #%d: unexpected text", i, ci+1)
 		}
 		prev = n
 	}
 	if tok := l.Lex(&sym); tok != 0 {
 		t.Fatalf("lexer reported symbol after what should have been EOF: %d", tok)
 	}
+	require.NoError(t, handler.Error())
 	// Now we check final state of lexer for unattached comments and final whitespace
 	// One of the final comments get associated as trailing comment for final token
-	assert.Equal(t, 1, len(prev.TrailingComments()), "last token: wrong number of trailing comments")
-	finalComments := l.eof.LeadingComments()
-	if assert.Equal(t, 2, len(finalComments), "wrong number of final remaining comments") {
-		assert.Equal(t, "// comment attached to no tokens (upcoming token is EOF!)\n", finalComments[0].Text, "incorrect final comment text")
-		assert.Equal(t, "/* another comment followed by some final whitespace*/", finalComments[1].Text, "incorrect final comment text")
+	prevNodeInfo := l.info.NodeInfo(prev)
+	assert.Equal(t, 1, prevNodeInfo.TrailingComments().Len(), "last token: wrong number of trailing comments")
+	eofNodeInfo := l.info.TokenInfo(l.eof)
+	finalComments := eofNodeInfo.LeadingComments()
+	if assert.Equal(t, 2, finalComments.Len(), "wrong number of final remaining comments") {
+		assert.Equal(t, "// comment attached to no tokens (upcoming token is EOF!)\n", finalComments.Index(0).RawText(), "incorrect final comment text")
+		assert.Equal(t, "/* another comment followed by some final whitespace*/", finalComments.Index(1).RawText(), "incorrect final comment text")
 	}
-	assert.Equal(t, "\n\n\t\n\t", l.eof.LeadingWhitespace(), "incorrect final whitespace")
+	assert.Equal(t, "\n\n\t\n\t", eofNodeInfo.LeadingWhitespace(), "incorrect final whitespace")
 }
 
 func TestLexerErrors(t *testing.T) {
@@ -254,7 +264,8 @@ func TestLexerErrors(t *testing.T) {
 		{str: `/* foobar`, errMsg: "unexpected EOF"},
 	}
 	for i, tc := range testCases {
-		l := newTestLexer(strings.NewReader(tc.str))
+		handler := reporter.NewHandler(nil)
+		l := newTestLexer(t, strings.NewReader(tc.str), handler)
 		var sym protoSymType
 		tok := l.Lex(&sym)
 		if assert.Equal(t, _ERROR, tok) {
@@ -265,6 +276,8 @@ func TestLexerErrors(t *testing.T) {
 	}
 }
 
-func newTestLexer(in io.Reader) *protoLex {
-	return newLexer(in, "test.proto", reporter.NewHandler(nil))
+func newTestLexer(t *testing.T, in io.Reader, h *reporter.Handler) *protoLex {
+	lexer, err := newLexer(in, "test.proto", h)
+	require.NoError(t, err)
+	return lexer
 }

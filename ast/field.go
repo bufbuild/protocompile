@@ -399,11 +399,11 @@ func NewSyntheticOneOf(ident IdentValueNode) *SyntheticOneOf {
 	return &SyntheticOneOf{Ident: ident}
 }
 
-func (n *SyntheticOneOf) Start() SourcePos {
+func (n *SyntheticOneOf) Start() Token {
 	return n.Ident.Start()
 }
 
-func (n *SyntheticOneOf) End() SourcePos {
+func (n *SyntheticOneOf) End() Token {
 	return n.Ident.End()
 }
 
@@ -585,19 +585,17 @@ type SyntheticMapField struct {
 // number (1 for key, 2 for value).
 func NewSyntheticMapField(ident IdentValueNode, tagNum uint64) *SyntheticMapField {
 	tag := &UintLiteralNode{
-		terminalNode: terminalNode{
-			posRange: PosRange{Start: ident.Start(), End: ident.End()},
-		},
-		Val: tagNum,
+		terminalNode: ident.Start().asTerminalNode(),
+		Val:          tagNum,
 	}
 	return &SyntheticMapField{Ident: ident, Tag: tag}
 }
 
-func (n *SyntheticMapField) Start() SourcePos {
+func (n *SyntheticMapField) Start() Token {
 	return n.Ident.Start()
 }
 
-func (n *SyntheticMapField) End() SourcePos {
+func (n *SyntheticMapField) End() Token {
 	return n.Ident.End()
 }
 

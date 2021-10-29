@@ -26,7 +26,7 @@ func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.So
 		return nil
 	}
 
-	sci := sourceCodeInfo{commentsUsed: map[*ast.Comment]struct{}{}}
+	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}}
 	path := make([]int32, 0, 10)
 
 	sci.newLocWithoutComments(file, nil)
@@ -394,35 +394,38 @@ func generateSourceCodeInfoForMethod(opts options.Index, sci *sourceCodeInfo, n 
 }
 
 type sourceCodeInfo struct {
+	file         *ast.FileNode
 	locs         []*descriptorpb.SourceCodeInfo_Location
-	commentsUsed map[*ast.Comment]struct{}
+	commentsUsed map[ast.SourcePos]struct{}
 }
 
 func (sci *sourceCodeInfo) newLocWithoutComments(n ast.Node, path []int32) {
 	dup := make([]int32, len(path))
 	copy(dup, path)
+	info := sci.file.NodeInfo(n)
 	sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
 		Path: dup,
-		Span: makeSpan(n.Start(), n.End()),
+		Span: makeSpan(info.Start(), info.End()),
 	})
 }
 
 func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
-	leadingComments := n.LeadingComments()
-	trailingComments := n.TrailingComments()
+	nodeInfo := sci.file.NodeInfo(n)
+	leadingComments := nodeInfo.LeadingComments()
+	trailingComments := nodeInfo.TrailingComments()
 	if sci.commentUsed(leadingComments) {
-		leadingComments = nil
+		leadingComments = ast.Comments{}
 	}
 	if sci.commentUsed(trailingComments) {
-		trailingComments = nil
+		trailingComments = ast.Comments{}
 	}
 	detached := groupComments(leadingComments)
 	var trail *string
-	if str, ok := combineComments(trailingComments); ok {
+	if str, ok := combineComments(trailingComments, 0, trailingComments.Len()); ok {
 		trail = proto.String(str)
 	}
 	var lead *string
-	if len(leadingComments) > 0 && leadingComments[len(leadingComments)-1].End.Line >= n.Start().Line-1 {
+	if leadingComments.Len() > 0 && leadingComments.Index(leadingComments.Len()-1).End().Line >= nodeInfo.Start().Line-1 {
 		lead = proto.String(detached[len(detached)-1])
 		detached = detached[:len(detached)-1]
 	}
@@ -433,7 +436,7 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 		LeadingComments:         lead,
 		TrailingComments:        trail,
 		Path:                    dup,
-		Span:                    makeSpan(n.Start(), n.End()),
+		Span:                    makeSpan(nodeInfo.Start(), nodeInfo.End()),
 	})
 }
 
@@ -444,57 +447,60 @@ func makeSpan(start, end ast.SourcePos) []int32 {
 	return []int32{int32(start.Line) - 1, int32(start.Col) - 1, int32(end.Line) - 1, int32(end.Col) - 1}
 }
 
-func (sci *sourceCodeInfo) commentUsed(c []ast.Comment) bool {
-	if len(c) == 0 {
+func (sci *sourceCodeInfo) commentUsed(c ast.Comments) bool {
+	if c.Len() == 0 {
 		return false
 	}
-	if _, ok := sci.commentsUsed[&c[0]]; ok {
+	pos := c.Index(0).Start()
+	if _, ok := sci.commentsUsed[pos]; ok {
 		return true
 	}
 
-	sci.commentsUsed[&c[0]] = struct{}{}
+	sci.commentsUsed[pos] = struct{}{}
 	return false
 }
 
-func groupComments(comments []ast.Comment) []string {
-	if len(comments) == 0 {
+func groupComments(comments ast.Comments) []string {
+	if comments.Len() == 0 {
 		return nil
 	}
 
 	var groups []string
-	singleLineStyle := comments[0].Text[:2] == "//"
-	line := comments[0].End.Line
+	singleLineStyle := comments.Index(0).RawText()[:2] == "//"
+	line := comments.Index(0).End().Line
 	start := 0
-	for i := 1; i < len(comments); i++ {
-		c := comments[i]
+	for i := 1; i < comments.Len(); i++ {
+		c := comments.Index(i)
 		prevSingleLine := singleLineStyle
-		singleLineStyle = strings.HasPrefix(comments[i].Text, "//")
-		if !singleLineStyle || prevSingleLine != singleLineStyle || c.Start.Line > line+1 {
+		singleLineStyle = strings.HasPrefix(c.RawText(), "//")
+		if !singleLineStyle || prevSingleLine != singleLineStyle || c.Start().Line > line+1 {
 			// new group!
-			if str, ok := combineComments(comments[start:i]); ok {
+			if str, ok := combineComments(comments, start, i); ok {
 				groups = append(groups, str)
 			}
 			start = i
 		}
-		line = c.End.Line
+		line = c.End().Line
 	}
 	// don't forget last group
-	if str, ok := combineComments(comments[start:]); ok {
+	if str, ok := combineComments(comments, start, comments.Len()); ok {
 		groups = append(groups, str)
 	}
 	return groups
 }
 
-func combineComments(comments []ast.Comment) (string, bool) {
-	if len(comments) == 0 {
+func combineComments(comments ast.Comments, start, end int) (string, bool) {
+	if start >= end {
 		return "", false
 	}
 	var buf bytes.Buffer
-	for _, c := range comments {
-		if c.Text[:2] == "//" {
-			buf.WriteString(c.Text[2:])
+	for i := start; i < end; i++ {
+		c := comments.Index(i)
+		txt := c.RawText()
+		if txt[:2] == "//" {
+			buf.WriteString(txt[2:])
 		} else {
-			lines := strings.Split(c.Text[2:len(c.Text)-2], "\n")
+			lines := strings.Split(txt[2:len(txt)-2], "\n")
 			first := true
 			for _, l := range lines {
 				if first {

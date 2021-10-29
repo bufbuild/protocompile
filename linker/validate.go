@@ -40,7 +40,8 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 		// Message set wire format requires that all extensions be messages
 		// themselves (no scalar extensions)
 		if fld.Kind() != protoreflect.MessageKind {
-			pos := r.FieldNode(fd.proto).FieldType().Start()
+			file := r.FileNode()
+			pos := file.NodeInfo(r.FieldNode(fd.proto).FieldType()).Start()
 			return handler.HandleErrorf(pos, "messages with message-set wire format cannot contain scalar extensions, only messages")
 		}
 	} else {
@@ -48,7 +49,8 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 		// now that things are linked, we can check if the extendee is messageset wire format
 		// and, if not, enforce tighter limit.
 		if fld.Number() > internal.MaxNormalTag {
-			pos := r.FieldNode(fd.proto).FieldTag().Start()
+			file := r.FileNode()
+			pos := file.NodeInfo(r.FieldNode(fd.proto).FieldTag()).Start()
 			return handler.HandleErrorf(pos, "tag number %d is higher than max allowed tag number (%d)", fld.Number(), internal.MaxNormalTag)
 		}
 	}

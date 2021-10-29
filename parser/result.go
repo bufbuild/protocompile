@@ -43,7 +43,7 @@ func ResultWithoutAST(proto *descriptorpb.FileDescriptorProto) Result {
 // The given handler is used to report any errors or warnings encountered. If any
 // errors are reported, this function returns a non-nil error.
 func ResultFromAST(file *ast.FileNode, validate bool, handler *reporter.Handler) (Result, error) {
-	filename := file.Start().Filename
+	filename := file.Name()
 	r := &result{file: file, nodes: map[proto.Message]ast.Node{}}
 	r.createFileDescriptor(filename, file, handler)
 	if validate {
@@ -71,7 +71,8 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		if file.Syntax.Syntax.AsString() == "proto3" {
 			isProto3 = true
 		} else if file.Syntax.Syntax.AsString() != "proto2" {
-			if handler.HandleErrorf(file.Syntax.Syntax.Start(), `syntax value must be "proto2" or "proto3"`) != nil {
+			nodeInfo := file.NodeInfo(file.Syntax.Syntax)
+			if handler.HandleErrorf(nodeInfo.Start(), `syntax value must be "proto2" or "proto3"`) != nil {
 				return
 			}
 		}
@@ -81,7 +82,8 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
 	} else {
-		handler.HandleWarning(file.Start(), ErrNoSyntax)
+		nodeInfo := file.NodeInfo(file)
+		handler.HandleWarning(nodeInfo.Start(), ErrNoSyntax)
 	}
 
 	for _, decl := range file.Decls {
@@ -112,7 +114,8 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			fd.Service = append(fd.Service, r.asServiceDescriptor(decl))
 		case *ast.PackageNode:
 			if fd.Package != nil {
-				if handler.HandleErrorf(decl.Start(), "files should have only one package declaration") != nil {
+				nodeInfo := file.NodeInfo(decl)
+				if handler.HandleErrorf(nodeInfo.Start(), "files should have only one package declaration") != nil {
 					return
 				}
 			}
@@ -197,7 +200,8 @@ func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldD
 		}
 	}
 	if count == 0 {
-		_ = handler.HandleErrorf(ext.Start(), "extend sections must define at least one extension")
+		nodeInfo := r.file.NodeInfo(ext)
+		_ = handler.HandleErrorf(nodeInfo.Start(), "extend sections must define at least one extension")
 	}
 }
 
@@ -217,7 +221,8 @@ func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
 
 func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, isProto3 bool, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
 	tag := node.Tag.Val
-	if err := checkTag(node.Tag.Start(), tag, maxTag); err != nil {
+	tagNodeInfo := r.file.NodeInfo(node.Tag)
+	if err := checkTag(tagNodeInfo.Start(), tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	fd := newFieldDescriptor(node.Name.Val, string(node.FldType.AsIdentifier()), int32(tag), asLabel(&node.Label))
@@ -270,11 +275,13 @@ func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descripto
 
 func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag int32, handler *reporter.Handler) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	tag := group.Tag.Val
-	if err := checkTag(group.Tag.Start(), tag, maxTag); err != nil {
+	tagNodeInfo := r.file.NodeInfo(group.Tag)
+	if err := checkTag(tagNodeInfo.Start(), tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	if !unicode.IsUpper(rune(group.Name.Val[0])) {
-		_ = handler.HandleErrorf(group.Name.Start(), "group %s should have a name that starts with a capital letter", group.Name.Val)
+		nameNodeInfo := r.file.NodeInfo(group.Name)
+		_ = handler.HandleErrorf(nameNodeInfo.Start(), "group %s should have a name that starts with a capital letter", group.Name.Val)
 	}
 	fieldName := strings.ToLower(group.Name.Val)
 	fd := &descriptorpb.FieldDescriptorProto{
@@ -297,7 +304,8 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag 
 
 func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, isProto3 bool, maxTag int32, handler *reporter.Handler) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	tag := mapField.Tag.Val
-	if err := checkTag(mapField.Tag.Start(), tag, maxTag); err != nil {
+	tagNodeInfo := r.file.NodeInfo(mapField.Tag)
+	if err := checkTag(tagNodeInfo.Start(), tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	var lbl *descriptorpb.FieldDescriptorProto_Label
@@ -327,7 +335,7 @@ func (r *result) asExtensionRanges(node *ast.ExtensionRangeNode, maxTag int32, h
 	opts := r.asUninterpretedOptions(node.Options.GetElements())
 	ers := make([]*descriptorpb.DescriptorProto_ExtensionRange, len(node.Ranges))
 	for i, rng := range node.Ranges {
-		start, end := getRangeBounds(rng, 0, maxTag, handler)
+		start, end := r.getRangeBounds(rng, 0, maxTag, handler)
 		er := &descriptorpb.DescriptorProto_ExtensionRange{
 			Start: proto.Int32(start),
 			End:   proto.Int32(end + 1),
@@ -344,7 +352,8 @@ func (r *result) asExtensionRanges(node *ast.ExtensionRangeNode, maxTag int32, h
 func (r *result) asEnumValue(ev *ast.EnumValueNode, handler *reporter.Handler) *descriptorpb.EnumValueDescriptorProto {
 	num, ok := ast.AsInt32(ev.Number, math.MinInt32, math.MaxInt32)
 	if !ok {
-		_ = handler.HandleErrorf(ev.Number.Start(), "value %d is out of range: should be between %d and %d", ev.Number.Value(), math.MinInt32, math.MaxInt32)
+		numberNodeInfo := r.file.NodeInfo(ev.Number)
+		_ = handler.HandleErrorf(numberNodeInfo.Start(), "value %d is out of range: should be between %d and %d", ev.Number.Value(), math.MinInt32, math.MaxInt32)
 	}
 	evd := &descriptorpb.EnumValueDescriptorProto{Name: proto.String(ev.Name.Val), Number: proto.Int32(num)}
 	r.putEnumValueNode(evd, ev)
@@ -407,7 +416,7 @@ func (r *result) asEnumDescriptor(en *ast.EnumNode, handler *reporter.Handler) *
 }
 
 func (r *result) asEnumReservedRange(rng *ast.RangeNode, handler *reporter.Handler) *descriptorpb.EnumDescriptorProto_EnumReservedRange {
-	start, end := getRangeBounds(rng, math.MinInt32, math.MaxInt32, handler)
+	start, end := r.getRangeBounds(rng, math.MinInt32, math.MaxInt32, handler)
 	rr := &descriptorpb.EnumDescriptorProto_EnumReservedRange{
 		Start: proto.Int32(start),
 		End:   proto.Int32(end),
@@ -493,7 +502,8 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 				}
 			}
 			if ooFields == 0 {
-				_ = handler.HandleErrorf(decl.Start(), "oneof must contain at least one field")
+				declNodeInfo := r.file.NodeInfo(decl)
+				_ = handler.HandleErrorf(declNodeInfo.Start(), "oneof must contain at least one field")
 			}
 		case *ast.MessageNode:
 			msgd.NestedType = append(msgd.NestedType, r.asMessageDescriptor(decl, isProto3, handler))
@@ -501,7 +511,8 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 			for _, n := range decl.Names {
 				count := rsvdNames[n.AsString()]
 				if count == 1 { // already seen
-					_ = handler.HandleErrorf(n.Start(), "name %q is reserved multiple times", n.AsString())
+					nameNodeInfo := r.file.NodeInfo(n)
+					_ = handler.HandleErrorf(nameNodeInfo.Start(), "name %q is reserved multiple times", n.AsString())
 				}
 				rsvdNames[n.AsString()] = count + 1
 				msgd.ReservedName = append(msgd.ReservedName, n.AsString())
@@ -515,11 +526,13 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	if messageSetOpt != nil {
 		if len(msgd.Field) > 0 {
 			node := r.FieldNode(msgd.Field[0])
-			_ = handler.HandleErrorf(node.Start(), "messages with message-set wire format cannot contain non-extension fields")
+			nodeInfo := r.file.NodeInfo(node)
+			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format cannot contain non-extension fields")
 		}
 		if len(msgd.ExtensionRange) == 0 {
 			node := r.OptionNode(messageSetOpt)
-			_ = handler.HandleErrorf(node.Start(), "messages with message-set wire format must contain at least one extension range")
+			nodeInfo := r.file.NodeInfo(node)
+			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format must contain at least one extension range")
 		}
 	}
 
@@ -549,12 +562,13 @@ func (r *result) isMessageSetWireFormat(scope string, md *descriptorpb.Descripto
 		return nil, nil
 	default:
 		optNode := r.OptionNode(opt)
-		return nil, handler.HandleErrorf(optNode.GetValue().Start(), "%s: expecting bool value for message_set_wire_format option", scope)
+		optNodeInfo := r.file.NodeInfo(optNode.GetValue())
+		return nil, handler.HandleErrorf(optNodeInfo.Start(), "%s: expecting bool value for message_set_wire_format option", scope)
 	}
 }
 
 func (r *result) asMessageReservedRange(rng *ast.RangeNode, maxTag int32, handler *reporter.Handler) *descriptorpb.DescriptorProto_ReservedRange {
-	start, end := getRangeBounds(rng, 0, maxTag, handler)
+	start, end := r.getRangeBounds(rng, 0, maxTag, handler)
 	rr := &descriptorpb.DescriptorProto_ReservedRange{
 		Start: proto.Int32(start),
 		End:   proto.Int32(end + 1),
@@ -563,24 +577,27 @@ func (r *result) asMessageReservedRange(rng *ast.RangeNode, maxTag int32, handle
 	return rr
 }
 
-func getRangeBounds(rng *ast.RangeNode, minVal, maxVal int32, handler *reporter.Handler) (int32, int32) {
+func (r *result) getRangeBounds(rng *ast.RangeNode, minVal, maxVal int32, handler *reporter.Handler) (int32, int32) {
 	checkOrder := true
 	start, ok := rng.StartValueAsInt32(minVal, maxVal)
 	if !ok {
 		checkOrder = false
-		_ = handler.HandleErrorf(rng.StartVal.Start(), "range start %d is out of range: should be between %d and %d", rng.StartValue(), minVal, maxVal)
+		startValNodeInfo := r.file.NodeInfo(rng.StartVal)
+		_ = handler.HandleErrorf(startValNodeInfo.Start(), "range start %d is out of range: should be between %d and %d", rng.StartValue(), minVal, maxVal)
 	}
 
 	end, ok := rng.EndValueAsInt32(minVal, maxVal)
 	if !ok {
 		checkOrder = false
 		if rng.EndVal != nil {
-			_ = handler.HandleErrorf(rng.EndVal.Start(), "range end %d is out of range: should be between %d and %d", rng.EndValue(), minVal, maxVal)
+			endValNodeInfo := r.file.NodeInfo(rng.EndVal)
+			_ = handler.HandleErrorf(endValNodeInfo.Start(), "range end %d is out of range: should be between %d and %d", rng.EndValue(), minVal, maxVal)
 		}
 	}
 
 	if checkOrder && start > end {
-		_ = handler.HandleErrorf(rng.RangeStart().Start(), "range, %d to %d, is invalid: start must be <= end", start, end)
+		rangeStartNodeInfo := r.file.NodeInfo(rng.RangeStart())
+		_ = handler.HandleErrorf(rangeStartNodeInfo.Start(), "range, %d to %d, is invalid: start must be <= end", start, end)
 	}
 
 	return start, end

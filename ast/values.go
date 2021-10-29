@@ -61,9 +61,9 @@ type StringLiteralNode struct {
 }
 
 // NewStringLiteralNode creates a new *StringLiteralNode with the given val.
-func NewStringLiteralNode(val string, info TokenInfo) *StringLiteralNode {
+func NewStringLiteralNode(val string, tok Token) *StringLiteralNode {
 	return &StringLiteralNode{
-		terminalNode: info.asTerminalNode(),
+		terminalNode: tok.asTerminalNode(),
 		Val:          val,
 	}
 }
@@ -148,9 +148,9 @@ type UintLiteralNode struct {
 }
 
 // NewUintLiteralNode creates a new *UintLiteralNode with the given val.
-func NewUintLiteralNode(val uint64, info TokenInfo) *UintLiteralNode {
+func NewUintLiteralNode(val uint64, tok Token) *UintLiteralNode {
 	return &UintLiteralNode{
-		terminalNode: info.asTerminalNode(),
+		terminalNode: tok.asTerminalNode(),
 		Val:          val,
 	}
 }
@@ -280,9 +280,9 @@ type FloatLiteralNode struct {
 }
 
 // NewFloatLiteralNode creates a new *FloatLiteralNode with the given val.
-func NewFloatLiteralNode(val float64, info TokenInfo) *FloatLiteralNode {
+func NewFloatLiteralNode(val float64, tok Token) *FloatLiteralNode {
 	return &FloatLiteralNode{
-		terminalNode: info.asTerminalNode(),
+		terminalNode: tok.asTerminalNode(),
 		Val:          val,
 	}
 }

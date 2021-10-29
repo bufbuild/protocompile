@@ -6,7 +6,9 @@ import "fmt"
 // This allows NoSourceNode to be used in place of *FileNode for some usages.
 type FileDeclNode interface {
 	Node
+	Name() string
 	GetSyntax() Node
+	NodeInfo(n Node) NodeInfo
 }
 
 var _ FileDeclNode = (*FileNode)(nil)
@@ -16,14 +18,13 @@ var _ FileDeclNode = NoSourceNode{}
 // protobuf source file.
 type FileNode struct {
 	compositeNode
+	fileInfo *FileInfo
+
 	Syntax *SyntaxNode // nil if file has no syntax declaration
 	Decls  []FileElement
 
-	// Any comments that follow the last token in the file.
-	FinalComments []Comment
-	// Any whitespace at the end of the file (after the last token or
-	// last comment in the file).
-	FinalWhitespace string
+	// This synthetic node allows access to final comments and whitespace
+	EOF *RuneNode
 }
 
 // NewFileElement creates a new *FileNode. The syntax parameter is optional. If it
@@ -31,7 +32,7 @@ type FileNode struct {
 //
 // This function panics if the concrete type of any element of decls is not
 // from this package.
-func NewFileNode(syntax *SyntaxNode, decls []FileElement) *FileNode {
+func NewFileNode(info *FileInfo, syntax *SyntaxNode, decls []FileElement, eof Token) *FileNode {
 	numChildren := len(decls)
 	if syntax != nil {
 		numChildren++
@@ -53,21 +54,42 @@ func NewFileNode(syntax *SyntaxNode, decls []FileElement) *FileNode {
 		}
 	}
 
+	eofNode := NewRuneNode(0, eof)
+	children = append(children, eofNode)
+
 	return &FileNode{
 		compositeNode: compositeNode{
 			children: children,
 		},
-		Syntax: syntax,
-		Decls:  decls,
+		fileInfo: info,
+		Syntax:   syntax,
+		Decls:    decls,
+		EOF:      eofNode,
 	}
 }
 
 func NewEmptyFileNode(filename string) *FileNode {
+	fileInfo := NewFileInfo(filename, []byte{})
+	fileInfo.AddToken(0, 0) // EOF
+
 	return &FileNode{
 		compositeNode: compositeNode{
 			children: []Node{NewNoSourceNode(filename)},
 		},
+		fileInfo: fileInfo,
 	}
+}
+
+func (f *FileNode) Name() string {
+	return f.fileInfo.Name()
+}
+
+func (f *FileNode) NodeInfo(n Node) NodeInfo {
+	return f.fileInfo.NodeInfo(n)
+}
+
+func (f *FileNode) TokenInfo(t Token) NodeInfo {
+	return f.fileInfo.TokenInfo(t)
 }
 
 func (f *FileNode) GetSyntax() Node {

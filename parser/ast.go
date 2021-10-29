@@ -5,6 +5,7 @@ import "github.com/jhump/protocompile/ast"
 // the types below are accumulator types: linked lists that are
 // constructed during parsing and then converted to slices of AST nodes
 // once the whole list has been parsed
+// TODO: change grammer to use slices of nodes instead of these constructions
 
 type compactOptionList struct {
 	option *ast.OptionNode

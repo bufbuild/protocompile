@@ -29,9 +29,9 @@ type IdentNode struct {
 }
 
 // NewIdentNode creates a new *IdentNode. The given val is the identifier text.
-func NewIdentNode(val string, info TokenInfo) *IdentNode {
+func NewIdentNode(val string, tok Token) *IdentNode {
 	return &IdentNode{
-		terminalNode: info.asTerminalNode(),
+		terminalNode: tok.asTerminalNode(),
 		Val:          val,
 	}
 }
@@ -126,9 +126,9 @@ func (n *CompoundIdentNode) AsIdentifier() Identifier {
 type KeywordNode IdentNode
 
 // NewKeywordNode creates a new *KeywordNode. The given val is the keyword.
-func NewKeywordNode(val string, info TokenInfo) *KeywordNode {
+func NewKeywordNode(val string, tok Token) *KeywordNode {
 	return &KeywordNode{
-		terminalNode: info.asTerminalNode(),
+		terminalNode: tok.asTerminalNode(),
 		Val:          val,
 	}
 }

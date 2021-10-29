@@ -5,8 +5,15 @@
 // tree implement TerminalNode and all others implement CompositeNode.
 // The root of the tree for a proto source file is a *FileNode.
 //
+// Position information is tracked using a *FileInfo, callings its various
+// Add* methods as the file is tokenized by the lexer. This allows AST
+// nodes to have a compact representation. To extract detailed position
+// information, you must use the nodeInfo method, available on either the
+// *FileInfo which produced the node's tokens or the *FileNode root of
+// the tree that contains the node.
+//
 // Comments are not represented as nodes in the tree. Instead, they are
-// attached to all terminal nodes in the tree. So, when lexing, comments
+// attributed to terminal nodes in the tree. So, when lexing, comments
 // are accumulated until the next non-comment token is found. The AST
 // model in this package thus provides access to all comments in the
 // file, regardless of location (unlike the SourceCodeInfo present in

@@ -64,16 +64,15 @@ func setTokenName(token int, text string) {
 // warnings encountered while parsing. If any errors are reported, this function
 // returns a non-nil error.
 func Parse(filename string, r io.Reader, handler *reporter.Handler) (*ast.FileNode, error) {
-	lx := newLexer(r, filename, handler)
+	lx, err := newLexer(r, filename, handler)
+	if err != nil {
+		return nil, err
+	}
 	protoParse(lx)
 	if lx.res == nil || len(lx.res.Children()) == 0 {
 		// nil AST means there was an error that prevented any parsing
 		// or the file was empty; synthesize empty non-nil AST
 		lx.res = ast.NewEmptyFileNode(filename)
-	}
-	if lx.eof != nil {
-		lx.res.FinalComments = lx.eof.LeadingComments()
-		lx.res.FinalWhitespace = lx.eof.LeadingWhitespace()
 	}
 	return lx.res, handler.Error()
 }

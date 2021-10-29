@@ -10,28 +10,30 @@ func UnknownPos(filename string) SourcePos {
 // interfaces in this package. It can be used to represent an AST
 // element for a file whose source is not available.
 type NoSourceNode struct {
-	pos SourcePos
+	filename string
 }
 
 // NewNoSourceNode creates a new NoSourceNode for the given filename.
 func NewNoSourceNode(filename string) NoSourceNode {
-	return NoSourceNode{pos: UnknownPos(filename)}
+	return NoSourceNode{filename: filename}
 }
 
-func (n NoSourceNode) Start() SourcePos {
-	return n.pos
+func (n NoSourceNode) Name() string {
+	return n.filename
 }
 
-func (n NoSourceNode) End() SourcePos {
-	return n.pos
+func (n NoSourceNode) Start() Token {
+	return 0
 }
 
-func (n NoSourceNode) LeadingComments() []Comment {
-	return nil
+func (n NoSourceNode) End() Token {
+	return 0
 }
 
-func (n NoSourceNode) TrailingComments() []Comment {
-	return nil
+func (n NoSourceNode) NodeInfo(Node) NodeInfo {
+	return NodeInfo{
+		fileInfo: &FileInfo{name: n.filename},
+	}
 }
 
 func (n NoSourceNode) GetSyntax() Node {

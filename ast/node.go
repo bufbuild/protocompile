@@ -6,10 +6,8 @@ package ast
 // about all prior comments (attached as leading comments) and
 // optional subsequent comments (attached as trailing comments).
 type Node interface {
-	Start() SourcePos
-	End() SourcePos
-	LeadingComments() []Comment
-	TrailingComments() []Comment
+	Start() Token
+	End() Token
 }
 
 // TerminalNode represents a leaf in the AST. These represent
@@ -18,18 +16,7 @@ type Node interface {
 // the following lexed token.
 type TerminalNode interface {
 	Node
-	// PopLeadingComment removes the first leading comment from this
-	// token and returns it. If the node has no leading comments then
-	// this method will panic.
-	PopLeadingComment() Comment
-	// PushTrailingComment appends the given comment to the token's
-	// trailing comments.
-	PushTrailingComment(Comment)
-	// LeadingWhitespace returns any whitespace between the prior comment
-	// (last leading comment), if any, or prior lexed token and this token.
-	LeadingWhitespace() string
-	// RawText returns the raw text of the token as read from the source.
-	RawText() string
+	Token() Token
 }
 
 var _ TerminalNode = (*StringLiteralNode)(nil)
@@ -40,34 +27,6 @@ var _ TerminalNode = (*BoolLiteralNode)(nil)
 var _ TerminalNode = (*SpecialFloatLiteralNode)(nil)
 var _ TerminalNode = (*KeywordNode)(nil)
 var _ TerminalNode = (*RuneNode)(nil)
-
-// TokenInfo represents state accumulated by the lexer to associated with a
-// token (aka terminal node).
-type TokenInfo struct {
-	// The location of the token in the source file.
-	PosRange
-	// The raw text of the token.
-	RawText string
-	// Any comments encountered preceding this token.
-	LeadingComments []Comment
-	// Any leading whitespace immediately preceding this token.
-	LeadingWhitespace string
-	// Any trailing comments following this token. This is usually
-	// empty as tokens are created by the lexer immediately and
-	// trailing comments are accounted for afterwards, added using
-	// the node's PushTrailingComment method.
-	TrailingComments []Comment
-}
-
-func (t *TokenInfo) asTerminalNode() terminalNode {
-	return terminalNode{
-		posRange:          t.PosRange,
-		leadingComments:   t.LeadingComments,
-		leadingWhitespace: t.LeadingWhitespace,
-		trailingComments:  t.TrailingComments,
-		raw:               t.RawText,
-	}
-}
 
 // CompositeNode represents any non-terminal node in the tree. These
 // are interior or root nodes and have child nodes.
@@ -81,46 +40,18 @@ type CompositeNode interface {
 // implementations. It is embedded in all such node types in this
 // package. It provides the implementation of the TerminalNode
 // interface.
-type terminalNode struct {
-	posRange          PosRange
-	leadingComments   []Comment
-	leadingWhitespace string
-	trailingComments  []Comment
-	raw               string
+type terminalNode Token
+
+func (n terminalNode) Start() Token {
+	return Token(n)
 }
 
-func (n *terminalNode) Start() SourcePos {
-	return n.posRange.Start
+func (n terminalNode) End() Token {
+	return Token(n)
 }
 
-func (n *terminalNode) End() SourcePos {
-	return n.posRange.End
-}
-
-func (n *terminalNode) LeadingComments() []Comment {
-	return n.leadingComments
-}
-
-func (n *terminalNode) TrailingComments() []Comment {
-	return n.trailingComments
-}
-
-func (n *terminalNode) PopLeadingComment() Comment {
-	c := n.leadingComments[0]
-	n.leadingComments = n.leadingComments[1:]
-	return c
-}
-
-func (n *terminalNode) PushTrailingComment(c Comment) {
-	n.trailingComments = append(n.trailingComments, c)
-}
-
-func (n *terminalNode) LeadingWhitespace() string {
-	return n.leadingWhitespace
-}
-
-func (n *terminalNode) RawText() string {
-	return n.raw
+func (n terminalNode) Token() Token {
+	return Token(n)
 }
 
 // compositeNode contains book-keeping shared by all CompositeNode
@@ -135,20 +66,12 @@ func (n *compositeNode) Children() []Node {
 	return n.children
 }
 
-func (n *compositeNode) Start() SourcePos {
+func (n *compositeNode) Start() Token {
 	return n.children[0].Start()
 }
 
-func (n *compositeNode) End() SourcePos {
+func (n *compositeNode) End() Token {
 	return n.children[len(n.children)-1].End()
-}
-
-func (n *compositeNode) LeadingComments() []Comment {
-	return n.children[0].LeadingComments()
-}
-
-func (n *compositeNode) TrailingComments() []Comment {
-	return n.children[len(n.children)-1].TrailingComments()
 }
 
 // RuneNode represents a single rune in protobuf source. Runes
@@ -156,15 +79,18 @@ func (n *compositeNode) TrailingComments() []Comment {
 // their own, such as punctuation/symbols like commas, semicolons,
 // equals signs, open and close symbols (braces, brackets, angles,
 // and parentheses), and periods/dots.
+// TODO: make this more compact; if runes don't have attributed comments
+//  then we don't need a Token to represent them and only need an offset
+//  into the file's contents
 type RuneNode struct {
 	terminalNode
 	Rune rune
 }
 
 // NewRuneNode creates a new *RuneNode with the given properties.
-func NewRuneNode(r rune, info TokenInfo) *RuneNode {
+func NewRuneNode(r rune, tok Token) *RuneNode {
 	return &RuneNode{
-		terminalNode: info.asTerminalNode(),
+		terminalNode: tok.asTerminalNode(),
 		Rune:         r,
 	}
 }

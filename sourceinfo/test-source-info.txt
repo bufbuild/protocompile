@@ -3,7 +3,7 @@
 
 :
 desc_test_comments.proto:8:1
-desc_test_comments.proto:141:2
+desc_test_comments.proto:145:1
 
 
  > syntax:
@@ -1136,7 +1136,7 @@ desc_test_comments.proto:139:56
 
 :
 desc_test_complex.proto:1:1
-desc_test_complex.proto:296:2
+desc_test_complex.proto:297:61
 
 
  > syntax:
@@ -5513,7 +5513,7 @@ desc_test_complex.proto:294:18
 
 :
 desc_test_options.proto:1:1
-desc_test_options.proto:63:2
+desc_test_options.proto:64:1
 
 
  > syntax:
