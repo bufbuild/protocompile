@@ -32,6 +32,9 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 	// NB: It's a little gross that we don't enforce these in validateBasic().
 	// But it requires linking to resolve the extendee, so we can interrogate
 	// its descriptor.
+	if xtd, ok := fld.(protoreflect.ExtensionTypeDescriptor); ok {
+		fld = xtd.Descriptor()
+	}
 	fd := fld.(*fldDescriptor)
 	if fld.ContainingMessage().Options().(*descriptorpb.MessageOptions).GetMessageSetWireFormat() {
 		// Message set wire format requires that all extensions be messages

@@ -31,6 +31,7 @@ type result struct {
 	usedImports    map[string]struct{}
 	optionBytes    map[proto.Message][]byte
 	srcLocs        []protoreflect.SourceLocation
+	srcLocIndex    map[interface{}]protoreflect.SourceLocation
 }
 
 var _ protoreflect.FileDescriptor = (*result)(nil)
@@ -106,8 +107,19 @@ func (r *result) SourceLocations() protoreflect.SourceLocations {
 	srcInfoProtos := r.Proto().GetSourceCodeInfo().GetLocation()
 	if r.srcLocs == nil && len(srcInfoProtos) > 0 {
 		r.srcLocs = asSourceLocations(srcInfoProtos)
+		r.srcLocIndex = computeSourceLocIndex(r.srcLocs)
 	}
-	return srcLocs{file: r, locs: r.srcLocs}
+	return srcLocs{file: r, locs: r.srcLocs, index: r.srcLocIndex}
+}
+
+func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[interface{}]protoreflect.SourceLocation {
+	index := map[interface{}]protoreflect.SourceLocation{}
+	for _, loc := range locs {
+		if loc.Next == 0 {
+			index[pathKey(loc.Path)] = loc
+		}
+	}
+	return index
 }
 
 func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []protoreflect.SourceLocation {
@@ -118,7 +130,7 @@ func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []
 		if len(loc.Span) == 3 {
 			stLin, stCol, enCol = int(loc.Span[0]), int(loc.Span[1]), int(loc.Span[2])
 			enLin = stLin
-		} else{
+		} else {
 			stLin, stCol, enLin, enCol = int(loc.Span[0]), int(loc.Span[1]), int(loc.Span[2]), int(loc.Span[3])
 		}
 		locs[i] = protoreflect.SourceLocation{
@@ -188,8 +200,9 @@ func (f *fileImports) Get(i int) protoreflect.FileImport {
 
 type srcLocs struct {
 	protoreflect.SourceLocations
-	file *result
-	locs []protoreflect.SourceLocation
+	file  *result
+	locs  []protoreflect.SourceLocation
+	index map[interface{}]protoreflect.SourceLocation
 }
 
 func (s srcLocs) Len() int {
@@ -201,8 +214,7 @@ func (s srcLocs) Get(i int) protoreflect.SourceLocation {
 }
 
 func (s srcLocs) ByPath(p protoreflect.SourcePath) protoreflect.SourceLocation {
-	// TODO: binary search for p
-	return protoreflect.SourceLocation{}
+	return s.index[pathKey(p)]
 }
 
 func (s srcLocs) ByDescriptor(d protoreflect.Descriptor) protoreflect.SourceLocation {
@@ -781,7 +793,9 @@ func (e *extDescriptors) Len() int {
 
 func (e *extDescriptors) Get(i int) protoreflect.ExtensionDescriptor {
 	fld := e.exts[i]
-	return e.file.asFieldDescriptor(fld, e.file, e.parent, i, e.prefix+fld.GetName())
+	fd := e.file.asFieldDescriptor(fld, e.file, e.parent, i, e.prefix+fld.GetName())
+	// extensions are expected to implement ExtensionTypeDescriptor, not just ExtensionDescriptor
+	return dynamicpb.NewExtensionType(fd).TypeDescriptor()
 }
 
 func (e *extDescriptors) ByName(s protoreflect.Name) protoreflect.ExtensionDescriptor {
@@ -1077,14 +1091,6 @@ func (f *fldDescriptor) Message() protoreflect.MessageDescriptor {
 		return nil
 	}
 	return f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetTypeName()))
-}
-
-func (f *fldDescriptor) Type() protoreflect.ExtensionType {
-	return dynamicpb.NewExtensionType(f)
-}
-
-func (f *fldDescriptor) Descriptor() protoreflect.ExtensionDescriptor {
-	return f
 }
 
 func (f *fldDescriptor) AddOptionBytes(opts []byte) {

@@ -40,21 +40,9 @@ func (r *result) ResolveExtension(name protoreflect.FullName) protoreflect.Exten
 		if td, ok := ed.(protoreflect.ExtensionTypeDescriptor); ok {
 			return td
 		}
-		return extTypeDesc{ed}
+		return dynamicpb.NewExtensionType(ed).TypeDescriptor()
 	}
 	return nil
-}
-
-type extTypeDesc struct {
-	protoreflect.ExtensionDescriptor
-}
-
-func (e extTypeDesc) Type() protoreflect.ExtensionType {
-	return dynamicpb.NewExtensionType(e.ExtensionDescriptor)
-}
-
-func (e extTypeDesc) Descriptor() protoreflect.ExtensionDescriptor {
-	return e.ExtensionDescriptor
 }
 
 func (r *result) resolveElement(name protoreflect.FullName) protoreflect.Descriptor {

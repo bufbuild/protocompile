@@ -38,6 +38,7 @@ type Index map[*ast.OptionNode][]int32
 
 type interpreter struct {
 	file     file
+	resolver linker.Resolver
 	lenient  bool
 	reporter *reporter.Handler
 	index    Index
@@ -111,6 +112,9 @@ func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index
 		lenient:  lenient,
 		reporter: handler,
 		index:    Index{},
+	}
+	if f, ok := file.(linker.File); ok {
+		interp.resolver = linker.ResolverFromFile(f)
 	}
 
 	fd := file.Proto()
@@ -387,7 +391,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	// see if the parse included an override copy for these options
 	if md := interp.file.ResolveMessageType(protoreflect.FullName(optsFqn)); md != nil {
 		dm := newDynamic(md)
-		if err := cloneInto(dm, opts); err != nil {
+		if err := cloneInto(dm, opts, nil); err != nil {
 			node := interp.file.Node(element)
 			return nil, interp.reporter.HandleError(reporter.Error(node.Start(), err))
 		}
@@ -428,7 +432,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		// If we're lenient, then we don't want to clobber the passed in message
 		// and leave it partially populated. So we convert into a copy first
 		optsClone := opts.ProtoReflect().New().Interface()
-		if err := cloneInto(optsClone, msg.Interface()); err != nil {
+		if err := cloneInto(optsClone, msg.Interface(), interp.resolver); err != nil {
 			// TODO: do this in a more granular way, so we can convert individual
 			// fields and leave bad ones uninterpreted instead of skipping all of
 			// the work we've done so far.
@@ -450,7 +454,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	}
 
 	// now try to convert into the passed in message and fail if not successful
-	if err := cloneInto(opts, msg.Interface()); err != nil {
+	if err := cloneInto(opts, msg.Interface(), interp.resolver); err != nil {
 		node := interp.file.Node(element)
 		return nil, interp.reporter.HandleError(reporter.Error(node.Start(), err))
 	}
@@ -458,9 +462,9 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	return nil, nil
 }
 
-func cloneInto(dest proto.Message, src proto.Message) error {
-	proto.Reset(dest)
+func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error {
 	if dest.ProtoReflect().Descriptor() == src.ProtoReflect().Descriptor() {
+		proto.Reset(dest)
 		proto.Merge(dest, src)
 		if err := proto.CheckInitialized(dest); err != nil {
 			return err
@@ -475,7 +479,7 @@ func cloneInto(dest proto.Message, src proto.Message) error {
 	if err != nil {
 		return err
 	}
-	return proto.Unmarshal(data, dest)
+	return proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, dest)
 }
 
 func newDynamic(md protoreflect.MessageDescriptor) *deterministicDynamic {

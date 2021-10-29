@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -18,6 +19,7 @@ func TestErrorReporting(t *testing.T) {
 	tooManyErrors := errors.New("too many errors")
 	limitedErrReporter := func(limit int, count *int) reporter.ErrorReporter {
 		return func(err reporter.ErrorWithPos) error {
+			fmt.Printf("* error reported: %v\n", err)
 			*count++
 			if *count > limit {
 				return tooManyErrors
@@ -27,6 +29,7 @@ func TestErrorReporting(t *testing.T) {
 	}
 	trackingReporter := func(errs *[]reporter.ErrorWithPos, count *int) reporter.ErrorReporter {
 		return func(err reporter.ErrorWithPos) error {
+			fmt.Printf("* error reported: %v\n", err)
 			*count++
 			*errs = append(*errs, err)
 			return nil
@@ -35,15 +38,16 @@ func TestErrorReporting(t *testing.T) {
 	fail := errors.New("failure!")
 	failFastReporter := func(count *int) reporter.ErrorReporter {
 		return func(err reporter.ErrorWithPos) error {
+			fmt.Printf("* error reported: %v\n", err)
 			*count++
 			return fail
 		}
 	}
 
 	testCases := []struct {
-		fileNames       []string
-		files           map[string]string
-		expectedErrs    [][]string
+		fileNames    []string
+		files        map[string]string
+		expectedErrs [][]string
 	}{
 		{
 			// multiple syntax errors
@@ -143,21 +147,11 @@ func TestErrorReporting(t *testing.T) {
 					`,
 			},
 			expectedErrs: [][]string{
-				// order depends on order of processing and reporting
 				{
-					"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
-					"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
-					"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
-				},
-				{
+					"*", // errors can be in different order than below (due to concurrency)
 					"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
 					"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
 					"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
-				},
-				{
-					"test1.proto:5:62: syntax error: unexpected '-', expecting int literal",
-					"test2.proto:7:49: syntax error: unexpected identifier, expecting \"option\" or \"rpc\" or ';' or '}'",
-					"test1.proto:8:62: syntax error: unexpected ';', expecting \"returns\"",
 				},
 			},
 		},
@@ -194,18 +188,11 @@ func TestErrorReporting(t *testing.T) {
 					"test1.proto:6:49: symbol \"Bar\" already defined at test2.proto:4:46",
 				},
 				{
-					// if test.proto processed first and reports first
+					"*", // errors can be in different order than below (due to concurrency)
 					"test1.proto:7:59: method Bar.Frob: unknown request type Empty",
 					"test1.proto:7:75: method Bar.Frob: unknown response type Nitz",
 					"test2.proto:4:46: symbol \"Bar\" already defined at test1.proto:6:49",
 					"test2.proto:7:49: symbol \"Foo\" already defined at test1.proto:3:49",
-				},
-				{
-					// if test.proto processed first but reports second
-					"test2.proto:4:46: symbol \"Bar\" already defined at test1.proto:6:49",
-					"test2.proto:7:49: symbol \"Foo\" already defined at test1.proto:3:49",
-					"test1.proto:7:59: method Bar.Frob: unknown request type Empty",
-					"test1.proto:7:75: method Bar.Frob: unknown response type Nitz",
 				},
 			},
 		},
@@ -213,6 +200,7 @@ func TestErrorReporting(t *testing.T) {
 
 	ctx := context.Background()
 	for i, tc := range testCases {
+		fmt.Printf("---- case #%d: tracking ----\n", i+1)
 		compiler := Compiler{
 			Resolver: &SourceResolver{Accessor: SourceAccessorFromMap(tc.files)},
 		}
@@ -231,19 +219,30 @@ func TestErrorReporting(t *testing.T) {
 		assert.Equal(t, reporter.ErrInvalidSource, err, "case #%d: parse should have failed with invalid source error", i+1)
 		var match []string
 		for _, errs := range tc.expectedErrs {
-			if reflect.DeepEqual(errs, reportedMsgs) {
+			actualErrs := reportedMsgs
+			if errs[0] == "*" {
+				// errors could be reported in any order due to goroutine execution
+				// interleaving, so compare sorted
+				errs = errs[1:]
+				actualErrs = make([]string, len(reportedMsgs))
+				copy(actualErrs, reportedMsgs)
+				sort.Strings(actualErrs)
+			}
+			if reflect.DeepEqual(errs, actualErrs) {
 				match = errs
 				break
 			}
 		}
 		assert.NotNil(t, match, "case #%d: reported errors do not match expected", i+1)
 
+		fmt.Printf("---- case #%d: fail fast ----\n", i+1)
 		count = 0
 		compiler.Reporter = reporter.NewReporter(failFastReporter(&count), nil)
 		_, err = compiler.Compile(ctx, tc.fileNames...)
 		assert.Equal(t, fail, err, "case #%d: parse should have failed fast", i+1)
 		assert.Equal(t, 1, count, "case #%d: parse should have called reporter only once", i+1)
 
+		fmt.Printf("---- case #%d: error limit ----\n", i+1)
 		count = 0
 		compiler.Reporter = reporter.NewReporter(limitedErrReporter(2, &count), nil)
 		_, err = compiler.Compile(ctx, tc.fileNames...)

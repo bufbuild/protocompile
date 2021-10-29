@@ -67,6 +67,7 @@ func (r reporterFuncs) Warning(err ErrorWithPos) {
 // so that reporter instances do not have to be thread-safe (unless re-used
 // across multiple handlers).
 type Handler struct {
+	parent       *Handler
 	mu           sync.Mutex
 	reporter     Reporter
 	errsReported bool
@@ -80,6 +81,17 @@ func NewHandler(rep Reporter) *Handler {
 		rep = NewReporter(nil, nil)
 	}
 	return &Handler{reporter: rep}
+}
+
+// SubHandler returns a "child" of h. Use of a child handler is the same as use
+// of the parent, except that the Err() and ReporterError() functions only
+// report non-nil for errors that were reported using the child handler. So
+// errors reported directly to the parent or to a different child handler won't
+// be returned. This is useful for making concurrent access to the handler more
+// deterministic: if a child handler is only used from one goroutine, its view
+// of reported errors is consistent and unimpacted by concurrent operations.
+func (h *Handler) SubHandler() *Handler {
+	return &Handler{parent: h}
 }
 
 // HandleErrorf handles an error with the given source position, creating the
@@ -97,10 +109,24 @@ func (h *Handler) HandleErrorf(pos ast.SourcePos, format string, args ...interfa
 // the given err is NOT an ErrorWithPos, the current operation will abort
 // immediately.
 //
-// If the handler has already aborted (by returning a non-nil error from a call
-// to HandleError or HandleErrorf), that same error is returned and the given
-// error is not reported.
+// If the handler has already aborted (by returning a non-nil error from a prior
+// call to HandleError or HandleErrorf), that same error is returned and the
+// given error is not reported.
 func (h *Handler) HandleError(err error) error {
+	if h.parent != nil {
+		_, isErrWithPos := err.(ErrorWithPos)
+		err = h.parent.HandleError(err)
+
+		// update child state
+		h.mu.Lock()
+		defer h.mu.Unlock()
+		if isErrWithPos {
+			h.errsReported = true
+		}
+		h.err = err
+		return err
+	}
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -118,6 +144,11 @@ func (h *Handler) HandleError(err error) error {
 // HandleWarning handles a warning with the given source position. This will
 // delegate to the handler's configured reporter.
 func (h *Handler) HandleWarning(pos ast.SourcePos, err error) {
+	if h.parent != nil {
+		h.parent.HandleWarning(pos, err)
+		return
+	}
+
 	// even though we aren't touching mutable fields, we acquire lock anyway so
 	// that underlying reporter does not have to be thread-safe
 	h.mu.Lock()

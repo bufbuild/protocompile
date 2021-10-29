@@ -335,7 +335,7 @@ type Visitor interface {
 // unconditionally return nil. This can be embedded into a struct to make that
 // struct implement the Visitor interface, and only the relevant visit methods
 // then need to be implemented on the struct.
-type NoOpVisitor struct {}
+type NoOpVisitor struct{}
 
 var _ Visitor = NoOpVisitor{}
 
@@ -525,59 +525,59 @@ func (n NoOpVisitor) VisitEmptyDeclNode(_ *EmptyDeclNode) error {
 // In this case, the DoVisitFieldDeclNode function is considered more specific
 // than DoVisitMessageDeclNode, so will be preferred if present.
 type SimpleVisitor struct {
-	DoVisitFileNode func(*FileNode) error
-	DoVisitSyntaxNode func(*SyntaxNode) error
-	DoVisitPackageNode func(*PackageNode) error
-	DoVisitImportNode func(*ImportNode) error
-	DoVisitOptionNode func(*OptionNode) error
-	DoVisitOptionNameNode func(*OptionNameNode) error
-	DoVisitFieldReferenceNode func(*FieldReferenceNode) error
-	DoVisitCompactOptionsNode func(*CompactOptionsNode) error
-	DoVisitMessageNode func(*MessageNode) error
-	DoVisitExtendNode func(*ExtendNode) error
-	DoVisitExtensionRangeNode func(*ExtensionRangeNode) error
-	DoVisitReservedNode func(*ReservedNode) error
-	DoVisitRangeNode func(*RangeNode) error
-	DoVisitFieldNode func(*FieldNode) error
-	DoVisitGroupNode func(*GroupNode) error
-	DoVisitMapFieldNode func(*MapFieldNode) error
-	DoVisitMapTypeNode func(*MapTypeNode) error
-	DoVisitOneOfNode func(*OneOfNode) error
-	DoVisitEnumNode func(*EnumNode) error
-	DoVisitEnumValueNode func(*EnumValueNode) error
-	DoVisitServiceNode func(*ServiceNode) error
-	DoVisitRPCNode func(*RPCNode) error
-	DoVisitRPCTypeNode func(*RPCTypeNode) error
-	DoVisitIdentNode func(*IdentNode) error
-	DoVisitCompoundIdentNode func(*CompoundIdentNode) error
-	DoVisitStringLiteralNode func(*StringLiteralNode) error
+	DoVisitFileNode                  func(*FileNode) error
+	DoVisitSyntaxNode                func(*SyntaxNode) error
+	DoVisitPackageNode               func(*PackageNode) error
+	DoVisitImportNode                func(*ImportNode) error
+	DoVisitOptionNode                func(*OptionNode) error
+	DoVisitOptionNameNode            func(*OptionNameNode) error
+	DoVisitFieldReferenceNode        func(*FieldReferenceNode) error
+	DoVisitCompactOptionsNode        func(*CompactOptionsNode) error
+	DoVisitMessageNode               func(*MessageNode) error
+	DoVisitExtendNode                func(*ExtendNode) error
+	DoVisitExtensionRangeNode        func(*ExtensionRangeNode) error
+	DoVisitReservedNode              func(*ReservedNode) error
+	DoVisitRangeNode                 func(*RangeNode) error
+	DoVisitFieldNode                 func(*FieldNode) error
+	DoVisitGroupNode                 func(*GroupNode) error
+	DoVisitMapFieldNode              func(*MapFieldNode) error
+	DoVisitMapTypeNode               func(*MapTypeNode) error
+	DoVisitOneOfNode                 func(*OneOfNode) error
+	DoVisitEnumNode                  func(*EnumNode) error
+	DoVisitEnumValueNode             func(*EnumValueNode) error
+	DoVisitServiceNode               func(*ServiceNode) error
+	DoVisitRPCNode                   func(*RPCNode) error
+	DoVisitRPCTypeNode               func(*RPCTypeNode) error
+	DoVisitIdentNode                 func(*IdentNode) error
+	DoVisitCompoundIdentNode         func(*CompoundIdentNode) error
+	DoVisitStringLiteralNode         func(*StringLiteralNode) error
 	DoVisitCompoundStringLiteralNode func(*CompoundStringLiteralNode) error
-	DoVisitUintLiteralNode func(*UintLiteralNode) error
-	DoVisitPositiveUintLiteralNode func(*PositiveUintLiteralNode) error
-	DoVisitNegativeIntLiteralNode func(*NegativeIntLiteralNode) error
-	DoVisitFloatLiteralNode func(*FloatLiteralNode) error
-	DoVisitSpecialFloatLiteralNode func(*SpecialFloatLiteralNode) error
-	DoVisitSignedFloatLiteralNode func(*SignedFloatLiteralNode) error
-	DoVisitBoolLiteralNode func(*BoolLiteralNode) error
-	DoVisitArrayLiteralNode func(*ArrayLiteralNode) error
-	DoVisitMessageLiteralNode func(*MessageLiteralNode) error
-	DoVisitMessageFieldNode func(*MessageFieldNode) error
-	DoVisitKeywordNode func(*KeywordNode) error
-	DoVisitRuneNode func(*RuneNode) error
-	DoVisitEmptyDeclNode func(*EmptyDeclNode) error
+	DoVisitUintLiteralNode           func(*UintLiteralNode) error
+	DoVisitPositiveUintLiteralNode   func(*PositiveUintLiteralNode) error
+	DoVisitNegativeIntLiteralNode    func(*NegativeIntLiteralNode) error
+	DoVisitFloatLiteralNode          func(*FloatLiteralNode) error
+	DoVisitSpecialFloatLiteralNode   func(*SpecialFloatLiteralNode) error
+	DoVisitSignedFloatLiteralNode    func(*SignedFloatLiteralNode) error
+	DoVisitBoolLiteralNode           func(*BoolLiteralNode) error
+	DoVisitArrayLiteralNode          func(*ArrayLiteralNode) error
+	DoVisitMessageLiteralNode        func(*MessageLiteralNode) error
+	DoVisitMessageFieldNode          func(*MessageFieldNode) error
+	DoVisitKeywordNode               func(*KeywordNode) error
+	DoVisitRuneNode                  func(*RuneNode) error
+	DoVisitEmptyDeclNode             func(*EmptyDeclNode) error
 
-	DoVisitFieldDeclNode func(FieldDeclNode) error
+	DoVisitFieldDeclNode   func(FieldDeclNode) error
 	DoVisitMessageDeclNode func(MessageDeclNode) error
 
-	DoVisitIdentValueNode func(IdentValueNode) error
+	DoVisitIdentValueNode  func(IdentValueNode) error
 	DoVisitStringValueNode func(StringValueNode) error
-	DoVisitIntValueNode func(IntValueNode) error
-	DoVisitFloatValueNode func(FloatValueNode) error
-	DoVisitValueNode func(ValueNode) error
+	DoVisitIntValueNode    func(IntValueNode) error
+	DoVisitFloatValueNode  func(FloatValueNode) error
+	DoVisitValueNode       func(ValueNode) error
 
-	DoVisitTerminalNode func(TerminalNode) error
+	DoVisitTerminalNode  func(TerminalNode) error
 	DoVisitCompositeNode func(CompositeNode) error
-	DoVisitNode func(Node) error
+	DoVisitNode          func(Node) error
 }
 
 var _ Visitor = (*SimpleVisitor)(nil)

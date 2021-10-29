@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"runtime"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/semaphore"
@@ -117,6 +118,7 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 			return nil, ctx.Err()
 		}
 		if r.err != nil {
+			fmt.Printf("got error for %q: %v\n", r.name, r.err)
 			if firstError == nil {
 				firstError = r.err
 			}
@@ -209,11 +211,17 @@ func (e *executor) compileLocked(ctx context.Context, file string, explicitFile 
 }
 
 type errFailedToResolve struct {
-	err error
+	err  error
+	path string
 }
 
 func (e errFailedToResolve) Error() string {
-	return e.err.Error()
+	errMsg := e.err.Error()
+	if strings.Contains(errMsg, e.path) {
+		// underlying error already refers to path in question, so we don't need to add more context
+		return errMsg
+	}
+	return fmt.Sprintf("could not resolve path %q: %s", e.path, e.err.Error())
 }
 
 func (e errFailedToResolve) Unwrap() error {
@@ -221,7 +229,7 @@ func (e errFailedToResolve) Unwrap() error {
 }
 
 func (e *executor) doCompile(ctx context.Context, file string, r *result) {
-	t := task{e: e, r: r}
+	t := task{e: e, h: e.h.SubHandler(), r: r}
 	if err := e.s.Acquire(ctx, 1); err != nil {
 		r.fail(err)
 		return
@@ -230,7 +238,7 @@ func (e *executor) doCompile(ctx context.Context, file string, r *result) {
 
 	sr, err := e.c.Resolver.FindFileByPath(file)
 	if err != nil {
-		r.fail(err)
+		r.fail(errFailedToResolve{err, file})
 		return
 	}
 
@@ -256,6 +264,10 @@ func (e *executor) doCompile(ctx context.Context, file string, r *result) {
 // of concurrent, running tasks.
 type task struct {
 	e *executor
+
+	// handler for this task
+	h *reporter.Handler
+
 	// If true, this task needs to acquire a semaphore permit before running.
 	// If false, this task needs to release its semaphore permit on completion.
 	released bool
@@ -294,8 +306,8 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 			pos := findImportPos(parseRes, dep)
 			if name == dep {
 				// doh! file imports itself
-				handleImportCycle(t.e.h, pos, []string{name}, dep)
-				return nil, t.e.h.Error()
+				handleImportCycle(t.h, pos, []string{name}, dep)
+				return nil, t.h.Error()
 			}
 
 			res := t.e.compile(ctx, dep)
@@ -321,7 +333,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 						// it's usually considered immediately fatal. However, if the reason
 						// we were resolving is due to an import, turn this into an error with
 						// source position that pinpoints the import statement and report it.
-						return nil, reporter.Error(findImportPos(parseRes, res.name), rerr.err)
+						return nil, reporter.Error(findImportPos(parseRes, res.name), rerr)
 					}
 					return nil, res.err
 				}
@@ -400,20 +412,20 @@ func findImportPos(res parser.Result, dep string) ast.SourcePos {
 }
 
 func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, error) {
-	file, err := linker.Link(parseRes, deps, t.e.sym, t.e.h)
+	file, err := linker.Link(parseRes, deps, t.e.sym, t.h)
 	if err != nil {
 		return nil, err
 	}
-	optsIndex, err := options.InterpretOptions(file, t.e.h)
+	optsIndex, err := options.InterpretOptions(file, t.h)
 	if err != nil {
 		return nil, err
 	}
 	// now that options are interpreted, we can do some additional checks
-	if err := file.ValidateExtensions(t.e.h); err != nil {
+	if err := file.ValidateExtensions(t.h); err != nil {
 		return nil, err
 	}
 	if t.r.explicitFile {
-		file.CheckForUnusedImports(t.e.h)
+		file.CheckForUnusedImports(t.h)
 	}
 
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
@@ -435,7 +447,7 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 		return nil, err
 	}
 
-	return parser.ResultFromAST(file, true, t.e.h)
+	return parser.ResultFromAST(file, true, t.h)
 }
 
 func (t *task) asAST(name string, r SearchResult) (*ast.FileNode, error) {
@@ -446,5 +458,5 @@ func (t *task) asAST(name string, r SearchResult) (*ast.FileNode, error) {
 		return r.AST, nil
 	}
 
-	return parser.Parse(name, r.Source, t.e.h)
+	return parser.Parse(name, r.Source, t.h)
 }

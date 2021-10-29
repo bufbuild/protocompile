@@ -116,7 +116,7 @@ func newFileRecursive(fd protoreflect.FileDescriptor, seen map[protoreflect.File
 type file struct {
 	protoreflect.FileDescriptor
 	descs map[protoreflect.FullName]protoreflect.Descriptor
-	deps Files
+	deps  Files
 }
 
 func (f file) FindDescriptorByName(name protoreflect.FullName) protoreflect.Descriptor {
@@ -171,7 +171,7 @@ type Resolver interface {
 	protoregistry.ExtensionTypeResolver
 }
 
-// AsResolver returns a Resolver that uses the given file plus its full set of
+// ResolverFromFile returns a Resolver that uses the given file plus its full set of
 // transitive dependencies as the source of descriptors.  If a given query
 // cannot be answered with these files, the query will fail with a
 // protoregistry.NotFound error.
@@ -189,7 +189,7 @@ func ResolverFromFile(f File) Resolver {
 }
 
 type fileResolver struct {
-	f File
+	f    File
 	deps Resolver
 }
 
@@ -220,6 +220,11 @@ func (r fileResolver) FindMessageByName(message protoreflect.FullName) (protoref
 }
 
 func (r fileResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
+	fullName := messageNameFromUrl(url)
+	return r.FindMessageByName(protoreflect.FullName(fullName))
+}
+
+func messageNameFromUrl(url string) string {
 	lastSlash := strings.LastIndexByte(url, '/')
 	var fullName string
 	if lastSlash >= 0 {
@@ -227,7 +232,7 @@ func (r fileResolver) FindMessageByURL(url string) (protoreflect.MessageType, er
 	} else {
 		fullName = url
 	}
-	return r.FindMessageByName(protoreflect.FullName(fullName))
+	return fullName
 }
 
 func (r fileResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
@@ -255,93 +260,66 @@ func (r fileResolver) FindExtensionByNumber(message protoreflect.FullName, field
 type filesResolver []File
 
 func (r filesResolver) FindFileByPath(path string) (protoreflect.FileDescriptor, error) {
-	var err error
 	for _, f := range r {
-		var result protoreflect.FileDescriptor
-		result, err = ResolverFromFile(f).FindFileByPath(path)
-		if err == nil {
-			return result, nil
+		if f.Path() == path {
+			return f, nil
 		}
 	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
+	return nil, protoregistry.NotFound
 }
 
 func (r filesResolver) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
-	var err error
 	for _, f := range r {
-		var result protoreflect.Descriptor
-		result, err = ResolverFromFile(f).FindDescriptorByName(name)
-		if err == nil {
+		result := f.FindDescriptorByName(name)
+		if result != nil {
 			return result, nil
 		}
 	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
+	return nil, protoregistry.NotFound
 }
 
 func (r filesResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
-	var err error
 	for _, f := range r {
-		var result protoreflect.MessageType
-		result, err = ResolverFromFile(f).FindMessageByName(message)
-		if err == nil {
-			return result, nil
+		d := f.FindDescriptorByName(message)
+		if d != nil {
+			if md, ok := d.(protoreflect.MessageDescriptor); ok {
+				return dynamicpb.NewMessageType(md), nil
+			}
+			return nil, protoregistry.NotFound
 		}
 	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
+	return nil, protoregistry.NotFound
 }
 
 func (r filesResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
-	var err error
-	for _, f := range r {
-		var result protoreflect.MessageType
-		result, err = ResolverFromFile(f).FindMessageByURL(url)
-		if err == nil {
-			return result, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
+	name := messageNameFromUrl(url)
+	return r.FindMessageByName(protoreflect.FullName(name))
 }
 
 func (r filesResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
-	var err error
 	for _, f := range r {
-		var result protoreflect.ExtensionType
-		result, err = ResolverFromFile(f).FindExtensionByName(field)
-		if err == nil {
-			return result, nil
+		d := f.FindDescriptorByName(field)
+		if d != nil {
+			if extd, ok := d.(protoreflect.ExtensionTypeDescriptor); ok {
+				return extd.Type(), nil
+			}
+			if fld, ok := d.(protoreflect.FieldDescriptor); ok && fld.IsExtension() {
+				return dynamicpb.NewExtensionType(fld), nil
+			}
+			return nil, protoregistry.NotFound
 		}
 	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
+	return nil, protoregistry.NotFound
 }
 
 func (r filesResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
-	var err error
 	for _, f := range r {
-		var result protoreflect.ExtensionType
-		result, err = ResolverFromFile(f).FindExtensionByNumber(message, field)
-		if err == nil {
-			return result, nil
+		ext := findExtension(f, message, field)
+		if ext != nil {
+			return ext.Type(), nil
 		}
 	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
+	return nil, protoregistry.NotFound
 }
 
 type hasExtensionsAndMessages interface {

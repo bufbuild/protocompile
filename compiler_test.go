@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
@@ -20,14 +19,14 @@ func TestParseFilesMessageComments(t *testing.T) {
 		IncludeSourceInfo: true,
 	}
 	ctx := context.Background()
-	protos, err := comp.Compile(ctx, "internal/testprotos/desc_test1.proto")
+	files, err := comp.Compile(ctx, "internal/testprotos/desc_test1.proto")
 	if !assert.Nil(t, err, "%v", err) {
 		t.FailNow()
 	}
 	comments := ""
 	expected := " Comment for TestMessage\n"
-	for _, fd := range protos {
-		msg := fd.Messages().ByName("testprotos.TestMessage")
+	for _, fd := range files {
+		msg := fd.Messages().ByName("TestMessage")
 		if msg != nil {
 			si := fd.SourceLocations().ByDescriptor(msg)
 			if si.Path != nil {
@@ -49,7 +48,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 	pwd, err := os.Getwd()
 	assert.Nil(t, err, "%v", err)
 
-	err = os.Chdir("internal/testprotos/protoparse")
+	err = os.Chdir("internal/testprotos/more")
 	assert.Nil(t, err, "%v", err)
 	defer func() {
 		// restore working directory
@@ -57,7 +56,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 	}()
 
 	comp := Compiler{
-		Resolver: &SourceResolver{},
+		Resolver: WithStandardImports(&SourceResolver{}),
 	}
 	ctx := context.Background()
 	protos, err := comp.Compile(ctx, relFilePaths...)
@@ -111,12 +110,12 @@ func TestParseFilesWithDependencies(t *testing.T) {
 	t.Run("DependencyIncludedProto", func(t *testing.T) {
 		// Create a dependency-aware compiler.
 		compiler := Compiler{
-			Resolver: ResolverFunc(func(f string) (SearchResult, error) {
+			Resolver: WithStandardImports(ResolverFunc(func(f string) (SearchResult, error) {
 				if f == "desc_test_wellknowntypes.proto" {
 					return SearchResult{Proto: wktDescProto}, nil
 				}
 				return baseResolver.FindFileByPath(f)
-			}),
+			})),
 		}
 		_, err := compiler.Compile(ctx, "test.proto")
 		assert.Nil(t, err, "%v", err)
@@ -198,28 +197,12 @@ message Foo {
 		t.FailNow()
 	}
 
+	ext := fds[0].Extensions().ByName("foo")
 	md := fds[0].Messages().Get(0)
-	data := md.Options().ProtoReflect().GetUnknown()
+	fooVal := md.Options().ProtoReflect().Get(ext)
+	assert.Equal(t, "foo", fooVal.String())
 
-	tag, wt, n := protowire.ConsumeTag(data)
-	assert.True(t, n > 0)
-	assert.Equal(t, protowire.Number(30303), tag)
-	assert.Equal(t, protowire.BytesType, wt)
-
-	data = data[n:]
-	fieldData, n := protowire.ConsumeBytes(data)
-	assert.True(t, n > 0)
-	assert.Equal(t, "foo", string(fieldData))
-
-	data = data[n:]
-	tag, wt, n = protowire.ConsumeTag(data)
-	assert.True(t, n > 0)
-	assert.Equal(t, protowire.Number(30304), tag)
-	assert.Equal(t, protowire.VarintType, wt)
-
-	data = data[n:]
-	fieldVal, n := protowire.ConsumeVarint(data)
-	assert.True(t, n > 0)
-	assert.Equal(t, uint64(123), fieldVal)
+	ext = fds[0].Extensions().ByName("bar")
+	barVal := md.Options().ProtoReflect().Get(ext)
+	assert.Equal(t, int64(123), barVal.Int())
 }
-

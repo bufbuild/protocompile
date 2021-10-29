@@ -38,4 +38,3 @@ type Comment struct {
 	// the trailing newline rune in Text.
 	Text string
 }
-

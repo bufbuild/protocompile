@@ -35,15 +35,15 @@ type SearchResult struct {
 	Source io.Reader
 	// Represents the abstract syntax tree for the file. If no field below is
 	// set, then the compiler will convert the AST into a descriptor proto.
-	AST    *ast.FileNode
+	AST *ast.FileNode
 	// A descriptor proto that represents the file. If the field below is not
 	// set, then the compiler will link this proto with its dependencies to
 	// produce a linked descriptor.
-	Proto  *descriptorpb.FileDescriptorProto
+	Proto *descriptorpb.FileDescriptorProto
 	// A fully linked descriptor that represents the file. If this field is set,
 	// then the compiler has no additional work to do for this file as it is
 	// already compiled.
-	Desc   protoreflect.FileDescriptor
+	Desc protoreflect.FileDescriptor
 }
 
 // ResolverFunc is a simple function type that implements Resolver.
@@ -92,7 +92,7 @@ type SourceResolver struct {
 	ImportPaths []string
 	// Optional function for returning a file's contents. If nil, then
 	// os.Open is used to open files on the file system.
-	Accessor    func(path string) (io.ReadCloser, error)
+	Accessor func(path string) (io.ReadCloser, error)
 }
 
 var _ Resolver = (*SourceResolver)(nil)
