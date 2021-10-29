@@ -723,6 +723,14 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 	if err != nil {
 		return err
 	}
+
+	if ood := fld.ContainingOneof(); ood != nil {
+		existingFld := msg.WhichOneof(ood)
+		if existingFld != nil && existingFld.Number() != fld.Number() {
+			return reporter.Errorf(name.Start(), "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
+		}
+	}
+
 	if fld.IsMap() {
 		entry := value.Message()
 		key := entry.Get(fld.MapKey()).MapKey()

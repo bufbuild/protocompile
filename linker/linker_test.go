@@ -613,6 +613,29 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			"foo.proto:6:30: message Baz: option (foo): field Bar not found",
 		},
+		{
+			map[string]string{
+				"foo.proto": "syntax = \"proto3\";\n" +
+					"import \"google/protobuf/descriptor.proto\";\n" +
+					"message Foo { oneof bar { string baz = 1; string buzz = 2; } }\n" +
+					"extend google.protobuf.MessageOptions { optional Foo foo = 10001; }\n" +
+					"message Baz { option (foo) = { baz: \"abc\" buzz: \"xyz\" }; }\n",
+			},
+			`foo.proto:5:43: message Baz: option (foo): oneof "bar" already has field "baz" set`,
+		},
+		{
+			map[string]string{
+				"foo.proto": "syntax = \"proto3\";\n" +
+					"import \"google/protobuf/descriptor.proto\";\n" +
+					"message Foo { oneof bar { string baz = 1; string buzz = 2; } }\n" +
+					"extend google.protobuf.MessageOptions { optional Foo foo = 10001; }\n" +
+					"message Baz {\n" +
+					"  option (foo).baz = \"abc\";\n" +
+					"  option (foo).buzz = \"xyz\";\n" +
+					"}",
+			},
+			`foo.proto:7:16: message Baz: option (foo).buzz: oneof "bar" already has field "baz" set`,
+		},
 	}
 
 	for i, tc := range testCases {
@@ -712,6 +735,8 @@ func TestProto3Enums(t *testing.T) {
 	}
 }
 
+// adapted from implementation of proto.Equal, but records an error for each discrepancy
+// found (does NOT exit early when a discrepancy is found)
 func compareFiles(t *testing.T, path string, exp, act *descriptorpb.FileDescriptorProto) {
 	if (exp == nil) != (act == nil) {
 		if exp == nil {
@@ -734,7 +759,6 @@ func compareFiles(t *testing.T, path string, exp, act *descriptorpb.FileDescript
 	compareMessages(t, path, mexp, mact)
 }
 
-// equalMessage compares two messages.
 func compareMessages(t *testing.T, path string, exp, act protoreflect.Message) {
 	if exp.Descriptor() != act.Descriptor() {
 		t.Errorf("%s: descriptors do not match: exp %#v, actual %#v", path, exp.Descriptor(), act.Descriptor())
@@ -768,7 +792,6 @@ func fieldDisplayName(fd protoreflect.FieldDescriptor) string {
 	return string(fd.Name())
 }
 
-// equalField compares two fields.
 func compareFields(t *testing.T, path string, fd protoreflect.FieldDescriptor, exp, act protoreflect.Value) {
 	switch {
 	case fd.IsList():
@@ -780,7 +803,6 @@ func compareFields(t *testing.T, path string, fd protoreflect.FieldDescriptor, e
 	}
 }
 
-// equalMap compares two maps.
 func compareMaps(t *testing.T, path string, fd protoreflect.FieldDescriptor, exp, act protoreflect.Map) {
 	exp.Range(func(k protoreflect.MapKey, expVal protoreflect.Value) bool {
 		actVal := act.Get(k)
@@ -799,7 +821,6 @@ func compareMaps(t *testing.T, path string, fd protoreflect.FieldDescriptor, exp
 	})
 }
 
-// equalList compares two lists.
 func compareLists(t *testing.T, path string, fd protoreflect.FieldDescriptor, exp, act protoreflect.List) {
 	if exp.Len() != act.Len() {
 		t.Errorf("%s: expected is list with %d items but actual has %d", path, exp.Len(), act.Len())
@@ -813,7 +834,6 @@ func compareLists(t *testing.T, path string, fd protoreflect.FieldDescriptor, ex
 	}
 }
 
-// equalValue compares two singular values.
 func compareValues(t *testing.T, path string, fd protoreflect.FieldDescriptor, exp, act protoreflect.Value) {
 	if fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind {
 		compareMessages(t, path, exp.Message(), act.Message())
@@ -853,8 +873,6 @@ func compareValues(t *testing.T, path string, fd protoreflect.FieldDescriptor, e
 	}
 }
 
-// equalUnknown compares unknown fields by direct comparison on the raw bytes
-// of each individual field number.
 func compareUnknown(t *testing.T, path string, exp, act protoreflect.RawFields) {
 	if bytes.Equal(exp, act) {
 		return
