@@ -420,7 +420,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		}
 		mc.option = uo
 		path, err := interp.interpretField(mc, element, msg, uo, 0, nil)
-		if err != nil || path == nil {
+		if err != nil {
 			if interp.lenient {
 				remain = append(remain, uo)
 				continue
