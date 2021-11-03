@@ -163,27 +163,20 @@ to match the keyword, per the rules below. All of the keyword token types below
 are *also* considered identifiers by the grammar. For example, a production in the
 grammar that references `identifier` will also accept `syntax` or `map`.
 ```
-syntax     = "syntax" .     import     = "import" .
-weak       = "weak" .       public     = "public" .
-package    = "package" .    option     = "option" .
-true       = "true" .       false      = "false" .
-inf        = "inf" .        nan        = "nan" .
-repeated   = "repeated" .   optional   = "optional" .
-required   = "required" .   double     = "double" .
-float      = "float" .      int32      = "int32" .
-int64      = "int64" .      uint32     = "uint32" .
-uint64     = "uint64" .     sint32     = "sint32" .
-sint64     = "sint64" .     fixed32    = "fixed32" .
-fixed64    = "fixed64" .    sfixed32   = "sfixed32" .
-sfixed64   = "sfixed64" .   bool       = "bool" .
-string     = "string" .     bytes      = "bytes" .
-group      = "group" .      oneof      = "oneof" .
-map        = "map" .        extensions = "extensions" .
-to         = "to" .         max        = "max" .
-reserved   = "reserved" .   enum       = "enum" .
-message    = "message" .    extend     = "extend" .
-service    = "service" .    rpc        = "rpc" .
-stream     = "stream" .     returns    = "returns" .
+syntax   = "syntax" .      float    = "float" .       group      = "group" .
+import   = "import" .      int32    = "int32" .       oneof      = "oneof" .
+weak     = "weak" .        int64    = "int64" .       map        = "map" .
+public   = "public" .      uint32   = "uint32" .      extensions = "extensions" .
+package  = "package" .     uint64   = "uint64" .      to         = "to" .
+option   = "option" .      sint32   = "sint32" .      max        = "max" .
+true     = "true" .        sint64   = "sint64" .      reserved   = "reserved" .
+false    = "false" .       fixed32  = "fixed32" .     enum       = "enum" .
+inf      = "inf" .         fixed64  = "fixed64" .     message    = "message" .
+nan      = "nan" .         sfixed32 = "sfixed32" .    extend     = "extend" .
+repeated = "repeated" .    sfixed64 = "sfixed64" .    service    = "service" .
+optional = "optional" .    bool     = "bool" .        rpc        = "rpc" .
+required = "required" .    string   = "string" .      stream     = "stream" .
+double   = "double" .      bytes    = "bytes" .       returns    = "returns" .
 ```
 
 ### Numeric Literals
@@ -254,11 +247,9 @@ unicode_escape_seq = `\` "u" hex_digit hex_digit hex_digit hex_digit |
 
 The symbols below represent all other valid input characters used by the protobuf grammar.
 ```
-semicolon = ";" .   comma     = "," .   dot       = "." .
-colon     = ":" .   equals    = "=" .   minus     = "-" .
-plus      = "+" .   l_paren   = "(" .   r_paren   = ")" .
-l_brace   = "{" .   r_brace   = "}" .   l_bracket = "[" .
-r_bracket = "]" .   l_angle   = "<" .   r_angle   = ">" .
+semicolon = ";" .   colon     = ":" .   plus      = "+" .   l_brace   = "{" .   r_bracket = "]" .
+comma     = "," .   equals    = "=" .   l_paren   = "(" .   r_brace   = "}" .   l_angle   = "<" .
+dot       = "." .   minus     = "-" .   r_paren   = ")" .   l_bracket = "[" .   r_angle   = ">" .
 ```
 
 # Grammar
