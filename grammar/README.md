@@ -136,8 +136,8 @@ hex_digit     = "0" … "9" | "A" … "F" | "a" … "f" .
 byte_order_mark = "\xEF\xBB\xBF"
 ```
 
-The `byte_order_mark` byte sequence is the UTF-8 encoding of the byte-order marker
-(U+FEFF).
+The `byte_order_mark` byte sequence is the UTF-8 encoding of the byte-order mark
+character (U+FEFF).
 
 ## Tokens
 
@@ -260,7 +260,7 @@ The productions below define the grammar rules for the protobuf IDL.
 
 The `File` production represents the contents of a valid protobuf source file.
 ```
-File = [byte_order_mark] [ SyntaxDecl ] { FileElement } .
+File = [ byte_order_mark ] [ SyntaxDecl ] { FileElement } .
 
 FileElement = ImportDecl |
               PackageDecl |
