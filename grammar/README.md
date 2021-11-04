@@ -28,8 +28,8 @@ The syntax is specified using Extended Backus-Naur Form (EBNF):
 Production  = production_name "=" Expression "." .
 Expression  = Alternative { "|" Alternative } .
 Alternative = Term { Term } .
-Term        = production_name | token [ "…" token ] | Exclusion | Group | Option | Repetition .
-Exclusion   = "!" token | "!" "(" token { "|" token } ")" .
+Term        = production_name | literal [ "…" literal ] | Exclusion | Group | Option | Repetition .
+Exclusion   = "!" literal | "!" "(" literal { "|" literal_source } ")" .
 Group       = "(" Expression ")" .
 Option      = "[" Expression "]" .
 Repetition  = "{" Expression "}" .
@@ -98,6 +98,9 @@ That way input like `"0.0.0"`, `"1to3"`, and `"packageio"` can never be interpre
 sequences [`"0.0"`, `".0"`]; [`"1"`, `"to"`, `"3"`]; or [`"package"`, `"io"`]
 respectively; they will always be interpreted as single tokens.
 
+If a sequence of input is encountered that does not match any of the rules for acceptable
+tokens, then the source is invalid and has a syntax error.
+
 ## Discarded Input
 
 Whitespace is often necessary to separate adjacent tokens in the language. But aside from
@@ -121,10 +124,10 @@ available to that later step.
 whitespace = " " | "\n" | "\r" | "\t" | "\f" | "\v" .
 comment = line_comment | block_comment .
 
-line_comment = "/" "/" { !"\n" } .
+line_comment = "/" "/" { !("\n" | "\x00") } .
 block_comment = "/" "*" comment_tail .
-comment_tail = "*" comment_tail_star | !"*" comment_tail .
-comment_tail_star = "/" | "*" comment_tail_star | !("*" | "/") comment_tail .
+comment_tail = "*" comment_tail_star | !("*" | "\x00") comment_tail .
+comment_tail_star = "/" | "*" comment_tail_star | !("*" | "/" | "\x00") comment_tail .
 ```
 
 If the `/*` sequence is found to start a block comment, but the above rule is not
@@ -254,6 +257,10 @@ unicode_escape_seq = `\` "u" hex_digit hex_digit hex_digit hex_digit |
                      `\` "U" hex_digit hex_digit hex_digit hex_digit
                              hex_digit hex_digit hex_digit hex_digit .
 ```
+
+If a string literal contains a newline or null character then it is malformed and a
+syntax error should be reported.
+
 
 ### Punctuation and Operators
 
