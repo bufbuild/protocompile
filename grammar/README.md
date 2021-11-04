@@ -8,7 +8,7 @@ way of describing data structures and RPC interfaces.
 
 This document is not an official artifact from Google or the Protobuf
 team. It has been developed over the course of implementing a [pure-Go
-parser and linker for Protobuf](https://pkg.go.dev/github.com/jhump/protoreflect@v1.10.1/desc/protoparse).
+compiler for Protobuf](https://pkg.go.dev/github.com/jhump/protoreflect@v1.10.1/desc/protoparse).
 There are official grammars that are available on the Protobuf developer
 website ([proto2](https://developers.google.com/protocol-buffers/docs/reference/proto2-spec)
 and [proto3](https://developers.google.com/protocol-buffers/docs/reference/proto3-spec)).
@@ -18,7 +18,7 @@ language (such as alternate compilers, formatters, linters, or other
 static analyzers). This specification attempts to fill that role.
 
 This spec presents a unified grammar, capable of parsing both proto2
-and proto3 syntax files. The differences between the two does not
+and proto3 syntax files. The differences between the two do not
 impact the grammar and can be enforced as a post-process over the
 resulting parsed syntax tree.
 
@@ -44,7 +44,7 @@ Productions are expressions constructed from terms and the following operators, 
 * **{}**: Repetition (0 to n times)
 
 Lower-case production names are used to identify lexical tokens. Non-terminals are in CamelCase.
-Literal source characters are enclosed in double quotes `""` or back quotes `` `` ``.
+Literal source characters are enclosed in double quotes `""` or back quotes ``` `` ```.
 In double-quotes, the contents can encode otherwise non-printable characters. The
 backslash character (`\`) is used to mark these encoded sequences:
 
@@ -98,8 +98,8 @@ respectively; they will always be interpreted as single tokens.
 
 Whitespace is often necessary to separate adjacent tokens in the language. But aside from
 that purpose during tokenization, it is ignored. Extra whitespace is allowed anywhere between
-tokens. Block comments can also serve to separate tokens and are also allows anywhere between
-tokens and are also ignored by the grammar.
+tokens. Block comments can also serve to separate tokens, are also allowed anywhere between
+tokens, and are also ignored by the grammar.
 
 Protobuf source allows for two styles of comments:
  1. Line comments: These begin with `//` and continue to the end of the line.
@@ -112,7 +112,7 @@ discarded.
 If a parser implementation intends to produce descriptor protos that include source code info
 (which has details about the location of lexical elements in the file as well as comments)
 then the tokenizer should accumulate comments as it scans for tokens so they can be made
-available to that parse step.
+available to that later step.
 ```
 whitespace = " " | "\n" | "\r" | "\t" | "\f" | "\v" .
 comment = line_comment | block_comment .
@@ -122,6 +122,14 @@ block_comment = "/" "*" comment_tail .
 comment_tail = "*" comment_tail_star | !"*" comment_tail .
 comment_tail_star = "/" | "*" comment_tail_star | !("*" | "/") comment_tail .
 ```
+
+If the `/*` sequence is found to start a block comment, but the above rule is not
+matched, it indicates a malformed block comment: EOF was reached before the
+concluding `*/` sequence was found. Such a malformed comment is a syntax
+error.
+
+If a comment text contains a null character (code point zero) then it is malformed
+and a syntax error should be reported.
 
 ## Character Classes
 
@@ -141,7 +149,7 @@ character (U+FEFF).
 
 ## Tokens
 
-The results of lexical analysis is a stream of tokens of the following kinds:
+The result of lexical analysis is a stream of tokens of the following kinds:
  * `identifier`
  * 42 token types corresponding to keywords.
  * `int_lit`
@@ -227,7 +235,7 @@ for constant values of `bytes` fields, so they must be able to represent arbitra
 binary data, in addition to normal/valid UTF-8 strings.
 
 Note that protobuf explicitly disallows a null character (code point 0) to appear in
-the string, but an _encoded null_ (e.g. `\x00`) can appear.
+the string, but an _encoded null_ (e.g. `"\x00"`) can appear.
 ```
 string_lit = single_quoted_string_lit | double_quoted_string_lit .
 
@@ -327,7 +335,7 @@ which provide a way to customize behavior and also provide the
 ability to use custom annotations on elements (which can then be
 used by protoc plugins or runtime libraries).
 ```
-OptionDecl = option OptionName equals Constant semicolon .
+OptionDecl = option OptionName equals OptionValue semicolon .
 
 OptionName = ( identifier | l_paren TypeName r_paren ) [ dot OptionName ] .
 TypeName = [ dot ] QualifiedIdentifier .
@@ -348,7 +356,7 @@ aggregate (e.g. will be wrapped in braces or angle brackets).
 List literals may not be used directly as option values (even for
 repeated fields) but are allowed inside an aggregate value.
 ```
-Constant = ScalarConstant | Aggregate .
+OptionValue = ScalarConstant | Aggregate .
 
 ScalarConstant = StringLiteral | Bool | Num | identifier .
 Bool = true | false .
@@ -432,7 +440,7 @@ FieldDecl = [ required | optional | repeated ] TypeName identifier equals int_li
             [ CompactOptions ] semicolon .
 
 CompactOptions = l_bracket CompactOption { comma CompactOption } r_bracket .
-CompactOption = OptionName equals Constant .
+CompactOption = OptionName equals OptionValue .
 ```
 
 Map fields never have a label as their cardinality is implicitly repeated (since
@@ -445,7 +453,7 @@ MapKeyType = int32   | int64   | uint32   | uint64   | sint32 | sint64 |
              fixed32 | fixed64 | sfixed32 | sfixed64 | bool   | string .
 ```
 
-Groups are a mechanism in proto2 to define to create a field that is a nested message.
+Groups are a mechanism in proto2 to to create a field that is a nested message.
 The message definition is inlined into the group field declaration.
 
 The group's name must start with a capital letter. In some contexts, the group field
@@ -497,8 +505,7 @@ OneofGroupDecl = group identifier equals int_lit
 Extendable messages (proto2 syntax only) may define ranges of tags. Extension fields
 must use a tag in one of these ranges.
 ```
-ExtensionRangeDecl = extensions TagRange { comma TagRange }
-                     [ CompactOptions ] semicolon .
+ExtensionRangeDecl = extensions TagRange { comma TagRange } [ CompactOptions ] semicolon .
 
 TagRange = int_lit [ to ( int_lit | max ) ] .
 ```
@@ -533,8 +540,8 @@ Value names (the first `identifier` token) may not match any of these keywords:
 EnumValueDecl = identifier equals int_lit [ CompactOptions ] semicolon .
 ```
 
-Like messages, enums can also reserve names and numbers (typically to prevent
-recycling names and numbers from old enum values).
+Like messages, enums can also reserve names and numbers, typically to prevent
+recycling names and numbers from old enum values.
 ```
 EnumReservedDecl = reserved ( EnumValueRange { comma EnumValueRange } | Names ) semicolon .
 
