@@ -156,9 +156,9 @@ character (U+FEFF).
 The result of lexical analysis is a stream of tokens of the following kinds:
  * `identifier`
  * 42 token types corresponding to keywords.
- * `int_lit`
- * `float_lit`
- * `string_lit`
+ * `int_literal`
+ * `float_literal`
+ * `string_literal`
  * 15 token types corresponding to symbols, punctuation, and operators.
 
 ### Identifiers
@@ -198,36 +198,36 @@ Handling of numeric literals is a bit special in order to avoid a situation wher
 respectively. Instead of these input sequences representing a possible sequence of 2
 or more tokens, they are considered invalid numeric literals.
 
-So input is first scanned for the `numeric_lit` token type:
+So input is first scanned for the `numeric_literal` token type:
 ```
-numeric_lit = ( "." | decimal_digit ) { digit_or_point }
-              { ( "e" | "E" ) [ "+" | "-" ] digit_or_point { digit_or_point } }
+numeric_literal = ( "." | decimal_digit ) { digit_or_point }
+                  { ( "e" | "E" ) [ "+" | "-" ] digit_or_point { digit_or_point } }
 
 digit_or_point = "." | decimal_digit | letter
 ```
  
-When a `numeric_lit` token is found, it is then checked to see if it matches the `int_lit`
-or `float_lit` rules (see below). If it does then the scanned token is included in the
-result token stream with `int_lit` or `float_lit` as its token type. But if it does *not*
+When a `numeric_literal` token is found, it is then checked to see if it matches the `int_literal`
+or `float_literal` rules (see below). If it does then the scanned token is included in the
+result token stream with `int_literal` or `float_literal` as its token type. But if it does *not*
 match, it is a malformed numeric literal which is considered a syntax error.
 
-Below is the rule for `int_lit`:
+Below is the rule for `int_literal`:
 ```
-int_lit        = decimal_lit | octal_lit | hex_lit .
+int_literal = decimal_literal | octal_literal | hex_literal .
 
-decimal_lit    = "0" | ( "1" … "9" ) [ decimal_digits ] .
-octal_lit      = "0" octal_digits .
-hex_lit        = "0" ( "x" | "X" ) hex_digits .
-decimal_digits = decimal_digit { decimal_digit } .
-octal_digits   = octal_digit { octal_digit } .
-hex_digits     = hex_digit { hex_digit } .
+decimal_literal = "0" | ( "1" … "9" ) [ decimal_digits ] .
+octal_literal   = "0" octal_digits .
+hex_literal     = "0" ( "x" | "X" ) hex_digits .
+decimal_digits  = decimal_digit { decimal_digit } .
+octal_digits    = octal_digit { octal_digit } .
+hex_digits      = hex_digit { hex_digit } .
 ```
 
-Below is the rule for `float_lit`:
+Below is the rule for `float_literal`:
 ```
-float_lit = decimal_digits "." [ decimal_digits ] [ decimal_exponent ] |
-            decimal_digits decimal_exponent |
-            "." decimal_digits [ decimal_exponent ] .
+float_literal = decimal_digits "." [ decimal_digits ] [ decimal_exponent ] |
+                decimal_digits decimal_exponent |
+                "." decimal_digits [ decimal_exponent ] .
 
 decimal_exponent  = ( "e" | "E" ) [ "+" | "-" ] decimal_digits .
 ```
@@ -241,10 +241,10 @@ binary data, in addition to normal/valid UTF-8 strings.
 Note that protobuf explicitly disallows a null character (code point 0) to appear in
 the string, but an _encoded null_ (e.g. `"\x00"`) can appear.
 ```
-string_lit = single_quoted_string_lit | double_quoted_string_lit .
+string_literal = single_quoted_string_literal | double_quoted_string_literal .
 
-single_quoted_string_lit = "'" { !("\n" | "\x00" | "'" | `\`) | rune_escape_seq } "'" .
-double_quoted_string_lit = `"` { !("\n" | "\x00" | `"` | `\`) | rune_escape_seq } `"` .
+single_quoted_string_literal = "'" { !("\n" | "\x00" | "'" | `\`) | rune_escape_seq } "'" .
+double_quoted_string_literal = `"` { !("\n" | "\x00" | `"` | `\`) | rune_escape_seq } `"` .
 
 rune_escape_seq    = simple_escape_seq | hex_escape_seq | octal_escape_seq | unicode_escape_seq .
 simple_escape_seq  = `\` ( "a" | "b" | "f" | "n" | "r" | "t" | "v" | `\` | "'" | `"` | "?" ) .
@@ -296,7 +296,7 @@ String literals support C-style concatenation. So the sequence
 ```
 SyntaxDecl = syntax equals StringLiteral semicolon .
 
-StringLiteral = string_lit { string_lit } .
+StringLiteral = string_literal { string_literal } .
 ```
 
 ### Package Declaration
@@ -350,33 +350,34 @@ values can also be aggregate values (message literals). This aggregate
 must be enclosed in braces (`{` and `}`).
 
 The syntax for the value _inside_ the braces, however, is the protobuf
-text format. This means aggregate values therein may be enclosed in
+text format. This means nested message values therein may be enclosed in
 braces or may instead be enclosed in angle brackets (`<` and `>`). In
-aggregate values, a single field is defined by a field name and value,
-separated by a colon. However the colon is optional if the value is a
+message values, a single field is defined by a field name and value,
+separated by a colon. However, the colon is optional if the value is a
 composite (e.g. will be surrounded by braces or brackets).
 
 List literals may not be used directly as option values (even for
-repeated fields) but are allowed inside an aggregate value.
+repeated fields) but are allowed inside a message value, for a
+repeated field.
 ```
-OptionValue = ScalarConstant | Aggregate .
+OptionValue = ScalarValue | MessageLiteralWithBraces .
 
-ScalarConstant = StringLiteral | Bool | Num | identifier .
-Bool           = true | false .
-Num            = nan | [ minus | plus ] UnsignedNum .
-UnsignedNum    = float_lit | int_lit | inf .
+ScalarValue        = StringLiteral | BoolLiteral | NumLiteral | identifier .
+BoolLiteral        = true | false .
+NumLiteral         = nan | [ minus | plus ] UnsignedNumLiteral .
+UnsignedNumLiteral = float_literal | int_literal | inf .
 
-Aggregate      = l_brace { AggregateField } r_brace .
-AggregateField = AggregateName colon Value |
-                 AggregateName CompositeValue .
-AggregateName  = identifier | l_bracket TypeName r_bracket .
-Value          = ScalarConstant | CompositeValue .
-CompositeValue = AggregateValue | List .
-AggregateValue = Aggregate |
-                 l_angle { AggregateField } r_angle .
+MessageLiteralWithBraces = l_brace { MessageLiteralField } r_brace .
+MessageLiteralField      = MessageLiteralFieldName colon Value |
+                           MessageLiteralFieldName CompositeValue .
+MessageLiteralFieldName  = identifier | l_bracket TypeName r_bracket .
+Value                    = ScalarValue | CompositeValue .
+CompositeValue           = MessageLiteral | ListLiteral .
+MessageLiteral           = MessageLiteralWithBraces |
+                           l_angle { MessageLiteralField } r_angle .
 
-List        = l_bracket [ ListElement { comma ListElement } ] r_bracket .
-ListElement = ScalarConstant | AggregateValue .
+ListLiteral = l_bracket [ ListElement { comma ListElement } ] r_bracket .
+ListElement = ScalarValue | MessageLiteral .
 ```
 
 ## Messages
@@ -440,7 +441,7 @@ the first constituent token is "enum". A _fully_qualified_ type name (one that s
 a dot) is always accepted, regardless of the first identifier token, since the dot prevents
 ambiguity.
 ```
-FieldDecl = [ required | optional | repeated ] TypeName identifier equals int_lit
+FieldDecl = [ required | optional | repeated ] TypeName identifier equals int_literal
             [ CompactOptions ] semicolon .
 
 CompactOptions = l_bracket CompactOption { comma CompactOption } r_bracket .
@@ -450,20 +451,20 @@ CompactOption  = OptionName equals OptionValue .
 Map fields never have a label as their cardinality is implicitly repeated (since
 a map can have more than one entry).
 ```
-MapFieldDecl = MapType identifier equals int_lit [ CompactOptions ] semicolon .
+MapFieldDecl = MapType identifier equals int_literal [ CompactOptions ] semicolon .
 
 MapType    = map l_angle MapKeyType comma TypeName r_angle .
 MapKeyType = int32   | int64   | uint32   | uint64   | sint32 | sint64 |
              fixed32 | fixed64 | sfixed32 | sfixed64 | bool   | string .
 ```
 
-Groups are a mechanism in proto2 to to create a field that is a nested message.
+Groups are a mechanism in proto2 to create a field that is a nested message.
 The message definition is inlined into the group field declaration.
 
 The group's name must start with a capital letter. In some contexts, the group field
 goes by the lower-cased form of this name.
 ```
-GroupDecl = [ required | optional | repeated ] group identifier equals int_lit
+GroupDecl = [ required | optional | repeated ] group identifier equals int_literal
             [ CompactOptions ] l_brace { MessageElement } r_brace .
 ```
 
@@ -493,14 +494,14 @@ name that starts with any of the following:
   * "required"
   * "repeated"
 ```
-OneofFieldDecl = TypeName identifier equals int_lit
+OneofFieldDecl = TypeName identifier equals int_literal
                  [ CompactOptions ] semicolon .
 ```
 
 A group's name must start with a capital letter. In some contexts, the group field
 goes by the lower-cased form of this name.
 ```
-OneofGroupDecl = group identifier equals int_lit
+OneofGroupDecl = group identifier equals int_literal
                  [ CompactOptions ] l_brace { MessageElement } r_brace .
 ```
 
@@ -511,7 +512,7 @@ must use a tag in one of these ranges.
 ```
 ExtensionRangeDecl = extensions TagRange { comma TagRange } [ CompactOptions ] semicolon .
 
-TagRange = int_lit [ to ( int_lit | max ) ] .
+TagRange = int_literal [ to ( int_literal | max ) ] .
 ```
 
 ### Reserved Names and Numbers
@@ -541,7 +542,9 @@ Value names (the first `identifier` token) may not match any of these keywords:
   * "reserved"
   * "option"
 ```
-EnumValueDecl = identifier equals int_lit [ CompactOptions ] semicolon .
+EnumValueDecl = identifier equals SignedIntLiteral [ CompactOptions ] semicolon .
+
+SignedIntLiteral = [ minus ] int_literal .
 ```
 
 Like messages, enums can also reserve names and numbers, typically to prevent
@@ -549,8 +552,7 @@ recycling names and numbers from old enum values.
 ```
 EnumReservedDecl = reserved ( EnumValueRange { comma EnumValueRange } | Names ) semicolon .
 
-EnumValueRange = SignedInt [ to ( SignedInt | max ) ] .
-SignedInt      = [ minus ] int_lit .
+EnumValueRange = SignedIntLiteral [ to ( SignedIntLiteral | max ) ] .
 ```
 
 ## Extensions
