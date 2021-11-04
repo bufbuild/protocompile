@@ -57,6 +57,10 @@ backslash character (`\`) is used to mark these encoded sequences:
             8-bit value indicates a code point between 0 and 255.
 * `"\\"`: A literal backslash character.
 
+These escaped characters represent _bytes_, not Unicode code points (thus the
+8-bit limit). To represent literal Unicode code points above 127, a sequence of
+bytes representing the UTF-8 encoding of the code point will be used.
+
 A string of multiple characters indicates all characters in a sequence. In other
 words, the following two productions are equivalent:
 ```
@@ -278,8 +282,7 @@ FileElement = ImportDecl |
               ExtensionDecl |
               ServiceDecl |
               EmptyDecl .
-
-EmptyDecl = semicolon .
+EmptyDecl   = semicolon .
 ```
 
 ### Syntax
@@ -338,7 +341,7 @@ used by protoc plugins or runtime libraries).
 OptionDecl = option OptionName equals OptionValue semicolon .
 
 OptionName = ( identifier | l_paren TypeName r_paren ) [ dot OptionName ] .
-TypeName = [ dot ] QualifiedIdentifier .
+TypeName   = [ dot ] QualifiedIdentifier .
 ```
 
 Option values are literals. In addition to primitive literal values
@@ -350,8 +353,8 @@ The syntax for the value _inside_ the braces, however, is the protobuf
 text format. This means aggregate values therein may be enclosed in
 braces or may instead be enclosed in angle brackets (`<` and `>`). In
 aggregate values, a single field is defined by a field name and value,
-separated by a colon. However the colon is optional if the value is an
-aggregate (e.g. will be wrapped in braces or angle brackets). 
+separated by a colon. However the colon is optional if the value is a
+composite (e.g. will be surrounded by braces or brackets).
 
 List literals may not be used directly as option values (even for
 repeated fields) but are allowed inside an aggregate value.
@@ -359,19 +362,20 @@ repeated fields) but are allowed inside an aggregate value.
 OptionValue = ScalarConstant | Aggregate .
 
 ScalarConstant = StringLiteral | Bool | Num | identifier .
-Bool = true | false .
-Num = nan | [ minus | plus ] UnsignedNum .
-UnsignedNum = float_lit | int_lit | inf .
+Bool           = true | false .
+Num            = nan | [ minus | plus ] UnsignedNum .
+UnsignedNum    = float_lit | int_lit | inf .
 
-Aggregate = l_brace { AggregateField } r_brace .
+Aggregate      = l_brace { AggregateField } r_brace .
 AggregateField = AggregateName colon Value |
-                 AggregateName AggregateValue .
-AggregateName = identifier | l_bracket TypeName r_bracket .
-Value = ScalarConstant | List | AggregateValue .
+                 AggregateName CompositeValue .
+AggregateName  = identifier | l_bracket TypeName r_bracket .
+Value          = ScalarConstant | CompositeValue .
+CompositeValue = AggregateValue | List .
 AggregateValue = Aggregate |
                  l_angle { AggregateField } r_angle .
 
-List = l_bracket [ ListElement { comma ListElement } ] r_bracket .
+List        = l_bracket [ ListElement { comma ListElement } ] r_bracket .
 ListElement = ScalarConstant | AggregateValue .
 ```
 
@@ -385,7 +389,7 @@ include `GroupDecl` or `ExtensionRangeDecl` elements.
 ```
 MessageDecl = message identifier l_brace { MessageElement } r_brace .
 
-MessageElement : FieldDecl |
+MessageElement = FieldDecl |
                  MapFieldDecl |
                  GroupDecl |
                  OneofDecl |
@@ -440,7 +444,7 @@ FieldDecl = [ required | optional | repeated ] TypeName identifier equals int_li
             [ CompactOptions ] semicolon .
 
 CompactOptions = l_bracket CompactOption { comma CompactOption } r_bracket .
-CompactOption = OptionName equals OptionValue .
+CompactOption  = OptionName equals OptionValue .
 ```
 
 Map fields never have a label as their cardinality is implicitly repeated (since
@@ -448,7 +452,7 @@ a map can have more than one entry).
 ```
 MapFieldDecl = MapType identifier equals int_lit [ CompactOptions ] semicolon .
 
-MapType = map l_angle MapKeyType comma TypeName r_angle .
+MapType    = map l_angle MapKeyType comma TypeName r_angle .
 MapKeyType = int32   | int64   | uint32   | uint64   | sint32 | sint64 |
              fixed32 | fixed64 | sfixed32 | sfixed64 | bool   | string .
 ```
@@ -546,7 +550,7 @@ recycling names and numbers from old enum values.
 EnumReservedDecl = reserved ( EnumValueRange { comma EnumValueRange } | Names ) semicolon .
 
 EnumValueRange = SignedInt [ to ( SignedInt | max ) ] .
-SignedInt = [ minus ] int_lit .
+SignedInt      = [ minus ] int_lit .
 ```
 
 ## Extensions
@@ -581,7 +585,7 @@ Each RPC defines a single method/operation and its request and response types.
 RpcDecl = rpc identifier RpcType returns RpcType semicolon |
           rpc identifier RpcType returns RpcType l_brace { RpcElement } r_brace .
 
-RpcType = l_paren [ stream ] TypeName r_paren .
+RpcType    = l_paren [ stream ] TypeName r_paren .
 RpcElement = OptionDecl |
              EmptyDecl .
 ```
