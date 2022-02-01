@@ -158,7 +158,8 @@ character (U+FEFF).
 
 The result of lexical analysis is a stream of tokens of the following kinds:
  * `identifier`
- * 42 token types corresponding to keywords.
+ * 42 token types corresponding to keywords
+ * 4 token types corresponding to special identifiers used in the protobuf text format
  * `int_literal`
  * `float_literal`
  * `string_literal`
@@ -192,6 +193,15 @@ repeated = "repeated" .    sfixed64 = "sfixed64" .    service    = "service" .
 optional = "optional" .    bool     = "bool" .        rpc        = "rpc" .
 required = "required" .    string   = "string" .      stream     = "stream" .
 double   = "double" .      bytes    = "bytes" .       returns    = "returns" .
+```
+
+If an `identiier` does not match a keyword above, it is checked against the following
+special identifiers used in the protobuf text format. If it matches one of these, its
+token type is changed to match, per the rules below. Like keywords, all four of these
+token types are *also* considered identifiers by the grammer.
+```
+short_true  = "t" .                      upper_true  = "True" .
+short_false = "f" .                      upper_false = "False" .
 ```
 
 ### Numeric Literals
@@ -266,9 +276,10 @@ syntax error should be reported.
 
 The symbols below represent all other valid input characters used by the protobuf grammar.
 ```
-semicolon = ";" .   colon     = ":" .   plus      = "+" .   l_brace   = "{" .   r_bracket = "]" .
-comma     = "," .   equals    = "=" .   l_paren   = "(" .   r_brace   = "}" .   l_angle   = "<" .
-dot       = "." .   minus     = "-" .   r_paren   = ")" .   l_bracket = "[" .   r_angle   = ">" .
+semicolon = ";" .     colon     = ":" .     l_paren   = "(" .     l_bracket = "[" .
+comma     = "," .     equals    = "=" .     r_paren   = ")" .     r_bracket = "]" .
+dot       = "." .     minus     = "-" .     l_brace   = "{" .     l_angle   = "<" .
+slash     = "/" .     plus      = "+" .     r_brace   = "}" .     r_angle   = ">" .
 ```
 
 # Grammar
@@ -377,8 +388,10 @@ UnsignedNumLiteral = float_literal | int_literal | inf .
 MessageLiteralWithBraces = l_brace { MessageLiteralField } r_brace .
 MessageLiteralField      = MessageLiteralFieldName colon Value |
                            MessageLiteralFieldName CompositeValue .
-MessageLiteralFieldName  = identifier | l_bracket TypeName r_bracket .
-Value                    = ScalarValue | CompositeValue .
+MessageLiteralFieldName  = identifier |
+                           l_bracket { QualifiedIdentifier slash } QualifiedIdentifier r_bracket .
+Value                    = ScalarValue | SpecialValue | CompositeValue .
+SpecialValue             = short_true | short_false | upper_true | upper_false .
 CompositeValue           = MessageLiteral | ListLiteral .
 MessageLiteral           = MessageLiteralWithBraces |
                            l_angle { MessageLiteralField } r_angle .
