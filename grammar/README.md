@@ -389,7 +389,7 @@ MessageLiteralWithBraces = l_brace { MessageLiteralField } r_brace .
 MessageLiteralField      = MessageLiteralFieldName colon Value |
                            MessageLiteralFieldName CompositeValue .
 MessageLiteralFieldName  = identifier |
-                           l_bracket { QualifiedIdentifier slash } QualifiedIdentifier r_bracket .
+                           l_bracket [ QualifiedIdentifier slash ] QualifiedIdentifier r_bracket .
 Value                    = ScalarValue | SpecialValue | CompositeValue .
 SpecialValue             = short_true | short_false | upper_true | upper_false .
 CompositeValue           = MessageLiteral | ListLiteral .
