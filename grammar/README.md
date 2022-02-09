@@ -1,7 +1,7 @@
 # Introduction
-This is a specification for the Protocol Buffer IDL (Interface
-Definition Language). Protocol Buffer is also known by the short
-hand "protobuf".
+This is a specification for the syntax of the Protocol Buffer IDL
+(Interface Definition Language). Protocol Buffer is also known by the
+short hand "protobuf".
 
 The language is a platform-agnostic and implementation-language-agnostic
 way of describing data structures and RPC interfaces.
