@@ -163,7 +163,7 @@ The result of lexical analysis is a stream of tokens of the following kinds:
  * `int_literal`
  * `float_literal`
  * `string_literal`
- * 15 token types corresponding to symbols, punctuation, and operators.
+ * 16 token types corresponding to symbols, punctuation, and operators.
 
 ### Identifiers
 
