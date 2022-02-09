@@ -397,7 +397,7 @@ MessageLiteral           = MessageLiteralWithBraces |
                            l_angle { MessageLiteralField } r_angle .
 
 ListLiteral = l_bracket [ ListElement { comma ListElement } ] r_bracket .
-ListElement = ScalarValue | MessageLiteral .
+ListElement = ScalarValue | SpecialValue | MessageLiteral .
 ```
 
 ## Messages
