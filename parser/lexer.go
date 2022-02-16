@@ -289,12 +289,19 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 				return int(c)
 			}
 			if cn == '/' {
-				l.skipToEndOfLineComment()
+				hasErr := l.skipToEndOfLineComment(lval)
+				if hasErr {
+					return _ERROR
+				}
 				l.comments = append(l.comments, l.newToken())
 				continue
 			}
 			if cn == '*' {
-				if ok := l.skipToEndOfBlockComment(); !ok {
+				ok, hasErr := l.skipToEndOfBlockComment(lval)
+				if hasErr {
+					return _ERROR
+				}
+				if !ok {
 					l.setError(lval, errors.New("block comment never terminates, unexpected EOF"))
 					return _ERROR
 				}
@@ -304,7 +311,11 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			l.input.unreadRune(szn)
 		}
 
-		if c > 127 {
+		if c < 32 || c == 127 {
+			l.setError(lval, errors.New("invalid control character"))
+			return _ERROR
+		}
+		if !strings.ContainsRune(";,.:=-+(){}[]<>", c) {
 			l.setError(lval, errors.New("invalid character"))
 			return _ERROR
 		}
@@ -662,33 +673,41 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 	return buf.String(), nil
 }
 
-func (l *protoLex) skipToEndOfLineComment() {
-	for {
-		c, _, err := l.input.readRune()
-		if err != nil {
-			return
-		}
-		if c == '\n' {
-			l.info.AddLine(l.input.offset())
-			return
-		}
-	}
-}
-
-func (l *protoLex) skipToEndOfBlockComment() bool {
+func (l *protoLex) skipToEndOfLineComment(lval *protoSymType) (hasErr bool) {
 	for {
 		c, _, err := l.input.readRune()
 		if err != nil {
 			return false
 		}
+		switch c {
+		case '\n':
+			l.info.AddLine(l.input.offset())
+			return false
+		case 0:
+			l.setError(lval, errors.New("invalid control character"))
+			return true
+		}
+	}
+}
+
+func (l *protoLex) skipToEndOfBlockComment(lval *protoSymType) (ok, hasErr bool) {
+	for {
+		c, _, err := l.input.readRune()
+		if err != nil {
+			return false, false
+		}
+		if c == 0 {
+			l.setError(lval, errors.New("invalid control character"))
+			return false, true
+		}
 		l.maybeNewLine(c)
 		if c == '*' {
 			c, sz, err := l.input.readRune()
 			if err != nil {
-				return false
+				return false, false
 			}
 			if c == '/' {
-				return true
+				return true, false
 			}
 			l.input.unreadRune(sz)
 		}

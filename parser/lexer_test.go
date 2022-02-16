@@ -271,6 +271,17 @@ func TestLexerErrors(t *testing.T) {
 		{str: "09", errMsg: "invalid syntax in octal integer value: 09"},
 		{str: "0f", errMsg: "invalid syntax in octal integer value: 0f"},
 		{str: `/* foobar`, errMsg: "unexpected EOF"},
+		{str: "\x00", errMsg: "invalid control character"},
+		{str: "\x03", errMsg: "invalid control character"},
+		{str: "\x1B", errMsg: "invalid control character"},
+		{str: "\x7F", errMsg: "invalid control character"},
+		{str: "#", errMsg: "invalid character"},
+		{str: "?", errMsg: "invalid character"},
+		{str: "^", errMsg: "invalid character"},
+		{str: "\uAAAA", errMsg: "invalid character"},
+		{str: "\U0010FFFF", errMsg: "invalid character"},
+		{str: "// foo \x00", errMsg: "invalid control character"},
+		{str: "/* foo \x00", errMsg: "invalid control character"},
 	}
 	for i, tc := range testCases {
 		handler := reporter.NewHandler(nil)
