@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -191,7 +192,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			if cn >= '0' && cn <= '9' {
 				l.readNumber()
 				token := l.input.getMark()
-				f, err := strconv.ParseFloat(token, 64)
+				f, err := parseFloat(token)
 				if err != nil {
 					l.setError(lval, numError(err, "float", token))
 					return _ERROR
@@ -233,7 +234,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			}
 			if strings.Contains(token, ".") || strings.Contains(token, "e") || strings.Contains(token, "E") {
 				// floating point!
-				f, err := strconv.ParseFloat(token, 64)
+				f, err := parseFloat(token)
 				if err != nil {
 					l.setError(lval, numError(err, "float", token))
 					return _ERROR
@@ -242,14 +243,21 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 				return _FLOAT_LIT
 			}
 			// integer! (decimal or octal)
-			ui, err := strconv.ParseUint(token, 0, 64)
+			base := 10
+			if token[0] == '0' {
+				base = 8
+			}
+			ui, err := strconv.ParseUint(token, base, 64)
 			if err != nil {
 				kind := "integer"
+				if base == 8 {
+					kind = "octal integer"
+				}
 				if numErr, ok := err.(*strconv.NumError); ok && numErr.Err == strconv.ErrRange {
 					// if it's too big to be an int, parse it as a float
 					var f float64
 					kind = "float"
-					f, err = strconv.ParseFloat(token, 64)
+					f, err = parseFloat(token)
 					if err == nil {
 						l.setFloat(lval, f)
 						return _FLOAT_LIT
@@ -303,6 +311,27 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 		l.setRune(lval, c)
 		return int(c)
 	}
+}
+
+func parseFloat(token string) (float64, error) {
+	// strconv.ParseFloat allows _ to separate digits, but protobuf does not
+	if strings.ContainsRune(token, '_') {
+		return 0, &strconv.NumError{
+			Func: "parseFloat",
+			Num:  token,
+			Err:  strconv.ErrSyntax,
+		}
+	}
+	f, err := strconv.ParseFloat(token, 64)
+	if err == nil {
+		return f, nil
+	}
+	if numErr, ok := err.(*strconv.NumError); ok && numErr.Err == strconv.ErrRange && math.IsInf(f, 1) {
+		// protoc doesn't complain about float overflow and instead just uses "infinity"
+		// so we mirror that behavior by just returning infinity and ignoring the error
+		return f, nil
+	}
+	return f, err
 }
 
 func (l *protoLex) newToken() ast.Token {
