@@ -335,7 +335,7 @@ func (r *result) asExtensionRanges(node *ast.ExtensionRangeNode, maxTag int32, h
 	opts := r.asUninterpretedOptions(node.Options.GetElements())
 	ers := make([]*descriptorpb.DescriptorProto_ExtensionRange, len(node.Ranges))
 	for i, rng := range node.Ranges {
-		start, end := r.getRangeBounds(rng, 0, maxTag, handler)
+		start, end := r.getRangeBounds(rng, 1, maxTag, handler)
 		er := &descriptorpb.DescriptorProto_ExtensionRange{
 			Start: proto.Int32(start),
 			End:   proto.Int32(end + 1),
@@ -568,7 +568,7 @@ func (r *result) isMessageSetWireFormat(scope string, md *descriptorpb.Descripto
 }
 
 func (r *result) asMessageReservedRange(rng *ast.RangeNode, maxTag int32, handler *reporter.Handler) *descriptorpb.DescriptorProto_ReservedRange {
-	start, end := r.getRangeBounds(rng, 0, maxTag, handler)
+	start, end := r.getRangeBounds(rng, 1, maxTag, handler)
 	rr := &descriptorpb.DescriptorProto_ReservedRange{
 		Start: proto.Int32(start),
 		End:   proto.Int32(end + 1),
