@@ -158,8 +158,7 @@ character (U+FEFF).
 
 The result of lexical analysis is a stream of tokens of the following kinds:
  * `identifier`
- * 42 token types corresponding to keywords
- * 4 token types corresponding to special identifiers used in the protobuf text format
+ * 39 token types corresponding to keywords
  * `int_literal`
  * `float_literal`
  * `string_literal`
@@ -179,29 +178,19 @@ to match the keyword, per the rules below. All of the keyword token types below
 are *also* considered identifiers by the grammar. For example, a production in the
 grammar that references `identifier` will also accept `syntax` or `map`.
 ```
-syntax   = "syntax" .      float    = "float" .       group      = "group" .
-import   = "import" .      int32    = "int32" .       oneof      = "oneof" .
-weak     = "weak" .        int64    = "int64" .       map        = "map" .
-public   = "public" .      uint32   = "uint32" .      extensions = "extensions" .
-package  = "package" .     uint64   = "uint64" .      to         = "to" .
-option   = "option" .      sint32   = "sint32" .      max        = "max" .
-true     = "true" .        sint64   = "sint64" .      reserved   = "reserved" .
-false    = "false" .       fixed32  = "fixed32" .     enum       = "enum" .
-inf      = "inf" .         fixed64  = "fixed64" .     message    = "message" .
-nan      = "nan" .         sfixed32 = "sfixed32" .    extend     = "extend" .
-repeated = "repeated" .    sfixed64 = "sfixed64" .    service    = "service" .
-optional = "optional" .    bool     = "bool" .        rpc        = "rpc" .
-required = "required" .    string   = "string" .      stream     = "stream" .
-double   = "double" .      bytes    = "bytes" .       returns    = "returns" .
-```
-
-If an `identiier` does not match a keyword above, it is checked against the following
-special identifiers used in the protobuf text format. If it matches one of these, its
-token type is changed to match, per the rules below. Like keywords, all four of these
-token types are *also* considered identifiers by the grammer.
-```
-short_true  = "t" .                      upper_true  = "True" .
-short_false = "f" .                      upper_false = "False" .
+syntax   = "syntax" .      float    = "float" .       oneof      = "oneof" .
+import   = "import" .      double   = "double" .      map        = "map" .
+weak     = "weak" .        int32    = "int32" .       extensions = "extensions" .
+public   = "public" .      int64    = "int64" .       to         = "to" .
+package  = "package" .     uint32   = "uint32" .      max        = "max" .
+option   = "option" .      uint64   = "uint64" .      reserved   = "reserved" .
+inf      = "inf" .         sint32   = "sint32" .      enum       = "enum" .
+repeated = "repeated" .    sint64   = "sint64" .      message    = "message" .
+optional = "optional" .    fixed32  = "fixed32" .     extend     = "extend" .
+required = "required" .    fixed64  = "fixed64" .     service    = "service" .
+bool     = "bool" .        sfixed32 = "sfixed32" .    rpc        = "rpc" .
+string   = "string" .      sfixed64 = "sfixed64" .    stream     = "stream" .
+bytes    = "bytes" .       group      = "group" .     returns    = "returns" .
 ```
 
 ### Numeric Literals
@@ -380,24 +369,22 @@ repeated field.
 ```
 OptionValue = ScalarValue | MessageLiteralWithBraces .
 
-ScalarValue        = StringLiteral | BoolLiteral | NumLiteral | identifier .
-BoolLiteral        = true | false .
-NumLiteral         = nan | [ minus | plus ] UnsignedNumLiteral .
-UnsignedNumLiteral = float_literal | int_literal | inf .
+ScalarValue        = StringLiteral | UnsignedNumLiteral | SignedNumLiteral | identifier .
+UnsignedNumLiteral = float_literal | int_literal .
+SignedNumLiteral   = ( minus | plus ) ( float_literal | int_literal | inf ) .
 
 MessageLiteralWithBraces = l_brace { MessageLiteralField } r_brace .
 MessageLiteralField      = MessageLiteralFieldName colon Value |
                            MessageLiteralFieldName CompositeValue .
 MessageLiteralFieldName  = identifier |
                            l_bracket [ QualifiedIdentifier slash ] QualifiedIdentifier r_bracket .
-Value                    = ScalarValue | SpecialValue | CompositeValue .
-SpecialValue             = short_true | short_false | upper_true | upper_false .
+Value                    = ScalarValue | CompositeValue .
 CompositeValue           = MessageLiteral | ListLiteral .
 MessageLiteral           = MessageLiteralWithBraces |
                            l_angle { MessageLiteralField } r_angle .
 
 ListLiteral = l_bracket [ ListElement { comma ListElement } ] r_bracket .
-ListElement = ScalarValue | SpecialValue | MessageLiteral .
+ListElement = ScalarValue | MessageLiteral .
 ```
 
 ## Messages
