@@ -13,7 +13,10 @@
 //
 // This interface is both the result of linking but also an input to the linking
 // process, as all dependencies of a file to be linked must be provided in this
-// form. The actual result of the Link function is a super-interface of File.
+// form. The actual result of the Link function is a super-interface of File:
+// Result. The linker.Result interface provides even more functions, which are
+// needed for subsequent compilation steps: interpreting options and generating
+// source code info.
 //
 // Symbols
 //
@@ -21,9 +24,9 @@
 // is usually an internal detail when linking, but callers can provide an
 // instance so that symbols across multiple compile/link operations all have
 // access to the same table. This allows for detection of cases where multiple
-// files that try to declare elements with conflicting fully-qualified names or
-// declaring extensions for a particular extendable message that have
-// conflicting tag numbers.
+// files try to declare elements with conflicting fully-qualified names or
+// declare extensions for a particular extendable message that have conflicting
+// tag numbers.
 //
 // The calling code simply uses the same Symbols instance across all compile
 // operations and if any files processed have such conflicts, they can be

@@ -9,8 +9,7 @@ import (
 
 type hasOptionNode interface {
 	OptionNode(part *descriptorpb.UninterpretedOption) ast.OptionDeclNode
-	// This is needed to be able to get NodeInfo
-	FileNode() ast.FileDeclNode
+	FileNode() ast.FileDeclNode // needed in order to query for NodeInfo
 }
 
 func FindOption(res hasOptionNode, handler *reporter.Handler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {

@@ -21,7 +21,7 @@ type File interface {
 	// FindDescriptorByName returns the given named element that is defined in
 	// this file. If no such element exists, nil is returned.
 	FindDescriptorByName(name protoreflect.FullName) protoreflect.Descriptor
-	// FindImportsByPath returns the File corresponding to the given import path.
+	// FindImportByPath returns the File corresponding to the given import path.
 	// If this file does not import the given path, nil is returned.
 	FindImportByPath(path string) File
 	// FindExtensionByNumber returns the extension descriptor for the given tag
@@ -157,7 +157,7 @@ func (f Files) FindFileByPath(path string) File {
 // with a protoregistry.NotFound error. The implementation just delegates calls
 // to each file until a result is found.
 //
-// Also see File.AsResolver.
+// Also see ResolverFromFile.
 func (f Files) AsResolver() Resolver {
 	return filesResolver(f)
 }
@@ -172,7 +172,7 @@ type Resolver interface {
 }
 
 // ResolverFromFile returns a Resolver that uses the given file plus its full set of
-// transitive dependencies as the source of descriptors.  If a given query
+// transitive dependencies as the source of descriptors. If a given query
 // cannot be answered with these files, the query will fail with a
 // protoregistry.NotFound error.
 //

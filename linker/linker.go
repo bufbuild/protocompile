@@ -85,7 +85,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 //  2. The element is defined in a file that is directly imported by this file.
 //  3. The element is "available" to a file that is directly imported by this
 //     file as a public import.
-// Other elements, even if the transitive closure of this file, are not
+// Other elements, even if in the transitive closure of this file, are not
 // available and thus won't be returned by these methods.
 type Result interface {
 	File
