@@ -44,6 +44,11 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 			pos := file.NodeInfo(r.FieldNode(fd.proto).FieldType()).Start()
 			return handler.HandleErrorf(pos, "messages with message-set wire format cannot contain scalar extensions, only messages")
 		}
+		if fld.Cardinality() == protoreflect.Repeated {
+			file := r.FileNode()
+			pos := file.NodeInfo(r.FieldNode(fd.proto).FieldLabel()).Start()
+			return handler.HandleErrorf(pos, "messages with message-set wire format cannot contain repeated extensions, only optional")
+		}
 	} else {
 		// In validateBasic() we just made sure these were within bounds for any message. But
 		// now that things are linked, we can check if the extendee is messageset wire format
