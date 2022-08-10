@@ -58,7 +58,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			// field where default is uninterpretable
 			contents: `enum TestEnum{ ZERO = 0; ONE = 1; } message Test { optional TestEnum uid = 1 [(must.link) = {foo: bar}, default = ONE, json_name = "UID", deprecated = true]; }`,
 			uninterpreted: map[string]interface{}{
-				"Test.uid:(must.link)": aggregate("{ foo: bar }"),
+				"Test.uid:(must.link)": aggregate("foo : bar"),
 				"Test.uid:default":     ident("ONE"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -107,7 +107,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			// service options
 			contents: `service Test { option deprecated = true; option (must.link) = {foo:1, foo:2, bar:3}; }`,
 			uninterpreted: map[string]interface{}{
-				"Test:(must.link)": aggregate("{ foo: 1 foo: 2 bar: 3 }"),
+				"Test:(must.link)": aggregate("foo : 1 , foo : 2 , bar : 3"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
 				assert.True(t, fd.GetService()[0].GetOptions().GetDeprecated())

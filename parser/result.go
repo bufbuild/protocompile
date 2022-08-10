@@ -2,7 +2,6 @@ package parser
 
 import (
 	"bytes"
-	"fmt"
 	"math"
 	"strings"
 	"unicode"
@@ -156,14 +155,39 @@ func (r *result) asUninterpretedOption(node *ast.OptionNode) *descriptorpb.Unint
 		opt.StringValue = []byte(val)
 	case ast.Identifier:
 		opt.IdentifierValue = proto.String(string(val))
-	case []*ast.MessageFieldNode:
-		var buf bytes.Buffer
-		aggToString(val, &buf)
-		aggStr := buf.String()
-		opt.AggregateValue = proto.String(aggStr)
-		//the grammar does not allow arrays here, so no case for []ast.ValueNode
+	default:
+		// the grammar does not allow arrays here, so the only possible case
+		// left should be []*ast.MessageFieldNode, which corresponds to an
+		// *ast.MessageLiteralNode
+		if n, ok := node.Val.(*ast.MessageLiteralNode); ok {
+			var buf bytes.Buffer
+			for i, el := range n.Elements {
+				flattenNode(r.file, el, &buf)
+				if len(n.Seps) > i && n.Seps[i] != nil {
+					buf.WriteRune(' ')
+					buf.WriteRune(n.Seps[i].Rune)
+				}
+			}
+			aggStr := buf.String()
+			opt.AggregateValue = proto.String(aggStr)
+		}
+		// TODO: else that reports an error or panics??
 	}
 	return opt
+}
+
+func flattenNode(f *ast.FileNode, n ast.Node, buf *bytes.Buffer) {
+	if cn, ok := n.(ast.CompositeNode); ok {
+		for _, ch := range cn.Children() {
+			flattenNode(f, ch, buf)
+		}
+		return
+	}
+
+	if buf.Len() > 0 {
+		buf.WriteRune(' ')
+	}
+	buf.WriteString(f.NodeInfo(n).RawText())
 }
 
 func (r *result) asUninterpretedOptionName(parts []*ast.FieldReferenceNode) []*descriptorpb.UninterpretedOption_NamePart {
@@ -629,56 +653,6 @@ func checkTag(pos ast.SourcePos, v uint64, maxTag int32) error {
 		return reporter.Errorf(pos, "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
 	}
 	return nil
-}
-
-func aggToString(agg []*ast.MessageFieldNode, buf *bytes.Buffer) {
-	buf.WriteString("{")
-	for _, a := range agg {
-		buf.WriteString(" ")
-		buf.WriteString(a.Name.Value())
-		if v, ok := a.Val.(*ast.MessageLiteralNode); ok {
-			aggToString(v.Elements, buf)
-		} else {
-			buf.WriteString(": ")
-			elementToString(a.Val.Value(), buf)
-		}
-	}
-	buf.WriteString(" }")
-}
-
-func elementToString(v interface{}, buf *bytes.Buffer) {
-	switch v := v.(type) {
-	case bool, int64, uint64, ast.Identifier:
-		_, _ = fmt.Fprintf(buf, "%v", v)
-	case float64:
-		if math.IsInf(v, 1) {
-			buf.WriteString(": inf")
-		} else if math.IsInf(v, -1) {
-			buf.WriteString(": -inf")
-		} else if math.IsNaN(v) {
-			buf.WriteString(": nan")
-		} else {
-			_, _ = fmt.Fprintf(buf, ": %v", v)
-		}
-	case string:
-		buf.WriteRune('"')
-		internal.WriteEscapedBytes(buf, []byte(v))
-		buf.WriteRune('"')
-	case []ast.ValueNode:
-		buf.WriteString(": [")
-		first := true
-		for _, e := range v {
-			if first {
-				first = false
-			} else {
-				buf.WriteString(", ")
-			}
-			elementToString(e.Value(), buf)
-		}
-		buf.WriteString("]")
-	case []*ast.MessageFieldNode:
-		aggToString(v, buf)
-	}
 }
 
 // processProto3OptionalFields adds synthetic oneofs to the given message descriptor
