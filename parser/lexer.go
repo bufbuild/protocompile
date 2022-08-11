@@ -351,87 +351,82 @@ func (l *protoLex) newToken() ast.Token {
 	return l.info.AddToken(offset, length)
 }
 
-func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode, isDot bool) {
-	info := l.info.NodeInfo(n)
-	nStart := info.Start().Line
-	if _, ok := n.(*ast.RuneNode); ok {
-		// This is really gross, but there are many cases where we don't want
-		// to attribute comments to punctuation (like commas, equals, semicolons)
-		// and would instead prefer to attribute comments to a more meaningful
-		// element in the AST.
-		//
-		// So if it's a simple node OTHER THAN PERIOD (since that is not just
-		// punctuation but typically part of a qualified identifier), don't
-		// attribute comments to it. We do that with this TOTAL HACK: adjusting
-		// the start line makes leading comments appear detached so logic below
-		// will naturally associate trailing comment to previous symbol
-		if !isDot {
-			nStart += 2
-		}
-	}
-	var prevEnd int
-	if l.prevSym != nil {
-		prevEnd = l.info.NodeInfo(l.prevSym).End().Line
-	}
+func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 	comments := l.comments
 	l.comments = nil
 	var prevTrailingComments []ast.Token
-	if l.prevSym != nil && len(comments) > 0 && prevEnd < nStart {
-		// we may need to re-attribute the first comment to
-		// instead be previous node's trailing comment
+
+	if l.prevSym != nil && len(comments) > 0 {
+		prevEnd := l.info.NodeInfo(l.prevSym).End().Line
 		c := comments[0]
 		commentInfo := l.info.TokenInfo(c)
 		commentStart := commentInfo.Start().Line
-		if commentStart == prevEnd {
-			// comment is on same line as previous symbol
-			comments = comments[1:]
-			prevTrailingComments = []ast.Token{c}
-		} else if commentStart == prevEnd+1 {
-			// comment is right after previous symbol; see if it is detached
-			// and if so re-attribute
-			prevSingleLineStyle := strings.HasPrefix(commentInfo.RawText(), "//")
-			prevLine := commentInfo.End().Line
+		if commentStart-prevEnd <= 1 {
+			// we may need to re-attribute the first comment to
+			// instead be previous node's trailing comment
 			groupEnd := 0
-			for i := 1; i < len(comments); i++ {
-				c := comments[i]
-				commentInfo := l.info.TokenInfo(c)
-				newGroup := false
-				if !prevSingleLineStyle || commentInfo.Start().Line > prevLine+1 {
-					// we've found a gap between comments, which means the
-					// previous comments were detached
-					newGroup = true
-				} else {
-					singleLineStyle := strings.HasPrefix(commentInfo.RawText(), "//")
-					if !singleLineStyle {
-						// we've found a switch from // comments to /*
-						// consider that a new group which means the
+			prevSingleLineStyle := strings.HasPrefix(commentInfo.RawText(), "//")
+			if commentStart == prevEnd || !prevSingleLineStyle {
+				groupEnd = 1
+			} else {
+				// merge adjacent single-line comments into one group
+				prevCommentLine := commentInfo.End().Line
+				for i := 1; i < len(comments); i++ {
+					c := comments[i]
+					commentInfo := l.info.TokenInfo(c)
+					detached := false
+					if !prevSingleLineStyle || commentInfo.Start().Line > prevCommentLine+1 {
+						// we've found a gap between comments, which means the
 						// previous comments were detached
-						newGroup = true
+						detached = true
+					} else {
+						singleLineStyle := strings.HasPrefix(commentInfo.RawText(), "//")
+						if !singleLineStyle {
+							// we've found a switch from // comments to /*
+							// consider that a new group which means the
+							// previous comments were detached
+							detached = true
+						}
+						prevCommentLine = commentInfo.End().Line
+						prevSingleLineStyle = singleLineStyle
 					}
-					prevLine = commentInfo.End().Line
-					prevSingleLineStyle = singleLineStyle
+					if detached {
+						groupEnd = i
+						break
+					}
 				}
-				if newGroup {
-					groupEnd = i
-					break
-				}
-			}
-
-			if groupEnd == 0 {
-				// just one group of comments; we'll mark it as a trailing
-				// comment if it immediately follows previous symbol and is
-				// detached from current symbol
-				c1 := comments[0]
-				c2 := comments[len(comments)-1]
-				c1info := l.info.TokenInfo(c1)
-				c2info := l.info.TokenInfo(c2)
-				if c1info.Start().Line <= prevEnd+1 && c2info.End().Line < nStart-1 {
+				if groupEnd == 0 {
+					// all comments belong to one group
 					groupEnd = len(comments)
 				}
 			}
 
-			prevTrailingComments = comments[:groupEnd]
-			comments = comments[groupEnd:]
+			var commentEnd int
+			if groupEnd == 1 {
+				commentEnd = commentInfo.End().Line
+			} else {
+				c2 := comments[groupEnd-1]
+				c2info := l.info.TokenInfo(c2)
+				commentEnd = c2info.End().Line
+			}
+
+			info := l.info.NodeInfo(n)
+			nStart := info.Start().Line
+
+			isPunctuation := false
+			if rn, ok := n.(*ast.RuneNode); ok {
+				isPunctuation = rn.Rune != '.'
+			}
+
+			if isPunctuation ||
+				(len(comments) > groupEnd && nStart > prevEnd) ||
+				(commentStart == prevEnd && nStart > commentEnd) ||
+				(nStart-commentEnd > 1) {
+
+				// we can move the first group of comments to previous token
+				prevTrailingComments = comments[:groupEnd]
+				comments = comments[groupEnd:]
+			}
 		}
 	}
 
@@ -448,27 +443,27 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode, isDot bool) {
 
 func (l *protoLex) setString(lval *protoSymType, val string) {
 	lval.s = ast.NewStringLiteralNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.s, false)
+	l.setPrevAndAddComments(lval.s)
 }
 
 func (l *protoLex) setIdent(lval *protoSymType, val string) {
 	lval.id = ast.NewIdentNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.id, false)
+	l.setPrevAndAddComments(lval.id)
 }
 
 func (l *protoLex) setInt(lval *protoSymType, val uint64) {
 	lval.i = ast.NewUintLiteralNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.i, false)
+	l.setPrevAndAddComments(lval.i)
 }
 
 func (l *protoLex) setFloat(lval *protoSymType, val float64) {
 	lval.f = ast.NewFloatLiteralNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.f, false)
+	l.setPrevAndAddComments(lval.f)
 }
 
 func (l *protoLex) setRune(lval *protoSymType, val rune) {
 	lval.b = ast.NewRuneNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.b, val == '.')
+	l.setPrevAndAddComments(lval.b)
 }
 
 func (l *protoLex) setError(lval *protoSymType, err error) {

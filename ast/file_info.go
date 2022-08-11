@@ -299,9 +299,15 @@ func (n NodeInfo) RawText() string {
 
 // SourcePos identifies a location in a proto source file.
 type SourcePos struct {
-	Filename  string
+	Filename string
+	// The line and column numbers for this position. These are
+	// one-based, so the first line and column is 1 (not zero). If
+	// either is zero, then the line and column are unknown and
+	// only the file name is known.
 	Line, Col int
-	Offset    int
+	// The offset, in bytes, from the beginning of the file. This
+	// is zero-based: the first character in the file is offset zero.
+	Offset int
 }
 
 func (pos SourcePos) String() string {
