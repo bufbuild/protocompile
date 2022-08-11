@@ -2,7 +2,7 @@ syntax = "proto2";
 
 package foo.bar;
 
-option go_package = "github.com/jhump/protocompile/internal/testprotos";
+option go_package = "github.com/bufbuild/protocompile/internal/testprotos";
 
 import "google/protobuf/descriptor.proto";
 

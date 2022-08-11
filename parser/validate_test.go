@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jhump/protocompile/reporter"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestBasicValidation(t *testing.T) {

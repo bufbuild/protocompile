@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jhump/protocompile/ast"
+	"github.com/bufbuild/protocompile/ast"
 )
 
 // ErrInvalidSource is a sentinel error that is returned by compilation and

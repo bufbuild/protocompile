@@ -6,8 +6,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/jhump/protocompile/parser"
-	"github.com/jhump/protocompile/reporter"
+	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 // Link handles linking a parsed descriptor proto into a fully-linked descriptor.

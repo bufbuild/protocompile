@@ -12,8 +12,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/reporter"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 type runeReader struct {

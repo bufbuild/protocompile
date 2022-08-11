@@ -37,12 +37,12 @@ desc_test_comments.proto:12:17
 
  > options:
 desc_test_comments.proto:15:1
-desc_test_comments.proto:15:75
+desc_test_comments.proto:15:78
 
 
  > options > go_package:
 desc_test_comments.proto:15:1
-desc_test_comments.proto:15:75
+desc_test_comments.proto:15:78
     Leading comments:
  option comments FTW!!!
 
@@ -1151,12 +1151,12 @@ desc_test_complex.proto:3:17
 
  > options:
 desc_test_complex.proto:5:1
-desc_test_complex.proto:5:73
+desc_test_complex.proto:5:76
 
 
  > options > go_package:
 desc_test_complex.proto:5:1
-desc_test_complex.proto:5:73
+desc_test_complex.proto:5:76
 
 
  > dependency[0]:
@@ -5523,12 +5523,12 @@ desc_test_options.proto:1:19
 
  > options:
 desc_test_options.proto:3:1
-desc_test_options.proto:3:73
+desc_test_options.proto:3:76
 
 
  > options > go_package:
 desc_test_options.proto:3:1
-desc_test_options.proto:3:73
+desc_test_options.proto:3:76
 
 
  > package:

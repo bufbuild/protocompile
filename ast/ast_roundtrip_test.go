@@ -10,9 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/parser"
-	"github.com/jhump/protocompile/reporter"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestASTRoundTrips(t *testing.T) {

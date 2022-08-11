@@ -5,7 +5,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile/linker"
+	"github.com/bufbuild/protocompile/linker"
 )
 
 // ProtoFromFileDescriptor extracts a descriptor proto from the given "rich"

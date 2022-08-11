@@ -6,7 +6,7 @@ package parser
 import (
 	"math"
 
-	"github.com/jhump/protocompile/ast"
+	"github.com/bufbuild/protocompile/ast"
 )
 
 %}

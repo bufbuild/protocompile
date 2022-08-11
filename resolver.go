@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile/ast"
+	"github.com/bufbuild/protocompile/ast"
 )
 
 // Resolver is used by the compiler to resolve a proto source file name

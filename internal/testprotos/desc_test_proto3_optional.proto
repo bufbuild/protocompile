@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/jhump/protocompile/internal/testprotos";
+option go_package = "github.com/bufbuild/protocompile/internal/testprotos";
 
 message MessageWithOptionalFields {
     optional string foo = 1;

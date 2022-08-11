@@ -9,10 +9,10 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/internal"
-	"github.com/jhump/protocompile/reporter"
-	"github.com/jhump/protocompile/walk"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/walk"
 )
 
 func (r *result) ResolveMessageType(name protoreflect.FullName) protoreflect.MessageDescriptor {

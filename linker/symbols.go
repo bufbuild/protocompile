@@ -8,9 +8,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/reporter"
-	"github.com/jhump/protocompile/walk"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/walk"
 )
 
 // Symbols is a symbol table that maps names for all program elements to their

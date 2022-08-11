@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile/reporter"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestEmptyParse(t *testing.T) {
@@ -145,7 +145,7 @@ func TestSimpleParse(t *testing.T) {
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
 		assert.Equal(t, "../internal/testprotos/pkg/desc_test_pkg.proto", fd.GetName())
-		assert.Equal(t, "jhump.protocompile.test", fd.GetPackage())
+		assert.Equal(t, "bufbuild.protocompile.test", fd.GetPackage())
 		assert.True(t, hasEnum(fd, "Foo"))
 		assert.True(t, hasMessage(fd, "Bar"))
 		protos[fd.GetName()] = res

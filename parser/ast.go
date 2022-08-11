@@ -1,6 +1,6 @@
 package parser
 
-import "github.com/jhump/protocompile/ast"
+import "github.com/bufbuild/protocompile/ast"
 
 // the types below are accumulator types: linked lists that are
 // constructed during parsing and then converted to slices of AST nodes

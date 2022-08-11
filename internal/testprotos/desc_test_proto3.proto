@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/jhump/protocompile/internal/testprotos";
+option go_package = "github.com/bufbuild/protocompile/internal/testprotos";
 
 package testprotos;
 
@@ -28,8 +28,8 @@ message TestResponse {
 }
 
 service TestService {
-	rpc DoSomething (TestRequest) returns (jhump.protocompile.test.Bar);
+	rpc DoSomething (TestRequest) returns (bufbuild.protocompile.test.Bar);
 	rpc DoSomethingElse (stream TestMessage) returns (TestResponse);
-	rpc DoSomethingAgain (jhump.protocompile.test.Bar) returns (stream AnotherTestMessage);
+	rpc DoSomethingAgain (bufbuild.protocompile.test.Bar) returns (stream AnotherTestMessage);
 	rpc DoSomethingForever (stream TestRequest) returns (stream TestResponse);
 }

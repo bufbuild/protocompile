@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile"
-	"github.com/jhump/protocompile/linker"
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/linker"
 )
 
 // If true, re-generates the golden output file

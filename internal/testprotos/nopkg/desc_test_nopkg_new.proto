@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-option go_package = "github.com/jhump/protocompile/internal/testprotos/nopkg;nopkg";
+option go_package = "github.com/bufbuild/protocompile/internal/testprotos/nopkg;nopkg";
 
 message TopLevel {
 	optional int32 i = 1;

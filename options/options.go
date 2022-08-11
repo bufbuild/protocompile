@@ -23,11 +23,11 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/internal"
-	"github.com/jhump/protocompile/linker"
-	"github.com/jhump/protocompile/parser"
-	"github.com/jhump/protocompile/reporter"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 // Index is a mapping of AST nodes that define options to a corresponding path

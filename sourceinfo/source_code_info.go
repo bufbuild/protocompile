@@ -12,9 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/internal"
-	"github.com/jhump/protocompile/options"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/options"
 )
 
 // GenerateSourceInfo generates source code info for the given AST. If the given

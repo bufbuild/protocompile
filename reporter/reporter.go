@@ -6,7 +6,7 @@ package reporter
 import (
 	"sync"
 
-	"github.com/jhump/protocompile/ast"
+	"github.com/bufbuild/protocompile/ast"
 )
 
 // ErrorReporter is responsible for reporting the given error. If the reporter

@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-option go_package = "github.com/jhump/protocompile/internal/testprotos/pkg;pkg";
+option go_package = "github.com/bufbuild/protocompile/internal/testprotos/pkg;pkg";
 
-package jhump.protocompile.test;
+package bufbuild.protocompile.test;
 
 enum Foo {
 	ABC = 0;

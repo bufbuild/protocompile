@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	_ "github.com/jhump/protocompile/internal/testprotos"
+	_ "github.com/bufbuild/protocompile/internal/testprotos"
 )
 
 func TestParseFilesMessageComments(t *testing.T) {

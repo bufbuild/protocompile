@@ -20,9 +20,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/jhump/protocompile"
-	_ "github.com/jhump/protocompile/internal/testprotos"
-	"github.com/jhump/protocompile/linker"
+	"github.com/bufbuild/protocompile"
+	_ "github.com/bufbuild/protocompile/internal/testprotos"
+	"github.com/bufbuild/protocompile/linker"
 )
 
 func TestSimpleLink(t *testing.T) {

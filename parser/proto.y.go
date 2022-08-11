@@ -12,7 +12,7 @@ import __yyfmt__ "fmt"
 import (
 	"math"
 
-	"github.com/jhump/protocompile/ast"
+	"github.com/bufbuild/protocompile/ast"
 )
 
 //line proto.y:16

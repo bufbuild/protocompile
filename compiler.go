@@ -12,12 +12,12 @@ import (
 
 	"golang.org/x/sync/semaphore"
 
-	"github.com/jhump/protocompile/ast"
-	"github.com/jhump/protocompile/linker"
-	"github.com/jhump/protocompile/options"
-	"github.com/jhump/protocompile/parser"
-	"github.com/jhump/protocompile/reporter"
-	"github.com/jhump/protocompile/sourceinfo"
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/options"
+	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/sourceinfo"
 )
 
 // Compiler handles compilation tasks, to turn protobuf source files, or other

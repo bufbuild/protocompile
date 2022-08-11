@@ -12,7 +12,7 @@ syntax = "proto2";
 package foo.bar;
 
 // option comments FTW!!!
-option go_package = "github.com/jhump/protocompile/internal/testprotos"  ;
+option go_package = "github.com/bufbuild/protocompile/internal/testprotos"  ;
 
 import public "google/protobuf/empty.proto";
 import "desc_test_options.proto";

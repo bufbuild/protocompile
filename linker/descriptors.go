@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
-	"github.com/jhump/protocompile/internal"
-	"github.com/jhump/protocompile/parser"
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/parser"
 )
 
 // This file contains implementations of protoreflect.Descriptor. Note that
