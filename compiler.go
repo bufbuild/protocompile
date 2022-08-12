@@ -236,7 +236,7 @@ func (e *executor) compileLocked(ctx context.Context, file string, explicitFile 
 // use errors.As(...) to access panic details.
 type PanicError struct {
 	// The file that was being processed when the panic occurred
-	File  string
+	File string
 	// The value returned by recover()
 	Value interface{}
 	// A formatted stack trace
