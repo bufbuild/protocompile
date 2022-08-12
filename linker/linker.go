@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
@@ -112,6 +113,21 @@ type Result interface {
 	// could incorrectly report imports as unused if the only symbol used were a
 	// custom option.
 	CheckForUnusedImports(handler *reporter.Handler)
+
+	// CanonicalProto returns the file descriptor proto in a form that
+	// will be serialized in a canonical way. The "canonical" way matches
+	// the way that "protoc" emits option values, which is a way that
+	// mostly matches the way options are defined in source, including
+	// ordering and de-structuring. Unlike the Proto() method, this
+	// method is more expensive and results in a new descriptor proto
+	// being constructed with each call.
+	//
+	// The returned value will have all options (fields of the various
+	// descriptorpb.*Options message types) represented via unrecognized
+	// fields. So the returned value will serialize as desired, but it
+	// is otherwise not useful since all option values are treated as
+	// unknown.
+	CanonicalProto() *descriptorpb.FileDescriptorProto
 }
 
 // ErrorUnusedImport may be passed to a warning reporter when an unused
