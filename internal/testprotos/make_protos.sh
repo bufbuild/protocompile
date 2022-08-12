@@ -46,3 +46,4 @@ ${PROTOC} "--go_out=paths=source_relative:$outdir" -I. *desc_test_comments.proto
 # And make descriptor set (with source info) for several files
 ${PROTOC} --descriptor_set_out=./desc_test_complex.protoset --include_imports -I. desc_test_complex.proto
 ${PROTOC} --descriptor_set_out=./desc_test_proto3_optional.protoset --include_imports -I. desc_test_proto3_optional.proto
+${PROTOC} --descriptor_set_out=./options/test.protoset -I./options test.proto

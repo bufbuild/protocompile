@@ -1,13 +1,22 @@
-package options
+package options_test
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/internal/prototest"
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 )
@@ -135,7 +144,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		if !assert.Nil(t, err, "case #%d failed to produce descriptor proto", i) {
 			continue
 		}
-		_, err = InterpretUnlinkedOptions(res)
+		_, err = options.InterpretUnlinkedOptions(res)
 		if !assert.Nil(t, err, "case #%d failed to interpret options", i) {
 			continue
 		}
@@ -243,4 +252,48 @@ func qualify(qualifier, name string) string {
 		return name
 	}
 	return qualifier + "." + name
+}
+
+func TestOptionsEncoding(t *testing.T) {
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"../internal/testprotos/options"},
+		}),
+	}
+	fds, err := compiler.Compile(context.Background(), "test.proto")
+	require.NoError(t, err)
+
+	res := fds[0].(linker.Result)
+	fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/options/test.protoset", linker.ResolverFromFile(fds[0]))
+	prototest.CheckFiles(t, res, prototest.FileProtoSetFromDescriptorProtos(fdset), false)
+
+	canonicalProto := res.CanonicalProto()
+	actualFdset := &descriptorpb.FileDescriptorSet{
+		File: []*descriptorpb.FileDescriptorProto{canonicalProto},
+	}
+	actualData, err := proto.Marshal(actualFdset)
+	require.NoError(t, err)
+
+	// semantic check that unmarshalling the "canonical bytes" results
+	// in the same proto as when not using "canonical bytes"
+	protoData, err := proto.Marshal(canonicalProto)
+	require.NoError(t, err)
+	proto.Reset(canonicalProto)
+	uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
+	err = uOpts.Unmarshal(protoData, canonicalProto)
+	require.NoError(t, err)
+	if !proto.Equal(res.Proto(), canonicalProto) {
+		t.Fatal("canonical proto != proto")
+	}
+
+	// drum roll... make sure the bytes match the protoc output
+	expectedData, err := ioutil.ReadFile("../internal/testprotos/options/test.protoset")
+	require.NoError(t, err)
+	if !bytes.Equal(actualData, expectedData) {
+		err := ioutil.WriteFile("../internal/testprotos/options/test.actual.protoset", actualData, 0666)
+		if err != nil {
+			t.Log("failed to write actual to file")
+		}
+		t.Fatal("descriptor set bytes not equal")
+	}
 }
