@@ -161,10 +161,16 @@ func pathStr(p protoreflect.SourcePath) string {
 	return buf.String()
 }
 
-func (r *result) AddOptionBytes(opts []byte) {
-	pm := r.Proto().Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %q", r.Path()))
+// AddOptionBytes associates the given opts (an options message encoded in the
+// binary format) with the given options protobuf message. The protobuf message
+// should exist in the hierarchy of this result's FileDescriptorProto. This
+// allows the FileDescriptorProto to be marshaled to bytes in a way that
+// preserves the way options are defined in source (just as is done by protoc,
+// but not possible when only using the generated Go types and standard
+// marshaling APIs in the protobuf runtime).
+func (r *result) AddOptionBytes(pm proto.Message, opts []byte) {
+	if r.optionBytes == nil {
+		r.optionBytes = map[proto.Message][]byte{}
 	}
 	r.optionBytes[pm] = append(r.optionBytes[pm], opts...)
 }
@@ -443,22 +449,6 @@ func (m *msgDescriptor) Extensions() protoreflect.ExtensionDescriptors {
 	return &extDescriptors{file: m.file, parent: m, exts: m.proto.GetExtension(), prefix: m.fqn + "."}
 }
 
-func (m *msgDescriptor) AddOptionBytes(opts []byte) {
-	pm := m.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", m.FullName()))
-	}
-	m.file.optionBytes[pm] = append(m.file.optionBytes[pm], opts...)
-}
-
-func (m *msgDescriptor) AddExtensionRangeOptionBytes(i int, opts []byte) {
-	pm := m.proto.ExtensionRange[i].Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s:extension_range[%d]", m.FullName(), i))
-	}
-	m.file.optionBytes[pm] = append(m.file.optionBytes[pm], opts...)
-}
-
 type names struct {
 	protoreflect.Names
 	s []string
@@ -648,14 +638,6 @@ func (e *enumDescriptor) ReservedRanges() protoreflect.EnumRanges {
 	return enumRanges{s: e.proto.ReservedRange}
 }
 
-func (e *enumDescriptor) AddOptionBytes(opts []byte) {
-	pm := e.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", e.FullName()))
-	}
-	e.file.optionBytes[pm] = append(e.file.optionBytes[pm], opts...)
-}
-
 type enumRanges struct {
 	protoreflect.EnumRanges
 	s []*descriptorpb.EnumDescriptorProto_EnumReservedRange
@@ -769,14 +751,6 @@ func (e *enValDescriptor) Options() protoreflect.ProtoMessage {
 
 func (e *enValDescriptor) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(e.proto.GetNumber())
-}
-
-func (e *enValDescriptor) AddOptionBytes(opts []byte) {
-	pm := e.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", e.FullName()))
-	}
-	e.file.optionBytes[pm] = append(e.file.optionBytes[pm], opts...)
 }
 
 type extDescriptors struct {
@@ -1093,14 +1067,6 @@ func (f *fldDescriptor) Message() protoreflect.MessageDescriptor {
 	return f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetTypeName()))
 }
 
-func (f *fldDescriptor) AddOptionBytes(opts []byte) {
-	pm := f.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", f.FullName()))
-	}
-	f.file.optionBytes[pm] = append(f.file.optionBytes[pm], opts...)
-}
-
 type oneofDescriptors struct {
 	protoreflect.OneofDescriptors
 	file   *result
@@ -1192,14 +1158,6 @@ func (o *oneofDescriptor) Fields() protoreflect.FieldDescriptors {
 	return &fldDescriptors{file: o.file, parent: o.parent, fields: fields, prefix: o.parent.fqn + "."}
 }
 
-func (o *oneofDescriptor) AddOptionBytes(opts []byte) {
-	pm := o.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", o.FullName()))
-	}
-	o.file.optionBytes[pm] = append(o.file.optionBytes[pm], opts...)
-}
-
 type svcDescriptors struct {
 	protoreflect.ServiceDescriptors
 	file   *result
@@ -1276,14 +1234,6 @@ func (s *svcDescriptor) Options() protoreflect.ProtoMessage {
 
 func (s *svcDescriptor) Methods() protoreflect.MethodDescriptors {
 	return &mtdDescriptors{file: s.file, parent: s, mtds: s.proto.GetMethod(), prefix: s.fqn + "."}
-}
-
-func (s *svcDescriptor) AddOptionBytes(opts []byte) {
-	pm := s.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", s.FullName()))
-	}
-	s.file.optionBytes[pm] = append(s.file.optionBytes[pm], opts...)
 }
 
 type mtdDescriptors struct {
@@ -1376,14 +1326,6 @@ func (m *mtdDescriptor) IsStreamingClient() bool {
 
 func (m *mtdDescriptor) IsStreamingServer() bool {
 	return m.proto.GetServerStreaming()
-}
-
-func (m *mtdDescriptor) AddOptionBytes(opts []byte) {
-	pm := m.proto.Options
-	if pm == nil {
-		panic(fmt.Sprintf("options is nil for %s", m.FullName()))
-	}
-	m.file.optionBytes[pm] = append(m.file.optionBytes[pm], opts...)
 }
 
 func (r *result) FindImportByPath(path string) File {

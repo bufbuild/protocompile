@@ -3,6 +3,7 @@ package linker_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -690,6 +691,10 @@ func TestLinkerValidation(t *testing.T) {
 			}),
 		}
 		_, err := compiler.Compile(context.Background(), names...)
+		var panicErr protocompile.PanicError
+		if errors.As(err, &panicErr) {
+			t.Logf("case %d: panic! %v\n%s", i, panicErr.Value, panicErr.Stack)
+		}
 		if tc.errMsg == "" {
 			if err != nil {
 				t.Errorf("case %d: expecting no error; instead got error %q", i, err)

@@ -1,11 +1,9 @@
-package protocompile
+package protoutil
 
 import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
-
-	"github.com/bufbuild/protocompile/linker"
 )
 
 // ProtoFromFileDescriptor extracts a descriptor proto from the given "rich"
@@ -13,7 +11,10 @@ import (
 // inexpensive and non-lossy operation. File descriptors from other sources
 // however may be expensive (to re-create a proto) and even lossy.
 func ProtoFromFileDescriptor(f protoreflect.FileDescriptor) *descriptorpb.FileDescriptorProto {
-	if res, ok := f.(linker.Result); ok {
+	type canProto interface {
+		Proto() *descriptorpb.FileDescriptorProto
+	}
+	if res, ok := f.(canProto); ok {
 		return res.Proto()
 	}
 	return protodesc.ToFileDescriptorProto(f)
