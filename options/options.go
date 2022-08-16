@@ -714,7 +714,7 @@ func validateRecursive(msg protoreflect.Message, prefix string) error {
 // interpretField interprets the option described by opt, as a field inside the given msg. This
 // interprets components of the option name starting at nameIndex. When nameIndex == 0, then
 // msg must be an options message. For nameIndex > 0, msg is a nested message inside of the
-// options message. The given pathPrefix is the path (sequence of field numbers of indices
+// options message. The given pathPrefix is the path (sequence of field numbers and indices
 // with a FileDescriptorProto as the start) up to but not including the given nameIndex.
 func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.Message, opt *descriptorpb.UninterpretedOption, nameIndex int, pathPrefix []int32) (*interpretedOption, error) {
 	var fld protoreflect.FieldDescriptor
