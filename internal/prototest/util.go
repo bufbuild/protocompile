@@ -1,4 +1,4 @@
-package testutil
+package prototest
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -20,19 +20,17 @@ import (
 )
 
 func LoadDescriptorSet(t *testing.T, path string, res linker.Resolver) *descriptorpb.FileDescriptorSet {
+	t.Helper()
 	data, err := ioutil.ReadFile(path)
-	if !assert.Nil(t, err) {
-		t.Fail()
-	}
+	require.NoError(t, err)
 	var fdset descriptorpb.FileDescriptorSet
 	err = proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, &fdset)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	return &fdset
 }
 
 func CheckFiles(t *testing.T, act protoreflect.FileDescriptor, expSet FileProtoSet, recursive bool) {
+	t.Helper()
 	checkFiles(t, act, expSet, recursive, map[string]struct{}{})
 }
 
@@ -196,13 +194,11 @@ func compareLists(t *testing.T, path string, fd protoreflect.FieldDescriptor, ex
 }
 
 func compareValues(t *testing.T, path string, fd protoreflect.FieldDescriptor, exp, act protoreflect.Value) {
-	if fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind {
-		compareMessages(t, path, exp.Message(), act.Message())
-		return
-	}
-
 	var eq bool
 	switch fd.Kind() {
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		compareMessages(t, path, exp.Message(), act.Message())
+		return
 	case protoreflect.BoolKind:
 		eq = exp.Bool() == act.Bool()
 	case protoreflect.EnumKind:
@@ -227,6 +223,7 @@ func compareValues(t *testing.T, path string, fd protoreflect.FieldDescriptor, e
 	case protoreflect.BytesKind:
 		eq = bytes.Equal(exp.Bytes(), act.Bytes())
 	default:
+		// should not be possible
 		eq = exp.Interface() == act.Interface()
 	}
 	if !eq {
