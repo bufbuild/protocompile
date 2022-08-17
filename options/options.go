@@ -403,7 +403,7 @@ type interpretedOption struct {
 	interpretedField
 }
 
-func (o interpretedOption) path() []int32 {
+func (o *interpretedOption) path() []int32 {
 	path := append(o.pathPrefix, o.number)
 	if o.repeated {
 		path = append(path, o.index)
@@ -475,29 +475,19 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 		if f.packed && canPack(f.kind) {
 			// for packed repeated numeric fields, all runs of values are merged into one packed list
 			num := f.number
-			var enclosed []byte
-			for j := i; j < len(flds) && flds[j].number == num; j++ {
-				val := flds[j].value
-				if val.isList {
-					l := val.val.List()
-					for k := 0; k < l.Len(); k++ {
-						var err error
-						enclosed, err = appendNumericValueBytes(enclosed, f.kind, l.Get(k))
-						if err != nil {
-							return nil, err
-						}
-					}
-				} else {
-					var err error
-					enclosed, err = appendNumericValueBytes(enclosed, f.kind, val.val)
-					if err != nil {
-						return nil, err
-					}
-				}
-				i = j // bump main loop index since we're subsuming this entry into the value
+			j := i
+			for j < len(flds) && flds[j].number == num {
+				j++
+			}
+			// now flds[i:j] is the range of contiguous fields for the same field number
+			enclosed, err := appendOptionBytesPacked(nil, f.kind, flds[i:j])
+			if err != nil {
+				return nil, err
 			}
 			b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
 			b = protowire.AppendBytes(b, enclosed)
+			// skip over the other subsequent fields we just serialized
+			i = j - 1
 
 		} else if f.value.isList {
 			// if not packed, then emit one value at a time
@@ -539,49 +529,82 @@ func canPack(k protoreflect.Kind) bool {
 	}
 }
 
+func appendOptionBytesPacked(b []byte, k protoreflect.Kind, flds []*interpretedField) ([]byte, error) {
+	for i := range flds {
+		val := flds[i].value
+		if val.isList {
+			l := val.val.List()
+			var err error
+			b, err = appendNumericValueBytesPacked(b, k, l)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			var err error
+			b, err = appendNumericValueBytes(b, k, val.val)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return b, nil
+}
+
 func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
+	num := protowire.Number(f.number)
 	switch f.kind {
 	case protoreflect.MessageKind:
 		enclosed, err := appendOptionBytes(nil, f.value.msgVal)
 		if err != nil {
 			return nil, err
 		}
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
+		b = protowire.AppendTag(b, num, protowire.BytesType)
 		return protowire.AppendBytes(b, enclosed), nil
 
 	case protoreflect.GroupKind:
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.StartGroupType)
+		b = protowire.AppendTag(b, num, protowire.StartGroupType)
 		var err error
 		b, err = appendOptionBytes(b, f.value.msgVal)
 		if err != nil {
 			return nil, err
 		}
-		return protowire.AppendTag(b, protowire.Number(f.number), protowire.EndGroupType), nil
+		return protowire.AppendTag(b, num, protowire.EndGroupType), nil
 
 	case protoreflect.StringKind:
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
+		b = protowire.AppendTag(b, num, protowire.BytesType)
 		return protowire.AppendString(b, f.value.val.String()), nil
 
 	case protoreflect.BytesKind:
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
+		b = protowire.AppendTag(b, num, protowire.BytesType)
 		return protowire.AppendBytes(b, f.value.val.Bytes()), nil
 
 	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Uint32Kind, protoreflect.Uint64Kind,
 		protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.EnumKind, protoreflect.BoolKind:
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.VarintType)
+		b = protowire.AppendTag(b, num, protowire.VarintType)
 		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.Fixed32Type)
+		b = protowire.AppendTag(b, num, protowire.Fixed32Type)
 		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
-		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.Fixed64Type)
+		b = protowire.AppendTag(b, num, protowire.Fixed64Type)
 		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	default:
 		return nil, fmt.Errorf("unknown field kind: %v", f.kind)
 	}
+}
+
+func appendNumericValueBytesPacked(b []byte, k protoreflect.Kind, l protoreflect.List) ([]byte, error) {
+	for i := 0; i < l.Len(); i++ {
+		var err error
+		b, err = appendNumericValueBytes(b, k, l.Get(i))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return b, nil
 }
 
 func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value) ([]byte, error) {
@@ -605,10 +628,7 @@ func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value
 	case protoreflect.DoubleKind:
 		return protowire.AppendFixed64(b, math.Float64bits(v.Float())), nil
 	case protoreflect.BoolKind:
-		if v.Bool() {
-                       return protowire.AppendVarint(b, 1), nil
-		}
-               return protowire.AppendVarint(b, 0), nil
+		return protowire.AppendVarint(b, protowire.EncodeBool(v.Bool())), nil
 	case protoreflect.EnumKind:
 		return protowire.AppendVarint(b, uint64(v.Enum())), nil
 	default:
