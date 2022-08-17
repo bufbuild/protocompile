@@ -411,20 +411,23 @@ func (o interpretedOption) path() []int32 {
 	return path
 }
 
-func (o *interpretedOption) appendOptionBytes(b []byte) []byte {
+func (o *interpretedOption) appendOptionBytes(b []byte) ([]byte, error) {
 	return o.appendOptionBytesWithPath(b, o.pathPrefix)
 }
 
-func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) []byte {
+func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) ([]byte, error) {
 	if len(path) == 0 {
 		return appendOptionBytesSingle(b, &o.interpretedField)
 	}
 	// NB: if we add functions to compute sizes of the options first, we could
 	// allocate precisely sized slice up front, which would be more efficient than
 	// repeated creation/growing/concatenation.
-	enclosed := o.appendOptionBytesWithPath(nil, path[1:])
+	enclosed, err := o.appendOptionBytesWithPath(nil, path[1:])
+	if err != nil {
+		return nil, err
+	}
 	b = protowire.AppendTag(b, protowire.Number(path[0]), protowire.BytesType)
-	return protowire.AppendBytes(b, enclosed)
+	return protowire.AppendBytes(b, enclosed), nil
 }
 
 // interpretedField represents a field in an options message that is the
@@ -459,7 +462,7 @@ type interpretedFieldValue struct {
 	msgListVal [][]*interpretedField
 }
 
-func appendOptionBytes(b []byte, flds []*interpretedField) []byte {
+func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 	// protoc emits messages sorted by field number
 	if len(flds) > 1 {
 		sort.SliceStable(flds, func(i, j int) bool {
@@ -478,10 +481,18 @@ func appendOptionBytes(b []byte, flds []*interpretedField) []byte {
 				if val.isList {
 					l := val.val.List()
 					for k := 0; k < l.Len(); k++ {
-						enclosed = appendNumericValueBytes(enclosed, f.kind, l.Get(k))
+						var err error
+						enclosed, err = appendNumericValueBytes(enclosed, f.kind, l.Get(k))
+						if err != nil {
+							return nil, err
+						}
 					}
 				} else {
-					enclosed = appendNumericValueBytes(enclosed, f.kind, val.val)
+					var err error
+					enclosed, err = appendNumericValueBytes(enclosed, f.kind, val.val)
+					if err != nil {
+						return nil, err
+					}
 				}
 				i = j // bump main loop index since we're subsuming this entry into the value
 			}
@@ -499,16 +510,24 @@ func appendOptionBytes(b []byte, flds []*interpretedField) []byte {
 				if f.kind == protoreflect.MessageKind || f.kind == protoreflect.GroupKind {
 					single.value.msgVal = f.value.msgListVal[i]
 				}
-				b = appendOptionBytesSingle(b, &single)
+				var err error
+				b, err = appendOptionBytesSingle(b, &single)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 		} else {
 			// simple singular value
-			b = appendOptionBytesSingle(b, f)
+			var err error
+			b, err = appendOptionBytesSingle(b, f)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	return b
+	return b, nil
 }
 
 func canPack(k protoreflect.Kind) bool {
@@ -520,25 +539,32 @@ func canPack(k protoreflect.Kind) bool {
 	}
 }
 
-func appendOptionBytesSingle(b []byte, f *interpretedField) []byte {
+func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
 	switch f.kind {
 	case protoreflect.MessageKind:
-		enclosed := appendOptionBytes(nil, f.value.msgVal)
+		enclosed, err := appendOptionBytes(nil, f.value.msgVal)
+		if err != nil {
+			return nil, err
+		}
 		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
-		return protowire.AppendBytes(b, enclosed)
+		return protowire.AppendBytes(b, enclosed), nil
 
 	case protoreflect.GroupKind:
 		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.StartGroupType)
-		b = appendOptionBytes(b, f.value.msgVal)
-		return protowire.AppendTag(b, protowire.Number(f.number), protowire.EndGroupType)
+		var err error
+		b, err = appendOptionBytes(b, f.value.msgVal)
+		if err != nil {
+			return nil, err
+		}
+		return protowire.AppendTag(b, protowire.Number(f.number), protowire.EndGroupType), nil
 
 	case protoreflect.StringKind:
 		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
-		return protowire.AppendString(b, f.value.val.String())
+		return protowire.AppendString(b, f.value.val.String()), nil
 
 	case protoreflect.BytesKind:
 		b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
-		return protowire.AppendBytes(b, f.value.val.Bytes())
+		return protowire.AppendBytes(b, f.value.val.Bytes()), nil
 
 	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Uint32Kind, protoreflect.Uint64Kind,
 		protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.EnumKind, protoreflect.BoolKind:
@@ -554,41 +580,39 @@ func appendOptionBytesSingle(b []byte, f *interpretedField) []byte {
 		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	default:
-		// TODO: panic?
-		return b
+		return nil, fmt.Errorf("unknown field kind: %v", f.kind)
 	}
 }
 
-func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value) []byte {
+func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value) ([]byte, error) {
 	switch k {
 	case protoreflect.Int32Kind, protoreflect.Int64Kind:
-		return protowire.AppendVarint(b, uint64(v.Int()))
+		return protowire.AppendVarint(b, uint64(v.Int())), nil
 	case protoreflect.Uint32Kind, protoreflect.Uint64Kind:
-		return protowire.AppendVarint(b, v.Uint())
+		return protowire.AppendVarint(b, v.Uint()), nil
 	case protoreflect.Sint32Kind, protoreflect.Sint64Kind:
-		return protowire.AppendVarint(b, protowire.EncodeZigZag(v.Int()))
+		return protowire.AppendVarint(b, protowire.EncodeZigZag(v.Int())), nil
 	case protoreflect.Fixed32Kind:
-		return protowire.AppendFixed32(b, uint32(v.Uint()))
+		return protowire.AppendFixed32(b, uint32(v.Uint())), nil
 	case protoreflect.Fixed64Kind:
-		return protowire.AppendFixed64(b, v.Uint())
+		return protowire.AppendFixed64(b, v.Uint()), nil
 	case protoreflect.Sfixed32Kind:
-		return protowire.AppendFixed32(b, uint32(v.Int()))
+		return protowire.AppendFixed32(b, uint32(v.Int())), nil
 	case protoreflect.Sfixed64Kind:
-		return protowire.AppendFixed64(b, uint64(v.Int()))
+		return protowire.AppendFixed64(b, uint64(v.Int())), nil
 	case protoreflect.FloatKind:
-		return protowire.AppendFixed32(b, math.Float32bits(float32(v.Float())))
+		return protowire.AppendFixed32(b, math.Float32bits(float32(v.Float()))), nil
 	case protoreflect.DoubleKind:
-		return protowire.AppendFixed64(b, math.Float64bits(v.Float()))
+		return protowire.AppendFixed64(b, math.Float64bits(v.Float())), nil
 	case protoreflect.BoolKind:
 		if v.Bool() {
-			return protowire.AppendVarint(b, 1)
+                       return protowire.AppendVarint(b, 1), nil
 		}
-		return protowire.AppendVarint(b, 0)
+               return protowire.AppendVarint(b, 0), nil
 	case protoreflect.EnumKind:
-		return protowire.AppendVarint(b, uint64(v.Enum()))
+		return protowire.AppendVarint(b, uint64(v.Enum())), nil
 	default:
-		// TODO: panic?
-		return b
+		return nil, fmt.Errorf("unknown field kind: %v", k)
 	}
 }
 
@@ -673,7 +697,11 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		proto.Merge(opts, optsClone)
 
 		if interp.container != nil {
-			interp.container.AddOptionBytes(opts, toOptionBytes(results))
+			b, err := interp.toOptionBytes(mc, results)
+			if err != nil {
+				return nil, err
+			}
+			interp.container.AddOptionBytes(opts, b)
 		}
 
 		return remain, nil
@@ -692,7 +720,11 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		return nil, interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node).Start(), err))
 	}
 	if interp.container != nil {
-		interp.container.AddOptionBytes(opts, toOptionBytes(results))
+		b, err := interp.toOptionBytes(mc, results)
+		if err != nil {
+			return nil, err
+		}
+		interp.container.AddOptionBytes(opts, b)
 	}
 
 	return nil, nil
@@ -728,7 +760,7 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 	return proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, dest)
 }
 
-func toOptionBytes(results []*interpretedOption) []byte {
+func (interp *interpreter) toOptionBytes(mc *messageContext, results []*interpretedOption) ([]byte, error) {
 	// protoc emits non-custom options in tag order and then
 	// the rest are emitted in the order they are defined in source
 	sort.SliceStable(results, func(i, j int) bool {
@@ -742,9 +774,19 @@ func toOptionBytes(results []*interpretedOption) []byte {
 	})
 	var b []byte
 	for _, res := range results {
-		b = res.appendOptionBytes(b)
+		var err error
+		b, err = res.appendOptionBytes(b)
+		if err != nil {
+			if _, ok := err.(reporter.ErrorWithPos); !ok {
+				pos := ast.SourcePos{Filename: interp.file.AST().Name()}
+				err = reporter.Errorf(pos, "%sfailed to encode options: %w", mc, err)
+			}
+			if err := interp.reporter.HandleError(err); err != nil {
+				return nil, err
+			}
+		}
 	}
-	return b
+	return b, nil
 }
 
 func validateRecursive(msg protoreflect.Message, prefix string) error {
