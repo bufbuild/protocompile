@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -402,12 +403,31 @@ type interpretedOption struct {
 	interpretedField
 }
 
-func (o interpretedOption) path() []int32 {
+func (o *interpretedOption) path() []int32 {
 	path := append(o.pathPrefix, o.number)
 	if o.repeated {
 		path = append(path, o.index)
 	}
 	return path
+}
+
+func (o *interpretedOption) appendOptionBytes(b []byte) ([]byte, error) {
+	return o.appendOptionBytesWithPath(b, o.pathPrefix)
+}
+
+func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) ([]byte, error) {
+	if len(path) == 0 {
+		return appendOptionBytesSingle(b, &o.interpretedField)
+	}
+	// NB: if we add functions to compute sizes of the options first, we could
+	// allocate precisely sized slice up front, which would be more efficient than
+	// repeated creation/growing/concatenation.
+	enclosed, err := o.appendOptionBytesWithPath(nil, path[1:])
+	if err != nil {
+		return nil, err
+	}
+	b = protowire.AppendTag(b, protowire.Number(path[0]), protowire.BytesType)
+	return protowire.AppendBytes(b, enclosed), nil
 }
 
 // interpretedField represents a field in an options message that is the
@@ -442,6 +462,180 @@ type interpretedFieldValue struct {
 	msgListVal [][]*interpretedField
 }
 
+func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
+	// protoc emits messages sorted by field number
+	if len(flds) > 1 {
+		sort.SliceStable(flds, func(i, j int) bool {
+			return flds[i].number < flds[j].number
+		})
+	}
+
+	for i := 0; i < len(flds); i++ {
+		f := flds[i]
+		if f.packed && canPack(f.kind) {
+			// for packed repeated numeric fields, all runs of values are merged into one packed list
+			num := f.number
+			j := i
+			for j < len(flds) && flds[j].number == num {
+				j++
+			}
+			// now flds[i:j] is the range of contiguous fields for the same field number
+			enclosed, err := appendOptionBytesPacked(nil, f.kind, flds[i:j])
+			if err != nil {
+				return nil, err
+			}
+			b = protowire.AppendTag(b, protowire.Number(f.number), protowire.BytesType)
+			b = protowire.AppendBytes(b, enclosed)
+			// skip over the other subsequent fields we just serialized
+			i = j - 1
+
+		} else if f.value.isList {
+			// if not packed, then emit one value at a time
+			single := *f
+			single.value.isList = false
+			single.value.msgListVal = nil
+			l := f.value.val.List()
+			for i := 0; i < l.Len(); i++ {
+				single.value.val = l.Get(i)
+				if f.kind == protoreflect.MessageKind || f.kind == protoreflect.GroupKind {
+					single.value.msgVal = f.value.msgListVal[i]
+				}
+				var err error
+				b, err = appendOptionBytesSingle(b, &single)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+		} else {
+			// simple singular value
+			var err error
+			b, err = appendOptionBytesSingle(b, f)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return b, nil
+}
+
+func canPack(k protoreflect.Kind) bool {
+	switch k {
+	case protoreflect.MessageKind, protoreflect.GroupKind, protoreflect.StringKind, protoreflect.BytesKind:
+		return false
+	default:
+		return true
+	}
+}
+
+func appendOptionBytesPacked(b []byte, k protoreflect.Kind, flds []*interpretedField) ([]byte, error) {
+	for i := range flds {
+		val := flds[i].value
+		if val.isList {
+			l := val.val.List()
+			var err error
+			b, err = appendNumericValueBytesPacked(b, k, l)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			var err error
+			b, err = appendNumericValueBytes(b, k, val.val)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return b, nil
+}
+
+func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
+	num := protowire.Number(f.number)
+	switch f.kind {
+	case protoreflect.MessageKind:
+		enclosed, err := appendOptionBytes(nil, f.value.msgVal)
+		if err != nil {
+			return nil, err
+		}
+		b = protowire.AppendTag(b, num, protowire.BytesType)
+		return protowire.AppendBytes(b, enclosed), nil
+
+	case protoreflect.GroupKind:
+		b = protowire.AppendTag(b, num, protowire.StartGroupType)
+		var err error
+		b, err = appendOptionBytes(b, f.value.msgVal)
+		if err != nil {
+			return nil, err
+		}
+		return protowire.AppendTag(b, num, protowire.EndGroupType), nil
+
+	case protoreflect.StringKind:
+		b = protowire.AppendTag(b, num, protowire.BytesType)
+		return protowire.AppendString(b, f.value.val.String()), nil
+
+	case protoreflect.BytesKind:
+		b = protowire.AppendTag(b, num, protowire.BytesType)
+		return protowire.AppendBytes(b, f.value.val.Bytes()), nil
+
+	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Uint32Kind, protoreflect.Uint64Kind,
+		protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.EnumKind, protoreflect.BoolKind:
+		b = protowire.AppendTag(b, num, protowire.VarintType)
+		return appendNumericValueBytes(b, f.kind, f.value.val)
+
+	case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
+		b = protowire.AppendTag(b, num, protowire.Fixed32Type)
+		return appendNumericValueBytes(b, f.kind, f.value.val)
+
+	case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
+		b = protowire.AppendTag(b, num, protowire.Fixed64Type)
+		return appendNumericValueBytes(b, f.kind, f.value.val)
+
+	default:
+		return nil, fmt.Errorf("unknown field kind: %v", f.kind)
+	}
+}
+
+func appendNumericValueBytesPacked(b []byte, k protoreflect.Kind, l protoreflect.List) ([]byte, error) {
+	for i := 0; i < l.Len(); i++ {
+		var err error
+		b, err = appendNumericValueBytes(b, k, l.Get(i))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return b, nil
+}
+
+func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value) ([]byte, error) {
+	switch k {
+	case protoreflect.Int32Kind, protoreflect.Int64Kind:
+		return protowire.AppendVarint(b, uint64(v.Int())), nil
+	case protoreflect.Uint32Kind, protoreflect.Uint64Kind:
+		return protowire.AppendVarint(b, v.Uint()), nil
+	case protoreflect.Sint32Kind, protoreflect.Sint64Kind:
+		return protowire.AppendVarint(b, protowire.EncodeZigZag(v.Int())), nil
+	case protoreflect.Fixed32Kind:
+		return protowire.AppendFixed32(b, uint32(v.Uint())), nil
+	case protoreflect.Fixed64Kind:
+		return protowire.AppendFixed64(b, v.Uint()), nil
+	case protoreflect.Sfixed32Kind:
+		return protowire.AppendFixed32(b, uint32(v.Int())), nil
+	case protoreflect.Sfixed64Kind:
+		return protowire.AppendFixed64(b, uint64(v.Int())), nil
+	case protoreflect.FloatKind:
+		return protowire.AppendFixed32(b, math.Float32bits(float32(v.Float()))), nil
+	case protoreflect.DoubleKind:
+		return protowire.AppendFixed64(b, math.Float64bits(v.Float())), nil
+	case protoreflect.BoolKind:
+		return protowire.AppendVarint(b, protowire.EncodeBool(v.Bool())), nil
+	case protoreflect.EnumKind:
+		return protowire.AppendVarint(b, uint64(v.Enum())), nil
+	default:
+		return nil, fmt.Errorf("unknown field kind: %v", k)
+	}
+}
+
 // optionsContainer may be optionally implemented by a linker.Result. It is
 // not part of the linker.Result interface as it is meant only for internal use.
 // This allows the option interpreter step to store extra metadata about the
@@ -466,7 +660,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	var msg protoreflect.Message
 	// see if the parse included an override copy for these options
 	if md := interp.file.ResolveMessageType(protoreflect.FullName(optsFqn)); md != nil {
-		dm := newDynamic(md)
+		dm := dynamicpb.NewMessage(md)
 		if err := cloneInto(dm, opts, nil); err != nil {
 			node := interp.file.Node(element)
 			return nil, interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node).Start(), err))
@@ -522,7 +716,13 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		proto.Reset(opts)
 		proto.Merge(opts, optsClone)
 
-		// TODO: serialize results to bytes and call interp.container.AddOptionBytes
+		if interp.container != nil {
+			b, err := interp.toOptionBytes(mc, results)
+			if err != nil {
+				return nil, err
+			}
+			interp.container.AddOptionBytes(opts, b)
+		}
 
 		return remain, nil
 	}
@@ -539,8 +739,13 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		node := interp.file.Node(element)
 		return nil, interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node).Start(), err))
 	}
-
-	// TODO: serialize results to bytes and call interp.container.AddOptionBytes
+	if interp.container != nil {
+		b, err := interp.toOptionBytes(mc, results)
+		if err != nil {
+			return nil, err
+		}
+		interp.container.AddOptionBytes(opts, b)
+	}
 
 	return nil, nil
 }
@@ -575,83 +780,33 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 	return proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, dest)
 }
 
-func newDynamic(md protoreflect.MessageDescriptor) *deterministicDynamic {
-	return &deterministicDynamic{Message: dynamicpb.NewMessage(md)}
-}
-
-type deterministicDynamic struct {
-	*dynamicpb.Message
-}
-
-// ProtoReflect implements the protoreflect.ProtoMessage interface.
-func (d *deterministicDynamic) ProtoReflect() protoreflect.Message {
-	return d
-}
-
-func (d *deterministicDynamic) Interface() protoreflect.ProtoMessage {
-	return d
-}
-
-func (d *deterministicDynamic) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	var fields []protoreflect.FieldDescriptor
-	d.Message.Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
-		fields = append(fields, fd)
-		return true
+func (interp *interpreter) toOptionBytes(mc *messageContext, results []*interpretedOption) ([]byte, error) {
+	// protoc emits non-custom options in tag order and then
+	// the rest are emitted in the order they are defined in source
+	sort.SliceStable(results, func(i, j int) bool {
+		if !results[i].unknown && results[j].unknown {
+			return true
+		}
+		if !results[i].unknown && !results[j].unknown {
+			return results[i].number < results[j].number
+		}
+		return false
 	})
-	// simple sort for deterministic marshaling
-	sort.Slice(fields, func(i, j int) bool {
-		return fields[i].Number() < fields[j].Number()
-	})
-	for _, fld := range fields {
-		if !f(fld, d.Get(fld)) {
-			return
+	var b []byte
+	for _, res := range results {
+		var err error
+		b, err = res.appendOptionBytes(b)
+		if err != nil {
+			if _, ok := err.(reporter.ErrorWithPos); !ok {
+				pos := ast.SourcePos{Filename: interp.file.AST().Name()}
+				err = reporter.Errorf(pos, "%sfailed to encode options: %w", mc, err)
+			}
+			if err := interp.reporter.HandleError(err); err != nil {
+				return nil, err
+			}
 		}
 	}
-}
-
-func (d *deterministicDynamic) Get(fd protoreflect.FieldDescriptor) protoreflect.Value {
-	v := d.Message.Get(fd)
-	if v.IsValid() && fd.IsMap() {
-		mp := v.Map()
-		if _, ok := mp.(*deterministicMap); !ok {
-			return protoreflect.ValueOfMap(&deterministicMap{Map: v.Map(), keyKind: fd.MapKey().Kind()})
-		}
-	}
-	return v
-}
-
-type deterministicMap struct {
-	protoreflect.Map
-	keyKind protoreflect.Kind
-}
-
-func (m *deterministicMap) Range(f func(protoreflect.MapKey, protoreflect.Value) bool) {
-	var keys []protoreflect.MapKey
-	m.Map.Range(func(k protoreflect.MapKey, _ protoreflect.Value) bool {
-		keys = append(keys, k)
-		return true
-	})
-	sort.Slice(keys, func(i, j int) bool {
-		switch m.keyKind {
-		case protoreflect.BoolKind:
-			return !keys[i].Bool() && keys[j].Bool()
-		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind,
-			protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
-			return keys[i].Int() < keys[j].Int()
-		case protoreflect.Uint32Kind, protoreflect.Fixed32Kind,
-			protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-			return keys[i].Uint() < keys[j].Uint()
-		case protoreflect.StringKind:
-			return keys[i].String() < keys[j].String()
-		default:
-			panic("invalid kind: " + m.keyKind.String())
-		}
-	})
-	for _, key := range keys {
-		if !f(key, m.Map.Get(key)) {
-			break
-		}
-	}
+	return b, nil
 }
 
 func validateRecursive(msg protoreflect.Message, prefix string) error {
@@ -772,7 +927,7 @@ func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.M
 						mc, ood.Name(), fieldName(existingFld))
 				}
 			}
-			fdm = newDynamic(fld.Message())
+			fdm = dynamicpb.NewMessage(fld.Message())
 			msg.Set(fld, protoreflect.ValueOfMessage(fdm))
 		}
 		// recurse to set next part of name
@@ -836,7 +991,7 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 				key := entry.Get(fld.MapKey()).MapKey()
 				val := entry.Get(fld.MapValue())
 				if dm, ok := val.Interface().(*dynamicpb.Message); ok && (dm == nil || !dm.IsValid()) {
-					val = protoreflect.ValueOfMessage(newDynamic(fld.MapValue().Message()))
+					val = protoreflect.ValueOfMessage(dynamicpb.NewMessage(fld.MapValue().Message()))
 				}
 				m := msg.Mutable(fld).Map()
 				// TODO: error if key is already present
@@ -869,7 +1024,7 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 		key := entry.Get(fld.MapKey()).MapKey()
 		val := entry.Get(fld.MapValue())
 		if dm, ok := val.Interface().(*dynamicpb.Message); ok && (dm == nil || !dm.IsValid()) {
-			val = protoreflect.ValueOfMessage(newDynamic(fld.MapValue().Message()))
+			val = protoreflect.ValueOfMessage(dynamicpb.NewMessage(fld.MapValue().Message()))
 		}
 		m := msg.Mutable(fld).Map()
 		// TODO: error if key is already present
@@ -1025,7 +1180,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 		v := val.Value()
 		if aggs, ok := v.([]*ast.MessageFieldNode); ok {
 			fmd := fld.Message()
-			fdm := newDynamic(fmd)
+			fdm := dynamicpb.NewMessage(fmd)
 			origPath := mc.optAggPath
 			defer func() {
 				mc.optAggPath = origPath
