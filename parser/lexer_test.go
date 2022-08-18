@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -291,6 +292,10 @@ func TestLexerErrors(t *testing.T) {
 		{str: "// foo \xBC", errMsg: ""},
 		{str: "'abc \xBC '", errMsg: ""},
 		{str: "\"abc \xBC \"", errMsg: ""},
+		// this one IS valid UTF8, so should be accepted without error
+		// even if we are rejecting the ones above (this is the VALID
+		// encoding of the unicode replacement char)
+		{str: "'abc " + string(utf8.RuneError) + " '", errMsg: ""},
 	}
 	for i, tc := range testCases {
 		handler := reporter.NewHandler(nil)

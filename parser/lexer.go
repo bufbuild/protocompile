@@ -32,7 +32,7 @@ func (rr *runeReader) readRune() (r rune, size int, err error) {
 		return 0, 0, rr.err
 	}
 	r, sz := utf8.DecodeRune(rr.data[rr.pos:])
-	if r == utf8.RuneError {
+	if r == utf8.RuneError && sz == 1 {
 		// this really should be an error, but we mirror protoc's lenience
 		r = rune(rr.data[rr.pos])
 		sz = 1
