@@ -33,8 +33,15 @@ func (rr *runeReader) readRune() (r rune, size int, err error) {
 	}
 	r, sz := utf8.DecodeRune(rr.data[rr.pos:])
 	if r == utf8.RuneError {
-		rr.err = fmt.Errorf("invalid UTF8 at offset %d: %x", rr.pos, rr.data[rr.pos])
-		return 0, 0, rr.err
+		// this really should be an error, but we mirror protoc's lenience
+		r = rune(rr.data[rr.pos])
+		sz = 1
+		// TODO: after protoc is updated to fail on bad UTF8, we can mirror its
+		// behavior by removing the above two lines and use the two below instead.
+		// Relevant protoc bug report:
+		//  https://github.com/protocolbuffers/protobuf/issues/9175
+		//rr.err = fmt.Errorf("invalid UTF8 at offset %d: %x", rr.pos, rr.data[rr.pos])
+		//return 0, 0, rr.err
 	}
 	rr.pos = rr.pos + sz
 	return r, sz, nil

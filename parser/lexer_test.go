@@ -282,13 +282,24 @@ func TestLexerErrors(t *testing.T) {
 		{str: "\U0010FFFF", errMsg: "invalid character"},
 		{str: "// foo \x00", errMsg: "invalid control character"},
 		{str: "/* foo \x00", errMsg: "invalid control character"},
+		// TODO: currently rejected because this is not a valid token
+		//  in the language; but it should be rejected because this
+		//  is not even valid UTF8 input
+		{str: "\xBC", errMsg: "invalid character"},
+		// TODO: for now, these are accepted; eventually, reject due
+		//  to being invalid UTF8 input (mirroring protoc on this)
+		{str: "// foo \xBC", errMsg: ""},
+		{str: "'abc \xBC '", errMsg: ""},
+		{str: "\"abc \xBC \"", errMsg: ""},
 	}
 	for i, tc := range testCases {
 		handler := reporter.NewHandler(nil)
 		l := newTestLexer(t, strings.NewReader(tc.str), handler)
 		var sym protoSymType
 		tok := l.Lex(&sym)
-		if assert.Equal(t, _ERROR, tok) {
+		if tc.errMsg == "" {
+			assert.NotEqual(t, _ERROR, tok)
+		} else if assert.Equal(t, _ERROR, tok) {
 			assert.True(t, sym.err != nil)
 			assert.True(t, strings.Contains(sym.err.Error(), tc.errMsg), "case %d: expected message to contain %q but does not: %q", i, tc.errMsg, sym.err.Error())
 			t.Logf("case %d: %v", i, sym.err)
