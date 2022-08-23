@@ -1127,7 +1127,7 @@ func (f *fldDescriptor) Default() protoreflect.Value {
 	case protoreflect.FloatKind:
 		return protoreflect.ValueOfFloat32(0)
 	case protoreflect.DoubleKind:
-		return protoreflect.ValueOfFloat32(0)
+		return protoreflect.ValueOfFloat64(0)
 	case protoreflect.BoolKind:
 		return protoreflect.ValueOfBool(false)
 	case protoreflect.BytesKind:

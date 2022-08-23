@@ -3,6 +3,7 @@ package options_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -261,6 +262,10 @@ func TestOptionsEncoding(t *testing.T) {
 		}),
 	}
 	fds, err := compiler.Compile(context.Background(), "test.proto")
+	var panicErr protocompile.PanicError
+	if errors.As(err, &panicErr) {
+		t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
+	}
 	require.NoError(t, err)
 
 	res := fds[0].(linker.Result)
