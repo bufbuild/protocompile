@@ -75,16 +75,16 @@ message AllTypes {
   repeated bool pr_flag = 53 [packed=true];
   repeated AnEnum pr_en = 55 [packed=true];
 
-  map<string, int32> m_i32 = 61;
-  map<string, int64> m_i64 = 62;
-  map<string, uint32> m_u32 = 63;
-  map<string, uint64> m_u64 = 64;
-  map<string, sint32> m_s32 = 65;
-  map<string, sint64> m_s64 = 66;
-  map<string, fixed32> m_f32 = 67;
-  map<string, fixed64> m_f64 = 68;
-  map<string, sfixed32> m_sf32 = 69;
-  map<string, sfixed64> m_sf64 = 70;
+  map<int32, int32> m_i32 = 61;
+  map<int64, int64> m_i64 = 62;
+  map<uint32, uint32> m_u32 = 63;
+  map<uint64, uint64> m_u64 = 64;
+  map<sint32, sint32> m_s32 = 65;
+  map<sint64, sint64> m_s64 = 66;
+  map<fixed32, fixed32> m_f32 = 67;
+  map<fixed64, fixed64> m_f64 = 68;
+  map<sfixed32, sfixed32> m_sf32 = 69;
+  map<sfixed64, sfixed64> m_sf64 = 70;
   map<string, float> m_fl32 = 71;
   map<string, double> m_fl64 = 72;
   map<string, bool> m_flag = 73;

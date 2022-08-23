@@ -46,11 +46,11 @@ message TestMessage {
     (fld).pr_s32 = 1,
 
     (fld).m_s32 = {
-      key: "abc",
+      key: 123,
       value: 0
     },
     (fld).m_s32 = {
-      key: "def",
+      key: -234,
       value: 1
     },
 
@@ -84,7 +84,7 @@ message TestMessage {
       r_s32: [0, 1, 2, 3]
       pr_s32: [0, 1, 2, 3]
       m_s32: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: -234, value: 2 }
       ]
       r_fl32: [0, 1, 2, 3]
       pr_fl32: [0, 1, 2, 3]
@@ -97,14 +97,16 @@ message TestMessage {
       r_s32: 2
       pr_s32: 1
       pr_s32: 2
-      m_s32: { key: "foo", value: 1 }
-      m_s32: { key: "bar", value: 2 }
+      m_s32: { value: 0 }
+      m_s32: { key: 123, value: 1 }
+      m_s32: { key: 234, value: 2 }
+      m_s32: { key: -345 }
       r_fl32: 1
       r_fl32: 2
       pr_fl32: 1
       pr_fl32: 2
-      m_fl32: { key: "foo", value: 1 }
-      m_fl32: { key: "bar", value: 2 }
+      m_fl32: { }
+      m_fl32: { key: "bar", value: -2.2222 }
     }
   ];
 
@@ -131,11 +133,11 @@ message TestMessage {
     option (oo).pr_i64 = 1;
 
     option (oo).m_i64 = {
-      key: "abc"
+      key: 123
       value: 0
     };
     option (oo).m_i64 = {
-      key: "def"
+      key: -234
       value: 1
     };
 
@@ -149,11 +151,11 @@ message TestMessage {
     option (oo).pr_u64 = 1;
 
     option (oo).m_u64 = {
-      key: "abc"
+      key: 123
       value: 0
     };
     option (oo).m_u64 = {
-      key: "def"
+      key: 234
       value: 1
     };
 
@@ -169,12 +171,12 @@ message TestMessage {
       r_i64: [0, 1, 2, 3]
       pr_i64: [0, 1, 2, 3]
       m_i64: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
       r_u64: [0, 1, 2, 3]
       pr_u64: [0, 1, 2, 3]
       m_u64: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
     };
     option (oo).msg.(t).msg.(t) = {
@@ -182,14 +184,16 @@ message TestMessage {
       r_i64: 2
       pr_i64: 1
       pr_i64: 2
-      m_i64: { key: "foo", value: 1 }
-      m_i64: { key: "bar", value: 2 }
+      m_i64: { value: 0 }
+      m_i64: { key: 123, value: 1 }
+      m_i64: { key: 234, value: 2 }
+      m_i64: { key: -345 }
       r_u64: 1
       r_u64: 2
       pr_u64: 1
       pr_u64: 2
-      m_u64: { key: "foo", value: 1 }
-      m_u64: { key: "bar", value: 2 }
+      m_u64: { }
+      m_u64: { key: 234, value: 2 }
     };
   }
 
@@ -212,11 +216,11 @@ message TestMessage {
     (ext).pr_f32 = 1,
 
     (ext).m_f32 = {
-      key: "abc",
+      key: 123,
       value: 0
     },
     (ext).m_f32 = {
-      key: "def",
+      key: 234,
       value: 1
     },
 
@@ -230,11 +234,11 @@ message TestMessage {
     (ext).pr_sf32 = 1,
 
     (ext).m_sf32 = {
-      key: "abc",
+      key: 123,
       value: 0
     },
     (ext).m_sf32 = {
-      key: "def",
+      key: -234,
       value: 1
     },
 
@@ -250,12 +254,12 @@ message TestMessage {
       r_f32: [0, 1, 2, 3]
       pr_f32: [0, 1, 2, 3]
       m_f32: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
       r_sf32: [0, 1, 2, 3]
       pr_sf32: [0, 1, 2, 3]
       m_sf32: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
     },
     (ext).msg.(t).msg.(t) = {
@@ -263,14 +267,16 @@ message TestMessage {
       r_f32: 2
       pr_f32: 1
       pr_f32: 2
-      m_f32: { key: "foo", value: 1 }
-      m_f32: { key: "bar", value: 2 }
+      m_f32: { value: 0 }
+      m_f32: { key: 123, value: 1 }
+      m_f32: { key: 234, value: 2 }
+      m_f32: { key: 345 }
       r_sf32: 1
       r_sf32: 2
       pr_sf32: 1
       pr_sf32: 2
-      m_sf32: { key: "foo", value: 1 }
-      m_sf32: { key: "bar", value: 2 }
+      m_sf32: { }
+      m_sf32: { key: -234, value: 2 }
     }
   ];
 
@@ -288,11 +294,11 @@ message TestMessage {
   option (msg).pr_f32 = 1;
 
   option (msg).m_f32 = {
-    key: "abc"
+    key: 123
     value: 0
   };
   option (msg).m_f32 = {
-    key: "def"
+    key: 234
     value: 1
   };
 
@@ -306,11 +312,11 @@ message TestMessage {
   option (msg).pr_sf32 = 1;
 
   option (msg).m_sf32 = {
-    key: "abc"
+    key: 123
     value: 0
   };
   option (msg).m_sf32 = {
-    key: "def"
+    key: -234
     value: 1
   };
 
@@ -326,12 +332,12 @@ message TestMessage {
     r_f32: [0, 1, 2, 3]
     pr_f32: [0, 1, 2, 3]
     m_f32: [
-      { key: "foo", value: 1 }, { key: "bar", value: 2 }
+      { key: 123, value: 1 }, { key: 234, value: 2 }
     ]
     r_sf32: [0, 1, 2, 3]
     pr_sf32: [0, 1, 2, 3]
     m_sf32: [
-      { key: "foo", value: 1 }, { key: "bar", value: 2 }
+      { key: 123, value: 1 }, { key: 234, value: 2 }
     ]
   };
   option (msg).msg.(t).msg.(t) = {
@@ -339,14 +345,16 @@ message TestMessage {
     r_f32: 2
     pr_f32: 1
     pr_f32: 2
-    m_f32: { key: "foo", value: 1 }
-    m_f32: { key: "bar", value: 2 }
+    m_f32: { value: 0 }
+    m_f32: { key: 123, value: 1 }
+    m_f32: { key: 234, value: 2 }
+    m_f32: { key: 345 }
     r_sf32: 1
     r_sf32: 2
     pr_sf32: 1
     pr_sf32: 2
-    m_sf32: { key: "foo", value: 1 }
-    m_sf32: { key: "bar", value: 2 }
+    m_sf32: { }
+    m_sf32: { key: -234, value: -2 }
   };
 
   option message_set_wire_format = false;
@@ -366,11 +374,11 @@ option (file).pr_i32 = 0;
 option (file).pr_i32 = 1;
 
 option (file).m_i32 = {
-  key: "abc"
+  key: 123
   value: 0
 };
 option (file).m_i32 = {
-  key: "def"
+  key: -234
   value: 1
 };
 
@@ -384,11 +392,11 @@ option (file).pr_u32 = 0;
 option (file).pr_u32 = 1;
 
 option (file).m_u32 = {
-  key: "abc"
+  key: 123
   value: 0
 };
 option (file).m_u32 = {
-  key: "def"
+  key: 234
   value: 1
 };
 
@@ -435,11 +443,11 @@ enum TestEnum {
     (env).pr_s64 = 1,
 
     (env).m_s64 = {
-      key: "abc",
+      key: 123,
       value: 0
     },
     (env).m_s64 = {
-      key: "def",
+      key: -234,
       value: 1
     },
 
@@ -473,7 +481,7 @@ enum TestEnum {
       r_s64: [0, 1, 2, 3]
       pr_s64: [0, 1, 2, 3]
       m_s64: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
       r_fl64: [0, 1, 2, 3]
       pr_fl64: [0, 1, 2, 3]
@@ -486,13 +494,15 @@ enum TestEnum {
       r_s64: 2
       pr_s64: 1
       pr_s64: 2
-      m_s64: { key: "foo", value: 1 }
-      m_s64: { key: "bar", value: 2 }
+      m_s64: { value: 0 }
+      m_s64: { key: 123, value: 1 }
+      m_s64: { key: 234, value: 2 }
+      m_s64: { key: -345 }
       r_fl64: 1
       r_fl64: 2
       pr_fl64: 1
       pr_fl64: 2
-      m_fl64: { key: "foo", value: 1 }
+      m_fl64: { }
       m_fl64: { key: "bar", value: 2 }
     }
   ];
@@ -511,11 +521,11 @@ enum TestEnum {
   option (en).pr_f64 = 1;
 
   option (en).m_f64 = {
-    key: "abc"
+    key: 123
     value: 0
   };
   option (en).m_f64 = {
-    key: "def"
+    key: 234
     value: 1
   };
 
@@ -529,11 +539,11 @@ enum TestEnum {
   option (en).pr_sf64 = 1;
 
   option (en).m_sf64 = {
-    key: "abc"
+    key: 123
     value: 0
   };
   option (en).m_sf64 = {
-    key: "def"
+    key: -234
     value: 1
   };
 
@@ -549,12 +559,12 @@ enum TestEnum {
     r_f64: [0, 1, 2, 3]
     pr_f64: [0, 1, 2, 3]
     m_f64: [
-      { key: "foo", value: 1 }, { key: "bar", value: 2 }
+      { key: 123, value: 1 }, { key: 234, value: 2 }
     ]
     r_sf64: [0, 1, 2, 3]
     pr_sf64: [0, 1, 2, 3]
     m_sf64: [
-      { key: "foo", value: 1 }, { key: "bar", value: 2 }
+      { key: 123, value: 1 }, { key: 234, value: 2 }
     ]
   };
   option (en).msg.(t).msg.(t) = {
@@ -562,14 +572,16 @@ enum TestEnum {
     r_f64: 2
     pr_f64: 1
     pr_f64: 2
-    m_f64: { key: "foo", value: 1 }
-    m_f64: { key: "bar", value: 2 }
+    m_f64: { value: 0 }
+    m_f64: { key: 123, value: 1 }
+    m_f64: { key: 234, value: 2 }
+    m_f64: { key: 345 }
     r_sf64: 1
     r_sf64: 2
     pr_sf64: 1
     pr_sf64: 2
-    m_sf64: { key: "foo", value: 1 }
-    m_sf64: { key: "bar", value: 2 }
+    m_sf64: { }
+    m_sf64: { key: -234, value: -2 }
   };
 }
 
@@ -577,12 +589,12 @@ option (file).msg.(t) = {
   r_i32: [0, 1, 2, 3]
   pr_i32: [0, 1, 2, 3]
   m_i32: [
-    { key: "foo", value: 1 }, { key: "bar", value: 2 }
+    { key: 123, value: 1 }, { key: 234, value: 2 }
   ]
   r_u32: [0, 1, 2, 3]
   pr_u32: [0, 1, 2, 3]
   m_u32: [
-    { key: "foo", value: 1 }, { key: "bar", value: 2 }
+    { key: 123, value: 1 }, { key: 234, value: 2 }
   ]
 };
 option (file).msg.(t).msg.(t) = {
@@ -590,14 +602,16 @@ option (file).msg.(t).msg.(t) = {
   r_i32: 2
   pr_i32: 1
   pr_i32: 2
-  m_i32: { key: "foo", value: 1 }
-  m_i32: { key: "bar", value: 2 }
+  m_i32: { value: 0 }
+  m_i32: { key: 123, value: 1 }
+  m_i32: { key: 234, value: 2 }
+  m_i32: { key: -345 }
   r_u32: 1
   r_u32: 2
   pr_u32: 1
   pr_u32: 2
-  m_u32: { key: "foo", value: 1 }
-  m_u32: { key: "bar", value: 2 }
+  m_u32: { }
+  m_u32: { key: 234, value: 2 }
 };
 
 extend Extendable {
@@ -620,11 +634,11 @@ extend Extendable {
     (fld).pr_s32 = 1,
 
     (fld).m_s32 = {
-      key: "abc",
+      key: 123,
       value: 0
     },
     (fld).m_s32 = {
-      key: "def",
+      key: -234,
       value: 1
     },
 
@@ -658,7 +672,7 @@ extend Extendable {
       r_s32: [0, 1, 2, 3]
       pr_s32: [0, 1, 2, 3]
       m_s32: [
-        { key: "foo", value: 1 }, { key: "bar", value: 2 }
+        { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
       r_fl32: [0, 1, 2, 3]
       pr_fl32: [0, 1, 2, 3]
@@ -671,14 +685,16 @@ extend Extendable {
       r_s32: 2
       pr_s32: 1
       pr_s32: 2
-      m_s32: { key: "foo", value: 1 }
-      m_s32: { key: "bar", value: 2 }
+      m_s32: { value: 1 }
+      m_s32: { key: 123, value: 1 }
+      m_s32: { key: 234, value: 2 }
+      m_s32: { key: 345 }
       r_fl32: 1
       r_fl32: 2
       pr_fl32: 1
       pr_fl32: 2
-      m_fl32: { key: "foo", value: 1 }
-      m_fl32: { key: "bar", value: 2 }
+      m_fl32: { }
+      m_fl32: { key: "bar", value: -2.22222 }
     }
   ];
 }
