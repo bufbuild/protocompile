@@ -295,7 +295,7 @@ func TestOptionsEncoding(t *testing.T) {
 	expectedData, err := ioutil.ReadFile("../internal/testprotos/options/test.protoset")
 	require.NoError(t, err)
 	if !bytes.Equal(actualData, expectedData) {
-		err := ioutil.WriteFile("../internal/testprotos/options/test.actual.protoset", actualData, 0666)
+		err := ioutil.WriteFile("../internal/testprotos/options/test.actual.protoset", actualData, 0644)
 		if err != nil {
 			t.Log("failed to write actual to file")
 		}
