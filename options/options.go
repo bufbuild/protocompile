@@ -1262,7 +1262,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					// ...but only regular fields, not extensions that are groups...
 					if ffld != nil && ffld.Kind() == protoreflect.GroupKind && ffld.Message().Name() != protoreflect.Name(a.Name.Value()) {
 						// this is kind of silly to fail here, but this mimics protoc behavior
-						return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, a.Name.Value(), ffld.Message().Name())
+						return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, a.Name.Value(), ffld.Message().Name())
 					}
 					if ffld == nil {
 						// could be a group name
@@ -1277,7 +1277,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					}
 				}
 				if ffld == nil {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
 				}
 				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val)
 				if err != nil {

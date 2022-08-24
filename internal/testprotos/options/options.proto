@@ -41,6 +41,11 @@ message AllTypes {
   optional bytes b = 15;
   optional string str = 16;
   optional Extendable msg = 17;
+  optional group Grp = 18 {
+    optional string foo = 1;
+    optional int32 bar = 2;
+    repeated bool baz = 3;
+  }
 
   repeated int32 r_i32 = 21;
   repeated int64 r_i64 = 22;
@@ -59,6 +64,11 @@ message AllTypes {
   repeated bytes r_b = 35;
   repeated string r_str = 36;
   repeated Extendable r_msg = 37;
+  repeated group R_Grp = 38 {
+    optional string foo = 1;
+    optional int32 bar = 2;
+    repeated bool baz = 3;
+  }
 
   repeated int32 pr_i32 = 41 [packed=true];
   repeated int64 pr_i64 = 42 [packed=true];
@@ -92,6 +102,38 @@ message AllTypes {
   map<string, bytes> m_b = 75;
   map<string, string> m_str = 76;
   map<string, Extendable> m_msg = 77;
+  map<string, Grp> m_grp = 78;
+
+  oneof int {
+    int32 oo_i32 = 81;
+    int64 oo_i64 = 82;
+    uint32 oo_u32 = 83;
+    uint64 oo_u64 = 84;
+    sint32 oo_s32 = 85;
+    sint64 oo_s64 = 86;
+  }
+  oneof fixed {
+    fixed32 oo_f32 = 87;
+    fixed64 oo_f64 = 88;
+    sfixed32 oo_sf32 = 89;
+    sfixed64 oo_sf64 = 90;
+  }
+  oneof other_scalar {
+    float oo_fl32 = 91;
+    double oo_fl64 = 92;
+    bool oo_flag = 93;
+    AnEnum oo_en = 94;
+  }
+  oneof bytes {
+    bytes oo_b = 95;
+    string oo_str = 96;
+    Extendable oo_msg = 97;
+    group OO_Grp = 98 {
+      optional string foo = 1;
+      optional int32 bar = 2;
+      repeated bool baz = 3;
+    }
+  }
 }
 
 extend Extendable {
@@ -143,5 +185,4 @@ extend google.protobuf.ServiceOptions {
 extend google.protobuf.MethodOptions {
   optional AllTypes rpc = 1001;
   repeated int32 rpc_i = 1002 [packed = true];
-
 }

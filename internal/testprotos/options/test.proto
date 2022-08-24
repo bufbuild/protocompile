@@ -37,6 +37,11 @@ message TestMessage {
       f32: 4 f64: 5 sf32: 6 sf64: 7
       fl32: 8.9 fl64: 9.101 s32: -10 s64: -11
       str: "file"
+
+      oo_i32: -9876
+      oo_f32: 1234
+      oo_fl32: 1.2345e100
+      oo_b: "\x00\x01\x02\x03"
     },
 
     (fld).r_s32 = 0,
@@ -56,6 +61,9 @@ message TestMessage {
 
     (fld).flag = true,
     (fld).b = "\x00\x01\x02\x03",
+    (fld).grp = {
+      foo: "abc" bar: 999
+    },
 
     (fld).r_fl32 = 0,
     (fld).r_fl32 = 1,
@@ -126,6 +134,11 @@ message TestMessage {
       str: "file"
     };
 
+    option (oo).oo_i64 = -9876;
+    option (oo).oo_f64 = 1234;
+    option (oo).oo_fl64 = 1.2345e100;
+    option (oo).oo_str = "foobar";
+
     option (oo).r_i64 = 0;
     option (oo).r_i64 = 1;
 
@@ -143,6 +156,9 @@ message TestMessage {
 
     option (oo).flag = true;
     option (oo).b = "\x00\x01\x02\x03";
+    option (oo).grp = {
+      foo: "abc" bar: 999
+    };
 
     option (oo).r_u64 = 0;
     option (oo).r_u64 = 1;
@@ -207,6 +223,11 @@ message TestMessage {
       f32: 4 f64: 5 sf32: 6 sf64: 7
       fl32: 8.9 fl64: 9.101 s32: -10 s64: -11
       str: "file"
+
+      oo_s32: -9876
+      oo_sf32: 1234
+      oo_flag: true
+      oo_msg <foo: "abc" bar: 123>
     },
 
     (ext).r_f32 = 0,
@@ -226,6 +247,9 @@ message TestMessage {
 
     (ext).flag = true,
     (ext).b = "\x00\x01\x02\x03",
+    (ext).grp = {
+      foo: "abc" bar: 999
+    },
 
     (ext).r_sf32 = 0,
     (ext).r_sf32 = 1,
@@ -287,6 +311,11 @@ message TestMessage {
     str: "file"
   };
 
+  option (msg).oo_s64 = -9876;
+  option (msg).oo_sf64 = 1234;
+  option (msg).oo_en = UNO;
+  option (msg).oo_grp = { foo: "abc" bar: 123 };
+
   option (msg).r_f32 = 0;
   option (msg).r_f32 = 1;
 
@@ -304,6 +333,9 @@ message TestMessage {
 
   option (msg).flag = true;
   option (msg).b = "\x00\x01\x02\x03";
+  option (msg).grp = {
+    foo: "abc" bar: 999
+  };
 
   option (msg).r_sf32 = 0;
   option (msg).r_sf32 = 1;
@@ -365,6 +397,11 @@ option (file) = {
   f32: 4 f64: 5 sf32: 6 sf64: 7
   fl32: 8.9 fl64: 9.101 s32: -10 s64: -11
   str: "file"
+
+  oo_u32: 9876
+  oo_f32: 1234
+  oo_fl32: 1.2345e100
+  oo_b: "\x00\x01\x02\x03"
 };
 
 option (file).r_i32 = 0;
@@ -384,6 +421,9 @@ option (file).m_i32 = {
 
 option (file).flag = true;
 option (file).b = "\x00\x01\x02\x03";
+option (file).grp = {
+  foo: "abc" bar: 999
+};
 
 option (file).r_u32 = 0;
 option (file).r_u32 = 1;
@@ -436,6 +476,11 @@ enum TestEnum {
       str: "file"
     },
 
+    (env).oo_u32 = 9876,
+    (env).oo_f32 = 1234,
+    (env).oo_fl32 = 1.2345e100,
+    (env).oo_b = "\x00\x01\x02\x03",
+
     (env).r_s64 = 0,
     (env).r_s64 = 1,
 
@@ -453,6 +498,9 @@ enum TestEnum {
 
     (env).flag = true,
     (env).b = "\x00\x01\x02\x03",
+    (env).grp = {
+      foo: "abc" bar: 999
+    },
 
     (env).r_fl64 = 0,
     (env).r_fl64 = 1,
@@ -512,6 +560,11 @@ enum TestEnum {
     f32: 4 f64: 5 sf32: 6 sf64: 7
     fl32: 8.9 fl64: 9.101 s32: -10 s64: -11
     str: "file"
+
+    oo_u64: 9876
+    oo_f32: 1234
+    oo_fl32: 1.2345e100
+    oo_b: "\x00\x01\x02\x03"
   };
 
   option (en).r_f64 = 0;
@@ -531,6 +584,9 @@ enum TestEnum {
 
   option (en).flag = true;
   option (en).b = "\x00\x01\x02\x03";
+  option (en).grp = {
+    foo: "abc" bar: 999
+  };
 
   option (en).r_sf64 = 0;
   option (en).r_sf64 = 1;
@@ -627,11 +683,13 @@ extend Extendable {
       str: "file"
     },
 
-    (fld).r_s32 = 0,
-    (fld).r_s32 = 1,
+    (fld).oo_u64 = 9876,
+    (fld).oo_f32 = 1234,
+    (fld).oo_fl32 = 1.2345e100,
+    (fld).oo_b = "\x00\x01\x02\x03",
 
-    (fld).pr_s32 = 0,
-    (fld).pr_s32 = 1,
+    (fld).r_grp = {foo: "foo"},
+    (fld).r_grp = {foo: "bar"},
 
     (fld).m_s32 = {
       key: 123,
@@ -644,6 +702,9 @@ extend Extendable {
 
     (fld).flag = true,
     (fld).b = "\x00\x01\x02\x03",
+    (fld).grp = {
+      foo: "abc" bar: 999
+    },
 
     (fld).r_fl32 = 0,
     (fld).r_fl32 = 1,
@@ -669,10 +730,11 @@ extend Extendable {
     },
 
     (fld).msg.(t) = {
-      r_s32: [0, 1, 2, 3]
-      pr_s32: [0, 1, 2, 3]
-      m_s32: [
-        { key: 123, value: 1 }, { key: 234, value: 2 }
+      R_Grp: [
+        <foo:"a", bar:1>, <foo:"b", bar:2>, <foo:"c", bar:3>
+      ]
+      m_grp: [
+        { key: "foo", value: <foo:"foo"> }, { key: "bar", value: <foo:"bar"> }
       ]
       r_fl32: [0, 1, 2, 3]
       pr_fl32: [0, 1, 2, 3]
@@ -681,14 +743,12 @@ extend Extendable {
       ]
     },
     (fld).msg.(t).msg.(t) = {
-      r_s32: 1
-      r_s32: 2
-      pr_s32: 1
-      pr_s32: 2
-      m_s32: { value: 1 }
-      m_s32: { key: 123, value: 1 }
-      m_s32: { key: 234, value: 2 }
-      m_s32: { key: 345 }
+      R_Grp: <foo: "a", bar: 1>
+      R_Grp: <foo: "b", bar: 2>
+      m_grp: { value: <foo: "abc", bar: 123> }
+      m_grp: { key: "1", value: <foo: "def", bar: 234> }
+      m_grp: { key: "2", value: <foo: "ghi", bar: 345> }
+      m_grp: { key: "3" }
       r_fl32: 1
       r_fl32: 2
       pr_fl32: 1
@@ -714,6 +774,11 @@ service TestService {
       f32: 4 f64: 5 sf32: 6 sf64: 7
       fl32: 8.9 fl64: 9.101 s32: -10 s64: -11
       str: "file"
+
+      oo_i32: -9876
+      oo_f32: 1234
+      oo_fl32: 1.2345e100
+      OO_Grp <foo: "abc" bar: 123>
     };
 
     option (rpc).r_en = ZED;
@@ -733,6 +798,9 @@ service TestService {
 
     option (rpc).flag = true;
     option (rpc).b = "\x00\x01\x02\x03";
+    option (rpc).grp = {
+      foo: "abc" bar: 999
+    };
 
     option (rpc).r_str = "abc";
     option (rpc).r_str = "def";
@@ -786,6 +854,11 @@ service TestService {
     str: "file"
   };
 
+  option (svc).oo_i32 = -9876;
+  option (svc).oo_f32 = 1234;
+  option (svc).oo_fl32 = 1.2345e100;
+  option (svc).oo_b = "\x00\x01\x02\x03";
+
   option (svc).r_flag = true;
   option (svc).r_flag = false;
 
@@ -803,9 +876,19 @@ service TestService {
 
   option (svc).flag = true;
   option (svc).b = "\x00\x01\x02\x03";
+  option (svc).grp = {
+    foo: "abc" bar: 999
+  };
 
   option (svc).r_b = "\x00\x01";
   option (svc).r_b = "\x02\x03";
+
+  option (svc).r_grp = {
+    foo: "foo", bar: 1
+  };
+  option (svc).r_grp = {
+    foo: "bar", bar: 2
+  };
 
   option (svc).m_b = {
     key: "abc"
@@ -819,7 +902,6 @@ service TestService {
   option (svc).r_msg = {
     foo: "filefoo", bar: 99, baz: false
   };
-
   option (svc).r_msg = {
     foo: "filefoo2", bar: 98, baz: true
   };
