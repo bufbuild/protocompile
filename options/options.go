@@ -1279,6 +1279,11 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 				if ffld == nil {
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
 				}
+				if a.Sep == nil && ffld.Message() == nil {
+					// If there is no separator, the field type should be a message.
+					// Otherwise it is an error in the text format.
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Val).Start(), "syntax error: unexpected value, expecting ':'")
+				}
 				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val)
 				if err != nil {
 					return interpretedFieldValue{}, err

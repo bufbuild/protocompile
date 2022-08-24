@@ -579,6 +579,58 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			`foo.proto:7:34: message Baz: option (foo).baz.options.(foo).buzz.name: oneof "bar" already has field "baz" set`,
 		},
+		{
+			map[string]string{
+				"foo.proto": "syntax = \"proto3\";\n" +
+					"import \"google/protobuf/descriptor.proto\";\n" +
+					"message Foo { repeated string strs = 1; repeated Foo foos = 2; }\n" +
+					"extend google.protobuf.FileOptions { optional Foo foo = 10001; }\n" +
+					"option (foo) = {\n" +
+					"  strs: []\n" +
+					"  foos []\n" +
+					"};",
+			},
+			"", // should succeed
+		},
+		{
+			map[string]string{
+				"foo.proto": "syntax = \"proto3\";\n" +
+					"import \"google/protobuf/descriptor.proto\";\n" +
+					"message Foo { repeated string strs = 1; repeated Foo foos = 2; }\n" +
+					"extend google.protobuf.FileOptions { optional Foo foo = 10001; }\n" +
+					"option (foo) = {\n" +
+					"  strs []\n" +
+					"  foos []\n" +
+					"};",
+			},
+			`foo.proto:6:8: syntax error: unexpected value, expecting ':'`,
+		},
+		{
+			map[string]string{
+				"foo.proto": "syntax = \"proto3\";\n" +
+					"import \"google/protobuf/descriptor.proto\";\n" +
+					"message Foo { repeated string strs = 1; repeated Foo foos = 2; }\n" +
+					"extend google.protobuf.FileOptions { optional Foo foo = 10001; }\n" +
+					"option (foo) = {\n" +
+					"  strs: ['abc', 'def']\n" +
+					"  foos [<strs:'foo'>, <strs:'bar'>]\n" +
+					"};",
+			},
+			"", // should succeed
+		},
+		{
+			map[string]string{
+				"foo.proto": "syntax = \"proto3\";\n" +
+					"import \"google/protobuf/descriptor.proto\";\n" +
+					"message Foo { repeated string strs = 1; repeated Foo foos = 2; }\n" +
+					"extend google.protobuf.FileOptions { optional Foo foo = 10001; }\n" +
+					"option (foo) = {\n" +
+					"  strs ['abc', 'def']\n" +
+					"  foos [<strs:'foo'>, <strs:'bar'>]\n" +
+					"};",
+			},
+			`foo.proto:6:9: syntax error: unexpected string literal, expecting '{' or '<' or ']'`,
+		},
 	}
 
 	for i, tc := range testCases {

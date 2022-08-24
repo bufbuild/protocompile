@@ -86,12 +86,12 @@ import (
 %type <ref>       optionNameComponent aggName
 %type <optNms>    optionName
 %type <cmpctOpts> compactOptions
-%type <v>         constant scalarConstant aggregate numLit
+%type <v>         constant scalarConstant aggregate msgLit numLit
 %type <il>        intLit
 %type <id>        name keyType msgElementName extElementName oneofElementName enumElementName
 %type <cid>       ident msgElementIdent extElementIdent oneofElementIdent
 %type <tid>       typeIdent msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
-%type <sl>        constantList
+%type <sl>        constantList msgList
 %type <msgField>  aggFieldEntry
 %type <msgEntry>  aggField
 %type <msgLit>    aggFields
@@ -334,6 +334,9 @@ aggregate : '{' aggFields '}' {
 		fields, delims := $2.toNodes()
 		$$ = ast.NewMessageLiteralNode($1, fields, delims, $3)
 	}
+	| '{' error '}' {
+	    $$ = nil
+	}
 
 aggFields : aggField {
 		if $1 != nil {
@@ -407,7 +410,7 @@ aggFieldEntry : aggName ':' scalarConstant {
 			$$ = nil
 		}
 	}
-	| aggName '[' constantList ']' {
+	| aggName '[' msgList ']' {
 		if $1 != nil {
 			vals, commas := $3.toNodes()
 			val := ast.NewArrayLiteralNode($2, vals, commas, $4)
@@ -428,34 +431,19 @@ aggFieldEntry : aggName ':' scalarConstant {
 	| aggName ':' '[' error ']' {
 		$$ = nil
 	}
-	| aggName ':' aggregate {
-		if $1 != nil {
+	| aggName '[' error ']' {
+		$$ = nil
+	}
+	| aggName ':' msgLit {
+		if $1 != nil && $3 != nil {
 			$$ = ast.NewMessageFieldNode($1, $2, $3)
 		} else {
 			$$ = nil
 		}
 	}
-	| aggName aggregate {
-		if $1 != nil {
+	| aggName msgLit {
+		if $1 != nil && $2 != nil {
 			$$ = ast.NewMessageFieldNode($1, nil, $2)
-		} else {
-			$$ = nil
-		}
-	}
-	| aggName ':' '<' aggFields '>' {
-		if $1 != nil {
-			fields, delims := $4.toNodes()
-			msg := ast.NewMessageLiteralNode($3, fields, delims, $5)
-			$$ = ast.NewMessageFieldNode($1, $2, msg)
-		} else {
-			$$ = nil
-		}
-	}
-	| aggName '<' aggFields '>' {
-		if $1 != nil {
-			fields, delims := $3.toNodes()
-			msg := ast.NewMessageLiteralNode($2, fields, delims, $4)
-			$$ = ast.NewMessageFieldNode($1, nil, msg)
 		} else {
 			$$ = nil
 		}
@@ -474,6 +462,32 @@ aggName : name {
 		$$ = ast.NewExtensionFieldReferenceNode($1, $2, $3)
 	}
 	| '[' error ']' {
+		$$ = nil
+	}
+
+msgList : msgLit {
+		if $1 == nil {
+			$$ = nil
+		} else {
+			$$ = &valueList{$1, nil, nil}
+		}
+	}
+	| msgLit ',' msgList {
+		if $1 == nil {
+			$$ = nil
+		} else {
+			$$ = &valueList{$1, $2, $3}
+		}
+	}
+
+msgLit : aggregate {
+		$$ = $1
+	}
+	| '<' aggFields '>' {
+		fields, delims := $2.toNodes()
+		$$ = ast.NewMessageLiteralNode($1, fields, delims, $3)
+	}
+	| '<' error '>' {
 		$$ = nil
 	}
 
