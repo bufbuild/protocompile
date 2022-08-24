@@ -527,7 +527,7 @@ type MessageFieldNode struct {
 	Name *FieldReferenceNode
 	// Sep represents the ':' separator between the name and value. If
 	// the value is a message or list literal (and thus starts with '<',
-	//'{', or '['), then the separator may be omitted and this field may
+	// '{', or '['), then the separator may be omitted and this field may
 	// be nil.
 	Sep *RuneNode
 	Val ValueNode
