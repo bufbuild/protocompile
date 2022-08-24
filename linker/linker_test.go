@@ -506,7 +506,7 @@ func TestLinkerValidation(t *testing.T) {
 					"extend google.protobuf.MessageOptions { optional Foo foo = 10001; }\n" +
 					"message Baz { option (foo) = { bar< name: \"abc\" > }; }\n",
 			},
-			"foo.proto:7:30: message Baz: option (foo): field bar not found (did you mean the group named Bar?)",
+			"foo.proto:7:32: message Baz: option (foo): field bar not found (did you mean the group named Bar?)",
 		},
 		{
 			map[string]string{
@@ -528,7 +528,7 @@ func TestLinkerValidation(t *testing.T) {
 					"extend google.protobuf.MessageOptions { optional Foo foo = 10001; }\n" +
 					"message Baz { option (foo) = { [Bar]< name: \"abc\" > }; }\n",
 			},
-			"foo.proto:6:30: message Baz: option (foo): field Bar not found",
+			"foo.proto:6:32: message Baz: option (foo): field Bar not found",
 		},
 		{
 			map[string]string{
