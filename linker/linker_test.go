@@ -631,6 +631,18 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			`foo.proto:6:9: syntax error: unexpected string literal, expecting '{' or '<' or ']'`,
 		},
+		{
+			map[string]string{
+				"foo.proto": "package foo.bar;\n" +
+					"message M { \n" +
+					"  enum E { M = 0; }\n" +
+					"  optional M F1 = 1;\n" +
+					"  extensions 2 to 2;\n" +
+					"  extend M { optional string F2 = 2; }\n" +
+					"}",
+			},
+			`foo.proto:6:10: extendee is invalid: foo.bar.M.M is a enum value, not a message`,
+		},
 	}
 
 	for i, tc := range testCases {

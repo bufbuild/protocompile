@@ -359,7 +359,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 	elemType := "field"
 	if fld.GetExtendee() != "" {
 		elemType = "extension"
-		dsc := r.resolve(fld.GetExtendee(), true, scopes)
+		dsc := r.resolve(fld.GetExtendee(), false, scopes)
 		if dsc == nil {
 			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()).Start(), "unknown extendee type %s", fld.GetExtendee())
 		}
