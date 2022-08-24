@@ -175,6 +175,126 @@ func (r *result) AddOptionBytes(pm proto.Message, opts []byte) {
 	r.optionBytes[pm] = append(r.optionBytes[pm], opts...)
 }
 
+func (r *result) CanonicalProto() *descriptorpb.FileDescriptorProto {
+	origFd := r.Proto()
+	// make a copy that we can mutate
+	fd := proto.Clone(origFd).(*descriptorpb.FileDescriptorProto)
+
+	r.storeOptionBytesInFile(fd, origFd)
+
+	return fd
+}
+
+func (r *result) storeOptionBytesInFile(fd, origFd *descriptorpb.FileDescriptorProto) {
+	if fd.Options != nil {
+		fd.Options.Reset()
+		fd.Options.ProtoReflect().SetUnknown(r.optionBytes[origFd.Options])
+	}
+
+	for i, md := range fd.MessageType {
+		origMd := origFd.MessageType[i]
+		r.storeOptionBytesInMessage(md, origMd)
+	}
+
+	for i, ed := range fd.EnumType {
+		origEd := origFd.EnumType[i]
+		r.storeOptionBytesInEnum(ed, origEd)
+	}
+
+	for i, exd := range fd.Extension {
+		origExd := origFd.Extension[i]
+		r.storeOptionBytesInField(exd, origExd)
+	}
+
+	for i, sd := range fd.Service {
+		origSd := origFd.Service[i]
+		if sd.Options != nil {
+			sd.Options.Reset()
+			sd.Options.ProtoReflect().SetUnknown(r.optionBytes[origSd.Options])
+		}
+
+		for j, mtd := range sd.Method {
+			origMtd := origSd.Method[j]
+			if mtd.Options != nil {
+				mtd.Options.Reset()
+				mtd.Options.ProtoReflect().SetUnknown(r.optionBytes[origMtd.Options])
+			}
+		}
+	}
+}
+
+func (r *result) storeOptionBytesInMessage(md, origMd *descriptorpb.DescriptorProto) {
+	if md.GetOptions().GetMapEntry() {
+		// Map entry messages are synthesized. They won't have any option bytes
+		// since they don't actually appear in the source and thus have any option
+		// declarations in the source.
+		return
+	}
+
+	if md.Options != nil {
+		md.Options.Reset()
+		md.Options.ProtoReflect().SetUnknown(r.optionBytes[origMd.Options])
+	}
+
+	for i, fld := range md.Field {
+		origFld := origMd.Field[i]
+		r.storeOptionBytesInField(fld, origFld)
+	}
+
+	for i, ood := range md.OneofDecl {
+		origOod := origMd.OneofDecl[i]
+		if ood.Options != nil {
+			ood.Options.Reset()
+			ood.Options.ProtoReflect().SetUnknown(r.optionBytes[origOod.Options])
+		}
+	}
+
+	for i, exr := range md.ExtensionRange {
+		origExr := origMd.ExtensionRange[i]
+		if exr.Options != nil {
+			exr.Options.Reset()
+			exr.Options.ProtoReflect().SetUnknown(r.optionBytes[origExr.Options])
+		}
+	}
+
+	for i, nmd := range md.NestedType {
+		origNmd := origMd.NestedType[i]
+		r.storeOptionBytesInMessage(nmd, origNmd)
+	}
+
+	for i, ed := range md.EnumType {
+		origEd := origMd.EnumType[i]
+		r.storeOptionBytesInEnum(ed, origEd)
+	}
+
+	for i, exd := range md.Extension {
+		origExd := origMd.Extension[i]
+		r.storeOptionBytesInField(exd, origExd)
+	}
+}
+
+func (r *result) storeOptionBytesInEnum(ed, origEd *descriptorpb.EnumDescriptorProto) {
+	if ed.Options != nil {
+		ed.Options.Reset()
+		ed.Options.ProtoReflect().SetUnknown(r.optionBytes[origEd.Options])
+	}
+
+	for i, evd := range ed.Value {
+		origEvd := origEd.Value[i]
+		if evd.Options != nil {
+			evd.Options.Reset()
+			evd.Options.ProtoReflect().SetUnknown(r.optionBytes[origEvd.Options])
+		}
+	}
+}
+
+func (r *result) storeOptionBytesInField(fld, origFld *descriptorpb.FieldDescriptorProto) {
+	if fld.Options != nil {
+		fld.Options.Reset()
+		fld.Options.ProtoReflect().SetUnknown(r.optionBytes[origFld.Options])
+	}
+}
+
 type fileImports struct {
 	protoreflect.FileImports
 	parent *result
@@ -1007,7 +1127,7 @@ func (f *fldDescriptor) Default() protoreflect.Value {
 	case protoreflect.FloatKind:
 		return protoreflect.ValueOfFloat32(0)
 	case protoreflect.DoubleKind:
-		return protoreflect.ValueOfFloat32(0)
+		return protoreflect.ValueOfFloat64(0)
 	case protoreflect.BoolKind:
 		return protoreflect.ValueOfBool(false)
 	case protoreflect.BytesKind:

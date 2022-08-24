@@ -982,22 +982,14 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 			if err != nil {
 				return interpretedFieldValue{}, err
 			}
+			if fld.IsMap() {
+				setMapEntry(msg, fld, &value)
+			} else {
+				msg.Mutable(fld).List().Append(value.val)
+			}
 			resVal = append(resVal, value.val)
 			if value.msgVal != nil {
 				resMsgVals = append(resMsgVals, value.msgVal)
-			}
-			if fld.IsMap() {
-				entry := value.val.Message()
-				key := entry.Get(fld.MapKey()).MapKey()
-				val := entry.Get(fld.MapValue())
-				if dm, ok := val.Interface().(*dynamicpb.Message); ok && (dm == nil || !dm.IsValid()) {
-					val = protoreflect.ValueOfMessage(dynamicpb.NewMessage(fld.MapValue().Message()))
-				}
-				m := msg.Mutable(fld).Map()
-				// TODO: error if key is already present
-				m.Set(key, val)
-			} else {
-				msg.Mutable(fld).List().Append(value.val)
 			}
 		}
 		return interpretedFieldValue{
@@ -1020,15 +1012,7 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 	}
 
 	if fld.IsMap() {
-		entry := value.val.Message()
-		key := entry.Get(fld.MapKey()).MapKey()
-		val := entry.Get(fld.MapValue())
-		if dm, ok := val.Interface().(*dynamicpb.Message); ok && (dm == nil || !dm.IsValid()) {
-			val = protoreflect.ValueOfMessage(dynamicpb.NewMessage(fld.MapValue().Message()))
-		}
-		m := msg.Mutable(fld).Map()
-		// TODO: error if key is already present
-		m.Set(key, val)
+		setMapEntry(msg, fld, &value)
 	} else if fld.IsList() {
 		msg.Mutable(fld).List().Append(value.val)
 	} else {
@@ -1039,6 +1023,71 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 	}
 
 	return value, nil
+}
+
+func setMapEntry(msg protoreflect.Message, fld protoreflect.FieldDescriptor, value *interpretedFieldValue) {
+	entry := value.val.Message()
+	keyFld, valFld := fld.MapKey(), fld.MapValue()
+	// if an entry is missing a key or value, we add in an explicit
+	// zero value to msgVals to match protoc (which also odds these
+	// in even if not present in source)
+	if !entry.Has(keyFld) {
+		// put key before value
+		value.msgVal = append(append(([]*interpretedField)(nil), zeroValue(keyFld)), value.msgVal...)
+	}
+	if !entry.Has(valFld) {
+		value.msgVal = append(value.msgVal, zeroValue(valFld))
+	}
+	key := entry.Get(keyFld)
+	val := entry.Get(valFld)
+	if dm, ok := val.Interface().(*dynamicpb.Message); ok && (dm == nil || !dm.IsValid()) {
+		val = protoreflect.ValueOfMessage(dynamicpb.NewMessage(valFld.Message()))
+	}
+	m := msg.Mutable(fld).Map()
+	// TODO: error if key is already present
+	m.Set(key.MapKey(), val)
+}
+
+// zeroValue returns the zero value for the field types as a *interpretedField.
+// The given fld must NOT be a repeated field.
+func zeroValue(fld protoreflect.FieldDescriptor) *interpretedField {
+	var val protoreflect.Value
+	var msgVal []*interpretedField
+	switch fld.Kind() {
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		// needs to be non-nil, but empty
+		msgVal = []*interpretedField{}
+		msg := dynamicpb.NewMessage(fld.Message())
+		val = protoreflect.ValueOfMessage(msg)
+	case protoreflect.EnumKind:
+		val = protoreflect.ValueOfEnum(0)
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+		val = protoreflect.ValueOfInt32(0)
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		val = protoreflect.ValueOfUint32(0)
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
+		val = protoreflect.ValueOfInt64(0)
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		val = protoreflect.ValueOfUint64(0)
+	case protoreflect.BoolKind:
+		val = protoreflect.ValueOfBool(false)
+	case protoreflect.FloatKind:
+		val = protoreflect.ValueOfFloat32(0)
+	case protoreflect.DoubleKind:
+		val = protoreflect.ValueOfFloat64(0)
+	case protoreflect.BytesKind:
+		val = protoreflect.ValueOfBytes(nil)
+	case protoreflect.StringKind:
+		val = protoreflect.ValueOfString("")
+	}
+	return &interpretedField{
+		number: int32(fld.Number()),
+		kind:   fld.Kind(),
+		value: interpretedFieldValue{
+			val:    val,
+			msgVal: msgVal,
+		},
+	}
 }
 
 type listValue []protoreflect.Value
@@ -1185,7 +1234,10 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 			defer func() {
 				mc.optAggPath = origPath
 			}()
-			var flds []*interpretedField
+			// NB: we don't want to leave this nil, even if the
+			// message is literal, because that indicates to
+			// caller that the result is not a message
+			flds := make([]*interpretedField, 0, len(aggs))
 			for _, a := range aggs {
 				if origPath == "" {
 					mc.optAggPath = a.Name.Value()
@@ -1210,7 +1262,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					// ...but only regular fields, not extensions that are groups...
 					if ffld != nil && ffld.Kind() == protoreflect.GroupKind && ffld.Message().Name() != protoreflect.Name(a.Name.Value()) {
 						// this is kind of silly to fail here, but this mimics protoc behavior
-						return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, a.Name.Value(), ffld.Message().Name())
+						return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, a.Name.Value(), ffld.Message().Name())
 					}
 					if ffld == nil {
 						// could be a group name
@@ -1225,7 +1277,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					}
 				}
 				if ffld == nil {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
 				}
 				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val)
 				if err != nil {
@@ -1355,9 +1407,6 @@ func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descript
 		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting double, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT:
 		if d, ok := v.(float64); ok {
-			if (d > math.MaxFloat32 || d < -math.MaxFloat32) && !math.IsInf(d, 1) && !math.IsInf(d, -1) && !math.IsNaN(d) {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %f is out of range for float", mc, d)
-			}
 			return float32(d), nil
 		}
 		if i, ok := v.(int64); ok {
