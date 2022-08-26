@@ -9,7 +9,7 @@ cd $(dirname $0)
 # match protosets only because protoc would be using a newer version of
 # descriptor.proto than protocompile. (By default, protocompile just uses the
 # standard versions compiled into the packages in google.golang.org/protobuf).
-PROTOC_VERSION="3.14.0"
+PROTOC_VERSION="3.15.0"
 PROTOC_OS="$(uname -s)"
 PROTOC_ARCH="$(uname -m)"
 case "${PROTOC_OS}" in
@@ -47,3 +47,4 @@ ${PROTOC} "--go_out=paths=source_relative:$outdir" -I. *desc_test_comments.proto
 ${PROTOC} --descriptor_set_out=./desc_test_complex.protoset --include_imports -I. desc_test_complex.proto
 ${PROTOC} --descriptor_set_out=./desc_test_proto3_optional.protoset --include_imports -I. desc_test_proto3_optional.proto
 ${PROTOC} --descriptor_set_out=./options/test.protoset -I./options test.proto
+${PROTOC} --descriptor_set_out=./options/test_proto3.protoset -I./options test_proto3.proto
