@@ -4,8 +4,12 @@
 // de-structuring of custom options.
 //
 // This files defines many options, in various forms (destructured and not) and
-// orders (including for packed and non-packed repeated fields). It is defined
-// as proto2 so that we can also test extension range options.
+// orders (including for packed and non-packed repeated fields).
+//
+// It is basically a copy of test.proto, except it uses proto3 syntax. To that
+// end, it does not include extension ranges or non-custom-option extensions.
+// It also has a mix of "default" cardinality fields (no explicit label or
+// "optional" keyword) and proto3 optional fields.
 syntax = "proto3";
 
 package bufbuild.protocompile.test;
@@ -26,8 +30,11 @@ message TestMessage {
   string foo = 1 [json_name = "FOO"];
   int32 bar = 2 [json_name = "bAr"];
   repeated bool baz = 3 [json_name = "Baz"];
+  // proto3 optional fields
+  optional string foo_opt = 4;
+  optional int32 bar_opt = 5;
 
-  string _field_ = 4 [
+  string _field_ = 6 [
     (fld_i) = 1,
     (fld_i) = 2,
     (fld_i) = 3,

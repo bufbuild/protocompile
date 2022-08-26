@@ -9,7 +9,7 @@ cd $(dirname $0)
 # match protosets only because protoc would be using a newer version of
 # descriptor.proto than protocompile. (By default, protocompile just uses the
 # standard versions compiled into the packages in google.golang.org/protobuf).
-PROTOC_VERSION="3.14.0"
+PROTOC_VERSION="3.15.0"
 PROTOC_OS="$(uname -s)"
 PROTOC_ARCH="$(uname -m)"
 case "${PROTOC_OS}" in
