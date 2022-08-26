@@ -256,49 +256,60 @@ func qualify(qualifier, name string) string {
 }
 
 func TestOptionsEncoding(t *testing.T) {
-	compiler := protocompile.Compiler{
-		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-			ImportPaths: []string{"../internal/testprotos/options"},
-		}),
+	testCases := map[string]string{
+		"proto2": "test.proto",
+		"proto3": "test_proto3.proto",
 	}
-	fds, err := compiler.Compile(context.Background(), "test.proto")
-	var panicErr protocompile.PanicError
-	if errors.As(err, &panicErr) {
-		t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
-	}
-	require.NoError(t, err)
+	for syntax, file := range testCases {
+		t.Run(syntax, func(t *testing.T) {
+			compiler := protocompile.Compiler{
+				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+					ImportPaths: []string{"../internal/testprotos/options"},
+				}),
+			}
+			fds, err := compiler.Compile(context.Background(), file)
+			var panicErr protocompile.PanicError
+			if errors.As(err, &panicErr) {
+				t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
+			}
+			require.NoError(t, err)
 
-	res := fds[0].(linker.Result)
-	fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/options/test.protoset", linker.ResolverFromFile(fds[0]))
-	prototest.CheckFiles(t, res, prototest.FileProtoSetFromDescriptorProtos(fdset), false)
+			res := fds[0].(linker.Result)
+			descriptorSetFile := fmt.Sprintf("../internal/testprotos/options/%sset", file)
+			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
+			prototest.CheckFiles(t, res, prototest.FileProtoSetFromDescriptorProtos(fdset), false)
 
-	canonicalProto := res.CanonicalProto()
-	actualFdset := &descriptorpb.FileDescriptorSet{
-		File: []*descriptorpb.FileDescriptorProto{canonicalProto},
-	}
-	actualData, err := proto.Marshal(actualFdset)
-	require.NoError(t, err)
+			canonicalProto := res.CanonicalProto()
+			actualFdset := &descriptorpb.FileDescriptorSet{
+				File: []*descriptorpb.FileDescriptorProto{canonicalProto},
+			}
+			actualData, err := proto.Marshal(actualFdset)
+			require.NoError(t, err)
 
-	// semantic check that unmarshalling the "canonical bytes" results
-	// in the same proto as when not using "canonical bytes"
-	protoData, err := proto.Marshal(canonicalProto)
-	require.NoError(t, err)
-	proto.Reset(canonicalProto)
-	uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
-	err = uOpts.Unmarshal(protoData, canonicalProto)
-	require.NoError(t, err)
-	if !proto.Equal(res.Proto(), canonicalProto) {
-		t.Fatal("canonical proto != proto")
-	}
+			// semantic check that unmarshalling the "canonical bytes" results
+			// in the same proto as when not using "canonical bytes"
+			protoData, err := proto.Marshal(canonicalProto)
+			require.NoError(t, err)
+			proto.Reset(canonicalProto)
+			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
+			err = uOpts.Unmarshal(protoData, canonicalProto)
+			require.NoError(t, err)
+			if !proto.Equal(res.Proto(), canonicalProto) {
+				t.Fatal("canonical proto != proto")
+			}
 
-	// drum roll... make sure the bytes match the protoc output
-	expectedData, err := ioutil.ReadFile("../internal/testprotos/options/test.protoset")
-	require.NoError(t, err)
-	if !bytes.Equal(actualData, expectedData) {
-		err := ioutil.WriteFile("../internal/testprotos/options/test.actual.protoset", actualData, 0644)
-		if err != nil {
-			t.Log("failed to write actual to file")
-		}
-		t.Fatal("descriptor set bytes not equal")
+			// drum roll... make sure the bytes match the protoc output
+			expectedData, err := ioutil.ReadFile(descriptorSetFile)
+			require.NoError(t, err)
+			if !bytes.Equal(actualData, expectedData) {
+				outputDescriptorSetFile := strings.ReplaceAll(descriptorSetFile, ".proto", ".actual.proto")
+				err = ioutil.WriteFile(outputDescriptorSetFile, actualData, 0644)
+				if err != nil {
+					t.Log("failed to write actual to file")
+				}
+
+				t.Fatalf("descriptor set bytes not equal (created file %q with actual bytes)", outputDescriptorSetFile)
+			}
+		})
 	}
 }
