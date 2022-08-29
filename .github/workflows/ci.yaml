@@ -29,8 +29,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
-          key: ${{ runner.os }}-connect-ci-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-connect-ci-
+          key: ${{ runner.os }}-protocompile-ci-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-protocompile-ci-
       - name: Test
         run: make test
       - name: Lint
