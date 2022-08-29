@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package parser
 
 import (
@@ -11,7 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-//go:generate goyacc -o proto.y.go -p proto proto.y
+//go:generate goyacc -o proto.y.go -l -p proto proto.y
 
 func init() {
 	protoErrorVerbose = true
@@ -31,7 +45,7 @@ func init() {
 func setTokenName(token int, text string) {
 	// NB: this is based on logic in generated parse code that translates the
 	// int returned from the lexer into an internal token number.
-	var intern int
+	var intern int8
 	if token < len(protoTok1) {
 		intern = protoTok1[token]
 	} else {
@@ -42,7 +56,7 @@ func setTokenName(token int, text string) {
 		}
 		if intern == 0 {
 			for i := 0; i+1 < len(protoTok3); i += 2 {
-				if protoTok3[i] == token {
+				if int(protoTok3[i]) == token {
 					intern = protoTok3[i+1]
 					break
 				}
@@ -50,7 +64,7 @@ func setTokenName(token int, text string) {
 		}
 	}
 
-	if intern >= 1 && intern-1 < len(protoToknames) {
+	if intern >= 1 && int(intern-1) < len(protoToknames) {
 		protoToknames[intern-1] = text
 		return
 	}

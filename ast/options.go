@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ast
 
 import "fmt"
@@ -19,7 +33,7 @@ var _ OptionDeclNode = NoSourceNode{}
 // and end with semicolon) and for compact options found in fields, enum values,
 // and extension ranges. Example:
 //
-//  option (custom.option) = "foo";
+//	option (custom.option) = "foo";
 type OptionNode struct {
 	compositeNode
 	Keyword   *KeywordNode // absent for compact options
@@ -39,11 +53,11 @@ func (e *OptionNode) methodElement()  {}
 // NewOptionNode creates a new *OptionNode for a full option declaration (as
 // used in files, messages, oneofs, enums, services, and methods). All arguments
 // must be non-nil. (Also see NewCompactOptionNode.)
-//  - keyword: The token corresponding to the "option" keyword.
-//  - name: The token corresponding to the name of the option.
-//  - equals: The token corresponding to the "=" rune after the name.
-//  - val: The token corresponding to the option value.
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - keyword: The token corresponding to the "option" keyword.
+//   - name: The token corresponding to the name of the option.
+//   - equals: The token corresponding to the "=" rune after the name.
+//   - val: The token corresponding to the option value.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewOptionNode(keyword *KeywordNode, name *OptionNameNode, equals *RuneNode, val ValueNode, semicolon *RuneNode) *OptionNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -76,9 +90,9 @@ func NewOptionNode(keyword *KeywordNode, name *OptionNameNode, equals *RuneNode,
 // NewCompactOptionNode creates a new *OptionNode for a full compact declaration
 // (as used in fields, enum values, and extension ranges). All arguments must be
 // non-nil.
-//  - name: The token corresponding to the name of the option.
-//  - equals: The token corresponding to the "=" rune after the name.
-//  - val: The token corresponding to the option value.
+//   - name: The token corresponding to the name of the option.
+//   - equals: The token corresponding to the "=" rune after the name.
+//   - val: The token corresponding to the option value.
 func NewCompactOptionNode(name *OptionNameNode, equals *RuneNode, val ValueNode) *OptionNode {
 	if name == nil {
 		panic("name is nil")
@@ -111,7 +125,7 @@ func (n *OptionNode) GetValue() ValueNode {
 // OptionNameNode represents an option name or even a traversal through message
 // types to name a nested option field. Example:
 //
-//   (foo.bar).baz.(bob)
+//	(foo.bar).baz.(bob)
 type OptionNameNode struct {
 	compositeNode
 	Parts []*FieldReferenceNode
@@ -172,7 +186,8 @@ func NewOptionNameNode(parts []*FieldReferenceNode, dots []*RuneNode) *OptionNam
 // which case the name is enclosed in square brackets "[" and "]".
 //
 // Example:
-//   (foo.bar)
+//
+//	(foo.bar)
 type FieldReferenceNode struct {
 	compositeNode
 	Open  *RuneNode // only present for extension names
@@ -236,7 +251,7 @@ func (a *FieldReferenceNode) Value() string {
 // CompactOptionsNode represents a compact options declaration, as used with
 // fields, enum values, and extension ranges. Example:
 //
-//  [deprecated = true, json_name = "foo_bar"]
+//	[deprecated = true, json_name = "foo_bar"]
 type CompactOptionsNode struct {
 	compositeNode
 	OpenBracket *RuneNode

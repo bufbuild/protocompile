@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package linker
 
 import (
@@ -680,6 +694,7 @@ func newSentinelDescriptor(name string) protoreflect.Descriptor {
 // distinguish between two situations:
 //  1. The given name could not be found.
 //  2. The given name *cannot* be a valid result so stop seraching.
+//
 // In these cases, attempts to resolve an element name will return nil for the
 // first case and will return a sentinelDescriptor in the second. The sentinel
 // contains the fully-qualified name which caused the search to stop (which may

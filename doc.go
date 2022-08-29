@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package protocompile provides the entry point for a high performance
 // native Go protobuf compiler. "Compile" in this case just means parsing
 // and validating source and generating fully-linked descriptors in the end.
@@ -22,7 +36,7 @@
 // of multiple CPU cores, so a compilation involving thousands of files can be
 // done very quickly by compiling things in parallel.
 //
-// Resolvers
+// # Resolvers
 //
 // A Resolver is how the compiler locates artifacts that are inputs to the
 // compilation. For example, it can load protobuf source code that must be
@@ -31,20 +45,20 @@
 //
 // A Resolver can provide any of the following in response to a query for an
 // input.
-//  * Source code: If a resolver answers a query with protobuf source, the
-//    compiler will parse and compile it.
-//  * AST: If a resolver answers a query with an AST, the parsing step can be
-//    skipped, and the rest of the compilation steps will be applied.
-//  * Descriptor proto: If a resolver answers a query with an unlinked proto,
-//    only the other compilation steps, including linking, need to be applied.
-//  * Descriptor: If a resolver answers a query with a fully-linked descriptor,
-//    nothing further needs to be done. The descriptor is used as-is.
+//   - Source code: If a resolver answers a query with protobuf source, the
+//     compiler will parse and compile it.
+//   - AST: If a resolver answers a query with an AST, the parsing step can be
+//     skipped, and the rest of the compilation steps will be applied.
+//   - Descriptor proto: If a resolver answers a query with an unlinked proto,
+//     only the other compilation steps, including linking, need to be applied.
+//   - Descriptor: If a resolver answers a query with a fully-linked descriptor,
+//     nothing further needs to be done. The descriptor is used as-is.
 //
 // Compilation will use the Resolver to load the files that are to be compiled
 // and also to load all dependencies (i.e. other files imported by those being
 // compiled).
 //
-// Compiler
+// # Compiler
 //
 // A Compiler accepts a list of file names and produces the list of descriptors.
 // A Compiler has several fields that control how it works but only the Resolver
@@ -52,9 +66,9 @@
 // from the file system based on the current working directory, can be had with
 // the following simple snippet:
 //
-//  compiler := protocompile.Compiler{
-//      Resolver: &protocompile.SourceResolver{},
-//  }
+//	compiler := protocompile.Compiler{
+//	    Resolver: &protocompile.SourceResolver{},
+//	}
 //
 // This minimal Compiler will use default parallelism, equal to the number of
 // CPU cores detected; it will not generate source code info in the resulting
