@@ -17,6 +17,10 @@ jobs:
       matrix:
         go-version: [1.18.x,1.19.x]
     steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
