@@ -12,29 +12,23 @@ import (
 func TestBasicValidation(t *testing.T) {
 	testCases := []struct {
 		contents string
-		succeeds bool
 		errMsg   string
 	}{
 		{
 			contents: `message Foo { optional double bar = 1 [default = -18446744073709551615]; }`,
-			succeeds: true,
 		},
 		{
 			// with byte order marker
 			contents: string([]byte{0xEF, 0xBB, 0xBF}) + `message Foo { optional double bar = 1 [default = -18446744073709551615]; }`,
-			succeeds: true,
 		},
 		{
 			contents: `message Foo { optional double bar = 1 [default = 18446744073709551616]; }`,
-			succeeds: true,
 		},
 		{
 			contents: `message Foo { extensions 100 to max; option message_set_wire_format = true; } message Bar { } extend Foo { optional Bar bar = 536870912; }`,
-			succeeds: true,
 		},
 		{
 			contents: `message Foo { option message_set_wire_format = true; extensions 1 to 100; }`,
-			succeeds: true,
 		},
 		{
 			contents: `message Foo { optional double bar = 536870912; option message_set_wire_format = true; }`,
@@ -46,7 +40,6 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `message Foo { oneof bar { group Baz = 1 [deprecated=true] { optional int32 abc = 1; } } }`,
-			succeeds: true,
 		},
 		{
 			contents: `syntax = "proto1";`,
@@ -117,8 +110,8 @@ func TestBasicValidation(t *testing.T) {
 			errMsg:   `test.proto:1:34: message Foo: map_entry option should not be set explicitly; use map type instead`,
 		},
 		{
+			// okay if explicit setting is false
 			contents: `message Foo { option map_entry = false; }`,
-			succeeds: true, // okay if explicit setting is false
 		},
 		{
 			contents: `syntax = "proto2"; message Foo { string s = 1; }`,
@@ -129,12 +122,12 @@ func TestBasicValidation(t *testing.T) {
 			errMsg:   `test.proto:1:22: field Foo.s: field has no label; proto2 requires explicit 'optional' label`,
 		},
 		{
+			// proto3_optional
 			contents: `syntax = "proto3"; message Foo { optional string s = 1; }`,
-			succeeds: true, // proto3_optional
 		},
 		{
+			// proto3_optional for extensions
 			contents: `syntax = "proto3"; import "google/protobuf/descriptor.proto"; extend google.protobuf.MessageOptions { optional string s = 50000; }`,
-			succeeds: true, // proto3_optional for extensions
 		},
 		{
 			contents: `syntax = "proto3"; message Foo { required string s = 1; }`,
@@ -162,11 +155,9 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `enum Foo { option allow_alias = true; V1 = 1; V2 = 1; }`,
-			succeeds: true,
 		},
 		{
 			contents: `enum Foo { option allow_alias = false; V1 = 1; V2 = 2; }`,
-			succeeds: true,
 		},
 		{
 			contents: `enum Foo { option allow_alias = true; V1 = 1; V2 = 2; }`,
@@ -174,7 +165,6 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `syntax = "proto3"; enum Foo { V1 = 0; reserved 1 to 20; reserved "V2"; }`,
-			succeeds: true,
 		},
 		{
 			contents: `enum Foo { V1 = 1; reserved 1 to 20; reserved "V2"; }`,
@@ -190,7 +180,6 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `enum Foo { V0 = 0; reserved 1 to 20; reserved 21 to 40; reserved "V2"; }`,
-			succeeds: true,
 		},
 		{
 			contents: `enum Foo { V0 = 0; reserved 1 to 20; reserved 20 to 40; reserved "V2"; }`,
@@ -218,7 +207,6 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `message Foo { reserved 1, 2 to 10, 11 to 20; extensions 21 to 22; }`,
-			succeeds: true,
 		},
 		{
 			contents: `message Foo { reserved 10 to 1; }`,
@@ -346,7 +334,6 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: ``,
-			succeeds: true,
 		},
 		{
 			contents: `0`,
@@ -374,19 +361,19 @@ func TestBasicValidation(t *testing.T) {
 		},
 		{
 			contents: `option (opt) = {m: [{key: "a",value: {}}]};`,
-			succeeds: true,
 		},
 		{
 			contents: `option (opt) = {m [{key: "a",value: {}}]};`,
-			succeeds: true,
 		},
 		{
 			contents: `option (opt) = {m: []};`,
-			succeeds: true,
 		},
 		{
 			contents: `option (opt) = {m []};`,
-			succeeds: true,
+		},
+		{
+			contents: `syntax = "proto3"; import "google/protobuf/descriptor.proto"; import "google/protobuf/descriptor.proto";`,
+			errMsg:   `test.proto:1:63: "google/protobuf/descriptor.proto" was already imported at test.proto:1:20`,
 		},
 	}
 
@@ -397,7 +384,7 @@ func TestBasicValidation(t *testing.T) {
 		}
 
 		err := errs.Error()
-		if tc.succeeds {
+		if tc.errMsg == "" {
 			assert.Nil(t, err, "case #%d should succeed", i)
 		} else {
 			if assert.NotNil(t, err, "case #%d should fail", i) {
