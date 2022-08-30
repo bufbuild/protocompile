@@ -75,10 +75,10 @@ checkgenerate:
 	@# Used in CI to verify that `make generate` doesn't produce a diff.
 	test -z "$$(git status --porcelain | tee /dev/stderr)"
 
-$(BIN)/license-header: Makefile
+$(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
-	GOBIN=$(abspath $(@D)) $(GO) install \
-		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@v1.7.0
+	cd $(TOOLS_MOD_DIR) && \
+	$(GO) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
 
 $(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)

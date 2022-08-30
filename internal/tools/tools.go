@@ -15,6 +15,7 @@
 package tools
 
 import (
+	_ "github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "golang.org/x/tools/cmd/goyacc"
 )
