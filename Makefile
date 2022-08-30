@@ -80,9 +80,10 @@ $(BIN)/license-header: Makefile
 	GOBIN=$(abspath $(@D)) $(GO) install \
 		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@v1.7.0
 
-$(BIN)/golangci-lint: Makefile
+$(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
-	GOBIN=$(abspath $(@D)) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0
+	cd $(TOOLS_MOD_DIR) && \
+	$(GO) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
 $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
