@@ -655,7 +655,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 	assert.Equal(t, "", call)
 }
 
-//func TestDoGenerate(t *testing.T) {
+// func TestDoGenerate(t *testing.T) {
 //	generateVisitors()
 //}
 //

@@ -18,15 +18,14 @@ import (
 	"fmt"
 	"strings"
 
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
-
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/walk"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 func (r *result) ResolveMessageType(name protoreflect.FullName) protoreflect.MessageDescriptor {
@@ -693,7 +692,7 @@ func newSentinelDescriptor(name string) protoreflect.Descriptor {
 // sentinelDescriptor is a placeholder descriptor. It is used instead of nil to
 // distinguish between two situations:
 //  1. The given name could not be found.
-//  2. The given name *cannot* be a valid result so stop seraching.
+//  2. The given name *cannot* be a valid result so stop searching.
 //
 // In these cases, attempts to resolve an element name will return nil for the
 // first case and will return a sentinelDescriptor in the second. The sentinel

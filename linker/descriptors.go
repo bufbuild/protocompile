@@ -19,13 +19,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/parser"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
-
-	"github.com/bufbuild/protocompile/internal"
-	"github.com/bufbuild/protocompile/parser"
 )
 
 // This file contains implementations of protoreflect.Descriptor. Note that

@@ -22,11 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestASTRoundTrips(t *testing.T) {
@@ -89,14 +88,6 @@ func printAST(w io.Writer, file *ast.FileNode) error {
 	if err != nil {
 		return err
 	}
-
-	//err = printComments(sw, file.FinalComments)
-	//if err != nil {
-	//	return err
-	//}
-	//_, err = sw.WriteString(file.FinalWhitespace)
-	//return err
-
 	return nil
 }
 
@@ -113,12 +104,12 @@ func printComments(sw stringWriter, comments ast.Comments) error {
 	return nil
 }
 
-// many io.Writer impls also provide a string-based method
+// many io.Writer impls also provide a string-based method.
 type stringWriter interface {
 	WriteString(s string) (n int, err error)
 }
 
-// adapter, in case the given writer does NOT provide a string-based method
+// adapter, in case the given writer does NOT provide a string-based method.
 type strWriter struct {
 	io.Writer
 }

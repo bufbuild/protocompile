@@ -32,17 +32,16 @@ import (
 	"sort"
 	"strings"
 
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/dynamicpb"
-
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
 // Index is a mapping of AST nodes that define options to a corresponding path
@@ -502,7 +501,6 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 			b = protowire.AppendBytes(b, enclosed)
 			// skip over the other subsequent fields we just serialized
 			i = j - 1
-
 		} else if f.value.isList {
 			// if not packed, then emit one value at a time
 			single := *f
@@ -520,7 +518,6 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 					return nil, err
 				}
 			}
-
 		} else {
 			// simple singular value
 			var err error

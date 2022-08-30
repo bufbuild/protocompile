@@ -18,12 +18,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bufbuild/protocompile/walk"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
-
-	"github.com/bufbuild/protocompile/walk"
 )
 
 // File is like a super-powered protoreflect.FileDescriptor. It includes helpful

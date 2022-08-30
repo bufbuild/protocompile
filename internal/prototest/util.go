@@ -22,15 +22,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
-
-	"github.com/bufbuild/protocompile/linker"
-	"github.com/bufbuild/protocompile/protoutil"
 )
 
 func LoadDescriptorSet(t *testing.T, path string, res linker.Resolver) *descriptorpb.FileDescriptorSet {
@@ -109,7 +108,7 @@ func checkFileDescriptor(t *testing.T, act, exp *descriptorpb.FileDescriptorProt
 }
 
 // adapted from implementation of proto.Equal, but records an error for each discrepancy
-// found (does NOT exit early when a discrepancy is found)
+// found (does NOT exit early when a discrepancy is found).
 func compareFiles(t *testing.T, path string, exp, act *descriptorpb.FileDescriptorProto) {
 	if (exp == nil) != (act == nil) {
 		if exp == nil {

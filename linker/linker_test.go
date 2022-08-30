@@ -23,13 +23,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/reflect/protoregistry"
-
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	_ "github.com/bufbuild/protocompile/internal/testprotos"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 func TestSimpleLink(t *testing.T) {

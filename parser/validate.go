@@ -18,14 +18,13 @@ import (
 	"fmt"
 	"sort"
 
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
-
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/walk"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func validateBasic(res *result, handler *reporter.Handler) {
@@ -94,7 +93,6 @@ func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md 
 	for i, r := range md.ReservedRange {
 		n := res.MessageReservedRangeNode(r)
 		rsvd[i] = tagRange{start: r.GetStart(), end: r.GetEnd(), node: n}
-
 	}
 	sort.Sort(rsvd)
 	for i := 1; i < len(rsvd); i++ {
@@ -127,7 +125,6 @@ func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md 
 	for i < len(rsvd) && j < len(exts) {
 		if rsvd[i].start >= exts[j].start && rsvd[i].start < exts[j].end ||
 			exts[j].start >= rsvd[i].start && exts[j].start < rsvd[i].end {
-
 			var pos ast.SourcePos
 			if rsvd[i].start >= exts[j].start && rsvd[i].start < exts[j].end {
 				rangeNodeInfo := res.file.NodeInfo(rsvd[i].node)

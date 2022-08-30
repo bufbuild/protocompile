@@ -94,9 +94,8 @@ func (n *compositeNode) End() Token {
 // equals signs, open and close symbols (braces, brackets, angles,
 // and parentheses), and periods/dots.
 // TODO: make this more compact; if runes don't have attributed comments
-//
-//	then we don't need a Token to represent them and only need an offset
-//	into the file's contents
+// then we don't need a Token to represent them and only need an offset
+// into the file's contents.
 type RuneNode struct {
 	terminalNode
 	Rune rune

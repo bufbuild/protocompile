@@ -18,9 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/bufbuild/protocompile/reporter"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBasicValidation(t *testing.T) {
