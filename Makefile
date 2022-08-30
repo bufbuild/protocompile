@@ -6,11 +6,12 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
-BIN := .tmp/bin
+BIN := $(abspath .tmp/bin)
 COPYRIGHT_YEARS := 2020-2022
 LICENSE_IGNORE := -e /testdata/ -e /testprotos/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
+TOOLS_MOD_DIR := ./internal/tools
 
 .PHONY: help
 help: ## Describe useful make targets
@@ -48,13 +49,15 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 	$(BIN)/golangci-lint run --fix
 
 .PHONY: generate
-generate: $(BIN)/license-header ## Regenerate code and licenses
+generate: $(BIN)/license-header $(BIN)/goyacc ## Regenerate code and licenses
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
 	@# two files and prints the union, dropping lines common to both (-3) and
 	@# those only in the second file (-2). We make one git-ls-files call for
 	@# the modified, cached, and new (--others) files, and a second for the
 	@# deleted files.
+	PATH=$(BIN):$$PATH cd parser && \
+	$(GO) generate
 	comm -23 \
 		<(git ls-files --cached --modified --others --no-empty-directory --exclude-standard | sort -u | grep -v $(LICENSE_IGNORE) ) \
 		<(git ls-files --deleted | sort -u) | \
@@ -81,3 +84,7 @@ $(BIN)/golangci-lint: Makefile
 	@mkdir -p $(@D)
 	GOBIN=$(abspath $(@D)) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.49.0
 
+$(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
+	@mkdir -p $(@D)
+	cd $(TOOLS_MOD_DIR) && \
+	$(GO) build -o $@ golang.org/x/tools/cmd/goyacc
