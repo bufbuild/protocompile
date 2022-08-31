@@ -656,6 +656,16 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			`foo.proto:6:10: extendee is invalid: foo.bar.M.M is a enum value, not a message`,
 		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions {
+  string foobar = 10001 [json_name="FooBar"];
+}`,
+			},
+			"foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
+		},
 	}
 
 	for i, tc := range testCases {
