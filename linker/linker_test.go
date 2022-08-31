@@ -656,10 +656,33 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			`foo.proto:6:10: extendee is invalid: foo.bar.M.M is a enum value, not a message`,
 		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+message Foo {
+  map<string,string> bar = 1;
+}
+message Baz {
+  Foo.BarEntry e = 1;
+}
+`,
+			},
+			"foo.proto:6:3: field Baz.e: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/struct.proto";
+message Foo {
+  google.protobuf.Struct.FieldsEntry e = 1;
+}
+`,
+			},
+			"foo.proto:4:3: field Foo.e: google.protobuf.Struct.FieldsEntry is a synthetic map entry and may not be referenced explicitly",
+		},
 	}
 
 	for i, tc := range testCases {
-		t.Log("test case", i+1)
 		acc := func(filename string) (io.ReadCloser, error) {
 			f, ok := tc.input[filename]
 			if !ok {
@@ -683,23 +706,12 @@ func TestLinkerValidation(t *testing.T) {
 			t.Logf("case %d: panic! %v\n%s", i, panicErr.Value, panicErr.Stack)
 		}
 		if tc.errMsg == "" {
-			if err != nil {
-				t.Errorf("case %d: expecting no error; instead got error %q", i, err)
-			}
+			assert.NoErrorf(t, err, "case %d: expecting no error", i)
 		} else if err == nil {
-			t.Errorf("case %d: expecting validation error %q; instead got no error", i, tc.errMsg)
+			assert.Errorf(t, err, "case %d: expecting validation error %q; instead got no error", i, tc.errMsg)
 		} else {
 			msgs := strings.Split(tc.errMsg, " || ")
-			found := false
-			for _, errMsg := range msgs {
-				if err.Error() == errMsg {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("case %d: expecting validation error %q; instead got: %q", i, tc.errMsg, err)
-			}
+			assert.Containsf(t, msgs, err.Error(), "case %d: expecting validation error %q; instead got: %q", i, tc.errMsg, err)
 		}
 	}
 }
