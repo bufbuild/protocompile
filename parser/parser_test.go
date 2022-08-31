@@ -23,10 +23,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestEmptyParse(t *testing.T) {

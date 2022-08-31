@@ -24,13 +24,14 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/sync/semaphore"
+
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/sourceinfo"
-	"golang.org/x/sync/semaphore"
 )
 
 // Compiler handles compilation tasks, to turn protobuf source files, or other

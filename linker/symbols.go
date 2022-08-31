@@ -18,12 +18,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bufbuild/protocompile/ast"
-	"github.com/bufbuild/protocompile/reporter"
-	"github.com/bufbuild/protocompile/walk"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/walk"
 )
 
 // Symbols is a symbol table that maps names for all program elements to their

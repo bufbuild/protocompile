@@ -21,10 +21,11 @@ import (
 	"strings"
 	"testing"
 
-	_ "github.com/bufbuild/protocompile/internal/testprotos"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoregistry"
+
+	_ "github.com/bufbuild/protocompile/internal/testprotos"
 )
 
 func TestParseFilesMessageComments(t *testing.T) {

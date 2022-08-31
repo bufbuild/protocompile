@@ -20,10 +20,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bufbuild/protocompile/ast"
-	"github.com/bufbuild/protocompile/reporter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestLexer(t *testing.T) {

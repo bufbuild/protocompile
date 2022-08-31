@@ -22,13 +22,14 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/bufbuild/protocompile"
-	"github.com/bufbuild/protocompile/linker"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/linker"
 )
 
 // If true, re-generates the golden output file.

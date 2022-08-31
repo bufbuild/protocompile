@@ -18,10 +18,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bufbuild/protocompile/ast"
-	"github.com/bufbuild/protocompile/reporter"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 //go:generate goyacc -o proto.y.go -l -p proto proto.y

@@ -23,9 +23,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/reporter"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorReporting(t *testing.T) {

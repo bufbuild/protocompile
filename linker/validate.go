@@ -15,10 +15,11 @@
 package linker
 
 import (
-	"github.com/bufbuild/protocompile/internal"
-	"github.com/bufbuild/protocompile/reporter"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 // ValidateExtensions runs some validation checks on extensions that can only

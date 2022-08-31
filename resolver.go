@@ -20,10 +20,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bufbuild/protocompile/ast"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/ast"
 )
 
 // Resolver is used by the compiler to resolve a proto source file name

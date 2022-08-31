@@ -35,10 +35,11 @@
 package walk
 
 import (
-	"github.com/bufbuild/protocompile/internal"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/internal"
 )
 
 // Descriptors walks all descriptors in the given file using a depth-first
