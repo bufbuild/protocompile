@@ -2,7 +2,6 @@ run:
   skip-dirs-use-default: false
   skip-files:
     - ".*\\.y\\.go$"
-  go: '1.19'
 linters-settings:
   errcheck:
     check-type-assertions: true
