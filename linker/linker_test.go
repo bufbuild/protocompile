@@ -658,12 +658,12 @@ func TestLinkerValidation(t *testing.T) {
 		},
 		{
 			map[string]string{
-				"foo.proto": `syntax = "proto3";
+				"foo.proto":
+`syntax = "proto3";
 import "google/protobuf/descriptor.proto";
 extend google.protobuf.MessageOptions {
   string foobar = 10001 [json_name="FooBar"];
-}
-`,
+}`,
 			},
 			"foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
 		},
