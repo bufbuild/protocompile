@@ -662,6 +662,7 @@ func TestDoGenerate(t *testing.T) {
 	generateVisitors()
 }
 
+//nolint:unused
 func generateVisitors() {
 	// This is manually-curated list of all node types in this package
 	// Not all of them are valid as visitor functions, since we intentionally

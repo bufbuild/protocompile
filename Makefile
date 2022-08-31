@@ -42,7 +42,7 @@ install: ## Install all binaries
 .PHONY: lint
 lint: $(BIN)/golangci-lint ## Lint Go
 	$(GO) vet ./...
-	$(BIN)/golangci-lint run || : # Don't fail on lint errors initially
+	$(BIN)/golangci-lint run
 
 .PHONY: lintfix
 lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
