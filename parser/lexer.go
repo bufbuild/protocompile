@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"strconv"
 	"strings"
@@ -98,7 +97,7 @@ func newLexer(in io.Reader, filename string, handler *reporter.Handler) (*protoL
 		_, _ = br.Discard(3)
 	}
 
-	contents, err := ioutil.ReadAll(br)
+	contents, err := io.ReadAll(br)
 	if err != nil {
 		return nil, err
 	}

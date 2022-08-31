@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -666,7 +665,7 @@ func TestLinkerValidation(t *testing.T) {
 			if !ok {
 				return nil, fmt.Errorf("file not found: %s", filename)
 			}
-			return ioutil.NopCloser(strings.NewReader(f)), nil
+			return io.NopCloser(strings.NewReader(f)), nil
 		}
 		names := make([]string, 0, len(tc.input))
 		for k := range tc.input {
@@ -735,7 +734,7 @@ func TestProto3Enums(t *testing.T) {
 				default:
 					return nil, fmt.Errorf("file not found: %s", filename)
 				}
-				return ioutil.NopCloser(strings.NewReader(data)), nil
+				return io.NopCloser(strings.NewReader(data)), nil
 			}
 			compiler := protocompile.Compiler{
 				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{

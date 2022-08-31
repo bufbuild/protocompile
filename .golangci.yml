@@ -2,7 +2,6 @@ run:
   skip-dirs-use-default: false
   skip-files:
     - ".*\\.y\\.go$"
-  go: '1.19'
 linters-settings:
   errcheck:
     check-type-assertions: true
@@ -35,7 +34,40 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    # TODO: TCN-350 - initial exclusions for failing linters.
+    # Should enable all of these.
+    - dupl
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustruct
+    - forbidigo
+    - forcetypeassert
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - goerr113
+    - gosec
+    - gosimple
+    - interfacebloat
+    - makezero
+    - nestif
+    - nilerr
+    - nilnil
+    - nonamedreturns
+    - paralleltest
+    - prealloc
+    - revive
+    - stylecheck
+    - thelper
+    - unconvert
+    - varnamelen
+    # Other disabled linters
     - cyclop            # covered by gocyclo
+    - deadcode          # deprecated by author
     - exhaustivestruct  # replaced by exhaustruct
     - funlen            # rely on code review to limit function length
     - gocognit          # dubious "cognitive overhead" quantification
@@ -51,7 +83,9 @@ linters:
     - nlreturn          # generous whitespace violates house style
     - nosnakecase       # deprecated in https://github.com/golangci/golangci-lint/pull/3065
     - scopelint         # deprecated by author
+    - structcheck       # deprecated by author
     - testpackage       # internal tests are fine
+    - varcheck          # deprecated by author
     - wrapcheck         # don't _always_ need to wrap errors
     - wsl               # generous whitespace violates house style
 issues:

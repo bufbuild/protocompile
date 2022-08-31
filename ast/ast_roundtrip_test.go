@@ -17,7 +17,6 @@ package ast_test
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,7 +35,7 @@ func TestASTRoundTrips(t *testing.T) {
 		}
 		if filepath.Ext(path) == ".proto" {
 			t.Run(path, func(t *testing.T) {
-				data, err := ioutil.ReadFile(path)
+				data, err := os.ReadFile(path)
 				if !assert.Nil(t, err, "%v", err) {
 					return
 				}
