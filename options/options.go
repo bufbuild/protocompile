@@ -258,51 +258,53 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 
 func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.FieldDescriptorProto) error {
 	opts := fld.GetOptions()
-	if len(opts.GetUninterpretedOption()) > 0 {
-		uo := opts.UninterpretedOption
-		scope := fmt.Sprintf("field %s", fqn)
+	if len(opts.GetUninterpretedOption()) == 0 {
+		return nil
+	}
+	uo := opts.UninterpretedOption
+	scope := fmt.Sprintf("field %s", fqn)
 
-		// process json_name pseudo-option
-		if index, err := internal.FindOption(interp.file, interp.reporter, scope, uo, "json_name"); err != nil && !interp.lenient {
-			return err
-		} else if index >= 0 {
-			opt := uo[index]
-			optNode := interp.file.OptionNode(opt)
-
-			// attribute source code info
-			if on, ok := optNode.(*ast.OptionNode); ok {
-				interp.index[on] = []int32{-1, internal.Field_jsonNameTag}
-			}
-			uo = internal.RemoveOption(uo, index)
-			if opt.StringValue == nil {
-				if err := interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: expecting string value for json_name option", scope); err != nil {
-					return err
-				}
-			} else {
-				fld.JsonName = proto.String(string(opt.StringValue))
-			}
+	// process json_name pseudo-option
+	index, err := internal.FindOption(interp.file, interp.reporter, scope, uo, "json_name")
+	if err != nil && !interp.lenient {
+		return err
+	}
+	if index >= 0 {
+		opt := uo[index]
+		optNode := interp.file.OptionNode(opt)
+		if fld.GetExtendee() != "" {
+			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetName()).Start(), "%s: option json_name is not allowed on extensions", scope)
 		}
-
-		// and process default pseudo-option
-		if index, err := interp.processDefaultOption(scope, fqn, fld, uo); err != nil && !interp.lenient {
-			return err
-		} else if index >= 0 {
-			// attribute source code info
-			optNode := interp.file.OptionNode(uo[index])
-			if on, ok := optNode.(*ast.OptionNode); ok {
-				interp.index[on] = []int32{-1, internal.Field_defaultTag}
-			}
-			uo = internal.RemoveOption(uo, index)
+		// attribute source code info
+		if on, ok := optNode.(*ast.OptionNode); ok {
+			interp.index[on] = []int32{-1, internal.Field_jsonNameTag}
 		}
-
-		if len(uo) == 0 {
-			// no real options, only pseudo-options above? clear out options
-			fld.Options = nil
-		} else if remain, err := interp.interpretOptions(fqn, fld, opts, uo); err != nil {
-			return err
-		} else {
-			opts.UninterpretedOption = remain
+		uo = internal.RemoveOption(uo, index)
+		if opt.StringValue == nil {
+			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: expecting string value for json_name option", scope)
 		}
+		fld.JsonName = proto.String(string(opt.StringValue))
+	}
+
+	// and process default pseudo-option
+	if index, err := interp.processDefaultOption(scope, fqn, fld, uo); err != nil && !interp.lenient {
+		return err
+	} else if index >= 0 {
+		// attribute source code info
+		optNode := interp.file.OptionNode(uo[index])
+		if on, ok := optNode.(*ast.OptionNode); ok {
+			interp.index[on] = []int32{-1, internal.Field_defaultTag}
+		}
+		uo = internal.RemoveOption(uo, index)
+	}
+
+	if len(uo) == 0 {
+		// no real options, only pseudo-options above? clear out options
+		fld.Options = nil
+	} else if remain, err := interp.interpretOptions(fqn, fld, opts, uo); err != nil {
+		return err
+	} else {
+		opts.UninterpretedOption = remain
 	}
 	return nil
 }

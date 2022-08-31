@@ -659,6 +659,16 @@ func TestLinkerValidation(t *testing.T) {
 		{
 			map[string]string{
 				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions {
+  string foobar = 10001 [json_name="FooBar"];
+}`,
+			},
+			"foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
 message Foo {
   map<string,string> bar = 1;
 }
@@ -683,6 +693,7 @@ message Foo {
 	}
 
 	for i, tc := range testCases {
+		t.Log("test case", i+1)
 		acc := func(filename string) (io.ReadCloser, error) {
 			f, ok := tc.input[filename]
 			if !ok {
@@ -706,12 +717,23 @@ message Foo {
 			t.Logf("case %d: panic! %v\n%s", i, panicErr.Value, panicErr.Stack)
 		}
 		if tc.errMsg == "" {
-			assert.NoErrorf(t, err, "case %d: expecting no error", i)
+			if err != nil {
+				t.Errorf("case %d: expecting no error; instead got error %q", i, err)
+			}
 		} else if err == nil {
-			assert.Errorf(t, err, "case %d: expecting validation error %q; instead got no error", i, tc.errMsg)
+			t.Errorf("case %d: expecting validation error %q; instead got no error", i, tc.errMsg)
 		} else {
 			msgs := strings.Split(tc.errMsg, " || ")
-			assert.Containsf(t, msgs, err.Error(), "case %d: expecting validation error %q; instead got: %q", i, tc.errMsg, err)
+			found := false
+			for _, errMsg := range msgs {
+				if err.Error() == errMsg {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("case %d: expecting validation error %q; instead got: %q", i, tc.errMsg, err)
+			}
 		}
 	}
 }
