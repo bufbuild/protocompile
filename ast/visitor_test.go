@@ -15,7 +15,9 @@
 package ast
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -655,105 +657,109 @@ func TestVisitorPriorityOrder(t *testing.T) {
 	assert.Equal(t, "", call)
 }
 
-// func TestDoGenerate(t *testing.T) {
-//	generateVisitors()
-//}
-//
-//func generateVisitors() {
-//	// This is manually-curated list of all node types in this package
-//	// Not all of them are valid as visitor functions, since we intentionally
-//	// omit NoSourceNode, SyntheticMapFieldNode, the various *Element interfaces,
-//	// and all of the *DeclNode interfaces that have only one real impl.
-//	types := `
-//*EnumNode
-//EnumElement
-//EnumValueDeclNode
-//*EnumValueNode
-//FieldDeclNode
-//*FieldNode
-//*FieldLabel
-//*GroupNode
-//*OneOfNode
-//OneOfElement
-//*MapTypeNode
-//*MapFieldNode
-//*SyntheticMapField
-//FileDeclNode
-//*FileNode
-//FileElement
-//*SyntaxNode
-//*ImportNode
-//*PackageNode
-//IdentValueNode
-//*IdentNode
-//*CompoundIdentNode
-//*KeywordNode
-//MessageDeclNode
-//*MessageNode
-//MessageElement
-//*ExtendNode
-//ExtendElement
-//Node
-//TerminalNode
-//CompositeNode
-//*RuneNode
-//*EmptyDeclNode
-//OptionDeclNode
-//*OptionNode
-//*OptionNameNode
-//*FieldReferenceNode
-//*CompactOptionsNode
-//*ExtensionRangeNode
-//RangeDeclNode
-//*RangeNode
-//*ReservedNode
-//*ServiceNode
-//ServiceElement
-//RPCDeclNode
-//*RPCNode
-//RPCElement
-//*RPCTypeNode
-//ValueNode
-//StringValueNode
-//*StringLiteralNode
-//*CompoundStringLiteralNode
-//IntValueNode
-//*UintLiteralNode
-//*PositiveUintLiteralNode
-//*NegativeIntLiteralNode
-//FloatValueNode
-//*FloatLiteralNode
-//*SpecialFloatLiteralNode
-//*SignedFloatLiteralNode
-//*BoolLiteralNode
-//*ArrayLiteralNode
-//*MessageLiteralNode
-//*MessageFieldNode
-//`
-//	strs := strings.Split(types, "\n")
-//	fmt.Println(`func testVisitors(methodCalled *string) (*Visitor, []*Visitor) {`)
-//	fmt.Println(`	v := &SimpleVisitor{`)
-//	for _, str := range strs {
-//		if str == "" {
-//			continue
-//		}
-//		name := strings.TrimPrefix(str, "*")
-//		fmt.Printf(`		DoVisit%s: func(%s) error {`, name, str); fmt.Println()
-//		fmt.Printf(`			*methodCalled = "%s"`, str); fmt.Println()
-//		fmt.Println(`			return nil`)
-//		fmt.Println(`		},`)
-//	}
-//	fmt.Println(`	}`)
-//	fmt.Println(`	others := []*SimpleVisitor{`)
-//	for _, str := range strs {
-//		if str == "" {
-//			continue
-//		}
-//		name := strings.TrimPrefix(str, "*")
-//		fmt.Println(`		{`)
-//		fmt.Printf(`			DoVisit%s: v.DoVisit%s,`, name, name); fmt.Println()
-//		fmt.Println(`		},`)
-//	}
-//	fmt.Println(`	}`)
-//	fmt.Println(`}`)
-//}
+func TestDoGenerate(t *testing.T) {
+	t.SkipNow()
+	generateVisitors()
+}
+
+func generateVisitors() {
+	// This is manually-curated list of all node types in this package
+	// Not all of them are valid as visitor functions, since we intentionally
+	// omit NoSourceNode, SyntheticMapFieldNode, the various *Element interfaces,
+	// and all of the *DeclNode interfaces that have only one real impl.
+	types := `
+*EnumNode
+EnumElement
+EnumValueDeclNode
+*EnumValueNode
+FieldDeclNode
+*FieldNode
+*FieldLabel
+*GroupNode
+*OneOfNode
+OneOfElement
+*MapTypeNode
+*MapFieldNode
+*SyntheticMapField
+FileDeclNode
+*FileNode
+FileElement
+*SyntaxNode
+*ImportNode
+*PackageNode
+IdentValueNode
+*IdentNode
+*CompoundIdentNode
+*KeywordNode
+MessageDeclNode
+*MessageNode
+MessageElement
+*ExtendNode
+ExtendElement
+Node
+TerminalNode
+CompositeNode
+*RuneNode
+*EmptyDeclNode
+OptionDeclNode
+*OptionNode
+*OptionNameNode
+*FieldReferenceNode
+*CompactOptionsNode
+*ExtensionRangeNode
+RangeDeclNode
+*RangeNode
+*ReservedNode
+*ServiceNode
+ServiceElement
+RPCDeclNode
+*RPCNode
+RPCElement
+*RPCTypeNode
+ValueNode
+StringValueNode
+*StringLiteralNode
+*CompoundStringLiteralNode
+IntValueNode
+*UintLiteralNode
+*PositiveUintLiteralNode
+*NegativeIntLiteralNode
+FloatValueNode
+*FloatLiteralNode
+*SpecialFloatLiteralNode
+*SignedFloatLiteralNode
+*BoolLiteralNode
+*ArrayLiteralNode
+*MessageLiteralNode
+*MessageFieldNode
+`
+	strs := strings.Split(types, "\n")
+	fmt.Println(`func testVisitors(methodCalled *string) (*Visitor, []*Visitor) {`)
+	fmt.Println(`	v := &SimpleVisitor{`)
+	for _, str := range strs {
+		if str == "" {
+			continue
+		}
+		name := strings.TrimPrefix(str, "*")
+		fmt.Printf(`		DoVisit%s: func(%s) error {`, name, str)
+		fmt.Println()
+		fmt.Printf(`			*methodCalled = "%s"`, str)
+		fmt.Println()
+		fmt.Println(`			return nil`)
+		fmt.Println(`		},`)
+	}
+	fmt.Println(`	}`)
+	fmt.Println(`	others := []*SimpleVisitor{`)
+	for _, str := range strs {
+		if str == "" {
+			continue
+		}
+		name := strings.TrimPrefix(str, "*")
+		fmt.Println(`		{`)
+		fmt.Printf(`			DoVisit%s: v.DoVisit%s,`, name, name)
+		fmt.Println()
+		fmt.Println(`		},`)
+	}
+	fmt.Println(`	}`)
+	fmt.Println(`}`)
+}
