@@ -674,8 +674,7 @@ message Foo {
 }
 message Baz {
   Foo.BarEntry e = 1;
-}
-`,
+}`,
 			},
 			"foo.proto:6:3: field Baz.e: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly",
 		},
@@ -685,8 +684,7 @@ message Baz {
 import "google/protobuf/struct.proto";
 message Foo {
   google.protobuf.Struct.FieldsEntry e = 1;
-}
-`,
+}`,
 			},
 			"foo.proto:4:3: field Foo.e: google.protobuf.Struct.FieldsEntry is a synthetic map entry and may not be referenced explicitly",
 		},
