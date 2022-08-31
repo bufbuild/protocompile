@@ -17,8 +17,8 @@ package prototest
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math"
+	"os"
 	"strconv"
 	"testing"
 
@@ -35,7 +35,7 @@ import (
 
 func LoadDescriptorSet(t *testing.T, path string, res linker.Resolver) *descriptorpb.FileDescriptorSet {
 	t.Helper()
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	require.NoError(t, err)
 	var fdset descriptorpb.FileDescriptorSet
 	err = proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, &fdset)

@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -313,11 +312,11 @@ func TestOptionsEncoding(t *testing.T) {
 			}
 
 			// drum roll... make sure the bytes match the protoc output
-			expectedData, err := ioutil.ReadFile(descriptorSetFile)
+			expectedData, err := os.ReadFile(descriptorSetFile)
 			require.NoError(t, err)
 			if !bytes.Equal(actualData, expectedData) {
 				outputDescriptorSetFile := strings.ReplaceAll(descriptorSetFile, ".proto", ".actual.proto")
-				err = ioutil.WriteFile(outputDescriptorSetFile, actualData, 0644)
+				err = os.WriteFile(outputDescriptorSetFile, actualData, 0644)
 				if err != nil {
 					t.Log("failed to write actual to file")
 				}

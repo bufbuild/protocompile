@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,13 +63,13 @@ func TestSourceCodeInfo(t *testing.T) {
 
 	if regenerateMode {
 		// re-generate the file
-		err = ioutil.WriteFile("test-source-info.txt", buf.Bytes(), 0666)
+		err = os.WriteFile("test-source-info.txt", buf.Bytes(), 0666)
 		if !assert.Nil(t, err) {
 			return
 		}
 	}
 
-	b, err := ioutil.ReadFile("test-source-info.txt")
+	b, err := os.ReadFile("test-source-info.txt")
 	if !assert.Nil(t, err) {
 		return
 	}
