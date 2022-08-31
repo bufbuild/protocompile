@@ -32,6 +32,10 @@ func validateBasic(res *result, handler *reporter.Handler) {
 	fd := res.proto
 	isProto3 := fd.GetSyntax() == "proto3"
 
+	if err := validateImports(res, handler); err != nil {
+		return
+	}
+
 	_ = walk.DescriptorProtos(fd, func(name protoreflect.FullName, d proto.Message) error {
 		switch d := d.(type) {
 		case *descriptorpb.DescriptorProto:
@@ -49,6 +53,27 @@ func validateBasic(res *result, handler *reporter.Handler) {
 		}
 		return nil
 	})
+}
+
+func validateImports(res *result, handler *reporter.Handler) error {
+	fileNode := res.file
+	if fileNode == nil {
+		return nil
+	}
+	imports := make(map[string]ast.SourcePos)
+	for _, decl := range fileNode.Decls {
+		imp, ok := decl.(*ast.ImportNode)
+		if !ok {
+			continue
+		}
+		startPos := fileNode.NodeInfo(decl).Start()
+		name := imp.Name.AsString()
+		if prev, ok := imports[name]; ok {
+			return handler.HandleErrorf(startPos, "%q was already imported at %v", name, prev)
+		}
+		imports[name] = startPos
+	}
+	return nil
 }
 
 func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md *descriptorpb.DescriptorProto, handler *reporter.Handler) error {
