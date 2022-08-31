@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ast
 
 import (
@@ -53,7 +67,7 @@ var _ StringValueNode = (*CompoundStringLiteralNode)(nil)
 
 // StringLiteralNode represents a simple string literal. Example:
 //
-//  "proto2"
+//	"proto2"
 type StringLiteralNode struct {
 	terminalNode
 	// Val is the actual string value that the literal indicates.
@@ -79,7 +93,7 @@ func (n *StringLiteralNode) AsString() string {
 // CompoundStringLiteralNode represents a compound string literal, which is
 // the concatenaton of adjacent string literals. Example:
 //
-//  "this "  "is"   " all one "   "string"
+//	"this "  "is"   " all one "   "string"
 type CompoundStringLiteralNode struct {
 	compositeNode
 	Val string
@@ -387,7 +401,7 @@ func (n *BoolLiteralNode) Value() interface{} {
 // ArrayLiteralNode represents an array literal, which is only allowed inside of
 // a MessageLiteralNode, to indicate values for a repeated field. Example:
 //
-//  ["foo", "bar", "baz"]
+//	["foo", "bar", "baz"]
 type ArrayLiteralNode struct {
 	compositeNode
 	OpenBracket *RuneNode
@@ -453,7 +467,7 @@ func (n *ArrayLiteralNode) Value() interface{} {
 // protobuf text format and can be used for custom options with message types.
 // Example:
 //
-//   { foo:1 foo:2 foo:3 bar:<name:"abc" id:123> }
+//	{ foo:1 foo:2 foo:3 bar:<name:"abc" id:123> }
 type MessageLiteralNode struct {
 	compositeNode
 	Open     *RuneNode // should be '{' or '<'
@@ -521,7 +535,7 @@ func (n *MessageLiteralNode) Value() interface{} {
 // MessageFieldNode represents a single field (name and value) inside of a
 // message literal. Example:
 //
-//   foo:"bar"
+//	foo:"bar"
 type MessageFieldNode struct {
 	compositeNode
 	Name *FieldReferenceNode

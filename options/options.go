@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package options contains the logic for interpreting options. The parse step
 // of compilation stores the options in uninterpreted form, which contains raw
 // identifiers and literal values.
@@ -488,7 +502,6 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 			b = protowire.AppendBytes(b, enclosed)
 			// skip over the other subsequent fields we just serialized
 			i = j - 1
-
 		} else if f.value.isList {
 			// if not packed, then emit one value at a time
 			single := *f
@@ -506,7 +519,6 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 					return nil, err
 				}
 			}
-
 		} else {
 			// simple singular value
 			var err error

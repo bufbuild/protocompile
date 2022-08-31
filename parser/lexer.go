@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package parser
 
 import (
@@ -422,7 +436,6 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 				(len(comments) > groupEnd && nStart > prevEnd) ||
 				(commentStart == prevEnd && nStart > commentEnd) ||
 				(nStart-commentEnd > 1) {
-
 				// we can move the first group of comments to previous token
 				prevTrailingComments = comments[:groupEnd]
 				comments = comments[groupEnd:]
@@ -569,7 +582,6 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("invalid hex escape: \\x%q", hex)
 				}
 				buf.WriteByte(byte(i))
-
 			} else if c >= '0' && c <= '7' {
 				// octal escape
 				c2, sz2, err := l.input.readRune()
@@ -600,7 +612,6 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("octal escape is out range, must be between 0 and 377: \\%q", octal)
 				}
 				buf.WriteByte(byte(i))
-
 			} else if c == 'u' {
 				// short unicode escape
 				u := make([]rune, 4)
@@ -616,7 +627,6 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("invalid unicode escape: \\u%q", string(u))
 				}
 				buf.WriteRune(rune(i))
-
 			} else if c == 'U' {
 				// long unicode escape
 				u := make([]rune, 8)
@@ -635,7 +645,6 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("unicode escape is out of range, must be between 0 and 0x10ffff: \\U%q", string(u))
 				}
 				buf.WriteRune(rune(i))
-
 			} else if c == 'a' {
 				buf.WriteByte('\a')
 			} else if c == 'b' {

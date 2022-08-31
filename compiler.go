@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package protocompile
 
 import (
@@ -24,11 +38,11 @@ import (
 // intermediate representations, into fully linked descriptors.
 //
 // The compilation process involves five steps for each protobuf source file:
-//   1. Parsing the source into an AST (abstract syntax tree).
-//   2. Converting the AST into descriptor protos.
-//   3. Linking descriptor protos into fully linked descriptors.
-//   4. Interpreting options.
-//   5. Computing source code information.
+//  1. Parsing the source into an AST (abstract syntax tree).
+//  2. Converting the AST into descriptor protos.
+//  3. Linking descriptor protos into fully linked descriptors.
+//  4. Interpreting options.
+//  5. Computing source code information.
 //
 // With fully linked descriptors, code generators and protoc plugins could be
 // invoked (though that step is not implemented by this package and not a

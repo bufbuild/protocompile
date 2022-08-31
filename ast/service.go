@@ -1,13 +1,27 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ast
 
 import "fmt"
 
 // ServiceNode represents a service declaration. Example:
 //
-//  service Foo {
-//    rpc Bar (Baz) returns (Bob);
-//    rpc Frobnitz (stream Parts) returns (Gyzmeaux);
-//  }
+//	service Foo {
+//	  rpc Bar (Baz) returns (Bob);
+//	  rpc Frobnitz (stream Parts) returns (Gyzmeaux);
+//	}
 type ServiceNode struct {
 	compositeNode
 	Keyword    *KeywordNode
@@ -20,11 +34,11 @@ type ServiceNode struct {
 func (*ServiceNode) fileElement() {}
 
 // NewServiceNode creates a new *ServiceNode. All arguments must be non-nil.
-//  - keyword: The token corresponding to the "service" keyword.
-//  - name: The token corresponding to the service's name.
-//  - openBrace: The token corresponding to the "{" rune that starts the body.
-//  - decls: All declarations inside the service body.
-//  - closeBrace: The token corresponding to the "}" rune that ends the body.
+//   - keyword: The token corresponding to the "service" keyword.
+//   - name: The token corresponding to the service's name.
+//   - openBrace: The token corresponding to the "{" rune that starts the body.
+//   - decls: All declarations inside the service body.
+//   - closeBrace: The token corresponding to the "}" rune that ends the body.
 func NewServiceNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []ServiceElement, closeBrace *RuneNode) *ServiceNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -91,7 +105,7 @@ var _ RPCDeclNode = NoSourceNode{}
 
 // RPCNode represents an RPC declaration. Example:
 //
-//  rpc Foo (Bar) returns (Baz);
+//	rpc Foo (Bar) returns (Baz);
 type RPCNode struct {
 	compositeNode
 	Keyword    *KeywordNode
@@ -108,12 +122,12 @@ type RPCNode struct {
 func (n *RPCNode) serviceElement() {}
 
 // NewRPCNode creates a new *RPCNode with no body. All arguments must be non-nil.
-//  - keyword: The token corresponding to the "rpc" keyword.
-//  - name: The token corresponding to the RPC's name.
-//  - input: The token corresponding to the RPC input message type.
-//  - returns: The token corresponding to the "returns" keyword that precedes the output type.
-//  - output: The token corresponding to the RPC output message type.
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - keyword: The token corresponding to the "rpc" keyword.
+//   - name: The token corresponding to the RPC's name.
+//   - input: The token corresponding to the RPC input message type.
+//   - returns: The token corresponding to the "returns" keyword that precedes the output type.
+//   - output: The token corresponding to the RPC output message type.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewRPCNode(keyword *KeywordNode, name *IdentNode, input *RPCTypeNode, returns *KeywordNode, output *RPCTypeNode, semicolon *RuneNode) *RPCNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -149,14 +163,14 @@ func NewRPCNode(keyword *KeywordNode, name *IdentNode, input *RPCTypeNode, retur
 
 // NewRPCNodeWithBody creates a new *RPCNode that includes a body (and possibly
 // options). All arguments must be non-nil.
-//  - keyword: The token corresponding to the "rpc" keyword.
-//  - name: The token corresponding to the RPC's name.
-//  - input: The token corresponding to the RPC input message type.
-//  - returns: The token corresponding to the "returns" keyword that precedes the output type.
-//  - output: The token corresponding to the RPC output message type.
-//  - openBrace: The token corresponding to the "{" rune that starts the body.
-//  - decls: All declarations inside the RPC body.
-//  - closeBrace: The token corresponding to the "}" rune that ends the body.
+//   - keyword: The token corresponding to the "rpc" keyword.
+//   - name: The token corresponding to the RPC's name.
+//   - input: The token corresponding to the RPC input message type.
+//   - returns: The token corresponding to the "returns" keyword that precedes the output type.
+//   - output: The token corresponding to the RPC output message type.
+//   - openBrace: The token corresponding to the "{" rune that starts the body.
+//   - decls: All declarations inside the RPC body.
+//   - closeBrace: The token corresponding to the "}" rune that ends the body.
 func NewRPCNodeWithBody(keyword *KeywordNode, name *IdentNode, input *RPCTypeNode, returns *KeywordNode, output *RPCTypeNode, openBrace *RuneNode, decls []RPCElement, closeBrace *RuneNode) *RPCNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -234,7 +248,7 @@ var _ RPCElement = (*EmptyDeclNode)(nil)
 // RPCTypeNode represents the declaration of a request or response type for an
 // RPC. Example:
 //
-//  (stream foo.Bar)
+//	(stream foo.Bar)
 type RPCTypeNode struct {
 	compositeNode
 	OpenParen   *RuneNode
@@ -245,10 +259,10 @@ type RPCTypeNode struct {
 
 // NewRPCTypeNode creates a new *RPCTypeNode. All arguments must be non-nil
 // except stream, which may be nil.
-//  - openParen: The token corresponding to the "(" rune that starts the declaration.
-//  - stream: The token corresponding to the "stream" keyword or nil if not present.
-//  - msgType: The token corresponding to the message type's name.
-//  - closeParen: The token corresponding to the ")" rune that ends the declaration.
+//   - openParen: The token corresponding to the "(" rune that starts the declaration.
+//   - stream: The token corresponding to the "stream" keyword or nil if not present.
+//   - msgType: The token corresponding to the message type's name.
+//   - closeParen: The token corresponding to the ")" rune that ends the declaration.
 func NewRPCTypeNode(openParen *RuneNode, stream *KeywordNode, msgType IdentValueNode, closeParen *RuneNode) *RPCTypeNode {
 	if openParen == nil {
 		panic("openParen is nil")

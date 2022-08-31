@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ast
 
 import "fmt"
@@ -5,9 +19,10 @@ import "fmt"
 // FieldDeclNode is a node in the AST that defines a field. This includes
 // normal message fields as well as extensions. There are multiple types
 // of AST nodes that declare fields:
-//  - *FieldNode
-//  - *GroupNode
-//  - *MapFieldNode
+//   - *FieldNode
+//   - *GroupNode
+//   - *MapFieldNode
+//
 // This also allows NoSourceNode and SyntheticMapField to be used in place of
 // one of the above for some usages.
 type FieldDeclNode interface {
@@ -31,7 +46,7 @@ var _ FieldDeclNode = NoSourceNode{}
 // can represent extension fields as well as non-extension fields (both inside
 // of messages and inside of one-ofs). Example:
 //
-//  optional string foo = 1;
+//	optional string foo = 1;
 type FieldNode struct {
 	compositeNode
 	Label     FieldLabel
@@ -53,14 +68,14 @@ func (*FieldNode) extendElement() {}
 
 // NewFieldNode creates a new *FieldNode. The label and options arguments may be
 // nil but the others must be non-nil.
-//  - label: The token corresponding to the label keyword if present ("optional",
-//    "required", or "repeated").
-//  - fieldType: The token corresponding to the field's type.
-//  - name: The token corresponding to the field's name.
-//  - equals: The token corresponding to the '=' rune after the name.
-//  - tag: The token corresponding to the field's tag number.
-//  - opts: Optional set of field options.
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - label: The token corresponding to the label keyword if present ("optional",
+//     "required", or "repeated").
+//   - fieldType: The token corresponding to the field's type.
+//   - name: The token corresponding to the field's name.
+//   - equals: The token corresponding to the '=' rune after the name.
+//   - tag: The token corresponding to the field's tag number.
+//   - opts: Optional set of field options.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewFieldNode(label *KeywordNode, fieldType IdentValueNode, name *IdentNode, equals *RuneNode, tag *UintLiteralNode, opts *CompactOptionsNode, semicolon *RuneNode) *FieldNode {
 	if fieldType == nil {
 		panic("fieldType is nil")
@@ -177,10 +192,10 @@ func (f *FieldLabel) IsPresent() bool {
 // non-extension fields (both inside of messages and inside of one-ofs).
 // Example:
 //
-//  optional group Key = 4 {
-//    optional uint64 id = 1;
-//    optional string name = 2;
-//  }
+//	optional group Key = 4 {
+//	  optional uint64 id = 1;
+//	  optional string name = 2;
+//	}
 type GroupNode struct {
 	compositeNode
 	Label   FieldLabel
@@ -202,16 +217,16 @@ func (*GroupNode) extendElement() {}
 
 // NewGroupNode creates a new *GroupNode. The label and options arguments may be
 // nil but the others must be non-nil.
-//  - label: The token corresponding to the label keyword if present ("optional",
-//    "required", or "repeated").
-//  - keyword: The token corresponding to the "group" keyword.
-//  - name: The token corresponding to the field's name.
-//  - equals: The token corresponding to the '=' rune after the name.
-//  - tag: The token corresponding to the field's tag number.
-//  - opts: Optional set of field options.
-//  - openBrace: The token corresponding to the "{" rune that starts the body.
-//  - decls: All declarations inside the group body.
-//  - closeBrace: The token corresponding to the "}" rune that ends the body.
+//   - label: The token corresponding to the label keyword if present ("optional",
+//     "required", or "repeated").
+//   - keyword: The token corresponding to the "group" keyword.
+//   - name: The token corresponding to the field's name.
+//   - equals: The token corresponding to the '=' rune after the name.
+//   - tag: The token corresponding to the field's tag number.
+//   - opts: Optional set of field options.
+//   - openBrace: The token corresponding to the "{" rune that starts the body.
+//   - decls: All declarations inside the group body.
+//   - closeBrace: The token corresponding to the "}" rune that ends the body.
 func NewGroupNode(label *KeywordNode, keyword *KeywordNode, name *IdentNode, equals *RuneNode, tag *UintLiteralNode, opts *CompactOptionsNode, openBrace *RuneNode, decls []MessageElement, closeBrace *RuneNode) *GroupNode {
 	if keyword == nil {
 		panic("fieldType is nil")
@@ -308,12 +323,12 @@ func (n *GroupNode) MessageName() Node {
 
 // OneOfNode represents a one-of declaration. Example:
 //
-//  oneof query {
-//    string by_name = 2;
-//    Type by_type = 3;
-//    Address by_address = 4;
-//    Labels by_label = 5;
-//  }
+//	oneof query {
+//	  string by_name = 2;
+//	  Type by_type = 3;
+//	  Address by_address = 4;
+//	  Labels by_label = 5;
+//	}
 type OneOfNode struct {
 	compositeNode
 	Keyword    *KeywordNode
@@ -328,11 +343,11 @@ func (*OneOfNode) msgElement() {}
 // NewOneOfNode creates a new *OneOfNode. All arguments must be non-nil. While
 // it is technically allowed for decls to be nil or empty, the resulting node
 // will not be a valid oneof, which must have at least one field.
-//  - keyword: The token corresponding to the "oneof" keyword.
-//  - name: The token corresponding to the oneof's name.
-//  - openBrace: The token corresponding to the "{" rune that starts the body.
-//  - decls: All declarations inside the oneof body.
-//  - closeBrace: The token corresponding to the "}" rune that ends the body.
+//   - keyword: The token corresponding to the "oneof" keyword.
+//   - name: The token corresponding to the oneof's name.
+//   - openBrace: The token corresponding to the "{" rune that starts the body.
+//   - decls: All declarations inside the oneof body.
+//   - closeBrace: The token corresponding to the "}" rune that ends the body.
 func NewOneOfNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []OneOfElement, closeBrace *RuneNode) *OneOfNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -418,7 +433,7 @@ func (n *SyntheticOneOf) TrailingComments() []Comment {
 // MapTypeNode represents the type declaration for a map field. It defines
 // both the key and value types for the map. Example:
 //
-//  map<string, Values>
+//	map<string, Values>
 type MapTypeNode struct {
 	compositeNode
 	Keyword    *KeywordNode
@@ -430,12 +445,12 @@ type MapTypeNode struct {
 }
 
 // NewMapTypeNode creates a new *MapTypeNode. All arguments must be non-nil.
-//  - keyword: The token corresponding to the "map" keyword.
-//  - openAngle: The token corresponding to the "<" rune after the keyword.
-//  - keyType: The token corresponding to the key type for the map.
-//  - comma: The token corresponding to the "," rune between key and value types.
-//  - valType: The token corresponding to the value type for the map.
-//  - closeAngle: The token corresponding to the ">" rune that ends the declaration.
+//   - keyword: The token corresponding to the "map" keyword.
+//   - openAngle: The token corresponding to the "<" rune after the keyword.
+//   - keyType: The token corresponding to the key type for the map.
+//   - comma: The token corresponding to the "," rune between key and value types.
+//   - valType: The token corresponding to the value type for the map.
+//   - closeAngle: The token corresponding to the ">" rune that ends the declaration.
 func NewMapTypeNode(keyword *KeywordNode, openAngle *RuneNode, keyType *IdentNode, comma *RuneNode, valType IdentValueNode, closeAngle *RuneNode) *MapTypeNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -471,7 +486,7 @@ func NewMapTypeNode(keyword *KeywordNode, openAngle *RuneNode, keyType *IdentNod
 
 // MapFieldNode represents a map field declaration. Example:
 //
-//  map<string,string> replacements = 3 [deprecated = true];
+//	map<string,string> replacements = 3 [deprecated = true];
 type MapFieldNode struct {
 	compositeNode
 	MapType   *MapTypeNode
@@ -486,12 +501,12 @@ func (*MapFieldNode) msgElement() {}
 
 // NewMapFieldNode creates a new *MapFieldNode. All arguments must be non-nil
 // except opts, which may be nil.
-//  - mapType: The token corresponding to the map type.
-//  - name: The token corresponding to the field's name.
-//  - equals: The token corresponding to the '=' rune after the name.
-//  - tag: The token corresponding to the field's tag number.
-//  - opts: Optional set of field options.
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - mapType: The token corresponding to the map type.
+//   - name: The token corresponding to the field's name.
+//   - equals: The token corresponding to the '=' rune after the name.
+//   - tag: The token corresponding to the field's tag number.
+//   - opts: Optional set of field options.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewMapFieldNode(mapType *MapTypeNode, name *IdentNode, equals *RuneNode, tag *UintLiteralNode, opts *CompactOptionsNode, semicolon *RuneNode) *MapFieldNode {
 	if mapType == nil {
 		panic("mapType is nil")

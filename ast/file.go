@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ast
 
 import "fmt"
@@ -115,7 +129,7 @@ var _ FileElement = (*EmptyDeclNode)(nil)
 // SyntaxNode represents a syntax declaration, which if present must be
 // the first non-comment content. Example:
 //
-//  syntax = "proto2";
+//	syntax = "proto2";
 //
 // Files that don't have a syntax node are assumed to use proto2 syntax.
 type SyntaxNode struct {
@@ -127,10 +141,10 @@ type SyntaxNode struct {
 }
 
 // NewSyntaxNode creates a new *SyntaxNode. All four arguments must be non-nil:
-//  - keyword: The token corresponding to the "syntax" keyword.
-//  - equals: The token corresponding to the "=" rune.
-//  - syntax: The actual syntax value, e.g. "proto2" or "proto3".
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - keyword: The token corresponding to the "syntax" keyword.
+//   - equals: The token corresponding to the "=" rune.
+//   - syntax: The actual syntax value, e.g. "proto2" or "proto3".
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewSyntaxNode(keyword *KeywordNode, equals *RuneNode, syntax StringValueNode, semicolon *RuneNode) *SyntaxNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -158,7 +172,7 @@ func NewSyntaxNode(keyword *KeywordNode, equals *RuneNode, syntax StringValueNod
 
 // ImportNode represents an import statement. Example:
 //
-//  import "google/protobuf/empty.proto";
+//	import "google/protobuf/empty.proto";
 type ImportNode struct {
 	compositeNode
 	Keyword *KeywordNode
@@ -176,11 +190,11 @@ type ImportNode struct {
 // a public import. When weak is non-nil, it indicates the "weak" keyword in the import
 // statement and means this is a weak import. When both are nil, this is a normal import.
 // The other arguments must be non-nil:
-//  - keyword: The token corresponding to the "import" keyword.
-//  - public: The token corresponding to the optional "public" keyword.
-//  - weak: The token corresponding to the optional "weak" keyword.
-//  - name: The actual imported file name.
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - keyword: The token corresponding to the "import" keyword.
+//   - public: The token corresponding to the optional "public" keyword.
+//   - weak: The token corresponding to the optional "weak" keyword.
+//   - name: The actual imported file name.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode, name StringValueNode, semicolon *RuneNode) *ImportNode {
 	if keyword == nil {
 		panic("keyword is nil")
@@ -220,7 +234,7 @@ func (*ImportNode) fileElement() {}
 
 // PackageNode represents a package declaration. Example:
 //
-//  package foobar.com;
+//	package foobar.com;
 type PackageNode struct {
 	compositeNode
 	Keyword   *KeywordNode
@@ -231,9 +245,9 @@ type PackageNode struct {
 func (*PackageNode) fileElement() {}
 
 // NewPackageNode creates a new *PackageNode. All three arguments must be non-nil:
-//  - keyword: The token corresponding to the "package" keyword.
-//  - name: The package name declared for the file.
-//  - semicolon: The token corresponding to the ";" rune that ends the declaration.
+//   - keyword: The token corresponding to the "package" keyword.
+//   - name: The package name declared for the file.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewPackageNode(keyword *KeywordNode, name IdentValueNode, semicolon *RuneNode) *PackageNode {
 	if keyword == nil {
 		panic("keyword is nil")

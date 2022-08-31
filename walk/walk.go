@@ -1,9 +1,23 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package walk provides helper functions for traversing all elements in a
 // protobuf file descriptor. There are versions both for traversing "rich"
 // descriptors (protoreflect.Descriptor) and for traversing the underlying
 // "raw" descriptor protos.
 //
-// Enter And Exit
+// # Enter And Exit
 //
 // This package includes variants of the functions that accept two callback
 // functions. These variants have names ending with "EnterAndExit". One function
@@ -12,7 +26,7 @@
 // can be useful when you need to track state that is scoped to the visitation
 // of a single element.
 //
-// Source Path
+// # Source Path
 //
 // When traversing raw descriptor protos, this package include variants whose
 // callback accepts a protoreflect.SourcePath. These variants have names that

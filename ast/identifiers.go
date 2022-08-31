@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ast
 
 import (
@@ -22,7 +36,7 @@ var _ IdentValueNode = (*CompoundIdentNode)(nil)
 // IdentNode represents a simple, unqualified identifier. These are used to name
 // elements declared in a protobuf file or to refer to elements. Example:
 //
-//  foobar
+//	foobar
 type IdentNode struct {
 	terminalNode
 	Val string
@@ -56,7 +70,7 @@ func (n *IdentNode) ToKeyword() *KeywordNode {
 // dots). If the identifier has a leading dot, then it is a *fully* qualified
 // identifier. Example:
 //
-//  .com.foobar.Baz
+//	.com.foobar.Baz
 type CompoundIdentNode struct {
 	compositeNode
 	// Optional leading dot, indicating that the identifier is fully qualified.
@@ -122,7 +136,7 @@ func (n *CompoundIdentNode) AsIdentifier() Identifier {
 // like identifiers, but they have special meaning in particular contexts.
 // Example:
 //
-//  message
+//	message
 type KeywordNode IdentNode
 
 // NewKeywordNode creates a new *KeywordNode. The given val is the keyword.
