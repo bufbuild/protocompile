@@ -666,6 +666,28 @@ extend google.protobuf.MessageOptions {
 			},
 			"foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
 		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+message Foo {
+  map<string,string> bar = 1;
+}
+message Baz {
+  Foo.BarEntry e = 1;
+}`,
+			},
+			"foo.proto:6:3: field Baz.e: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/struct.proto";
+message Foo {
+  google.protobuf.Struct.FieldsEntry e = 1;
+}`,
+			},
+			"foo.proto:4:3: field Foo.e: google.protobuf.Struct.FieldsEntry is a synthetic map entry and may not be referenced explicitly",
+		},
 	}
 
 	for i, tc := range testCases {

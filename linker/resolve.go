@@ -428,6 +428,23 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 	}
 	switch dsc := dsc.(type) {
 	case protoreflect.MessageDescriptor:
+		if dsc.IsMapEntry() {
+			isValid := false
+			switch node.(type) {
+			case *ast.MapFieldNode:
+				// We have an AST for this file and can see this field is from a map declaration
+				isValid = true
+			case ast.NoSourceNode:
+				// We don't have an AST for the file (it came from a provided descriptor). So we
+				// need to validate that it's not an illegal reference. To be valid, the field
+				// must be repeated and the entry type must be nested in the same enclosing
+				// message as the field.
+				isValid = dsc.FullName() == fqn && fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
+			}
+			if !isValid {
+				return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: %s is a synthetic map entry and may not be referenced explicitly", scope, dsc.FullName())
+			}
+		}
 		fld.TypeName = proto.String("." + string(dsc.FullName()))
 		// if type was tentatively unset, we now know it's actually a message
 		if fld.Type == nil {
