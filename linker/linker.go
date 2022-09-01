@@ -118,11 +118,11 @@ type Result interface {
 	// extension that is available in this file. If no such element is available
 	// or if the named element is not an extension, nil is returned.
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
-	// ValidateExtensions runs some validation checks on extensions that can only
-	// be done after files are linked and options are interpreted. Any errors or
-	// warnings encountered will be reported via the given handler. If any error
-	// is reported, this function returns a non-nil error.
-	ValidateExtensions(handler *reporter.Handler) error
+	// ValidateOptions runs some validation checks on the descriptor that can only
+	// be done after options are interpreted. Any errors or warnings encountered
+	// will be reported via the given handler. If any error is reported, this
+	// function returns a non-nil error.
+	ValidateOptions(handler *reporter.Handler) error
 	// CheckForUnusedImports is used to report warnings for unused imports. This
 	// should be called after options have been interpreted. Otherwise, the logic
 	// could incorrectly report imports as unused if the only symbol used were a

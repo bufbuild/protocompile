@@ -564,6 +564,7 @@ type Rule struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Rule:
+	//
 	//	*Rule_String_
 	//	*Rule_Repeated
 	//	*Rule_Int

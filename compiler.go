@@ -473,7 +473,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 		return nil, err
 	}
 	// now that options are interpreted, we can do some additional checks
-	if err := file.ValidateExtensions(t.h); err != nil {
+	if err := file.ValidateOptions(t.h); err != nil {
 		return nil, err
 	}
 	if t.r.explicitFile {

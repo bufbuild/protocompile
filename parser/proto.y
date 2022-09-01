@@ -660,9 +660,6 @@ ooDecl : option {
 	| oneofGroup {
 		$$ = $1
 	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
-	}
 	| error ';' {
 		$$ = nil
 	}
@@ -919,9 +916,6 @@ extendDecl : extField {
 	}
 	| group {
 		$$ = $1
-	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
 	}
 	| error ';' {
 		$$ = nil
