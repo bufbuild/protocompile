@@ -117,7 +117,7 @@ $(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
 	unzip -o -q $< -d $(PROTOC_DIR) && \
 	touch $@
 
-internal/testdata/all.protoset: $(wildcard internal/testdata/*.proto)
+internal/testdata/all.protoset: $(sort $(wildcard internal/testdata/*.proto))
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
 
 internal/testdata/desc_test_complex.protoset: internal/testdata/desc_test_complex.proto
