@@ -4,12 +4,13 @@ set -e
 
 cd $(dirname $0)
 
-# Sadly, this is the version of descriptor.proto used in the descriptorpb package.
+# This needs to match the version that was used to generate the descriptorpb
+# package in the Go module "google.golang.org/protobuf".
 # If we don't pin this, then some comparisons of protocompile output will fail to
 # match protosets only because protoc would be using a newer version of
 # descriptor.proto than protocompile. (By default, protocompile just uses the
-# standard versions compiled into the packages in google.golang.org/protobuf).
-PROTOC_VERSION="3.15.0"
+# standard versions compiled into the descriptorpb package.)
+PROTOC_VERSION="21.5"
 PROTOC_OS="$(uname -s)"
 PROTOC_ARCH="$(uname -m)"
 case "${PROTOC_OS}" in
