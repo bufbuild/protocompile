@@ -21,10 +21,8 @@ case "${PROTOC_OS}" in
     exit 1
 esac
 
-# This is for macs with M1 chips. Precompiled binaries for osx/amd64 are not available for download, so for that case
-# we download the x86_64 version instead. This will work as long as rosetta2 is installed.
 if [ "$PROTOC_OS" = "osx" ] && [ "$PROTOC_ARCH" = "arm64" ]; then
-  PROTOC_ARCH="x86_64"
+  PROTOC_ARCH="aarch_64"
 fi
 
 PROTOC="./protoc/bin/protoc"
