@@ -22,10 +22,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestSimpleLink(t *testing.T) {
