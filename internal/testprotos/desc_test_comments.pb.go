@@ -136,12 +136,14 @@ type Request struct {
 	// can be this or that
 	//
 	// Types that are assignable to Abc:
+	//
 	//	*Request_This
 	//	*Request_That
 	Abc isRequest_Abc `protobuf_oneof:"abc"`
 	// can be these or those
 	//
 	// Types that are assignable to Xyz:
+	//
 	//	*Request_These
 	//	*Request_Those
 	Xyz isRequest_Xyz `protobuf_oneof:"xyz"`

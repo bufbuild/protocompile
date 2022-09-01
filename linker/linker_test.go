@@ -183,7 +183,7 @@ func TestLinkerValidation(t *testing.T) {
 			map[string]string{
 				"foo.proto": "package fu.baz; message foobar{ extensions 1; } extend foobar { optional string a = 2; }",
 			},
-			"foo.proto:1:85: field fu.baz.a: tag 2 is not in valid range for extended type fu.baz.foobar",
+			"foo.proto:1:85: extension fu.baz.a: tag 2 is not in valid range for extended type fu.baz.foobar",
 		},
 		{
 			map[string]string{
@@ -407,7 +407,7 @@ func TestLinkerValidation(t *testing.T) {
 			map[string]string{
 				"foo.proto": "message Foo { extensions 1 to max; } extend Foo { optional int32 bar = 536870912; }",
 			},
-			"foo.proto:1:72: field bar: tag 536870912 is not in valid range for extended type Foo",
+			"foo.proto:1:72: extension bar: tag 536870912 is not in valid range for extended type Foo",
 		},
 		{
 			map[string]string{
@@ -437,7 +437,7 @@ func TestLinkerValidation(t *testing.T) {
 			map[string]string{
 				"foo.proto": "message Foo { extensions 1 to max; } extend Foo { optional int32 bar = 536870912; }",
 			},
-			"foo.proto:1:72: field bar: tag 536870912 is not in valid range for extended type Foo",
+			"foo.proto:1:72: extension bar: tag 536870912 is not in valid range for extended type Foo",
 		},
 		{
 			map[string]string{
@@ -687,6 +687,45 @@ message Foo {
 }`,
 			},
 			"foo.proto:4:3: field Foo.e: google.protobuf.Struct.FieldsEntry is a synthetic map entry and may not be referenced explicitly",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto2";
+message Foo {
+  extensions 1 to 100;
+}`,
+				"bar.proto": `syntax = "proto3";
+import "foo.proto";
+extend Foo {
+  string bar = 1;
+}`,
+			},
+			"bar.proto:3:8: extend blocks in proto3 can only be used to define custom options",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+message Foo {
+  oneof bar {
+    string baz = 1;
+    uint64 buzz = 2;
+    ;
+  }
+}`,
+			},
+			"foo.proto:6:5: syntax error: unexpected ';'",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions {
+  string baz = 1001;
+  uint64 buzz = 1002;
+  ;
+}`,
+			},
+			"foo.proto:6:3: syntax error: unexpected ';'",
 		},
 	}
 

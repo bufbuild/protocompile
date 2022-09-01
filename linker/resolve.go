@@ -318,6 +318,13 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 				if err := r.resolveFieldTypes(handler, s, fqn, d, scopes); err != nil {
 					return err
 				}
+				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.GetExtendee()) {
+					file := r.FileNode()
+					node := r.FieldNode(d).FieldExtendee()
+					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "extend blocks in proto3 can only be used to define custom options"); err != nil {
+						return err
+					}
+				}
 			case *descriptorpb.OneofDescriptorProto:
 				if d.Options != nil {
 					if err := r.resolveOptions(handler, "one-of", fqn, d.Options.UninterpretedOption, scopes); err != nil {
@@ -366,13 +373,35 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 		})
 }
 
+var allowedProto3Extendees = map[string]struct{}{
+	".google.protobuf.FileOptions":           {},
+	".google.protobuf.MessageOptions":        {},
+	".google.protobuf.FieldOptions":          {},
+	".google.protobuf.OneofOptions":          {},
+	".google.protobuf.ExtensionRangeOptions": {},
+	".google.protobuf.EnumOptions":           {},
+	".google.protobuf.EnumValueOptions":      {},
+	".google.protobuf.ServiceOptions":        {},
+	".google.protobuf.MethodOptions":         {},
+}
+
+func allowedProto3Extendee(n string) bool {
+	if n == "" {
+		// not an extension, allowed
+		return true
+	}
+	_, ok := allowedProto3Extendees[n]
+	return ok
+}
+
 func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn protoreflect.FullName, fld *descriptorpb.FieldDescriptorProto, scopes []scope) error {
-	scope := fmt.Sprintf("field %s", fqn)
 	file := r.FileNode()
 	node := r.FieldNode(fld)
 	elemType := "field"
+	scope := fmt.Sprintf("field %s", fqn)
 	if fld.GetExtendee() != "" {
 		elemType = "extension"
+		scope = fmt.Sprintf("extension %s", fqn)
 		dsc := r.resolve(fld.GetExtendee(), false, scopes)
 		if dsc == nil {
 			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()).Start(), "unknown extendee type %s", fld.GetExtendee())

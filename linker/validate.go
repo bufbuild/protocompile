@@ -22,9 +22,9 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-// ValidateExtensions runs some validation checks on extensions that can only
-// be done after files are linked and options are interpreted.
-func (r *result) ValidateExtensions(handler *reporter.Handler) error {
+// ValidateOptions runs some validation checks on the result that can only
+// be done after options are interpreted.
+func (r *result) ValidateOptions(handler *reporter.Handler) error {
 	return r.validateExtensions(r, handler)
 }
 
