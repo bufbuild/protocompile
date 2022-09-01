@@ -22,13 +22,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/reflect/protoregistry"
-
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
-	_ "github.com/bufbuild/protocompile/internal/testprotos"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSimpleLink(t *testing.T) {
@@ -44,7 +41,7 @@ func TestSimpleLink(t *testing.T) {
 
 	res := fds[0].(linker.Result)
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/desc_test_complex.protoset", linker.ResolverFromFile(fds[0]))
-	prototest.CheckFiles(t, res, prototest.FileProtoSetFromDescriptorProtos(fdset), true)
+	prototest.CheckFiles(t, res, fdset, true)
 }
 
 func TestMultiFileLink(t *testing.T) {
@@ -60,7 +57,8 @@ func TestMultiFileLink(t *testing.T) {
 		}
 
 		res := fds[0].(linker.Result)
-		prototest.CheckFiles(t, res, prototest.FileProtoSetFromRegistry(protoregistry.GlobalFiles), true)
+		fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/all.protoset", linker.ResolverFromFile(fds[0]))
+		prototest.CheckFiles(t, res, fdset, true)
 	}
 }
 
@@ -78,7 +76,7 @@ func TestProto3Optional(t *testing.T) {
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/desc_test_proto3_optional.protoset", fds.AsResolver())
 
 	res := fds[0].(linker.Result)
-	prototest.CheckFiles(t, res, prototest.FileProtoSetFromDescriptorProtos(fdset), true)
+	prototest.CheckFiles(t, res, fdset, true)
 }
 
 func TestLinkerValidation(t *testing.T) {

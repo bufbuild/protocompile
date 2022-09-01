@@ -23,9 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
-	_ "github.com/bufbuild/protocompile/internal/testprotos"
+	"github.com/bufbuild/protocompile/internal/prototest"
 )
 
 func TestParseFilesMessageComments(t *testing.T) {
@@ -102,13 +104,13 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		return SearchResult{Source: strings.NewReader(s)}, nil
 	})
 
-	wktDesc, err := protoregistry.GlobalFiles.FindFileByPath("desc_test_wellknowntypes.proto")
-	assert.Nil(t, err)
-	wktDescProto := protodesc.ToFileDescriptorProto(wktDesc)
+	fdset := prototest.LoadDescriptorSet(t, "./internal/testprotos/all.protoset", nil)
+	wktDesc, wktDescProto := findAndLink(t, "desc_test_wellknowntypes.proto", fdset, nil)
+
 	ctx := context.Background()
 
-	// Establish that we *can* parse the source file with a parser that
-	// registers the dependency.
+	// Establish that we *can* parse the source file with a resolver that provides
+	// the dependency, as either a full descriptor or as a descriptor proto.
 	t.Run("DependencyIncluded", func(t *testing.T) {
 		// Create a dependency-aware compiler.
 		compiler := Compiler{
@@ -136,8 +138,8 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		assert.Nil(t, err, "%v", err)
 	})
 
-	// Establish that we *can not* parse the source file with a parser that
-	// did not register the dependency.
+	// Establish that we *can not* parse the source file if the resolver
+	// is not able to resolve the dependency.
 	t.Run("DependencyExcluded", func(t *testing.T) {
 		// Create a dependency-UNaware parser.
 		compiler := Compiler{Resolver: baseResolver}
@@ -145,8 +147,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		assert.NotNil(t, err, "expected parse to fail")
 	})
 
-	// Establish that the accessor has precedence over LookupImport.
-	t.Run("AccessorWins", func(t *testing.T) {
+	t.Run("NoDependencies", func(t *testing.T) {
 		// Create a dependency-aware parser that should never be called.
 		compiler := Compiler{
 			Resolver: ResolverFunc(func(f string) (SearchResult, error) {
@@ -160,6 +161,30 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		_, err := compiler.Compile(ctx, "test.proto")
 		assert.Nil(t, err)
 	})
+}
+
+func findAndLink(t *testing.T, filename string, fdset *descriptorpb.FileDescriptorSet, soFar *protoregistry.Files) (protoreflect.FileDescriptor, *descriptorpb.FileDescriptorProto) {
+	for _, fd := range fdset.File {
+		if fd.GetName() == filename {
+			if soFar == nil {
+				soFar = &protoregistry.Files{}
+			}
+			for _, dep := range fd.GetDependency() {
+				depDesc, _ := findAndLink(t, dep, fdset, soFar)
+				err := soFar.RegisterFile(depDesc)
+				if !assert.NoError(t, err) {
+					t.FailNow()
+				}
+			}
+			desc, err := protodesc.NewFile(fd, soFar)
+			if !assert.NoError(t, err) {
+				t.FailNow()
+			}
+			return desc, fd
+		}
+	}
+	assert.FailNow(t, "could not find dependency %q in proto set", filename)
+	return nil, nil // make compiler happy
 }
 
 func TestParseCommentsBeforeDot(t *testing.T) {

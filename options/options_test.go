@@ -291,7 +291,7 @@ func TestOptionsEncoding(t *testing.T) {
 			res := fds[0].(linker.Result)
 			descriptorSetFile := fmt.Sprintf("../internal/testprotos/options/%sset", file)
 			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
-			prototest.CheckFiles(t, res, prototest.FileProtoSetFromDescriptorProtos(fdset), false)
+			prototest.CheckFiles(t, res, fdset, false)
 
 			canonicalProto := res.CanonicalProto()
 			actualFdset := &descriptorpb.FileDescriptorSet{
