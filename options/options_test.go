@@ -278,7 +278,7 @@ func TestOptionsEncoding(t *testing.T) {
 		t.Run(syntax, func(t *testing.T) {
 			compiler := protocompile.Compiler{
 				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-					ImportPaths: []string{"../internal/testprotos/options"},
+					ImportPaths: []string{"../internal/testdata/options"},
 				}),
 			}
 			fds, err := compiler.Compile(context.Background(), file)
@@ -289,7 +289,7 @@ func TestOptionsEncoding(t *testing.T) {
 			require.NoError(t, err)
 
 			res := fds[0].(linker.Result)
-			descriptorSetFile := fmt.Sprintf("../internal/testprotos/options/%sset", file)
+			descriptorSetFile := fmt.Sprintf("../internal/testdata/options/%sset", file)
 			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
 			prototest.CheckFiles(t, res, fdset, false)
 

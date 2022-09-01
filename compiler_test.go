@@ -36,7 +36,7 @@ func TestParseFilesMessageComments(t *testing.T) {
 		IncludeSourceInfo: true,
 	}
 	ctx := context.Background()
-	files, err := comp.Compile(ctx, "internal/testprotos/desc_test1.proto")
+	files, err := comp.Compile(ctx, "internal/testdata/desc_test1.proto")
 	if !assert.Nil(t, err, "%v", err) {
 		t.FailNow()
 	}
@@ -65,7 +65,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 	pwd, err := os.Getwd()
 	assert.Nil(t, err, "%v", err)
 
-	err = os.Chdir("internal/testprotos/more")
+	err = os.Chdir("internal/testdata/more")
 	assert.Nil(t, err, "%v", err)
 	defer func() {
 		// restore working directory
@@ -85,7 +85,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 
 func TestParseFilesWithDependencies(t *testing.T) {
 	// Create some file contents that import a non-well-known proto.
-	// (One of the protos in internal/testprotos is fine.)
+	// (One of the protos in internal/testdata is fine.)
 	contents := map[string]string{
 		"test.proto": `
 			syntax = "proto3";
@@ -104,7 +104,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		return SearchResult{Source: strings.NewReader(s)}, nil
 	})
 
-	fdset := prototest.LoadDescriptorSet(t, "./internal/testprotos/all.protoset", nil)
+	fdset := prototest.LoadDescriptorSet(t, "./internal/testdata/all.protoset", nil)
 	wktDesc, wktDescProto := findAndLink(t, "desc_test_wellknowntypes.proto", fdset, nil)
 
 	ctx := context.Background()

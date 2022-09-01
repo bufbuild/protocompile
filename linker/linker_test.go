@@ -31,7 +31,7 @@ import (
 func TestSimpleLink(t *testing.T) {
 	compiler := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-			ImportPaths: []string{"../internal/testprotos"},
+			ImportPaths: []string{"../internal/testdata"},
 		}),
 	}
 	fds, err := compiler.Compile(context.Background(), "desc_test_complex.proto")
@@ -40,7 +40,7 @@ func TestSimpleLink(t *testing.T) {
 	}
 
 	res := fds[0].(linker.Result)
-	fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/desc_test_complex.protoset", linker.ResolverFromFile(fds[0]))
+	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_complex.protoset", linker.ResolverFromFile(fds[0]))
 	prototest.CheckFiles(t, res, fdset, true)
 }
 
@@ -48,7 +48,7 @@ func TestMultiFileLink(t *testing.T) {
 	for _, name := range []string{"desc_test_defaults.proto", "desc_test_field_types.proto", "desc_test_options.proto", "desc_test_wellknowntypes.proto"} {
 		compiler := protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-				ImportPaths: []string{"../internal/testprotos"},
+				ImportPaths: []string{"../internal/testdata"},
 			}),
 		}
 		fds, err := compiler.Compile(context.Background(), name)
@@ -57,7 +57,7 @@ func TestMultiFileLink(t *testing.T) {
 		}
 
 		res := fds[0].(linker.Result)
-		fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/all.protoset", linker.ResolverFromFile(fds[0]))
+		fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/all.protoset", linker.ResolverFromFile(fds[0]))
 		prototest.CheckFiles(t, res, fdset, true)
 	}
 }
@@ -65,7 +65,7 @@ func TestMultiFileLink(t *testing.T) {
 func TestProto3Optional(t *testing.T) {
 	compiler := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-			ImportPaths: []string{"../internal/testprotos"},
+			ImportPaths: []string{"../internal/testdata"},
 		}),
 	}
 	fds, err := compiler.Compile(context.Background(), "desc_test_proto3_optional.proto")
@@ -73,7 +73,7 @@ func TestProto3Optional(t *testing.T) {
 		return
 	}
 
-	fdset := prototest.LoadDescriptorSet(t, "../internal/testprotos/desc_test_proto3_optional.protoset", fds.AsResolver())
+	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_proto3_optional.protoset", fds.AsResolver())
 
 	res := fds[0].(linker.Result)
 	prototest.CheckFiles(t, res, fdset, true)

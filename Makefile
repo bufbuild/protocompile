@@ -8,7 +8,7 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 BIN := $(abspath .tmp/bin)
 COPYRIGHT_YEARS := 2020-2022
-LICENSE_IGNORE := -e /testdata/ -e /testprotos/
+LICENSE_IGNORE := -e /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
 TOOLS_MOD_DIR := ./internal/tools
@@ -50,7 +50,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 
 .PHONY: generate
 generate: $(BIN)/license-header $(BIN)/goyacc ## Regenerate code and licenses
-	cd internal/testprotos && ./make_protos.sh
+	cd internal/testdata && ./make_protos.sh
 	PATH=$(BIN):$(PATH) $(GO) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes

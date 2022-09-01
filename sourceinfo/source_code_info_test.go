@@ -38,7 +38,7 @@ const regenerateMode = false
 func TestSourceCodeInfo(t *testing.T) {
 	compiler := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-			ImportPaths: []string{"../internal/testprotos"},
+			ImportPaths: []string{"../internal/testdata"},
 		}),
 		IncludeSourceInfo: true,
 	}
