@@ -35,15 +35,10 @@ if [[ "$(${PROTOC} --version 2>/dev/null)" != "libprotoc ${PROTOC_VERSION}" ]]; 
   cd ./protoc && unzip protoc.zip && cd ..
 fi
 
-go install google.golang.org/protobuf/cmd/protoc-gen-go
+rm *.protoset 2>/dev/null || true
 
-rm *.protoset *.pb.go
-
-# Output directory will effectively be GOPATH/src.
-outdir="."
-${PROTOC} "--go_out=paths=source_relative:$outdir" -I. *desc_test_comments.proto desc_test_complex.proto desc_test_options.proto desc_test_defaults.proto desc_test_field_types.proto desc_test_wellknowntypes.proto
-
-# And make descriptor set (with source info) for several files
+# Make descriptor sets for several files
+${PROTOC} --descriptor_set_out=./all.protoset --include_imports -I. *.proto
 ${PROTOC} --descriptor_set_out=./desc_test_complex.protoset --include_imports -I. desc_test_complex.proto
 ${PROTOC} --descriptor_set_out=./desc_test_proto3_optional.protoset --include_imports -I. desc_test_proto3_optional.proto
 ${PROTOC} --descriptor_set_out=./options/test.protoset -I./options test.proto

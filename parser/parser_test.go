@@ -68,20 +68,20 @@ func TestSimpleParse(t *testing.T) {
 	// testing. We do a *very* shallow check of what was parsed because we know
 	// it won't be fully correct until after linking. (So that will be tested
 	// below, where we parse *and* link.)
-	res, err := parseFileForTest("../internal/testprotos/desc_test1.proto")
+	res, err := parseFileForTest("../internal/testdata/desc_test1.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test1.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test1.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasExtension(fd, "xtm"))
 		assert.True(t, hasMessage(fd, "TestMessage"))
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/desc_test2.proto")
+	res, err = parseFileForTest("../internal/testdata/desc_test2.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test2.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test2.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasExtension(fd, "groupx"))
 		assert.True(t, hasMessage(fd, "GroupX"))
@@ -89,29 +89,29 @@ func TestSimpleParse(t *testing.T) {
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/desc_test_defaults.proto")
+	res, err = parseFileForTest("../internal/testdata/desc_test_defaults.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test_defaults.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test_defaults.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasMessage(fd, "PrimitiveDefaults"))
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/desc_test_field_types.proto")
+	res, err = parseFileForTest("../internal/testdata/desc_test_field_types.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test_field_types.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test_field_types.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasEnum(fd, "TestEnum"))
 		assert.True(t, hasMessage(fd, "UnaryFields"))
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/desc_test_options.proto")
+	res, err = parseFileForTest("../internal/testdata/desc_test_options.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test_options.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test_options.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasExtension(fd, "mfubar"))
 		assert.True(t, hasEnum(fd, "ReallySimpleEnum"))
@@ -119,46 +119,46 @@ func TestSimpleParse(t *testing.T) {
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/desc_test_proto3.proto")
+	res, err = parseFileForTest("../internal/testdata/desc_test_proto3.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test_proto3.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test_proto3.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasEnum(fd, "Proto3Enum"))
 		assert.True(t, hasService(fd, "TestService"))
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/desc_test_wellknowntypes.proto")
+	res, err = parseFileForTest("../internal/testdata/desc_test_wellknowntypes.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/desc_test_wellknowntypes.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/desc_test_wellknowntypes.proto", fd.GetName())
 		assert.Equal(t, "testprotos", fd.GetPackage())
 		assert.True(t, hasMessage(fd, "TestWellKnownTypes"))
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/nopkg/desc_test_nopkg.proto")
+	res, err = parseFileForTest("../internal/testdata/nopkg/desc_test_nopkg.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/nopkg/desc_test_nopkg.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg.proto", fd.GetName())
 		assert.Equal(t, "", fd.GetPackage())
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/nopkg/desc_test_nopkg_new.proto")
+	res, err = parseFileForTest("../internal/testdata/nopkg/desc_test_nopkg_new.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/nopkg/desc_test_nopkg_new.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg_new.proto", fd.GetName())
 		assert.Equal(t, "", fd.GetPackage())
 		assert.True(t, hasMessage(fd, "TopLevel"))
 		protos[fd.GetName()] = res
 	}
 
-	res, err = parseFileForTest("../internal/testprotos/pkg/desc_test_pkg.proto")
+	res, err = parseFileForTest("../internal/testdata/pkg/desc_test_pkg.proto")
 	if assert.Nil(t, err, "%v", err) {
 		fd := res.Proto()
-		assert.Equal(t, "../internal/testprotos/pkg/desc_test_pkg.proto", fd.GetName())
+		assert.Equal(t, "../internal/testdata/pkg/desc_test_pkg.proto", fd.GetName())
 		assert.Equal(t, "bufbuild.protocompile.test", fd.GetPackage())
 		assert.True(t, hasEnum(fd, "Foo"))
 		assert.True(t, hasMessage(fd, "Bar"))
@@ -219,7 +219,7 @@ func hasService(fd *descriptorpb.FileDescriptorProto, name string) bool {
 }
 
 func TestAggregateValueInUninterpretedOptions(t *testing.T) {
-	res, err := parseFileForTest("../internal/testprotos/desc_test_complex.proto")
+	res, err := parseFileForTest("../internal/testdata/desc_test_complex.proto")
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}

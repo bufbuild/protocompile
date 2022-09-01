@@ -26,7 +26,6 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/linker"
@@ -43,19 +42,19 @@ func LoadDescriptorSet(t *testing.T, path string, res linker.Resolver) *descript
 	return &fdset
 }
 
-func CheckFiles(t *testing.T, act protoreflect.FileDescriptor, expSet FileProtoSet, recursive bool) {
+func CheckFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descriptorpb.FileDescriptorSet, recursive bool) {
 	t.Helper()
 	checkFiles(t, act, expSet, recursive, map[string]struct{}{})
 }
 
-func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet FileProtoSet, recursive bool, checked map[string]struct{}) {
+func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descriptorpb.FileDescriptorSet, recursive bool, checked map[string]struct{}) {
 	if _, ok := checked[act.Path()]; ok {
 		// already checked
 		return
 	}
 	checked[act.Path()] = struct{}{}
 
-	expProto := expSet.FindFile(act.Path())
+	expProto := findFileInSet(expSet, act.Path())
 	actProto := protoutil.ProtoFromFileDescriptor(act)
 	checkFileDescriptor(t, actProto, expProto)
 
@@ -66,23 +65,7 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet FileProtoS
 	}
 }
 
-type FileProtoSet interface {
-	FindFile(name string) *descriptorpb.FileDescriptorProto
-}
-
-func FileProtoSetFromDescriptorProtos(fds *descriptorpb.FileDescriptorSet) FileProtoSet {
-	return (*fdsProtoSet)(fds)
-}
-
-func FileProtoSetFromRegistry(reg *protoregistry.Files) FileProtoSet {
-	return (*regProtoSet)(reg)
-}
-
-type fdsProtoSet descriptorpb.FileDescriptorSet
-
-var _ FileProtoSet = &fdsProtoSet{}
-
-func (fps *fdsProtoSet) FindFile(name string) *descriptorpb.FileDescriptorProto {
+func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptorpb.FileDescriptorProto {
 	files := fps.File
 	for _, fd := range files {
 		if fd.GetName() == name {
@@ -90,18 +73,6 @@ func (fps *fdsProtoSet) FindFile(name string) *descriptorpb.FileDescriptorProto 
 		}
 	}
 	return nil
-}
-
-type regProtoSet protoregistry.Files
-
-var _ FileProtoSet = &regProtoSet{}
-
-func (fps *regProtoSet) FindFile(name string) *descriptorpb.FileDescriptorProto {
-	f, err := (*protoregistry.Files)(fps).FindFileByPath(name)
-	if err != nil {
-		return nil
-	}
-	return protoutil.ProtoFromFileDescriptor(f)
 }
 
 func checkFileDescriptor(t *testing.T, act, exp *descriptorpb.FileDescriptorProto) {
