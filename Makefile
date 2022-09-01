@@ -121,16 +121,16 @@ internal/testdata/all.protoset: $(wildcard internal/testdata/*.proto)
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
 
 internal/testdata/desc_test_complex.protoset: internal/testdata/desc_test_complex.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(<F)
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
 
 internal/testdata/desc_test_proto3_optional.protoset: internal/testdata/desc_test_proto3_optional.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(<F)
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
 
 internal/testdata/options/test.protoset: internal/testdata/options/test.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(<F)
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(^F)
 
 internal/testdata/options/test_proto3.protoset: internal/testdata/options/test_proto3.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(<F)
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(^F)
 
 .PHONY: test-descriptors
 test-descriptors: $(PROTOC)
