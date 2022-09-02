@@ -49,13 +49,20 @@ func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.So
 		sci.newLocWithComments(file.Syntax, append(path, internal.File_syntaxTag))
 	}
 
-	var depIndex, optIndex, msgIndex, enumIndex, extendIndex, svcIndex int32
+	var depIndex, pubDepIndex, weakDepIndex, optIndex, msgIndex, enumIndex, extendIndex, svcIndex int32
 
 	for _, child := range file.Decls {
 		switch child := child.(type) {
 		case *ast.ImportNode:
 			sci.newLocWithComments(child, append(path, internal.File_dependencyTag, depIndex))
 			depIndex++
+			if child.Public != nil {
+				sci.newLoc(child.Public, append(path, internal.File_publicDependencyTag, pubDepIndex))
+				pubDepIndex++
+			} else if child.Weak != nil {
+				sci.newLoc(child.Weak, append(path, internal.File_weakDependencyTag, weakDepIndex))
+				weakDepIndex++
+			}
 		case *ast.PackageNode:
 			sci.newLocWithComments(child, append(path, internal.File_packageTag))
 		case *ast.OptionNode:

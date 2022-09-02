@@ -61,6 +61,15 @@ const (
 	// File_optionsTag is the tag number of the options element in a file
 	// descriptor proto.
 	File_optionsTag = 8
+	// File_sourceCodeInfoTag is the tag number of the source code info element
+	// in a file descriptor proto.
+	File_sourceCodeInfoTag = 9
+	// File_publicDependencyTag is the tag number of the public dependency element
+	// in a file descriptor proto.
+	File_publicDependencyTag = 10
+	// File_weakDependencyTag is the tag number of the weak dependency element
+	// in a file descriptor proto.
+	File_weakDependencyTag = 11
 	// File_syntaxTag is the tag number of the syntax element in a file
 	// descriptor proto.
 	File_syntaxTag = 12
@@ -133,6 +142,9 @@ const (
 	// Field_optionsTag is the tag number of the options element in a field
 	// descriptor proto.
 	Field_optionsTag = 8
+	// Field_oneofIndexTag is the tag number of the oneof index element in a
+	// field descriptor proto.
+	Field_oneofIndexTag = 9
 	// Field_jsonNameTag is the tag number of the JSON name element in a field
 	// descriptor proto.
 	Field_jsonNameTag = 10
