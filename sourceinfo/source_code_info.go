@@ -270,6 +270,8 @@ func generateSourceCodeInfoForReservedRange(sci *sourceCodeInfo, n *ast.RangeNod
 		sci.newLoc(n.EndVal, append(path, internal.ReservedRange_endTag))
 	} else if n.Max != nil {
 		sci.newLoc(n.Max, append(path, internal.ReservedRange_endTag))
+	} else {
+		sci.newLoc(n.StartVal, append(path, internal.ReservedRange_endTag))
 	}
 }
 
@@ -374,6 +376,8 @@ func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCod
 			sci.newLoc(child.EndVal, append(path, internal.ExtensionRange_endTag))
 		} else if child.Max != nil {
 			sci.newLoc(child.Max, append(path, internal.ExtensionRange_endTag))
+		} else {
+			sci.newLoc(child.StartVal, append(path, internal.ExtensionRange_endTag))
 		}
 		if n.Options != nil {
 			optsPath := append(path, internal.ExtensionRange_optionsTag)
