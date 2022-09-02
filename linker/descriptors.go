@@ -383,9 +383,9 @@ func computePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			path = append(path, int32(d.Index()))
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
-				path = append(path, internal.File_messagesTag)
+				path = append(path, internal.FileMessagesTag)
 			case protoreflect.MessageDescriptor:
-				path = append(path, internal.Message_nestedMessagesTag)
+				path = append(path, internal.MessageNestedMessagesTag)
 			default:
 				return nil, false
 			}
@@ -394,15 +394,15 @@ func computePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
 				if d.IsExtension() {
-					path = append(path, internal.File_extensionsTag)
+					path = append(path, internal.FileExtensionsTag)
 				} else {
 					return nil, false
 				}
 			case protoreflect.MessageDescriptor:
 				if d.IsExtension() {
-					path = append(path, internal.Message_extensionsTag)
+					path = append(path, internal.MessageExtensionsTag)
 				} else {
-					path = append(path, internal.Message_fieldsTag)
+					path = append(path, internal.MessageFieldsTag)
 				}
 			default:
 				return nil, false
@@ -410,7 +410,7 @@ func computePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 		case protoreflect.OneofDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.MessageDescriptor); ok {
-				path = append(path, internal.Message_oneOfsTag)
+				path = append(path, internal.MessageOneOfsTag)
 			} else {
 				return nil, false
 			}
@@ -418,30 +418,30 @@ func computePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 			path = append(path, int32(d.Index()))
 			switch p.(type) {
 			case protoreflect.FileDescriptor:
-				path = append(path, internal.File_enumsTag)
+				path = append(path, internal.FileEnumsTag)
 			case protoreflect.MessageDescriptor:
-				path = append(path, internal.Message_enumsTag)
+				path = append(path, internal.MessageEnumsTag)
 			default:
 				return nil, false
 			}
 		case protoreflect.EnumValueDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.EnumDescriptor); ok {
-				path = append(path, internal.Enum_valuesTag)
+				path = append(path, internal.EnumValuesTag)
 			} else {
 				return nil, false
 			}
 		case protoreflect.ServiceDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.FileDescriptor); ok {
-				path = append(path, internal.File_servicesTag)
+				path = append(path, internal.FileServicesTag)
 			} else {
 				return nil, false
 			}
 		case protoreflect.MethodDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.ServiceDescriptor); ok {
-				path = append(path, internal.Service_methodsTag)
+				path = append(path, internal.ServiceMethodsTag)
 			} else {
 				return nil, false
 			}
