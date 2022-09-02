@@ -428,11 +428,36 @@ type sourceCodeInfo struct {
 func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	dup := make([]int32, len(path))
 	copy(dup, path)
-	info := sci.file.NodeInfo(n)
+	var start, end ast.SourcePos
+	if n == sci.file {
+		// For files, we don't want to consider trailing EOF token
+		// as part of the span. We want the span to only include
+		// actual lexical elements in the file (which also excludes
+		// whitespace and comments).
+		children := sci.file.Children()
+		if len(children) > 0 && isEOF(children[len(children)-1]) {
+			children = children[:len(children)-1]
+		}
+		if len(children) == 0 {
+			start = ast.SourcePos{Filename: sci.file.Name(), Line: 1, Col: 1}
+			end = start
+		} else {
+			start = sci.file.TokenInfo(n.Start()).Start()
+			end = sci.file.TokenInfo(children[len(children)-1].End()).End()
+		}
+	} else {
+		info := sci.file.NodeInfo(n)
+		start, end = info.Start(), info.End()
+	}
 	sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
 		Path: dup,
-		Span: makeSpan(info.Start(), info.End()),
+		Span: makeSpan(start, end),
 	})
+}
+
+func isEOF(n ast.Node) bool {
+	r, ok := n.(*ast.RuneNode)
+	return ok && r.Rune == 0
 }
 
 func (sci *sourceCodeInfo) newBlockLocWithComments(n, openBrace ast.Node, path []int32) {
