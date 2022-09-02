@@ -277,7 +277,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		}
 		// attribute source code info
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = []int32{-1, internal.Field_jsonNameTag}
+			interp.index[on] = []int32{-1, internal.FieldJsonNameTag}
 		}
 		uo = internal.RemoveOption(uo, index)
 		if opt.StringValue == nil {
@@ -293,7 +293,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		// attribute source code info
 		optNode := interp.file.OptionNode(uo[index])
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = []int32{-1, internal.Field_defaultTag}
+			interp.index[on] = []int32{-1, internal.FieldDefaultTag}
 		}
 		uo = internal.RemoveOption(uo, index)
 	}

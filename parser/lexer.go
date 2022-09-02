@@ -371,10 +371,12 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 
 	if l.prevSym != nil && len(comments) > 0 {
 		prevEnd := l.info.NodeInfo(l.prevSym).End().Line
+		info := l.info.NodeInfo(n)
+		nStart := info.Start().Line
 		c := comments[0]
 		commentInfo := l.info.TokenInfo(c)
 		commentStart := commentInfo.Start().Line
-		if commentStart-prevEnd <= 1 {
+		if nStart > prevEnd && commentStart-prevEnd <= 1 {
 			// we may need to re-attribute the first comment to
 			// instead be previous node's trailing comment
 			groupEnd := 0
@@ -432,9 +434,9 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 			}
 
 			if isPunctuation ||
-				(len(comments) > groupEnd && nStart > prevEnd) ||
+				len(comments) > groupEnd ||
 				(commentStart == prevEnd && nStart > commentEnd) ||
-				(nStart-commentEnd > 1) {
+				nStart-commentEnd > 1 {
 				// we can move the first group of comments to previous token
 				prevTrailingComments = comments[:groupEnd]
 				comments = comments[groupEnd:]

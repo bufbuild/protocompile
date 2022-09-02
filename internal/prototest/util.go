@@ -100,10 +100,10 @@ func compareFiles(t *testing.T, path string, exp, act *descriptorpb.FileDescript
 		}
 		return
 	}
-	compareMessages(t, path, mexp, mact)
+	CompareMessages(t, path, mexp, mact)
 }
 
-func compareMessages(t *testing.T, path string, exp, act protoreflect.Message) {
+func CompareMessages(t *testing.T, path string, exp, act protoreflect.Message) {
 	if exp.Descriptor() != act.Descriptor() {
 		t.Errorf("%s: descriptors do not match: exp %#v, actual %#v", path, exp.Descriptor(), act.Descriptor())
 		return
@@ -182,7 +182,7 @@ func compareValues(t *testing.T, path string, fd protoreflect.FieldDescriptor, e
 	var eq bool
 	switch fd.Kind() {
 	case protoreflect.MessageKind, protoreflect.GroupKind:
-		compareMessages(t, path, exp.Message(), act.Message())
+		CompareMessages(t, path, exp.Message(), act.Message())
 		return
 	case protoreflect.BoolKind:
 		eq = exp.Bool() == act.Bool()

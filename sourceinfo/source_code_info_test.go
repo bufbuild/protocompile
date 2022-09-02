@@ -15,25 +15,21 @@
 package sourceinfo_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"os"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/protoutil"
 )
-
-// If true, re-generates the golden output file.
-const regenerateMode = false
 
 func TestSourceCodeInfo(t *testing.T) {
 	compiler := protocompile.Compiler{
@@ -53,108 +49,108 @@ func TestSourceCodeInfo(t *testing.T) {
 		return
 	}
 
-	// create description of source code info
-	// (human readable so diffs in source control are comprehensible)
-	var buf bytes.Buffer
-	for _, fd := range fds {
-		printSourceCodeInfo(fd, &buf)
-	}
-	printSourceCodeInfo(importedFd, &buf)
-	actual := buf.String()
-
-	if regenerateMode {
-		// re-generate the file
-		err = os.WriteFile("test-source-info.txt", buf.Bytes(), 0666)
-		if !assert.Nil(t, err) {
-			return
-		}
+	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/source_info.protoset", linker.ResolverFromFile(fds[0]))
+	actualFdset := &descriptorpb.FileDescriptorSet{
+		File: []*descriptorpb.FileDescriptorProto{
+			protoutil.ProtoFromFileDescriptor(importedFd),
+			protoutil.ProtoFromFileDescriptor(fds[0]),
+			protoutil.ProtoFromFileDescriptor(fds[1]),
+		},
 	}
 
-	b, err := os.ReadFile("test-source-info.txt")
-	if !assert.Nil(t, err) {
-		return
-	}
-	golden := string(b)
-
-	assert.Equal(t, golden, actual, "wrong source code info")
-}
-
-// NB: this function can be used to manually inspect the source code info for a
-// descriptor, in a manner that is much easier to read and check than raw
-// descriptor form.
-func printSourceCodeInfo(fd linker.File, out io.Writer) {
-	fmt.Fprintf(out, "---- %s ----\n", fd.Path())
-
-	var fdMsg *descriptorpb.FileDescriptorProto
-	if r, ok := fd.(linker.Result); ok {
-		fdMsg = r.Proto()
-	} else {
-		fdMsg = protodesc.ToFileDescriptorProto(fd)
-	}
-
-	for i := 0; i < fd.SourceLocations().Len(); i++ {
-		loc := fd.SourceLocations().Get(i)
-		var buf bytes.Buffer
-		findLocation(linker.ResolverFromFile(fd), fdMsg.ProtoReflect(), fdMsg.ProtoReflect().Descriptor(), loc.Path, &buf)
-		fmt.Fprintf(out, "\n\n%s:\n", buf.String())
-		fmt.Fprintf(out, "%s:%d:%d\n", fd.Path(), loc.StartLine+1, loc.StartColumn+1)
-		fmt.Fprintf(out, "%s:%d:%d\n", fd.Path(), loc.EndLine+1, loc.EndColumn+1)
-		if len(loc.LeadingDetachedComments) > 0 {
-			for i, comment := range loc.LeadingDetachedComments {
-				fmt.Fprintf(out, "    Leading detached comment [%d]:\n%s\n", i, comment)
+	for _, actualFd := range actualFdset.File {
+		var expectedFd *descriptorpb.FileDescriptorProto
+		for _, fd := range fdset.File {
+			if fd.GetName() == actualFd.GetName() {
+				expectedFd = fd
+				break
 			}
 		}
-		if loc.LeadingComments != "" {
-			fmt.Fprintf(out, "    Leading comments:\n%s\n", loc.LeadingComments)
+		if !assert.NotNil(t, expectedFd, "file %q not found in source_info.protoset", actualFd.GetName()) {
+			continue
 		}
-		if loc.TrailingComments != "" {
-			fmt.Fprintf(out, "    Trailing comments:\n%s\n", loc.TrailingComments)
-		}
+		fixupProtocSourceCodeInfo(expectedFd.SourceCodeInfo)
+		prototest.CompareMessages(t, fmt.Sprintf("%q.source_code_info", actualFd.GetName()), expectedFd.SourceCodeInfo.ProtoReflect(), actualFd.SourceCodeInfo.ProtoReflect())
 	}
 }
 
-func findLocation(res protoregistry.ExtensionTypeResolver, msg protoreflect.Message, md protoreflect.MessageDescriptor, path []int32, buf *bytes.Buffer) {
-	if len(path) == 0 {
-		return
-	}
+var protocFixers = []struct {
+	pathPatterns []*regexp.Regexp
+	fixer        func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location
+}{
+	{
+		// FieldDescriptorProto.default_value
+		// https://github.com/protocolbuffers/protobuf/issues/10478
+		pathPatterns: []*regexp.Regexp{
+			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*2,\\d+,7$"), // normal fields
+			regexp.MustCompile("^7,\\d+,7$"),                    // extension fields, top-level in file
+			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*7,\\d+,7$"), // extension fields, nested in a message
+		},
+		fixer: func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location {
+			// adjust span to include preceding "default = "
+			allLocs[currentIndex].Span[1] -= 10
+			return allLocs[currentIndex]
+		},
+	},
+	{
+		// FieldDescriptorProto.json_name
+		// https://github.com/protocolbuffers/protobuf/issues/10478
+		pathPatterns: []*regexp.Regexp{
+			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*2,\\d+,10$"),
+		},
+		fixer: func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location {
+			if currentIndex > 0 && pathsEqual(allLocs[currentIndex].Path, allLocs[currentIndex-1].Path) {
+				// second span for json_name is not useful; remove it
+				return nil
+			}
+			return allLocs[currentIndex]
+		},
+	},
+}
 
-	tag := protoreflect.FieldNumber(path[0])
-	fld := md.Fields().ByNumber(tag)
-	if fld == nil {
-		ext, err := res.FindExtensionByNumber(md.FullName(), tag)
-		if err != nil {
-			panic(fmt.Sprintf("could not find field with tag %d in message of type %s", path[0], msg.Descriptor().FullName()))
+func pathsEqual(a, b []int32) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if b[i] != a[i] {
+			return false
 		}
-		fld = ext.TypeDescriptor()
 	}
+	return true
+}
 
-	fmt.Fprintf(buf, " > %s", fld.Name())
-	path = path[1:]
-	idx := -1
-	if fld.Cardinality() == protoreflect.Repeated && len(path) > 0 {
-		idx = int(path[0])
-		fmt.Fprintf(buf, "[%d]", path[0])
-		path = path[1:]
-	}
+func fixupProtocSourceCodeInfo(info *descriptorpb.SourceCodeInfo) {
+	for i := 0; i < len(info.Location); i++ {
+		loc := info.Location[i]
 
-	if len(path) > 0 {
-		var next protoreflect.Message
-		if msg != nil {
-			fldVal := msg.Get(fld)
-			if idx >= 0 {
-				l := fldVal.List()
-				if idx < l.Len() {
-					next = l.Get(idx).Message()
+		pathStrs := make([]string, len(loc.Path))
+		for j, val := range loc.Path {
+			pathStrs[j] = strconv.FormatInt(int64(val), 10)
+		}
+		pathStr := strings.Join(pathStrs, ",")
+
+		for _, fixerEntry := range protocFixers {
+			match := false
+			for _, pattern := range fixerEntry.pathPatterns {
+				if pattern.MatchString(pathStr) {
+					match = true
+					break
 				}
-			} else {
-				next = fldVal.Message()
 			}
+			if !match {
+				continue
+			}
+			newLoc := fixerEntry.fixer(info.Location, i)
+			if newLoc == nil {
+				// remove this entry
+				info.Location = append(info.Location[:i], info.Location[i+1:]...)
+				i--
+			} else {
+				info.Location[i] = newLoc
+			}
+			// only apply one fixer to each location
+			break
 		}
-
-		if next == nil && msg != nil {
-			buf.WriteString(" !!! ")
-		}
-
-		findLocation(res, next, fld.Message(), path, buf)
 	}
 }

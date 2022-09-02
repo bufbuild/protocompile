@@ -43,33 +43,40 @@ func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.So
 	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}}
 	path := make([]int32, 0, 10)
 
-	sci.newLocWithoutComments(file, nil)
+	sci.newLoc(file, nil)
 
 	if file.Syntax != nil {
-		sci.newLoc(file.Syntax, append(path, internal.File_syntaxTag))
+		sci.newLocWithComments(file.Syntax, append(path, internal.FileSyntaxTag))
 	}
 
-	var depIndex, optIndex, msgIndex, enumIndex, extendIndex, svcIndex int32
+	var depIndex, pubDepIndex, weakDepIndex, optIndex, msgIndex, enumIndex, extendIndex, svcIndex int32
 
 	for _, child := range file.Decls {
 		switch child := child.(type) {
 		case *ast.ImportNode:
-			sci.newLoc(child, append(path, internal.File_dependencyTag, depIndex))
+			sci.newLocWithComments(child, append(path, internal.FileDependencyTag, depIndex))
 			depIndex++
+			if child.Public != nil {
+				sci.newLoc(child.Public, append(path, internal.FilePublicDependencyTag, pubDepIndex))
+				pubDepIndex++
+			} else if child.Weak != nil {
+				sci.newLoc(child.Weak, append(path, internal.FileWeakDependencyTag, weakDepIndex))
+				weakDepIndex++
+			}
 		case *ast.PackageNode:
-			sci.newLoc(child, append(path, internal.File_packageTag))
+			sci.newLocWithComments(child, append(path, internal.FilePackageTag))
 		case *ast.OptionNode:
-			generateSourceCodeInfoForOption(opts, &sci, child, false, &optIndex, append(path, internal.File_optionsTag))
+			generateSourceCodeInfoForOption(opts, &sci, child, false, &optIndex, append(path, internal.FileOptionsTag))
 		case *ast.MessageNode:
-			generateSourceCodeInfoForMessage(opts, &sci, child, nil, append(path, internal.File_messagesTag, msgIndex))
+			generateSourceCodeInfoForMessage(opts, &sci, child, nil, append(path, internal.FileMessagesTag, msgIndex))
 			msgIndex++
 		case *ast.EnumNode:
-			generateSourceCodeInfoForEnum(opts, &sci, child, append(path, internal.File_enumsTag, enumIndex))
+			generateSourceCodeInfoForEnum(opts, &sci, child, append(path, internal.FileEnumsTag, enumIndex))
 			enumIndex++
 		case *ast.ExtendNode:
-			generateSourceCodeInfoForExtensions(opts, &sci, child, &extendIndex, &msgIndex, append(path, internal.File_extensionsTag), append(dup(path), internal.File_messagesTag))
+			generateSourceCodeInfoForExtensions(opts, &sci, child, &extendIndex, &msgIndex, append(path, internal.FileExtensionsTag), append(dup(path), internal.FileMessagesTag))
 		case *ast.ServiceNode:
-			generateSourceCodeInfoForService(opts, &sci, child, append(path, internal.File_servicesTag, svcIndex))
+			generateSourceCodeInfoForService(opts, &sci, child, append(path, internal.FileServicesTag, svcIndex))
 			svcIndex++
 		}
 	}
@@ -79,7 +86,7 @@ func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.So
 
 func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n *ast.OptionNode, compact bool, uninterpIndex *int32, path []int32) {
 	if !compact {
-		sci.newLocWithoutComments(n, path)
+		sci.newLoc(n, path)
 	}
 	subPath := opts[n]
 	if len(subPath) > 0 {
@@ -92,7 +99,11 @@ func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n 
 			copy(p, path)
 			subPath = subPath[1:]
 		}
-		sci.newLoc(n, append(p, subPath...))
+		if compact {
+			sci.newLoc(n, append(p, subPath...))
+		} else {
+			sci.newLocWithComments(n, append(p, subPath...))
+		}
 		return
 	}
 
@@ -103,47 +114,51 @@ func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n 
 	var valTag int32
 	switch n.Val.(type) {
 	case ast.IdentValueNode:
-		valTag = internal.Uninterpreted_identTag
+		valTag = internal.UninterpretedIdentTag
 	case *ast.NegativeIntLiteralNode:
-		valTag = internal.Uninterpreted_negIntTag
+		valTag = internal.UninterpretedNegIntTag
 	case ast.IntValueNode:
-		valTag = internal.Uninterpreted_posIntTag
+		valTag = internal.UninterpretedPosIntTag
 	case ast.FloatValueNode:
-		valTag = internal.Uninterpreted_doubleTag
+		valTag = internal.UninterpretedDoubleTag
 	case ast.StringValueNode:
-		valTag = internal.Uninterpreted_stringTag
+		valTag = internal.UninterpretedStringTag
 	case *ast.MessageLiteralNode:
-		valTag = internal.Uninterpreted_aggregateTag
+		valTag = internal.UninterpretedAggregateTag
 	}
 	if valTag != 0 {
 		sci.newLoc(n.Val, append(optPath, valTag))
 	}
 	for j, nn := range n.Name.Parts {
-		optNmPath := append(optPath, internal.Uninterpreted_nameTag, int32(j))
+		optNmPath := append(optPath, internal.UninterpretedNameTag, int32(j))
 		sci.newLoc(nn, optNmPath)
-		sci.newLoc(nn.Name, append(optNmPath, internal.UninterpretedName_nameTag))
+		sci.newLoc(nn.Name, append(optNmPath, internal.UninterpretedNameNameTag))
 	}
 }
 
 func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n ast.MessageDeclNode, fieldPath []int32, path []int32) {
-	sci.newLoc(n, path)
+	var openBrace ast.Node
 
 	var decls []ast.MessageElement
 	switch n := n.(type) {
 	case *ast.MessageNode:
+		openBrace = n.OpenBrace
 		decls = n.Decls
 	case *ast.GroupNode:
+		openBrace = n.OpenBrace
 		decls = n.Decls
 	case *ast.MapFieldNode:
+		sci.newLoc(n, path)
 		// map entry so nothing else to do
 		return
 	}
+	sci.newBlockLocWithComments(n, openBrace, path)
 
-	sci.newLoc(n.MessageName(), append(path, internal.Message_nameTag))
+	sci.newLoc(n.MessageName(), append(path, internal.MessageNameTag))
 	// matching protoc, which emits the corresponding field type name (for group fields)
 	// right after the source location for the group message name
 	if fieldPath != nil {
-		sci.newLoc(n.MessageName(), append(fieldPath, internal.Field_typeNameTag))
+		sci.newLoc(n.MessageName(), append(fieldPath, internal.FieldTypeNameTag))
 	}
 
 	var optIndex, fieldIndex, oneOfIndex, extendIndex, nestedMsgIndex int32
@@ -151,45 +166,45 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 	for _, child := range decls {
 		switch child := child.(type) {
 		case *ast.OptionNode:
-			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(path, internal.Message_optionsTag))
+			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(path, internal.MessageOptionsTag))
 		case *ast.FieldNode:
-			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.Message_fieldsTag, fieldIndex))
+			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.MessageFieldsTag, fieldIndex))
 			fieldIndex++
 		case *ast.GroupNode:
-			fldPath := append(path, internal.Message_fieldsTag, fieldIndex)
+			fldPath := append(path, internal.MessageFieldsTag, fieldIndex)
 			generateSourceCodeInfoForField(opts, sci, child, fldPath)
 			fieldIndex++
-			generateSourceCodeInfoForMessage(opts, sci, child, fldPath, append(dup(path), internal.Message_nestedMessagesTag, nestedMsgIndex))
+			generateSourceCodeInfoForMessage(opts, sci, child, fldPath, append(dup(path), internal.MessageNestedMessagesTag, nestedMsgIndex))
 			nestedMsgIndex++
 		case *ast.MapFieldNode:
-			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.Message_fieldsTag, fieldIndex))
+			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.MessageFieldsTag, fieldIndex))
 			fieldIndex++
 			nestedMsgIndex++
 		case *ast.OneOfNode:
-			generateSourceCodeInfoForOneOf(opts, sci, child, &fieldIndex, &nestedMsgIndex, append(path, internal.Message_fieldsTag), append(dup(path), internal.Message_nestedMessagesTag), append(dup(path), internal.Message_oneOfsTag, oneOfIndex))
+			generateSourceCodeInfoForOneOf(opts, sci, child, &fieldIndex, &nestedMsgIndex, append(path, internal.MessageFieldsTag), append(dup(path), internal.MessageNestedMessagesTag), append(dup(path), internal.MessageOneOfsTag, oneOfIndex))
 			oneOfIndex++
 		case *ast.MessageNode:
-			generateSourceCodeInfoForMessage(opts, sci, child, nil, append(path, internal.Message_nestedMessagesTag, nestedMsgIndex))
+			generateSourceCodeInfoForMessage(opts, sci, child, nil, append(path, internal.MessageNestedMessagesTag, nestedMsgIndex))
 			nestedMsgIndex++
 		case *ast.EnumNode:
-			generateSourceCodeInfoForEnum(opts, sci, child, append(path, internal.Message_enumsTag, nestedEnumIndex))
+			generateSourceCodeInfoForEnum(opts, sci, child, append(path, internal.MessageEnumsTag, nestedEnumIndex))
 			nestedEnumIndex++
 		case *ast.ExtendNode:
-			generateSourceCodeInfoForExtensions(opts, sci, child, &extendIndex, &nestedMsgIndex, append(path, internal.Message_extensionsTag), append(dup(path), internal.Message_nestedMessagesTag))
+			generateSourceCodeInfoForExtensions(opts, sci, child, &extendIndex, &nestedMsgIndex, append(path, internal.MessageExtensionsTag), append(dup(path), internal.MessageNestedMessagesTag))
 		case *ast.ExtensionRangeNode:
-			generateSourceCodeInfoForExtensionRanges(opts, sci, child, &extRangeIndex, append(path, internal.Message_extensionRangeTag))
+			generateSourceCodeInfoForExtensionRanges(opts, sci, child, &extRangeIndex, append(path, internal.MessageExtensionRangesTag))
 		case *ast.ReservedNode:
 			if len(child.Names) > 0 {
-				resPath := append(path, internal.Message_reservedNameTag)
-				sci.newLoc(child, resPath)
+				resPath := append(path, internal.MessageReservedNamesTag)
+				sci.newLocWithComments(child, resPath)
 				for _, rn := range child.Names {
 					sci.newLoc(rn, append(resPath, reservedNameIndex))
 					reservedNameIndex++
 				}
 			}
 			if len(child.Ranges) > 0 {
-				resPath := append(path, internal.Message_reservedRangeTag)
-				sci.newLoc(child, resPath)
+				resPath := append(path, internal.MessageReservedRangesTag)
+				sci.newLocWithComments(child, resPath)
 				for _, rr := range child.Ranges {
 					generateSourceCodeInfoForReservedRange(sci, rr, append(resPath, reservedRangeIndex))
 					reservedRangeIndex++
@@ -200,29 +215,29 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 }
 
 func generateSourceCodeInfoForEnum(opts options.Index, sci *sourceCodeInfo, n *ast.EnumNode, path []int32) {
-	sci.newLoc(n, path)
-	sci.newLoc(n.Name, append(path, internal.Enum_nameTag))
+	sci.newBlockLocWithComments(n, n.OpenBrace, path)
+	sci.newLoc(n.Name, append(path, internal.EnumNameTag))
 
 	var optIndex, valIndex, reservedNameIndex, reservedRangeIndex int32
 	for _, child := range n.Decls {
 		switch child := child.(type) {
 		case *ast.OptionNode:
-			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(path, internal.Enum_optionsTag))
+			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(path, internal.EnumOptionsTag))
 		case *ast.EnumValueNode:
-			generateSourceCodeInfoForEnumValue(opts, sci, child, append(path, internal.Enum_valuesTag, valIndex))
+			generateSourceCodeInfoForEnumValue(opts, sci, child, append(path, internal.EnumValuesTag, valIndex))
 			valIndex++
 		case *ast.ReservedNode:
 			if len(child.Names) > 0 {
-				resPath := append(path, internal.Enum_reservedNameTag)
-				sci.newLoc(child, resPath)
+				resPath := append(path, internal.EnumReservedNamesTag)
+				sci.newLocWithComments(child, resPath)
 				for _, rn := range child.Names {
 					sci.newLoc(rn, append(resPath, reservedNameIndex))
 					reservedNameIndex++
 				}
 			}
 			if len(child.Ranges) > 0 {
-				resPath := append(path, internal.Enum_reservedRangeTag)
-				sci.newLoc(child, resPath)
+				resPath := append(path, internal.EnumReservedRangesTag)
+				sci.newLocWithComments(child, resPath)
 				for _, rr := range child.Ranges {
 					generateSourceCodeInfoForReservedRange(sci, rr, append(resPath, reservedRangeIndex))
 					reservedRangeIndex++
@@ -233,13 +248,13 @@ func generateSourceCodeInfoForEnum(opts options.Index, sci *sourceCodeInfo, n *a
 }
 
 func generateSourceCodeInfoForEnumValue(opts options.Index, sci *sourceCodeInfo, n *ast.EnumValueNode, path []int32) {
-	sci.newLoc(n, path)
-	sci.newLoc(n.Name, append(path, internal.EnumVal_nameTag))
-	sci.newLoc(n.Number, append(path, internal.EnumVal_numberTag))
+	sci.newLocWithComments(n, path)
+	sci.newLoc(n.Name, append(path, internal.EnumValNameTag))
+	sci.newLoc(n.Number, append(path, internal.EnumValNumberTag))
 
 	// enum value options
 	if n.Options != nil {
-		optsPath := append(path, internal.EnumVal_optionsTag)
+		optsPath := append(path, internal.EnumValOptionsTag)
 		sci.newLoc(n.Options, optsPath)
 		var optIndex int32
 		for _, opt := range n.Options.GetElements() {
@@ -250,16 +265,18 @@ func generateSourceCodeInfoForEnumValue(opts options.Index, sci *sourceCodeInfo,
 
 func generateSourceCodeInfoForReservedRange(sci *sourceCodeInfo, n *ast.RangeNode, path []int32) {
 	sci.newLoc(n, path)
-	sci.newLoc(n.StartVal, append(path, internal.ReservedRange_startTag))
+	sci.newLoc(n.StartVal, append(path, internal.ReservedRangeStartTag))
 	if n.EndVal != nil {
-		sci.newLoc(n.EndVal, append(path, internal.ReservedRange_endTag))
+		sci.newLoc(n.EndVal, append(path, internal.ReservedRangeEndTag))
 	} else if n.Max != nil {
-		sci.newLoc(n.Max, append(path, internal.ReservedRange_endTag))
+		sci.newLoc(n.Max, append(path, internal.ReservedRangeEndTag))
+	} else {
+		sci.newLoc(n.StartVal, append(path, internal.ReservedRangeEndTag))
 	}
 }
 
 func generateSourceCodeInfoForExtensions(opts options.Index, sci *sourceCodeInfo, n *ast.ExtendNode, extendIndex, msgIndex *int32, extendPath, msgPath []int32) {
-	sci.newLoc(n, extendPath)
+	sci.newBlockLocWithComments(n, n.OpenBrace, extendPath)
 	for _, decl := range n.Decls {
 		switch decl := decl.(type) {
 		case *ast.FieldNode:
@@ -276,14 +293,14 @@ func generateSourceCodeInfoForExtensions(opts options.Index, sci *sourceCodeInfo
 }
 
 func generateSourceCodeInfoForOneOf(opts options.Index, sci *sourceCodeInfo, n *ast.OneOfNode, fieldIndex, nestedMsgIndex *int32, fieldPath, nestedMsgPath, oneOfPath []int32) {
-	sci.newLoc(n, oneOfPath)
-	sci.newLoc(n.Name, append(oneOfPath, internal.OneOf_nameTag))
+	sci.newBlockLocWithComments(n, n.OpenBrace, oneOfPath)
+	sci.newLoc(n.Name, append(oneOfPath, internal.OneOfNameTag))
 
 	var optIndex int32
 	for _, child := range n.Decls {
 		switch child := child.(type) {
 		case *ast.OptionNode:
-			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(oneOfPath, internal.OneOf_optionsTag))
+			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(oneOfPath, internal.OneOfOptionsTag))
 		case *ast.FieldNode:
 			generateSourceCodeInfoForField(opts, sci, child, append(fieldPath, *fieldIndex))
 			*fieldIndex++
@@ -305,41 +322,41 @@ func generateSourceCodeInfoForField(opts options.Index, sci *sourceCodeInfo, n a
 
 	if n.GetGroupKeyword() != nil {
 		// comments will appear on group message
-		sci.newLocWithoutComments(n, path)
+		sci.newLoc(n, path)
 		if n.FieldExtendee() != nil {
-			sci.newLoc(n.FieldExtendee(), append(path, internal.Field_extendeeTag))
+			sci.newLoc(n.FieldExtendee(), append(path, internal.FieldExtendeeTag))
 		}
 		if n.FieldLabel() != nil {
 			// no comments here either (label is first token for group, so we want
 			// to leave the comments to be associated with the group message instead)
-			sci.newLocWithoutComments(n.FieldLabel(), append(path, internal.Field_labelTag))
+			sci.newLoc(n.FieldLabel(), append(path, internal.FieldLabelTag))
 		}
-		sci.newLoc(n.FieldType(), append(path, internal.Field_typeTag))
+		sci.newLoc(n.FieldType(), append(path, internal.FieldTypeTag))
 		// let the name comments be attributed to the group name
-		sci.newLocWithoutComments(n.FieldName(), append(path, internal.Field_nameTag))
+		sci.newLoc(n.FieldName(), append(path, internal.FieldNameTag))
 	} else {
-		sci.newLoc(n, path)
+		sci.newLocWithComments(n, path)
 		if n.FieldExtendee() != nil {
-			sci.newLoc(n.FieldExtendee(), append(path, internal.Field_extendeeTag))
+			sci.newLoc(n.FieldExtendee(), append(path, internal.FieldExtendeeTag))
 		}
 		if n.FieldLabel() != nil {
-			sci.newLoc(n.FieldLabel(), append(path, internal.Field_labelTag))
+			sci.newLoc(n.FieldLabel(), append(path, internal.FieldLabelTag))
 		}
 		var tag int32
 		if _, isScalar := internal.FieldTypes[fieldType]; isScalar {
-			tag = internal.Field_typeTag
+			tag = internal.FieldTypeTag
 		} else {
 			// this is a message or an enum, so attribute type location
 			// to the type name field
-			tag = internal.Field_typeNameTag
+			tag = internal.FieldTypeNameTag
 		}
 		sci.newLoc(n.FieldType(), append(path, tag))
-		sci.newLoc(n.FieldName(), append(path, internal.Field_nameTag))
+		sci.newLoc(n.FieldName(), append(path, internal.FieldNameTag))
 	}
-	sci.newLoc(n.FieldTag(), append(path, internal.Field_numberTag))
+	sci.newLoc(n.FieldTag(), append(path, internal.FieldNumberTag))
 
 	if n.GetOptions() != nil {
-		optsPath := append(path, internal.Field_optionsTag)
+		optsPath := append(path, internal.FieldOptionsTag)
 		sci.newLoc(n.GetOptions(), optsPath)
 		var optIndex int32
 		for _, opt := range n.GetOptions().GetElements() {
@@ -349,19 +366,27 @@ func generateSourceCodeInfoForField(opts options.Index, sci *sourceCodeInfo, n a
 }
 
 func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCodeInfo, n *ast.ExtensionRangeNode, extRangeIndex *int32, path []int32) {
-	sci.newLoc(n, path)
+	sci.newLocWithComments(n, path)
+	startExtRangeIndex := *extRangeIndex
 	for _, child := range n.Ranges {
 		path := append(path, *extRangeIndex)
 		*extRangeIndex++
 		sci.newLoc(child, path)
-		sci.newLoc(child.StartVal, append(path, internal.ExtensionRange_startTag))
+		sci.newLoc(child.StartVal, append(path, internal.ExtensionRangeStartTag))
 		if child.EndVal != nil {
-			sci.newLoc(child.EndVal, append(path, internal.ExtensionRange_endTag))
+			sci.newLoc(child.EndVal, append(path, internal.ExtensionRangeEndTag))
 		} else if child.Max != nil {
-			sci.newLoc(child.Max, append(path, internal.ExtensionRange_endTag))
+			sci.newLoc(child.Max, append(path, internal.ExtensionRangeEndTag))
+		} else {
+			sci.newLoc(child.StartVal, append(path, internal.ExtensionRangeEndTag))
 		}
+	}
+	// options for all ranges go after the start+end values
+	for range n.Ranges {
+		path := append(path, startExtRangeIndex)
+		startExtRangeIndex++
 		if n.Options != nil {
-			optsPath := append(path, internal.ExtensionRange_optionsTag)
+			optsPath := append(path, internal.ExtensionRangeOptionsTag)
 			sci.newLoc(n.Options, optsPath)
 			var optIndex int32
 			for _, opt := range n.Options.GetElements() {
@@ -372,33 +397,37 @@ func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCod
 }
 
 func generateSourceCodeInfoForService(opts options.Index, sci *sourceCodeInfo, n *ast.ServiceNode, path []int32) {
-	sci.newLoc(n, path)
-	sci.newLoc(n.Name, append(path, internal.Service_nameTag))
+	sci.newBlockLocWithComments(n, n.OpenBrace, path)
+	sci.newLoc(n.Name, append(path, internal.ServiceNameTag))
 	var optIndex, rpcIndex int32
 	for _, child := range n.Decls {
 		switch child := child.(type) {
 		case *ast.OptionNode:
-			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(path, internal.Service_optionsTag))
+			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(path, internal.ServiceOptionsTag))
 		case *ast.RPCNode:
-			generateSourceCodeInfoForMethod(opts, sci, child, append(path, internal.Service_methodsTag, rpcIndex))
+			generateSourceCodeInfoForMethod(opts, sci, child, append(path, internal.ServiceMethodsTag, rpcIndex))
 			rpcIndex++
 		}
 	}
 }
 
 func generateSourceCodeInfoForMethod(opts options.Index, sci *sourceCodeInfo, n *ast.RPCNode, path []int32) {
-	sci.newLoc(n, path)
-	sci.newLoc(n.Name, append(path, internal.Method_nameTag))
+	if n.OpenBrace != nil {
+		sci.newBlockLocWithComments(n, n.OpenBrace, path)
+	} else {
+		sci.newLocWithComments(n, path)
+	}
+	sci.newLoc(n.Name, append(path, internal.MethodNameTag))
 	if n.Input.Stream != nil {
-		sci.newLoc(n.Input.Stream, append(path, internal.Method_inputStreamTag))
+		sci.newLoc(n.Input.Stream, append(path, internal.MethodInputStreamTag))
 	}
-	sci.newLoc(n.Input.MessageType, append(path, internal.Method_inputTag))
+	sci.newLoc(n.Input.MessageType, append(path, internal.MethodInputTag))
 	if n.Output.Stream != nil {
-		sci.newLoc(n.Output.Stream, append(path, internal.Method_outputStreamTag))
+		sci.newLoc(n.Output.Stream, append(path, internal.MethodOutputStreamTag))
 	}
-	sci.newLoc(n.Output.MessageType, append(path, internal.Method_outputTag))
+	sci.newLoc(n.Output.MessageType, append(path, internal.MethodOutputTag))
 
-	optsPath := append(path, internal.Method_optionsTag)
+	optsPath := append(path, internal.MethodOptionsTag)
 	var optIndex int32
 	for _, decl := range n.Decls {
 		if opt, ok := decl.(*ast.OptionNode); ok {
@@ -413,20 +442,64 @@ type sourceCodeInfo struct {
 	commentsUsed map[ast.SourcePos]struct{}
 }
 
-func (sci *sourceCodeInfo) newLocWithoutComments(n ast.Node, path []int32) {
+func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	dup := make([]int32, len(path))
 	copy(dup, path)
-	info := sci.file.NodeInfo(n)
+	var start, end ast.SourcePos
+	if n == sci.file {
+		// For files, we don't want to consider trailing EOF token
+		// as part of the span. We want the span to only include
+		// actual lexical elements in the file (which also excludes
+		// whitespace and comments).
+		children := sci.file.Children()
+		if len(children) > 0 && isEOF(children[len(children)-1]) {
+			children = children[:len(children)-1]
+		}
+		if len(children) == 0 {
+			start = ast.SourcePos{Filename: sci.file.Name(), Line: 1, Col: 1}
+			end = start
+		} else {
+			start = sci.file.TokenInfo(n.Start()).Start()
+			end = sci.file.TokenInfo(children[len(children)-1].End()).End()
+		}
+	} else {
+		info := sci.file.NodeInfo(n)
+		start, end = info.Start(), info.End()
+	}
 	sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
 		Path: dup,
-		Span: makeSpan(info.Start(), info.End()),
+		Span: makeSpan(start, end),
 	})
 }
 
-func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
+func isEOF(n ast.Node) bool {
+	r, ok := n.(*ast.RuneNode)
+	return ok && r.Rune == 0
+}
+
+func (sci *sourceCodeInfo) newBlockLocWithComments(n, openBrace ast.Node, path []int32) {
+	// Block definitions use trailing comments after the open brace "{" as the
+	// element's trailing comments. For example:
+	//
+	//    message Foo { // this is a trailing comment for a message
+	//
+	//    }             // not this
+	//
+	nodeInfo := sci.file.NodeInfo(n)
+	leadingComments := nodeInfo.LeadingComments()
+	openBraceInfo := sci.file.NodeInfo(openBrace)
+	trailingComments := openBraceInfo.TrailingComments()
+	sci.newLocWithGivenComments(nodeInfo, leadingComments, trailingComments, path)
+}
+
+func (sci *sourceCodeInfo) newLocWithComments(n ast.Node, path []int32) {
 	nodeInfo := sci.file.NodeInfo(n)
 	leadingComments := nodeInfo.LeadingComments()
 	trailingComments := nodeInfo.TrailingComments()
+	sci.newLocWithGivenComments(nodeInfo, leadingComments, trailingComments, path)
+}
+
+func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadingComments, trailingComments ast.Comments, path []int32) {
 	if sci.commentUsed(leadingComments) {
 		leadingComments = ast.Comments{}
 	}
