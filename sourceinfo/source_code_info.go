@@ -130,18 +130,22 @@ func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n 
 }
 
 func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n ast.MessageDeclNode, fieldPath []int32, path []int32) {
-	sci.newLoc(n, path)
+	var openBrace ast.Node
 
 	var decls []ast.MessageElement
 	switch n := n.(type) {
 	case *ast.MessageNode:
+		openBrace = n.OpenBrace
 		decls = n.Decls
 	case *ast.GroupNode:
+		openBrace = n.OpenBrace
 		decls = n.Decls
 	case *ast.MapFieldNode:
+		sci.newLoc(n, path)
 		// map entry so nothing else to do
 		return
 	}
+	sci.newBlockLocWithComments(n, openBrace, path)
 
 	sci.newLoc(n.MessageName(), append(path, internal.Message_nameTag))
 	// matching protoc, which emits the corresponding field type name (for group fields)
@@ -204,7 +208,7 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 }
 
 func generateSourceCodeInfoForEnum(opts options.Index, sci *sourceCodeInfo, n *ast.EnumNode, path []int32) {
-	sci.newLocWithComments(n, path)
+	sci.newBlockLocWithComments(n, n.OpenBrace, path)
 	sci.newLoc(n.Name, append(path, internal.Enum_nameTag))
 
 	var optIndex, valIndex, reservedNameIndex, reservedRangeIndex int32
@@ -263,7 +267,7 @@ func generateSourceCodeInfoForReservedRange(sci *sourceCodeInfo, n *ast.RangeNod
 }
 
 func generateSourceCodeInfoForExtensions(opts options.Index, sci *sourceCodeInfo, n *ast.ExtendNode, extendIndex, msgIndex *int32, extendPath, msgPath []int32) {
-	sci.newLocWithComments(n, extendPath)
+	sci.newBlockLocWithComments(n, n.OpenBrace, extendPath)
 	for _, decl := range n.Decls {
 		switch decl := decl.(type) {
 		case *ast.FieldNode:
@@ -280,7 +284,7 @@ func generateSourceCodeInfoForExtensions(opts options.Index, sci *sourceCodeInfo
 }
 
 func generateSourceCodeInfoForOneOf(opts options.Index, sci *sourceCodeInfo, n *ast.OneOfNode, fieldIndex, nestedMsgIndex *int32, fieldPath, nestedMsgPath, oneOfPath []int32) {
-	sci.newLocWithComments(n, oneOfPath)
+	sci.newBlockLocWithComments(n, n.OpenBrace, oneOfPath)
 	sci.newLoc(n.Name, append(oneOfPath, internal.OneOf_nameTag))
 
 	var optIndex int32
@@ -376,7 +380,7 @@ func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCod
 }
 
 func generateSourceCodeInfoForService(opts options.Index, sci *sourceCodeInfo, n *ast.ServiceNode, path []int32) {
-	sci.newLocWithComments(n, path)
+	sci.newBlockLocWithComments(n, n.OpenBrace, path)
 	sci.newLoc(n.Name, append(path, internal.Service_nameTag))
 	var optIndex, rpcIndex int32
 	for _, child := range n.Decls {
@@ -391,7 +395,11 @@ func generateSourceCodeInfoForService(opts options.Index, sci *sourceCodeInfo, n
 }
 
 func generateSourceCodeInfoForMethod(opts options.Index, sci *sourceCodeInfo, n *ast.RPCNode, path []int32) {
-	sci.newLocWithComments(n, path)
+	if n.OpenBrace != nil {
+		sci.newBlockLocWithComments(n, n.OpenBrace, path)
+	} else {
+		sci.newLocWithComments(n, path)
+	}
 	sci.newLoc(n.Name, append(path, internal.Method_nameTag))
 	if n.Input.Stream != nil {
 		sci.newLoc(n.Input.Stream, append(path, internal.Method_inputStreamTag))
@@ -427,10 +435,29 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	})
 }
 
+func (sci *sourceCodeInfo) newBlockLocWithComments(n, openBrace ast.Node, path []int32) {
+	// Block definitions use trailing comments after the open brace "{" as the
+	// element's trailing comments. For example:
+	//
+	//    message Foo { // this is a trailing comment for a message
+	//
+	//    }             // not this
+	//
+	nodeInfo := sci.file.NodeInfo(n)
+	leadingComments := nodeInfo.LeadingComments()
+	openBraceInfo := sci.file.NodeInfo(openBrace)
+	trailingComments := openBraceInfo.TrailingComments()
+	sci.newLocWithGivenComments(nodeInfo, leadingComments, trailingComments, path)
+}
+
 func (sci *sourceCodeInfo) newLocWithComments(n ast.Node, path []int32) {
 	nodeInfo := sci.file.NodeInfo(n)
 	leadingComments := nodeInfo.LeadingComments()
 	trailingComments := nodeInfo.TrailingComments()
+	sci.newLocWithGivenComments(nodeInfo, leadingComments, trailingComments, path)
+}
+
+func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadingComments, trailingComments ast.Comments, path []int32) {
 	if sci.commentUsed(leadingComments) {
 		leadingComments = ast.Comments{}
 	}
