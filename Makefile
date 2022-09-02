@@ -126,6 +126,9 @@ internal/testdata/desc_test_complex.protoset: $(PROTOC) internal/testdata/desc_t
 internal/testdata/desc_test_proto3_optional.protoset: $(PROTOC) internal/testdata/desc_test_proto3_optional.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
+internal/testdata/source_info.protoset: $(PROTOC) internal/testdata/desc_test_options.proto internal/testdata/desc_test_comments.proto internal/testdata/desc_test_complex.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_source_info -I. $(filter-out protoc,$(^F))
+
 internal/testdata/options/test.protoset: $(PROTOC) internal/testdata/options/test.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
 
@@ -136,5 +139,6 @@ internal/testdata/options/test_proto3.protoset: $(PROTOC) internal/testdata/opti
 test-descriptors: internal/testdata/all.protoset
 test-descriptors: internal/testdata/desc_test_complex.protoset
 test-descriptors: internal/testdata/desc_test_proto3_optional.protoset
+test-descriptors: internal/testdata/source_info.protoset
 test-descriptors: internal/testdata/options/test.protoset
 test-descriptors: internal/testdata/options/test_proto3.protoset
