@@ -12,6 +12,25 @@ LICENSE_IGNORE := -e /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
 TOOLS_MOD_DIR := ./internal/tools
+UNAME_OS := $(shell uname -s)
+UNAME_ARCH := $(shell uname -m)
+
+PROTOC_VERSION ?= 21.5
+PROTOC_DIR := $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
+PROTOC := $(PROTOC_DIR)/bin/protoc
+
+ifeq ($(UNAME_OS),Darwin)
+PROTOC_OS := osx
+ifeq ($(UNAME_ARCH),arm64)
+PROTOC_ARCH := aarch_64
+else
+PROTOC_ARCH := x86_64
+endif
+endif
+ifeq ($(UNAME_OS),Linux)
+PROTOC_OS := linux
+PROTOC_ARCH := $(UNAME_ARCH)
+endif
 
 .PHONY: help
 help: ## Describe useful make targets
@@ -49,8 +68,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 	$(BIN)/golangci-lint run --fix
 
 .PHONY: generate
-generate: $(BIN)/license-header $(BIN)/goyacc ## Regenerate code and licenses
-	cd internal/testdata && ./make_protos.sh
+generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ## Regenerate code and licenses
 	PATH=$(BIN):$(PATH) $(GO) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
@@ -89,3 +107,34 @@ $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
 	$(GO) build -o $@ golang.org/x/tools/cmd/goyacc
+
+internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
+	@mkdir -p $(@D)
+	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
+
+$(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
+	@mkdir -p $(@D)
+	unzip -o -q $< -d $(PROTOC_DIR) && \
+	touch $@
+
+internal/testdata/all.protoset: $(PROTOC) $(sort $(wildcard internal/testdata/*.proto))
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+
+internal/testdata/desc_test_complex.protoset: $(PROTOC) internal/testdata/desc_test_complex.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+
+internal/testdata/desc_test_proto3_optional.protoset: $(PROTOC) internal/testdata/desc_test_proto3_optional.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+
+internal/testdata/options/test.protoset: $(PROTOC) internal/testdata/options/test.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
+
+internal/testdata/options/test_proto3.protoset: $(PROTOC) internal/testdata/options/test_proto3.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
+
+.PHONY: test-descriptors
+test-descriptors: internal/testdata/all.protoset
+test-descriptors: internal/testdata/desc_test_complex.protoset
+test-descriptors: internal/testdata/desc_test_proto3_optional.protoset
+test-descriptors: internal/testdata/options/test.protoset
+test-descriptors: internal/testdata/options/test_proto3.protoset
