@@ -17,6 +17,9 @@ package sourceinfo_test
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,7 +69,88 @@ func TestSourceCodeInfo(t *testing.T) {
 		if !assert.NotNil(t, expectedFd, "file %q not found in source_info.protoset", actualFd.GetName()) {
 			continue
 		}
+		fixupProtocSourceCodeInfo(expectedFd.SourceCodeInfo)
 		prototest.CompareMessages(t, fmt.Sprintf("%q.source_code_info", actualFd.GetName()), expectedFd.SourceCodeInfo.ProtoReflect(), actualFd.SourceCodeInfo.ProtoReflect())
 	}
 }
 
+var protocFixers = []struct {
+	pathPatterns []*regexp.Regexp
+	fixer        func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location
+}{
+	{
+		// FieldDescriptorProto.default_value
+		// https://github.com/protocolbuffers/protobuf/issues/10478
+		pathPatterns: []*regexp.Regexp{
+			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*2,\\d+,7$"), // normal fields
+			regexp.MustCompile("^7,\\d+,7$"),                    // extension fields, top-level in file
+			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*7,\\d+,7$"), // extension fields, nested in a message
+		},
+		fixer: func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location {
+			// adjust span to include preceding "default = "
+			allLocs[currentIndex].Span[1] -= 10
+			return allLocs[currentIndex]
+		},
+	},
+	{
+		// FieldDescriptorProto.json_name
+		// https://github.com/protocolbuffers/protobuf/issues/10478
+		pathPatterns: []*regexp.Regexp{
+			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*2,\\d+,10$"),
+		},
+		fixer: func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location {
+			if currentIndex > 0 && pathsEqual(allLocs[currentIndex].Path, allLocs[currentIndex-1].Path) {
+				// second span for json_name is not useful; remove it
+				return nil
+			}
+			return allLocs[currentIndex]
+		},
+	},
+}
+
+func pathsEqual(a, b []int32) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if b[i] != a[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func fixupProtocSourceCodeInfo(info *descriptorpb.SourceCodeInfo) {
+	for i := 0; i < len(info.Location); i++ {
+		loc := info.Location[i]
+
+		pathStrs := make([]string, len(loc.Path))
+		for j, val := range loc.Path {
+			pathStrs[j] = strconv.FormatInt(int64(val), 10)
+		}
+		pathStr := strings.Join(pathStrs, ",")
+
+		for _, fixerEntry := range protocFixers {
+			match := false
+			for _, pattern := range fixerEntry.pathPatterns {
+				if pattern.MatchString(pathStr) {
+					match = true
+					break
+				}
+			}
+			if !match {
+				continue
+			}
+			newLoc := fixerEntry.fixer(info.Location, i)
+			if newLoc == nil {
+				// remove this entry
+				info.Location = append(info.Location[:i], info.Location[i+1:]...)
+				i--
+			} else {
+				info.Location[i] = newLoc
+			}
+			// only apply one fixer to each location
+			break
+		}
+	}
+}
