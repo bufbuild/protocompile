@@ -16,7 +16,7 @@ UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 
 PROTOC_VERSION ?= 21.5
-PROTOC_DIR := $(abspath internal/testdata/protoc/$(PROTOC_VERSION))
+PROTOC_DIR := $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
 ifeq ($(UNAME_OS),Darwin)
@@ -117,23 +117,22 @@ $(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
 	unzip -o -q $< -d $(PROTOC_DIR) && \
 	touch $@
 
-internal/testdata/all.protoset: $(sort $(wildcard internal/testdata/*.proto))
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
+internal/testdata/all.protoset: $(PROTOC) $(sort $(wildcard internal/testdata/*.proto))
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
-internal/testdata/desc_test_complex.protoset: internal/testdata/desc_test_complex.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
+internal/testdata/desc_test_complex.protoset: $(PROTOC) internal/testdata/desc_test_complex.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
-internal/testdata/desc_test_proto3_optional.protoset: internal/testdata/desc_test_proto3_optional.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(^F)
+internal/testdata/desc_test_proto3_optional.protoset: $(PROTOC) internal/testdata/desc_test_proto3_optional.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
-internal/testdata/options/test.protoset: internal/testdata/options/test.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(^F)
+internal/testdata/options/test.protoset: $(PROTOC) internal/testdata/options/test.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
 
-internal/testdata/options/test_proto3.protoset: internal/testdata/options/test_proto3.proto
-	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(^F)
+internal/testdata/options/test_proto3.protoset: $(PROTOC) internal/testdata/options/test_proto3.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
 
 .PHONY: test-descriptors
-test-descriptors: $(PROTOC)
 test-descriptors: internal/testdata/all.protoset
 test-descriptors: internal/testdata/desc_test_complex.protoset
 test-descriptors: internal/testdata/desc_test_proto3_optional.protoset
