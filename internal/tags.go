@@ -147,9 +147,9 @@ const (
 	// FieldOneofIndexTag is the tag number of the oneof index element in a
 	// field descriptor proto.
 	FieldOneofIndexTag = 9
-	// FieldJsonNameTag is the tag number of the JSON name element in a field
+	// FieldJSONNameTag is the tag number of the JSON name element in a field
 	// descriptor proto.
-	FieldJsonNameTag = 10
+	FieldJSONNameTag = 10
 	// FieldProto3OptionalTag is the tag number of the proto3_optional element
 	// in a descriptor proto.
 	FieldProto3OptionalTag = 17

@@ -295,7 +295,7 @@ var fieldTypes = map[string]descriptorpb.FieldDescriptorProto_Type{
 func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descriptorpb.FieldDescriptorProto_Label) *descriptorpb.FieldDescriptorProto {
 	fd := &descriptorpb.FieldDescriptorProto{
 		Name:     proto.String(name),
-		JsonName: proto.String(internal.JsonName(name)),
+		JsonName: proto.String(internal.JSONName(name)),
 		Number:   proto.Int32(tag),
 		Label:    lbl,
 	}
@@ -324,7 +324,7 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag 
 	fieldName := strings.ToLower(group.Name.Val)
 	fd := &descriptorpb.FieldDescriptorProto{
 		Name:     proto.String(fieldName),
-		JsonName: proto.String(internal.JsonName(fieldName)),
+		JsonName: proto.String(internal.JSONName(fieldName)),
 		Number:   proto.Int32(int32(tag)),
 		Label:    asLabel(&group.Label),
 		Type:     descriptorpb.FieldDescriptorProto_TYPE_GROUP.Enum(),
@@ -354,7 +354,7 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, isProto3 bool, max
 	r.putFieldNode(keyFd, mapField.KeyField())
 	valFd := newFieldDescriptor("value", string(mapField.MapType.ValueType.AsIdentifier()), 2, lbl)
 	r.putFieldNode(valFd, mapField.ValueField())
-	entryName := internal.InitCap(internal.JsonName(mapField.Name.Val)) + "Entry"
+	entryName := internal.InitCap(internal.JSONName(mapField.Name.Val)) + "Entry"
 	fd := newFieldDescriptor(mapField.Name.Val, entryName, int32(tag), descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum())
 	if opts := mapField.Options.GetElements(); len(opts) > 0 {
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}

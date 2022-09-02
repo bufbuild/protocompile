@@ -43,12 +43,12 @@ type OptionNode struct {
 	Semicolon *RuneNode // absent for compact options
 }
 
-func (e *OptionNode) fileElement()    {}
-func (e *OptionNode) msgElement()     {}
-func (e *OptionNode) oneOfElement()   {}
-func (e *OptionNode) enumElement()    {}
-func (e *OptionNode) serviceElement() {}
-func (e *OptionNode) methodElement()  {}
+func (n *OptionNode) fileElement()    {}
+func (n *OptionNode) msgElement()     {}
+func (n *OptionNode) oneOfElement()   {}
+func (n *OptionNode) enumElement()    {}
+func (n *OptionNode) serviceElement() {}
+func (n *OptionNode) methodElement()  {}
 
 // NewOptionNode creates a new *OptionNode for a full option declaration (as
 // used in files, messages, oneofs, enums, services, and methods). All arguments

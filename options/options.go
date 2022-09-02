@@ -277,7 +277,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		}
 		// attribute source code info
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = []int32{-1, internal.FieldJsonNameTag}
+			interp.index[on] = []int32{-1, internal.FieldJSONNameTag}
 		}
 		uo = internal.RemoveOption(uo, index)
 		if opt.StringValue == nil {

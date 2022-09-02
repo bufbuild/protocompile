@@ -234,11 +234,11 @@ func (r fileResolver) FindMessageByName(message protoreflect.FullName) (protoref
 }
 
 func (r fileResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
-	fullName := messageNameFromUrl(url)
+	fullName := messageNameFromURL(url)
 	return r.FindMessageByName(protoreflect.FullName(fullName))
 }
 
-func messageNameFromUrl(url string) string {
+func messageNameFromURL(url string) string {
 	lastSlash := strings.LastIndexByte(url, '/')
 	var fullName string
 	if lastSlash >= 0 {
@@ -306,7 +306,7 @@ func (r filesResolver) FindMessageByName(message protoreflect.FullName) (protore
 }
 
 func (r filesResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
-	name := messageNameFromUrl(url)
+	name := messageNameFromURL(url)
 	return r.FindMessageByName(protoreflect.FullName(name))
 }
 
