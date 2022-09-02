@@ -367,6 +367,7 @@ func generateSourceCodeInfoForField(opts options.Index, sci *sourceCodeInfo, n a
 
 func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCodeInfo, n *ast.ExtensionRangeNode, extRangeIndex *int32, path []int32) {
 	sci.newLocWithComments(n, path)
+	startExtRangeIndex := *extRangeIndex
 	for _, child := range n.Ranges {
 		path := append(path, *extRangeIndex)
 		*extRangeIndex++
@@ -379,6 +380,11 @@ func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCod
 		} else {
 			sci.newLoc(child.StartVal, append(path, internal.ExtensionRange_endTag))
 		}
+	}
+	// options for all ranges go after the start+end values
+	for range n.Ranges {
+		path := append(path, startExtRangeIndex)
+		startExtRangeIndex++
 		if n.Options != nil {
 			optsPath := append(path, internal.ExtensionRange_optionsTag)
 			sci.newLoc(n.Options, optsPath)
