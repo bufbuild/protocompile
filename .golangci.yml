@@ -61,7 +61,6 @@ linters:
     - paralleltest
     - prealloc
     - revive
-    - stylecheck
     - thelper
     - unconvert
     - varnamelen

@@ -20,8 +20,8 @@ import (
 	"unicode/utf8"
 )
 
-// JsonName returns the default JSON name for a field with the given name.
-func JsonName(name string) string {
+// JSONName returns the default JSON name for a field with the given name.
+func JSONName(name string) string {
 	var js []rune
 	nextUpper := false
 	for i, r := range name {
