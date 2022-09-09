@@ -216,10 +216,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*SignedFloatLiteralNode"
 			return nil
 		},
-		DoVisitBoolLiteralNode: func(*BoolLiteralNode) error {
-			*methodCalled = "*BoolLiteralNode"
-			return nil
-		},
 		DoVisitArrayLiteralNode: func(*ArrayLiteralNode) error {
 			*methodCalled = "*ArrayLiteralNode"
 			return nil
@@ -373,9 +369,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			DoVisitSignedFloatLiteralNode: v.DoVisitSignedFloatLiteralNode,
 		},
 		{
-			DoVisitBoolLiteralNode: v.DoVisitBoolLiteralNode,
-		},
-		{
 			DoVisitArrayLiteralNode: v.DoVisitArrayLiteralNode,
 		},
 		{
@@ -497,9 +490,6 @@ func TestVisitorAll(t *testing.T) {
 		},
 		(*SignedFloatLiteralNode)(nil): {
 			"*SignedFloatLiteralNode", "ValueNode", "FloatValueNode", "CompositeNode", "Node",
-		},
-		(*BoolLiteralNode)(nil): {
-			"*BoolLiteralNode", "ValueNode", "TerminalNode", "Node",
 		},
 		(*ArrayLiteralNode)(nil): {
 			"*ArrayLiteralNode", "ValueNode", "CompositeNode", "Node",

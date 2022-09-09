@@ -342,7 +342,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 		}
 		v = string(ev.Name())
 	} else {
-		v, err = interp.scalarFieldValue(mc, fld.GetType(), val)
+		v, err = interp.scalarFieldValue(mc, fld.GetType(), val, false)
 		if err != nil {
 			return -1, interp.reporter.HandleError(err)
 		}
@@ -1321,7 +1321,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 		return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting message, got %s", mc, valueKind(v))
 
 	default:
-		v, err := interp.scalarFieldValue(mc, descriptorpb.FieldDescriptorProto_Type(k), val)
+		v, err := interp.scalarFieldValue(mc, descriptorpb.FieldDescriptorProto_Type(k), val, false)
 		if err != nil {
 			return interpretedFieldValue{}, err
 		}
@@ -1345,12 +1345,32 @@ func (interp *interpreter) enumFieldValue(mc *messageContext, ed protoreflect.En
 
 // scalarFieldValue resolves the given AST node val as a value whose type is assignable to a
 // field with the given fldType.
-func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descriptorpb.FieldDescriptorProto_Type, val ast.ValueNode) (interface{}, error) {
+func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descriptorpb.FieldDescriptorProto_Type, val ast.ValueNode, insideMsgLiteral bool) (interface{}, error) {
 	v := val.Value()
 	switch fldType {
 	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
 		if b, ok := v.(bool); ok {
 			return b, nil
+		}
+		if id, ok := v.(ast.Identifier); ok {
+			if insideMsgLiteral {
+				// inside a message literal, values use the protobuf text format,
+				// which is lenient in that it accepts "t" and "f" or "True" and "False"
+				switch id {
+				case "t", "true", "True":
+					return true, nil
+				case "f", "false", "False":
+					return false, nil
+				}
+			} else {
+				// options with simple scalar values (no message literal) are stricter
+				switch id {
+				case "true":
+					return true, nil
+				case "false":
+					return false, nil
+				}
+			}
 		}
 		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting bool, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
@@ -1414,6 +1434,14 @@ func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descript
 		}
 		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting uint64, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
+		if id, ok := v.(ast.Identifier); ok {
+			switch id {
+			case "inf":
+				return math.Inf(1), nil
+			case "nan":
+				return math.NaN(), nil
+			}
+		}
 		if d, ok := v.(float64); ok {
 			return d, nil
 		}
@@ -1425,6 +1453,14 @@ func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descript
 		}
 		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting double, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT:
+		if id, ok := v.(ast.Identifier); ok {
+			switch id {
+			case "inf":
+				return float32(math.Inf(1)), nil
+			case "nan":
+				return float32(math.NaN()), nil
+			}
+		}
 		if d, ok := v.(float64); ok {
 			return float32(d), nil
 		}
