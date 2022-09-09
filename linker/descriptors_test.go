@@ -1,3 +1,17 @@
+// Copyright 2020-2022 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package linker_test
 
 import (
@@ -13,25 +27,37 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
+	"github.com/bufbuild/protocompile/protoutil"
 )
 
-func TestFieldDefaults(t *testing.T) {
-	fds := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_defaults.protoset", nil)
+func TestFields(t *testing.T) {
+	fds := prototest.LoadDescriptorSet(t, "../internal/testdata/descriptor_impl_tests.protoset", nil)
 	files, err := protodesc.NewFiles(fds)
 	require.NoError(t, err)
-	protocFd, err := files.FindFileByPath("desc_test_defaults.proto")
-	require.NoError(t, err)
 
-	compiler := protocompile.Compiler{
-		Resolver: &protocompile.SourceResolver{
-			ImportPaths: []string{"../internal/testdata"},
-		},
+	testFileNames := []string{
+		"desc_test2.proto",
+		"desc_test_defaults.proto",
+		"desc_test_proto3.proto",
+		"desc_test_proto3_optional.proto",
 	}
-	results, err := compiler.Compile(context.Background(), "desc_test_defaults.proto")
-	require.NoError(t, err)
-	fd := results[0]
+	for _, testFileName := range testFileNames {
+		t.Run(testFileName, func(t *testing.T) {
+			protocFd, err := files.FindFileByPath(testFileName)
+			require.NoError(t, err)
 
-	checkDefaults(t, protocFd, fd, `"desc_test_defaults.proto"`)
+			compiler := protocompile.Compiler{
+				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+					ImportPaths: []string{"../internal/testdata"},
+				}),
+			}
+			results, err := compiler.Compile(context.Background(), testFileName)
+			require.NoError(t, err)
+			fd := results[0]
+
+			checkAttributes(t, protocFd, fd, fmt.Sprintf("%q", testFileName))
+		})
+	}
 }
 
 type container interface {
@@ -39,8 +65,8 @@ type container interface {
 	Messages() protoreflect.MessageDescriptors
 }
 
-func checkDefaults(t *testing.T, exp, actual container, path string) {
-	checkDefaultsInFields(t, exp.Extensions(), actual.Extensions(), fmt.Sprintf("extensions in %s", path))
+func checkAttributes(t *testing.T, exp, actual container, path string) {
+	checkAttributesInFields(t, exp.Extensions(), actual.Extensions(), fmt.Sprintf("extensions in %s", path))
 	if assert.Equal(t, exp.Messages().Len(), actual.Messages().Len()) {
 		for i := 0; i < exp.Messages().Len(); i++ {
 			expMsg := exp.Messages().Get(i)
@@ -48,17 +74,18 @@ func checkDefaults(t *testing.T, exp, actual container, path string) {
 			if !assert.Equal(t, expMsg.Name(), actMsg.Name(), "%s: message name at index %d", path, i) {
 				continue
 			}
-			checkDefaults(t, expMsg, actMsg, fmt.Sprintf("%s.%s", path, expMsg.Name()))
+			checkAttributes(t, expMsg, actMsg, fmt.Sprintf("%s.%s", path, expMsg.Name()))
 		}
 	}
 
 	if expMsg, ok := exp.(protoreflect.MessageDescriptor); ok {
 		actMsg := actual.(protoreflect.MessageDescriptor)
-		checkDefaultsInFields(t, expMsg.Fields(), actMsg.Fields(), fmt.Sprintf("fields in %s", path))
+		checkAttributesInFields(t, expMsg.Fields(), actMsg.Fields(), fmt.Sprintf("fields in %s", path))
+		checkAttributesInOneofs(t, expMsg.Oneofs(), actMsg.Oneofs(), fmt.Sprintf("oneofs in %s", path))
 	}
 }
 
-func checkDefaultsInFields(t *testing.T, exp, actual protoreflect.ExtensionDescriptors, where string) {
+func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDescriptors, where string) {
 	if !assert.Equal(t, exp.Len(), actual.Len(), "%s: number of fields", where) {
 		return
 	}
@@ -68,6 +95,9 @@ func checkDefaultsInFields(t *testing.T, exp, actual protoreflect.ExtensionDescr
 		if !assert.Equal(t, expFld.Name(), actFld.Name(), "%s: field name at index %d", where, i) {
 			continue
 		}
+
+		// default values
+
 		assert.Equal(t, expFld.HasDefault(), actFld.HasDefault(), "%s: field has default at index %d (%s)", where, i, expFld.Name())
 
 		expVal := expFld.Default().Interface()
@@ -90,5 +120,37 @@ func checkDefaultsInFields(t *testing.T, exp, actual protoreflect.ExtensionDescr
 			assert.Equal(t, expEnumVal.Name(), actEnumVal.Name(), "%s: field default enum value at index %d (%s)", where, i, expFld.Name())
 			assert.Equal(t, expEnumVal.Number(), actEnumVal.Number(), "%s: field default enum value at index %d (%s)", where, i, expFld.Name())
 		}
+
+		expFldProto := protoutil.ProtoFromFieldDescriptor(expFld)
+		actFldProto := protoutil.ProtoFromFieldDescriptor(actFld)
+		if expFldProto.DefaultValue == nil {
+			assert.Nil(t, actFldProto.DefaultValue, "%s: field default value should be nil at index %d (%s)", where, i, expFld.Name())
+		} else {
+			assert.Equal(t, expFldProto.DefaultValue, actFldProto.DefaultValue, "%s: field default value at index %d (%s)", where, i, expFld.Name())
+		}
+
+		// proto3 optionals
+
+		assert.Equal(t, expFld.HasOptionalKeyword(), actFld.HasOptionalKeyword(), "%s: field has optional keyword at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.HasPresence(), actFld.HasPresence(), "%s: field has presence at index %d (%s)", where, i, expFld.Name())
+
+		if actFld.IsExtension() && actFldProto.GetProto3Optional() {
+			// protoc sets proto3_optional to true for extensions w/ explicit optional
+			// keyword, so we do, too. BUT the Go runtime ignores it, so its descriptor
+			// implementation (as well as the logic to convert descriptor -> proto)
+			// is missing it. So we don't bother with this check in this case since we
+			// know it would fail. This is a case of the conversion of the standard Go
+			// runtime descriptor to proto being lossy :/
+			continue
+		}
+		if expFldProto.Proto3Optional == nil {
+			assert.Nil(t, actFldProto.Proto3Optional, "%s: field proto3 optional should be nil at index %d (%s)", where, i, expFld.Name())
+		} else {
+			assert.Equal(t, expFldProto.Proto3Optional, actFldProto.Proto3Optional, "%s: field proto3 optional at index %d (%s)", where, i, expFld.Name())
+		}
 	}
+}
+
+func checkAttributesInOneofs(t *testing.T, exp, actual protoreflect.OneofDescriptors, where string) {
+
 }

@@ -28,6 +28,7 @@ import (
 
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/protoutil"
 )
 
 // This file contains implementations of protoreflect.Descriptor. Note that
@@ -52,7 +53,7 @@ type result struct {
 
 var _ protoreflect.FileDescriptor = (*result)(nil)
 var _ Result = (*result)(nil)
-var _ DescriptorProtoWrapper = (*result)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*result)(nil)
 
 func (r *result) AsProto() proto.Message {
 	return r.FileDescriptorProto()
@@ -501,7 +502,7 @@ type msgDescriptor struct {
 }
 
 var _ protoreflect.MessageDescriptor = (*msgDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*msgDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*msgDescriptor)(nil)
 
 func (r *result) asMessageDescriptor(md *descriptorpb.DescriptorProto, file *result, parent protoreflect.Descriptor, index int, fqn string) *msgDescriptor {
 	if ret := r.descriptors[md]; ret != nil {
@@ -734,7 +735,7 @@ type enumDescriptor struct {
 }
 
 var _ protoreflect.EnumDescriptor = (*enumDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*enumDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*enumDescriptor)(nil)
 
 func (r *result) asEnumDescriptor(ed *descriptorpb.EnumDescriptorProto, file *result, parent protoreflect.Descriptor, index int, fqn string) *enumDescriptor {
 	if ret := r.descriptors[ed]; ret != nil {
@@ -873,7 +874,7 @@ type enValDescriptor struct {
 }
 
 var _ protoreflect.EnumValueDescriptor = (*enValDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*enValDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*enValDescriptor)(nil)
 
 func (r *result) asEnumValueDescriptor(ed *descriptorpb.EnumValueDescriptorProto, file *result, parent *enumDescriptor, index int, fqn string) *enValDescriptor {
 	if ret := r.descriptors[ed]; ret != nil {
@@ -944,7 +945,7 @@ func (e *extDescriptors) Get(i int) protoreflect.ExtensionDescriptor {
 	fld := e.exts[i]
 	fd := e.file.asFieldDescriptor(fld, e.file, e.parent, i, e.prefix+fld.GetName())
 	// extensions are expected to implement ExtensionTypeDescriptor, not just ExtensionDescriptor
-	return dynamicpb.NewExtensionType(fd).TypeDescriptor()
+	return extTypeDescriptor{ExtensionTypeDescriptor: dynamicpb.NewExtensionType(fd).TypeDescriptor(), fd: fd}
 }
 
 func (e *extDescriptors) ByName(s protoreflect.Name) protoreflect.ExtensionDescriptor {
@@ -954,6 +955,21 @@ func (e *extDescriptors) ByName(s protoreflect.Name) protoreflect.ExtensionDescr
 		}
 	}
 	return nil
+}
+
+type extTypeDescriptor struct {
+	protoreflect.ExtensionTypeDescriptor
+	fd *fldDescriptor
+}
+
+var _ protoutil.DescriptorProtoWrapper = extTypeDescriptor{}
+
+func (e extTypeDescriptor) FieldDescriptorProto() *descriptorpb.FieldDescriptorProto {
+	return e.fd.proto
+}
+
+func (e extTypeDescriptor) AsProto() proto.Message {
+	return e.fd.proto
 }
 
 type fldDescriptors struct {
@@ -1014,7 +1030,7 @@ type fldDescriptor struct {
 }
 
 var _ protoreflect.FieldDescriptor = (*fldDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*fldDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*fldDescriptor)(nil)
 
 func (r *result) asFieldDescriptor(fd *descriptorpb.FieldDescriptorProto, file *result, parent protoreflect.Descriptor, index int, fqn string) *fldDescriptor {
 	if ret := r.descriptors[fd]; ret != nil {
@@ -1107,16 +1123,13 @@ func (f *fldDescriptor) TextName() string {
 }
 
 func (f *fldDescriptor) HasPresence() bool {
-	if f.Syntax() == protoreflect.Proto2 {
-		return true
+	if f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
+		return false
 	}
-	if f.Kind() == protoreflect.MessageKind || f.Kind() == protoreflect.GroupKind {
-		return true
-	}
-	if f.proto.OneofIndex != nil {
-		return true
-	}
-	return false
+	return f.IsExtension() ||
+		f.Syntax() == protoreflect.Proto2 ||
+		f.Kind() == protoreflect.MessageKind || f.Kind() == protoreflect.GroupKind ||
+		f.proto.OneofIndex != nil
 }
 
 func (f *fldDescriptor) IsExtension() bool {
@@ -1124,8 +1137,18 @@ func (f *fldDescriptor) IsExtension() bool {
 }
 
 func (f *fldDescriptor) HasOptionalKeyword() bool {
-	return f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
-		(f.file.Syntax() == protoreflect.Proto2 || f.proto.GetProto3Optional())
+	if f.proto.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
+		return false
+	}
+	if f.proto.GetProto3Optional() {
+		// NB: This smells weird to return false here. If the proto3_optional field
+		// is set, it's because the keyword WAS present. However, the Go runtime
+		// returns false for this case, so we mirror that behavior.
+		return !f.IsExtension()
+	}
+	// If it's optional, but not a proto3 optional, then the keyword is only
+	// present for proto2 files, for fields that are not part of a oneof.
+	return f.file.Syntax() == protoreflect.Proto2 && f.proto.OneofIndex == nil
 }
 
 func (f *fldDescriptor) IsWeak() bool {
@@ -1179,15 +1202,10 @@ func (f *fldDescriptor) HasDefault() bool {
 }
 
 func (f *fldDescriptor) Default() protoreflect.Value {
-	// No custom default value allowed for repeated and message types,
-	// so we return empty/default values for those
-	switch {
-	case f.IsMap():
-		return protoreflect.ValueOfMap(emptyMap{})
-	case f.IsList():
-		return protoreflect.ValueOfList(emptyList{})
-	case f.Kind() == protoreflect.GroupKind || f.Kind() == protoreflect.MessageKind:
-		return protoreflect.ValueOfMessage(dynamicpb.NewMessage(f.Message()))
+	// We only return a valid value for scalar fields
+	if f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED ||
+		f.Kind() == protoreflect.GroupKind || f.Kind() == protoreflect.MessageKind {
+		return protoreflect.Value{}
 	}
 
 	if f.proto.DefaultValue != nil {
@@ -1412,82 +1430,8 @@ func (f *fldDescriptor) DefaultEnumValue() protoreflect.EnumValueDescriptor {
 			return val
 		}
 	}
-	// NB: return the first enum value for the enum type
-	return ed.Values().Get(0)
-}
-
-type emptyList struct{}
-
-var _ protoreflect.List = emptyList{}
-
-func (l emptyList) Len() int {
-	return 0
-}
-
-func (l emptyList) Get(i int) protoreflect.Value {
-	var empty []protoreflect.Value
-	return empty[i] // expect panic
-}
-
-func (l emptyList) Set(i int, value protoreflect.Value) {
-	var empty []protoreflect.Value
-	empty[i] = value // expect panic
-}
-
-func (l emptyList) Append(value protoreflect.Value) {
-	panic("Append not supported")
-}
-
-func (l emptyList) AppendMutable() protoreflect.Value {
-	panic("AppendMutable not supported")
-}
-
-func (l emptyList) Truncate(i int) {
-	panic("Truncate not supported")
-}
-
-func (l emptyList) NewElement() protoreflect.Value {
-	panic("NewElement not supported")
-}
-
-func (l emptyList) IsValid() bool {
-	return true
-}
-
-type emptyMap struct{}
-
-func (m emptyMap) Len() int {
-	return 0
-}
-
-func (m emptyMap) Range(_ func(protoreflect.MapKey, protoreflect.Value) bool) {
-}
-
-func (m emptyMap) Has(protoreflect.MapKey) bool {
-	return false
-}
-
-func (m emptyMap) Clear(protoreflect.MapKey) {
-}
-
-func (m emptyMap) Get(protoreflect.MapKey) protoreflect.Value {
-	return protoreflect.Value{}
-}
-
-func (m emptyMap) Set(protoreflect.MapKey, protoreflect.Value) {
-	panic("Set not supported")
-}
-
-func (m emptyMap) Mutable(protoreflect.MapKey) protoreflect.Value {
-	panic("Mutable not supported")
-}
-
-func (m emptyMap) NewValue() protoreflect.Value {
-	panic("NewValue not supported")
-}
-
-func (m emptyMap) IsValid() bool {
-	return true
+	// if no default specified in source, return nil
+	return nil
 }
 
 func (f *fldDescriptor) ContainingOneof() protoreflect.OneofDescriptor {
@@ -1562,7 +1506,7 @@ type oneofDescriptor struct {
 }
 
 var _ protoreflect.OneofDescriptor = (*oneofDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*oneofDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*oneofDescriptor)(nil)
 
 func (r *result) asOneOfDescriptor(ood *descriptorpb.OneofDescriptorProto, file *result, parent *msgDescriptor, index int, fqn string) *oneofDescriptor {
 	if ret := r.descriptors[ood]; ret != nil {
@@ -1666,7 +1610,7 @@ type svcDescriptor struct {
 }
 
 var _ protoreflect.ServiceDescriptor = (*svcDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*svcDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*svcDescriptor)(nil)
 
 func (r *result) asServiceDescriptor(sd *descriptorpb.ServiceDescriptorProto, file *result, index int, fqn string) *svcDescriptor {
 	if ret := r.descriptors[sd]; ret != nil {
@@ -1757,7 +1701,7 @@ type mtdDescriptor struct {
 }
 
 var _ protoreflect.MethodDescriptor = (*mtdDescriptor)(nil)
-var _ DescriptorProtoWrapper = (*mtdDescriptor)(nil)
+var _ protoutil.DescriptorProtoWrapper = (*mtdDescriptor)(nil)
 
 func (r *result) asMethodDescriptor(mtd *descriptorpb.MethodDescriptorProto, file *result, parent *svcDescriptor, index int, fqn string) *mtdDescriptor {
 	if ret := r.descriptors[mtd]; ret != nil {
