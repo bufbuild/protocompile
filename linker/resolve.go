@@ -261,6 +261,8 @@ func descriptorType(d protoreflect.Descriptor) string {
 			return "extension"
 		}
 		return "field"
+	case protoreflect.OneofDescriptor:
+		return "oneof"
 	case protoreflect.EnumDescriptor:
 		return "enum"
 	case protoreflect.EnumValueDescriptor:
