@@ -350,12 +350,12 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 	}
 
 	var deps []linker.File
-	if len(parseRes.Proto().Dependency) > 0 {
-		t.r.setBlockedOn(parseRes.Proto().Dependency)
+	if len(parseRes.FileDescriptorProto().Dependency) > 0 {
+		t.r.setBlockedOn(parseRes.FileDescriptorProto().Dependency)
 
-		results := make([]*result, len(parseRes.Proto().Dependency))
+		results := make([]*result, len(parseRes.FileDescriptorProto().Dependency))
 		checked := map[string]struct{}{}
-		for i, dep := range parseRes.Proto().Dependency {
+		for i, dep := range parseRes.FileDescriptorProto().Dependency {
 			pos := findImportPos(parseRes, dep)
 			if name == dep {
 				// doh! file imports itself
@@ -481,7 +481,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	}
 
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
-		parseRes.Proto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)
+		parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)
 	}
 	return file, nil
 }

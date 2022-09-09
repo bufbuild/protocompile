@@ -63,7 +63,7 @@ func (r *result) Index() int {
 }
 
 func (r *result) Syntax() protoreflect.Syntax {
-	switch r.Proto().GetSyntax() {
+	switch r.FileDescriptorProto().GetSyntax() {
 	case "proto2", "":
 		return protoreflect.Proto2
 	case "proto3":
@@ -86,15 +86,15 @@ func (r *result) IsPlaceholder() bool {
 }
 
 func (r *result) Options() protoreflect.ProtoMessage {
-	return r.Proto().Options
+	return r.FileDescriptorProto().Options
 }
 
 func (r *result) Path() string {
-	return r.Proto().GetName()
+	return r.FileDescriptorProto().GetName()
 }
 
 func (r *result) Package() protoreflect.FullName {
-	return protoreflect.FullName(r.Proto().GetPackage())
+	return protoreflect.FullName(r.FileDescriptorProto().GetPackage())
 }
 
 func (r *result) Imports() protoreflect.FileImports {
@@ -102,23 +102,23 @@ func (r *result) Imports() protoreflect.FileImports {
 }
 
 func (r *result) Enums() protoreflect.EnumDescriptors {
-	return &enumDescriptors{file: r, parent: r, enums: r.Proto().GetEnumType(), prefix: r.prefix}
+	return &enumDescriptors{file: r, parent: r, enums: r.FileDescriptorProto().GetEnumType(), prefix: r.prefix}
 }
 
 func (r *result) Messages() protoreflect.MessageDescriptors {
-	return &msgDescriptors{file: r, parent: r, msgs: r.Proto().GetMessageType(), prefix: r.prefix}
+	return &msgDescriptors{file: r, parent: r, msgs: r.FileDescriptorProto().GetMessageType(), prefix: r.prefix}
 }
 
 func (r *result) Extensions() protoreflect.ExtensionDescriptors {
-	return &extDescriptors{file: r, parent: r, exts: r.Proto().GetExtension(), prefix: r.prefix}
+	return &extDescriptors{file: r, parent: r, exts: r.FileDescriptorProto().GetExtension(), prefix: r.prefix}
 }
 
 func (r *result) Services() protoreflect.ServiceDescriptors {
-	return &svcDescriptors{file: r, svcs: r.Proto().GetService(), prefix: r.prefix}
+	return &svcDescriptors{file: r, svcs: r.FileDescriptorProto().GetService(), prefix: r.prefix}
 }
 
 func (r *result) SourceLocations() protoreflect.SourceLocations {
-	srcInfoProtos := r.Proto().GetSourceCodeInfo().GetLocation()
+	srcInfoProtos := r.FileDescriptorProto().GetSourceCodeInfo().GetLocation()
 	if r.srcLocs == nil && len(srcInfoProtos) > 0 {
 		r.srcLocs = asSourceLocations(srcInfoProtos)
 		r.srcLocIndex = computeSourceLocIndex(r.srcLocs)
@@ -190,7 +190,7 @@ func (r *result) AddOptionBytes(pm proto.Message, opts []byte) {
 }
 
 func (r *result) CanonicalProto() *descriptorpb.FileDescriptorProto {
-	origFd := r.Proto()
+	origFd := r.FileDescriptorProto()
 	// make a copy that we can mutate
 	fd := proto.Clone(origFd).(*descriptorpb.FileDescriptorProto)
 
@@ -315,21 +315,21 @@ type fileImports struct {
 }
 
 func (f *fileImports) Len() int {
-	return len(f.parent.Proto().Dependency)
+	return len(f.parent.FileDescriptorProto().Dependency)
 }
 
 func (f *fileImports) Get(i int) protoreflect.FileImport {
-	dep := f.parent.Proto().Dependency[i]
+	dep := f.parent.FileDescriptorProto().Dependency[i]
 	desc := f.parent.deps.FindFileByPath(dep)
 	isPublic := false
-	for _, d := range f.parent.Proto().PublicDependency {
+	for _, d := range f.parent.FileDescriptorProto().PublicDependency {
 		if d == int32(i) {
 			isPublic = true
 			break
 		}
 	}
 	isWeak := false
-	for _, d := range f.parent.Proto().WeakDependency {
+	for _, d := range f.parent.FileDescriptorProto().WeakDependency {
 		if d == int32(i) {
 			isWeak = true
 			break

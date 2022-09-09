@@ -75,7 +75,7 @@ func (r *result) markUsed(importPath string) {
 }
 
 func (r *result) CheckForUnusedImports(handler *reporter.Handler) {
-	fd := r.Proto()
+	fd := r.FileDescriptorProto()
 	file, _ := r.FileNode().(*ast.FileNode)
 	for i, dep := range fd.Dependency {
 		if _, ok := r.usedImports[dep]; !ok {
@@ -167,7 +167,7 @@ func (r *result) toDescriptor(fqn string, d proto.Message) protoreflect.Descript
 func (r *result) findParent(fqn string) (protoreflect.Descriptor, int) {
 	names := strings.Split(strings.TrimPrefix(fqn, r.prefix), ".")
 	if len(names) == 1 {
-		for i, en := range r.Proto().EnumType {
+		for i, en := range r.FileDescriptorProto().EnumType {
 			if en.GetName() == names[0] {
 				return r, i
 			}
@@ -177,13 +177,13 @@ func (r *result) findParent(fqn string) (protoreflect.Descriptor, int) {
 				}
 			}
 		}
-		for i, ext := range r.Proto().Extension {
+		for i, ext := range r.FileDescriptorProto().Extension {
 			if ext.GetName() == names[0] {
 				return r, i
 			}
 		}
 	}
-	for i, svc := range r.Proto().Service {
+	for i, svc := range r.FileDescriptorProto().Service {
 		if svc.GetName() == names[0] {
 			if len(names) == 1 {
 				return r, i
@@ -200,7 +200,7 @@ func (r *result) findParent(fqn string) (protoreflect.Descriptor, int) {
 			}
 		}
 	}
-	for i, msg := range r.Proto().MessageType {
+	for i, msg := range r.FileDescriptorProto().MessageType {
 		if msg.GetName() == names[0] {
 			if len(names) == 1 {
 				return r, i
@@ -280,7 +280,7 @@ func descriptorType(d protoreflect.Descriptor) string {
 }
 
 func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error {
-	fd := r.Proto()
+	fd := r.FileDescriptorProto()
 	scopes := []scope{fileScope(r)}
 	if fd.Options != nil {
 		if err := r.resolveOptions(handler, "file", protoreflect.FullName(fd.GetName()), fd.Options.UninterpretedOption, scopes); err != nil {
@@ -630,7 +630,7 @@ func fileScope(r *result) scope {
 	// we search symbols in this file, but also symbols in other files that have
 	// the same package as this file or a "parent" package (in protobuf,
 	// packages are a hierarchy like C++ namespaces)
-	prefixes := internal.CreatePrefixList(r.Proto().GetPackage())
+	prefixes := internal.CreatePrefixList(r.FileDescriptorProto().GetPackage())
 	querySymbol := func(n string) protoreflect.Descriptor {
 		return r.resolveElement(protoreflect.FullName(n))
 	}

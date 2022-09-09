@@ -264,7 +264,7 @@ func (s *Symbols) importResultLocked(r *result, populatePool bool, checkExts boo
 
 func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter.Handler) error {
 	resultSyms := map[protoreflect.FullName]symbolEntry{}
-	return walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
+	return walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
 		_, isEnumVal := d.(*descriptorpb.EnumValueDescriptorProto)
 		file := r.FileNode()
 		node := r.Node(d)
@@ -343,7 +343,7 @@ func (s *Symbols) commitResultLocked(r *result, populatePool bool) {
 	if s.exts == nil {
 		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
 	}
-	_ = walk.DescriptorProtos(r.Proto(), func(fqn protoreflect.FullName, d proto.Message) error {
+	_ = walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
 		pos := nameStart(r.FileNode(), r.Node(d))
 		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
 		s.symbols[fqn] = symbolEntry{pos: pos, isEnumValue: isEnumValue}

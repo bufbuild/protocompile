@@ -44,12 +44,12 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	if symbols == nil {
 		symbols = &Symbols{}
 	}
-	prefix := parsed.Proto().GetPackage()
+	prefix := parsed.FileDescriptorProto().GetPackage()
 	if prefix != "" {
 		prefix += "."
 	}
 
-	for _, imp := range parsed.Proto().Dependency {
+	for _, imp := range parsed.FileDescriptorProto().Dependency {
 		dep := dependencies.FindFileByPath(imp)
 		if dep == nil {
 			return nil, fmt.Errorf("dependencies is missing import %q", imp)
@@ -133,7 +133,7 @@ type Result interface {
 	// will be serialized in a canonical way. The "canonical" way matches
 	// the way that "protoc" emits option values, which is a way that
 	// mostly matches the way options are defined in source, including
-	// ordering and de-structuring. Unlike the Proto() method, this
+	// ordering and de-structuring. Unlike the FileDescriptorProto() method, this
 	// method is more expensive and results in a new descriptor proto
 	// being constructed with each call.
 	//

@@ -26,10 +26,10 @@ import (
 // however may be expensive (to re-create a proto) and even lossy.
 func ProtoFromFileDescriptor(f protoreflect.FileDescriptor) *descriptorpb.FileDescriptorProto {
 	type canProto interface {
-		Proto() *descriptorpb.FileDescriptorProto
+		FileDescriptorProto() *descriptorpb.FileDescriptorProto
 	}
 	if res, ok := f.(canProto); ok {
-		return res.Proto()
+		return res.FileDescriptorProto()
 	}
 	return protodesc.ToFileDescriptorProto(f)
 }

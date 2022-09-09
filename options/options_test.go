@@ -164,10 +164,10 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			continue
 		}
 		actual := map[string]interface{}{}
-		buildUninterpretedMapForFile(res.Proto(), actual)
+		buildUninterpretedMapForFile(res.FileDescriptorProto(), actual)
 		assert.Equal(t, tc.uninterpreted, actual, "case #%d resulted in wrong uninterpreted options", i)
 		if tc.checkInterpreted != nil {
-			tc.checkInterpreted(t, res.Proto())
+			tc.checkInterpreted(t, res.FileDescriptorProto())
 		}
 	}
 }
@@ -308,7 +308,7 @@ func TestOptionsEncoding(t *testing.T) {
 			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
 			err = uOpts.Unmarshal(protoData, canonicalProto)
 			require.NoError(t, err)
-			if !proto.Equal(res.Proto(), canonicalProto) {
+			if !proto.Equal(res.FileDescriptorProto(), canonicalProto) {
 				t.Fatal("canonical proto != proto")
 			}
 
