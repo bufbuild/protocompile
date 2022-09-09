@@ -173,6 +173,10 @@ func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
 		namePath = append(path, internal.ServiceNameTag)
 	case protoreflect.MethodDescriptor:
 		namePath = append(path, internal.MethodNameTag)
+	default:
+		// NB: shouldn't really happen, but just in case fall back to path to
+		// descriptor, sans name field
+		namePath = path
 	}
 	loc := d.ParentFile().SourceLocations().ByPath(namePath)
 	if isZeroLoc(loc) {
