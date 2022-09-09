@@ -726,6 +726,37 @@ extend google.protobuf.MessageOptions {
 			},
 			"foo.proto:6:3: syntax error: unexpected ';'",
 		},
+		{
+			map[string]string{
+				"a.proto": `syntax = "proto3";
+message m{
+  oneof z{
+	int64 z=1;
+  }
+}`,
+			},
+			`a.proto:4:15: symbol "m.z" already defined at a.proto:3:9`,
+		},
+		{
+			map[string]string{
+				"a.proto": `syntax="proto3";
+message m{
+  string z = 1;
+  oneof z{int64 b=2;}
+}`,
+			},
+			`a.proto:4:9: symbol "m.z" already defined at a.proto:3:10`,
+		},
+		{
+			map[string]string{
+				"a.proto": `syntax="proto3";
+message m{
+  oneof z{int64 a=1;}
+  oneof z{int64 b=2;}
+}`,
+			},
+			`a.proto:4:9: symbol "m.z" already defined at a.proto:3:9`,
+		},
 	}
 
 	for i, tc := range testCases {
