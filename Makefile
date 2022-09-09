@@ -123,6 +123,9 @@ internal/testdata/all.protoset: $(PROTOC) $(sort $(wildcard internal/testdata/*.
 internal/testdata/desc_test_complex.protoset: $(PROTOC) internal/testdata/desc_test_complex.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
+internal/testdata/desc_test_defaults.protoset: $(PROTOC) internal/testdata/desc_test_defaults.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+
 internal/testdata/desc_test_proto3_optional.protoset: $(PROTOC) internal/testdata/desc_test_proto3_optional.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
@@ -138,6 +141,7 @@ internal/testdata/options/test_proto3.protoset: $(PROTOC) internal/testdata/opti
 .PHONY: test-descriptors
 test-descriptors: internal/testdata/all.protoset
 test-descriptors: internal/testdata/desc_test_complex.protoset
+test-descriptors: internal/testdata/desc_test_defaults.protoset
 test-descriptors: internal/testdata/desc_test_proto3_optional.protoset
 test-descriptors: internal/testdata/source_info.protoset
 test-descriptors: internal/testdata/options/test.protoset

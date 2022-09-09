@@ -271,17 +271,23 @@ func qualify(qualifier, name string) string {
 
 func TestOptionsEncoding(t *testing.T) {
 	testCases := map[string]string{
-		"proto2": "test.proto",
-		"proto3": "test_proto3.proto",
+		"proto2":   "options/test.proto",
+		"proto3":   "options/test_proto3.proto",
+		"defaults": "desc_test_defaults.proto",
 	}
 	for syntax, file := range testCases {
 		t.Run(syntax, func(t *testing.T) {
+			fileToCompile := strings.TrimPrefix(file, "options/")
+			importPath := "../internal/testdata"
+			if fileToCompile != file {
+				importPath = "../internal/testdata/options"
+			}
 			compiler := protocompile.Compiler{
 				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-					ImportPaths: []string{"../internal/testdata/options"},
+					ImportPaths: []string{importPath},
 				}),
 			}
-			fds, err := compiler.Compile(context.Background(), file)
+			fds, err := compiler.Compile(context.Background(), fileToCompile)
 			var panicErr protocompile.PanicError
 			if errors.As(err, &panicErr) {
 				t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
@@ -289,7 +295,7 @@ func TestOptionsEncoding(t *testing.T) {
 			require.NoError(t, err)
 
 			res := fds[0].(linker.Result)
-			descriptorSetFile := fmt.Sprintf("../internal/testdata/options/%sset", file)
+			descriptorSetFile := fmt.Sprintf("../internal/testdata/%sset", file)
 			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
 			prototest.CheckFiles(t, res, fdset, false)
 
