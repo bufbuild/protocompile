@@ -17,7 +17,9 @@ package linker
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -49,6 +51,12 @@ type result struct {
 }
 
 var _ protoreflect.FileDescriptor = (*result)(nil)
+var _ Result = (*result)(nil)
+var _ DescriptorProtoWrapper = (*result)(nil)
+
+func (r *result) AsProto() proto.Message {
+	return r.FileDescriptorProto()
+}
 
 func (r *result) ParentFile() protoreflect.FileDescriptor {
 	return r
@@ -492,6 +500,9 @@ type msgDescriptor struct {
 	fqn    string
 }
 
+var _ protoreflect.MessageDescriptor = (*msgDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*msgDescriptor)(nil)
+
 func (r *result) asMessageDescriptor(md *descriptorpb.DescriptorProto, file *result, parent protoreflect.Descriptor, index int, fqn string) *msgDescriptor {
 	if ret := r.descriptors[md]; ret != nil {
 		return ret.(*msgDescriptor)
@@ -499,6 +510,14 @@ func (r *result) asMessageDescriptor(md *descriptorpb.DescriptorProto, file *res
 	ret := &msgDescriptor{file: file, parent: parent, index: index, proto: md, fqn: fqn}
 	r.descriptors[md] = ret
 	return ret
+}
+
+func (m *msgDescriptor) MessageDescriptorProto() *descriptorpb.DescriptorProto {
+	return m.proto
+}
+
+func (m *msgDescriptor) AsProto() proto.Message {
+	return m.proto
 }
 
 func (m *msgDescriptor) ParentFile() protoreflect.FileDescriptor {
@@ -714,6 +733,9 @@ type enumDescriptor struct {
 	fqn    string
 }
 
+var _ protoreflect.EnumDescriptor = (*enumDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*enumDescriptor)(nil)
+
 func (r *result) asEnumDescriptor(ed *descriptorpb.EnumDescriptorProto, file *result, parent protoreflect.Descriptor, index int, fqn string) *enumDescriptor {
 	if ret := r.descriptors[ed]; ret != nil {
 		return ret.(*enumDescriptor)
@@ -721,6 +743,14 @@ func (r *result) asEnumDescriptor(ed *descriptorpb.EnumDescriptorProto, file *re
 	ret := &enumDescriptor{file: file, parent: parent, index: index, proto: ed, fqn: fqn}
 	r.descriptors[ed] = ret
 	return ret
+}
+
+func (e *enumDescriptor) EnumDescriptorProto() *descriptorpb.EnumDescriptorProto {
+	return e.proto
+}
+
+func (e *enumDescriptor) AsProto() proto.Message {
+	return e.proto
 }
 
 func (e *enumDescriptor) ParentFile() protoreflect.FileDescriptor {
@@ -842,6 +872,9 @@ type enValDescriptor struct {
 	fqn    string
 }
 
+var _ protoreflect.EnumValueDescriptor = (*enValDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*enValDescriptor)(nil)
+
 func (r *result) asEnumValueDescriptor(ed *descriptorpb.EnumValueDescriptorProto, file *result, parent *enumDescriptor, index int, fqn string) *enValDescriptor {
 	if ret := r.descriptors[ed]; ret != nil {
 		return ret.(*enValDescriptor)
@@ -849,6 +882,14 @@ func (r *result) asEnumValueDescriptor(ed *descriptorpb.EnumValueDescriptorProto
 	ret := &enValDescriptor{file: file, parent: parent, index: index, proto: ed, fqn: fqn}
 	r.descriptors[ed] = ret
 	return ret
+}
+
+func (e *enValDescriptor) EnumValueDescriptorProto() *descriptorpb.EnumValueDescriptorProto {
+	return e.proto
+}
+
+func (e *enValDescriptor) AsProto() proto.Message {
+	return e.proto
 }
 
 func (e *enValDescriptor) ParentFile() protoreflect.FileDescriptor {
@@ -972,6 +1013,9 @@ type fldDescriptor struct {
 	fqn    string
 }
 
+var _ protoreflect.FieldDescriptor = (*fldDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*fldDescriptor)(nil)
+
 func (r *result) asFieldDescriptor(fd *descriptorpb.FieldDescriptorProto, file *result, parent protoreflect.Descriptor, index int, fqn string) *fldDescriptor {
 	if ret := r.descriptors[fd]; ret != nil {
 		return ret.(*fldDescriptor)
@@ -979,6 +1023,14 @@ func (r *result) asFieldDescriptor(fd *descriptorpb.FieldDescriptorProto, file *
 	ret := &fldDescriptor{file: file, parent: parent, index: index, proto: fd, fqn: fqn}
 	r.descriptors[fd] = ret
 	return ret
+}
+
+func (f *fldDescriptor) FieldDescriptorProto() *descriptorpb.FieldDescriptorProto {
+	return f.proto
+}
+
+func (f *fldDescriptor) AsProto() proto.Message {
+	return f.proto
 }
 
 func (f *fldDescriptor) ParentFile() protoreflect.FileDescriptor {
@@ -1072,7 +1124,8 @@ func (f *fldDescriptor) IsExtension() bool {
 }
 
 func (f *fldDescriptor) HasOptionalKeyword() bool {
-	return f.proto.Label != nil && f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL
+	return f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL &&
+		(f.file.Syntax() == protoreflect.Proto2 || f.proto.GetProto3Optional())
 }
 
 func (f *fldDescriptor) IsWeak() bool {
@@ -1122,17 +1175,34 @@ func (f *fldDescriptor) MapValue() protoreflect.FieldDescriptor {
 }
 
 func (f *fldDescriptor) HasDefault() bool {
-	// TODO
-	return false
+	return f.proto.DefaultValue != nil
 }
 
 func (f *fldDescriptor) Default() protoreflect.Value {
+	// No custom default value allowed for repeated and message types,
+	// so we return empty/default values for those
+	switch {
+	case f.IsMap():
+		return protoreflect.ValueOfMap(emptyMap{})
+	case f.IsList():
+		return protoreflect.ValueOfList(emptyList{})
+	case f.Kind() == protoreflect.GroupKind || f.Kind() == protoreflect.MessageKind:
+		return protoreflect.ValueOfMessage(dynamicpb.NewMessage(f.Message()))
+	}
+
+	if f.proto.DefaultValue != nil {
+		defVal := f.parseDefaultValue(f.proto.GetDefaultValue())
+		if defVal.IsValid() {
+			return defVal
+		}
+		// if we cannot parse a valid value, fall back to zero value below
+	}
+
+	// No custom default value, so return the zero value for the type
 	switch f.Kind() {
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind,
-		protoreflect.Sfixed32Kind:
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
 		return protoreflect.ValueOfInt32(0)
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind,
-		protoreflect.Sfixed64Kind:
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
 		return protoreflect.ValueOfInt64(0)
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
 		return protoreflect.ValueOfUint32(0)
@@ -1157,12 +1227,267 @@ func (f *fldDescriptor) Default() protoreflect.Value {
 	}
 }
 
+func (f *fldDescriptor) parseDefaultValue(val string) protoreflect.Value {
+	switch f.Kind() {
+	case protoreflect.EnumKind:
+		vd := f.Enum().Values().ByName(protoreflect.Name(val))
+		if vd != nil {
+			return protoreflect.ValueOfEnum(vd.Number())
+		}
+		return protoreflect.Value{}
+	case protoreflect.BoolKind:
+		switch val {
+		case "true":
+			return protoreflect.ValueOfBool(true)
+		case "false":
+			return protoreflect.ValueOfBool(false)
+		default:
+			return protoreflect.Value{}
+		}
+	case protoreflect.BytesKind:
+		return protoreflect.ValueOfBytes([]byte(unescape(val)))
+	case protoreflect.StringKind:
+		return protoreflect.ValueOfString(val)
+	case protoreflect.FloatKind:
+		if f, err := strconv.ParseFloat(val, 32); err == nil {
+			return protoreflect.ValueOfFloat32(float32(f))
+		}
+		return protoreflect.Value{}
+	case protoreflect.DoubleKind:
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			return protoreflect.ValueOfFloat64(f)
+		}
+		return protoreflect.Value{}
+	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
+		if i, err := strconv.ParseInt(val, 10, 32); err == nil {
+			return protoreflect.ValueOfInt32(int32(i))
+		}
+		return protoreflect.Value{}
+	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+		if i, err := strconv.ParseUint(val, 10, 32); err == nil {
+			return protoreflect.ValueOfUint32(uint32(i))
+		}
+		return protoreflect.Value{}
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
+		if i, err := strconv.ParseInt(val, 10, 64); err == nil {
+			return protoreflect.ValueOfInt64(i)
+		}
+		return protoreflect.Value{}
+	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+		if i, err := strconv.ParseUint(val, 10, 64); err == nil {
+			return protoreflect.ValueOfUint64(i)
+		}
+		return protoreflect.Value{}
+	default:
+		return protoreflect.Value{}
+	}
+}
+
+func unescape(s string) string {
+	// protoc encodes default values for 'bytes' fields using C escaping,
+	// so this function reverses that escaping
+	out := make([]byte, 0, len(s))
+	var buf [4]byte
+	for len(s) > 0 {
+		if s[0] != '\\' || len(s) < 2 {
+			// not escape sequence, or too short to be well-formed escape
+			out = append(out, s[0])
+			s = s[1:]
+		} else if s[1] == 'x' || s[1] == 'X' {
+			n := matchPrefix(s[2:], 2, isHex)
+			if n == 0 {
+				// bad escape
+				out = append(out, s[:2]...)
+				s = s[2:]
+			} else {
+				c, err := strconv.ParseUint(s[2:2+n], 16, 8)
+				if err != nil {
+					// shouldn't really happen...
+					out = append(out, s[:2+n]...)
+				} else {
+					out = append(out, byte(c))
+				}
+				s = s[2+n:]
+			}
+		} else if s[1] >= '0' && s[1] <= '7' {
+			n := 1 + matchPrefix(s[2:], 2, isOctal)
+			c, err := strconv.ParseUint(s[1:1+n], 8, 8)
+			if err != nil || c > 0xff {
+				out = append(out, s[:1+n]...)
+			} else {
+				out = append(out, byte(c))
+			}
+			s = s[1+n:]
+		} else if s[1] == 'u' {
+			if len(s) < 6 {
+				// bad escape
+				out = append(out, s...)
+				s = s[len(s):]
+			} else {
+				c, err := strconv.ParseUint(s[2:6], 16, 16)
+				if err != nil {
+					// bad escape
+					out = append(out, s[:6]...)
+				} else {
+					w := utf8.EncodeRune(buf[:], rune(c))
+					out = append(out, buf[:w]...)
+				}
+				s = s[6:]
+			}
+		} else if s[1] == 'U' {
+			if len(s) < 10 {
+				// bad escape
+				out = append(out, s...)
+				s = s[len(s):]
+			} else {
+				c, err := strconv.ParseUint(s[2:10], 16, 32)
+				if err != nil || c > 0x10ffff {
+					// bad escape
+					out = append(out, s[:10]...)
+				} else {
+					w := utf8.EncodeRune(buf[:], rune(c))
+					out = append(out, buf[:w]...)
+				}
+				s = s[10:]
+			}
+		} else {
+			switch s[1] {
+			case 'a':
+				out = append(out, '\a')
+			case 'b':
+				out = append(out, '\b')
+			case 'f':
+				out = append(out, '\f')
+			case 'n':
+				out = append(out, '\n')
+			case 'r':
+				out = append(out, '\r')
+			case 't':
+				out = append(out, '\t')
+			case 'v':
+				out = append(out, '\v')
+			case '\\':
+				out = append(out, '\\')
+			case '\'':
+				out = append(out, '\'')
+			case '"':
+				out = append(out, '"')
+			case '?':
+				out = append(out, '?')
+			default:
+				// invalid escape, just copy it as-is
+				out = append(out, s[:2]...)
+			}
+			s = s[2:]
+		}
+	}
+	return string(out)
+}
+
+func isOctal(b byte) bool { return b >= '0' && b <= '7' }
+func isHex(b byte) bool {
+	return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F')
+}
+func matchPrefix(s string, limit int, fn func(byte) bool) int {
+	l := len(s)
+	if l > limit {
+		l = limit
+	}
+	i := 0
+	for ; i < l; i++ {
+		if !fn(s[i]) {
+			return i
+		}
+	}
+	return i
+}
+
 func (f *fldDescriptor) DefaultEnumValue() protoreflect.EnumValueDescriptor {
 	ed := f.Enum()
 	if ed == nil {
 		return nil
 	}
+	if f.proto.DefaultValue != nil {
+		if val := ed.Values().ByName(protoreflect.Name(f.proto.GetDefaultValue())); val != nil {
+			return val
+		}
+	}
+	// NB: return the first enum value for the enum type
 	return ed.Values().Get(0)
+}
+
+type emptyList struct{}
+
+var _ protoreflect.List = emptyList{}
+
+func (l emptyList) Len() int {
+	return 0
+}
+
+func (l emptyList) Get(i int) protoreflect.Value {
+	var empty []protoreflect.Value
+	return empty[i] // expect panic
+}
+
+func (l emptyList) Set(i int, value protoreflect.Value) {
+	var empty []protoreflect.Value
+	empty[i] = value // expect panic
+}
+
+func (l emptyList) Append(value protoreflect.Value) {
+	panic("Append not supported")
+}
+
+func (l emptyList) AppendMutable() protoreflect.Value {
+	panic("AppendMutable not supported")
+}
+
+func (l emptyList) Truncate(i int) {
+	panic("Truncate not supported")
+}
+
+func (l emptyList) NewElement() protoreflect.Value {
+	panic("NewElement not supported")
+}
+
+func (l emptyList) IsValid() bool {
+	return true
+}
+
+type emptyMap struct{}
+
+func (m emptyMap) Len() int {
+	return 0
+}
+
+func (m emptyMap) Range(_ func(protoreflect.MapKey, protoreflect.Value) bool) {
+}
+
+func (m emptyMap) Has(protoreflect.MapKey) bool {
+	return false
+}
+
+func (m emptyMap) Clear(protoreflect.MapKey) {
+}
+
+func (m emptyMap) Get(protoreflect.MapKey) protoreflect.Value {
+	return protoreflect.Value{}
+}
+
+func (m emptyMap) Set(protoreflect.MapKey, protoreflect.Value) {
+	panic("Set not supported")
+}
+
+func (m emptyMap) Mutable(protoreflect.MapKey) protoreflect.Value {
+	panic("Mutable not supported")
+}
+
+func (m emptyMap) NewValue() protoreflect.Value {
+	panic("NewValue not supported")
+}
+
+func (m emptyMap) IsValid() bool {
+	return true
 }
 
 func (f *fldDescriptor) ContainingOneof() protoreflect.OneofDescriptor {
@@ -1236,6 +1561,9 @@ type oneofDescriptor struct {
 	fqn    string
 }
 
+var _ protoreflect.OneofDescriptor = (*oneofDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*oneofDescriptor)(nil)
+
 func (r *result) asOneOfDescriptor(ood *descriptorpb.OneofDescriptorProto, file *result, parent *msgDescriptor, index int, fqn string) *oneofDescriptor {
 	if ret := r.descriptors[ood]; ret != nil {
 		return ret.(*oneofDescriptor)
@@ -1243,6 +1571,14 @@ func (r *result) asOneOfDescriptor(ood *descriptorpb.OneofDescriptorProto, file 
 	ret := &oneofDescriptor{file: file, parent: parent, index: index, proto: ood, fqn: fqn}
 	r.descriptors[ood] = ret
 	return ret
+}
+
+func (o *oneofDescriptor) OneOfDescriptorProto() *descriptorpb.OneofDescriptorProto {
+	return o.proto
+}
+
+func (o *oneofDescriptor) AsProto() proto.Message {
+	return o.proto
 }
 
 func (o *oneofDescriptor) ParentFile() protoreflect.FileDescriptor {
@@ -1278,8 +1614,12 @@ func (o *oneofDescriptor) Options() protoreflect.ProtoMessage {
 }
 
 func (o *oneofDescriptor) IsSynthetic() bool {
-	// TODO
-	return false
+	for _, fld := range o.parent.proto.GetField() {
+		if fld.OneofIndex != nil && int(fld.GetOneofIndex()) == o.index {
+			return fld.GetProto3Optional()
+		}
+	}
+	return false // NB: we should never get here
 }
 
 func (o *oneofDescriptor) Fields() protoreflect.FieldDescriptors {
@@ -1325,6 +1665,9 @@ type svcDescriptor struct {
 	fqn   string
 }
 
+var _ protoreflect.ServiceDescriptor = (*svcDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*svcDescriptor)(nil)
+
 func (r *result) asServiceDescriptor(sd *descriptorpb.ServiceDescriptorProto, file *result, index int, fqn string) *svcDescriptor {
 	if ret := r.descriptors[sd]; ret != nil {
 		return ret.(*svcDescriptor)
@@ -1332,6 +1675,14 @@ func (r *result) asServiceDescriptor(sd *descriptorpb.ServiceDescriptorProto, fi
 	ret := &svcDescriptor{file: file, index: index, proto: sd, fqn: fqn}
 	r.descriptors[sd] = ret
 	return ret
+}
+
+func (s *svcDescriptor) ServiceDescriptorProto() *descriptorpb.ServiceDescriptorProto {
+	return s.proto
+}
+
+func (s *svcDescriptor) AsProto() proto.Message {
+	return s.proto
 }
 
 func (s *svcDescriptor) ParentFile() protoreflect.FileDescriptor {
@@ -1405,6 +1756,9 @@ type mtdDescriptor struct {
 	fqn    string
 }
 
+var _ protoreflect.MethodDescriptor = (*mtdDescriptor)(nil)
+var _ DescriptorProtoWrapper = (*mtdDescriptor)(nil)
+
 func (r *result) asMethodDescriptor(mtd *descriptorpb.MethodDescriptorProto, file *result, parent *svcDescriptor, index int, fqn string) *mtdDescriptor {
 	if ret := r.descriptors[mtd]; ret != nil {
 		return ret.(*mtdDescriptor)
@@ -1412,6 +1766,14 @@ func (r *result) asMethodDescriptor(mtd *descriptorpb.MethodDescriptorProto, fil
 	ret := &mtdDescriptor{file: file, parent: parent, index: index, proto: mtd, fqn: fqn}
 	r.descriptors[mtd] = ret
 	return ret
+}
+
+func (m *mtdDescriptor) MethodDescriptorProto() *descriptorpb.MethodDescriptorProto {
+	return m.proto
+}
+
+func (m *mtdDescriptor) AsProto() proto.Message {
+	return m.proto
 }
 
 func (m *mtdDescriptor) ParentFile() protoreflect.FileDescriptor {

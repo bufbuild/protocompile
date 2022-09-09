@@ -85,6 +85,9 @@ func CreatePrefixList(pkg string) []string {
 }
 
 func WriteEscapedBytes(buf *bytes.Buffer, b []byte) {
+	// This uses the same algorithm as the protoc C++ code for escaping strings.
+	// The protoc C++ code in turn uses the abseil C++ library's CEscape function:
+	//  https://github.com/abseil/abseil-cpp/blob/934f613818ffcb26c942dff4a80be9a4031c662c/absl/strings/escaping.cc#L406
 	for _, c := range b {
 		switch c {
 		case '\n':
@@ -100,7 +103,7 @@ func WriteEscapedBytes(buf *bytes.Buffer, b []byte) {
 		case '\\':
 			buf.WriteString("\\\\")
 		default:
-			if c >= 0x20 && c <= 0x7f && c != '"' && c != '\\' {
+			if c >= 0x20 && c < 0x7f {
 				// simple printable characters
 				buf.WriteByte(c)
 			} else {

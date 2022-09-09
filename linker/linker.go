@@ -145,6 +145,50 @@ type Result interface {
 	CanonicalProto() *descriptorpb.FileDescriptorProto
 }
 
+// DescriptorProtoWrapper is a protoreflect.Descriptor that wraps an
+// underlying descriptor proto. It provides the same interface as
+// Descriptor but with one extra operation, to efficiently query for
+// the underlying descriptor proto.
+//
+// Descriptors that implement this will also implement another method
+// whose specified return type is the concrete type returned by the
+// AsProto method. The name of this method varies by the type of this
+// descriptor:
+//
+//	 Descriptor Type        Other Method Name
+//	---------------------+------------------------------------
+//	 FileDescriptor      |  FileDescriptorProto()
+//	 MessageDescriptor   |  MessageDescriptorProto()
+//	 FieldDescriptor     |  FieldDescriptorProto()
+//	 OneofDescriptor     |  OneOfDescriptorProto()
+//	 EnumDescriptor      |  EnumDescriptorProto()
+//	 EnumValueDescriptor |  EnumValueDescriptorProto()
+//	 ServiceDescriptor   |  ServiceDescriptorProto()
+//	 MethodDescriptor    |  MethodDescriptorProto()
+//
+// For example, a DescriptorProtoWrapper that implements FileDescriptor
+// returns a *descriptorpb.FileDescriptorProto value from its AsProto
+// method and also provides a method with the following signature:
+//
+//	FileDescriptorProto() *descriptorpb.FileDescriptorProto
+type DescriptorProtoWrapper interface {
+	protoreflect.Descriptor
+	// AsProto returns the underlying descriptor proto. The concrete
+	// type of the proto message depends on the type of this
+	// descriptor:
+	//    Descriptor Type        Proto Message Type
+	//   ---------------------+------------------------------------
+	//    FileDescriptor      |  *descriptorpb.FileDescriptorProto
+	//    MessageDescriptor   |  *descriptorpb.DescriptorProto
+	//    FieldDescriptor     |  *descriptorpb.FieldDescriptorProto
+	//    OneofDescriptor     |  *descriptorpb.OneofDescriptorProto
+	//    EnumDescriptor      |  *descriptorpb.EnumDescriptorProto
+	//    EnumValueDescriptor |  *descriptorpb.EnumValueDescriptorProto
+	//    ServiceDescriptor   |  *descriptorpb.ServiceDescriptorProto
+	//    MethodDescriptor    |  *descriptorpb.MethodDescriptorProto
+	AsProto() proto.Message
+}
+
 // ErrorUnusedImport may be passed to a warning reporter when an unused
 // import is detected. The error the reporter receives will be wrapped
 // with source position that indicates the file and line where the import
