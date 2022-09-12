@@ -949,7 +949,8 @@ func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.M
 	}
 
 	optNode := interp.file.OptionNode(opt)
-	val, err := interp.setOptionField(mc, msg, fld, node, optNode.GetValue())
+	_, insideMsgLiteral := optNode.GetValue().(*ast.MessageLiteralNode)
+	val, err := interp.setOptionField(mc, msg, fld, node, optNode.GetValue(), insideMsgLiteral)
 	if err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
@@ -977,7 +978,7 @@ func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.M
 // setOptionField sets the value for field fld in the given message msg to the value represented
 // by val. The given name is the AST node that corresponds to the name of fld. On success, it
 // returns additional metadata about the field that was set.
-func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode) (interpretedFieldValue, error) {
+func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
 	v := val.Value()
 	if sl, ok := v.([]ast.ValueNode); ok {
 		// handle slices a little differently than the others
@@ -992,7 +993,7 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 		var resMsgVals [][]*interpretedField
 		for index, item := range sl {
 			mc.optAggPath = fmt.Sprintf("%s[%d]", origPath, index)
-			value, err := interp.fieldValue(mc, fld, item)
+			value, err := interp.fieldValue(mc, fld, item, insideMsgLiteral)
 			if err != nil {
 				return interpretedFieldValue{}, err
 			}
@@ -1013,7 +1014,7 @@ func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.M
 		}, nil
 	}
 
-	value, err := interp.fieldValue(mc, fld, val)
+	value, err := interp.fieldValue(mc, fld, val, insideMsgLiteral)
 	if err != nil {
 		return interpretedFieldValue{}, err
 	}
@@ -1229,7 +1230,7 @@ func valueKind(val interface{}) string {
 
 // fieldValue computes a compile-time value (constant or list or message literal) for the given
 // AST node val. The value in val must be assignable to the field fld.
-func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.FieldDescriptor, val ast.ValueNode) (interpretedFieldValue, error) {
+func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.FieldDescriptor, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
 	k := fld.Kind()
 	switch k {
 	case protoreflect.EnumKind:
@@ -1298,7 +1299,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					// Otherwise it is an error in the text format.
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Val).Start(), "syntax error: unexpected value, expecting ':'")
 				}
-				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val)
+				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val, insideMsgLiteral)
 				if err != nil {
 					return interpretedFieldValue{}, err
 				}
@@ -1321,7 +1322,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 		return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting message, got %s", mc, valueKind(v))
 
 	default:
-		v, err := interp.scalarFieldValue(mc, descriptorpb.FieldDescriptorProto_Type(k), val, false)
+		v, err := interp.scalarFieldValue(mc, descriptorpb.FieldDescriptorProto_Type(k), val, insideMsgLiteral)
 		if err != nil {
 			return interpretedFieldValue{}, err
 		}

@@ -819,7 +819,7 @@ message Baz {
 	}
 
 	for i, tc := range testCases {
-		t.Log("test case", i+1)
+		t.Log("test case", i)
 		acc := func(filename string) (io.ReadCloser, error) {
 			f, ok := tc.input[filename]
 			if !ok {
