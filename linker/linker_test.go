@@ -23,6 +23,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
@@ -757,15 +760,6 @@ message m{
 			},
 			`a.proto:4:9: symbol "m.z" already defined at a.proto:3:9`,
 		},
-		{
-			map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-package google.protobuf;
-message DescriptorProto {}`,
-			},
-			`foo.proto:4:9: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`,
-		},
 	}
 
 	for i, tc := range testCases {
@@ -867,4 +861,34 @@ func TestProto3Enums(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestLinkerSymbolCollisionNoSource(t *testing.T) {
+	fdProto := &descriptorpb.FileDescriptorProto{
+		Name:       strPtr(t, "foo.proto"),
+		Dependency: []string{"google/protobuf/descriptor.proto"},
+		Package:    strPtr(t, "google.protobuf"),
+		MessageType: []*descriptorpb.DescriptorProto{
+			{
+				Name: strPtr(t, "DescriptorProto"),
+			},
+		},
+	}
+	resolver := protocompile.WithStandardImports(protocompile.ResolverFunc(func(s string) (protocompile.SearchResult, error) {
+		if s == "foo.proto" {
+			return protocompile.SearchResult{Proto: fdProto}, nil
+		}
+		return protocompile.SearchResult{}, protoregistry.NotFound
+	}))
+	compiler := &protocompile.Compiler{
+		Resolver: resolver,
+	}
+	_, err := compiler.Compile(context.Background(), "foo.proto")
+	require.Error(t, err)
+	assert.EqualError(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
+}
+
+func strPtr(tb testing.TB, str string) *string {
+	tb.Helper()
+	return &str
 }
