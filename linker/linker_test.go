@@ -757,10 +757,69 @@ message m{
 			},
 			`a.proto:4:9: symbol "m.z" already defined at a.proto:3:9`,
 		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+enum Foo { true = 0; false = 1; t = 2; f = 3; True = 4; False = 5; inf = 6; nan = 7; }
+extend google.protobuf.MessageOptions { repeated Foo foo = 10001; }
+message Baz {
+  option (foo) = true; option (foo) = false;
+  option (foo) = t; option (foo) = f;
+  option (foo) = True; option (foo) = False;
+  option (foo) = inf; option (foo) = nan;
+}`,
+			},
+			"", // should succeed
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+extend google.protobuf.MessageOptions { repeated bool foo = 10001; }
+message Baz {
+  option (foo) = true; option (foo) = false;
+  option (foo) = t; option (foo) = f;
+  option (foo) = True; option (foo) = False;
+}`,
+			},
+			"foo.proto:6:18: message Baz: option (foo): expecting bool, got identifier",
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+message Foo { repeated bool b = 1; }
+extend google.protobuf.MessageOptions { Foo foo = 10001; }
+message Baz {
+  option (foo) = {
+    b: t     b: f
+    b: true  b: false
+    b: True  b: False
+  };
+}`,
+			},
+			"", // should succeed
+		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto2";
+import "google/protobuf/descriptor.proto";
+message Foo { extensions 1 to 10; }
+extend Foo { optional bool b = 10; }
+extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+message Baz {
+  option (foo) = {
+    [.b]: true
+  };
+}`,
+			},
+			"foo.proto:8:6: syntax error: unexpected '.'",
+		},
 	}
 
 	for i, tc := range testCases {
-		t.Log("test case", i+1)
+		t.Log("test case", i)
 		acc := func(filename string) (io.ReadCloser, error) {
 			f, ok := tc.input[filename]
 			if !ok {

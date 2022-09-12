@@ -49,7 +49,6 @@ var _ ValueNode = (*NegativeIntLiteralNode)(nil)
 var _ ValueNode = (*FloatLiteralNode)(nil)
 var _ ValueNode = (*SpecialFloatLiteralNode)(nil)
 var _ ValueNode = (*SignedFloatLiteralNode)(nil)
-var _ ValueNode = (*BoolLiteralNode)(nil)
 var _ ValueNode = (*ArrayLiteralNode)(nil)
 var _ ValueNode = (*MessageLiteralNode)(nil)
 var _ ValueNode = NoSourceNode{}
@@ -376,25 +375,6 @@ func (n *SignedFloatLiteralNode) Value() interface{} {
 }
 
 func (n *SignedFloatLiteralNode) AsFloat() float64 {
-	return n.Val
-}
-
-// BoolLiteralNode represents a boolean literal.
-type BoolLiteralNode struct {
-	*KeywordNode
-	Val bool
-}
-
-// NewBoolLiteralNode returns a new *BoolLiteralNode for the given keyword,
-// which must be "true" or "false".
-func NewBoolLiteralNode(name *KeywordNode) *BoolLiteralNode {
-	return &BoolLiteralNode{
-		KeywordNode: name,
-		Val:         name.Val == "true",
-	}
-}
-
-func (n *BoolLiteralNode) Value() interface{} {
 	return n.Val
 }
 
