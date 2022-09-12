@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -865,12 +866,12 @@ func TestProto3Enums(t *testing.T) {
 
 func TestLinkerSymbolCollisionNoSource(t *testing.T) {
 	fdProto := &descriptorpb.FileDescriptorProto{
-		Name:       strPtr(t, "foo.proto"),
+		Name:       proto.String("foo.proto"),
 		Dependency: []string{"google/protobuf/descriptor.proto"},
-		Package:    strPtr(t, "google.protobuf"),
+		Package:    proto.String("google.protobuf"),
 		MessageType: []*descriptorpb.DescriptorProto{
 			{
-				Name: strPtr(t, "DescriptorProto"),
+				Name: proto.String("DescriptorProto"),
 			},
 		},
 	}
@@ -886,9 +887,4 @@ func TestLinkerSymbolCollisionNoSource(t *testing.T) {
 	_, err := compiler.Compile(context.Background(), "foo.proto")
 	require.Error(t, err)
 	assert.EqualError(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
-}
-
-func strPtr(tb testing.TB, str string) *string {
-	tb.Helper()
-	return &str
 }
