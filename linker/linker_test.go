@@ -757,6 +757,15 @@ message m{
 			},
 			`a.proto:4:9: symbol "m.z" already defined at a.proto:3:9`,
 		},
+		{
+			map[string]string{
+				"foo.proto": `syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+package google.protobuf;
+message DescriptorProto {}`,
+			},
+			`foo.proto:4:9: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`,
+		},
 	}
 
 	for i, tc := range testCases {
