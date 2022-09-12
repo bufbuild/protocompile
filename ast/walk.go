@@ -165,8 +165,6 @@ func Visit(n Node, v Visitor) error {
 		return v.VisitSpecialFloatLiteralNode(n)
 	case *SignedFloatLiteralNode:
 		return v.VisitSignedFloatLiteralNode(n)
-	case *BoolLiteralNode:
-		return v.VisitBoolLiteralNode(n)
 	case *ArrayLiteralNode:
 		return v.VisitArrayLiteralNode(n)
 	case *MessageLiteralNode:
@@ -329,8 +327,6 @@ type Visitor interface {
 	VisitSpecialFloatLiteralNode(*SpecialFloatLiteralNode) error
 	// VisitSignedFloatLiteralNode is invoked when visiting a *SignedFloatLiteralNode in the AST.
 	VisitSignedFloatLiteralNode(*SignedFloatLiteralNode) error
-	// VisitBoolLiteralNode is invoked when visiting a *BoolLiteralNode in the AST.
-	VisitBoolLiteralNode(*BoolLiteralNode) error
 	// VisitArrayLiteralNode is invoked when visiting an *ArrayLiteralNode in the AST.
 	VisitArrayLiteralNode(*ArrayLiteralNode) error
 	// VisitMessageLiteralNode is invoked when visiting a *MessageLiteralNode in the AST.
@@ -485,10 +481,6 @@ func (n NoOpVisitor) VisitSignedFloatLiteralNode(_ *SignedFloatLiteralNode) erro
 	return nil
 }
 
-func (n NoOpVisitor) VisitBoolLiteralNode(_ *BoolLiteralNode) error {
-	return nil
-}
-
 func (n NoOpVisitor) VisitArrayLiteralNode(_ *ArrayLiteralNode) error {
 	return nil
 }
@@ -572,7 +564,6 @@ type SimpleVisitor struct {
 	DoVisitFloatLiteralNode          func(*FloatLiteralNode) error
 	DoVisitSpecialFloatLiteralNode   func(*SpecialFloatLiteralNode) error
 	DoVisitSignedFloatLiteralNode    func(*SignedFloatLiteralNode) error
-	DoVisitBoolLiteralNode           func(*BoolLiteralNode) error
 	DoVisitArrayLiteralNode          func(*ArrayLiteralNode) error
 	DoVisitMessageLiteralNode        func(*MessageLiteralNode) error
 	DoVisitMessageFieldNode          func(*MessageFieldNode) error
@@ -883,13 +874,6 @@ func (b *SimpleVisitor) VisitSpecialFloatLiteralNode(node *SpecialFloatLiteralNo
 func (b *SimpleVisitor) VisitSignedFloatLiteralNode(node *SignedFloatLiteralNode) error {
 	if b.DoVisitSignedFloatLiteralNode != nil {
 		return b.DoVisitSignedFloatLiteralNode(node)
-	}
-	return b.visitInterface(node)
-}
-
-func (b *SimpleVisitor) VisitBoolLiteralNode(node *BoolLiteralNode) error {
-	if b.DoVisitBoolLiteralNode != nil {
-		return b.DoVisitBoolLiteralNode(node)
 	}
 	return b.visitInterface(node)
 }
