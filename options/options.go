@@ -949,8 +949,7 @@ func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.M
 	}
 
 	optNode := interp.file.OptionNode(opt)
-	_, insideMsgLiteral := optNode.GetValue().(*ast.MessageLiteralNode)
-	val, err := interp.setOptionField(mc, msg, fld, node, optNode.GetValue(), insideMsgLiteral)
+	val, err := interp.setOptionField(mc, msg, fld, node, optNode.GetValue(), false)
 	if err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
@@ -1299,7 +1298,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					// Otherwise it is an error in the text format.
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Val).Start(), "syntax error: unexpected value, expecting ':'")
 				}
-				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val, insideMsgLiteral)
+				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val, true)
 				if err != nil {
 					return interpretedFieldValue{}, err
 				}
