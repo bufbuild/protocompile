@@ -134,7 +134,7 @@ func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index
 		interp.resolver = linker.ResolverFromFile(f)
 	}
 
-	fd := file.Proto()
+	fd := file.FileDescriptorProto()
 	prefix := fd.GetPackage()
 	if prefix != "" {
 		prefix += "."
@@ -328,7 +328,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	}
 	mc := &messageContext{
 		res:         interp.file,
-		file:        interp.file.Proto(),
+		file:        interp.file.FileDescriptorProto(),
 		elementName: fqn,
 		elementType: descriptorType(fld),
 		option:      opt,
@@ -684,7 +684,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		msg = proto.Clone(opts).ProtoReflect()
 	}
 
-	mc := &messageContext{res: interp.file, file: interp.file.Proto(), elementName: fqn, elementType: descriptorType(element)}
+	mc := &messageContext{res: interp.file, file: interp.file.FileDescriptorProto(), elementName: fqn, elementType: descriptorType(element)}
 	var remain []*descriptorpb.UninterpretedOption
 	var results []*interpretedOption
 	for _, uo := range uninterpreted {

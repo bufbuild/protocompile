@@ -69,7 +69,7 @@ func (r *result) AST() *ast.FileNode {
 	return r.file
 }
 
-func (r *result) Proto() *descriptorpb.FileDescriptorProto {
+func (r *result) FileDescriptorProto() *descriptorpb.FileDescriptorProto {
 	return r.proto
 }
 
