@@ -31,6 +31,7 @@ import (
 )
 
 func TestEmptyParse(t *testing.T) {
+	t.Parallel()
 	errHandler := reporter.NewHandler(nil)
 	ast, err := Parse("foo.proto", bytes.NewReader(nil), errHandler)
 	assert.Nil(t, err)
@@ -46,6 +47,7 @@ func TestEmptyParse(t *testing.T) {
 }
 
 func TestJunkParse(t *testing.T) {
+	t.Parallel()
 	errHandler := reporter.NewHandler(nil)
 	// inputs that have been found in the past to cause panics by oss-fuzz
 	inputs := map[string]string{
@@ -62,6 +64,7 @@ func TestJunkParse(t *testing.T) {
 }
 
 func TestSimpleParse(t *testing.T) {
+	t.Parallel()
 	protos := map[string]Result{}
 
 	// Just verify that we can successfully parse the same files we use for
@@ -219,6 +222,7 @@ func hasService(fd *descriptorpb.FileDescriptorProto, name string) bool {
 }
 
 func TestAggregateValueInUninterpretedOptions(t *testing.T) {
+	t.Parallel()
 	res, err := parseFileForTest("../internal/testdata/desc_test_complex.proto")
 	if !assert.Nil(t, err) {
 		t.FailNow()
@@ -244,6 +248,7 @@ func TestAggregateValueInUninterpretedOptions(t *testing.T) {
 }
 
 func TestBasicSuccess(t *testing.T) {
+	t.Parallel()
 	r := readerForTestdata(t, "largeproto.proto")
 	handler := reporter.NewHandler(nil)
 

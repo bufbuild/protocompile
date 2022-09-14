@@ -32,6 +32,7 @@ import (
 )
 
 func TestSourceCodeInfo(t *testing.T) {
+	t.Parallel()
 	compiler := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{"../internal/testdata"},

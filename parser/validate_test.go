@@ -24,6 +24,7 @@ import (
 )
 
 func TestBasicValidation(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		contents string
 		errMsg   string
