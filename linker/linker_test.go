@@ -827,30 +827,6 @@ message b {
 }`,
 			},
 		},
-		"success_extension_resolution_custom_options2": {
-			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-message b { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message c {
-  extend a { optional b b = 1; }
-  extend b { repeated int32 i = 1; repeated float f = 2; }
-  option (msga) = {
-    [foo.bar.c.b] {
-      [foo.bar.c.i]: 123
-      [bar.c.i]: 234
-      [c.i]: 345
-    }
-  };
-  option (msga).(foo.bar.c.b).(foo.bar.c.f) = 1.23;
-  option (msga).(foo.bar.c.b).(bar.c.f) = 2.34;
-  option (msga).(foo.bar.c.b).(c.f) = 3.45;
-}`,
-			},
-		},
 		"failure_extension_resolution_unknown": {
 			input: map[string]string{
 				"test.proto": `syntax="proto2";
