@@ -59,6 +59,10 @@ func (r *result) ResolveExtension(name protoreflect.FullName) protoreflect.Exten
 	return nil
 }
 
+func (r *result) ResolveMessageLiteralExtensionName(node ast.IdentValueNode) string {
+	return r.optionQualifiedNames[node]
+}
+
 func (r *result) resolveElement(name protoreflect.FullName) protoreflect.Descriptor {
 	if len(name) > 0 && name[0] == '.' {
 		name = name[1:]
@@ -292,12 +296,16 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 		func(fqn protoreflect.FullName, d proto.Message) error {
 			switch d := d.(type) {
 			case *descriptorpb.DescriptorProto:
-				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
+				// Strangely, when protoc resolves extension names, it uses the *enclosing* scope
+				// instead of the message's scope. So if the message contains an extension named "i",
+				// an option cannot refer to it as simply "i" but must qualify it (at a minimum "Msg.i").
+				// So we don't add this messages scope to our scopes slice until *after* we do options.
 				if d.Options != nil {
 					if err := r.resolveOptions(handler, "message", fqn, d.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
+				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
 				// walk only visits descriptors, so we need to loop over extension ranges ourselves
 				for _, er := range d.ExtensionRange {
 					if er.Options != nil {
@@ -543,46 +551,105 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 }
 
 func (r *result) resolveOptions(handler *reporter.Handler, elemType string, elemName protoreflect.FullName, opts []*descriptorpb.UninterpretedOption, scopes []scope) error {
-	var scope string
-	if elemType != "file" {
-		scope = fmt.Sprintf("%s %s: ", elemType, elemName)
+	mc := &internal.MessageContext{
+		File:        r,
+		ElementName: string(elemName),
+		ElementType: elemType,
 	}
 	file := r.FileNode()
 opts:
 	for _, opt := range opts {
+		// resolve any extension names found in option names
 		for _, nm := range opt.Name {
 			if nm.GetIsExtension() {
 				node := r.OptionNamePartNode(nm)
-				dsc := r.resolve(nm.GetNamePart(), false, scopes)
-				if dsc == nil {
-					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "%sunknown extension %s", scope, nm.GetNamePart()); err != nil {
+				fqn, err := r.resolveExtensionName(nm.GetNamePart(), scopes)
+				if err != nil {
+					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "%v%v", mc, err); err != nil {
 						return err
 					}
 					continue opts
 				}
-				if isSentinelDescriptor(dsc) {
-					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "%sunknown extension %s; resolved to %s which is not defined; consider using a leading dot", scope, nm.GetNamePart(), dsc.FullName()); err != nil {
+				nm.NamePart = proto.String(fqn)
+			}
+		}
+		// also resolve any extension names found inside message literals in option values
+		mc.Option = opt
+		optVal := r.OptionNode(opt).GetValue()
+		if err := r.resolveOptionValue(handler, mc, optVal, scopes); err != nil {
+			return err
+		}
+		mc.Option = nil
+	}
+	return nil
+}
+
+func (r *result) resolveOptionValue(handler *reporter.Handler, mc *internal.MessageContext, val ast.ValueNode, scopes []scope) error {
+	optVal := val.Value()
+	switch optVal := optVal.(type) {
+	case []ast.ValueNode:
+		origPath := mc.OptAggPath
+		defer func() {
+			mc.OptAggPath = origPath
+		}()
+		for i, v := range optVal {
+			mc.OptAggPath = fmt.Sprintf("%s[%d]", origPath, i)
+			if err := r.resolveOptionValue(handler, mc, v, scopes); err != nil {
+				return err
+			}
+		}
+	case []*ast.MessageFieldNode:
+		origPath := mc.OptAggPath
+		defer func() {
+			mc.OptAggPath = origPath
+		}()
+		for _, fld := range optVal {
+			// check for extension name
+			if fld.Name.IsExtension() {
+				fqn, err := r.resolveExtensionName(string(fld.Name.Name.AsIdentifier()), scopes)
+				if err != nil {
+					if err := handler.HandleErrorf(r.FileNode().NodeInfo(fld.Name.Name).Start(), "%v%v", mc, err); err != nil {
 						return err
 					}
-					continue opts
+				} else {
+					r.optionQualifiedNames[fld.Name.Name] = fqn
 				}
-				if ext, ok := dsc.(protoreflect.FieldDescriptor); !ok {
-					otherType := descriptorType(dsc)
-					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "%sinvalid extension: %s is a %s, not an extension", scope, nm.GetNamePart(), otherType); err != nil {
-						return err
-					}
-					continue opts
-				} else if !ext.IsExtension() {
-					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "%sinvalid extension: %s is a field but not an extension", scope, nm.GetNamePart()); err != nil {
-						return err
-					}
-					continue opts
-				}
-				nm.NamePart = proto.String("." + string(dsc.FullName()))
+			}
+
+			// recurse into value
+			mc.OptAggPath = origPath
+			if origPath != "" {
+				mc.OptAggPath += "."
+			}
+			if fld.Name.IsExtension() {
+				mc.OptAggPath = fmt.Sprintf("%s[%s]", mc.OptAggPath, string(fld.Name.Name.AsIdentifier()))
+			} else {
+				mc.OptAggPath = fmt.Sprintf("%s%s", mc.OptAggPath, string(fld.Name.Name.AsIdentifier()))
+			}
+
+			if err := r.resolveOptionValue(handler, mc, fld.Val, scopes); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
+}
+
+func (r *result) resolveExtensionName(name string, scopes []scope) (string, error) {
+	dsc := r.resolve(name, false, scopes)
+	if dsc == nil {
+		return "", fmt.Errorf("unknown extension %s", name)
+	}
+	if isSentinelDescriptor(dsc) {
+		return "", fmt.Errorf("unknown extension %s; resolved to %s which is not defined; consider using a leading dot", name, dsc.FullName())
+	}
+	if ext, ok := dsc.(protoreflect.FieldDescriptor); !ok {
+		otherType := descriptorType(dsc)
+		return "", fmt.Errorf("invalid extension: %s is a %s, not an extension", name, otherType)
+	} else if !ext.IsExtension() {
+		return "", fmt.Errorf("invalid extension: %s is a field but not an extension", name)
+	}
+	return string("." + dsc.FullName()), nil
 }
 
 func (r *result) resolve(name string, onlyTypes bool, scopes []scope) protoreflect.Descriptor {
@@ -717,7 +784,7 @@ func matchesPkgNamespace(fqn, pkg protoreflect.FullName) bool {
 func isAggregateDescriptor(d protoreflect.Descriptor) bool {
 	if isSentinelDescriptor(d) {
 		// this indicates the name matched a package, not a
-		// descriptor, but a package is an aggregate so
+		// descriptor, but a package is an aggregate, so
 		// we return true
 		return true
 	}
@@ -776,11 +843,11 @@ func (p *sentinelDescriptor) FullName() protoreflect.FullName {
 	return protoreflect.FullName(p.name)
 }
 
-func (p sentinelDescriptor) IsPlaceholder() bool {
+func (p *sentinelDescriptor) IsPlaceholder() bool {
 	return false
 }
 
-func (p sentinelDescriptor) Options() protoreflect.ProtoMessage {
+func (p *sentinelDescriptor) Options() protoreflect.ProtoMessage {
 	return nil
 }
 

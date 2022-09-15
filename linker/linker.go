@@ -21,6 +21,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 )
@@ -60,12 +61,13 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	}
 
 	r := &result{
-		Result:         parsed,
-		deps:           dependencies,
-		descriptors:    map[proto.Message]protoreflect.Descriptor{},
-		descriptorPool: map[string]proto.Message{},
-		usedImports:    map[string]struct{}{},
-		prefix:         prefix,
+		Result:               parsed,
+		deps:                 dependencies,
+		descriptors:          map[proto.Message]protoreflect.Descriptor{},
+		descriptorPool:       map[string]proto.Message{},
+		usedImports:          map[string]struct{}{},
+		prefix:               prefix,
+		optionQualifiedNames: map[ast.IdentValueNode]string{},
 	}
 
 	// First, we put all symbols into a single pool, which lets us ensure there
@@ -118,6 +120,9 @@ type Result interface {
 	// extension that is available in this file. If no such element is available
 	// or if the named element is not an extension, nil is returned.
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
+	// ResolveMessageLiteralExtensionName returns the fully qualified name for
+	// an identifier for extension field names in message literals.
+	ResolveMessageLiteralExtensionName(ast.IdentValueNode) string
 	// ValidateOptions runs some validation checks on the descriptor that can only
 	// be done after options are interpreted. Any errors or warnings encountered
 	// will be reported via the given handler. If any error is reported, this
