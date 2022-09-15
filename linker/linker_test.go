@@ -21,6 +21,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -233,8 +234,7 @@ func TestLinkerValidation(t *testing.T) {
 						rpc Bar(Foo) returns (Foo) {
 							option (mtd_foo) = "method";
 						}
-					}
-					`,
+					}`,
 			},
 		},
 		"failure_default_repeated": {
@@ -287,113 +287,124 @@ func TestLinkerValidation(t *testing.T) {
 		},
 		"failure_option_unknown_field": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f).b = 123;`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f).b = 123;`,
 			},
 			expectedErr: "foo.proto:5:12: option (f).b: field b of foo does not exist",
 		},
 		"failure_option_wrong_type": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f).a = 123;`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f).a = 123;`,
 			},
 			expectedErr: "foo.proto:5:16: option (f).a: expecting string, got integer",
 		},
 		"failure_extension_message_not_file": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (b) = 123;`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (b) = 123;`,
 			},
 			expectedErr: "foo.proto:5:8: option (b): extension b should extend google.protobuf.FileOptions but instead extends foo",
 		},
 		"failure_option_message_not_extension": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (foo) = 123;`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (foo) = 123;`,
 			},
 			expectedErr: "foo.proto:5:8: invalid extension: foo is a message, not an extension",
 		},
 		"failure_option_field_not_extension": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (foo.a) = 123;`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (foo.a) = 123;`,
 			},
 			expectedErr: "foo.proto:5:8: invalid extension: foo.a is a field but not an extension",
 		},
 		"failure_option_not_repeated": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f) = { a: [ 123 ] };`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f) = { a: [ 123 ] };`,
 			},
 			expectedErr: "foo.proto:5:19: option (f): value is an array but field is not repeated",
 		},
 		"failure_option_repeated_string_integer": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { repeated string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f) = { a: [ "a", "b", 123 ] };`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { repeated string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f) = { a: [ "a", "b", 123 ] };`,
 			},
 			expectedErr: "foo.proto:5:31: option (f): expecting string, got integer",
 		},
 		"failure_option_non_repeated_override": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f) = { a: "a" };
-option (f) = { a: "b" };`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f) = { a: "a" };
+					option (f) = { a: "b" };`,
 			},
 			expectedErr: "foo.proto:6:8: option (f): non-repeated option field (f) already set",
 		},
 		"failure_option_non_repeated_override2": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f) = { a: "a" };
-option (f).a = "b";`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f) = { a: "a" };
+					option (f).a = "b";`,
 			},
 			expectedErr: "foo.proto:6:12: option (f).a: non-repeated option field a already set",
 		},
 		"failure_option_int32_not_string": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { optional string a = 1; extensions 10 to 20; }
-extend foo { optional int32 b = 10; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f) = { a: "a" };
-option (f).(b) = "b";`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { optional string a = 1; extensions 10 to 20; }
+					extend foo { optional int32 b = 10; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f) = { a: "a" };
+					option (f).(b) = "b";`,
 			},
 			expectedErr: "foo.proto:6:18: option (f).(b): expecting int32, got string",
 		},
 		"failure_option_required_field_unset": {
 			input: map[string]string{
-				"foo.proto": `import "google/protobuf/descriptor.proto";
-message foo { required string a = 1; required string b = 2; }
-extend google.protobuf.FileOptions { optional foo f = 20000; }
-option (f) = { a: "a" };`,
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { required string a = 1; required string b = 2; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f) = { a: "a" };`,
 			},
 			expectedErr: "foo.proto:1:1: error in file options: some required fields missing: (f).b",
 		},
@@ -449,474 +460,511 @@ option (f) = { a: "a" };`,
 		},
 		"success_group_message_extension": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo {
-  optional group Bar = 1 { optional string name = 1; }
-}
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo).bar.name = "abc"; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo {
+					  optional group Bar = 1 { optional string name = 1; }
+					}
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo).bar.name = "abc"; }`,
 			},
 		},
 		"failure_group_extension_not_exist": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo {
-  optional group Bar = 1 { optional string name = 1; }
-}
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo).Bar.name = "abc"; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo {
+					  optional group Bar = 1 { optional string name = 1; }
+					}
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo).Bar.name = "abc"; }`,
 			},
 			expectedErr: "foo.proto:7:28: message Baz: option (foo).Bar.name: field Bar of Foo does not exist",
 		},
 		"success_group_extension": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-extend google.protobuf.MessageOptions {
-  optional group Foo = 10001 { optional string name = 1; }
-}
-message Bar { option (foo).name = "abc"; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions {
+					  optional group Foo = 10001 { optional string name = 1; }
+					}
+					message Bar { option (foo).name = "abc"; }`,
 			},
 		},
 		"failure_group_not_extension": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-extend google.protobuf.MessageOptions {
-  optional group Foo = 10001 { optional string name = 1; }
-}
-message Bar { option (Foo).name = "abc"; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions {
+					  optional group Foo = 10001 { optional string name = 1; }
+					}
+					message Bar { option (Foo).name = "abc"; }`,
 			},
 			expectedErr: "foo.proto:6:22: message Bar: invalid extension: Foo is a message, not an extension",
 		},
 		"success_group_custom_option": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo {
-  optional group Bar = 1 { optional string name = 1; }
-}
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo) = { Bar< name: "abc" > }; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo {
+					  optional group Bar = 1 { optional string name = 1; }
+					}
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo) = { Bar< name: "abc" > }; }`,
 			},
 		},
 		"failure_group_custom_option": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo {
-  optional group Bar = 1 { optional string name = 1; }
-}
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo) = { bar< name: "abc" > }; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo {
+					  optional group Bar = 1 { optional string name = 1; }
+					}
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo) = { bar< name: "abc" > }; }`,
 			},
 			expectedErr: "foo.proto:7:32: message Baz: option (foo): field bar not found (did you mean the group named Bar?)",
 		},
 		"success_group_custom_option2": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo { extensions 1 to 10; }
-extend Foo { optional group Bar = 10 { optional string name = 1; } }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo) = { [bar]< name: "abc" > }; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo { extensions 1 to 10; }
+					extend Foo { optional group Bar = 10 { optional string name = 1; } }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo) = { [bar]< name: "abc" > }; }`,
 			},
 		},
 		"failure_group_extension_field_not_found": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo { extensions 1 to 10; }
-extend Foo { optional group Bar = 10 { optional string name = 1; } }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo) = { [Bar]< name: "abc" > }; }`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo { extensions 1 to 10; }
+					extend Foo { optional group Bar = 10 { optional string name = 1; } }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo) = { [Bar]< name: "abc" > }; }`,
 			},
 			expectedErr: "foo.proto:6:33: message Baz: option (foo): invalid extension: Bar is a message, not an extension",
 		},
 		"failure_oneof_extension_already_set": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { oneof bar { string baz = 1; string buzz = 2; } }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz { option (foo) = { baz: "abc" buzz: "xyz" }; }`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { oneof bar { string baz = 1; string buzz = 2; } }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz { option (foo) = { baz: "abc" buzz: "xyz" }; }`,
 			},
 			expectedErr: `foo.proto:5:43: message Baz: option (foo): oneof "bar" already has field "baz" set`,
 		},
 		"failure_oneof_extension_already_set2": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { oneof bar { string baz = 1; string buzz = 2; } }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz {
-  option (foo).baz = "abc";
-  option (foo).buzz = "xyz";
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { oneof bar { string baz = 1; string buzz = 2; } }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz {
+					  option (foo).baz = "abc";
+					  option (foo).buzz = "xyz";
+					}`,
 			},
 			expectedErr: `foo.proto:7:16: message Baz: option (foo).buzz: oneof "bar" already has field "baz" set`,
 		},
 		"failure_oneof_extension_already_set3": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { oneof bar { google.protobuf.DescriptorProto baz = 1; google.protobuf.DescriptorProto buzz = 2; } }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz {
-  option (foo).baz.name = "abc";
-  option (foo).buzz.name = "xyz";
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { oneof bar { google.protobuf.DescriptorProto baz = 1; google.protobuf.DescriptorProto buzz = 2; } }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz {
+					  option (foo).baz.name = "abc";
+					  option (foo).buzz.name = "xyz";
+					}`,
 			},
 			expectedErr: `foo.proto:7:16: message Baz: option (foo).buzz.name: oneof "bar" already has field "baz" set`,
 		},
 		"failure_oneof_extension_already_set4": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { oneof bar { google.protobuf.DescriptorProto baz = 1; google.protobuf.DescriptorProto buzz = 2; } }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz {
-  option (foo).baz.options.(foo).baz.name = "abc";
-  option (foo).baz.options.(foo).buzz.name = "xyz";
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { oneof bar { google.protobuf.DescriptorProto baz = 1; google.protobuf.DescriptorProto buzz = 2; } }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz {
+					  option (foo).baz.options.(foo).baz.name = "abc";
+					  option (foo).baz.options.(foo).buzz.name = "xyz";
+					}`,
 			},
 			expectedErr: `foo.proto:7:34: message Baz: option (foo).baz.options.(foo).buzz.name: oneof "bar" already has field "baz" set`,
 		},
 		"success_repeated_extensions": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { repeated string strs = 1; repeated Foo foos = 2; }
-extend google.protobuf.FileOptions { optional Foo foo = 10001; }
-option (foo) = {
-  strs: []
-  foos []
-};`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { repeated string strs = 1; repeated Foo foos = 2; }
+					extend google.protobuf.FileOptions { optional Foo foo = 10001; }
+					option (foo) = {
+					  strs: []
+					  foos []
+					};`,
 			},
 		},
 		"failure_repeated_primitive_no_leading_colon": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { repeated string strs = 1; repeated Foo foos = 2; }
-extend google.protobuf.FileOptions { optional Foo foo = 10001; }
-option (foo) = {
-  strs []
-  foos []
-};`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { repeated string strs = 1; repeated Foo foos = 2; }
+					extend google.protobuf.FileOptions { optional Foo foo = 10001; }
+					option (foo) = {
+					  strs []
+					  foos []
+					};`,
 			},
 			expectedErr: `foo.proto:6:8: syntax error: unexpected value, expecting ':'`,
 		},
 		"success_extension_repeated_field_values": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { repeated string strs = 1; repeated Foo foos = 2; }
-extend google.protobuf.FileOptions { optional Foo foo = 10001; }
-option (foo) = {
-  strs: ['abc', 'def']
-  foos [<strs:'foo'>, <strs:'bar'>]
-};`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { repeated string strs = 1; repeated Foo foos = 2; }
+					extend google.protobuf.FileOptions { optional Foo foo = 10001; }
+					option (foo) = {
+					  strs: ['abc', 'def']
+					  foos [<strs:'foo'>, <strs:'bar'>]
+					};`,
 			},
 		},
 		"failure_extension_unexpected_string_literal": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { repeated string strs = 1; repeated Foo foos = 2; }
-extend google.protobuf.FileOptions { optional Foo foo = 10001; }
-option (foo) = {
-  strs ['abc', 'def']
-  foos [<strs:'foo'>, <strs:'bar'>]
-};`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { repeated string strs = 1; repeated Foo foos = 2; }
+					extend google.protobuf.FileOptions { optional Foo foo = 10001; }
+					option (foo) = {
+					  strs ['abc', 'def']
+					  foos [<strs:'foo'>, <strs:'bar'>]
+					};`,
 			},
 			expectedErr: `foo.proto:6:9: syntax error: unexpected string literal, expecting '{' or '<' or ']'`,
 		},
 		"failure_extension_enum_value_not_message": {
 			input: map[string]string{
-				"foo.proto": `package foo.bar;
-message M {
-  enum E { M = 0; }
-  optional M F1 = 1;
-  extensions 2 to 2;
-  extend M { optional string F2 = 2; }
-}`,
+				"foo.proto": `
+					package foo.bar;
+					message M {
+					  enum E { M = 0; }
+					  optional M F1 = 1;
+					  extensions 2 to 2;
+					  extend M { optional string F2 = 2; }
+					}`,
 			},
 			expectedErr: `foo.proto:6:10: extendee is invalid: foo.bar.M.M is a enum value, not a message`,
 		},
 		"failure_json_name_extension": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-extend google.protobuf.MessageOptions {
-  string foobar = 10001 [json_name="FooBar"];
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions {
+					  string foobar = 10001 [json_name="FooBar"];
+					}`,
 			},
 			expectedErr: "foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
 		},
 		"failure_synthetic_map_entry_reference": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-message Foo {
-  map<string,string> bar = 1;
-}
-message Baz {
-  Foo.BarEntry e = 1;
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  map<string,string> bar = 1;
+					}
+					message Baz {
+					  Foo.BarEntry e = 1;
+					}`,
 			},
 			expectedErr: "foo.proto:6:3: field Baz.e: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly",
 		},
 		"failure_synthetic_struct_reference": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/struct.proto";
-message Foo {
-  google.protobuf.Struct.FieldsEntry e = 1;
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/struct.proto";
+					message Foo {
+					  google.protobuf.Struct.FieldsEntry e = 1;
+					}`,
 			},
 			expectedErr: "foo.proto:4:3: field Foo.e: google.protobuf.Struct.FieldsEntry is a synthetic map entry and may not be referenced explicitly",
 		},
 		"failure_proto3_extend_add_field": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-message Foo {
-  extensions 1 to 100;
-}`,
-				"bar.proto": `syntax = "proto3";
-import "foo.proto";
-extend Foo {
-  string bar = 1;
-}`,
+				"foo.proto": `
+					syntax = "proto2";
+					message Foo {
+					  extensions 1 to 100;
+					}`,
+				"bar.proto": `
+					syntax = "proto3";
+					import "foo.proto";
+					extend Foo {
+					  string bar = 1;
+					}`,
 			},
 			expectedErr: "bar.proto:3:8: extend blocks in proto3 can only be used to define custom options",
 		},
-		"failure_additional_semicolon": {
+		"failure_oneof_disallows_empty_statement": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-message Foo {
-  oneof bar {
-    string baz = 1;
-    uint64 buzz = 2;
-    ;
-  }
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  oneof bar {
+					    string baz = 1;
+					    uint64 buzz = 2;
+					    ;
+					  }
+					}`,
 			},
 			expectedErr: "foo.proto:6:5: syntax error: unexpected ';'",
 		},
-		"failure_extend_extra_semicolon": {
+		"failure_extend_disallows_empty_statement": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-extend google.protobuf.MessageOptions {
-  string baz = 1001;
-  uint64 buzz = 1002;
-  ;
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions {
+					  string baz = 1001;
+					  uint64 buzz = 1002;
+					  ;
+					}`,
 			},
 			expectedErr: "foo.proto:6:3: syntax error: unexpected ';'",
 		},
 		"failure_oneof_field_conflict": {
 			input: map[string]string{
-				"a.proto": `syntax = "proto3";
-message m{
-  oneof z{
-	int64 z=1;
-  }
-}`,
+				"a.proto": `
+					syntax = "proto3";
+					message m{
+					  oneof z{
+						int64 z=1;
+					  }
+					}`,
 			},
 			expectedErr: `a.proto:4:15: symbol "m.z" already defined at a.proto:3:9`,
 		},
 		"failure_oneof_field_conflict2": {
 			input: map[string]string{
-				"a.proto": `syntax="proto3";
-message m{
-  string z = 1;
-  oneof z{int64 b=2;}
-}`,
+				"a.proto": `
+					syntax="proto3";
+					message m{
+					  string z = 1;
+					  oneof z{int64 b=2;}
+					}`,
 			},
 			expectedErr: `a.proto:4:9: symbol "m.z" already defined at a.proto:3:10`,
 		},
 		"failure_oneof_conflicts": {
 			input: map[string]string{
-				"a.proto": `syntax="proto3";
-message m{
-  oneof z{int64 a=1;}
-  oneof z{int64 b=2;}
-}`,
+				"a.proto": `
+					syntax="proto3";
+					message m{
+					  oneof z{int64 a=1;}
+					  oneof z{int64 b=2;}
+					}`,
 			},
 			expectedErr: `a.proto:4:9: symbol "m.z" already defined at a.proto:3:9`,
 		},
 		"success_message_literals": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-enum Foo { true = 0; false = 1; t = 2; f = 3; True = 4; False = 5; inf = 6; nan = 7; }
-extend google.protobuf.MessageOptions { repeated Foo foo = 10001; }
-message Baz {
-  option (foo) = true; option (foo) = false;
-  option (foo) = t; option (foo) = f;
-  option (foo) = True; option (foo) = False;
-  option (foo) = inf; option (foo) = nan;
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					enum Foo { true = 0; false = 1; t = 2; f = 3; True = 4; False = 5; inf = 6; nan = 7; }
+					extend google.protobuf.MessageOptions { repeated Foo foo = 10001; }
+					message Baz {
+					  option (foo) = true; option (foo) = false;
+					  option (foo) = t; option (foo) = f;
+					  option (foo) = True; option (foo) = False;
+					  option (foo) = inf; option (foo) = nan;
+					}`,
 			},
 		},
 		"failure_message_literals": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-extend google.protobuf.MessageOptions { repeated bool foo = 10001; }
-message Baz {
-  option (foo) = true; option (foo) = false;
-  option (foo) = t; option (foo) = f;
-  option (foo) = True; option (foo) = False;
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions { repeated bool foo = 10001; }
+					message Baz {
+					  option (foo) = true; option (foo) = false;
+					  option (foo) = t; option (foo) = f;
+					  option (foo) = True; option (foo) = False;
+					}`,
 			},
 			expectedErr: "foo.proto:6:18: message Baz: option (foo): expecting bool, got identifier",
 		},
 		"success_message_literals_repeated": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-message Foo { repeated bool b = 1; }
-extend google.protobuf.MessageOptions { Foo foo = 10001; }
-message Baz {
-  option (foo) = {
-    b: t     b: f
-    b: true  b: false
-    b: True  b: False
-  };
-}`,
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo { repeated bool b = 1; }
+					extend google.protobuf.MessageOptions { Foo foo = 10001; }
+					message Baz {
+					  option (foo) = {
+						b: t     b: f
+						b: true  b: false
+						b: True  b: False
+					  };
+					}`,
 			},
 		},
 		"failure_message_literal_leading_dot": {
 			input: map[string]string{
-				"foo.proto": `syntax = "proto2";
-import "google/protobuf/descriptor.proto";
-message Foo { extensions 1 to 10; }
-extend Foo { optional bool b = 10; }
-extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
-message Baz {
-  option (foo) = {
-    [.b]: true
-  };
-}`,
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					message Foo { extensions 1 to 10; }
+					extend Foo { optional bool b = 10; }
+					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
+					message Baz {
+					  option (foo) = {
+					    [.b]: true
+					  };
+					}`,
 			},
 			expectedErr: "foo.proto:8:6: syntax error: unexpected '.'",
 		},
 		"success_extension_resolution_custom_options": {
 			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message b {
-  message c {
-    extend a { repeated int32 i = 1; repeated float f = 2; }
-  }
-  option (msga) = {
-    [foo.bar.b.c.i]: 123
-    [bar.b.c.i]: 234
-    [b.c.i]: 345
-  };
-  option (msga).(foo.bar.b.c.f) = 1.23;
-  option (msga).(bar.b.c.f) = 2.34;
-  option (msga).(b.c.f) = 3.45;
-}`,
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message a { extensions 1 to 100; }
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message b {
+					  message c {
+						extend a { repeated int32 i = 1; repeated float f = 2; }
+					  }
+					  option (msga) = {
+						[foo.bar.b.c.i]: 123
+						[bar.b.c.i]: 234
+						[b.c.i]: 345
+					  };
+					  option (msga).(foo.bar.b.c.f) = 1.23;
+					  option (msga).(bar.b.c.f) = 2.34;
+					  option (msga).(b.c.f) = 3.45;
+					}`,
 			},
 		},
 		"failure_extension_resolution_custom_options": {
 			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-message b { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message c {
-  extend a { optional b b = 1; }
-  extend b { repeated int32 i = 1; repeated float f = 2; }
-  option (msga) = {
-    [foo.bar.c.b] {
-      [foo.bar.c.i]: 123
-      [bar.c.i]: 234
-      [c.i]: 345
-    }
-  };
-  option (msga).(foo.bar.c.b).(foo.bar.c.f) = 1.23;
-  option (msga).(foo.bar.c.b).(bar.c.f) = 2.34;
-  option (msga).(foo.bar.c.b).(c.f) = 3.45;
-}`,
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message a { extensions 1 to 100; }
+					message b { extensions 1 to 100; }
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message c {
+					  extend a { optional b b = 1; }
+					  extend b { repeated int32 i = 1; repeated float f = 2; }
+					  option (msga) = {
+						[foo.bar.c.b] {
+						  [foo.bar.c.i]: 123
+						  [bar.c.i]: 234
+						  [c.i]: 345
+						}
+					  };
+					  option (msga).(foo.bar.c.b).(foo.bar.c.f) = 1.23;
+					  option (msga).(foo.bar.c.b).(bar.c.f) = 2.34;
+					  option (msga).(foo.bar.c.b).(c.f) = 3.45;
+					}`,
 			},
 			expectedErr: "test.proto:9:10: extendee is invalid: foo.bar.c.b is a extension, not a message",
 		},
 		"failure_extension_resolution_unknown": {
 			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message b {
-  message c {
-    extend a { repeated int32 i = 1; repeated float f = 2; }
-  }
-  option (msga) = {
-    [c.i]: 456
-  };
-}`,
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message a { extensions 1 to 100; }
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message b {
+					  message c {
+						extend a { repeated int32 i = 1; repeated float f = 2; }
+					  }
+					  option (msga) = {
+					    [c.i]: 456
+					  };
+					}`,
 			},
 			expectedErr: "test.proto:11:6: message foo.bar.b: option (foo.bar.msga): unknown extension c.i",
 		},
 		"failure_extension_resolution_unknown2": {
 			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message b {
-  message c {
-    extend a { repeated int32 i = 1; repeated float f = 2; }
-  }
-  option (msga) = {
-    [i]: 567
-  };
-}`,
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message a { extensions 1 to 100; }
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message b {
+					  message c {
+					    extend a { repeated int32 i = 1; repeated float f = 2; }
+					  }
+					  option (msga) = {
+					    [i]: 567
+					  };
+					}`,
 			},
 			expectedErr: "test.proto:11:6: message foo.bar.b: option (foo.bar.msga): unknown extension i",
 		},
 		"failure_extension_resolution_unknown3": {
 			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message b {
-  message c {
-    extend a { repeated int32 i = 1; repeated float f = 2; }
-  }
-  option (msga).(c.f) = 4.56;
-}`,
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message a { extensions 1 to 100; }
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message b {
+					  message c {
+					    extend a { repeated int32 i = 1; repeated float f = 2; }
+					  }
+					  option (msga).(c.f) = 4.56;
+					}`,
 			},
 			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension c.f",
 		},
 		"failure_extension_resolution_unknown4": {
 			input: map[string]string{
-				"test.proto": `syntax="proto2";
-package foo.bar;
-import "google/protobuf/descriptor.proto";
-message a { extensions 1 to 100; }
-extend google.protobuf.MessageOptions { optional a msga = 10000; }
-message b {
-  message c {
-    extend a { repeated int32 i = 1; repeated float f = 2; }
-  }
-  option (msga).(f) = 5.67;
-}`,
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message a { extensions 1 to 100; }
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message b {
+					  message c {
+					    extend a { repeated int32 i = 1; repeated float f = 2; }
+					  }
+					  option (msga).(f) = 5.67;
+					}`,
 			},
 			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension f",
 		},
@@ -931,6 +979,9 @@ message b {
 		assert.Truef(t, strings.HasPrefix(name, expectedPrefix), "expected test name %q to have %q prefix", name, expectedPrefix)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+			for filename, data := range tc.input {
+				tc.input[filename] = removePrefixIndent(data)
+			}
 			_, err := compile(t, tc.input)
 			var panicErr protocompile.PanicError
 			if errors.As(err, &panicErr) {
@@ -957,6 +1008,27 @@ message b {
 			}
 		})
 	}
+}
+
+func removePrefixIndent(s string) string {
+	lines := strings.Split(s, "\n")
+	if len(lines) <= 1 || strings.TrimSpace(lines[0]) != "" {
+		return s
+	}
+	lines = lines[1:] // skip first blank line
+	// determine whitespace prefix from first line (e.g. five tabstops)
+	var prefix []rune
+	for _, r := range lines[1] {
+		if !unicode.IsSpace(r) {
+			break
+		}
+		prefix = append(prefix, r)
+	}
+	prefixStr := string(prefix)
+	for i := range lines {
+		lines[i] = strings.TrimPrefix(lines[i], prefixStr)
+	}
+	return strings.Join(lines, "\n")
 }
 
 func compile(t *testing.T, input map[string]string) (linker.Files, error) {
