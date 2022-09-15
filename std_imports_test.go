@@ -23,6 +23,7 @@ import (
 )
 
 func TestStdImports(t *testing.T) {
+	t.Parallel()
 	// make sure we can successfully "compile" all standard imports
 	// (by regurgitating the built-in descriptors)
 	c := Compiler{Resolver: WithStandardImports(&SourceResolver{})}

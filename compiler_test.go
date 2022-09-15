@@ -31,6 +31,7 @@ import (
 )
 
 func TestParseFilesMessageComments(t *testing.T) {
+	t.Parallel()
 	comp := Compiler{
 		Resolver:          &SourceResolver{},
 		IncludeSourceInfo: true,
@@ -56,24 +57,17 @@ func TestParseFilesMessageComments(t *testing.T) {
 }
 
 func TestParseFilesWithImportsNoImportPath(t *testing.T) {
+	t.Parallel()
 	relFilePaths := []string{
 		"a/b/b1.proto",
 		"a/b/b2.proto",
 		"c/c.proto",
 	}
 
-	pwd, err := os.Getwd()
-	assert.Nil(t, err, "%v", err)
-
-	err = os.Chdir("internal/testdata/more")
-	assert.Nil(t, err, "%v", err)
-	defer func() {
-		// restore working directory
-		_ = os.Chdir(pwd)
-	}()
-
 	comp := Compiler{
-		Resolver: WithStandardImports(&SourceResolver{}),
+		Resolver: WithStandardImports(&SourceResolver{
+			ImportPaths: []string{"internal/testdata/more"},
+		}),
 	}
 	ctx := context.Background()
 	protos, err := comp.Compile(ctx, relFilePaths...)
@@ -84,6 +78,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 }
 
 func TestParseFilesWithDependencies(t *testing.T) {
+	t.Parallel()
 	// Create some file contents that import a non-well-known proto.
 	// (One of the protos in internal/testdata is fine.)
 	contents := map[string]string{
@@ -112,6 +107,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 	// Establish that we *can* parse the source file with a resolver that provides
 	// the dependency, as either a full descriptor or as a descriptor proto.
 	t.Run("DependencyIncluded", func(t *testing.T) {
+		t.Parallel()
 		// Create a dependency-aware compiler.
 		compiler := Compiler{
 			Resolver: ResolverFunc(func(f string) (SearchResult, error) {
@@ -125,6 +121,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		assert.Nil(t, err, "%v", err)
 	})
 	t.Run("DependencyIncludedProto", func(t *testing.T) {
+		t.Parallel()
 		// Create a dependency-aware compiler.
 		compiler := Compiler{
 			Resolver: WithStandardImports(ResolverFunc(func(f string) (SearchResult, error) {
@@ -141,6 +138,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 	// Establish that we *can not* parse the source file if the resolver
 	// is not able to resolve the dependency.
 	t.Run("DependencyExcluded", func(t *testing.T) {
+		t.Parallel()
 		// Create a dependency-UNaware parser.
 		compiler := Compiler{Resolver: baseResolver}
 		_, err := compiler.Compile(ctx, "test.proto")
@@ -148,6 +146,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 	})
 
 	t.Run("NoDependencies", func(t *testing.T) {
+		t.Parallel()
 		// Create a dependency-aware parser that should never be called.
 		compiler := Compiler{
 			Resolver: ResolverFunc(func(f string) (SearchResult, error) {
@@ -188,6 +187,7 @@ func findAndLink(t *testing.T, filename string, fdset *descriptorpb.FileDescript
 }
 
 func TestParseCommentsBeforeDot(t *testing.T) {
+	t.Parallel()
 	accessor := SourceAccessorFromMap(map[string]string{
 		"test.proto": `
 syntax = "proto3";
@@ -212,6 +212,7 @@ message Foo {
 }
 
 func TestParseCustomOptions(t *testing.T) {
+	t.Parallel()
 	accessor := SourceAccessorFromMap(map[string]string{
 		"test.proto": `
 syntax = "proto3";
@@ -248,6 +249,7 @@ message Foo {
 }
 
 func TestPanicHandling(t *testing.T) {
+	t.Parallel()
 	c := Compiler{
 		Resolver: ResolverFunc(func(string) (SearchResult, error) {
 			panic(errors.New("mui mui bad"))

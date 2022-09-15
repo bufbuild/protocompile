@@ -29,6 +29,7 @@ import (
 )
 
 func TestASTRoundTrips(t *testing.T) {
+	t.Parallel()
 	err := filepath.Walk("../internal/testdata", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

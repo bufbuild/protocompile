@@ -382,6 +382,7 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 }
 
 func TestVisitorAll(t *testing.T) {
+	t.Parallel()
 	testCases := map[Node][]string{
 		(*EnumNode)(nil): {
 			"*EnumNode", "CompositeNode", "Node",
@@ -522,6 +523,7 @@ func TestVisitorAll(t *testing.T) {
 }
 
 func TestVisitorPriorityOrder(t *testing.T) {
+	t.Parallel()
 	// This tests a handful of cases, concrete types that implement numerous interfaces,
 	// and verifies that the preferred function on the visitor is called when present.
 	var call string
@@ -648,6 +650,7 @@ func TestVisitorPriorityOrder(t *testing.T) {
 }
 
 func TestDoGenerate(t *testing.T) {
+	t.Parallel()
 	t.SkipNow()
 	generateVisitors()
 }

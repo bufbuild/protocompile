@@ -58,7 +58,6 @@ linters:
     - nilerr
     - nilnil
     - nonamedreturns
-    - paralleltest
     - prealloc
     - revive
     - thelper

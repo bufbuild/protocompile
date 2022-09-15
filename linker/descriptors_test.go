@@ -31,6 +31,7 @@ import (
 )
 
 func TestFields(t *testing.T) {
+	t.Parallel()
 	fds := prototest.LoadDescriptorSet(t, "../internal/testdata/descriptor_impl_tests.protoset", nil)
 	files, err := protodesc.NewFiles(fds)
 	require.NoError(t, err)
@@ -42,7 +43,9 @@ func TestFields(t *testing.T) {
 		"desc_test_proto3_optional.proto",
 	}
 	for _, testFileName := range testFileNames {
+		testFileName := testFileName // must not capture loop variable below, for thread safety
 		t.Run(testFileName, func(t *testing.T) {
+			t.Parallel()
 			protocFd, err := files.FindFileByPath(testFileName)
 			require.NoError(t, err)
 

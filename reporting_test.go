@@ -30,6 +30,7 @@ import (
 )
 
 func TestErrorReporting(t *testing.T) {
+	t.Parallel()
 	tooManyErrors := errors.New("too many errors")
 	limitedErrReporter := func(limit int, count *int) reporter.ErrorReporter {
 		return func(err reporter.ErrorWithPos) error {
@@ -289,15 +290,10 @@ func TestErrorReporting(t *testing.T) {
 }
 
 func TestWarningReporting(t *testing.T) {
+	t.Parallel()
 	type msg struct {
 		pos  ast.SourcePos
 		text string
-	}
-	var msgs []msg
-	rep := func(warn reporter.ErrorWithPos) {
-		msgs = append(msgs, msg{
-			pos: warn.GetPosition(), text: warn.Unwrap().Error(),
-		})
 	}
 
 	testCases := []struct {
@@ -415,12 +411,19 @@ func TestWarningReporting(t *testing.T) {
 	}
 	ctx := context.Background()
 	for _, testCase := range testCases {
+		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			var msgs []msg
+			rep := func(warn reporter.ErrorWithPos) {
+				msgs = append(msgs, msg{
+					pos: warn.GetPosition(), text: warn.Unwrap().Error(),
+				})
+			}
 			compiler := Compiler{
 				Resolver: WithStandardImports(&SourceResolver{Accessor: SourceAccessorFromMap(testCase.sources)}),
 				Reporter: reporter.NewReporter(nil, rep),
 			}
-			msgs = nil
 			_, err := compiler.Compile(ctx, "test.proto")
 			assert.Nil(t, err)
 

@@ -28,6 +28,7 @@ import (
 )
 
 func TestLexer(t *testing.T) {
+	t.Parallel()
 	handler := reporter.NewHandler(nil)
 	l := newTestLexer(t, strings.NewReader(`
 	// comment
@@ -257,6 +258,7 @@ foo
 }
 
 func TestLexerErrors(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		str    string
 		errMsg string
