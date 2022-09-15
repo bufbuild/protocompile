@@ -23,13 +23,24 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 )
 
+// MessageContext provides information about the location in a descriptor
+// hierarchy, for adding context to warnings and error messages.
 type MessageContext struct {
-	AST         *ast.FileNode
-	File        *descriptorpb.FileDescriptorProto
+	// The relevant file
+	AST  *ast.FileNode
+	File *descriptorpb.FileDescriptorProto
+
+	// The type and fully-qualified name of the element within the file.
 	ElementType string
 	ElementName string
-	Option      *descriptorpb.UninterpretedOption
-	OptAggPath  string
+
+	// If the element being processed is an option (or *in* an option)
+	// on the named element above, this will be non-nil.
+	Option *descriptorpb.UninterpretedOption
+	// If the element being processed is inside a message literal in an
+	// option value, this will be non-empty and represent a traversal
+	// to the element in question.
+	OptAggPath string
 }
 
 func (c *MessageContext) String() string {
