@@ -331,12 +331,12 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	if _, ok := val.(*ast.MessageLiteralNode); ok {
 		return -1, interp.reporter.HandleErrorf(interp.nodeInfo(val).Start(), "%s: default value cannot be a message", scope)
 	}
-	mc := &messageContext{
-		res:         interp.file,
-		file:        interp.file.FileDescriptorProto(),
-		elementName: fqn,
-		elementType: descriptorType(fld),
-		option:      opt,
+	mc := &internal.MessageContext{
+		AST:         interp.file.AST(),
+		File:        interp.file.FileDescriptorProto(),
+		ElementName: fqn,
+		ElementType: descriptorType(fld),
+		Option:      opt,
 	}
 	var v interface{}
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
@@ -689,7 +689,12 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		msg = proto.Clone(opts).ProtoReflect()
 	}
 
-	mc := &messageContext{res: interp.file, file: interp.file.FileDescriptorProto(), elementName: fqn, elementType: descriptorType(element)}
+	mc := &internal.MessageContext{
+		AST:         interp.file.AST(),
+		File:        interp.file.FileDescriptorProto(),
+		ElementName: fqn,
+		ElementType: descriptorType(element),
+	}
 	var remain []*descriptorpb.UninterpretedOption
 	var results []*interpretedOption
 	for _, uo := range uninterpreted {
@@ -704,7 +709,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 				return nil, err
 			}
 		}
-		mc.option = uo
+		mc.Option = uo
 		res, err := interp.interpretField(mc, msg, uo, 0, nil)
 		if err != nil {
 			if interp.lenient {
@@ -799,7 +804,7 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 	return proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, dest)
 }
 
-func (interp *interpreter) toOptionBytes(mc *messageContext, results []*interpretedOption) ([]byte, error) {
+func (interp *interpreter) toOptionBytes(mc *internal.MessageContext, results []*interpretedOption) ([]byte, error) {
 	// protoc emits non-custom options in tag order and then
 	// the rest are emitted in the order they are defined in source
 	sort.SliceStable(results, func(i, j int) bool {
@@ -890,7 +895,7 @@ func validateRecursive(msg protoreflect.Message, prefix string) error {
 // msg must be an options message. For nameIndex > 0, msg is a nested message inside of the
 // options message. The given pathPrefix is the path (sequence of field numbers and indices
 // with a FileDescriptorProto as the start) up to but not including the given nameIndex.
-func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.Message, opt *descriptorpb.UninterpretedOption, nameIndex int, pathPrefix []int32) (*interpretedOption, error) {
+func (interp *interpreter) interpretField(mc *internal.MessageContext, msg protoreflect.Message, opt *descriptorpb.UninterpretedOption, nameIndex int, pathPrefix []int32) (*interpretedOption, error) {
 	var fld protoreflect.FieldDescriptor
 	nm := opt.GetName()[nameIndex]
 	node := interp.file.OptionNamePartNode(nm)
@@ -982,21 +987,21 @@ func (interp *interpreter) interpretField(mc *messageContext, msg protoreflect.M
 // setOptionField sets the value for field fld in the given message msg to the value represented
 // by val. The given name is the AST node that corresponds to the name of fld. On success, it
 // returns additional metadata about the field that was set.
-func (interp *interpreter) setOptionField(mc *messageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
+func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
 	v := val.Value()
 	if sl, ok := v.([]ast.ValueNode); ok {
 		// handle slices a little differently than the others
 		if fld.Cardinality() != protoreflect.Repeated {
 			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue is an array but field is not repeated", mc)
 		}
-		origPath := mc.optAggPath
+		origPath := mc.OptAggPath
 		defer func() {
-			mc.optAggPath = origPath
+			mc.OptAggPath = origPath
 		}()
 		var resVal listValue
 		var resMsgVals [][]*interpretedField
 		for index, item := range sl {
-			mc.optAggPath = fmt.Sprintf("%s[%d]", origPath, index)
+			mc.OptAggPath = fmt.Sprintf("%s[%d]", origPath, index)
 			value, err := interp.fieldValue(mc, fld, item, insideMsgLiteral)
 			if err != nil {
 				return interpretedFieldValue{}, err
@@ -1145,36 +1150,6 @@ func (l listValue) IsValid() bool {
 	return true
 }
 
-type messageContext struct {
-	res         parser.Result
-	file        *descriptorpb.FileDescriptorProto
-	elementType string
-	elementName string
-	option      *descriptorpb.UninterpretedOption
-	optAggPath  string
-}
-
-func (c *messageContext) String() string {
-	var ctx bytes.Buffer
-	if c.elementType != "file" {
-		_, _ = fmt.Fprintf(&ctx, "%s %s: ", c.elementType, c.elementName)
-	}
-	if c.option != nil && c.option.Name != nil {
-		ctx.WriteString("option ")
-		internal.WriteOptionName(&ctx, c.option.Name)
-		if c.res.AST() == nil {
-			// if we have no source position info, try to provide as much context
-			// as possible (if nodes != nil, we don't need this because any errors
-			// will actually have file and line numbers)
-			if c.optAggPath != "" {
-				_, _ = fmt.Fprintf(&ctx, " at %s", c.optAggPath)
-			}
-		}
-		ctx.WriteString(": ")
-	}
-	return ctx.String()
-}
-
 func fieldName(fld protoreflect.FieldDescriptor) string {
 	if fld.IsExtension() {
 		return fmt.Sprintf("(%s)", fld.FullName())
@@ -1211,7 +1186,7 @@ func valueKind(val interface{}) string {
 
 // fieldValue computes a compile-time value (constant or list or message literal) for the given
 // AST node val. The value in val must be assignable to the field fld.
-func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.FieldDescriptor, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
+func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protoreflect.FieldDescriptor, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
 	k := fld.Kind()
 	switch k {
 	case protoreflect.EnumKind:
@@ -1226,9 +1201,9 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 		if aggs, ok := v.([]*ast.MessageFieldNode); ok {
 			fmd := fld.Message()
 			fdm := dynamicpb.NewMessage(fmd)
-			origPath := mc.optAggPath
+			origPath := mc.OptAggPath
 			defer func() {
-				mc.optAggPath = origPath
+				mc.OptAggPath = origPath
 			}()
 			// NB: we don't want to leave this nil, even if the
 			// message is literal, because that indicates to
@@ -1236,9 +1211,9 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 			flds := make([]*interpretedField, 0, len(aggs))
 			for _, a := range aggs {
 				if origPath == "" {
-					mc.optAggPath = a.Name.Value()
+					mc.OptAggPath = a.Name.Value()
 				} else {
-					mc.optAggPath = origPath + "." + a.Name.Value()
+					mc.OptAggPath = origPath + "." + a.Name.Value()
 				}
 				var ffld protoreflect.FieldDescriptor
 				if a.Name.IsExtension() {
@@ -1251,7 +1226,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 					if ffld == nil {
 						// may need to qualify with package name
 						// (this should not be necessary!)
-						pkg := mc.file.GetPackage()
+						pkg := mc.File.GetPackage()
 						if pkg != "" {
 							ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))
 						}
@@ -1318,7 +1293,7 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 
 // enumFieldValue resolves the given AST node val as an enum value descriptor. If the given
 // value is not a valid identifier, an error is returned instead.
-func (interp *interpreter) enumFieldValue(mc *messageContext, ed protoreflect.EnumDescriptor, val ast.ValueNode) (protoreflect.EnumValueDescriptor, error) {
+func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, val ast.ValueNode) (protoreflect.EnumValueDescriptor, error) {
 	v := val.Value()
 	if id, ok := v.(ast.Identifier); ok {
 		ev := ed.Values().ByName(protoreflect.Name(id))
@@ -1332,7 +1307,7 @@ func (interp *interpreter) enumFieldValue(mc *messageContext, ed protoreflect.En
 
 // scalarFieldValue resolves the given AST node val as a value whose type is assignable to a
 // field with the given fldType.
-func (interp *interpreter) scalarFieldValue(mc *messageContext, fldType descriptorpb.FieldDescriptorProto_Type, val ast.ValueNode, insideMsgLiteral bool) (interface{}, error) {
+func (interp *interpreter) scalarFieldValue(mc *internal.MessageContext, fldType descriptorpb.FieldDescriptorProto_Type, val ast.ValueNode, insideMsgLiteral bool) (interface{}, error) {
 	v := val.Value()
 	switch fldType {
 	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:

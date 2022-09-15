@@ -15,7 +15,6 @@
 package linker
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -551,40 +550,11 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 	return nil
 }
 
-type messageContext struct {
-	ast         *ast.FileNode
-	elementType string
-	elementName string
-	option      *descriptorpb.UninterpretedOption
-	optAggPath  string
-}
-
-func (c *messageContext) String() string {
-	var ctx bytes.Buffer
-	if c.elementType != "file" {
-		_, _ = fmt.Fprintf(&ctx, "%s %s: ", c.elementType, c.elementName)
-	}
-	if c.option != nil && c.option.Name != nil {
-		ctx.WriteString("option ")
-		internal.WriteOptionName(&ctx, c.option.Name)
-		if c.ast == nil {
-			// if we have no source position info, try to provide as much context
-			// as possible (if nodes != nil, we don't need this because any errors
-			// will actually have file and line numbers)
-			if c.optAggPath != "" {
-				_, _ = fmt.Fprintf(&ctx, " at %s", c.optAggPath)
-			}
-		}
-		ctx.WriteString(": ")
-	}
-	return ctx.String()
-}
-
 func (r *result) resolveOptions(handler *reporter.Handler, elemType string, elemName protoreflect.FullName, opts []*descriptorpb.UninterpretedOption, scopes []scope) error {
-	mc := &messageContext{
-		ast:         r.AST(),
-		elementName: string(elemName),
-		elementType: elemType,
+	mc := &internal.MessageContext{
+		AST:         r.AST(),
+		ElementName: string(elemName),
+		ElementType: elemType,
 	}
 	file := r.FileNode()
 opts:
@@ -604,34 +574,34 @@ opts:
 			}
 		}
 		// also resolve any extension names found inside message literals in option values
-		mc.option = opt
+		mc.Option = opt
 		optVal := r.OptionNode(opt).GetValue()
 		if err := r.resolveOptionValue(handler, mc, optVal, scopes); err != nil {
 			return err
 		}
-		mc.option = nil
+		mc.Option = nil
 	}
 	return nil
 }
 
-func (r *result) resolveOptionValue(handler *reporter.Handler, mc *messageContext, val ast.ValueNode, scopes []scope) error {
+func (r *result) resolveOptionValue(handler *reporter.Handler, mc *internal.MessageContext, val ast.ValueNode, scopes []scope) error {
 	optVal := val.Value()
 	switch optVal := optVal.(type) {
 	case []ast.ValueNode:
-		origPath := mc.optAggPath
+		origPath := mc.OptAggPath
 		defer func() {
-			mc.optAggPath = origPath
+			mc.OptAggPath = origPath
 		}()
 		for i, v := range optVal {
-			mc.optAggPath = fmt.Sprintf("%s[%d]", origPath, i)
+			mc.OptAggPath = fmt.Sprintf("%s[%d]", origPath, i)
 			if err := r.resolveOptionValue(handler, mc, v, scopes); err != nil {
 				return err
 			}
 		}
 	case []*ast.MessageFieldNode:
-		origPath := mc.optAggPath
+		origPath := mc.OptAggPath
 		defer func() {
-			mc.optAggPath = origPath
+			mc.OptAggPath = origPath
 		}()
 		for _, fld := range optVal {
 			// check for extension name
@@ -647,14 +617,14 @@ func (r *result) resolveOptionValue(handler *reporter.Handler, mc *messageContex
 			}
 
 			// recurse into value
-			mc.optAggPath = origPath
+			mc.OptAggPath = origPath
 			if origPath != "" {
-				mc.optAggPath += "."
+				mc.OptAggPath += "."
 			}
 			if fld.Name.IsExtension() {
-				mc.optAggPath = fmt.Sprintf("%s[%s]", mc.optAggPath, string(fld.Name.Name.AsIdentifier()))
+				mc.OptAggPath = fmt.Sprintf("%s[%s]", mc.OptAggPath, string(fld.Name.Name.AsIdentifier()))
 			} else {
-				mc.optAggPath = fmt.Sprintf("%s%s", mc.optAggPath, string(fld.Name.Name.AsIdentifier()))
+				mc.OptAggPath = fmt.Sprintf("%s%s", mc.OptAggPath, string(fld.Name.Name.AsIdentifier()))
 			}
 
 			if err := r.resolveOptionValue(handler, mc, fld.Val, scopes); err != nil {
@@ -814,7 +784,7 @@ func matchesPkgNamespace(fqn, pkg protoreflect.FullName) bool {
 func isAggregateDescriptor(d protoreflect.Descriptor) bool {
 	if isSentinelDescriptor(d) {
 		// this indicates the name matched a package, not a
-		// descriptor, but a package is an aggregate so
+		// descriptor, but a package is an aggregate, so
 		// we return true
 		return true
 	}
@@ -873,11 +843,11 @@ func (p *sentinelDescriptor) FullName() protoreflect.FullName {
 	return protoreflect.FullName(p.name)
 }
 
-func (p sentinelDescriptor) IsPlaceholder() bool {
+func (p *sentinelDescriptor) IsPlaceholder() bool {
 	return false
 }
 
-func (p sentinelDescriptor) Options() protoreflect.ProtoMessage {
+func (p *sentinelDescriptor) Options() protoreflect.ProtoMessage {
 	return nil
 }
 
