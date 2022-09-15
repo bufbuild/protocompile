@@ -43,7 +43,7 @@ func TestFields(t *testing.T) {
 		"desc_test_proto3_optional.proto",
 	}
 	for _, testFileName := range testFileNames {
-		testFileName := testFileName
+		testFileName := testFileName // must not capture loop variable below, for thread safety
 		t.Run(testFileName, func(t *testing.T) {
 			t.Parallel()
 			protocFd, err := files.FindFileByPath(testFileName)
