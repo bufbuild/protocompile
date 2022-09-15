@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/ast"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -49,6 +50,11 @@ type result struct {
 	optionBytes    map[proto.Message][]byte
 	srcLocs        []protoreflect.SourceLocation
 	srcLocIndex    map[interface{}]protoreflect.SourceLocation
+	// a map of AST nodes that represent identifiers in ast.FieldReferenceNodes
+	// to their fully-qualified name. The identifiers are for field names in
+	// message literals (in option values) that are extension fields. These names
+	// are resolved during linking and stored here, to be used to interpret options.
+	optionQualifiedNames map[ast.IdentValueNode]string
 }
 
 var _ protoreflect.FileDescriptor = (*result)(nil)

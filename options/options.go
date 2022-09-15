@@ -65,6 +65,7 @@ type file interface {
 	ResolveEnumType(protoreflect.FullName) protoreflect.EnumDescriptor
 	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
+	ResolveMessageLiteralExtensionName(ast.IdentValueNode) string
 }
 
 type noResolveFile struct {
@@ -81,6 +82,10 @@ func (n noResolveFile) ResolveMessageType(name protoreflect.FullName) protorefle
 
 func (n noResolveFile) ResolveExtension(name protoreflect.FullName) protoreflect.ExtensionTypeDescriptor {
 	return nil
+}
+
+func (n noResolveFile) ResolveMessageLiteralExtensionName(ast.IdentValueNode) string {
+	return ""
 }
 
 // InterpretOptions interprets options in the given linked result, returning
@@ -1260,10 +1265,15 @@ func (interp *interpreter) fieldValue(mc *messageContext, fld protoreflect.Field
 				}
 				var ffld protoreflect.FieldDescriptor
 				if a.Name.IsExtension() {
-					n := string(a.Name.Name.AsIdentifier())
+					n := interp.file.ResolveMessageLiteralExtensionName(a.Name.Name)
+					if n == "" {
+						// this should not be possible!
+						n = string(a.Name.Name.AsIdentifier())
+					}
 					ffld = interp.file.ResolveExtension(protoreflect.FullName(n))
 					if ffld == nil {
 						// may need to qualify with package name
+						// (this should not be necessary!)
 						pkg := mc.file.GetPackage()
 						if pkg != "" {
 							ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))

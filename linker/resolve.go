@@ -59,6 +59,10 @@ func (r *result) ResolveExtension(name protoreflect.FullName) protoreflect.Exten
 	return nil
 }
 
+func (r *result) ResolveMessageLiteralExtensionName(node ast.IdentValueNode) string {
+	return r.optionQualifiedNames[node]
+}
+
 func (r *result) resolveElement(name protoreflect.FullName) protoreflect.Descriptor {
 	if len(name) > 0 && name[0] == '.' {
 		name = name[1:]
