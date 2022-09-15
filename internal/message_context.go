@@ -23,12 +23,22 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 )
 
+// ParsedFile wraps an optional AST and required FileDescriptorProto.
+// This is used so types like parser.Result can be passed to this internal package avoiding circular imports.
+// Additionally, it makes it less likely that users might specify one or the other.
+type ParsedFile interface {
+	// AST returns the parsed abstract syntax tree. This returns nil if the
+	// Result was created without an AST.
+	AST() *ast.FileNode
+	// FileDescriptorProto returns the file descriptor proto.
+	FileDescriptorProto() *descriptorpb.FileDescriptorProto
+}
+
 // MessageContext provides information about the location in a descriptor
 // hierarchy, for adding context to warnings and error messages.
 type MessageContext struct {
 	// The relevant file
-	AST  *ast.FileNode
-	File *descriptorpb.FileDescriptorProto
+	File ParsedFile
 
 	// The type and fully-qualified name of the element within the file.
 	ElementType string
@@ -51,7 +61,7 @@ func (c *MessageContext) String() string {
 	if c.Option != nil && c.Option.Name != nil {
 		ctx.WriteString("option ")
 		writeOptionName(&ctx, c.Option.Name)
-		if c.AST == nil {
+		if c.File.AST() == nil {
 			// if we have no source position info, try to provide as much context
 			// as possible (if nodes != nil, we don't need this because any errors
 			// will actually have file and line numbers)

@@ -552,7 +552,7 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 
 func (r *result) resolveOptions(handler *reporter.Handler, elemType string, elemName protoreflect.FullName, opts []*descriptorpb.UninterpretedOption, scopes []scope) error {
 	mc := &internal.MessageContext{
-		AST:         r.AST(),
+		File:        r,
 		ElementName: string(elemName),
 		ElementType: elemType,
 	}

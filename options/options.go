@@ -332,8 +332,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 		return -1, interp.reporter.HandleErrorf(interp.nodeInfo(val).Start(), "%s: default value cannot be a message", scope)
 	}
 	mc := &internal.MessageContext{
-		AST:         interp.file.AST(),
-		File:        interp.file.FileDescriptorProto(),
+		File:        interp.file,
 		ElementName: fqn,
 		ElementType: descriptorType(fld),
 		Option:      opt,
@@ -690,8 +689,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	}
 
 	mc := &internal.MessageContext{
-		AST:         interp.file.AST(),
-		File:        interp.file.FileDescriptorProto(),
+		File:        interp.file,
 		ElementName: fqn,
 		ElementType: descriptorType(element),
 	}
@@ -1226,7 +1224,7 @@ func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protorefl
 					if ffld == nil {
 						// may need to qualify with package name
 						// (this should not be necessary!)
-						pkg := mc.File.GetPackage()
+						pkg := mc.File.FileDescriptorProto().GetPackage()
 						if pkg != "" {
 							ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))
 						}
