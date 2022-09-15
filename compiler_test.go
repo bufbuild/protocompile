@@ -17,9 +17,7 @@ package protocompile
 import (
 	"context"
 	"errors"
-	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -68,9 +66,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 
 	comp := Compiler{
 		Resolver: WithStandardImports(&SourceResolver{
-			Accessor: func(path string) (io.ReadCloser, error) {
-				return os.Open(filepath.Join("internal/testdata/more", path))
-			},
+			ImportPaths: []string{"internal/testdata/more"},
 		}),
 	}
 	ctx := context.Background()

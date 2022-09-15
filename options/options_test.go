@@ -278,7 +278,7 @@ func TestOptionsEncoding(t *testing.T) {
 		"defaults": "desc_test_defaults.proto",
 	}
 	for syntax, file := range testCases {
-		file := file
+		file := file // must not capture loop variable below, for thread safety
 		t.Run(syntax, func(t *testing.T) {
 			t.Parallel()
 			fileToCompile := strings.TrimPrefix(file, "options/")

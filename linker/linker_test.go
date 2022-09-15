@@ -844,8 +844,8 @@ message Baz {
 	}
 }
 
-func compile(tb testing.TB, input map[string]string) (linker.Files, error) {
-	tb.Helper()
+func compile(t *testing.T, input map[string]string) (linker.Files, error) {
+	t.Helper()
 	acc := func(filename string) (io.ReadCloser, error) {
 		f, ok := input[filename]
 		if !ok {
