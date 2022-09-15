@@ -533,7 +533,7 @@ extend Foo { optional group Bar = 10 { optional string name = 1; } }
 extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
 message Baz { option (foo) = { [Bar]< name: "abc" > }; }`,
 			},
-			expectedErr: "foo.proto:6:32: message Baz: option (foo): field Bar not found",
+			expectedErr: "foo.proto:6:33: message Baz: option (foo): invalid extension: Bar is a message, not an extension",
 		},
 		"failure_oneof_extension_already_set": {
 			input: map[string]string{
@@ -804,6 +804,120 @@ message Baz {
 }`,
 			},
 			expectedErr: "foo.proto:8:6: syntax error: unexpected '.'",
+		},
+		"success_extension_resolution_custom_options": {
+			input: map[string]string{
+				"test.proto": `syntax="proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+message a { extensions 1 to 100; }
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message b {
+  message c {
+    extend a { repeated int32 i = 1; repeated float f = 2; }
+  }
+  option (msga) = {
+    [foo.bar.b.c.i]: 123
+    [bar.b.c.i]: 234
+    [b.c.i]: 345
+  };
+  option (msga).(foo.bar.b.c.f) = 1.23;
+  option (msga).(bar.b.c.f) = 2.34;
+  option (msga).(b.c.f) = 3.45;
+}`,
+			},
+		},
+		"success_extension_resolution_custom_options2": {
+			input: map[string]string{
+				"test.proto": `syntax="proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+message a { extensions 1 to 100; }
+message b { extensions 1 to 100; }
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message c {
+  extend a { optional b b = 1; }
+  extend b { repeated int32 i = 1; repeated float f = 2; }
+  option (msga) = {
+    [foo.bar.c.b] {
+      [foo.bar.c.i]: 123
+      [bar.c.i]: 234
+      [c.i]: 345
+    }
+  };
+  option (msga).(foo.bar.c.b).(foo.bar.c.f) = 1.23;
+  option (msga).(foo.bar.c.b).(bar.c.f) = 2.34;
+  option (msga).(foo.bar.c.b).(c.f) = 3.45;
+}`,
+			},
+		},
+		"failure_extension_resolution_unknown": {
+			input: map[string]string{
+				"test.proto": `syntax="proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+message a { extensions 1 to 100; }
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message b {
+  message c {
+    extend a { repeated int32 i = 1; repeated float f = 2; }
+  }
+  option (msga) = {
+    [c.i]: 456
+  };
+}`,
+			},
+			expectedErr: "test.proto:11:6: message foo.bar.b: option (foo.bar.msga): unknown extension c.i",
+		},
+		"failure_extension_resolution_unknown2": {
+			input: map[string]string{
+				"test.proto": `syntax="proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+message a { extensions 1 to 100; }
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message b {
+  message c {
+    extend a { repeated int32 i = 1; repeated float f = 2; }
+  }
+  option (msga) = {
+    [i]: 567
+  };
+}`,
+			},
+			expectedErr: "test.proto:11:6: message foo.bar.b: option (foo.bar.msga): unknown extension i",
+		},
+		"failure_extension_resolution_unknown3": {
+			input: map[string]string{
+				"test.proto": `syntax="proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+message a { extensions 1 to 100; }
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message b {
+  message c {
+    extend a { repeated int32 i = 1; repeated float f = 2; }
+  }
+  option (msga).(c.f) = 4.56;
+}`,
+			},
+			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension c.f",
+		},
+		"failure_extension_resolution_unknown4": {
+			input: map[string]string{
+				"test.proto": `syntax="proto2";
+package foo.bar;
+import "google/protobuf/descriptor.proto";
+message a { extensions 1 to 100; }
+extend google.protobuf.MessageOptions { optional a msga = 10000; }
+message b {
+  message c {
+    extend a { repeated int32 i = 1; repeated float f = 2; }
+  }
+  option (msga).(f) = 5.67;
+}`,
+			},
+			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension f",
 		},
 	}
 
