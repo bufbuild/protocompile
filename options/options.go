@@ -1161,7 +1161,7 @@ func (c *messageContext) String() string {
 	}
 	if c.option != nil && c.option.Name != nil {
 		ctx.WriteString("option ")
-		writeOptionName(&ctx, c.option.Name)
+		internal.WriteOptionName(&ctx, c.option.Name)
 		if c.res.AST() == nil {
 			// if we have no source position info, try to provide as much context
 			// as possible (if nodes != nil, we don't need this because any errors
@@ -1173,29 +1173,6 @@ func (c *messageContext) String() string {
 		ctx.WriteString(": ")
 	}
 	return ctx.String()
-}
-
-func writeOptionName(buf *bytes.Buffer, parts []*descriptorpb.UninterpretedOption_NamePart) {
-	first := true
-	for _, p := range parts {
-		if first {
-			first = false
-		} else {
-			buf.WriteByte('.')
-		}
-		nm := p.GetNamePart()
-		if nm[0] == '.' {
-			// skip leading dot
-			nm = nm[1:]
-		}
-		if p.GetIsExtension() {
-			buf.WriteByte('(')
-			buf.WriteString(nm)
-			buf.WriteByte(')')
-		} else {
-			buf.WriteString(nm)
-		}
-	}
 }
 
 func fieldName(fld protoreflect.FieldDescriptor) string {

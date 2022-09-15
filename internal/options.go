@@ -15,6 +15,8 @@
 package internal
 
 import (
+	"bytes"
+
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
@@ -54,5 +56,28 @@ func RemoveOption(uo []*descriptorpb.UninterpretedOption, indexToRemove int) []*
 		return uo[:len(uo)-1]
 	} else {
 		return append(uo[:indexToRemove], uo[indexToRemove+1:]...)
+	}
+}
+
+func WriteOptionName(buf *bytes.Buffer, parts []*descriptorpb.UninterpretedOption_NamePart) {
+	first := true
+	for _, p := range parts {
+		if first {
+			first = false
+		} else {
+			buf.WriteByte('.')
+		}
+		nm := p.GetNamePart()
+		if nm[0] == '.' {
+			// skip leading dot
+			nm = nm[1:]
+		}
+		if p.GetIsExtension() {
+			buf.WriteByte('(')
+			buf.WriteString(nm)
+			buf.WriteByte(')')
+		} else {
+			buf.WriteString(nm)
+		}
 	}
 }
