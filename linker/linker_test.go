@@ -672,7 +672,7 @@ func TestLinkerValidation(t *testing.T) {
 					  extend M { optional string F2 = 2; }
 					}`,
 			},
-			expectedErr: `foo.proto:6:10: extendee is invalid: foo.bar.M.M is a enum value, not a message`,
+			expectedErr: `foo.proto:6:10: extendee is invalid: foo.bar.M.M is an enum value, not a message`,
 		},
 		"failure_json_name_extension": {
 			input: map[string]string{
@@ -894,7 +894,7 @@ func TestLinkerValidation(t *testing.T) {
 					  option (msga).(foo.bar.c.b).(c.f) = 3.45;
 					}`,
 			},
-			expectedErr: "test.proto:9:10: extendee is invalid: foo.bar.c.b is a extension, not a message",
+			expectedErr: "test.proto:9:10: extendee is invalid: foo.bar.c.b is an extension, not a message",
 		},
 		"failure_extension_resolution_unknown": {
 			input: map[string]string{
@@ -1062,6 +1062,88 @@ func TestLinkerValidation(t *testing.T) {
 					}`,
 			},
 			expectedErr: "foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): could not resolve type reference type.googleapis.com/Foo",
+		},
+		"failure_scope_type_name": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.foo;
+					import "other.proto";
+					service Foo { rpc Bar (Baz) returns (Baz); }
+					message Baz {
+					  foo.Foo.Bar f = 1;
+					}`,
+				"other.proto": `
+					syntax = "proto3";
+					package foo;
+					message Foo {
+					  enum Bar { ZED = 0; }
+					}`,
+			},
+			expectedErr: "foo.proto:6:3: field foo.foo.Baz.f: invalid type: foo.foo.Foo.Bar is a method, not a message or enum",
+		},
+		"failure_scope_extension": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message Foo {
+					  enum Bar { ZED = 0; }
+					  message Foo {
+					    extend google.protobuf.MessageOptions {
+					      string Bar = 30000;
+					    }
+					    Foo.Bar f = 1;
+					  }
+					}`,
+			},
+			expectedErr: "foo.proto:9:5: field Foo.Foo.f: invalid type: Foo.Foo.Bar is an extension, not a message or enum",
+		},
+		"success_scope_extension": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.ServiceOptions {
+					  string Bar = 30000;
+					}
+					message Empty {}
+					service Foo {
+					  option (Bar) = "blah";
+					  rpc Bar (Empty) returns (Empty);
+					}`,
+			},
+		},
+		"failure_scope_extension2": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MethodOptions {
+					  string Bar = 30000;
+					}
+					message Empty {}
+					service Foo {
+					  rpc Bar (Empty) returns (Empty) { option (Bar) = "blah"; }
+					}`,
+			},
+			expectedErr: "foo.proto:8:44: method Foo.Bar: invalid extension: Bar is a method, not an extension",
+		},
+		"success_scope_extension2": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					enum Bar { ZED = 0; }
+					message Foo {
+					  extend google.protobuf.MessageOptions {
+					    string Bar = 30000;
+					  }
+					  message Foo {
+					    Bar f = 1;
+					  }
+					}`,
+			},
 		},
 	}
 

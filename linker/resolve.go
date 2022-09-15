@@ -256,30 +256,30 @@ func (r *result) findParentInMessage(msg *msgDescriptor, names []string) (protor
 	return nil, 0
 }
 
-func descriptorType(d protoreflect.Descriptor) string {
+func descriptorTypeWithArticle(d protoreflect.Descriptor) string {
 	switch d := d.(type) {
 	case protoreflect.MessageDescriptor:
-		return "message"
+		return "a message"
 	case protoreflect.FieldDescriptor:
 		if d.IsExtension() {
-			return "extension"
+			return "an extension"
 		}
-		return "field"
+		return "a field"
 	case protoreflect.OneofDescriptor:
-		return "oneof"
+		return "a oneof"
 	case protoreflect.EnumDescriptor:
-		return "enum"
+		return "an enum"
 	case protoreflect.EnumValueDescriptor:
-		return "enum value"
+		return "an enum value"
 	case protoreflect.ServiceDescriptor:
-		return "service"
+		return "a service"
 	case protoreflect.MethodDescriptor:
-		return "method"
+		return "a method"
 	case protoreflect.FileDescriptor:
-		return "file"
+		return "a file"
 	default:
 		// shouldn't be possible
-		return fmt.Sprintf("%T", d)
+		return fmt.Sprintf("a %T", d)
 	}
 }
 
@@ -421,8 +421,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		}
 		extd, ok := dsc.(protoreflect.MessageDescriptor)
 		if !ok {
-			otherType := descriptorType(dsc)
-			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()).Start(), "extendee is invalid: %s is a %s, not a message", dsc.FullName(), otherType)
+			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()).Start(), "extendee is invalid: %s is %s, not a message", dsc.FullName(), descriptorTypeWithArticle(dsc))
 		}
 		fld.Extendee = proto.String("." + string(dsc.FullName()))
 		// make sure the tag number is in range
@@ -500,8 +499,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		// the type was tentatively unset, but now we know it's actually an enum
 		fld.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
 	default:
-		otherType := descriptorType(dsc)
-		return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: invalid type: %s is a %s, not a message or enum", scope, dsc.FullName(), otherType)
+		return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: invalid type: %s is %s, not a message or enum", scope, dsc.FullName(), descriptorTypeWithArticle(dsc))
 	}
 	return nil
 }
@@ -520,8 +518,7 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 			return err
 		}
 	} else if _, ok := dsc.(protoreflect.MessageDescriptor); !ok {
-		otherType := descriptorType(dsc)
-		if err := handler.HandleErrorf(file.NodeInfo(node.GetInputType()).Start(), "%s: invalid request type: %s is a %s, not a message", scope, dsc.FullName(), otherType); err != nil {
+		if err := handler.HandleErrorf(file.NodeInfo(node.GetInputType()).Start(), "%s: invalid request type: %s is %s, not a message", scope, dsc.FullName(), descriptorTypeWithArticle(dsc)); err != nil {
 			return err
 		}
 	} else {
@@ -539,8 +536,7 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 			return err
 		}
 	} else if _, ok := dsc.(protoreflect.MessageDescriptor); !ok {
-		otherType := descriptorType(dsc)
-		if err := handler.HandleErrorf(file.NodeInfo(node.GetOutputType()).Start(), "%s: invalid response type: %s is a %s, not a message", scope, dsc.FullName(), otherType); err != nil {
+		if err := handler.HandleErrorf(file.NodeInfo(node.GetOutputType()).Start(), "%s: invalid response type: %s is %s, not a message", scope, dsc.FullName(), descriptorTypeWithArticle(dsc)); err != nil {
 			return err
 		}
 	} else {
@@ -644,8 +640,7 @@ func (r *result) resolveExtensionName(name string, scopes []scope) (string, erro
 		return "", fmt.Errorf("unknown extension %s; resolved to %s which is not defined; consider using a leading dot", name, dsc.FullName())
 	}
 	if ext, ok := dsc.(protoreflect.FieldDescriptor); !ok {
-		otherType := descriptorType(dsc)
-		return "", fmt.Errorf("invalid extension: %s is a %s, not an extension", name, otherType)
+		return "", fmt.Errorf("invalid extension: %s is %s, not an extension", name, descriptorTypeWithArticle(dsc))
 	} else if !ext.IsExtension() {
 		return "", fmt.Errorf("invalid extension: %s is a field but not an extension", name)
 	}
@@ -668,9 +663,16 @@ func (r *result) resolve(name string, onlyTypes bool, scopes []scope) protorefle
 	for i := len(scopes) - 1; i >= 0; i-- {
 		d := scopes[i](firstName, name)
 		if d != nil {
-			if !onlyTypes || isType(d) {
+			// In `protoc`, it will skip a match of the wrong type and move on
+			// to the next scope, but only if the reference is unqualified. So
+			// we mirror that behavior here. When we skip and move on, we go
+			// ahead and save the match of the wrong type so we can at least use
+			// it to construct a better error in the event that we don't find
+			// any match of the right type.
+			if !onlyTypes || isType(d) || firstName != name {
 				return d
-			} else if bestGuess == nil {
+			}
+			if bestGuess == nil {
 				bestGuess = d
 			}
 		}
