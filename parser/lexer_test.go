@@ -429,3 +429,37 @@ func newTestLexer(t *testing.T, in io.Reader, h *reporter.Handler) *protoLex {
 	require.NoError(t, err)
 	return lexer
 }
+
+func TestUTF8(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		data      string
+		expectVal string
+		succeeds  bool
+	}{
+		{
+			data:      "'😊'",
+			expectVal: "😊",
+			succeeds:  true,
+		},
+		{
+			data:      "'\xff\x80'",
+			expectVal: "��", // replaces bad encoding bytes w/ replacement char
+			succeeds:  true, // TODO: should be false if enforcing valid UTF8
+		},
+	}
+	for _, tc := range testCases {
+		handler := reporter.NewHandler(nil)
+		l := newTestLexer(t, strings.NewReader(tc.data), handler)
+		var sym protoSymType
+		tok := l.Lex(&sym)
+		if !tc.succeeds {
+			assert.Equal(t, _ERROR, tok, "lexer should return error for %v", tc.data)
+		} else {
+			if assert.Equal(t, _STRING_LIT, tok, "lexer should return string literal token for %v", tc.data) {
+				assert.Equal(t, tc.expectVal, sym.s.Val)
+			}
+		}
+	}
+}
