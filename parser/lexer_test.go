@@ -264,6 +264,7 @@ func TestLexerErrors(t *testing.T) {
 		errMsg string
 	}{
 		{str: `0xffffffffffffffffffff`, errMsg: "value out of range"},
+		{str: `07777777777777777777777`, errMsg: "value out of range"},
 		{str: `"foobar`, errMsg: "unexpected EOF"},
 		{str: `"foobar\J"`, errMsg: "invalid escape sequence"},
 		{str: `"foobar\xgfoo"`, errMsg: "invalid hex escape"},
