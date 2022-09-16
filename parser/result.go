@@ -132,6 +132,19 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 					return
 				}
 			}
+			pkgName := string(decl.Name.AsIdentifier())
+			if len(pkgName) >= 512 {
+				nodeInfo := file.NodeInfo(decl.Name)
+				if handler.HandleErrorf(nodeInfo.Start(), "package name (with whitespace removed) must be less than 512 characters long") != nil {
+					return
+				}
+			}
+			if strings.Count(pkgName, ".") > 100 {
+				nodeInfo := file.NodeInfo(decl.Name)
+				if handler.HandleErrorf(nodeInfo.Start(), "package name may not contain more than 100 periods") != nil {
+					return
+				}
+			}
 			fd.Package = proto.String(string(decl.Name.AsIdentifier()))
 		}
 	}
