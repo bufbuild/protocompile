@@ -265,8 +265,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 				kind := "integer"
 				if base == 8 {
 					kind = "octal integer"
-				}
-				if numErr, ok := err.(*strconv.NumError); ok && numErr.Err == strconv.ErrRange {
+				} else if numErr, ok := err.(*strconv.NumError); ok && numErr.Err == strconv.ErrRange {
 					// if it's too big to be an int, parse it as a float
 					var f float64
 					kind = "float"
