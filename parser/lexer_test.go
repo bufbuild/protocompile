@@ -259,57 +259,167 @@ foo
 
 func TestLexerErrors(t *testing.T) {
 	t.Parallel()
-	testCases := []struct {
-		str    string
-		errMsg string
+	testCases := map[string]struct {
+		input       string
+		expectedErr string
 	}{
-		{str: `0xffffffffffffffffffff`, errMsg: "value out of range"},
-		{str: `07777777777777777777777`, errMsg: "value out of range"},
-		{str: `"foobar`, errMsg: "unexpected EOF"},
-		{str: `"foobar\J"`, errMsg: "invalid escape sequence"},
-		{str: `"foobar\xgfoo"`, errMsg: "invalid hex escape"},
-		{str: `"foobar\u09gafoo"`, errMsg: "invalid unicode escape"},
-		{str: `"foobar\U0010005zfoo"`, errMsg: "invalid unicode escape"},
-		{str: `"foobar\U00110000foo"`, errMsg: "unicode escape is out of range"},
-		{str: "'foobar\nbaz'", errMsg: "encountered end-of-line"},
-		{str: "'foobar\000baz'", errMsg: "null character ('\\0') not allowed"},
-		{str: `1.543g12`, errMsg: "invalid syntax"},
-		{str: `0.1234.5678.`, errMsg: "invalid syntax"},
-		{str: `0x987.345aaf`, errMsg: "invalid syntax"},
-		{str: `0.987.345`, errMsg: "invalid syntax"},
-		{str: `0.987e34e-20`, errMsg: "invalid syntax"},
-		{str: `0.987e-345e20`, errMsg: "invalid syntax"},
-		{str: `.987to123`, errMsg: "invalid syntax"},
-		{str: `0b0111`, errMsg: "invalid syntax"},
-		{str: `0o765432`, errMsg: "invalid syntax"},
-		{str: `1_000_000`, errMsg: "invalid syntax"},
-		{str: `1_000.000_001e6`, errMsg: "invalid syntax"},
-		{str: `0X1F_FFP-16`, errMsg: "invalid syntax"},
-		{str: "09", errMsg: "invalid syntax in octal integer value: 09"},
-		{str: "0f", errMsg: "invalid syntax in octal integer value: 0f"},
-		{str: `/* foobar`, errMsg: "unexpected EOF"},
-		{str: "\x00", errMsg: "invalid control character"},
-		{str: "\x03", errMsg: "invalid control character"},
-		{str: "\x1B", errMsg: "invalid control character"},
-		{str: "\x7F", errMsg: "invalid control character"},
-		{str: "#", errMsg: "invalid character"},
-		{str: "?", errMsg: "invalid character"},
-		{str: "^", errMsg: "invalid character"},
-		{str: "\uAAAA", errMsg: "invalid character"},
-		{str: "\U0010FFFF", errMsg: "invalid character"},
-		{str: "// foo \x00", errMsg: "invalid control character"},
-		{str: "/* foo \x00", errMsg: "invalid control character"},
+		"int_hex_out_of_range": {
+			input:       `0x10000000000000000`,
+			expectedErr: "value out of range",
+		},
+		"int_octal_out_of_range": {
+			input:       `02000000000000000000000`,
+			expectedErr: "value out of range",
+		},
+		"str_incomplete": {
+			input:       `"foobar`,
+			expectedErr: "unexpected EOF",
+		},
+		"str_invalid_escape": {
+			input:       `"foobar\J"`,
+			expectedErr: "invalid escape sequence",
+		},
+		"str_invalid_hex_escape": {
+			input:       `"foobar\xgfoo"`,
+			expectedErr: "invalid hex escape",
+		},
+		"str_invalid_short_unicode_escape": {
+			input:       `"foobar\u09gafoo"`,
+			expectedErr: "invalid unicode escape",
+		},
+		"str_invalid_long_unicode_escape": {
+			input:       `"foobar\U0010005zfoo"`,
+			expectedErr: "invalid unicode escape",
+		},
+		"str_unicode_out_of_range": {
+			input:       `"foobar\U00110000foo"`,
+			expectedErr: "unicode escape is out of range",
+		},
+		"str_w_newline": {
+			input:       "'foobar\nbaz'",
+			expectedErr: "encountered end-of-line",
+		},
+		"str_w_null": {
+			input:       "'foobar\000baz'",
+			expectedErr: "null character ('\\0') not allowed",
+		},
+		"float_w_wrong_exp": {
+			input:       `1.543g12`,
+			expectedErr: "invalid syntax",
+		},
+		"float_w_multiple_points": {
+			input:       `0.1234.5678.`,
+			expectedErr: "invalid syntax",
+		},
+		"int_hex_w_point": {
+			input:       `0x987.345aaf`,
+			expectedErr: "invalid syntax",
+		},
+		"float_w_multiple_points2": {
+			input:       `0.987.345`,
+			expectedErr: "invalid syntax",
+		},
+		"float_w_two_exp": {
+			input:       `0.987e34e-20`,
+			expectedErr: "invalid syntax",
+		},
+		"float_w_two_exp2": {
+			input:       `0.987e-345e20`,
+			expectedErr: "invalid syntax",
+		},
+		"range_no_spaces": {
+			input:       `.987to123`,
+			expectedErr: "invalid syntax",
+		},
+		"int_binary": {
+			input:       `0b0111`,
+			expectedErr: "invalid syntax",
+		},
+		"int_octal_incorrect": {
+			input:       `0o765432`,
+			expectedErr: "invalid syntax",
+		},
+		"int_w_separators": {
+			input:       `1_000_000`,
+			expectedErr: "invalid syntax",
+		},
+		"float_w_separators": {
+			input:       `1_000.000_001e6`,
+			expectedErr: "invalid syntax",
+		},
+		"int_hex_invalid": {
+			input:       `0X1F_FFP-16`,
+			expectedErr: "invalid syntax",
+		},
+		"int_octal_invalid": {
+			input:       "09",
+			expectedErr: "invalid syntax in octal integer value: 09",
+		},
+		"float_f_suffix": {
+			input:       "0f",
+			expectedErr: "invalid syntax in octal integer value: 0f",
+		},
+		"block_comment_incomplete": {
+			input:       `/* foobar`,
+			expectedErr: "unexpected EOF",
+		},
+		"invalid_char_null": {
+			input:       "\x00",
+			expectedErr: "invalid control character",
+		},
+		"invalid_char": {
+			input:       "\x03",
+			expectedErr: "invalid control character",
+		},
+		"invalid_char2": {
+			input:       "\x1B",
+			expectedErr: "invalid control character",
+		},
+		"invalid_char3": {
+			input:       "\x7F",
+			expectedErr: "invalid control character",
+		},
+		"invalid_char4": {
+			input:       "#",
+			expectedErr: "invalid character",
+		},
+		"invalid_char5": {
+			input:       "?",
+			expectedErr: "invalid character",
+		},
+		"invalid_char6": {
+			input:       "^",
+			expectedErr: "invalid character",
+		},
+		"invalid_char7": {
+			input:       "\uAAAA",
+			expectedErr: "invalid character",
+		},
+		"invalid_char8": {
+			input:       "\U0010FFFF",
+			expectedErr: "invalid character",
+		},
+		"block_comment_w_null": {
+			input:       "// foo \x00",
+			expectedErr: "invalid control character",
+		},
+		"line_comment_w_null": {
+			input:       "/* foo \x00",
+			expectedErr: "invalid control character",
+		},
 	}
-	for i, tc := range testCases {
-		handler := reporter.NewHandler(nil)
-		l := newTestLexer(t, strings.NewReader(tc.str), handler)
-		var sym protoSymType
-		tok := l.Lex(&sym)
-		if assert.Equal(t, _ERROR, tok) {
-			assert.True(t, sym.err != nil)
-			assert.True(t, strings.Contains(sym.err.Error(), tc.errMsg), "case %d: expected message to contain %q but does not: %q", i, tc.errMsg, sym.err.Error())
-			t.Logf("case %d: %v", i, sym.err)
-		}
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			handler := reporter.NewHandler(nil)
+			l := newTestLexer(t, strings.NewReader(tc.input), handler)
+			var sym protoSymType
+			tok := l.Lex(&sym)
+			if assert.Equal(t, _ERROR, tok) {
+				assert.True(t, sym.err != nil)
+				assert.True(t, strings.Contains(sym.err.Error(), tc.expectedErr), "expected message to contain %q but does not: %q", tc.expectedErr, sym.err.Error())
+			}
+		})
 	}
 }
 
