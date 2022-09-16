@@ -388,6 +388,123 @@ func TestBasicValidation(t *testing.T) {
 			contents:    `syntax = "proto3"; import "google/protobuf/descriptor.proto"; import "google/protobuf/descriptor.proto";`,
 			expectedErr: `test.proto:1:63: "google/protobuf/descriptor.proto" was already imported at test.proto:1:20`,
 		},
+		"success_long_package_name": {
+			contents: `syntax = "proto3"; package a012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789;`,
+		},
+		"failure_long_package_name": {
+			contents:    `syntax = "proto3"; package ab012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789;`,
+			expectedErr: `test.proto:1:28: package name (with whitespace removed) must be less than 512 characters long`,
+		},
+		"success_long_package_name2": {
+			contents: `syntax = "proto3"; package a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1;`,
+		},
+		"failure_long_package_name2": {
+			contents:    `syntax = "proto3"; package a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2;`,
+			expectedErr: `test.proto:1:28: package name may not contain more than 100 periods`,
+		},
+		"success_deep_nesting": {
+			contents: `syntax = "proto3";
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 {
+					   } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }`,
+		},
+		"failure_deep_nesting": {
+			contents: `syntax = "proto3";
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 { message _32 {
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }`,
+			expectedErr: `test.proto:9:86: message nesting depth must be less than 32`,
+		},
+		"failure_deep_nesting2": {
+			contents: `syntax = "proto3";
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 { message _32 {
+					   message _33 {
+					   }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }`,
+			expectedErr: `test.proto:9:86: message nesting depth must be less than 32`,
+		},
+		"failure_deep_nesting3": {
+			contents: `syntax = "proto3";
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 {
+					     map<string, string> m = 1;
+					   } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }`,
+			expectedErr: `test.proto:10:46: message nesting depth must be less than 32`,
+		},
+		"failure_deep_nesting4": {
+			contents: `syntax = "proto2";
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 {
+					     optional group Foo = 1 { }
+					   } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }`,
+			expectedErr: `test.proto:10:55: message nesting depth must be less than 32`,
+		},
 	}
 
 	for name, tc := range testCases {
