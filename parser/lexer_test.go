@@ -265,11 +265,11 @@ func TestLexerErrors(t *testing.T) {
 	}{
 		"int_hex_out_of_range": {
 			input:       `0x10000000000000000`,
-			expectedErr: "value out of range",
+			expectedErr: "value out of range for hexadecimal integer",
 		},
 		"int_octal_out_of_range": {
 			input:       `02000000000000000000000`,
-			expectedErr: "value out of range",
+			expectedErr: "value out of range for octal integer",
 		},
 		"str_incomplete": {
 			input:       `"foobar`,
