@@ -1198,85 +1198,7 @@ func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protorefl
 		v := val.Value()
 		if aggs, ok := v.([]*ast.MessageFieldNode); ok {
 			fmd := fld.Message()
-			fdm := dynamicpb.NewMessage(fmd)
-			origPath := mc.OptAggPath
-			defer func() {
-				mc.OptAggPath = origPath
-			}()
-			// NB: we don't want to leave this nil, even if the
-			// message is literal, because that indicates to
-			// caller that the result is not a message
-			flds := make([]*interpretedField, 0, len(aggs))
-			for _, a := range aggs {
-				if origPath == "" {
-					mc.OptAggPath = a.Name.Value()
-				} else {
-					mc.OptAggPath = origPath + "." + a.Name.Value()
-				}
-				var ffld protoreflect.FieldDescriptor
-				if a.Name.IsExtension() {
-					n := interp.file.ResolveMessageLiteralExtensionName(a.Name.Name)
-					if n == "" {
-						// this should not be possible!
-						n = string(a.Name.Name.AsIdentifier())
-					}
-					ffld = interp.file.ResolveExtension(protoreflect.FullName(n))
-					if ffld == nil {
-						// may need to qualify with package name
-						// (this should not be necessary!)
-						pkg := mc.File.FileDescriptorProto().GetPackage()
-						if pkg != "" {
-							ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))
-						}
-					}
-				} else {
-					ffld = fmd.Fields().ByName(protoreflect.Name(a.Name.Value()))
-					// Groups are indicated in the text format by the group name (which is
-					// camel-case), NOT the field name (which is lower-case).
-					// ...but only regular fields, not extensions that are groups...
-					if ffld != nil && ffld.Kind() == protoreflect.GroupKind && ffld.Message().Name() != protoreflect.Name(a.Name.Value()) {
-						// this is kind of silly to fail here, but this mimics protoc behavior
-						return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, a.Name.Value(), ffld.Message().Name())
-					}
-					if ffld == nil {
-						// could be a group name
-						for i := 0; i < fmd.Fields().Len(); i++ {
-							fd := fmd.Fields().Get(i)
-							if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(a.Name.Value()) {
-								// found it!
-								ffld = fd
-								break
-							}
-						}
-					}
-				}
-				if ffld == nil {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Name).Start(), "%vfield %s not found", mc, string(a.Name.Name.AsIdentifier()))
-				}
-				if a.Sep == nil && ffld.Message() == nil {
-					// If there is no separator, the field type should be a message.
-					// Otherwise it is an error in the text format.
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(a.Val).Start(), "syntax error: unexpected value, expecting ':'")
-				}
-				res, err := interp.setOptionField(mc, fdm, ffld, a.Name, a.Val, true)
-				if err != nil {
-					return interpretedFieldValue{}, err
-				}
-				flds = append(flds, &interpretedField{
-					number:   int32(ffld.Number()),
-					kind:     ffld.Kind(),
-					repeated: ffld.Cardinality() == protoreflect.Repeated,
-					packed:   ffld.IsPacked(),
-					value:    res,
-					// NB: no need to set index here, inside message literal
-					// (it is only used for top-level options, for emitting
-					// source code info)
-				})
-			}
-			return interpretedFieldValue{
-				val:    protoreflect.ValueOfMessage(fdm),
-				msgVal: flds,
-			}, nil
+			return interp.messageLiteralValue(mc, aggs, fmd)
 		}
 		return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting message, got %s", mc, valueKind(v))
 
@@ -1462,4 +1384,138 @@ func descriptorType(m proto.Message) string {
 		// shouldn't be possible
 		return fmt.Sprintf("%T", m)
 	}
+}
+
+func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fieldNodes []*ast.MessageFieldNode, fmd protoreflect.MessageDescriptor) (interpretedFieldValue, error) {
+	fdm := dynamicpb.NewMessage(fmd)
+	origPath := mc.OptAggPath
+	defer func() {
+		mc.OptAggPath = origPath
+	}()
+	// NB: we don't want to leave this nil, even if the
+	// message is literal, because that indicates to
+	// caller that the result is not a message
+	flds := make([]*interpretedField, 0, len(fieldNodes))
+	for _, fieldNode := range fieldNodes {
+		if origPath == "" {
+			mc.OptAggPath = fieldNode.Name.Value()
+		} else {
+			mc.OptAggPath = origPath + "." + fieldNode.Name.Value()
+		}
+
+		// TODO: ensure that len(fieldNodes) == 1 (can't have multiple any fields)
+		if fieldNode.Name.IsAnyTypeReference() {
+			if fmd.FullName() == "google.protobuf.Any" {
+				// TODO: Support other URLs dynamically -- the caller of protoparse
+				// should be able to provide fldNode custom resolver that can resolve type
+				// URLs into message descriptors. The default resolver would be
+				// implemented as below, only accepting  "type.googleapis.com" and
+				// "type.googleprod.com" as hosts/prefixes and using the compiled
+				// file's transitive closure to find the named message.
+				urlPrefix := fieldNode.Name.URLPrefix.AsIdentifier()
+				msgName := fieldNode.Name.Name.AsIdentifier()
+				fullURL := fmt.Sprintf("%s/%s", urlPrefix, msgName)
+				if urlPrefix != "type.googleapis.com" && urlPrefix != "type.googleprod.com" {
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
+				}
+				anyFields, ok := fieldNode.Val.Value().([]*ast.MessageFieldNode)
+				if !ok {
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vtype references for google.protobuf.Any must have message literal value", mc)
+				}
+				anyMd := interp.file.ResolveMessageType(protoreflect.FullName(msgName))
+				if anyMd == nil {
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
+				}
+				// parse the message value
+				msgVal, err := interp.messageLiteralValue(mc, anyFields, anyMd)
+				if err != nil {
+					return interpretedFieldValue{}, err
+				}
+
+				// Any is defined with two fields:
+				//   string type_url = 1
+				//   bytes value = 2
+				typeURLDescriptor := fmd.Fields().ByNumber(1)
+				if typeURLDescriptor == nil {
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set type_url string field on Any: %w", mc, err)
+				}
+				fdm.Set(typeURLDescriptor, protoreflect.ValueOfString(fullURL))
+				valueDescriptor := fmd.Fields().ByNumber(2)
+				if valueDescriptor == nil {
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set value bytes field on Any: %w", mc, err)
+				}
+				b, err := proto.MarshalOptions{Deterministic: true}.Marshal(msgVal.val.Message().Interface())
+				if err != nil {
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vfailed to serialize message value: %w", mc, err)
+				}
+				fdm.Set(valueDescriptor, protoreflect.ValueOfBytes(b))
+			} else {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
+			}
+		} else {
+			var ffld protoreflect.FieldDescriptor
+			if fieldNode.Name.IsExtension() {
+				n := interp.file.ResolveMessageLiteralExtensionName(fieldNode.Name.Name)
+				if n == "" {
+					// this should not be possible!
+					n = string(fieldNode.Name.Name.AsIdentifier())
+				}
+				ffld = interp.file.ResolveExtension(protoreflect.FullName(n))
+				if ffld == nil {
+					// may need to qualify with package name
+					// (this should not be necessary!)
+					pkg := mc.File.FileDescriptorProto().GetPackage()
+					if pkg != "" {
+						ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))
+					}
+				}
+			} else {
+				ffld = fmd.Fields().ByName(protoreflect.Name(fieldNode.Name.Value()))
+				// Groups are indicated in the text format by the group name (which is
+				// camel-case), NOT the field name (which is lower-case).
+				// ...but only regular fields, not extensions that are groups...
+				if ffld != nil && ffld.Kind() == protoreflect.GroupKind && ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) {
+					// this is kind of silly to fail here, but this mimics protoc behavior
+					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, fieldNode.Name.Value(), ffld.Message().Name())
+				}
+				if ffld == nil {
+					// could be a group name
+					for i := 0; i < fmd.Fields().Len(); i++ {
+						fd := fmd.Fields().Get(i)
+						if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(fieldNode.Name.Value()) {
+							// found it!
+							ffld = fd
+							break
+						}
+					}
+				}
+			}
+			if ffld == nil {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfield %s not found", mc, string(fieldNode.Name.Name.AsIdentifier()))
+			}
+			if fieldNode.Sep == nil && ffld.Message() == nil {
+				// If there is no separator, the field type should be a message.
+				// Otherwise it is an error in the text format.
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "syntax error: unexpected value, expecting ':'")
+			}
+			res, err := interp.setOptionField(mc, fdm, ffld, fieldNode.Name, fieldNode.Val, true)
+			if err != nil {
+				return interpretedFieldValue{}, err
+			}
+			flds = append(flds, &interpretedField{
+				number:   int32(ffld.Number()),
+				kind:     ffld.Kind(),
+				repeated: ffld.Cardinality() == protoreflect.Repeated,
+				packed:   ffld.IsPacked(),
+				value:    res,
+				// NB: no need to set index here, inside message literal
+				// (it is only used for top-level options, for emitting
+				// source code info)
+			})
+		}
+	}
+	return interpretedFieldValue{
+		val:    protoreflect.ValueOfMessage(fdm),
+		msgVal: flds,
+	}, nil
 }

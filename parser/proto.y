@@ -455,6 +455,9 @@ aggName : name {
 	| '[' ident ']' {
 		$$ = ast.NewExtensionFieldReferenceNode($1, $2.toIdentValueNode(nil), $3)
 	}
+	| '[' ident '/' ident ']' {
+		$$ = ast.NewAnyTypeReferenceNode($1, $2.toIdentValueNode(nil), $3, $4.toIdentValueNode(nil), $5)
+	}
 	| '[' error ']' {
 		$$ = nil
 	}
