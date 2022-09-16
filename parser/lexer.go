@@ -45,10 +45,13 @@ func (rr *runeReader) readRune() (r rune, size int, err error) {
 		return 0, 0, rr.err
 	}
 	r, sz := utf8.DecodeRune(rr.data[rr.pos:])
-	if r == utf8.RuneError {
-		rr.err = fmt.Errorf("invalid UTF8 at offset %d: %x", rr.pos, rr.data[rr.pos])
-		return 0, 0, rr.err
-	}
+	// TODO: Enable this check to make input strictly required to be UTF8. We may
+	//   want this to be an optional flag that the parser accepts, to make it
+	//   a conditional check. For now, since protoc allows bad UTF8, so must we :(
+	//if r == utf8.RuneError {
+	//	rr.err = fmt.Errorf("invalid UTF8 at offset %d: %x", rr.pos, rr.data[rr.pos])
+	//	return 0, 0, rr.err
+	//}
 	rr.pos = rr.pos + sz
 	return r, sz, nil
 }
