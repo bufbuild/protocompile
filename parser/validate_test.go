@@ -396,9 +396,16 @@ func TestBasicValidation(t *testing.T) {
 			expectedErr: `test.proto:1:28: package name (with whitespace removed) must be less than 512 characters long`,
 		},
 		"success_long_package_name2": {
-			contents: `syntax = "proto3"; package a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1;`,
+			contents: `syntax = "proto3"; package a .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789;`,
 		},
 		"failure_long_package_name2": {
+			contents:    `syntax = "proto3"; package ab .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789 .  a23456789;`,
+			expectedErr: `test.proto:1:28: package name (with whitespace removed) must be less than 512 characters long`,
+		},
+		"success_long_package_name3": {
+			contents: `syntax = "proto3"; package a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1;`,
+		},
+		"failure_long_package_name3": {
 			contents:    `syntax = "proto3"; package a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2.a3.a4.a5.a6.a7.a8.a9.a0.a1.a2;`,
 			expectedErr: `test.proto:1:28: package name may not contain more than 100 periods`,
 		},
