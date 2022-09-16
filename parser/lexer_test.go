@@ -466,6 +466,7 @@ func TestUTF8(t *testing.T) {
 }
 
 func TestCompactOptionsLeadingComments(t *testing.T) {
+	t.Parallel()
 	contents := `
 syntax = "proto2";
 
