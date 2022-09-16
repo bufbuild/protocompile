@@ -411,6 +411,7 @@ func TestLexerErrors(t *testing.T) {
 	for name, tc := range testCases {
 		tc := tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			handler := reporter.NewHandler(nil)
 			l := newTestLexer(t, strings.NewReader(tc.input), handler)
 			var sym protoSymType
