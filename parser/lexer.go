@@ -432,7 +432,7 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 
 			isPunctuation := false
 			if rn, ok := n.(*ast.RuneNode); ok {
-				isPunctuation = rn.Rune != '.'
+				isPunctuation = rn.Rune != '.' && rn.Rune != '(' && rn.Rune != '['
 			}
 
 			if isPunctuation ||
