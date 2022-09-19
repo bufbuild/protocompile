@@ -968,6 +968,101 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension f",
 		},
+		"success_any_message_literal": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					import "google/protobuf/any.proto";
+					import "google/protobuf/descriptor.proto";
+					message Foo { string a = 1; int32 b = 2; }
+					extend google.protobuf.MessageOptions { optional google.protobuf.Any any = 10001; }
+					message Baz {
+					  option (any) = {
+					    [type.googleapis.com/foo.bar.Foo] <
+					      a: "abc"
+					      b: 123
+					    >
+					  };
+					}`,
+			},
+		},
+		"failure_any_message_literal_not_any": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					message Foo { string a = 1; int32 b = 2; }
+					extend google.protobuf.MessageOptions { optional Foo f = 10001; }
+					message Baz {
+					  option (f) = {
+					    [type.googleapis.com/foo.bar.Foo] <
+					      a: "abc"
+					      b: 123
+					    >
+					  };
+					}`,
+			},
+			expectedErr: "foo.proto:8:6: message foo.bar.Baz: option (foo.bar.f): type references are only allowed for google.protobuf.Any, but this type is foo.bar.Foo",
+		},
+		"failure_any_message_literal_unsupported_domain": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					import "google/protobuf/any.proto";
+					import "google/protobuf/descriptor.proto";
+					message Foo { string a = 1; int32 b = 2; }
+					extend google.protobuf.MessageOptions { optional google.protobuf.Any any = 10001; }
+					message Baz {
+					  option (any) = {
+					    [types.custom.io/foo.bar.Foo] <
+					      a: "abc"
+					      b: 123
+					    >
+					  };
+					}`,
+			},
+			expectedErr: "foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): could not resolve type reference types.custom.io/foo.bar.Foo",
+		},
+		"failure_any_message_literal_scalar": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					import "google/protobuf/any.proto";
+					import "google/protobuf/descriptor.proto";
+					message Foo { string a = 1; int32 b = 2; }
+					extend google.protobuf.MessageOptions { optional google.protobuf.Any any = 10001; }
+					message Baz {
+					  option (any) = {
+					    [type.googleapis.com/foo.bar.Foo]: 123
+					  };
+					}`,
+			},
+			expectedErr: "foo.proto:9:40: message foo.bar.Baz: option (foo.bar.any): type references for google.protobuf.Any must have message literal value",
+		},
+		"failure_any_message_literal_incorrect_type": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					import "google/protobuf/any.proto";
+					import "google/protobuf/descriptor.proto";
+					message Foo { string a = 1; int32 b = 2; }
+					extend google.protobuf.MessageOptions { optional google.protobuf.Any any = 10001; }
+					message Baz {
+					  option (any) = {
+					    [type.googleapis.com/Foo] <
+					      a: "abc"
+					      b: 123
+					    >
+					  };
+					}`,
+			},
+			expectedErr: "foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): could not resolve type reference type.googleapis.com/Foo",
+		},
 	}
 
 	for name, tc := range testCases {
