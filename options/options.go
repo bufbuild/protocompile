@@ -1393,7 +1393,7 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 		mc.OptAggPath = origPath
 	}()
 	// NB: we don't want to leave this nil, even if the
-	// message is literal, because that indicates to
+	// message is empty, because that indicates to
 	// caller that the result is not a message
 	flds := make([]*interpretedField, 0, len(fieldNodes))
 	for _, fieldNode := range fieldNodes {
@@ -1436,12 +1436,12 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 				//   string type_url = 1
 				//   bytes value = 2
 				typeURLDescriptor := fmd.Fields().ByNumber(1)
-				if typeURLDescriptor == nil {
+				if typeURLDescriptor == nil || typeURLDescriptor.Kind() != protoreflect.StringKind {
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set type_url string field on Any: %w", mc, err)
 				}
 				fdm.Set(typeURLDescriptor, protoreflect.ValueOfString(fullURL))
 				valueDescriptor := fmd.Fields().ByNumber(2)
-				if valueDescriptor == nil {
+				if valueDescriptor == nil || valueDescriptor.Kind() != protoreflect.BytesKind {
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set value bytes field on Any: %w", mc, err)
 				}
 				b, err := proto.MarshalOptions{Deterministic: true}.Marshal(msgVal.val.Message().Interface())

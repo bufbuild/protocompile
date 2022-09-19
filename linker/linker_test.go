@@ -1006,7 +1006,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:8:6: message foo.bar.Baz: option (foo.bar.f): type references are only allowed for google.protobuf.Any, but this type is foo.bar.Foo",
 		},
-		"failure_any_message_literal_unknown_type": {
+		"failure_any_message_literal_unsupported_domain": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -1043,7 +1043,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:9:40: message foo.bar.Baz: option (foo.bar.any): type references for google.protobuf.Any must have message literal value",
 		},
-		"failure_any_message_literal_foo_reference": {
+		"failure_any_message_literal_incorrect_type": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
