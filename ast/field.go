@@ -22,6 +22,7 @@ import "fmt"
 //   - *FieldNode
 //   - *GroupNode
 //   - *MapFieldNode
+//   - *SyntheticMapField
 //
 // This also allows NoSourceNode and SyntheticMapField to be used in place of
 // one of the above for some usages.
@@ -321,6 +322,18 @@ func (n *GroupNode) MessageName() Node {
 	return n.Name
 }
 
+// OneOfDeclNode is a node in the AST that defines a oneof. There are
+// multiple types of AST nodes that declare oneofs:
+//   - *OneOfNode
+//   - *SyntheticOneOf
+//
+// This also allows NoSourceNode to be used in place of one of the above
+// for some usages.
+type OneOfDeclNode interface {
+	Node
+	OneOfName() Node
+}
+
 // OneOfNode represents a one-of declaration. Example:
 //
 //	oneof query {
@@ -388,6 +401,10 @@ func NewOneOfNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, de
 	}
 }
 
+func (n *OneOfNode) OneOfName() Node {
+	return n.Name
+}
+
 // OneOfElement is an interface implemented by all AST nodes that can
 // appear in the body of a oneof declaration.
 type OneOfElement interface {
@@ -428,6 +445,10 @@ func (n *SyntheticOneOf) LeadingComments() []Comment {
 
 func (n *SyntheticOneOf) TrailingComments() []Comment {
 	return nil
+}
+
+func (n *SyntheticOneOf) OneOfName() Node {
+	return n.Ident
 }
 
 // MapTypeNode represents the type declaration for a map field. It defines
