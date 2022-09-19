@@ -791,7 +791,7 @@ func TestLinkerValidation(t *testing.T) {
 				"foo.proto": `
 					syntax = "proto3";
 					import "google/protobuf/descriptor.proto";
-					enum Foo { true = 0; false = 1; t = 2; f = 3; True = 4; False = 5; inf = 6; nan = 7; }
+					enum Foo { option allow_alias = true; true = 0; false = 1; t = 2; f = 3; True = 0; False = 1; inf = 6; nan = 7; }
 					extend google.protobuf.MessageOptions { repeated Foo foo = 10001; }
 					message Baz {
 					  option (foo) = true; option (foo) = false;
@@ -1142,6 +1142,127 @@ func TestLinkerValidation(t *testing.T) {
 					  message Foo {
 					    Bar f = 1;
 					  }
+					}`,
+			},
+		},
+		"failure_json_name_conflict_default": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foo = 1;
+					  string bar = 2 [json_name="foo"];
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.bar: custom JSON name "foo" conflicts with default JSON name of field foo, defined at foo.proto:3:3`,
+		},
+		"failure_json_name_conflict_case_insensitive": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foo = 1 [json_name="foo_bar"];
+					  string bar = 2 [json_name="Foo_Bar"];
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.bar: custom JSON name "Foo_Bar" conflicts with custom JSON name "foo_bar" of field foo, defined at foo.proto:3:3`,
+		},
+		"failure_json_name_conflict_default_underscore": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string fooBar = 1;
+					  string foo_bar = 2;
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.foo_bar: default JSON name "fooBar" conflicts with default JSON name of field fooBar, defined at foo.proto:3:3`,
+		},
+		"failure_json_name_conflict_default_override": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string fooBar = 1;
+					  string foo_bar = 2 [json_name="fuber"];
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.foo_bar: default JSON name "fooBar" conflicts with default JSON name of field fooBar, defined at foo.proto:3:3`,
+		},
+		"failure_json_name_uppercase_default": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string fooBar = 1;
+					  string FOO_BAR = 2;
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.FOO_BAR: default JSON name "FOOBAR" conflicts with default JSON name "fooBar" of field fooBar, defined at foo.proto:3:3`,
+		},
+		"failure_json_name_conflict_leading_underscores": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string fooBar = 1;
+					  string __foo_bar = 2;
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.__foo_bar: default JSON name "FooBar" conflicts with default JSON name "fooBar" of field fooBar, defined at foo.proto:3:3`,
+		},
+		"failure_json_name_conflict_override_case_insensitive": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					message Foo {
+					  optional string foo = 1 [json_name="foo_bar"];
+					  optional string bar = 2 [json_name="Foo_Bar"];
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.bar: custom JSON name "Foo_Bar" conflicts with custom JSON name "foo_bar" of field foo, defined at foo.proto:3:3`,
+		},
+		"success_json_name_default_proto3_only": {
+			// should succeed: only check default JSON names in proto3
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					message Foo {
+					  optional string fooBar = 1;
+					  optional string foo_bar = 2;
+					}`,
+			},
+		},
+		"failure_json_name_conflict_proto2": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					message Foo {
+					  optional string fooBar = 1 [json_name="fooBar"];
+					  optional string foo_bar = 2 [json_name="fooBar"];
+					}`,
+			},
+			expectedErr: `foo.proto:4:3: field Foo.foo_bar: custom JSON name "fooBar" conflicts with custom JSON name of field fooBar, defined at foo.proto:3:3`,
+		},
+		"success_json_name_default_proto2": {
+			// should succeed: only check default JSON names in proto3
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					message Foo {
+					  optional string fooBar = 1;
+					  optional string FOO_BAR = 2;
+					}`,
+			},
+		},
+		"success_json_name_default_proto2_underscore": {
+			// should succeed: only check default JSON names in proto3
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					message Foo {
+					  optional string fooBar = 1;
+					  optional string __foo_bar = 2;
 					}`,
 			},
 		},

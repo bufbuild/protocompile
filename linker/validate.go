@@ -15,6 +15,11 @@
 package linker
 
 import (
+	"fmt"
+	"strings"
+	"unicode"
+	"unicode/utf8"
+
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -25,7 +30,10 @@ import (
 // ValidateOptions runs some validation checks on the result that can only
 // be done after options are interpreted.
 func (r *result) ValidateOptions(handler *reporter.Handler) error {
-	return r.validateExtensions(r, handler)
+	if err := r.validateExtensions(r, handler); err != nil {
+		return err
+	}
+	return r.validateJSONNamesInFile(handler)
 }
 
 func (r *result) validateExtensions(d hasExtensionsAndMessages, handler *reporter.Handler) error {
@@ -75,4 +83,209 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 	}
 
 	return nil
+}
+
+func (r *result) validateJSONNamesInFile(handler *reporter.Handler) error {
+	for _, md := range r.FileDescriptorProto().GetMessageType() {
+		if err := r.validateJSONNamesInMessage(md, handler); err != nil {
+			return err
+		}
+	}
+	for _, ed := range r.FileDescriptorProto().GetEnumType() {
+		if err := r.validateJSONNamesInEnum(ed, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *result) validateJSONNamesInMessage(md *descriptorpb.DescriptorProto, handler *reporter.Handler) error {
+	if err := r.validateFieldJSONNames(md, false, handler); err != nil {
+		return err
+	}
+	if err := r.validateFieldJSONNames(md, true, handler); err != nil {
+		return err
+	}
+
+	for _, nmd := range md.GetNestedType() {
+		if err := r.validateJSONNamesInMessage(nmd, handler); err != nil {
+			return err
+		}
+	}
+	for _, ed := range md.GetEnumType() {
+		if err := r.validateJSONNamesInEnum(ed, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *result) validateJSONNamesInEnum(ed *descriptorpb.EnumDescriptorProto, handler *reporter.Handler) error {
+	seen := map[string]*descriptorpb.EnumValueDescriptorProto{}
+	for _, evd := range ed.GetValue() {
+		scope := "enum value " + ed.GetName() + "." + evd.GetName()
+
+		name := canonicalEnumValueName(evd.GetName(), ed.GetName())
+		if existing, ok := seen[name]; ok && evd.GetNumber() != existing.GetNumber() {
+			fldNode := r.EnumValueNode(evd)
+			existingNode := r.EnumValueNode(existing)
+			conflictErr := fmt.Errorf("%s: camel-case name (with optional enum name prefix removed) %q conflicts with camel-case name of enum value %s, defined at %v",
+				scope, name, existing.GetName(), r.FileNode().NodeInfo(existingNode).Start())
+
+			// Since proto2 did not originally have a JSON format, we report conflicts as just warnings
+			if r.Syntax() != protoreflect.Proto3 {
+				handler.HandleWarning(r.FileNode().NodeInfo(fldNode).Start(), conflictErr)
+			} else if err := handler.HandleErrorf(r.FileNode().NodeInfo(fldNode).Start(), conflictErr.Error()); err != nil {
+				return err
+			}
+		} else {
+			seen[name] = evd
+		}
+	}
+	return nil
+}
+
+func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCustom bool, handler *reporter.Handler) error {
+	type jsonName struct {
+		source *descriptorpb.FieldDescriptorProto
+		// field's original JSON nane (which can differ in case from map key)
+		orig string
+		// true if orig is a custom JSON name (vs. the field's default JSON name)
+		custom bool
+	}
+	seen := map[string]jsonName{}
+
+	for _, fd := range md.GetField() {
+		scope := "field " + md.GetName() + "." + fd.GetName()
+		defaultName := internal.JSONName(fd.GetName())
+		name := defaultName
+		custom := false
+		if useCustom {
+			n := fd.GetJsonName()
+			if n != defaultName || r.hasCustomJSONName(fd) {
+				name = n
+				custom = true
+			}
+		}
+		lcaseName := strings.ToLower(name)
+		if existing, ok := seen[lcaseName]; ok {
+			// When useCustom is true, we'll only report an issue when a conflict is
+			// due to a custom name. That way, we don't double report conflicts on
+			// non-custom names.
+			if !useCustom || custom || existing.custom {
+				fldNode := r.FieldNode(fd)
+				customStr, srcCustomStr := "custom", "custom"
+				if !custom {
+					customStr = "default"
+				}
+				if !existing.custom {
+					srcCustomStr = "default"
+				}
+				otherName := ""
+				if name != existing.orig {
+					otherName = fmt.Sprintf(" %q", existing.orig)
+				}
+				conflictErr := fmt.Errorf("%s: %s JSON name %q conflicts with %s JSON name%s of field %s, defined at %v",
+					scope, customStr, name, srcCustomStr, otherName, existing.source.GetName(), r.FileNode().NodeInfo(r.FieldNode(existing.source)).Start())
+
+				// Since proto2 did not originally have default JSON names, we report conflicts involving
+				// default names as just warnings.
+				if r.Syntax() != protoreflect.Proto3 && (!custom || !existing.custom) {
+					handler.HandleWarning(r.FileNode().NodeInfo(fldNode).Start(), conflictErr)
+				} else if err := handler.HandleErrorf(r.FileNode().NodeInfo(fldNode).Start(), conflictErr.Error()); err != nil {
+					return err
+				}
+			}
+		} else {
+			seen[lcaseName] = jsonName{source: fd, orig: name, custom: custom}
+		}
+	}
+	return nil
+}
+
+func (r *result) hasCustomJSONName(fdProto *descriptorpb.FieldDescriptorProto) bool {
+	// if we have the AST, we can more precisely determine if there was a custom
+	// JSON named defined, even if it is explicitly configured to tbe the same
+	// as the default JSON name for the field.
+	opts := r.FieldNode(fdProto).GetOptions()
+	if opts == nil {
+		return false
+	}
+	for _, opt := range opts.Options {
+		if len(opt.Name.Parts) == 1 &&
+			opt.Name.Parts[0].Name.AsIdentifier() == "json_name" &&
+			!opt.Name.Parts[0].IsExtension() {
+			return true
+		}
+	}
+	return false
+}
+
+func canonicalEnumValueName(enumValueName, enumName string) string {
+	return enumValCamelCase(removePrefix(enumValueName, enumName))
+}
+
+// removePrefix is used to remove the given prefix from the given str. It does not require
+// an exact match and ignores case and underscores. If the all non-underscore characters
+// would be removed from str, str is returned unchanged. If str does not have the given
+// prefix (even with the very lenient matching, in regard to case and underscores), then
+// str is returned unchanged.
+//
+// The algorithm is adapted from the protoc source:
+//
+//	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L922
+func removePrefix(str, prefix string) string {
+	j := 0
+	for i, r := range str {
+		if r == '_' {
+			// skip underscores in the input
+			continue
+		}
+
+		p, sz := utf8.DecodeRuneInString(prefix[j:])
+		for p == '_' {
+			j += sz // consume/skip underscore
+			p, sz = utf8.DecodeRuneInString(prefix[j:])
+		}
+
+		if j == len(prefix) {
+			// matched entire prefix; return rest of str
+			// but skipping any leading underscores
+			result := strings.TrimLeft(str[i:], "_")
+			if len(result) == 0 {
+				// result can't be empty string
+				return str
+			}
+			return result
+		}
+		if unicode.ToLower(r) != unicode.ToLower(p) {
+			// does not match prefix
+			return str
+		}
+		j += sz // consume matched rune of prefix
+	}
+	return str
+}
+
+// enumValCamelCase converts the given string to upper-camel-case.
+//
+// The algorithm is adapted from the protoc source:
+//
+//	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L887
+func enumValCamelCase(name string) string {
+	var js []rune
+	nextUpper := true
+	for _, r := range name {
+		if r == '_' {
+			nextUpper = true
+			continue
+		}
+		if nextUpper {
+			nextUpper = false
+			js = append(js, unicode.ToUpper(r))
+		} else {
+			js = append(js, unicode.ToLower(r))
+		}
+	}
+	return string(js)
 }
