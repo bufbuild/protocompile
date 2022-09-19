@@ -354,13 +354,13 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 					}
 				}
 			case *descriptorpb.ServiceDescriptorProto:
-				// not a message, but same scoping rules for nested elements as if it were
-				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
 				if d.Options != nil {
 					if err := r.resolveOptions(handler, "service", fqn, d.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
+				// not a message, but same scoping rules for nested elements as if it were
+				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
 			case *descriptorpb.MethodDescriptorProto:
 				if d.Options != nil {
 					if err := r.resolveOptions(handler, "method", fqn, d.Options.UninterpretedOption, scopes); err != nil {
