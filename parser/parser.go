@@ -83,7 +83,7 @@ func Parse(filename string, r io.Reader, handler *reporter.Handler) (*ast.FileNo
 		return nil, err
 	}
 	protoParse(lx)
-	if lx.res == nil || len(lx.res.Children()) == 0 {
+	if lx.res == nil {
 		// nil AST means there was an error that prevented any parsing
 		// or the file was empty; synthesize empty non-nil AST
 		lx.res = ast.NewEmptyFileNode(filename)
