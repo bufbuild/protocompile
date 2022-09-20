@@ -292,7 +292,7 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 		}
 	}
 
-	return walk.DescriptorProtosEnterAndExit(fd,
+	err := walk.DescriptorProtosEnterAndExit(fd,
 		func(fqn protoreflect.FullName, d proto.Message) error {
 			switch d := d.(type) {
 			case *descriptorpb.DescriptorProto:
@@ -381,6 +381,32 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 			}
 			return nil
 		})
+
+	if err == nil {
+		// Because references can by cyclical (for example: message A can have
+		// a field of type B and message B can have a field of type A), we can't
+		// resolve all descriptors up-front in a straight-forward way. So we
+		// instead resolve and cache them "just in time", so that order does not
+		// matter.
+		//
+		// But lazy construction is not thread-safe: we now need to proactively
+		// make sure they are all created so that no subsequent operation from some
+		// other goroutine triggers it (which could result in unsafe concurrent
+		// access and data races).
+		_ = walk.Descriptors(r, func(d protoreflect.Descriptor) error {
+			switch d := d.(type) {
+			case protoreflect.FieldDescriptor:
+				d.Message()
+				d.Enum()
+				d.ContainingMessage()
+			case protoreflect.MethodDescriptor:
+				d.Input()
+				d.Output()
+			}
+			return nil
+		})
+	}
+	return err
 }
 
 var allowedProto3Extendees = map[string]struct{}{

@@ -1033,6 +1033,9 @@ type fldDescriptor struct {
 	index  int
 	proto  *descriptorpb.FieldDescriptorProto
 	fqn    string
+
+	msgType, extendee protoreflect.MessageDescriptor
+	enumType          protoreflect.EnumDescriptor
 }
 
 var _ protoreflect.FieldDescriptor = (*fldDescriptor)(nil)
@@ -1458,14 +1461,20 @@ func (f *fldDescriptor) ContainingMessage() protoreflect.MessageDescriptor {
 	if !f.IsExtension() {
 		return f.parent.(*msgDescriptor)
 	}
-	return f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetExtendee()))
+	if f.extendee == nil {
+		f.extendee = f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetExtendee()))
+	}
+	return f.extendee
 }
 
 func (f *fldDescriptor) Enum() protoreflect.EnumDescriptor {
 	if f.proto.GetType() != descriptorpb.FieldDescriptorProto_TYPE_ENUM {
 		return nil
 	}
-	return f.file.ResolveEnumType(protoreflect.FullName(f.proto.GetTypeName()))
+	if f.enumType == nil {
+		f.enumType = f.file.ResolveEnumType(protoreflect.FullName(f.proto.GetTypeName()))
+	}
+	return f.enumType
 }
 
 func (f *fldDescriptor) Message() protoreflect.MessageDescriptor {
@@ -1473,7 +1482,10 @@ func (f *fldDescriptor) Message() protoreflect.MessageDescriptor {
 		f.proto.GetType() != descriptorpb.FieldDescriptorProto_TYPE_GROUP {
 		return nil
 	}
-	return f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetTypeName()))
+	if f.msgType == nil {
+		f.msgType = f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetTypeName()))
+	}
+	return f.msgType
 }
 
 type oneofDescriptors struct {
@@ -1704,6 +1716,8 @@ type mtdDescriptor struct {
 	index  int
 	proto  *descriptorpb.MethodDescriptorProto
 	fqn    string
+
+	inputType, outputType protoreflect.MessageDescriptor
 }
 
 var _ protoreflect.MethodDescriptor = (*mtdDescriptor)(nil)
@@ -1759,11 +1773,17 @@ func (m *mtdDescriptor) Options() protoreflect.ProtoMessage {
 }
 
 func (m *mtdDescriptor) Input() protoreflect.MessageDescriptor {
-	return m.file.ResolveMessageType(protoreflect.FullName(m.proto.GetInputType()))
+	if m.inputType == nil {
+		m.inputType = m.file.ResolveMessageType(protoreflect.FullName(m.proto.GetInputType()))
+	}
+	return m.inputType
 }
 
 func (m *mtdDescriptor) Output() protoreflect.MessageDescriptor {
-	return m.file.ResolveMessageType(protoreflect.FullName(m.proto.GetOutputType()))
+	if m.outputType == nil {
+		m.outputType = m.file.ResolveMessageType(protoreflect.FullName(m.proto.GetOutputType()))
+	}
+	return m.outputType
 }
 
 func (m *mtdDescriptor) IsStreamingClient() bool {
