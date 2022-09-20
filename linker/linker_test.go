@@ -1356,12 +1356,12 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	expectedFoo1FirstErrors := []string{
 		`foo2.proto:2:9: symbol "Foo" already defined at foo1.proto:2:9`,
 		`foo2.proto:3:19: symbol "Foo.bar" already defined at foo1.proto:3:19`,
-		`foo2.proto:3:19: symbol "Foo._bar" already defined at foo1.proto:3:19`,
+		`foo2.proto:3:3: symbol "Foo._bar" already defined at foo1.proto:3:3`,
 	}
 	expectedFoo2FirstErrors := []string{
 		`foo1.proto:2:9: symbol "Foo" already defined at foo2.proto:2:9`,
 		`foo1.proto:3:19: symbol "Foo.bar" already defined at foo2.proto:3:19`,
-		`foo1.proto:3:19: symbol "Foo._bar" already defined at foo2.proto:3:19`,
+		`foo1.proto:3:3: symbol "Foo._bar" already defined at foo2.proto:3:3`,
 	}
 	var expected []string
 	require.NotEmpty(t, errs)

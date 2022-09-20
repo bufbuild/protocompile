@@ -420,23 +420,23 @@ var _ OneOfElement = (*EmptyDeclNode)(nil)
 // SyntheticOneOf is not an actual node in the AST but a synthetic node
 // that represents the oneof implied by a proto3 optional field.
 type SyntheticOneOf struct {
-	Ident IdentValueNode
+	Field *FieldNode
 }
 
 var _ Node = (*SyntheticOneOf)(nil)
 
-// NewSyntheticOneOf creates a new *SyntheticOneOf for the given identifier
-// (the name of the proto3 optional field).
-func NewSyntheticOneOf(ident IdentValueNode) *SyntheticOneOf {
-	return &SyntheticOneOf{Ident: ident}
+// NewSyntheticOneOf creates a new *SyntheticOneOf that corresponds to the
+// given proto3 optional field.
+func NewSyntheticOneOf(field *FieldNode) *SyntheticOneOf {
+	return &SyntheticOneOf{Field: field}
 }
 
 func (n *SyntheticOneOf) Start() Token {
-	return n.Ident.Start()
+	return n.Field.Start()
 }
 
 func (n *SyntheticOneOf) End() Token {
-	return n.Ident.End()
+	return n.Field.End()
 }
 
 func (n *SyntheticOneOf) LeadingComments() []Comment {
@@ -448,7 +448,7 @@ func (n *SyntheticOneOf) TrailingComments() []Comment {
 }
 
 func (n *SyntheticOneOf) OneOfName() Node {
-	return n.Ident
+	return n.Field.FieldName()
 }
 
 // MapTypeNode represents the type declaration for a map field. It defines
