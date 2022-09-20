@@ -32,6 +32,7 @@ import (
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestSimpleLink(t *testing.T) {
@@ -1431,4 +1432,68 @@ func TestLinkerSymbolCollisionNoSource(t *testing.T) {
 	_, err := compiler.Compile(context.Background(), "foo.proto")
 	require.Error(t, err)
 	assert.EqualError(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
+}
+
+func TestSyntheticOneOfCollisions(t *testing.T) {
+	t.Parallel()
+	input := map[string]string{
+		"foo1.proto": `
+			syntax = "proto3";
+			message Foo {
+			  optional string bar = 1;
+			}`,
+		"foo2.proto": `
+			syntax = "proto3";
+			message Foo {
+			  optional string bar = 1;
+			}`,
+	}
+
+	var errs []error
+	compiler := &protocompile.Compiler{
+		Reporter: reporter.NewReporter(
+			func(err reporter.ErrorWithPos) error {
+				errs = append(errs, err)
+				// need to return nil to accumulate all errors so we can report synthetic
+				// oneof collision; otherwise, the link will fail after the first collision
+				// and we'll never test the synthetic oneofs
+				return nil
+			},
+			nil,
+		),
+		Resolver: protocompile.ResolverFunc(func(filename string) (protocompile.SearchResult, error) {
+			f, ok := input[filename]
+			if !ok {
+				return protocompile.SearchResult{}, fmt.Errorf("file not found: %s", filename)
+			}
+			return protocompile.SearchResult{Source: strings.NewReader(removePrefixIndent(f))}, nil
+		}),
+	}
+	_, err := compiler.Compile(context.Background(), "foo1.proto", "foo2.proto")
+
+	assert.Equal(t, reporter.ErrInvalidSource, err)
+
+	// since files are compiled concurrently, there are two possible outcomes
+	expectedFoo1FirstErrors := []string{
+		`foo2.proto:2:9: symbol "Foo" already defined at foo1.proto:2:9`,
+		`foo2.proto:3:19: symbol "Foo.bar" already defined at foo1.proto:3:19`,
+		`foo2.proto:3:19: symbol "Foo._bar" already defined at foo1.proto:3:19`,
+	}
+	expectedFoo2FirstErrors := []string{
+		`foo1.proto:2:9: symbol "Foo" already defined at foo2.proto:2:9`,
+		`foo1.proto:3:19: symbol "Foo.bar" already defined at foo2.proto:3:19`,
+		`foo1.proto:3:19: symbol "Foo._bar" already defined at foo2.proto:3:19`,
+	}
+	var expected []string
+	require.NotEmpty(t, errs)
+	var actual []string
+	for _, err := range errs {
+		actual = append(actual, err.Error())
+	}
+	if strings.HasPrefix(actual[0], "foo2.proto") {
+		expected = expectedFoo1FirstErrors
+	} else {
+		expected = expectedFoo2FirstErrors
+	}
+	assert.Equal(t, expected, actual)
 }
