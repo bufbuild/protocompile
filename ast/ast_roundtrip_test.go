@@ -36,26 +36,37 @@ func TestASTRoundTrips(t *testing.T) {
 		}
 		if filepath.Ext(path) == ".proto" {
 			t.Run(path, func(t *testing.T) {
+				t.Parallel()
 				data, err := os.ReadFile(path)
 				if !assert.Nil(t, err, "%v", err) {
 					return
 				}
-				filename := filepath.Base(path)
-				root, err := parser.Parse(filename, bytes.NewReader(data), reporter.NewHandler(nil))
-				if !assert.Nil(t, err) {
-					return
-				}
-				var buf bytes.Buffer
-				err = printAST(&buf, root)
-				if assert.Nil(t, err, "%v", err) {
-					// see if file survived round trip!
-					assert.Equal(t, string(data), buf.String())
-				}
+				testASTRoundTrip(t, path, data)
 			})
 		}
 		return nil
 	})
 	assert.Nil(t, err, "%v", err)
+	t.Run("empty", func(t *testing.T) {
+		t.Parallel()
+		testASTRoundTrip(t, "empty", []byte(`
+		// this file has no lexical elements, just this one comment
+		`))
+	})
+}
+
+func testASTRoundTrip(t *testing.T, path string, data []byte) {
+	filename := filepath.Base(path)
+	root, err := parser.Parse(filename, bytes.NewReader(data), reporter.NewHandler(nil))
+	if !assert.Nil(t, err) {
+		return
+	}
+	var buf bytes.Buffer
+	err = printAST(&buf, root)
+	if assert.Nil(t, err, "%v", err) {
+		// see if file survived round trip!
+		assert.Equal(t, string(data), buf.String())
+	}
 }
 
 // printAST prints the given AST node to the given output. This operation
