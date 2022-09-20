@@ -321,8 +321,8 @@ func nameStart(file ast.FileDeclNode, n ast.Node) ast.SourcePos {
 		return file.NodeInfo(n.FieldName()).Start()
 	case ast.MessageDeclNode:
 		return file.NodeInfo(n.MessageName()).Start()
-	case *ast.OneOfNode:
-		return file.NodeInfo(n.Name).Start()
+	case ast.OneOfDeclNode:
+		return file.NodeInfo(n.OneOfName()).Start()
 	case ast.EnumValueDeclNode:
 		return file.NodeInfo(n.GetName()).Start()
 	case *ast.EnumNode:
