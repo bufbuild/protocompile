@@ -1497,3 +1497,73 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	}
 	assert.Equal(t, expected, actual)
 }
+
+func TestCustomJSONNameWarnings(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		source  string
+		warning string
+	}{
+		{
+			source: `
+				syntax = "proto2";
+				message Foo {
+				  optional string foo = 1;
+				  optional string bar = 2 [json_name="foo"];
+				}`,
+			warning: `test.proto:4:3: field Foo.bar: custom JSON name "foo" conflicts with default JSON name of field foo, defined at test.proto:3:3`,
+		},
+		{
+			source: `
+				syntax = "proto2";
+				message Foo {
+				  optional string foo_bar = 1;
+				  optional string fooBar = 2;
+				}`,
+			warning: `test.proto:4:3: field Foo.fooBar: default JSON name "fooBar" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3`,
+		},
+		{
+			source: `
+				syntax = "proto2";
+				message Foo {
+				  optional string foo_bar = 1;
+				  optional string fooBar = 2;
+				}`,
+			warning: `test.proto:4:3: field Foo.fooBar: default JSON name "fooBar" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3`,
+		},
+	}
+	for i, tc := range testCases {
+		resolver := protocompile.ResolverFunc(func(filename string) (protocompile.SearchResult, error) {
+			if filename == "test.proto" {
+				return protocompile.SearchResult{Source: strings.NewReader(removePrefixIndent(tc.source))}, nil
+			}
+			return protocompile.SearchResult{}, fmt.Errorf("file not found: %s", filename)
+		})
+		var warnings []string
+		warnFunc := func(err reporter.ErrorWithPos) {
+			warnings = append(warnings, err.Error())
+		}
+		compiler := protocompile.Compiler{
+			Resolver: resolver,
+			Reporter: reporter.NewReporter(nil, warnFunc),
+		}
+		_, err := compiler.Compile(context.Background(), "test.proto")
+		if err != nil {
+			t.Errorf("case %d: expecting no error; instead got error %q", i, err)
+		}
+		if tc.warning == "" && len(warnings) > 0 {
+			t.Errorf("case %d: expecting no warnings; instead got: %v", i, warnings)
+		} else {
+			found := false
+			for _, w := range warnings {
+				if w == tc.warning {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("case %d: expecting warning %q; instead got: %v", i, tc.warning, warnings)
+			}
+		}
+	}
+}
