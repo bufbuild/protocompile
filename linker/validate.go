@@ -185,14 +185,15 @@ func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCus
 				if name != existing.orig {
 					otherName = fmt.Sprintf(" %q", existing.orig)
 				}
-				conflictErr := fmt.Errorf("%s: %s JSON name %q conflicts with %s JSON name%s of field %s, defined at %v",
+				pos := r.FileNode().NodeInfo(fldNode).Start()
+				conflictErr := reporter.Errorf(pos, "%s: %s JSON name %q conflicts with %s JSON name%s of field %s, defined at %v",
 					scope, customStr, name, srcCustomStr, otherName, existing.source.GetName(), r.FileNode().NodeInfo(r.FieldNode(existing.source)).Start())
 
 				// Since proto2 did not originally have default JSON names, we report conflicts involving
 				// default names as just warnings.
 				if r.Syntax() != protoreflect.Proto3 && (!custom || !existing.custom) {
-					handler.HandleWarning(r.FileNode().NodeInfo(fldNode).Start(), conflictErr)
-				} else if err := handler.HandleErrorf(r.FileNode().NodeInfo(fldNode).Start(), conflictErr.Error()); err != nil {
+					handler.HandleWarning(pos, conflictErr.Underlying())
+				} else if err := handler.HandleError(conflictErr); err != nil {
 					return err
 				}
 			}
