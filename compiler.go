@@ -48,7 +48,7 @@ import (
 // invoked (though that step is not implemented by this package and not a
 // responsibility of this type).
 type Compiler struct {
-	// Resolves path/file names into source code or intermediate representions
+	// Resolves path/file names into source code or intermediate representations
 	// for protobuf source files. This is how the compiler loads the files to
 	// be compiled as well as all dependencies. This field is the only required
 	// field.

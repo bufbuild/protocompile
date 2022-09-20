@@ -697,6 +697,15 @@ func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto)
 				for _, fd := range msgd.Field {
 					allNames[fd.GetName()] = struct{}{}
 				}
+				for _, od := range msgd.OneofDecl {
+					allNames[od.GetName()] = struct{}{}
+				}
+				// NB: protoc only considers names of other fields and oneofs
+				// when computing the synthetic oneof name. But that feels like
+				// a bug, since it means it could generate a name that conflicts
+				// with some other symbol defined in the message. If it's decided
+				// that's NOT a bug and is desirable, then we should remove the
+				// following four loops to mimic protoc's behavior.
 				for _, fd := range msgd.Extension {
 					allNames[fd.GetName()] = struct{}{}
 				}
@@ -734,7 +743,7 @@ func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto)
 			fd.OneofIndex = proto.Int32(int32(len(msgd.OneofDecl)))
 			ood := &descriptorpb.OneofDescriptorProto{Name: proto.String(ooName)}
 			msgd.OneofDecl = append(msgd.OneofDecl, ood)
-			ooident := r.FieldNode(fd).FieldName().(*ast.IdentNode)
+			ooident := r.FieldNode(fd).(*ast.FieldNode)
 			r.putOneOfNode(ood, ast.NewSyntheticOneOf(ooident))
 		}
 	}
@@ -858,7 +867,7 @@ func (r *result) putFieldNode(f *descriptorpb.FieldDescriptorProto, n ast.FieldD
 	r.nodes[f] = n
 }
 
-func (r *result) putOneOfNode(o *descriptorpb.OneofDescriptorProto, n ast.Node) {
+func (r *result) putOneOfNode(o *descriptorpb.OneofDescriptorProto, n ast.OneOfDeclNode) {
 	r.nodes[o] = n
 }
 
