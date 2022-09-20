@@ -1606,99 +1606,110 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 		},
 		// in nested message
 		{
-			source: "syntax = \"proto2\";\n" +
-				"message Blah { message Foo {\n" +
-				"  optional string foo = 1;\n" +
-				"  optional string bar = 2 [json_name=\"foo\"];\n" +
-				"} }\n",
-			warning: "test.proto:4:3: field Foo.bar: custom JSON name \"foo\" conflicts with default JSON name of field foo, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				message Blah { message Foo {
+				  optional string foo = 1;
+				  optional string bar = 2 [json_name="foo"];
+				} }`,
+			warning: `test.proto:4:3: field Foo.bar: custom JSON name "foo" conflicts with default JSON name of field foo, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"message Blah { message Foo {\n" +
-				"  optional string foo_bar = 1;\n" +
-				"  optional string fooBar = 2;\n" +
-				"} }\n",
-			warning: "test.proto:4:3: field Foo.fooBar: default JSON name \"fooBar\" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				message Blah { message Foo {
+				  optional string foo_bar = 1;
+				  optional string fooBar = 2;
+				} }`,
+			warning: `test.proto:4:3: field Foo.fooBar: default JSON name "fooBar" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"message Blah { message Foo {\n" +
-				"  optional string foo_bar = 1;\n" +
-				"  optional string fooBar = 2;\n" +
-				"} }\n",
-			warning: "test.proto:4:3: field Foo.fooBar: default JSON name \"fooBar\" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				message Blah { message Foo {
+				  optional string foo_bar = 1;
+				  optional string fooBar = 2;
+				} }`,
+			warning: `test.proto:4:3: field Foo.fooBar: default JSON name "fooBar" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3`,
 		},
 		// enum values
 		{
-			source: "syntax = \"proto2\";\n" +
-				"enum Foo {\n" +
-				"  true = 0;\n" +
-				"  TRUE = 1;\n" +
-				"}\n",
-			warning: "test.proto:4:3: enum value Foo.TRUE: camel-case name (with optional enum name prefix removed) \"True\" conflicts with camel-case name of enum value true, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				enum Foo {
+				  true = 0;
+				  TRUE = 1;
+				}`,
+			warning: `test.proto:4:3: enum value Foo.TRUE: camel-case name (with optional enum name prefix removed) "True" conflicts with camel-case name of enum value true, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"enum Foo {\n" +
-				"  fooBar_Baz = 0;\n" +
-				"  _FOO__BAR_BAZ = 1;\n" +
-				"}\n",
-			warning: "test.proto:4:3: enum value Foo._FOO__BAR_BAZ: camel-case name (with optional enum name prefix removed) \"BarBaz\" conflicts with camel-case name of enum value fooBar_Baz, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				enum Foo {
+				  fooBar_Baz = 0;
+				  _FOO__BAR_BAZ = 1;
+				}`,
+			warning: `test.proto:4:3: enum value Foo._FOO__BAR_BAZ: camel-case name (with optional enum name prefix removed) "BarBaz" conflicts with camel-case name of enum value fooBar_Baz, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"enum Foo {\n" +
-				"  fooBar_Baz = 0;\n" +
-				"  FOO__BAR__BAZ__ = 1;\n" +
-				"}\n",
-			warning: "test.proto:4:3: enum value Foo.FOO__BAR__BAZ__: camel-case name (with optional enum name prefix removed) \"BarBaz\" conflicts with camel-case name of enum value fooBar_Baz, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				enum Foo {
+				  fooBar_Baz = 0;
+				  FOO__BAR__BAZ__ = 1;
+				}`,
+			warning: `test.proto:4:3: enum value Foo.FOO__BAR__BAZ__: camel-case name (with optional enum name prefix removed) "BarBaz" conflicts with camel-case name of enum value fooBar_Baz, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"enum Foo {\n" +
-				"  fooBarBaz = 0;\n" +
-				"  _FOO__BAR_BAZ = 1;\n" +
-				"}\n",
+			source: `
+				syntax = "proto2";
+				enum Foo {
+				  fooBarBaz = 0;
+				  _FOO__BAR_BAZ = 1;
+				}`,
 			warning: "",
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"enum Foo {\n" +
-				"  option allow_alias = true;\n" +
-				"  Bar_Baz = 0;\n" +
-				"  _BAR_BAZ_ = 0;\n" +
-				"  FOO_BAR_BAZ = 0;\n" +
-				"  foobar_baz = 0;\n" +
-				"}\n",
+			source: `
+				syntax = "proto2";
+				enum Foo {
+				  option allow_alias = true;
+				  Bar_Baz = 0;
+				  _BAR_BAZ_ = 0;
+				  FOO_BAR_BAZ = 0;
+				  foobar_baz = 0;
+				}`,
 			warning: "",
 		},
 		// in nested message
 		{
-			source: "syntax = \"proto2\";\n" +
-				"message Blah { enum Foo {\n" +
-				"  true = 0;\n" +
-				"  TRUE = 1;\n" +
-				"} }\n",
-			warning: "test.proto:4:3: enum value Foo.TRUE: camel-case name (with optional enum name prefix removed) \"True\" conflicts with camel-case name of enum value true, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				message Blah { enum Foo {
+				  true = 0;
+				  TRUE = 1;
+				} }`,
+			warning: `test.proto:4:3: enum value Foo.TRUE: camel-case name (with optional enum name prefix removed) "True" conflicts with camel-case name of enum value true, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"message Blah { enum Foo {\n" +
-				"  fooBar_Baz = 0;\n" +
-				"  _FOO__BAR_BAZ = 1;\n" +
-				"} }\n",
-			warning: "test.proto:4:3: enum value Foo._FOO__BAR_BAZ: camel-case name (with optional enum name prefix removed) \"BarBaz\" conflicts with camel-case name of enum value fooBar_Baz, defined at test.proto:3:3",
+			source: `
+				syntax = "proto2";
+				message Blah { enum Foo {
+				  fooBar_Baz = 0;
+				  _FOO__BAR_BAZ = 1;
+				} }`,
+			warning: `test.proto:4:3: enum value Foo._FOO__BAR_BAZ: camel-case name (with optional enum name prefix removed) "BarBaz" conflicts with camel-case name of enum value fooBar_Baz, defined at test.proto:3:3`,
 		},
 		{
-			source: "syntax = \"proto2\";\n" +
-				"message Blah { enum Foo {\n" +
-				"  option allow_alias = true;\n" +
-				"  Bar_Baz = 0;\n" +
-				"  _BAR_BAZ_ = 0;\n" +
-				"  FOO_BAR_BAZ = 0;\n" +
-				"  foobar_baz = 0;\n" +
-				"} }\n",
+			source: `
+				syntax = "proto2";
+				message Blah { enum Foo {
+				  option allow_alias = true;
+				  Bar_Baz = 0;
+				  _BAR_BAZ_ = 0;
+				  FOO_BAR_BAZ = 0;
+				  foobar_baz = 0;
+				} }`,
 			warning: "",
 		},
 	}
