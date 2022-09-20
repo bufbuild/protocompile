@@ -140,122 +140,6 @@ func resolveElement(f File, fqn protoreflect.FullName, publicImportsOnly bool, c
 	return nil, nil
 }
 
-func (r *result) toDescriptor(fqn string, d proto.Message) protoreflect.Descriptor {
-	if ret := r.descriptors[d]; ret != nil {
-		// don't bother searching for parent if we don't need it...
-		return ret
-	}
-
-	parent, index := r.findParent(fqn)
-	switch d := d.(type) {
-	case *descriptorpb.DescriptorProto:
-		return r.asMessageDescriptor(d, r, parent, index, fqn)
-	case *descriptorpb.FieldDescriptorProto:
-		return r.asFieldDescriptor(d, r, parent, index, fqn)
-	case *descriptorpb.OneofDescriptorProto:
-		return r.asOneOfDescriptor(d, r, parent.(*msgDescriptor), index, fqn)
-	case *descriptorpb.EnumDescriptorProto:
-		return r.asEnumDescriptor(d, r, parent, index, fqn)
-	case *descriptorpb.EnumValueDescriptorProto:
-		return r.asEnumValueDescriptor(d, r, parent.(*enumDescriptor), index, fqn)
-	case *descriptorpb.ServiceDescriptorProto:
-		return r.asServiceDescriptor(d, r, index, fqn)
-	case *descriptorpb.MethodDescriptorProto:
-		return r.asMethodDescriptor(d, r, parent.(*svcDescriptor), index, fqn)
-	default:
-		// WTF? panic?
-		return nil
-	}
-}
-
-func (r *result) findParent(fqn string) (protoreflect.Descriptor, int) {
-	names := strings.Split(strings.TrimPrefix(fqn, r.prefix), ".")
-	if len(names) == 1 {
-		for i, en := range r.FileDescriptorProto().EnumType {
-			if en.GetName() == names[0] {
-				return r, i
-			}
-			for j, env := range en.Value {
-				if env.GetName() == names[0] {
-					return r.asEnumDescriptor(en, r, r, i, r.prefix+en.GetName()), j
-				}
-			}
-		}
-		for i, ext := range r.FileDescriptorProto().Extension {
-			if ext.GetName() == names[0] {
-				return r, i
-			}
-		}
-	}
-	for i, svc := range r.FileDescriptorProto().Service {
-		if svc.GetName() == names[0] {
-			if len(names) == 1 {
-				return r, i
-			} else {
-				if len(names) != 2 {
-					return nil, 0
-				}
-				sd := r.asServiceDescriptor(svc, r, i, r.prefix+svc.GetName())
-				for j, mtd := range svc.Method {
-					if mtd.GetName() == names[1] {
-						return sd, j
-					}
-				}
-			}
-		}
-	}
-	for i, msg := range r.FileDescriptorProto().MessageType {
-		if msg.GetName() == names[0] {
-			if len(names) == 1 {
-				return r, i
-			}
-			md := r.asMessageDescriptor(msg, r, r, i, r.prefix+msg.GetName())
-			return r.findParentInMessage(md, names[1:])
-		}
-	}
-	return nil, 0
-}
-
-func (r *result) findParentInMessage(msg *msgDescriptor, names []string) (protoreflect.Descriptor, int) {
-	if len(names) == 1 {
-		for i, en := range msg.proto.EnumType {
-			if en.GetName() == names[0] {
-				return msg, i
-			}
-			for j, env := range en.Value {
-				if env.GetName() == names[0] {
-					return r.asEnumDescriptor(en, msg.file, msg, i, msg.fqn+"."+en.GetName()), j
-				}
-			}
-		}
-		for i, ext := range msg.proto.Extension {
-			if ext.GetName() == names[0] {
-				return msg, i
-			}
-		}
-		for i, fld := range msg.proto.Field {
-			if fld.GetName() == names[0] {
-				return msg, i
-			}
-		}
-		for i, ood := range msg.proto.OneofDecl {
-			if ood.GetName() == names[0] {
-				return msg, i
-			}
-		}
-	}
-	for i, nested := range msg.proto.NestedType {
-		if nested.GetName() == names[0] {
-			if len(names) == 1 {
-				return msg, i
-			}
-			md := r.asMessageDescriptor(nested, msg.file, msg, i, msg.fqn+"."+nested.GetName())
-			return r.findParentInMessage(md, names[1:])
-		}
-	}
-	return nil, 0
-}
-
 func descriptorTypeWithArticle(d protoreflect.Descriptor) string {
 	switch d := d.(type) {
 	case protoreflect.MessageDescriptor:
@@ -284,7 +168,19 @@ func descriptorTypeWithArticle(d protoreflect.Descriptor) string {
 }
 
 func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error {
+	// first create the full descriptor hierarchy
 	fd := r.FileDescriptorProto()
+	prefix := ""
+	if fd.GetPackage() != "" {
+		prefix = fd.GetPackage() + "."
+	}
+	r.imports = r.createImports()
+	r.messages = r.createMessages(prefix, r, fd.MessageType)
+	r.enums = r.createEnums(prefix, r, fd.EnumType)
+	r.extensions = r.createExtensions(prefix, r, fd.Extension)
+	r.services = r.createServices(prefix, fd.Service)
+
+	// then resolve symbol references
 	scopes := []scope{fileScope(r)}
 	if fd.Options != nil {
 		if err := r.resolveOptions(handler, "file", protoreflect.FullName(fd.GetName()), fd.Options.UninterpretedOption, scopes); err != nil {
@@ -292,22 +188,23 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 		}
 	}
 
-	err := walk.DescriptorProtosEnterAndExit(fd,
-		func(fqn protoreflect.FullName, d proto.Message) error {
+	return walk.DescriptorsEnterAndExit(r,
+		func(d protoreflect.Descriptor) error {
+			fqn := d.FullName()
 			switch d := d.(type) {
-			case *descriptorpb.DescriptorProto:
+			case *msgDescriptor:
 				// Strangely, when protoc resolves extension names, it uses the *enclosing* scope
 				// instead of the message's scope. So if the message contains an extension named "i",
 				// an option cannot refer to it as simply "i" but must qualify it (at a minimum "Msg.i").
 				// So we don't add this messages scope to our scopes slice until *after* we do options.
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, "message", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, "message", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
 				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
 				// walk only visits descriptors, so we need to loop over extension ranges ourselves
-				for _, er := range d.ExtensionRange {
+				for _, er := range d.proto.ExtensionRange {
 					if er.Options != nil {
 						erName := protoreflect.FullName(fmt.Sprintf("%s:%d-%d", fqn, er.GetStart(), er.GetEnd()-1))
 						if err := r.resolveOptions(handler, "extension range", erName, er.Options.UninterpretedOption, scopes); err != nil {
@@ -315,98 +212,79 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 						}
 					}
 				}
-			case *descriptorpb.FieldDescriptorProto:
-				elemType := "field"
-				if d.GetExtendee() != "" {
-					elemType = "extension"
-				}
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, elemType, fqn, d.Options.UninterpretedOption, scopes); err != nil {
+			case *extTypeDescriptor:
+				elemType := "extension"
+				if d.field.proto.Options != nil {
+					if err := r.resolveOptions(handler, elemType, fqn, d.field.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
-				if err := r.resolveFieldTypes(handler, s, fqn, d, scopes); err != nil {
+				if err := resolveFieldTypes(d.field, handler, s, scopes); err != nil {
 					return err
 				}
-				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.GetExtendee()) {
+				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.field.proto.GetExtendee()) {
 					file := r.FileNode()
-					node := r.FieldNode(d).FieldExtendee()
+					node := r.FieldNode(d.field.proto).FieldExtendee()
 					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "extend blocks in proto3 can only be used to define custom options"); err != nil {
 						return err
 					}
 				}
-			case *descriptorpb.OneofDescriptorProto:
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, "one-of", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+			case *fldDescriptor:
+				elemType := "field"
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, elemType, fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
-			case *descriptorpb.EnumDescriptorProto:
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, "enum", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+				if err := resolveFieldTypes(d, handler, s, scopes); err != nil {
+					return err
+				}
+			case *oneofDescriptor:
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, "oneof", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
-			case *descriptorpb.EnumValueDescriptorProto:
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, "enum value", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+			case *enumDescriptor:
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, "enum", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
-			case *descriptorpb.ServiceDescriptorProto:
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, "service", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+			case *enValDescriptor:
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, "enum value", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
+						return err
+					}
+				}
+			case *svcDescriptor:
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, "service", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
 				// not a message, but same scoping rules for nested elements as if it were
 				scopes = append(scopes, messageScope(r, fqn)) // push new scope on entry
-			case *descriptorpb.MethodDescriptorProto:
-				if d.Options != nil {
-					if err := r.resolveOptions(handler, "method", fqn, d.Options.UninterpretedOption, scopes); err != nil {
+			case *mtdDescriptor:
+				if d.proto.Options != nil {
+					if err := r.resolveOptions(handler, "method", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
-				if err := r.resolveMethodTypes(handler, fqn, d, scopes); err != nil {
+				if err := resolveMethodTypes(d, handler, scopes); err != nil {
 					return err
 				}
 			}
 			return nil
 		},
-		func(fqn protoreflect.FullName, d proto.Message) error {
+		func(d protoreflect.Descriptor) error {
 			switch d.(type) {
-			case *descriptorpb.DescriptorProto, *descriptorpb.ServiceDescriptorProto:
+			case protoreflect.MessageDescriptor, protoreflect.ServiceDescriptor:
 				// pop message scope on exit
 				scopes = scopes[:len(scopes)-1]
 			}
 			return nil
 		})
-
-	if err == nil {
-		// Because references can by cyclical (for example: message A can have
-		// a field of type B and message B can have a field of type A), we can't
-		// resolve all descriptors up-front in a straight-forward way. So we
-		// instead resolve and cache them "just in time", so that order does not
-		// matter.
-		//
-		// But lazy construction is not thread-safe: we now need to proactively
-		// make sure they are all created so that no subsequent operation from some
-		// other goroutine triggers it (which could result in unsafe concurrent
-		// access and data races).
-		_ = walk.Descriptors(r, func(d protoreflect.Descriptor) error {
-			switch d := d.(type) {
-			case protoreflect.FieldDescriptor:
-				d.Message()
-				d.Enum()
-				d.ContainingMessage()
-			case protoreflect.MethodDescriptor:
-				d.Input()
-				d.Output()
-			}
-			return nil
-		})
-	}
-	return err
 }
 
 var allowedProto3Extendees = map[string]struct{}{
@@ -430,14 +308,14 @@ func allowedProto3Extendee(n string) bool {
 	return ok
 }
 
-func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn protoreflect.FullName, fld *descriptorpb.FieldDescriptorProto, scopes []scope) error {
+func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, scopes []scope) error {
+	r := f.file
+	fld := f.proto
 	file := r.FileNode()
 	node := r.FieldNode(fld)
-	elemType := "field"
-	scope := fmt.Sprintf("field %s", fqn)
+	scope := fmt.Sprintf("field %s", f.fqn)
 	if fld.GetExtendee() != "" {
-		elemType = "extension"
-		scope = fmt.Sprintf("extension %s", fqn)
+		scope := fmt.Sprintf("extension %s", f.fqn)
 		dsc := r.resolve(fld.GetExtendee(), false, scopes)
 		if dsc == nil {
 			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()).Start(), "unknown extendee type %s", fld.GetExtendee())
@@ -449,6 +327,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		if !ok {
 			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()).Start(), "extendee is invalid: %s is %s, not a message", dsc.FullName(), descriptorTypeWithArticle(dsc))
 		}
+		f.extendee = extd
 		fld.Extendee = proto.String("." + string(dsc.FullName()))
 		// make sure the tag number is in range
 		found := false
@@ -470,12 +349,10 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 				return err
 			}
 		}
-	}
-
-	if fld.Options != nil {
-		if err := r.resolveOptions(handler, elemType, fqn, fld.Options.UninterpretedOption, scopes); err != nil {
-			return err
-		}
+	} else if f.proto.OneofIndex != nil {
+		parent := f.parent.(protoreflect.MessageDescriptor)
+		index := int(f.proto.GetOneofIndex())
+		f.oneof = parent.Oneofs().Get(index)
 	}
 
 	if fld.GetTypeName() == "" {
@@ -503,7 +380,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 				// need to validate that it's not an illegal reference. To be valid, the field
 				// must be repeated and the entry type must be nested in the same enclosing
 				// message as the field.
-				isValid = dsc.FullName() == fqn && fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
+				isValid = dsc.FullName() == f.FullName() && fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
 			}
 			if !isValid {
 				return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: %s is a synthetic map entry and may not be referenced explicitly", scope, dsc.FullName())
@@ -514,6 +391,7 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		if fld.Type == nil {
 			fld.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
 		}
+		f.msgType = dsc
 	case protoreflect.EnumDescriptor:
 		proto3 := r.Syntax() == protoreflect.Proto3
 		enumIsProto3 := dsc.ParentFile().Syntax() == protoreflect.Proto3
@@ -524,14 +402,17 @@ func (r *result) resolveFieldTypes(handler *reporter.Handler, s *Symbols, fqn pr
 		fld.TypeName = proto.String("." + string(dsc.FullName()))
 		// the type was tentatively unset, but now we know it's actually an enum
 		fld.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
+		f.enumType = dsc
 	default:
 		return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: invalid type: %s is %s, not a message or enum", scope, dsc.FullName(), descriptorTypeWithArticle(dsc))
 	}
 	return nil
 }
 
-func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.FullName, mtd *descriptorpb.MethodDescriptorProto, scopes []scope) error {
-	scope := fmt.Sprintf("method %s", fqn)
+func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []scope) error {
+	scope := fmt.Sprintf("method %s", m.fqn)
+	r := m.file
+	mtd := m.proto
 	file := r.FileNode()
 	node := r.MethodNode(mtd)
 	dsc := r.resolve(mtd.GetInputType(), false, scopes)
@@ -543,12 +424,13 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 		if err := handler.HandleErrorf(file.NodeInfo(node.GetInputType()).Start(), "%s: unknown request type %s; resolved to %s which is not defined; consider using a leading dot", scope, mtd.GetInputType(), dsc.FullName()); err != nil {
 			return err
 		}
-	} else if _, ok := dsc.(protoreflect.MessageDescriptor); !ok {
+	} else if msg, ok := dsc.(protoreflect.MessageDescriptor); !ok {
 		if err := handler.HandleErrorf(file.NodeInfo(node.GetInputType()).Start(), "%s: invalid request type: %s is %s, not a message", scope, dsc.FullName(), descriptorTypeWithArticle(dsc)); err != nil {
 			return err
 		}
 	} else {
 		mtd.InputType = proto.String("." + string(dsc.FullName()))
+		m.inputType = msg
 	}
 
 	// TODO: make input and output type resolution more DRY
@@ -558,15 +440,16 @@ func (r *result) resolveMethodTypes(handler *reporter.Handler, fqn protoreflect.
 			return err
 		}
 	} else if isSentinelDescriptor(dsc) {
-		if err := handler.HandleErrorf(file.NodeInfo(node.GetInputType()).Start(), "%s: unknown response type %s; resolved to %s which is not defined; consider using a leading dot", scope, mtd.GetOutputType(), dsc.FullName()); err != nil {
+		if err := handler.HandleErrorf(file.NodeInfo(node.GetOutputType()).Start(), "%s: unknown response type %s; resolved to %s which is not defined; consider using a leading dot", scope, mtd.GetOutputType(), dsc.FullName()); err != nil {
 			return err
 		}
-	} else if _, ok := dsc.(protoreflect.MessageDescriptor); !ok {
+	} else if msg, ok := dsc.(protoreflect.MessageDescriptor); !ok {
 		if err := handler.HandleErrorf(file.NodeInfo(node.GetOutputType()).Start(), "%s: invalid response type: %s is %s, not a message", scope, dsc.FullName(), descriptorTypeWithArticle(dsc)); err != nil {
 			return err
 		}
 	} else {
 		mtd.OutputType = proto.String("." + string(dsc.FullName()))
+		m.outputType = msg
 	}
 
 	return nil

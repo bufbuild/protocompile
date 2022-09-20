@@ -17,7 +17,6 @@ package linker
 import (
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -63,8 +62,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	r := &result{
 		Result:               parsed,
 		deps:                 dependencies,
-		descriptors:          map[proto.Message]protoreflect.Descriptor{},
-		descriptorPool:       map[string]proto.Message{},
+		descriptors:          map[string]protoreflect.Descriptor{},
 		usedImports:          map[string]struct{}{},
 		prefix:               prefix,
 		optionQualifiedNames: map[ast.IdentValueNode]string{},
@@ -73,7 +71,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	// First, we put all symbols into a single pool, which lets us ensure there
 	// are no duplicate symbols and will also let us resolve and revise all type
 	// references in next step.
-	if err := symbols.importResult(r, true, false, handler); err != nil {
+	if err := symbols.importResult(r, false, handler); err != nil {
 		return nil, err
 	}
 
@@ -133,6 +131,12 @@ type Result interface {
 	// could incorrectly report imports as unused if the only symbol used were a
 	// custom option.
 	CheckForUnusedImports(handler *reporter.Handler)
+	// PopulateSourceCodeInfo is used to populate source code info for the file
+	// descriptor. This step requires that the underlying descriptor proto have
+	// its `source_code_info` field populated. This is typically a post-process
+	// step separate from linking, because computing source code info requires
+	// interpreting options (which is done after linking).
+	PopulateSourceCodeInfo()
 
 	// CanonicalProto returns the file descriptor proto in a form that
 	// will be serialized in a canonical way. The "canonical" way matches
