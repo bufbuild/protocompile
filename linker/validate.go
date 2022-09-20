@@ -192,7 +192,7 @@ func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCus
 				// Since proto2 did not originally have default JSON names, we report conflicts involving
 				// default names as just warnings.
 				if r.Syntax() != protoreflect.Proto3 && (!custom || !existing.custom) {
-					handler.HandleWarning(pos, conflictErr.Underlying())
+					handler.HandleWarning(pos, conflictErr.Unwrap())
 				} else if err := handler.HandleError(conflictErr); err != nil {
 					return err
 				}
