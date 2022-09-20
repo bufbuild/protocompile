@@ -378,7 +378,17 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 				// need to validate that it's not an illegal reference. To be valid, the field
 				// must be repeated and the entry type must be nested in the same enclosing
 				// message as the field.
-				isValid = dsc.FullName() == f.FullName() && fld.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
+				isValid = isValidMap(f, dsc)
+				if isValid && f.index > 0 {
+					// also make sure there are no earlier fields that are valid for this map entry
+					flds := f.Parent().(protoreflect.MessageDescriptor).Fields()
+					for i := 0; i < f.index; i++ {
+						if isValidMap(flds.Get(i), dsc) {
+							isValid = false
+							break
+						}
+					}
+				}
 			}
 			if !isValid {
 				return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: %s is a synthetic map entry and may not be referenced explicitly", scope, dsc.FullName())
@@ -405,6 +415,13 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 		return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: invalid type: %s is %s, not a message or enum", scope, dsc.FullName(), descriptorTypeWithArticle(dsc))
 	}
 	return nil
+}
+
+func isValidMap(mapField protoreflect.FieldDescriptor, mapEntry protoreflect.MessageDescriptor) bool {
+	return !mapField.IsExtension() &&
+		mapEntry.Parent() == mapField.ContainingMessage() &&
+		mapField.Cardinality() == protoreflect.Repeated &&
+		string(mapEntry.Name()) == internal.InitCap(internal.JSONName(string(mapField.Name())))+"Entry"
 }
 
 func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []scope) error {
