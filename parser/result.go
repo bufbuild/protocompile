@@ -718,9 +718,6 @@ func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto)
 				for _, fd := range msgd.NestedType {
 					allNames[fd.GetName()] = struct{}{}
 				}
-				for _, n := range msgd.ReservedName {
-					allNames[n] = struct{}{}
-				}
 			}
 
 			// Compute a name for the synthetic oneof. This uses the same
