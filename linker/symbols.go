@@ -35,7 +35,7 @@ import (
 //
 // This type is thread-safe.
 type Symbols struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	files   map[protoreflect.FileDescriptor]struct{}
 	symbols map[protoreflect.FullName]symbolEntry
 	exts    map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos
@@ -44,6 +44,7 @@ type Symbols struct {
 type symbolEntry struct {
 	pos         ast.SourcePos
 	isEnumValue bool
+	isPackage   bool
 }
 
 // Import populates the symbol table with all symbols/elements and extension
@@ -61,28 +62,35 @@ func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handl
 		fd = f.FileDescriptor
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	_, alreadyImported := s.files[fd]
+	s.mu.RUnlock()
 
-	return s.importLocked(fd, handler)
-}
-
-func (s *Symbols) importLocked(fd protoreflect.FileDescriptor, handler *reporter.Handler) error {
-	if _, ok := s.files[fd]; ok {
-		// already imported
+	if alreadyImported {
 		return nil
 	}
 
-	// make sure deps are imported
 	for i := 0; i < fd.Imports().Len(); i++ {
-		imp := fd.Imports().Get(i)
-		if err := s.importLocked(imp.FileDescriptor, handler); err != nil {
+		if err := s.Import(fd.Imports().Get(i).FileDescriptor, handler); err != nil {
 			return err
 		}
 	}
 
 	if res, ok := fd.(*result); ok {
-		return s.importResultLocked(res, true, handler)
+		return s.importResult(res, true, handler)
+	}
+
+	if err := s.importPackages(sourcePositionForPackage(fd), fd.Package(), handler); err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.files[fd]; ok {
+		// have to double-check if it's already imported, in case
+		// it was added after above read-locked check
+		return nil
 	}
 
 	// first pass: check for conflicts
@@ -99,19 +107,65 @@ func (s *Symbols) importLocked(fd protoreflect.FileDescriptor, handler *reporter
 	return nil
 }
 
+func (s *Symbols) importPackages(pos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) error {
+	parts := strings.Split(string(pkg), ".")
+	for i := 1; i < len(parts); i++ {
+		parts[i] = parts[i-1] + "." + parts[i]
+	}
+
+	for _, p := range parts {
+		if err := s.importPackage(pos, protoreflect.FullName(p), handler); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Symbols) importPackage(pos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) error {
+	s.mu.RLock()
+	existing, ok := s.symbols[pkg]
+	s.mu.RUnlock()
+	if ok && existing.isPackage {
+		// package already exists
+		return nil
+	} else if ok {
+		return reportSymbolCollision(pos, pkg, false, existing, handler)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// have to double-check in case it was added while upgrading to write lock
+	existing, ok = s.symbols[pkg]
+	if ok && existing.isPackage {
+		// package already exists
+		return nil
+	} else if ok {
+		return reportSymbolCollision(pos, pkg, false, existing, handler)
+	}
+	if s.symbols == nil {
+		s.symbols = map[protoreflect.FullName]symbolEntry{}
+	}
+	s.symbols[pkg] = symbolEntry{pos: pos, isPackage: true}
+	return nil
+}
+
 func reportSymbolCollision(pos ast.SourcePos, fqn protoreflect.FullName, additionIsEnumVal bool, existing symbolEntry, handler *reporter.Handler) error {
 	// because of weird scoping for enum values, provide more context in error message
 	// if this conflict is with an enum value
-	var suffix string
+	var isPkg, suffix string
 	if additionIsEnumVal || existing.isEnumValue {
 		suffix = "; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum"
+	}
+	if existing.isPackage {
+		isPkg = " as a package"
 	}
 	orig := existing.pos
 	conflict := pos
 	if posLess(conflict, orig) {
 		orig, conflict = conflict, orig
 	}
-	return handler.HandleErrorf(conflict, "symbol %q already defined at %v%s", fqn, orig, suffix)
+	return handler.HandleErrorf(conflict, "symbol %q already defined%s at %v%s", fqn, isPkg, orig, suffix)
 }
 
 func posLess(a, b ast.SourcePos) bool {
@@ -150,6 +204,18 @@ func (s *Symbols) checkFileLocked(f protoreflect.FileDescriptor, handler *report
 
 		return nil
 	})
+}
+
+func sourcePositionForPackage(fd protoreflect.FileDescriptor) ast.SourcePos {
+	loc := fd.SourceLocations().ByPath([]int32{internal.FilePackageTag})
+	if isZeroLoc(loc) {
+		return ast.UnknownPos(fd.Path())
+	}
+	return ast.SourcePos{
+		Filename: fd.Path(),
+		Line:     loc.StartLine,
+		Col:      loc.StartColumn,
+	}
 }
 
 func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
@@ -236,6 +302,10 @@ func (s *Symbols) commitFileLocked(f protoreflect.FileDescriptor) {
 }
 
 func (s *Symbols) importResult(r *result, checkExts bool, handler *reporter.Handler) error {
+	if err := s.importPackages(packageNameStart(r), r.Package(), handler); err != nil {
+		return err
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -312,6 +382,17 @@ func (s *Symbols) checkResultLocked(r *result, checkExts bool, handler *reporter
 
 		return nil
 	})
+}
+
+func packageNameStart(r *result) ast.SourcePos {
+	if node, ok := r.FileNode().(*ast.FileNode); ok {
+		for _, decl := range node.Decls {
+			if pkgNode, ok := decl.(*ast.PackageNode); ok {
+				return r.FileNode().NodeInfo(pkgNode.Name).Start()
+			}
+		}
+	}
+	return ast.UnknownPos(r.Path())
 }
 
 func nameStart(file ast.FileDeclNode, n ast.Node) ast.SourcePos {
