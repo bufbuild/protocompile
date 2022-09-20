@@ -1233,6 +1233,9 @@ protodefault:
 	case 4:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
+			lex := protolex.(*protoLex)
+			protoVAL.file = ast.NewFileNode(lex.info, nil, nil, lex.eof)
+			lex.res = protoVAL.file
 		}
 	case 5:
 		protoDollar = protoS[protopt-2 : protopt+1]

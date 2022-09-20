@@ -156,6 +156,9 @@ file : syntax {
 		lex.res = $$
 	}
 	| {
+		lex := protolex.(*protoLex)
+		$$ = ast.NewFileNode(lex.info, nil, nil, lex.eof)
+		lex.res = $$
 	}
 
 fileDecls : fileDecls fileDecl {

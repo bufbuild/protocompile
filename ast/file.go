@@ -41,7 +41,7 @@ type FileNode struct {
 	EOF *RuneNode
 }
 
-// NewFileElement creates a new *FileNode. The syntax parameter is optional. If it
+// NewFileNode creates a new *FileNode. The syntax parameter is optional. If it
 // is absent, it means the file had no syntax declaration.
 //
 // This function panics if the concrete type of any element of decls is not
@@ -82,16 +82,10 @@ func NewFileNode(info *FileInfo, syntax *SyntaxNode, decls []FileElement, eof To
 	}
 }
 
+// NewEmptyFileNode returns an empty AST for a file with the given name.
 func NewEmptyFileNode(filename string) *FileNode {
 	fileInfo := NewFileInfo(filename, []byte{})
-	fileInfo.AddToken(0, 0) // EOF
-
-	return &FileNode{
-		compositeNode: compositeNode{
-			children: []Node{NewNoSourceNode(filename)},
-		},
-		fileInfo: fileInfo,
-	}
+	return NewFileNode(fileInfo, nil, nil, fileInfo.AddToken(0, 0))
 }
 
 func (f *FileNode) Name() string {
