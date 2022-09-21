@@ -1846,3 +1846,9 @@ func (r *result) FindDescriptorByName(name protoreflect.FullName) protoreflect.D
 func (r *result) importsAsFiles() Files {
 	return r.deps
 }
+
+func (r *result) hasSource() bool {
+	n := r.FileNode()
+	_, ok := n.(*ast.FileNode)
+	return ok
+}
