@@ -40,8 +40,8 @@ func (e SymbolEntry) IsPackage() bool {
 	return e.isPackage
 }
 
-func (s *Symbols) ImportPackages(pos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) (*PackageSymbols, error) {
-	return s.importPackages(pos, pkg, handler)
+func (s *Symbols) ImportPackages(pkgPos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) (*PackageSymbols, error) {
+	return s.importPackages(pkgPos, pkg, handler)
 }
 func (s *Symbols) GetPackage(pkg protoreflect.FullName) *PackageSymbols {
 	return s.getPackage(pkg)

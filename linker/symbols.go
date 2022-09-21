@@ -147,7 +147,7 @@ func (s *packageSymbols) importFile(fd protoreflect.FileDescriptor, handler *rep
 	return true, nil
 }
 
-func (s *Symbols) importPackages(pos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) (*packageSymbols, error) {
+func (s *Symbols) importPackages(pkgPos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) (*packageSymbols, error) {
 	if pkg == "" {
 		return &s.pkgTrie, nil
 	}
@@ -160,7 +160,7 @@ func (s *Symbols) importPackages(pos ast.SourcePos, pkg protoreflect.FullName, h
 	cur := &s.pkgTrie
 	for _, p := range parts {
 		var err error
-		cur, err = cur.importPackage(pos, protoreflect.FullName(p), handler)
+		cur, err = cur.importPackage(pkgPos, protoreflect.FullName(p), handler)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +172,7 @@ func (s *Symbols) importPackages(pos ast.SourcePos, pkg protoreflect.FullName, h
 	return cur, nil
 }
 
-func (s *packageSymbols) importPackage(pos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) (*packageSymbols, error) {
+func (s *packageSymbols) importPackage(pkgPos ast.SourcePos, pkg protoreflect.FullName, handler *reporter.Handler) (*packageSymbols, error) {
 	s.mu.RLock()
 	existing, ok := s.symbols[pkg]
 	var child *packageSymbols
@@ -185,7 +185,7 @@ func (s *packageSymbols) importPackage(pos ast.SourcePos, pkg protoreflect.FullN
 		// package already exists
 		return child, nil
 	} else if ok {
-		return nil, reportSymbolCollision(pos, pkg, false, existing, handler)
+		return nil, reportSymbolCollision(pkgPos, pkg, false, existing, handler)
 	}
 
 	s.mu.Lock()
@@ -196,12 +196,12 @@ func (s *packageSymbols) importPackage(pos ast.SourcePos, pkg protoreflect.FullN
 		// package already exists
 		return s.children[pkg], nil
 	} else if ok {
-		return nil, reportSymbolCollision(pos, pkg, false, existing, handler)
+		return nil, reportSymbolCollision(pkgPos, pkg, false, existing, handler)
 	}
 	if s.symbols == nil {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
-	s.symbols[pkg] = symbolEntry{pos: pos, isPackage: true}
+	s.symbols[pkg] = symbolEntry{pos: pkgPos, isPackage: true}
 	child = &packageSymbols{}
 	if s.children == nil {
 		s.children = map[protoreflect.FullName]*packageSymbols{}
