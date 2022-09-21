@@ -50,7 +50,7 @@ func TestErrorReporting(t *testing.T) {
 			return nil
 		}
 	}
-	fail := errors.New("failure!")
+	fail := errors.New("failure")
 	failFastReporter := func(count *int) reporter.ErrorReporter {
 		return func(err reporter.ErrorWithPos) error {
 			fmt.Printf("* error reported: %v\n", err)

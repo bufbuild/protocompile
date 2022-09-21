@@ -302,9 +302,8 @@ func (a *FieldReferenceNode) Value() string {
 			return string(a.Open.Rune) + string(a.URLPrefix.AsIdentifier()) + string(a.Slash.Rune) + string(a.Name.AsIdentifier()) + string(a.Close.Rune)
 		}
 		return string(a.Open.Rune) + string(a.Name.AsIdentifier()) + string(a.Close.Rune)
-	} else {
-		return string(a.Name.AsIdentifier())
 	}
+	return string(a.Name.AsIdentifier())
 }
 
 // CompactOptionsNode represents a compact options declaration, as used with
