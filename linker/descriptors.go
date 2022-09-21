@@ -1173,17 +1173,15 @@ func (f *fldDescriptor) HasJSONName() bool {
 func (f *fldDescriptor) JSONName() string {
 	if f.IsExtension() {
 		return f.TextName()
-	} else {
-		return f.proto.GetJsonName()
 	}
+	return f.proto.GetJsonName()
 }
 
 func (f *fldDescriptor) TextName() string {
 	if f.IsExtension() {
 		return fmt.Sprintf("[%s]", f.FullName())
-	} else {
-		return string(f.Name())
 	}
+	return string(f.Name())
 }
 
 func (f *fldDescriptor) HasPresence() bool {

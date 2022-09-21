@@ -16,8 +16,8 @@ package protocompile
 
 import (
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry" // link in packages that include the standard protos included with protoc
-	_ "google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	_ "google.golang.org/protobuf/types/known/anypb" // link in packages that include the standard protos included with protoc.
 	_ "google.golang.org/protobuf/types/known/apipb"
 	_ "google.golang.org/protobuf/types/known/durationpb"
 	_ "google.golang.org/protobuf/types/known/emptypb"

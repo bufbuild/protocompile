@@ -147,11 +147,11 @@ func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index
 	opts := fd.GetOptions()
 	if opts != nil {
 		if len(opts.UninterpretedOption) > 0 {
-			if remain, err := interp.interpretOptions(fd.GetName(), fd, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(fd.GetName(), fd, opts, opts.UninterpretedOption)
+			if err != nil {
 				return nil, err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 	}
 	for _, md := range fd.GetMessageType() {
@@ -176,21 +176,21 @@ func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index
 		fqn := prefix + sd.GetName()
 		opts := sd.GetOptions()
 		if len(opts.GetUninterpretedOption()) > 0 {
-			if remain, err := interp.interpretOptions(fqn, sd, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(fqn, sd, opts, opts.UninterpretedOption)
+			if err != nil {
 				return nil, err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 		for _, mtd := range sd.GetMethod() {
 			mtdFqn := fqn + "." + mtd.GetName()
 			opts := mtd.GetOptions()
 			if len(opts.GetUninterpretedOption()) > 0 {
-				if remain, err := interp.interpretOptions(mtdFqn, mtd, opts, opts.UninterpretedOption); err != nil {
+				remain, err := interp.interpretOptions(mtdFqn, mtd, opts, opts.UninterpretedOption)
+				if err != nil {
 					return nil, err
-				} else {
-					opts.UninterpretedOption = remain
 				}
+				opts.UninterpretedOption = remain
 			}
 		}
 	}
@@ -205,11 +205,11 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 	opts := md.GetOptions()
 	if opts != nil {
 		if len(opts.UninterpretedOption) > 0 {
-			if remain, err := interp.interpretOptions(fqn, md, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(fqn, md, opts, opts.UninterpretedOption)
+			if err != nil {
 				return err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 	}
 	for _, fld := range md.GetField() {
@@ -222,11 +222,11 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 		oodFqn := fqn + "." + ood.GetName()
 		opts := ood.GetOptions()
 		if len(opts.GetUninterpretedOption()) > 0 {
-			if remain, err := interp.interpretOptions(oodFqn, ood, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(oodFqn, ood, opts, opts.UninterpretedOption)
+			if err != nil {
 				return err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 	}
 	for _, fld := range md.GetExtension() {
@@ -239,11 +239,11 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 		erFqn := fmt.Sprintf("%s.%d-%d", fqn, er.GetStart(), er.GetEnd())
 		opts := er.GetOptions()
 		if len(opts.GetUninterpretedOption()) > 0 {
-			if remain, err := interp.interpretOptions(erFqn, er, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(erFqn, er, opts, opts.UninterpretedOption)
+			if err != nil {
 				return err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 	}
 	for _, nmd := range md.GetNestedType() {
@@ -391,22 +391,22 @@ func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.Enu
 	opts := ed.GetOptions()
 	if opts != nil {
 		if len(opts.UninterpretedOption) > 0 {
-			if remain, err := interp.interpretOptions(fqn, ed, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(fqn, ed, opts, opts.UninterpretedOption)
+			if err != nil {
 				return err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 	}
 	for _, evd := range ed.GetValue() {
 		evdFqn := fqn + "." + evd.GetName()
 		opts := evd.GetOptions()
 		if len(opts.GetUninterpretedOption()) > 0 {
-			if remain, err := interp.interpretOptions(evdFqn, evd, opts, opts.UninterpretedOption); err != nil {
+			remain, err := interp.interpretOptions(evdFqn, evd, opts, opts.UninterpretedOption)
+			if err != nil {
 				return err
-			} else {
-				opts.UninterpretedOption = remain
 			}
+			opts.UninterpretedOption = remain
 		}
 	}
 	return nil
@@ -1151,9 +1151,8 @@ func (l listValue) IsValid() bool {
 func fieldName(fld protoreflect.FieldDescriptor) string {
 	if fld.IsExtension() {
 		return fmt.Sprintf("(%s)", fld.FullName())
-	} else {
-		return string(fld.Name())
 	}
+	return string(fld.Name())
 }
 
 func valueKind(val interface{}) string {
@@ -1367,9 +1366,8 @@ func descriptorType(m proto.Message) string {
 	case *descriptorpb.FieldDescriptorProto:
 		if m.GetExtendee() == "" {
 			return "field"
-		} else {
-			return "extension"
 		}
+		return "extension"
 	case *descriptorpb.EnumDescriptorProto:
 		return "enum"
 	case *descriptorpb.EnumValueDescriptorProto:
