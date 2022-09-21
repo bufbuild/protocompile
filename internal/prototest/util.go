@@ -51,11 +51,9 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 	}
 	checked[act.Path()] = struct{}{}
 
-	expProto := findFileInSet(expSet, act.Path())
+	expProto := findFileInSet(t, expSet, act.Path())
 	actProto := protoutil.ProtoFromFileDescriptor(act)
-	if diff := cmp.Diff(expProto, actProto, protocmp.Transform()); diff != "" {
-		t.Errorf("file descriptor mismatch (-want +got):\n%v", diff)
-	}
+	AssertMessagesEqual(t, expProto, actProto)
 
 	if recursive {
 		for i := 0; i < act.Imports().Len(); i++ {
@@ -64,7 +62,8 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 	}
 }
 
-func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptorpb.FileDescriptorProto {
+func findFileInSet(t *testing.T, fps *descriptorpb.FileDescriptorSet, name string) *descriptorpb.FileDescriptorProto {
+	t.Helper()
 	files := fps.File
 	for _, fd := range files {
 		if fd.GetName() == name {
