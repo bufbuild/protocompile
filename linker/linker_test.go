@@ -1521,6 +1521,156 @@ func TestLinkerSymbolCollisionNoSource(t *testing.T) {
 	assert.EqualError(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
 }
 
+func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
+	t.Parallel()
+	baseFileDescProto := &descriptorpb.FileDescriptorProto{
+		Name: proto.String("foo.proto"),
+		MessageType: []*descriptorpb.DescriptorProto{
+			{
+				Name: proto.String("Foo"),
+				NestedType: []*descriptorpb.DescriptorProto{
+					{
+						Name: proto.String("BarEntry"),
+						Options: &descriptorpb.MessageOptions{
+							MapEntry: proto.Bool(true),
+						},
+						Field: []*descriptorpb.FieldDescriptorProto{
+							{
+								Name:     proto.String("key"),
+								Number:   proto.Int32(1),
+								Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+								Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+								JsonName: proto.String("key"),
+							},
+							{
+								Name:     proto.String("value"),
+								Number:   proto.Int32(2),
+								Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+								Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+								JsonName: proto.String("value"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	testCases := map[string]struct {
+		fields      []*descriptorpb.FieldDescriptorProto
+		others      []*descriptorpb.DescriptorProto
+		expectedErr string
+	}{
+		"success_valid_map": {
+			fields: []*descriptorpb.FieldDescriptorProto{
+				{
+					Name:     proto.String("bar"),
+					Number:   proto.Int32(1),
+					Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+					TypeName: proto.String(".Foo.BarEntry"),
+					JsonName: proto.String("bar"),
+				},
+			},
+		},
+		"failure_not_repeated": {
+			fields: []*descriptorpb.FieldDescriptorProto{
+				{
+					Name:     proto.String("bar"),
+					Number:   proto.Int32(1),
+					Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+					TypeName: proto.String(".Foo.BarEntry"),
+					JsonName: proto.String("bar"),
+				},
+			},
+			expectedErr: `foo.proto: field Foo.bar: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly`,
+		},
+		"failure_name_mismatch": {
+			fields: []*descriptorpb.FieldDescriptorProto{
+				{
+					Name:     proto.String("baz"),
+					Number:   proto.Int32(1),
+					Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+					TypeName: proto.String(".Foo.BarEntry"),
+					JsonName: proto.String("baz"),
+				},
+			},
+			expectedErr: `foo.proto: field Foo.baz: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly`,
+		},
+		"failure_multiple_refs": {
+			fields: []*descriptorpb.FieldDescriptorProto{
+				{
+					Name:     proto.String("bar"),
+					Number:   proto.Int32(1),
+					Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+					TypeName: proto.String(".Foo.BarEntry"),
+					JsonName: proto.String("bar"),
+				},
+				{
+					Name:     proto.String("Bar"),
+					Number:   proto.Int32(1),
+					Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+					TypeName: proto.String(".Foo.BarEntry"),
+					JsonName: proto.String("Bar"),
+				},
+			},
+			expectedErr: `foo.proto: field Foo.Bar: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly`,
+		},
+		"failure_wrong_message": {
+			others: []*descriptorpb.DescriptorProto{
+				{
+					Name: proto.String("Bar"),
+					Field: []*descriptorpb.FieldDescriptorProto{
+						{
+							Name:     proto.String("bar"),
+							Number:   proto.Int32(1),
+							Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+							Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+							TypeName: proto.String(".Foo.BarEntry"),
+							JsonName: proto.String("bar"),
+						},
+					},
+				},
+			},
+			expectedErr: `foo.proto: field Bar.bar: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly`,
+		},
+	}
+	for name, tc := range testCases {
+		expectedPrefix := "success_"
+		if tc.expectedErr != "" {
+			expectedPrefix = "failure_"
+		}
+		assert.Truef(t, strings.HasPrefix(name, expectedPrefix), "expected test name %q to have %q prefix", name, expectedPrefix)
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			fdProto := proto.Clone(baseFileDescProto).(*descriptorpb.FileDescriptorProto)
+			fdProto.MessageType[0].Field = tc.fields
+			fdProto.MessageType = append(fdProto.MessageType, tc.others...)
+
+			resolver := protocompile.ResolverFunc(func(s string) (protocompile.SearchResult, error) {
+				if s == "foo.proto" {
+					return protocompile.SearchResult{Proto: fdProto}, nil
+				}
+				return protocompile.SearchResult{}, protoregistry.NotFound
+			})
+			compiler := &protocompile.Compiler{
+				Resolver: resolver,
+			}
+			_, err := compiler.Compile(context.Background(), "foo.proto")
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestSyntheticOneOfCollisions(t *testing.T) {
 	t.Parallel()
 	input := map[string]string{
