@@ -71,7 +71,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	// First, we put all symbols into a single pool, which lets us ensure there
 	// are no duplicate symbols and will also let us resolve and revise all type
 	// references in next step.
-	if _, err := symbols.importResult(r, handler); err != nil {
+	if err := symbols.importResult(r, handler); err != nil {
 		return nil, err
 	}
 

@@ -343,7 +343,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 			}
 		} else {
 			// make sure tag is not a duplicate
-			if err := s.addExtension(dsc.FullName(), tag, file.NodeInfo(node.FieldTag()).Start(), handler); err != nil {
+			if err := s.addExtension(dsc.ParentFile().Package(), dsc.FullName(), tag, file.NodeInfo(node.FieldTag()).Start(), handler); err != nil {
 				return err
 			}
 		}
