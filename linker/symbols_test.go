@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package linker_test
+package linker
 
 import (
-	"context"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,48 +24,47 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
-	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
-	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestSymbolsPackages(t *testing.T) {
 	t.Parallel()
 
-	var s linker.Symbols
+	var s Symbols
 	// default/nameless package is the root
-	assert.Equal(t, s.Packages(), s.GetPackage(""))
+	assert.Equal(t, &s.pkgTrie, s.getPackage(""))
 
 	h := reporter.NewHandler(nil)
 	pos := ast.UnknownPos("foo.proto")
-	pkg, err := s.ImportPackages(pos, "build.buf.foo.bar.baz", h)
+	pkg, err := s.importPackages(pos, "build.buf.foo.bar.baz", h)
 	require.NoError(t, err)
 	// new package has nothing in it
-	assert.Empty(t, pkg.Children())
-	assert.Empty(t, pkg.Files())
-	assert.Empty(t, pkg.Symbols())
-	assert.Empty(t, pkg.Extensions())
+	assert.Empty(t, pkg.children)
+	assert.Empty(t, pkg.files)
+	assert.Empty(t, pkg.symbols)
+	assert.Empty(t, pkg.exts)
 
-	assert.Equal(t, pkg, s.GetPackage("build.buf.foo.bar.baz"))
+	assert.Equal(t, pkg, s.getPackage("build.buf.foo.bar.baz"))
 
 	// verify that trie was created correctly:
 	//   each package has just one entry, which is its immediate sub-package
-	cur := s.Packages()
+	cur := &s.pkgTrie
 	pkgNames := []protoreflect.FullName{"build", "build.buf", "build.buf.foo", "build.buf.foo.bar", "build.buf.foo.bar.baz"}
 	for _, pkgName := range pkgNames {
-		assert.Equal(t, 1, len(cur.Children()))
-		assert.Empty(t, cur.Files())
-		assert.Equal(t, 1, len(cur.Symbols()))
-		assert.Empty(t, cur.Extensions())
+		assert.Equal(t, 1, len(cur.children))
+		assert.Empty(t, cur.files)
+		assert.Equal(t, 1, len(cur.symbols))
+		assert.Empty(t, cur.exts)
 
-		entry, ok := cur.Symbols()[pkgName]
+		entry, ok := cur.symbols[pkgName]
 		require.True(t, ok)
-		assert.Equal(t, pos, entry.Pos())
-		assert.False(t, entry.IsEnumValue())
-		assert.True(t, entry.IsPackage())
+		assert.Equal(t, pos, entry.pos)
+		assert.False(t, entry.isEnumValue)
+		assert.True(t, entry.isPackage)
 
-		next, ok := cur.Children()[pkgName]
+		next, ok := cur.children[pkgName]
 		require.True(t, ok)
 		require.NotNil(t, next)
 
@@ -77,7 +76,7 @@ func TestSymbolsPackages(t *testing.T) {
 func TestSymbolsImport(t *testing.T) {
 	t.Parallel()
 
-	testProto := `
+	fileAsResult := parseAndLink(t, `
 		syntax = "proto2";
 		import "google/protobuf/descriptor.proto";
 		package foo.bar;
@@ -93,18 +92,8 @@ func TestSymbolsImport(t *testing.T) {
 		extend google.protobuf.FieldOptions {
 			optional bytes xtra = 20000;
 		}
-		`
-	compiler := protocompile.Compiler{
-		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-			Accessor: protocompile.SourceAccessorFromMap(map[string]string{
-				"test.proto": testProto,
-			}),
-		}),
-	}
-	files, err := compiler.Compile(context.Background(), "test.proto")
-	require.NoError(t, err)
+		`)
 
-	fileAsResult := files[0].(linker.Result)
 	fileAsNonResult, err := protodesc.NewFile(fileAsResult.FileDescriptorProto(), protoregistry.GlobalFiles)
 	require.NoError(t, err)
 
@@ -119,14 +108,14 @@ func TestSymbolsImport(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			var s linker.Symbols
+			var s Symbols
 			err := s.Import(fd, h)
 			require.NoError(t, err)
 
 			// verify contents of s
 
-			pkg := s.GetPackage("foo.bar")
-			syms := pkg.Symbols()
+			pkg := s.getPackage("foo.bar")
+			syms := pkg.symbols
 			assert.Equal(t, 6, len(syms))
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.Foo"))
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.Foo.bar"))
@@ -134,15 +123,15 @@ func TestSymbolsImport(t *testing.T) {
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.f"))
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.s"))
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.xtra"))
-			exts := pkg.Extensions()
+			exts := pkg.exts
 			assert.Equal(t, 1, len(exts))
 			extNums := exts["foo.bar.Foo"]
 			assert.Equal(t, 2, len(extNums))
 			assert.Contains(t, extNums, protoreflect.FieldNumber(10))
 			assert.Contains(t, extNums, protoreflect.FieldNumber(11))
 
-			pkg = s.GetPackage("google.protobuf")
-			exts = pkg.Extensions()
+			pkg = s.getPackage("google.protobuf")
+			exts = pkg.exts
 			assert.Equal(t, 1, len(exts))
 			extNums = exts["google.protobuf.FieldOptions"]
 			assert.Equal(t, 1, len(extNums))
@@ -154,11 +143,11 @@ func TestSymbolsImport(t *testing.T) {
 func TestSymbolExtensions(t *testing.T) {
 	t.Parallel()
 
-	var s linker.Symbols
+	var s Symbols
 
-	_, err := s.ImportPackages(ast.UnknownPos("foo.proto"), "foo.bar", reporter.NewHandler(nil))
+	_, err := s.importPackages(ast.UnknownPos("foo.proto"), "foo.bar", reporter.NewHandler(nil))
 	require.NoError(t, err)
-	_, err = s.ImportPackages(ast.UnknownPos("google/protobuf/descriptor.proto"), "google.protobuf", reporter.NewHandler(nil))
+	_, err = s.importPackages(ast.UnknownPos("google/protobuf/descriptor.proto"), "google.protobuf", reporter.NewHandler(nil))
 	require.NoError(t, err)
 
 	addExt := func(pkg, extendee protoreflect.FullName, num protoreflect.FieldNumber) error {
@@ -193,16 +182,16 @@ func TestSymbolExtensions(t *testing.T) {
 
 	// verify contents of s
 
-	pkg := s.GetPackage("foo.bar")
-	exts := pkg.Extensions()
+	pkg := s.getPackage("foo.bar")
+	exts := pkg.exts
 	assert.Equal(t, 1, len(exts))
 	extNums := exts["foo.bar.Foo"]
 	assert.Equal(t, 2, len(extNums))
 	assert.Contains(t, extNums, protoreflect.FieldNumber(11))
 	assert.Contains(t, extNums, protoreflect.FieldNumber(12))
 
-	pkg = s.GetPackage("google.protobuf")
-	exts = pkg.Extensions()
+	pkg = s.getPackage("google.protobuf")
+	exts = pkg.exts
 	assert.Equal(t, 3, len(exts))
 	assert.Contains(t, exts, protoreflect.FullName("google.protobuf.FileOptions"))
 	assert.Contains(t, exts, protoreflect.FullName("google.protobuf.FieldOptions"))
@@ -216,4 +205,20 @@ func TestSymbolExtensions(t *testing.T) {
 	extNums = exts["google.protobuf.MessageOptions"]
 	assert.Equal(t, 1, len(extNums))
 	assert.Contains(t, extNums, protoreflect.FieldNumber(10101))
+}
+
+func parseAndLink(t *testing.T, contents string) Result {
+	h := reporter.NewHandler(nil)
+	fileAst, err := parser.Parse("test.proto", strings.NewReader(contents), h)
+	require.NoError(t, err)
+	parseResult, err := parser.ResultFromAST(fileAst, true, h)
+	require.NoError(t, err)
+	dep, err := protoregistry.GlobalFiles.FindFileByPath("google/protobuf/descriptor.proto")
+	require.NoError(t, err)
+	depAsFile, err := NewFileRecursive(dep)
+	require.NoError(t, err)
+	depFiles := Files{depAsFile}
+	linkResult, err := Link(parseResult, depFiles, nil, h)
+	require.NoError(t, err)
+	return linkResult
 }
