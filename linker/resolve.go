@@ -213,9 +213,8 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 					}
 				}
 			case *extTypeDescriptor:
-				elemType := "extension"
 				if d.field.proto.Options != nil {
-					if err := r.resolveOptions(handler, elemType, fqn, d.field.proto.Options.UninterpretedOption, scopes); err != nil {
+					if err := r.resolveOptions(handler, "extension", fqn, d.field.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}
@@ -230,9 +229,8 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 					}
 				}
 			case *fldDescriptor:
-				elemType := "field"
 				if d.proto.Options != nil {
-					if err := r.resolveOptions(handler, elemType, fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
+					if err := r.resolveOptions(handler, "field", fqn, d.proto.Options.UninterpretedOption, scopes); err != nil {
 						return err
 					}
 				}

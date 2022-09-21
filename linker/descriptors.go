@@ -356,7 +356,7 @@ func (r *result) createImports() fileImports {
 		imps[int(publicIndex)].IsPublic = true
 	}
 	for _, weakIndex := range fd.WeakDependency {
-		imps[int(weakIndex)].IsPublic = true
+		imps[int(weakIndex)].IsWeak = true
 	}
 	return fileImports{files: imps}
 }
@@ -871,7 +871,7 @@ func (e enumRanges) Get(i int) [2]protoreflect.EnumNumber {
 
 func (e enumRanges) Has(n protoreflect.EnumNumber) bool {
 	for _, r := range e.ranges {
-		if r[0] <= n && r[0] >= n {
+		if r[0] <= n && r[1] >= n {
 			return true
 		}
 	}
@@ -1510,23 +1510,10 @@ func (f *fldDescriptor) ContainingMessage() protoreflect.MessageDescriptor {
 }
 
 func (f *fldDescriptor) Enum() protoreflect.EnumDescriptor {
-	if f.proto.GetType() != descriptorpb.FieldDescriptorProto_TYPE_ENUM {
-		return nil
-	}
-	if f.enumType == nil {
-		f.enumType = f.file.ResolveEnumType(protoreflect.FullName(f.proto.GetTypeName()))
-	}
 	return f.enumType
 }
 
 func (f *fldDescriptor) Message() protoreflect.MessageDescriptor {
-	if f.proto.GetType() != descriptorpb.FieldDescriptorProto_TYPE_MESSAGE &&
-		f.proto.GetType() != descriptorpb.FieldDescriptorProto_TYPE_GROUP {
-		return nil
-	}
-	if f.msgType == nil {
-		f.msgType = f.file.ResolveMessageType(protoreflect.FullName(f.proto.GetTypeName()))
-	}
 	return f.msgType
 }
 
@@ -1830,16 +1817,10 @@ func (m *mtdDescriptor) Options() protoreflect.ProtoMessage {
 }
 
 func (m *mtdDescriptor) Input() protoreflect.MessageDescriptor {
-	if m.inputType == nil {
-		m.inputType = m.file.ResolveMessageType(protoreflect.FullName(m.proto.GetInputType()))
-	}
 	return m.inputType
 }
 
 func (m *mtdDescriptor) Output() protoreflect.MessageDescriptor {
-	if m.outputType == nil {
-		m.outputType = m.file.ResolveMessageType(protoreflect.FullName(m.proto.GetOutputType()))
-	}
 	return m.outputType
 }
 
