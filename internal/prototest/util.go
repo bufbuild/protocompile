@@ -74,15 +74,11 @@ func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptor
 	return nil
 }
 
-func CompareMessages(t *testing.T, path string, exp, act protoreflect.Message, opts ...cmp.Option) {
+func AssertMessagesEqual(t *testing.T, exp, act proto.Message, opts ...cmp.Option) {
 	t.Helper()
-	if exp.Descriptor() != act.Descriptor() {
-		t.Errorf("%s: descriptors do not match: exp %#v, actual %#v", path, exp.Descriptor(), act.Descriptor())
-		return
-	}
 	cmpOpts := []cmp.Option{protocmp.Transform()}
 	cmpOpts = append(cmpOpts, opts...)
-	if diff := cmp.Diff(exp.Interface(), act.Interface(), cmpOpts...); diff != "" {
+	if diff := cmp.Diff(exp, act, cmpOpts...); diff != "" {
 		t.Errorf("message mismatch (-want +got):\n%v", diff)
 	}
 }

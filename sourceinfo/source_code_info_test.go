@@ -16,7 +16,6 @@ package sourceinfo_test
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -71,7 +70,7 @@ func TestSourceCodeInfo(t *testing.T) {
 			continue
 		}
 		fixupProtocSourceCodeInfo(expectedFd.SourceCodeInfo)
-		prototest.CompareMessages(t, fmt.Sprintf("%q.source_code_info", actualFd.GetName()), expectedFd.SourceCodeInfo.ProtoReflect(), actualFd.SourceCodeInfo.ProtoReflect())
+		prototest.AssertMessagesEqual(t, expectedFd.SourceCodeInfo, actualFd.SourceCodeInfo)
 	}
 }
 
