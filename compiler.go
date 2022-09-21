@@ -482,6 +482,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
 		parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)
+		file.PopulateSourceCodeInfo()
 	}
 	return file, nil
 }

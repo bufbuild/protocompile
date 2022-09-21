@@ -82,7 +82,7 @@ func (s *Symbols) importLocked(fd protoreflect.FileDescriptor, handler *reporter
 	}
 
 	if res, ok := fd.(*result); ok {
-		return s.importResultLocked(res, false, true, handler)
+		return s.importResultLocked(res, true, handler)
 	}
 
 	// first pass: check for conflicts
@@ -235,7 +235,7 @@ func (s *Symbols) commitFileLocked(f protoreflect.FileDescriptor) {
 	s.files[f] = struct{}{}
 }
 
-func (s *Symbols) importResult(r *result, populatePool bool, checkExts bool, handler *reporter.Handler) error {
+func (s *Symbols) importResult(r *result, checkExts bool, handler *reporter.Handler) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -244,10 +244,10 @@ func (s *Symbols) importResult(r *result, populatePool bool, checkExts bool, han
 		return nil
 	}
 
-	return s.importResultLocked(r, populatePool, checkExts, handler)
+	return s.importResultLocked(r, checkExts, handler)
 }
 
-func (s *Symbols) importResultLocked(r *result, populatePool bool, checkExts bool, handler *reporter.Handler) error {
+func (s *Symbols) importResultLocked(r *result, checkExts bool, handler *reporter.Handler) error {
 	// first pass: check for conflicts
 	if err := s.checkResultLocked(r, checkExts, handler); err != nil {
 		return err
@@ -257,7 +257,7 @@ func (s *Symbols) importResultLocked(r *result, populatePool bool, checkExts boo
 	}
 
 	// second pass: commit all symbols
-	s.commitResultLocked(r, populatePool)
+	s.commitResultLocked(r)
 
 	return nil
 }
@@ -336,7 +336,7 @@ func nameStart(file ast.FileDeclNode, n ast.Node) ast.SourcePos {
 	}
 }
 
-func (s *Symbols) commitResultLocked(r *result, populatePool bool) {
+func (s *Symbols) commitResultLocked(r *result) {
 	if s.symbols == nil {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
@@ -347,9 +347,6 @@ func (s *Symbols) commitResultLocked(r *result, populatePool bool) {
 		pos := nameStart(r.FileNode(), r.Node(d))
 		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
 		s.symbols[fqn] = symbolEntry{pos: pos, isEnumValue: isEnumValue}
-		if populatePool {
-			r.descriptorPool[string(fqn)] = d
-		}
 		return nil
 	})
 
