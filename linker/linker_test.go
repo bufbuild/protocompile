@@ -1626,9 +1626,6 @@ func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			if strings.HasPrefix(name, "fails") {
-			}
-
 			fdProto := proto.Clone(baseFileDescProto).(*descriptorpb.FileDescriptorProto)
 			fdProto.MessageType[0].Field = tc.fields
 			fdProto.MessageType = append(fdProto.MessageType, tc.others...)
