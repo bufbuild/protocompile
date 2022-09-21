@@ -208,6 +208,7 @@ func TestSymbolExtensions(t *testing.T) {
 }
 
 func parseAndLink(t *testing.T, contents string) Result {
+	t.Helper()
 	h := reporter.NewHandler(nil)
 	fileAst, err := parser.Parse("test.proto", strings.NewReader(contents), h)
 	require.NoError(t, err)
