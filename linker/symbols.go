@@ -116,7 +116,7 @@ func (s *Symbols) importFileWithExtensions(pkg *packageSymbols, fd protoreflect.
 		}
 		pos := sourcePositionForNumber(fld)
 		extendee := fld.ContainingMessage()
-		if err := s.addExtension(extendee.ParentFile().Package(), extendee.FullName(), fld.Number(), pos, handler); err != nil {
+		if err := s.AddExtension(extendee.ParentFile().Package(), extendee.FullName(), fld.Number(), pos, handler); err != nil {
 			return err
 		}
 		return nil
@@ -396,7 +396,7 @@ func (s *Symbols) importResultWithExtensions(pkg *packageSymbols, r *result, han
 		node := r.FieldNode(fd.FieldDescriptorProto())
 		pos := file.NodeInfo(node.FieldTag()).Start()
 		extendee := fd.ContainingMessage()
-		if err := s.addExtension(extendee.ParentFile().Package(), extendee.FullName(), fd.Number(), pos, handler); err != nil {
+		if err := s.AddExtension(extendee.ParentFile().Package(), extendee.FullName(), fd.Number(), pos, handler); err != nil {
 			return err
 		}
 
@@ -518,7 +518,7 @@ func (s *packageSymbols) commitResultLocked(r *result) {
 	s.files[r] = struct{}{}
 }
 
-func (s *Symbols) addExtension(pkg, extendee protoreflect.FullName, tag protoreflect.FieldNumber, pos ast.SourcePos, handler *reporter.Handler) error {
+func (s *Symbols) AddExtension(pkg, extendee protoreflect.FullName, tag protoreflect.FieldNumber, pos ast.SourcePos, handler *reporter.Handler) error {
 	if pkg != "" {
 		if !strings.HasPrefix(string(extendee), string(pkg)+".") {
 			return handler.HandleErrorf(pos, "could not register extension: extendee %q does not match package %q", extendee, pkg)
