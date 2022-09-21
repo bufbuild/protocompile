@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:revive
 package linker
+
+// NB: revive is disabled because it doesn't understand aliases for
+//     unexported types, so have several false positives in this file
 
 import (
 	"google.golang.org/protobuf/reflect/protoreflect"
