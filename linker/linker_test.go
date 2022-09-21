@@ -1340,6 +1340,20 @@ func TestLinkerValidation(t *testing.T) {
 					}`,
 			},
 		},
+		"failure_symbol_conflicts_with_package": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					enum baz { ZED = 0; }`,
+				"bar.proto": `
+					syntax = "proto3";
+					package foo.bar.baz;
+					message Empty { }`,
+			},
+			expectedErr: `foo.proto:3:6: symbol "foo.bar.baz" already defined as a package at bar.proto:2:9` +
+				` || bar.proto:2:9: symbol "foo.bar.baz" already defined at foo.proto:3:6`,
+		},
 	}
 
 	for name, tc := range testCases {
