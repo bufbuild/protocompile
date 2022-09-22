@@ -51,7 +51,7 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 	}
 	checked[act.Path()] = struct{}{}
 
-	expProto := findFileInSet(t, expSet, act.Path())
+	expProto := findFileInSet(expSet, act.Path())
 	actProto := protoutil.ProtoFromFileDescriptor(act)
 	AssertMessagesEqual(t, expProto, actProto)
 
@@ -62,8 +62,7 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 	}
 }
 
-func findFileInSet(t *testing.T, fps *descriptorpb.FileDescriptorSet, name string) *descriptorpb.FileDescriptorProto {
-	t.Helper()
+func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptorpb.FileDescriptorProto {
 	files := fps.File
 	for _, fd := range files {
 		if fd.GetName() == name {
