@@ -120,7 +120,7 @@ func (f *FileInfo) AddToken(offset, length int) Token {
 }
 
 // AddComment adds info about a comment to this file. Comments must first be
-// added as tokens via f.AddToken(). The given comment argument is the TokenInfo
+// added as tokens via f.AddToken(). The given comment argument is the Token
 // from that step. The given attributedTo argument indicates another token in the
 // file with which the comment is associated. If comment's offset is before that
 // of attributedTo, then this is a leading comment. Otherwise, it is a trailing
@@ -153,6 +153,76 @@ func (f *FileInfo) TokenInfo(t Token) NodeInfo {
 
 func (f *FileInfo) isDummyFile() bool {
 	return f.lines == nil
+}
+
+// FirstToken returns the first token in the file. It returns
+// TokenError if the file contains no tokens (e.g. it is empty
+// or contains only whitespace and comments).
+func (f *FileInfo) FirstToken() Token {
+	return f.tokenForward(0)
+}
+
+// NextToken returns the next token in the file that comes after
+// t. It returns TokenError if there is no next token (i.e. the
+// given t is the last token). It also returns TokenError if
+// the given t is invalid.
+func (f *FileInfo) NextToken(t Token) Token {
+	if t < 0 {
+		return TokenError
+	}
+	return f.tokenForward(t + 1)
+}
+
+func (f *FileInfo) tokenForward(t Token) Token {
+	end := Token(len(f.tokens))
+	for t < end {
+		if !f.isComment(t) {
+			return t
+		}
+		t++
+	}
+	return TokenError
+}
+
+// LastToken returns the last token in the file. It returns
+// TokenError if the file contains no tokens (e.g. it is empty
+// or contains only whitespace and comments).
+func (f *FileInfo) LastToken() Token {
+	return f.tokenBackward(Token(len(f.tokens)) - 1)
+}
+
+// PreviousToken returns the previous token in the file that comes
+// before t. It returns TokenError if there is no next token (i.e.
+// the given t is the first token). It also returns TokenError if
+// the given t is invalid.
+func (f *FileInfo) PreviousToken(t Token) Token {
+	if int(t) >= len(f.tokens) {
+		return TokenError
+	}
+	return f.tokenBackward(t - 1)
+}
+
+func (f *FileInfo) tokenBackward(t Token) Token {
+	for t >= 0 {
+		if !f.isComment(t) {
+			return t
+		}
+		t--
+	}
+	return TokenError
+}
+
+func (f *FileInfo) isComment(t Token) bool {
+	tok := f.tokens[t]
+	if tok.length < 2 {
+		return false
+	}
+	// see if token text starts with "//" or "/*"
+	if f.data[tok.offset] != '/' {
+		return false
+	}
+	c := f.data[tok.offset+1]
+	return c == '/' || c == '*'
 }
 
 func (f *FileInfo) SourcePos(offset int) SourcePos {
@@ -189,6 +259,10 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 
 // Token represents a single lexed token.
 type Token int
+
+// TokenError indicates an invalid token. It is returned from query
+// functions when no valid token satisfies the request.
+const TokenError = Token(-1)
 
 func (t Token) asTerminalNode() terminalNode {
 	return terminalNode(t)

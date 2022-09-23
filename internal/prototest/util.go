@@ -15,6 +15,7 @@
 package prototest
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -53,7 +54,7 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 
 	expProto := findFileInSet(expSet, act.Path())
 	actProto := protoutil.ProtoFromFileDescriptor(act)
-	AssertMessagesEqual(t, expProto, actProto)
+	AssertMessagesEqual(t, expProto, actProto, expProto.GetName())
 
 	if recursive {
 		for i := 0; i < act.Imports().Len(); i++ {
@@ -72,11 +73,27 @@ func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptor
 	return nil
 }
 
-func AssertMessagesEqual(t *testing.T, exp, act proto.Message, opts ...cmp.Option) {
+func AssertMessagesEqual(t *testing.T, exp, act proto.Message, msgAndArgs ...interface{}) {
+	t.Helper()
+	AssertMessagesEqualWithOptions(t, exp, act, nil, msgAndArgs...)
+}
+
+func AssertMessagesEqualWithOptions(t *testing.T, exp, act proto.Message, opts []cmp.Option, msgAndArgs ...interface{}) {
 	t.Helper()
 	cmpOpts := []cmp.Option{protocmp.Transform()}
 	cmpOpts = append(cmpOpts, opts...)
 	if diff := cmp.Diff(exp, act, cmpOpts...); diff != "" {
-		t.Errorf("message mismatch (-want +got):\n%v", diff)
+		var prefix string
+		if len(msgAndArgs) == 1 {
+			if msg, ok := msgAndArgs[0].(string); ok {
+				prefix = msg + ": "
+			} else {
+				prefix = fmt.Sprintf("%+v: ", msgAndArgs[0])
+			}
+		} else if len(msgAndArgs) > 1 {
+			prefix = fmt.Sprintf(msgAndArgs[0].(string)+": ", msgAndArgs[1:]...)
+		}
+
+		t.Errorf("%smessage mismatch (-want +got):\n%v", prefix, diff)
 	}
 }
