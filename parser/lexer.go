@@ -378,70 +378,19 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 		c := comments[0]
 		commentInfo := l.info.TokenInfo(c)
 		commentStart := commentInfo.Start().Line
-		if nStart > prevEnd && commentStart-prevEnd <= 1 {
-			// we may need to re-attribute the first comment to
-			// instead be previous node's trailing comment
-			groupEnd := 0
-			prevSingleLineStyle := strings.HasPrefix(commentInfo.RawText(), "//")
-			if commentStart == prevEnd || !prevSingleLineStyle {
-				groupEnd = 1
-			} else {
-				// merge adjacent single-line comments into one group
-				prevCommentLine := commentInfo.End().Line
-				for i := 1; i < len(comments); i++ {
-					c := comments[i]
-					commentInfo := l.info.TokenInfo(c)
-					detached := false
-					if !prevSingleLineStyle || commentInfo.Start().Line > prevCommentLine+1 {
-						// we've found a gap between comments, which means the
-						// previous comments were detached
-						detached = true
-					} else {
-						singleLineStyle := strings.HasPrefix(commentInfo.RawText(), "//")
-						if !singleLineStyle {
-							// we've found a switch from // comments to /*
-							// consider that a new group which means the
-							// previous comments were detached
-							detached = true
-						}
-						prevCommentLine = commentInfo.End().Line
-						prevSingleLineStyle = singleLineStyle
-					}
-					if detached {
-						groupEnd = i
-						break
-					}
-				}
-				if groupEnd == 0 {
-					// all comments belong to one group
-					groupEnd = len(comments)
-				}
-			}
+		if nStart > prevEnd && commentStart == prevEnd {
+			// Comment starts right after the previous token. If it's a
+			// line comment, we record that as a trailing comment.
+			//
+			// But if it's a block comment, it is only a trailing comment
+			// if there are multiple comments or if the block comment ends
+			// on a line before n.
+			canDonate := strings.HasPrefix(commentInfo.RawText(), "//") ||
+				len(comments) > 1 || commentInfo.End().Line < nStart
 
-			var commentEnd int
-			if groupEnd == 1 {
-				commentEnd = commentInfo.End().Line
-			} else {
-				c2 := comments[groupEnd-1]
-				c2info := l.info.TokenInfo(c2)
-				commentEnd = c2info.End().Line
-			}
-
-			info := l.info.NodeInfo(n)
-			nStart := info.Start().Line
-
-			isPunctuation := false
-			if rn, ok := n.(*ast.RuneNode); ok {
-				isPunctuation = rn.Rune != '.' && rn.Rune != '(' && rn.Rune != '['
-			}
-
-			if isPunctuation ||
-				len(comments) > groupEnd ||
-				(commentStart == prevEnd && nStart > commentEnd) ||
-				nStart-commentEnd > 1 {
-				// we can move the first group of comments to previous token
-				prevTrailingComments = comments[:groupEnd]
-				comments = comments[groupEnd:]
+			if canDonate {
+				prevTrailingComments = comments[:1]
+				comments = comments[1:]
 			}
 		}
 	}

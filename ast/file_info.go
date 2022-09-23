@@ -160,8 +160,9 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 		return f.lines[n] > offset
 	})
 
-	// If it weren't for tabs, we could trivially compute the column
-	// just based on offset and the starting offset of lineNumber :(
+	// If it weren't for tabs and multi-byte unicode characters, we
+	// could trivially compute the column just based on offset and the
+	// starting offset of lineNumber :(
 	// Wish this were more efficient... that would require also storing
 	// computed line+column information, which would triple the size of
 	// f's tokens slice...
@@ -170,7 +171,9 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 		if f.data[i] == '\t' {
 			nextTabStop := 8 - (col % 8)
 			col += nextTabStop
-		} else {
+		} else if (f.data[i] & 0b11000000) != 0b10000000 {
+			// we only increment for single byte runes (highest bit unset)
+			// and the first byte of a multi-byte rune (>1 high bits set)
 			col++
 		}
 	}
