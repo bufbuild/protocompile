@@ -17,6 +17,7 @@ package ast
 import (
 	"fmt"
 	"sort"
+	"unicode/utf8"
 )
 
 // FileInfo contains information about the contents of a source file, including
@@ -173,7 +174,7 @@ func (f *FileInfo) FirstToken() Token {
 // given t is the last token). It also returns TokenError if
 // the given t is invalid.
 func (f *FileInfo) NextToken(t Token) Token {
-	if t < 0 {
+	if t < 0 || int(t) >= len(f.tokens) {
 		return TokenError
 	}
 	return f.tokenForward(t + 1)
@@ -182,6 +183,10 @@ func (f *FileInfo) NextToken(t Token) Token {
 func (f *FileInfo) tokenForward(t Token) Token {
 	end := Token(len(f.tokens))
 	for t < end {
+		// Comments are not tokens in the exported API. But they
+		// do mingle with them inside of `f.tokens`, as a matter
+		// of convenience since they share the same needs for
+		// location book-keeping.
 		if !f.isComment(t) {
 			return t
 		}
@@ -202,7 +207,7 @@ func (f *FileInfo) LastToken() Token {
 // the given t is the first token). It also returns TokenError if
 // the given t is invalid.
 func (f *FileInfo) PreviousToken(t Token) Token {
-	if int(t) >= len(f.tokens) {
+	if t < 0 || int(t) >= len(f.tokens) {
 		return TokenError
 	}
 	return f.tokenBackward(t - 1)
@@ -210,6 +215,10 @@ func (f *FileInfo) PreviousToken(t Token) Token {
 
 func (f *FileInfo) tokenBackward(t Token) Token {
 	for t >= 0 {
+		// Comments are not tokens in the exported API. But they
+		// do mingle with them inside of `f.tokens`, as a matter
+		// of convenience since they share the same needs for
+		// location book-keeping.
 		if !f.isComment(t) {
 			return t
 		}
@@ -218,6 +227,8 @@ func (f *FileInfo) tokenBackward(t Token) Token {
 	return TokenError
 }
 
+// isComment is comment returns true if t actually refers to a
+// comment, not a real token.
 func (f *FileInfo) isComment(t Token) bool {
 	tok := f.tokens[t]
 	if tok.length < 2 {
@@ -247,9 +258,7 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 		if f.data[i] == '\t' {
 			nextTabStop := 8 - (col % 8)
 			col += nextTabStop
-		} else if (f.data[i] & 0b11000000) != 0b10000000 {
-			// we only increment for single byte runes (highest bit unset)
-			// and the first byte of a multi-byte rune (>1 high bits set)
+		} else if utf8.RuneStart(f.data[i]) {
 			col++
 		}
 	}

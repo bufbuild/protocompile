@@ -588,10 +588,6 @@ func attributeComments(prevInfo, info ast.NodeInfo) (t comments, l []comments) {
 	trail := prevInfo.TrailingComments()
 	lead := groupComments(info.LeadingComments())
 
-	if commentsContain(trail, lead, "This is the first detached comment for the syntax.\n") {
-		_ = true
-	}
-
 	if trail.Len() > 0 || len(lead) == 0 {
 		// previous token already has trailing comments or current token
 		// has no comments from which it may borrow
@@ -621,27 +617,6 @@ func attributeComments(prevInfo, info ast.NodeInfo) (t comments, l []comments) {
 	}
 
 	return trail, lead
-}
-
-func commentsContain(t comments, l []comments, s string) bool {
-	if doContains(t, s) {
-		return true
-	}
-	for _, c := range l {
-		if doContains(c, s) {
-			return true
-		}
-	}
-	return false
-}
-
-func doContains(c comments, s string) bool {
-	for i := 0; i < c.Len(); i++ {
-		if strings.Contains(c.Index(i).RawText(), s) {
-			return true
-		}
-	}
-	return false
 }
 
 func makeSpan(start, end ast.SourcePos) []int32 {
