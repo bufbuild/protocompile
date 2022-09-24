@@ -17,6 +17,7 @@ package ast
 import (
 	"fmt"
 	"sort"
+	"unicode/utf8"
 )
 
 // FileInfo contains information about the contents of a source file, including
@@ -120,7 +121,7 @@ func (f *FileInfo) AddToken(offset, length int) Token {
 }
 
 // AddComment adds info about a comment to this file. Comments must first be
-// added as tokens via f.AddToken(). The given comment argument is the TokenInfo
+// added as tokens via f.AddToken(). The given comment argument is the Token
 // from that step. The given attributedTo argument indicates another token in the
 // file with which the comment is associated. If comment's offset is before that
 // of attributedTo, then this is a leading comment. Otherwise, it is a trailing
@@ -143,10 +144,16 @@ func (f *FileInfo) AddComment(comment, attributedTo Token) Comment {
 	}
 }
 
+// NodeInfo returns details from the original source for the given AST node. If
+// the given n is not a node from the AST corresponding to f, the returned value
+// is undefined (and interacting it with may incur panics).
 func (f *FileInfo) NodeInfo(n Node) NodeInfo {
 	return NodeInfo{fileInfo: f, startIndex: int(n.Start()), endIndex: int(n.End())}
 }
 
+// TokenInfo returns details from the original source for the given token. If the
+// given t is not a leaf node in the AST corresponding to f, the returned value is
+// undefined (and interacting it with may incur panics).
 func (f *FileInfo) TokenInfo(t Token) NodeInfo {
 	return NodeInfo{fileInfo: f, startIndex: int(t), endIndex: int(t)}
 }
@@ -155,13 +162,94 @@ func (f *FileInfo) isDummyFile() bool {
 	return f.lines == nil
 }
 
+// FirstToken returns the first token in the file. It returns
+// TokenError if the file contains no tokens (e.g. it is empty
+// or contains only whitespace and comments).
+func (f *FileInfo) FirstToken() Token {
+	return f.tokenForward(0)
+}
+
+// NextToken returns the next token in the file that comes after
+// t. It returns TokenError if there is no next token (i.e. the
+// given t is the last token). It also returns TokenError if
+// the given t is invalid.
+func (f *FileInfo) NextToken(t Token) Token {
+	if t < 0 || int(t) >= len(f.tokens) {
+		return TokenError
+	}
+	return f.tokenForward(t + 1)
+}
+
+func (f *FileInfo) tokenForward(t Token) Token {
+	end := Token(len(f.tokens))
+	for t < end {
+		// Comments are not tokens in the exported API. But they
+		// do mingle with them inside of `f.tokens`, as a matter
+		// of convenience since they share the same needs for
+		// location book-keeping.
+		if !f.isComment(t) {
+			return t
+		}
+		t++
+	}
+	return TokenError
+}
+
+// LastToken returns the last token in the file. It returns
+// TokenError if the file contains no tokens (e.g. it is empty
+// or contains only whitespace and comments).
+func (f *FileInfo) LastToken() Token {
+	return f.tokenBackward(Token(len(f.tokens)) - 1)
+}
+
+// PreviousToken returns the previous token in the file that comes
+// before t. It returns TokenError if there is no next token (i.e.
+// the given t is the first token). It also returns TokenError if
+// the given t is invalid.
+func (f *FileInfo) PreviousToken(t Token) Token {
+	if t < 0 || int(t) >= len(f.tokens) {
+		return TokenError
+	}
+	return f.tokenBackward(t - 1)
+}
+
+func (f *FileInfo) tokenBackward(t Token) Token {
+	for t >= 0 {
+		// Comments are not tokens in the exported API. But they
+		// do mingle with them inside of `f.tokens`, as a matter
+		// of convenience since they share the same needs for
+		// location book-keeping.
+		if !f.isComment(t) {
+			return t
+		}
+		t--
+	}
+	return TokenError
+}
+
+// isComment is comment returns true if t actually refers to a
+// comment, not a real token.
+func (f *FileInfo) isComment(t Token) bool {
+	tok := f.tokens[t]
+	if tok.length < 2 {
+		return false
+	}
+	// see if token text starts with "//" or "/*"
+	if f.data[tok.offset] != '/' {
+		return false
+	}
+	c := f.data[tok.offset+1]
+	return c == '/' || c == '*'
+}
+
 func (f *FileInfo) SourcePos(offset int) SourcePos {
 	lineNumber := sort.Search(len(f.lines), func(n int) bool {
 		return f.lines[n] > offset
 	})
 
-	// If it weren't for tabs, we could trivially compute the column
-	// just based on offset and the starting offset of lineNumber :(
+	// If it weren't for tabs and multi-byte unicode characters, we
+	// could trivially compute the column just based on offset and the
+	// starting offset of lineNumber :(
 	// Wish this were more efficient... that would require also storing
 	// computed line+column information, which would triple the size of
 	// f's tokens slice...
@@ -170,7 +258,7 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 		if f.data[i] == '\t' {
 			nextTabStop := 8 - (col % 8)
 			col += nextTabStop
-		} else {
+		} else if utf8.RuneStart(f.data[i]) {
 			col++
 		}
 	}
@@ -187,16 +275,26 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 // Token represents a single lexed token.
 type Token int
 
+// TokenError indicates an invalid token. It is returned from query
+// functions when no valid token satisfies the request.
+const TokenError = Token(-1)
+
 func (t Token) asTerminalNode() terminalNode {
 	return terminalNode(t)
 }
 
-// NodeInfo represents the details for a node in the source file's AST.
+// NodeInfo represents the details for a node or token in the source file's AST.
+// It provides access to information about the node's location in the source
+// file. It also provides access to the original text in the source file (with
+// all the original formatting intact) and also provides access to surrounding
+// comments.
 type NodeInfo struct {
 	fileInfo             *FileInfo
 	startIndex, endIndex int
 }
 
+// Start returns the starting position of the element. This is the first
+// character of the node or token.
 func (n NodeInfo) Start() SourcePos {
 	if n.fileInfo.isDummyFile() {
 		return UnknownPos(n.fileInfo.name)
@@ -206,6 +304,11 @@ func (n NodeInfo) Start() SourcePos {
 	return n.fileInfo.SourcePos(tok.offset)
 }
 
+// End returns the ending position of the element, exclusive. This is the
+// location after the last character of the node or token. If n returns
+// the same position for Start() and End(), the element in source had a
+// length of zero (which should only happen for the special EOF token
+// that designates the end of the file).
 func (n NodeInfo) End() SourcePos {
 	if n.fileInfo.isDummyFile() {
 		return UnknownPos(n.fileInfo.name)
@@ -226,6 +329,11 @@ func (n NodeInfo) End() SourcePos {
 	return pos
 }
 
+// LeadingWhitespace returns any whitespace prior to the element. If there
+// were comments in between this element and the previous one, this will
+// return the whitespace between the last such comment in the element. If
+// there were no such comments, this returns the whitespace between the
+// previous element and the current one.
 func (n NodeInfo) LeadingWhitespace() string {
 	if n.fileInfo.isDummyFile() {
 		return ""
@@ -240,6 +348,9 @@ func (n NodeInfo) LeadingWhitespace() string {
 	return string(n.fileInfo.data[prevEnd:tok.offset])
 }
 
+// LeadingComments returns all comments in the source that exist between the
+// element and the previous element, except for any trailing comment on the
+// previous element.
 func (n NodeInfo) LeadingComments() Comments {
 	if n.fileInfo.isDummyFile() {
 		return Comments{}
@@ -272,6 +383,28 @@ func (n NodeInfo) LeadingComments() Comments {
 	}
 }
 
+// TrailingComments returns the trailing comment for the element, if any.
+// An element will have a trailing comment only if it is the last token
+// on a line and is followed by a comment on the same line. Typically, the
+// following comment is a line-style comment (starting with "//").
+//
+// If the following comment is a block-style comment that spans multiple
+// lines, and the next token is on the same line as the end of the comment,
+// the comment is NOT considered a trailing comment.
+//
+// Examples:
+//
+//	foo // this is a trailing comment for foo
+//
+//	bar /* this is a trailing comment for bar */
+//
+//	baz /* this is a trailing
+//	       comment for baz */
+//
+//	fizz /* this is NOT a trailing
+//	        comment for fizz because
+//	        its on the same line as the
+//	        following token buzz */       buzz
 func (n NodeInfo) TrailingComments() Comments {
 	if n.fileInfo.isDummyFile() {
 		return Comments{}
@@ -305,6 +438,10 @@ func (n NodeInfo) TrailingComments() Comments {
 	}
 }
 
+// RawText returns the actual text in the source file that corresponds to the
+// element. If the element is a node in the AST that encompasses multiple
+// tokens (like an entire declaration), the full text of all tokens is returned
+// including any interior whitespace and comments.
 func (n NodeInfo) RawText() string {
 	startTok := n.fileInfo.tokens[n.startIndex]
 	endTok := n.fileInfo.tokens[n.endIndex]
@@ -338,6 +475,7 @@ type Comments struct {
 	first, num int
 }
 
+// Len returns the number of comments in c.
 func (c Comments) Len() int {
 	return c.num
 }
@@ -353,7 +491,13 @@ func (c Comments) Index(i int) Comment {
 }
 
 // Comment represents a single comment in a source file. It indicates
-// the position of the comment and its contents.
+// the position of the comment and its contents. A single comment means
+// one line-style comment ("//" to end of line) or one block comment
+// ("/*" through "*/"). If a longer comment uses multiple line comments,
+// each line is considered to be a separate comment. For example:
+//
+//	// This is a single comment, and
+//	// this is a separate comment.
 type Comment struct {
 	fileInfo *FileInfo
 	index    int

@@ -88,6 +88,10 @@ func NewEmptyFileNode(filename string) *FileNode {
 	return NewFileNode(fileInfo, nil, nil, fileInfo.AddToken(0, 0))
 }
 
+func (f *FileNode) GetSyntax() Node {
+	return f.Syntax
+}
+
 func (f *FileNode) Name() string {
 	return f.fileInfo.Name()
 }
@@ -100,8 +104,20 @@ func (f *FileNode) TokenInfo(t Token) NodeInfo {
 	return f.fileInfo.TokenInfo(t)
 }
 
-func (f *FileNode) GetSyntax() Node {
-	return f.Syntax
+func (f *FileNode) FirstToken() Token {
+	return f.fileInfo.FirstToken()
+}
+
+func (f *FileNode) LastToken() Token {
+	return f.fileInfo.LastToken()
+}
+
+func (f *FileNode) NextToken(t Token) Token {
+	return f.fileInfo.NextToken(t)
+}
+
+func (f *FileNode) PreviousToken(t Token) Token {
+	return f.fileInfo.PreviousToken(t)
 }
 
 // FileElement is an interface implemented by all AST nodes that are

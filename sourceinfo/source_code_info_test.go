@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
@@ -39,15 +40,14 @@ func TestSourceCodeInfo(t *testing.T) {
 		IncludeSourceInfo: true,
 	}
 	fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto", "desc_test_complex.proto")
-	if !assert.Nil(t, err) {
-		return
+	if pe, ok := err.(protocompile.PanicError); ok {
+		t.Fatalf("panic! %v\n%v", pe, pe.Stack)
 	}
+	require.NoError(t, err)
 	// also test that imported files have source code info
 	// (desc_test_comments.proto imports desc_test_options.proto)
 	importedFd := fds[0].FindImportByPath("desc_test_options.proto")
-	if !assert.NotNil(t, importedFd) {
-		return
-	}
+	require.NotNil(t, importedFd)
 
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/source_info.protoset", linker.ResolverFromFile(fds[0]))
 	actualFdset := &descriptorpb.FileDescriptorSet{
@@ -70,7 +70,7 @@ func TestSourceCodeInfo(t *testing.T) {
 			continue
 		}
 		fixupProtocSourceCodeInfo(expectedFd.SourceCodeInfo)
-		prototest.AssertMessagesEqual(t, expectedFd.SourceCodeInfo, actualFd.SourceCodeInfo)
+		prototest.AssertMessagesEqual(t, expectedFd.SourceCodeInfo, actualFd.SourceCodeInfo, expectedFd.GetName())
 	}
 }
 
