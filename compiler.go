@@ -17,12 +17,14 @@ package protocompile
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
 	"runtime/debug"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/semaphore"
 
@@ -148,13 +150,84 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 	return descs, firstError
 }
 
+var (
+	ErrResultNotReady = errors.New("result not ready")
+)
+
+// CompileResult is the result of a compilation request. When complete,
+// it contains the resulting descriptor from compiling a single file or
+// the error that caused the compilation to fail.
+type CompileResult interface {
+	// Filename returns the path and name of the file being compiled.
+	Filename() string
+	// IsReady returns true if the associated file has been compiled.
+	// If this method returns false then a call to Get() will return
+	// (nil, ErrResultNotReady).
+	IsReady() bool
+	// Done returns a channel that can be used to await the completion
+	// of this result. When the returned channel is closed, IsReady()
+	// will return true.
+	Done() <-chan struct{}
+	// Get returns the descriptor from compiling a single file or the
+	// error that caused it to fail. If the file is not yet compiled,
+	// IsReady() returns false and this method returns (nil,
+	// ErrResultNotReady).
+	Get() (linker.File, error)
+}
+
+// StartOperation starts a new compile operation using the fields of
+// c as configuration. The caller submits files to be compiled in the
+// operation with the returned operation's Submit method. To wait for
+// all submitted files to be compiled, the caller can use the Await
+// method.
+func (c *Compiler) StartOperation(ctx context.Context) Operation {
+}
+
+// Operation represents a compile operation. Through this interface,
+// files to be compiled are submitted.
+type Operation interface {
+	// Submit requests the given filename to be compiled in this
+	// operation. An error is returned if the operation has been
+	// cancelled. Otherwise, a result is returned that represents
+	// the asynchronous result of compiling the given file.
+	Submit(filename string) (CompileResult, error)
+	// Get retrieves the result for the given filename. If the
+	// filename was never successfully submitted, nil is returned.
+	Get(filename string) CompileResult
+	// Remove removes the given filename from the operation. If the
+	// result for that file is needed again (because it is submitted
+	// or imported by a file that is submitted), its result will be
+	// re-computed. This method may be useful to reduce the amount of
+	// memory pinned by this operation. If never called, all files
+	// submitted to the operation, as well as the all transitive
+	// dependencies of those files, are retained until all submitted
+	// files are complete and the operation is garbage collected.
+	Remove(filename string) bool
+	// Await returns when all submitted files are finished. This
+	// should only be invoked after all files have been submitted.
+	// If files are submitted after this is invoked, it is possible
+	// that this method could spuriously return early.
+	//
+	// It returns an error if any file failed to be compiled or if
+	// the operation was cancelled.
+	Await() error
+	// Cancel attempts to terminate any files currently being compiled
+	// by the operation and also prevents any future files from being
+	// submitted.
+	Cancel()
+}
+
 type result struct {
 	name  string
 	ready chan struct{}
 
 	// true if this file was explicitly provided to the compiler; otherwise
 	// this file is an import that is implicitly included
-	explicitFile bool
+	explicitFile atomic.Bool
+	// when explicitFile is true, we directly report unused import warnings,
+	// but otherwise we store them in case we later see the file explicitly
+	// requested we can report them at that later point
+	unusedImportWarnings []reporter.ErrorWithPos
 
 	// produces a linker.File or error, only available when ready is closed
 	res linker.File
@@ -209,13 +282,22 @@ func (e *executor) compile(ctx context.Context, file string) *result {
 func (e *executor) compileLocked(ctx context.Context, file string, explicitFile bool) *result {
 	r := e.results[file]
 	if r != nil {
+		if explicitFile && r.explicitFile.CompareAndSwap(false, true) {
+			warnings := r.unusedImportWarnings
+			r.unusedImportWarnings = nil
+			for _, err := range warnings {
+				e.h.HandleWarning(err)
+			}
+		}
 		return r
 	}
 
 	r = &result{
-		name:         file,
-		ready:        make(chan struct{}),
-		explicitFile: explicitFile,
+		name:  file,
+		ready: make(chan struct{}),
+	}
+	if explicitFile {
+		r.explicitFile.Store(true)
 	}
 	e.results[file] = r
 	go func() {
@@ -476,8 +558,17 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	if err := file.ValidateOptions(t.h); err != nil {
 		return nil, err
 	}
-	if t.r.explicitFile {
+	if t.r.explicitFile.Load() {
 		file.CheckForUnusedImports(t.h)
+	} else {
+		// if not an explicitly requested file, save away the warnings
+		// (in case the file is explicitly requested later)
+		handler := reporter.NewHandler(reporter.NewReporter(nil,
+			func(e reporter.ErrorWithPos) {
+				t.r.unusedImportWarnings = append(t.r.unusedImportWarnings, e)
+			},
+		))
+		file.CheckForUnusedImports(handler)
 	}
 
 	if t.e.c.IncludeSourceInfo && parseRes.AST() != nil {
