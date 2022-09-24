@@ -16,7 +16,7 @@
 // native Go protobuf compiler. "Compile" in this case just means parsing
 // and validating source and generating fully-linked descriptors in the end.
 // Unlike the protoc command-line tool, this package does not try to use the
-// descriptors to perform code.
+// descriptors to perform code generation.
 //
 // The various sub-packages represent the various compile phases and contain
 // models for the intermediate results. Those phases follow:
@@ -31,10 +31,15 @@
 //  5. Generate source code info.
 //     Also see: sourceinfo.GenerateSourceInfo
 //
-// This package provides an easy-to-use interface that does all of the phases
-// relevant, based on the inputs given. It is also capable of taking advantage
-// of multiple CPU cores, so a compilation involving thousands of files can be
-// done very quickly by compiling things in parallel.
+// This package provides an easy-to-use interface that does all the relevant
+// phases, based on the inputs given. If an input is provided as source, all
+// phases apply. If an input is provided as a descriptor proto, only phases
+// 3 to 5 apply. Nothing is necessary if provided a linked descriptor (which
+// is usually only the case for select system dependencies).
+//
+// This package is also capable of taking advantage of multiple CPU cores, so
+// a compilation involving thousands of files can be done very quickly by
+// compiling things in parallel.
 //
 // # Resolvers
 //

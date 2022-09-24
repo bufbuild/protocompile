@@ -14,7 +14,7 @@
 
 // Package reporter contains the types used for reporting errors from
 // protocompile operations. It contains error types as well as interfaces
-// for reporting and handling errors.
+// for reporting and handling errors and warnings.
 package reporter
 
 import (
@@ -36,6 +36,8 @@ type ErrorReporter func(err ErrorWithPos) error
 type WarningReporter func(ErrorWithPos)
 
 // Reporter is a type that handles reporting both errors and warnings.
+// A reporter does not need to be thread-safe. Safe concurrent access is
+// managed by a Handler.
 type Reporter interface {
 	// Error is called when the given error is encountered and needs to be
 	// reported to the calling program. This signature matches ErrorReporter
@@ -98,7 +100,7 @@ func NewHandler(rep Reporter) *Handler {
 }
 
 // SubHandler returns a "child" of h. Use of a child handler is the same as use
-// of the parent, except that the Err() and ReporterError() functions only
+// of the parent, except that the Error() and ReporterError() functions only
 // report non-nil for errors that were reported using the child handler. So
 // errors reported directly to the parent or to a different child handler won't
 // be returned. This is useful for making concurrent access to the handler more
@@ -106,16 +108,6 @@ func NewHandler(rep Reporter) *Handler {
 // of reported errors is consistent and unimpacted by concurrent operations.
 func (h *Handler) SubHandler() *Handler {
 	return &Handler{parent: h}
-}
-
-// HandleErrorf handles an error with the given source position, creating the
-// error using the given message format and arguments.
-//
-// If the handler has already aborted (by returning a non-nil error from a call
-// to HandleError or HandleErrorf), that same error is returned and the given
-// error is not reported.
-func (h *Handler) HandleErrorf(pos ast.SourcePos, format string, args ...interface{}) error {
-	return h.HandleError(Errorf(pos, format, args...))
 }
 
 // HandleError handles the given error. If the given err is an ErrorWithPos, it
@@ -155,11 +147,36 @@ func (h *Handler) HandleError(err error) error {
 	return err
 }
 
-// HandleWarning handles a warning with the given source position. This will
-// delegate to the handler's configured reporter.
-func (h *Handler) HandleWarning(pos ast.SourcePos, err error) {
+// HandleErrorWithPos handles an error with the given source position.
+//
+// If the handler has already aborted (by returning a non-nil error from a prior
+// call to HandleError or HandleErrorf), that same error is returned and the
+// given error is not reported.
+func (h *Handler) HandleErrorWithPos(pos ast.SourcePos, err error) error {
+	if ewp, ok := err.(ErrorWithPos); ok {
+		// replace existing position with given one
+		err = errorWithSourcePos{pos: pos, underlying: ewp.Unwrap()}
+	} else {
+		err = errorWithSourcePos{pos: pos, underlying: err}
+	}
+	return h.HandleError(err)
+}
+
+// HandleErrorf handles an error with the given source position, creating the
+// error using the given message format and arguments.
+//
+// If the handler has already aborted (by returning a non-nil error from a call
+// to HandleError or HandleErrorf), that same error is returned and the given
+// error is not reported.
+func (h *Handler) HandleErrorf(pos ast.SourcePos, format string, args ...interface{}) error {
+	return h.HandleError(Errorf(pos, format, args...))
+}
+
+// HandleWarning handles the given warning. This will delegate to the handler's
+// configured reporter.
+func (h *Handler) HandleWarning(err ErrorWithPos) {
 	if h.parent != nil {
-		h.parent.HandleWarning(pos, err)
+		h.parent.HandleWarning(err)
 		return
 	}
 
@@ -168,7 +185,26 @@ func (h *Handler) HandleWarning(pos ast.SourcePos, err error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.reporter.Warning(errorWithSourcePos{pos: pos, underlying: err})
+	h.reporter.Warning(err)
+}
+
+// HandleWarningWithPos handles a warning with the given source position. This will
+// delegate to the handler's configured reporter.
+func (h *Handler) HandleWarningWithPos(pos ast.SourcePos, err error) {
+	ewp, ok := err.(ErrorWithPos)
+	if ok {
+		// replace existing position with given one
+		ewp = errorWithSourcePos{pos: pos, underlying: ewp.Unwrap()}
+	} else {
+		ewp = errorWithSourcePos{pos: pos, underlying: err}
+	}
+	h.HandleWarning(ewp)
+}
+
+// HandleWarningf handles a warning with the given source position, creating the
+// actual error value using the given message format and arguments.
+func (h *Handler) HandleWarningf(pos ast.SourcePos, format string, args ...interface{}) {
+	h.HandleWarning(Errorf(pos, format, args...))
 }
 
 // Error returns the handler result. If any errors have been reported then this

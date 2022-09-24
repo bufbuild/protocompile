@@ -103,7 +103,7 @@ func (r *result) CheckForUnusedImports(handler *reporter.Handler) {
 					}
 				}
 			}
-			handler.HandleWarning(pos, errUnusedImport(dep))
+			handler.HandleWarningWithPos(pos, errUnusedImport(dep))
 		}
 	}
 }

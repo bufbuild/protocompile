@@ -17,9 +17,9 @@
 // identifiers and literal values.
 //
 // The process of interpreting an option is to resolve identifiers, by examining
-// descriptors for the Options types and their available extensions (custom
-// options). As field names are resolved, the values can be type-checked against
-// the types indicated in field descriptors.
+// descriptors for the google.protobuf.*Options types and their available
+// extensions (custom options). As field names are resolved, the values can be
+// type-checked against the types indicated in field descriptors.
 //
 // On success, the various fields and extensions of the options message are
 // populated and the field holding the uninterpreted form is cleared.
