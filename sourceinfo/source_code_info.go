@@ -673,6 +673,9 @@ func combineComments(comments comments) string {
 		txt := c.RawText()
 		if txt[:2] == "//" {
 			buf.WriteString(txt[2:])
+			// protoc includes trailing newline for line comments,
+			// but it's not present in the AST comment, so we add it
+			buf.WriteRune('\n')
 		} else {
 			lines := strings.Split(txt[2:len(txt)-2], "\n")
 			first := true

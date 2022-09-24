@@ -631,13 +631,15 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 
 func (l *protoLex) skipToEndOfLineComment(lval *protoSymType) (hasErr bool) {
 	for {
-		c, _, err := l.input.readRune()
+		c, sz, err := l.input.readRune()
 		if err != nil {
+			// eof
 			return false
 		}
 		switch c {
 		case '\n':
-			l.info.AddLine(l.input.offset())
+			// don't include newline in the comment
+			l.input.unreadRune(sz)
 			return false
 		case 0:
 			l.setError(lval, errors.New("invalid control character"))
