@@ -143,18 +143,48 @@ func (f *FileInfo) AddComment(comment, attributedTo Token) Comment {
 	}
 }
 
-// NodeInfo returns details from the original source for the given AST node. If
-// the given n is not a node from the AST corresponding to f, the returned value
-// is undefined (and interacting it with may incur panics).
+// NodeInfo returns details from the original source for the given AST node.
+//
+// If the given n is out of range, this returns an invalid NodeInfo (i.e.
+// nodeInfo.IsValid() returns false). If the given n is not out of range but
+// also from a different file than f, then the result is undefined.
 func (f *FileInfo) NodeInfo(n Node) NodeInfo {
-	return NodeInfo{fileInfo: f, startIndex: int(n.Start()), endIndex: int(n.End())}
+	return f.nodeInfo(int(n.Start()), int(n.End()))
 }
 
-// TokenInfo returns details from the original source for the given token. If the
-// given t is not a leaf node in the AST corresponding to f, the returned value is
-// undefined (and interacting it with may incur panics).
+// TokenInfo returns details from the original source for the given token.
+//
+// If the given t is out of range, this returns an invalid NodeInfo (i.e.
+// nodeInfo.IsValid() returns false). If the given t is not out of range but
+// also from a different file than f, then the result is undefined.
 func (f *FileInfo) TokenInfo(t Token) NodeInfo {
-	return NodeInfo{fileInfo: f, startIndex: int(t), endIndex: int(t)}
+	return f.nodeInfo(int(t), int(t))
+}
+
+func (f *FileInfo) nodeInfo(start, end int) NodeInfo {
+	if start < 0 || start >= len(f.items) {
+		return NodeInfo{}
+	}
+	if end < 0 || end >= len(f.items) {
+		return NodeInfo{}
+	}
+	return NodeInfo{fileInfo: f, startIndex: start, endIndex: end}
+}
+
+// ItemInfo returns details from the original source for the given item.
+//
+// If the given i is out of range, this returns nil. If the given i is not
+// out of range but also from a different file than f, then the result is
+// undefined.
+func (f *FileInfo) ItemInfo(i Item) ItemInfo {
+	tok, cmt := f.GetItem(i)
+	if tok != TokenError {
+		return f.TokenInfo(tok)
+	}
+	if cmt.IsValid() {
+		return cmt
+	}
+	return nil
 }
 
 // GetItem returns the token or comment represented by the given item. Only one
@@ -162,7 +192,9 @@ func (f *FileInfo) TokenInfo(t Token) NodeInfo {
 // comment will be a zero value and thus invalid (i.e. comment.IsValid() returns
 // false). If the item is a comment then the returned token will be TokenError.
 //
-// If the given i is invalid, this returns (TokenError, Comment{}).
+// If the given i is out of range, this returns (TokenError, Comment{}). If the
+// given i is not out of range but also from a different file than f, then
+// the result is undefined.
 func (f *FileInfo) GetItem(i Item) (Token, Comment) {
 	if i < 0 || int(i) >= len(f.items) {
 		return TokenError, Comment{}
@@ -183,7 +215,7 @@ func (f *FileInfo) GetItem(i Item) (Token, Comment) {
 }
 
 func (f *FileInfo) isDummyFile() bool {
-	return f.lines == nil
+	return f == nil || f.lines == nil
 }
 
 // Sequence represents a navigable sequence of elements.
@@ -364,6 +396,15 @@ func (t Token) asTerminalNode() terminalNode {
 // a Token or a Comment.
 type Item int
 
+// ItemInfo provides details about an item's location in the source file and
+// its contents.
+type ItemInfo interface {
+	Start() SourcePos
+	End() SourcePos
+	LeadingWhitespace() string
+	RawText() string
+}
+
 // NodeInfo represents the details for a node or token in the source file's AST.
 // It provides access to information about the node's location in the source
 // file. It also provides access to the original text in the source file (with
@@ -372,6 +413,14 @@ type Item int
 type NodeInfo struct {
 	fileInfo             *FileInfo
 	startIndex, endIndex int
+}
+
+var _ ItemInfo = NodeInfo{}
+
+// IsValid returns true if this node info is valid. If n is a zero-value struct,
+// it is not valid.
+func (n NodeInfo) IsValid() bool {
+	return n.fileInfo != nil
 }
 
 // Start returns the starting position of the element. This is the first
@@ -583,6 +632,8 @@ type Comment struct {
 	fileInfo *FileInfo
 	index    int
 }
+
+var _ ItemInfo = Comment{}
 
 // IsValid returns true if this comment is valid. If this comment is
 // a zero-value struct, it is not valid.
