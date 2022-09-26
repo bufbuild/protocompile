@@ -187,7 +187,8 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			l.setRune(lval, 0)
 			l.eof = lval.b.Token()
 			return 0
-		} else if err != nil {
+		}
+		if err != nil {
 			l.setError(lval, err)
 			return _ERROR
 		}
@@ -248,7 +249,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 				l.setInt(lval, ui)
 				return _INT_LIT
 			}
-			if strings.Contains(token, ".") || strings.Contains(token, "e") || strings.Contains(token, "E") {
+			if strings.ContainsAny(token, ".eE") {
 				// floating point!
 				f, err := parseFloat(token)
 				if err != nil {
@@ -304,8 +305,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 				return int(c)
 			}
 			if cn == '/' {
-				hasErr := l.skipToEndOfLineComment(lval)
-				if hasErr {
+				if hasErr := l.skipToEndOfLineComment(lval); hasErr {
 					return _ERROR
 				}
 				l.comments = append(l.comments, l.newToken())

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1403,7 +1404,7 @@ func removePrefixIndent(s string) string {
 	}
 	lines = lines[1:] // skip first blank line
 	// determine whitespace prefix from first line (e.g. five tabstops)
-	var prefix []rune
+	prefix := make([]rune, 0, utf8.RuneCountInString(lines[1]))
 	for _, r := range lines[1] {
 		if !unicode.IsSpace(r) {
 			break
@@ -1723,7 +1724,7 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	}
 	var expected []string
 	require.NotEmpty(t, errs)
-	var actual []string
+	actual := make([]string, 0, len(errs))
 	for _, err := range errs {
 		actual = append(actual, err.Error())
 	}

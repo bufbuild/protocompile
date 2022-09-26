@@ -58,7 +58,6 @@ linters:
     - nilerr
     - nilnil
     - nonamedreturns
-    - prealloc
     - thelper
     - unconvert
     - varnamelen

@@ -55,17 +55,14 @@ func NewEnumNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, dec
 	children := make([]Node, 0, 4+len(decls))
 	children = append(children, keyword, name, openBrace)
 	for _, decl := range decls {
-		children = append(children, decl)
-	}
-	children = append(children, closeBrace)
-
-	for _, decl := range decls {
 		switch decl.(type) {
 		case *OptionNode, *EnumValueNode, *ReservedNode, *EmptyDeclNode:
 		default:
 			panic(fmt.Sprintf("invalid EnumElement type: %T", decl))
 		}
+		children = append(children, decl)
 	}
+	children = append(children, closeBrace)
 
 	return &EnumNode{
 		compositeNode: compositeNode{

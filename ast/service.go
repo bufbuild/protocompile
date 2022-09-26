@@ -55,17 +55,14 @@ func NewServiceNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, 
 	children := make([]Node, 0, 4+len(decls))
 	children = append(children, keyword, name, openBrace)
 	for _, decl := range decls {
-		children = append(children, decl)
-	}
-	children = append(children, closeBrace)
-
-	for _, decl := range decls {
 		switch decl := decl.(type) {
 		case *OptionNode, *RPCNode, *EmptyDeclNode:
 		default:
 			panic(fmt.Sprintf("invalid ServiceElement type: %T", decl))
 		}
+		children = append(children, decl)
 	}
+	children = append(children, closeBrace)
 
 	return &ServiceNode{
 		compositeNode: compositeNode{
@@ -196,17 +193,14 @@ func NewRPCNodeWithBody(keyword *KeywordNode, name *IdentNode, input *RPCTypeNod
 	children := make([]Node, 0, 7+len(decls))
 	children = append(children, keyword, name, input, returns, output, openBrace)
 	for _, decl := range decls {
-		children = append(children, decl)
-	}
-	children = append(children, closeBrace)
-
-	for _, decl := range decls {
 		switch decl := decl.(type) {
 		case *OptionNode, *EmptyDeclNode:
 		default:
 			panic(fmt.Sprintf("invalid RPCElement type: %T", decl))
 		}
+		children = append(children, decl)
 	}
+	children = append(children, closeBrace)
 
 	return &RPCNode{
 		compositeNode: compositeNode{

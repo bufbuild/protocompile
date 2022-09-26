@@ -47,7 +47,7 @@ type FileNode struct {
 // This function panics if the concrete type of any element of decls is not
 // from this package.
 func NewFileNode(info *FileInfo, syntax *SyntaxNode, decls []FileElement, eof Token) *FileNode {
-	numChildren := len(decls)
+	numChildren := len(decls) + 1
 	if syntax != nil {
 		numChildren++
 	}
@@ -56,16 +56,13 @@ func NewFileNode(info *FileInfo, syntax *SyntaxNode, decls []FileElement, eof To
 		children = append(children, syntax)
 	}
 	for _, decl := range decls {
-		children = append(children, decl)
-	}
-
-	for _, decl := range decls {
 		switch decl := decl.(type) {
 		case *PackageNode, *ImportNode, *OptionNode, *MessageNode,
 			*EnumNode, *ExtendNode, *ServiceNode, *EmptyDeclNode:
 		default:
 			panic(fmt.Sprintf("invalid FileElement type: %T", decl))
 		}
+		children = append(children, decl)
 	}
 
 	eofNode := NewRuneNode(0, eof)
@@ -215,7 +212,7 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 	if semicolon == nil {
 		panic("semicolon is nil")
 	}
-	numChildren := 3
+	numChildren := 2
 	if public != nil || weak != nil {
 		numChildren++
 	}
