@@ -96,7 +96,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		}
 	} else {
 		nodeInfo := file.NodeInfo(file)
-		handler.HandleWarning(nodeInfo.Start(), ErrNoSyntax)
+		handler.HandleWarningWithPos(nodeInfo.Start(), ErrNoSyntax)
 	}
 
 	for _, decl := range file.Decls {

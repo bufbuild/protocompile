@@ -30,6 +30,9 @@ import (
 // Resolver is used by the compiler to resolve a proto source file name
 // into some unit that is usable by the compiler. The result could be source
 // for a proto file or it could be an already-parsed AST or descriptor.
+//
+// Resolver implementations must be thread-safe as a single compilation
+// operation could invoke FindFileByPath from multiple goroutines.
 type Resolver interface {
 	// FindFileByPath searches for information for the given file path. If no
 	// result is available, it should return a non-nil error, such as
@@ -106,6 +109,10 @@ type SourceResolver struct {
 	ImportPaths []string
 	// Optional function for returning a file's contents. If nil, then
 	// os.Open is used to open files on the file system.
+	//
+	// This function must be thread-safe as a single compilation operation
+	// could result in concurrent invocations of this function from
+	// multiple goroutines.
 	Accessor func(path string) (io.ReadCloser, error)
 }
 
@@ -145,6 +152,10 @@ func (r *SourceResolver) accessFile(path string) (io.ReadCloser, error) {
 // SourceAccessorFromMap returns a function that can be used as the Accessor
 // field of a SourceResolver that uses the given map to load source. The map
 // keys are file names and the values are the corresponding file contents.
+//
+// The given map is used directly and not copied. Since accessor functions
+// must be thread-safe, this means that the provided map must not be mutated
+// once this accessor is provided to a compile operation.
 func SourceAccessorFromMap(srcs map[string]string) func(string) (io.ReadCloser, error) {
 	return func(path string) (io.ReadCloser, error) {
 		src, ok := srcs[path]
