@@ -387,8 +387,8 @@ type ArrayLiteralNode struct {
 	OpenBracket *RuneNode
 	Elements    []ValueNode
 	// Commas represent the separating ',' characters between elements. The
-	// length of this slice must be exactly len(Elements)-1, with each AsItem
-	// in Elements having a corresponding AsItem in this slice *except the last*
+	// length of this slice must be exactly len(Elements)-1, with each item
+	// in Elements having a corresponding item in this slice *except the last*
 	// (since a trailing comma is not allowed).
 	Commas       []*RuneNode
 	CloseBracket *RuneNode
@@ -454,9 +454,9 @@ type MessageLiteralNode struct {
 	Elements []*MessageFieldNode
 	// Separator characters between elements, which can be either ','
 	// or ';' if present. This slice must be exactly len(Elements) in
-	// length, with each AsItem in Elements having one corresponding AsItem
+	// length, with each item in Elements having one corresponding item
 	// in Seps. Separators in message literals are optional, so a given
-	// AsItem in this slice may be nil to indicate absence of a separator.
+	// item in this slice may be nil to indicate absence of a separator.
 	Seps  []*RuneNode
 	Close *RuneNode // should be '}' or '>', depending on Open
 }

@@ -130,8 +130,8 @@ type OptionNameNode struct {
 	compositeNode
 	Parts []*FieldReferenceNode
 	// Dots represent the separating '.' characters between name parts. The
-	// length of this slice must be exactly len(Parts)-1, each AsItem in Parts
-	// having a corresponding AsItem in this slice *except the last* (since a
+	// length of this slice must be exactly len(Parts)-1, each item in Parts
+	// having a corresponding item in this slice *except the last* (since a
 	// trailing dot is not allowed).
 	//
 	// These do *not* include dots that are inside of an extension name. For
@@ -315,8 +315,8 @@ type CompactOptionsNode struct {
 	OpenBracket *RuneNode
 	Options     []*OptionNode
 	// Commas represent the separating ',' characters between options. The
-	// length of this slice must be exactly len(Options)-1, with each AsItem
-	// in Options having a corresponding AsItem in this slice *except the last*
+	// length of this slice must be exactly len(Options)-1, with each item
+	// in Options having a corresponding item in this slice *except the last*
 	// (since a trailing comma is not allowed).
 	Commas       []*RuneNode
 	CloseBracket *RuneNode
