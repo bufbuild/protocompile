@@ -27,10 +27,10 @@
 //
 // This interface is both the result of linking but also an input to the linking
 // process, as all dependencies of a file to be linked must be provided in this
-// form. The actual result of the Link function is a super-interface of File:
-// Result. The linker.Result interface provides even more functions, which are
-// needed for subsequent compilation steps: interpreting options and generating
-// source code info.
+// form. The actual result of the Link function, a Result, is an even broader
+// interface than File: The linker.Result interface provides even more functions,
+// which are needed for subsequent compilation steps: interpreting options and
+// generating source code info.
 //
 // # Symbols
 //

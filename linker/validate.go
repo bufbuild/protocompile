@@ -134,7 +134,7 @@ func (r *result) validateJSONNamesInEnum(ed *descriptorpb.EnumDescriptorProto, h
 
 			// Since proto2 did not originally have a JSON format, we report conflicts as just warnings
 			if r.Syntax() != protoreflect.Proto3 {
-				handler.HandleWarning(r.FileNode().NodeInfo(fldNode).Start(), conflictErr)
+				handler.HandleWarningWithPos(r.FileNode().NodeInfo(fldNode).Start(), conflictErr)
 			} else if err := handler.HandleErrorf(r.FileNode().NodeInfo(fldNode).Start(), conflictErr.Error()); err != nil {
 				return err
 			}
@@ -192,7 +192,7 @@ func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCus
 				// Since proto2 did not originally have default JSON names, we report conflicts involving
 				// default names as just warnings.
 				if r.Syntax() != protoreflect.Proto3 && (!custom || !existing.custom) {
-					handler.HandleWarning(pos, conflictErr.Unwrap())
+					handler.HandleWarning(conflictErr)
 				} else if err := handler.HandleError(conflictErr); err != nil {
 					return err
 				}

@@ -185,16 +185,16 @@ type Resolver interface {
 	protoregistry.ExtensionTypeResolver
 }
 
-// ResolverFromFile returns a Resolver that uses the given file plus its full set of
-// transitive dependencies as the source of descriptors. If a given query
+// ResolverFromFile returns a Resolver that uses the given file plus its full
+// set of transitive dependencies as the source of descriptors. If a given query
 // cannot be answered with these files, the query will fail with a
 // protoregistry.NotFound error.
 //
-// Note that this function does not compute any additional indexes, for
-// efficient search, so queries generally take linear time, O(n) where n is the
-// number of files in the transitive closure of the given file. Queries for an
-// extension by number are linear with the number of messages and extensions
-// defined across all the files.
+// Note that this function does not compute any additional indexes for efficient
+// search, so queries generally take linear time, O(n) where n is the number of
+// files in the transitive closure of the given file. Queries for an extension
+// by number are linear with the number of messages and extensions defined across
+// all the files.
 func ResolverFromFile(f File) Resolver {
 	return fileResolver{
 		f:    f,

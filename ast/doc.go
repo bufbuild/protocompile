@@ -19,10 +19,10 @@
 // tree implement TerminalNode and all others implement CompositeNode.
 // The root of the tree for a proto source file is a *FileNode.
 //
-// Position information is tracked using a *FileInfo, callings its various
+// Position information is tracked using a *FileInfo, calling its various
 // Add* methods as the file is tokenized by the lexer. This allows AST
 // nodes to have a compact representation. To extract detailed position
-// information, you must use the nodeInfo method, available on either the
+// information, you must use the NodeInfo method, available on either the
 // *FileInfo which produced the node's tokens or the *FileNode root of
 // the tree that contains the node.
 //
