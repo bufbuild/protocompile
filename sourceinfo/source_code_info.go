@@ -686,6 +686,8 @@ func (sci *sourceCodeInfo) combineComments(comments comments) string {
 					// protoc includes trailing newline for line comments,
 					// but it's not present in the AST comment. So if
 					buf.WriteRune('\n')
+				} else {
+					_ = true
 				}
 			}
 		} else {

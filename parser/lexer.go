@@ -370,11 +370,18 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 	comments := l.comments
 	l.comments = nil
 	var prevTrailingComments []ast.Token
-
 	if l.prevSym != nil && len(comments) > 0 {
 		prevEnd := l.info.NodeInfo(l.prevSym).End().Line
 		info := l.info.NodeInfo(n)
 		nStart := info.Start().Line
+		if nStart == prevEnd {
+			if rn, ok := n.(*ast.RuneNode); ok && rn.Rune == 0 {
+				// if current token is EOF, pretend its on separate line
+				// so that the logic below can attribute a final trailing
+				// comment to the previous token
+				nStart++
+			}
+		}
 		c := comments[0]
 		commentInfo := l.info.TokenInfo(c)
 		commentStart := commentInfo.Start().Line
