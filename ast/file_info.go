@@ -21,7 +21,7 @@ import (
 )
 
 // FileInfo contains information about the contents of a source file, including
-// details about comments and tokens. A lexer accumulates these details as it
+// details about comments and items. A lexer accumulates these details as it
 // scans the file contents. This allows efficient representation of things like
 // source positions.
 type FileInfo struct {
@@ -38,26 +38,25 @@ type FileInfo struct {
 	// comments. The first entry corresponds to the first comment in the file,
 	// and so on.
 	comments []commentInfo
-	// The info for every token in the file. The last item in the slice
-	// corresponds to the EOF, so every file (even an empty one) has at least
-	// one element. This includes all terminal symbols in the AST as well as
-	// all comments. However, it excludes rune nodes (which can be more
-	// compactly represented by an offset into data).
-	tokens []tokenSpan
+	// The info for every lexed item in the file. The last item in the slice
+	// corresponds to the EOF, so every file (even an empty one) should have at
+	// least one entry. This includes all terminal symbols (tokens) in the AST
+	// as well as all comments.
+	items []itemSpan
 }
 
 type commentInfo struct {
-	// the index of the token, in the file's tokens slice, that represents this
+	// the index of the item, in the file's items slice, that represents this
 	// comment
 	index int
 	// the index of the token to which this comment is attributed.
 	attributedToIndex int
 }
 
-type tokenSpan struct {
-	// the offset into the file of the first character of a token.
+type itemSpan struct {
+	// the offset into the file of the first character of an item.
 	offset int
-	// the length of the token
+	// the length of the item
 	length int
 }
 
@@ -107,21 +106,21 @@ func (f *FileInfo) AddToken(offset, length int) Token {
 		panic(fmt.Sprintf("invalid offset+length: %d is greater than file size %d", offset+length, len(f.data)))
 	}
 
-	tokenID := len(f.tokens)
-	if len(f.tokens) > 0 {
-		lastToken := f.tokens[tokenID-1]
+	tokenID := len(f.items)
+	if len(f.items) > 0 {
+		lastToken := f.items[tokenID-1]
 		lastEnd := lastToken.offset + lastToken.length - 1
 		if offset <= lastEnd {
 			panic(fmt.Sprintf("invalid offset: %d is not greater than previously observed token end %d", offset, lastEnd))
 		}
 	}
 
-	f.tokens = append(f.tokens, tokenSpan{offset: offset, length: length})
+	f.items = append(f.items, itemSpan{offset: offset, length: length})
 	return Token(tokenID)
 }
 
 // AddComment adds info about a comment to this file. Comments must first be
-// added as tokens via f.AddToken(). The given comment argument is the Token
+// added as items via f.AddToken(). The given comment argument is the Token
 // from that step. The given attributedTo argument indicates another token in the
 // file with which the comment is associated. If comment's offset is before that
 // of attributedTo, then this is a leading comment. Otherwise, it is a trailing
@@ -158,87 +157,160 @@ func (f *FileInfo) TokenInfo(t Token) NodeInfo {
 	return NodeInfo{fileInfo: f, startIndex: int(t), endIndex: int(t)}
 }
 
+// GetItem returns the token or comment represented by the given item. Only one
+// of the return values will be valid. If the item is a token then the returned
+// comment will be a zero value and thus invalid (i.e. comment.IsValid() returns
+// false). If the item is a comment then the returned token will be TokenError.
+//
+// If the given i is invalid, this returns (TokenError, Comment{}).
+func (f *FileInfo) GetItem(i Item) (Token, Comment) {
+	if i < 0 || int(i) >= len(f.items) {
+		return TokenError, Comment{}
+	}
+	if !f.isComment(i) {
+		return Token(i), Comment{}
+	}
+	// It's a comment, so find its location in f.comments
+	c := sort.Search(len(f.comments), func(c int) bool {
+		return f.comments[c].index >= int(i)
+	})
+	if c < len(f.comments) && f.comments[c].index == int(i) {
+		return TokenError, Comment{fileInfo: f, index: c}
+	}
+	// f.isComment(i) returned true, but we couldn't find it
+	// in f.comments? Uh oh... that shouldn't be possible.
+	return TokenError, Comment{}
+}
+
 func (f *FileInfo) isDummyFile() bool {
 	return f.lines == nil
 }
 
-// FirstToken returns the first token in the file. It returns
-// TokenError if the file contains no tokens (e.g. it is empty
-// or contains only whitespace and comments).
-func (f *FileInfo) FirstToken() Token {
-	return f.tokenForward(0)
+// Sequence represents a navigable sequence of elements.
+type Sequence[T any] interface {
+	// First returns the first element in the sequence. The bool return
+	// is false if this sequence contains no elements. For example, an
+	// empty file has no items or tokens.
+	First() (T, bool)
+	// Next returns the next element in the sequence that comes after
+	// the given element. The bool returns is false if there is no next
+	// item (i.e. the given element is the last one). It also returns
+	// false if the given element is invalid.
+	Next(T) (T, bool)
+	// Last returns the last element in the sequence. The bool return
+	// is false if this sequence contains no elements. For example, an
+	// empty file has no items or tokens.
+	Last() (T, bool)
+	// Previous returns the previous element in the sequence that comes
+	// before the given element. The bool returns is false if there is no
+	// previous item (i.e. the given element is the first one). It also
+	// returns false if the given element is invalid.
+	Previous(T) (T, bool)
 }
 
-// NextToken returns the next token in the file that comes after
-// t. It returns TokenError if there is no next token (i.e. the
-// given t is the last token). It also returns TokenError if
-// the given t is invalid.
-func (f *FileInfo) NextToken(t Token) Token {
-	if t < 0 || int(t) >= len(f.tokens) {
-		return TokenError
+func (f *FileInfo) Items() Sequence[Item] {
+	return items{fileInfo: f}
+}
+
+func (f *FileInfo) Tokens() Sequence[Token] {
+	return tokens{fileInfo: f}
+}
+
+type items struct {
+	fileInfo *FileInfo
+}
+
+func (i items) First() (Item, bool) {
+	if len(i.fileInfo.items) == 0 {
+		return 0, false
 	}
-	return f.tokenForward(t + 1)
+	return 0, true
 }
 
-func (f *FileInfo) tokenForward(t Token) Token {
-	end := Token(len(f.tokens))
-	for t < end {
-		// Comments are not tokens in the exported API. But they
-		// do mingle with them inside of `f.tokens`, as a matter
-		// of convenience since they share the same needs for
-		// location book-keeping.
-		if !f.isComment(t) {
-			return t
+func (i items) Next(item Item) (Item, bool) {
+	if item < 0 || int(item) >= len(i.fileInfo.items) {
+		return 0, false
+	}
+	return i.fileInfo.itemForward(item+1, true)
+}
+
+func (i items) Last() (Item, bool) {
+	if len(i.fileInfo.items) == 0 {
+		return 0, false
+	}
+	return Item(len(i.fileInfo.items) - 1), true
+}
+
+func (i items) Previous(item Item) (Item, bool) {
+	if item < 0 || int(item) >= len(i.fileInfo.items) {
+		return 0, false
+	}
+	return i.fileInfo.itemBackward(item-1, true)
+}
+
+type tokens struct {
+	fileInfo *FileInfo
+}
+
+func (t tokens) First() (Token, bool) {
+	i, ok := t.fileInfo.itemForward(0, false)
+	return Token(i), ok
+}
+
+func (t tokens) Next(tok Token) (Token, bool) {
+	if tok < 0 || int(tok) >= len(t.fileInfo.items) {
+		return 0, false
+	}
+	i, ok := t.fileInfo.itemForward(Item(tok+1), false)
+	return Token(i), ok
+}
+
+func (t tokens) Last() (Token, bool) {
+	i, ok := t.fileInfo.itemBackward(Item(len(t.fileInfo.items))-1, false)
+	return Token(i), ok
+}
+
+func (t tokens) Previous(tok Token) (Token, bool) {
+	if tok < 0 || int(tok) >= len(t.fileInfo.items) {
+		return 0, false
+	}
+	i, ok := t.fileInfo.itemBackward(Item(tok-1), false)
+	return Token(i), ok
+}
+
+func (f *FileInfo) itemForward(i Item, allowComment bool) (Item, bool) {
+	end := Item(len(f.items))
+	for i < end {
+		if allowComment || !f.isComment(i) {
+			return i, true
 		}
-		t++
+		i++
 	}
-	return TokenError
+	return 0, false
 }
 
-// LastToken returns the last token in the file. It returns
-// TokenError if the file contains no tokens (e.g. it is empty
-// or contains only whitespace and comments).
-func (f *FileInfo) LastToken() Token {
-	return f.tokenBackward(Token(len(f.tokens)) - 1)
-}
-
-// PreviousToken returns the previous token in the file that comes
-// before t. It returns TokenError if there is no next token (i.e.
-// the given t is the first token). It also returns TokenError if
-// the given t is invalid.
-func (f *FileInfo) PreviousToken(t Token) Token {
-	if t < 0 || int(t) >= len(f.tokens) {
-		return TokenError
-	}
-	return f.tokenBackward(t - 1)
-}
-
-func (f *FileInfo) tokenBackward(t Token) Token {
-	for t >= 0 {
-		// Comments are not tokens in the exported API. But they
-		// do mingle with them inside of `f.tokens`, as a matter
-		// of convenience since they share the same needs for
-		// location book-keeping.
-		if !f.isComment(t) {
-			return t
+func (f *FileInfo) itemBackward(i Item, allowComment bool) (Item, bool) {
+	for i >= 0 {
+		if allowComment || !f.isComment(i) {
+			return i, true
 		}
-		t--
+		i--
 	}
-	return TokenError
+	return 0, false
 }
 
-// isComment is comment returns true if t actually refers to a
-// comment, not a real token.
-func (f *FileInfo) isComment(t Token) bool {
-	tok := f.tokens[t]
-	if tok.length < 2 {
+// isComment is comment returns true if i refers to a comment.
+// (If it returns false, i refers to a token.)
+func (f *FileInfo) isComment(i Item) bool {
+	item := f.items[i]
+	if item.length < 2 {
 		return false
 	}
-	// see if token text starts with "//" or "/*"
-	if f.data[tok.offset] != '/' {
+	// see if item text starts with "//" or "/*"
+	if f.data[item.offset] != '/' {
 		return false
 	}
-	c := f.data[tok.offset+1]
+	c := f.data[item.offset+1]
 	return c == '/' || c == '*'
 }
 
@@ -252,7 +324,7 @@ func (f *FileInfo) SourcePos(offset int) SourcePos {
 	// starting offset of lineNumber :(
 	// Wish this were more efficient... that would require also storing
 	// computed line+column information, which would triple the size of
-	// f's tokens slice...
+	// f's items slice...
 	col := 0
 	for i := f.lines[lineNumber-1]; i < offset; i++ {
 		if f.data[i] == '\t' {
@@ -279,9 +351,18 @@ type Token int
 // functions when no valid token satisfies the request.
 const TokenError = Token(-1)
 
+// AsItem returns the Item that corresponds to t.
+func (t Token) AsItem() Item {
+	return Item(t)
+}
+
 func (t Token) asTerminalNode() terminalNode {
 	return terminalNode(t)
 }
+
+// Item represents an item lexed from source. It represents either
+// a Token or a Comment.
+type Item int
 
 // NodeInfo represents the details for a node or token in the source file's AST.
 // It provides access to information about the node's location in the source
@@ -300,7 +381,7 @@ func (n NodeInfo) Start() SourcePos {
 		return UnknownPos(n.fileInfo.name)
 	}
 
-	tok := n.fileInfo.tokens[n.startIndex]
+	tok := n.fileInfo.items[n.startIndex]
 	return n.fileInfo.SourcePos(tok.offset)
 }
 
@@ -314,7 +395,7 @@ func (n NodeInfo) End() SourcePos {
 		return UnknownPos(n.fileInfo.name)
 	}
 
-	tok := n.fileInfo.tokens[n.endIndex]
+	tok := n.fileInfo.items[n.endIndex]
 	// find offset of last character in the span
 	offset := tok.offset
 	if tok.length > 0 {
@@ -339,10 +420,10 @@ func (n NodeInfo) LeadingWhitespace() string {
 		return ""
 	}
 
-	tok := n.fileInfo.tokens[n.startIndex]
+	tok := n.fileInfo.items[n.startIndex]
 	var prevEnd int
 	if n.startIndex > 0 {
-		prevTok := n.fileInfo.tokens[n.startIndex-1]
+		prevTok := n.fileInfo.items[n.startIndex-1]
 		prevEnd = prevTok.offset + prevTok.length
 	}
 	return string(n.fileInfo.data[prevEnd:tok.offset])
@@ -440,11 +521,11 @@ func (n NodeInfo) TrailingComments() Comments {
 
 // RawText returns the actual text in the source file that corresponds to the
 // element. If the element is a node in the AST that encompasses multiple
-// tokens (like an entire declaration), the full text of all tokens is returned
+// items (like an entire declaration), the full text of all items is returned
 // including any interior whitespace and comments.
 func (n NodeInfo) RawText() string {
-	startTok := n.fileInfo.tokens[n.startIndex]
-	endTok := n.fileInfo.tokens[n.endIndex]
+	startTok := n.fileInfo.items[n.startIndex]
+	endTok := n.fileInfo.items[n.endIndex]
 	return string(n.fileInfo.data[startTok.offset : endTok.offset+endTok.length])
 }
 
@@ -469,7 +550,7 @@ func (pos SourcePos) String() string {
 }
 
 // Comments represents a range of sequential comments in a source file
-// (e.g. no interleaving tokens or AST nodes).
+// (e.g. no interleaving items or AST nodes).
 type Comments struct {
 	fileInfo   *FileInfo
 	first, num int
@@ -503,31 +584,39 @@ type Comment struct {
 	index    int
 }
 
+// IsValid returns true if this comment is valid. If this comment is
+// a zero-value struct, it is not valid.
+func (c Comment) IsValid() bool {
+	return c.fileInfo != nil && c.index >= 0
+}
+
+// AsItem returns the Item that corresponds to c.
+func (c Comment) AsItem() Item {
+	return Item(c.fileInfo.comments[c.index].index)
+}
+
 func (c Comment) Start() SourcePos {
-	comment := c.fileInfo.comments[c.index]
-	tok := c.fileInfo.tokens[comment.index]
-	return c.fileInfo.SourcePos(tok.offset)
+	span := c.fileInfo.items[c.AsItem()]
+	return c.fileInfo.SourcePos(span.offset)
 }
 
 func (c Comment) End() SourcePos {
-	comment := c.fileInfo.comments[c.index]
-	tok := c.fileInfo.tokens[comment.index]
-	return c.fileInfo.SourcePos(tok.offset + tok.length - 1)
+	span := c.fileInfo.items[c.AsItem()]
+	return c.fileInfo.SourcePos(span.offset + span.length - 1)
 }
 
 func (c Comment) LeadingWhitespace() string {
-	comment := c.fileInfo.comments[c.index]
-	tok := c.fileInfo.tokens[comment.index]
+	item := c.AsItem()
+	span := c.fileInfo.items[item]
 	var prevEnd int
-	if comment.index > 0 {
-		prevTok := c.fileInfo.tokens[comment.index-1]
-		prevEnd = prevTok.offset + prevTok.length
+	if item > 0 {
+		prevItem := c.fileInfo.items[item-1]
+		prevEnd = prevItem.offset + prevItem.length
 	}
-	return string(c.fileInfo.data[prevEnd:tok.offset])
+	return string(c.fileInfo.data[prevEnd:span.offset])
 }
 
 func (c Comment) RawText() string {
-	comment := c.fileInfo.comments[c.index]
-	tok := c.fileInfo.tokens[comment.index]
-	return string(c.fileInfo.data[tok.offset : tok.offset+tok.length])
+	span := c.fileInfo.items[c.AsItem()]
+	return string(c.fileInfo.data[span.offset : span.offset+span.length])
 }

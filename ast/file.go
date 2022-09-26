@@ -104,20 +104,16 @@ func (f *FileNode) TokenInfo(t Token) NodeInfo {
 	return f.fileInfo.TokenInfo(t)
 }
 
-func (f *FileNode) FirstToken() Token {
-	return f.fileInfo.FirstToken()
+func (f *FileNode) GetItem(i Item) (Token, Comment) {
+	return f.fileInfo.GetItem(i)
 }
 
-func (f *FileNode) LastToken() Token {
-	return f.fileInfo.LastToken()
+func (f *FileNode) Items() Sequence[Item] {
+	return f.fileInfo.Items()
 }
 
-func (f *FileNode) NextToken(t Token) Token {
-	return f.fileInfo.NextToken(t)
-}
-
-func (f *FileNode) PreviousToken(t Token) Token {
-	return f.fileInfo.PreviousToken(t)
+func (f *FileNode) Tokens() Sequence[Token] {
+	return f.fileInfo.Tokens()
 }
 
 // FileElement is an interface implemented by all AST nodes that are

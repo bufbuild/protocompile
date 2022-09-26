@@ -13,18 +13,29 @@
 // limitations under the License.
 
 // Package ast defines types for modeling the AST (Abstract Syntax
-// Tree) for the protocol buffers source language.
+// Tree) for the Protocol Buffers interface definition language.
 //
-// All nodes of the tree implement the Node interface. Leaf nodes in the
-// tree implement TerminalNode and all others implement CompositeNode.
-// The root of the tree for a proto source file is a *FileNode.
+// # Nodes
 //
-// Position information is tracked using a *FileInfo, callings its various
-// Add* methods as the file is tokenized by the lexer. This allows AST
-// nodes to have a compact representation. To extract detailed position
-// information, you must use the nodeInfo method, available on either the
-// *FileInfo which produced the node's tokens or the *FileNode root of
-// the tree that contains the node.
+// All nodes of the tree implement the [Node] interface. Leaf nodes in the
+// tree implement [TerminalNode], and all others implement [CompositeNode].
+// The root of the tree for a proto source file is a *[FileNode].
+//
+// A [TerminalNode] represents a single lexical element, or [Token]. A
+// [CompositeNode] represents a sub-tree of the AST and range of tokens.
+//
+// Position information is tracked using a *[FileInfo]. The lexer invokes its
+// various Add* methods to add details as the file is tokenized. Storing
+// the position information in the *[FileInfo], instead of in each AST node,
+// allows the AST to have a much more compact representation. To extract
+// detailed position information, you must use the NodeInfo method, available
+// on either the *[FileInfo] which produced the node's items or the *[FileNode]
+// root of the tree that contains the node.
+//
+// # Items, Tokens, and Comments
+//
+// An [Item] represents a lexical item, excluding whitespace. This can be
+// either a [Token] or a [Comment].
 //
 // Comments are not represented as nodes in the tree. Instead, they are
 // attributed to terminal nodes in the tree. So, when lexing, comments
@@ -35,6 +46,21 @@
 // a non-leaf/non-token node (i.e. a CompositeNode) come from the first
 // and last nodes in its sub-tree, for leading and trailing comments
 // respectively.
+//
+// A [Comment] value corresponds to a line ("//") or block ("/*") style
+// comment in the source. These have no bearing on the grammar and are
+// effectively ignored as the parser is determining the shape of the
+// syntax tree.
+//
+// A [Token] value corresponds to a component of the grammar, that is
+// used to produce an AST. They correspond to leaves in the AST (i.e.
+// [TerminalNode]).
+//
+// The *[FileInfo] and *[FileNode] types provide methods for querying
+// and iterating through all the items or tokens in the file. They also
+// include a method for resolving an [Item] into a [Token] or [Comment].
+//
+// # Factory Functions
 //
 // Creation of AST nodes should use the factory functions in this
 // package instead of struct literals. Some factory functions accept

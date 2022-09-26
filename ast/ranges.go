@@ -25,8 +25,8 @@ type ExtensionRangeNode struct {
 	Keyword *KeywordNode
 	Ranges  []*RangeNode
 	// Commas represent the separating ',' characters between ranges. The
-	// length of this slice must be exactly len(Ranges)-1, each item in Ranges
-	// having a corresponding item in this slice *except the last* (since a
+	// length of this slice must be exactly len(Ranges)-1, each AsItem in Ranges
+	// having a corresponding AsItem in this slice *except the last* (since a
 	// trailing comma is not allowed).
 	Commas    []*RuneNode
 	Options   *CompactOptionsNode
@@ -216,8 +216,8 @@ type ReservedNode struct {
 	Names []StringValueNode
 	// Commas represent the separating ',' characters between options. The
 	// length of this slice must be exactly len(Ranges)-1 or len(Names)-1, depending
-	// on whether this node represents reserved ranges or reserved names. Each item
-	// in Ranges or Names has a corresponding item in this slice *except the last*
+	// on whether this node represents reserved ranges or reserved names. Each AsItem
+	// in Ranges or Names has a corresponding AsItem in this slice *except the last*
 	// (since a trailing comma is not allowed).
 	Commas    []*RuneNode
 	Semicolon *RuneNode

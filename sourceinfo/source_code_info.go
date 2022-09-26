@@ -562,9 +562,9 @@ func (s subComments) Index(i int) ast.Comment {
 
 func (sci *sourceCodeInfo) getLeadingComments(n ast.Node) []comments {
 	s := n.Start()
-	prev := sci.file.PreviousToken(s)
 	info := sci.file.TokenInfo(s)
-	if prev == ast.TokenError {
+	prev, ok := sci.file.Tokens().Previous(s)
+	if !ok {
 		return groupComments(info.LeadingComments())
 	}
 	prevInfo := sci.file.TokenInfo(prev)
@@ -574,8 +574,8 @@ func (sci *sourceCodeInfo) getLeadingComments(n ast.Node) []comments {
 
 func (sci *sourceCodeInfo) getTrailingComments(n ast.Node) comments {
 	e := n.End()
-	next := sci.file.NextToken(e)
-	if next == ast.TokenError {
+	next, ok := sci.file.Tokens().Next(e)
+	if !ok {
 		return emptyComments
 	}
 	info := sci.file.TokenInfo(e)
