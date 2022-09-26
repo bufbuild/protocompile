@@ -104,6 +104,10 @@ func (f *FileNode) TokenInfo(t Token) NodeInfo {
 	return f.fileInfo.TokenInfo(t)
 }
 
+func (f *FileNode) ItemInfo(i Item) ItemInfo {
+	return f.fileInfo.ItemInfo(i)
+}
+
 func (f *FileNode) GetItem(i Item) (Token, Comment) {
 	return f.fileInfo.GetItem(i)
 }

@@ -260,7 +260,7 @@ func (i items) First() (Item, bool) {
 }
 
 func (i items) Next(item Item) (Item, bool) {
-	if item < 0 || int(item) >= len(i.fileInfo.items) {
+	if item < 0 || int(item) >= len(i.fileInfo.items)-1 {
 		return 0, false
 	}
 	return i.fileInfo.itemForward(item+1, true)
@@ -274,7 +274,7 @@ func (i items) Last() (Item, bool) {
 }
 
 func (i items) Previous(item Item) (Item, bool) {
-	if item < 0 || int(item) >= len(i.fileInfo.items) {
+	if item <= 0 || int(item) >= len(i.fileInfo.items) {
 		return 0, false
 	}
 	return i.fileInfo.itemBackward(item-1, true)
@@ -290,7 +290,7 @@ func (t tokens) First() (Token, bool) {
 }
 
 func (t tokens) Next(tok Token) (Token, bool) {
-	if tok < 0 || int(tok) >= len(t.fileInfo.items) {
+	if tok < 0 || int(tok) >= len(t.fileInfo.items)-1 {
 		return 0, false
 	}
 	i, ok := t.fileInfo.itemForward(Item(tok+1), false)
@@ -303,7 +303,7 @@ func (t tokens) Last() (Token, bool) {
 }
 
 func (t tokens) Previous(tok Token) (Token, bool) {
-	if tok < 0 || int(tok) >= len(t.fileInfo.items) {
+	if tok <= 0 || int(tok) >= len(t.fileInfo.items) {
 		return 0, false
 	}
 	i, ok := t.fileInfo.itemBackward(Item(tok-1), false)

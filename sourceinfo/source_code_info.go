@@ -673,21 +673,13 @@ func (sci *sourceCodeInfo) combineComments(comments comments) string {
 		txt := c.RawText()
 		if txt[:2] == "//" {
 			buf.WriteString(txt[2:])
-			n, ok := sci.file.Items().Next(c.AsItem())
-			if ok {
-				tok, cmts := sci.file.GetItem(n)
-				var nextLeadingWhitespace string
-				if tok != ast.TokenError {
-					nextLeadingWhitespace = sci.file.TokenInfo(tok).LeadingWhitespace()
-				} else if cmts.IsValid() {
-					nextLeadingWhitespace = cmts.LeadingWhitespace()
-				}
-				if strings.HasPrefix(nextLeadingWhitespace, "\n") {
-					// protoc includes trailing newline for line comments,
-					// but it's not present in the AST comment. So if
+			// protoc includes trailing newline for line comments,
+			// but it's not present in the AST comment. So we need
+			// to add it if present.
+			if i, ok := sci.file.Items().Next(c.AsItem()); ok {
+				info := sci.file.ItemInfo(i)
+				if strings.HasPrefix(info.LeadingWhitespace(), "\n") {
 					buf.WriteRune('\n')
-				} else {
-					_ = true
 				}
 			}
 		} else {
