@@ -509,7 +509,7 @@ func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadin
 
 	var trail *string
 	if trailingComments.Len() > 0 {
-		trail = proto.String(combineComments(trailingComments))
+		trail = proto.String(sci.combineComments(trailingComments))
 	}
 
 	var lead *string
@@ -517,13 +517,13 @@ func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadin
 		lastGroup := leadingComments[len(leadingComments)-1]
 		lastComment := lastGroup.Index(lastGroup.Len() - 1)
 		if lastComment.End().Line >= nodeInfo.Start().Line-1 {
-			lead = proto.String(combineComments(lastGroup))
+			lead = proto.String(sci.combineComments(lastGroup))
 			leadingComments = leadingComments[:len(leadingComments)-1]
 		}
 	}
 	detached := make([]string, len(leadingComments))
 	for i := range leadingComments {
-		detached[i] = combineComments(leadingComments[i])
+		detached[i] = sci.combineComments(leadingComments[i])
 	}
 
 	dup := make([]int32, len(path))
@@ -663,7 +663,7 @@ func groupComments(cmts ast.Comments) []comments {
 	return groups
 }
 
-func combineComments(comments comments) string {
+func (sci *sourceCodeInfo) combineComments(comments comments) string {
 	if comments.Len() == 0 {
 		return ""
 	}
@@ -673,9 +673,21 @@ func combineComments(comments comments) string {
 		txt := c.RawText()
 		if txt[:2] == "//" {
 			buf.WriteString(txt[2:])
-			// protoc includes trailing newline for line comments,
-			// but it's not present in the AST comment, so we add it
-			buf.WriteRune('\n')
+			n, ok := sci.file.Items().Next(c.AsItem())
+			if ok {
+				tok, cmts := sci.file.GetItem(n)
+				var nextLeadingWhitespace string
+				if tok != ast.TokenError {
+					nextLeadingWhitespace = sci.file.TokenInfo(tok).LeadingWhitespace()
+				} else if cmts.IsValid() {
+					nextLeadingWhitespace = cmts.LeadingWhitespace()
+				}
+				if strings.HasPrefix(nextLeadingWhitespace, "\n") {
+					// protoc includes trailing newline for line comments,
+					// but it's not present in the AST comment. So if
+					buf.WriteRune('\n')
+				}
+			}
 		} else {
 			lines := strings.Split(txt[2:len(txt)-2], "\n")
 			first := true
