@@ -113,11 +113,11 @@ foo
 		comments   []string
 		trailCount int
 	}{
-		0:  {t: _INT32, line: 8, col: 9, span: 5, v: "int32", comments: []string{"// comment\n", "/*\n\t * block comment\n\t */", "/* inline comment */"}},
+		0:  {t: _INT32, line: 8, col: 9, span: 5, v: "int32", comments: []string{"// comment", "/*\n\t * block comment\n\t */", "/* inline comment */"}},
 		1:  {t: _STRING_LIT, line: 8, col: 16, span: 25, v: "\032\x16\n\rfoobar\"zap"},
 		2:  {t: _STRING_LIT, line: 8, col: 57, span: 22, v: "another\tstring's\t"},
 		3:  {t: _NAME, line: 9, col: 1, span: 3, v: "foo"},
-		4:  {t: _SERVICE, line: 14, col: 9, span: 7, v: "service", comments: []string{"// another comment\n", "// more and more...\n"}},
+		4:  {t: _SERVICE, line: 14, col: 9, span: 7, v: "service", comments: []string{"// another comment", "// more and more..."}},
 		5:  {t: _RPC, line: 14, col: 17, span: 3, v: "rpc"},
 		6:  {t: _MESSAGE, line: 14, col: 21, span: 7, v: "message"},
 		7:  {t: '.', line: 15, col: 9, span: 1},
@@ -168,19 +168,19 @@ foo
 		52: {t: '=', line: 41, col: 16, span: 1, v: nil},
 		53: {t: _STRING_LIT, line: 41, col: 18, span: 8, v: "proto2"},
 		54: {t: ';', line: 41, col: 26, span: 1, v: nil},
-		55: {t: _FLOAT_LIT, line: 44, col: 9, span: 5, v: 1.543, comments: []string{"// some strange cases\n"}},
+		55: {t: _FLOAT_LIT, line: 44, col: 9, span: 5, v: 1.543, comments: []string{"// some strange cases"}},
 		56: {t: _NAME, line: 44, col: 15, span: 3, v: "g12"},
 		57: {t: _FLOAT_LIT, line: 45, col: 9, span: 7, v: 0.0, comments: []string{"/* trailing inline comment */"}, trailCount: 1},
 		58: {t: _FLOAT_LIT, line: 46, col: 9, span: 6, v: 0.1234},
 		59: {t: _FLOAT_LIT, line: 46, col: 16, span: 5, v: 0.5678},
 		60: {t: '.', line: 46, col: 22, span: 1, v: nil},
-		61: {t: _FLOAT_LIT, line: 47, col: 9, span: 5, v: 12e12, comments: []string{"// trailing line comment\n"}, trailCount: 1},
+		61: {t: _FLOAT_LIT, line: 47, col: 9, span: 5, v: 12e12, comments: []string{"// trailing line comment"}, trailCount: 1},
 		62: {t: _FLOAT_LIT, line: 47, col: 15, span: 19, v: math.Inf(1)},
 		63: {t: _NAME, line: 49, col: 9, span: 53, v: "Random_identifier_with_numbers_0123456789_and_letters"},
 		64: {t: '.', line: 49, col: 62, span: 1, v: nil},
 		65: {t: '.', line: 49, col: 63, span: 1, v: nil},
 		66: {t: '.', line: 49, col: 64, span: 1, v: nil},
-		67: {t: _NAME, line: 59, col: 9, span: 3, v: "foo", comments: []string{"// this is a trailing comment\n", "// that spans multiple lines\n", "// over two in fact!\n", "/*\n\t * this is a detached comment\n\t * with lots of extra words and stuff...\n\t */", "// this is an attached leading comment\n"}},
+		67: {t: _NAME, line: 59, col: 9, span: 3, v: "foo", comments: []string{"// this is a trailing comment", "// that spans multiple lines", "// over two in fact!", "/*\n\t * this is a detached comment\n\t * with lots of extra words and stuff...\n\t */", "// this is an attached leading comment"}},
 		68: {t: _STRING_LIT, line: 61, col: 9, span: 7, v: "abc 😊"},
 		69: {t: _STRING_LIT, line: 63, col: 48, span: 7, v: "def 🙁", comments: []string{"/* this is not a trailing\n\t            comment because it ends on\n\t            same line as next token */"}},
 		70: {t: _FLOAT_LIT, line: 65, col: 9, span: 8, v: 1.23e+20},
@@ -265,7 +265,7 @@ foo
 	eofNodeInfo := l.info.TokenInfo(l.eof)
 	finalComments := eofNodeInfo.LeadingComments()
 	if assert.Equal(t, 2, finalComments.Len(), "wrong number of final remaining comments") {
-		assert.Equal(t, "// comment attached to no tokens (upcoming token is EOF!)\n", finalComments.Index(0).RawText(), "incorrect final comment text")
+		assert.Equal(t, "// comment attached to no tokens (upcoming token is EOF!)", finalComments.Index(0).RawText(), "incorrect final comment text")
 		assert.Equal(t, "/* another comment followed by some final whitespace*/", finalComments.Index(1).RawText(), "incorrect final comment text")
 	}
 	assert.Equal(t, "\n\n\t\n\t", eofNodeInfo.LeadingWhitespace(), "incorrect final whitespace")
@@ -528,7 +528,7 @@ message Foo {
 					if assert.Equal(t, 1, info.LeadingComments().Len(), "%s should have a leading comment", name) {
 						assert.Equal(
 							t,
-							fmt.Sprintf("// Leading comment on %s.\n", name),
+							fmt.Sprintf("// Leading comment on %s.", name),
 							info.LeadingComments().Index(0).RawText(),
 						)
 					}
@@ -542,7 +542,7 @@ message Foo {
 					if assert.Equal(t, 1, info.LeadingComments().Len(), "%s should have a leading comment", name) {
 						assert.Equal(
 							t,
-							fmt.Sprintf("// Leading comment on %s.\n", name),
+							fmt.Sprintf("// Leading comment on %s.", name),
 							info.LeadingComments().Index(0).RawText(),
 						)
 					}

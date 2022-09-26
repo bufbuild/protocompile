@@ -25,7 +25,7 @@ type Node interface {
 }
 
 // TerminalNode represents a leaf in the AST. These represent
-// the tokens/lexemes in the protobuf language. Comments and
+// the items/lexemes in the protobuf language. Comments and
 // whitespace are accumulated by the lexer and associated with
 // the following lexed token.
 type TerminalNode interface {
@@ -88,7 +88,7 @@ func (n *compositeNode) End() Token {
 }
 
 // RuneNode represents a single rune in protobuf source. Runes
-// are typically collected into tokens, but some runes stand on
+// are typically collected into items, but some runes stand on
 // their own, such as punctuation/symbols like commas, semicolons,
 // equals signs, open and close symbols (braces, brackets, angles,
 // and parentheses), and periods/dots.

@@ -61,3 +61,11 @@ extend google.protobuf.OneofOptions {
 	repeated string oofubar = 10101;
 	optional bytes oofubarb = 10102;
 }
+
+extend google.protobuf.FileOptions {
+	repeated string flfubar = 10101;
+	optional bytes flfubarb = 10102;
+}
+
+// a file option!
+option (flfubar) = "foobar"; // line comment with no trailing newline
