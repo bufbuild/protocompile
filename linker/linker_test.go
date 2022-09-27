@@ -1403,7 +1403,7 @@ func removePrefixIndent(s string) string {
 	}
 	lines = lines[1:] // skip first blank line
 	// determine whitespace prefix from first line (e.g. five tabstops)
-	var prefix []rune
+	var prefix []rune //nolint:prealloc
 	for _, r := range lines[1] {
 		if !unicode.IsSpace(r) {
 			break
@@ -1723,9 +1723,9 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	}
 	var expected []string
 	require.NotEmpty(t, errs)
-	var actual []string
-	for _, err := range errs {
-		actual = append(actual, err.Error())
+	actual := make([]string, len(errs))
+	for i, err := range errs {
+		actual[i] = err.Error()
 	}
 	if strings.HasPrefix(actual[0], "foo2.proto") {
 		expected = expectedFoo1FirstErrors

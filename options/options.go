@@ -694,7 +694,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		ElementType: descriptorType(element),
 	}
 	var remain []*descriptorpb.UninterpretedOption
-	var results []*interpretedOption
+	results := make([]*interpretedOption, 0, len(uninterpreted))
 	for _, uo := range uninterpreted {
 		node := interp.file.OptionNode(uo)
 		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == "uninterpreted_option" {

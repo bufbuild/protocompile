@@ -45,11 +45,11 @@ var _ TerminalNode = (*RuneNode)(nil)
 // are interior or root nodes and have child nodes.
 type CompositeNode interface {
 	Node
-	// All AST nodes that are immediate children of this one.
+	// Children contains all AST nodes that are immediate children of this one.
 	Children() []Node
 }
 
-// terminalNode contains book-keeping shared by all TerminalNode
+// terminalNode contains bookkeeping shared by all TerminalNode
 // implementations. It is embedded in all such node types in this
 // package. It provides the implementation of the TerminalNode
 // interface.
@@ -67,7 +67,7 @@ func (n terminalNode) Token() Token {
 	return Token(n)
 }
 
-// compositeNode contains book-keeping shared by all CompositeNode
+// compositeNode contains bookkeeping shared by all CompositeNode
 // implementations. It is embedded in all such node types in this
 // package. It provides the implementation of the CompositeNode
 // interface.
