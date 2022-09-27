@@ -212,7 +212,7 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 	if semicolon == nil {
 		panic("semicolon is nil")
 	}
-	numChildren := 2
+	numChildren := 3
 	if public != nil || weak != nil {
 		numChildren++
 	}
