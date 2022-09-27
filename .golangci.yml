@@ -51,7 +51,6 @@ linters:
     - gocyclo
     - goerr113
     - gosec
-    - gosimple
     - interfacebloat
     - makezero
     - nestif

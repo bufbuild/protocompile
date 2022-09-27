@@ -852,10 +852,7 @@ func validateRecursive(msg protoreflect.Message, prefix string) error {
 				val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
 					chprefix := fmt.Sprintf("%s%s[%v].", prefix, fieldName(fld), k)
 					err = validateRecursive(v.Message(), chprefix)
-					if err != nil {
-						return false
-					}
-					return true
+					return err == nil
 				})
 				if err != nil {
 					return false
