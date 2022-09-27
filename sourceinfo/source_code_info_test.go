@@ -82,9 +82,9 @@ var protocFixers = []struct {
 		// FieldDescriptorProto.default_value
 		// https://github.com/protocolbuffers/protobuf/issues/10478
 		pathPatterns: []*regexp.Regexp{
-			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*2,\\d+,7$"), // normal fields
-			regexp.MustCompile("^7,\\d+,7$"),                    // extension fields, top-level in file
-			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*7,\\d+,7$"), // extension fields, nested in a message
+			regexp.MustCompile(`^4,\d+,(?:3,\d+,)*2,\d+,7$`), // normal fields
+			regexp.MustCompile(`^7,\d+,7$`),                  // extension fields, top-level in file
+			regexp.MustCompile(`^4,\d+,(?:3,\d+,)*7,\d+,7$`), // extension fields, nested in a message
 		},
 		fixer: func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location {
 			// adjust span to include preceding "default = "
@@ -96,7 +96,7 @@ var protocFixers = []struct {
 		// FieldDescriptorProto.json_name
 		// https://github.com/protocolbuffers/protobuf/issues/10478
 		pathPatterns: []*regexp.Regexp{
-			regexp.MustCompile("^4,\\d+,(?:3,\\d+,)*2,\\d+,10$"),
+			regexp.MustCompile(`^4,\d+,(?:3,\d+,)*2,\d+,10$`),
 		},
 		fixer: func(allLocs []*descriptorpb.SourceCodeInfo_Location, currentIndex int) *descriptorpb.SourceCodeInfo_Location {
 			if currentIndex > 0 && pathsEqual(allLocs[currentIndex].Path, allLocs[currentIndex-1].Path) {
