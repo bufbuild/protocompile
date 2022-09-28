@@ -101,6 +101,9 @@ func ProtoFromDescriptor(d protoreflect.Descriptor) proto.Message {
 // inexpensive and non-lossy operation. File descriptors from other sources
 // however may be expensive (to re-create a proto) and even lossy.
 func ProtoFromFileDescriptor(d protoreflect.FileDescriptor) *descriptorpb.FileDescriptorProto {
+	if imp, ok := d.(protoreflect.FileImport); ok {
+		d = imp.FileDescriptor
+	}
 	type canProto interface {
 		FileDescriptorProto() *descriptorpb.FileDescriptorProto
 	}
