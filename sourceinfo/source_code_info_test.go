@@ -18,16 +18,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
@@ -162,7 +162,7 @@ func fixupProtocSourceCodeInfo(info *descriptorpb.SourceCodeInfo) {
 
 func TestSourceCodeInfoExtraComments(t *testing.T) {
 	// set to true to re-generate golden output file
-	const regenerateGoldenOutputFile = true
+	const regenerateGoldenOutputFile = false
 
 	t.Parallel()
 	compiler := protocompile.Compiler{
@@ -178,6 +178,7 @@ func TestSourceCodeInfoExtraComments(t *testing.T) {
 	require.NoError(t, err)
 
 	file, err := linker.NewFileRecursive(fds[0])
+	require.NoError(t, err)
 	resolver := linker.ResolverFromFile(file)
 	output := describeSourceCodeInfo(file.Path(), file.SourceLocations(), resolver)
 
