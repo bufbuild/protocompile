@@ -1394,6 +1394,7 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 	// message is empty, because that indicates to
 	// caller that the result is not a message
 	flds := make([]*interpretedField, 0, len(fieldNodes))
+	var foundAnyNode bool
 	for _, fieldNode := range fieldNodes {
 		if origPath == "" {
 			mc.OptAggPath = fieldNode.Name.Value()
@@ -1403,53 +1404,56 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 
 		// TODO: ensure that len(fieldNodes) == 1 (can't have multiple any fields)
 		if fieldNode.Name.IsAnyTypeReference() {
-			if fmd.FullName() == "google.protobuf.Any" {
-				// TODO: Support other URLs dynamically -- the caller of protoparse
-				// should be able to provide fldNode custom resolver that can resolve type
-				// URLs into message descriptors. The default resolver would be
-				// implemented as below, only accepting  "type.googleapis.com" and
-				// "type.googleprod.com" as hosts/prefixes and using the compiled
-				// file's transitive closure to find the named message.
-				urlPrefix := fieldNode.Name.URLPrefix.AsIdentifier()
-				msgName := fieldNode.Name.Name.AsIdentifier()
-				fullURL := fmt.Sprintf("%s/%s", urlPrefix, msgName)
-				if urlPrefix != "type.googleapis.com" && urlPrefix != "type.googleprod.com" {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
-				}
-				anyFields, ok := fieldNode.Val.Value().([]*ast.MessageFieldNode)
-				if !ok {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vtype references for google.protobuf.Any must have message literal value", mc)
-				}
-				anyMd := interp.file.ResolveMessageType(protoreflect.FullName(msgName))
-				if anyMd == nil {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
-				}
-				// parse the message value
-				msgVal, err := interp.messageLiteralValue(mc, anyFields, anyMd)
-				if err != nil {
-					return interpretedFieldValue{}, err
-				}
-
-				// Any is defined with two fields:
-				//   string type_url = 1
-				//   bytes value = 2
-				typeURLDescriptor := fmd.Fields().ByNumber(1)
-				if typeURLDescriptor == nil || typeURLDescriptor.Kind() != protoreflect.StringKind {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set type_url string field on Any: %w", mc, err)
-				}
-				fdm.Set(typeURLDescriptor, protoreflect.ValueOfString(fullURL))
-				valueDescriptor := fmd.Fields().ByNumber(2)
-				if valueDescriptor == nil || valueDescriptor.Kind() != protoreflect.BytesKind {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set value bytes field on Any: %w", mc, err)
-				}
-				b, err := proto.MarshalOptions{Deterministic: true}.Marshal(msgVal.val.Message().Interface())
-				if err != nil {
-					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vfailed to serialize message value: %w", mc, err)
-				}
-				fdm.Set(valueDescriptor, protoreflect.ValueOfBytes(b))
-			} else {
+			if foundAnyNode {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vmultiple any type references are not allowed", mc)
+			}
+			foundAnyNode = true
+			// TODO: Support other URLs dynamically -- the caller of protoparse
+			// should be able to provide a fldNode custom resolver that can resolve type
+			// URLs into message descriptors. The default resolver would be
+			// implemented as below, only accepting "type.googleapis.com" and
+			// "type.googleprod.com" as hosts/prefixes and using the compiled
+			// file's transitive closure to find the named message.
+			if fmd.FullName() != "google.protobuf.Any" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
 			}
+			urlPrefix := fieldNode.Name.URLPrefix.AsIdentifier()
+			msgName := fieldNode.Name.Name.AsIdentifier()
+			fullURL := fmt.Sprintf("%s/%s", urlPrefix, msgName)
+			if urlPrefix != "type.googleapis.com" && urlPrefix != "type.googleprod.com" {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
+			}
+			anyFields, ok := fieldNode.Val.Value().([]*ast.MessageFieldNode)
+			if !ok {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vtype references for google.protobuf.Any must have message literal value", mc)
+			}
+			anyMd := interp.file.ResolveMessageType(protoreflect.FullName(msgName))
+			if anyMd == nil {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
+			}
+			// parse the message value
+			msgVal, err := interp.messageLiteralValue(mc, anyFields, anyMd)
+			if err != nil {
+				return interpretedFieldValue{}, err
+			}
+
+			// Any is defined with two fields:
+			//   string type_url = 1
+			//   bytes value = 2
+			typeURLDescriptor := fmd.Fields().ByNumber(1)
+			if typeURLDescriptor == nil || typeURLDescriptor.Kind() != protoreflect.StringKind {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set type_url string field on Any: %w", mc, err)
+			}
+			fdm.Set(typeURLDescriptor, protoreflect.ValueOfString(fullURL))
+			valueDescriptor := fmd.Fields().ByNumber(2)
+			if valueDescriptor == nil || valueDescriptor.Kind() != protoreflect.BytesKind {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfailed to set value bytes field on Any: %w", mc, err)
+			}
+			b, err := proto.MarshalOptions{Deterministic: true}.Marshal(msgVal.val.Message().Interface())
+			if err != nil {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vfailed to serialize message value: %w", mc, err)
+			}
+			fdm.Set(valueDescriptor, protoreflect.ValueOfBytes(b))
 		} else {
 			var ffld protoreflect.FieldDescriptor
 			if fieldNode.Name.IsExtension() {

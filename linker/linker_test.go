@@ -1067,6 +1067,30 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): could not resolve type reference type.googleapis.com/Foo",
 		},
+		"failure_any_message_literal_duplicate": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					import "google/protobuf/any.proto";
+					import "google/protobuf/descriptor.proto";
+					message Foo { string a = 1; int32 b = 2; }
+					extend google.protobuf.MessageOptions { optional google.protobuf.Any any = 10001; }
+					message Baz {
+					  option (any) = {
+					    [type.googleapis.com/foo.bar.Foo] <
+					      a: "abc"
+					      b: 123
+					    >
+					    [type.googleapis.com/foo.bar.Foo] <
+					      a: "abc"
+					      b: 123
+					    >
+					  };
+					}`,
+			},
+			expectedErr: "foo.proto:13:6: message foo.bar.Baz: option (foo.bar.any): multiple any type references are not allowed",
+		},
 		"failure_scope_type_name": {
 			input: map[string]string{
 				"foo.proto": `
