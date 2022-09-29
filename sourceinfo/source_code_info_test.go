@@ -15,7 +15,12 @@
 package sourceinfo_test
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -153,4 +158,118 @@ func fixupProtocSourceCodeInfo(info *descriptorpb.SourceCodeInfo) {
 			break
 		}
 	}
+}
+
+func TestSourceCodeInfoExtraComments(t *testing.T) {
+	// set to true to re-generate golden output file
+	const regenerateGoldenOutputFile = true
+
+	t.Parallel()
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"../internal/testdata"},
+		}),
+		SourceInfoMode: protocompile.SourceInfoExtraComments,
+	}
+	fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto")
+	if pe, ok := err.(protocompile.PanicError); ok {
+		t.Fatalf("panic! %v\n%v", pe, pe.Stack)
+	}
+	require.NoError(t, err)
+
+	file, err := linker.NewFileRecursive(fds[0])
+	resolver := linker.ResolverFromFile(file)
+	output := describeSourceCodeInfo(file.Path(), file.SourceLocations(), resolver)
+
+	if regenerateGoldenOutputFile {
+		err := os.WriteFile("extra_comments_test.txt", []byte(output), 0666)
+		require.NoError(t, err)
+		return
+	}
+
+	goldenOutput, err := os.ReadFile("extra_comments_test.txt")
+	require.NoError(t, err)
+	diff := cmp.Diff(string(goldenOutput), output)
+	assert.Empty(t, diff, "source code info mismatch (-want +got):\n%v", diff)
+}
+
+var pathRoot = (&descriptorpb.FileDescriptorProto{}).ProtoReflect().Descriptor()
+
+func describeSourceCodeInfo(fileName string, locs protoreflect.SourceLocations, resolver linker.Resolver) string {
+	var buf bytes.Buffer
+	for i := 0; i < locs.Len(); i++ {
+		if i > 0 {
+			buf.WriteString("\n")
+		}
+		buf.WriteString(fileName)
+		describeLocation(&buf, locs.Get(i), resolver)
+	}
+	return buf.String()
+}
+
+func describeLocation(buf *bytes.Buffer, loc protoreflect.SourceLocation, resolver linker.Resolver) {
+	describePath(buf, loc.Path, pathRoot, resolver)
+	_, _ = fmt.Fprintf(buf, "   Span: %d:%d -> %d:%d\n",
+		loc.StartLine+1, loc.StartColumn+1, loc.EndLine+1, loc.EndColumn+1)
+	if len(loc.LeadingDetachedComments) > 0 {
+		_, _ = fmt.Fprintf(buf, "   Detached Comments:\n")
+		for i, cmt := range loc.LeadingDetachedComments {
+			if i > 0 {
+				buf.WriteString("\n")
+			}
+			cmt = strings.TrimSuffix(cmt, "\n")
+			_, _ = fmt.Fprintf(buf, "%s\n", cmt)
+		}
+	}
+	if loc.LeadingComments != "" {
+		cmt := strings.TrimSuffix(loc.LeadingComments, "\n")
+		_, _ = fmt.Fprintf(buf, "   Leading Comments:\n%s\n", cmt)
+	}
+	if loc.TrailingComments != "" {
+		cmt := strings.TrimSuffix(loc.TrailingComments, "\n")
+		_, _ = fmt.Fprintf(buf, "   Trailing Comments:\n%s\n", cmt)
+	}
+}
+
+func describePath(buf *bytes.Buffer, path protoreflect.SourcePath, md protoreflect.MessageDescriptor, resolver linker.Resolver) {
+	if len(path) == 0 {
+		buf.WriteString(":\n")
+		return
+	}
+
+	fieldNumber := protoreflect.FieldNumber(path[0])
+	path = path[1:]
+	var next protoreflect.MessageDescriptor
+	fd := resolveNumber(fieldNumber, md, resolver)
+	if fd == nil {
+		_, _ = fmt.Fprintf(buf, " > %d?", fieldNumber)
+	} else {
+		if fd.IsExtension() {
+			_, _ = fmt.Fprintf(buf, " > (%s)", fd.FullName())
+		} else {
+			_, _ = fmt.Fprintf(buf, " > %s", fd.Name())
+		}
+		if fd.Cardinality() == protoreflect.Repeated && len(path) > 0 {
+			index := path[0]
+			path = path[1:]
+			_, _ = fmt.Fprintf(buf, "[%d]", index)
+		}
+		next = fd.Message()
+	}
+	describePath(buf, path, next, resolver)
+}
+
+func resolveNumber(num protoreflect.FieldNumber, md protoreflect.MessageDescriptor, resolver linker.Resolver) protoreflect.FieldDescriptor {
+	if md == nil {
+		return nil
+	}
+	fld := md.Fields().ByNumber(num)
+	if fld != nil {
+		return fld
+	}
+	xt, err := resolver.FindExtensionByNumber(md.FullName(), num)
+	if err != nil {
+		return nil
+	}
+	return xt.TypeDescriptor()
 }

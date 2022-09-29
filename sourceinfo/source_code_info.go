@@ -62,7 +62,7 @@ func generateSourceInfo(file *ast.FileNode, opts options.Index, extraComments bo
 	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}, extraComments: extraComments}
 	path := make([]int32, 0, 10)
 
-	sci.newLoc(file, nil)
+	sci.newLocWithoutComments(file, nil)
 
 	if file.Syntax != nil {
 		sci.newLocWithComments(file.Syntax, append(path, internal.FileSyntaxTag))
@@ -105,7 +105,7 @@ func generateSourceInfo(file *ast.FileNode, opts options.Index, extraComments bo
 
 func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n *ast.OptionNode, compact bool, uninterpIndex *int32, path []int32) {
 	if !compact {
-		sci.newLoc(n, path)
+		sci.newLocWithoutComments(n, path)
 	}
 	subPath := opts[n]
 	if len(subPath) > 0 {
@@ -341,18 +341,18 @@ func generateSourceCodeInfoForField(opts options.Index, sci *sourceCodeInfo, n a
 
 	if n.GetGroupKeyword() != nil {
 		// comments will appear on group message
-		sci.newLoc(n, path)
+		sci.newLocWithoutComments(n, path)
 		if n.FieldExtendee() != nil {
 			sci.newLoc(n.FieldExtendee(), append(path, internal.FieldExtendeeTag))
 		}
 		if n.FieldLabel() != nil {
 			// no comments here either (label is first token for group, so we want
 			// to leave the comments to be associated with the group message instead)
-			sci.newLoc(n.FieldLabel(), append(path, internal.FieldLabelTag))
+			sci.newLocWithoutComments(n.FieldLabel(), append(path, internal.FieldLabelTag))
 		}
 		sci.newLoc(n.FieldType(), append(path, internal.FieldTypeTag))
 		// let the name comments be attributed to the group name
-		sci.newLoc(n.FieldName(), append(path, internal.FieldNameTag))
+		sci.newLocWithoutComments(n.FieldName(), append(path, internal.FieldNameTag))
 	} else {
 		sci.newLocWithComments(n, path)
 		if n.FieldExtendee() != nil {
@@ -462,10 +462,9 @@ type sourceCodeInfo struct {
 	commentsUsed  map[ast.SourcePos]struct{}
 }
 
-func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
+func (sci *sourceCodeInfo) newLocWithoutComments(n ast.Node, path []int32) {
 	dup := make([]int32, len(path))
 	copy(dup, path)
-	info := sci.file.NodeInfo(n)
 	var start, end ast.SourcePos
 	if n == sci.file {
 		// For files, we don't want to consider trailing EOF token
@@ -484,10 +483,21 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 			end = sci.file.TokenInfo(children[len(children)-1].End()).End()
 		}
 	} else {
+		info := sci.file.NodeInfo(n)
 		start, end = info.Start(), info.End()
 	}
+	sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
+		Path: dup,
+		Span: makeSpan(start, end),
+	})
+}
+
+func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
+	info := sci.file.NodeInfo(n)
 	if !sci.extraComments {
-		// normal mode: no comments for these locations
+		dup := make([]int32, len(path))
+		copy(dup, path)
+		start, end := info.Start(), info.End()
 		sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
 			Path: dup,
 			Span: makeSpan(start, end),
@@ -495,7 +505,7 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	} else {
 		leadingComments := sci.getLeadingComments(n)
 		trailingComments := sci.getTrailingComments(n)
-		sci.newLocWithGivenSpanAndComments(info, makeSpan(start, end), leadingComments, trailingComments, path)
+		sci.newLocWithGivenComments(info, leadingComments, trailingComments, path)
 	}
 }
 
