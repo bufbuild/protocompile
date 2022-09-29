@@ -36,12 +36,30 @@ import (
 // opts is present, it can generate source code info for interpreted options.
 // Otherwise, any options in the AST will get source code info as uninterpreted
 // options.
+//
+// This includes comments only for locations that represent complete declarations.
+// This is the same behavior as protoc, the reference compiler for Protocol Buffers.
 func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.SourceCodeInfo {
+	return generateSourceInfo(file, opts, false)
+}
+
+// GenerateSourceInfoWithExtraComments generates source code info for the given
+// AST. If the given opts is present, it can generate source code info for
+// interpreted options. Otherwise, any options in the AST will get source code
+// info as uninterpreted options.
+//
+// This includes comments for all locations. This is still lossy, but less so as
+// it preserves far more comments from the source file.
+func GenerateSourceInfoWithExtraComments(file *ast.FileNode, opts options.Index) *descriptorpb.SourceCodeInfo {
+	return generateSourceInfo(file, opts, true)
+}
+
+func generateSourceInfo(file *ast.FileNode, opts options.Index, extraComments bool) *descriptorpb.SourceCodeInfo {
 	if file == nil {
 		return nil
 	}
 
-	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}}
+	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}, extraComments: extraComments}
 	path := make([]int32, 0, 10)
 
 	sci.newLoc(file, nil)
@@ -438,14 +456,16 @@ func generateSourceCodeInfoForMethod(opts options.Index, sci *sourceCodeInfo, n 
 }
 
 type sourceCodeInfo struct {
-	file         *ast.FileNode
-	locs         []*descriptorpb.SourceCodeInfo_Location
-	commentsUsed map[ast.SourcePos]struct{}
+	file          *ast.FileNode
+	extraComments bool
+	locs          []*descriptorpb.SourceCodeInfo_Location
+	commentsUsed  map[ast.SourcePos]struct{}
 }
 
 func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	dup := make([]int32, len(path))
 	copy(dup, path)
+	info := sci.file.NodeInfo(n)
 	var start, end ast.SourcePos
 	if n == sci.file {
 		// For files, we don't want to consider trailing EOF token
@@ -464,13 +484,19 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 			end = sci.file.TokenInfo(children[len(children)-1].End()).End()
 		}
 	} else {
-		info := sci.file.NodeInfo(n)
 		start, end = info.Start(), info.End()
 	}
-	sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
-		Path: dup,
-		Span: makeSpan(start, end),
-	})
+	if !sci.extraComments {
+		// normal mode: no comments for these locations
+		sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
+			Path: dup,
+			Span: makeSpan(start, end),
+		})
+	} else {
+		leadingComments := sci.getLeadingComments(n)
+		trailingComments := sci.getTrailingComments(n)
+		sci.newLocWithGivenSpanAndComments(info, makeSpan(start, end), leadingComments, trailingComments, path)
+	}
 }
 
 func isEOF(n ast.Node) bool {
@@ -535,6 +561,9 @@ func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadin
 		Path:                    dup,
 		Span:                    makeSpan(nodeInfo.Start(), nodeInfo.End()),
 	})
+}
+
+func (sci *sourceCodeInfo) newLocWithGivenSpanAndComments(nodeInfo ast.NodeInfo, span []int32, leadingComments []comments, trailingComments comments, path []int32) {
 }
 
 type comments interface {

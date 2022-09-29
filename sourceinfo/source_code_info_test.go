@@ -37,7 +37,7 @@ func TestSourceCodeInfo(t *testing.T) {
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{"../internal/testdata"},
 		}),
-		IncludeSourceInfo: true,
+		SourceInfoMode: protocompile.SourceInfoStandard,
 	}
 	fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto", "desc_test_complex.proto")
 	if pe, ok := err.(protocompile.PanicError); ok {
