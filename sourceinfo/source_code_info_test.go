@@ -165,30 +165,39 @@ func TestSourceCodeInfoExtraComments(t *testing.T) {
 	const regenerateGoldenOutputFile = false
 
 	t.Parallel()
-	compiler := protocompile.Compiler{
-		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-			ImportPaths: []string{"../internal/testdata"},
-		}),
-		SourceInfoMode: protocompile.SourceInfoExtraComments,
-	}
-	fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto")
-	if pe, ok := err.(protocompile.PanicError); ok {
-		t.Fatalf("panic! %v\n%v", pe, pe.Stack)
-	}
-	require.NoError(t, err)
 
-	file, err := linker.NewFileRecursive(fds[0])
-	require.NoError(t, err)
-	resolver := linker.ResolverFromFile(file)
-	output := describeSourceCodeInfo(file.Path(), file.SourceLocations(), resolver)
+	generateSourceInfoText := func(mode protocompile.SourceInfoMode) string {
+		compiler := protocompile.Compiler{
+			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+				ImportPaths: []string{"../internal/testdata"},
+			}),
+			SourceInfoMode: mode,
+		}
+		fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto")
+		if pe, ok := err.(protocompile.PanicError); ok {
+			t.Fatalf("panic! %v\n%v", pe, pe.Stack)
+		}
+		require.NoError(t, err)
+
+		file, err := linker.NewFileRecursive(fds[0])
+		require.NoError(t, err)
+		resolver := linker.ResolverFromFile(file)
+		return describeSourceCodeInfo(file.Path(), file.SourceLocations(), resolver)
+	}
+
+	output := generateSourceInfoText(protocompile.SourceInfoExtraComments)
 
 	if regenerateGoldenOutputFile {
-		err := os.WriteFile("extra_comments_test.txt", []byte(output), 0666)
+		err := os.WriteFile("testdata/desc_test_comments.extra_comments.txt", []byte(output), 0644)
+		require.NoError(t, err)
+		// also create a file with standard comments, as a useful demonstration of the differences
+		output := generateSourceInfoText(protocompile.SourceInfoStandard)
+		err = os.WriteFile("testdata/desc_test_comments.standard.txt", []byte(output), 0644)
 		require.NoError(t, err)
 		return
 	}
 
-	goldenOutput, err := os.ReadFile("extra_comments_test.txt")
+	goldenOutput, err := os.ReadFile("testdata/desc_test_comments.extra_comments.txt")
 	require.NoError(t, err)
 	diff := cmp.Diff(string(goldenOutput), output)
 	assert.Empty(t, diff, "source code info mismatch (-want +got):\n%v", diff)

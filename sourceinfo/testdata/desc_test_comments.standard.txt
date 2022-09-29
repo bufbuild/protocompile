@@ -1,0 +1,681 @@
+desc_test_comments.proto:
+   Span: 8:1 -> 156:2
+
+desc_test_comments.proto > syntax:
+   Span: 8:1 -> 8:19
+   Detached Comments:
+ This is the first detached comment for the syntax.
+
+
+ This is a second detached comment.
+
+ This is a third.
+   Leading Comments:
+ Syntax comment...
+   Trailing Comments:
+ Syntax trailer.
+
+desc_test_comments.proto > package:
+   Span: 12:1 -> 12:17
+   Leading Comments:
+ And now the package declaration
+
+desc_test_comments.proto > options:
+   Span: 15:1 -> 15:78
+
+desc_test_comments.proto > options > go_package:
+   Span: 15:1 -> 15:78
+   Leading Comments:
+ option comments FTW!!!
+
+desc_test_comments.proto > dependency[0]:
+   Span: 17:1 -> 17:45
+
+desc_test_comments.proto > public_dependency[0]:
+   Span: 17:8 -> 17:14
+
+desc_test_comments.proto > dependency[1]:
+   Span: 18:1 -> 18:34
+
+desc_test_comments.proto > message_type[0]:
+   Span: 25:1 -> 113:2
+   Detached Comments:
+ Multiple white space lines (like above) cannot
+ be preserved...
+   Leading Comments:
+ We need a request for our RPC service below.
+
+desc_test_comments.proto > message_type[0] > name:
+   Span: 25:68 -> 25:75
+
+desc_test_comments.proto > message_type[0] > options:
+   Span: 26:9 -> 26:34
+
+desc_test_comments.proto > message_type[0] > options > deprecated:
+   Span: 26:9 -> 26:34
+   Trailing Comments:
+ deprecated!
+
+desc_test_comments.proto > message_type[0] > field[0]:
+   Span: 29:9 -> 32:132
+   Leading Comments:
+ A field comment
+   Trailing Comments:
+ field trailer #1...
+
+desc_test_comments.proto > message_type[0] > field[0] > label:
+   Span: 29:9 -> 29:17
+
+desc_test_comments.proto > message_type[0] > field[0] > type:
+   Span: 29:18 -> 29:23
+
+desc_test_comments.proto > message_type[0] > field[0] > name:
+   Span: 29:24 -> 29:27
+
+desc_test_comments.proto > message_type[0] > field[0] > number:
+   Span: 29:70 -> 29:71
+
+desc_test_comments.proto > message_type[0] > field[0] > options:
+   Span: 32:11 -> 32:131
+
+desc_test_comments.proto > message_type[0] > field[0] > options > packed:
+   Span: 32:12 -> 32:23
+
+desc_test_comments.proto > message_type[0] > field[0] > json_name:
+   Span: 32:39 -> 32:56
+
+desc_test_comments.proto > message_type[0] > field[0] > options > (testprotos.ffubar)[0]:
+   Span: 32:77 -> 32:102
+
+desc_test_comments.proto > message_type[0] > field[0] > options > (testprotos.ffubarb):
+   Span: 32:104 -> 32:130
+
+desc_test_comments.proto > message_type[0] > options:
+   Span: 35:27 -> 35:61
+
+desc_test_comments.proto > message_type[0] > options > (testprotos.mfubar):
+   Span: 35:27 -> 35:61
+   Leading Comments:
+ lead mfubar 
+   Trailing Comments:
+ trailing mfubar
+
+desc_test_comments.proto > message_type[0] > field[1]:
+   Span: 42:29 -> 43:77
+   Detached Comments:
+ some detached comments
+
+ some detached comments with unicode 这个是值
+
+ Another field comment
+   Leading Comments:
+ label comment 
+
+desc_test_comments.proto > message_type[0] > field[1] > label:
+   Span: 42:29 -> 42:37
+
+desc_test_comments.proto > message_type[0] > field[1] > type:
+   Span: 42:57 -> 42:63
+
+desc_test_comments.proto > message_type[0] > field[1] > name:
+   Span: 42:83 -> 42:87
+
+desc_test_comments.proto > message_type[0] > field[1] > number:
+   Span: 42:90 -> 42:91
+
+desc_test_comments.proto > message_type[0] > field[1] > options:
+   Span: 43:17 -> 43:76
+
+desc_test_comments.proto > message_type[0] > field[1] > default_value:
+   Span: 43:37 -> 43:54
+
+desc_test_comments.proto > message_type[0] > extension_range:
+   Span: 46:9 -> 46:31
+   Leading Comments:
+ extension range comments are (sadly) not preserved
+
+desc_test_comments.proto > message_type[0] > extension_range[0]:
+   Span: 46:20 -> 46:30
+
+desc_test_comments.proto > message_type[0] > extension_range[0] > start:
+   Span: 46:20 -> 46:23
+
+desc_test_comments.proto > message_type[0] > extension_range[0] > end:
+   Span: 46:27 -> 46:30
+
+desc_test_comments.proto > message_type[0] > extension_range:
+   Span: 47:9 -> 47:109
+
+desc_test_comments.proto > message_type[0] > extension_range[1]:
+   Span: 47:20 -> 47:30
+
+desc_test_comments.proto > message_type[0] > extension_range[1] > start:
+   Span: 47:20 -> 47:23
+
+desc_test_comments.proto > message_type[0] > extension_range[1] > end:
+   Span: 47:27 -> 47:30
+
+desc_test_comments.proto > message_type[0] > extension_range[1] > options:
+   Span: 47:31 -> 47:108
+
+desc_test_comments.proto > message_type[0] > extension_range[1] > options > (testprotos.exfubarb):
+   Span: 47:32 -> 47:74
+
+desc_test_comments.proto > message_type[0] > extension_range[1] > options > (testprotos.exfubar)[0]:
+   Span: 47:76 -> 47:107
+
+desc_test_comments.proto > message_type[0] > reserved_range:
+   Span: 51:48 -> 51:77
+   Detached Comments:
+ another detached comment
+   Leading Comments:
+ same for reserved range comments 
+
+desc_test_comments.proto > message_type[0] > reserved_range[0]:
+   Span: 51:57 -> 51:65
+
+desc_test_comments.proto > message_type[0] > reserved_range[0] > start:
+   Span: 51:57 -> 51:59
+
+desc_test_comments.proto > message_type[0] > reserved_range[0] > end:
+   Span: 51:63 -> 51:65
+
+desc_test_comments.proto > message_type[0] > reserved_range[1]:
+   Span: 51:67 -> 51:75
+
+desc_test_comments.proto > message_type[0] > reserved_range[1] > start:
+   Span: 51:67 -> 51:69
+
+desc_test_comments.proto > message_type[0] > reserved_range[1] > end:
+   Span: 51:73 -> 51:75
+
+desc_test_comments.proto > message_type[0] > reserved_name:
+   Span: 52:9 -> 52:38
+   Trailing Comments:
+ reserved trailers 
+
+desc_test_comments.proto > message_type[0] > reserved_name[0]:
+   Span: 52:18 -> 52:23
+
+desc_test_comments.proto > message_type[0] > reserved_name[1]:
+   Span: 52:25 -> 52:30
+
+desc_test_comments.proto > message_type[0] > reserved_name[2]:
+   Span: 52:32 -> 52:37
+
+desc_test_comments.proto > message_type[0] > field[2]:
+   Span: 55:9 -> 69:10
+
+desc_test_comments.proto > message_type[0] > field[2] > label:
+   Span: 55:9 -> 55:17
+
+desc_test_comments.proto > message_type[0] > field[2] > type:
+   Span: 55:18 -> 55:23
+
+desc_test_comments.proto > message_type[0] > field[2] > name:
+   Span: 55:41 -> 55:47
+
+desc_test_comments.proto > message_type[0] > field[2] > number:
+   Span: 55:50 -> 55:51
+
+desc_test_comments.proto > message_type[0] > nested_type[0]:
+   Span: 55:9 -> 69:10
+   Leading Comments:
+ Group comment with emoji 😀 😍 👻 ❤ 💯 💥 🐶 🦂 🥑 🍻 🌍 🚕 🪐
+   Trailing Comments:
+ trailer for Extras
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > name:
+   Span: 55:41 -> 55:47
+
+desc_test_comments.proto > message_type[0] > field[2] > type_name:
+   Span: 55:41 -> 55:47
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > options:
+   Span: 59:17 -> 59:52
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > options > (testprotos.mfubar):
+   Span: 59:17 -> 59:52
+   Leading Comments:
+ this is a custom option
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[0]:
+   Span: 61:17 -> 61:41
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[0] > label:
+   Span: 61:17 -> 61:25
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[0] > type:
+   Span: 61:26 -> 61:32
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[0] > name:
+   Span: 61:33 -> 61:36
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[0] > number:
+   Span: 61:39 -> 61:40
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[1]:
+   Span: 62:17 -> 62:40
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[1] > label:
+   Span: 62:17 -> 62:25
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[1] > type:
+   Span: 62:26 -> 62:31
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[1] > name:
+   Span: 62:32 -> 62:35
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[1] > number:
+   Span: 62:38 -> 62:39
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > options:
+   Span: 64:17 -> 64:64
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > options > no_standard_descriptor_accessor:
+   Span: 64:17 -> 64:64
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[2]:
+   Span: 67:17 -> 67:41
+   Leading Comments:
+ Leading comment...
+   Trailing Comments:
+ Trailing comment...
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[2] > label:
+   Span: 67:17 -> 67:25
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[2] > type:
+   Span: 67:26 -> 67:32
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[2] > name:
+   Span: 67:33 -> 67:36
+
+desc_test_comments.proto > message_type[0] > nested_type[0] > field[2] > number:
+   Span: 67:39 -> 67:40
+
+desc_test_comments.proto > message_type[0] > enum_type[0]:
+   Span: 71:9 -> 93:10
+   Trailing Comments:
+ trailer for enum
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > name:
+   Span: 71:14 -> 71:29
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > options:
+   Span: 75:17 -> 75:43
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > options > allow_alias:
+   Span: 75:17 -> 75:43
+   Leading Comments:
+ allow_alias comments!
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[0]:
+   Span: 77:17 -> 77:86
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[0] > name:
+   Span: 77:17 -> 77:22
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[0] > number:
+   Span: 77:25 -> 77:26
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[0] > options:
+   Span: 77:27 -> 77:85
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[0] > options > (testprotos.evfubars):
+   Span: 77:28 -> 77:56
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[0] > options > (testprotos.evfubar):
+   Span: 77:58 -> 77:84
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[1]:
+   Span: 78:17 -> 78:100
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[1] > name:
+   Span: 78:17 -> 78:22
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[1] > number:
+   Span: 78:25 -> 78:26
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[1] > options:
+   Span: 78:27 -> 78:99
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[1] > options > (testprotos.evfubaruf):
+   Span: 78:29 -> 78:57
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[1] > options > (testprotos.evfubaru):
+   Span: 78:73 -> 78:98
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[2]:
+   Span: 79:17 -> 79:27
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[2] > name:
+   Span: 79:17 -> 79:22
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[2] > number:
+   Span: 79:25 -> 79:26
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[3]:
+   Span: 80:17 -> 80:28
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[3] > name:
+   Span: 80:17 -> 80:23
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[3] > number:
+   Span: 80:26 -> 80:27
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > options:
+   Span: 82:17 -> 82:52
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > options > (testprotos.efubars):
+   Span: 82:17 -> 82:52
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[4]:
+   Span: 84:17 -> 84:27
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[4] > name:
+   Span: 84:17 -> 84:22
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[4] > number:
+   Span: 84:25 -> 84:26
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[5]:
+   Span: 85:17 -> 85:29
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[5] > name:
+   Span: 85:17 -> 85:24
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[5] > number:
+   Span: 85:27 -> 85:28
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[6]:
+   Span: 86:17 -> 86:60
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[6] > name:
+   Span: 86:17 -> 86:24
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[6] > number:
+   Span: 86:27 -> 86:28
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[6] > options:
+   Span: 86:29 -> 86:59
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[6] > options > (testprotos.evfubarsf):
+   Span: 86:30 -> 86:58
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[7]:
+   Span: 87:17 -> 87:28
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[7] > name:
+   Span: 87:17 -> 87:23
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[7] > number:
+   Span: 87:26 -> 87:27
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[8]:
+   Span: 88:17 -> 88:31
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[8] > name:
+   Span: 88:17 -> 88:26
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[8] > number:
+   Span: 88:29 -> 88:30
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[9]:
+   Span: 89:17 -> 89:27
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[9] > name:
+   Span: 89:17 -> 89:22
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[9] > number:
+   Span: 89:25 -> 89:26
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[10]:
+   Span: 90:17 -> 90:31
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[10] > name:
+   Span: 90:17 -> 90:23
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > value[10] > number:
+   Span: 90:26 -> 90:30
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > options:
+   Span: 92:17 -> 92:50
+
+desc_test_comments.proto > message_type[0] > enum_type[0] > options > (testprotos.efubar):
+   Span: 92:17 -> 92:50
+
+desc_test_comments.proto > message_type[0] > oneof_decl[0]:
+   Span: 96:9 -> 101:10
+   Leading Comments:
+ can be this or that
+   Trailing Comments:
+ trailer for oneof abc
+
+desc_test_comments.proto > message_type[0] > oneof_decl[0] > name:
+   Span: 96:15 -> 96:18
+
+desc_test_comments.proto > message_type[0] > field[3]:
+   Span: 99:17 -> 99:33
+
+desc_test_comments.proto > message_type[0] > field[3] > type:
+   Span: 99:17 -> 99:23
+
+desc_test_comments.proto > message_type[0] > field[3] > name:
+   Span: 99:24 -> 99:28
+
+desc_test_comments.proto > message_type[0] > field[3] > number:
+   Span: 99:31 -> 99:32
+
+desc_test_comments.proto > message_type[0] > field[4]:
+   Span: 100:17 -> 100:32
+
+desc_test_comments.proto > message_type[0] > field[4] > type:
+   Span: 100:17 -> 100:22
+
+desc_test_comments.proto > message_type[0] > field[4] > name:
+   Span: 100:23 -> 100:27
+
+desc_test_comments.proto > message_type[0] > field[4] > number:
+   Span: 100:30 -> 100:31
+
+desc_test_comments.proto > message_type[0] > oneof_decl[1]:
+   Span: 103:9 -> 109:10
+   Leading Comments:
+ can be these or those
+
+desc_test_comments.proto > message_type[0] > oneof_decl[1] > name:
+   Span: 103:15 -> 103:18
+
+desc_test_comments.proto > message_type[0] > oneof_decl[1] > options:
+   Span: 105:17 -> 105:89
+
+desc_test_comments.proto > message_type[0] > oneof_decl[1] > options > (testprotos.oofubar)[0]:
+   Span: 105:17 -> 105:89
+   Leading Comments:
+ whoops?
+
+desc_test_comments.proto > message_type[0] > field[5]:
+   Span: 107:17 -> 107:34
+
+desc_test_comments.proto > message_type[0] > field[5] > type:
+   Span: 107:17 -> 107:23
+
+desc_test_comments.proto > message_type[0] > field[5] > name:
+   Span: 107:24 -> 107:29
+
+desc_test_comments.proto > message_type[0] > field[5] > number:
+   Span: 107:32 -> 107:33
+
+desc_test_comments.proto > message_type[0] > field[6]:
+   Span: 108:17 -> 108:33
+
+desc_test_comments.proto > message_type[0] > field[6] > type:
+   Span: 108:17 -> 108:22
+
+desc_test_comments.proto > message_type[0] > field[6] > name:
+   Span: 108:23 -> 108:28
+
+desc_test_comments.proto > message_type[0] > field[6] > number:
+   Span: 108:31 -> 108:32
+
+desc_test_comments.proto > message_type[0] > field[7]:
+   Span: 112:9 -> 112:40
+   Leading Comments:
+ map field
+
+desc_test_comments.proto > message_type[0] > field[7] > type_name:
+   Span: 112:9 -> 112:28
+
+desc_test_comments.proto > message_type[0] > field[7] > name:
+   Span: 112:29 -> 112:35
+
+desc_test_comments.proto > message_type[0] > field[7] > number:
+   Span: 112:38 -> 112:39
+
+desc_test_comments.proto > extension:
+   Span: 117:1 -> 128:2
+   Detached Comments:
+ And next we'll need some extensions...
+   Trailing Comments:
+ trailer for extend block
+
+desc_test_comments.proto > extension[0]:
+   Span: 125:9 -> 125:37
+   Leading Comments:
+ comment for guid1
+
+desc_test_comments.proto > extension[0] > extendee:
+   Span: 119:1 -> 119:8
+
+desc_test_comments.proto > extension[0] > label:
+   Span: 125:9 -> 125:17
+
+desc_test_comments.proto > extension[0] > type:
+   Span: 125:18 -> 125:24
+
+desc_test_comments.proto > extension[0] > name:
+   Span: 125:25 -> 125:30
+
+desc_test_comments.proto > extension[0] > number:
+   Span: 125:33 -> 125:36
+
+desc_test_comments.proto > extension[1]:
+   Span: 127:9 -> 127:37
+   Leading Comments:
+ ... and a comment for guid2
+
+desc_test_comments.proto > extension[1] > extendee:
+   Span: 119:1 -> 119:8
+
+desc_test_comments.proto > extension[1] > label:
+   Span: 127:9 -> 127:17
+
+desc_test_comments.proto > extension[1] > type:
+   Span: 127:18 -> 127:24
+
+desc_test_comments.proto > extension[1] > name:
+   Span: 127:25 -> 127:30
+
+desc_test_comments.proto > extension[1] > number:
+   Span: 127:33 -> 127:36
+
+desc_test_comments.proto > message_type[1]:
+   Span: 131:1 -> 131:115
+
+desc_test_comments.proto > message_type[1] > name:
+   Span: 131:36 -> 131:50
+
+desc_test_comments.proto > service[0]:
+   Span: 134:1 -> 156:2
+   Leading Comments:
+ Service comment
+   Trailing Comments:
+ service trailer
+ that spans multiple lines
+
+desc_test_comments.proto > service[0] > name:
+   Span: 134:28 -> 134:38
+
+desc_test_comments.proto > service[0] > options:
+   Span: 139:9 -> 139:43
+
+desc_test_comments.proto > service[0] > options > (testprotos.sfubar) > id:
+   Span: 139:9 -> 139:43
+   Leading Comments:
+ option that sets field
+
+desc_test_comments.proto > service[0] > options:
+   Span: 141:9 -> 141:47
+
+desc_test_comments.proto > service[0] > options > (testprotos.sfubar) > name:
+   Span: 141:9 -> 141:47
+   Leading Comments:
+ another option that sets field
+
+desc_test_comments.proto > service[0] > options:
+   Span: 142:9 -> 142:35
+
+desc_test_comments.proto > service[0] > options > deprecated:
+   Span: 142:9 -> 142:35
+   Trailing Comments:
+ DEPRECATED!
+
+desc_test_comments.proto > service[0] > options:
+   Span: 144:9 -> 144:45
+
+desc_test_comments.proto > service[0] > options > (testprotos.sfubare):
+   Span: 144:9 -> 144:45
+
+desc_test_comments.proto > service[0] > method[0]:
+   Span: 147:9 -> 148:84
+   Leading Comments:
+ Method comment
+   Trailing Comments:
+ compact method trailer
+
+desc_test_comments.proto > service[0] > method[0] > name:
+   Span: 147:28 -> 147:40
+
+desc_test_comments.proto > service[0] > method[0] > client_streaming:
+   Span: 147:73 -> 147:79
+
+desc_test_comments.proto > service[0] > method[0] > input_type:
+   Span: 147:96 -> 147:103
+
+desc_test_comments.proto > service[0] > method[0] > output_type:
+   Span: 148:57 -> 148:64
+
+desc_test_comments.proto > service[0] > method[1]:
+   Span: 150:9 -> 155:10
+   Trailing Comments:
+ trailer for method
+
+desc_test_comments.proto > service[0] > method[1] > name:
+   Span: 150:13 -> 150:21
+
+desc_test_comments.proto > service[0] > method[1] > input_type:
+   Span: 150:23 -> 150:30
+
+desc_test_comments.proto > service[0] > method[1] > output_type:
+   Span: 150:41 -> 150:62
+
+desc_test_comments.proto > service[0] > method[1] > options:
+   Span: 152:17 -> 152:42
+
+desc_test_comments.proto > service[0] > method[1] > options > deprecated:
+   Span: 152:17 -> 152:42
+   Leading Comments:
+ this RPC is deprecated!
+
+desc_test_comments.proto > service[0] > method[1] > options:
+   Span: 153:17 -> 153:53
+
+desc_test_comments.proto > service[0] > method[1] > options > (testprotos.mtfubar)[0]:
+   Span: 153:17 -> 153:53
+
+desc_test_comments.proto > service[0] > method[1] > options:
+   Span: 154:17 -> 154:56
+
+desc_test_comments.proto > service[0] > method[1] > options > (testprotos.mtfubard):
+   Span: 154:17 -> 154:56

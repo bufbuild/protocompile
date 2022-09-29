@@ -539,10 +539,10 @@ func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, detach
 	if (len(detachedComments) > 0 && sci.commentUsed(detachedComments[0])) ||
 		(len(detachedComments) == 0 && sci.commentUsed(leadingComments)) {
 		detachedComments = nil
-		leadingComments = emptyComments
+		leadingComments = ast.EmptyComments
 	}
 	if sci.commentUsed(trailingComments) {
-		trailingComments = emptyComments
+		trailingComments = ast.EmptyComments
 	}
 
 	var trail *string
@@ -576,8 +576,6 @@ type comments interface {
 	Index(int) ast.Comment
 }
 
-var emptyComments = ast.Comments{}
-
 type subComments struct {
 	offs, n int
 	c       ast.Comments
@@ -609,7 +607,7 @@ func (sci *sourceCodeInfo) getTrailingComments(n ast.Node) comments {
 	e := n.End()
 	next, ok := sci.file.Tokens().Next(e)
 	if !ok {
-		return emptyComments
+		return ast.EmptyComments
 	}
 	info := sci.file.TokenInfo(e)
 	nextInfo := sci.file.TokenInfo(next)
@@ -626,7 +624,7 @@ func (sci *sourceCodeInfo) attributeComments(prevInfo, info ast.NodeInfo) (t com
 			trail, detached = sci.maybeDonate(prevInfo, info, detached)
 		}
 	} else {
-		trail = emptyComments
+		trail = ast.EmptyComments
 	}
 	detached, lead := sci.maybeAttach(prevInfo, info, trail.Len() > 0, detached)
 	return trail, detached, lead
@@ -635,7 +633,7 @@ func (sci *sourceCodeInfo) attributeComments(prevInfo, info ast.NodeInfo) (t com
 func (sci *sourceCodeInfo) maybeDonate(prevInfo ast.NodeInfo, info ast.NodeInfo, lead []comments) (t comments, l []comments) {
 	if len(lead) == 0 {
 		// nothing to donate
-		return emptyComments, nil
+		return ast.EmptyComments, nil
 	}
 	if !sci.extraComments {
 		// Mirroring protoc for now: if tokens on the same line, attribution
@@ -644,12 +642,12 @@ func (sci *sourceCodeInfo) maybeDonate(prevInfo ast.NodeInfo, info ast.NodeInfo,
 		// once this PR is released:
 		//   https://github.com/protocolbuffers/protobuf/pull/10660
 		if prevInfo.End().Line == info.Start().Line {
-			return emptyComments, nil
+			return ast.EmptyComments, nil
 		}
 	}
 	if lead[0].Index(0).Start().Line > prevInfo.End().Line+1 {
 		// first comment is detached from previous token, so can't be a trailing comment
-		return emptyComments, lead
+		return ast.EmptyComments, lead
 	}
 	if len(lead) > 1 {
 		// multiple groups? then donate first comment to previous token
@@ -668,12 +666,12 @@ func (sci *sourceCodeInfo) maybeDonate(prevInfo ast.NodeInfo, info ast.NodeInfo,
 	}
 
 	// cannot donate
-	return emptyComments, lead
+	return ast.EmptyComments, lead
 }
 
 func (sci *sourceCodeInfo) maybeAttach(prevInfo ast.NodeInfo, info ast.NodeInfo, hasTrail bool, lead []comments) (d []comments, l comments) {
 	if len(lead) == 0 {
-		return nil, emptyComments
+		return nil, ast.EmptyComments
 	}
 
 	if len(lead) == 1 && !hasTrail && prevInfo.IsValid() {
@@ -689,10 +687,10 @@ func (sci *sourceCodeInfo) maybeAttach(prevInfo ast.NodeInfo, info ast.NodeInfo,
 				// This condition can be dropped (and we can stop dropping comments)
 				// once this PR is released:
 				//   https://github.com/protocolbuffers/protobuf/pull/10660
-				return nil, emptyComments
+				return nil, ast.EmptyComments
 			}
 			// Since attachment is ambiguous, leave it detached.
-			return lead, emptyComments
+			return lead, ast.EmptyComments
 		}
 	}
 
@@ -701,7 +699,7 @@ func (sci *sourceCodeInfo) maybeAttach(prevInfo ast.NodeInfo, info ast.NodeInfo,
 		return lead[:len(lead)-1], lastComment
 	}
 
-	return lead, emptyComments
+	return lead, ast.EmptyComments
 }
 
 func makeSpan(start, end ast.SourcePos) []int32 {

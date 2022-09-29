@@ -483,7 +483,7 @@ func (n NodeInfo) LeadingWhitespace() string {
 // previous element.
 func (n NodeInfo) LeadingComments() Comments {
 	if n.fileInfo.isDummyFile() {
-		return Comments{}
+		return EmptyComments
 	}
 
 	start := sort.Search(len(n.fileInfo.comments), func(i int) bool {
@@ -492,7 +492,7 @@ func (n NodeInfo) LeadingComments() Comments {
 
 	if start == len(n.fileInfo.comments) || n.fileInfo.comments[start].attributedToIndex != n.startIndex {
 		// no comments associated with this token
-		return Comments{}
+		return EmptyComments
 	}
 
 	numComments := 0
@@ -537,7 +537,7 @@ func (n NodeInfo) LeadingComments() Comments {
 //	        following token buzz */       buzz
 func (n NodeInfo) TrailingComments() Comments {
 	if n.fileInfo.isDummyFile() {
-		return Comments{}
+		return EmptyComments
 	}
 
 	start := sort.Search(len(n.fileInfo.comments), func(i int) bool {
@@ -548,7 +548,7 @@ func (n NodeInfo) TrailingComments() Comments {
 
 	if start == len(n.fileInfo.comments) || n.fileInfo.comments[start].attributedToIndex != n.endIndex {
 		// no comments associated with this token
-		return Comments{}
+		return EmptyComments
 	}
 
 	numComments := 0
@@ -604,6 +604,9 @@ type Comments struct {
 	fileInfo   *FileInfo
 	first, num int
 }
+
+// EmptyComments is an empty set of comments.
+var EmptyComments = Comments{}
 
 // Len returns the number of comments in c.
 func (c Comments) Len() int {
