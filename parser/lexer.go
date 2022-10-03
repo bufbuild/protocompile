@@ -225,8 +225,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 		if c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
 			// identifier
 			l.readIdentifier()
-			token := l.input.getMark()
-			str := string(token)
+			str := l.input.getMark()
 			if t, ok := keywords[str]; ok {
 				l.setIdent(lval, str)
 				return t

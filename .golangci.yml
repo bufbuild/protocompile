@@ -56,7 +56,6 @@ linters:
     - nilnil
     - nonamedreturns
     - thelper
-    - unconvert
     - varnamelen
     # Other disabled linters
     - cyclop            # covered by gocyclo
