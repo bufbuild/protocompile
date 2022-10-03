@@ -36,15 +36,33 @@ import (
 // opts is present, it can generate source code info for interpreted options.
 // Otherwise, any options in the AST will get source code info as uninterpreted
 // options.
+//
+// This includes comments only for locations that represent complete declarations.
+// This is the same behavior as protoc, the reference compiler for Protocol Buffers.
 func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.SourceCodeInfo {
+	return generateSourceInfo(file, opts, false)
+}
+
+// GenerateSourceInfoWithExtraComments generates source code info for the given
+// AST. If the given opts is present, it can generate source code info for
+// interpreted options. Otherwise, any options in the AST will get source code
+// info as uninterpreted options.
+//
+// This includes comments for all locations. This is still lossy, but less so as
+// it preserves far more comments from the source file.
+func GenerateSourceInfoWithExtraComments(file *ast.FileNode, opts options.Index) *descriptorpb.SourceCodeInfo {
+	return generateSourceInfo(file, opts, true)
+}
+
+func generateSourceInfo(file *ast.FileNode, opts options.Index, extraComments bool) *descriptorpb.SourceCodeInfo {
 	if file == nil {
 		return nil
 	}
 
-	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}}
+	sci := sourceCodeInfo{file: file, commentsUsed: map[ast.SourcePos]struct{}{}, extraComments: extraComments}
 	path := make([]int32, 0, 10)
 
-	sci.newLoc(file, nil)
+	sci.newLocWithoutComments(file, nil)
 
 	if file.Syntax != nil {
 		sci.newLocWithComments(file.Syntax, append(path, internal.FileSyntaxTag))
@@ -87,7 +105,7 @@ func GenerateSourceInfo(file *ast.FileNode, opts options.Index) *descriptorpb.So
 
 func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n *ast.OptionNode, compact bool, uninterpIndex *int32, path []int32) {
 	if !compact {
-		sci.newLoc(n, path)
+		sci.newLocWithoutComments(n, path)
 	}
 	subPath := opts[n]
 	if len(subPath) > 0 {
@@ -323,18 +341,18 @@ func generateSourceCodeInfoForField(opts options.Index, sci *sourceCodeInfo, n a
 
 	if n.GetGroupKeyword() != nil {
 		// comments will appear on group message
-		sci.newLoc(n, path)
+		sci.newLocWithoutComments(n, path)
 		if n.FieldExtendee() != nil {
 			sci.newLoc(n.FieldExtendee(), append(path, internal.FieldExtendeeTag))
 		}
 		if n.FieldLabel() != nil {
 			// no comments here either (label is first token for group, so we want
 			// to leave the comments to be associated with the group message instead)
-			sci.newLoc(n.FieldLabel(), append(path, internal.FieldLabelTag))
+			sci.newLocWithoutComments(n.FieldLabel(), append(path, internal.FieldLabelTag))
 		}
 		sci.newLoc(n.FieldType(), append(path, internal.FieldTypeTag))
 		// let the name comments be attributed to the group name
-		sci.newLoc(n.FieldName(), append(path, internal.FieldNameTag))
+		sci.newLocWithoutComments(n.FieldName(), append(path, internal.FieldNameTag))
 	} else {
 		sci.newLocWithComments(n, path)
 		if n.FieldExtendee() != nil {
@@ -438,12 +456,13 @@ func generateSourceCodeInfoForMethod(opts options.Index, sci *sourceCodeInfo, n 
 }
 
 type sourceCodeInfo struct {
-	file         *ast.FileNode
-	locs         []*descriptorpb.SourceCodeInfo_Location
-	commentsUsed map[ast.SourcePos]struct{}
+	file          *ast.FileNode
+	extraComments bool
+	locs          []*descriptorpb.SourceCodeInfo_Location
+	commentsUsed  map[ast.SourcePos]struct{}
 }
 
-func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
+func (sci *sourceCodeInfo) newLocWithoutComments(n ast.Node, path []int32) {
 	dup := make([]int32, len(path))
 	copy(dup, path)
 	var start, end ast.SourcePos
@@ -473,6 +492,23 @@ func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
 	})
 }
 
+func (sci *sourceCodeInfo) newLoc(n ast.Node, path []int32) {
+	info := sci.file.NodeInfo(n)
+	if !sci.extraComments {
+		dup := make([]int32, len(path))
+		copy(dup, path)
+		start, end := info.Start(), info.End()
+		sci.locs = append(sci.locs, &descriptorpb.SourceCodeInfo_Location{
+			Path: dup,
+			Span: makeSpan(start, end),
+		})
+	} else {
+		detachedComments, leadingComments := sci.getLeadingComments(n)
+		trailingComments := sci.getTrailingComments(n)
+		sci.newLocWithGivenComments(info, detachedComments, leadingComments, trailingComments, path)
+	}
+}
+
 func isEOF(n ast.Node) bool {
 	r, ok := n.(*ast.RuneNode)
 	return ok && r.Rune == 0
@@ -487,24 +523,26 @@ func (sci *sourceCodeInfo) newBlockLocWithComments(n, openBrace ast.Node, path [
 	//    }             // not this
 	//
 	nodeInfo := sci.file.NodeInfo(n)
-	leadingComments := sci.getLeadingComments(n)
+	detachedComments, leadingComments := sci.getLeadingComments(n)
 	trailingComments := sci.getTrailingComments(openBrace)
-	sci.newLocWithGivenComments(nodeInfo, leadingComments, trailingComments, path)
+	sci.newLocWithGivenComments(nodeInfo, detachedComments, leadingComments, trailingComments, path)
 }
 
 func (sci *sourceCodeInfo) newLocWithComments(n ast.Node, path []int32) {
 	nodeInfo := sci.file.NodeInfo(n)
-	leadingComments := sci.getLeadingComments(n)
+	detachedComments, leadingComments := sci.getLeadingComments(n)
 	trailingComments := sci.getTrailingComments(n)
-	sci.newLocWithGivenComments(nodeInfo, leadingComments, trailingComments, path)
+	sci.newLocWithGivenComments(nodeInfo, detachedComments, leadingComments, trailingComments, path)
 }
 
-func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadingComments []comments, trailingComments comments, path []int32) {
-	if len(leadingComments) > 0 && sci.commentUsed(leadingComments[0]) {
-		leadingComments = nil
+func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, detachedComments []comments, leadingComments comments, trailingComments comments, path []int32) {
+	if (len(detachedComments) > 0 && sci.commentUsed(detachedComments[0])) ||
+		(len(detachedComments) == 0 && sci.commentUsed(leadingComments)) {
+		detachedComments = nil
+		leadingComments = ast.EmptyComments
 	}
 	if sci.commentUsed(trailingComments) {
-		trailingComments = ast.Comments{}
+		trailingComments = ast.EmptyComments
 	}
 
 	var trail *string
@@ -513,17 +551,13 @@ func (sci *sourceCodeInfo) newLocWithGivenComments(nodeInfo ast.NodeInfo, leadin
 	}
 
 	var lead *string
-	if len(leadingComments) > 0 {
-		lastGroup := leadingComments[len(leadingComments)-1]
-		lastComment := lastGroup.Index(lastGroup.Len() - 1)
-		if lastComment.End().Line >= nodeInfo.Start().Line-1 {
-			lead = proto.String(sci.combineComments(lastGroup))
-			leadingComments = leadingComments[:len(leadingComments)-1]
-		}
+	if leadingComments.Len() > 0 {
+		lead = proto.String(sci.combineComments(leadingComments))
 	}
-	detached := make([]string, len(leadingComments))
-	for i := range leadingComments {
-		detached[i] = sci.combineComments(leadingComments[i])
+
+	detached := make([]string, len(detachedComments))
+	for i, cmts := range detachedComments {
+		detached[i] = sci.combineComments(cmts)
 	}
 
 	dup := make([]int32, len(path))
@@ -542,8 +576,6 @@ type comments interface {
 	Index(int) ast.Comment
 }
 
-var emptyComments = subComments{offs: 0, n: 0, c: ast.Comments{}}
-
 type subComments struct {
 	offs, n int
 	c       ast.Comments
@@ -560,63 +592,114 @@ func (s subComments) Index(i int) ast.Comment {
 	return s.c.Index(i + s.offs)
 }
 
-func (sci *sourceCodeInfo) getLeadingComments(n ast.Node) []comments {
+func (sci *sourceCodeInfo) getLeadingComments(n ast.Node) ([]comments, comments) {
 	s := n.Start()
 	info := sci.file.TokenInfo(s)
-	prev, ok := sci.file.Tokens().Previous(s)
-	if !ok {
-		return groupComments(info.LeadingComments())
+	var prevInfo ast.NodeInfo
+	if prev, ok := sci.file.Tokens().Previous(s); ok {
+		prevInfo = sci.file.TokenInfo(prev)
 	}
-	prevInfo := sci.file.TokenInfo(prev)
-	_, c := attributeComments(prevInfo, info)
-	return c
+	_, d, l := sci.attributeComments(prevInfo, info)
+	return d, l
 }
 
 func (sci *sourceCodeInfo) getTrailingComments(n ast.Node) comments {
 	e := n.End()
 	next, ok := sci.file.Tokens().Next(e)
 	if !ok {
-		return emptyComments
+		return ast.EmptyComments
 	}
 	info := sci.file.TokenInfo(e)
 	nextInfo := sci.file.TokenInfo(next)
-	c, _ := attributeComments(info, nextInfo)
-	return c
+	t, _, _ := sci.attributeComments(info, nextInfo)
+	return t
 }
 
-func attributeComments(prevInfo, info ast.NodeInfo) (t comments, l []comments) {
-	trail := prevInfo.TrailingComments()
-	lead := groupComments(info.LeadingComments())
-
-	if trail.Len() > 0 || len(lead) == 0 {
-		// previous token already has trailing comments or current token
-		// has no comments from which it may borrow
-		return trail, lead
+func (sci *sourceCodeInfo) attributeComments(prevInfo, info ast.NodeInfo) (t comments, d []comments, l comments) {
+	detached := groupComments(info.LeadingComments())
+	var trail comments
+	if prevInfo.IsValid() {
+		trail = comments(prevInfo.TrailingComments())
+		if trail.Len() == 0 {
+			trail, detached = sci.maybeDonate(prevInfo, info, detached)
+		}
+	} else {
+		trail = ast.EmptyComments
 	}
-	if prevInfo.End().Line == info.Start().Line {
-		// if the tokens are on the same line, no way to attribute
-		return trail, nil
+	detached, lead := sci.maybeAttach(prevInfo, info, trail.Len() > 0, detached)
+	return trail, detached, lead
+}
+
+func (sci *sourceCodeInfo) maybeDonate(prevInfo ast.NodeInfo, info ast.NodeInfo, lead []comments) (t comments, l []comments) {
+	if len(lead) == 0 {
+		// nothing to donate
+		return ast.EmptyComments, nil
+	}
+	if !sci.extraComments {
+		// Mirroring protoc for now: if tokens on the same line, attribution
+		// is ambiguous so drop everything.
+		// This condition can be dropped (and we can stop dropping comments)
+		// once this PR is released:
+		//   https://github.com/protocolbuffers/protobuf/pull/10660
+		if prevInfo.End().Line == info.Start().Line {
+			return ast.EmptyComments, nil
+		}
 	}
 	if lead[0].Index(0).Start().Line > prevInfo.End().Line+1 {
 		// first comment is detached from previous token, so can't be a trailing comment
-		return trail, lead
+		return ast.EmptyComments, lead
 	}
 	if len(lead) > 1 {
 		// multiple groups? then donate first comment to previous token
 		return lead[0], lead[1:]
 	}
-
-	if lead[0].Index(lead[0].Len()-1).End().Line < info.Start().Line-1 {
+	// there is only one element in lead
+	comment := lead[0]
+	if comment.Index(comment.Len()-1).End().Line < info.Start().Line-1 {
 		// there is a blank line between the comments and subsequent token, so
 		// we can donate the comment to previous token
-		return lead[0], lead[1:]
+		return comment, nil
 	}
-	if txt := info.RawText(); len(txt) == 1 && strings.Contains("}])", txt) {
+	if txt := info.RawText(); len(txt) == 1 && strings.Contains("}]),;", txt) {
 		// token is a symbol for the end of a scope, which doesn't need a leading comment
-		return lead[0], lead[1:]
+		return comment, nil
 	}
 
-	return trail, lead
+	// cannot donate
+	return ast.EmptyComments, lead
+}
+
+func (sci *sourceCodeInfo) maybeAttach(prevInfo ast.NodeInfo, info ast.NodeInfo, hasTrail bool, lead []comments) (d []comments, l comments) {
+	if len(lead) == 0 {
+		return nil, ast.EmptyComments
+	}
+
+	if len(lead) == 1 && !hasTrail && prevInfo.IsValid() {
+		// If the one comment appears attached to both previous and next tokens,
+		// don't attach to either.
+		comment := lead[0]
+		attachedToPrevious := comment.Index(0).Start().Line == prevInfo.End().Line
+		attachedToNext := comment.Index(comment.Len()-1).End().Line == info.Start().Line
+		if attachedToPrevious && attachedToNext {
+			if !sci.extraComments {
+				// Mirroring protoc for now: if comment starts on line of previous token
+				// and ends on line of next, attribution is ambiguous so drop everything.
+				// This condition can be dropped (and we can stop dropping comments)
+				// once this PR is released:
+				//   https://github.com/protocolbuffers/protobuf/pull/10660
+				return nil, ast.EmptyComments
+			}
+			// Since attachment is ambiguous, leave it detached.
+			return lead, ast.EmptyComments
+		}
+	}
+
+	lastComment := lead[len(lead)-1]
+	if lastComment.Index(lastComment.Len()-1).End().Line >= info.Start().Line-1 {
+		return lead[:len(lead)-1], lastComment
+	}
+
+	return lead, ast.EmptyComments
 }
 
 func makeSpan(start, end ast.SourcePos) []int32 {

@@ -33,8 +33,8 @@ import (
 func TestParseFilesMessageComments(t *testing.T) {
 	t.Parallel()
 	comp := Compiler{
-		Resolver:          &SourceResolver{},
-		IncludeSourceInfo: true,
+		Resolver:       &SourceResolver{},
+		SourceInfoMode: SourceInfoStandard,
 	}
 	ctx := context.Background()
 	files, err := comp.Compile(ctx, "internal/testdata/desc_test1.proto")
@@ -199,8 +199,8 @@ message Foo {
 	})
 
 	compiler := Compiler{
-		Resolver:          &SourceResolver{Accessor: accessor},
-		IncludeSourceInfo: true,
+		Resolver:       &SourceResolver{Accessor: accessor},
+		SourceInfoMode: SourceInfoStandard,
 	}
 	ctx := context.Background()
 	fds, err := compiler.Compile(ctx, "test.proto")
@@ -229,8 +229,8 @@ message Foo {
 	})
 
 	compiler := Compiler{
-		Resolver:          WithStandardImports(&SourceResolver{Accessor: accessor}),
-		IncludeSourceInfo: true,
+		Resolver:       WithStandardImports(&SourceResolver{Accessor: accessor}),
+		SourceInfoMode: SourceInfoStandard,
 	}
 	ctx := context.Background()
 	fds, err := compiler.Compile(ctx, "test.proto")
