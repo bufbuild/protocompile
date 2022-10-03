@@ -51,7 +51,6 @@ linters:
     - goerr113
     - gosec
     - interfacebloat
-    - makezero
     - nestif
     - nilerr
     - nilnil
