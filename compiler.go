@@ -101,6 +101,12 @@ const (
 // compiler's resolver is used to locate source code (or intermediate artifacts
 // such as parsed ASTs or descriptor protos) and then do what is necessary to
 // transform that into descriptors (parsing, linking, etc).
+//
+// Elements in the given returned files will implement [linker.Result] if the
+// compiler had to link it (i.e. the resolver provided either a descriptor proto
+// or source code). That result will contain a full AST for the file if the
+// compiler had to parse it (i.e. the resolver provided source code for that
+// file).
 func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, error) {
 	if len(files) == 0 {
 		return nil, nil
