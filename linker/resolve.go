@@ -348,7 +348,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 			}
 		}
 	} else if f.proto.OneofIndex != nil {
-		parent := f.parent.(protoreflect.MessageDescriptor)
+		parent := f.parent.(protoreflect.MessageDescriptor) //nolint:errcheck
 		index := int(f.proto.GetOneofIndex())
 		f.oneof = parent.Oneofs().Get(index)
 	}

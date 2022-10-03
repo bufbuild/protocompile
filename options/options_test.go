@@ -298,7 +298,8 @@ func TestOptionsEncoding(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			res := fds[0].(linker.Result)
+			res, ok := fds[0].(linker.Result)
+			require.True(t, ok)
 			descriptorSetFile := fmt.Sprintf("../internal/testdata/%sset", file)
 			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
 			prototest.CheckFiles(t, res, fdset, false)

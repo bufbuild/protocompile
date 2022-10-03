@@ -740,7 +740,7 @@ func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto)
 			fd.OneofIndex = proto.Int32(int32(len(msgd.OneofDecl)))
 			ood := &descriptorpb.OneofDescriptorProto{Name: proto.String(ooName)}
 			msgd.OneofDecl = append(msgd.OneofDecl, ood)
-			ooident := r.FieldNode(fd).(*ast.FieldNode)
+			ooident := r.FieldNode(fd).(*ast.FieldNode) //nolint:errcheck
 			r.putOneOfNode(ood, ast.NewSyntheticOneOf(ooident))
 		}
 	}

@@ -57,7 +57,7 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 	if xtd, ok := fld.(protoreflect.ExtensionTypeDescriptor); ok {
 		fld = xtd.Descriptor()
 	}
-	fd := fld.(*fldDescriptor)
+	fd := fld.(*fldDescriptor) //nolint:errcheck
 	if fld.ContainingMessage().Options().(*descriptorpb.MessageOptions).GetMessageSetWireFormat() {
 		// Message set wire format requires that all extensions be messages
 		// themselves (no scalar extensions)

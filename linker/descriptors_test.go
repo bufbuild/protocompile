@@ -82,7 +82,8 @@ func checkAttributes(t *testing.T, exp, actual container, path string) {
 	}
 
 	if expMsg, ok := exp.(protoreflect.MessageDescriptor); ok {
-		actMsg := actual.(protoreflect.MessageDescriptor)
+		actMsg, ok := actual.(protoreflect.MessageDescriptor)
+		require.True(t, ok)
 		checkAttributesInFields(t, expMsg.Fields(), actMsg.Fields(), fmt.Sprintf("fields in %s", path))
 		checkAttributesInOneofs(t, expMsg.Oneofs(), actMsg.Oneofs(), fmt.Sprintf("oneofs in %s", path))
 	}

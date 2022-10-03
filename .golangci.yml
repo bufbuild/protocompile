@@ -37,7 +37,6 @@ linters:
     # TODO: TCN-350 - initial exclusions for failing linters.
     # Should enable all of these.
     - dupl
-    - errcheck
     - errname
     - errorlint
     - exhaustive
