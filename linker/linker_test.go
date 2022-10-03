@@ -47,7 +47,8 @@ func TestSimpleLink(t *testing.T) {
 		return
 	}
 
-	res := fds[0].(linker.Result)
+	res, ok := fds[0].(linker.Result)
+	require.True(t, ok)
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_complex.protoset", linker.ResolverFromFile(fds[0]))
 	prototest.CheckFiles(t, res, fdset, true)
 }
@@ -65,7 +66,8 @@ func TestMultiFileLink(t *testing.T) {
 			continue
 		}
 
-		res := fds[0].(linker.Result)
+		res, ok := fds[0].(linker.Result)
+		require.True(t, ok)
 		fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/all.protoset", linker.ResolverFromFile(fds[0]))
 		prototest.CheckFiles(t, res, fdset, true)
 	}
@@ -85,7 +87,8 @@ func TestProto3Optional(t *testing.T) {
 
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_proto3_optional.protoset", fds.AsResolver())
 
-	res := fds[0].(linker.Result)
+	res, ok := fds[0].(linker.Result)
+	require.True(t, ok)
 	prototest.CheckFiles(t, res, fdset, true)
 }
 
@@ -1648,7 +1651,7 @@ func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			fdProto := proto.Clone(baseFileDescProto).(*descriptorpb.FileDescriptorProto)
+			fdProto := proto.Clone(baseFileDescProto).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
 			fdProto.MessageType[0].Field = tc.fields
 			fdProto.MessageType = append(fdProto.MessageType, tc.others...)
 

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -256,6 +257,7 @@ func TestPanicHandling(t *testing.T) {
 		}),
 	}
 	_, err := c.Compile(context.Background(), "test.proto")
-	panicErr := err.(PanicError)
+	panicErr, ok := err.(PanicError)
+	require.True(t, ok)
 	t.Logf("%v\n\n%v", panicErr, panicErr.Stack)
 }

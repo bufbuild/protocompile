@@ -223,7 +223,7 @@ func (r *result) AddOptionBytes(pm proto.Message, opts []byte) {
 func (r *result) CanonicalProto() *descriptorpb.FileDescriptorProto {
 	origFd := r.FileDescriptorProto()
 	// make a copy that we can mutate
-	fd := proto.Clone(origFd).(*descriptorpb.FileDescriptorProto)
+	fd := proto.Clone(origFd).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
 
 	r.storeOptionBytesInFile(fd, origFd)
 

@@ -466,7 +466,8 @@ func handleImportCycle(h *reporter.Handler, pos ast.SourcePos, importSequence []
 		fmt.Fprintf(&buf, "%q -> ", imp)
 	}
 	fmt.Fprintf(&buf, "%q", dep)
-	h.HandleErrorf(pos, buf.String())
+	// error is saved and returned in caller
+	h.HandleErrorf(pos, buf.String()) //nolint:errcheck
 }
 
 func findImportPos(res parser.Result, dep string) ast.SourcePos {
