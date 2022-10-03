@@ -109,17 +109,15 @@ func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n 
 	}
 	subPath := opts[n]
 	if len(subPath) > 0 {
-		var p []int32
+		p := make([]int32, len(path), len(path)+len(subPath))
+		copy(p, path)
 		if subPath[0] == -1 {
 			// used by "default" and "json_name" field pseudo-options
 			// to attribute path to parent element (since those are
 			// stored directly on the descriptor, not its options)
 			subPath = subPath[1:]
-			p = make([]int32, len(path)-1, len(path)-1+len(subPath))
-		} else {
-			p = make([]int32, len(path), len(path)+len(subPath))
+			p = p[:len(path)-1]
 		}
-		copy(p, path)
 		p = append(p, subPath...)
 		if compact {
 			sci.newLoc(n, p)
