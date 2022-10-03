@@ -293,26 +293,25 @@ func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
 	if !ok {
 		return ast.UnknownPos(d.ParentFile().Path())
 	}
-	var namePath protoreflect.SourcePath
+	namePath := path
 	switch d.(type) {
 	case protoreflect.FieldDescriptor:
-		namePath = append(path, internal.FieldNameTag)
+		namePath = append(namePath, internal.FieldNameTag)
 	case protoreflect.MessageDescriptor:
-		namePath = append(path, internal.MessageNameTag)
+		namePath = append(namePath, internal.MessageNameTag)
 	case protoreflect.OneofDescriptor:
-		namePath = append(path, internal.OneOfNameTag)
+		namePath = append(namePath, internal.OneOfNameTag)
 	case protoreflect.EnumDescriptor:
-		namePath = append(path, internal.EnumNameTag)
+		namePath = append(namePath, internal.EnumNameTag)
 	case protoreflect.EnumValueDescriptor:
-		namePath = append(path, internal.EnumValNameTag)
+		namePath = append(namePath, internal.EnumValNameTag)
 	case protoreflect.ServiceDescriptor:
-		namePath = append(path, internal.ServiceNameTag)
+		namePath = append(namePath, internal.ServiceNameTag)
 	case protoreflect.MethodDescriptor:
-		namePath = append(path, internal.MethodNameTag)
+		namePath = append(namePath, internal.MethodNameTag)
 	default:
 		// NB: shouldn't really happen, but just in case fall back to path to
 		// descriptor, sans name field
-		namePath = path
 	}
 	loc := d.ParentFile().SourceLocations().ByPath(namePath)
 	if isZeroLoc(loc) {
@@ -333,7 +332,8 @@ func sourcePositionForNumber(fd protoreflect.FieldDescriptor) ast.SourcePos {
 	if !ok {
 		return ast.UnknownPos(fd.ParentFile().Path())
 	}
-	numberPath := append(path, internal.FieldNumberTag)
+	numberPath := path
+	numberPath = append(numberPath, internal.FieldNumberTag)
 	loc := fd.ParentFile().SourceLocations().ByPath(numberPath)
 	if isZeroLoc(loc) {
 		loc = fd.ParentFile().SourceLocations().ByPath(path)

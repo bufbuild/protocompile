@@ -470,10 +470,8 @@ func TestUTF8(t *testing.T) {
 		tok := l.Lex(&sym)
 		if !tc.succeeds {
 			assert.Equal(t, _ERROR, tok, "lexer should return error for %v", tc.data)
-		} else {
-			if assert.Equal(t, _STRING_LIT, tok, "lexer should return string literal token for %v", tc.data) {
-				assert.Equal(t, tc.expectVal, sym.s.Val)
-			}
+		} else if assert.Equal(t, _STRING_LIT, tok, "lexer should return string literal token for %v", tc.data) {
+			assert.Equal(t, tc.expectVal, sym.s.Val)
 		}
 	}
 }

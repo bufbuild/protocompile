@@ -34,6 +34,9 @@ type runeReader struct {
 	pos  int
 	err  error
 	mark int
+	// Enable this check to make input required to be valid UTF-8.
+	// For now, since protoc allows invalid UTF-8, default to false.
+	utf8Strict bool
 }
 
 func (rr *runeReader) readRune() (r rune, size int, err error) {
@@ -45,14 +48,11 @@ func (rr *runeReader) readRune() (r rune, size int, err error) {
 		return 0, 0, rr.err
 	}
 	r, sz := utf8.DecodeRune(rr.data[rr.pos:])
-	// TODO: Enable this check to make input strictly required to be UTF8. We may
-	//   want this to be an optional flag that the parser accepts, to make it
-	//   a conditional check. For now, since protoc allows bad UTF8, so must we :(
-	//if r == utf8.RuneError {
-	//	rr.err = fmt.Errorf("invalid UTF8 at offset %d: %x", rr.pos, rr.data[rr.pos])
-	//	return 0, 0, rr.err
-	//}
-	rr.pos = rr.pos + sz
+	if rr.utf8Strict && r == utf8.RuneError {
+		rr.err = fmt.Errorf("invalid UTF8 at offset %d: %x", rr.pos, rr.data[rr.pos])
+		return 0, 0, rr.err
+	}
+	rr.pos += sz
 	return r, sz, nil
 }
 
@@ -518,7 +518,8 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			if c == 'x' || c == 'X' {
+			switch {
+			case c == 'x' || c == 'X':
 				// hex escape
 				c, _, err := l.input.readRune()
 				if err != nil {
@@ -540,7 +541,7 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("invalid hex escape: \\x%q", hex)
 				}
 				buf.WriteByte(byte(i))
-			} else if c >= '0' && c <= '7' {
+			case c >= '0' && c <= '7':
 				// octal escape
 				c2, sz2, err := l.input.readRune()
 				if err != nil {
@@ -570,7 +571,7 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("octal escape is out range, must be between 0 and 377: \\%q", octal)
 				}
 				buf.WriteByte(byte(i))
-			} else if c == 'u' {
+			case c == 'u':
 				// short unicode escape
 				u := make([]rune, 4)
 				for i := range u {
@@ -585,7 +586,7 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("invalid unicode escape: \\u%q", string(u))
 				}
 				buf.WriteRune(rune(i))
-			} else if c == 'U' {
+			case c == 'U':
 				// long unicode escape
 				u := make([]rune, 8)
 				for i := range u {
@@ -603,29 +604,29 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 					return "", fmt.Errorf("unicode escape is out of range, must be between 0 and 0x10ffff: \\U%q", string(u))
 				}
 				buf.WriteRune(rune(i))
-			} else if c == 'a' {
+			case c == 'a':
 				buf.WriteByte('\a')
-			} else if c == 'b' {
+			case c == 'b':
 				buf.WriteByte('\b')
-			} else if c == 'f' {
+			case c == 'f':
 				buf.WriteByte('\f')
-			} else if c == 'n' {
+			case c == 'n':
 				buf.WriteByte('\n')
-			} else if c == 'r' {
+			case c == 'r':
 				buf.WriteByte('\r')
-			} else if c == 't' {
+			case c == 't':
 				buf.WriteByte('\t')
-			} else if c == 'v' {
+			case c == 'v':
 				buf.WriteByte('\v')
-			} else if c == '\\' {
+			case c == '\\':
 				buf.WriteByte('\\')
-			} else if c == '\'' {
+			case c == '\'':
 				buf.WriteByte('\'')
-			} else if c == '"' {
+			case c == '"':
 				buf.WriteByte('"')
-			} else if c == '?' {
+			case c == '?':
 				buf.WriteByte('?')
-			} else {
+			default:
 				return "", fmt.Errorf("invalid escape sequence: %q", "\\"+string(c))
 			}
 		} else {

@@ -259,13 +259,14 @@ type protoWalker struct {
 func (w *protoWalker) walkDescriptorProtos(file *descriptorpb.FileDescriptorProto) error {
 	prefix := file.GetPackage()
 	if prefix != "" {
-		prefix = prefix + "."
+		prefix += "."
 	}
 	var path protoreflect.SourcePath
 	for i, msg := range file.MessageType {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.FileMessagesTag, int32(i))
+			p = path
+			p = append(p, internal.FileMessagesTag, int32(i))
 		}
 		if err := w.walkDescriptorProto(prefix, p, msg); err != nil {
 			return err
@@ -274,7 +275,8 @@ func (w *protoWalker) walkDescriptorProtos(file *descriptorpb.FileDescriptorProt
 	for i, en := range file.EnumType {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.FileEnumsTag, int32(i))
+			p = path
+			p = append(p, internal.FileEnumsTag, int32(i))
 		}
 		if err := w.walkEnumDescriptorProto(prefix, p, en); err != nil {
 			return err
@@ -283,7 +285,8 @@ func (w *protoWalker) walkDescriptorProtos(file *descriptorpb.FileDescriptorProt
 	for i, ext := range file.Extension {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.FileExtensionsTag, int32(i))
+			p = path
+			p = append(p, internal.FileExtensionsTag, int32(i))
 		}
 		fqn := prefix + ext.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, ext); err != nil {
@@ -298,7 +301,8 @@ func (w *protoWalker) walkDescriptorProtos(file *descriptorpb.FileDescriptorProt
 	for i, svc := range file.Service {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.FileServicesTag, int32(i))
+			p = path
+			p = append(p, internal.FileServicesTag, int32(i))
 		}
 		fqn := prefix + svc.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, svc); err != nil {
@@ -307,7 +311,8 @@ func (w *protoWalker) walkDescriptorProtos(file *descriptorpb.FileDescriptorProt
 		for j, mtd := range svc.Method {
 			var mp protoreflect.SourcePath
 			if w.usePath {
-				mp = append(p, internal.ServiceMethodsTag, int32(j))
+				mp = p
+				mp = append(mp, internal.ServiceMethodsTag, int32(j))
 			}
 			mtdFqn := fqn + "." + mtd.GetName()
 			if err := w.enter(protoreflect.FullName(mtdFqn), mp, mtd); err != nil {
@@ -337,7 +342,8 @@ func (w *protoWalker) walkDescriptorProto(prefix string, path protoreflect.Sourc
 	for i, fld := range msg.Field {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.MessageFieldsTag, int32(i))
+			p = path
+			p = append(p, internal.MessageFieldsTag, int32(i))
 		}
 		fqn := prefix + fld.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, fld); err != nil {
@@ -352,7 +358,8 @@ func (w *protoWalker) walkDescriptorProto(prefix string, path protoreflect.Sourc
 	for i, oo := range msg.OneofDecl {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.MessageOneOfsTag, int32(i))
+			p = path
+			p = append(p, internal.MessageOneOfsTag, int32(i))
 		}
 		fqn := prefix + oo.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, oo); err != nil {
@@ -367,7 +374,8 @@ func (w *protoWalker) walkDescriptorProto(prefix string, path protoreflect.Sourc
 	for i, nested := range msg.NestedType {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.MessageNestedMessagesTag, int32(i))
+			p = path
+			p = append(p, internal.MessageNestedMessagesTag, int32(i))
 		}
 		if err := w.walkDescriptorProto(prefix, p, nested); err != nil {
 			return err
@@ -376,7 +384,8 @@ func (w *protoWalker) walkDescriptorProto(prefix string, path protoreflect.Sourc
 	for i, en := range msg.EnumType {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.MessageEnumsTag, int32(i))
+			p = path
+			p = append(p, internal.MessageEnumsTag, int32(i))
 		}
 		if err := w.walkEnumDescriptorProto(prefix, p, en); err != nil {
 			return err
@@ -385,7 +394,8 @@ func (w *protoWalker) walkDescriptorProto(prefix string, path protoreflect.Sourc
 	for i, ext := range msg.Extension {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.MessageExtensionsTag, int32(i))
+			p = path
+			p = append(p, internal.MessageExtensionsTag, int32(i))
 		}
 		fqn := prefix + ext.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, ext); err != nil {
@@ -413,7 +423,8 @@ func (w *protoWalker) walkEnumDescriptorProto(prefix string, path protoreflect.S
 	for i, val := range en.Value {
 		var p protoreflect.SourcePath
 		if w.usePath {
-			p = append(path, internal.EnumValuesTag, int32(i))
+			p = path
+			p = append(p, internal.EnumValuesTag, int32(i))
 		}
 		fqn := prefix + val.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, val); err != nil {

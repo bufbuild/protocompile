@@ -433,9 +433,8 @@ func (r *result) asMethodDescriptor(node *ast.RPCNode) *descriptorpb.MethodDescr
 	if node.OpenBrace != nil {
 		md.Options = &descriptorpb.MethodOptions{}
 		for _, decl := range node.Decls {
-			switch decl := decl.(type) {
-			case *ast.OptionNode:
-				md.Options.UninterpretedOption = append(md.Options.UninterpretedOption, r.asUninterpretedOption(decl))
+			if option, ok := decl.(*ast.OptionNode); ok {
+				md.Options.UninterpretedOption = append(md.Options.UninterpretedOption, r.asUninterpretedOption(option))
 			}
 		}
 	}
@@ -672,14 +671,16 @@ func (r *result) asServiceDescriptor(svc *ast.ServiceNode) *descriptorpb.Service
 }
 
 func checkTag(pos ast.SourcePos, v uint64, maxTag int32) error {
-	if v < 1 {
+	switch {
+	case v < 1:
 		return reporter.Errorf(pos, "tag number %d must be greater than zero", v)
-	} else if v > uint64(maxTag) {
+	case v > uint64(maxTag):
 		return reporter.Errorf(pos, "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
-	} else if v >= internal.SpecialReservedStart && v <= internal.SpecialReservedEnd {
+	case v >= internal.SpecialReservedStart && v <= internal.SpecialReservedEnd:
 		return reporter.Errorf(pos, "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
+	default:
+		return nil
 	}
-	return nil
 }
 
 // processProto3OptionalFields adds synthetic oneofs to the given message descriptor

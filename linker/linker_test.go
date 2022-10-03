@@ -1376,13 +1376,14 @@ func TestLinkerValidation(t *testing.T) {
 			if errors.As(err, &panicErr) {
 				t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
 			}
-			if tc.expectedErr == "" {
+			switch {
+			case tc.expectedErr == "":
 				if err != nil {
 					t.Errorf("expecting no error; instead got error %q", err)
 				}
-			} else if err == nil {
+			case err == nil:
 				t.Errorf("expecting validation error %q; instead got no error", tc.expectedErr)
-			} else {
+			default:
 				msgs := strings.Split(tc.expectedErr, " || ")
 				found := false
 				for _, errMsg := range msgs {

@@ -71,15 +71,13 @@ func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *re
 			pos := file.NodeInfo(r.FieldNode(fd.proto).FieldLabel()).Start()
 			return handler.HandleErrorf(pos, "messages with message-set wire format cannot contain repeated extensions, only optional")
 		}
-	} else {
+	} else if fld.Number() > internal.MaxNormalTag {
 		// In validateBasic() we just made sure these were within bounds for any message. But
 		// now that things are linked, we can check if the extendee is messageset wire format
 		// and, if not, enforce tighter limit.
-		if fld.Number() > internal.MaxNormalTag {
-			file := r.FileNode()
-			pos := file.NodeInfo(r.FieldNode(fd.proto).FieldTag()).Start()
-			return handler.HandleErrorf(pos, "tag number %d is higher than max allowed tag number (%d)", fld.Number(), internal.MaxNormalTag)
-		}
+		file := r.FileNode()
+		pos := file.NodeInfo(r.FieldNode(fd.proto).FieldTag()).Start()
+		return handler.HandleErrorf(pos, "tag number %d is higher than max allowed tag number (%d)", fld.Number(), internal.MaxNormalTag)
 	}
 
 	return nil

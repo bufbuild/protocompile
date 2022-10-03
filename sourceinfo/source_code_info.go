@@ -128,7 +128,8 @@ func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n 
 	}
 
 	// it's an uninterpreted option
-	optPath := append(path, internal.UninterpretedOptionsTag, *uninterpIndex)
+	optPath := path
+	optPath = append(optPath, internal.UninterpretedOptionsTag, *uninterpIndex)
 	*uninterpIndex++
 	sci.newLoc(n, optPath)
 	var valTag int32
@@ -150,7 +151,8 @@ func generateSourceCodeInfoForOption(opts options.Index, sci *sourceCodeInfo, n 
 		sci.newLoc(n.Val, append(optPath, valTag))
 	}
 	for j, nn := range n.Name.Parts {
-		optNmPath := append(optPath, internal.UninterpretedNameTag, int32(j))
+		optNmPath := optPath
+		optNmPath = append(optNmPath, internal.UninterpretedNameTag, int32(j))
 		sci.newLoc(nn, optNmPath)
 		sci.newLoc(nn.Name, append(optNmPath, internal.UninterpretedNameNameTag))
 	}
@@ -191,7 +193,8 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.MessageFieldsTag, fieldIndex))
 			fieldIndex++
 		case *ast.GroupNode:
-			fldPath := append(path, internal.MessageFieldsTag, fieldIndex)
+			fldPath := path
+			fldPath = append(fldPath, internal.MessageFieldsTag, fieldIndex)
 			generateSourceCodeInfoForField(opts, sci, child, fldPath)
 			fieldIndex++
 			generateSourceCodeInfoForMessage(opts, sci, child, fldPath, append(dup(path), internal.MessageNestedMessagesTag, nestedMsgIndex))
@@ -215,7 +218,8 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 			generateSourceCodeInfoForExtensionRanges(opts, sci, child, &extRangeIndex, append(path, internal.MessageExtensionRangesTag))
 		case *ast.ReservedNode:
 			if len(child.Names) > 0 {
-				resPath := append(path, internal.MessageReservedNamesTag)
+				resPath := path
+				resPath = append(resPath, internal.MessageReservedNamesTag)
 				sci.newLocWithComments(child, resPath)
 				for _, rn := range child.Names {
 					sci.newLoc(rn, append(resPath, reservedNameIndex))
@@ -223,7 +227,8 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 				}
 			}
 			if len(child.Ranges) > 0 {
-				resPath := append(path, internal.MessageReservedRangesTag)
+				resPath := path
+				resPath = append(resPath, internal.MessageReservedRangesTag)
 				sci.newLocWithComments(child, resPath)
 				for _, rr := range child.Ranges {
 					generateSourceCodeInfoForReservedRange(sci, rr, append(resPath, reservedRangeIndex))
@@ -248,7 +253,8 @@ func generateSourceCodeInfoForEnum(opts options.Index, sci *sourceCodeInfo, n *a
 			valIndex++
 		case *ast.ReservedNode:
 			if len(child.Names) > 0 {
-				resPath := append(path, internal.EnumReservedNamesTag)
+				resPath := path
+				resPath = append(resPath, internal.EnumReservedNamesTag)
 				sci.newLocWithComments(child, resPath)
 				for _, rn := range child.Names {
 					sci.newLoc(rn, append(resPath, reservedNameIndex))
@@ -256,7 +262,8 @@ func generateSourceCodeInfoForEnum(opts options.Index, sci *sourceCodeInfo, n *a
 				}
 			}
 			if len(child.Ranges) > 0 {
-				resPath := append(path, internal.EnumReservedRangesTag)
+				resPath := path
+				resPath = append(resPath, internal.EnumReservedRangesTag)
 				sci.newLocWithComments(child, resPath)
 				for _, rr := range child.Ranges {
 					generateSourceCodeInfoForReservedRange(sci, rr, append(resPath, reservedRangeIndex))
@@ -274,7 +281,8 @@ func generateSourceCodeInfoForEnumValue(opts options.Index, sci *sourceCodeInfo,
 
 	// enum value options
 	if n.Options != nil {
-		optsPath := append(path, internal.EnumValOptionsTag)
+		optsPath := path
+		optsPath = append(optsPath, internal.EnumValOptionsTag)
 		sci.newLoc(n.Options, optsPath)
 		var optIndex int32
 		for _, opt := range n.Options.GetElements() {
@@ -286,11 +294,12 @@ func generateSourceCodeInfoForEnumValue(opts options.Index, sci *sourceCodeInfo,
 func generateSourceCodeInfoForReservedRange(sci *sourceCodeInfo, n *ast.RangeNode, path []int32) {
 	sci.newLoc(n, path)
 	sci.newLoc(n.StartVal, append(path, internal.ReservedRangeStartTag))
-	if n.EndVal != nil {
+	switch {
+	case n.EndVal != nil:
 		sci.newLoc(n.EndVal, append(path, internal.ReservedRangeEndTag))
-	} else if n.Max != nil {
+	case n.Max != nil:
 		sci.newLoc(n.Max, append(path, internal.ReservedRangeEndTag))
-	} else {
+	default:
 		sci.newLoc(n.StartVal, append(path, internal.ReservedRangeEndTag))
 	}
 }
@@ -303,7 +312,8 @@ func generateSourceCodeInfoForExtensions(opts options.Index, sci *sourceCodeInfo
 			generateSourceCodeInfoForField(opts, sci, decl, append(extendPath, *extendIndex))
 			*extendIndex++
 		case *ast.GroupNode:
-			fldPath := append(extendPath, *extendIndex)
+			fldPath := extendPath
+			fldPath = append(fldPath, *extendIndex)
 			generateSourceCodeInfoForField(opts, sci, decl, fldPath)
 			*extendIndex++
 			generateSourceCodeInfoForMessage(opts, sci, decl, fldPath, append(msgPath, *msgIndex))
@@ -325,7 +335,8 @@ func generateSourceCodeInfoForOneOf(opts options.Index, sci *sourceCodeInfo, n *
 			generateSourceCodeInfoForField(opts, sci, child, append(fieldPath, *fieldIndex))
 			*fieldIndex++
 		case *ast.GroupNode:
-			fldPath := append(fieldPath, *fieldIndex)
+			fldPath := fieldPath
+			fldPath = append(fldPath, *fieldIndex)
 			generateSourceCodeInfoForField(opts, sci, child, fldPath)
 			*fieldIndex++
 			generateSourceCodeInfoForMessage(opts, sci, child, fldPath, append(nestedMsgPath, *nestedMsgIndex))
@@ -376,7 +387,8 @@ func generateSourceCodeInfoForField(opts options.Index, sci *sourceCodeInfo, n a
 	sci.newLoc(n.FieldTag(), append(path, internal.FieldNumberTag))
 
 	if n.GetOptions() != nil {
-		optsPath := append(path, internal.FieldOptionsTag)
+		optsPath := path
+		optsPath = append(optsPath, internal.FieldOptionsTag)
 		sci.newLoc(n.GetOptions(), optsPath)
 		var optIndex int32
 		for _, opt := range n.GetOptions().GetElements() {
@@ -393,11 +405,12 @@ func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCod
 		*extRangeIndex++
 		sci.newLoc(child, path)
 		sci.newLoc(child.StartVal, append(path, internal.ExtensionRangeStartTag))
-		if child.EndVal != nil {
+		switch {
+		case child.EndVal != nil:
 			sci.newLoc(child.EndVal, append(path, internal.ExtensionRangeEndTag))
-		} else if child.Max != nil {
+		case child.Max != nil:
 			sci.newLoc(child.Max, append(path, internal.ExtensionRangeEndTag))
-		} else {
+		default:
 			sci.newLoc(child.StartVal, append(path, internal.ExtensionRangeEndTag))
 		}
 	}
@@ -406,7 +419,8 @@ func generateSourceCodeInfoForExtensionRanges(opts options.Index, sci *sourceCod
 		path := append(path, startExtRangeIndex)
 		startExtRangeIndex++
 		if n.Options != nil {
-			optsPath := append(path, internal.ExtensionRangeOptionsTag)
+			optsPath := path
+			optsPath = append(optsPath, internal.ExtensionRangeOptionsTag)
 			sci.newLoc(n.Options, optsPath)
 			var optIndex int32
 			for _, opt := range n.Options.GetElements() {
@@ -447,7 +461,8 @@ func generateSourceCodeInfoForMethod(opts options.Index, sci *sourceCodeInfo, n 
 	}
 	sci.newLoc(n.Output.MessageType, append(path, internal.MethodOutputTag))
 
-	optsPath := append(path, internal.MethodOptionsTag)
+	optsPath := path
+	optsPath = append(optsPath, internal.MethodOptionsTag)
 	var optIndex int32
 	for _, decl := range n.Decls {
 		if opt, ok := decl.(*ast.OptionNode); ok {
@@ -661,7 +676,7 @@ func (sci *sourceCodeInfo) maybeDonate(prevInfo ast.NodeInfo, info ast.NodeInfo,
 		// we can donate the comment to previous token
 		return comment, nil
 	}
-	if txt := info.RawText(); len(txt) == 1 && strings.Contains("}]),;", txt) {
+	if txt := info.RawText(); len(txt) == 1 && strings.ContainsAny(txt, "}]),;") {
 		// token is a symbol for the end of a scope, which doesn't need a leading comment
 		return comment, nil
 	}
@@ -784,11 +799,12 @@ func (sci *sourceCodeInfo) combineComments(comments comments) string {
 					}
 					j++
 				}
-				if j == len(l) {
+				switch {
+				case j == len(l):
 					l = ""
-				} else if l[j] == '*' {
+				case l[j] == '*':
 					l = l[j+1:]
-				} else if j > 0 {
+				case j > 0:
 					l = " " + l[j:]
 				}
 

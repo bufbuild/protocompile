@@ -1369,27 +1369,12 @@ func unescape(s string) string {
 	out := make([]byte, 0, len(s))
 	var buf [4]byte
 	for len(s) > 0 {
-		if s[0] != '\\' || len(s) < 2 {
+		switch {
+		case s[0] != '\\' || len(s) < 2:
 			// not escape sequence, or too short to be well-formed escape
 			out = append(out, s[0])
 			s = s[1:]
-		} else if s[1] == 'x' || s[1] == 'X' {
-			n := matchPrefix(s[2:], 2, isHex)
-			if n == 0 {
-				// bad escape
-				out = append(out, s[:2]...)
-				s = s[2:]
-			} else {
-				c, err := strconv.ParseUint(s[2:2+n], 16, 8)
-				if err != nil {
-					// shouldn't really happen...
-					out = append(out, s[:2+n]...)
-				} else {
-					out = append(out, byte(c))
-				}
-				s = s[2+n:]
-			}
-		} else if s[1] >= '0' && s[1] <= '7' {
+		case s[1] >= '0' && s[1] <= '7':
 			n := 1 + matchPrefix(s[2:], 2, isOctal)
 			c, err := strconv.ParseUint(s[1:1+n], 8, 8)
 			if err != nil || c > 0xff {
@@ -1398,40 +1383,56 @@ func unescape(s string) string {
 				out = append(out, byte(c))
 			}
 			s = s[1+n:]
-		} else if s[1] == 'u' {
-			if len(s) < 6 {
-				// bad escape
-				out = append(out, s...)
-				s = s[len(s):]
-			} else {
-				c, err := strconv.ParseUint(s[2:6], 16, 16)
-				if err != nil {
-					// bad escape
-					out = append(out, s[:6]...)
-				} else {
-					w := utf8.EncodeRune(buf[:], rune(c))
-					out = append(out, buf[:w]...)
-				}
-				s = s[6:]
-			}
-		} else if s[1] == 'U' {
-			if len(s) < 10 {
-				// bad escape
-				out = append(out, s...)
-				s = s[len(s):]
-			} else {
-				c, err := strconv.ParseUint(s[2:10], 16, 32)
-				if err != nil || c > 0x10ffff {
-					// bad escape
-					out = append(out, s[:10]...)
-				} else {
-					w := utf8.EncodeRune(buf[:], rune(c))
-					out = append(out, buf[:w]...)
-				}
-				s = s[10:]
-			}
-		} else {
+		default:
 			switch s[1] {
+			case 'x', 'X':
+				n := matchPrefix(s[2:], 2, isHex)
+				if n == 0 {
+					// bad escape
+					out = append(out, s[:2]...)
+					s = s[2:]
+				} else {
+					c, err := strconv.ParseUint(s[2:2+n], 16, 8)
+					if err != nil {
+						// shouldn't really happen...
+						out = append(out, s[:2+n]...)
+					} else {
+						out = append(out, byte(c))
+					}
+					s = s[2+n:]
+				}
+			case 'u':
+				if len(s) < 6 {
+					// bad escape
+					out = append(out, s...)
+					s = s[len(s):]
+				} else {
+					c, err := strconv.ParseUint(s[2:6], 16, 16)
+					if err != nil {
+						// bad escape
+						out = append(out, s[:6]...)
+					} else {
+						w := utf8.EncodeRune(buf[:], rune(c))
+						out = append(out, buf[:w]...)
+					}
+					s = s[6:]
+				}
+			case 'U':
+				if len(s) < 10 {
+					// bad escape
+					out = append(out, s...)
+					s = s[len(s):]
+				} else {
+					c, err := strconv.ParseUint(s[2:10], 16, 32)
+					if err != nil || c > 0x10ffff {
+						// bad escape
+						out = append(out, s[:10]...)
+					} else {
+						w := utf8.EncodeRune(buf[:], rune(c))
+						out = append(out, buf[:w]...)
+					}
+					s = s[10:]
+				}
 			case 'a':
 				out = append(out, '\a')
 			case 'b':
