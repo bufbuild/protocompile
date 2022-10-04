@@ -47,8 +47,7 @@ order):
     This is the entry point, used to configure and initiate a compilation operation.
   * [`parser`](https://pkg.go.dev/github.com/bufbuild/protocompile/parser):
     This is the first stage of the compiler. It parses Protobuf source code and produces an AST. This package can also
-    generate a [`FileDescriptorProto`](https://github.com/protocolbuffers/protobuf/blob/v21.7/src/google/protobuf/descriptor.proto#L61-L62)
-    from an AST.
+    generate a file descriptor proto from an AST.
   * [`ast`](https://pkg.go.dev/github.com/bufbuild/protocompile/ast):
     This package models an Abstract Syntax Tree (AST) for the Protobuf language.
   * [`linker`](https://pkg.go.dev/github.com/bufbuild/protocompile/linker):
@@ -71,3 +70,22 @@ order):
     hierarchy.
   * [`protoutil`](https://pkg.go.dev/github.com/bufbuild/protocompile/protoutil):
     This package contains some other useful functions for interacting with Protobuf descriptors.
+
+### Migrating from `protoparse`
+
+There are a few differences between this repo and its predecessor, `github.com/jhump/protoreflect/desc/protoparse`.
+
+* If you want to include "standard imports", for the well-known files that are included with `protoc`, you have to do
+  so explicitly. To do this, wrap your resolver using `protocompile.WithStandardImports`.
+* If you used `protoparse.FileContentsFromMap`, in this new repo you'll use a `protocompile.SourceResolver` and then use
+  `protocompile.SourceAccessorFromMap` as its accessor function.
+* If you used `Parser.ParseToAST`, you won't use the `protocompile` package but instead directly use `parser.Parse` in
+  this repo's `parser` sub-package. This returns an AST for the given file contents.
+* If you used `Parser.ParseFilesButDoNotLink`, that is still possible in this repo, but not provided directly via a
+  single function. Instead, you need to take a few steps:
+  1. Parse the source using `parser.Parse`. Then use `parser.ResultFromAST` to construct a result that contains a file
+     descriptor proto.
+  2. Interpret whatever options can be interpreted without linking using `options.InterpretUnlinkedOptions`. This may
+     leave some options in the descriptor proto uninterpreted (including all custom options).
+  3. If you want source code info for the file, finally call `sourceinfo.GenerateSourceInfo` using the index returned
+     from the previous step and store that in the file descriptor proto.
