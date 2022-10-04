@@ -532,10 +532,8 @@ func TestBasicValidation(t *testing.T) {
 			err := errs.Error()
 			if tc.expectedErr == "" {
 				assert.NoError(t, err, "should succeed")
-			} else {
-				if assert.NotNil(t, err, "should fail") {
-					assert.Equal(t, tc.expectedErr, err.Error(), "bad error message")
-				}
+			} else if assert.NotNil(t, err, "should fail") {
+				assert.Equal(t, tc.expectedErr, err.Error(), "bad error message")
 			}
 		})
 	}

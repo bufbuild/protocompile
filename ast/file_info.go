@@ -454,7 +454,7 @@ func (n NodeInfo) End() SourcePos {
 	if tok.length > 0 {
 		// We return "open range", so end is the position *after* the
 		// last character in the span. So we adjust
-		pos.Col = pos.Col + 1
+		pos.Col++
 	}
 	return pos
 }

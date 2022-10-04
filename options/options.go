@@ -365,13 +365,14 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 			}
 		}
 		if ok {
-			if math.IsInf(flt, 1) {
+			switch {
+			case math.IsInf(flt, 1):
 				fld.DefaultValue = proto.String("inf")
-			} else if ok && math.IsInf(flt, -1) {
+			case math.IsInf(flt, -1):
 				fld.DefaultValue = proto.String("-inf")
-			} else if ok && math.IsNaN(flt) {
+			case math.IsNaN(flt):
 				fld.DefaultValue = proto.String("nan")
-			} else {
+			default:
 				fld.DefaultValue = proto.String(fmt.Sprintf("%v", v))
 			}
 		} else {
@@ -424,7 +425,8 @@ type interpretedOption struct {
 }
 
 func (o *interpretedOption) path() []int32 {
-	path := append(o.pathPrefix, o.number)
+	path := o.pathPrefix
+	path = append(path, o.number)
 	if o.repeated {
 		path = append(path, o.index)
 	}
@@ -492,7 +494,8 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 
 	for i := 0; i < len(flds); i++ {
 		f := flds[i]
-		if f.packed && canPack(f.kind) {
+		switch {
+		case f.packed && canPack(f.kind):
 			// for packed repeated numeric fields, all runs of values are merged into one packed list
 			num := f.number
 			j := i
@@ -508,7 +511,7 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 			b = protowire.AppendBytes(b, enclosed)
 			// skip over the other subsequent fields we just serialized
 			i = j - 1
-		} else if f.value.isList {
+		case f.value.isList:
 			// if not packed, then emit one value at a time
 			single := *f
 			single.value.isList = false
@@ -525,7 +528,7 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 					return nil, err
 				}
 			}
-		} else {
+		default:
 			// simple singular value
 			var err error
 			b, err = appendOptionBytesSingle(b, f)
@@ -1030,17 +1033,17 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 		}
 	}
 
-	if fld.IsMap() {
+	switch {
+	case fld.IsMap():
 		setMapEntry(msg, fld, &value)
-	} else if fld.IsList() {
+	case fld.IsList():
 		msg.Mutable(fld).List().Append(value.val)
-	} else {
+	default:
 		if msg.Has(fld) {
 			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
 		}
 		msg.Set(fld, value.val)
 	}
-
 	return value, nil
 }
 

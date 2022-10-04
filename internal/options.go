@@ -48,11 +48,12 @@ func FindOption(res hasOptionNode, handler *reporter.Handler, scope string, opts
 }
 
 func RemoveOption(uo []*descriptorpb.UninterpretedOption, indexToRemove int) []*descriptorpb.UninterpretedOption {
-	if indexToRemove == 0 {
+	switch {
+	case indexToRemove == 0:
 		return uo[1:]
-	} else if indexToRemove == len(uo)-1 {
+	case indexToRemove == len(uo)-1:
 		return uo[:len(uo)-1]
-	} else {
+	default:
 		return append(uo[:indexToRemove], uo[indexToRemove+1:]...)
 	}
 }

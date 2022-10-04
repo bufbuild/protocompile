@@ -1373,12 +1373,15 @@ func unescape(s string) string {
 			// not escape sequence, or too short to be well-formed escape
 			out = append(out, s[0])
 			s = s[1:]
-		} else if s[1] == 'x' || s[1] == 'X' {
+			continue
+		}
+		nextIndex := 2 // by default, skip '\' + escaped character
+		switch s[1] {
+		case 'x', 'X':
 			n := matchPrefix(s[2:], 2, isHex)
 			if n == 0 {
 				// bad escape
 				out = append(out, s[:2]...)
-				s = s[2:]
 			} else {
 				c, err := strconv.ParseUint(s[2:2+n], 16, 8)
 				if err != nil {
@@ -1387,9 +1390,9 @@ func unescape(s string) string {
 				} else {
 					out = append(out, byte(c))
 				}
-				s = s[2+n:]
+				nextIndex = 2 + n
 			}
-		} else if s[1] >= '0' && s[1] <= '7' {
+		case '0', '1', '2', '3', '4', '5', '6', '7':
 			n := 1 + matchPrefix(s[2:], 2, isOctal)
 			c, err := strconv.ParseUint(s[1:1+n], 8, 8)
 			if err != nil || c > 0xff {
@@ -1397,12 +1400,12 @@ func unescape(s string) string {
 			} else {
 				out = append(out, byte(c))
 			}
-			s = s[1+n:]
-		} else if s[1] == 'u' {
+			nextIndex = 1 + n
+		case 'u':
 			if len(s) < 6 {
 				// bad escape
 				out = append(out, s...)
-				s = s[len(s):]
+				nextIndex = len(s)
 			} else {
 				c, err := strconv.ParseUint(s[2:6], 16, 16)
 				if err != nil {
@@ -1412,13 +1415,13 @@ func unescape(s string) string {
 					w := utf8.EncodeRune(buf[:], rune(c))
 					out = append(out, buf[:w]...)
 				}
-				s = s[6:]
+				nextIndex = 6
 			}
-		} else if s[1] == 'U' {
+		case 'U':
 			if len(s) < 10 {
 				// bad escape
 				out = append(out, s...)
-				s = s[len(s):]
+				nextIndex = len(s)
 			} else {
 				c, err := strconv.ParseUint(s[2:10], 16, 32)
 				if err != nil || c > 0x10ffff {
@@ -1428,38 +1431,29 @@ func unescape(s string) string {
 					w := utf8.EncodeRune(buf[:], rune(c))
 					out = append(out, buf[:w]...)
 				}
-				s = s[10:]
+				nextIndex = 10
 			}
-		} else {
-			switch s[1] {
-			case 'a':
-				out = append(out, '\a')
-			case 'b':
-				out = append(out, '\b')
-			case 'f':
-				out = append(out, '\f')
-			case 'n':
-				out = append(out, '\n')
-			case 'r':
-				out = append(out, '\r')
-			case 't':
-				out = append(out, '\t')
-			case 'v':
-				out = append(out, '\v')
-			case '\\':
-				out = append(out, '\\')
-			case '\'':
-				out = append(out, '\'')
-			case '"':
-				out = append(out, '"')
-			case '?':
-				out = append(out, '?')
-			default:
-				// invalid escape, just copy it as-is
-				out = append(out, s[:2]...)
-			}
-			s = s[2:]
+		case 'a':
+			out = append(out, '\a')
+		case 'b':
+			out = append(out, '\b')
+		case 'f':
+			out = append(out, '\f')
+		case 'n':
+			out = append(out, '\n')
+		case 'r':
+			out = append(out, '\r')
+		case 't':
+			out = append(out, '\t')
+		case 'v':
+			out = append(out, '\v')
+		case '\\', '\'', '"', '?':
+			out = append(out, s[1])
+		default:
+			// invalid escape, just copy it as-is
+			out = append(out, s[:2]...)
 		}
+		s = s[nextIndex:]
 	}
 	return string(out)
 }
