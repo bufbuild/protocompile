@@ -1404,13 +1404,13 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 
 		// TODO: ensure that len(fieldNodes) == 1 (can't have multiple any fields)
 		if fieldNode.Name.IsAnyTypeReference() {
+			if fmd.FullName() != "google.protobuf.Any" {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
+			}
 			if foundAnyNode {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vmultiple any type references are not allowed", mc)
 			}
 			foundAnyNode = true
-			if fmd.FullName() != "google.protobuf.Any" {
-				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
-			}
 			urlPrefix := fieldNode.Name.URLPrefix.AsIdentifier()
 			msgName := fieldNode.Name.Name.AsIdentifier()
 			fullURL := fmt.Sprintf("%s/%s", urlPrefix, msgName)
