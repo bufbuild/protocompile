@@ -1408,18 +1408,18 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vmultiple any type references are not allowed", mc)
 			}
 			foundAnyNode = true
-			// TODO: Support other URLs dynamically -- the caller of protoparse
-			// should be able to provide a fldNode custom resolver that can resolve type
-			// URLs into message descriptors. The default resolver would be
-			// implemented as below, only accepting "type.googleapis.com" and
-			// "type.googleprod.com" as hosts/prefixes and using the compiled
-			// file's transitive closure to find the named message.
 			if fmd.FullName() != "google.protobuf.Any" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
 			}
 			urlPrefix := fieldNode.Name.URLPrefix.AsIdentifier()
 			msgName := fieldNode.Name.Name.AsIdentifier()
 			fullURL := fmt.Sprintf("%s/%s", urlPrefix, msgName)
+			// TODO: Support other URLs dynamically -- the caller of protoparse
+			// should be able to provide a fldNode custom resolver that can resolve type
+			// URLs into message descriptors. The default resolver would be
+			// implemented as below, only accepting "type.googleapis.com" and
+			// "type.googleprod.com" as hosts/prefixes and using the compiled
+			// file's transitive closure to find the named message.
 			if urlPrefix != "type.googleapis.com" && urlPrefix != "type.googleprod.com" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
 			}
