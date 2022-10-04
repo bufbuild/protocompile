@@ -73,10 +73,13 @@ linters:
     - maligned          # readability trumps efficient struct packing
     - nlreturn          # generous whitespace violates house style
     - nosnakecase       # deprecated in https://github.com/golangci/golangci-lint/pull/3065
+    - rowserrcheck      # no SQL code in protocompile
     - scopelint         # deprecated by author
+    - sqlclosecheck     # no SQL code in protocompile
     - structcheck       # deprecated by author
     - testpackage       # internal tests are fine
     - varcheck          # deprecated by author
+    - wastedassign      # not supported with generics
     - wrapcheck         # don't _always_ need to wrap errors
     - wsl               # generous whitespace violates house style
 issues:
