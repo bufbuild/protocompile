@@ -1401,8 +1401,6 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 		} else {
 			mc.OptAggPath = origPath + "." + fieldNode.Name.Value()
 		}
-
-		// TODO: ensure that len(fieldNodes) == 1 (can't have multiple any fields)
 		if fieldNode.Name.IsAnyTypeReference() {
 			if fmd.FullName() != "google.protobuf.Any" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
