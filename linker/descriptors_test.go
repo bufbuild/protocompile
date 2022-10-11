@@ -77,7 +77,7 @@ func TestUnescape(t *testing.T) {
 				Field: []*descriptorpb.FieldDescriptorProto{
 					{
 						Name:         proto.String("escaped_bytes"),
-						DefaultValue: proto.String(`\p\0\001\02\ab\b\f\n\r\t\v\\\'\"\?\xfe\Xab\u2192\U0001F389`),
+						DefaultValue: proto.String(`\p\0\001\02\ab\b\f\n\r\t\v\\\'\"\?\xfe\Xab\Xc\xf\u2192\U0001F389`),
 						Type:         (*descriptorpb.FieldDescriptorProto_Type)(proto.Int32(int32(descriptorpb.FieldDescriptorProto_TYPE_BYTES))),
 					},
 				},
@@ -93,7 +93,7 @@ func TestUnescape(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	field := result.FindFileByPath("foo.proto").Messages().Get(0).Fields().Get(0)
-	expected := []byte{'\\', 'p', 0, 1, 2, '\a', 'b', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '\'', '"', '?', 0xfe, 0xab}
+	expected := []byte{'\\', 'p', 0, 1, 2, '\a', 'b', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '\'', '"', '?', 0xfe, 0xab, 0xc, 0xf}
 	expected = utf8.AppendRune(expected, 0x2192)
 	expected = utf8.AppendRune(expected, 0x0001f389)
 	assert.Equal(t, expected, field.Default().Bytes())
