@@ -19,11 +19,14 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/prototest"
@@ -61,6 +64,39 @@ func TestFields(t *testing.T) {
 			checkAttributes(t, protocFd, fd, fmt.Sprintf("%q", testFileName))
 		})
 	}
+}
+
+func TestUnescape(t *testing.T) {
+	t.Parallel()
+	fileProto := &descriptorpb.FileDescriptorProto{
+		Name:   proto.String("foo.proto"),
+		Syntax: proto.String("proto2"),
+		MessageType: []*descriptorpb.DescriptorProto{
+			{
+				Name: proto.String("Foo"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					{
+						Name:         proto.String("escaped_bytes"),
+						DefaultValue: proto.String(`\p\0\001\02\ab\b\f\n\r\t\v\\\'\"\?\xfe\Xab\Xc\xf\u2192\U0001F389`),
+						Type:         (*descriptorpb.FieldDescriptorProto_Type)(proto.Int32(int32(descriptorpb.FieldDescriptorProto_TYPE_BYTES))),
+					},
+				},
+			},
+		},
+	}
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(protocompile.ResolverFunc(func(path string) (protocompile.SearchResult, error) {
+			return protocompile.SearchResult{Proto: fileProto}, nil
+		})),
+	}
+	result, err := compiler.Compile(context.Background(), "foo.proto")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	field := result.FindFileByPath("foo.proto").Messages().Get(0).Fields().Get(0)
+	expected := []byte{'\\', 'p', 0, 1, 2, '\a', 'b', '\b', '\f', '\n', '\r', '\t', '\v', '\\', '\'', '"', '?', 0xfe, 0xab, 0xc, 0xf}
+	expected = utf8.AppendRune(expected, 0x2192)
+	expected = utf8.AppendRune(expected, 0x0001f389)
+	assert.Equal(t, expected, field.Default().Bytes())
 }
 
 type container interface {
