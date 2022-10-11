@@ -152,6 +152,9 @@ type Result interface {
 	// is otherwise not useful since all option values are treated as
 	// unknown.
 	CanonicalProto() *descriptorpb.FileDescriptorProto
+
+	// RemoveAST drops the AST information from this result.
+	RemoveAST()
 }
 
 // ErrorUnusedImport may be passed to a warning reporter when an unused

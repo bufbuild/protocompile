@@ -43,7 +43,12 @@ type packageSymbols struct {
 	children map[protoreflect.FullName]*packageSymbols
 	files    map[protoreflect.FileDescriptor]struct{}
 	symbols  map[protoreflect.FullName]symbolEntry
-	exts     map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos
+	exts     map[extNumber]ast.SourcePos
+}
+
+type extNumber struct {
+	extendee protoreflect.FullName
+	tag      protoreflect.FieldNumber
 }
 
 type symbolEntry struct {
@@ -361,7 +366,7 @@ func (s *packageSymbols) commitFileLocked(f protoreflect.FileDescriptor) {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
 	if s.exts == nil {
-		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
+		s.exts = map[extNumber]ast.SourcePos{}
 	}
 	_ = walk.Descriptors(f, func(d protoreflect.Descriptor) error {
 		pos := sourcePositionFor(d)
@@ -503,7 +508,7 @@ func (s *packageSymbols) commitResultLocked(r *result) {
 		s.symbols = map[protoreflect.FullName]symbolEntry{}
 	}
 	if s.exts == nil {
-		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
+		s.exts = map[extNumber]ast.SourcePos{}
 	}
 	_ = walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
 		pos := nameStart(r.FileNode(), r.Node(d))
@@ -537,20 +542,16 @@ func (s *packageSymbols) addExtension(extendee protoreflect.FullName, tag protor
 	defer s.mu.Unlock()
 
 	if s.exts == nil {
-		s.exts = map[protoreflect.FullName]map[protoreflect.FieldNumber]ast.SourcePos{}
+		s.exts = map[extNumber]ast.SourcePos{}
 	}
 
-	usedExtTags := s.exts[extendee]
-	if usedExtTags == nil {
-		usedExtTags = map[protoreflect.FieldNumber]ast.SourcePos{}
-		s.exts[extendee] = usedExtTags
-	}
-	if existing, ok := usedExtTags[tag]; ok {
+	extNum := extNumber{extendee: extendee, tag: tag}
+	if existing, ok := s.exts[extNum]; ok {
 		if err := handler.HandleErrorf(pos, "extension with tag %d for message %s already defined at %v", tag, extendee, existing); err != nil {
 			return err
 		}
 	} else {
-		usedExtTags[tag] = pos
+		s.exts[extNum] = pos
 	}
 	return nil
 }

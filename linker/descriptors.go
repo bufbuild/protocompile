@@ -76,6 +76,11 @@ var _ protoreflect.FileDescriptor = (*result)(nil)
 var _ Result = (*result)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*result)(nil)
 
+func (r *result) RemoveAST() {
+	r.Result = parser.ResultWithoutAST(r.FileDescriptorProto())
+	r.optionQualifiedNames = nil
+}
+
 func (r *result) AsProto() proto.Message {
 	return r.FileDescriptorProto()
 }
@@ -157,11 +162,11 @@ func (r *result) SourceLocations() protoreflect.SourceLocations {
 	return &r.srcLocations
 }
 
-func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[interface{}]protoreflect.SourceLocation {
-	index := map[interface{}]protoreflect.SourceLocation{}
-	for _, loc := range locs {
+func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[interface{}]int {
+	index := map[interface{}]int{}
+	for i, loc := range locs {
 		if loc.Next == 0 {
-			index[pathKey(loc.Path)] = loc
+			index[pathKey(loc.Path)] = i
 		}
 	}
 	return index
@@ -373,7 +378,7 @@ type srcLocs struct {
 	protoreflect.SourceLocations
 	file  *result
 	locs  []protoreflect.SourceLocation
-	index map[interface{}]protoreflect.SourceLocation
+	index map[interface{}]int
 }
 
 func (s *srcLocs) Len() int {
@@ -385,7 +390,11 @@ func (s *srcLocs) Get(i int) protoreflect.SourceLocation {
 }
 
 func (s *srcLocs) ByPath(p protoreflect.SourcePath) protoreflect.SourceLocation {
-	return s.index[pathKey(p)]
+	index, ok := s.index[pathKey(p)]
+	if !ok {
+		return protoreflect.SourceLocation{}
+	}
+	return s.locs[index]
 }
 
 func (s *srcLocs) ByDescriptor(d protoreflect.Descriptor) protoreflect.SourceLocation {
