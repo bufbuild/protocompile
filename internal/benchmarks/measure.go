@@ -61,7 +61,7 @@ func (t *measuringTape) insert(start uintptr, length uint64) bool {
 	// start out if needed to encompass all overlaps
 	first := t.bst.Iterator().Key()
 	for entryStart > start {
-		if entryEnd == first {
+		if iter.Key() == first {
 			// can go no further
 			break
 		}
@@ -70,8 +70,7 @@ func (t *measuringTape) insert(start uintptr, length uint64) bool {
 			// gone back too far
 			break
 		}
-		entryEnd = iter.Key()
-		entryStart = entryEnd - uintptr(iter.Value())
+		entryStart = iter.Key() - uintptr(iter.Value())
 	}
 	if entryStart < start {
 		start = entryStart
@@ -98,7 +97,6 @@ func (t *measuringTape) insert(start uintptr, length uint64) bool {
 				break
 			}
 			entryEnd = iter.Key()
-			entryStart = st
 		}
 	}
 	if entryEnd > end {

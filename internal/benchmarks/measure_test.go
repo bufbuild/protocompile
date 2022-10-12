@@ -15,15 +15,18 @@
 package benchmarks
 
 import (
-	"github.com/igrmk/treemap/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"math/bits"
 	"reflect"
 	"testing"
+
+	"github.com/igrmk/treemap/v2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMeasuringTapeInsert(t *testing.T) {
+	t.Parallel()
+
 	mt := newMeasuringTape()
 	assert.True(t, mt.insert(100, 300)) // 100 -> 400
 	verifyMap(t, mt.bst, 100, 400)
@@ -84,6 +87,8 @@ func TestMeasuringTapeInsert(t *testing.T) {
 }
 
 func TestMeasuringTapeMeasure(t *testing.T) {
+	t.Parallel()
+
 	mt := newMeasuringTape()
 	bytes := make([]byte, 1000000)
 	mt.measure(reflect.ValueOf(bytes))
@@ -128,6 +133,8 @@ func verifyMap(t *testing.T, tree *treemap.TreeMap[uintptr, uint64], ranges ...u
 }
 
 func TestNumBuckets(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(t, 0, numBuckets(0))
 	assert.Equal(t, 1, numBuckets(8))
 	assert.Equal(t, 2, numBuckets(9))

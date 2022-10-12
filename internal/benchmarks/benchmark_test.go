@@ -57,7 +57,7 @@ const (
 
 var (
 	protocPath        = fmt.Sprintf("../testdata/protoc/%s/bin/protoc", protocVersion)
-	googleapisUri     = fmt.Sprintf("https://github.com/googleapis/googleapis/archive/%s.tar.gz", googleapisCommit)
+	googleapisURI     = fmt.Sprintf("https://github.com/googleapis/googleapis/archive/%s.tar.gz", googleapisCommit)
 	googleapisDir     string
 	googleapisSources []string
 )
@@ -97,7 +97,7 @@ func TestMain(m *testing.M) {
 		}
 	}()
 
-	if err := downloadAndExpand(googleapisUri, dir); err != nil {
+	if err := downloadAndExpand(googleapisURI, dir); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to download and expand googleapis: %v\n", err)
 		stat = 1
 		return
@@ -129,7 +129,11 @@ func TestMain(m *testing.M) {
 
 func downloadAndExpand(url, targetDir string) (e error) {
 	start := time.Now()
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -140,7 +144,7 @@ func downloadAndExpand(url, targetDir string) (e error) {
 			}
 		}()
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("downloading %s resulted in status code %s", url, resp.Status)
 	}
 	if err := os.MkdirAll(targetDir, 0777); err != nil {
@@ -220,8 +224,8 @@ func downloadAndExpand(url, targetDir string) (e error) {
 	return nil
 }
 
-func BenchmarkGoogleapis_Protocompile(b *testing.B) {
-	benchmarkGoogleapis_Protocompile(b, false, func() *protocompile.Compiler {
+func BenchmarkGoogleapisProtocompile(b *testing.B) {
+	benchmarkGoogleapisProtocompile(b, false, func() *protocompile.Compiler {
 		return &protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 				ImportPaths: []string{googleapisDir},
@@ -232,8 +236,8 @@ func BenchmarkGoogleapis_Protocompile(b *testing.B) {
 	})
 }
 
-func BenchmarkGoogleapis_Protocompile_Canonical(b *testing.B) {
-	benchmarkGoogleapis_Protocompile(b, true, func() *protocompile.Compiler {
+func BenchmarkGoogleapisProtocompileCanonical(b *testing.B) {
+	benchmarkGoogleapisProtocompile(b, true, func() *protocompile.Compiler {
 		return &protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 				ImportPaths: []string{googleapisDir},
@@ -244,8 +248,8 @@ func BenchmarkGoogleapis_Protocompile_Canonical(b *testing.B) {
 	})
 }
 
-func BenchmarkGoogleapis_Protocompile_NoSourceInfo(b *testing.B) {
-	benchmarkGoogleapis_Protocompile(b, false, func() *protocompile.Compiler {
+func BenchmarkGoogleapisProtocompileNoSourceInfo(b *testing.B) {
+	benchmarkGoogleapisProtocompile(b, false, func() *protocompile.Compiler {
 		return &protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 				ImportPaths: []string{googleapisDir},
@@ -256,7 +260,7 @@ func BenchmarkGoogleapis_Protocompile_NoSourceInfo(b *testing.B) {
 	})
 }
 
-func benchmarkGoogleapis_Protocompile(b *testing.B, canonicalBytes bool, factory func() *protocompile.Compiler) {
+func benchmarkGoogleapisProtocompile(b *testing.B, canonicalBytes bool, factory func() *protocompile.Compiler) {
 	for i := 0; i < b.N; i++ {
 		c := factory()
 		fds, err := c.Compile(context.Background(), googleapisSources...)
@@ -275,8 +279,8 @@ func benchmarkGoogleapis_Protocompile(b *testing.B, canonicalBytes bool, factory
 	}
 }
 
-func BenchmarkGoogleapis_Protoparse(b *testing.B) {
-	benchmarkGoogleapis_Protoparse(b, func() *protoparse.Parser {
+func BenchmarkGoogleapisProtoparse(b *testing.B) {
+	benchmarkGoogleapisProtoparse(b, func() *protoparse.Parser {
 		return &protoparse.Parser{
 			ImportPaths:           []string{googleapisDir},
 			IncludeSourceCodeInfo: true,
@@ -284,8 +288,8 @@ func BenchmarkGoogleapis_Protoparse(b *testing.B) {
 	})
 }
 
-func BenchmarkGoogleapis_Protoparse_NoSourceInfo(b *testing.B) {
-	benchmarkGoogleapis_Protoparse(b, func() *protoparse.Parser {
+func BenchmarkGoogleapisProtoparseNoSourceInfo(b *testing.B) {
+	benchmarkGoogleapisProtoparse(b, func() *protoparse.Parser {
 		return &protoparse.Parser{
 			ImportPaths:           []string{googleapisDir},
 			IncludeSourceCodeInfo: false,
@@ -293,7 +297,7 @@ func BenchmarkGoogleapis_Protoparse_NoSourceInfo(b *testing.B) {
 	})
 }
 
-func benchmarkGoogleapis_Protoparse(b *testing.B, factory func() *protoparse.Parser) {
+func benchmarkGoogleapisProtoparse(b *testing.B, factory func() *protoparse.Parser) {
 	par := runtime.GOMAXPROCS(-1)
 	cpus := runtime.NumCPU()
 	if par > cpus {
@@ -339,15 +343,15 @@ func benchmarkGoogleapis_Protoparse(b *testing.B, factory func() *protoparse.Par
 	}
 }
 
-func BenchmarkGoogleapis_Protoc(b *testing.B) {
-	benchmarkGoogleapis_Protoc(b, "--include_source_info")
+func BenchmarkGoogleapisProtoc(b *testing.B) {
+	benchmarkGoogleapisProtoc(b, "--include_source_info")
 }
 
-func BenchmarkGoogleapis_Protoc_NoSourceInfo(b *testing.B) {
-	benchmarkGoogleapis_Protoc(b)
+func BenchmarkGoogleapisProtocNoSourceInfo(b *testing.B) {
+	benchmarkGoogleapisProtoc(b)
 }
 
-func benchmarkGoogleapis_Protoc(b *testing.B, extraArgs ...string) {
+func benchmarkGoogleapisProtoc(b *testing.B, extraArgs ...string) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			args := make([]string, 0, len(googleapisSources)+5)
@@ -369,7 +373,7 @@ func benchmarkGoogleapis_Protoc(b *testing.B, extraArgs ...string) {
 	})
 }
 
-func BenchmarkGoogleapis_Protocompile_SingleThreaded(b *testing.B) {
+func BenchmarkGoogleapisProtocompileSingleThreaded(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			c := protocompile.Compiler{
@@ -393,7 +397,7 @@ func BenchmarkGoogleapis_Protocompile_SingleThreaded(b *testing.B) {
 	})
 }
 
-func BenchmarkGoogleapis_Protoparse_SingleThreaded(b *testing.B) {
+func BenchmarkGoogleapisProtoparseSingleThreaded(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			p := protoparse.Parser{
@@ -432,7 +436,7 @@ func writeToNull(b *testing.B, fds *descriptorpb.FileDescriptorSet) {
 	}
 }
 
-func TestGoogleapis_Protocompile_Memory(t *testing.T) {
+func TestGoogleapisProtocompileResultMemory(t *testing.T) {
 	c := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{googleapisDir},
@@ -444,7 +448,7 @@ func TestGoogleapis_Protocompile_Memory(t *testing.T) {
 	measure(t, fds)
 }
 
-func TestGoogleapis_Protocompile_Memory_NoSourceInfo(t *testing.T) {
+func TestGoogleapisProtocompileResultMemoryNoSourceInfo(t *testing.T) {
 	c := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			ImportPaths: []string{googleapisDir},
@@ -456,7 +460,7 @@ func TestGoogleapis_Protocompile_Memory_NoSourceInfo(t *testing.T) {
 	measure(t, fds)
 }
 
-func TestGoogleapis_Protocompile_ASTMemory(t *testing.T) {
+func TestGoogleapisProtocompileASTMemory(t *testing.T) {
 	var asts []*ast.FileNode
 	for _, file := range googleapisSources {
 		func() {
@@ -476,7 +480,7 @@ func TestGoogleapis_Protocompile_ASTMemory(t *testing.T) {
 	measure(t, asts)
 }
 
-func TestGoogleapis_Protoparse_Memory(t *testing.T) {
+func TestGoogleapisProtoparseResultMemory(t *testing.T) {
 	p := protoparse.Parser{
 		ImportPaths:           []string{googleapisDir},
 		IncludeSourceCodeInfo: true,
@@ -486,7 +490,7 @@ func TestGoogleapis_Protoparse_Memory(t *testing.T) {
 	measure(t, fds)
 }
 
-func TestGoogleapis_Protoparse_Memory_NoSourceInfo(t *testing.T) {
+func TestGoogleapisProtoparseResultMemoryNoSourceInfo(t *testing.T) {
 	p := protoparse.Parser{
 		ImportPaths:           []string{googleapisDir},
 		IncludeSourceCodeInfo: false,
@@ -496,7 +500,7 @@ func TestGoogleapis_Protoparse_Memory_NoSourceInfo(t *testing.T) {
 	measure(t, fds)
 }
 
-func TestGoogleapis_Protoparse_ASTMemory(t *testing.T) {
+func TestGoogleapisProtoparseASTMemory(t *testing.T) {
 	p := protoparse.Parser{
 		IncludeSourceCodeInfo: true,
 	}

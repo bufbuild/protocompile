@@ -51,6 +51,10 @@ clean: ## Delete intermediate build artifacts
 test: build ## Run unit tests
 	$(GO) test -vet=off -race -cover ./...
 
+.PHONY: benchmarks
+benchmarks: build ## Run benchmarks
+	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
+
 .PHONY: build
 build: generate ## Build all packages
 	$(GO) build ./...
@@ -61,12 +65,14 @@ install: ## Install all binaries
 
 .PHONY: lint
 lint: $(BIN)/golangci-lint ## Lint Go
-	$(GO) vet ./...
+	$(GO) vet ./... ./internal/benchmarks/...
 	$(BIN)/golangci-lint run
+	cd internal/benchmarks && $(BIN)/golangci-lint run
 
 .PHONY: lintfix
 lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 	$(BIN)/golangci-lint run --fix
+	cd internal/benchmarks && $(BIN)/golangci-lint run --fix
 
 .PHONY: generate
 generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ## Regenerate code and licenses
