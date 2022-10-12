@@ -262,21 +262,24 @@ func BenchmarkGoogleapisProtocompileNoSourceInfo(b *testing.B) {
 
 func benchmarkGoogleapisProtocompile(b *testing.B, canonicalBytes bool, factory func() *protocompile.Compiler) {
 	for i := 0; i < b.N; i++ {
-		c := factory()
-		fds, err := c.Compile(context.Background(), googleapisSources...)
-		require.NoError(b, err)
-		var fdSet descriptorpb.FileDescriptorSet
-		fdSet.File = make([]*descriptorpb.FileDescriptorProto, len(fds))
-		for i, fd := range fds {
-			if canonicalBytes {
-				fdSet.File[i] = fd.(linker.Result).CanonicalProto()
-			} else {
-				fdSet.File[i] = protoutil.ProtoFromFileDescriptor(fd)
-			}
-		}
-		// protoc is writing output to file descriptor set, so we should, too
-		writeToNull(b, &fdSet)
+		benchmarkProtocompile(b, factory(), googleapisSources, canonicalBytes)
 	}
+}
+
+func benchmarkProtocompile(b *testing.B, c *protocompile.Compiler, sources []string, canonicalBytes bool) {
+	fds, err := c.Compile(context.Background(), sources...)
+	require.NoError(b, err)
+	var fdSet descriptorpb.FileDescriptorSet
+	fdSet.File = make([]*descriptorpb.FileDescriptorProto, len(fds))
+	for i, fd := range fds {
+		if canonicalBytes {
+			fdSet.File[i] = fd.(linker.Result).CanonicalProto()
+		} else {
+			fdSet.File[i] = protoutil.ProtoFromFileDescriptor(fd)
+		}
+	}
+	// protoc is writing output to file descriptor set, so we should, too
+	writeToNull(b, &fdSet)
 }
 
 func BenchmarkGoogleapisProtoparse(b *testing.B) {
@@ -376,7 +379,7 @@ func benchmarkGoogleapisProtoc(b *testing.B, extraArgs ...string) {
 func BenchmarkGoogleapisProtocompileSingleThreaded(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			c := protocompile.Compiler{
+			c := &protocompile.Compiler{
 				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 					ImportPaths: []string{googleapisDir},
 				}),
@@ -385,14 +388,7 @@ func BenchmarkGoogleapisProtocompileSingleThreaded(b *testing.B) {
 				// need to run a single-threaded compile
 				MaxParallelism: 1,
 			}
-			fds, err := c.Compile(context.Background(), googleapisSources...)
-			require.NoError(b, err)
-			var fdSet descriptorpb.FileDescriptorSet
-			fdSet.File = make([]*descriptorpb.FileDescriptorProto, len(fds))
-			for i, fd := range fds {
-				fdSet.File[i] = protoutil.ProtoFromFileDescriptor(fd)
-			}
-			writeToNull(b, &fdSet)
+			benchmarkProtocompile(b, c, googleapisSources, false)
 		}
 	})
 }
