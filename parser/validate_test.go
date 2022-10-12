@@ -512,6 +512,64 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }`,
 			expectedErr: `test.proto:10:55: message nesting depth must be less than 32`,
 		},
+		"failure_message_invalid_reserved_name": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     reserved "foo", "b_a_r9", " blah ";
+					   }`,
+			expectedErr: `test.proto:3:72: message Foo: reserved name " blah " is not a valid identifier`,
+		},
+		"failure_message_invalid_reserved_name2": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     reserved "foo", "_bar123", "123";
+					   }`,
+			expectedErr: `test.proto:3:73: message Foo: reserved name "123" is not a valid identifier`,
+		},
+		"failure_message_invalid_reserved_name3": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     reserved "foo" "_bar123" "@y!!";
+					   }`,
+			expectedErr: `test.proto:3:55: message Foo: reserved name "foo_bar123@y!!" is not a valid identifier`,
+		},
+		"success_message_reserved_name": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     reserved "foo", "_bar123", "A_B_C_1_2_3";
+					   }`,
+		},
+		"failure_enum_invalid_reserved_name": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "foo", "b_a_r9", " blah ";
+					   }`,
+			expectedErr: `test.proto:4:72: enum Foo: reserved name " blah " is not a valid identifier`,
+		},
+		"failure_enum_invalid_reserved_name2": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "foo", "_bar123", "123";
+					   }`,
+			expectedErr: `test.proto:4:73: enum Foo: reserved name "123" is not a valid identifier`,
+		},
+		"failure_enum_invalid_reserved_name3": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "foo" "_bar123" "@y!!";
+					   }`,
+			expectedErr: `test.proto:4:55: enum Foo: reserved name "foo_bar123@y!!" is not a valid identifier`,
+		},
+		"success_enum_reserved_name": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "foo", "_bar123", "A_B_C_1_2_3";
+					   }`,
+		},
 	}
 
 	for name, tc := range testCases {

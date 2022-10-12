@@ -203,6 +203,14 @@ func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md 
 	// or reserved ranges or reserved names
 	rsvdNames := map[string]struct{}{}
 	for _, n := range md.ReservedName {
+		// validate reserved name while we're here
+		if !isIdentifier(n) {
+			node := findMessageReservedNameNode(res.MessageNode(md), n)
+			nodeInfo := res.file.NodeInfo(node)
+			if err := handler.HandleErrorf(nodeInfo.Start(), "%s: reserved name %q is not a valid identifier", scope, n); err != nil {
+				return err
+			}
+		}
 		rsvdNames[n] = struct{}{}
 	}
 	fieldTags := map[int32]string{}
@@ -240,6 +248,58 @@ func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md 
 	}
 
 	return nil
+}
+
+func isIdentifier(s string) bool {
+	for i, r := range s {
+		if i == 0 && r >= '0' && r <= '9' {
+			// can't start with number
+			return false
+		}
+		// alphanumeric and underscore ok; everything else bad
+		switch {
+		case r >= '0' && r <= '9':
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r == '_':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func findMessageReservedNameNode(msgNode ast.MessageDeclNode, name string) ast.Node {
+	var decls []ast.MessageElement
+	switch msgNode := msgNode.(type) {
+	case *ast.MessageNode:
+		decls = msgNode.Decls
+	case *ast.GroupNode:
+		decls = msgNode.Decls
+	default:
+		// leave decls empty
+	}
+	return findReservedNameNode(msgNode, decls, name)
+}
+
+func findReservedNameNode[T ast.Node](parent ast.Node, decls []T, name string) ast.Node {
+	for _, decl := range decls {
+		// NB: We have to store in empty interface value first before we can do type
+		// assertion because type assertions on type parameters aren't allowed. (The
+		// compiler cannot yet know whether T is an interface type or not.)
+		var declIface any = decl
+		rsvd, ok := declIface.(*ast.ReservedNode)
+		if !ok {
+			continue
+		}
+		for _, rsvdName := range rsvd.Names {
+			if rsvdName.AsString() == name {
+				return rsvdName
+			}
+		}
+	}
+	// couldn't find it? Instead of puking, report position of the parent.
+	return parent
 }
 
 func validateEnum(res *result, isProto3 bool, name protoreflect.FullName, ed *descriptorpb.EnumDescriptorProto, handler *reporter.Handler) error {
@@ -331,6 +391,14 @@ func validateEnum(res *result, isProto3 bool, name protoreflect.FullName, ed *de
 	// or reserved ranges or reserved names
 	rsvdNames := map[string]struct{}{}
 	for _, n := range ed.ReservedName {
+		// validate reserved name while we're here
+		if !isIdentifier(n) {
+			node := findEnumReservedNameNode(res.EnumNode(ed), n)
+			nodeInfo := res.file.NodeInfo(node)
+			if err := handler.HandleErrorf(nodeInfo.Start(), "%s: reserved name %q is not a valid identifier", scope, n); err != nil {
+				return err
+			}
+		}
 		rsvdNames[n] = struct{}{}
 	}
 	for _, ev := range ed.Value {
@@ -352,6 +420,15 @@ func validateEnum(res *result, isProto3 bool, name protoreflect.FullName, ed *de
 	}
 
 	return nil
+}
+
+func findEnumReservedNameNode(enumNode ast.Node, name string) ast.Node {
+	var decls []ast.EnumElement
+	if enumNode, ok := enumNode.(*ast.EnumNode); ok {
+		decls = enumNode.Decls
+		// if not the right type, we leave decls empty
+	}
+	return findReservedNameNode(enumNode, decls, name)
 }
 
 func validateField(res *result, isProto3 bool, name protoreflect.FullName, fld *descriptorpb.FieldDescriptorProto, handler *reporter.Handler) error {
