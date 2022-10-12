@@ -124,18 +124,14 @@ func TestSymbolsImport(t *testing.T) {
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.s"))
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.xtra"))
 			exts := pkg.exts
-			assert.Equal(t, 1, len(exts))
-			extNums := exts["foo.bar.Foo"]
-			assert.Equal(t, 2, len(extNums))
-			assert.Contains(t, extNums, protoreflect.FieldNumber(10))
-			assert.Contains(t, extNums, protoreflect.FieldNumber(11))
+			assert.Equal(t, 2, len(exts))
+			assert.Contains(t, exts, extNumber{"foo.bar.Foo", 10})
+			assert.Contains(t, exts, extNumber{"foo.bar.Foo", 11})
 
 			pkg = s.getPackage("google.protobuf")
 			exts = pkg.exts
 			assert.Equal(t, 1, len(exts))
-			extNums = exts["google.protobuf.FieldOptions"]
-			assert.Equal(t, 1, len(extNums))
-			assert.Contains(t, extNums, protoreflect.FieldNumber(20000))
+			assert.Contains(t, exts, extNumber{"google.protobuf.FieldOptions", 20000})
 		})
 	}
 }
@@ -184,27 +180,16 @@ func TestSymbolExtensions(t *testing.T) {
 
 	pkg := s.getPackage("foo.bar")
 	exts := pkg.exts
-	assert.Equal(t, 1, len(exts))
-	extNums := exts["foo.bar.Foo"]
-	assert.Equal(t, 2, len(extNums))
-	assert.Contains(t, extNums, protoreflect.FieldNumber(11))
-	assert.Contains(t, extNums, protoreflect.FieldNumber(12))
+	assert.Equal(t, 2, len(exts))
+	assert.Contains(t, exts, extNumber{"foo.bar.Foo", 11})
+	assert.Contains(t, exts, extNumber{"foo.bar.Foo", 12})
 
 	pkg = s.getPackage("google.protobuf")
 	exts = pkg.exts
 	assert.Equal(t, 3, len(exts))
-	assert.Contains(t, exts, protoreflect.FullName("google.protobuf.FileOptions"))
-	assert.Contains(t, exts, protoreflect.FullName("google.protobuf.FieldOptions"))
-	assert.Contains(t, exts, protoreflect.FullName("google.protobuf.MessageOptions"))
-	extNums = exts["google.protobuf.FileOptions"]
-	assert.Equal(t, 1, len(extNums))
-	assert.Contains(t, extNums, protoreflect.FieldNumber(10101))
-	extNums = exts["google.protobuf.FieldOptions"]
-	assert.Equal(t, 1, len(extNums))
-	assert.Contains(t, extNums, protoreflect.FieldNumber(10101))
-	extNums = exts["google.protobuf.MessageOptions"]
-	assert.Equal(t, 1, len(extNums))
-	assert.Contains(t, extNums, protoreflect.FieldNumber(10101))
+	assert.Contains(t, exts, extNumber{"google.protobuf.FileOptions", 10101})
+	assert.Contains(t, exts, extNumber{"google.protobuf.FieldOptions", 10101})
+	assert.Contains(t, exts, extNumber{"google.protobuf.MessageOptions", 10101})
 }
 
 func parseAndLink(t *testing.T, contents string) Result {
