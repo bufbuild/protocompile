@@ -15,6 +15,7 @@ TOOLS_MOD_DIR := ./internal/tools
 UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 
+# NB: this must be kept in sync with constant in internal/benchmarks.
 PROTOC_VERSION ?= 21.7
 PROTOC_DIR := $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc

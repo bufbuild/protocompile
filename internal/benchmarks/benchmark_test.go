@@ -92,7 +92,9 @@ func TestMain(m *testing.M) {
 		return
 	}
 	defer func() {
-		_ = os.RemoveAll(dir)
+		if err := os.RemoveAll(dir); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "Failed to cleanup temp directory %s: %v\n", dir, err)
+		}
 	}()
 
 	if err := downloadAndExpand(googleapisUri, dir); err != nil {
@@ -125,14 +127,17 @@ func TestMain(m *testing.M) {
 	stat = m.Run()
 }
 
-func downloadAndExpand(url, targetDir string) error {
+func downloadAndExpand(url, targetDir string) (e error) {
+	start := time.Now()
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	if resp.Body != nil {
 		defer func() {
-			_ = resp.Body.Close()
+			if err = resp.Body.Close(); err != nil && e == nil {
+				e = err
+			}
 		}()
 	}
 	if resp.StatusCode != 200 {
@@ -147,16 +152,20 @@ func downloadAndExpand(url, targetDir string) error {
 	}
 	defer func() {
 		if f != nil {
-			_ = f.Close()
+			if err := f.Close(); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close %s: %v\n", f.Name(), err)
+			}
 		}
 	}()
 	n, err := io.Copy(f, resp.Body)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Downloaded %v; %d bytes.\n", url, n)
+	fmt.Printf("Downloaded %v; %d bytes (%v).\n", url, n, time.Since(start))
 	archiveName := f.Name()
-	_ = f.Close()
+	if err := f.Close(); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close %s: %v\n", f.Name(), err)
+	}
 	f = nil
 
 	f, err = os.OpenFile(archiveName, os.O_RDONLY, 0)
@@ -169,7 +178,9 @@ func downloadAndExpand(url, targetDir string) error {
 		return err
 	}
 	defer func() {
-		_ = gzr.Close()
+		if err = gzr.Close(); err != nil && e == nil {
+			e = err
+		}
 	}()
 
 	tr := tar.NewReader(gzr)
@@ -340,7 +351,7 @@ func benchmarkGoogleapis_Protoc(b *testing.B, extraArgs ...string) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			args := make([]string, 0, len(googleapisSources)+5)
-			args = append(args, "-I", googleapisDir, "-o", nullOutputFile())
+			args = append(args, "-I", googleapisDir, "-o", os.DevNull)
 			args = append(args, extraArgs...)
 			args = append(args, googleapisSources...)
 			cmd := exec.Command(protocPath, args...)
@@ -367,7 +378,7 @@ func BenchmarkGoogleapis_Protocompile_SingleThreaded(b *testing.B) {
 				}),
 				SourceInfoMode: protocompile.SourceInfoExtraComments,
 				// to really test performance compared to protoc and protoparse, we
-				// need to a single-threaded compile
+				// need to run a single-threaded compile
 				MaxParallelism: 1,
 			}
 			fds, err := c.Compile(context.Background(), googleapisSources...)
@@ -401,21 +412,15 @@ func BenchmarkGoogleapis_Protoparse_SingleThreaded(b *testing.B) {
 	})
 }
 
-func nullOutputFile() string {
-	if runtime.GOOS == "windows" {
-		return "NUL"
-	}
-	return "/dev/null"
-}
-
 func writeToNull(b *testing.B, fds *descriptorpb.FileDescriptorSet) {
-	output := nullOutputFile()
-	f, err := os.OpenFile(output, os.O_WRONLY, 0)
+	f, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	if err != nil {
-		b.Fatalf("failed to open output file %s: %v", output, err)
+		b.Fatalf("failed to open output file %s: %v", os.DevNull, err)
 	}
 	defer func() {
-		_ = f.Close()
+		if err := f.Close(); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close %s: %v\n", f.Name(), err)
+		}
 	}()
 	data, err := proto.Marshal(fds)
 	if err != nil {
@@ -458,7 +463,9 @@ func TestGoogleapis_Protocompile_ASTMemory(t *testing.T) {
 			f, err := os.OpenFile(filepath.Join(googleapisDir, file), os.O_RDONLY, 0)
 			require.NoError(t, err)
 			defer func() {
-				_ = f.Close()
+				if err := f.Close(); err != nil {
+					_, _ = fmt.Fprintf(os.Stderr, "warning: failed to close %s: %v\n", f.Name(), err)
+				}
 			}()
 			h := reporter.NewHandler(nil)
 			ast, err := parser.Parse(file, f, h)
@@ -505,11 +512,7 @@ func TestGoogleapis_Protoparse_ASTMemory(t *testing.T) {
 
 func measure(t *testing.T, v any) {
 	// log heap allocations
-	for i := 0; i < 5; i++ {
-		// we REALLY want nothing extra left on the heap...
-		runtime.GC()
-		time.Sleep(100 * time.Millisecond)
-	}
+	runtime.GC()
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	t.Logf("(heap used: %d bytes)", m.Alloc)
