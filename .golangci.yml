@@ -92,3 +92,7 @@ issues:
     - path: benchmark_test\.go
       linters:
         - paralleltest
+    # dupword reports several errors in .proto test fixtures
+    - path: _test\.go
+      linters:
+        - dupword

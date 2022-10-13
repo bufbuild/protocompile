@@ -43,7 +43,7 @@
 // model in this package thus provides access to all comments in the
 // file, regardless of location (unlike the SourceCodeInfo present in
 // descriptor protos, which is lossy). The comments associated with a
-// a non-leaf/non-token node (i.e. a CompositeNode) come from the first
+// non-leaf/non-token node (i.e. a CompositeNode) come from the first
 // and last nodes in its sub-tree, for leading and trailing comments
 // respectively.
 //
