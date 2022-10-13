@@ -251,6 +251,9 @@ func validateMessage(res *result, isProto3 bool, name protoreflect.FullName, md 
 }
 
 func isIdentifier(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
 	for i, r := range s {
 		if i == 0 && r >= '0' && r <= '9' {
 			// can't start with number
@@ -284,11 +287,10 @@ func findMessageReservedNameNode(msgNode ast.MessageDeclNode, name string) ast.N
 
 func findReservedNameNode[T ast.Node](parent ast.Node, decls []T, name string) ast.Node {
 	for _, decl := range decls {
-		// NB: We have to store in empty interface value first before we can do type
+		// NB: We have to convert to empty interface first, before we can do a type
 		// assertion because type assertions on type parameters aren't allowed. (The
 		// compiler cannot yet know whether T is an interface type or not.)
-		var declIface any = decl
-		rsvd, ok := declIface.(*ast.ReservedNode)
+		rsvd, ok := any(decl).(*ast.ReservedNode)
 		if !ok {
 			continue
 		}

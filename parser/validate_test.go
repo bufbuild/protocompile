@@ -533,6 +533,13 @@ func TestBasicValidation(t *testing.T) {
 					   }`,
 			expectedErr: `test.proto:3:55: message Foo: reserved name "foo_bar123@y!!" is not a valid identifier`,
 		},
+		"failure_message_invalid_reserved_name4": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     reserved "";
+					   }`,
+			expectedErr: `test.proto:3:55: message Foo: reserved name "" is not a valid identifier`,
+		},
 		"success_message_reserved_name": {
 			contents: `syntax = "proto3";
 					   message Foo {
@@ -562,6 +569,14 @@ func TestBasicValidation(t *testing.T) {
 					     reserved "foo" "_bar123" "@y!!";
 					   }`,
 			expectedErr: `test.proto:4:55: enum Foo: reserved name "foo_bar123@y!!" is not a valid identifier`,
+		},
+		"failure_enum_invalid_reserved_name4": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "";
+					   }`,
+			expectedErr: `test.proto:4:55: enum Foo: reserved name "" is not a valid identifier`,
 		},
 		"success_enum_reserved_name": {
 			contents: `syntax = "proto3";
