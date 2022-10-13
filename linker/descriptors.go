@@ -1236,7 +1236,7 @@ func (f *fldDescriptor) IsPacked() bool {
 		return false
 	}
 
-	// proto3 defaults to packed for repeated scalar fields
+	// proto3 defaults to packed for repeated scalar numeric fields
 	if f.file.Syntax() != protoreflect.Proto3 {
 		return false
 	}
