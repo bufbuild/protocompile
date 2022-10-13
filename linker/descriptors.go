@@ -1227,7 +1227,30 @@ func (f *fldDescriptor) IsWeak() bool {
 }
 
 func (f *fldDescriptor) IsPacked() bool {
-	return f.proto.Options.GetPacked()
+	opts := f.proto.GetOptions()
+	if opts.GetPacked() {
+		return true
+	}
+	if opts != nil && opts.Packed != nil {
+		// explicitly not packed
+		return false
+	}
+
+	// proto3 defaults to packed for repeated scalar fields
+	if f.file.Syntax() != protoreflect.Proto3 {
+		return false
+	}
+	if f.proto.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
+		return false
+	}
+	switch f.proto.GetType() {
+	case descriptorpb.FieldDescriptorProto_TYPE_GROUP, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE,
+		descriptorpb.FieldDescriptorProto_TYPE_BYTES, descriptorpb.FieldDescriptorProto_TYPE_STRING:
+		return false
+	default:
+		// all others can be packed
+		return true
+	}
 }
 
 func (f *fldDescriptor) IsList() bool {
