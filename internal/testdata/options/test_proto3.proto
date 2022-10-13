@@ -18,6 +18,60 @@ import "options.proto";
 // pull in extra/forked enum options to make sure they are encoded as expected
 import "google/protobuf/descriptor.proto";
 
+// Repeated scalar fields are packed by default in proto3. So we define some extra
+// options here just for testing that.
+message PackedOptions {
+  repeated int32 i32 = 1;
+  repeated uint32 u32 = 2;
+  repeated sint32 s32 = 3;
+  repeated fixed32 f32 = 4;
+  repeated sfixed32 sf32 = 5;
+  repeated int64 i64 = 6;
+  repeated uint64 u64 = 7;
+  repeated sint64 s64 = 8;
+  repeated fixed64 f64 = 9;
+  repeated sfixed64 sf64 = 10;
+  repeated float fl32 = 11;
+  repeated double fl64 = 12;
+  repeated bool flag = 13;
+  enum Foo {
+    NA = 0;
+    BAR = 1;
+    BAZ = 2;
+  }
+  repeated Foo en = 14;
+
+  PackedOptions msg = 99;
+}
+
+extend google.protobuf.FileOptions {
+  PackedOptions file3 = 50505;
+}
+extend google.protobuf.MessageOptions {
+  PackedOptions msg3 = 50505;
+}
+extend google.protobuf.FieldOptions {
+  PackedOptions fld3 = 50505;
+}
+extend google.protobuf.OneofOptions {
+  PackedOptions oo3 = 50505;
+}
+extend google.protobuf.ExtensionRangeOptions {
+  PackedOptions ext3 = 50505;
+}
+extend google.protobuf.EnumOptions {
+  PackedOptions en3 = 50505;
+}
+extend google.protobuf.EnumValueOptions {
+  PackedOptions env3 = 50505;
+}
+extend google.protobuf.ServiceOptions {
+  PackedOptions svc3 = 50505;
+}
+extend google.protobuf.MethodOptions {
+  PackedOptions rpc3 = 50505;
+}
+
 option (file_i) = 1;
 option (file_i) = 2;
 option (file_i) = 3;
@@ -56,6 +110,7 @@ message TestMessage {
 
     (fld).pr_s32 = 0,
     (fld).pr_s32 = 1,
+    (fld3).s32 = 1,
 
     (fld).m_s32 = {
       key: 123,
@@ -77,6 +132,7 @@ message TestMessage {
 
     (fld).pr_fl32 = 0,
     (fld).pr_fl32 = 1,
+    (fld3).fl32 = 1,
 
     (fld).m_fl32 = {
       key: "abc",
@@ -107,6 +163,10 @@ message TestMessage {
         { key: "foo", value: 1 }, { key: "bar", value: 2 }
       ]
     },
+    (fld3).msg = {
+      s32: [0, 1, 2, 3],
+      fl32: [0, 1, 2, 3],
+    },
     (fld).msg.(t).msg.(t) = {
       r_s32: 1
       r_s32: 2
@@ -122,6 +182,20 @@ message TestMessage {
       pr_fl32: 2
       m_fl32: { }
       m_fl32: { key: "bar", value: -2.2222 }
+    },
+    (fld3).msg.msg = {
+      s32: 1
+      s32: 2
+      fl32: 1
+      fl32: 2
+    },
+    (fld).msg.(t).msg.(t).msg.(t) = {
+      pr_s32: 1
+      pr_fl32: 2
+    },
+    (fld3).msg.msg.msg = {
+      s32: 1
+      fl32: 1
     }
   ];
 
@@ -151,6 +225,7 @@ message TestMessage {
 
     option (oo).pr_i64 = 0;
     option (oo).pr_i64 = 1;
+    option (oo3).i64 = 0;
 
     option (oo).m_i64 = {
       key: 123
@@ -172,6 +247,7 @@ message TestMessage {
 
     option (oo).pr_u64 = 0;
     option (oo).pr_u64 = 1;
+    option (oo3).u64 = 0;
 
     option (oo).m_u64 = {
       key: 123
@@ -202,6 +278,10 @@ message TestMessage {
         { key: 123, value: 1 }, { key: 234, value: 2 }
       ]
     };
+    option (oo3).msg = {
+      i64: [0, 1, 2, 3]
+      u64: [0, 1, 2, 3]
+    };
     option (oo).msg.(t).msg.(t) = {
       r_i64: 1
       r_i64: 2
@@ -217,6 +297,20 @@ message TestMessage {
       pr_u64: 2
       m_u64: { }
       m_u64: { key: 234, value: 2 }
+    };
+    option (oo3).msg.msg = {
+      i64: 1
+      i64: 2
+      u64: 1
+      u64: 2
+    };
+    option (oo).msg.(t).msg.(t).msg.(t) = {
+      pr_i64: 1
+      pr_u64: 1
+    };
+    option(oo3).msg.msg.msg = {
+      i64: 1;
+      u64: 2;
     };
   }
 
@@ -237,6 +331,7 @@ message TestMessage {
 
   option (msg).pr_f32 = 0;
   option (msg).pr_f32 = 1;
+  option (msg3).f32 = 0;
 
   option (msg).m_f32 = {
     key: 123
@@ -258,6 +353,7 @@ message TestMessage {
 
   option (msg).pr_sf32 = 0;
   option (msg).pr_sf32 = 1;
+  option (msg3).sf32 = 0;
 
   option (msg).m_sf32 = {
     key: 123
@@ -288,6 +384,10 @@ message TestMessage {
       { key: 123, value: 1 }, { key: 234, value: 2 }
     ]
   };
+  option (msg3).msg = {
+    f32: [0, 1, 2, 3]
+    sf32: [0, 1, 2, 3]
+  };
   option (msg).msg.(t).msg.(t) = {
     r_f32: 1
     r_f32: 2
@@ -303,6 +403,20 @@ message TestMessage {
     pr_sf32: 2
     m_sf32: { }
     m_sf32: { key: -234, value: -2 }
+  };
+  option (msg3).msg.msg = {
+    f32: 1
+    f32: 2
+    sf32: 1
+    sf32: 2
+  };
+  option (msg).msg.(t).msg.(t).msg.(t) = {
+    pr_f32: 1
+    pr_sf32: 1
+  };
+  option (msg3).msg.msg.msg = {
+    f32: 1
+    sf32: 1
   };
 
   option message_set_wire_format = false;
@@ -325,6 +439,7 @@ option (file).r_i32 = 1;
 
 option (file).pr_i32 = 0;
 option (file).pr_i32 = 1;
+option (file3).i32 = 0;
 
 option (file).m_i32 = {
   key: 123
@@ -346,6 +461,7 @@ option (file).r_u32 = 1;
 
 option (file).pr_u32 = 0;
 option (file).pr_u32 = 1;
+option (file3).u32 = 0;
 
 option (file).m_u32 = {
   key: 123
@@ -402,6 +518,7 @@ enum TestEnum {
 
     (env).pr_s64 = 0,
     (env).pr_s64 = 1,
+    (env3).s64 = 0,
 
     (env).m_s64 = {
       key: 123,
@@ -423,6 +540,7 @@ enum TestEnum {
 
     (env).pr_fl64 = 0,
     (env).pr_fl64 = 1,
+    (env3).fl64 = 0,
 
     (env).m_fl64 = {
       key: "abc",
@@ -453,6 +571,10 @@ enum TestEnum {
         { key: "foo", value: 1 }, { key: "bar", value: 2 }
       ]
     },
+    (env3).msg = {
+      s64: [0, 1, 2, 3]
+      fl64: [0, 1, 2, 3]
+    },
     (env).msg.(t).msg.(t) = {
       r_s64: 1
       r_s64: 2
@@ -468,6 +590,20 @@ enum TestEnum {
       pr_fl64: 2
       m_fl64: { }
       m_fl64: { key: "bar", value: 2 }
+    },
+    (env3).msg.msg = {
+      s64: 1
+      s64: 2
+      fl64: 1
+      fl64: 2
+    },
+    (env).msg.(t).msg.(t).msg.(t) = {
+      pr_s64: 1
+      pr_fl64: 1
+    },
+    (env3).msg.msg.msg = {
+      s64: 1
+      fl64: 1
     }
   ];
 
@@ -488,6 +624,7 @@ enum TestEnum {
 
   option (en).pr_f64 = 0;
   option (en).pr_f64 = 1;
+  option (en3).f64 = 0;
 
   option (en).m_f64 = {
     key: 123
@@ -509,6 +646,7 @@ enum TestEnum {
 
   option (en).pr_sf64 = 0;
   option (en).pr_sf64 = 1;
+  option (en3).sf64 = 0;
 
   option (en).m_sf64 = {
     key: 123
@@ -539,6 +677,10 @@ enum TestEnum {
       { key: 123, value: 1 }, { key: 234, value: 2 }
     ]
   };
+  option (en3).msg = {
+    f64: [0, 1, 2, 3]
+    sf64: [0, 1, 2, 3]
+  };
   option (en).msg.(t).msg.(t) = {
     r_f64: 1
     r_f64: 2
@@ -555,6 +697,20 @@ enum TestEnum {
     m_sf64: { }
     m_sf64: { key: -234, value: -2 }
   };
+  option (en3).msg.msg = {
+    f64: 1
+    f64: 2
+    sf64: 1
+    sf64: 2
+  };
+  option (en).msg.(t).msg.(t).msg.(t) = {
+    pr_f64: 1
+    pr_sf64: 1
+  };
+  option (en3).msg.msg.msg = {
+    f64: 1
+    sf64: 1
+  };
 }
 
 option (file).msg.(t) = {
@@ -568,6 +724,10 @@ option (file).msg.(t) = {
   m_u32: [
     { key: 123, value: 1 }, { key: 234, value: 2 }
   ]
+};
+option (file3).msg = {
+  i32: [0, 1, 2, 3]
+  u32: [0, 1, 2, 3]
 };
 option (file).msg.(t).msg.(t) = {
   r_i32: 1
@@ -584,6 +744,20 @@ option (file).msg.(t).msg.(t) = {
   pr_u32: 2
   m_u32: { }
   m_u32: { key: 234, value: 2 }
+};
+option (file3).msg.msg = {
+  i32: 1
+  i32: 2
+  u32: 1
+  u32: 2
+};
+option (file).msg.(t).msg.(t).msg.(t) = {
+  pr_i32: 1
+  pr_u32: 1
+};
+option (file3).msg.msg.msg = {
+  i32: 1
+  u32: 1
 };
 
 service TestService {
@@ -613,6 +787,7 @@ service TestService {
 
     option (rpc).pr_en = ZED;
     option (rpc).pr_en = UNO;
+    option (rpc3).en = BAR;
 
     option (rpc).m_en = {
       key: "abc"
@@ -660,6 +835,9 @@ service TestService {
         { key: "foo", value: "one" }, { key: "bar", value: "two" }
       ]
     };
+    option (rpc3).msg = {
+      en: [BAR, BAZ]
+    };
     option (rpc).msg.(t).msg.(t) = {
       r_en: UNO
       r_en: DOS
@@ -671,6 +849,16 @@ service TestService {
       r_str: "def"
       m_str: { key: "foo", value: "one" }
       m_str: { key: "bar", value: "two" }
+    };
+    option (rpc3).msg.msg = {
+      en: BAR
+      en: BAZ
+    };
+    option (rpc).msg.(t).msg.(t).msg.(t) = {
+      pr_en: UNO
+    };
+    option (rpc3).msg.msg.msg = {
+      en: BAR
     };
   }
 
@@ -691,6 +879,7 @@ service TestService {
 
   option (svc).pr_flag = true;
   option (svc).pr_flag = false;
+  option (svc3).flag = true;
 
   option (svc).m_flag = {
     key: "abc"
@@ -744,6 +933,9 @@ service TestService {
       { key: "foo", value: "abc" }, { key: "bar", value: "def" }
     ]
   };
+  option (svc3).msg = {
+    flag: [false, false, true, true]
+  };
   option (svc).msg.(t).msg.(t) = {
     r_flag: true
     r_flag: false
@@ -755,6 +947,16 @@ service TestService {
     r_b: "def"
     m_b: { key: "foo", value: "abc" }
     m_b: { key: "bar", value: "def" }
+  };
+  option (svc3).msg.msg = {
+    flag: true
+    flag: false
+  };
+  option (svc).msg.(t).msg.(t).msg.(t) = {
+    pr_flag: true
+  };
+  option (svc3).msg.msg.msg = {
+    flag: true
   };
 
   option deprecated = true;
