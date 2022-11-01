@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -67,7 +68,7 @@ func TestMain(m *testing.M) {
 		protocPath += ".exe"
 	}
 	if info, err := os.Stat(protocPath); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			_, _ = fmt.Fprintf(os.Stderr, "Path %s not found. Run `make generate` in the project root first.\n", protocPath)
 		} else {
 			_, _ = fmt.Fprintf(os.Stderr, "Error querying for path %s: %v\n", protocPath, err)
