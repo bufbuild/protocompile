@@ -438,6 +438,73 @@ func TestLexerErrors(t *testing.T) {
 	}
 }
 
+func TestStringLiteralMultipleErrors(t *testing.T) {
+	t.Parallel()
+	testCases := map[string]struct {
+		input        string
+		expectedErrs []string
+	}{
+		"null_char_and_bad_escapes": {
+			input: "'foo \x00 \\L bar \\. baz \\+ \\[ buzz'",
+			expectedErrs: []string{
+				`test.proto:1:6: null character ('\0') not allowed in string literal`,
+				`test.proto:1:8: invalid escape sequence: \L`,
+				`test.proto:1:15: invalid escape sequence: \.`,
+				`test.proto:1:22: invalid escape sequence: \+`,
+				`test.proto:1:25: invalid escape sequence: \[`,
+			},
+		},
+		"bad_hex_and_octal_escapes": {
+			input: `" \xg \xg5 \X \X_ \477 \080 "`,
+			expectedErrs: []string{
+				`test.proto:1:3: invalid hex escape: \xg`,
+				`test.proto:1:7: invalid hex escape: \xg5`,
+				`test.proto:1:12: invalid hex escape: \X `,
+				`test.proto:1:15: invalid hex escape: \X_`,
+				`test.proto:1:19: octal escape is out range, must be between 0 and 377: \477`,
+			},
+		},
+		"bad_unicode_escapes": {
+			input: `" \u12 \ughij \ufgfg \U0010ffff \U10101010 \U0000FFAX "`,
+			expectedErrs: []string{
+				`test.proto:1:3: invalid unicode escape: \u12 `,
+				`test.proto:1:8: invalid unicode escape: \ughij`,
+				`test.proto:1:15: invalid unicode escape: \ufgfg`,
+				`test.proto:1:33: unicode escape is out of range, must be between 0 and 0x10ffff: \U10101010`,
+				`test.proto:1:44: invalid unicode escape: \U0000FFAX`,
+			},
+		},
+	}
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var errors []reporter.ErrorWithPos
+			handler := reporter.NewHandler(reporter.NewReporter(
+				func(err reporter.ErrorWithPos) error {
+					errors = append(errors, err)
+					return nil
+				},
+				nil,
+			))
+			// add an extra integer literal *after* the bad string literal, to make sure we can tokenize it
+			l := newTestLexer(t, strings.NewReader(tc.input+" 0"), handler)
+			var sym protoSymType
+			tok := l.Lex(&sym)
+			require.Equal(t, _ERROR, tok)
+			require.Equal(t, len(tc.expectedErrs), len(errors))
+			require.Equal(t, errors[len(errors)-1], sym.err) // returned err in symbol should be last error
+			for i := range tc.expectedErrs {
+				assert.Equal(t, tc.expectedErrs[i], errors[i].Error(), "error#%d", i+1)
+			}
+			// make sure we can successfully tokenize the subsequent token
+			tok = l.Lex(&sym)
+			require.Equal(t, _INT_LIT, tok)
+			require.Equal(t, uint64(0), sym.i.Val)
+		})
+	}
+}
+
 func newTestLexer(t *testing.T, in io.Reader, h *reporter.Handler) *protoLex {
 	lexer, err := newLexer(in, "test.proto", h)
 	require.NoError(t, err)
