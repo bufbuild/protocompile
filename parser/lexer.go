@@ -508,7 +508,7 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 		escapeErrors = append(escapeErrors, l.errWithCurrentPos(err, -len(badEscape)))
 	}
 	for {
-		c, sz, err := l.input.readRune()
+		c, _, err := l.input.readRune()
 		if err != nil {
 			if err == io.EOF {
 				err = io.ErrUnexpectedEOF
@@ -671,14 +671,7 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 			case c == '?':
 				buf.WriteByte('?')
 			default:
-				var badEscape string
-				if c == quote || c == '\\' {
-					l.input.unreadRune(sz)
-					badEscape = "\\"
-				} else {
-					badEscape = "\\" + string(c)
-				}
-				reportErr("invalid escape sequence: %s", badEscape)
+				reportErr("invalid escape sequence: %s", "\\"+string(c))
 				continue
 			}
 		} else {
