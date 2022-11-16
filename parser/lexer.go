@@ -503,8 +503,9 @@ func (l *protoLex) readStringLiteral(quote rune) (string, error) {
 		} else {
 			err = errors.New(msg)
 		}
+		// we've now consumed the bad escape and lexer position is after it, so we need
+		// to back up to the beginning of the escape to report the correct position
 		escapeErrors = append(escapeErrors, l.errWithCurrentPos(err, -len(badEscape)))
-		buf.WriteString(badEscape)
 	}
 	for {
 		c, sz, err := l.input.readRune()
