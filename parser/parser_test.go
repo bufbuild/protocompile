@@ -16,6 +16,7 @@ package parser
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -295,27 +296,34 @@ func readerForTestdata(t testing.TB, filename string) io.Reader {
 func TestPathological(t *testing.T) {
 	t.Parallel()
 
-	// This addresses performance issue identified by fuzz tests:
+	// This test verifies that the test case found in fuzz tests has
+	// adequate performance.
 	//   https://oss-fuzz.com/testcase-detail/4766256800858112
 
-	//ctx, cancel := context.WithCancel(context.Background())
-	//// Fuzz testing complains if this loop, with 100 iterations, takes longer
-	//// than 60 seconds. To prevent this test from being too slow, we limit to
-	//// 3 iterations and no longer than 1 second (which is a stricter deadline).
-	//timer := time.AfterFunc(time.Second, func() {
-	//	require.Fail(t, "test took too long to execute")
-	//	cancel()
-	//})
-	//defer timer.Stop()
-	start := time.Now()
-	defer func() {
-		t.Logf("test duration: %v", time.Since(start))
-	}()
+	ctx, cancel := context.WithCancel(context.Background())
+	// Fuzz testing complains if this loop, with 100 iterations, takes longer
+	// than 60 seconds. To prevent this test from being too slow, we limit to
+	// 3 iterations and no longer than 1 second (which is a stricter deadline).
+	allowedDuration := time.Second
+	if isRace {
+		// We increase that threshold to 10 seconds when the race detector is enabled.
+		// The race detector has been observed to make it take ~8x as long. If coverage
+		// is *also* enabled, the test can take 19x as long(!!). But 10s should still
+		// be a reasonable limit in practice. (Unfortunately, there doesn't appear to
+		// be a way to easily detect if coverage is enabled.)
+		allowedDuration = 10 * time.Second
+		t.Logf("allowing %v since race detector is enabled", allowedDuration)
+	}
+	timer := time.AfterFunc(allowedDuration, func() {
+		require.Fail(t, "test took too long to execute (> %v)", allowedDuration)
+		cancel()
+	})
+	defer timer.Stop()
 
 	for i := 0; i < 3; i++ {
-		//if ctx.Err() != nil {
-		//	break
-		//}
+		if ctx.Err() != nil {
+			break
+		}
 		r := readerForTestdata(t, "pathological.proto")
 		handler := reporter.NewHandler(nil)
 		fileNode, err := Parse("pathological.proto", r, handler)
