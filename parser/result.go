@@ -487,7 +487,7 @@ func (r *result) asMessageDescriptor(node *ast.MessageNode, isProto3 bool, handl
 }
 
 func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *reporter.Handler) bool {
-	if depth != 32 {
+	if depth < 32 {
 		return true
 	}
 	n := ast.Node(node)
