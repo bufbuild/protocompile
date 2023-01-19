@@ -272,8 +272,7 @@ func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
 
 func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, isProto3 bool, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
 	tag := node.Tag.Val
-	tagNodeInfo := r.file.NodeInfo(node.Tag)
-	if err := checkTag(tagNodeInfo.Start(), tag, maxTag); err != nil {
+	if err := r.checkTag(node.Tag, tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	fd := newFieldDescriptor(node.Name.Val, string(node.FldType.AsIdentifier()), int32(tag), asLabel(&node.Label))
@@ -326,8 +325,7 @@ func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descripto
 
 func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag int32, handler *reporter.Handler) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	tag := group.Tag.Val
-	tagNodeInfo := r.file.NodeInfo(group.Tag)
-	if err := checkTag(tagNodeInfo.Start(), tag, maxTag); err != nil {
+	if err := r.checkTag(group.Tag, tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	if !unicode.IsUpper(rune(group.Name.Val[0])) {
@@ -355,8 +353,7 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag 
 
 func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, isProto3 bool, maxTag int32, handler *reporter.Handler) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	tag := mapField.Tag.Val
-	tagNodeInfo := r.file.NodeInfo(mapField.Tag)
-	if err := checkTag(tagNodeInfo.Start(), tag, maxTag); err != nil {
+	if err := r.checkTag(mapField.Tag, tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	var lbl *descriptorpb.FieldDescriptorProto_Label
@@ -670,14 +667,14 @@ func (r *result) asServiceDescriptor(svc *ast.ServiceNode) *descriptorpb.Service
 	return sd
 }
 
-func checkTag(pos ast.SourcePos, v uint64, maxTag int32) error {
+func (r *result) checkTag(n ast.Node, v uint64, maxTag int32) error {
 	switch {
 	case v < 1:
-		return reporter.Errorf(pos, "tag number %d must be greater than zero", v)
+		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d must be greater than zero", v)
 	case v > uint64(maxTag):
-		return reporter.Errorf(pos, "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
+		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
 	case v >= internal.SpecialReservedStart && v <= internal.SpecialReservedEnd:
-		return reporter.Errorf(pos, "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
+		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
 	default:
 		return nil
 	}

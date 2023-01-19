@@ -16,12 +16,14 @@ package parser
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -289,4 +291,33 @@ func readerForTestdata(t testing.TB, filename string) io.Reader {
 	require.NoError(t, err)
 
 	return file
+}
+
+func TestPathological(t *testing.T) {
+	t.Parallel()
+
+	// This addresses performance issue identified by fuzz tests:
+	//   https://oss-fuzz.com/testcase-detail/4766256800858112
+
+	ctx, cancel := context.WithCancel(context.Background())
+	// Fuzz testing complains if this loop, with 100 iterations, takes longer
+	// than 60 seconds. To prevent this test from being too slow, we limit to
+	// 3 iterations and no longer than 1 second (which is a stricter deadline).
+	timer := time.AfterFunc(time.Second, func() {
+		require.Fail(t, "test took too long to execute")
+		cancel()
+	})
+	defer timer.Stop()
+
+	for i := 0; i < 3; i++ {
+		if ctx.Err() != nil {
+			break
+		}
+		r := readerForTestdata(t, "pathological.proto")
+		handler := reporter.NewHandler(nil)
+		fileNode, err := Parse("pathological.proto", r, handler)
+		require.NoError(t, err)
+		_, err = ResultFromAST(fileNode, true, handler)
+		require.NotNil(t, err)
+	}
 }
