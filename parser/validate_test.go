@@ -428,7 +428,7 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }
 					   } } } }`,
 		},
-		"failure_deep_nesting": {
+		"failure_deep_nesting_message1": {
 			contents: `syntax = "proto3";
 					   message _01 { message _02 { message _03 { message _04 {
 					   message _05 { message _06 { message _07 { message _08 {
@@ -448,7 +448,7 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }`,
 			expectedErr: `test.proto:9:86: message nesting depth must be less than 32`,
 		},
-		"failure_deep_nesting2": {
+		"failure_deep_nesting_message2": {
 			contents: `syntax = "proto3";
 					   message _01 { message _02 { message _03 { message _04 {
 					   message _05 { message _06 { message _07 { message _08 {
@@ -458,8 +458,7 @@ func TestBasicValidation(t *testing.T) {
 					   message _21 { message _22 { message _23 { message _24 {
 					   message _25 { message _26 { message _27 { message _28 {
 					   message _29 { message _30 { message _31 { message _32 {
-					   message _33 {
-					   }
+					   message _33 { }
 					   } } } }
 					   } } } }
 					   } } } }
@@ -470,7 +469,7 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }`,
 			expectedErr: `test.proto:9:86: message nesting depth must be less than 32`,
 		},
-		"failure_deep_nesting3": {
+		"failure_deep_nesting_map": {
 			contents: `syntax = "proto3";
 					   message _01 { message _02 { message _03 { message _04 {
 					   message _05 { message _06 { message _07 { message _08 {
@@ -491,7 +490,7 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }`,
 			expectedErr: `test.proto:10:46: message nesting depth must be less than 32`,
 		},
-		"failure_deep_nesting4": {
+		"failure_deep_nesting_group1": {
 			contents: `syntax = "proto2";
 					   message _01 { message _02 { message _03 { message _04 {
 					   message _05 { message _06 { message _07 { message _08 {
@@ -511,6 +510,75 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }
 					   } } } }`,
 			expectedErr: `test.proto:10:55: message nesting depth must be less than 32`,
+		},
+		"failure_deep_nesting_group2": {
+			contents: `syntax = "proto2";
+					   message _01 { optional group Foo = 1 {
+					   message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 {
+					   } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } }
+					   } }`,
+			expectedErr: `test.proto:10:72: message nesting depth must be less than 32`,
+		},
+		"failure_deep_nesting_extension_group1": {
+			contents: `syntax = "proto2";
+					   message Ext { extensions 1 to max; }
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 {
+					     extend Ext {
+					       optional group Foo = 1 { }
+					     }
+					   } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }`,
+			expectedErr: `test.proto:12:57: message nesting depth must be less than 32`,
+		},
+		"failure_deep_nesting_extension_group2": {
+			contents: `syntax = "proto2";
+					   message Ext { extensions 1 to max; }
+					   extend Ext { optional group Foo = 1 {
+					   message _01 { message _02 { message _03 { message _04 {
+					   message _05 { message _06 { message _07 { message _08 {
+					   message _09 { message _10 { message _11 { message _12 {
+					   message _13 { message _14 { message _15 { message _16 {
+					   message _17 { message _18 { message _19 { message _20 {
+					   message _21 { message _22 { message _23 { message _24 {
+					   message _25 { message _26 { message _27 { message _28 {
+					   message _29 { message _30 { message _31 {
+					   } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } } } }
+					   } }`,
+			expectedErr: `test.proto:11:72: message nesting depth must be less than 32`,
 		},
 		"failure_message_invalid_reserved_name": {
 			contents: `syntax = "proto3";
