@@ -45,6 +45,10 @@ func TestBasicValidation(t *testing.T) {
 		"success_message_set_wire_format": {
 			contents: `message Foo { option message_set_wire_format = true; extensions 1 to 100; }`,
 		},
+		"failure_message_set_wire_format_in_proto3": {
+			contents:    `syntax = "proto3"; message Foo { option message_set_wire_format = true; extensions 1 to 100; }`,
+			expectedErr: "test.proto:1:34: messages with message-set wire format are not allowed with proto3 syntax",
+		},
 		"failure_message_set_wire_format_non_ext_field": {
 			contents:    `message Foo { optional double bar = 536870912; option message_set_wire_format = true; }`,
 			expectedErr: "test.proto:1:15: messages with message-set wire format cannot contain non-extension fields",
