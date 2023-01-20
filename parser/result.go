@@ -517,6 +517,11 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	if err != nil {
 		return
 	} else if messageSetOpt != nil {
+		if isProto3 {
+			node := r.OptionNode(messageSetOpt)
+			nodeInfo := r.file.NodeInfo(node)
+			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format are not allowed with proto3 syntax")
+		}
 		maxTag = internal.MaxTag // higher limit for messageset wire format
 	}
 
