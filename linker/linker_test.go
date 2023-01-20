@@ -702,7 +702,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:6:3: field Baz.e: Foo.BarEntry is a synthetic map entry and may not be referenced explicitly",
 		},
-		"failure_synthetic_struct_reference": {
+		"failure_imported_synthetic_map_entry_reference": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -805,7 +805,8 @@ func TestLinkerValidation(t *testing.T) {
 					}`,
 			},
 		},
-		"failure_message_literals": {
+		"failure_option_boolean_names": {
+			// in options, boolean values must be "true" or "false"
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -819,7 +820,9 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:6:18: message Baz: option (foo): expecting bool, got identifier",
 		},
-		"success_message_literals_repeated": {
+		"success_message_literals_boolean_names": {
+			// but inside message literals, boolean values can be
+			// "true", "false", "t", "f", "True", or "False"
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -971,6 +974,54 @@ func TestLinkerValidation(t *testing.T) {
 					}`,
 			},
 			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension f",
+		},
+		"success_nested_extension_resolution_custom_options": {
+			input: map[string]string{
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message a {
+					  extensions 1 to 100;
+					  message b {
+					    message c {
+					      extend a { repeated int32 i = 1; repeated float f = 2; }
+					    }
+					    option (msga) = {
+					      [foo.bar.a.b.c.i]: 123
+					      [bar.a.b.c.i]: 234
+					      [a.b.c.i]: 345
+					      // can't use b.c.i here
+					    };
+					    option (msga).(foo.bar.a.b.c.f) = 1.23;
+					    option (msga).(bar.a.b.c.f) = 2.34;
+					    option (msga).(a.b.c.f) = 3.45;
+					    option (msga).(b.c.f) = 4.56;
+					  }
+					}`,
+			},
+		},
+		"failure_extension_resolution_unknown_nested": {
+			input: map[string]string{
+				"test.proto": `
+					syntax="proto2";
+					package foo.bar;
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions { optional a msga = 10000; }
+					message a {
+					  extensions 1 to 100;
+					  message b {
+					    message c {
+					      extend a { repeated int32 i = 1; repeated float f = 2; }
+					    }
+					    option (msga) = {
+					      [b.c.i]: 345
+					    };
+					  }
+					}`,
+			},
+			expectedErr: "test.proto:12:8: message foo.bar.a.b: option (foo.bar.msga): unknown extension b.c.i",
 		},
 		"success_any_message_literal": {
 			input: map[string]string{
