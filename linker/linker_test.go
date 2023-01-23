@@ -1032,7 +1032,7 @@ func TestLinkerValidation(t *testing.T) {
 					  extensions 1 to 100;
 					  message b {
 					    message c {
-					      extend a { repeated int32 i = 1; repeated float f = 2; }
+					      extend a { repeated int32 i = 1; }
 					    }
 					    option (msga) = {
 					      [b.c.i]: 345
