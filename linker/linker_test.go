@@ -689,6 +689,25 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
 		},
+		"failure_json_name_looks_like_extension": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foobar = 10001 [json_name="[FooBar]"];
+					}`,
+			},
+			expectedErr: "foo.proto:3:36: field Foo.foobar: option json_name value cannot start with '[' and end with ']'; that is reserved for representing extensions",
+		},
+		"success_json_name_not_quite_extension": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foobar = 10001 [json_name="[FooBar"];
+					}`,
+			},
+		},
 		"failure_synthetic_map_entry_reference": {
 			input: map[string]string{
 				"foo.proto": `
@@ -1013,7 +1032,7 @@ func TestLinkerValidation(t *testing.T) {
 					  extensions 1 to 100;
 					  message b {
 					    message c {
-					      extend a { repeated int32 i = 1; repeated float f = 2; }
+					      extend a { repeated int32 i = 1; }
 					    }
 					    option (msga) = {
 					      [b.c.i]: 345
@@ -1248,7 +1267,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:5:5: field Foo.bar: custom JSON name "foo" conflicts with default JSON name of field foo, defined at foo.proto:4:5`,
 		},
-		"failure_json_name_conflict_case_insensitive": {
+		"success_json_names_case_sensitive": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -1257,7 +1276,6 @@ func TestLinkerValidation(t *testing.T) {
 					  string bar = 2 [json_name="Foo_Bar"];
 					}`,
 			},
-			expectedErr: `foo.proto:4:3: field Foo.bar: custom JSON name "Foo_Bar" conflicts with custom JSON name "foo_bar" of field foo, defined at foo.proto:3:3`,
 		},
 		"failure_json_name_conflict_default_underscore": {
 			input: map[string]string{
@@ -1281,7 +1299,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:4:3: field Foo.foo_bar: default JSON name "fooBar" conflicts with default JSON name of field fooBar, defined at foo.proto:3:3`,
 		},
-		"failure_json_name_uppercase_default": {
+		"success_json_name_differs_by_case": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -1290,42 +1308,30 @@ func TestLinkerValidation(t *testing.T) {
 					  string FOO_BAR = 2;
 					}`,
 			},
-			expectedErr: `foo.proto:4:3: field Foo.FOO_BAR: default JSON name "FOOBAR" conflicts with default JSON name "fooBar" of field fooBar, defined at foo.proto:3:3`,
 		},
 		"failure_json_name_conflict_leading_underscores": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
 					message Foo {
-					  string fooBar = 1;
+					  string _fooBar = 1;
 					  string __foo_bar = 2;
 					}`,
 			},
-			expectedErr: `foo.proto:4:3: field Foo.__foo_bar: default JSON name "FooBar" conflicts with default JSON name "fooBar" of field fooBar, defined at foo.proto:3:3`,
+			expectedErr: `foo.proto:4:3: field Foo.__foo_bar: default JSON name "FooBar" conflicts with default JSON name of field _fooBar, defined at foo.proto:3:3`,
 		},
-		"failure_json_name_conflict_override_case_insensitive": {
-			input: map[string]string{
-				"foo.proto": `
-					syntax = "proto2";
-					message Foo {
-					  optional string foo = 1 [json_name="foo_bar"];
-					  optional string bar = 2 [json_name="Foo_Bar"];
-					}`,
-			},
-			expectedErr: `foo.proto:4:3: field Foo.bar: custom JSON name "Foo_Bar" conflicts with custom JSON name "foo_bar" of field foo, defined at foo.proto:3:3`,
-		},
-		"failure_json_name_nested_option": {
+		"failure_json_name_custom_and_default_proto2": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
 					message Blah {
 					  message Foo {
-					    optional string foo = 1 [json_name="foo_bar"];
-					    optional string bar = 2 [json_name="Foo_Bar"];
+					    optional string foo = 1 [json_name="fooBar"];
+					    optional string foo_bar = 2;
 					  }
 					}`,
 			},
-			expectedErr: `foo.proto:5:5: field Foo.bar: custom JSON name "Foo_Bar" conflicts with custom JSON name "foo_bar" of field foo, defined at foo.proto:4:5`,
+			expectedErr: `foo.proto:5:5: field Foo.foo_bar: default JSON name "fooBar" conflicts with custom JSON name of field foo, defined at foo.proto:4:5`,
 		},
 		"success_json_name_default_proto3_only": {
 			// should succeed: only check default JSON names in proto3
@@ -1824,15 +1830,6 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 			source: `
 				syntax = "proto2";
 				message Foo {
-				  optional string foo = 1;
-				  optional string bar = 2 [json_name="foo"];
-				}`,
-			warning: `test.proto:4:3: field Foo.bar: custom JSON name "foo" conflicts with default JSON name of field foo, defined at test.proto:3:3`,
-		},
-		{
-			source: `
-				syntax = "proto2";
-				message Foo {
 				  optional string foo_bar = 1;
 				  optional string fooBar = 2;
 				}`,
@@ -1848,15 +1845,6 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 			warning: `test.proto:4:3: field Foo.fooBar: default JSON name "fooBar" conflicts with default JSON name of field foo_bar, defined at test.proto:3:3`,
 		},
 		// in nested message
-		{
-			source: `
-				syntax = "proto2";
-				message Blah { message Foo {
-				  optional string foo = 1;
-				  optional string bar = 2 [json_name="foo"];
-				} }`,
-			warning: `test.proto:4:3: field Foo.bar: custom JSON name "foo" conflicts with default JSON name of field foo, defined at test.proto:3:3`,
-		},
 		{
 			source: `
 				syntax = "proto2";
