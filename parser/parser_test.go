@@ -304,7 +304,8 @@ func TestPathological(t *testing.T) {
 		"pathological.proto":  true,
 		"pathological2.proto": false,
 	}
-	for fileName, canParse := range testCases {
+	for fileName := range testCases {
+		fileName, canParse := fileName, testCases[fileName] // don't want test func below to capture loop var
 		t.Run(fileName, func(t *testing.T) {
 			t.Parallel()
 			ctx, cancel := context.WithCancel(context.Background())
