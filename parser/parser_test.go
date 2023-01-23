@@ -306,7 +306,7 @@ func TestPathological(t *testing.T) {
 	}
 	for fileName, canParse := range testCases {
 		t.Run(fileName, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 			ctx, cancel := context.WithCancel(context.Background())
 			// Fuzz testing complains if this loop, with 100 iterations, takes longer
 			// than 60 seconds. To prevent this test from being too slow, we limit to
@@ -322,8 +322,7 @@ func TestPathological(t *testing.T) {
 				t.Logf("allowing %v since race detector is enabled", allowedDuration)
 			}
 			timer := time.AfterFunc(allowedDuration, func() {
-				//require.Fail(t, "test took too long to execute (> %v)", allowedDuration)
-				t.Logf("test took too long to execute (> %v)", allowedDuration)
+				require.Fail(t, "test took too long to execute (> %v)", allowedDuration)
 				cancel()
 			})
 			defer timer.Stop()
