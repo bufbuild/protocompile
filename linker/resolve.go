@@ -38,7 +38,7 @@ func (r *result) ResolveMessageType(name protoreflect.FullName) protoreflect.Mes
 }
 
 func (r *result) ResolveOptionsType(name protoreflect.FullName) protoreflect.MessageDescriptor {
-	d, _ := r.resolver.FindDescriptorByName(name)
+	d, _ := ResolverFromFile(r).FindDescriptorByName(name)
 	md, _ := d.(protoreflect.MessageDescriptor)
 	if md != nil {
 		r.markUsed(md.ParentFile().Path())

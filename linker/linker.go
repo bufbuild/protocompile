@@ -67,7 +67,6 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 		prefix:               prefix,
 		optionQualifiedNames: map[ast.IdentValueNode]string{},
 	}
-	r.resolver = ResolverFromFile(r)
 
 	// First, we put all symbols into a single pool, which lets us ensure there
 	// are no duplicate symbols and will also let us resolve and revise all type

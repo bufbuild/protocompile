@@ -42,9 +42,8 @@ import (
 type result struct {
 	protoreflect.FileDescriptor
 	parser.Result
-	prefix   string
-	deps     Files
-	resolver Resolver
+	prefix string
+	deps   Files
 
 	// A map of all descriptors keyed by their fully-qualified name (without
 	// any leading dot).

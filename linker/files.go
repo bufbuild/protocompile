@@ -187,10 +187,16 @@ type Resolver interface {
 	protoregistry.ExtensionTypeResolver
 }
 
-// ResolverFromFile returns a Resolver that uses the given file plus its full
-// set of transitive dependencies as the source of descriptors. If a given query
-// cannot be answered with these files, the query will fail with a
-// protoregistry.NotFound error.
+// ResolverFromFile returns a Resolver that uses the given file plus all of its
+// imports as the source of descriptors. If a given query cannot be answered with
+// these files, the query will fail with a protoregistry.NotFound error. This
+// does not recursively search the entire transitive closure; it only searches
+// the given file and its immediate dependencies. This is useful for resolving
+// elements visible to the file.
+//
+// If the given file is the result of a call to Link, then all dependencies
+// provided in the call to Link are searched (which could actually include more
+// than just the file's direct imports).
 //
 // Note that this function does not compute any additional indexes for efficient
 // search, so queries generally take linear time, O(n) where n is the number of
@@ -198,18 +204,9 @@ type Resolver interface {
 // by number are linear with the number of messages and extensions defined across
 // all the files.
 func ResolverFromFile(f File) Resolver {
-	if r, ok := f.(*result); ok && r.resolver != nil {
-		return r.resolver
-	}
-
-	deps := f.importsAsFiles()
-	res := make(aggResolver, len(deps))
-	for i := range deps {
-		res[i] = ResolverFromFile(deps[i])
-	}
 	return fileResolver{
 		f:    f,
-		deps: res,
+		deps: f.importsAsFiles().AsResolver(),
 	}
 }
 
@@ -280,92 +277,6 @@ func (r fileResolver) FindExtensionByNumber(message protoreflect.FullName, field
 		return ext.Type(), nil
 	}
 	return r.deps.FindExtensionByNumber(message, field)
-}
-
-type aggResolver []Resolver
-
-func (r aggResolver) FindFileByPath(path string) (protoreflect.FileDescriptor, error) {
-	var err error
-	for _, res := range r {
-		var fd protoreflect.FileDescriptor
-		if fd, err = res.FindFileByPath(path); err == nil {
-			return fd, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
-}
-
-func (r aggResolver) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
-	var err error
-	for _, res := range r {
-		var d protoreflect.Descriptor
-		if d, err = res.FindDescriptorByName(name); err == nil {
-			return d, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
-}
-
-func (r aggResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
-	var err error
-	for _, res := range r {
-		var t protoreflect.MessageType
-		if t, err = res.FindMessageByName(message); err == nil {
-			return t, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
-}
-
-func (r aggResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
-	var err error
-	for _, res := range r {
-		var t protoreflect.MessageType
-		if t, err = res.FindMessageByURL(url); err == nil {
-			return t, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
-}
-
-func (r aggResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
-	var err error
-	for _, res := range r {
-		var xt protoreflect.ExtensionType
-		if xt, err = res.FindExtensionByName(field); err == nil {
-			return xt, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
-}
-
-func (r aggResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
-	var err error
-	for _, res := range r {
-		var xt protoreflect.ExtensionType
-		if xt, err = res.FindExtensionByNumber(message, field); err == nil {
-			return xt, nil
-		}
-	}
-	if err == nil {
-		err = protoregistry.NotFound
-	}
-	return nil, err
 }
 
 type filesResolver []File
