@@ -1252,7 +1252,7 @@ func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protor
 		return num, ev.Name(), nil
 	}
 	if !isOpen {
-		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%venum %s has no value with number %d", mc, ed.FullName(), num)
+		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
 	}
 	// unknown value, but enum is open, so we allow it and return blank name
 	return num, "", nil
