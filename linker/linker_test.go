@@ -1438,6 +1438,22 @@ func TestLinkerValidation(t *testing.T) {
 			expectedErr: `foo.proto:3:6: symbol "foo.bar.baz" already defined as a package at bar.proto:2:9` +
 				` || bar.proto:2:9: symbol "foo.bar.baz" already defined at foo.proto:3:6`,
 		},
+		"success_custom_field_option": {
+			input: map[string]string{
+				"google/protobuf/descriptor.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FieldOptions {
+						optional string some_new_option = 11;
+					}`,
+				"bar.proto": `
+					syntax = "proto3";
+					package foo.bar.baz;
+					message Foo {
+						string bar = 1 [some_new_option="abc"];
+					}`,
+			},
+		},
 	}
 
 	for name, tc := range testCases {

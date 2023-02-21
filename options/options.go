@@ -64,6 +64,7 @@ type file interface {
 	parser.Result
 	ResolveEnumType(protoreflect.FullName) protoreflect.EnumDescriptor
 	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
+	ResolveOptionsType(protoreflect.FullName) protoreflect.MessageDescriptor
 	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
 	ResolveMessageLiteralExtensionName(ast.IdentValueNode) string
 }
@@ -77,6 +78,10 @@ func (n noResolveFile) ResolveEnumType(name protoreflect.FullName) protoreflect.
 }
 
 func (n noResolveFile) ResolveMessageType(name protoreflect.FullName) protoreflect.MessageDescriptor {
+	return nil
+}
+
+func (n noResolveFile) ResolveOptionsType(name protoreflect.FullName) protoreflect.MessageDescriptor {
 	return nil
 }
 
@@ -684,7 +689,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	optsFqn := string(optsDesc.FullName())
 	var msg protoreflect.Message
 	// see if the parse included an override copy for these options
-	if md := interp.file.ResolveMessageType(protoreflect.FullName(optsFqn)); md != nil {
+	if md := interp.file.ResolveOptionsType(protoreflect.FullName(optsFqn)); md != nil {
 		dm := dynamicpb.NewMessage(md)
 		if err := cloneInto(dm, opts, nil); err != nil {
 			node := interp.file.Node(element)

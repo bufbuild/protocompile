@@ -37,6 +37,15 @@ func (r *result) ResolveMessageType(name protoreflect.FullName) protoreflect.Mes
 	return nil
 }
 
+func (r *result) ResolveOptionsType(name protoreflect.FullName) protoreflect.MessageDescriptor {
+	d, _ := r.resolver.FindDescriptorByName(name)
+	md, _ := d.(protoreflect.MessageDescriptor)
+	if md != nil {
+		r.markUsed(md.ParentFile().Path())
+	}
+	return md
+}
+
 func (r *result) ResolveEnumType(name protoreflect.FullName) protoreflect.EnumDescriptor {
 	d := r.resolveElement(name)
 	if ed, ok := d.(protoreflect.EnumDescriptor); ok {

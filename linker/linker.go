@@ -67,6 +67,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 		prefix:               prefix,
 		optionQualifiedNames: map[ast.IdentValueNode]string{},
 	}
+	r.resolver = ResolverFromFile(r)
 
 	// First, we put all symbols into a single pool, which lets us ensure there
 	// are no duplicate symbols and will also let us resolve and revise all type
@@ -114,6 +115,12 @@ type Result interface {
 	// message that is available in this file. If no such element is available
 	// or if the named element is not a message, nil is returned.
 	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
+	// ResolveOptionsType returns a message descriptor for the given options
+	// type. This is like ResolveMessageType but searches the result's entire
+	// set of transitive dependencies without regard for visibility. If no
+	// such element is available or if the named element is not a message, nil
+	// is returned.
+	ResolveOptionsType(protoreflect.FullName) protoreflect.MessageDescriptor
 	// ResolveExtension returns an extension descriptor for the given named
 	// extension that is available in this file. If no such element is available
 	// or if the named element is not an extension, nil is returned.

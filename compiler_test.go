@@ -151,11 +151,17 @@ func TestParseFilesWithDependencies(t *testing.T) {
 		// Create a dependency-aware parser that should never be called.
 		compiler := Compiler{
 			Resolver: ResolverFunc(func(f string) (SearchResult, error) {
-				if f == "test.proto" {
+				switch f {
+				case "test.proto":
 					return SearchResult{Source: strings.NewReader(`syntax = "proto3";`)}, nil
+				case descriptorProtoPath:
+					// used to see if resolver provides custom descriptor.proto
+					return SearchResult{}, os.ErrNotExist
+				default:
+					// no other name should be passed to resolver
+					t.Errorf("resolver was called for unexpected filename %q", f)
+					return SearchResult{}, os.ErrNotExist
 				}
-				t.Errorf("resolved was called for unexpected filename %q", f)
-				return SearchResult{}, os.ErrNotExist
 			}),
 		}
 		_, err := compiler.Compile(ctx, "test.proto")

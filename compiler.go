@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/linker"
@@ -230,6 +231,9 @@ type executor struct {
 	cancel context.CancelFunc
 	sym    *linker.Symbols
 
+	descriptorProtoCheck    sync.Once
+	descriptorProtoIsCustom bool
+
 	mu      sync.Mutex
 	results map[string]*result
 }
@@ -316,6 +320,18 @@ func (e errFailedToResolve) Unwrap() error {
 	return e.err
 }
 
+func (e *executor) hasOverrideDescriptorProto() bool {
+	e.descriptorProtoCheck.Do(func() {
+		defer func() {
+			// ignore a panic here; just assume no custom descriptor.proto
+			_ = recover()
+		}()
+		res, err := e.c.Resolver.FindFileByPath(descriptorProtoPath)
+		e.descriptorProtoIsCustom = err == nil && res.Desc != standardImports[descriptorProtoPath]
+	})
+	return e.descriptorProtoIsCustom
+}
+
 func (e *executor) doCompile(ctx context.Context, file string, r *result) {
 	t := task{e: e, h: e.h.SubHandler(), r: r}
 	if err := e.s.Acquire(ctx, 1); err != nil {
@@ -326,7 +342,7 @@ func (e *executor) doCompile(ctx context.Context, file string, r *result) {
 
 	sr, err := e.c.Resolver.FindFileByPath(file)
 	if err != nil {
-		r.fail(errFailedToResolve{err, file})
+		r.fail(errFailedToResolve{err: err, path: file})
 		return
 	}
 
@@ -371,6 +387,8 @@ func (t *task) release() {
 	}
 }
 
+var descriptorProtoPath = (*descriptorpb.FileDescriptorProto)(nil).ProtoReflect().Descriptor().ParentFile().Path()
+
 func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.File, error) {
 	if r.Desc != nil {
 		if r.Desc.Path() != name {
@@ -385,12 +403,30 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 	}
 
 	var deps []linker.File
-	if len(parseRes.FileDescriptorProto().Dependency) > 0 {
-		t.r.setBlockedOn(parseRes.FileDescriptorProto().Dependency)
+	fileDescriptorProto := parseRes.FileDescriptorProto()
+	var wantsDescriptorProto bool
+	imports := fileDescriptorProto.Dependency
 
-		results := make([]*result, len(parseRes.FileDescriptorProto().Dependency))
+	if t.e.hasOverrideDescriptorProto() {
+		// we only consider implicitly including descriptor.proto if it's overidden
+		includesDescriptorProto := name == descriptorProtoPath
+		for _, dep := range fileDescriptorProto.Dependency {
+			if !includesDescriptorProto && dep == descriptorProtoPath {
+				includesDescriptorProto = true
+			}
+		}
+		if !includesDescriptorProto {
+			wantsDescriptorProto = true
+			imports = append(imports, descriptorProtoPath)
+		}
+	}
+
+	if len(imports) > 0 {
+		t.r.setBlockedOn(imports)
+
+		results := make([]*result, len(fileDescriptorProto.Dependency))
 		checked := map[string]struct{}{}
-		for i, dep := range parseRes.FileDescriptorProto().Dependency {
+		for i, dep := range fileDescriptorProto.Dependency {
 			pos := findImportPos(parseRes, dep)
 			if name == dep {
 				// doh! file imports itself
@@ -405,7 +441,15 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 			}
 			results[i] = res
 		}
-		deps = make([]linker.File, len(results))
+		capacity := len(results)
+		if wantsDescriptorProto {
+			capacity++
+		}
+		deps = make([]linker.File, len(results), capacity)
+		var descriptorProtoRes *result
+		if wantsDescriptorProto {
+			descriptorProtoRes = t.e.compile(ctx, descriptorProtoPath)
+		}
 
 		// release our semaphore so dependencies can be processed w/out risk of deadlock
 		t.e.s.Release(1)
@@ -426,6 +470,17 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 					return nil, res.err
 				}
 				deps[i] = res.res
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
+		if descriptorProtoRes != nil {
+			select {
+			case <-descriptorProtoRes.ready:
+				// descriptor.proto wasn't explicitly imported, so we can ignore a failure
+				if descriptorProtoRes.err == nil {
+					deps = append(deps, descriptorProtoRes.res)
+				}
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			}
