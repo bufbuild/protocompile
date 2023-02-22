@@ -344,11 +344,11 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	var v interface{}
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
 		ed := interp.file.ResolveEnumType(protoreflect.FullName(fld.GetTypeName()))
-		ev, err := interp.enumFieldValue(mc, ed, val)
+		_, name, err := interp.enumFieldValue(mc, ed, val, false)
 		if err != nil {
 			return -1, interp.reporter.HandleError(err)
 		}
-		v = string(ev.Name())
+		v = string(name)
 	} else {
 		v, err = interp.scalarFieldValue(mc, fld.GetType(), val, false)
 		if err != nil {
@@ -1191,11 +1191,11 @@ func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protorefl
 	k := fld.Kind()
 	switch k {
 	case protoreflect.EnumKind:
-		evd, err := interp.enumFieldValue(mc, fld.Enum(), val)
+		num, _, err := interp.enumFieldValue(mc, fld.Enum(), val, insideMsgLiteral)
 		if err != nil {
 			return interpretedFieldValue{}, err
 		}
-		return interpretedFieldValue{val: protoreflect.ValueOfEnum(evd.Number())}, nil
+		return interpretedFieldValue{val: protoreflect.ValueOfEnum(num)}, nil
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		v := val.Value()
@@ -1216,16 +1216,46 @@ func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protorefl
 
 // enumFieldValue resolves the given AST node val as an enum value descriptor. If the given
 // value is not a valid identifier, an error is returned instead.
-func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, val ast.ValueNode) (protoreflect.EnumValueDescriptor, error) {
+func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, val ast.ValueNode, allowNumber bool) (protoreflect.EnumNumber, protoreflect.Name, error) {
 	v := val.Value()
-	if id, ok := v.(ast.Identifier); ok {
-		ev := ed.Values().ByName(protoreflect.Name(id))
+	var num protoreflect.EnumNumber
+	switch v := v.(type) {
+	case ast.Identifier:
+		name := protoreflect.Name(v)
+		ev := ed.Values().ByName(name)
 		if ev == nil {
-			return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%venum %s has no value named %s", mc, ed.FullName(), id)
+			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%venum %s has no value named %s", mc, ed.FullName(), v)
 		}
-		return ev, nil
+		return ev.Number(), name, nil
+	case int64:
+		if !allowNumber {
+			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum name, got %s", mc, valueKind(v))
+		}
+		if v > math.MaxInt32 || v < math.MinInt32 {
+			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for an enum", mc, v)
+		}
+		num = protoreflect.EnumNumber(v)
+	case uint64:
+		if !allowNumber {
+			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum name, got %s", mc, valueKind(v))
+		}
+		if v > math.MaxInt32 {
+			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for an enum", mc, v)
+		}
+		num = protoreflect.EnumNumber(v)
+	default:
+		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum, got %s", mc, valueKind(v))
 	}
-	return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum, got %s", mc, valueKind(v))
+	isOpen := ed.ParentFile().Syntax() == protoreflect.Proto3
+	ev := ed.Values().ByNumber(num)
+	if ev != nil {
+		return num, ev.Name(), nil
+	}
+	if !isOpen {
+		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
+	}
+	// unknown value, but enum is open, so we allow it and return blank name
+	return num, "", nil
 }
 
 // scalarFieldValue resolves the given AST node val as a value whose type is assignable to a
