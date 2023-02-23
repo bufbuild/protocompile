@@ -1438,6 +1438,151 @@ func TestLinkerValidation(t *testing.T) {
 			expectedErr: `foo.proto:3:6: symbol "foo.bar.baz" already defined as a package at bar.proto:2:9` +
 				` || bar.proto:2:9: symbol "foo.bar.baz" already defined at foo.proto:3:6`,
 		},
+		"success_enum_in_msg_literal_using_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					message Bar {
+						optional Foo foo = 1;
+					}
+					extend google.protobuf.FileOptions {
+						optional Bar bar = 10101;
+					}
+					option (bar) = { foo: 1 };`,
+			},
+		},
+		"success_enum_in_msg_literal_using_negative_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+						ZERO = 0;
+						ONE = 1;
+						NEG_ONE = -1;
+					}
+					message Bar {
+						optional Foo foo = 1;
+					}
+					extend google.protobuf.FileOptions {
+						optional Bar bar = 10101;
+					}
+					option (bar) = { foo: -1 };`,
+			},
+		},
+		"success_open_enum_in_msg_literal_using_unknown_number": {
+			// enums in proto3 are "open", so unknown numbers are acceptable
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					message Bar {
+						Foo foo = 1;
+					}
+					extend google.protobuf.FileOptions {
+						Bar bar = 10101;
+					}
+					option (bar) = { foo: 5 };`,
+			},
+		},
+		"failure_enum_option_using_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					extend google.protobuf.FileOptions {
+						optional Foo foo = 10101;
+					}
+					option (foo) = 1;`,
+			},
+			expectedErr: `foo.proto:10:16: option (foo): expecting enum name, got integer`,
+		},
+		"failure_default_value_for_enum_using_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					enum Foo {
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					message Bar {
+						optional Foo foo = 1 [default=1];
+					}`,
+			},
+			expectedErr: `foo.proto:7:39: field Bar.foo: option default: expecting enum name, got integer`,
+		},
+		"failure_closed_enum_in_msg_literal_using_unknown_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					message Bar {
+						optional Foo foo = 1;
+					}
+					extend google.protobuf.FileOptions {
+						optional Bar bar = 10101;
+					}
+					option (bar) = { foo: 5 };`,
+			},
+			expectedErr: `foo.proto:13:23: option (bar): closed enum Foo has no value with number 5`,
+		},
+		"failure_enum_in_msg_literal_using_out_of_range_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+						ZERO = 0;
+						ONE = 1;
+						NEG_ONE = -1;
+					}
+					message Bar {
+						Foo foo = 1;
+					}
+					extend google.protobuf.FileOptions {
+						Bar bar = 10101;
+					}
+					option (bar) = { foo: 2147483648 };`,
+			},
+			expectedErr: `foo.proto:14:23: option (bar): value 2147483648 is out of range for an enum`,
+		},
+		"failure_enum_in_msg_literal_using_out_of_range_negative_number": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					enum Foo {
+						ZERO = 0;
+						ONE = 1;
+						NEG_ONE = -1;
+					}
+					message Bar {
+						Foo foo = 1;
+					}
+					extend google.protobuf.FileOptions {
+						Bar bar = 10101;
+					}
+					option (bar) = { foo: -2147483649 };`,
+			},
+			expectedErr: `foo.proto:14:23: option (bar): value -2147483649 is out of range for an enum`,
+		},
 		"success_custom_field_option": {
 			input: map[string]string{
 				"google/protobuf/descriptor.proto": `
