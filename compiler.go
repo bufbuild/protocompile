@@ -408,7 +408,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 
 	if t.e.hasOverrideDescriptorProto() {
 		// we only consider implicitly including descriptor.proto if it's overridden
-		if name == descriptorProtoPath {
+		if name != descriptorProtoPath {
 			var includesDescriptorProto bool
 			for _, dep := range fileDescriptorProto.Dependency {
 				if dep == descriptorProtoPath {
