@@ -1583,6 +1583,22 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:14:23: option (bar): value -2147483649 is out of range for an enum`,
 		},
+		"success_custom_field_option": {
+			input: map[string]string{
+				"google/protobuf/descriptor.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FieldOptions {
+						optional string some_new_option = 11;
+					}`,
+				"bar.proto": `
+					syntax = "proto3";
+					package foo.bar.baz;
+					message Foo {
+						string bar = 1 [some_new_option="abc"];
+					}`,
+			},
+		},
 	}
 
 	for name, tc := range testCases {
