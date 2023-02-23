@@ -408,15 +408,23 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 
 	if t.e.hasOverrideDescriptorProto() {
 		// we only consider implicitly including descriptor.proto if it's overridden
-		includesDescriptorProto := name == descriptorProtoPath
-		for _, dep := range fileDescriptorProto.Dependency {
-			if !includesDescriptorProto && dep == descriptorProtoPath {
-				includesDescriptorProto = true
+		if name == descriptorProtoPath {
+			var includesDescriptorProto bool
+			for _, dep := range fileDescriptorProto.Dependency {
+				if dep == descriptorProtoPath {
+					includesDescriptorProto = true
+					break
+				}
 			}
-		}
-		if !includesDescriptorProto {
-			wantsDescriptorProto = true
-			imports = append(imports, descriptorProtoPath)
+			if !includesDescriptorProto {
+				wantsDescriptorProto = true
+				// make a defensive copy so we don't inadvertently mutate
+				// slice's backing array when adding this implicit dep
+				importsCopy := make([]string, len(imports)+1)
+				copy(importsCopy, imports)
+				importsCopy[len(imports)] = descriptorProtoPath
+				imports = importsCopy
+			}
 		}
 	}
 
