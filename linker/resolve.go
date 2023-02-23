@@ -40,7 +40,7 @@ func (r *result) ResolveMessageType(name protoreflect.FullName) protoreflect.Mes
 func (r *result) ResolveOptionsType(name protoreflect.FullName) protoreflect.MessageDescriptor {
 	d, _ := ResolverFromFile(r).FindDescriptorByName(name)
 	md, _ := d.(protoreflect.MessageDescriptor)
-	if md != nil {
+	if md != nil && md.ParentFile() != nil {
 		r.markUsed(md.ParentFile().Path())
 	}
 	return md
@@ -352,7 +352,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 			}
 		} else {
 			// make sure tag is not a duplicate
-			if err := s.AddExtension(dsc.ParentFile().Package(), dsc.FullName(), tag, file.NodeInfo(node.FieldTag()).Start(), handler); err != nil {
+			if err := s.AddExtension(packageFor(dsc), dsc.FullName(), tag, file.NodeInfo(node.FieldTag()).Start(), handler); err != nil {
 				return err
 			}
 		}
@@ -411,7 +411,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 		f.msgType = dsc
 	case protoreflect.EnumDescriptor:
 		proto3 := r.Syntax() == protoreflect.Proto3
-		enumIsProto3 := dsc.ParentFile().Syntax() == protoreflect.Proto3
+		enumIsProto3 := dsc.Syntax() == protoreflect.Proto3
 		if fld.GetExtendee() == "" && proto3 && !enumIsProto3 {
 			// fields in a proto3 message cannot refer to proto2 enums
 			return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: cannot use proto2 enum %s in a proto3 message", scope, fld.GetTypeName())
@@ -424,6 +424,14 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 		return handler.HandleErrorf(file.NodeInfo(node.FieldType()).Start(), "%s: invalid type: %s is %s, not a message or enum", scope, dsc.FullName(), descriptorTypeWithArticle(dsc))
 	}
 	return nil
+}
+
+func packageFor(dsc protoreflect.Descriptor) protoreflect.FullName {
+	if dsc.ParentFile() != nil {
+		return dsc.ParentFile().Package()
+	}
+	// Can't access package? Make a best effort guess.
+	return dsc.FullName().Parent()
 }
 
 func isValidMap(mapField protoreflect.FieldDescriptor, mapEntry protoreflect.MessageDescriptor) bool {

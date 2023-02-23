@@ -1251,12 +1251,11 @@ func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protor
 	default:
 		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum, got %s", mc, valueKind(v))
 	}
-	isOpen := ed.ParentFile().Syntax() == protoreflect.Proto3
 	ev := ed.Values().ByNumber(num)
 	if ev != nil {
 		return num, ev.Name(), nil
 	}
-	if !isOpen {
+	if ed.Syntax() != protoreflect.Proto3 {
 		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
 	}
 	// unknown value, but enum is open, so we allow it and return blank name
