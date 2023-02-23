@@ -25,7 +25,6 @@ import (
 	"sync"
 
 	"golang.org/x/sync/semaphore"
-	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/linker"
@@ -387,7 +386,7 @@ func (t *task) release() {
 	}
 }
 
-var descriptorProtoPath = (*descriptorpb.FileDescriptorProto)(nil).ProtoReflect().Descriptor().ParentFile().Path()
+const descriptorProtoPath = "google/protobuf/descriptor.proto"
 
 func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.File, error) {
 	if r.Desc != nil {
@@ -408,7 +407,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 	imports := fileDescriptorProto.Dependency
 
 	if t.e.hasOverrideDescriptorProto() {
-		// we only consider implicitly including descriptor.proto if it's overidden
+		// we only consider implicitly including descriptor.proto if it's overridden
 		includesDescriptorProto := name == descriptorProtoPath
 		for _, dep := range fileDescriptorProto.Dependency {
 			if !includesDescriptorProto && dep == descriptorProtoPath {

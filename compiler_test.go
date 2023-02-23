@@ -267,3 +267,9 @@ func TestPanicHandling(t *testing.T) {
 	require.True(t, ok)
 	t.Logf("%v\n\n%v", panicErr, panicErr.Stack)
 }
+
+func TestDescriptorProtoPath(t *testing.T) {
+	// sanity check our constant
+	path := (*descriptorpb.FileDescriptorProto)(nil).ProtoReflect().Descriptor().ParentFile().Path()
+	require.Equal(t, descriptorProtoPath, path)
+}
