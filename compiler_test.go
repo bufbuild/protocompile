@@ -269,6 +269,7 @@ func TestPanicHandling(t *testing.T) {
 }
 
 func TestDescriptorProtoPath(t *testing.T) {
+	t.Parallel()
 	// sanity check our constant
 	path := (*descriptorpb.FileDescriptorProto)(nil).ProtoReflect().Descriptor().ParentFile().Path()
 	require.Equal(t, descriptorProtoPath, path)
