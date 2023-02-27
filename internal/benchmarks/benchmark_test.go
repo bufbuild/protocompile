@@ -51,7 +51,7 @@ import (
 
 const (
 	// NB: this must be kept in sync with PROTOC_VERSION in Makefile.
-	protocVersion = "21.7"
+	protocVersion = "22.0"
 
 	googleapisCommit = "cb6fbe8784479b22af38c09a5039d8983e894566"
 )
