@@ -15,20 +15,27 @@
 package protocompile
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/prototest"
+	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 func TestParseFilesMessageComments(t *testing.T) {
@@ -253,6 +260,127 @@ message Foo {
 	ext = fds[0].Extensions().ByName("bar")
 	barVal := md.Options().ProtoReflect().Get(ext)
 	assert.Equal(t, int64(123), barVal.Int())
+}
+
+func TestDataRace(t *testing.T) {
+	t.Parallel()
+	if !internal.IsRace {
+		t.Skip("only useful when race detector enabled")
+		return
+	}
+
+	data, err := os.ReadFile("./internal/testdata/desc_test_complex.proto")
+	require.NoError(t, err)
+	ast, err := parser.Parse("desc_test_complex.proto", bytes.NewReader(data), reporter.NewHandler(nil))
+	require.NoError(t, err)
+	parseResult, err := parser.ResultFromAST(ast, true, reporter.NewHandler(nil))
+	require.NoError(t, err)
+	// let's also produce a resolved proto
+	files, err := (&Compiler{
+		Resolver: WithStandardImports(&SourceResolver{
+			ImportPaths: []string{"./internal/testdata"},
+		}),
+		SourceInfoMode: SourceInfoStandard,
+	}).Compile(context.Background(), "desc_test_complex.proto")
+	require.NoError(t, err)
+	resolvedProto := files[0].(linker.Result).FileDescriptorProto()
+
+	descriptor, err := protoregistry.GlobalFiles.FindFileByPath(descriptorProtoPath)
+	require.NoError(t, err)
+	descriptorProto := protodesc.ToFileDescriptorProto(descriptor)
+
+	// We will share this descriptor/parse result (which needs to be modified by the linker
+	// to resolve all references) from multiple concurrent operations to make sure the race
+	// detector is not triggered.
+	testCases := []struct {
+		name     string
+		resolver Resolver
+	}{
+		// TODO: Sadly, interpreting options does not actually work when no AST is provided.
+		//       Uncomment this test case when this is fixed.
+		// {
+		//	name: "share unresolved descriptor",
+		//	resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
+		//		if name == "desc_test_complex.proto" {
+		//			return SearchResult{
+		//				Proto: parseResult.FileDescriptorProto(),
+		//			}, nil
+		//		}
+		//		return SearchResult{}, os.ErrNotExist
+		//	})),
+		// },
+		{
+			name: "share resolved descriptor",
+			resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
+				if name == "desc_test_complex.proto" {
+					return SearchResult{
+						Proto: resolvedProto,
+					}, nil
+				}
+				return SearchResult{}, os.ErrNotExist
+			})),
+		},
+		{
+			name: "share unresolved parse result",
+			resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
+				if name == "desc_test_complex.proto" {
+					return SearchResult{
+						ParseResult: parseResult,
+					}, nil
+				}
+				return SearchResult{}, os.ErrNotExist
+			})),
+		},
+		{
+			name: "share google/protobuf/descriptor.proto",
+			resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
+				// we'll parse our test proto from source, but its implicit dep on
+				// descriptor.proto will use a
+				switch name {
+				case "desc_test_complex.proto":
+					return SearchResult{
+						Source: bytes.NewReader(data),
+					}, nil
+				case "google/protobuf/descriptor.proto":
+					return SearchResult{
+						Proto: descriptorProto,
+					}, nil
+				default:
+					return SearchResult{}, os.ErrNotExist
+				}
+			})),
+		},
+	}
+
+	for i := range testCases {
+		testCase := testCases[i]
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			compiler1 := &Compiler{
+				Resolver:       testCase.resolver,
+				SourceInfoMode: SourceInfoStandard,
+			}
+			compiler2 := &Compiler{
+				Resolver:       testCase.resolver,
+				SourceInfoMode: SourceInfoStandard,
+			}
+			grp, ctx := errgroup.WithContext(context.Background())
+			grp.Go(func() error {
+				_, err := compiler1.Compile(ctx, "desc_test_complex.proto")
+				return err
+			})
+			grp.Go(func() error {
+				// We need to start this *after* the one above, but we can't
+				// use any sychronizing event or that would not be a race.
+				// So we assume a one second delay is sufficient.
+				time.Sleep(time.Second)
+				_, err := compiler2.Compile(ctx, "desc_test_complex.proto")
+				return err
+			})
+			err := grp.Wait()
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestPanicHandling(t *testing.T) {

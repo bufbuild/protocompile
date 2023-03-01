@@ -64,7 +64,7 @@ type SearchResult struct {
 	// proto in one. When a parser result is available, it is more efficient
 	// than using an AST search result, since the descriptor proto need not be
 	// re-created. And it provides better error messages than a descriptor proto
-	// search results, since the AST has greater fidelity with regard to source
+	// search result, since the AST has greater fidelity with regard to source
 	// positions (even if the descriptor proto includes source code info).
 	ParseResult parser.Result
 	// A fully linked descriptor that represents the file. If this field is set,

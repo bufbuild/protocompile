@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/descriptorpb"
 
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -313,7 +314,7 @@ func TestPathological(t *testing.T) {
 			// than 60 seconds. To prevent this test from being too slow, we limit to
 			// 3 iterations and no longer than 1 second (which is a stricter deadline).
 			allowedDuration := time.Second
-			if isRace {
+			if internal.IsRace {
 				// We increase that threshold to 10 seconds when the race detector is enabled.
 				// The race detector has been observed to make it take ~8x as long. If coverage
 				// is *also* enabled, the test can take 19x as long(!!). But 10s should still
