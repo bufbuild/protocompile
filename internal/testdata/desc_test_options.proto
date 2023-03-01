@@ -68,4 +68,9 @@ extend google.protobuf.FileOptions {
 }
 
 // a file option!
+// TODO: After https://github.com/protocolbuffers/protobuf/pull/12082 makes it into
+//       a protoc release, remove the newline at the end of the file to make the
+//       following comment true. (For now, we need the newline in order for protoc
+//       to produce source code info we can match with protocompile since we don't
+//       have the same bug.)
 option (flfubar) = "foobar"; // line comment with no trailing newline
