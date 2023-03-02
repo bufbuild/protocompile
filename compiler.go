@@ -610,13 +610,10 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 		if r.ParseResult.FileDescriptorProto().GetName() != name {
 			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.ParseResult.FileDescriptorProto().GetName())
 		}
-		res := r.ParseResult
-		if fileNeedsResolution(res.FileDescriptorProto()) || needsSourceInfo(res, t.e.c.SourceInfoMode) {
-			// If the file descriptor needs linking, it will be mutated during the
-			// next stage. So to make the mutations thread-safe, we must make a
-			// defensive copy.
-			res = parser.Clone(res)
-		}
+		// If the file descriptor needs linking, it will be mutated during the
+		// next stage. So to make anu mutations thread-safe, we must make a
+		// defensive copy.
+		res := parser.Clone(r.ParseResult)
 		return res, nil
 	}
 
@@ -624,13 +621,10 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 		if r.Proto.GetName() != name {
 			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.Proto.GetName())
 		}
-		descProto := r.Proto
-		if fileNeedsResolution(descProto) {
-			// If the file descriptor needs linking, it will be mutated during the
-			// next stage. So to make the mutations thread-safe, we must make a
-			// defensive copy.
-			descProto = proto.Clone(descProto).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
-		}
+		// If the file descriptor needs linking, it will be mutated during the
+		// next stage. So to make any mutations thread-safe, we must make a
+		// defensive copy.
+		descProto := proto.Clone(r.Proto).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
 		return parser.ResultWithoutAST(descProto), nil
 	}
 
@@ -640,111 +634,6 @@ func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error)
 	}
 
 	return parser.ResultFromAST(file, true, t.h)
-}
-
-func fileNeedsResolution(fd *descriptorpb.FileDescriptorProto) bool {
-	if len(fd.GetOptions().GetUninterpretedOption()) > 0 {
-		return true
-	}
-	for _, md := range fd.MessageType {
-		if msgNeedsResolution(md) {
-			return true
-		}
-	}
-	for _, ed := range fd.EnumType {
-		if enumNeedsResolution(ed) {
-			return true
-		}
-	}
-	for _, extd := range fd.Extension {
-		if fieldNeedsResolution(extd) {
-			return true
-		}
-	}
-	for _, sd := range fd.Service {
-		if len(sd.GetOptions().GetUninterpretedOption()) > 0 {
-			return true
-		}
-		for _, mtd := range sd.Method {
-			if len(mtd.GetOptions().GetUninterpretedOption()) > 0 {
-				return true
-			}
-			if nameNeedsResolution(mtd.GetInputType()) {
-				return true
-			}
-			if nameNeedsResolution(mtd.GetOutputType()) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func msgNeedsResolution(md *descriptorpb.DescriptorProto) bool {
-	if len(md.GetOptions().GetUninterpretedOption()) > 0 {
-		return true
-	}
-	for _, fld := range md.Field {
-		if fieldNeedsResolution(fld) {
-			return true
-		}
-	}
-	for _, ood := range md.OneofDecl {
-		if len(ood.GetOptions().GetUninterpretedOption()) > 0 {
-			return true
-		}
-	}
-	for _, extr := range md.ExtensionRange {
-		if len(extr.GetOptions().GetUninterpretedOption()) > 0 {
-			return true
-		}
-	}
-	for _, nmd := range md.NestedType {
-		if msgNeedsResolution(nmd) {
-			return true
-		}
-	}
-	for _, ed := range md.EnumType {
-		if enumNeedsResolution(ed) {
-			return true
-		}
-	}
-	for _, extd := range md.Extension {
-		if fieldNeedsResolution(extd) {
-			return true
-		}
-	}
-	return false
-}
-
-func enumNeedsResolution(ed *descriptorpb.EnumDescriptorProto) bool {
-	if len(ed.GetOptions().GetUninterpretedOption()) > 0 {
-		return true
-	}
-	for _, evd := range ed.Value {
-		if len(evd.GetOptions().GetUninterpretedOption()) > 0 {
-			return true
-		}
-	}
-	return false
-}
-
-func fieldNeedsResolution(fld *descriptorpb.FieldDescriptorProto) bool {
-	if len(fld.GetOptions().GetUninterpretedOption()) > 0 {
-		return true
-	}
-	if fld.Extendee != nil && nameNeedsResolution(*fld.Extendee) {
-		return true
-	}
-	if fld.TypeName != nil &&
-		(nameNeedsResolution(*fld.TypeName) || fld.Type == nil) {
-		return true
-	}
-	return false
-}
-
-func nameNeedsResolution(name string) bool {
-	return !strings.HasPrefix(name, ".")
 }
 
 func (t *task) asAST(name string, r SearchResult) (*ast.FileNode, error) {

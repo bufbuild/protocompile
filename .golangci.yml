@@ -87,12 +87,6 @@ issues:
     # checks from err113 are useful.
     - "err113: do not define dynamic errors.*"
   exclude-rules:
-    # Clone uses unchecked type conversions after invocations of proto.Clone
-    # which is safe because of the guarantees of proto.Clone and the static
-    # type of the input argument.
-    - path: parser/clone(_test)?.go
-      linters:
-        - errcheck
     # Benchmarks can't be run in parallel
     - path: benchmark_test\.go
       linters:

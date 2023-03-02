@@ -82,8 +82,8 @@ func checkClone(t *testing.T, orig, clone Result, isProtoClone bool) {
 	// AST is expected to be equal since it is never mutated by compilation
 	require.Same(t, orig.AST(), clone.AST())
 
-	origRes := orig.(*result)
-	cloneRes := clone.(*result)
+	origRes := orig.(*result)   //nolint:errcheck
+	cloneRes := clone.(*result) //nolint:errcheck
 
 	if origRes.file == nil {
 		require.Empty(t, cloneRes.nodes)

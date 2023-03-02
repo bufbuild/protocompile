@@ -43,7 +43,7 @@ func Clone(r Result) Result {
 		return cl.Clone()
 	}
 	if res, ok := r.(*result); ok {
-		newProto := proto.Clone(res.proto).(*descriptorpb.FileDescriptorProto)
+		newProto := proto.Clone(res.proto).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
 		newNodes := make(map[proto.Message]ast.Node, len(res.nodes))
 		newResult := &result{
 			file:  res.file,
@@ -58,7 +58,7 @@ func Clone(r Result) Result {
 	// different tactic.
 	if r.AST() == nil {
 		// no AST? all we have to do is copy the proto
-		fileProto := proto.Clone(r.FileDescriptorProto()).(*descriptorpb.FileDescriptorProto)
+		fileProto := proto.Clone(r.FileDescriptorProto()).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
 		return ResultWithoutAST(fileProto)
 	}
 	// Otherwise, we have an AST, but no way to clone the result's
