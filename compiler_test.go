@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -370,10 +369,6 @@ func TestDataRace(t *testing.T) {
 				return err
 			})
 			grp.Go(func() error {
-				// We need to start this *after* the one above, but we can't
-				// use any sychronizing event or that would not be a race.
-				// So we assume a one second delay is sufficient.
-				time.Sleep(time.Second)
 				_, err := compiler2.Compile(ctx, "desc_test_complex.proto")
 				return err
 			})
