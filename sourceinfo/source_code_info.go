@@ -782,9 +782,8 @@ func (sci *sourceCodeInfo) combineComments(comments comments) string {
 					first = false
 					buf.WriteString(l)
 					continue
-				} else {
-					buf.WriteByte('\n')
 				}
+				buf.WriteByte('\n')
 
 				// strip a prefix of whitespace followed by '*'
 				j := 0

@@ -816,40 +816,33 @@ func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) b
 		// Packed repeated numeric scalars use bytes wire type.
 		wireType = protowire.BytesType
 	default:
-		switch opt.kind {
-		case protoreflect.StringKind, protoreflect.BytesKind, protoreflect.MessageKind:
-			wireType = protowire.BytesType
-		case protoreflect.GroupKind:
-			wireType = protowire.StartGroupType
-		case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
-			wireType = protowire.Fixed32Type
-		case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
-			wireType = protowire.Fixed64Type
-		default:
-			// everything else uses varint
-			wireType = protowire.VarintType
-		}
+		wireType = wireTypeForKind(opt.kind)
 	}
 
 	// And then we see if the wire type we just determined is compatible with
 	// the field descriptor we found.
 	if fd.IsList() && canPack(fd.Kind()) && wireType == protowire.BytesType {
 		// Even if fd.IsPacked() is false, bytes type is still accepted for
-		// repeated scalar numerics, so that changing a field from
+		// repeated scalar numerics, so that changing a repeated field from
+		// packed to not-packed (or vice versa) is a compatible change.
 		return true
 	}
-	switch fd.Kind() {
+	return wireType == wireTypeForKind(fd.Kind())
+}
+
+func wireTypeForKind(kind protoreflect.Kind) protowire.Type {
+	switch kind {
 	case protoreflect.StringKind, protoreflect.BytesKind, protoreflect.MessageKind:
-		return wireType == protowire.BytesType
+		return protowire.BytesType
 	case protoreflect.GroupKind:
-		return wireType == protowire.StartGroupType
+		return protowire.StartGroupType
 	case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
-		return wireType == protowire.Fixed32Type
+		return protowire.Fixed32Type
 	case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
-		return wireType == protowire.Fixed64Type
+		return protowire.Fixed64Type
 	default:
 		// everything else uses varint
-		return wireType == protowire.VarintType
+		return protowire.VarintType
 	}
 }
 
