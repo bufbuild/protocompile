@@ -25,6 +25,8 @@ import (
 	"sync"
 
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/linker"
@@ -400,6 +402,11 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 	if err != nil {
 		return nil, err
 	}
+	if linkRes, ok := parseRes.(linker.Result); ok {
+		// if resolver returned a parse result that was actually a link result,
+		// use the link result directly (no other steps needed)
+		return linkRes, nil
+	}
 
 	var deps []linker.File
 	fileDescriptorProto := parseRes.FileDescriptorProto()
@@ -578,7 +585,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 		file.CheckForUnusedImports(t.h)
 	}
 
-	if t.e.c.SourceInfoMode != SourceInfoNone && parseRes.AST() != nil {
+	if needsSourceInfo(parseRes, t.e.c.SourceInfoMode) {
 		switch t.e.c.SourceInfoMode {
 		case SourceInfoStandard:
 			parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)
@@ -594,19 +601,31 @@ func (t *task) link(parseRes parser.Result, deps linker.Files) (linker.File, err
 	return file, nil
 }
 
+func needsSourceInfo(parseRes parser.Result, mode SourceInfoMode) bool {
+	return mode != SourceInfoNone && parseRes.AST() != nil && parseRes.FileDescriptorProto().SourceCodeInfo == nil
+}
+
 func (t *task) asParseResult(name string, r SearchResult) (parser.Result, error) {
 	if r.ParseResult != nil {
 		if r.ParseResult.FileDescriptorProto().GetName() != name {
 			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.ParseResult.FileDescriptorProto().GetName())
 		}
-		return r.ParseResult, nil
+		// If the file descriptor needs linking, it will be mutated during the
+		// next stage. So to make anu mutations thread-safe, we must make a
+		// defensive copy.
+		res := parser.Clone(r.ParseResult)
+		return res, nil
 	}
 
 	if r.Proto != nil {
 		if r.Proto.GetName() != name {
 			return nil, fmt.Errorf("search result for %q returned descriptor for %q", name, r.Proto.GetName())
 		}
-		return parser.ResultWithoutAST(r.Proto), nil
+		// If the file descriptor needs linking, it will be mutated during the
+		// next stage. So to make any mutations thread-safe, we must make a
+		// defensive copy.
+		descProto := proto.Clone(r.Proto).(*descriptorpb.FileDescriptorProto) //nolint:errcheck
+		return parser.ResultWithoutAST(descProto), nil
 	}
 
 	file, err := t.asAST(name, r)
