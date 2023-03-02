@@ -58,10 +58,14 @@ message /* detached message name */ /* request with a capital R */ Request // tr
 		// this is a custom option
 		option (testprotos.mfubar) = false;
 
-		optional double dbl = 1;
-		optional float flt = 2;
+		optional double dbl = 1; /* trailing comment for dbl */ /* detached comment */ /* leading comment for flt */ optional float flt = 2;
 
-		option no_standard_descriptor_accessor = false;
+		option no_standard_descriptor_accessor = false; /* weird trailing comment
+		                                                   for the option that gets
+		                                                   classified as detached
+		                                                   since it's on the same
+		                                                   line as the following
+		                                                   element */ option deprecated=true;
 
 		// Leading comment...
 		optional string str = 3;
@@ -76,8 +80,7 @@ message /* detached message name */ /* request with a capital R */ Request // tr
 
 		MARIO = 1 [(testprotos.evfubars) = -314, (testprotos.evfubar) = 278];
 		LUIGI = 2 [ (testprotos.evfubaruf) = 100, /* swoosh! */ (testprotos.evfubaru)=200];
-		PEACH = 3;
-		BOWSER = 4;
+		PEACH = 3; /* peach trailer */ /* bowser leader */ BOWSER = 4;
 
 		option (testprotos.efubars) = -321;
 
@@ -128,7 +131,14 @@ Request
 }
 // after extend block
 
-message /* name leading comment */ AnEmptyMessage /* name trailing comment */ { /* trailer for AnEmptyMessage */ }
+message /* name leading comment */ AnEmptyMessage /* name trailing comment */ { /* detached comment inside AnEmptyMessage */ }
+
+/*
+ * Tests javadoc style comment, where every line in block comment has leading
+ * asterisk that should be stripped.
+ */
+message AnotherEmptyMessage  { /* trailer for AnotherEmptyMessage */
+}
 
 // Service comment
 service /* service name */ RpcService {
@@ -141,6 +151,10 @@ service /* service name */ RpcService {
 	option(testprotos.sfubar).name= "bob";
 	option deprecated = false; // DEPRECATED!
 
+	/**
+	 * Another javadoc-style comment.
+	 * This one has the double-asterisk on first line, like javadoc.
+	 */
 	option (testprotos.sfubare) = VALUE;
 
 	// Method comment

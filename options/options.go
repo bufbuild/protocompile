@@ -784,6 +784,9 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	return nil, nil
 }
 
+// isKnownField returns true if the given option is for a known field of the
+// given options message descriptor and will be serialized using the expected
+// wire type for that known field.
 func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) bool {
 	var num int32
 	if len(opt.pathPrefix) > 0 {
@@ -791,7 +794,56 @@ func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) b
 	} else {
 		num = opt.number
 	}
-	return desc.Fields().ByNumber(protoreflect.FieldNumber(num)) != nil
+	fd := desc.Fields().ByNumber(protoreflect.FieldNumber(num))
+	if fd == nil {
+		return false
+	}
+
+	// Before the full wire type check, we do a quick check that will usually pass
+	// and allow us to short-circuit the logic below.
+	if fd.IsList() == opt.repeated && fd.Kind() == opt.kind {
+		return true
+	}
+
+	// We figure out the wire type this interpreted field will use when serialized.
+	var wireType protowire.Type
+	switch {
+	case len(opt.pathPrefix) > 0:
+		// If path prefix exists, this field is nested inside a message.
+		// And messages use bytes wire type.
+		wireType = protowire.BytesType
+	case opt.repeated && opt.packed && canPack(opt.kind):
+		// Packed repeated numeric scalars use bytes wire type.
+		wireType = protowire.BytesType
+	default:
+		wireType = wireTypeForKind(opt.kind)
+	}
+
+	// And then we see if the wire type we just determined is compatible with
+	// the field descriptor we found.
+	if fd.IsList() && canPack(fd.Kind()) && wireType == protowire.BytesType {
+		// Even if fd.IsPacked() is false, bytes type is still accepted for
+		// repeated scalar numerics, so that changing a repeated field from
+		// packed to not-packed (or vice versa) is a compatible change.
+		return true
+	}
+	return wireType == wireTypeForKind(fd.Kind())
+}
+
+func wireTypeForKind(kind protoreflect.Kind) protowire.Type {
+	switch kind {
+	case protoreflect.StringKind, protoreflect.BytesKind, protoreflect.MessageKind:
+		return protowire.BytesType
+	case protoreflect.GroupKind:
+		return protowire.StartGroupType
+	case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
+		return protowire.Fixed32Type
+	case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
+		return protowire.Fixed64Type
+	default:
+		// everything else uses varint
+		return protowire.VarintType
+	}
 }
 
 func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error {
