@@ -125,8 +125,14 @@ func Visit(n Node, v Visitor) error {
 		return v.VisitReservedNode(n)
 	case *RangeNode:
 		return v.VisitRangeNode(n)
+	case *RangeStartNode:
+		return v.VisitRangeStartNode(n)
+	case *RangeEndNode:
+		return v.VisitRangeEndNode(n)
 	case *FieldNode:
 		return v.VisitFieldNode(n)
+	case *FieldLabel:
+		return v.VisitFieldLabelNode(n)
 	case *GroupNode:
 		return v.VisitGroupNode(n)
 	case *MapFieldNode:
@@ -287,8 +293,14 @@ type Visitor interface {
 	VisitReservedNode(*ReservedNode) error
 	// VisitRangeNode is invoked when visiting a *RangeNode in the AST.
 	VisitRangeNode(*RangeNode) error
+	// VisitRangeStartNode is invoked when visiting a *RangeStartNode in the AST.
+	VisitRangeStartNode(*RangeStartNode) error
+	// VisitRangeEndNode is invoked when visiting a *RangeEndNode in the AST.
+	VisitRangeEndNode(*RangeEndNode) error
 	// VisitFieldNode is invoked when visiting a *FieldNode in the AST.
 	VisitFieldNode(*FieldNode) error
+	// VisitFieldLabelNode is invoked when visiting a *FieldLabel in the AST.
+	VisitFieldLabelNode(*FieldLabel) error
 	// VisitGroupNode is invoked when visiting a *GroupNode in the AST.
 	VisitGroupNode(*GroupNode) error
 	// VisitMapFieldNode is invoked when visiting a *MapFieldNode in the AST.
@@ -401,7 +413,19 @@ func (n NoOpVisitor) VisitRangeNode(_ *RangeNode) error {
 	return nil
 }
 
+func (n NoOpVisitor) VisitRangeStartNode(_ *RangeStartNode) error {
+	return nil
+}
+
+func (n NoOpVisitor) VisitRangeEndNode(_ *RangeEndNode) error {
+	return nil
+}
+
 func (n NoOpVisitor) VisitFieldNode(_ *FieldNode) error {
+	return nil
+}
+
+func (n NoOpVisitor) VisitFieldLabelNode(_ *FieldLabel) error {
 	return nil
 }
 
@@ -544,7 +568,10 @@ type SimpleVisitor struct {
 	DoVisitExtensionRangeNode        func(*ExtensionRangeNode) error
 	DoVisitReservedNode              func(*ReservedNode) error
 	DoVisitRangeNode                 func(*RangeNode) error
+	DoVisitRangeStartNode            func(*RangeStartNode) error
+	DoVisitRangeEndNode              func(*RangeEndNode) error
 	DoVisitFieldNode                 func(*FieldNode) error
+	DoVisitFieldLabelNode            func(*FieldLabel) error
 	DoVisitGroupNode                 func(*GroupNode) error
 	DoVisitMapFieldNode              func(*MapFieldNode) error
 	DoVisitMapTypeNode               func(*MapTypeNode) error
@@ -738,9 +765,30 @@ func (b *SimpleVisitor) VisitRangeNode(node *RangeNode) error {
 	return b.visitInterface(node)
 }
 
+func (b *SimpleVisitor) VisitRangeStartNode(node *RangeStartNode) error {
+	if b.DoVisitRangeStartNode != nil {
+		return b.DoVisitRangeStartNode(node)
+	}
+	return b.visitInterface(node)
+}
+
+func (b *SimpleVisitor) VisitRangeEndNode(node *RangeEndNode) error {
+	if b.DoVisitRangeEndNode != nil {
+		return b.DoVisitRangeEndNode(node)
+	}
+	return b.visitInterface(node)
+}
+
 func (b *SimpleVisitor) VisitFieldNode(node *FieldNode) error {
 	if b.DoVisitFieldNode != nil {
 		return b.DoVisitFieldNode(node)
+	}
+	return b.visitInterface(node)
+}
+
+func (b *SimpleVisitor) VisitFieldLabelNode(node *FieldLabel) error {
+	if b.DoVisitFieldLabelNode != nil {
+		return b.DoVisitFieldLabelNode(node)
 	}
 	return b.visitInterface(node)
 }

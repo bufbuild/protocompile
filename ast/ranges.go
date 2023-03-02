@@ -109,9 +109,8 @@ var _ RangeDeclNode = NoSourceNode{}
 type RangeNode struct {
 	compositeNode
 	StartVal IntValueNode
-	// if To is non-nil, then exactly one of EndVal or Max must also be non-nil
-	To *KeywordNode
-	// EndVal and Max are mutually exclusive
+	// if To is non-nil, then EndVal o must also be non-nil
+	To     *KeywordNode
 	EndVal IntValueNode
 	Max    *KeywordNode
 }
@@ -200,6 +199,68 @@ func (n *RangeNode) EndValueAsInt32(min, max int32) (int32, bool) {
 		return n.StartValueAsInt32(min, max)
 	}
 	return AsInt32(n.EndVal, min, max)
+}
+
+// RangeStartNode represents the starting value of a range expression
+// Example:
+//
+// 1000 -1000.
+type RangeStartNode struct {
+	compositeNode
+	StartVal IntValueNode
+}
+
+// NewRangeStartNode creates a new *RangeNode. The start argument must be non-nil.
+// The RangeStartNode represents the starting value of a range expression.
+func NewRangeStartNode(start IntValueNode) *RangeStartNode {
+	if start == nil {
+		panic("start is nil")
+	}
+	children := []Node{start}
+	return &RangeStartNode{
+		compositeNode: compositeNode{
+			children: children,
+		},
+		StartVal: start,
+	}
+}
+
+// RangeEndNode represents the end value of a range expression (represented by RangeNode).
+// Example:
+//
+// 100, max.
+type RangeEndNode struct {
+	compositeNode
+	EndVal IntValueNode
+	Max    *KeywordNode
+}
+
+// NewRangeEndNode creates a new *RangeEndNode. Exactly one of the end argument and max
+// argument must be non-nil.
+func NewRangeEndNode(end IntValueNode, max *KeywordNode) *RangeEndNode {
+	if end == nil && max == nil {
+		panic("end and max cannot be both non-nil")
+	}
+	if end != nil && max != nil {
+		panic("end and max cannot be both non-nil")
+	}
+	var children []Node
+	if end != nil {
+		children = append(children, end)
+	} else {
+		children = append(children, max)
+	}
+	return &RangeEndNode{
+		compositeNode: compositeNode{
+			children: children,
+		},
+		EndVal: end,
+		Max:    max,
+	}
+}
+
+func (n *RangeEndNode) IsMax() bool {
+	return n.Max != nil
 }
 
 // ReservedNode represents reserved declaration, which can be used to reserve

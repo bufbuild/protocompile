@@ -48,6 +48,10 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*FieldNode"
 			return nil
 		},
+		DoVisitFieldLabelNode: func(*FieldLabel) error {
+			*methodCalled = "*FieldLabel"
+			return nil
+		},
 		DoVisitGroupNode: func(*GroupNode) error {
 			*methodCalled = "*GroupNode"
 			return nil
@@ -152,6 +156,14 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*RangeNode"
 			return nil
 		},
+		DoVisitRangeStartNode: func(*RangeStartNode) error {
+			*methodCalled = "*RangeStartNode"
+			return nil
+		},
+		DoVisitRangeEndNode: func(*RangeEndNode) error {
+			*methodCalled = "*RangeEndNode"
+			return nil
+		},
 		DoVisitReservedNode: func(*ReservedNode) error {
 			*methodCalled = "*ReservedNode"
 			return nil
@@ -243,6 +255,9 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			DoVisitFieldNode: v.DoVisitFieldNode,
 		},
 		{
+			DoVisitFieldLabelNode: v.DoVisitFieldLabelNode,
+		},
+		{
 			DoVisitGroupNode: v.DoVisitGroupNode,
 		},
 		{
@@ -319,6 +334,12 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 		},
 		{
 			DoVisitRangeNode: v.DoVisitRangeNode,
+		},
+		{
+			DoVisitRangeStartNode: v.DoVisitRangeStartNode,
+		},
+		{
+			DoVisitRangeEndNode: v.DoVisitRangeEndNode,
 		},
 		{
 			DoVisitReservedNode: v.DoVisitReservedNode,
