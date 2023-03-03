@@ -26,64 +26,64 @@ import (
 )
 
 type protoSymType struct {
-	yys       int
-	file      *ast.FileNode
-	syn       *ast.SyntaxNode
-	fileDecl  ast.FileElement
-	fileDecls []ast.FileElement
-	pkg       *ast.PackageNode
-	imprt     *ast.ImportNode
-	msg       *ast.MessageNode
-	msgDecl   ast.MessageElement
-	msgDecls  []ast.MessageElement
-	fld       *ast.FieldNode
-	fldLabel  *ast.FieldLabel
-	mapFld    *ast.MapFieldNode
-	mapType   *ast.MapTypeNode
-	grp       *ast.GroupNode
-	oo        *ast.OneOfNode
-	ooDecl    ast.OneOfElement
-	ooDecls   []ast.OneOfElement
-	ext       *ast.ExtensionRangeNode
-	resvd     *ast.ReservedNode
-	en        *ast.EnumNode
-	enDecl    ast.EnumElement
-	enDecls   []ast.EnumElement
-	env       *ast.EnumValueNode
-	extend    *ast.ExtendNode
-	extDecl   ast.ExtendElement
-	extDecls  []ast.ExtendElement
-	svc       *ast.ServiceNode
-	svcDecl   ast.ServiceElement
-	svcDecls  []ast.ServiceElement
-	mtd       *ast.RPCNode
-	rpcType   *ast.RPCTypeNode
-	rpcDecl   ast.RPCElement
-	rpcDecls  []ast.RPCElement
-	opt       *ast.OptionNode
-	opts      *compactOptionList
-	ref       *ast.FieldReferenceNode
-	optNms    *fieldRefList
-	cmpctOpts *ast.CompactOptionsNode
-	rng       *ast.RangeNode
-	rngs      *rangeList
-	rngStart  *ast.RangeStartNode
-	rngEnd    *ast.RangeEndNode
-	names     *nameList
-	cid       *identList
-	tid       ast.IdentValueNode
-	sl        *valueList
-	msgField  *ast.MessageFieldNode
-	msgLit    *messageFieldList
-	v         ast.ValueNode
-	il        ast.IntValueNode
-	str       *stringList
-	s         *ast.StringLiteralNode
-	i         *ast.UintLiteralNode
-	f         *ast.FloatLiteralNode
-	id        *ast.IdentNode
-	b         *ast.RuneNode
-	err       error
+	yys          int
+	file         *ast.FileNode
+	syn          *ast.SyntaxNode
+	fileElement  ast.FileElement
+	fileElements []ast.FileElement
+	pkg          *ast.PackageNode
+	imprt        *ast.ImportNode
+	msg          *ast.MessageNode
+	msgElement   ast.MessageElement
+	msgElements  []ast.MessageElement
+	fld          *ast.FieldNode
+	fldCard      *ast.FieldLabel
+	mapFld       *ast.MapFieldNode
+	mapType      *ast.MapTypeNode
+	grp          *ast.GroupNode
+	oo           *ast.OneOfNode
+	ooElement    ast.OneOfElement
+	ooElements   []ast.OneOfElement
+	ext          *ast.ExtensionRangeNode
+	resvd        *ast.ReservedNode
+	en           *ast.EnumNode
+	enElement    ast.EnumElement
+	enElements   []ast.EnumElement
+	env          *ast.EnumValueNode
+	extend       *ast.ExtendNode
+	extElement   ast.ExtendElement
+	extElements  []ast.ExtendElement
+	svc          *ast.ServiceNode
+	svcElement   ast.ServiceElement
+	svcElements  []ast.ServiceElement
+	mtd          *ast.RPCNode
+	rpcType      *ast.RPCTypeNode
+	rpcElement   ast.RPCElement
+	rpcElements  []ast.RPCElement
+	opt          *ast.OptionNode
+	opts         *compactOptionList
+	ref          *ast.FieldReferenceNode
+	optNms       *fieldRefList
+	cmpctOpts    *ast.CompactOptionsNode
+	rng          *ast.RangeNode
+	rngs         *rangeList
+	rngStart     *ast.RangeStartNode
+	rngEnd       *ast.RangeEndNode
+	names        *nameList
+	cid          *identList
+	tid          ast.IdentValueNode
+	sl           *valueList
+	msgLitFld    *ast.MessageFieldNode
+	msgLitFlds   *messageFieldList
+	v            ast.ValueNode
+	il           ast.IntValueNode
+	str          *stringList
+	s            *ast.StringLiteralNode
+	i            *ast.UintLiteralNode
+	f            *ast.FloatLiteralNode
+	id           *ast.IdentNode
+	b            *ast.RuneNode
+	err          error
 }
 
 const _STRING_LIT = 57346
@@ -538,7 +538,7 @@ var protoPgo = [...]int16{
 	4, 443, 442, 441, 96, 9, 439, 13, 10, 8,
 	12, 437, 436, 435, 430, 428, 17, 11, 427, 424,
 	424, 422, 390, 18, 386, 386, 385, 16, 384, 384,
-	383, 7, 14, 382, 26, 27, 36, 381, 380, 379,
+	383, 7, 14, 382, 27, 26, 36, 381, 380, 379,
 	32, 378, 377, 375, 327, 0, 1, 20, 374, 22,
 	372, 370, 34, 369, 368, 23, 24, 367, 366, 365,
 	364, 358, 315, 38, 356, 355, 298, 39, 353, 21,
@@ -551,8 +551,8 @@ var protoR1 = [...]int8{
 	5, 6, 33, 33, 34, 34, 35, 35, 36, 36,
 	7, 14, 14, 14, 14, 12, 17, 17, 18, 18,
 	18, 21, 21, 21, 21, 21, 21, 21, 21, 79,
-	79, 19, 19, 44, 45, 45, 45, 45, 45, 45,
-	45, 43, 43, 43, 43, 43, 13, 13, 13, 13,
+	79, 19, 19, 45, 44, 44, 44, 44, 44, 44,
+	44, 43, 43, 43, 43, 43, 13, 13, 13, 13,
 	16, 16, 16, 25, 25, 42, 42, 20, 20, 20,
 	22, 22, 22, 41, 41, 23, 23, 24, 24, 24,
 	37, 37, 38, 38, 39, 39, 40, 40, 46, 46,
@@ -660,18 +660,18 @@ var protoChk = [...]int16{
 	29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
 	39, 40, 41, 43, 44, 45, 46, 47, 48, 49,
 	-78, -77, -46, -50, 2, 38, -82, -81, -7, -83,
-	52, 2, 47, 52, -44, 2, -45, -43, -13, -27,
+	52, 2, 47, 52, -45, 2, -44, -43, -13, -27,
 	67, 6, 16, 5, 6, 16, 5, 55, -55, 52,
 	-37, 36, -27, -65, -63, -68, 5, -27, -27, -65,
 	-59, -79, -33, 62, 59, 55, -73, 52, 51, -66,
 	-64, -67, -26, 5, 64, 55, -77, 52, 55, -81,
-	52, -27, 55, 55, 60, 52, 60, 52, -45, 2,
+	52, -27, 55, 55, 60, 52, 60, 52, -44, 2,
 	53, -25, -20, -24, -19, 62, 67, -33, 2, -27,
 	-27, 51, 52, -15, 67, 60, 40, 54, 51, 52,
 	52, 60, -28, 23, 24, 25, 26, 27, 28, 29,
 	30, 31, 32, 33, 34, -33, -26, 52, 60, 40,
-	5, -84, 65, -45, -45, -16, -18, -20, -22, 67,
-	-44, 2, -42, 68, 2, -20, 68, 57, 68, 51,
+	5, -84, 65, -44, -44, -16, -18, -20, -22, 67,
+	-45, 2, -42, 68, 2, -20, 68, 57, 68, 51,
 	51, 5, 52, -9, -8, -14, -65, -70, 5, 41,
 	-58, -57, -7, -47, -51, 2, -40, 36, -36, 59,
 	-31, 7, 8, 9, 10, 11, 12, 14, 15, 16,
@@ -1119,14 +1119,14 @@ protodefault:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
 			lex := protolex.(*protoLex)
-			protoVAL.file = ast.NewFileNode(lex.info, nil, protoDollar[1].fileDecls, lex.eof)
+			protoVAL.file = ast.NewFileNode(lex.info, nil, protoDollar[1].fileElements, lex.eof)
 			lex.res = protoVAL.file
 		}
 	case 3:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
 			lex := protolex.(*protoLex)
-			protoVAL.file = ast.NewFileNode(lex.info, protoDollar[1].syn, protoDollar[2].fileDecls, lex.eof)
+			protoVAL.file = ast.NewFileNode(lex.info, protoDollar[1].syn, protoDollar[2].fileElements, lex.eof)
 			lex.res = protoVAL.file
 		}
 	case 4:
@@ -1139,70 +1139,70 @@ protodefault:
 	case 5:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].fileDecl != nil {
-				protoVAL.fileDecls = append(protoDollar[1].fileDecls, protoDollar[2].fileDecl)
+			if protoDollar[2].fileElement != nil {
+				protoVAL.fileElements = append(protoDollar[1].fileElements, protoDollar[2].fileElement)
 			} else {
-				protoVAL.fileDecls = protoDollar[1].fileDecls
+				protoVAL.fileElements = protoDollar[1].fileElements
 			}
 		}
 	case 6:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].fileDecl != nil {
-				protoVAL.fileDecls = []ast.FileElement{protoDollar[1].fileDecl}
+			if protoDollar[1].fileElement != nil {
+				protoVAL.fileElements = []ast.FileElement{protoDollar[1].fileElement}
 			} else {
-				protoVAL.fileDecls = nil
+				protoVAL.fileElements = nil
 			}
 		}
 	case 7:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].imprt
+			protoVAL.fileElement = protoDollar[1].imprt
 		}
 	case 8:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].pkg
+			protoVAL.fileElement = protoDollar[1].pkg
 		}
 	case 9:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].opt
+			protoVAL.fileElement = protoDollar[1].opt
 		}
 	case 10:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].msg
+			protoVAL.fileElement = protoDollar[1].msg
 		}
 	case 11:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].en
+			protoVAL.fileElement = protoDollar[1].en
 		}
 	case 12:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].extend
+			protoVAL.fileElement = protoDollar[1].extend
 		}
 	case 13:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = protoDollar[1].svc
+			protoVAL.fileElement = protoDollar[1].svc
 		}
 	case 14:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = ast.NewEmptyDeclNode(protoDollar[1].b)
+			protoVAL.fileElement = ast.NewEmptyDeclNode(protoDollar[1].b)
 		}
 	case 15:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.fileDecl = nil
+			protoVAL.fileElement = nil
 		}
 	case 16:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileDecl = nil
+			protoVAL.fileElement = nil
 		}
 	case 17:
 		protoDollar = protoS[protopt-4 : protopt+1]
@@ -1373,7 +1373,7 @@ protodefault:
 	case 51:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			fields, delims := protoDollar[2].msgLit.toNodes()
+			fields, delims := protoDollar[2].msgLitFlds.toNodes()
 			protoVAL.v = ast.NewMessageLiteralNode(protoDollar[1].b, fields, delims, protoDollar[3].b)
 		}
 	case 52:
@@ -1384,105 +1384,105 @@ protodefault:
 	case 53:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgLit = protoDollar[1].msgLit
+			protoVAL.msgLitFlds = protoDollar[1].msgLitFlds
 		}
 	case 54:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			if protoDollar[1].msgField != nil {
-				entry := &messageFieldEntry{protoDollar[1].msgField, protoDollar[2].b}
-				protoVAL.msgLit = &messageFieldList{entry, protoDollar[3].msgLit}
+			if protoDollar[1].msgLitFld != nil {
+				entry := &messageFieldEntry{protoDollar[1].msgLitFld, protoDollar[2].b}
+				protoVAL.msgLitFlds = &messageFieldList{entry, protoDollar[3].msgLitFlds}
 			} else {
-				protoVAL.msgLit = nil
+				protoVAL.msgLitFlds = nil
 			}
 		}
 	case 55:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			if protoDollar[1].msgField != nil {
-				entry := &messageFieldEntry{protoDollar[1].msgField, protoDollar[2].b}
-				protoVAL.msgLit = &messageFieldList{entry, protoDollar[3].msgLit}
+			if protoDollar[1].msgLitFld != nil {
+				entry := &messageFieldEntry{protoDollar[1].msgLitFld, protoDollar[2].b}
+				protoVAL.msgLitFlds = &messageFieldList{entry, protoDollar[3].msgLitFlds}
 			} else {
-				protoVAL.msgLit = nil
+				protoVAL.msgLitFlds = nil
 			}
 		}
 	case 56:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[1].msgField != nil {
-				entry := &messageFieldEntry{protoDollar[1].msgField, nil}
-				protoVAL.msgLit = &messageFieldList{entry, protoDollar[2].msgLit}
+			if protoDollar[1].msgLitFld != nil {
+				entry := &messageFieldEntry{protoDollar[1].msgLitFld, nil}
+				protoVAL.msgLitFlds = &messageFieldList{entry, protoDollar[2].msgLitFlds}
 			} else {
-				protoVAL.msgLit = nil
+				protoVAL.msgLitFlds = nil
 			}
 		}
 	case 57:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[1].msgField != nil {
-				entry := &messageFieldEntry{protoDollar[1].msgField, protoDollar[2].b}
-				protoVAL.msgLit = &messageFieldList{entry, nil}
+			if protoDollar[1].msgLitFld != nil {
+				entry := &messageFieldEntry{protoDollar[1].msgLitFld, protoDollar[2].b}
+				protoVAL.msgLitFlds = &messageFieldList{entry, nil}
 			} else {
-				protoVAL.msgLit = nil
+				protoVAL.msgLitFlds = nil
 			}
 		}
 	case 58:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[1].msgField != nil {
-				entry := &messageFieldEntry{protoDollar[1].msgField, protoDollar[2].b}
-				protoVAL.msgLit = &messageFieldList{entry, nil}
+			if protoDollar[1].msgLitFld != nil {
+				entry := &messageFieldEntry{protoDollar[1].msgLitFld, protoDollar[2].b}
+				protoVAL.msgLitFlds = &messageFieldList{entry, nil}
 			} else {
-				protoVAL.msgLit = nil
+				protoVAL.msgLitFlds = nil
 			}
 		}
 	case 59:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].msgField != nil {
-				entry := &messageFieldEntry{protoDollar[1].msgField, nil}
-				protoVAL.msgLit = &messageFieldList{entry, nil}
+			if protoDollar[1].msgLitFld != nil {
+				entry := &messageFieldEntry{protoDollar[1].msgLitFld, nil}
+				protoVAL.msgLitFlds = &messageFieldList{entry, nil}
 			} else {
-				protoVAL.msgLit = nil
+				protoVAL.msgLitFlds = nil
 			}
 		}
 	case 60:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.msgLit = nil
+			protoVAL.msgLitFlds = nil
 		}
 	case 61:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			if protoDollar[1].ref != nil {
-				protoVAL.msgField = ast.NewMessageFieldNode(protoDollar[1].ref, protoDollar[2].b, protoDollar[3].v)
+				protoVAL.msgLitFld = ast.NewMessageFieldNode(protoDollar[1].ref, protoDollar[2].b, protoDollar[3].v)
 			} else {
-				protoVAL.msgField = nil
+				protoVAL.msgLitFld = nil
 			}
 		}
 	case 62:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
 			if protoDollar[1].ref != nil {
-				protoVAL.msgField = ast.NewMessageFieldNode(protoDollar[1].ref, nil, protoDollar[2].v)
+				protoVAL.msgLitFld = ast.NewMessageFieldNode(protoDollar[1].ref, nil, protoDollar[2].v)
 			} else {
-				protoVAL.msgField = nil
+				protoVAL.msgLitFld = nil
 			}
 		}
 	case 63:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.msgField = nil
+			protoVAL.msgLitFld = nil
 		}
 	case 64:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.msgField = nil
+			protoVAL.msgLitFld = nil
 		}
 	case 65:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgField = nil
+			protoVAL.msgLitFld = nil
 		}
 	case 66:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -1547,7 +1547,7 @@ protodefault:
 	case 78:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			fields, delims := protoDollar[2].msgLit.toNodes()
+			fields, delims := protoDollar[2].msgLitFlds.toNodes()
 			protoVAL.v = ast.NewMessageLiteralNode(protoDollar[1].b, fields, delims, protoDollar[3].b)
 		}
 	case 79:
@@ -1654,12 +1654,12 @@ protodefault:
 	case 98:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.fld = ast.NewFieldNode(protoDollar[1].fldLabel.KeywordNode, protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, protoDollar[6].b)
+			protoVAL.fld = ast.NewFieldNode(protoDollar[1].fldCard.KeywordNode, protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, protoDollar[6].b)
 		}
 	case 99:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
-			protoVAL.fld = ast.NewFieldNode(protoDollar[1].fldLabel.KeywordNode, protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, protoDollar[7].b)
+			protoVAL.fld = ast.NewFieldNode(protoDollar[1].fldCard.KeywordNode, protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, protoDollar[7].b)
 		}
 	case 100:
 		protoDollar = protoS[protopt-5 : protopt+1]
@@ -1674,17 +1674,17 @@ protodefault:
 	case 102:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fldLabel = ast.NewFieldLabel(protoDollar[1].id.ToKeyword())
+			protoVAL.fldCard = ast.NewFieldLabel(protoDollar[1].id.ToKeyword())
 		}
 	case 103:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fldLabel = ast.NewFieldLabel(protoDollar[1].id.ToKeyword())
+			protoVAL.fldCard = ast.NewFieldLabel(protoDollar[1].id.ToKeyword())
 		}
 	case 104:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fldLabel = ast.NewFieldLabel(protoDollar[1].id.ToKeyword())
+			protoVAL.fldCard = ast.NewFieldLabel(protoDollar[1].id.ToKeyword())
 		}
 	case 105:
 		protoDollar = protoS[protopt-3 : protopt+1]
@@ -1712,65 +1712,65 @@ protodefault:
 	case 109:
 		protoDollar = protoS[protopt-8 : protopt+1]
 		{
-			protoVAL.grp = ast.NewGroupNode(protoDollar[1].fldLabel.KeywordNode, protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, protoDollar[6].b, protoDollar[7].msgDecls, protoDollar[8].b)
+			protoVAL.grp = ast.NewGroupNode(protoDollar[1].fldCard.KeywordNode, protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, protoDollar[6].b, protoDollar[7].msgElements, protoDollar[8].b)
 		}
 	case 110:
 		protoDollar = protoS[protopt-9 : protopt+1]
 		{
-			protoVAL.grp = ast.NewGroupNode(protoDollar[1].fldLabel.KeywordNode, protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, protoDollar[7].b, protoDollar[8].msgDecls, protoDollar[9].b)
+			protoVAL.grp = ast.NewGroupNode(protoDollar[1].fldCard.KeywordNode, protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, protoDollar[7].b, protoDollar[8].msgElements, protoDollar[9].b)
 		}
 	case 111:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
-			protoVAL.oo = ast.NewOneOfNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].ooDecls, protoDollar[5].b)
+			protoVAL.oo = ast.NewOneOfNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].ooElements, protoDollar[5].b)
 		}
 	case 112:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].ooDecl != nil {
-				protoVAL.ooDecls = append(protoDollar[1].ooDecls, protoDollar[2].ooDecl)
+			if protoDollar[2].ooElement != nil {
+				protoVAL.ooElements = append(protoDollar[1].ooElements, protoDollar[2].ooElement)
 			} else {
-				protoVAL.ooDecls = protoDollar[1].ooDecls
+				protoVAL.ooElements = protoDollar[1].ooElements
 			}
 		}
 	case 113:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].ooDecl != nil {
-				protoVAL.ooDecls = []ast.OneOfElement{protoDollar[1].ooDecl}
+			if protoDollar[1].ooElement != nil {
+				protoVAL.ooElements = []ast.OneOfElement{protoDollar[1].ooElement}
 			} else {
-				protoVAL.ooDecls = nil
+				protoVAL.ooElements = nil
 			}
 		}
 	case 114:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.ooDecls = nil
+			protoVAL.ooElements = nil
 		}
 	case 115:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.ooDecl = protoDollar[1].opt
+			protoVAL.ooElement = protoDollar[1].opt
 		}
 	case 116:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.ooDecl = protoDollar[1].fld
+			protoVAL.ooElement = protoDollar[1].fld
 		}
 	case 117:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.ooDecl = protoDollar[1].grp
+			protoVAL.ooElement = protoDollar[1].grp
 		}
 	case 118:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.ooDecl = nil
+			protoVAL.ooElement = nil
 		}
 	case 119:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.ooDecl = nil
+			protoVAL.ooElement = nil
 		}
 	case 120:
 		protoDollar = protoS[protopt-5 : protopt+1]
@@ -1785,12 +1785,12 @@ protodefault:
 	case 122:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
-			protoVAL.grp = ast.NewGroupNode(nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, nil, protoDollar[5].b, protoDollar[6].msgDecls, protoDollar[7].b)
+			protoVAL.grp = ast.NewGroupNode(nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, nil, protoDollar[5].b, protoDollar[6].msgElements, protoDollar[7].b)
 		}
 	case 123:
 		protoDollar = protoS[protopt-8 : protopt+1]
 		{
-			protoVAL.grp = ast.NewGroupNode(nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, protoDollar[5].cmpctOpts, protoDollar[6].b, protoDollar[7].msgDecls, protoDollar[8].b)
+			protoVAL.grp = ast.NewGroupNode(nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, protoDollar[5].cmpctOpts, protoDollar[6].b, protoDollar[7].msgElements, protoDollar[8].b)
 		}
 	case 124:
 		protoDollar = protoS[protopt-5 : protopt+1]
@@ -1938,60 +1938,60 @@ protodefault:
 	case 164:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
-			protoVAL.en = ast.NewEnumNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].enDecls, protoDollar[5].b)
+			protoVAL.en = ast.NewEnumNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].enElements, protoDollar[5].b)
 		}
 	case 165:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].enDecl != nil {
-				protoVAL.enDecls = append(protoDollar[1].enDecls, protoDollar[2].enDecl)
+			if protoDollar[2].enElement != nil {
+				protoVAL.enElements = append(protoDollar[1].enElements, protoDollar[2].enElement)
 			} else {
-				protoVAL.enDecls = protoDollar[1].enDecls
+				protoVAL.enElements = protoDollar[1].enElements
 			}
 		}
 	case 166:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].enDecl != nil {
-				protoVAL.enDecls = []ast.EnumElement{protoDollar[1].enDecl}
+			if protoDollar[1].enElement != nil {
+				protoVAL.enElements = []ast.EnumElement{protoDollar[1].enElement}
 			} else {
-				protoVAL.enDecls = nil
+				protoVAL.enElements = nil
 			}
 		}
 	case 167:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.enDecls = nil
+			protoVAL.enElements = nil
 		}
 	case 168:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enDecl = protoDollar[1].opt
+			protoVAL.enElement = protoDollar[1].opt
 		}
 	case 169:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enDecl = protoDollar[1].env
+			protoVAL.enElement = protoDollar[1].env
 		}
 	case 170:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enDecl = protoDollar[1].resvd
+			protoVAL.enElement = protoDollar[1].resvd
 		}
 	case 171:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enDecl = ast.NewEmptyDeclNode(protoDollar[1].b)
+			protoVAL.enElement = ast.NewEmptyDeclNode(protoDollar[1].b)
 		}
 	case 172:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.enDecl = nil
+			protoVAL.enElement = nil
 		}
 	case 173:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enDecl = nil
+			protoVAL.enElement = nil
 		}
 	case 174:
 		protoDollar = protoS[protopt-4 : protopt+1]
@@ -2006,196 +2006,196 @@ protodefault:
 	case 176:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
-			protoVAL.msg = ast.NewMessageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].msgDecls, protoDollar[5].b)
+			protoVAL.msg = ast.NewMessageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].msgElements, protoDollar[5].b)
 		}
 	case 177:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].msgDecl != nil {
-				protoVAL.msgDecls = append(protoDollar[1].msgDecls, protoDollar[2].msgDecl)
+			if protoDollar[2].msgElement != nil {
+				protoVAL.msgElements = append(protoDollar[1].msgElements, protoDollar[2].msgElement)
 			} else {
-				protoVAL.msgDecls = protoDollar[1].msgDecls
+				protoVAL.msgElements = protoDollar[1].msgElements
 			}
 		}
 	case 178:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].msgDecl != nil {
-				protoVAL.msgDecls = []ast.MessageElement{protoDollar[1].msgDecl}
+			if protoDollar[1].msgElement != nil {
+				protoVAL.msgElements = []ast.MessageElement{protoDollar[1].msgElement}
 			} else {
-				protoVAL.msgDecls = nil
+				protoVAL.msgElements = nil
 			}
 		}
 	case 179:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.msgDecls = nil
+			protoVAL.msgElements = nil
 		}
 	case 180:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].fld
+			protoVAL.msgElement = protoDollar[1].fld
 		}
 	case 181:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].en
+			protoVAL.msgElement = protoDollar[1].en
 		}
 	case 182:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].msg
+			protoVAL.msgElement = protoDollar[1].msg
 		}
 	case 183:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].extend
+			protoVAL.msgElement = protoDollar[1].extend
 		}
 	case 184:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].ext
+			protoVAL.msgElement = protoDollar[1].ext
 		}
 	case 185:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].grp
+			protoVAL.msgElement = protoDollar[1].grp
 		}
 	case 186:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].opt
+			protoVAL.msgElement = protoDollar[1].opt
 		}
 	case 187:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].oo
+			protoVAL.msgElement = protoDollar[1].oo
 		}
 	case 188:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].mapFld
+			protoVAL.msgElement = protoDollar[1].mapFld
 		}
 	case 189:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = protoDollar[1].resvd
+			protoVAL.msgElement = protoDollar[1].resvd
 		}
 	case 190:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = ast.NewEmptyDeclNode(protoDollar[1].b)
+			protoVAL.msgElement = ast.NewEmptyDeclNode(protoDollar[1].b)
 		}
 	case 191:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.msgDecl = nil
+			protoVAL.msgElement = nil
 		}
 	case 192:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgDecl = nil
+			protoVAL.msgElement = nil
 		}
 	case 193:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
-			protoVAL.extend = ast.NewExtendNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].b, protoDollar[4].extDecls, protoDollar[5].b)
+			protoVAL.extend = ast.NewExtendNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].b, protoDollar[4].extElements, protoDollar[5].b)
 		}
 	case 194:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].extDecl != nil {
-				protoVAL.extDecls = append(protoDollar[1].extDecls, protoDollar[2].extDecl)
+			if protoDollar[2].extElement != nil {
+				protoVAL.extElements = append(protoDollar[1].extElements, protoDollar[2].extElement)
 			} else {
-				protoVAL.extDecls = protoDollar[1].extDecls
+				protoVAL.extElements = protoDollar[1].extElements
 			}
 		}
 	case 195:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].extDecl != nil {
-				protoVAL.extDecls = []ast.ExtendElement{protoDollar[1].extDecl}
+			if protoDollar[1].extElement != nil {
+				protoVAL.extElements = []ast.ExtendElement{protoDollar[1].extElement}
 			} else {
-				protoVAL.extDecls = nil
+				protoVAL.extElements = nil
 			}
 		}
 	case 196:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.extDecls = nil
+			protoVAL.extElements = nil
 		}
 	case 197:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.extDecl = protoDollar[1].fld
+			protoVAL.extElement = protoDollar[1].fld
 		}
 	case 198:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.extDecl = protoDollar[1].grp
+			protoVAL.extElement = protoDollar[1].grp
 		}
 	case 199:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.extDecl = nil
+			protoVAL.extElement = nil
 		}
 	case 200:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.extDecl = nil
+			protoVAL.extElement = nil
 		}
 	case 201:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
-			protoVAL.svc = ast.NewServiceNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].svcDecls, protoDollar[5].b)
+			protoVAL.svc = ast.NewServiceNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].svcElements, protoDollar[5].b)
 		}
 	case 202:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].svcDecl != nil {
-				protoVAL.svcDecls = append(protoDollar[1].svcDecls, protoDollar[2].svcDecl)
+			if protoDollar[2].svcElement != nil {
+				protoVAL.svcElements = append(protoDollar[1].svcElements, protoDollar[2].svcElement)
 			} else {
-				protoVAL.svcDecls = protoDollar[1].svcDecls
+				protoVAL.svcElements = protoDollar[1].svcElements
 			}
 		}
 	case 203:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].svcDecl != nil {
-				protoVAL.svcDecls = []ast.ServiceElement{protoDollar[1].svcDecl}
+			if protoDollar[1].svcElement != nil {
+				protoVAL.svcElements = []ast.ServiceElement{protoDollar[1].svcElement}
 			} else {
-				protoVAL.svcDecls = nil
+				protoVAL.svcElements = nil
 			}
 		}
 	case 204:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.svcDecls = nil
+			protoVAL.svcElements = nil
 		}
 	case 205:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcDecl = protoDollar[1].opt
+			protoVAL.svcElement = protoDollar[1].opt
 		}
 	case 206:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcDecl = protoDollar[1].mtd
+			protoVAL.svcElement = protoDollar[1].mtd
 		}
 	case 207:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcDecl = ast.NewEmptyDeclNode(protoDollar[1].b)
+			protoVAL.svcElement = ast.NewEmptyDeclNode(protoDollar[1].b)
 		}
 	case 208:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.svcDecl = nil
+			protoVAL.svcElement = nil
 		}
 	case 209:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcDecl = nil
+			protoVAL.svcElement = nil
 		}
 	case 210:
 		protoDollar = protoS[protopt-6 : protopt+1]
@@ -2205,7 +2205,7 @@ protodefault:
 	case 211:
 		protoDollar = protoS[protopt-8 : protopt+1]
 		{
-			protoVAL.mtd = ast.NewRPCNodeWithBody(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].rpcType, protoDollar[4].id.ToKeyword(), protoDollar[5].rpcType, protoDollar[6].b, protoDollar[7].rpcDecls, protoDollar[8].b)
+			protoVAL.mtd = ast.NewRPCNodeWithBody(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].rpcType, protoDollar[4].id.ToKeyword(), protoDollar[5].rpcType, protoDollar[6].b, protoDollar[7].rpcElements, protoDollar[8].b)
 		}
 	case 212:
 		protoDollar = protoS[protopt-4 : protopt+1]
@@ -2220,45 +2220,45 @@ protodefault:
 	case 214:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[2].rpcDecl != nil {
-				protoVAL.rpcDecls = append(protoDollar[1].rpcDecls, protoDollar[2].rpcDecl)
+			if protoDollar[2].rpcElement != nil {
+				protoVAL.rpcElements = append(protoDollar[1].rpcElements, protoDollar[2].rpcElement)
 			} else {
-				protoVAL.rpcDecls = protoDollar[1].rpcDecls
+				protoVAL.rpcElements = protoDollar[1].rpcElements
 			}
 		}
 	case 215:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].rpcDecl != nil {
-				protoVAL.rpcDecls = []ast.RPCElement{protoDollar[1].rpcDecl}
+			if protoDollar[1].rpcElement != nil {
+				protoVAL.rpcElements = []ast.RPCElement{protoDollar[1].rpcElement}
 			} else {
-				protoVAL.rpcDecls = nil
+				protoVAL.rpcElements = nil
 			}
 		}
 	case 216:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			protoVAL.rpcDecls = nil
+			protoVAL.rpcElements = nil
 		}
 	case 217:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.rpcDecl = protoDollar[1].opt
+			protoVAL.rpcElement = protoDollar[1].opt
 		}
 	case 218:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.rpcDecl = ast.NewEmptyDeclNode(protoDollar[1].b)
+			protoVAL.rpcElement = ast.NewEmptyDeclNode(protoDollar[1].b)
 		}
 	case 219:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.rpcDecl = nil
+			protoVAL.rpcElement = nil
 		}
 	case 220:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.rpcDecl = nil
+			protoVAL.rpcElement = nil
 		}
 	}
 	goto protostack /* stack new state and value */

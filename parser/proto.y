@@ -14,119 +14,119 @@ import (
 // fields inside this union end up as the fields in a structure known
 // as ${PREFIX}SymType, of which a reference is passed to the lexer.
 %union{
-	file      *ast.FileNode
-	syn       *ast.SyntaxNode
-	fileDecl  ast.FileElement
-	fileDecls []ast.FileElement
-	pkg       *ast.PackageNode
-	imprt     *ast.ImportNode
-	msg       *ast.MessageNode
-	msgDecl   ast.MessageElement
-	msgDecls  []ast.MessageElement
-	fld       *ast.FieldNode
-	fldLabel  *ast.FieldLabel
-	mapFld    *ast.MapFieldNode
-	mapType   *ast.MapTypeNode
-	grp       *ast.GroupNode
-	oo        *ast.OneOfNode
-	ooDecl    ast.OneOfElement
-	ooDecls   []ast.OneOfElement
-	ext       *ast.ExtensionRangeNode
-	resvd     *ast.ReservedNode
-	en        *ast.EnumNode
-	enDecl    ast.EnumElement
-	enDecls   []ast.EnumElement
-	env       *ast.EnumValueNode
-	extend    *ast.ExtendNode
-	extDecl   ast.ExtendElement
-	extDecls  []ast.ExtendElement
-	svc       *ast.ServiceNode
-	svcDecl   ast.ServiceElement
-	svcDecls  []ast.ServiceElement
-	mtd       *ast.RPCNode
-	rpcType   *ast.RPCTypeNode
-	rpcDecl   ast.RPCElement
-	rpcDecls  []ast.RPCElement
-	opt       *ast.OptionNode
-	opts      *compactOptionList
-	ref       *ast.FieldReferenceNode
-	optNms    *fieldRefList
-	cmpctOpts *ast.CompactOptionsNode
-	rng       *ast.RangeNode
-	rngs      *rangeList
-	rngStart  *ast.RangeStartNode
-	rngEnd    *ast.RangeEndNode
-	names     *nameList
-	cid       *identList
-	tid       ast.IdentValueNode
-	sl        *valueList
-	msgField  *ast.MessageFieldNode
-	msgLit    *messageFieldList
-	v         ast.ValueNode
-	il        ast.IntValueNode
-	str       *stringList
-	s         *ast.StringLiteralNode
-	i         *ast.UintLiteralNode
-	f         *ast.FloatLiteralNode
-	id        *ast.IdentNode
-	b         *ast.RuneNode
-	err       error
+	file         *ast.FileNode
+	syn          *ast.SyntaxNode
+	fileElement  ast.FileElement
+	fileElements []ast.FileElement
+	pkg          *ast.PackageNode
+	imprt        *ast.ImportNode
+	msg          *ast.MessageNode
+	msgElement   ast.MessageElement
+	msgElements  []ast.MessageElement
+	fld          *ast.FieldNode
+	fldCard      *ast.FieldLabel
+	mapFld       *ast.MapFieldNode
+	mapType      *ast.MapTypeNode
+	grp          *ast.GroupNode
+	oo           *ast.OneOfNode
+	ooElement    ast.OneOfElement
+	ooElements   []ast.OneOfElement
+	ext          *ast.ExtensionRangeNode
+	resvd        *ast.ReservedNode
+	en           *ast.EnumNode
+	enElement    ast.EnumElement
+	enElements   []ast.EnumElement
+	env          *ast.EnumValueNode
+	extend       *ast.ExtendNode
+	extElement   ast.ExtendElement
+	extElements  []ast.ExtendElement
+	svc          *ast.ServiceNode
+	svcElement   ast.ServiceElement
+	svcElements  []ast.ServiceElement
+	mtd          *ast.RPCNode
+	rpcType      *ast.RPCTypeNode
+	rpcElement   ast.RPCElement
+	rpcElements  []ast.RPCElement
+	opt          *ast.OptionNode
+	opts         *compactOptionList
+	ref          *ast.FieldReferenceNode
+	optNms       *fieldRefList
+	cmpctOpts    *ast.CompactOptionsNode
+	rng          *ast.RangeNode
+	rngs         *rangeList
+	rngStart     *ast.RangeStartNode
+	rngEnd       *ast.RangeEndNode
+	names        *nameList
+	cid          *identList
+	tid          ast.IdentValueNode
+	sl           *valueList
+	msgLitFld    *ast.MessageFieldNode
+	msgLitFlds   *messageFieldList
+	v            ast.ValueNode
+	il           ast.IntValueNode
+	str          *stringList
+	s            *ast.StringLiteralNode
+	i            *ast.UintLiteralNode
+	f            *ast.FloatLiteralNode
+	id           *ast.IdentNode
+	b            *ast.RuneNode
+	err          error
 }
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
-%type <file>      file
-%type <syn>       syntaxDecl
-%type <fileDecl>  fileElement
-%type <fileDecls> fileElements
-%type <imprt>     importDecl
-%type <pkg>       packageDecl
-%type <opt>       optionDecl compactOption
-%type <opts>      compactOptionDecls
-%type <rpcDecl>   methodElement
-%type <rpcDecls>  methodElements
-%type <ref>       extensionName messageLiteralFieldName
-%type <optNms>    optionName
-%type <cmpctOpts> compactOptions
-%type <v>         value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
-%type <il>        enumValueNumber
-%type <id>        identifier mapKeyType msgElementName extElementName oneofElementName enumValueName
-%type <cid>       qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent
-%type <tid>       typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
-%type <sl>        listElements messageLiterals
-%type <msgField>  messageLiteralField
-%type <msgLit>    messageTextFormat messageLiteralFields
-%type <fld>       fieldDecl oneofFieldDecl
-%type <fldLabel>  fieldCardinality
-%type <oo>        oneofDecl
-%type <grp>       groupDecl oneofGroupDecl
-%type <mapFld>    mapFieldDecl
-%type <mapType>   mapType
-%type <msg>       messageDecl
-%type <msgDecl>   messageElement
-%type <msgDecls>  messageElements
-%type <ooDecl>    oneofElement
-%type <ooDecls>   oneofElements
-%type <names>     fieldNames
-%type <resvd>     msgReserved enumReserved reservedNames
-%type <rng>       tagRange enumValueRange
-%type <rngs>      tagRanges enumValueRanges
-%type <rngStart>  enumValueRangeStart tagRangeStart
-%type <rngEnd>    enumValueRangeEnd tagRangeEnd
-%type <ext>       extensionRangeDecl
-%type <en>        enumDecl
-%type <enDecl>    enumElement
-%type <enDecls>   enumElements
-%type <env>       enumValueDecl
-%type <extend>    extensionDecl
-%type <extDecl>   extensionElement
-%type <extDecls>  extensionElements
-%type <str>       stringLit
-%type <svc>       serviceDecl
-%type <svcDecl>   serviceElement
-%type <svcDecls>  serviceElements
-%type <mtd>       methodDecl
-%type <rpcType>   methodMessageType
+%type <file>         file
+%type <syn>          syntaxDecl
+%type <fileElement>  fileElement
+%type <fileElements> fileElements
+%type <imprt>        importDecl
+%type <pkg>          packageDecl
+%type <opt>          optionDecl compactOption
+%type <opts>         compactOptionDecls
+%type <rpcElement>   methodElement
+%type <rpcElements>  methodElements
+%type <ref>          extensionName messageLiteralFieldName
+%type <optNms>       optionName
+%type <cmpctOpts>    compactOptions
+%type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
+%type <il>           enumValueNumber
+%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName enumValueName
+%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent
+%type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
+%type <sl>           listElements messageLiterals
+%type <msgLitFld>    messageLiteralField
+%type <msgLitFlds>   messageLiteralFields messageTextFormat
+%type <fld>          fieldDecl oneofFieldDecl
+%type <fldCard>      fieldCardinality
+%type <oo>           oneofDecl
+%type <grp>          groupDecl oneofGroupDecl
+%type <mapFld>       mapFieldDecl
+%type <mapType>      mapType
+%type <msg>          messageDecl
+%type <msgElement>   messageElement
+%type <msgElements>  messageElements
+%type <ooElement>    oneofElement
+%type <ooElements>   oneofElements
+%type <names>        fieldNames
+%type <resvd>        msgReserved enumReserved reservedNames
+%type <rng>          tagRange enumValueRange
+%type <rngs>         tagRanges enumValueRanges
+%type <rngStart>     enumValueRangeStart tagRangeStart
+%type <rngEnd>       enumValueRangeEnd tagRangeEnd
+%type <ext>          extensionRangeDecl
+%type <en>           enumDecl
+%type <enElement>    enumElement
+%type <enElements>   enumElements
+%type <env>          enumValueDecl
+%type <extend>       extensionDecl
+%type <extElement>   extensionElement
+%type <extElements>  extensionElements
+%type <str>          stringLit
+%type <svc>          serviceDecl
+%type <svcElement>   serviceElement
+%type <svcElements>  serviceElements
+%type <mtd>          methodDecl
+%type <rpcType>      methodMessageType
 
 // same for terminals
 %token <s>   _STRING_LIT
