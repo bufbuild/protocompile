@@ -109,8 +109,9 @@ var _ RangeDeclNode = NoSourceNode{}
 type RangeNode struct {
 	compositeNode
 	StartVal IntValueNode
-	// if To is non-nil, then EndVal o must also be non-nil
-	To     *KeywordNode
+	// if To is non-nil, then exactly one of EndVal or Max must also be non-nil
+	To *KeywordNode
+	// EndVal and Max are mutually exclusive
 	EndVal IntValueNode
 	Max    *KeywordNode
 }

@@ -257,9 +257,6 @@ func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldD
 }
 
 func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
-	if lbl == nil {
-		return nil
-	}
 	if !lbl.IsPresent() {
 		return nil
 	}
