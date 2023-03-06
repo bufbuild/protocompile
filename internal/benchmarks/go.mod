@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/bufbuild/protocompile v0.0.0-20221004230924-06a336f5b6be
 	github.com/igrmk/treemap/v2 v2.0.1
-	github.com/jhump/protoreflect v1.13.0
+	github.com/jhump/protoreflect v1.14.1
 	github.com/stretchr/testify v1.8.0
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
 )

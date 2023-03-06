@@ -52,20 +52,17 @@ import (
 type Index map[*ast.OptionNode][]int32
 
 type interpreter struct {
-	file      file
-	resolver  linker.Resolver
-	container optionsContainer
-	lenient   bool
-	reporter  *reporter.Handler
-	index     Index
+	file                    file
+	resolver                linker.Resolver
+	container               optionsContainer
+	overrideDescriptorProto linker.File
+	lenient                 bool
+	reporter                *reporter.Handler
+	index                   Index
 }
 
 type file interface {
 	parser.Result
-	ResolveEnumType(protoreflect.FullName) protoreflect.EnumDescriptor
-	ResolveMessageType(protoreflect.FullName) protoreflect.MessageDescriptor
-	ResolveOptionsType(protoreflect.FullName) protoreflect.MessageDescriptor
-	ResolveExtension(protoreflect.FullName) protoreflect.ExtensionTypeDescriptor
 	ResolveMessageLiteralExtensionName(ast.IdentValueNode) string
 }
 
@@ -73,24 +70,23 @@ type noResolveFile struct {
 	parser.Result
 }
 
-func (n noResolveFile) ResolveEnumType(name protoreflect.FullName) protoreflect.EnumDescriptor {
-	return nil
-}
-
-func (n noResolveFile) ResolveMessageType(name protoreflect.FullName) protoreflect.MessageDescriptor {
-	return nil
-}
-
-func (n noResolveFile) ResolveOptionsType(name protoreflect.FullName) protoreflect.MessageDescriptor {
-	return nil
-}
-
-func (n noResolveFile) ResolveExtension(name protoreflect.FullName) protoreflect.ExtensionTypeDescriptor {
-	return nil
-}
-
 func (n noResolveFile) ResolveMessageLiteralExtensionName(ast.IdentValueNode) string {
 	return ""
+}
+
+// InterpreterOption is an option that can be passed to InterpretOptions and
+// its variants.
+type InterpreterOption func(*interpreter)
+
+// WithOverrideDescriptorProto returns an option that indicates that the given file
+// should be consulted when looking up a definition for an option type. The given
+// file should usually have the path "google/protobuf/descriptor.proto". The given
+// file will only be consulted if the option type is otherwise not visible to the
+// file whose options are being interpreted.
+func WithOverrideDescriptorProto(f linker.File) InterpreterOption {
+	return func(interp *interpreter) {
+		interp.overrideDescriptorProto = f
+	}
 }
 
 // InterpretOptions interprets options in the given linked result, returning
@@ -100,8 +96,8 @@ func (n noResolveFile) ResolveMessageLiteralExtensionName(ast.IdentValueNode) st
 //
 // The given handler is used to report errors and warnings. If any errors are
 // reported, this function returns a non-nil error.
-func InterpretOptions(linked linker.Result, handler *reporter.Handler) (Index, error) {
-	return interpretOptions(false, linked, handler)
+func InterpretOptions(linked linker.Result, handler *reporter.Handler, opts ...InterpreterOption) (Index, error) {
+	return interpretOptions(false, linked, linker.ResolverFromFile(linked), handler, opts)
 }
 
 // InterpretOptionsLenient interprets options in a lenient/best-effort way in
@@ -113,8 +109,8 @@ func InterpretOptions(linked linker.Result, handler *reporter.Handler) (Index, e
 // In lenient more, errors resolving option names and type errors are ignored.
 // Any options that are uninterpretable (due to such errors) will remain in the
 // "uninterpreted_option" fields.
-func InterpretOptionsLenient(linked linker.Result) (Index, error) {
-	return interpretOptions(true, linked, reporter.NewHandler(nil))
+func InterpretOptionsLenient(linked linker.Result, opts ...InterpreterOption) (Index, error) {
+	return interpretOptions(true, linked, linker.ResolverFromFile(linked), reporter.NewHandler(nil), opts)
 }
 
 // InterpretUnlinkedOptions does a best-effort attempt to interpret options in
@@ -128,20 +124,21 @@ func InterpretOptionsLenient(linked linker.Result) (Index, error) {
 // interpreted. Other errors resolving option names or type errors will be
 // effectively ignored. Any options that are uninterpretable (due to such
 // errors) will remain in the "uninterpreted_option" fields.
-func InterpretUnlinkedOptions(parsed parser.Result) (Index, error) {
-	return interpretOptions(true, noResolveFile{parsed}, reporter.NewHandler(nil))
+func InterpretUnlinkedOptions(parsed parser.Result, opts ...InterpreterOption) (Index, error) {
+	return interpretOptions(true, noResolveFile{parsed}, nil, reporter.NewHandler(nil), opts)
 }
 
-func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index, error) {
+func interpretOptions(lenient bool, file file, res linker.Resolver, handler *reporter.Handler, interpOpts []InterpreterOption) (Index, error) {
 	interp := interpreter{
 		file:     file,
+		resolver: res,
 		lenient:  lenient,
 		reporter: handler,
 		index:    Index{},
 	}
 	interp.container, _ = file.(optionsContainer)
-	if f, ok := file.(linker.File); ok {
-		interp.resolver = linker.ResolverFromFile(f)
+	for _, opt := range interpOpts {
+		opt(&interp)
 	}
 
 	fd := file.FileDescriptorProto()
@@ -200,6 +197,51 @@ func interpretOptions(lenient bool, file file, handler *reporter.Handler) (Index
 		}
 	}
 	return interp.index, nil
+}
+
+func resolveDescriptor[T protoreflect.Descriptor](res linker.Resolver, name string) T {
+	var zero T
+	if res == nil {
+		return zero
+	}
+	if len(name) > 0 && name[0] == '.' {
+		name = name[1:]
+	}
+	desc, _ := res.FindDescriptorByName(protoreflect.FullName(name))
+	typedDesc, ok := desc.(T)
+	if ok {
+		return typedDesc
+	}
+	return zero
+}
+
+func (interp *interpreter) resolveExtensionType(name string) protoreflect.ExtensionTypeDescriptor {
+	if interp.resolver == nil {
+		return nil
+	}
+	if len(name) > 0 && name[0] == '.' {
+		name = name[1:]
+	}
+	ext, _ := interp.resolver.FindExtensionByName(protoreflect.FullName(name))
+	return ext.TypeDescriptor()
+}
+
+func (interp *interpreter) resolveOptionsType(name string) protoreflect.MessageDescriptor {
+	md := resolveDescriptor[protoreflect.MessageDescriptor](interp.resolver, name)
+	if md != nil {
+		return md
+	}
+	if interp.overrideDescriptorProto == nil {
+		return nil
+	}
+	if len(name) > 0 && name[0] == '.' {
+		name = name[1:]
+	}
+	desc := interp.overrideDescriptorProto.FindDescriptorByName(protoreflect.FullName(name))
+	if md, ok := desc.(protoreflect.MessageDescriptor); ok {
+		return md
+	}
+	return nil
 }
 
 func (interp *interpreter) nodeInfo(n ast.Node) ast.NodeInfo {
@@ -348,7 +390,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	}
 	var v interface{}
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
-		ed := interp.file.ResolveEnumType(protoreflect.FullName(fld.GetTypeName()))
+		ed := resolveDescriptor[protoreflect.EnumDescriptor](interp.resolver, fld.GetTypeName())
 		_, name, err := interp.enumFieldValue(mc, ed, val, false)
 		if err != nil {
 			return -1, interp.reporter.HandleError(err)
@@ -689,7 +731,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	optsFqn := string(optsDesc.FullName())
 	var msg protoreflect.Message
 	// see if the parse included an override copy for these options
-	if md := interp.file.ResolveOptionsType(protoreflect.FullName(optsFqn)); md != nil {
+	if md := interp.resolveOptionsType(optsFqn); md != nil {
 		dm := dynamicpb.NewMessage(md)
 		if err := cloneInto(dm, opts, nil); err != nil {
 			node := interp.file.Node(element)
@@ -963,7 +1005,7 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 		if extName[0] == '.' {
 			extName = extName[1:] /* skip leading dot */
 		}
-		fld = interp.file.ResolveExtension(protoreflect.FullName(extName))
+		fld = interp.resolveExtensionType(extName)
 		if fld == nil {
 			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
 				"%vunrecognized extension %s of %s",
@@ -1515,7 +1557,7 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			if !ok {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "%vtype references for google.protobuf.Any must have message literal value", mc)
 			}
-			anyMd := interp.file.ResolveMessageType(protoreflect.FullName(msgName))
+			anyMd := resolveDescriptor[protoreflect.MessageDescriptor](interp.resolver, string(msgName))
 			if anyMd == nil {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix).Start(), "%vcould not resolve type reference %s", mc, fullURL)
 			}
@@ -1550,13 +1592,13 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 					// this should not be possible!
 					n = string(fieldNode.Name.Name.AsIdentifier())
 				}
-				ffld = interp.file.ResolveExtension(protoreflect.FullName(n))
+				ffld = interp.resolveExtensionType(n)
 				if ffld == nil {
 					// may need to qualify with package name
 					// (this should not be necessary!)
 					pkg := mc.File.FileDescriptorProto().GetPackage()
 					if pkg != "" {
-						ffld = interp.file.ResolveExtension(protoreflect.FullName(pkg + "." + n))
+						ffld = interp.resolveExtensionType(pkg + "." + n)
 					}
 				}
 			} else {
