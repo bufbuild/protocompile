@@ -20,12 +20,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
@@ -39,15 +41,82 @@ import (
 type ident string
 type aggregate string
 
+func TestCustomOptionsAreKnown(t *testing.T) {
+	t.Parallel()
+	for _, withOverride := range []bool{false, true} {
+		withOverride := withOverride
+		name := "no overrides"
+		if withOverride {
+			name = "with override descriptor.proto"
+		}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			sources := map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "other.proto";
+					option (string_option) = "abc";
+					`,
+				"other.proto": `
+					syntax = "proto3";
+					import public "options.proto";
+					`,
+				"options.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.FileOptions {
+						string string_option = 10101;
+					}
+					`,
+			}
+			resolver := protocompile.Resolver(&protocompile.SourceResolver{
+				Accessor: protocompile.SourceAccessorFromMap(sources),
+			})
+			if withOverride {
+				sources["google/protobuf/descriptor.proto"] = `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional string foo = 1;
+						optional bool bar = 2;
+						optional int32 baz = 3;
+						extensions 1000 to max;
+					}
+					`
+			} else {
+				resolver = protocompile.WithStandardImports(resolver)
+			}
+			compiler := &protocompile.Compiler{
+				Resolver: resolver,
+			}
+			files, err := compiler.Compile(context.Background(), "test.proto")
+			require.NoError(t, err)
+			require.Equal(t, 1, len(files))
+			var knownOptionNames []string
+			fileOptions := files[0].Options().ProtoReflect()
+			assert.Empty(t, fileOptions.GetUnknown())
+			fileOptions.Range(func(fd protoreflect.FieldDescriptor, val protoreflect.Value) bool {
+				if fd.IsExtension() {
+					knownOptionNames = append(knownOptionNames, string(fd.FullName()))
+				}
+				return true
+			})
+			sort.Strings(knownOptionNames)
+			assert.Equal(t, []string{"string_option"}, knownOptionNames)
+		})
+	}
+}
+
 func TestOptionsInUnlinkedFiles(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
+		name             string
 		contents         string
 		uninterpreted    map[string]interface{}
 		checkInterpreted func(*testing.T, *descriptorpb.FileDescriptorProto)
 	}{
 		{
-			// file options
+			name:     "file options",
 			contents: `option go_package = "foo.bar"; option (must.link) = "FOO";`,
 			uninterpreted: map[string]interface{}{
 				"test.proto:(must.link)": "FOO",
@@ -57,7 +126,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// message options
+			name:     "message options",
 			contents: `message Test { option (must.link) = 1.234; option deprecated = true; }`,
 			uninterpreted: map[string]interface{}{
 				"Test:(must.link)": 1.234,
@@ -67,7 +136,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// field options and pseudo-options
+			name:     "field options",
 			contents: `message Test { optional string uid = 1 [(must.link) = 10101, (must.link) = 20202, default = "fubar", json_name = "UID", deprecated = true]; }`,
 			uninterpreted: map[string]interface{}{
 				"Test.uid:(must.link)":   10101,
@@ -80,7 +149,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// field where default is uninterpretable
+			name:     "field options, default uninterpretable",
 			contents: `enum TestEnum{ ZERO = 0; ONE = 1; } message Test { optional TestEnum uid = 1 [(must.link) = {foo: bar}, default = ONE, json_name = "UID", deprecated = true]; }`,
 			uninterpreted: map[string]interface{}{
 				"Test.uid:(must.link)": aggregate("foo : bar"),
@@ -92,7 +161,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// one-of options
+			name:     "oneof options",
 			contents: `message Test { oneof x { option (must.link) = true; option deprecated = true; string uid = 1; uint64 nnn = 2; } }`,
 			uninterpreted: map[string]interface{}{
 				"Test.x:(must.link)": ident("true"),
@@ -100,7 +169,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// extension range options
+			name:     "extension range options",
 			contents: `message Test { extensions 100 to 200 [(must.link) = "foo", deprecated = true]; }`,
 			uninterpreted: map[string]interface{}{
 				"Test.100-200:(must.link)": "foo",
@@ -108,7 +177,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// enum options
+			name:     "enum options",
 			contents: `enum Test { option allow_alias = true; option deprecated = true; option (must.link) = 123.456; ZERO = 0; ZILCH = 0; }`,
 			uninterpreted: map[string]interface{}{
 				"Test:(must.link)": 123.456,
@@ -119,7 +188,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// enum value options
+			name:     "enum value options",
 			contents: `enum Test { ZERO = 0 [deprecated = true, (must.link) = -222]; }`,
 			uninterpreted: map[string]interface{}{
 				"Test.ZERO:(must.link)": -222,
@@ -129,7 +198,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// service options
+			name:     "service options",
 			contents: `service Test { option deprecated = true; option (must.link) = {foo:1, foo:2, bar:3}; }`,
 			uninterpreted: map[string]interface{}{
 				"Test:(must.link)": aggregate("foo : 1 , foo : 2 , bar : 3"),
@@ -139,7 +208,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
-			// method options
+			name:     "method options",
 			contents: `import "google/protobuf/empty.proto"; service Test { rpc Foo (google.protobuf.Empty) returns (google.protobuf.Empty) { option deprecated = true; option (must.link) = FOO; } }`,
 			uninterpreted: map[string]interface{}{
 				"Test.Foo:(must.link)": ident("FOO"),
@@ -150,26 +219,30 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		},
 	}
 
-	for i, tc := range testCases {
-		h := reporter.NewHandler(nil)
-		ast, err := parser.Parse("test.proto", strings.NewReader(tc.contents), h)
-		if !assert.Nil(t, err, "case #%d failed to parse", i) {
-			continue
-		}
-		res, err := parser.ResultFromAST(ast, true, h)
-		if !assert.Nil(t, err, "case #%d failed to produce descriptor proto", i) {
-			continue
-		}
-		_, err = options.InterpretUnlinkedOptions(res)
-		if !assert.Nil(t, err, "case #%d failed to interpret options", i) {
-			continue
-		}
-		actual := map[string]interface{}{}
-		buildUninterpretedMapForFile(res.FileDescriptorProto(), actual)
-		assert.Equal(t, tc.uninterpreted, actual, "case #%d resulted in wrong uninterpreted options", i)
-		if tc.checkInterpreted != nil {
-			tc.checkInterpreted(t, res.FileDescriptorProto())
-		}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			h := reporter.NewHandler(nil)
+			ast, err := parser.Parse("test.proto", strings.NewReader(tc.contents), h)
+			if !assert.Nil(t, err, "failed to parse") {
+				return
+			}
+			res, err := parser.ResultFromAST(ast, true, h)
+			if !assert.Nil(t, err, "failed to produce descriptor proto") {
+				return
+			}
+			_, err = options.InterpretUnlinkedOptions(res)
+			if !assert.Nil(t, err, "failed to interpret options") {
+				return
+			}
+			actual := map[string]interface{}{}
+			buildUninterpretedMapForFile(res.FileDescriptorProto(), actual)
+			assert.Equal(t, tc.uninterpreted, actual, "resulted in wrong uninterpreted options")
+			if tc.checkInterpreted != nil {
+				tc.checkInterpreted(t, res.FileDescriptorProto())
+			}
+		})
 	}
 }
 
