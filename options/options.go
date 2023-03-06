@@ -33,6 +33,7 @@ import (
 	"sort"
 	"strings"
 
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -383,30 +384,26 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_GROUP || fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
 		return -1, interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetName()).Start(), "%s: default value cannot be set because field is a message", scope)
 	}
-	val := optNode.GetValue()
-	if _, ok := val.(*ast.MessageLiteralNode); ok {
-		return -1, interp.reporter.HandleErrorf(interp.nodeInfo(val).Start(), "%s: default value cannot be a message", scope)
-	}
 	mc := &internal.MessageContext{
 		File:        interp.file,
 		ElementName: fqn,
 		ElementType: descriptorType(fld),
 		Option:      opt,
 	}
+
+	val := optNode.GetValue()
 	var v interface{}
-	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
-		ed := resolveDescriptor[protoreflect.EnumDescriptor](interp.resolver, fld.GetTypeName())
-		_, name, err := interp.enumFieldValue(mc, ed, val, false)
-		if err != nil {
-			return -1, interp.reporter.HandleError(err)
-		}
-		v = string(name)
+	if val.Value() == nil {
+		// no value in the AST, so we dig the value out of the uninterpreted option proto
+		v, err = interp.defaultValueFromProto(mc, fld, opt, val)
 	} else {
-		v, err = interp.scalarFieldValue(mc, fld.GetType(), val, false)
-		if err != nil {
-			return -1, interp.reporter.HandleError(err)
-		}
+		// compute value from AST
+		v, err = interp.defaultValue(mc, fld, val)
 	}
+	if err != nil {
+		return -1, interp.reporter.HandleError(err)
+	}
+
 	if str, ok := v.(string); ok {
 		fld.DefaultValue = proto.String(str)
 	} else if b, ok := v.([]byte); ok {
@@ -436,6 +433,42 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 		}
 	}
 	return found, nil
+}
+
+func (interp *interpreter) defaultValue(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, val ast.ValueNode) (interface{}, error) {
+	if _, ok := val.(*ast.MessageLiteralNode); ok {
+		return -1, reporter.Errorf(interp.nodeInfo(val).Start(), "%vdefault value cannot be a message", mc)
+	}
+	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
+		ed := resolveDescriptor[protoreflect.EnumDescriptor](interp.resolver, fld.GetTypeName())
+		if ed == nil {
+			return -1, reporter.Errorf(interp.nodeInfo(val).Start(), "%vunable to resolve enum type %q for field %q", mc, fld.GetTypeName(), fld.GetName())
+		}
+		_, name, err := interp.enumFieldValue(mc, ed, val, false)
+		if err != nil {
+			return -1, err
+		}
+		return string(name), nil
+	}
+	return interp.scalarFieldValue(mc, fld.GetType(), val, false)
+}
+
+func (interp *interpreter) defaultValueFromProto(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, opt *descriptorpb.UninterpretedOption, node ast.Node) (interface{}, error) {
+	if opt.AggregateValue != nil {
+		return -1, reporter.Errorf(interp.nodeInfo(node).Start(), "%vdefault value cannot be a message", mc)
+	}
+	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
+		ed := resolveDescriptor[protoreflect.EnumDescriptor](interp.resolver, fld.GetTypeName())
+		if ed == nil {
+			return -1, reporter.Errorf(interp.nodeInfo(node).Start(), "%vunable to resolve enum type %q for field %q", mc, fld.GetTypeName(), fld.GetName())
+		}
+		_, name, err := interp.enumFieldValueFromProto(mc, ed, opt, node)
+		if err != nil {
+			return nil, err
+		}
+		return string(name), nil
+	}
+	return interp.scalarFieldValueFromProto(mc, fld.GetType(), opt, node)
 }
 
 func encodeDefaultBytes(b []byte) string {
@@ -530,6 +563,10 @@ type interpretedField struct {
 // interpretedFieldValue is a wrapper around protoreflect.Value that
 // includes extra metadata.
 type interpretedFieldValue struct {
+	// the bytes for this field value if already pre-serialized
+	// (when this is set, the other fields are ignored)
+	preserialized []byte
+
 	// the field value
 	val protoreflect.Value
 	// if true, this value is a list of values, not a singular value
@@ -550,6 +587,10 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 
 	for i := 0; i < len(flds); i++ {
 		f := flds[i]
+		if f.value.preserialized != nil {
+			b = append(b, f.value.preserialized...)
+			continue
+		}
 		switch {
 		case f.packed && canPack(f.kind):
 			// for packed repeated numeric fields, all runs of values are merged into one packed list
@@ -628,6 +669,9 @@ func appendOptionBytesPacked(b []byte, k protoreflect.Kind, flds []*interpretedF
 }
 
 func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
+	if f.value.preserialized != nil {
+		return append(b, f.value.preserialized...), nil
+	}
 	num := protowire.Number(f.number)
 	switch f.kind {
 	case protoreflect.MessageKind:
@@ -1067,8 +1111,15 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, int32(fld.Number())))
 	}
 
-	optNode := interp.file.OptionNode(opt)
-	val, err := interp.setOptionField(mc, msg, fld, node, optNode.GetValue(), false)
+	optValNode := interp.file.OptionNode(opt).GetValue()
+	var val interpretedFieldValue
+	var err error
+	if optValNode.Value() == nil {
+		// We don't have an AST, so we get the value from the uninterpreted option proto
+		val, err = interp.setOptionFieldFromProto(mc, msg, fld, node, opt, optValNode)
+	} else {
+		val, err = interp.setOptionField(mc, msg, fld, node, optValNode, false)
+	}
 	if err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
@@ -1094,8 +1145,8 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 }
 
 // setOptionField sets the value for field fld in the given message msg to the value represented
-// by val. The given name is the AST node that corresponds to the name of fld. On success, it
-// returns additional metadata about the field that was set.
+// by AST node val. The given name is the AST node that corresponds to the name of fld. On success,
+// it returns additional metadata about the field that was set.
 func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
 	v := val.Value()
 	if sl, ok := v.([]ast.ValueNode); ok {
@@ -1147,6 +1198,95 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 	switch {
 	case fld.IsMap():
 		setMapEntry(msg, fld, &value)
+	case fld.IsList():
+		msg.Mutable(fld).List().Append(value.val)
+	default:
+		if msg.Has(fld) {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
+		}
+		msg.Set(fld, value.val)
+	}
+	return value, nil
+}
+
+// setOptionField sets the value for field fld in the given message msg to the value represented
+// by AST node val. The given name is the AST node that corresponds to the name of fld. On success,
+// it returns additional metadata about the field that was set.
+func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, opt *descriptorpb.UninterpretedOption, node ast.Node) (interpretedFieldValue, error) {
+	k := fld.Kind()
+	var value interpretedFieldValue
+	switch k {
+	case protoreflect.EnumKind:
+		num, _, err := interp.enumFieldValueFromProto(mc, fld.Enum(), opt, node)
+		if err != nil {
+			return interpretedFieldValue{}, err
+		}
+		value = interpretedFieldValue{val: protoreflect.ValueOfEnum(num)}
+
+	case protoreflect.MessageKind, protoreflect.GroupKind:
+		if opt.AggregateValue == nil {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting message, got %s", mc, optionValueKind(opt))
+		}
+		// We must parse the text format from the aggregate value string
+		fmd := fld.Message()
+		tmpMsg := dynamicpb.NewMessage(fmd)
+		err := prototext.UnmarshalOptions{
+			Resolver:     &msgLiteralResolver{interp: interp, pkg: fld.ParentFile().Package()},
+			AllowPartial: true,
+		}.Unmarshal([]byte(opt.GetAggregateValue()), tmpMsg)
+		if err != nil {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(node).Start(), "%vfailed to parse message literal %w", mc, err)
+		}
+		msgData, err := proto.MarshalOptions{
+			AllowPartial: true,
+		}.Marshal(tmpMsg)
+		if err != nil {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(node).Start(), "%vfailed to serialize data from message literal %w", mc, err)
+		}
+		var data []byte
+		if k == protoreflect.GroupKind {
+			data = protowire.AppendTag(data, fld.Number(), protowire.StartGroupType)
+			data = append(data, msgData...)
+			data = protowire.AppendTag(data, fld.Number(), protowire.EndGroupType)
+		} else {
+			data = protowire.AppendTag(nil, fld.Number(), protowire.BytesType)
+			data = protowire.AppendBytes(data, msgData)
+		}
+		// NB: At this point, the serialized fields may no longer be in the same
+		//     order as in the text literal. So for this case, the linker result's
+		//     CanonicalProto won't be in *quite* the right order. ¯\_(ツ)_/¯
+		value = interpretedFieldValue{preserialized: data}
+
+	default:
+		v, err := interp.scalarFieldValueFromProto(mc, descriptorpb.FieldDescriptorProto_Type(k), opt, node)
+		if err != nil {
+			return interpretedFieldValue{}, err
+		}
+		value = interpretedFieldValue{val: protoreflect.ValueOf(v)}
+	}
+
+	if ood := fld.ContainingOneof(); ood != nil {
+		existingFld := msg.WhichOneof(ood)
+		if existingFld != nil && existingFld.Number() != fld.Number() {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
+		}
+	}
+
+	switch {
+	case value.preserialized != nil:
+		if !fld.IsList() && !fld.IsMap() && msg.Has(fld) {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
+		}
+		// We have to merge the bytes for this field into the message.
+		// TODO: if a map field, error if key for this entry already set?
+		err := proto.UnmarshalOptions{
+			Resolver:     &msgLiteralResolver{interp: interp, pkg: fld.ParentFile().Package()},
+			AllowPartial: true,
+			Merge:        true,
+		}.Unmarshal(value.preserialized, msg.Interface())
+		if err != nil {
+			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%v failed to set value for field %v: %w", mc, fieldName(fld), err)
+		}
 	case fld.IsList():
 		msg.Mutable(fld).List().Append(value.val)
 	default:
@@ -1259,6 +1399,53 @@ func (l listValue) IsValid() bool {
 	return true
 }
 
+type msgLiteralResolver struct {
+	interp *interpreter
+	pkg    protoreflect.FullName
+}
+
+func (r *msgLiteralResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
+	return r.interp.resolver.FindMessageByName(message)
+}
+
+func (r *msgLiteralResolver) FindMessageByURL(url string) (protoreflect.MessageType, error) {
+	// In a message literal, we don't allow arbitrary URL prefixes
+	pos := strings.LastIndexByte(url, '/')
+	var urlPrefix string
+	if pos > 0 {
+		urlPrefix = url[:pos]
+	}
+	if urlPrefix != "type.googleapis.com" && urlPrefix != "type.googleprod.com" {
+		return nil, fmt.Errorf("could not resolve type reference %s", url)
+	}
+	return r.FindMessageByName(protoreflect.FullName(url[pos+1:]))
+}
+
+func (r *msgLiteralResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
+	// In a message literal, extension name may be partially qualified, relative to package.
+	// So we have to search through package scopes.
+	pkg := r.pkg
+	for {
+		// TODO: This does not *fully* implement the insane logic of protoc with regards
+		//       to resolving relative references.
+		//       https://protobuf.com/docs/language-spec#reference-resolution
+		name := pkg.Append(protoreflect.Name(field))
+		ext, err := r.interp.resolver.FindExtensionByName(name)
+		if err == nil {
+			return ext, nil
+		}
+		if pkg == "" {
+			// no more namespaces to check
+			return nil, err
+		}
+		pkg = pkg.Parent()
+	}
+}
+
+func (r *msgLiteralResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
+	return r.interp.resolver.FindExtensionByNumber(message, field)
+}
+
 func fieldName(fld protoreflect.FieldDescriptor) string {
 	if fld.IsExtension() {
 		return fmt.Sprintf("(%s)", fld.FullName())
@@ -1292,6 +1479,26 @@ func valueKind(val interface{}) string {
 	}
 }
 
+func optionValueKind(opt *descriptorpb.UninterpretedOption) string {
+	switch {
+	case opt.IdentifierValue != nil:
+		return "identifier"
+	case opt.PositiveIntValue != nil:
+		return "integer"
+	case opt.NegativeIntValue != nil:
+		return "negative integer"
+	case opt.DoubleValue != nil:
+		return "double"
+	case opt.StringValue != nil:
+		return "string"
+	case opt.AggregateValue != nil:
+		return "message"
+	default:
+		// should not be possible
+		return "<nil>"
+	}
+}
+
 // fieldValue computes a compile-time value (constant or list or message literal) for the given
 // AST node val. The value in val must be assignable to the field fld.
 func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protoreflect.FieldDescriptor, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
@@ -1322,7 +1529,7 @@ func (interp *interpreter) fieldValue(mc *internal.MessageContext, fld protorefl
 }
 
 // enumFieldValue resolves the given AST node val as an enum value descriptor. If the given
-// value is not a valid identifier, an error is returned instead.
+// value is not a valid identifier (or number if allowed), an error is returned instead.
 func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, val ast.ValueNode, allowNumber bool) (protoreflect.EnumNumber, protoreflect.Name, error) {
 	v := val.Value()
 	var num protoreflect.EnumNumber
@@ -1362,6 +1569,25 @@ func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protor
 	}
 	// unknown value, but enum is open, so we allow it and return blank name
 	return num, "", nil
+}
+
+// enumFieldValueFromProto resolves the given uninterpreted option value as an enum value descriptor.
+// If the given value is not a valid identifier, an error is returned instead.
+func (interp *interpreter) enumFieldValueFromProto(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, opt *descriptorpb.UninterpretedOption, node ast.Node) (protoreflect.EnumNumber, protoreflect.Name, error) {
+	// We don't have to worry about allowing numbers because numbers are never allowed
+	// in uninterpreted values; they are only allowed inside aggregate values (i.e.
+	// message literals).
+	switch {
+	case opt.IdentifierValue != nil:
+		name := protoreflect.Name(opt.GetIdentifierValue())
+		ev := ed.Values().ByName(name)
+		if ev == nil {
+			return 0, "", reporter.Errorf(interp.nodeInfo(node).Start(), "%venum %s has no value named %s", mc, ed.FullName(), name)
+		}
+		return ev.Number(), name, nil
+	default:
+		return 0, "", reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting enum, got %s", mc, optionValueKind(opt))
+	}
 }
 
 // scalarFieldValue resolves the given AST node val as a value whose type is assignable to a
@@ -1494,6 +1720,130 @@ func (interp *interpreter) scalarFieldValue(mc *internal.MessageContext, fldType
 		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting float, got %s", mc, valueKind(v))
 	default:
 		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vunrecognized field type: %s", mc, fldType)
+	}
+}
+
+// scalarFieldValue resolves the given uninterpreted option value as a value whose type is
+// assignable to a field with the given fldType.
+func (interp *interpreter) scalarFieldValueFromProto(mc *internal.MessageContext, fldType descriptorpb.FieldDescriptorProto_Type, opt *descriptorpb.UninterpretedOption, node ast.Node) (interface{}, error) {
+	switch fldType {
+	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
+		if opt.IdentifierValue != nil {
+			switch opt.GetIdentifierValue() {
+			case "true":
+				return true, nil
+			case "false":
+				return false, nil
+			}
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting bool, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
+		if opt.StringValue != nil {
+			return opt.GetStringValue(), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting bytes, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
+		if opt.StringValue != nil {
+			return string(opt.GetStringValue()), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting string, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_INT32, descriptorpb.FieldDescriptorProto_TYPE_SINT32, descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
+		if opt.NegativeIntValue != nil {
+			i := opt.GetNegativeIntValue()
+			if i > math.MaxInt32 || i < math.MinInt32 {
+				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for int32", mc, i)
+			}
+			return int32(i), nil
+		}
+		if opt.PositiveIntValue != nil {
+			ui := opt.GetPositiveIntValue()
+			if ui > math.MaxInt32 {
+				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for int32", mc, ui)
+			}
+			return int32(ui), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting int32, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_UINT32, descriptorpb.FieldDescriptorProto_TYPE_FIXED32:
+		if opt.NegativeIntValue != nil {
+			i := opt.GetNegativeIntValue()
+			if i > math.MaxUint32 || i < 0 {
+				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for uint32", mc, i)
+			}
+			return uint32(i), nil
+		}
+		if opt.PositiveIntValue != nil {
+			ui := opt.GetPositiveIntValue()
+			if ui > math.MaxUint32 {
+				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for uint32", mc, ui)
+			}
+			return uint32(ui), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting uint32, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_INT64, descriptorpb.FieldDescriptorProto_TYPE_SINT64, descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
+		if opt.NegativeIntValue != nil {
+			return opt.GetNegativeIntValue(), nil
+		}
+		if opt.PositiveIntValue != nil {
+			ui := opt.GetPositiveIntValue()
+			if ui > math.MaxInt64 {
+				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for int64", mc, ui)
+			}
+			return int64(ui), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting int64, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_UINT64, descriptorpb.FieldDescriptorProto_TYPE_FIXED64:
+		if opt.NegativeIntValue != nil {
+			i := opt.GetNegativeIntValue()
+			if i < 0 {
+				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for uint64", mc, i)
+			}
+			// should not be possible since i should always be negative...
+			return uint64(i), nil
+		}
+		if opt.PositiveIntValue != nil {
+			return opt.GetPositiveIntValue(), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting uint64, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
+		if opt.IdentifierValue != nil {
+			switch opt.GetIdentifierValue() {
+			case "inf":
+				return math.Inf(1), nil
+			case "nan":
+				return math.NaN(), nil
+			}
+		}
+		if opt.DoubleValue != nil {
+			return opt.GetDoubleValue(), nil
+		}
+		if opt.NegativeIntValue != nil {
+			return float64(opt.GetNegativeIntValue()), nil
+		}
+		if opt.PositiveIntValue != nil {
+			return float64(opt.GetPositiveIntValue()), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting double, got %s", mc, optionValueKind(opt))
+	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT:
+		if opt.IdentifierValue != nil {
+			switch opt.GetIdentifierValue() {
+			case "inf":
+				return float32(math.Inf(1)), nil
+			case "nan":
+				return float32(math.NaN()), nil
+			}
+		}
+		if opt.DoubleValue != nil {
+			return float32(opt.GetDoubleValue()), nil
+		}
+		if opt.NegativeIntValue != nil {
+			return float32(opt.GetNegativeIntValue()), nil
+		}
+		if opt.PositiveIntValue != nil {
+			return float32(opt.GetPositiveIntValue()), nil
+		}
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting float, got %s", mc, optionValueKind(opt))
+	default:
+		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vunrecognized field type: %s", mc, fldType)
 	}
 }
 

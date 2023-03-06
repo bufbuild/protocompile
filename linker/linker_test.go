@@ -257,7 +257,7 @@ func TestLinkerValidation(t *testing.T) {
 			input: map[string]string{
 				"foo.proto": `package fu.baz; message foobar{ optional string a = 1 [default = { a: "abc" }]; }`,
 			},
-			expectedErr: "foo.proto:1:66: field fu.baz.foobar.a: default value cannot be a message",
+			expectedErr: "foo.proto:1:66: field fu.baz.foobar.a: option default: default value cannot be a message",
 		},
 		"failure_string_default_double": {
 			input: map[string]string{

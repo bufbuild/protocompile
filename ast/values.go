@@ -36,6 +36,10 @@ type ValueNode interface {
 	// literal:
 	//   * For array literals, the type returned will be []ValueNode
 	//   * For message literals, the type returned will be []*MessageFieldNode
+	//
+	// If the ValueNode is a NoSourceNode, indicating that there is no actual
+	// source code (and thus not AST information), then this method always
+	// returns nil.
 	Value() interface{}
 }
 
