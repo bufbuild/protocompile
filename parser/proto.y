@@ -24,7 +24,7 @@ import (
 	msgElement   ast.MessageElement
 	msgElements  []ast.MessageElement
 	fld          *ast.FieldNode
-	fldCard      *ast.FieldLabel
+	fldCard      *ast.KeywordNode
 	mapFld       *ast.MapFieldNode
 	mapType      *ast.MapTypeNode
 	grp          *ast.GroupNode
@@ -54,8 +54,7 @@ import (
 	cmpctOpts    *ast.CompactOptionsNode
 	rng          *ast.RangeNode
 	rngs         *rangeList
-	rngStart     *ast.RangeStartNode
-	rngEnd       *ast.RangeEndNode
+	rngEnd       *rangeEnd
 	names        *nameList
 	cid          *identList
 	tid          ast.IdentValueNode
@@ -89,7 +88,7 @@ import (
 %type <optNms>       optionName
 %type <cmpctOpts>    compactOptions
 %type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
-%type <il>           enumValueNumber
+%type <il>           enumValueNumber tagRangeStart enumValueRangeStart
 %type <id>           identifier mapKeyType msgElementName extElementName oneofElementName enumValueName
 %type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent
 %type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
@@ -111,7 +110,6 @@ import (
 %type <resvd>        msgReserved enumReserved reservedNames
 %type <rng>          tagRange enumValueRange
 %type <rngs>         tagRanges enumValueRanges
-%type <rngStart>     enumValueRangeStart tagRangeStart
 %type <rngEnd>       enumValueRangeEnd tagRangeEnd
 %type <ext>          extensionRangeDecl
 %type <en>           enumDecl
@@ -541,10 +539,10 @@ oneofElementTypeIdent : oneofElementIdent {
 	}
 
 fieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
-		$$ = ast.NewFieldNode($1.KeywordNode, $2, $3, $4, $5, nil, $6)
+		$$ = ast.NewFieldNode($1, $2, $3, $4, $5, nil, $6)
 	}
 	| fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewFieldNode($1.KeywordNode, $2, $3, $4, $5, $6, $7)
+		$$ = ast.NewFieldNode($1, $2, $3, $4, $5, $6, $7)
 	}
 	| msgElementTypeIdent identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
@@ -554,13 +552,13 @@ fieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
 	}
 
 fieldCardinality : _REQUIRED {
-		$$ = ast.NewFieldLabel($1.ToKeyword())
+		$$ = $1.ToKeyword()
 	}
 	| _OPTIONAL {
-		$$ = ast.NewFieldLabel($1.ToKeyword())
+		$$ = $1.ToKeyword()
 	}
 	| _REPEATED {
-		$$ = ast.NewFieldLabel($1.ToKeyword())
+		$$ = $1.ToKeyword()
 	}
 
 compactOptions: '[' compactOptionDecls ']' {
@@ -582,10 +580,10 @@ compactOption: optionName '=' optionValue {
 	}
 
 groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageElements '}' {
-		$$ = ast.NewGroupNode($1.KeywordNode, $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8)
+		$$ = ast.NewGroupNode($1, $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8)
 	}
 	| fieldCardinality _GROUP identifier '=' _INT_LIT compactOptions '{' messageElements '}' {
-		$$ = ast.NewGroupNode($1.KeywordNode, $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9)
+		$$ = ast.NewGroupNode($1, $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9)
 	}
 
 oneofDecl : _ONEOF identifier '{' oneofElements '}' {
@@ -681,25 +679,25 @@ tagRanges : tagRange {
 	}
 
 tagRange : tagRangeStart {
-		$$ = ast.NewRangeNode($1.StartVal, nil, nil, nil)
+		$$ = ast.NewRangeNode($1, nil, nil, nil)
 	}
 	| tagRangeStart _TO tagRangeEnd {
-		if $3.IsMax() {
-			$$ = ast.NewRangeNode($1.StartVal, $2.ToKeyword(), nil, $3.Max)
+		if $3.isMax() {
+			$$ = ast.NewRangeNode($1, $2.ToKeyword(), nil, $3.max)
 		} else {
-			$$ = ast.NewRangeNode($1.StartVal, $2.ToKeyword(), $3.EndVal, nil)
+			$$ = ast.NewRangeNode($1, $2.ToKeyword(), $3.endVal, nil)
 		}
 	}
 
 tagRangeStart : _INT_LIT {
-		$$ = ast.NewRangeStartNode($1)
+		$$ = $1
 	}
 
 tagRangeEnd : _INT_LIT {
-		$$ = ast.NewRangeEndNode($1, nil)
+		$$ = &rangeEnd{$1, nil}
 	}
 	| _MAX {
-		$$ = ast.NewRangeEndNode(nil, $1.ToKeyword())
+		$$ = &rangeEnd{nil, $1.ToKeyword()}
 	}
 
 enumValueRanges : enumValueRange {
@@ -710,25 +708,25 @@ enumValueRanges : enumValueRange {
 	}
 
 enumValueRange : enumValueRangeStart {
-		$$ = ast.NewRangeNode($1.StartVal, nil, nil, nil)
+		$$ = ast.NewRangeNode($1, nil, nil, nil)
 	}
 	| enumValueRangeStart _TO enumValueRangeEnd {
-		if $3.IsMax() {
-       			$$ = ast.NewRangeNode($1.StartVal, $2.ToKeyword(), nil, $3.Max)
+		if $3.isMax() {
+       			$$ = ast.NewRangeNode($1, $2.ToKeyword(), nil, $3.max)
              	} else {
-               		$$ = ast.NewRangeNode($1.StartVal, $2.ToKeyword(), $3.EndVal, nil)
+               		$$ = ast.NewRangeNode($1, $2.ToKeyword(), $3.endVal, nil)
                 }
 	}
 
 enumValueRangeStart : enumValueNumber {
-		$$ = ast.NewRangeStartNode($1)
+		$$ = $1
 	}
 
 enumValueRangeEnd : enumValueNumber {
-		$$ = ast.NewRangeEndNode($1, nil)
+		$$ = &rangeEnd{$1, nil}
 	}
 	| _MAX {
-		$$ = ast.NewRangeEndNode(nil, $1.ToKeyword())
+		$$ = &rangeEnd{nil, $1.ToKeyword()}
 	}
 
 enumValueNumber : _INT_LIT {

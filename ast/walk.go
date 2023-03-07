@@ -125,10 +125,6 @@ func Visit(n Node, v Visitor) error {
 		return v.VisitReservedNode(n)
 	case *RangeNode:
 		return v.VisitRangeNode(n)
-	case *RangeStartNode:
-		return v.VisitRangeStartNode(n)
-	case *RangeEndNode:
-		return v.VisitRangeEndNode(n)
 	case *FieldNode:
 		return v.VisitFieldNode(n)
 	case *FieldLabel:
@@ -294,10 +290,6 @@ type Visitor interface {
 	// VisitRangeNode is invoked when visiting a *RangeNode in the AST.
 	VisitRangeNode(*RangeNode) error
 	// VisitRangeStartNode is invoked when visiting a *RangeStartNode in the AST.
-	VisitRangeStartNode(*RangeStartNode) error
-	// VisitRangeEndNode is invoked when visiting a *RangeEndNode in the AST.
-	VisitRangeEndNode(*RangeEndNode) error
-	// VisitFieldNode is invoked when visiting a *FieldNode in the AST.
 	VisitFieldNode(*FieldNode) error
 	// VisitFieldLabelNode is invoked when visiting a *FieldLabel in the AST.
 	VisitFieldLabelNode(*FieldLabel) error
@@ -410,14 +402,6 @@ func (n NoOpVisitor) VisitReservedNode(_ *ReservedNode) error {
 }
 
 func (n NoOpVisitor) VisitRangeNode(_ *RangeNode) error {
-	return nil
-}
-
-func (n NoOpVisitor) VisitRangeStartNode(_ *RangeStartNode) error {
-	return nil
-}
-
-func (n NoOpVisitor) VisitRangeEndNode(_ *RangeEndNode) error {
 	return nil
 }
 
@@ -568,8 +552,6 @@ type SimpleVisitor struct {
 	DoVisitExtensionRangeNode        func(*ExtensionRangeNode) error
 	DoVisitReservedNode              func(*ReservedNode) error
 	DoVisitRangeNode                 func(*RangeNode) error
-	DoVisitRangeStartNode            func(*RangeStartNode) error
-	DoVisitRangeEndNode              func(*RangeEndNode) error
 	DoVisitFieldNode                 func(*FieldNode) error
 	DoVisitFieldLabelNode            func(*FieldLabel) error
 	DoVisitGroupNode                 func(*GroupNode) error
@@ -761,20 +743,6 @@ func (b *SimpleVisitor) VisitReservedNode(node *ReservedNode) error {
 func (b *SimpleVisitor) VisitRangeNode(node *RangeNode) error {
 	if b.DoVisitRangeNode != nil {
 		return b.DoVisitRangeNode(node)
-	}
-	return b.visitInterface(node)
-}
-
-func (b *SimpleVisitor) VisitRangeStartNode(node *RangeStartNode) error {
-	if b.DoVisitRangeStartNode != nil {
-		return b.DoVisitRangeStartNode(node)
-	}
-	return b.visitInterface(node)
-}
-
-func (b *SimpleVisitor) VisitRangeEndNode(node *RangeEndNode) error {
-	if b.DoVisitRangeEndNode != nil {
-		return b.DoVisitRangeEndNode(node)
 	}
 	return b.visitInterface(node)
 }

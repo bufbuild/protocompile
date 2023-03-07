@@ -156,14 +156,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*RangeNode"
 			return nil
 		},
-		DoVisitRangeStartNode: func(*RangeStartNode) error {
-			*methodCalled = "*RangeStartNode"
-			return nil
-		},
-		DoVisitRangeEndNode: func(*RangeEndNode) error {
-			*methodCalled = "*RangeEndNode"
-			return nil
-		},
 		DoVisitReservedNode: func(*ReservedNode) error {
 			*methodCalled = "*ReservedNode"
 			return nil
@@ -334,12 +326,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 		},
 		{
 			DoVisitRangeNode: v.DoVisitRangeNode,
-		},
-		{
-			DoVisitRangeStartNode: v.DoVisitRangeStartNode,
-		},
-		{
-			DoVisitRangeEndNode: v.DoVisitRangeEndNode,
 		},
 		{
 			DoVisitReservedNode: v.DoVisitReservedNode,
