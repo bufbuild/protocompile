@@ -48,10 +48,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*FieldNode"
 			return nil
 		},
-		DoVisitFieldLabelNode: func(*FieldLabel) error {
-			*methodCalled = "*FieldLabel"
-			return nil
-		},
 		DoVisitGroupNode: func(*GroupNode) error {
 			*methodCalled = "*GroupNode"
 			return nil
@@ -245,9 +241,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 		},
 		{
 			DoVisitFieldNode: v.DoVisitFieldNode,
-		},
-		{
-			DoVisitFieldLabelNode: v.DoVisitFieldLabelNode,
 		},
 		{
 			DoVisitGroupNode: v.DoVisitGroupNode,

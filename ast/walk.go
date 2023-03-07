@@ -127,8 +127,6 @@ func Visit(n Node, v Visitor) error {
 		return v.VisitRangeNode(n)
 	case *FieldNode:
 		return v.VisitFieldNode(n)
-	case *FieldLabel:
-		return v.VisitFieldLabelNode(n)
 	case *GroupNode:
 		return v.VisitGroupNode(n)
 	case *MapFieldNode:
@@ -289,10 +287,8 @@ type Visitor interface {
 	VisitReservedNode(*ReservedNode) error
 	// VisitRangeNode is invoked when visiting a *RangeNode in the AST.
 	VisitRangeNode(*RangeNode) error
-	// VisitRangeStartNode is invoked when visiting a *RangeStartNode in the AST.
+	// VisitFieldNode is invoked when visiting a *FieldNode in the AST.
 	VisitFieldNode(*FieldNode) error
-	// VisitFieldLabelNode is invoked when visiting a *FieldLabel in the AST.
-	VisitFieldLabelNode(*FieldLabel) error
 	// VisitGroupNode is invoked when visiting a *GroupNode in the AST.
 	VisitGroupNode(*GroupNode) error
 	// VisitMapFieldNode is invoked when visiting a *MapFieldNode in the AST.
@@ -406,10 +402,6 @@ func (n NoOpVisitor) VisitRangeNode(_ *RangeNode) error {
 }
 
 func (n NoOpVisitor) VisitFieldNode(_ *FieldNode) error {
-	return nil
-}
-
-func (n NoOpVisitor) VisitFieldLabelNode(_ *FieldLabel) error {
 	return nil
 }
 
@@ -553,7 +545,6 @@ type SimpleVisitor struct {
 	DoVisitReservedNode              func(*ReservedNode) error
 	DoVisitRangeNode                 func(*RangeNode) error
 	DoVisitFieldNode                 func(*FieldNode) error
-	DoVisitFieldLabelNode            func(*FieldLabel) error
 	DoVisitGroupNode                 func(*GroupNode) error
 	DoVisitMapFieldNode              func(*MapFieldNode) error
 	DoVisitMapTypeNode               func(*MapTypeNode) error
@@ -750,13 +741,6 @@ func (b *SimpleVisitor) VisitRangeNode(node *RangeNode) error {
 func (b *SimpleVisitor) VisitFieldNode(node *FieldNode) error {
 	if b.DoVisitFieldNode != nil {
 		return b.DoVisitFieldNode(node)
-	}
-	return b.visitInterface(node)
-}
-
-func (b *SimpleVisitor) VisitFieldLabelNode(node *FieldLabel) error {
-	if b.DoVisitFieldLabelNode != nil {
-		return b.DoVisitFieldLabelNode(node)
 	}
 	return b.visitInterface(node)
 }

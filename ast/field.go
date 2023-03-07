@@ -114,7 +114,7 @@ func NewFieldNode(label *KeywordNode, fieldType IdentValueNode, name *IdentNode,
 		compositeNode: compositeNode{
 			children: children,
 		},
-		Label:     *NewFieldLabel(label),
+		Label:     newFieldLabel(label),
 		FldType:   fieldType,
 		Name:      name,
 		Equals:    equals,
@@ -169,13 +169,13 @@ type FieldLabel struct {
 	Required bool
 }
 
-func NewFieldLabel(lbl *KeywordNode) *FieldLabel {
+func newFieldLabel(lbl *KeywordNode) FieldLabel {
 	repeated, required := false, false
 	if lbl != nil {
 		repeated = lbl.Val == "repeated"
 		required = lbl.Val == "required"
 	}
-	return &FieldLabel{
+	return FieldLabel{
 		KeywordNode: lbl,
 		Repeated:    repeated,
 		Required:    required,
@@ -272,7 +272,7 @@ func NewGroupNode(label *KeywordNode, keyword *KeywordNode, name *IdentNode, equ
 		compositeNode: compositeNode{
 			children: children,
 		},
-		Label:   *NewFieldLabel(label),
+		Label:   newFieldLabel(label),
 		Keyword: keyword,
 		Name:    name,
 		Equals:  equals,
