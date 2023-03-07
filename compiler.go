@@ -435,7 +435,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 		}
 	}
 
-	var descriptorProtoRes *result
+	var overrideDescriptorProto linker.File
 	if len(imports) > 0 {
 		t.r.setBlockedOn(imports)
 
@@ -457,6 +457,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 			results[i] = res
 		}
 		deps = make([]linker.File, len(results))
+		var descriptorProtoRes *result
 		if wantsDescriptorProto {
 			descriptorProtoRes = t.e.compile(ctx, descriptorProtoPath)
 		}
@@ -484,7 +485,17 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 				return nil, ctx.Err()
 			}
 		}
-
+		if descriptorProtoRes != nil {
+			select {
+			case <-descriptorProtoRes.ready:
+				// descriptor.proto wasn't explicitly imported, so we can ignore a failure
+				if descriptorProtoRes.err == nil {
+					overrideDescriptorProto = descriptorProtoRes.res
+				}
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
+		}
 		// all deps resolved
 		t.r.setBlockedOn(nil)
 		// reacquire semaphore so we can proceed
@@ -494,7 +505,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 		t.released = false
 	}
 
-	return t.link(ctx, parseRes, deps, descriptorProtoRes)
+	return t.link(parseRes, deps, overrideDescriptorProto)
 }
 
 func (e *executor) checkForDependencyCycle(res *result, sequence []string, pos ast.SourcePos, checked map[string]struct{}) error {
@@ -553,23 +564,15 @@ func findImportPos(res parser.Result, dep string) ast.SourcePos {
 	return ast.UnknownPos(res.FileNode().Name())
 }
 
-func (t *task) link(ctx context.Context, parseRes parser.Result, deps linker.Files, descriptorProtoRes *result) (linker.File, error) {
+func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescriptorProtoRes linker.File) (linker.File, error) {
 	file, err := linker.Link(parseRes, deps, t.e.sym, t.h)
 	if err != nil {
 		return nil, err
 	}
 
 	var interpretOpts []options.InterpreterOption
-	if descriptorProtoRes != nil {
-		select {
-		case <-descriptorProtoRes.ready:
-			// descriptor.proto wasn't explicitly imported, so we can ignore a failure
-			if descriptorProtoRes.err == nil {
-				interpretOpts = []options.InterpreterOption{options.WithOverrideDescriptorProto(descriptorProtoRes.res)}
-			}
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		}
+	if overrideDescriptorProtoRes != nil {
+		interpretOpts = []options.InterpreterOption{options.WithOverrideDescriptorProto(overrideDescriptorProtoRes)}
 	}
 
 	optsIndex, err := options.InterpretOptions(file, t.h, interpretOpts...)
