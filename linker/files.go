@@ -218,9 +218,11 @@ func (r fileResolver) FindMessageByName(message protoreflect.FullName) (protoref
 	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.MessageType, error) {
 		d := f.FindDescriptorByName(message)
 		if d != nil {
-			if md, ok := d.(protoreflect.MessageDescriptor); ok {
-				return dynamicpb.NewMessageType(md), nil
+			md, ok := d.(protoreflect.MessageDescriptor)
+			if !ok {
+				return nil, fmt.Errorf("%q is %s, not a message", message, descriptorTypeWithArticle(d))
 			}
+			return dynamicpb.NewMessageType(md), nil
 		}
 		return nil, protoregistry.NotFound
 	})
@@ -240,12 +242,14 @@ func (r fileResolver) FindExtensionByName(field protoreflect.FullName) (protoref
 	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.ExtensionType, error) {
 		d := f.FindDescriptorByName(field)
 		if d != nil {
-			if extd, ok := d.(protoreflect.ExtensionTypeDescriptor); ok {
+			fld, ok := d.(protoreflect.FieldDescriptor)
+			if !ok || !fld.IsExtension() {
+				return nil, fmt.Errorf("%q is %s, not an extension", field, descriptorTypeWithArticle(d))
+			}
+			if extd, ok := fld.(protoreflect.ExtensionTypeDescriptor); ok {
 				return extd.Type(), nil
 			}
-			if fld, ok := d.(protoreflect.FieldDescriptor); ok && fld.IsExtension() {
-				return dynamicpb.NewExtensionType(fld), nil
-			}
+			return dynamicpb.NewExtensionType(fld), nil
 		}
 		return nil, protoregistry.NotFound
 	})

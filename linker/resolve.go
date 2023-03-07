@@ -15,6 +15,7 @@
 package linker
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -60,8 +61,13 @@ func resolveInFile[T any](f File, publicImportsOnly bool, checked []string, fn f
 
 	res, err := fn(f)
 	if err == nil {
+		// found it
 		return res, nil
 	}
+	if !errors.Is(err, protoregistry.NotFound) {
+		return zero, err
+	}
+
 	imports := f.Imports()
 	for i, l := 0, imports.Len(); i < l; i++ {
 		imp := imports.Get(i)
@@ -69,14 +75,18 @@ func resolveInFile[T any](f File, publicImportsOnly bool, checked []string, fn f
 			continue
 		}
 		res, err := resolveInFile(f.FindImportByPath(imp.Path()), true, checked, fn)
-		if err == nil {
-			if !imp.IsPublic {
-				if r, ok := f.(*result); ok {
-					r.markUsed(imp.Path())
-				}
-			}
-			return res, nil
+		if errors.Is(err, protoregistry.NotFound) {
+			continue
 		}
+		if err != nil {
+			return zero, err
+		}
+		if !imp.IsPublic {
+			if r, ok := f.(*result); ok {
+				r.markUsed(imp.Path())
+			}
+		}
+		return res, nil
 	}
 	return zero, err
 }

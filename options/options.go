@@ -27,6 +27,7 @@ package options
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -35,6 +36,7 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 
@@ -215,15 +217,18 @@ func resolveDescriptor[T protoreflect.Descriptor](res linker.Resolver, name stri
 	return zero
 }
 
-func (interp *interpreter) resolveExtensionType(name string) protoreflect.ExtensionTypeDescriptor {
+func (interp *interpreter) resolveExtensionType(name string) (protoreflect.ExtensionTypeDescriptor, error) {
 	if interp.resolver == nil {
-		return nil
+		return nil, protoregistry.NotFound
 	}
 	if len(name) > 0 && name[0] == '.' {
 		name = name[1:]
 	}
-	ext, _ := interp.resolver.FindExtensionByName(protoreflect.FullName(name))
-	return ext.TypeDescriptor()
+	ext, err := interp.resolver.FindExtensionByName(protoreflect.FullName(name))
+	if err != nil {
+		return nil, err
+	}
+	return ext.TypeDescriptor(), nil
 }
 
 func (interp *interpreter) resolveOptionsType(name string) protoreflect.MessageDescriptor {
@@ -1005,11 +1010,14 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 		if extName[0] == '.' {
 			extName = extName[1:] /* skip leading dot */
 		}
-		fld = interp.resolveExtensionType(extName)
-		if fld == nil {
+		var err error
+		fld, err = interp.resolveExtensionType(extName)
+		if errors.Is(err, protoregistry.NotFound) {
 			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
 				"%vunrecognized extension %s of %s",
 				mc, extName, msg.Descriptor().FullName())
+		} else if err != nil {
+			return nil, interp.reporter.HandleErrorWithPos(interp.nodeInfo(node).Start(), err)
 		}
 		if fld.ContainingMessage().FullName() != msg.Descriptor().FullName() {
 			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
@@ -1586,19 +1594,20 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			fdm.Set(valueDescriptor, protoreflect.ValueOfBytes(b))
 		} else {
 			var ffld protoreflect.FieldDescriptor
+			var err error
 			if fieldNode.Name.IsExtension() {
 				n := interp.file.ResolveMessageLiteralExtensionName(fieldNode.Name.Name)
 				if n == "" {
 					// this should not be possible!
 					n = string(fieldNode.Name.Name.AsIdentifier())
 				}
-				ffld = interp.resolveExtensionType(n)
-				if ffld == nil {
+				ffld, err = interp.resolveExtensionType(n)
+				if errors.Is(err, protoregistry.NotFound) {
 					// may need to qualify with package name
 					// (this should not be necessary!)
 					pkg := mc.File.FileDescriptorProto().GetPackage()
 					if pkg != "" {
-						ffld = interp.resolveExtensionType(pkg + "." + n)
+						ffld, err = interp.resolveExtensionType(pkg + "." + n)
 					}
 				}
 			} else {
@@ -1611,19 +1620,24 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfield %s not found (did you mean the group named %s?)", mc, fieldNode.Name.Value(), ffld.Message().Name())
 				}
 				if ffld == nil {
+					err = protoregistry.NotFound
 					// could be a group name
 					for i := 0; i < fmd.Fields().Len(); i++ {
 						fd := fmd.Fields().Get(i)
 						if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(fieldNode.Name.Value()) {
 							// found it!
 							ffld = fd
+							err = nil
 							break
 						}
 					}
 				}
 			}
-			if ffld == nil {
-				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(), "%vfield %s not found", mc, string(fieldNode.Name.Name.AsIdentifier()))
+			if errors.Is(err, protoregistry.NotFound) {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name).Start(),
+					"%vfield %s not found", mc, string(fieldNode.Name.Name.AsIdentifier()))
+			} else if err != nil {
+				return interpretedFieldValue{}, reporter.Error(interp.nodeInfo(fieldNode.Name).Start(), err)
 			}
 			if fieldNode.Sep == nil && ffld.Message() == nil {
 				// If there is no separator, the field type should be a message.
