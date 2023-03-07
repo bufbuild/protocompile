@@ -12,3 +12,6 @@ updates:
     directory: "/internal/tools/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Versions after v1.14.1 aren't relevant for the benchmark
+      - dependency-name: "github.com/jhump/protoreflect"
