@@ -57,8 +57,9 @@ import (
 	cid          *identList
 	tid          ast.IdentValueNode
 	sl           *valueList
-	msgLitFld    *ast.MessageFieldNode
 	msgLitFlds   *messageFieldList
+	msgLitFld    *ast.MessageFieldNode
+	msgLitFldEntry *messageFieldEntry
 	v            ast.ValueNode
 	il           ast.IntValueNode
 	str          *stringList
@@ -91,8 +92,9 @@ import (
 %type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent
 %type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
 %type <sl>           listElements messageLiterals
-%type <msgLitFld>    messageLiteralField
 %type <msgLitFlds>   messageLiteralFields messageTextFormat
+%type <msgLitFld>    messageLiteralField
+%type <msgLitFldEntry> messageLiteralFieldEntry
 %type <fld>          fieldDecl oneofFieldDecl
 %type <oo>           oneofDecl
 %type <grp>          groupDecl oneofGroupDecl
@@ -343,60 +345,52 @@ messageLiteralWithBraces : '{' messageTextFormat '}' {
 
 messageTextFormat : messageLiteralFields
 
-messageLiteralFields : messageLiteralField ',' messageLiteralFields {
+messageLiteralFields : messageLiteralFieldEntry {
 		if $1 != nil {
-			entry := &messageFieldEntry{$1, $2}
-			$$ = &messageFieldList{entry, $3}
+			$$ = &messageFieldList{$1, nil}
 		} else {
 			$$ = nil
 		}
 	}
-	| messageLiteralField ';' messageLiteralFields {
+	| messageLiteralFieldEntry messageLiteralFields {
 		if $1 != nil {
-			entry := &messageFieldEntry{$1, $2}
-                	$$ = &messageFieldList{entry, $3}
-                } else {
-                	$$ = nil
-       		}
-	}
-	| messageLiteralField messageLiteralFields {
-		if $1 != nil {
-			entry := &messageFieldEntry{$1, nil}
-                	$$ = &messageFieldList{entry, $2}
+			$$ = &messageFieldList{$1, $2}
 		} else {
-			$$ = nil
+			$$ = $2
 		}
 	}
-	| messageLiteralField ',' {
+	| {
+		$$ = nil
+	}
+
+messageLiteralFieldEntry : messageLiteralField {
+                if $1 != nil {
+                    	$$ = &messageFieldEntry{$1, nil}
+               } else {
+                        $$ = nil
+               }
+        }
+        | messageLiteralField ',' {
 		if $1 != nil {
-			entry := &messageFieldEntry{$1, $2}
-                	$$ = &messageFieldList{entry, nil}
+			$$ = &messageFieldEntry{$1, $2}
 		} else {
 			$$ = nil
 		}
 	}
 	| messageLiteralField ';' {
 		if $1 != nil {
-			entry := &messageFieldEntry{$1, $2}
-			$$ = &messageFieldList{entry, nil}
-		} else {
-			$$ = nil
-		}
-	}
-	| messageLiteralField {
-		if $1 != nil {
-			entry := &messageFieldEntry{$1, nil}
-			$$ = &messageFieldList{entry, nil}
-		} else {
-			$$ = nil
-		}
+         		$$ = &messageFieldEntry{$1, $2}
+              	} else {
+               		$$ = nil
+               	}
 	}
 	| error ',' {
-       		$$ = nil
-        }
-        | error ';' {
-       		$$ = nil
-       	}
+		$$ = nil
+	} error ';' {
+		$$ = nil
+	} error {
+		$$ = nil
+	}
 
 messageLiteralField : messageLiteralFieldName ':' value {
 		if $1 != nil {
