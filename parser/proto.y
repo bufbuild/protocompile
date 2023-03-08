@@ -24,7 +24,6 @@ import (
 	msgElement   ast.MessageElement
 	msgElements  []ast.MessageElement
 	fld          *ast.FieldNode
-	fldCard      *ast.KeywordNode
 	mapFld       *ast.MapFieldNode
 	mapType      *ast.MapTypeNode
 	grp          *ast.GroupNode
@@ -54,7 +53,6 @@ import (
 	cmpctOpts    *ast.CompactOptionsNode
 	rng          *ast.RangeNode
 	rngs         *rangeList
-	rngEnd       *rangeEnd
 	names        *nameList
 	cid          *identList
 	tid          ast.IdentValueNode
@@ -88,15 +86,14 @@ import (
 %type <optNms>       optionName
 %type <cmpctOpts>    compactOptions
 %type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
-%type <il>           enumValueNumber tagRangeStart enumValueRangeStart
-%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName enumValueName
+%type <il>           enumValueNumber
+%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName enumValueName fieldCardinality
 %type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent
 %type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
 %type <sl>           listElements messageLiterals
 %type <msgLitFld>    messageLiteralField
 %type <msgLitFlds>   messageLiteralFields messageTextFormat
 %type <fld>          fieldDecl oneofFieldDecl
-%type <fldCard>      fieldCardinality
 %type <oo>           oneofDecl
 %type <grp>          groupDecl oneofGroupDecl
 %type <mapFld>       mapFieldDecl
@@ -110,7 +107,6 @@ import (
 %type <resvd>        msgReserved enumReserved reservedNames
 %type <rng>          tagRange enumValueRange
 %type <rngs>         tagRanges enumValueRanges
-%type <rngEnd>       enumValueRangeEnd tagRangeEnd
 %type <ext>          extensionRangeDecl
 %type <en>           enumDecl
 %type <enElement>    enumElement
@@ -338,13 +334,14 @@ messageLiteralWithBraces : '{' messageTextFormat '}' {
 		fields, delims := $2.toNodes()
 		$$ = ast.NewMessageLiteralNode($1, fields, delims, $3)
 	}
+	| '{' '}' {
+		$$ = ast.NewMessageLiteralNode($1, nil, nil, $2)
+	}
 	| '{' error '}' {
-	    $$ = nil
+		$$ = nil
 	}
 
-messageTextFormat : messageLiteralFields {
-		$$ = $1
-	}
+messageTextFormat : messageLiteralFields
 
 messageLiteralFields : messageLiteralField ',' messageLiteralFields {
 		if $1 != nil {
@@ -394,9 +391,12 @@ messageLiteralFields : messageLiteralField ',' messageLiteralFields {
 			$$ = nil
 		}
 	}
-	| {
-		$$ = nil
-	}
+	| error ',' {
+       		$$ = nil
+        }
+        | error ';' {
+       		$$ = nil
+       	}
 
 messageLiteralField : messageLiteralFieldName ':' value {
 		if $1 != nil {
@@ -411,12 +411,6 @@ messageLiteralField : messageLiteralFieldName ':' value {
 		} else {
 			$$ = nil
 		}
-	}
-	| error ',' {
-		$$ = nil
-	}
-	| error ';' {
-		$$ = nil
 	}
 	| error {
 		$$ = nil
@@ -435,36 +429,20 @@ messageLiteralFieldName : identifier {
 		$$ = nil
 	}
 
-value : scalarValue {
-		$$ = $1
-	}
-	| messageLiteral {
-		$$ = $1
-	}
-	| listLiteral {
-		$$ = $1
-	}
+value : scalarValue
+	| messageLiteral
+	| listLiteral
 
-messageValue : messageLiteral {
-		$$ = $1
-	}
-	| listOfMessagesLiteral {
-		$$ = $1
-	}
+messageValue : messageLiteral
+	| listOfMessagesLiteral
 
-messageLiterals : messageLiteral ',' messageLiterals {
-		$$ = &valueList{$1, $2, $3}
-	}
-	| messageLiteral {
-		$$ = &valueList{$1, nil, nil}
-	}
-
-messageLiteral : messageLiteralWithBraces {
-		$$ = $1
-	}
+messageLiteral : messageLiteralWithBraces
 	| '<' messageTextFormat '>' {
 		fields, delims := $2.toNodes()
 		$$ = ast.NewMessageLiteralNode($1, fields, delims, $3)
+	}
+	| '<' '>' {
+		$$ = ast.NewMessageLiteralNode($1, nil, nil, $2)
 	}
 	| '<' error '>' {
 		$$ = nil
@@ -488,12 +466,8 @@ listElements : listElement ',' listElements {
 		$$ = &valueList{$1, nil, nil}
 	}
 
-listElement : scalarValue {
-		$$ = $1
-	}
-	| messageLiteral {
-		$$ = $1
-	}
+listElement : scalarValue
+	| messageLiteral
 
 listOfMessagesLiteral : '[' messageLiterals ']' {
 		if $2 != nil {
@@ -508,6 +482,13 @@ listOfMessagesLiteral : '[' messageLiterals ']' {
 	}
 	| '[' error ']' {
 		$$ = nil
+	}
+
+messageLiterals : messageLiteral ',' messageLiterals {
+		$$ = &valueList{$1, $2, $3}
+	}
+	| messageLiteral {
+		$$ = &valueList{$1, nil, nil}
 	}
 
 typeName : qualifiedIdentifier {
@@ -539,10 +520,10 @@ oneofElementTypeIdent : oneofElementIdent {
 	}
 
 fieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
-		$$ = ast.NewFieldNode($1, $2, $3, $4, $5, nil, $6)
+		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
 	}
 	| fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewFieldNode($1, $2, $3, $4, $5, $6, $7)
+		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
 	}
 	| msgElementTypeIdent identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
@@ -551,15 +532,9 @@ fieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
-fieldCardinality : _REQUIRED {
-		$$ = $1.ToKeyword()
-	}
-	| _OPTIONAL {
-		$$ = $1.ToKeyword()
-	}
-	| _REPEATED {
-		$$ = $1.ToKeyword()
-	}
+fieldCardinality : _REQUIRED
+	| _OPTIONAL
+	| _REPEATED
 
 compactOptions: '[' compactOptionDecls ']' {
 		opts, commas := $2.toNodes()
@@ -580,10 +555,10 @@ compactOption: optionName '=' optionValue {
 	}
 
 groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageElements '}' {
-		$$ = ast.NewGroupNode($1, $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8)
+		$$ = ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8)
 	}
 	| fieldCardinality _GROUP identifier '=' _INT_LIT compactOptions '{' messageElements '}' {
-		$$ = ast.NewGroupNode($1, $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9)
+		$$ = ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9)
 	}
 
 oneofDecl : _ONEOF identifier '{' oneofElements '}' {
@@ -678,26 +653,14 @@ tagRanges : tagRange {
 		$$ = &rangeList{$1, $2, $3}
 	}
 
-tagRange : tagRangeStart {
+tagRange : _INT_LIT {
 		$$ = ast.NewRangeNode($1, nil, nil, nil)
 	}
-	| tagRangeStart _TO tagRangeEnd {
-		if $3.isMax() {
-			$$ = ast.NewRangeNode($1, $2.ToKeyword(), nil, $3.max)
-		} else {
-			$$ = ast.NewRangeNode($1, $2.ToKeyword(), $3.endVal, nil)
-		}
+	| _INT_LIT _TO _INT_LIT {
+		$$ = ast.NewRangeNode($1, $2.ToKeyword(), $3, nil)
 	}
-
-tagRangeStart : _INT_LIT {
-		$$ = $1
-	}
-
-tagRangeEnd : _INT_LIT {
-		$$ = &rangeEnd{$1, nil}
-	}
-	| _MAX {
-		$$ = &rangeEnd{nil, $1.ToKeyword()}
+	| _INT_LIT _TO _MAX {
+		$$ = ast.NewRangeNode($1, $2.ToKeyword(), nil, $3.ToKeyword())
 	}
 
 enumValueRanges : enumValueRange {
@@ -707,26 +670,14 @@ enumValueRanges : enumValueRange {
 		$$ = &rangeList{$1, $2, $3}
 	}
 
-enumValueRange : enumValueRangeStart {
+enumValueRange : enumValueNumber {
 		$$ = ast.NewRangeNode($1, nil, nil, nil)
 	}
-	| enumValueRangeStart _TO enumValueRangeEnd {
-		if $3.isMax() {
-       			$$ = ast.NewRangeNode($1, $2.ToKeyword(), nil, $3.max)
-             	} else {
-               		$$ = ast.NewRangeNode($1, $2.ToKeyword(), $3.endVal, nil)
-                }
+	| enumValueNumber _TO enumValueNumber {
+		$$ = ast.NewRangeNode($1, $2.ToKeyword(), $3, nil)
 	}
-
-enumValueRangeStart : enumValueNumber {
-		$$ = $1
-	}
-
-enumValueRangeEnd : enumValueNumber {
-		$$ = &rangeEnd{$1, nil}
-	}
-	| _MAX {
-		$$ = &rangeEnd{nil, $1.ToKeyword()}
+	| enumValueNumber _TO _MAX {
+		$$ = ast.NewRangeNode($1, $2.ToKeyword(), nil, $3.ToKeyword())
 	}
 
 enumValueNumber : _INT_LIT {

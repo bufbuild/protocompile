@@ -109,15 +109,6 @@ func (list *rangeList) toNodes() ([]*ast.RangeNode, []*ast.RuneNode) {
 	return ranges, commas
 }
 
-type rangeEnd struct {
-	endVal ast.IntValueNode
-	max    *ast.KeywordNode
-}
-
-func (r *rangeEnd) isMax() bool {
-	return r.max != nil
-}
-
 type valueList struct {
 	val   ast.ValueNode
 	comma *ast.RuneNode
