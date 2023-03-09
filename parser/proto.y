@@ -95,7 +95,7 @@ import (
 %type <msgLitFlds>   messageLiteralFields messageTextFormat
 %type <msgLitFld>    messageLiteralField
 %type <msgLitFldEntry> messageLiteralFieldEntry
-%type <fld>          fieldDecl oneofFieldDecl
+%type <fld>          messageFieldDecl oneofFieldDecl extensionFieldDecl
 %type <oo>           oneofDecl
 %type <grp>          groupDecl oneofGroupDecl
 %type <mapFld>       mapFieldDecl
@@ -336,9 +336,6 @@ messageLiteralWithBraces : '{' messageTextFormat '}' {
 		fields, delims := $2.toNodes()
 		$$ = ast.NewMessageLiteralNode($1, fields, delims, $3)
 	}
-	| '{' '}' {
-		$$ = ast.NewMessageLiteralNode($1, nil, nil, $2)
-	}
 	| '{' error '}' {
 		$$ = nil
 	}
@@ -386,9 +383,11 @@ messageLiteralFieldEntry : messageLiteralField {
 	}
 	| error ',' {
 		$$ = nil
-	} error ';' {
+	}
+	| error ';' {
 		$$ = nil
-	} error {
+	}
+	| error {
 		$$ = nil
 	}
 
@@ -405,9 +404,6 @@ messageLiteralField : messageLiteralFieldName ':' value {
 		} else {
 			$$ = nil
 		}
-	}
-	| error {
-		$$ = nil
 	}
 
 messageLiteralFieldName : identifier {
@@ -511,19 +507,6 @@ oneofElementTypeIdent : oneofElementIdent {
 	}
 	| '.' qualifiedIdentifier {
 		$$ = $2.toIdentValueNode($1)
-	}
-
-fieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
-		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
-	}
-	| fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
-	}
-	| msgElementTypeIdent identifier '=' _INT_LIT ';' {
-		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
-	}
-	| msgElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
 fieldCardinality : _REQUIRED
@@ -775,7 +758,7 @@ messageElements : messageElements messageElement {
 		$$ = nil
 	}
 
-messageElement : fieldDecl {
+messageElement : messageFieldDecl {
 		$$ = $1
 	}
 	| enumDecl {
@@ -815,6 +798,19 @@ messageElement : fieldDecl {
 		$$ = nil
 	}
 
+messageFieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
+		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
+	}
+	| fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
+		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
+	}
+	| msgElementTypeIdent identifier '=' _INT_LIT ';' {
+		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
+	}
+	| msgElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
+	}
+
 extensionDecl : _EXTEND typeName '{' extensionElements '}' {
 		$$ = ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
@@ -837,7 +833,7 @@ extensionElements : extensionElements extensionElement {
 		$$ = nil
 	}
 
-extensionElement : fieldDecl {
+extensionElement : extensionFieldDecl {
 		$$ = $1
 	}
 	| groupDecl {
@@ -849,6 +845,19 @@ extensionElement : fieldDecl {
 	| error {
 		$$ = nil
 	}
+
+extensionFieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
+                    $$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
+	}
+        | fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
+        	$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
+        }
+        | extElementTypeIdent identifier '=' _INT_LIT ';' {
+        	$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
+        }
+    	| extElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
+        }
 
 serviceDecl : _SERVICE identifier '{' serviceElements '}' {
 		$$ = ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5)
