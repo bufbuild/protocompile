@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"unicode"
@@ -38,9 +39,19 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-const (
+var (
 	protocPath = "../internal/testdata/protoc/22.0/bin/protoc"
+	nullDevice = "/dev/null"
 )
+
+func TestMain(m *testing.M) {
+	if runtime.GOOS == "windows" {
+		protocPath = "protoc"
+		nullDevice = "NUL"
+	}
+	exitVal := m.Run()
+	os.Exit(exitVal)
+}
 
 func TestSimpleLink(t *testing.T) {
 	t.Parallel()
@@ -103,7 +114,10 @@ func TestLinkerValidation(t *testing.T) {
 	t.Parallel()
 	testCases := map[string]struct {
 		input map[string]string
+		// The correct order of passing files to protoc in command line
+		inputOrder []string
 		// Expected error message - leave empty if input is expected to succeed
+		// This is set when the order of input file matters for protoc
 		expectedErr            string
 		expectedDiffWithProtoc bool
 	}{
@@ -1621,6 +1635,7 @@ func TestLinkerValidation(t *testing.T) {
 						string bar = 1 [some_new_option="abc"];
 					}`,
 			},
+			inputOrder: []string{"google/protobuf/descriptor.proto", "bar.proto"},
 		},
 	}
 
@@ -1663,7 +1678,7 @@ func TestLinkerValidation(t *testing.T) {
 			}
 
 			// parse with protoc
-			passProtoc, err := testByProtoc(t, tc.input)
+			passProtoc, err := testByProtoc(t, tc.input, tc.inputOrder)
 			require.NoError(t, err)
 			if tc.expectedErr == "" {
 				if tc.expectedDiffWithProtoc {
@@ -1754,7 +1769,8 @@ func TestProto3Enums(t *testing.T) {
 				"f1.proto": fc1,
 				"f2.proto": fc2,
 			}
-			passProtoc, err := testByProtoc(t, testFiles)
+			fileNames := []string{"f1.proto", "f2.proto"}
+			passProtoc, err := testByProtoc(t, testFiles, fileNames)
 			require.NoError(t, err)
 			// parse the protos with protocompile
 			acc := func(filename string) (io.ReadCloser, error) {
@@ -2033,7 +2049,8 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	// parse and check with protoc
-	passed, err := testByProtoc(t, input)
+	fileNames := []string{"foo1.proto", "foo2.proto"}
+	passed, err := testByProtoc(t, input, fileNames)
 	require.NoError(t, err)
 	require.False(t, passed)
 }
@@ -2202,13 +2219,15 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 	//  we are focusing on other test cases first before protoc is fixed.
 }
 
-func testByProtoc(t *testing.T, files map[string]string) (passed bool, err error) {
+func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
 	tempDir := writeFileToDisk(t, files)
 	defer os.RemoveAll(tempDir)
 
-	fileNames := make([]string, 0, len(files))
-	for fileName := range files {
-		fileNames = append(fileNames, fileName)
+	if fileNames == nil {
+		fileNames = make([]string, 0, len(files))
+		for fileName := range files {
+			fileNames = append(fileNames, fileName)
+		}
 	}
 	return compileByProtoc(t, tempDir, fileNames)
 }
@@ -2231,7 +2250,7 @@ func writeFileToDisk(t *testing.T, files map[string]string) string {
 }
 
 func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
-	args := []string{"-I", protoPath, "-o", "/dev/null"}
+	args := []string{"-I", protoPath, "-o", nullDevice}
 	args = append(args, fileNames...)
 	cmd := exec.Command(protocPath, args...)
 	stdout, err := cmd.Output()
