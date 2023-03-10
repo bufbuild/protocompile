@@ -336,6 +336,9 @@ messageLiteralWithBraces : '{' messageTextFormat '}' {
 		fields, delims := $2.toNodes()
 		$$ = ast.NewMessageLiteralNode($1, fields, delims, $3)
 	}
+	| '{' '}' {
+		$$ = ast.NewMessageLiteralNode($1, nil, nil, $2)
+	}
 	| '{' error '}' {
 		$$ = nil
 	}
@@ -355,9 +358,6 @@ messageLiteralFields : messageLiteralFieldEntry {
 		} else {
 			$$ = $2
 		}
-	}
-	| {
-		$$ = nil
 	}
 
 messageLiteralFieldEntry : messageLiteralField {
@@ -404,6 +404,9 @@ messageLiteralField : messageLiteralFieldName ':' value {
 		} else {
 			$$ = nil
 		}
+	}
+	| error ':' value {
+		$$ = nil
 	}
 
 messageLiteralFieldName : identifier {
