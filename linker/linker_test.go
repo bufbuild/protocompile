@@ -1678,7 +1678,12 @@ func TestLinkerValidation(t *testing.T) {
 			}
 
 			// parse with protoc
-			passProtoc, err := testByProtoc(t, tc.input, tc.inputOrder)
+			var passProtoc bool
+			if tc.inputOrder != nil {
+				passProtoc, err = testByProtocWithFileOrder(t, tc.input, tc.inputOrder)
+			} else {
+				passProtoc, err = testByProtoc(t, tc.input)
+			}
 			require.NoError(t, err)
 			if tc.expectedErr == "" {
 				if tc.expectedDiffWithProtoc {
@@ -1770,7 +1775,7 @@ func TestProto3Enums(t *testing.T) {
 				"f2.proto": fc2,
 			}
 			fileNames := []string{"f1.proto", "f2.proto"}
-			passProtoc, err := testByProtoc(t, testFiles, fileNames)
+			passProtoc, err := testByProtocWithFileOrder(t, testFiles, fileNames)
 			require.NoError(t, err)
 			// parse the protos with protocompile
 			acc := func(filename string) (io.ReadCloser, error) {
@@ -2049,8 +2054,7 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	// parse and check with protoc
-	fileNames := []string{"foo1.proto", "foo2.proto"}
-	passed, err := testByProtoc(t, input, fileNames)
+	passed, err := testByProtoc(t, input)
 	require.NoError(t, err)
 	require.False(t, passed)
 }
@@ -2219,16 +2223,22 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 	//  we are focusing on other test cases first before protoc is fixed.
 }
 
-func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
+// testByProtoc tests the proto files with protoc. The fileNames parameter indicates the order of file
+// that should be used in the command line for protoc. fileNames can be nil when the order does not matter.
+func testByProtoc(t *testing.T, files map[string]string) (passed bool, err error) {
 	tempDir := writeFileToDisk(t, files)
 	defer os.RemoveAll(tempDir)
 
-	if fileNames == nil {
-		fileNames = make([]string, 0, len(files))
-		for fileName := range files {
-			fileNames = append(fileNames, fileName)
-		}
+	fileNames := make([]string, 0, len(files))
+	for fileName := range files {
+		fileNames = append(fileNames, fileName)
 	}
+	return compileByProtoc(t, tempDir, fileNames)
+}
+
+func testByProtocWithFileOrder(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
+	tempDir := writeFileToDisk(t, files)
+	defer os.RemoveAll(tempDir)
 	return compileByProtoc(t, tempDir, fileNames)
 }
 
