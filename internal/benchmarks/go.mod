@@ -7,7 +7,7 @@ require (
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/jhump/protoreflect v1.14.1
 	github.com/stretchr/testify v1.8.2
-	google.golang.org/protobuf v1.28.2-0.20230222093303-bc1253ad3743
+	google.golang.org/protobuf v1.29.0
 )
 
 require (
