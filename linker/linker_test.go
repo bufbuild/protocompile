@@ -39,19 +39,9 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-var (
-	protocPath = "../internal/testdata/protoc/22.0/bin/protoc"
-	nullDevice = "/dev/null"
+const (
+	nullDevice = os.DevNull
 )
-
-func TestMain(m *testing.M) {
-	if runtime.GOOS == "windows" {
-		protocPath = "protoc"
-		nullDevice = "NUL"
-	}
-	exitVal := m.Run()
-	os.Exit(exitVal)
-}
 
 func TestSimpleLink(t *testing.T) {
 	t.Parallel()
@@ -115,9 +105,9 @@ func TestLinkerValidation(t *testing.T) {
 	testCases := map[string]struct {
 		input map[string]string
 		// The correct order of passing files to protoc in command line
+		// This is set when the order of input file matters for protoc
 		inputOrder []string
 		// Expected error message - leave empty if input is expected to succeed
-		// This is set when the order of input file matters for protoc
 		expectedErr            string
 		expectedDiffWithProtoc bool
 	}{
@@ -605,8 +595,8 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr:            `foo.proto:7:16: message Baz: option (foo).buzz: oneof "bar" already has field "baz" set`,
 			expectedDiffWithProtoc: true,
-			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125)
-			//  until v22.0. Difference is expected in the test before it is fixed.
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"failure_oneof_extension_already_set3": {
 			input: map[string]string{
@@ -622,8 +612,8 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr:            `foo.proto:7:16: message Baz: option (foo).buzz.name: oneof "bar" already has field "baz" set`,
 			expectedDiffWithProtoc: true,
-			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125)
-			//  until v22.0. Difference is expected in the test before it is fixed.
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"failure_oneof_extension_already_set4": {
 			input: map[string]string{
@@ -639,8 +629,8 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr:            `foo.proto:7:34: message Baz: option (foo).baz.options.(foo).buzz.name: oneof "bar" already has field "baz" set`,
 			expectedDiffWithProtoc: true,
-			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125)
-			//  until v22.0. Difference is expected in the test before it is fixed.
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"success_repeated_extensions": {
 			input: map[string]string{
@@ -1364,8 +1354,8 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr:            `foo.proto:5:5: field Foo.foo_bar: default JSON name "fooBar" conflicts with custom JSON name of field foo, defined at foo.proto:4:5`,
 			expectedDiffWithProtoc: true,
-			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/5063) in
-			//  the latest version (v22.0). Difference is expected in the test before it is fixed.
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/5063).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"success_json_name_default_proto3_only": {
 			// should succeed: only check default JSON names in proto3
@@ -1389,8 +1379,8 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr:            `foo.proto:4:3: field Foo.foo_bar: custom JSON name "fooBar" conflicts with custom JSON name of field fooBar, defined at foo.proto:3:3`,
 			expectedDiffWithProtoc: true,
-			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/5063) in
-			//  the latest version (v22.0). Difference is expected in the test before it is fixed.
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/5063).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"success_json_name_default_proto2": {
 			// should succeed: only check default JSON names in proto3
@@ -1678,12 +1668,7 @@ func TestLinkerValidation(t *testing.T) {
 			}
 
 			// parse with protoc
-			var passProtoc bool
-			if tc.inputOrder != nil {
-				passProtoc, err = testByProtocWithFileOrder(t, tc.input, tc.inputOrder)
-			} else {
-				passProtoc, err = testByProtoc(t, tc.input)
-			}
+			passProtoc, err := testByProtoc(t, tc.input, tc.inputOrder)
 			require.NoError(t, err)
 			if tc.expectedErr == "" {
 				if tc.expectedDiffWithProtoc {
@@ -1775,7 +1760,7 @@ func TestProto3Enums(t *testing.T) {
 				"f2.proto": fc2,
 			}
 			fileNames := []string{"f1.proto", "f2.proto"}
-			passProtoc, err := testByProtocWithFileOrder(t, testFiles, fileNames)
+			passProtoc, err := testByProtoc(t, testFiles, fileNames)
 			require.NoError(t, err)
 			// parse the protos with protocompile
 			acc := func(filename string) (io.ReadCloser, error) {
@@ -2054,7 +2039,7 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	// parse and check with protoc
-	passed, err := testByProtoc(t, input)
+	passed, err := testByProtoc(t, input, nil)
 	require.NoError(t, err)
 	require.False(t, passed)
 }
@@ -2225,20 +2210,23 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 
 // testByProtoc tests the proto files with protoc. The fileNames parameter indicates the order of file
 // that should be used in the command line for protoc. fileNames can be nil when the order does not matter.
-func testByProtoc(t *testing.T, files map[string]string) (passed bool, err error) {
+func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
+	if len(fileNames) != 0 {
+		require.True(t, len(files) == len(fileNames))
+		for _, fileName := range fileNames {
+			_, ok := files[fileName]
+			require.True(t, ok)
+		}
+	}
+
 	tempDir := writeFileToDisk(t, files)
 	defer os.RemoveAll(tempDir)
-
-	fileNames := make([]string, 0, len(files))
+	if len(fileNames) == 0 {
+		fileNames = make([]string, 0, len(files))
+	}
 	for fileName := range files {
 		fileNames = append(fileNames, fileName)
 	}
-	return compileByProtoc(t, tempDir, fileNames)
-}
-
-func testByProtocWithFileOrder(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
-	tempDir := writeFileToDisk(t, files)
-	defer os.RemoveAll(tempDir)
 	return compileByProtoc(t, tempDir, fileNames)
 }
 
@@ -2262,7 +2250,7 @@ func writeFileToDisk(t *testing.T, files map[string]string) string {
 func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
 	args := []string{"-I", protoPath, "-o", nullDevice}
 	args = append(args, fileNames...)
-	cmd := exec.Command(protocPath, args...)
+	cmd := exec.Command(getProtocPath(), args...)
 	stdout, err := cmd.Output()
 	if err == nil {
 		return true, nil
@@ -2273,4 +2261,11 @@ func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed
 		return false, nil
 	}
 	return false, err
+}
+
+func getProtocPath() string {
+	if runtime.GOOS == "windows" {
+		return "protoc"
+	}
+	return "../internal/testdata/protoc/22.0/bin/protoc"
 }
