@@ -20,14 +20,17 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
@@ -409,5 +412,69 @@ func TestOptionsEncoding(t *testing.T) {
 				t.Fatalf("descriptor set bytes not equal (created file %q with actual bytes)", outputDescriptorSetFile)
 			}
 		})
+	}
+}
+
+//nolint:errcheck
+func TestInterpretOptionsWithoutAST(t *testing.T) {
+	t.Parallel()
+
+	// First compile from source, so we interpret options with an AST
+	fileNames := []string{"desc_test_options.proto", "desc_test_comments.proto", "desc_test_complex.proto"}
+	compiler := &protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"../internal/testdata"},
+		}),
+	}
+	files, err := compiler.Compile(context.Background(), fileNames...)
+	require.NoError(t, err)
+
+	// Now compile without the AST, to make sure we interpret options the same way
+	compiler = &protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(protocompile.ResolverFunc(
+			func(name string) (protocompile.SearchResult, error) {
+				var res protocompile.SearchResult
+				data, err := os.ReadFile(filepath.Join("../internal/testdata", name))
+				if err != nil {
+					return res, err
+				}
+				fileNode, err := parser.Parse(name, bytes.NewReader(data), reporter.NewHandler(nil))
+				if err != nil {
+					return res, err
+				}
+				parseResult, err := parser.ResultFromAST(fileNode, true, reporter.NewHandler(nil))
+				if err != nil {
+					return res, err
+				}
+				res.Proto = parseResult.FileDescriptorProto()
+				return res, nil
+			},
+		)),
+	}
+	filesFromNoAST, err := compiler.Compile(context.Background(), fileNames...)
+	require.NoError(t, err)
+
+	for _, file := range files {
+		fromNoAST := filesFromNoAST.FindFileByPath(file.Path())
+		require.NotNil(t, fromNoAST)
+		fd := file.(linker.Result).FileDescriptorProto()
+		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
+		// final protos, with options interpreted, match
+		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
+		require.Empty(t, diff)
+	}
+
+	// Also make sure the canonical bytes are correct
+	for _, file := range filesFromNoAST {
+		res := file.(linker.Result)
+		canonicalFd := res.CanonicalProto()
+		data, err := proto.Marshal(canonicalFd)
+		require.NoError(t, err)
+		fromCanonical := &descriptorpb.FileDescriptorProto{}
+		err = proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(file)}.Unmarshal(data, fromCanonical)
+		require.NoError(t, err)
+		origFd := res.FileDescriptorProto()
+		diff := cmp.Diff(origFd, fromCanonical, protocmp.Transform())
+		require.Empty(t, diff)
 	}
 }

@@ -295,19 +295,17 @@ func TestDataRace(t *testing.T) {
 		name     string
 		resolver Resolver
 	}{
-		// TODO: Sadly, interpreting options does not actually work when no AST is provided.
-		//       Uncomment this test case when this is fixed.
-		// {
-		//	name: "share unresolved descriptor",
-		//	resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
-		//		if name == "desc_test_complex.proto" {
-		//			return SearchResult{
-		//				Proto: parseResult.FileDescriptorProto(),
-		//			}, nil
-		//		}
-		//		return SearchResult{}, os.ErrNotExist
-		//	})),
-		// },
+		{
+			name: "share unresolved descriptor",
+			resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
+				if name == "desc_test_complex.proto" {
+					return SearchResult{
+						Proto: parseResult.FileDescriptorProto(),
+					}, nil
+				}
+				return SearchResult{}, os.ErrNotExist
+			})),
+		},
 		{
 			name: "share resolved descriptor",
 			resolver: WithStandardImports(ResolverFunc(func(name string) (SearchResult, error) {
