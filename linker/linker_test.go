@@ -39,10 +39,6 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-const (
-	nullDevice = os.DevNull
-)
-
 func TestSimpleLink(t *testing.T) {
 	t.Parallel()
 	compiler := protocompile.Compiler{
@@ -2223,9 +2219,9 @@ func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (pa
 	defer os.RemoveAll(tempDir)
 	if len(fileNames) == 0 {
 		fileNames = make([]string, 0, len(files))
-	}
-	for fileName := range files {
-		fileNames = append(fileNames, fileName)
+		for fileName := range files {
+			fileNames = append(fileNames, fileName)
+		}
 	}
 	return compileByProtoc(t, tempDir, fileNames)
 }
@@ -2248,7 +2244,7 @@ func writeFileToDisk(t *testing.T, files map[string]string) string {
 }
 
 func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
-	args := []string{"-I", protoPath, "-o", nullDevice}
+	args := []string{"-I", protoPath, "-o", os.DevNull}
 	args = append(args, fileNames...)
 	cmd := exec.Command(getProtocPath(), args...)
 	stdout, err := cmd.Output()
