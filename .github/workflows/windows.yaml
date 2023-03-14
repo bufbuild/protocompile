@@ -12,6 +12,10 @@ permissions:
   contents: read
 jobs:
   ci:
+    env:
+      GOMODCACHE: 'd:\gomodcache'
+      GOCACHE: 'd:\gocache'
+      DOWNLOAD_CACHE: 'd:\downloadcache'
     runs-on: windows-latest
     strategy:
       matrix:
@@ -40,6 +44,4 @@ jobs:
           key: ${{ runner.os }}-protocompile-ci-${{ hashFiles('**/go.sum') }}
       - name: Test
         shell: bash
-        run: |
-          go build ./...
-          go test -vet=off -race ./...
+        run: ./windows/test.bash

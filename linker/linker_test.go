@@ -19,6 +19,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"unicode"
@@ -96,8 +100,12 @@ func TestLinkerValidation(t *testing.T) {
 	t.Parallel()
 	testCases := map[string]struct {
 		input map[string]string
+		// The correct order of passing files to protoc in command line
+		// This is set when the order of input file matters for protoc
+		inputOrder []string
 		// Expected error message - leave empty if input is expected to succeed
-		expectedErr string
+		expectedErr            string
+		expectedDiffWithProtoc bool
 	}{
 		"success_multi_namespace": {
 			input: map[string]string{
@@ -581,7 +589,10 @@ func TestLinkerValidation(t *testing.T) {
 					  option (foo).buzz = "xyz";
 					}`,
 			},
-			expectedErr: `foo.proto:7:16: message Baz: option (foo).buzz: oneof "bar" already has field "baz" set`,
+			expectedErr:            `foo.proto:7:16: message Baz: option (foo).buzz: oneof "bar" already has field "baz" set`,
+			expectedDiffWithProtoc: true,
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"failure_oneof_extension_already_set3": {
 			input: map[string]string{
@@ -595,7 +606,10 @@ func TestLinkerValidation(t *testing.T) {
 					  option (foo).buzz.name = "xyz";
 					}`,
 			},
-			expectedErr: `foo.proto:7:16: message Baz: option (foo).buzz.name: oneof "bar" already has field "baz" set`,
+			expectedErr:            `foo.proto:7:16: message Baz: option (foo).buzz.name: oneof "bar" already has field "baz" set`,
+			expectedDiffWithProtoc: true,
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"failure_oneof_extension_already_set4": {
 			input: map[string]string{
@@ -609,7 +623,10 @@ func TestLinkerValidation(t *testing.T) {
 					  option (foo).baz.options.(foo).buzz.name = "xyz";
 					}`,
 			},
-			expectedErr: `foo.proto:7:34: message Baz: option (foo).baz.options.(foo).buzz.name: oneof "bar" already has field "baz" set`,
+			expectedErr:            `foo.proto:7:34: message Baz: option (foo).baz.options.(foo).buzz.name: oneof "bar" already has field "baz" set`,
+			expectedDiffWithProtoc: true,
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"success_repeated_extensions": {
 			input: map[string]string{
@@ -1331,7 +1348,10 @@ func TestLinkerValidation(t *testing.T) {
 					  }
 					}`,
 			},
-			expectedErr: `foo.proto:5:5: field Foo.foo_bar: default JSON name "fooBar" conflicts with custom JSON name of field foo, defined at foo.proto:4:5`,
+			expectedErr:            `foo.proto:5:5: field Foo.foo_bar: default JSON name "fooBar" conflicts with custom JSON name of field foo, defined at foo.proto:4:5`,
+			expectedDiffWithProtoc: true,
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/5063).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"success_json_name_default_proto3_only": {
 			// should succeed: only check default JSON names in proto3
@@ -1353,7 +1373,10 @@ func TestLinkerValidation(t *testing.T) {
 					  optional string foo_bar = 2 [json_name="fooBar"];
 					}`,
 			},
-			expectedErr: `foo.proto:4:3: field Foo.foo_bar: custom JSON name "fooBar" conflicts with custom JSON name of field fooBar, defined at foo.proto:3:3`,
+			expectedErr:            `foo.proto:4:3: field Foo.foo_bar: custom JSON name "fooBar" conflicts with custom JSON name of field fooBar, defined at foo.proto:3:3`,
+			expectedDiffWithProtoc: true,
+			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/5063).
+			//  Difference is expected in the test before it is fixed.
 		},
 		"success_json_name_default_proto2": {
 			// should succeed: only check default JSON names in proto3
@@ -1598,6 +1621,7 @@ func TestLinkerValidation(t *testing.T) {
 						string bar = 1 [some_new_option="abc"];
 					}`,
 			},
+			inputOrder: []string{"google/protobuf/descriptor.proto", "bar.proto"},
 		},
 	}
 
@@ -1636,6 +1660,27 @@ func TestLinkerValidation(t *testing.T) {
 				}
 				if !found {
 					t.Errorf("expecting validation error %q; instead got: %q", tc.expectedErr, err)
+				}
+			}
+
+			// parse with protoc
+			passProtoc, err := testByProtoc(t, tc.input, tc.inputOrder)
+			require.NoError(t, err)
+			if tc.expectedErr == "" {
+				if tc.expectedDiffWithProtoc {
+					// We can explicitly check different result is produced by protoc. When the bug is fixed,
+					// we can change the tc.expectedDiffWithProtoc field to false and delete the comment.
+					require.False(t, passProtoc)
+				} else {
+					// if the test case passes protocompile, it should also pass protoc.
+					require.True(t, passProtoc)
+				}
+			} else {
+				if tc.expectedDiffWithProtoc {
+					require.True(t, passProtoc)
+				} else {
+					// if the test case fails protocompile, it should also fail protoc.
+					require.False(t, passProtoc)
 				}
 			}
 		})
@@ -1705,7 +1750,15 @@ func TestProto3Enums(t *testing.T) {
 		for _, o2 := range syntaxOptions {
 			fc2 := getFileContents(file2, o2)
 
-			// now parse the protos
+			// now parse the protos with protoc
+			testFiles := map[string]string{
+				"f1.proto": fc1,
+				"f2.proto": fc2,
+			}
+			fileNames := []string{"f1.proto", "f2.proto"}
+			passProtoc, err := testByProtoc(t, testFiles, fileNames)
+			require.NoError(t, err)
+			// parse the protos with protocompile
 			acc := func(filename string) (io.ReadCloser, error) {
 				var data string
 				switch filename {
@@ -1723,8 +1776,7 @@ func TestProto3Enums(t *testing.T) {
 					Accessor: acc,
 				}),
 			}
-			_, err := compiler.Compile(context.Background(), "f1.proto", "f2.proto")
-
+			_, err = compiler.Compile(context.Background(), "f1.proto", "f2.proto")
 			if o1 != o2 && o2 == "proto3" {
 				expected := "f2.proto:1:54: field foo.bar: cannot use proto2 enum bar in a proto3 message"
 				if err == nil {
@@ -1732,10 +1784,12 @@ func TestProto3Enums(t *testing.T) {
 				} else if err.Error() != expected {
 					t.Errorf("expecting validation error %q; instead got: %q", expected, err)
 				}
+				require.False(t, passProtoc)
 			} else {
 				// other cases succeed (okay to for proto2 to use enum from proto3 file and
 				// obviously okay for proto2 importing proto2 and proto3 importing proto3)
 				assert.Nil(t, err)
+				require.True(t, passProtoc)
 			}
 		}
 	}
@@ -1979,6 +2033,11 @@ func TestSyntheticOneOfCollisions(t *testing.T) {
 		expected = expectedFoo2FirstErrors
 	}
 	assert.Equal(t, expected, actual)
+
+	// parse and check with protoc
+	passed, err := testByProtoc(t, input, nil)
+	require.NoError(t, err)
+	require.False(t, passed)
 }
 
 func TestCustomJSONNameWarnings(t *testing.T) {
@@ -2139,4 +2198,70 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 			}
 		}
 	}
+	// TODO: Need to run these test cases against protoc like other test
+	//  cases in this file. As of writing, the most recent version (v22.0)
+	//  of protoc produces too many different result with protocompile. So
+	//  we are focusing on other test cases first before protoc is fixed.
+}
+
+// testByProtoc tests the proto files with protoc. The fileNames parameter indicates the order of file
+// that should be used in the command line for protoc. fileNames can be nil when the order does not matter.
+func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
+	if len(fileNames) != 0 {
+		require.True(t, len(files) == len(fileNames))
+		for _, fileName := range fileNames {
+			_, ok := files[fileName]
+			require.True(t, ok)
+		}
+	}
+
+	tempDir := writeFileToDisk(t, files)
+	defer os.RemoveAll(tempDir)
+	if len(fileNames) == 0 {
+		fileNames = make([]string, 0, len(files))
+		for fileName := range files {
+			fileNames = append(fileNames, fileName)
+		}
+	}
+	return compileByProtoc(t, tempDir, fileNames)
+}
+
+func writeFileToDisk(t *testing.T, files map[string]string) string {
+	tempDir, err := os.MkdirTemp("..", "temp_proto_files")
+	require.NoError(t, err)
+
+	for fileName, fileContent := range files {
+		tempFileName := filepath.Join(tempDir, fileName)
+		tempFileDirPart := filepath.Dir(tempFileName)
+		if _, err = os.Stat(tempFileDirPart); os.IsNotExist(err) {
+			err = os.MkdirAll(tempFileDirPart, os.ModePerm)
+			require.NoError(t, err)
+		}
+		err := os.WriteFile(tempFileName, []byte(fileContent), 0644)
+		require.NoError(t, err)
+	}
+	return tempDir
+}
+
+func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
+	args := []string{"-I", protoPath, "-o", os.DevNull}
+	args = append(args, fileNames...)
+	cmd := exec.Command(getProtocPath(), args...)
+	stdout, err := cmd.Output()
+	if err == nil {
+		return true, nil
+	}
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		t.Log(string(stdout), string(exitError.Stderr))
+		return false, nil
+	}
+	return false, err
+}
+
+func getProtocPath() string {
+	if runtime.GOOS == "windows" {
+		return "protoc"
+	}
+	return "../internal/testdata/protoc/22.0/bin/protoc"
 }
