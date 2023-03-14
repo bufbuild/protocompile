@@ -24,4 +24,4 @@ jobs:
         run: |
           make build
           cd internal/benchmarks
-          go test -bench=. -count=10
+          go test -bench '^BenchmarkGoogleapisProto(?:compile|parse)(?:Canonical|NoSourceInfo)?$' -run 'match-nothing' -timeout 20m
