@@ -1209,9 +1209,10 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 	return value, nil
 }
 
-// setOptionField sets the value for field fld in the given message msg to the value represented
-// by AST node val. The given name is the AST node that corresponds to the name of fld. On success,
-// it returns additional metadata about the field that was set.
+// setOptionFieldFromProto sets the value for field fld in the given message msg to the value
+// represented by the given uninterpreted option. The given ast.Node, if non-nil, will be used
+// to report source positions in error messages. On success, it returns additional metadata
+// about the field that was set.
 func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, opt *descriptorpb.UninterpretedOption, node ast.Node) (interpretedFieldValue, error) {
 	k := fld.Kind()
 	var value interpretedFieldValue
