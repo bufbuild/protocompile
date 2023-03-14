@@ -1,0 +1,24 @@
+name: benchmark
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '15 22 * * *'
+  workflow_dispatch: {} # support manual runs
+permissions:
+  contents: read
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: setup-go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.19.x'
+      - name: benchmarks
+        run: cd internal/benchmarks && go test -bench=. -count=10
