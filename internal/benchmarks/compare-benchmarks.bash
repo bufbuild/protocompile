@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-go test -bench '^BenchmarkGoogleapisProto(?:compile|parse)(?:Canonical|NoSourceInfo)?$' -run 'match-nothing' -timeout 20m -count 1 > new-benchmark.txt
+go test -bench '^BenchmarkGoogleapisProto(?:compile|parse)(?:Canonical|NoSourceInfo)?$' -run 'match-nothing' -timeout 20m -count 10 > new-benchmark.txt
 
 # The ci-benchmark.txt is the benchmark from github action runner (https://github.com/bufbuild/protocompile/actions/runs/4420308905/jobs/7749835161)
 benchstat ci-benchmark.txt new-benchmark.txt > benchstat_result.txt
