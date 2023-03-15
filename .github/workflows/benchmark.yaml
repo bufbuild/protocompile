@@ -25,4 +25,5 @@ jobs:
       - name: benchmarks
         run: |
           cd internal/benchmarks
+          chmod +x compare-benchmarks.bash
           ./compare-benchmarks.bash
