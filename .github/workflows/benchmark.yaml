@@ -24,6 +24,7 @@ jobs:
         run: make build
       - name: benchmarks
         run: |
+          go install golang.org/x/perf/cmd/benchstat@latest
           cd internal/benchmarks
           chmod +x compare-benchmarks.bash
           ./compare-benchmarks.bash

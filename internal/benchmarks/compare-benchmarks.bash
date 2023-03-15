@@ -4,6 +4,8 @@ go test -bench '^BenchmarkGoogleapisProto(?:compile|parse)(?:Canonical|NoSourceI
 
 # The ci-benchmark.txt is the benchmark from github action runner (https://github.com/bufbuild/protocompile/actions/runs/4420308905/jobs/7749835161)
 benchstat ci-benchmark.txt new-benchmark.txt > benchstat_result.txt
+echo "benchstat_result.txt:"
+cat benchstat_result.txt
 result=$(sed '1,5d;$d' benchstat_result.txt)
 
 while IFS= read -r line; do
