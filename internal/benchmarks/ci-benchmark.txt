@@ -1,0 +1,56 @@
+goos: linux
+goarch: amd64
+pkg: github.com/jhump/protocompile/internal/benchmarks
+cpu: Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz
+BenchmarkGoogleapisProtocompile-2               	       1	5442493613 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5281984062 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5225013102 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5161121910 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5170509815 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5126715420 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5127812287 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5137568007 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5125786260 ns/op
+BenchmarkGoogleapisProtocompile-2               	       1	5188616267 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5177391464 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5109463209 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5215245863 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5316685010 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5153910507 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5208397136 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5242885621 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5191250350 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5223440040 ns/op
+BenchmarkGoogleapisProtocompileCanonical-2      	       1	5173350759 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3405077302 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3476769259 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3497605126 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3479366944 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3520000470 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3457830236 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3481917286 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3494240844 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3500006810 ns/op
+BenchmarkGoogleapisProtocompileNoSourceInfo-2   	       1	3532129891 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7009191634 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7067009169 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7092377506 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7099663032 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7079918586 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7082339972 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7137673592 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7142816933 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	7180177440 ns/op
+BenchmarkGoogleapisProtoparse-2                 	       1	6972818856 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4303630712 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4303922075 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4381889063 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4378788890 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4415149001 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4324640075 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4413319723 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4359996503 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4387740116 ns/op
+BenchmarkGoogleapisProtoparseNoSourceInfo-2     	       1	4392429195 ns/op
+PASS
+ok  	github.com/jhump/protocompile/internal/benchmarks	257.453s
