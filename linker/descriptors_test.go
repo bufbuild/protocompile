@@ -192,5 +192,14 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 }
 
 func checkAttributesInOneofs(t *testing.T, exp, actual protoreflect.OneofDescriptors, where string) {
-
+	if !assert.Equal(t, exp.Len(), actual.Len(), "%s: number of fields", where) {
+		return
+	}
+	for i := 0; i < exp.Len(); i++ {
+		expOo := exp.Get(i)
+		actOo := actual.Get(i)
+		if !assert.Equal(t, expOo.Name(), actOo.Name(), "%s: oneof name at index %d", where, i) {
+			continue
+		}
+	}
 }

@@ -941,10 +941,7 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 	if dest.ProtoReflect().Descriptor() == src.ProtoReflect().Descriptor() {
 		proto.Reset(dest)
 		proto.Merge(dest, src)
-		if err := proto.CheckInitialized(dest); err != nil {
-			return err
-		}
-		return nil
+		return proto.CheckInitialized(dest)
 	}
 
 	// If descriptors are not the same, we could have field descriptors in src that

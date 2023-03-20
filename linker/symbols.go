@@ -123,10 +123,7 @@ func (s *Symbols) importFileWithExtensions(pkg *packageSymbols, fd protoreflect.
 		}
 		pos := sourcePositionForNumber(fld)
 		extendee := fld.ContainingMessage()
-		if err := s.AddExtension(packageFor(extendee), extendee.FullName(), fld.Number(), pos, handler); err != nil {
-			return err
-		}
-		return nil
+		return s.AddExtension(packageFor(extendee), extendee.FullName(), fld.Number(), pos, handler)
 	})
 }
 
@@ -411,11 +408,7 @@ func (s *Symbols) importResultWithExtensions(pkg *packageSymbols, r *result, han
 		node := r.FieldNode(fd.FieldDescriptorProto())
 		pos := file.NodeInfo(node.FieldTag()).Start()
 		extendee := fd.ContainingMessage()
-		if err := s.AddExtension(packageFor(extendee), extendee.FullName(), fd.Number(), pos, handler); err != nil {
-			return err
-		}
-
-		return nil
+		return s.AddExtension(packageFor(extendee), extendee.FullName(), fd.Number(), pos, handler)
 	})
 }
 
