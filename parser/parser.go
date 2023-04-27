@@ -45,7 +45,7 @@ func init() {
 func setTokenName(token int, text string) {
 	// NB: this is based on logic in generated parse code that translates the
 	// int returned from the lexer into an internal token number.
-	var intern int8
+	var intern int
 	if token < len(protoTok1) {
 		intern = protoTok1[token]
 	} else {

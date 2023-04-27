@@ -113,7 +113,7 @@ $(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO) build -o $@ golang.org/x/tools/cmd/goyacc
+		GOWORK=off $(GO) build -o $@ vitess.io/vitess/go/vt/sqlparser/goyacc
 
 internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)

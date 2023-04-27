@@ -197,21 +197,21 @@ foo
 		var val interface{}
 		switch tok {
 		case _SYNTAX, _OPTION, _INT32, _SERVICE, _RPC, _MESSAGE, _NAME:
-			n = sym.id
-			val = sym.id.Val
+			n = sym.idUnion()
+			val = sym.idUnion().Val
 		case _STRING_LIT:
-			n = sym.s
-			val = sym.s.Val
+			n = sym.sUnion()
+			val = sym.sUnion().Val
 		case _INT_LIT:
-			n = sym.i
-			val = sym.i.Val
+			n = sym.iUnion()
+			val = sym.iUnion().Val
 		case _FLOAT_LIT:
-			n = sym.f
-			val = sym.f.Val
+			n = sym.fUnion()
+			val = sym.fUnion().Val
 		case _ERROR:
-			val = sym.err
+			val = sym.errUnion()
 		default:
-			n = sym.b
+			n = sym.bUnion()
 			val = nil
 		}
 		if !assert.Equal(t, exp.t, tok, "case %d: wrong token type (expecting %+v, got %+v)", i, exp.v, val) {
@@ -431,8 +431,8 @@ func TestLexerErrors(t *testing.T) {
 			var sym protoSymType
 			tok := l.Lex(&sym)
 			if assert.Equal(t, _ERROR, tok) {
-				assert.True(t, sym.err != nil)
-				assert.True(t, strings.Contains(sym.err.Error(), tc.expectedErr), "expected message to contain %q but does not: %q", tc.expectedErr, sym.err.Error())
+				assert.True(t, sym.errUnion() != nil)
+				assert.True(t, strings.Contains(sym.errUnion().Error(), tc.expectedErr), "expected message to contain %q but does not: %q", tc.expectedErr, sym.errUnion().Error())
 			}
 		})
 	}
@@ -493,14 +493,14 @@ func TestStringLiteralMultipleErrors(t *testing.T) {
 			tok := l.Lex(&sym)
 			require.Equal(t, _ERROR, tok)
 			require.Equal(t, len(tc.expectedErrs), len(errors))
-			require.Equal(t, errors[len(errors)-1], sym.err) // returned err in symbol should be last error
+			require.Equal(t, errors[len(errors)-1], sym.errUnion()) // returned err in symbol should be last error
 			for i := range tc.expectedErrs {
 				assert.Equal(t, tc.expectedErrs[i], errors[i].Error(), "error#%d", i+1)
 			}
 			// make sure we can successfully tokenize the subsequent token
 			tok = l.Lex(&sym)
 			require.Equal(t, _INT_LIT, tok)
-			require.Equal(t, uint64(0), sym.i.Val)
+			require.Equal(t, uint64(0), sym.iUnion().Val)
 		})
 	}
 }
@@ -538,7 +538,7 @@ func TestUTF8(t *testing.T) {
 		if !tc.succeeds {
 			assert.Equal(t, _ERROR, tok, "lexer should return error for %v", tc.data)
 		} else if assert.Equal(t, _STRING_LIT, tok, "lexer should return string literal token for %v", tc.data) {
-			assert.Equal(t, tc.expectVal, sym.s.Val)
+			assert.Equal(t, tc.expectVal, sym.sUnion().Val)
 		}
 	}
 }

@@ -185,7 +185,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 			// accumulated comments as a trailing comment on last symbol
 			// (if appropriate)
 			l.setRune(lval, 0)
-			l.eof = lval.b.Token()
+			l.eof = lval.bUnion().Token()
 			return 0
 		}
 		if err != nil {
@@ -413,32 +413,32 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 }
 
 func (l *protoLex) setString(lval *protoSymType, val string) {
-	lval.s = ast.NewStringLiteralNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.s)
+	lval.union = ast.NewStringLiteralNode(val, l.newToken())
+	l.setPrevAndAddComments(lval.sUnion())
 }
 
 func (l *protoLex) setIdent(lval *protoSymType, val string) {
-	lval.id = ast.NewIdentNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.id)
+	lval.union = ast.NewIdentNode(val, l.newToken())
+	l.setPrevAndAddComments(lval.idUnion())
 }
 
 func (l *protoLex) setInt(lval *protoSymType, val uint64) {
-	lval.i = ast.NewUintLiteralNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.i)
+	lval.union = ast.NewUintLiteralNode(val, l.newToken())
+	l.setPrevAndAddComments(lval.iUnion())
 }
 
 func (l *protoLex) setFloat(lval *protoSymType, val float64) {
-	lval.f = ast.NewFloatLiteralNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.f)
+	lval.union = ast.NewFloatLiteralNode(val, l.newToken())
+	l.setPrevAndAddComments(lval.fUnion())
 }
 
 func (l *protoLex) setRune(lval *protoSymType, val rune) {
-	lval.b = ast.NewRuneNode(val, l.newToken())
-	l.setPrevAndAddComments(lval.b)
+	lval.union = ast.NewRuneNode(val, l.newToken())
+	l.setPrevAndAddComments(lval.bUnion())
 }
 
 func (l *protoLex) setError(lval *protoSymType, err error) {
-	lval.err, _ = l.addSourceError(err)
+	lval.union, _ = l.addSourceError(err)
 }
 
 func (l *protoLex) readNumber() {
