@@ -48,7 +48,7 @@ clean: ## Delete intermediate build artifacts
 	git clean -Xdf
 
 .PHONY: test
-test: ## Run unit tests
+test: $(PROTOC) ## Run unit tests
 	$(GO) test -vet=off -race -cover ./...
 
 .PHONY: benchmarks
