@@ -48,11 +48,11 @@ clean: ## Delete intermediate build artifacts
 	git clean -Xdf
 
 .PHONY: test
-test: $(PROTOC) ## Run unit tests
+test: build ## Run unit tests
 	$(GO) test -vet=off -race -cover ./...
 
 .PHONY: benchmarks
-benchmarks: ## Run benchmarks
+benchmarks: build ## Run benchmarks
 	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
 
 .PHONY: build
@@ -102,18 +102,18 @@ checkgenerate:
 
 $(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
-	GOWORK=off cd $(TOOLS_MOD_DIR) && \
-		$(GO) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
+	cd $(TOOLS_MOD_DIR) && \
+		GOWORK=off $(GO) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
 
 $(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
-	GOWORK=off cd $(TOOLS_MOD_DIR) && \
-		$(GO) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd $(TOOLS_MOD_DIR) && \
+		GOWORK=off $(GO) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
 $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
-	GOWORK=off cd $(TOOLS_MOD_DIR) && \
-		$(GO) build -o $@ golang.org/x/tools/cmd/goyacc
+	cd $(TOOLS_MOD_DIR) && \
+		GOWORK=off $(GO) build -o $@ golang.org/x/tools/cmd/goyacc
 
 internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
