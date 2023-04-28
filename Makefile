@@ -52,7 +52,7 @@ test: $(PROTOC) ## Run unit tests
 	$(GO) test -vet=off -race -cover ./...
 
 .PHONY: benchmarks
-benchmarks: build ## Run benchmarks
+benchmarks: ## Run benchmarks
 	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
 
 .PHONY: build
