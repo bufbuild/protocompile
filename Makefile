@@ -103,17 +103,17 @@ checkgenerate:
 $(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-	$(GO) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
+		GOWORK=off $(GO) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
 
 $(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-	$(GO) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
+		GOWORK=off $(GO) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
 $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-	$(GO) build -o $@ golang.org/x/tools/cmd/goyacc
+		GOWORK=off $(GO) build -o $@ golang.org/x/tools/cmd/goyacc
 
 internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
