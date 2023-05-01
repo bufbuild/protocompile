@@ -24,8 +24,8 @@ type EnumNode struct {
 	Name       *IdentNode
 	OpenBrace  *RuneNode
 	CloseBrace *RuneNode
-	Decls      []EnumElement
 	compositeNode
+	Decls []EnumElement
 }
 
 func (*EnumNode) fileElement() {}
@@ -104,11 +104,11 @@ var _ EnumValueDeclNode = NoSourceNode{}
 //
 //	UNSET = 0 [deprecated = true];
 type EnumValueNode struct {
+	Number    IntValueNode
 	Name      *IdentNode
 	Equals    *RuneNode
 	Options   *CompactOptionsNode
 	Semicolon *RuneNode
-	Number    IntValueNode
 	compositeNode
 }
 

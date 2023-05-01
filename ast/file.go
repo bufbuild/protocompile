@@ -37,8 +37,8 @@ type FileNode struct {
 	// This synthetic node allows access to final comments and whitespace
 	EOF *RuneNode
 
-	Decls []FileElement
 	compositeNode
+	Decls []FileElement
 }
 
 // NewFileNode creates a new *FileNode. The syntax parameter is optional. If it
@@ -140,10 +140,10 @@ var _ FileElement = (*EmptyDeclNode)(nil)
 //
 // Files that don't have a syntax node are assumed to use proto2 syntax.
 type SyntaxNode struct {
+	Syntax    StringValueNode
 	Keyword   *KeywordNode
 	Equals    *RuneNode
 	Semicolon *RuneNode
-	Syntax    StringValueNode
 	compositeNode
 }
 
@@ -181,13 +181,13 @@ func NewSyntaxNode(keyword *KeywordNode, equals *RuneNode, syntax StringValueNod
 //
 //	import "google/protobuf/empty.proto";
 type ImportNode struct {
+	Name    StringValueNode
 	Keyword *KeywordNode
 	// Optional; if present indicates this is a public import
 	Public *KeywordNode
 	// Optional; if present indicates this is a weak import
 	Weak      *KeywordNode
 	Semicolon *RuneNode
-	Name      StringValueNode
 	compositeNode
 }
 
@@ -243,9 +243,9 @@ func (*ImportNode) fileElement() {}
 //
 //	package foobar.com;
 type PackageNode struct {
+	Name      IdentValueNode
 	Keyword   *KeywordNode
 	Semicolon *RuneNode
-	Name      IdentValueNode
 	compositeNode
 }
 

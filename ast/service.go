@@ -27,8 +27,8 @@ type ServiceNode struct {
 	Name       *IdentNode
 	OpenBrace  *RuneNode
 	CloseBrace *RuneNode
-	Decls      []ServiceElement
 	compositeNode
+	Decls []ServiceElement
 }
 
 func (*ServiceNode) fileElement() {}
@@ -112,8 +112,8 @@ type RPCNode struct {
 	Semicolon  *RuneNode
 	OpenBrace  *RuneNode
 	CloseBrace *RuneNode
-	Decls      []RPCElement
 	compositeNode
+	Decls []RPCElement
 }
 
 func (n *RPCNode) serviceElement() {}
@@ -244,10 +244,10 @@ var _ RPCElement = (*EmptyDeclNode)(nil)
 //
 //	(stream foo.Bar)
 type RPCTypeNode struct {
+	MessageType IdentValueNode
 	OpenParen   *RuneNode
 	Stream      *KeywordNode
 	CloseParen  *RuneNode
-	MessageType IdentValueNode
 	compositeNode
 }
 

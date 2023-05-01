@@ -49,6 +49,7 @@ var _ FieldDeclNode = NoSourceNode{}
 //
 //	optional string foo = 1;
 type FieldNode struct {
+	FldType   IdentValueNode
 	Name      *IdentNode
 	Equals    *RuneNode
 	Tag       *UintLiteralNode
@@ -59,8 +60,7 @@ type FieldNode struct {
 	// that are defined inside of "extend" blocks.
 	Extendee *ExtendNode
 
-	Label   FieldLabel
-	FldType IdentValueNode
+	Label FieldLabel
 	compositeNode
 }
 
@@ -199,6 +199,7 @@ func (f *FieldLabel) IsPresent() bool {
 //	  optional string name = 2;
 //	}
 type GroupNode struct {
+	MessageBody
 	Keyword *KeywordNode
 	Name    *IdentNode
 	Equals  *RuneNode
@@ -210,7 +211,6 @@ type GroupNode struct {
 	Extendee *ExtendNode
 
 	Label FieldLabel
-	MessageBody
 	compositeNode
 }
 
@@ -349,8 +349,8 @@ type OneOfNode struct {
 	Name       *IdentNode
 	OpenBrace  *RuneNode
 	CloseBrace *RuneNode
-	Decls      []OneOfElement
 	compositeNode
+	Decls []OneOfElement
 }
 
 func (*OneOfNode) msgElement() {}
@@ -458,12 +458,12 @@ func (n *SyntheticOneOf) OneOfName() Node {
 //
 //	map<string, Values>
 type MapTypeNode struct {
+	ValueType  IdentValueNode
 	Keyword    *KeywordNode
 	OpenAngle  *RuneNode
 	KeyType    *IdentNode
 	Comma      *RuneNode
 	CloseAngle *RuneNode
-	ValueType  IdentValueNode
 	compositeNode
 }
 

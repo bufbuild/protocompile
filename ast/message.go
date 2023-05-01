@@ -42,9 +42,9 @@ var _ MessageDeclNode = NoSourceNode{}
 //	  bytes extra = 3;
 //	}
 type MessageNode struct {
+	MessageBody
 	Keyword *KeywordNode
 	Name    *IdentNode
-	MessageBody
 	compositeNode
 }
 
@@ -140,12 +140,12 @@ var _ MessageElement = (*EmptyDeclNode)(nil)
 //	  bool redacted = 33333;
 //	}
 type ExtendNode struct {
+	Extendee   IdentValueNode
 	Keyword    *KeywordNode
 	OpenBrace  *RuneNode
 	CloseBrace *RuneNode
-	Decls      []ExtendElement
-	Extendee   IdentValueNode
 	compositeNode
+	Decls []ExtendElement
 }
 
 func (*ExtendNode) fileElement() {}

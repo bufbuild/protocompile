@@ -35,11 +35,11 @@ var _ OptionDeclNode = NoSourceNode{}
 //
 //	option (custom.option) = "foo";
 type OptionNode struct {
+	Val       ValueNode
 	Keyword   *KeywordNode // absent for compact options
 	Name      *OptionNameNode
 	Equals    *RuneNode
 	Semicolon *RuneNode // absent for compact options
-	Val       ValueNode
 	compositeNode
 }
 
@@ -202,11 +202,11 @@ func NewOptionNameNode(parts []*FieldReferenceNode, dots []*RuneNode) *OptionNam
 //	[foo.bar]
 //	[type.googleapis.com/foo.bar]
 type FieldReferenceNode struct {
-	Open      *RuneNode // only present for extension names and "any" type references
-	Slash     *RuneNode
-	Close     *RuneNode      // only present for extension names and "any" type references
 	URLPrefix IdentValueNode // only present for "any" type references
 	Name      IdentValueNode
+	Open      *RuneNode // only present for extension names and "any" type references
+	Slash     *RuneNode
+	Close     *RuneNode // only present for extension names and "any" type references
 	compositeNode
 }
 
@@ -309,13 +309,13 @@ func (a *FieldReferenceNode) Value() string {
 type CompactOptionsNode struct {
 	OpenBracket  *RuneNode
 	CloseBracket *RuneNode
-	Options      []*OptionNode
+	compositeNode
+	Options []*OptionNode
 	// Commas represent the separating ',' characters between options. The
 	// length of this slice must be exactly len(Options)-1, with each item
 	// in Options having a corresponding item in this slice *except the last*
 	// (since a trailing comma is not allowed).
 	Commas []*RuneNode
-	compositeNode
 }
 
 // NewCompactOptionsNode creates a *CompactOptionsNode. All args must be

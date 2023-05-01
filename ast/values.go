@@ -344,8 +344,8 @@ func (n *SpecialFloatLiteralNode) AsFloat() float64 {
 
 // SignedFloatLiteralNode represents a signed floating point number.
 type SignedFloatLiteralNode struct {
-	Sign  *RuneNode
 	Float FloatValueNode
+	Sign  *RuneNode
 	compositeNode
 	Val float64
 }
@@ -387,15 +387,15 @@ func (n *SignedFloatLiteralNode) AsFloat() float64 {
 //
 //	["foo", "bar", "baz"]
 type ArrayLiteralNode struct {
-	OpenBracket *RuneNode
-	Elements    []ValueNode
+	OpenBracket  *RuneNode
+	CloseBracket *RuneNode
+	compositeNode
+	Elements []ValueNode
 	// Commas represent the separating ',' characters between elements. The
 	// length of this slice must be exactly len(Elements)-1, with each item
 	// in Elements having a corresponding item in this slice *except the last*
 	// (since a trailing comma is not allowed).
-	Commas       []*RuneNode
-	CloseBracket *RuneNode
-	compositeNode
+	Commas []*RuneNode
 }
 
 // NewArrayLiteralNode creates a new *ArrayLiteralNode. The openBracket and
@@ -453,16 +453,16 @@ func (n *ArrayLiteralNode) Value() interface{} {
 //
 //	{ foo:1 foo:2 foo:3 bar:<name:"abc" id:123> }
 type MessageLiteralNode struct {
-	Open     *RuneNode // should be '{' or '<'
+	Open  *RuneNode // should be '{' or '<'
+	Close *RuneNode // should be '}' or '>', depending on Open
+	compositeNode
 	Elements []*MessageFieldNode
 	// Separator characters between elements, which can be either ','
 	// or ';' if present. This slice must be exactly len(Elements) in
 	// length, with each item in Elements having one corresponding item
 	// in Seps. Separators in message literals are optional, so a given
 	// item in this slice may be nil to indicate absence of a separator.
-	Seps  []*RuneNode
-	Close *RuneNode // should be '}' or '>', depending on Open
-	compositeNode
+	Seps []*RuneNode
 }
 
 // NewMessageLiteralNode creates a new *MessageLiteralNode. The openSym and
@@ -521,13 +521,13 @@ func (n *MessageLiteralNode) Value() interface{} {
 //
 //	foo:"bar"
 type MessageFieldNode struct {
+	Val  ValueNode
 	Name *FieldReferenceNode
 	// Sep represents the ':' separator between the name and value. If
 	// the value is a message or list literal (and thus starts with '<',
 	// '{', or '['), then the separator may be omitted and this field may
 	// be nil.
 	Sep *RuneNode
-	Val ValueNode
 	compositeNode
 }
 
