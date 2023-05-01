@@ -451,9 +451,9 @@ func validateField(res *result, isProto3 bool, name protoreflect.FullName, fld *
 }
 
 type tagRange struct {
-	node  ast.RangeDeclNode
 	start int32
 	end   int32
+	node  ast.RangeDeclNode
 }
 
 type tagRanges []tagRange

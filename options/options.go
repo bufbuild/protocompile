@@ -59,9 +59,9 @@ type interpreter struct {
 	resolver                linker.Resolver
 	container               optionsContainer
 	overrideDescriptorProto linker.File
+	lenient                 bool
 	reporter                *reporter.Handler
 	index                   Index
-	lenient                 bool
 }
 
 type file interface {
@@ -508,9 +508,9 @@ func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.Enu
 // of the source (the way the options are de-structured and the order in
 // which options appear).
 type interpretedOption struct {
+	unknown    bool
 	pathPrefix []int32
 	interpretedField
-	unknown bool
 }
 
 func (o *interpretedOption) path() []int32 {
@@ -546,7 +546,6 @@ func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) ([
 // itself as well as for subfields when an option value is a message
 // literal.
 type interpretedField struct {
-	value interpretedFieldValue
 	// field number
 	number int32
 	// index of this element inside a repeated field; only set if repeated == true
@@ -557,6 +556,8 @@ type interpretedField struct {
 	packed bool
 	// the field's kind
 	kind protoreflect.Kind
+
+	value interpretedFieldValue
 }
 
 // interpretedFieldValue is a wrapper around protoreflect.Value that
@@ -568,12 +569,12 @@ type interpretedFieldValue struct {
 
 	// the field value
 	val protoreflect.Value
+	// if true, this value is a list of values, not a singular value
+	isList bool
 	// non-nil for singular message values
 	msgVal []*interpretedField
 	// non-nil for non-empty lists of message values
 	msgListVal [][]*interpretedField
-	// if true, this value is a list of values, not a singular value
-	isList bool
 }
 
 func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {

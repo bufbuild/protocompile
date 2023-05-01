@@ -23,12 +23,12 @@ import "fmt"
 //	  rpc Frobnitz (stream Parts) returns (Gyzmeaux);
 //	}
 type ServiceNode struct {
+	compositeNode
 	Keyword    *KeywordNode
 	Name       *IdentNode
 	OpenBrace  *RuneNode
+	Decls      []ServiceElement
 	CloseBrace *RuneNode
-	compositeNode
-	Decls []ServiceElement
 }
 
 func (*ServiceNode) fileElement() {}
@@ -104,6 +104,7 @@ var _ RPCDeclNode = NoSourceNode{}
 //
 //	rpc Foo (Bar) returns (Baz);
 type RPCNode struct {
+	compositeNode
 	Keyword    *KeywordNode
 	Name       *IdentNode
 	Input      *RPCTypeNode
@@ -111,9 +112,8 @@ type RPCNode struct {
 	Output     *RPCTypeNode
 	Semicolon  *RuneNode
 	OpenBrace  *RuneNode
+	Decls      []RPCElement
 	CloseBrace *RuneNode
-	compositeNode
-	Decls []RPCElement
 }
 
 func (n *RPCNode) serviceElement() {}
@@ -244,11 +244,11 @@ var _ RPCElement = (*EmptyDeclNode)(nil)
 //
 //	(stream foo.Bar)
 type RPCTypeNode struct {
-	MessageType IdentValueNode
+	compositeNode
 	OpenParen   *RuneNode
 	Stream      *KeywordNode
+	MessageType IdentValueNode
 	CloseParen  *RuneNode
-	compositeNode
 }
 
 // NewRPCTypeNode creates a new *RPCTypeNode. All arguments must be non-nil

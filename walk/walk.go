@@ -252,8 +252,8 @@ func DescriptorProtosEnterAndExit(file *descriptorpb.FileDescriptorProto, enter,
 }
 
 type protoWalker struct {
-	enter, exit func(protoreflect.FullName, protoreflect.SourcePath, proto.Message) error
 	usePath     bool
+	enter, exit func(protoreflect.FullName, protoreflect.SourcePath, proto.Message) error
 }
 
 func (w *protoWalker) walkDescriptorProtos(file *descriptorpb.FileDescriptorProto) error {

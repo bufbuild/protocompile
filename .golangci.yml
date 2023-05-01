@@ -105,8 +105,7 @@ issues:
       text: "fieldalignment:"
       linters:
         - govet
-    # exclude field alignment linter in tests
-    - path: (compiler|resolver)\.go
-      text: "fieldalignment:"
+    # exclude fieldalignment "pointer bytes" failures
+    - text: "pointer bytes"
       linters:
         - govet

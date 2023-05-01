@@ -42,10 +42,10 @@ var _ MessageDeclNode = NoSourceNode{}
 //	  bytes extra = 3;
 //	}
 type MessageNode struct {
-	MessageBody
+	compositeNode
 	Keyword *KeywordNode
 	Name    *IdentNode
-	compositeNode
+	MessageBody
 }
 
 func (*MessageNode) fileElement() {}
@@ -96,8 +96,8 @@ func (n *MessageNode) MessageName() Node {
 // MessageNodes and GroupNodes.
 type MessageBody struct {
 	OpenBrace  *RuneNode
-	CloseBrace *RuneNode
 	Decls      []MessageElement
+	CloseBrace *RuneNode
 }
 
 func populateMessageBody(m *MessageBody, openBrace *RuneNode, decls []MessageElement, closeBrace *RuneNode) {
@@ -140,12 +140,12 @@ var _ MessageElement = (*EmptyDeclNode)(nil)
 //	  bool redacted = 33333;
 //	}
 type ExtendNode struct {
-	Extendee   IdentValueNode
-	Keyword    *KeywordNode
-	OpenBrace  *RuneNode
-	CloseBrace *RuneNode
 	compositeNode
-	Decls []ExtendElement
+	Keyword    *KeywordNode
+	Extendee   IdentValueNode
+	OpenBrace  *RuneNode
+	Decls      []ExtendElement
+	CloseBrace *RuneNode
 }
 
 func (*ExtendNode) fileElement() {}

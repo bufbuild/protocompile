@@ -21,16 +21,16 @@ import "fmt"
 //
 //	extensions 100 to max;
 type ExtensionRangeNode struct {
-	Keyword   *KeywordNode
-	Options   *CompactOptionsNode
-	Semicolon *RuneNode
 	compositeNode
-	Ranges []*RangeNode
+	Keyword *KeywordNode
+	Ranges  []*RangeNode
 	// Commas represent the separating ',' characters between ranges. The
 	// length of this slice must be exactly len(Ranges)-1, each item in Ranges
 	// having a corresponding item in this slice *except the last* (since a
 	// trailing comma is not allowed).
-	Commas []*RuneNode
+	Commas    []*RuneNode
+	Options   *CompactOptionsNode
+	Semicolon *RuneNode
 }
 
 func (e *ExtensionRangeNode) msgElement() {}
@@ -107,13 +107,13 @@ var _ RangeDeclNode = NoSourceNode{}
 //
 //	1000 to max
 type RangeNode struct {
+	compositeNode
 	StartVal IntValueNode
+	// if To is non-nil, then exactly one of EndVal or Max must also be non-nil
+	To *KeywordNode
 	// EndVal and Max are mutually exclusive
 	EndVal IntValueNode
-	// if To is non-nil, then exactly one of EndVal or Max must also be non-nil
-	To  *KeywordNode
-	Max *KeywordNode
-	compositeNode
+	Max    *KeywordNode
 }
 
 // NewRangeNode creates a new *RangeNode. The start argument must be non-nil.
@@ -208,9 +208,8 @@ func (n *RangeNode) EndValueAsInt32(min, max int32) (int32, bool) {
 //	reserved 1, 10-12, 15;
 //	reserved "foo", "bar", "baz";
 type ReservedNode struct {
-	Keyword   *KeywordNode
-	Semicolon *RuneNode
 	compositeNode
+	Keyword *KeywordNode
 	// If non-empty, this node represents reserved ranges and Names will be empty.
 	Ranges []*RangeNode
 	// If non-empty, this node represents reserved names and Ranges will be empty.
@@ -220,7 +219,8 @@ type ReservedNode struct {
 	// on whether this node represents reserved ranges or reserved names. Each item
 	// in Ranges or Names has a corresponding item in this slice *except the last*
 	// (since a trailing comma is not allowed).
-	Commas []*RuneNode
+	Commas    []*RuneNode
+	Semicolon *RuneNode
 }
 
 func (*ReservedNode) msgElement()  {}

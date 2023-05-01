@@ -20,12 +20,12 @@ import "fmt"
 //
 //	enum Foo { BAR = 0; BAZ = 1 }
 type EnumNode struct {
+	compositeNode
 	Keyword    *KeywordNode
 	Name       *IdentNode
 	OpenBrace  *RuneNode
+	Decls      []EnumElement
 	CloseBrace *RuneNode
-	compositeNode
-	Decls []EnumElement
 }
 
 func (*EnumNode) fileElement() {}
@@ -104,12 +104,12 @@ var _ EnumValueDeclNode = NoSourceNode{}
 //
 //	UNSET = 0 [deprecated = true];
 type EnumValueNode struct {
-	Number    IntValueNode
+	compositeNode
 	Name      *IdentNode
 	Equals    *RuneNode
+	Number    IntValueNode
 	Options   *CompactOptionsNode
 	Semicolon *RuneNode
-	compositeNode
 }
 
 func (*EnumValueNode) enumElement() {}

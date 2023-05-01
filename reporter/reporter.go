@@ -83,11 +83,11 @@ func (r reporterFuncs) Warning(err ErrorWithPos) {
 // so that reporter instances do not have to be thread-safe (unless re-used
 // across multiple handlers).
 type Handler struct {
-	reporter     Reporter
-	err          error
 	parent       *Handler
 	mu           sync.Mutex
+	reporter     Reporter
 	errsReported bool
+	err          error
 }
 
 // NewHandler creates a new Handler that reports errors and warnings using the
