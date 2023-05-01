@@ -26,6 +26,9 @@ linters-settings:
     # TODO, OPT, etc. comments are fine to commit. Use FIXME comments for
     # temporary hacks, and use godox to prevent committing them.
     keywords: [FIXME]
+  govet:
+    enable:
+      - fieldalignment
   varnamelen:
     ignore-decls:
       - T any
@@ -97,3 +100,12 @@ issues:
       linters:
         - dupword
         - gosec
+    # exclude field alignment linter in tests
+    - path: _test\.go
+      text: "fieldalignment:"
+      linters:
+        - govet
+    # exclude fieldalignment "pointer bytes" failures
+    - text: "pointer bytes"
+      linters:
+        - govet
