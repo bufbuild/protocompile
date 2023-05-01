@@ -30,9 +30,9 @@ import (
 )
 
 type runeReader struct {
+	err  error
 	data []byte
 	pos  int
-	err  error
 	mark int
 	// Enable this check to make input required to be valid UTF-8.
 	// For now, since protoc allows invalid UTF-8, default to false.
@@ -83,10 +83,9 @@ type protoLex struct {
 	res     *ast.FileNode
 
 	prevSym    ast.TerminalNode
-	prevOffset int
+	comments   []ast.Token
 	eof        ast.Token
-
-	comments []ast.Token
+	prevOffset int
 }
 
 var utf8Bom = []byte{0xEF, 0xBB, 0xBF}

@@ -31,14 +31,14 @@ var _ FileDeclNode = NoSourceNode{}
 // FileNode is the root of the AST hierarchy. It represents an entire
 // protobuf source file.
 type FileNode struct {
-	compositeNode
 	fileInfo *FileInfo
 
 	Syntax *SyntaxNode // nil if file has no syntax declaration
-	Decls  []FileElement
-
 	// This synthetic node allows access to final comments and whitespace
 	EOF *RuneNode
+
+	Decls []FileElement
+	compositeNode
 }
 
 // NewFileNode creates a new *FileNode. The syntax parameter is optional. If it
@@ -140,11 +140,11 @@ var _ FileElement = (*EmptyDeclNode)(nil)
 //
 // Files that don't have a syntax node are assumed to use proto2 syntax.
 type SyntaxNode struct {
-	compositeNode
 	Keyword   *KeywordNode
 	Equals    *RuneNode
-	Syntax    StringValueNode
 	Semicolon *RuneNode
+	Syntax    StringValueNode
+	compositeNode
 }
 
 // NewSyntaxNode creates a new *SyntaxNode. All four arguments must be non-nil:
@@ -181,14 +181,14 @@ func NewSyntaxNode(keyword *KeywordNode, equals *RuneNode, syntax StringValueNod
 //
 //	import "google/protobuf/empty.proto";
 type ImportNode struct {
-	compositeNode
 	Keyword *KeywordNode
 	// Optional; if present indicates this is a public import
 	Public *KeywordNode
 	// Optional; if present indicates this is a weak import
 	Weak      *KeywordNode
-	Name      StringValueNode
 	Semicolon *RuneNode
+	Name      StringValueNode
+	compositeNode
 }
 
 // NewImportNode creates a new *ImportNode. The public and weak arguments are optional
@@ -243,10 +243,10 @@ func (*ImportNode) fileElement() {}
 //
 //	package foobar.com;
 type PackageNode struct {
-	compositeNode
 	Keyword   *KeywordNode
-	Name      IdentValueNode
 	Semicolon *RuneNode
+	Name      IdentValueNode
+	compositeNode
 }
 
 func (*PackageNode) fileElement() {}

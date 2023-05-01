@@ -40,10 +40,9 @@ import (
 // aren't present.
 
 type result struct {
+	srcLocations srcLocs
 	protoreflect.FileDescriptor
 	parser.Result
-	prefix string
-	deps   Files
 
 	// A map of all descriptors keyed by their fully-qualified name (without
 	// any leading dot).
@@ -64,12 +63,13 @@ type result struct {
 	// are resolved during linking and stored here, to be used to interpret options.
 	optionQualifiedNames map[ast.IdentValueNode]string
 
-	imports      fileImports
-	messages     msgDescriptors
-	enums        enumDescriptors
-	extensions   extDescriptors
-	services     svcDescriptors
-	srcLocations srcLocs
+	prefix     string
+	messages   msgDescriptors
+	imports    fileImports
+	enums      enumDescriptors
+	extensions extDescriptors
+	services   svcDescriptors
+	deps       Files
 }
 
 var _ protoreflect.FileDescriptor = (*result)(nil)
@@ -377,8 +377,8 @@ func (f *fileImports) Get(i int) protoreflect.FileImport {
 type srcLocs struct {
 	protoreflect.SourceLocations
 	file  *result
-	locs  []protoreflect.SourceLocation
 	index map[interface{}]int
+	locs  []protoreflect.SourceLocation
 }
 
 func (s *srcLocs) Len() int {
@@ -528,22 +528,20 @@ func (m *msgDescriptors) ByName(s protoreflect.Name) protoreflect.MessageDescrip
 }
 
 type msgDescriptor struct {
-	protoreflect.MessageDescriptor
-	file   *result
 	parent protoreflect.Descriptor
-	index  int
-	proto  *descriptorpb.DescriptorProto
-	fqn    string
-
+	protoreflect.MessageDescriptor
+	file             *result
+	proto            *descriptorpb.DescriptorProto
+	fqn              string
+	nestedEnums      enumDescriptors
 	fields           fldDescriptors
 	oneofs           oneofDescriptors
 	nestedMessages   msgDescriptors
-	nestedEnums      enumDescriptors
 	nestedExtensions extDescriptors
-
-	extRanges  fieldRanges
-	rsvdRanges fieldRanges
-	rsvdNames  names
+	extRanges        fieldRanges
+	rsvdRanges       fieldRanges
+	rsvdNames        names
+	index            int
 }
 
 var _ protoreflect.MessageDescriptor = (*msgDescriptor)(nil)
@@ -772,16 +770,14 @@ func (e *enumDescriptors) ByName(s protoreflect.Name) protoreflect.EnumDescripto
 
 type enumDescriptor struct {
 	protoreflect.EnumDescriptor
-	file   *result
-	parent protoreflect.Descriptor
-	index  int
-	proto  *descriptorpb.EnumDescriptorProto
-	fqn    string
-
-	values enValDescriptors
-
+	parent     protoreflect.Descriptor
+	file       *result
+	proto      *descriptorpb.EnumDescriptorProto
+	fqn        string
+	values     enValDescriptors
 	rsvdRanges enumRanges
 	rsvdNames  names
+	index      int
 }
 
 var _ protoreflect.EnumDescriptor = (*enumDescriptor)(nil)
@@ -930,9 +926,9 @@ type enValDescriptor struct {
 	protoreflect.EnumValueDescriptor
 	file   *result
 	parent *enumDescriptor
-	index  int
 	proto  *descriptorpb.EnumValueDescriptorProto
 	fqn    string
+	index  int
 }
 
 var _ protoreflect.EnumValueDescriptor = (*enValDescriptor)(nil)
@@ -1093,16 +1089,15 @@ func (f *fldDescriptors) ByNumber(n protoreflect.FieldNumber) protoreflect.Field
 
 type fldDescriptor struct {
 	protoreflect.FieldDescriptor
-	file   *result
-	parent protoreflect.Descriptor
-	index  int
-	proto  *descriptorpb.FieldDescriptorProto
-	fqn    string
-
+	parent   protoreflect.Descriptor
 	msgType  protoreflect.MessageDescriptor
 	extendee protoreflect.MessageDescriptor
 	enumType protoreflect.EnumDescriptor
 	oneof    protoreflect.OneofDescriptor
+	file     *result
+	proto    *descriptorpb.FieldDescriptorProto
+	fqn      string
+	index    int
 }
 
 var _ protoreflect.FieldDescriptor = (*fldDescriptor)(nil)
@@ -1575,11 +1570,10 @@ type oneofDescriptor struct {
 	protoreflect.OneofDescriptor
 	file   *result
 	parent *msgDescriptor
-	index  int
 	proto  *descriptorpb.OneofDescriptorProto
 	fqn    string
-
 	fields fldDescriptors
+	index  int
 }
 
 var _ protoreflect.OneofDescriptor = (*oneofDescriptor)(nil)
@@ -1685,12 +1679,11 @@ func (s *svcDescriptors) ByName(n protoreflect.Name) protoreflect.ServiceDescrip
 
 type svcDescriptor struct {
 	protoreflect.ServiceDescriptor
-	file  *result
-	index int
-	proto *descriptorpb.ServiceDescriptorProto
-	fqn   string
-
+	file    *result
+	proto   *descriptorpb.ServiceDescriptorProto
+	fqn     string
 	methods mtdDescriptors
+	index   int
 }
 
 var _ protoreflect.ServiceDescriptor = (*svcDescriptor)(nil)
@@ -1784,11 +1777,12 @@ type mtdDescriptor struct {
 	protoreflect.MethodDescriptor
 	file   *result
 	parent *svcDescriptor
-	index  int
 	proto  *descriptorpb.MethodDescriptorProto
-	fqn    string
 
 	inputType, outputType protoreflect.MessageDescriptor
+
+	fqn   string
+	index int
 }
 
 var _ protoreflect.MethodDescriptor = (*mtdDescriptor)(nil)

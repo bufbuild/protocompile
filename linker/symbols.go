@@ -41,11 +41,11 @@ type Symbols struct {
 }
 
 type packageSymbols struct {
-	mu       sync.RWMutex
 	children map[protoreflect.FullName]*packageSymbols
 	files    map[protoreflect.FileDescriptor]struct{}
 	symbols  map[protoreflect.FullName]symbolEntry
 	exts     map[extNumber]ast.SourcePos
+	mu       sync.RWMutex
 }
 
 type extNumber struct {

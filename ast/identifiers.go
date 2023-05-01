@@ -38,8 +38,8 @@ var _ IdentValueNode = (*CompoundIdentNode)(nil)
 //
 //	foobar
 type IdentNode struct {
-	terminalNode
 	Val string
+	terminalNode
 }
 
 // NewIdentNode creates a new *IdentNode. The given val is the identifier text.
@@ -72,7 +72,6 @@ func (n *IdentNode) ToKeyword() *KeywordNode {
 //
 //	.com.foobar.Baz
 type CompoundIdentNode struct {
-	compositeNode
 	// Optional leading dot, indicating that the identifier is fully qualified.
 	LeadingDot *RuneNode
 	Components []*IdentNode
@@ -82,6 +81,7 @@ type CompoundIdentNode struct {
 	// The text value of the identifier, with all components and dots
 	// concatenated.
 	Val string
+	compositeNode
 }
 
 // NewCompoundIdentNode creates a *CompoundIdentNode. The leadingDot may be nil.

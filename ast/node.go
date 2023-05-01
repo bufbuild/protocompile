@@ -112,8 +112,8 @@ func NewRuneNode(r rune, tok Token) *RuneNode {
 // These amount to extra semicolons, with no actual content preceding
 // the semicolon.
 type EmptyDeclNode struct {
-	compositeNode
 	Semicolon *RuneNode
+	compositeNode
 }
 
 // NewEmptyDeclNode creates a new *EmptyDeclNode. The one argument must
