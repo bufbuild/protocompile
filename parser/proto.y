@@ -43,9 +43,9 @@ import (
 	svcElement   ast.ServiceElement
 	svcElements  []ast.ServiceElement
 	mtd          *ast.RPCNode
-	rpcType      *ast.RPCTypeNode
-	rpcElement   ast.RPCElement
-	rpcElements  []ast.RPCElement
+	mtdMsgType   *ast.RPCTypeNode
+	mtdElement   ast.RPCElement
+	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
@@ -85,9 +85,9 @@ import (
 %type <cmpctOpts>    compactOptions
 %type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
 %type <il>           enumValueNumber
-%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName notGroupElementName rpcElementName enumValueName fieldCardinality
-%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent notGroupElementIdent rpcElementIdent
-%type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent notGroupElementTypeIdent rpcElementTypeIdent
+%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName notGroupElementName mtdElementName enumValueName fieldCardinality
+%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent notGroupElementIdent mtdElementIdent
+%type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent notGroupElementTypeIdent mtdElementTypeIdent
 %type <sl>           listElements messageLiterals
 %type <msgLitFlds>   messageLiteralFieldEntry messageLiteralFields messageTextFormat
 %type <msgLitFld>    messageLiteralField
@@ -118,9 +118,9 @@ import (
 %type <svcElement>   serviceElement
 %type <svcElements>  serviceElements serviceBody
 %type <mtd>          methodDecl
-%type <rpcElement>   methodElement
-%type <rpcElements>  methodElements methodBody
-%type <rpcType>      methodMessageType
+%type <mtdElement>   methodElement
+%type <mtdElements>  methodElements methodBody
+%type <mtdMsgType>   methodMessageType
 
 // same for terminals
 %token <s>   _STRING_LIT
@@ -269,10 +269,10 @@ notGroupElementIdent : notGroupElementName {
 		$$ = $1
 	}
 
-rpcElementIdent : rpcElementName {
+mtdElementIdent : mtdElementName {
 		$$ = &identSlices{idents: []*ast.IdentNode{$1}}
 	}
-	| rpcElementIdent '.' identifier {
+	| mtdElementIdent '.' identifier {
 		$1.idents = append($1.idents, $3)
 		$1.dots = append($1.dots, $2)
 		$$ = $1
@@ -557,7 +557,7 @@ notGroupElementTypeIdent : notGroupElementIdent {
 		$$ = $2.toIdentValueNode($1)
 	}
 
-rpcElementTypeIdent : rpcElementIdent {
+mtdElementTypeIdent : mtdElementIdent {
 		$$ = $1.toIdentValueNode(nil)
 	}
 	| '.' qualifiedIdentifier {
@@ -967,7 +967,7 @@ methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType ';' {
 methodMessageType : '(' _STREAM typeName ')' {
 		$$ = ast.NewRPCTypeNode($1, $2.ToKeyword(), $3, $4)
 	}
-	| '(' rpcElementTypeIdent ')' {
+	| '(' mtdElementTypeIdent ')' {
 		$$ = ast.NewRPCTypeNode($1, nil, $2, $3)
 	}
 
@@ -1207,7 +1207,7 @@ notGroupElementName : _NAME
 	| _RETURNS
 
 // excludes stream
-rpcElementName : _NAME
+mtdElementName : _NAME
 	| _SYNTAX
 	| _IMPORT
 	| _WEAK
