@@ -534,24 +534,12 @@ extElementTypeIdent : extElementIdent {
 oneofElementTypeIdent : oneofElementIdent {
 		$$ = $1.toIdentValueNode(nil)
 	}
-	| _GROUP '.' qualifiedIdentifier {
-		$$ = (&identSlices{
-			idents: append([]*ast.IdentNode{$1}, $3.idents...),
-			dots:   append([]*ast.RuneNode{$2}, $3.dots...),
-		}).toIdentValueNode(nil)
-	}
 	| '.' qualifiedIdentifier {
 		$$ = $2.toIdentValueNode($1)
 	}
 
 notGroupElementTypeIdent : notGroupElementIdent {
 		$$ = $1.toIdentValueNode(nil)
-	}
-	| _GROUP '.' qualifiedIdentifier {
-		$$ = (&identSlices{
-			idents: append([]*ast.IdentNode{$1}, $3.idents...),
-			dots:   append([]*ast.RuneNode{$2}, $3.dots...),
-		}).toIdentValueNode(nil)
 	}
 	| '.' qualifiedIdentifier {
 		$$ = $2.toIdentValueNode($1)
@@ -1002,7 +990,7 @@ methodElement : optionDecl {
 	}
 
 // excludes message, enum, oneof, extensions, reserved, extend,
-//   option, optional, required, and repeated
+//   option, group, optional, required, and repeated
 msgElementName : _NAME
 	| _SYNTAX
 	| _IMPORT
@@ -1028,7 +1016,6 @@ msgElementName : _NAME
 	| _BOOL
 	| _STRING
 	| _BYTES
-	| _GROUP
 	| _MAP
 	| _TO
 	| _MAX
@@ -1037,7 +1024,7 @@ msgElementName : _NAME
 	| _STREAM
 	| _RETURNS
 
-// excludes optional, required, and repeated
+// excludes group, optional, required, and repeated
 extElementName : _NAME
 	| _SYNTAX
 	| _IMPORT
@@ -1064,7 +1051,6 @@ extElementName : _NAME
 	| _BOOL
 	| _STRING
 	| _BYTES
-	| _GROUP
 	| _ONEOF
 	| _MAP
 	| _EXTENSIONS
