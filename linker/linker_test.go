@@ -1623,6 +1623,359 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			inputOrder: []string{"google/protobuf/descriptor.proto", "bar.proto"},
 		},
+		"failure_group_as_type_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { }
+					message Foo { optional group Foo = 1; }
+				`,
+			},
+			expectedErr: `test.proto:3:37: syntax error: unexpected ';', expecting '{' or '['`,
+		},
+		"failure_group_as_type_name_prefix": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { optional group.Bar Foo = 1; }
+				`,
+			},
+			expectedErr: `test.proto:3:29: syntax error: unexpected '.'`,
+		},
+		"success_group_as_type_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { }
+					message Foo { optional .group Foo = 1; }
+				`,
+			},
+		},
+		"success_group_as_type_name_prefix": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { optional .group.Bar Foo = 1; }
+				`,
+			},
+		},
+		"failure_oneof_group_as_type_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { }
+					message Foo { oneof abc { group Foo = 1; } }
+				`,
+			},
+			expectedErr: `test.proto:3:40: syntax error: unexpected ';', expecting '{' or '['`,
+		},
+		"failure_oneof_group_as_type_name_prefix": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { oneof abc { group.Bar Foo = 1; } }
+				`,
+			},
+			expectedErr: `test.proto:3:32: syntax error: unexpected '.'`,
+		},
+		"success_oneof_group_as_type_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { }
+					message Foo { oneof abc { .group Foo = 1; } }
+				`,
+			},
+		},
+		"success_oneof_group_as_type_name_prefix": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { oneof abc { .group.Bar Foo = 1; } }
+				`,
+			},
+		},
+		"failure_ext_group_as_type_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { extensions 1 to 100; }
+					extend Foo { optional group Fooz = 1; }
+				`,
+			},
+			expectedErr: `test.proto:4:37: syntax error: unexpected ';', expecting '{' or '['`,
+		},
+		"failure_ext_group_as_type_name_prefix": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { extensions 1 to 100; }
+					extend Foo { optional group.Bar Fooz = 1; }
+				`,
+			},
+			expectedErr: `test.proto:4:28: syntax error: unexpected '.'`,
+		},
+		"success_ext_group_as_type_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { extensions 1 to 100; }
+					extend Foo { optional .group Fooz = 1; }
+				`,
+			},
+		},
+		"success_ext_group_as_type_name_prefix": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message group { message Bar {} }
+					message Foo { extensions 1 to 100; }
+					extend Foo { optional .group.Bar Fooz = 1; }
+				`,
+			},
+		},
+		"failure_group_as_type_name_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { }
+					message Foo { optional group Foo = 1; }
+				`,
+			},
+			expectedErr: `test.proto:3:37: syntax error: unexpected ';', expecting '{' or '['`,
+		},
+		"failure_group_as_type_name_prefix_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { message Bar {} }
+					message Foo { optional group.Bar Foo = 1; }
+				`,
+			},
+			expectedErr: `test.proto:3:29: syntax error: unexpected '.'`,
+		},
+		"success_group_as_type_name_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { }
+					message Foo { optional .group Foo = 1; }
+				`,
+			},
+		},
+		"success_group_as_type_name_prefix_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { message Bar {} }
+					message Foo { optional .group.Bar Foo = 1; }
+				`,
+			},
+		},
+		"failure_oneof_group_as_type_name_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { }
+					message Foo { oneof abc { group Foo = 1; } }
+				`,
+			},
+			expectedErr: `test.proto:3:40: syntax error: unexpected ';', expecting '{' or '['`,
+		},
+		"failure_oneof_group_as_type_name_prefix_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { message Bar {} }
+					message Foo { oneof abc { group.Bar Foo = 1; } }
+				`,
+			},
+			expectedErr: `test.proto:3:32: syntax error: unexpected '.'`,
+		},
+		"success_oneof_group_as_type_name_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { }
+					message Foo { oneof abc { .group Foo = 1; } }
+				`,
+			},
+		},
+		"success_oneof_group_as_type_name_prefix_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { message Bar {} }
+					message Foo { oneof abc { .group.Bar Foo = 1; } }
+				`,
+			},
+		},
+		"failure_ext_group_as_type_name_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { optional group Foo = 10101; }
+				`,
+			},
+			expectedErr: `test.proto:4:67: syntax error: unexpected ';', expecting '{' or '['`,
+		},
+		"failure_ext_group_as_type_name_prefix_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { optional group.Bar Foo = 10101; }
+				`,
+			},
+			expectedErr: `test.proto:4:55: syntax error: unexpected '.'`,
+		},
+		"success_ext_group_as_type_name_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { optional .group Foo = 10101; }
+				`,
+			},
+		},
+		"success_ext_group_as_type_name_prefix_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { optional .group.Bar Foo = 10101; }
+				`,
+			},
+		},
+		"failure_group_as_type_name_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { }
+					message Foo { group Foo = 1; }
+				`,
+			},
+			expectedErr: `test.proto:3:15: syntax error: unexpected "group"`,
+		},
+		"failure_group_as_type_name_prefix_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { message Bar {} }
+					message Foo { group.Bar Foo = 1; }
+				`,
+			},
+			expectedErr: `test.proto:3:15: syntax error: unexpected "group"`,
+		},
+		"success_group_as_type_name_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { }
+					message Foo { .group Foo = 1; }
+				`,
+			},
+		},
+		"success_group_as_type_name_prefix_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message group { message Bar {} }
+					message Foo { .group.Bar Foo = 1; }
+				`,
+			},
+		},
+		"failure_ext_group_as_type_name_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { group Foo = 10101; }
+				`,
+			},
+			expectedErr: `test.proto:4:41: syntax error: unexpected "group"`,
+		},
+		"failure_ext_group_as_type_name_prefix_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { group.Bar Foo = 10101; }
+				`,
+			},
+			expectedErr: `test.proto:4:41: syntax error: unexpected "group"`,
+		},
+		"success_ext_group_as_type_name_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { .group Foo = 10101; }
+				`,
+			},
+		},
+		"success_ext_group_as_type_name_prefix_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					message group { message Bar {} }
+					extend google.protobuf.MessageOptions { .group.Bar Foo = 10101; }
+				`,
+			},
+		},
+		"failure_group_proto3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo { optional group Foo = 1 {} }
+				`,
+			},
+			expectedErr: `test.proto:2:24: field Foo.foo: groups are not allowed in proto3`,
+		},
+		"failure_group_proto3_no_label": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo { group Foo = 1 {} }
+				`,
+			},
+			expectedErr: `test.proto:2:15: syntax error: unexpected "group"`,
+		},
+		"failure_stream_looks_like_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message stream { message Foo {} }
+					service FooService { rpc Do(stream.Foo) returns (stream.Foo); }
+				`,
+			},
+			expectedErr: `test.proto:3:35: method FooService.Do: unknown request type .Foo`,
+		},
+		"success_stream_looks_like_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message stream { message Foo {} }
+					service FooService { rpc Do(.stream.Foo) returns (.stream.Foo); }
+				`,
+			},
+		},
 	}
 
 	for name, tc := range testCases {

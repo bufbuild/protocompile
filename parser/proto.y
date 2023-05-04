@@ -43,9 +43,9 @@ import (
 	svcElement   ast.ServiceElement
 	svcElements  []ast.ServiceElement
 	mtd          *ast.RPCNode
-	rpcType      *ast.RPCTypeNode
-	rpcElement   ast.RPCElement
-	rpcElements  []ast.RPCElement
+	mtdMsgType   *ast.RPCTypeNode
+	mtdElement   ast.RPCElement
+	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
@@ -80,16 +80,14 @@ import (
 %type <pkg>          packageDecl
 %type <opt>          optionDecl compactOption
 %type <opts>         compactOptionDecls
-%type <rpcElement>   methodElement
-%type <rpcElements>  methodElements
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
 %type <cmpctOpts>    compactOptions
 %type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
 %type <il>           enumValueNumber
-%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName enumValueName fieldCardinality
-%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent
-%type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent
+%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName notGroupElementName mtdElementName enumValueName fieldCardinality
+%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent notGroupElementIdent mtdElementIdent
+%type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent notGroupElementTypeIdent mtdElementTypeIdent
 %type <sl>           listElements messageLiterals
 %type <msgLitFlds>   messageLiteralFieldEntry messageLiteralFields messageTextFormat
 %type <msgLitFld>    messageLiteralField
@@ -100,9 +98,9 @@ import (
 %type <mapType>      mapType
 %type <msg>          messageDecl
 %type <msgElement>   messageElement
-%type <msgElements>  messageElements
+%type <msgElements>  messageElements messageBody
 %type <ooElement>    oneofElement
-%type <ooElements>   oneofElements
+%type <ooElements>   oneofElements oneofBody
 %type <names>        fieldNames
 %type <resvd>        msgReserved enumReserved reservedNames
 %type <rng>          tagRange enumValueRange
@@ -110,17 +108,19 @@ import (
 %type <ext>          extensionRangeDecl
 %type <en>           enumDecl
 %type <enElement>    enumElement
-%type <enElements>   enumElements
+%type <enElements>   enumElements enumBody
 %type <env>          enumValueDecl
 %type <extend>       extensionDecl
 %type <extElement>   extensionElement
-%type <extElements>  extensionElements
+%type <extElements>  extensionElements extensionBody
 %type <str>          stringLit
 %type <svc>          serviceDecl
 %type <svcElement>   serviceElement
-%type <svcElements>  serviceElements
+%type <svcElements>  serviceElements serviceBody
 %type <mtd>          methodDecl
-%type <rpcType>      methodMessageType
+%type <mtdElement>   methodElement
+%type <mtdElements>  methodElements methodBody
+%type <mtdMsgType>   methodMessageType
 
 // same for terminals
 %token <s>   _STRING_LIT
@@ -198,9 +198,6 @@ fileElement : importDecl {
 	| ';' {
 		$$ = ast.NewEmptyDeclNode($1)
 	}
-	| error ';' {
-		$$ = nil
-	}
 	| error {
 		$$ = nil
 	}
@@ -258,6 +255,24 @@ oneofElementIdent : oneofElementName {
 		$$ = &identSlices{idents: []*ast.IdentNode{$1}}
 	}
 	| oneofElementIdent '.' identifier {
+		$1.idents = append($1.idents, $3)
+		$1.dots = append($1.dots, $2)
+		$$ = $1
+	}
+
+notGroupElementIdent : notGroupElementName {
+		$$ = &identSlices{idents: []*ast.IdentNode{$1}}
+	}
+	| notGroupElementIdent '.' identifier {
+		$1.idents = append($1.idents, $3)
+		$1.dots = append($1.dots, $2)
+		$$ = $1
+	}
+
+mtdElementIdent : mtdElementName {
+		$$ = &identSlices{idents: []*ast.IdentNode{$1}}
+	}
+	| mtdElementIdent '.' identifier {
 		$1.idents = append($1.idents, $3)
 		$1.dots = append($1.dots, $2)
 		$$ = $1
@@ -351,9 +366,6 @@ messageLiteralWithBraces : '{' messageTextFormat '}' {
 	| '{' '}' {
 		$$ = ast.NewMessageLiteralNode($1, nil, nil, $2)
 	}
-	| '{' error '}' {
-		$$ = nil
-	}
 
 messageTextFormat : messageLiteralFields
 
@@ -392,6 +404,9 @@ messageLiteralFieldEntry : messageLiteralField {
 		$$ = nil
 	}
 	| error ';' {
+		$$ = nil
+	}
+	| error {
 		$$ = nil
 	}
 
@@ -444,9 +459,6 @@ messageLiteral : messageLiteralWithBraces
 	}
 	| '<' '>' {
 		$$ = ast.NewMessageLiteralNode($1, nil, nil, $2)
-	}
-	| '<' error '>' {
-		$$ = nil
 	}
 
 listLiteral : '[' listElements ']' {
@@ -526,6 +538,20 @@ oneofElementTypeIdent : oneofElementIdent {
 		$$ = $2.toIdentValueNode($1)
 	}
 
+notGroupElementTypeIdent : notGroupElementIdent {
+		$$ = $1.toIdentValueNode(nil)
+	}
+	| '.' qualifiedIdentifier {
+		$$ = $2.toIdentValueNode($1)
+	}
+
+mtdElementTypeIdent : mtdElementIdent {
+		$$ = $1.toIdentValueNode(nil)
+	}
+	| '.' qualifiedIdentifier {
+		$$ = $2.toIdentValueNode($1)
+	}
+
 fieldCardinality : _REQUIRED
 	| _OPTIONAL
 	| _REPEATED
@@ -548,16 +574,21 @@ compactOption: optionName '=' optionValue {
 		$$ = ast.NewCompactOptionNode(optName, $2, $3)
 	}
 
-groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageElements '}' {
+groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' {
 		$$ = ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8)
 	}
-	| fieldCardinality _GROUP identifier '=' _INT_LIT compactOptions '{' messageElements '}' {
+	| fieldCardinality _GROUP identifier '=' _INT_LIT compactOptions '{' messageBody '}' {
 		$$ = ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9)
 	}
 
-oneofDecl : _ONEOF identifier '{' oneofElements '}' {
+oneofDecl : _ONEOF identifier '{' oneofBody '}' {
 		$$ = ast.NewOneOfNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
+
+oneofBody : {
+		$$ = nil
+	}
+	| oneofElements
 
 oneofElements : oneofElements oneofElement {
 		if $2 != nil {
@@ -572,9 +603,6 @@ oneofElements : oneofElements oneofElement {
 		} else {
 			$$ = nil
 		}
-	}
-	| {
-		$$ = nil
 	}
 
 oneofElement : optionDecl {
@@ -600,10 +628,10 @@ oneofFieldDecl : oneofElementTypeIdent identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
-oneofGroupDecl : _GROUP identifier '=' _INT_LIT '{' messageElements '}' {
+oneofGroupDecl : _GROUP identifier '=' _INT_LIT '{' messageBody '}' {
 		$$ = ast.NewGroupNode(nil, $1.ToKeyword(), $2, $3, $4, nil, $5, $6, $7)
 	}
-	| _GROUP identifier '=' _INT_LIT compactOptions '{' messageElements '}' {
+	| _GROUP identifier '=' _INT_LIT compactOptions '{' messageBody '}' {
 		$$ = ast.NewGroupNode(nil, $1.ToKeyword(), $2, $3, $4, $5, $6, $7, $8)
 	}
 
@@ -706,9 +734,14 @@ fieldNames : stringLit {
 		$$ = $1
 	}
 
-enumDecl : _ENUM identifier '{' enumElements '}' {
+enumDecl : _ENUM identifier '{' enumBody '}' {
 		$$ = ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
+
+enumBody : {
+		$$ = nil
+	}
+	| enumElements
 
 enumElements : enumElements enumElement {
 		if $2 != nil {
@@ -724,9 +757,6 @@ enumElements : enumElements enumElement {
 			$$ = nil
 		}
 	}
-	| {
-		$$ = nil
-	}
 
 enumElement : optionDecl {
 		$$ = $1
@@ -740,9 +770,6 @@ enumElement : optionDecl {
 	| ';' {
 		$$ = ast.NewEmptyDeclNode($1)
 	}
-	| error ';' {
-		$$ = nil
-	}
 	| error {
 		$$ = nil
 	}
@@ -754,9 +781,14 @@ enumValueDecl : enumValueName '=' enumValueNumber ';' {
 		$$ = ast.NewEnumValueNode($1, $2, $3, $4, $5)
 	}
 
-messageDecl : _MESSAGE identifier '{' messageElements '}' {
+messageDecl : _MESSAGE identifier '{' messageBody '}' {
 		$$ = ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
+
+messageBody : {
+		$$ = nil
+	}
+	| messageElements
 
 messageElements : messageElements messageElement {
 		if $2 != nil {
@@ -771,9 +803,6 @@ messageElements : messageElements messageElement {
 		} else {
 			$$ = nil
 		}
-	}
-	| {
-		$$ = nil
 	}
 
 messageElement : messageFieldDecl {
@@ -809,17 +838,14 @@ messageElement : messageFieldDecl {
 	| ';' {
 		$$ = ast.NewEmptyDeclNode($1)
 	}
-	| error ';' {
-		$$ = nil
-	}
 	| error {
 		$$ = nil
 	}
 
-messageFieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
+messageFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
 	}
-	| fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
+	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
 	}
 	| msgElementTypeIdent identifier '=' _INT_LIT ';' {
@@ -829,9 +855,14 @@ messageFieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
-extensionDecl : _EXTEND typeName '{' extensionElements '}' {
+extensionDecl : _EXTEND typeName '{' extensionBody '}' {
 		$$ = ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
+
+extensionBody : {
+		$$ = nil
+	}
+	| extensionElements
 
 extensionElements : extensionElements extensionElement {
 		if $2 != nil {
@@ -847,9 +878,6 @@ extensionElements : extensionElements extensionElement {
 			$$ = nil
 		}
 	}
-	| {
-		$$ = nil
-	}
 
 extensionElement : extensionFieldDecl {
 		$$ = $1
@@ -864,10 +892,10 @@ extensionElement : extensionFieldDecl {
 		$$ = nil
 	}
 
-extensionFieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
+extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
 	}
-	| fieldCardinality typeName identifier '=' _INT_LIT compactOptions ';' {
+	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
 	}
 	| extElementTypeIdent identifier '=' _INT_LIT ';' {
@@ -877,9 +905,14 @@ extensionFieldDecl : fieldCardinality typeName identifier '=' _INT_LIT ';' {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
-serviceDecl : _SERVICE identifier '{' serviceElements '}' {
+serviceDecl : _SERVICE identifier '{' serviceBody '}' {
 		$$ = ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
+
+serviceBody : {
+		$$ = nil
+	}
+	| serviceElements
 
 serviceElements : serviceElements serviceElement {
 		if $2 != nil {
@@ -895,9 +928,6 @@ serviceElements : serviceElements serviceElement {
 			$$ = nil
 		}
 	}
-	| {
-		$$ = nil
-	}
 
 // NB: doc suggests support for "stream" declaration, separate from "rpc", but
 // it does not appear to be supported in protoc (doc is likely from grammar for
@@ -911,9 +941,6 @@ serviceElement : optionDecl {
 	| ';' {
 		$$ = ast.NewEmptyDeclNode($1)
 	}
-	| error ';' {
-		$$ = nil
-	}
 	| error {
 		$$ = nil
 	}
@@ -921,16 +948,21 @@ serviceElement : optionDecl {
 methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType ';' {
 		$$ = ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6)
 	}
-	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodElements '}' {
+	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' {
 		$$ = ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8)
 	}
 
 methodMessageType : '(' _STREAM typeName ')' {
 		$$ = ast.NewRPCTypeNode($1, $2.ToKeyword(), $3, $4)
 	}
-	| '(' typeName ')' {
+	| '(' mtdElementTypeIdent ')' {
 		$$ = ast.NewRPCTypeNode($1, nil, $2, $3)
 	}
+
+methodBody : {
+		$$ = nil
+	}
+	| methodElements
 
 methodElements : methodElements methodElement {
 		if $2 != nil {
@@ -946,9 +978,6 @@ methodElements : methodElements methodElement {
 			$$ = nil
 		}
 	}
-	| {
-		$$ = nil
-	}
 
 methodElement : optionDecl {
 		$$ = $1
@@ -956,15 +985,12 @@ methodElement : optionDecl {
 	| ';' {
 		$$ = ast.NewEmptyDeclNode($1)
 	}
-	| error ';' {
-		$$ = nil
-	}
 	| error {
 		$$ = nil
 	}
 
 // excludes message, enum, oneof, extensions, reserved, extend,
-//   option, optional, required, and repeated
+//   option, group, optional, required, and repeated
 msgElementName : _NAME
 	| _SYNTAX
 	| _IMPORT
@@ -990,7 +1016,6 @@ msgElementName : _NAME
 	| _BOOL
 	| _STRING
 	| _BYTES
-	| _GROUP
 	| _MAP
 	| _TO
 	| _MAX
@@ -999,7 +1024,7 @@ msgElementName : _NAME
 	| _STREAM
 	| _RETURNS
 
-// excludes optional, required, and repeated
+// excludes group, optional, required, and repeated
 extElementName : _NAME
 	| _SYNTAX
 	| _IMPORT
@@ -1026,7 +1051,6 @@ extElementName : _NAME
 	| _BOOL
 	| _STRING
 	| _BYTES
-	| _GROUP
 	| _ONEOF
 	| _MAP
 	| _EXTENSIONS
@@ -1084,7 +1108,7 @@ enumValueName : _NAME
 	| _STREAM
 	| _RETURNS
 
-// excludes option, optional, required, and repeated
+// excludes group, option, optional, required, and repeated
 oneofElementName : _NAME
 	| _SYNTAX
 	| _IMPORT
@@ -1095,6 +1119,94 @@ oneofElementName : _NAME
 	| _FALSE
 	| _INF
 	| _NAN
+	| _DOUBLE
+	| _FLOAT
+	| _INT32
+	| _INT64
+	| _UINT32
+	| _UINT64
+	| _SINT32
+	| _SINT64
+	| _FIXED32
+	| _FIXED64
+	| _SFIXED32
+	| _SFIXED64
+	| _BOOL
+	| _STRING
+	| _BYTES
+	| _ONEOF
+	| _MAP
+	| _EXTENSIONS
+	| _TO
+	| _MAX
+	| _RESERVED
+	| _ENUM
+	| _MESSAGE
+	| _EXTEND
+	| _SERVICE
+	| _RPC
+	| _STREAM
+	| _RETURNS
+
+// excludes group
+notGroupElementName : _NAME
+	| _SYNTAX
+	| _IMPORT
+	| _WEAK
+	| _PUBLIC
+	| _PACKAGE
+	| _OPTION
+	| _TRUE
+	| _FALSE
+	| _INF
+	| _NAN
+	| _REPEATED
+	| _OPTIONAL
+	| _REQUIRED
+	| _DOUBLE
+	| _FLOAT
+	| _INT32
+	| _INT64
+	| _UINT32
+	| _UINT64
+	| _SINT32
+	| _SINT64
+	| _FIXED32
+	| _FIXED64
+	| _SFIXED32
+	| _SFIXED64
+	| _BOOL
+	| _STRING
+	| _BYTES
+	| _ONEOF
+	| _MAP
+	| _EXTENSIONS
+	| _TO
+	| _MAX
+	| _RESERVED
+	| _ENUM
+	| _MESSAGE
+	| _EXTEND
+	| _SERVICE
+	| _RPC
+	| _STREAM
+	| _RETURNS
+
+// excludes stream
+mtdElementName : _NAME
+	| _SYNTAX
+	| _IMPORT
+	| _WEAK
+	| _PUBLIC
+	| _PACKAGE
+	| _OPTION
+	| _TRUE
+	| _FALSE
+	| _INF
+	| _NAN
+	| _REPEATED
+	| _OPTIONAL
+	| _REQUIRED
 	| _DOUBLE
 	| _FLOAT
 	| _INT32
@@ -1122,7 +1234,6 @@ oneofElementName : _NAME
 	| _EXTEND
 	| _SERVICE
 	| _RPC
-	| _STREAM
 	| _RETURNS
 
 identifier : _NAME
