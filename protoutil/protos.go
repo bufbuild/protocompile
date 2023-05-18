@@ -45,7 +45,7 @@ import (
 //	 FileDescriptor      |  FileDescriptorProto()
 //	 MessageDescriptor   |  MessageDescriptorProto()
 //	 FieldDescriptor     |  FieldDescriptorProto()
-//	 OneofDescriptor     |  OneOfDescriptorProto()
+//	 OneofDescriptor     |  OneofDescriptorProto()
 //	 EnumDescriptor      |  EnumDescriptorProto()
 //	 EnumValueDescriptor |  EnumValueDescriptorProto()
 //	 ServiceDescriptor   |  ServiceDescriptorProto()

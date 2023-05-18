@@ -450,7 +450,7 @@ func computePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 		case protoreflect.OneofDescriptor:
 			path = append(path, int32(d.Index()))
 			if _, ok := p.(protoreflect.MessageDescriptor); ok {
-				path = append(path, internal.MessageOneOfsTag)
+				path = append(path, internal.MessageOneofsTag)
 			} else {
 				return nil, false
 			}
@@ -557,7 +557,7 @@ func (r *result) createMessageDescriptor(md *descriptorpb.DescriptorProto, paren
 	// NB: We MUST create fields before oneofs so that we can populate the
 	//  set of fields that belong to the oneof
 	ret.fields = r.createFields(prefix, ret, md.Field)
-	ret.oneofs = r.createOneOfs(prefix, ret, md.OneofDecl)
+	ret.oneofs = r.createOneofs(prefix, ret, md.OneofDecl)
 	ret.nestedMessages = r.createMessages(prefix, ret, md.NestedType)
 	ret.nestedEnums = r.createEnums(prefix, ret, md.EnumType)
 	ret.nestedExtensions = r.createExtensions(prefix, ret, md.Extension)
@@ -1546,10 +1546,10 @@ type oneofDescriptors struct {
 	oneofs []*oneofDescriptor
 }
 
-func (r *result) createOneOfs(prefix string, parent *msgDescriptor, ooProtos []*descriptorpb.OneofDescriptorProto) oneofDescriptors {
+func (r *result) createOneofs(prefix string, parent *msgDescriptor, ooProtos []*descriptorpb.OneofDescriptorProto) oneofDescriptors {
 	oos := make([]*oneofDescriptor, len(ooProtos))
 	for i, fldProto := range ooProtos {
-		oos[i] = r.createOneOfDescriptor(fldProto, parent, i, prefix+fldProto.GetName())
+		oos[i] = r.createOneofDescriptor(fldProto, parent, i, prefix+fldProto.GetName())
 	}
 	return oneofDescriptors{oneofs: oos}
 }
@@ -1585,7 +1585,7 @@ type oneofDescriptor struct {
 var _ protoreflect.OneofDescriptor = (*oneofDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*oneofDescriptor)(nil)
 
-func (r *result) createOneOfDescriptor(ood *descriptorpb.OneofDescriptorProto, parent *msgDescriptor, index int, fqn string) *oneofDescriptor {
+func (r *result) createOneofDescriptor(ood *descriptorpb.OneofDescriptorProto, parent *msgDescriptor, index int, fqn string) *oneofDescriptor {
 	ret := &oneofDescriptor{file: r, parent: parent, index: index, proto: ood, fqn: fqn}
 	r.descriptors[fqn] = ret
 
@@ -1600,7 +1600,7 @@ func (r *result) createOneOfDescriptor(ood *descriptorpb.OneofDescriptorProto, p
 	return ret
 }
 
-func (o *oneofDescriptor) OneOfDescriptorProto() *descriptorpb.OneofDescriptorProto {
+func (o *oneofDescriptor) OneofDescriptorProto() *descriptorpb.OneofDescriptorProto {
 	return o.proto
 }
 

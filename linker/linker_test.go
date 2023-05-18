@@ -2324,7 +2324,7 @@ func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
 	}
 }
 
-func TestSyntheticOneOfCollisions(t *testing.T) {
+func TestSyntheticOneofCollisions(t *testing.T) {
 	t.Parallel()
 	input := map[string]string{
 		"foo1.proto": `

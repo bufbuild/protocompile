@@ -308,7 +308,7 @@ func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
 	case protoreflect.MessageDescriptor:
 		namePath = append(namePath, internal.MessageNameTag)
 	case protoreflect.OneofDescriptor:
-		namePath = append(namePath, internal.OneOfNameTag)
+		namePath = append(namePath, internal.OneofNameTag)
 	case protoreflect.EnumDescriptor:
 		namePath = append(namePath, internal.EnumNameTag)
 	case protoreflect.EnumValueDescriptor:
@@ -491,8 +491,8 @@ func nameStart(file ast.FileDeclNode, n ast.Node) ast.SourcePos {
 		return file.NodeInfo(n.FieldName()).Start()
 	case ast.MessageDeclNode:
 		return file.NodeInfo(n.MessageName()).Start()
-	case ast.OneOfDeclNode:
-		return file.NodeInfo(n.OneOfName()).Start()
+	case ast.OneofDeclNode:
+		return file.NodeInfo(n.OneofName()).Start()
 	case ast.EnumValueDeclNode:
 		return file.NodeInfo(n.GetName()).Start()
 	case *ast.EnumNode:

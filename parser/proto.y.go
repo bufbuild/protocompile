@@ -40,9 +40,9 @@ type protoSymType struct {
 	mapFld       *ast.MapFieldNode
 	mapType      *ast.MapTypeNode
 	grp          *ast.GroupNode
-	oo           *ast.OneOfNode
-	ooElement    ast.OneOfElement
-	ooElements   []ast.OneOfElement
+	oo           *ast.OneofNode
+	ooElement    ast.OneofElement
+	ooElements   []ast.OneofElement
 	ext          *ast.ExtensionRangeNode
 	resvd        *ast.ReservedNode
 	en           *ast.EnumNode
@@ -1715,7 +1715,7 @@ protodefault:
 	case 113:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
-			protoVAL.oo = ast.NewOneOfNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].ooElements, protoDollar[5].b)
+			protoVAL.oo = ast.NewOneofNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].ooElements, protoDollar[5].b)
 		}
 	case 114:
 		protoDollar = protoS[protopt-0 : protopt+1]
@@ -1735,7 +1735,7 @@ protodefault:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
 			if protoDollar[1].ooElement != nil {
-				protoVAL.ooElements = []ast.OneOfElement{protoDollar[1].ooElement}
+				protoVAL.ooElements = []ast.OneofElement{protoDollar[1].ooElement}
 			} else {
 				protoVAL.ooElements = nil
 			}

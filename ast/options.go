@@ -45,7 +45,7 @@ type OptionNode struct {
 
 func (n *OptionNode) fileElement()    {}
 func (n *OptionNode) msgElement()     {}
-func (n *OptionNode) oneOfElement()   {}
+func (n *OptionNode) oneofElement()   {}
 func (n *OptionNode) enumElement()    {}
 func (n *OptionNode) serviceElement() {}
 func (n *OptionNode) methodElement()  {}

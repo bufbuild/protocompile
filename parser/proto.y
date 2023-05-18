@@ -27,9 +27,9 @@ import (
 	mapFld       *ast.MapFieldNode
 	mapType      *ast.MapTypeNode
 	grp          *ast.GroupNode
-	oo           *ast.OneOfNode
-	ooElement    ast.OneOfElement
-	ooElements   []ast.OneOfElement
+	oo           *ast.OneofNode
+	ooElement    ast.OneofElement
+	ooElements   []ast.OneofElement
 	ext          *ast.ExtensionRangeNode
 	resvd        *ast.ReservedNode
 	en           *ast.EnumNode
@@ -582,7 +582,7 @@ groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' 
 	}
 
 oneofDecl : _ONEOF identifier '{' oneofBody '}' {
-		$$ = ast.NewOneOfNode($1.ToKeyword(), $2, $3, $4, $5)
+		$$ = ast.NewOneofNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
 
 oneofBody : {
@@ -599,7 +599,7 @@ oneofElements : oneofElements oneofElement {
 	}
 	| oneofElement {
 		if $1 != nil {
-			$$ = []ast.OneOfElement{$1}
+			$$ = []ast.OneofElement{$1}
 		} else {
 			$$ = nil
 		}

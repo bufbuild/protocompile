@@ -359,7 +359,7 @@ func (w *protoWalker) walkDescriptorProto(prefix string, path protoreflect.Sourc
 		var p protoreflect.SourcePath
 		if w.usePath {
 			p = path
-			p = append(p, internal.MessageOneOfsTag, int32(i))
+			p = append(p, internal.MessageOneofsTag, int32(i))
 		}
 		fqn := prefix + oo.GetName()
 		if err := w.enter(protoreflect.FullName(fqn), p, oo); err != nil {
