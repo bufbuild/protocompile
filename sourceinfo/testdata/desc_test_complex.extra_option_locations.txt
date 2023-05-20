@@ -422,6 +422,12 @@ desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > op
 desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > options > (foo.bar.rept)[0]:
    Span: 53:25 -> 53:108
 
+desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > options > (foo.bar.rept)[0] > foo:
+   Span: 53:43 -> 53:53
+
+desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > options > (foo.bar.rept)[0] > (foo.bar.Test.Nested._NestedNested._garblez):
+   Span: 53:54 -> 53:105
+
 desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > nested_type[0]:
    Span: 54:25 -> 58:26
 
@@ -433,6 +439,12 @@ desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > ne
 
 desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > nested_type[0] > options > (foo.bar.rept)[0]:
    Span: 55:33 -> 55:109
+
+desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > nested_type[0] > options > (foo.bar.rept)[0] > foo:
+   Span: 55:51 -> 55:61
+
+desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > nested_type[0] > options > (foo.bar.rept)[0] > (foo.bar.Test.Nested._NestedNested._garblez):
+   Span: 55:62 -> 55:106
 
 desc_test_complex.proto > message_type[1] > nested_type[1] > nested_type[0] > nested_type[0] > field[0]:
    Span: 57:33 -> 57:56
@@ -725,17 +737,92 @@ desc_test_complex.proto > message_type[4] > options:
 desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0]:
    Span: 92:5 -> 92:130
 
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > foo:
+   Span: 92:32 -> 92:42
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > s:
+   Span: 92:43 -> 92:69
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > s > name:
+   Span: 92:47 -> 92:58
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > s > id:
+   Span: 92:60 -> 92:67
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > array[0]:
+   Span: 92:79 -> 92:80
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > array[1]:
+   Span: 92:82 -> 92:83
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > array[2]:
+   Span: 92:85 -> 92:86
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > r[0]:
+   Span: 92:92 -> 92:102
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > r[0] > name:
+   Span: 92:93 -> 92:101
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > r[1]:
+   Span: 92:104 -> 92:114
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > r[1] > name:
+   Span: 92:105 -> 92:113
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > r[2]:
+   Span: 92:116 -> 92:124
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[0] > r[2] > id:
+   Span: 92:117 -> 92:123
+
 desc_test_complex.proto > message_type[4] > options:
    Span: 93:5 -> 93:115
 
 desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1]:
    Span: 93:5 -> 93:115
 
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > foo:
+   Span: 93:31 -> 93:41
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > s:
+   Span: 93:42 -> 93:68
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > s > name:
+   Span: 93:46 -> 93:57
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > s > id:
+   Span: 93:59 -> 93:66
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > array[0]:
+   Span: 93:78 -> 93:79
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > array[1]:
+   Span: 93:81 -> 93:82
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > array[2]:
+   Span: 93:84 -> 93:85
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > r[0]:
+   Span: 93:88 -> 93:100
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > r[0] > name:
+   Span: 93:91 -> 93:99
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > r[1]:
+   Span: 93:101 -> 93:113
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[1] > r[1] > name:
+   Span: 93:104 -> 93:112
+
 desc_test_complex.proto > message_type[4] > options:
    Span: 94:5 -> 94:36
 
 desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[2]:
    Span: 94:5 -> 94:36
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.rept)[2] > foo:
+   Span: 94:23 -> 94:33
 
 desc_test_complex.proto > message_type[4] > options:
    Span: 95:5 -> 95:23
@@ -749,11 +836,32 @@ desc_test_complex.proto > message_type[4] > options:
 desc_test_complex.proto > message_type[4] > options > (foo.bar.a):
    Span: 96:9 -> 96:34
 
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > fff:
+   Span: 96:24 -> 96:31
+
 desc_test_complex.proto > message_type[4] > options:
    Span: 97:9 -> 97:86
 
 desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test:
    Span: 97:9 -> 97:86
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test > m[0]:
+   Span: 97:29 -> 97:56
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test > m[0] > key:
+   Span: 97:33 -> 97:43
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test > m[0] > value:
+   Span: 97:44 -> 97:54
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test > m[1]:
+   Span: 97:57 -> 97:84
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test > m[1] > key:
+   Span: 97:61 -> 97:71
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.a) > test > m[1] > value:
+   Span: 97:72 -> 97:82
 
 desc_test_complex.proto > message_type[4] > options:
    Span: 98:9 -> 98:37
@@ -807,11 +915,23 @@ desc_test_complex.proto > message_type[4] > options > (foo.bar.map_vals) > vals[
    Trailing Comments:
  no value
 
+desc_test_complex.proto > message_type[4] > options > (foo.bar.map_vals) > vals[1] > key:
+   Span: 106:35 -> 106:45
+
 desc_test_complex.proto > message_type[4] > options:
    Span: 107:9 -> 107:69
 
 desc_test_complex.proto > message_type[4] > options > (foo.bar.map_vals) > vals[2]:
    Span: 107:9 -> 107:69
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.map_vals) > vals[2] > key:
+   Span: 107:35 -> 107:45
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.map_vals) > vals[2] > value:
+   Span: 107:47 -> 107:67
+
+desc_test_complex.proto > message_type[4] > options > (foo.bar.map_vals) > vals[2] > value > name:
+   Span: 107:55 -> 107:66
 
 desc_test_complex.proto > message_type[4] > field[0]:
    Span: 109:5 -> 109:28
@@ -999,6 +1119,18 @@ desc_test_complex.proto > service[0] > method[0] > options:
 desc_test_complex.proto > service[0] > method[0] > options > (foo.bar.validator):
    Span: 135:17 -> 141:19
 
+desc_test_complex.proto > service[0] > method[0] > options > (foo.bar.validator) > authenticated:
+   Span: 136:25 -> 136:44
+
+desc_test_complex.proto > service[0] > method[0] > options > (foo.bar.validator) > permission[0]:
+   Span: 137:25 -> 140:26
+
+desc_test_complex.proto > service[0] > method[0] > options > (foo.bar.validator) > permission[0] > action:
+   Span: 138:33 -> 138:46
+
+desc_test_complex.proto > service[0] > method[0] > options > (foo.bar.validator) > permission[0] > entity:
+   Span: 139:33 -> 139:49
+
 desc_test_complex.proto > service[0] > method[1]:
    Span: 143:9 -> 151:10
 
@@ -1016,6 +1148,18 @@ desc_test_complex.proto > service[0] > method[1] > options:
 
 desc_test_complex.proto > service[0] > method[1] > options > (foo.bar.validator):
    Span: 144:17 -> 150:19
+
+desc_test_complex.proto > service[0] > method[1] > options > (foo.bar.validator) > authenticated:
+   Span: 145:25 -> 145:44
+
+desc_test_complex.proto > service[0] > method[1] > options > (foo.bar.validator) > permission[0]:
+   Span: 146:25 -> 149:26
+
+desc_test_complex.proto > service[0] > method[1] > options > (foo.bar.validator) > permission[0] > action:
+   Span: 147:33 -> 147:45
+
+desc_test_complex.proto > service[0] > method[1] > options > (foo.bar.validator) > permission[0] > entity:
+   Span: 148:33 -> 148:47
 
 desc_test_complex.proto > message_type[6]:
    Span: 154:1 -> 180:2
@@ -1331,6 +1475,18 @@ desc_test_complex.proto > message_type[7] > field[0] > options:
 
 desc_test_complex.proto > message_type[7] > field[0] > options > (foo.bar.rules) > repeated:
    Span: 188:8 -> 191:9
+
+desc_test_complex.proto > message_type[7] > field[0] > options > (foo.bar.rules) > repeated > min_items:
+   Span: 189:9 -> 189:21
+
+desc_test_complex.proto > message_type[7] > field[0] > options > (foo.bar.rules) > repeated > items:
+   Span: 190:9 -> 190:92
+
+desc_test_complex.proto > message_type[7] > field[0] > options > (foo.bar.rules) > repeated > items > string:
+   Span: 190:18 -> 190:90
+
+desc_test_complex.proto > message_type[7] > field[0] > options > (foo.bar.rules) > repeated > items > string > pattern:
+   Span: 190:28 -> 190:88
 
 desc_test_complex.proto > message_type[8]:
    Span: 196:1 -> 232:2
@@ -2665,3 +2821,108 @@ desc_test_complex.proto > message_type[9] > field[1] > options:
 
 desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom):
    Span: 286:17 -> 296:18
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > syntax:
+   Span: 287:25 -> 287:37
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > import:
+   Span: 287:39 -> 287:51
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > public:
+   Span: 287:53 -> 287:65
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > weak:
+   Span: 287:67 -> 287:77
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > package:
+   Span: 287:79 -> 287:92
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > string:
+   Span: 288:25 -> 288:41
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > bytes:
+   Span: 288:43 -> 288:57
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > bool:
+   Span: 288:59 -> 288:69
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > float:
+   Span: 289:25 -> 289:36
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > double:
+   Span: 289:38 -> 289:53
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > int32:
+   Span: 290:25 -> 290:34
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > int64:
+   Span: 290:36 -> 290:45
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > uint32:
+   Span: 290:47 -> 290:59
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > uint64:
+   Span: 290:61 -> 290:73
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > sint32:
+   Span: 290:75 -> 290:86
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > sint64:
+   Span: 290:88 -> 290:99
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > fixed32:
+   Span: 291:25 -> 291:38
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > fixed64:
+   Span: 291:40 -> 291:53
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > sfixed32:
+   Span: 291:55 -> 291:70
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > sfixed64:
+   Span: 291:72 -> 291:87
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > optional:
+   Span: 292:25 -> 292:39
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > repeated:
+   Span: 292:41 -> 292:55
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > required:
+   Span: 292:57 -> 292:71
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > message:
+   Span: 293:25 -> 293:38
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > enum:
+   Span: 293:40 -> 293:50
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > service:
+   Span: 293:52 -> 293:65
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > rpc:
+   Span: 293:67 -> 293:76
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > option:
+   Span: 294:25 -> 294:37
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > extend:
+   Span: 294:39 -> 294:51
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > extensions:
+   Span: 294:53 -> 294:69
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > reserved:
+   Span: 294:71 -> 294:85
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > to:
+   Span: 295:25 -> 295:33
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > true:
+   Span: 295:35 -> 295:44
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > false:
+   Span: 295:46 -> 295:57
+
+desc_test_complex.proto > message_type[9] > field[1] > options > (foo.bar.boom) > default:
+   Span: 295:59 -> 295:71
