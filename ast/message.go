@@ -105,7 +105,7 @@ func populateMessageBody(m *MessageBody, openBrace *RuneNode, decls []MessageEle
 	m.Decls = decls
 	for _, decl := range decls {
 		switch decl.(type) {
-		case *OptionNode, *FieldNode, *MapFieldNode, *GroupNode, *OneOfNode,
+		case *OptionNode, *FieldNode, *MapFieldNode, *GroupNode, *OneofNode,
 			*MessageNode, *EnumNode, *ExtendNode, *ExtensionRangeNode,
 			*ReservedNode, *EmptyDeclNode:
 		default:
@@ -125,7 +125,7 @@ type MessageElement interface {
 var _ MessageElement = (*OptionNode)(nil)
 var _ MessageElement = (*FieldNode)(nil)
 var _ MessageElement = (*MapFieldNode)(nil)
-var _ MessageElement = (*OneOfNode)(nil)
+var _ MessageElement = (*OneofNode)(nil)
 var _ MessageElement = (*GroupNode)(nil)
 var _ MessageElement = (*MessageNode)(nil)
 var _ MessageElement = (*EnumNode)(nil)

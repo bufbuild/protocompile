@@ -52,8 +52,8 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*GroupNode"
 			return nil
 		},
-		DoVisitOneOfNode: func(*OneOfNode) error {
-			*methodCalled = "*OneOfNode"
+		DoVisitOneofNode: func(*OneofNode) error {
+			*methodCalled = "*OneofNode"
 			return nil
 		},
 		DoVisitMapTypeNode: func(*MapTypeNode) error {
@@ -246,7 +246,7 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			DoVisitGroupNode: v.DoVisitGroupNode,
 		},
 		{
-			DoVisitOneOfNode: v.DoVisitOneOfNode,
+			DoVisitOneofNode: v.DoVisitOneofNode,
 		},
 		{
 			DoVisitMapTypeNode: v.DoVisitMapTypeNode,
@@ -396,8 +396,8 @@ func TestVisitorAll(t *testing.T) {
 		(*GroupNode)(nil): {
 			"*GroupNode", "FieldDeclNode", "MessageDeclNode", "CompositeNode", "Node",
 		},
-		(*OneOfNode)(nil): {
-			"*OneOfNode", "CompositeNode", "Node",
+		(*OneofNode)(nil): {
+			"*OneofNode", "CompositeNode", "Node",
 		},
 		(*MapTypeNode)(nil): {
 			"*MapTypeNode", "CompositeNode", "Node",
@@ -669,8 +669,8 @@ FieldDeclNode
 *FieldNode
 *FieldLabel
 *GroupNode
-*OneOfNode
-OneOfElement
+*OneofNode
+OneofElement
 *MapTypeNode
 *MapFieldNode
 *SyntheticMapField

@@ -183,7 +183,7 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 		sci.newLoc(n.MessageName(), append(fieldPath, internal.FieldTypeNameTag))
 	}
 
-	var optIndex, fieldIndex, oneOfIndex, extendIndex, nestedMsgIndex int32
+	var optIndex, fieldIndex, oneofIndex, extendIndex, nestedMsgIndex int32
 	var nestedEnumIndex, extRangeIndex, reservedRangeIndex, reservedNameIndex int32
 	for _, child := range decls {
 		switch child := child.(type) {
@@ -203,9 +203,9 @@ func generateSourceCodeInfoForMessage(opts options.Index, sci *sourceCodeInfo, n
 			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.MessageFieldsTag, fieldIndex))
 			fieldIndex++
 			nestedMsgIndex++
-		case *ast.OneOfNode:
-			generateSourceCodeInfoForOneOf(opts, sci, child, &fieldIndex, &nestedMsgIndex, append(path, internal.MessageFieldsTag), append(dup(path), internal.MessageNestedMessagesTag), append(dup(path), internal.MessageOneOfsTag, oneOfIndex))
-			oneOfIndex++
+		case *ast.OneofNode:
+			generateSourceCodeInfoForOneof(opts, sci, child, &fieldIndex, &nestedMsgIndex, append(path, internal.MessageFieldsTag), append(dup(path), internal.MessageNestedMessagesTag), append(dup(path), internal.MessageOneofsTag, oneofIndex))
+			oneofIndex++
 		case *ast.MessageNode:
 			generateSourceCodeInfoForMessage(opts, sci, child, nil, append(path, internal.MessageNestedMessagesTag, nestedMsgIndex))
 			nestedMsgIndex++
@@ -322,15 +322,15 @@ func generateSourceCodeInfoForExtensions(opts options.Index, sci *sourceCodeInfo
 	}
 }
 
-func generateSourceCodeInfoForOneOf(opts options.Index, sci *sourceCodeInfo, n *ast.OneOfNode, fieldIndex, nestedMsgIndex *int32, fieldPath, nestedMsgPath, oneOfPath []int32) {
-	sci.newBlockLocWithComments(n, n.OpenBrace, oneOfPath)
-	sci.newLoc(n.Name, append(oneOfPath, internal.OneOfNameTag))
+func generateSourceCodeInfoForOneof(opts options.Index, sci *sourceCodeInfo, n *ast.OneofNode, fieldIndex, nestedMsgIndex *int32, fieldPath, nestedMsgPath, oneofPath []int32) {
+	sci.newBlockLocWithComments(n, n.OpenBrace, oneofPath)
+	sci.newLoc(n.Name, append(oneofPath, internal.OneofNameTag))
 
 	var optIndex int32
 	for _, child := range n.Decls {
 		switch child := child.(type) {
 		case *ast.OptionNode:
-			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(oneOfPath, internal.OneOfOptionsTag))
+			generateSourceCodeInfoForOption(opts, sci, child, false, &optIndex, append(oneofPath, internal.OneofOptionsTag))
 		case *ast.FieldNode:
 			generateSourceCodeInfoForField(opts, sci, child, append(fieldPath, *fieldIndex))
 			*fieldIndex++

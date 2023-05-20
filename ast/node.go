@@ -133,7 +133,7 @@ func NewEmptyDeclNode(semicolon *RuneNode) *EmptyDeclNode {
 func (e *EmptyDeclNode) fileElement()    {}
 func (e *EmptyDeclNode) msgElement()     {}
 func (e *EmptyDeclNode) extendElement()  {}
-func (e *EmptyDeclNode) oneOfElement()   {}
+func (e *EmptyDeclNode) oneofElement()   {}
 func (e *EmptyDeclNode) enumElement()    {}
 func (e *EmptyDeclNode) serviceElement() {}
 func (e *EmptyDeclNode) methodElement()  {}
