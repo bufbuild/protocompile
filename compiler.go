@@ -595,10 +595,10 @@ func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescripto
 	if needsSourceInfo(parseRes, t.e.c.SourceInfoMode) {
 		var srcInfoOpts []sourceinfo.GenerateOption
 		if t.e.c.SourceInfoMode&SourceInfoExtraComments != 0 {
-			srcInfoOpts = []sourceinfo.GenerateOption{sourceinfo.WithExtraComments()}
+			srcInfoOpts = append(srcInfoOpts, sourceinfo.WithExtraComments())
 		}
 		if t.e.c.SourceInfoMode&SourceInfoExtraOptionLocations != 0 {
-			srcInfoOpts = []sourceinfo.GenerateOption{sourceinfo.WithExtraOptionLocations()}
+			srcInfoOpts = append(srcInfoOpts, sourceinfo.WithExtraOptionLocations())
 		}
 		parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex, srcInfoOpts...)
 		file.PopulateSourceCodeInfo()
