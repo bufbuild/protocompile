@@ -96,14 +96,19 @@ type SourceInfoMode int
 
 const (
 	// SourceInfoNone indicates that no source code info is generated.
-	SourceInfoNone = SourceInfoMode(iota)
+	SourceInfoNone = SourceInfoMode(0)
 	// SourceInfoStandard indicates that the standard source code info is
 	// generated, which includes comments only for complete declarations.
-	SourceInfoStandard
+	SourceInfoStandard = SourceInfoMode(1)
 	// SourceInfoExtraComments indicates that source code info is generated
 	// and will include comments for all elements (more comments than would
 	// be found in a descriptor produced by protoc).
-	SourceInfoExtraComments
+	SourceInfoExtraComments = SourceInfoMode(2)
+	// SourceInfoExtraOptionLocations indicates that source code info is
+	// generated with additional locations for elements inside of message
+	// literals in option values. This can be combined with the above by
+	// bitwise-OR'ing it with SourceInfoExtraComments.
+	SourceInfoExtraOptionLocations = SourceInfoMode(4)
 )
 
 // Compile compiles the given file names into fully-linked descriptors. The
@@ -588,12 +593,14 @@ func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescripto
 	}
 
 	if needsSourceInfo(parseRes, t.e.c.SourceInfoMode) {
-		switch t.e.c.SourceInfoMode {
-		case SourceInfoStandard:
-			parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex)
-		case SourceInfoExtraComments:
-			parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfoWithExtraComments(parseRes.AST(), optsIndex)
+		var srcInfoOpts []sourceinfo.GenerateOption
+		if t.e.c.SourceInfoMode&SourceInfoExtraComments != 0 {
+			srcInfoOpts = append(srcInfoOpts, sourceinfo.WithExtraComments())
 		}
+		if t.e.c.SourceInfoMode&SourceInfoExtraOptionLocations != 0 {
+			srcInfoOpts = append(srcInfoOpts, sourceinfo.WithExtraOptionLocations())
+		}
+		parseRes.FileDescriptorProto().SourceCodeInfo = sourceinfo.GenerateSourceInfo(parseRes.AST(), optsIndex, srcInfoOpts...)
 		file.PopulateSourceCodeInfo()
 	}
 

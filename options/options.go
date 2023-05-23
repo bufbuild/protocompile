@@ -46,13 +46,8 @@ import (
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/sourceinfo"
 )
-
-// Index is a mapping of AST nodes that define options to a corresponding path
-// into the containing file descriptor. The path is a sequence of field tags
-// and indexes that define a traversal path from the root (the file descriptor)
-// to the resolved option field.
-type Index map[*ast.OptionNode][]int32
 
 type interpreter struct {
 	file                    file
@@ -61,7 +56,7 @@ type interpreter struct {
 	overrideDescriptorProto linker.File
 	lenient                 bool
 	reporter                *reporter.Handler
-	index                   Index
+	index                   sourceinfo.OptionIndex
 }
 
 type file interface {
@@ -99,7 +94,7 @@ func WithOverrideDescriptorProto(f linker.File) InterpreterOption {
 //
 // The given handler is used to report errors and warnings. If any errors are
 // reported, this function returns a non-nil error.
-func InterpretOptions(linked linker.Result, handler *reporter.Handler, opts ...InterpreterOption) (Index, error) {
+func InterpretOptions(linked linker.Result, handler *reporter.Handler, opts ...InterpreterOption) (sourceinfo.OptionIndex, error) {
 	return interpretOptions(false, linked, linker.ResolverFromFile(linked), handler, opts)
 }
 
@@ -112,7 +107,7 @@ func InterpretOptions(linked linker.Result, handler *reporter.Handler, opts ...I
 // In lenient more, errors resolving option names and type errors are ignored.
 // Any options that are uninterpretable (due to such errors) will remain in the
 // "uninterpreted_option" fields.
-func InterpretOptionsLenient(linked linker.Result, opts ...InterpreterOption) (Index, error) {
+func InterpretOptionsLenient(linked linker.Result, opts ...InterpreterOption) (sourceinfo.OptionIndex, error) {
 	return interpretOptions(true, linked, linker.ResolverFromFile(linked), reporter.NewHandler(nil), opts)
 }
 
@@ -127,17 +122,17 @@ func InterpretOptionsLenient(linked linker.Result, opts ...InterpreterOption) (I
 // interpreted. Other errors resolving option names or type errors will be
 // effectively ignored. Any options that are uninterpretable (due to such
 // errors) will remain in the "uninterpreted_option" fields.
-func InterpretUnlinkedOptions(parsed parser.Result, opts ...InterpreterOption) (Index, error) {
+func InterpretUnlinkedOptions(parsed parser.Result, opts ...InterpreterOption) (sourceinfo.OptionIndex, error) {
 	return interpretOptions(true, noResolveFile{parsed}, nil, reporter.NewHandler(nil), opts)
 }
 
-func interpretOptions(lenient bool, file file, res linker.Resolver, handler *reporter.Handler, interpOpts []InterpreterOption) (Index, error) {
+func interpretOptions(lenient bool, file file, res linker.Resolver, handler *reporter.Handler, interpOpts []InterpreterOption) (sourceinfo.OptionIndex, error) {
 	interp := interpreter{
 		file:     file,
 		resolver: res,
 		lenient:  lenient,
 		reporter: handler,
-		index:    Index{},
+		index:    sourceinfo.OptionIndex{},
 	}
 	interp.container, _ = file.(optionsContainer)
 	for _, opt := range interpOpts {
@@ -335,7 +330,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		}
 		// attribute source code info
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = []int32{-1, internal.FieldJSONNameTag}
+			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, internal.FieldJSONNameTag}}
 		}
 		uo = internal.RemoveOption(uo, index)
 		if opt.StringValue == nil {
@@ -355,7 +350,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		// attribute source code info
 		optNode := interp.file.OptionNode(uo[index])
 		if on, ok := optNode.(*ast.OptionNode); ok {
-			interp.index[on] = []int32{-1, internal.FieldDefaultTag}
+			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, internal.FieldDefaultTag}}
 		}
 		uo = internal.RemoveOption(uo, index)
 	}
@@ -513,13 +508,8 @@ type interpretedOption struct {
 	interpretedField
 }
 
-func (o *interpretedOption) path() []int32 {
-	path := o.pathPrefix
-	path = append(path, o.number)
-	if o.repeated {
-		path = append(path, o.index)
-	}
-	return path
+func (o *interpretedOption) toSourceInfo() *sourceinfo.OptionSourceInfo {
+	return o.interpretedField.toSourceInfo(o.pathPrefix)
 }
 
 func (o *interpretedOption) appendOptionBytes(b []byte) ([]byte, error) {
@@ -546,6 +536,11 @@ func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) ([
 // itself as well as for subfields when an option value is a message
 // literal.
 type interpretedField struct {
+	// the AST node for this field -- an [*ast.OptionNode] for top-level options,
+	// an [*ast.MessageFieldNode] for fields in a message literal, or nil for
+	// synthetic field values (for keys or values in map entries that were
+	// omitted from source).
+	node ast.Node
 	// field number
 	number int32
 	// index of this element inside a repeated field; only set if repeated == true
@@ -558,6 +553,50 @@ type interpretedField struct {
 	kind protoreflect.Kind
 
 	value interpretedFieldValue
+}
+
+func (f *interpretedField) path(prefix []int32) []int32 {
+	path := make([]int32, 0, len(prefix)+2)
+	path = append(path, prefix...)
+	path = append(path, f.number)
+	if f.repeated {
+		path = append(path, f.index)
+	}
+	return path
+}
+
+func (f *interpretedField) toSourceInfo(prefix []int32) *sourceinfo.OptionSourceInfo {
+	path := f.path(prefix)
+	var children sourceinfo.OptionChildrenSourceInfo
+	if len(f.value.msgListVal) > 0 {
+		elements := make([]sourceinfo.OptionSourceInfo, len(f.value.msgListVal))
+		for i, msgVal := range f.value.msgListVal {
+			// With an array literal, the index in path is that of the first element.
+			elementPath := append(([]int32)(nil), path...)
+			elementPath[len(elementPath)-1] += int32(i)
+			elements[i].Path = elementPath
+			elements[i].Children = msgSourceInfo(elementPath, msgVal)
+		}
+		children = &sourceinfo.ArrayLiteralSourceInfo{Elements: elements}
+	} else if len(f.value.msgVal) > 0 {
+		children = msgSourceInfo(path, f.value.msgVal)
+	}
+	return &sourceinfo.OptionSourceInfo{
+		Path:     path,
+		Children: children,
+	}
+}
+
+func msgSourceInfo(prefix []int32, fields []*interpretedField) *sourceinfo.MessageLiteralSourceInfo {
+	fieldInfo := map[*ast.MessageFieldNode]*sourceinfo.OptionSourceInfo{}
+	for _, field := range fields {
+		msgFieldNode, ok := field.node.(*ast.MessageFieldNode)
+		if !ok {
+			continue
+		}
+		fieldInfo[msgFieldNode] = field.toSourceInfo(prefix)
+	}
+	return &sourceinfo.MessageLiteralSourceInfo{Fields: fieldInfo}
 }
 
 // interpretedFieldValue is a wrapper around protoreflect.Value that
@@ -822,7 +861,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 		res.unknown = !isKnownField(optsDesc, res)
 		results = append(results, res)
 		if optn, ok := node.(*ast.OptionNode); ok {
-			interp.index[optn] = res.path()
+			interp.index[optn] = res.toSourceInfo()
 		}
 	}
 
@@ -1108,29 +1147,28 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, int32(fld.Number())))
 	}
 
-	optValNode := interp.file.OptionNode(opt).GetValue()
+	optNode := interp.file.OptionNode(opt)
+	optValNode := optNode.GetValue()
 	var val interpretedFieldValue
+	var index int
 	var err error
 	if optValNode.Value() == nil {
-		// We don't have an AST, so we get the value from the uninterpreted option proto
+		// We don't have an AST, so we get the value from the uninterpreted option proto.
+		// It's okay that we don't populate index as it is used to populate source code info,
+		// which can't be done without an AST.
 		val, err = interp.setOptionFieldFromProto(mc, msg, fld, node, opt, optValNode)
 	} else {
-		val, err = interp.setOptionField(mc, msg, fld, node, optValNode, false)
+		val, index, err = interp.setOptionField(mc, msg, fld, node, optValNode, false)
 	}
 	if err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
-	var index int32
-	if fld.IsMap() {
-		index = int32(msg.Get(fld).Map().Len()) - 1
-	} else if fld.IsList() {
-		index = int32(msg.Get(fld).List().Len()) - 1
-	}
 	return &interpretedOption{
 		pathPrefix: pathPrefix,
 		interpretedField: interpretedField{
+			node:     optNode,
 			number:   int32(fld.Number()),
-			index:    index,
+			index:    int32(index),
 			kind:     fld.Kind(),
 			repeated: fld.Cardinality() == protoreflect.Repeated,
 			value:    val,
@@ -1144,12 +1182,12 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 // setOptionField sets the value for field fld in the given message msg to the value represented
 // by AST node val. The given name is the AST node that corresponds to the name of fld. On success,
 // it returns additional metadata about the field that was set.
-func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, error) {
+func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg protoreflect.Message, fld protoreflect.FieldDescriptor, name ast.Node, val ast.ValueNode, insideMsgLiteral bool) (interpretedFieldValue, int, error) {
 	v := val.Value()
 	if sl, ok := v.([]ast.ValueNode); ok {
 		// handle slices a little differently than the others
 		if fld.Cardinality() != protoreflect.Repeated {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue is an array but field is not repeated", mc)
+			return interpretedFieldValue{}, 0, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue is an array but field is not repeated", mc)
 		}
 		origPath := mc.OptAggPath
 		defer func() {
@@ -1157,16 +1195,25 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 		}()
 		var resVal listValue
 		var resMsgVals [][]*interpretedField
+		var firstIndex int
 		for index, item := range sl {
 			mc.OptAggPath = fmt.Sprintf("%s[%d]", origPath, index)
 			value, err := interp.fieldValue(mc, fld, item, insideMsgLiteral)
 			if err != nil {
-				return interpretedFieldValue{}, err
+				return interpretedFieldValue{}, 0, err
 			}
 			if fld.IsMap() {
-				setMapEntry(msg, fld, &value)
+				mv := msg.Mutable(fld).Map()
+				if index == 0 {
+					firstIndex = mv.Len()
+				}
+				setMapEntry(fld, mv, &value)
 			} else {
-				msg.Mutable(fld).List().Append(value.val)
+				lv := msg.Mutable(fld).List()
+				if index == 0 {
+					firstIndex = lv.Len()
+				}
+				lv.Append(value.val)
 			}
 			resVal = append(resVal, value.val)
 			if value.msgVal != nil {
@@ -1177,33 +1224,38 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 			isList:     true,
 			val:        protoreflect.ValueOfList(&resVal),
 			msgListVal: resMsgVals,
-		}, nil
+		}, firstIndex, nil
 	}
 
 	value, err := interp.fieldValue(mc, fld, val, insideMsgLiteral)
 	if err != nil {
-		return interpretedFieldValue{}, err
+		return interpretedFieldValue{}, 0, err
 	}
 
 	if ood := fld.ContainingOneof(); ood != nil {
 		existingFld := msg.WhichOneof(ood)
 		if existingFld != nil && existingFld.Number() != fld.Number() {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
+			return interpretedFieldValue{}, 0, reporter.Errorf(interp.nodeInfo(name).Start(), "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
 		}
 	}
 
+	var index int
 	switch {
 	case fld.IsMap():
-		setMapEntry(msg, fld, &value)
+		mv := msg.Mutable(fld).Map()
+		index = mv.Len()
+		setMapEntry(fld, mv, &value)
 	case fld.IsList():
-		msg.Mutable(fld).List().Append(value.val)
+		lv := msg.Mutable(fld).List()
+		index = lv.Len()
+		lv.Append(value.val)
 	default:
 		if msg.Has(fld) {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
+			return interpretedFieldValue{}, 0, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
 		}
 		msg.Set(fld, value.val)
 	}
-	return value, nil
+	return value, index, nil
 }
 
 // setOptionFieldFromProto sets the value for field fld in the given message msg to the value
@@ -1296,7 +1348,7 @@ func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, 
 	return value, nil
 }
 
-func setMapEntry(msg protoreflect.Message, fld protoreflect.FieldDescriptor, value *interpretedFieldValue) {
+func setMapEntry(fld protoreflect.FieldDescriptor, mapVal protoreflect.Map, value *interpretedFieldValue) {
 	entry := value.val.Message()
 	keyFld, valFld := fld.MapKey(), fld.MapValue()
 	// if an entry is missing a key or value, we add in an explicit
@@ -1314,9 +1366,8 @@ func setMapEntry(msg protoreflect.Message, fld protoreflect.FieldDescriptor, val
 	if dm, ok := val.Interface().(*dynamicpb.Message); ok && (dm == nil || !dm.IsValid()) {
 		val = protoreflect.ValueOfMessage(dynamicpb.NewMessage(valFld.Message()))
 	}
-	m := msg.Mutable(fld).Map()
 	// TODO: error if key is already present
-	m.Set(key.MapKey(), val)
+	mapVal.Set(key.MapKey(), val)
 }
 
 // zeroValue returns the zero value for the field types as a *interpretedField.
@@ -1992,19 +2043,18 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 				// Otherwise it is an error in the text format.
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val).Start(), "syntax error: unexpected value, expecting ':'")
 			}
-			res, err := interp.setOptionField(mc, fdm, ffld, fieldNode.Name, fieldNode.Val, true)
+			res, index, err := interp.setOptionField(mc, fdm, ffld, fieldNode.Name, fieldNode.Val, true)
 			if err != nil {
 				return interpretedFieldValue{}, err
 			}
 			flds = append(flds, &interpretedField{
+				node:     fieldNode,
 				number:   int32(ffld.Number()),
+				index:    int32(index),
 				kind:     ffld.Kind(),
 				repeated: ffld.Cardinality() == protoreflect.Repeated,
 				packed:   ffld.IsPacked(),
 				value:    res,
-				// NB: no need to set index here, inside message literal
-				// (it is only used for top-level options, for emitting
-				// source code info)
 			})
 		}
 	}

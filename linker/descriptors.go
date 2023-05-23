@@ -15,7 +15,6 @@
 package linker
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -174,7 +173,7 @@ func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[interface{}]i
 
 func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []protoreflect.SourceLocation {
 	locs := make([]protoreflect.SourceLocation, len(srcInfoProtos))
-	prev := map[string]*protoreflect.SourceLocation{}
+	prev := map[any]*protoreflect.SourceLocation{}
 	for i, loc := range srcInfoProtos {
 		var stLin, stCol, enLin, enCol int
 		if len(loc.Span) == 3 {
@@ -193,7 +192,7 @@ func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []
 			EndLine:                 enLin,
 			EndColumn:               enCol,
 		}
-		str := pathStr(loc.Path)
+		str := pathKey(loc.Path)
 		pr := prev[str]
 		if pr != nil {
 			pr.Next = i
@@ -201,14 +200,6 @@ func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []
 		prev[str] = &locs[i]
 	}
 	return locs
-}
-
-func pathStr(p protoreflect.SourcePath) string {
-	var buf bytes.Buffer
-	for _, v := range p {
-		_, _ = fmt.Fprintf(&buf, "%x:", v)
-	}
-	return buf.String()
 }
 
 // AddOptionBytes associates the given opts (an options message encoded in the

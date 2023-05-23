@@ -160,20 +160,20 @@ func fixupProtocSourceCodeInfo(info *descriptorpb.SourceCodeInfo) {
 	}
 }
 
-func TestSourceCodeInfoExtraComments(t *testing.T) {
+func TestSourceCodeInfoOptions(t *testing.T) {
+	t.Parallel()
+
 	// set to true to re-generate golden output file
 	const regenerateGoldenOutputFile = false
 
-	t.Parallel()
-
-	generateSourceInfoText := func(mode protocompile.SourceInfoMode) string {
+	generateSourceInfoText := func(filename string, mode protocompile.SourceInfoMode) string {
 		compiler := protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 				ImportPaths: []string{"../internal/testdata"},
 			}),
 			SourceInfoMode: mode,
 		}
-		fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto")
+		fds, err := compiler.Compile(context.Background(), filename)
 		if pe, ok := err.(protocompile.PanicError); ok {
 			t.Fatalf("panic! %v\n%v", pe, pe.Stack)
 		}
@@ -185,22 +185,46 @@ func TestSourceCodeInfoExtraComments(t *testing.T) {
 		return describeSourceCodeInfo(file.Path(), file.SourceLocations(), resolver)
 	}
 
-	output := generateSourceInfoText(protocompile.SourceInfoExtraComments)
-
-	if regenerateGoldenOutputFile {
-		err := os.WriteFile("testdata/desc_test_comments.extra_comments.txt", []byte(output), 0644)
-		require.NoError(t, err)
-		// also create a file with standard comments, as a useful demonstration of the differences
-		output := generateSourceInfoText(protocompile.SourceInfoStandard)
-		err = os.WriteFile("testdata/desc_test_comments.standard.txt", []byte(output), 0644)
-		require.NoError(t, err)
-		return
+	testCases := []struct {
+		name     string
+		filename string
+		mode     protocompile.SourceInfoMode
+	}{
+		{
+			name:     "extra_comments",
+			filename: "desc_test_comments.proto",
+			mode:     protocompile.SourceInfoExtraComments,
+		},
+		{
+			name:     "extra_option_locations",
+			filename: "desc_test_complex.proto",
+			mode:     protocompile.SourceInfoExtraOptionLocations,
+		},
 	}
 
-	goldenOutput, err := os.ReadFile("testdata/desc_test_comments.extra_comments.txt")
-	require.NoError(t, err)
-	diff := cmp.Diff(string(goldenOutput), output)
-	assert.Empty(t, diff, "source code info mismatch (-want +got):\n%v", diff)
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			output := generateSourceInfoText(testCase.filename, testCase.mode)
+
+			baseName := strings.TrimSuffix(testCase.filename, ".proto")
+			if regenerateGoldenOutputFile {
+				err := os.WriteFile(fmt.Sprintf("testdata/%s.%s.txt", baseName, testCase.name), []byte(output), 0644)
+				require.NoError(t, err)
+				// also create a file with standard comments, as a useful demonstration of the differences
+				output := generateSourceInfoText(testCase.filename, protocompile.SourceInfoStandard)
+				err = os.WriteFile(fmt.Sprintf("testdata/%s.standard.txt", baseName), []byte(output), 0644)
+				require.NoError(t, err)
+				return
+			}
+
+			goldenOutput, err := os.ReadFile(fmt.Sprintf("testdata/%s.%s.txt", baseName, testCase.name))
+			require.NoError(t, err)
+			diff := cmp.Diff(string(goldenOutput), output)
+			assert.Empty(t, diff, "source code info mismatch (-want +got):\n%v", diff)
+		})
+	}
 }
 
 var pathRoot = (&descriptorpb.FileDescriptorProto{}).ProtoReflect().Descriptor()
