@@ -324,7 +324,7 @@ func TestPathological(t *testing.T) {
 				t.Logf("allowing %v since race detector is enabled", allowedDuration)
 			}
 			timer := time.AfterFunc(allowedDuration, func() {
-				require.Fail(t, "test took too long to execute (> %v)", allowedDuration)
+				t.Errorf("test took too long to execute (> %v)", allowedDuration)
 				cancel()
 			})
 			defer timer.Stop()
