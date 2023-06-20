@@ -38,7 +38,8 @@ linters:
   enable-all: true
   disable:
     # TODO: TCN-350 - initial exclusions for failing linters.
-    # Should enable all of these.
+    # Should enable all of these?
+    - depguard
     - dupl
     - errname
     - errorlint
