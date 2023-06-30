@@ -2552,14 +2552,15 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 		}
 	}
 	// TODO: Need to run these test cases against protoc like other test
-	//  cases in this file. As of writing, the most recent version (v22.0)
-	//  of protoc produces too many different result with protocompile. So
+	//  cases in this file. As of writing, the most recent version of
+	//  protoc produces too many different result with protocompile. So
 	//  we are focusing on other test cases first before protoc is fixed.
 }
 
 // testByProtoc tests the proto files with protoc. The fileNames parameter indicates the order of file
 // that should be used in the command line for protoc. fileNames can be nil when the order does not matter.
 func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
+	t.Helper()
 	if len(fileNames) != 0 {
 		require.True(t, len(files) == len(fileNames))
 		for _, fileName := range fileNames {
@@ -2569,7 +2570,10 @@ func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (pa
 	}
 
 	tempDir := writeFileToDisk(t, files)
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		err := os.RemoveAll(tempDir)
+		require.NoError(t, err)
+	}()
 	if len(fileNames) == 0 {
 		fileNames = make([]string, 0, len(files))
 		for fileName := range files {
@@ -2599,7 +2603,11 @@ func writeFileToDisk(t *testing.T, files map[string]string) string {
 func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
 	args := []string{"-I", protoPath, "-o", os.DevNull}
 	args = append(args, fileNames...)
-	cmd := exec.Command(getProtocPath(), args...)
+	protocPath, err := getProtocPath()
+	if err != nil {
+		return false, err
+	}
+	cmd := exec.Command(protocPath, args...)
 	stdout, err := cmd.Output()
 	if err == nil {
 		return true, nil
@@ -2612,9 +2620,15 @@ func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed
 	return false, err
 }
 
-func getProtocPath() string {
+func getProtocPath() (string, error) {
+	// TODO: unify with similar logic in benchmarks
 	if runtime.GOOS == "windows" {
-		return "protoc"
+		return "protoc", nil
 	}
-	return "../internal/testdata/protoc/22.0/bin/protoc"
+	data, err := os.ReadFile("../.protoc_version")
+	if err != nil {
+		return "", err
+	}
+	version := strings.TrimSpace(string(data))
+	return fmt.Sprintf("../internal/testdata/protoc/%s/bin/protoc", version), nil
 }

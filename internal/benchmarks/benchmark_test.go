@@ -50,22 +50,23 @@ import (
 )
 
 const (
-	// NB: this must be kept in sync with PROTOC_VERSION in Makefile.
-	protocVersion = "22.0"
-
 	googleapisCommit = "cb6fbe8784479b22af38c09a5039d8983e894566"
 )
 
 var (
-	protocPath        = fmt.Sprintf("../testdata/protoc/%s/bin/protoc", protocVersion)
+	protocPath string
+
 	googleapisURI     = fmt.Sprintf("https://github.com/googleapis/googleapis/archive/%s.tar.gz", googleapisCommit)
 	googleapisDir     string
 	googleapisSources []string
 )
 
 func TestMain(m *testing.M) {
-	if runtime.GOOS == "windows" {
-		protocPath += ".exe"
+	var err error
+	protocPath, err = getProtocPath()
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Failed to compute protoc path: %v\n", err)
+		os.Exit(1)
 	}
 	if info, err := os.Stat(protocPath); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -126,6 +127,19 @@ func TestMain(m *testing.M) {
 	fmt.Printf("%d total source files found in googleapis (%d bytes).\n", len(googleapisSources), sourceSize)
 
 	stat = m.Run()
+}
+
+func getProtocPath() (string, error) {
+	data, err := os.ReadFile("../../.protoc_version")
+	if err != nil {
+		return "", err
+	}
+	version := strings.TrimSpace(string(data))
+	protocPath := fmt.Sprintf("../testdata/protoc/%s/bin/protoc", version)
+	if runtime.GOOS == "windows" {
+		protocPath += ".exe"
+	}
+	return protocPath, nil
 }
 
 func downloadAndExpand(url, targetDir string) (e error) {
