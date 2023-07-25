@@ -16,3 +16,5 @@ require (
 )
 
 retract v0.5.0 // Contains deadlock error
+
+replace google.golang.org/protobuf => ../protobuf-go
