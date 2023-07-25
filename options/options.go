@@ -851,6 +851,16 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 				return nil, err
 			}
 		}
+		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == "features" && !interp.isEditions() {
+			if interp.lenient {
+				remain = append(remain, uo)
+				continue
+			}
+			// the "features" option is reserved for use with editions
+			if err := interp.reporter.HandleErrorf(interp.nodeInfo(node.GetName()).Start(), "%v option 'features' may only be used with editions but file uses %q syntax", mc, interp.syntax()); err != nil {
+				return nil, err
+			}
+		}
 		mc.Option = uo
 		res, err := interp.interpretField(mc, msg, uo, 0, nil)
 		if err != nil {
@@ -914,6 +924,18 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 	}
 
 	return nil, nil
+}
+
+func (interp *interpreter) isEditions() bool {
+	return interp.file.FileDescriptorProto().Edition != nil
+}
+
+func (interp *interpreter) syntax() string {
+	syntax := interp.file.FileDescriptorProto().GetSyntax()
+	if syntax == "" {
+		return "proto2"
+	}
+	return syntax
 }
 
 // isKnownField returns true if the given option is for a known field of the

@@ -16,7 +16,9 @@ package parser
 
 import (
 	"bytes"
+	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -27,6 +29,8 @@ import (
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 )
+
+var supportedEditions = map[string]struct{}{"2023": {}}
 
 type result struct {
 	file  *ast.FileNode
@@ -84,11 +88,14 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 
 	r.putFileNode(fd, file)
 
+	// TODO: will need more than just a bool to support editions in validation...
 	isProto3 := false
 	if file.Syntax != nil {
-		if file.Syntax.Syntax.AsString() == "proto3" {
+		switch file.Syntax.Syntax.AsString() {
+		case "proto3":
 			isProto3 = true
-		} else if file.Syntax.Syntax.AsString() != "proto2" {
+		case "proto2":
+		default:
 			nodeInfo := file.NodeInfo(file.Syntax.Syntax)
 			if handler.HandleErrorf(nodeInfo.Start(), `syntax value must be "proto2" or "proto3"`) != nil {
 				return
@@ -98,6 +105,21 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		// proto2 is the default, so no need to set unless proto3
 		if isProto3 {
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
+		}
+	} else if file.Edition != nil {
+		edition := file.Edition.Edition.AsString()
+		fd.Syntax = proto.String("editions")
+		fd.Edition = proto.String(edition)
+		if _, ok := supportedEditions[edition]; !ok {
+			nodeInfo := file.NodeInfo(file.Edition.Edition)
+			editionStrs := make([]string, 0, len(supportedEditions))
+			for supportedEdition := range supportedEditions {
+				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
+			}
+			sort.Strings(editionStrs)
+			if handler.HandleErrorf(nodeInfo.Start(), `edition value %s not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
+				return
+			}
 		}
 	} else {
 		nodeInfo := file.NodeInfo(file)

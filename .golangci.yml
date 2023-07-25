@@ -52,6 +52,7 @@ linters:
     - goconst
     - gocyclo
     - goerr113
+    - gomoddirectives # temporary
     - interfacebloat
     - nestif
     - nilerr
