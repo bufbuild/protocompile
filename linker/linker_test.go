@@ -706,6 +706,16 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
 		},
+		"success_json_name_extension_default": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.MessageOptions {
+					  string foobar = 10001 [json_name="foobar"];
+					}`,
+			},
+		},
 		"failure_json_name_looks_like_extension": {
 			input: map[string]string{
 				"foo.proto": `

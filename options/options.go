@@ -325,7 +325,13 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 	if index >= 0 {
 		opt := uo[index]
 		optNode := interp.file.OptionNode(opt)
-		if fld.GetExtendee() != "" {
+		if opt.StringValue == nil {
+			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: expecting string value for json_name option", scope)
+		}
+		jsonName := string(opt.StringValue)
+		// Extensions don't support custom json_name values.
+		// If the value is already set (via the descriptor) and doesn't match the default value, return an error.
+		if fld.GetExtendee() != "" && jsonName != "" && jsonName != internal.JSONName(fld.GetName()) {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetName()).Start(), "%s: option json_name is not allowed on extensions", scope)
 		}
 		// attribute source code info
@@ -333,14 +339,10 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 			interp.index[on] = &sourceinfo.OptionSourceInfo{Path: []int32{-1, internal.FieldJSONNameTag}}
 		}
 		uo = internal.RemoveOption(uo, index)
-		if opt.StringValue == nil {
-			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: expecting string value for json_name option", scope)
-		}
-		name := string(opt.StringValue)
-		if strings.HasPrefix(name, "[") && strings.HasSuffix(name, "]") {
+		if strings.HasPrefix(jsonName, "[") && strings.HasSuffix(jsonName, "]") {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: option json_name value cannot start with '[' and end with ']'; that is reserved for representing extensions", scope)
 		}
-		fld.JsonName = proto.String(name)
+		fld.JsonName = proto.String(jsonName)
 	}
 
 	// and process default pseudo-option
