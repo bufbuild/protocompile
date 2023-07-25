@@ -108,6 +108,9 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		}
 	} else if file.Edition != nil {
 		edition := file.Edition.Edition.AsString()
+		// setting this to true for now: many of proto3 constraints are shared
+		// with editions, so we'll do this for now...
+		isProto3 = true
 		fd.Syntax = proto.String("editions")
 		fd.Edition = proto.String(edition)
 		if _, ok := supportedEditions[edition]; !ok {
@@ -117,7 +120,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
 			}
 			sort.Strings(editionStrs)
-			if handler.HandleErrorf(nodeInfo.Start(), `edition value %s not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
+			if handler.HandleErrorf(nodeInfo.Start(), `edition value %q not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
 				return
 			}
 		}

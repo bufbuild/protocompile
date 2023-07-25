@@ -857,7 +857,7 @@ func (interp *interpreter) interpretOptions(fqn string, element, opts proto.Mess
 				continue
 			}
 			// the "features" option is reserved for use with editions
-			if err := interp.reporter.HandleErrorf(interp.nodeInfo(node.GetName()).Start(), "%v option 'features' may only be used with editions but file uses %q syntax", mc, interp.syntax()); err != nil {
+			if err := interp.reporter.HandleErrorf(interp.nodeInfo(node.GetName()).Start(), "%voption 'features' may only be used with editions but file uses %q syntax", mc, interp.syntax()); err != nil {
 				return nil, err
 			}
 		}
@@ -1164,8 +1164,9 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 						mc, ood.Name(), fieldName(existingFld))
 				}
 			}
-			fdm = dynamicpb.NewMessage(fld.Message())
-			msg.Set(fld, protoreflect.ValueOfMessage(fdm))
+			fldVal := msg.NewField(fld)
+			fdm = fldVal.Message()
+			msg.Set(fld, fldVal)
 		}
 		// recurse to set next part of name
 		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, int32(fld.Number())))

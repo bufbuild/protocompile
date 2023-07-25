@@ -1986,6 +1986,42 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 		},
+		"success_editions": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					message Foo {
+						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+						int32 bar = 2 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+		},
+		"failure_unknown_edition": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2024";
+					message Foo {
+						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+						int32 bar = 2 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr:            `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
+			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet reject unrecognized editions
+		},
+		"failure_use_of_features_without_editions": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+						int32 bar = 2 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:25: field Foo.foo: option 'features' may only be used with editions but file uses "proto3" syntax`,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -2611,7 +2647,7 @@ func writeFileToDisk(t *testing.T, files map[string]string) string {
 }
 
 func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
-	args := []string{"-I", protoPath, "-o", os.DevNull}
+	args := []string{"--experimental_editions", "-I", protoPath, "-o", os.DevNull}
 	args = append(args, fileNames...)
 	protocPath, err := getProtocPath()
 	if err != nil {
