@@ -325,7 +325,10 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 	if index >= 0 {
 		opt := uo[index]
 		optNode := interp.file.OptionNode(opt)
-		if extendee := fld.GetExtendee(); extendee != "" && fld.GetJsonName() != string(opt.GetStringValue()) {
+		name := string(opt.StringValue)
+		// Extensions don't support custom json_name values.
+		// If the value is already set (via the descriptor) and doesn't match the default value, return an error.
+		if fld.GetExtendee() != "" && fld.GetJsonName() != name {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetName()).Start(), "%s: option json_name is not allowed on extensions", scope)
 		}
 		// attribute source code info
@@ -336,7 +339,6 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		if opt.StringValue == nil {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: expecting string value for json_name option", scope)
 		}
-		name := string(opt.StringValue)
 		if strings.HasPrefix(name, "[") && strings.HasSuffix(name, "]") {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetValue()).Start(), "%s: option json_name value cannot start with '[' and end with ']'; that is reserved for representing extensions", scope)
 		}
