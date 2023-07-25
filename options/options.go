@@ -325,7 +325,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 	if index >= 0 {
 		opt := uo[index]
 		optNode := interp.file.OptionNode(opt)
-		if fld.GetExtendee() != "" {
+		if extendee := fld.GetExtendee(); extendee != "" && fld.GetJsonName() != string(opt.GetStringValue()) {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(optNode.GetName()).Start(), "%s: option json_name is not allowed on extensions", scope)
 		}
 		// attribute source code info
