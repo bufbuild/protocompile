@@ -34,6 +34,7 @@ else
 	PROTOC_OS := $(LOWER_UNAME_OS)
 	PROTOC_ARCH := $(UNAME_ARCH)
 endif
+PROTOC_ARTIFACT_SUFFIX ?= $(PROTOC_OS)-$(PROTOC_ARCH)
 
 .PHONY: help
 help: ## Describe useful make targets
@@ -121,7 +122,7 @@ $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 
 internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
-	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_ARTIFACT_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
+	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_ARTIFACT_VERSION)-$(PROTOC_ARTIFACT_SUFFIX).zip
 
 $(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
 	@mkdir -p $(@D)
