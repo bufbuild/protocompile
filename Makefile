@@ -6,7 +6,7 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
-BIN := $(abspath .tmp/bin)
+BIN ?= $(abspath .tmp/bin)
 COPYRIGHT_YEARS := 2020-2023
 LICENSE_IGNORE := -e /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
@@ -14,26 +14,28 @@ GO ?= go
 TOOLS_MOD_DIR := ./internal/tools
 UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
+PATH_SEP ?= ":"
 
 PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
 # though the version tag does not :(
-PROTOC_ARTIFACT_VERSION = $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+)$$/-rc-\1/g')
-PROTOC_DIR := $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
+PROTOC_ARTIFACT_VERSION := $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+)$$/-rc-\1/g')
+PROTOC_DIR ?= $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
-ifeq ($(UNAME_OS),Darwin)
-PROTOC_OS := osx
-ifeq ($(UNAME_ARCH),arm64)
-PROTOC_ARCH := aarch_64
+LOWER_UNAME_OS := $(shell echo $(UNAME_OS) | tr A-Z a-z)
+ifeq ($(LOWER_UNAME_OS),darwin)
+	PROTOC_OS := osx
+	ifeq ($(UNAME_ARCH),arm64)
+		PROTOC_ARCH := aarch_64
+	else
+		PROTOC_ARCH := x86_64
+	endif
 else
-PROTOC_ARCH := x86_64
+	PROTOC_OS := $(LOWER_UNAME_OS)
+	PROTOC_ARCH := $(UNAME_ARCH)
 endif
-endif
-ifeq ($(UNAME_OS),Linux)
-PROTOC_OS := linux
-PROTOC_ARCH := $(UNAME_ARCH)
-endif
+PROTOC_ARTIFACT_SUFFIX ?= $(PROTOC_OS)-$(PROTOC_ARCH)
 
 .PHONY: help
 help: ## Describe useful make targets
@@ -51,7 +53,7 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: build ## Run unit tests
-	$(GO) test -vet=off -race -cover ./...
+	$(GO) test -race -cover ./...
 
 .PHONY: benchmarks
 benchmarks: build ## Run benchmarks
@@ -78,7 +80,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 
 .PHONY: generate
 generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ## Regenerate code and licenses
-	PATH="$(BIN):$(PATH)" $(GO) generate ./...
+	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
 	@# two files and prints the union, dropping lines common to both (-3) and
@@ -119,7 +121,10 @@ $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 
 internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
-	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_ARTIFACT_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
+	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_ARTIFACT_VERSION)-$(PROTOC_ARTIFACT_SUFFIX).zip
+
+.PHONY: protoc
+protoc: $(PROTOC)
 
 $(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
 	@mkdir -p $(@D)

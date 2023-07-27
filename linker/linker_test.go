@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"unicode"
@@ -2657,7 +2656,7 @@ func writeFileToDisk(t *testing.T, files map[string]string) string {
 func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
 	args := []string{"--experimental_editions", "-I", protoPath, "-o", os.DevNull}
 	args = append(args, fileNames...)
-	protocPath, err := getProtocPath()
+	protocPath, err := internal.GetProtocPath("../")
 	if err != nil {
 		return false, err
 	}
@@ -2672,17 +2671,4 @@ func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed
 		return false, nil
 	}
 	return false, err
-}
-
-func getProtocPath() (string, error) {
-	// TODO: unify with similar logic in benchmarks
-	if runtime.GOOS == "windows" {
-		return "protoc", nil
-	}
-	data, err := os.ReadFile("../.protoc_version")
-	if err != nil {
-		return "", err
-	}
-	version := strings.TrimSpace(string(data))
-	return fmt.Sprintf("../internal/testdata/protoc/%s/bin/protoc", version), nil
 }
