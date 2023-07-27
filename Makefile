@@ -18,8 +18,8 @@ UNAME_ARCH := $(shell uname -m)
 PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
 # though the version tag does not :(
-PROTOC_ARTIFACT_VERSION = $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+)$$/-rc-\1/g')
-PROTOC_DIR := $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
+PROTOC_ARTIFACT_VERSION := $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+)$$/-rc-\1/g')
+PROTOC_DIR ?= $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
 ifeq ($(UNAME_OS),Darwin)
@@ -51,7 +51,7 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: build ## Run unit tests
-	$(GO) test -vet=off -race -cover ./...
+	$(GO) test -race -cover ./...
 
 .PHONY: benchmarks
 benchmarks: build ## Run benchmarks
