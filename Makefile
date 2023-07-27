@@ -123,6 +123,9 @@ internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
 	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_ARTIFACT_VERSION)-$(PROTOC_ARTIFACT_SUFFIX).zip
 
+.PHONY: protoc
+protoc: $(PROTOC)
+
 $(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
 	@mkdir -p $(@D)
 	unzip -o -q $< -d $(PROTOC_DIR) && \

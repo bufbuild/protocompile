@@ -24,7 +24,8 @@ import (
 
 // GetProtocPath returns the path to an appropriate protoc executable. This
 // path is created by the Makefile, so run `make test` instead of `go test ./...`
-// to make sure the path is populated.
+// to make sure the path is populated. You can also just create the protoc
+// executable via 'make protoc'.
 //
 // The protoc executable is used by some tests to verify that the output of
 // this repo matches the output of the reference compiler.
@@ -40,7 +41,7 @@ func GetProtocPath(rootDir string) (string, error) {
 	}
 	if info, err := os.Stat(protocPath); err != nil {
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("%s does not exist; run 'make test' from the top-level of this repo", protocPath)
+			return "", fmt.Errorf("%s does not exist; run 'make protoc' from the top-level of this repo", protocPath)
 		}
 		return "", err
 	} else if info.IsDir() {

@@ -13,12 +13,8 @@ permissions:
 jobs:
   ci:
     env:
-#      GOMODCACHE: 'd:\gomodcache'
-#      GOCACHE: 'd:\gocache'
-#      DOWNLOAD_CACHE: 'd:\downloadcache'
       PROTOC_ARTIFACT_SUFFIX: win64
       PATH_SEP: ;
-      BIN: 'd:\tmp\bin'
     runs-on: windows-latest
     strategy:
       matrix:
@@ -47,4 +43,4 @@ jobs:
           key: ${{ runner.os }}-protocompile-ci-${{ hashFiles('**/go.sum') }}
       - name: Test
         shell: bash
-        run: make test
+        run: make protoc && go test ./...
