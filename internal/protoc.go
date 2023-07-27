@@ -26,7 +26,8 @@ import (
 // path is created by the Makefile, so run `make test` instead of `go test ./...`
 // to make sure the path is populated.
 //
-// The protoc executable is used by some tests
+// The protoc executable is used by some tests to verify that the output of
+// this repo matches the output of the reference compiler.
 func GetProtocPath(rootDir string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(rootDir, ".protoc_version"))
 	if err != nil {

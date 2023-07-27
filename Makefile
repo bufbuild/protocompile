@@ -6,7 +6,7 @@ SHELL := bash
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
-BIN := $(abspath .tmp/bin)
+BIN ?= $(abspath .tmp/bin)
 COPYRIGHT_YEARS := 2020-2023
 LICENSE_IGNORE := -e /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
@@ -23,7 +23,7 @@ PROTOC_ARTIFACT_VERSION := $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+
 PROTOC_DIR ?= $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
-LOWER_UNAME_OS := $(shell echo $UNAME_OS | tr A-Z a-z)
+LOWER_UNAME_OS := $(shell echo $(UNAME_OS) | tr A-Z a-z)
 ifeq ($(LOWER_UNAME_OS),darwin)
 	PROTOC_OS := osx
 	ifeq ($(UNAME_ARCH),arm64)
@@ -53,8 +53,6 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: build ## Run unit tests
-	uname -s
-	uname -m
 	$(GO) test -race -cover ./...
 
 .PHONY: benchmarks
