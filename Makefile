@@ -14,6 +14,7 @@ GO ?= go
 TOOLS_MOD_DIR := ./internal/tools
 UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
+PATH_SEP := ":"
 
 PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
@@ -81,7 +82,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 
 .PHONY: generate
 generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ## Regenerate code and licenses
-	PATH="$(BIN):$(PATH)" $(GO) generate ./...
+	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
 	@# two files and prints the union, dropping lines common to both (-3) and

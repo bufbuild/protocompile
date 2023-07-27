@@ -17,6 +17,7 @@ jobs:
 #      GOCACHE: 'd:\gocache'
 #      DOWNLOAD_CACHE: 'd:\downloadcache'
       PROTOC_ARTIFACT_SUFFIX: win64
+      PATH_SEP: ;
     runs-on: windows-latest
     strategy:
       matrix:
