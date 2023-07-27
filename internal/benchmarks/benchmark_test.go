@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bufbuild/protocompile/internal"
 	"io"
 	"io/fs"
 	"net/http"
@@ -44,6 +43,7 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/protoutil"
