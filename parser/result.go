@@ -88,9 +88,10 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 
 	r.putFileNode(fd, file)
 
-	// TODO: will need more than just a bool to support editions in validation...
+	// TODO: will need more than just a bool to correctly support editions in validation...
 	isProto3 := false
-	if file.Syntax != nil {
+	switch {
+	case file.Syntax != nil:
 		switch file.Syntax.Syntax.AsString() {
 		case "proto3":
 			isProto3 = true
@@ -106,7 +107,13 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		if isProto3 {
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
-	} else if file.Edition != nil {
+	case file.Edition != nil:
+		if !internal.AllowEditions {
+			nodeInfo := file.NodeInfo(file.Edition.Edition)
+			if handler.HandleErrorf(nodeInfo.Start(), `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
+				return
+			}
+		}
 		edition := file.Edition.Edition.AsString()
 		// setting this to true for now: many of proto3 constraints are shared
 		// with editions, so we'll do this for now...
@@ -124,7 +131,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 				return
 			}
 		}
-	} else {
+	default:
 		nodeInfo := file.NodeInfo(file)
 		handler.HandleWarningWithPos(nodeInfo.Start(), ErrNoSyntax)
 	}

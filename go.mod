@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/sync v0.3.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.31.1-0.20230727123859-6d0a5dbd9500
 )
 
 require (
@@ -16,5 +16,3 @@ require (
 )
 
 retract v0.5.0 // Contains deadlock error
-
-replace google.golang.org/protobuf => ../protobuf-go
