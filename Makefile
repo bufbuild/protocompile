@@ -14,7 +14,7 @@ GO ?= go
 TOOLS_MOD_DIR := ./internal/tools
 UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
-PATH_SEP := ":"
+PATH_SEP ?= ":"
 
 PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
