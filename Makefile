@@ -22,17 +22,17 @@ PROTOC_ARTIFACT_VERSION := $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+
 PROTOC_DIR ?= $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
-ifeq ($(UNAME_OS),Darwin)
-PROTOC_OS := osx
-ifeq ($(UNAME_ARCH),arm64)
-PROTOC_ARCH := aarch_64
+LOWER_UNAME_OS := $(shell echo $UNAME_OS | tr A-Z a-z)
+ifeq ($(LOWER_UNAME_OS),darwin)
+	PROTOC_OS := osx
+	ifeq ($(UNAME_ARCH),arm64)
+		PROTOC_ARCH := aarch_64
+	else
+		PROTOC_ARCH := x86_64
+	endif
 else
-PROTOC_ARCH := x86_64
-endif
-endif
-ifeq ($(UNAME_OS),Linux)
-PROTOC_OS := linux
-PROTOC_ARCH := $(UNAME_ARCH)
+	PROTOC_OS := $(LOWER_UNAME_OS)
+	PROTOC_ARCH := $(UNAME_ARCH)
 endif
 
 .PHONY: help
@@ -51,6 +51,8 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: build ## Run unit tests
+	uname -s
+	uname -m
 	$(GO) test -race -cover ./...
 
 .PHONY: benchmarks
