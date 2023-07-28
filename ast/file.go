@@ -212,7 +212,7 @@ type EditionNode struct {
 }
 
 // NewEditionNode creates a new *EditionNode. All four arguments must be non-nil:
-//   - keyword: The token corresponding to the "syntax" keyword.
+//   - keyword: The token corresponding to the "edition" keyword.
 //   - equals: The token corresponding to the "=" rune.
 //   - edition: The actual edition value, e.g. "2023".
 //   - semicolon: The token corresponding to the ";" rune that ends the declaration.
