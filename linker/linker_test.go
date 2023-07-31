@@ -2004,7 +2004,7 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 		},
-		"failure_unknown_edition": {
+		"failure_unknown_edition_future": {
 			input: map[string]string{
 				"test.proto": `
 					edition = "2024";
@@ -2014,8 +2014,22 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr:            `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet reject unrecognized editions
+			expectedErr: `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
+			// protoc v24.0-rc2 doesn't (yet?) reject unrecognized editions that
+			// sort *after* 2023; only ones before 2023 🤷
+			expectedDiffWithProtoc: true,
+		},
+		"failure_unknown_edition_past": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2022";
+					message Foo {
+						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+						int32 bar = 2 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:1:11: edition value "2022" not recognized; should be one of ["2023"]`,
 		},
 		"failure_use_of_features_without_editions": {
 			input: map[string]string{

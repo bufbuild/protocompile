@@ -371,6 +371,9 @@ func TestDataRace(t *testing.T) {
 				return err
 			})
 			err := grp.Wait()
+			if panicErr := new(PanicError); errors.As(err, panicErr) {
+				t.Logf(panicErr.Stack)
+			}
 			require.NoError(t, err)
 		})
 	}

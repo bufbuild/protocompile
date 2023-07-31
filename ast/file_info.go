@@ -163,10 +163,10 @@ func (f *FileInfo) TokenInfo(t Token) NodeInfo {
 
 func (f *FileInfo) nodeInfo(start, end int) NodeInfo {
 	if start < 0 || start >= len(f.items) {
-		return NodeInfo{}
+		return NodeInfo{fileInfo: f}
 	}
 	if end < 0 || end >= len(f.items) {
-		return NodeInfo{}
+		return NodeInfo{fileInfo: f}
 	}
 	return NodeInfo{fileInfo: f, startIndex: start, endIndex: end}
 }
