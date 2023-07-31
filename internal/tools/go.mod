@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/bufbuild/buf v1.15.0
 	github.com/golangci/golangci-lint v1.53.3
-	golang.org/x/tools v0.11.0
+	golang.org/x/tools v0.11.1
 )
 
 require (
