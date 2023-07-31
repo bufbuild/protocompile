@@ -1,4 +1,4 @@
-module github.com/jhump/protocompile/internal/benchmarks
+module github.com/bufbuild/protocompile/internal/benchmarks
 
 go 1.19
 

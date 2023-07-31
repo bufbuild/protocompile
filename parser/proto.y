@@ -16,6 +16,7 @@ import (
 %union{
 	file         *ast.FileNode
 	syn          *ast.SyntaxNode
+	ed           *ast.EditionNode
 	fileElement  ast.FileElement
 	fileElements []ast.FileElement
 	pkg          *ast.PackageNode
@@ -74,6 +75,7 @@ import (
 // really a field name in the above union struct
 %type <file>         file
 %type <syn>          syntaxDecl
+%type <ed>           editionDecl
 %type <fileElement>  fileElement
 %type <fileElements> fileElements
 %type <imprt>        importDecl
@@ -127,7 +129,7 @@ import (
 %token <i>   _INT_LIT
 %token <f>   _FLOAT_LIT
 %token <id>  _NAME
-%token <id>  _SYNTAX _IMPORT _WEAK _PUBLIC _PACKAGE _OPTION _TRUE _FALSE _INF _NAN _REPEATED _OPTIONAL _REQUIRED
+%token <id>  _SYNTAX _EDITION _IMPORT _WEAK _PUBLIC _PACKAGE _OPTION _TRUE _FALSE _INF _NAN _REPEATED _OPTIONAL _REQUIRED
 %token <id>  _DOUBLE _FLOAT _INT32 _INT64 _UINT32 _UINT64 _SINT32 _SINT64 _FIXED32 _FIXED64 _SFIXED32 _SFIXED64
 %token <id>  _BOOL _STRING _BYTES _GROUP _ONEOF _MAP _EXTENSIONS _TO _MAX _RESERVED _ENUM _MESSAGE _EXTEND
 %token <id>  _SERVICE _RPC _STREAM _RETURNS
@@ -143,6 +145,11 @@ file : syntaxDecl {
 		$$ = ast.NewFileNode(lex.info, $1, nil, lex.eof)
 		lex.res = $$
 	}
+	| editionDecl {
+		lex := protolex.(*protoLex)
+		$$ = ast.NewFileNodeWithEdition(lex.info, $1, nil, lex.eof)
+		lex.res = $$
+	}
 	| fileElements  {
 		lex := protolex.(*protoLex)
 		$$ = ast.NewFileNode(lex.info, nil, $1, lex.eof)
@@ -151,6 +158,11 @@ file : syntaxDecl {
 	| syntaxDecl fileElements {
 		lex := protolex.(*protoLex)
 		$$ = ast.NewFileNode(lex.info, $1, $2, lex.eof)
+		lex.res = $$
+	}
+	| editionDecl fileElements {
+		lex := protolex.(*protoLex)
+		$$ = ast.NewFileNodeWithEdition(lex.info, $1, $2, lex.eof)
 		lex.res = $$
 	}
 	| {
@@ -204,6 +216,10 @@ fileElement : importDecl {
 
 syntaxDecl : _SYNTAX '=' stringLit ';' {
 		$$ = ast.NewSyntaxNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
+	}
+
+editionDecl : _EDITION '=' stringLit ';' {
+		$$ = ast.NewEditionNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
 
 importDecl : _IMPORT stringLit ';' {
@@ -993,6 +1009,7 @@ methodElement : optionDecl {
 //   option, group, optional, required, and repeated
 msgElementName : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC
@@ -1027,6 +1044,7 @@ msgElementName : _NAME
 // excludes group, optional, required, and repeated
 extElementName : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC
@@ -1068,6 +1086,7 @@ extElementName : _NAME
 // excludes reserved, option
 enumValueName : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC
@@ -1111,6 +1130,7 @@ enumValueName : _NAME
 // excludes group, option, optional, required, and repeated
 oneofElementName : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC
@@ -1151,6 +1171,7 @@ oneofElementName : _NAME
 // excludes group
 notGroupElementName : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC
@@ -1195,6 +1216,7 @@ notGroupElementName : _NAME
 // excludes stream
 mtdElementName : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC
@@ -1238,6 +1260,7 @@ mtdElementName : _NAME
 
 identifier : _NAME
 	| _SYNTAX
+	| _EDITION
 	| _IMPORT
 	| _WEAK
 	| _PUBLIC

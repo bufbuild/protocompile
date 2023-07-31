@@ -16,7 +16,9 @@ package parser
 
 import (
 	"bytes"
+	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -27,6 +29,8 @@ import (
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 )
+
+var supportedEditions = map[string]struct{}{"2023": {}}
 
 type result struct {
 	file  *ast.FileNode
@@ -84,11 +88,15 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 
 	r.putFileNode(fd, file)
 
+	// TODO: will need more than just a bool to correctly support editions in validation...
 	isProto3 := false
-	if file.Syntax != nil {
-		if file.Syntax.Syntax.AsString() == "proto3" {
+	switch {
+	case file.Syntax != nil:
+		switch file.Syntax.Syntax.AsString() {
+		case "proto3":
 			isProto3 = true
-		} else if file.Syntax.Syntax.AsString() != "proto2" {
+		case "proto2":
+		default:
 			nodeInfo := file.NodeInfo(file.Syntax.Syntax)
 			if handler.HandleErrorf(nodeInfo.Start(), `syntax value must be "proto2" or "proto3"`) != nil {
 				return
@@ -99,7 +107,31 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		if isProto3 {
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
-	} else {
+	case file.Edition != nil:
+		if !internal.AllowEditions {
+			nodeInfo := file.NodeInfo(file.Edition.Edition)
+			if handler.HandleErrorf(nodeInfo.Start(), `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
+				return
+			}
+		}
+		edition := file.Edition.Edition.AsString()
+		// setting this to true for now: many of proto3 constraints are shared
+		// with editions, so we'll do this for now...
+		isProto3 = true
+		fd.Syntax = proto.String("editions")
+		fd.Edition = proto.String(edition)
+		if _, ok := supportedEditions[edition]; !ok {
+			nodeInfo := file.NodeInfo(file.Edition.Edition)
+			editionStrs := make([]string, 0, len(supportedEditions))
+			for supportedEdition := range supportedEditions {
+				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
+			}
+			sort.Strings(editionStrs)
+			if handler.HandleErrorf(nodeInfo.Start(), `edition value %q not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
+				return
+			}
+		}
+	default:
 		nodeInfo := file.NodeInfo(file)
 		handler.HandleWarningWithPos(nodeInfo.Start(), ErrNoSyntax)
 	}

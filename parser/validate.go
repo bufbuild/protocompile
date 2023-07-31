@@ -30,7 +30,7 @@ import (
 
 func validateBasic(res *result, handler *reporter.Handler) {
 	fd := res.proto
-	isProto3 := fd.GetSyntax() == "proto3"
+	isProto3 := fd.GetSyntax() != "" && fd.GetSyntax() != "proto2" // TODO: need something smarter for editions...
 
 	if err := validateImports(res, handler); err != nil {
 		return

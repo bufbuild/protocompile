@@ -43,6 +43,7 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/protoutil"
@@ -63,7 +64,7 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	protocPath, err = getProtocPath()
+	protocPath, err = internal.GetProtocPath("../../")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to compute protoc path: %v\n", err)
 		os.Exit(1)
@@ -127,19 +128,6 @@ func TestMain(m *testing.M) {
 	fmt.Printf("%d total source files found in googleapis (%d bytes).\n", len(googleapisSources), sourceSize)
 
 	stat = m.Run()
-}
-
-func getProtocPath() (string, error) {
-	data, err := os.ReadFile("../../.protoc_version")
-	if err != nil {
-		return "", err
-	}
-	version := strings.TrimSpace(string(data))
-	protocPath := fmt.Sprintf("../testdata/protoc/%s/bin/protoc", version)
-	if runtime.GOOS == "windows" {
-		protocPath += ".exe"
-	}
-	return protocPath, nil
 }
 
 func downloadAndExpand(url, targetDir string) (e error) {

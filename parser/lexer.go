@@ -113,6 +113,7 @@ func newLexer(in io.Reader, filename string, handler *reporter.Handler) (*protoL
 
 var keywords = map[string]int{
 	"syntax":     _SYNTAX,
+	"edition":    _EDITION,
 	"import":     _IMPORT,
 	"weak":       _WEAK,
 	"public":     _PUBLIC,
