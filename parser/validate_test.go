@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -758,7 +759,7 @@ func TestBasicValidation(t *testing.T) {
 
 func testByProtoc(t *testing.T, fileContents string, expectSuccess bool) {
 	t.Helper()
-	stdout, err := internal.CompileWithProtoc(map[string]string{"test.proto": fileContents}, nil)
+	stdout, err := protoc.Compile(map[string]string{"test.proto": fileContents}, nil)
 	if execErr := new(exec.ExitError); errors.As(err, &execErr) {
 		t.Logf("protoc stdout:\n%s\nprotoc stderr:\n%s\n", stdout, execErr.Stderr)
 		require.False(t, expectSuccess)

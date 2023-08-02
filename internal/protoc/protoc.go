@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+// Package protoc contains some helpers for invoking protoc from tests. This
+// technique is used to verify that protocompile produces equivalent outputs
+// and has equivalent behavior as protoc.
+package protoc
 
 import (
 	"fmt"
@@ -23,14 +26,14 @@ import (
 	"strings"
 )
 
-// GetProtocPath returns the path to an appropriate protoc executable. This
+// BinaryPath returns the path to an appropriate protoc executable. This
 // path is created by the Makefile, so run `make test` instead of `go test ./...`
 // to make sure the path is populated. You can also just create the protoc
 // executable via 'make protoc'.
 //
 // The protoc executable is used by some tests to verify that the output of
 // this repo matches the output of the reference compiler.
-func GetProtocPath(rootDir string) (string, error) {
+func BinaryPath(rootDir string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(rootDir, ".protoc_version"))
 	if err != nil {
 		return "", err
@@ -51,13 +54,13 @@ func GetProtocPath(rootDir string) (string, error) {
 	return protocPath, nil
 }
 
-// CompileWithProtoc compiles the given files with protoc. The fileNames parameter indicates the order of
+// Compile compiles the given files with protoc. The fileNames parameter indicates the order of
 // files that should be used in the command line for protoc (can be nil when the order does not matter).
 //
 // This does not return the full results of compilation, only if compilation succeeded or not. The
 // returned error will be an instance of *[exec.ExitError] if protoc was successfully invoked but
 // returned a non-zero status.
-func CompileWithProtoc(files map[string]string, fileNames []string) (stdout []byte, err error) {
+func Compile(files map[string]string, fileNames []string) (stdout []byte, err error) {
 	if len(fileNames) != 0 {
 		if len(files) != len(fileNames) {
 			return nil, fmt.Errorf("fileNames has wrong number of entries: expecting %d, got %d", len(files), len(fileNames))
@@ -115,7 +118,7 @@ func writeFileToDisk(files map[string]string) (string, error) {
 func invokeProtoc(protoPath string, fileNames []string) (stdout []byte, err error) {
 	args := []string{"--experimental_editions", "-I", protoPath, "-o", os.DevNull}
 	args = append(args, fileNames...)
-	protocPath, err := GetProtocPath("../")
+	protocPath, err := BinaryPath("../")
 	if err != nil {
 		return nil, err
 	}

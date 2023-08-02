@@ -33,6 +33,7 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/reporter"
@@ -2632,7 +2633,7 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 
 func testByProtoc(t *testing.T, files map[string]string, fileNames []string) bool {
 	t.Helper()
-	stdout, err := internal.CompileWithProtoc(files, fileNames)
+	stdout, err := protoc.Compile(files, fileNames)
 	if execErr := new(exec.ExitError); errors.As(err, &execErr) {
 		t.Logf("protoc stdout:\n%s\nprotoc stderr:\n%s\n", stdout, execErr.Stderr)
 		return false
