@@ -178,20 +178,9 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 	if prefix != "" {
 		prefix += "."
 	}
-	opts := fd.GetOptions()
-	if len(opts.GetUninterpretedOption()) > 0 {
-		newDefaults, remain, err := interp.interpretOptions(fd.GetName(), descriptorpb.FieldOptions_TARGET_TYPE_FILE, featuresDefaults, fd, opts, opts.UninterpretedOption)
-		if err != nil {
-			return nil, err
-		}
-		opts.UninterpretedOption = remain
-		featuresDefaults = newDefaults
-	} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-		if opts == nil {
-			opts = &descriptorpb.FileOptions{}
-			fd.Options = opts
-		}
-		setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+	featuresDefaults, err := interpretElementOptions(&interp, fd.GetName(), targetTypeFile, featuresDefaults, fd)
+	if err != nil {
+		return nil, err
 	}
 	for _, md := range fd.GetMessageType() {
 		fqn := prefix + md.GetName()
@@ -213,37 +202,15 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 	}
 	for _, sd := range fd.GetService() {
 		fqn := prefix + sd.GetName()
-		opts := sd.GetOptions()
-		featuresDefaults := featuresDefaults
-		if len(opts.GetUninterpretedOption()) > 0 {
-			newDefaults, remain, err := interp.interpretOptions(fqn, descriptorpb.FieldOptions_TARGET_TYPE_SERVICE, featuresDefaults, sd, opts, opts.UninterpretedOption)
-			if err != nil {
-				return nil, err
-			}
-			opts.UninterpretedOption = remain
-			featuresDefaults = newDefaults
-		} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-			if opts == nil {
-				opts = &descriptorpb.ServiceOptions{}
-				sd.Options = opts
-			}
-			setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+		featuresDefaults, err := interpretElementOptions(&interp, fqn, targetTypeService, featuresDefaults, sd)
+		if err != nil {
+			return nil, err
 		}
 		for _, mtd := range sd.GetMethod() {
 			mtdFqn := fqn + "." + mtd.GetName()
-			opts := mtd.GetOptions()
-			if len(opts.GetUninterpretedOption()) > 0 {
-				_, remain, err := interp.interpretOptions(mtdFqn, descriptorpb.FieldOptions_TARGET_TYPE_METHOD, featuresDefaults, mtd, opts, opts.UninterpretedOption)
-				if err != nil {
-					return nil, err
-				}
-				opts.UninterpretedOption = remain
-			} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-				if opts == nil {
-					opts = &descriptorpb.MethodOptions{}
-					mtd.Options = opts
-				}
-				setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+			_, err := interpretElementOptions(&interp, mtdFqn, targetTypeMethod, featuresDefaults, mtd)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -303,20 +270,9 @@ func (interp *interpreter) nodeInfo(n ast.Node) ast.NodeInfo {
 }
 
 func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.DescriptorProto, featuresDefaults protoreflect.Message) error {
-	opts := md.GetOptions()
-	if len(opts.GetUninterpretedOption()) > 0 {
-		newDefaults, remain, err := interp.interpretOptions(fqn, descriptorpb.FieldOptions_TARGET_TYPE_MESSAGE, featuresDefaults, md, opts, opts.UninterpretedOption)
-		if err != nil {
-			return err
-		}
-		opts.UninterpretedOption = remain
-		featuresDefaults = newDefaults
-	} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-		if opts == nil {
-			opts = &descriptorpb.MessageOptions{}
-			md.Options = opts
-		}
-		setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+	featuresDefaults, err := interpretElementOptions(interp, fqn, targetTypeMessage, featuresDefaults, md)
+	if err != nil {
+		return err
 	}
 	var mapFieldFeatures map[string]protoreflect.Message
 	for _, fld := range md.GetField() {
@@ -337,19 +293,9 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 	}
 	for _, ood := range md.GetOneofDecl() {
 		oodFqn := fqn + "." + ood.GetName()
-		opts := ood.GetOptions()
-		if len(opts.GetUninterpretedOption()) > 0 {
-			_, remain, err := interp.interpretOptions(oodFqn, descriptorpb.FieldOptions_TARGET_TYPE_ONEOF, featuresDefaults, ood, opts, opts.UninterpretedOption)
-			if err != nil {
-				return err
-			}
-			opts.UninterpretedOption = remain
-		} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-			if opts == nil {
-				opts = &descriptorpb.OneofOptions{}
-				ood.Options = opts
-			}
-			setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+		_, err := interpretElementOptions(interp, oodFqn, targetTypeOneof, featuresDefaults, ood)
+		if err != nil {
+			return err
 		}
 	}
 	for _, fld := range md.GetExtension() {
@@ -360,19 +306,9 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 	}
 	for _, er := range md.GetExtensionRange() {
 		erFqn := fmt.Sprintf("%s.%d-%d", fqn, er.GetStart(), er.GetEnd())
-		opts := er.GetOptions()
-		if len(opts.GetUninterpretedOption()) > 0 {
-			_, remain, err := interp.interpretOptions(erFqn, descriptorpb.FieldOptions_TARGET_TYPE_EXTENSION_RANGE, featuresDefaults, er, opts, opts.UninterpretedOption)
-			if err != nil {
-				return err
-			}
-			opts.UninterpretedOption = remain
-		} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-			if opts == nil {
-				opts = &descriptorpb.ExtensionRangeOptions{}
-				er.Options = opts
-			}
-			setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+		_, err := interpretElementOptions(interp, erFqn, targetTypeExtensionRange, featuresDefaults, er)
+		if err != nil {
+			return err
 		}
 	}
 	for _, nmd := range md.GetNestedType() {
@@ -413,26 +349,16 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 		}
 	}
 
-	// Then process actual options.
-	// (Must re-check length of uninterpreted options since above step could remove some.)
-	//nolint:gocritic
-	if len(opts.GetUninterpretedOption()) > 0 {
-		_, remain, err := interp.interpretOptions(fqn, descriptorpb.FieldOptions_TARGET_TYPE_FIELD, featuresDefaults, fld, opts, opts.UninterpretedOption)
-		if err != nil {
-			return err
-		}
-		opts.UninterpretedOption = remain
-	} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-		if opts == nil {
-			opts = &descriptorpb.FieldOptions{}
-			fld.Options = opts
-		}
-		setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
-	} else {
+	if len(opts.GetUninterpretedOption()) == 0 && featuresDefaults == nil {
 		// If no options to interpret and no features to resolve, clear out options.
 		fld.Options = nil
+		return nil
 	}
-	return nil
+
+	// Then process actual options.
+	// (Must re-check length of uninterpreted options since above step could remove some.)
+	_, err := interpretElementOptions(interp, fqn, targetTypeField, featuresDefaults, fld)
+	return err
 }
 
 func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descriptorpb.FieldDescriptorProto, opts *descriptorpb.FieldOptions) error {
@@ -590,36 +516,15 @@ func encodeDefaultBytes(b []byte) string {
 }
 
 func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.EnumDescriptorProto, featuresDefaults protoreflect.Message) error {
-	opts := ed.GetOptions()
-	if len(opts.GetUninterpretedOption()) > 0 {
-		newDefaults, remain, err := interp.interpretOptions(fqn, descriptorpb.FieldOptions_TARGET_TYPE_ENUM, featuresDefaults, ed, opts, opts.UninterpretedOption)
-		if err != nil {
-			return err
-		}
-		opts.UninterpretedOption = remain
-		featuresDefaults = newDefaults
-	} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-		if opts == nil {
-			opts = &descriptorpb.EnumOptions{}
-			ed.Options = opts
-		}
-		setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+	featuresDefaults, err := interpretElementOptions(interp, fqn, targetTypeEnum, featuresDefaults, ed)
+	if err != nil {
+		return err
 	}
 	for _, evd := range ed.GetValue() {
 		evdFqn := fqn + "." + evd.GetName()
-		opts := evd.GetOptions()
-		if len(opts.GetUninterpretedOption()) > 0 {
-			_, remain, err := interp.interpretOptions(evdFqn, descriptorpb.FieldOptions_TARGET_TYPE_ENUM_ENTRY, featuresDefaults, evd, opts, opts.UninterpretedOption)
-			if err != nil {
-				return err
-			}
-			opts.UninterpretedOption = remain
-		} else if featuresDefaults != nil && opts.GetFeatures() == nil {
-			if opts == nil {
-				opts = &descriptorpb.EnumValueOptions{}
-				evd.Options = opts
-			}
-			setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+		_, err := interpretElementOptions(interp, evdFqn, targetTypeEnumValue, featuresDefaults, evd)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -935,6 +840,33 @@ type optionsContainer interface {
 	// This value should be part of the message hierarchy whose root is the
 	// *descriptorpb.FileDescriptorProto that corresponds to this result.
 	AddOptionBytes(pm proto.Message, opts []byte)
+}
+
+func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any, Opts optionsType[OptsStruct]](
+	interp *interpreter,
+	fqn string,
+	target *targetType[Elem, OptsStruct, Opts],
+	featuresDefaults protoreflect.Message,
+	elem Elem,
+) (protoreflect.Message, error) {
+	opts := elem.GetOptions()
+	uo := opts.GetUninterpretedOption()
+	if len(uo) > 0 {
+		newDefaults, remain, err := interp.interpretOptions(fqn, target.t, featuresDefaults, elem, opts, uo)
+		if err != nil {
+			return featuresDefaults, err
+		}
+		target.setUninterpretedOptions(opts, remain)
+		return newDefaults, nil
+	}
+	if featuresDefaults != nil && opts.GetFeatures() == nil {
+		if opts == nil {
+			opts = new(OptsStruct)
+			target.setOptions(elem, opts)
+		}
+		setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+	}
+	return featuresDefaults, nil
 }
 
 // interpretOptions processes the options in uninterpreted, which are interpreted as fields

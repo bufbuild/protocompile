@@ -610,7 +610,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescripto
 		parseRes.FileDescriptorProto().SourceCodeInfo = nil
 	}
 	if len(parseRes.FileDescriptorProto().GetSourceCodeInfo().GetLocation()) > 0 {
-		// If we have source code info the descriptor proto at this point,
+		// If we have source code info in the descriptor proto at this point,
 		// we have to build the index of locations.
 		file.PopulateSourceCodeInfo()
 	}

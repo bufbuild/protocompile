@@ -32,6 +32,7 @@ import (
 
 var supportedEditions = map[string]struct{}{"2023": {}}
 
+// NB: protoreflect.Syntax doesn't yet know about editions, so we have to use our own type.
 type syntaxType int
 
 const (
@@ -96,7 +97,6 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 
 	r.putFileNode(fd, file)
 
-	// TODO: will need more than just a bool to correctly support editions in validation...
 	var syntax syntaxType
 	switch {
 	case file.Syntax != nil:
@@ -124,8 +124,6 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			}
 		}
 		edition := file.Edition.Edition.AsString()
-		// setting this to true for now: many of proto3 constraints are shared
-		// with editions, so we'll do this for now...
 		syntax = syntaxEditions
 		fd.Syntax = proto.String("editions")
 		fd.Edition = proto.String(edition)
