@@ -2053,6 +2053,32 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:3:25: field Foo.foo: option 'features' may only be used with editions but file uses "proto3" syntax`,
 		},
+		"failure_direct_use_of_raw_features": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					message Foo {
+						string foo = 1 [features.raw_features.field_presence = LEGACY_REQUIRED];
+					}
+				`,
+			},
+			expectedErr:            `test.proto:3:34: feature field "raw_features" may not be used explicitly`,
+			expectedDiffWithProtoc: true, // seems like a bug in protoc that it allows use of raw_features
+		},
+		"failure_direct_use_of_raw_features_in_message_literal": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					message Foo {
+					  string foo = 1 [features = {
+					    raw_features: <field_presence: IMPLICIT>
+					  }];
+					}
+				`,
+			},
+			expectedErr:            `test.proto:4:5: feature field "raw_features" may not be used explicitly`,
+			expectedDiffWithProtoc: true, // seems like a bug in protoc that it allows use of raw_features
+		},
 	}
 
 	for name, tc := range testCases {
