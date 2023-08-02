@@ -286,6 +286,8 @@ func populateFeatureDefaults(msgType protoreflect.MessageType, edition string) (
 	for i, length := 0, fields.Len(); i < length; i++ {
 		fld := fields.Get(i)
 		if fld.Name() == rawFeaturesFieldName {
+			// set to empty message
+			defaults.Set(fld, defaults.NewField(fld))
 			continue
 		}
 		err := setEditionDefault(defaults, fld, edition)
@@ -416,4 +418,33 @@ func resolveFeatures(features, defaults protoreflect.Message, res linker.Resolve
 		resolved.ProtoReflect().Set(rawField, protoreflect.ValueOfMessage(rawFeatures))
 	}
 	return resolved.ProtoReflect(), nil
+}
+
+func setFeatures(options, features protoreflect.Message, res linker.Resolver) {
+	// TODO: signature should return an error; need to handle error in all callers
+	fld := options.Descriptor().Fields().ByName(featuresFieldName)
+	if fld == nil {
+		// no features to resolve
+		return
+	}
+	if fld.IsList() || fld.Message() == nil || fld.Message().FullName() != featureSetName {
+		// features field doesn't look right... abort
+		// TODO: should this return an error?
+		return
+	}
+	if fld.Message() == features.Descriptor() {
+		options.Set(fld, protoreflect.ValueOfMessage(features))
+		return
+	}
+	// Descriptors don't match, which means we need to set the value by
+	// serializing to bytes and then de-serializing.
+	dest := options.NewField(fld)
+	options.Set(fld, dest)
+	data, err := proto.Marshal(features.Interface())
+	if err != nil {
+		return
+	}
+	if err := (proto.UnmarshalOptions{Resolver: res}).Unmarshal(data, dest.Message().Interface()); err != nil {
+		return
+	}
 }

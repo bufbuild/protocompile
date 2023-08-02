@@ -21,7 +21,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"unicode"
@@ -54,14 +53,28 @@ func TestSimpleLink(t *testing.T) {
 		}),
 	}
 	fds, err := compiler.Compile(context.Background(), "desc_test_complex.proto")
-	if !assert.Nil(t, err) {
-		return
-	}
+	require.NoError(t, err)
 
 	res, ok := fds[0].(linker.Result)
 	require.True(t, ok)
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_complex.protoset", linker.ResolverFromFile(fds[0]))
 	prototest.CheckFiles(t, res, fdset, true)
+}
+
+func TestSimpleLink_Editions(t *testing.T) {
+	t.Parallel()
+	compiler := protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"../internal/testdata/editions"},
+		}),
+	}
+	fds, err := compiler.Compile(context.Background(), "all_default_features.proto", "features_with_overrides.proto")
+	require.NoError(t, err)
+
+	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/editions/all.protoset", fds.AsResolver())
+
+	prototest.CheckFiles(t, fds[0], fdset, true)
+	prototest.CheckFiles(t, fds[1], fdset, true)
 }
 
 func TestMultiFileLink(t *testing.T) {
@@ -73,9 +86,7 @@ func TestMultiFileLink(t *testing.T) {
 			}),
 		}
 		fds, err := compiler.Compile(context.Background(), name)
-		if !assert.Nil(t, err) {
-			continue
-		}
+		require.NoError(t, err)
 
 		res, ok := fds[0].(linker.Result)
 		require.True(t, ok)
@@ -92,9 +103,7 @@ func TestProto3Optional(t *testing.T) {
 		}),
 	}
 	fds, err := compiler.Compile(context.Background(), "desc_test_proto3_optional.proto")
-	if !assert.Nil(t, err) {
-		return
-	}
+	require.NoError(t, err)
 
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_proto3_optional.protoset", fds.AsResolver())
 
@@ -1963,7 +1972,7 @@ func TestLinkerValidation(t *testing.T) {
 					message Foo { optional group Foo = 1 {} }
 				`,
 			},
-			expectedErr: `test.proto:2:24: field Foo.foo: groups are not allowed in proto3`,
+			expectedErr: `test.proto:2:24: field Foo.foo: groups are not allowed in proto3 or editions`,
 		},
 		"failure_group_proto3_no_label": {
 			input: map[string]string{
@@ -2084,8 +2093,7 @@ func TestLinkerValidation(t *testing.T) {
 			}
 
 			// parse with protoc
-			passProtoc, err := testByProtoc(t, tc.input, tc.inputOrder)
-			require.NoError(t, err)
+			passProtoc := testByProtoc(t, tc.input, tc.inputOrder)
 			if tc.expectedErr == "" {
 				if tc.expectedDiffWithProtoc {
 					// We can explicitly check different result is produced by protoc. When the bug is fixed,
@@ -2176,8 +2184,7 @@ func TestProto3Enums(t *testing.T) {
 				"f2.proto": fc2,
 			}
 			fileNames := []string{"f1.proto", "f2.proto"}
-			passProtoc, err := testByProtoc(t, testFiles, fileNames)
-			require.NoError(t, err)
+			passProtoc := testByProtoc(t, testFiles, fileNames)
 			// parse the protos with protocompile
 			acc := func(filename string) (io.ReadCloser, error) {
 				var data string
@@ -2196,7 +2203,7 @@ func TestProto3Enums(t *testing.T) {
 					Accessor: acc,
 				}),
 			}
-			_, err = compiler.Compile(context.Background(), "f1.proto", "f2.proto")
+			_, err := compiler.Compile(context.Background(), "f1.proto", "f2.proto")
 			if o1 != o2 && o2 == "proto3" {
 				expected := "f2.proto:1:54: field foo.bar: cannot use proto2 enum bar in a proto3 message"
 				if err == nil {
@@ -2208,7 +2215,7 @@ func TestProto3Enums(t *testing.T) {
 			} else {
 				// other cases succeed (okay to for proto2 to use enum from proto3 file and
 				// obviously okay for proto2 importing proto2 and proto3 importing proto3)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				require.True(t, passProtoc)
 			}
 		}
@@ -2455,8 +2462,7 @@ func TestSyntheticOneofCollisions(t *testing.T) {
 	assert.Equal(t, expected, actual)
 
 	// parse and check with protoc
-	passed, err := testByProtoc(t, input, nil)
-	require.NoError(t, err)
+	passed := testByProtoc(t, input, nil)
 	require.False(t, passed)
 }
 
@@ -2624,65 +2630,13 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 	//  we are focusing on other test cases first before protoc is fixed.
 }
 
-// testByProtoc tests the proto files with protoc. The fileNames parameter indicates the order of file
-// that should be used in the command line for protoc. fileNames can be nil when the order does not matter.
-func testByProtoc(t *testing.T, files map[string]string, fileNames []string) (passed bool, err error) {
+func testByProtoc(t *testing.T, files map[string]string, fileNames []string) bool {
 	t.Helper()
-	if len(fileNames) != 0 {
-		require.True(t, len(files) == len(fileNames))
-		for _, fileName := range fileNames {
-			_, ok := files[fileName]
-			require.True(t, ok)
-		}
+	stdout, err := internal.CompileWithProtoc(files, fileNames)
+	if execErr := new(exec.ExitError); errors.As(err, &execErr) {
+		t.Logf("protoc stdout:\n%s\nprotoc stderr:\n%s\n", stdout, execErr.Stderr)
+		return false
 	}
-
-	tempDir := writeFileToDisk(t, files)
-	defer func() {
-		err := os.RemoveAll(tempDir)
-		require.NoError(t, err)
-	}()
-	if len(fileNames) == 0 {
-		fileNames = make([]string, 0, len(files))
-		for fileName := range files {
-			fileNames = append(fileNames, fileName)
-		}
-	}
-	return compileByProtoc(t, tempDir, fileNames)
-}
-
-func writeFileToDisk(t *testing.T, files map[string]string) string {
-	tempDir, err := os.MkdirTemp("..", "temp_proto_files")
 	require.NoError(t, err)
-
-	for fileName, fileContent := range files {
-		tempFileName := filepath.Join(tempDir, fileName)
-		tempFileDirPart := filepath.Dir(tempFileName)
-		if _, err = os.Stat(tempFileDirPart); os.IsNotExist(err) {
-			err = os.MkdirAll(tempFileDirPart, os.ModePerm)
-			require.NoError(t, err)
-		}
-		err := os.WriteFile(tempFileName, []byte(fileContent), 0644)
-		require.NoError(t, err)
-	}
-	return tempDir
-}
-
-func compileByProtoc(t *testing.T, protoPath string, fileNames []string) (passed bool, err error) {
-	args := []string{"--experimental_editions", "-I", protoPath, "-o", os.DevNull}
-	args = append(args, fileNames...)
-	protocPath, err := internal.GetProtocPath("../")
-	if err != nil {
-		return false, err
-	}
-	cmd := exec.Command(protocPath, args...)
-	stdout, err := cmd.Output()
-	if err == nil {
-		return true, nil
-	}
-	var exitError *exec.ExitError
-	if errors.As(err, &exitError) {
-		t.Log(string(stdout), string(exitError.Stderr))
-		return false, nil
-	}
-	return false, err
+	return true
 }

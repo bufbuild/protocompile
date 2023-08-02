@@ -17,6 +17,7 @@ package internal
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -48,4 +49,76 @@ func GetProtocPath(rootDir string) (string, error) {
 		return "", fmt.Errorf("%s is a directory, but should be an executable file", protocPath)
 	}
 	return protocPath, nil
+}
+
+// CompileWithProtoc compiles the given files with protoc. The fileNames parameter indicates the order of
+// files that should be used in the command line for protoc (can be nil when the order does not matter).
+//
+// This does not return the full results of compilation, only if compilation succeeded or not. The
+// returned error will be an instance of *[exec.ExitError] if protoc was successfully invoked but
+// returned a non-zero status.
+func CompileWithProtoc(files map[string]string, fileNames []string) (stdout []byte, err error) {
+	if len(fileNames) != 0 {
+		if len(files) != len(fileNames) {
+			return nil, fmt.Errorf("fileNames has wrong number of entries: expecting %d, got %d", len(files), len(fileNames))
+		}
+		for _, fileName := range fileNames {
+			if _, exists := files[fileName]; !exists {
+				return nil, fmt.Errorf("fileNames has wrong number of entries: expecting %d, got %d", len(files), len(fileNames))
+			}
+		}
+	}
+
+	tempDir, err := writeFileToDisk(files)
+	if err != nil {
+		if tempDir != "" {
+			_ = os.RemoveAll(tempDir)
+		}
+		return nil, err
+	}
+	defer func() {
+		removeErr := os.RemoveAll(tempDir)
+		if err == nil && removeErr != nil {
+			err = removeErr
+		}
+	}()
+	if len(fileNames) == 0 {
+		fileNames = make([]string, 0, len(files))
+		for fileName := range files {
+			fileNames = append(fileNames, fileName)
+		}
+	}
+	return invokeProtoc(tempDir, fileNames)
+}
+
+func writeFileToDisk(files map[string]string) (string, error) {
+	tempDir, err := os.MkdirTemp("", "temp_proto_files")
+	if err != nil {
+		return "", err
+	}
+
+	for fileName, fileContent := range files {
+		tempFileName := filepath.Join(tempDir, fileName)
+		tempFileDirPart := filepath.Dir(tempFileName)
+		if _, err = os.Stat(tempFileDirPart); os.IsNotExist(err) {
+			if err = os.MkdirAll(tempFileDirPart, os.ModePerm); err != nil {
+				return tempDir, err
+			}
+		}
+		if err := os.WriteFile(tempFileName, []byte(fileContent), 0600); err != nil {
+			return tempDir, err
+		}
+	}
+	return tempDir, nil
+}
+
+func invokeProtoc(protoPath string, fileNames []string) (stdout []byte, err error) {
+	args := []string{"--experimental_editions", "-I", protoPath, "-o", os.DevNull}
+	args = append(args, fileNames...)
+	protocPath, err := GetProtocPath("../")
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.Command(protocPath, args...)
+	return cmd.Output()
 }
