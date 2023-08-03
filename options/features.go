@@ -168,7 +168,7 @@ func validateFeatures(md protoreflect.MessageDescriptor) error {
 
 func posOf(desc protoreflect.Descriptor) ast.SourcePos {
 	fd := desc.ParentFile()
-	// First see if we can get the source location from the AST
+	// First see if we can get the source location from the AST.
 	if result, ok := fd.(linker.Result); ok {
 		if msg := findProto(result.FileDescriptorProto(), desc); msg != nil {
 			node := result.Node(msg)
@@ -178,7 +178,7 @@ func posOf(desc protoreflect.Descriptor) ast.SourcePos {
 		}
 		srcLocs := result.FileDescriptorProto().GetSourceCodeInfo().GetLocation()
 		if fd.SourceLocations().Len() == 0 && len(srcLocs) > 0 {
-			// We haven't yet build the protoreflect.SourceLocations index for this
+			// We haven't yet built the protoreflect.SourceLocations index for this
 			// result, so we have to trawl through the proto.
 			path, ok := internal.ComputePath(desc)
 			if ok {
@@ -195,7 +195,7 @@ func posOf(desc protoreflect.Descriptor) ast.SourcePos {
 			return ast.UnknownPos(fd.Path())
 		}
 	}
-	// If not, try to get it from the
+	// If not, try to get it from the descriptor's source locations.
 	srcLoc := fd.SourceLocations().ByDescriptor(desc)
 	if internal.IsZeroLocation(srcLoc) {
 		return ast.UnknownPos(fd.Path())
@@ -420,21 +420,20 @@ func resolveFeatures(features, defaults protoreflect.Message, res linker.Resolve
 	return resolved.ProtoReflect(), nil
 }
 
-func setFeatures(options, features protoreflect.Message, res linker.Resolver) {
-	// TODO: signature should return an error; need to handle error in all callers
+func setFeatures(options, features protoreflect.Message, res linker.Resolver) error {
 	fld := options.Descriptor().Fields().ByName(featuresFieldName)
 	if fld == nil {
 		// no features to resolve
-		return
+		return nil
 	}
 	if fld.IsList() || fld.Message() == nil || fld.Message().FullName() != featureSetName {
 		// features field doesn't look right... abort
 		// TODO: should this return an error?
-		return
+		return nil
 	}
 	if fld.Message() == features.Descriptor() {
 		options.Set(fld, protoreflect.ValueOfMessage(features))
-		return
+		return nil
 	}
 	// Descriptors don't match, which means we need to set the value by
 	// serializing to bytes and then de-serializing.
@@ -442,9 +441,7 @@ func setFeatures(options, features protoreflect.Message, res linker.Resolver) {
 	options.Set(fld, dest)
 	data, err := proto.Marshal(features.Interface())
 	if err != nil {
-		return
+		return err
 	}
-	if err := (proto.UnmarshalOptions{Resolver: res}).Unmarshal(data, dest.Message().Interface()); err != nil {
-		return
-	}
+	return proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, dest.Message().Interface())
 }

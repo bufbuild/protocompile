@@ -320,12 +320,17 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 			// This is a synthetic map entry whose fields need the features
 			// that were defined on the corresponding map field.
 			mapFeatures := mapFieldFeatures[nmd.GetName()]
-			if mapFieldFeatures != nil {
+			if mapFeatures != nil {
 				for _, fld := range nmd.GetField() {
 					if fld.Options == nil {
 						fld.Options = &descriptorpb.FieldOptions{}
 					}
-					setFeatures(fld.Options.ProtoReflect(), mapFeatures, interp.resolver)
+					if err := setFeatures(fld.Options.ProtoReflect(), mapFeatures, interp.resolver); err != nil {
+						node := interp.file.MessageNode(nmd)
+						if err := interp.reporter.HandleErrorWithPos(interp.file.FileNode().NodeInfo(node).Start(), err); err != nil {
+							return err
+						}
+					}
 				}
 			}
 		}
@@ -864,7 +869,12 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 			opts = new(OptsStruct)
 			target.setOptions(elem, opts)
 		}
-		setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver)
+		if err := setFeatures(opts.ProtoReflect(), featuresDefaults, interp.resolver); err != nil {
+			node := interp.file.Node(elem)
+			if err := interp.reporter.HandleErrorWithPos(interp.file.FileNode().NodeInfo(node).Start(), err); err != nil {
+				return featuresDefaults, err
+			}
+		}
 	}
 	return featuresDefaults, nil
 }
