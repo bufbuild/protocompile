@@ -43,7 +43,7 @@ import (
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
-	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/protoutil"
@@ -64,7 +64,7 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	protocPath, err = internal.GetProtocPath("../../")
+	protocPath, err = protoc.BinaryPath("../../")
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to compute protoc path: %v\n", err)
 		os.Exit(1)

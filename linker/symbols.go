@@ -282,7 +282,7 @@ func (s *packageSymbols) checkFileLocked(f protoreflect.FileDescriptor, handler 
 
 func sourcePositionForPackage(fd protoreflect.FileDescriptor) ast.SourcePos {
 	loc := fd.SourceLocations().ByPath([]int32{internal.FilePackageTag})
-	if isZeroLoc(loc) {
+	if internal.IsZeroLocation(loc) {
 		return ast.UnknownPos(fd.Path())
 	}
 	return ast.SourcePos{
@@ -297,7 +297,7 @@ func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
 	if file == nil {
 		return ast.UnknownPos(unknownFilePath)
 	}
-	path, ok := computePath(d)
+	path, ok := internal.ComputePath(d)
 	if !ok {
 		return ast.UnknownPos(file.Path())
 	}
@@ -322,9 +322,9 @@ func sourcePositionFor(d protoreflect.Descriptor) ast.SourcePos {
 		// descriptor, sans name field
 	}
 	loc := file.SourceLocations().ByPath(namePath)
-	if isZeroLoc(loc) {
+	if internal.IsZeroLocation(loc) {
 		loc = file.SourceLocations().ByPath(path)
-		if isZeroLoc(loc) {
+		if internal.IsZeroLocation(loc) {
 			return ast.UnknownPos(file.Path())
 		}
 	}
@@ -340,16 +340,16 @@ func sourcePositionForNumber(fd protoreflect.FieldDescriptor) ast.SourcePos {
 	if file == nil {
 		return ast.UnknownPos(unknownFilePath)
 	}
-	path, ok := computePath(fd)
+	path, ok := internal.ComputePath(fd)
 	if !ok {
 		return ast.UnknownPos(file.Path())
 	}
 	numberPath := path
 	numberPath = append(numberPath, internal.FieldNumberTag)
 	loc := file.SourceLocations().ByPath(numberPath)
-	if isZeroLoc(loc) {
+	if internal.IsZeroLocation(loc) {
 		loc = file.SourceLocations().ByPath(path)
-		if isZeroLoc(loc) {
+		if internal.IsZeroLocation(loc) {
 			return ast.UnknownPos(file.Path())
 		}
 	}
@@ -358,14 +358,6 @@ func sourcePositionForNumber(fd protoreflect.FieldDescriptor) ast.SourcePos {
 		Line:     loc.StartLine,
 		Col:      loc.StartColumn,
 	}
-}
-
-func isZeroLoc(loc protoreflect.SourceLocation) bool {
-	return loc.Path == nil &&
-		loc.StartLine == 0 &&
-		loc.StartColumn == 0 &&
-		loc.EndLine == 0 &&
-		loc.EndColumn == 0
 }
 
 func (s *packageSymbols) commitFileLocked(f protoreflect.FileDescriptor) {

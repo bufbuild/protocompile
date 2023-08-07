@@ -32,6 +32,15 @@ import (
 
 var supportedEditions = map[string]struct{}{"2023": {}}
 
+// NB: protoreflect.Syntax doesn't yet know about editions, so we have to use our own type.
+type syntaxType int
+
+const (
+	syntaxProto2 = syntaxType(iota)
+	syntaxProto3
+	syntaxEditions
+)
+
 type result struct {
 	file  *ast.FileNode
 	proto *descriptorpb.FileDescriptorProto
@@ -88,14 +97,14 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 
 	r.putFileNode(fd, file)
 
-	// TODO: will need more than just a bool to correctly support editions in validation...
-	isProto3 := false
+	var syntax syntaxType
 	switch {
 	case file.Syntax != nil:
 		switch file.Syntax.Syntax.AsString() {
 		case "proto3":
-			isProto3 = true
+			syntax = syntaxProto3
 		case "proto2":
+			syntax = syntaxProto2
 		default:
 			nodeInfo := file.NodeInfo(file.Syntax.Syntax)
 			if handler.HandleErrorf(nodeInfo.Start(), `syntax value must be "proto2" or "proto3"`) != nil {
@@ -103,8 +112,8 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			}
 		}
 
-		// proto2 is the default, so no need to set unless proto3
-		if isProto3 {
+		// proto2 is the default, so no need to set for that value
+		if syntax != syntaxProto2 {
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
 	case file.Edition != nil:
@@ -115,9 +124,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			}
 		}
 		edition := file.Edition.Edition.AsString()
-		// setting this to true for now: many of proto3 constraints are shared
-		// with editions, so we'll do this for now...
-		isProto3 = true
+		syntax = syntaxEditions
 		fd.Syntax = proto.String("editions")
 		fd.Edition = proto.String(edition)
 		if _, ok := supportedEditions[edition]; !ok {
@@ -144,7 +151,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		case *ast.EnumNode:
 			fd.EnumType = append(fd.EnumType, r.asEnumDescriptor(decl, handler))
 		case *ast.ExtendNode:
-			r.addExtensions(decl, &fd.Extension, &fd.MessageType, isProto3, handler, 0)
+			r.addExtensions(decl, &fd.Extension, &fd.MessageType, syntax, handler, 0)
 		case *ast.ImportNode:
 			index := len(fd.Dependency)
 			fd.Dependency = append(fd.Dependency, decl.Name.AsString())
@@ -154,7 +161,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 				fd.WeakDependency = append(fd.WeakDependency, int32(index))
 			}
 		case *ast.MessageNode:
-			fd.MessageType = append(fd.MessageType, r.asMessageDescriptor(decl, isProto3, handler, 1))
+			fd.MessageType = append(fd.MessageType, r.asMessageDescriptor(decl, syntax, handler, 1))
 		case *ast.OptionNode:
 			if fd.Options == nil {
 				fd.Options = &descriptorpb.FileOptions{}
@@ -267,7 +274,7 @@ func (r *result) asUninterpretedOptionName(parts []*ast.FieldReferenceNode) []*d
 	return ret
 }
 
-func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldDescriptorProto, msgs *[]*descriptorpb.DescriptorProto, isProto3 bool, handler *reporter.Handler, depth int) {
+func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldDescriptorProto, msgs *[]*descriptorpb.DescriptorProto, syntax syntaxType, handler *reporter.Handler, depth int) {
 	extendee := string(ext.Extendee.AsIdentifier())
 	count := 0
 	for _, decl := range ext.Decls {
@@ -275,13 +282,13 @@ func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldD
 		case *ast.FieldNode:
 			count++
 			// use higher limit since we don't know yet whether extendee is messageset wire format
-			fd := r.asFieldDescriptor(decl, internal.MaxTag, isProto3, handler)
+			fd := r.asFieldDescriptor(decl, internal.MaxTag, syntax, handler)
 			fd.Extendee = proto.String(extendee)
 			*flds = append(*flds, fd)
 		case *ast.GroupNode:
 			count++
 			// ditto: use higher limit right now
-			fd, md := r.asGroupDescriptors(decl, isProto3, internal.MaxTag, handler, depth+1)
+			fd, md := r.asGroupDescriptors(decl, syntax, internal.MaxTag, handler, depth+1)
 			fd.Extendee = proto.String(extendee)
 			*flds = append(*flds, fd)
 			*msgs = append(*msgs, md)
@@ -307,7 +314,7 @@ func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
 	}
 }
 
-func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, isProto3 bool, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
+func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, syntax syntaxType, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
 	tag := node.Tag.Val
 	if err := r.checkTag(node.Tag, tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
@@ -317,7 +324,7 @@ func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, isProto3 b
 	if opts := node.Options.GetElements(); len(opts) > 0 {
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}
 	}
-	if isProto3 && fd.Label != nil && fd.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
+	if syntax == syntaxProto3 && fd.Label != nil && fd.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
 		fd.Proto3Optional = proto.Bool(true)
 	}
 	return fd
@@ -360,7 +367,7 @@ func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descripto
 	return fd
 }
 
-func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
+func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	tag := group.Tag.Val
 	if err := r.checkTag(group.Tag, tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
@@ -386,19 +393,19 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, isProto3 bool, maxTag 
 	r.putMessageNode(md, group)
 	// don't bother processing body if we've exceeded depth
 	if r.checkDepth(depth, group, handler) {
-		r.addMessageBody(md, &group.MessageBody, isProto3, handler, depth)
+		r.addMessageBody(md, &group.MessageBody, syntax, handler, depth)
 	}
 	return fd, md
 }
 
-func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, isProto3 bool, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
+func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	tag := mapField.Tag.Val
 	if err := r.checkTag(mapField.Tag, tag, maxTag); err != nil {
 		_ = handler.HandleError(err)
 	}
 	r.checkDepth(depth, mapField, handler)
 	var lbl *descriptorpb.FieldDescriptorProto_Label
-	if !isProto3 {
+	if syntax == syntaxProto2 {
 		lbl = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
 	}
 	keyFd := newFieldDescriptor("key", mapField.MapType.KeyType.Val, 1, lbl)
@@ -513,12 +520,12 @@ func (r *result) asEnumReservedRange(rng *ast.RangeNode, handler *reporter.Handl
 	return rr
 }
 
-func (r *result) asMessageDescriptor(node *ast.MessageNode, isProto3 bool, handler *reporter.Handler, depth int) *descriptorpb.DescriptorProto {
+func (r *result) asMessageDescriptor(node *ast.MessageNode, syntax syntaxType, handler *reporter.Handler, depth int) *descriptorpb.DescriptorProto {
 	msgd := &descriptorpb.DescriptorProto{Name: proto.String(node.Name.Val)}
 	r.putMessageNode(msgd, node)
 	// don't bother processing body if we've exceeded depth
 	if r.checkDepth(depth, node, handler) {
-		r.addMessageBody(msgd, &node.MessageBody, isProto3, handler, depth)
+		r.addMessageBody(msgd, &node.MessageBody, syntax, handler, depth)
 	}
 	return msgd
 }
@@ -536,7 +543,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 	return false
 }
 
-func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.MessageBody, isProto3 bool, handler *reporter.Handler, depth int) {
+func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.MessageBody, syntax syntaxType, handler *reporter.Handler, depth int) {
 	// first process any options
 	for _, decl := range body.Decls {
 		if opt, ok := decl.(*ast.OptionNode); ok {
@@ -554,7 +561,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	if err != nil {
 		return
 	} else if messageSetOpt != nil {
-		if isProto3 {
+		if syntax == syntaxProto3 {
 			node := r.OptionNode(messageSetOpt)
 			nodeInfo := r.file.NodeInfo(node)
 			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format are not allowed with proto3 syntax")
@@ -570,18 +577,18 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		case *ast.EnumNode:
 			msgd.EnumType = append(msgd.EnumType, r.asEnumDescriptor(decl, handler))
 		case *ast.ExtendNode:
-			r.addExtensions(decl, &msgd.Extension, &msgd.NestedType, isProto3, handler, depth)
+			r.addExtensions(decl, &msgd.Extension, &msgd.NestedType, syntax, handler, depth)
 		case *ast.ExtensionRangeNode:
 			msgd.ExtensionRange = append(msgd.ExtensionRange, r.asExtensionRanges(decl, maxTag, handler)...)
 		case *ast.FieldNode:
-			fd := r.asFieldDescriptor(decl, maxTag, isProto3, handler)
+			fd := r.asFieldDescriptor(decl, maxTag, syntax, handler)
 			msgd.Field = append(msgd.Field, fd)
 		case *ast.MapFieldNode:
-			fd, md := r.asMapDescriptors(decl, isProto3, maxTag, handler, depth+1)
+			fd, md := r.asMapDescriptors(decl, syntax, maxTag, handler, depth+1)
 			msgd.Field = append(msgd.Field, fd)
 			msgd.NestedType = append(msgd.NestedType, md)
 		case *ast.GroupNode:
-			fd, md := r.asGroupDescriptors(decl, isProto3, maxTag, handler, depth+1)
+			fd, md := r.asGroupDescriptors(decl, syntax, maxTag, handler, depth+1)
 			msgd.Field = append(msgd.Field, fd)
 			msgd.NestedType = append(msgd.NestedType, md)
 		case *ast.OneofNode:
@@ -598,12 +605,12 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 					}
 					ood.Options.UninterpretedOption = append(ood.Options.UninterpretedOption, r.asUninterpretedOption(oodecl))
 				case *ast.FieldNode:
-					fd := r.asFieldDescriptor(oodecl, maxTag, isProto3, handler)
+					fd := r.asFieldDescriptor(oodecl, maxTag, syntax, handler)
 					fd.OneofIndex = proto.Int32(int32(oodIndex))
 					msgd.Field = append(msgd.Field, fd)
 					ooFields++
 				case *ast.GroupNode:
-					fd, md := r.asGroupDescriptors(oodecl, isProto3, maxTag, handler, depth+1)
+					fd, md := r.asGroupDescriptors(oodecl, syntax, maxTag, handler, depth+1)
 					fd.OneofIndex = proto.Int32(int32(oodIndex))
 					msgd.Field = append(msgd.Field, fd)
 					msgd.NestedType = append(msgd.NestedType, md)
@@ -615,7 +622,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 				_ = handler.HandleErrorf(declNodeInfo.Start(), "oneof must contain at least one field")
 			}
 		case *ast.MessageNode:
-			msgd.NestedType = append(msgd.NestedType, r.asMessageDescriptor(decl, isProto3, handler, depth+1))
+			msgd.NestedType = append(msgd.NestedType, r.asMessageDescriptor(decl, syntax, handler, depth+1))
 		case *ast.ReservedNode:
 			for _, n := range decl.Names {
 				count := rsvdNames[n.AsString()]
@@ -646,7 +653,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	}
 
 	// process any proto3_optional fields
-	if isProto3 {
+	if syntax == syntaxProto3 {
 		r.processProto3OptionalFields(msgd)
 	}
 }
