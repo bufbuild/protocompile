@@ -1092,6 +1092,7 @@ func (interp *interpreter) positionOfFeature(featuresInfo []*interpretedOption, 
 			continue
 		}
 		if len(remainingNumbers) > 0 {
+			//nolint:gosec // this is not aliasing the loop var; this is taking address of field in slice element
 			node = findInterpretedFieldForFeature(&info.interpretedField, remainingNumbers)
 		}
 		if node != nil {
