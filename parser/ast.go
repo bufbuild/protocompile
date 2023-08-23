@@ -32,7 +32,9 @@ func toStringValueNode(strs []*ast.StringLiteralNode) ast.StringValueNode {
 }
 
 type nameSlices struct {
+	// only names or idents will be set, never both
 	names  []ast.StringValueNode
+	idents []*ast.IdentNode
 	commas []*ast.RuneNode
 }
 

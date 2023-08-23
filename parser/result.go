@@ -149,7 +149,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		}
 		switch decl := decl.(type) {
 		case *ast.EnumNode:
-			fd.EnumType = append(fd.EnumType, r.asEnumDescriptor(decl, handler))
+			fd.EnumType = append(fd.EnumType, r.asEnumDescriptor(decl, syntax, handler))
 		case *ast.ExtendNode:
 			r.addExtensions(decl, &fd.Extension, &fd.MessageType, syntax, handler, 0)
 		case *ast.ImportNode:
@@ -486,9 +486,10 @@ func (r *result) asMethodDescriptor(node *ast.RPCNode) *descriptorpb.MethodDescr
 	return md
 }
 
-func (r *result) asEnumDescriptor(en *ast.EnumNode, handler *reporter.Handler) *descriptorpb.EnumDescriptorProto {
+func (r *result) asEnumDescriptor(en *ast.EnumNode, syntax syntaxType, handler *reporter.Handler) *descriptorpb.EnumDescriptorProto {
 	ed := &descriptorpb.EnumDescriptorProto{Name: proto.String(en.Name.Val)}
 	r.putEnumNode(ed, en)
+	rsvdNames := map[string]ast.SourcePos{}
 	for _, decl := range en.Decls {
 		switch decl := decl.(type) {
 		case *ast.OptionNode:
@@ -499,9 +500,7 @@ func (r *result) asEnumDescriptor(en *ast.EnumNode, handler *reporter.Handler) *
 		case *ast.EnumValueNode:
 			ed.Value = append(ed.Value, r.asEnumValue(decl, handler))
 		case *ast.ReservedNode:
-			for _, n := range decl.Names {
-				ed.ReservedName = append(ed.ReservedName, n.AsString())
-			}
+			r.addReservedNames(&ed.ReservedName, decl, syntax, handler, rsvdNames)
 			for _, rng := range decl.Ranges {
 				ed.ReservedRange = append(ed.ReservedRange, r.asEnumReservedRange(rng, handler))
 			}
@@ -528,6 +527,41 @@ func (r *result) asMessageDescriptor(node *ast.MessageNode, syntax syntaxType, h
 		r.addMessageBody(msgd, &node.MessageBody, syntax, handler, depth)
 	}
 	return msgd
+}
+
+func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, syntax syntaxType, handler *reporter.Handler, alreadyReserved map[string]ast.SourcePos) {
+	if syntax == syntaxEditions {
+		if len(node.Names) > 0 {
+			nameNodeInfo := r.file.NodeInfo(node.Names[0])
+			_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use identifiers, not string literals, to reserved names with editions`)
+		}
+		for _, n := range node.Identifiers {
+			name := string(n.AsIdentifier())
+			nameNodePos := r.file.NodeInfo(n).Start()
+			if existing, ok := alreadyReserved[name]; ok {
+				_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+				continue
+			}
+			alreadyReserved[name] = nameNodePos
+			*names = append(*names, name)
+		}
+		return
+	}
+
+	if len(node.Identifiers) > 0 {
+		nameNodeInfo := r.file.NodeInfo(node.Identifiers[0])
+		_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use string literals, not identifiers, to reserved names with proto2 and proto3`)
+	}
+	for _, n := range node.Names {
+		name := n.AsString()
+		nameNodePos := r.file.NodeInfo(n).Start()
+		if existing, ok := alreadyReserved[name]; ok {
+			_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+			continue
+		}
+		alreadyReserved[name] = nameNodePos
+		*names = append(*names, name)
+	}
 }
 
 func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *reporter.Handler) bool {
@@ -569,13 +603,13 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		maxTag = internal.MaxTag // higher limit for messageset wire format
 	}
 
-	rsvdNames := map[string]int{}
+	rsvdNames := map[string]ast.SourcePos{}
 
 	// now we can process the rest
 	for _, decl := range body.Decls {
 		switch decl := decl.(type) {
 		case *ast.EnumNode:
-			msgd.EnumType = append(msgd.EnumType, r.asEnumDescriptor(decl, handler))
+			msgd.EnumType = append(msgd.EnumType, r.asEnumDescriptor(decl, syntax, handler))
 		case *ast.ExtendNode:
 			r.addExtensions(decl, &msgd.Extension, &msgd.NestedType, syntax, handler, depth)
 		case *ast.ExtensionRangeNode:
@@ -624,15 +658,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		case *ast.MessageNode:
 			msgd.NestedType = append(msgd.NestedType, r.asMessageDescriptor(decl, syntax, handler, depth+1))
 		case *ast.ReservedNode:
-			for _, n := range decl.Names {
-				count := rsvdNames[n.AsString()]
-				if count == 1 { // already seen
-					nameNodeInfo := r.file.NodeInfo(n)
-					_ = handler.HandleErrorf(nameNodeInfo.Start(), "name %q is reserved multiple times", n.AsString())
-				}
-				rsvdNames[n.AsString()] = count + 1
-				msgd.ReservedName = append(msgd.ReservedName, n.AsString())
-			}
+			r.addReservedNames(&msgd.ReservedName, decl, syntax, handler, rsvdNames)
 			for _, rng := range decl.Ranges {
 				msgd.ReservedRange = append(msgd.ReservedRange, r.asMessageReservedRange(rng, maxTag, handler))
 			}

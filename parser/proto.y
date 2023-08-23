@@ -103,7 +103,7 @@ import (
 %type <msgElements>  messageElements messageBody
 %type <ooElement>    oneofElement
 %type <ooElements>   oneofElements oneofBody
-%type <names>        fieldNames
+%type <names>        fieldNameStrings fieldNameIdents
 %type <resvd>        msgReserved enumReserved reservedNames
 %type <rng>          tagRange enumValueRange
 %type <rngs>         tagRanges enumValueRanges
@@ -737,15 +737,27 @@ enumReserved : _RESERVED enumValueRanges ';' {
 	}
 	| reservedNames
 
-reservedNames : _RESERVED fieldNames ';' {
+reservedNames : _RESERVED fieldNameStrings ';' {
 		$$ = ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, $3)
 	}
+	| _RESERVED fieldNameIdents ';' {
+		$$ = ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3)
+	}
 
-fieldNames : stringLit {
+fieldNameStrings : stringLit {
 		$$ = &nameSlices{names: []ast.StringValueNode{toStringValueNode($1)}}
 	}
-	| fieldNames ',' stringLit {
+	| fieldNameStrings ',' stringLit {
 		$1.names = append($1.names, toStringValueNode($3))
+		$1.commas = append($1.commas, $2)
+		$$ = $1
+	}
+
+fieldNameIdents : identifier {
+		$$ = &nameSlices{idents: []*ast.IdentNode{$1}}
+	}
+	| fieldNameIdents ',' identifier {
+		$1.idents = append($1.idents, $3)
 		$1.commas = append($1.commas, $2)
 		$$ = $1
 	}
