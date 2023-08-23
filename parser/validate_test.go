@@ -338,7 +338,7 @@ func TestBasicValidation(t *testing.T) {
 		},
 		"failure_message_decl_start_w_reserved": {
 			contents:    `enum Foo { reserved = 1; }`,
-			expectedErr: `test.proto:1:21: syntax error: unexpected '=', expecting string literal or int literal or '-'`,
+			expectedErr: `test.proto:1:21: syntax error: unexpected '='`,
 		},
 		"failure_message_decl_start_w_message": {
 			contents:    `syntax = "proto3"; enum message { unset = 0; } message Foo { message bar = 1; }`,
@@ -350,7 +350,7 @@ func TestBasicValidation(t *testing.T) {
 		},
 		"failure_message_decl_start_w_reserved2": {
 			contents:    `syntax = "proto3"; enum reserved { unset = 0; } message Foo { reserved bar = 1; }`,
-			expectedErr: `test.proto:1:72: syntax error: unexpected identifier, expecting string literal or int literal`,
+			expectedErr: `test.proto:1:76: syntax error: unexpected '=', expecting ';' or ','`,
 		},
 		"failure_message_decl_start_w_extend": {
 			contents:    `syntax = "proto3"; enum extend { unset = 0; } message Foo { extend bar = 1; }`,
@@ -675,11 +675,25 @@ func TestBasicValidation(t *testing.T) {
 			expectedErr:            `test.proto:3:55: message Foo: reserved name "" is not a valid identifier`,
 			expectedDiffWithProtoc: true, // protoc only warns for invalid reserved names: https://github.com/protocolbuffers/protobuf/issues/6335
 		},
-		"success_message_reserved_name": {
+		"success_message_reserved_name_proto2": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     reserved "foo", "_bar123", "A_B_C_1_2_3";
+					   }`,
+		},
+		"success_message_reserved_name_proto3": {
 			contents: `syntax = "proto3";
 					   message Foo {
 					     reserved "foo", "_bar123", "A_B_C_1_2_3";
 					   }`,
+		},
+		"failure_message_reserved_name_editions": {
+			contents: `edition = "2023";
+					   message Foo {
+					     reserved "foo", "_bar123", "A_B_C_1_2_3";
+					   }`,
+			expectedErr:            `test.proto:3:55: must use identifiers, not string literals, to reserved names with editions`,
+			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
 		},
 		"failure_enum_invalid_reserved_name": {
 			contents: `syntax = "proto3";
@@ -717,12 +731,73 @@ func TestBasicValidation(t *testing.T) {
 			expectedErr:            `test.proto:4:55: enum Foo: reserved name "" is not a valid identifier`,
 			expectedDiffWithProtoc: true, // protoc only warns for invalid reserved names: https://github.com/protocolbuffers/protobuf/issues/6335
 		},
-		"success_enum_reserved_name": {
+		"success_enum_reserved_name_proto2": {
+			contents: `syntax = "proto2";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "foo", "_bar123", "A_B_C_1_2_3";
+					   }`,
+		},
+		"success_enum_reserved_name_proto3": {
 			contents: `syntax = "proto3";
 					   enum Foo {
 					     BAR = 0;
 					     reserved "foo", "_bar123", "A_B_C_1_2_3";
 					   }`,
+		},
+		"failure_enum_reserved_name_editions": {
+			contents: `edition = "2023";
+					   enum Foo {
+					     BAR = 0;
+					     reserved "foo", "_bar123", "A_B_C_1_2_3";
+					   }`,
+			expectedErr:            `test.proto:4:55: must use identifiers, not string literals, to reserved names with editions`,
+			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
+		},
+		"failure_message_reserved_ident_proto2": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     reserved foo, _bar123, A_B_C_1_2_3;
+					   }`,
+			expectedErr: `test.proto:3:55: must use string literals, not identifiers, to reserved names with proto2 and proto3`,
+		},
+		"failure_message_reserved_ident_proto3": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     reserved foo, _bar123, A_B_C_1_2_3;
+					   }`,
+			expectedErr: `test.proto:3:55: must use string literals, not identifiers, to reserved names with proto2 and proto3`,
+		},
+		"success_message_reserved_ident_editions": {
+			contents: `edition = "2023";
+					   message Foo {
+					     reserved foo, _bar123, A_B_C_1_2_3;
+					   }`,
+			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
+		},
+		"failure_enum_reserved_ident_proto2": {
+			contents: `syntax = "proto2";
+					   enum Foo {
+					     BAR = 0;
+					     reserved foo, _bar123, A_B_C_1_2_3;
+					   }`,
+			expectedErr: `test.proto:4:55: must use string literals, not identifiers, to reserved names with proto2 and proto3`,
+		},
+		"failure_enum_reserved_ident_proto3": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = 0;
+					     reserved foo, _bar123, A_B_C_1_2_3;
+					   }`,
+			expectedErr: `test.proto:4:55: must use string literals, not identifiers, to reserved names with proto2 and proto3`,
+		},
+		"success_enum_reserved_ident_editions": {
+			contents: `edition = "2023";
+					   enum Foo {
+					     BAR = 0;
+					     reserved foo, _bar123, A_B_C_1_2_3;
+					   }`,
+			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet have support for identifiers with editions
 		},
 	}
 
