@@ -306,11 +306,11 @@ func TestBasicValidation(t *testing.T) {
 		},
 		"failure_message_reserved_name_duplicate": {
 			contents:    `message Foo { reserved "foo", "foo"; }`,
-			expectedErr: `test.proto:1:31: name "foo" is reserved multiple times`,
+			expectedErr: `test.proto:1:31: name "foo" is already reserved at test.proto:1:24`,
 		},
 		"failure_message_reserved_name_duplicate2": {
 			contents:    `message Foo { reserved "foo"; reserved "foo"; }`,
-			expectedErr: `test.proto:1:40: name "foo" is reserved multiple times`,
+			expectedErr: `test.proto:1:40: name "foo" is already reserved at test.proto:1:24`,
 		},
 		"failure_message_field_w_reserved_name": {
 			contents:    `message Foo { reserved "foo"; optional string foo = 1; }`,

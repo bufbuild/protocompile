@@ -489,7 +489,7 @@ func (r *result) asMethodDescriptor(node *ast.RPCNode) *descriptorpb.MethodDescr
 func (r *result) asEnumDescriptor(en *ast.EnumNode, syntax syntaxType, handler *reporter.Handler) *descriptorpb.EnumDescriptorProto {
 	ed := &descriptorpb.EnumDescriptorProto{Name: proto.String(en.Name.Val)}
 	r.putEnumNode(ed, en)
-	rsvdNames := map[string]int{}
+	rsvdNames := map[string]ast.SourcePos{}
 	for _, decl := range en.Decls {
 		switch decl := decl.(type) {
 		case *ast.OptionNode:
@@ -529,32 +529,37 @@ func (r *result) asMessageDescriptor(node *ast.MessageNode, syntax syntaxType, h
 	return msgd
 }
 
-func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, syntax syntaxType, handler *reporter.Handler, alreadyReserved map[string]int) {
-	if len(node.Names) > 0 && syntax == syntaxEditions {
-		nameNodeInfo := r.file.NodeInfo(node.Names[0])
-		_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use identifiers, not string literals, to reserved names with editions`)
-	} else if len(node.Identifiers) > 0 && syntax != syntaxEditions {
+func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, syntax syntaxType, handler *reporter.Handler, alreadyReserved map[string]ast.SourcePos) {
+	if syntax == syntaxEditions {
+		if len(node.Names) > 0 {
+			nameNodeInfo := r.file.NodeInfo(node.Names[0])
+			_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use identifiers, not string literals, to reserved names with editions`)
+		}
+		for _, n := range node.Identifiers {
+			name := string(n.AsIdentifier())
+			nameNodePos := r.file.NodeInfo(n).Start()
+			if existing, ok := alreadyReserved[name]; ok {
+				_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+				continue
+			}
+			alreadyReserved[name] = nameNodePos
+			*names = append(*names, name)
+		}
+		return
+	}
+
+	if len(node.Identifiers) > 0 {
 		nameNodeInfo := r.file.NodeInfo(node.Identifiers[0])
 		_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use string literals, not identifiers, to reserved names with proto2 and proto3`)
 	}
 	for _, n := range node.Names {
 		name := n.AsString()
-		count := alreadyReserved[name]
-		if count == 1 { // already seen
-			nameNodeInfo := r.file.NodeInfo(n)
-			_ = handler.HandleErrorf(nameNodeInfo.Start(), "name %q is reserved multiple times", name)
+		nameNodePos := r.file.NodeInfo(n).Start()
+		if existing, ok := alreadyReserved[name]; ok {
+			_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+			continue
 		}
-		alreadyReserved[name] = count + 1
-		*names = append(*names, name)
-	}
-	for _, n := range node.Identifiers {
-		name := string(n.AsIdentifier())
-		count := alreadyReserved[name]
-		if count == 1 { // already seen
-			nameNodeInfo := r.file.NodeInfo(n)
-			_ = handler.HandleErrorf(nameNodeInfo.Start(), "name %q is reserved multiple times", name)
-		}
-		alreadyReserved[name] = count + 1
+		alreadyReserved[name] = nameNodePos
 		*names = append(*names, name)
 	}
 }
@@ -598,7 +603,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		maxTag = internal.MaxTag // higher limit for messageset wire format
 	}
 
-	rsvdNames := map[string]int{}
+	rsvdNames := map[string]ast.SourcePos{}
 
 	// now we can process the rest
 	for _, decl := range body.Decls {
