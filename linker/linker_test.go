@@ -2079,6 +2079,177 @@ func TestLinkerValidation(t *testing.T) {
 			expectedErr:            `test.proto:4:5: feature field "raw_features" may not be used explicitly`,
 			expectedDiffWithProtoc: true, // seems like a bug in protoc that it allows use of raw_features
 		},
+		"success_proto2_packed": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  repeated int32 i32 = 1 [packed=true];
+					  repeated int64 i64 = 2 [packed=true];
+					  repeated uint32 u32 = 3 [packed=true];
+					  repeated uint64 u64 = 4 [packed=true];
+					  repeated sint32 s32 = 5 [packed=true];
+					  repeated sint64 s64 = 6 [packed=true];
+					  repeated fixed32 f32 = 7 [packed=true];
+					  repeated fixed64 f64 = 8 [packed=true];
+					  repeated sfixed32 sf32 = 9 [packed=true];
+					  repeated sfixed64 sf64 = 10 [packed=true];
+					  repeated float flt = 11 [packed=true];
+					  repeated double dbl = 12 [packed=true];
+					  repeated bool bool = 13 [packed=true];
+					  repeated En en = 14 [packed=true];
+					  enum En { Z=0; A=1; B=2; }
+					}
+				`,
+			},
+		},
+		"success_proto3_packed": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+					  repeated int32 i32 = 1 [packed=true];
+					  repeated int64 i64 = 2 [packed=true];
+					  repeated uint32 u32 = 3 [packed=true];
+					  repeated uint64 u64 = 4 [packed=true];
+					  repeated sint32 s32 = 5 [packed=true];
+					  repeated sint64 s64 = 6 [packed=true];
+					  repeated fixed32 f32 = 7 [packed=true];
+					  repeated fixed64 f64 = 8 [packed=true];
+					  repeated sfixed32 sf32 = 9 [packed=true];
+					  repeated sfixed64 sf64 = 10 [packed=true];
+					  repeated float flt = 11 [packed=true];
+					  repeated double dbl = 12 [packed=true];
+					  repeated bool bool = 13 [packed=true];
+					  repeated En en = 14 [packed=true];
+					  enum En { Z=0; A=1; B=2; }
+					}
+				`,
+			},
+		},
+		"failure_proto2_packed_string": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  repeated string s = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto2_packed_bytes": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  repeated bytes b = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto2_packed_msg": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  repeated Foo msgs = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto2_packed_group": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  repeated group G = 1 [packed=true] {
+					    optional string name = 1;
+					  }
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto2_packed_map": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  map<int32,int32> m = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:3: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto2_packed_nonrepeated": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message Foo {
+					  optional int32 i32 = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:3: packed option is only allowed on repeated fields`,
+		},
+		"failure_proto3_packed_string": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+					  repeated string s = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto3_packed_bytes": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+					  repeated bytes b = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto3_packed_msg": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+					  repeated Foo msgs = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:12: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto3_packed_map": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+					  map<int32,int32> m = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:3: packed option is only allowed on numeric, boolean, and enum fields`,
+		},
+		"failure_proto3_packed_nonrepeated": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto3";
+					message Foo {
+					  optional int32 i32 = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:3: packed option is only allowed on repeated fields`,
+		},
 	}
 
 	for name, tc := range testCases {

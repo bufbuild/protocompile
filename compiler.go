@@ -594,6 +594,9 @@ func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescripto
 	if t.r.explicitFile {
 		file.CheckForUnusedImports(t.h)
 	}
+	if err := t.h.Error(); err != nil {
+		return nil, err
+	}
 
 	if needsSourceInfo(parseRes, t.e.c.SourceInfoMode) {
 		var srcInfoOpts []sourceinfo.GenerateOption
