@@ -105,7 +105,7 @@ func (r *result) validatePacked(fld protoreflect.FieldDescriptor, handler *repor
 		pos := file.NodeInfo(r.FieldNode(fd.proto).FieldLabel()).Start()
 		err := handler.HandleErrorf(pos, "packed option is only allowed on repeated fields")
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 	switch fd.proto.GetType() {
