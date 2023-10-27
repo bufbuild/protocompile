@@ -49,6 +49,16 @@ import (
 	"github.com/bufbuild/protocompile/sourceinfo"
 )
 
+const (
+	// featuresFieldName is the name of a field in every options message.
+	featuresFieldName = "features"
+)
+
+var (
+	featureSetType = (*descriptorpb.FeatureSet)(nil).ProtoReflect().Type()
+	featureSetName = featureSetType.Descriptor().FullName()
+)
+
 type interpreter struct {
 	file                    file
 	resolver                linker.Resolver
@@ -302,7 +312,11 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 					if mapField.Options == nil {
 						mapField.Options = &descriptorpb.FieldOptions{}
 					}
-					mapField.Options.Features = proto.Clone(fld.Options.Features).(*descriptorpb.FeatureSet) //nolint:errcheck
+					features := proto.Clone(fld.Options.Features).(*descriptorpb.FeatureSet) //nolint:errcheck
+					if mapField.Options.Features != nil {
+						proto.Merge(features, mapField.Options.Features)
+					}
+					mapField.Options.Features = features
 				}
 				break
 			}
@@ -823,7 +837,7 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 	opts := elem.GetOptions()
 	uo := opts.GetUninterpretedOption()
 	if len(uo) > 0 {
-		remain, err := interp.interpretOptions(fqn, elem, opts, uo)
+		remain, err := interp.interpretOptions(fqn, target.t, elem, opts, uo)
 		if err != nil {
 			return err
 		}
@@ -839,6 +853,7 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 // In such a case, the returned slice contains the options which could not be interpreted.
 func (interp *interpreter) interpretOptions(
 	fqn string,
+	targetType descriptorpb.FieldOptions_OptionTargetType,
 	element, opts proto.Message,
 	uninterpreted []*descriptorpb.UninterpretedOption,
 ) ([]*descriptorpb.UninterpretedOption, error) {
@@ -864,6 +879,7 @@ func (interp *interpreter) interpretOptions(
 	}
 	var remain []*descriptorpb.UninterpretedOption
 	results := make([]*interpretedOption, 0, len(uninterpreted))
+	var featuresInfo []*interpretedOption
 	for _, uo := range uninterpreted {
 		node := interp.file.OptionNode(uo)
 		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == "uninterpreted_option" {
@@ -887,10 +903,17 @@ func (interp *interpreter) interpretOptions(
 		}
 		res.unknown = !isKnownField(optsDesc, res)
 		results = append(results, res)
+		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == featuresFieldName {
+			featuresInfo = append(featuresInfo, res)
+		}
 		if optn, ok := node.(*ast.OptionNode); ok {
 			si := res.toSourceInfo()
 			interp.index[optn] = si
 		}
+	}
+
+	if err := interp.validateFeatures(targetType, msg, featuresInfo); err != nil && !interp.lenient {
+		return nil, err
 	}
 
 	if interp.lenient {
@@ -941,6 +964,109 @@ func (interp *interpreter) interpretOptions(
 	}
 
 	return nil, nil
+}
+
+func (interp *interpreter) validateFeatures(
+	targetType descriptorpb.FieldOptions_OptionTargetType,
+	opts protoreflect.Message,
+	featuresInfo []*interpretedOption,
+) error {
+	fld := opts.Descriptor().Fields().ByName(featuresFieldName)
+	if fld == nil {
+		// no features to resolve
+		return nil
+	}
+	if fld.IsList() || fld.Message() == nil || fld.Message().FullName() != featureSetName {
+		// features field doesn't look right... abort
+		// TODO: should this return an error?
+		return nil
+	}
+	features := opts.Get(fld).Message()
+	var err error
+	features.Range(func(featureField protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+		opts, ok := featureField.Options().(*descriptorpb.FieldOptions)
+		if !ok {
+			return true
+		}
+		targetTypes := opts.GetTargets()
+		var allowed bool
+		for _, allowedType := range targetTypes {
+			if allowedType == targetType {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			allowedTypes := make([]string, len(targetTypes))
+			for i, t := range opts.Targets {
+				allowedTypes[i] = targetTypeString(t)
+			}
+			pos := interp.positionOfFeature(featuresInfo, fld.Number(), featureField.Number())
+			if len(opts.Targets) == 1 && opts.Targets[0] == descriptorpb.FieldOptions_TARGET_TYPE_UNKNOWN {
+				err = interp.reporter.HandleErrorf(pos, "feature field %q may not be used explicitly", featureField.Name())
+			} else {
+				err = interp.reporter.HandleErrorf(pos, "feature %q is allowed on [%s], not on %s", featureField.Name(), strings.Join(allowedTypes, ","), targetTypeString(targetType))
+			}
+		}
+		return err == nil
+	})
+	return err
+}
+
+func (interp *interpreter) positionOfFeature(featuresInfo []*interpretedOption, fieldNumbers ...protoreflect.FieldNumber) ast.SourcePos {
+	if interp.file.AST() == nil {
+		return ast.UnknownPos(interp.file.FileDescriptorProto().GetName())
+	}
+	for _, info := range featuresInfo {
+		matched, remainingNumbers, node := matchInterpretedOption(info, fieldNumbers)
+		if !matched {
+			continue
+		}
+		if len(remainingNumbers) > 0 {
+			node = findInterpretedFieldForFeature(&(info.interpretedField), remainingNumbers)
+		}
+		if node != nil {
+			return interp.file.FileNode().NodeInfo(node).Start()
+		}
+	}
+	return ast.UnknownPos(interp.file.FileDescriptorProto().GetName())
+}
+
+func matchInterpretedOption(info *interpretedOption, path []protoreflect.FieldNumber) (bool, []protoreflect.FieldNumber, ast.Node) {
+	for i := 0; i < len(path) && i < len(info.pathPrefix); i++ {
+		if info.pathPrefix[i] != int32(path[i]) {
+			return false, nil, nil
+		}
+	}
+	if len(path) <= len(info.pathPrefix) {
+		// no more path elements to match
+		node := info.node
+		if optsNode, ok := node.(*ast.OptionNode); ok {
+			// Do we need to check this? It should always be true...
+			if len(optsNode.Name.Parts) == len(info.pathPrefix)+1 {
+				node = optsNode.Name.Parts[len(path)-1]
+			}
+		}
+		return true, nil, node
+	}
+	if info.number != int32(path[len(info.pathPrefix)]) {
+		return false, nil, nil
+	}
+	return true, path[len(info.pathPrefix)+1:], info.node
+}
+
+func findInterpretedFieldForFeature(opt *interpretedField, path []protoreflect.FieldNumber) ast.Node {
+	if len(path) == 0 {
+		return opt.node
+	}
+	for _, fld := range opt.value.msgVal {
+		if fld.number == int32(path[0]) {
+			if res := findInterpretedFieldForFeature(fld, path[1:]); res != nil {
+				return res
+			}
+		}
+	}
+	return nil
 }
 
 // isKnownField returns true if the given option is for a known field of the
@@ -1003,6 +1129,10 @@ func wireTypeForKind(kind protoreflect.Kind) protowire.Type {
 		// everything else uses varint
 		return protowire.VarintType
 	}
+}
+
+func targetTypeString(t descriptorpb.FieldOptions_OptionTargetType) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimPrefix(t.String(), "TARGET_TYPE_"), "_", " "))
 }
 
 func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error {

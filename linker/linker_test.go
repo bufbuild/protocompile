@@ -2209,6 +2209,30 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:3:3: packed option is only allowed on repeated fields`,
 		},
+		"failure_editions_feature_on_wrong_target_type": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					message Foo {
+					  int32 i32 = 1 [features.enum_type=OPEN];
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:18: feature "enum_type" is allowed on [enum,file], not on field`,
+		},
+		"failure_editions_feature_on_wrong_target_type_msg_literal": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					message Foo {
+					  int32 i32 = 1 [features={
+					    enum_type: OPEN
+					  }];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:5: feature "enum_type" is allowed on [enum,file], not on field`,
+		},
 	}
 
 	for name, tc := range testCases {
