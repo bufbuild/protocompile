@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/parser"
@@ -38,15 +39,13 @@ func TestASTRoundTrips(t *testing.T) {
 			t.Run(path, func(t *testing.T) {
 				t.Parallel()
 				data, err := os.ReadFile(path)
-				if !assert.Nil(t, err, "%v", err) {
-					return
-				}
+				require.NoError(t, err)
 				testASTRoundTrip(t, path, data)
 			})
 		}
 		return nil
 	})
-	assert.Nil(t, err, "%v", err)
+	assert.NoError(t, err) //nolint:testifylint // we want to continue even if err!=nil
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
 		testASTRoundTrip(t, "empty", []byte(`
@@ -58,15 +57,12 @@ func TestASTRoundTrips(t *testing.T) {
 func testASTRoundTrip(t *testing.T, path string, data []byte) {
 	filename := filepath.Base(path)
 	root, err := parser.Parse(filename, bytes.NewReader(data), reporter.NewHandler(nil))
-	if !assert.Nil(t, err) {
-		return
-	}
+	require.NoError(t, err)
 	var buf bytes.Buffer
 	err = printAST(&buf, root)
-	if assert.Nil(t, err, "%v", err) {
-		// see if file survived round trip!
-		assert.Equal(t, string(data), buf.String())
-	}
+	require.NoError(t, err)
+	// see if file survived round trip!
+	assert.Equal(t, string(data), buf.String())
 }
 
 // printAST prints the given AST node to the given output. This operation

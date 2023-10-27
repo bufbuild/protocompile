@@ -148,8 +148,8 @@ func TestNumBuckets(t *testing.T) {
 		// power of 2
 		assert.Equal(t, 1, bits.OnesCount(uint(b)))
 		// that fits given size (each bucket holds 8 entries)
-		assert.True(t, b*4 < sz)
-		assert.True(t, b*8 >= sz)
+		assert.Less(t, b*4, sz)
+		assert.GreaterOrEqual(t, b*8, sz)
 	}
 	check(7364)
 	check(1234567)

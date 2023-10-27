@@ -69,6 +69,7 @@ linters:
     - golint            # deprecated by Go team
     - gomnd             # some unnamed constants are okay
     - ifshort           # deprecated by author
+    - inamedparam       # named params in interface signatures are not always necessary
     - interfacer        # deprecated by author
     - ireturn           # "accept interfaces, return structs" isn't ironclad
     - lll               # don't want hard limits for line length
@@ -76,6 +77,7 @@ linters:
     - maligned          # readability trumps efficient struct packing
     - nlreturn          # generous whitespace violates house style
     - nosnakecase       # deprecated in https://github.com/golangci/golangci-lint/pull/3065
+    - protogetter       # lots of false positives: can't use getter to check if field is present
     - rowserrcheck      # no SQL code in protocompile
     - scopelint         # deprecated by author
     - sqlclosecheck     # no SQL code in protocompile

@@ -896,9 +896,11 @@ func TestBasicValidation(t *testing.T) {
 
 			err := errs.Error()
 			if tc.expectedErr == "" {
+				//nolint:testifylint // we want to continue even if err!=nil
 				assert.NoError(t, err, "should succeed")
-			} else if assert.NotNil(t, err, "should fail") {
-				assert.Equal(t, tc.expectedErr, err.Error(), "bad error message")
+			} else {
+				//nolint:testifylint // we want to continue even if assertion fails
+				assert.EqualError(t, err, tc.expectedErr, "bad error message")
 			}
 
 			expectSuccess := tc.expectedErr == ""

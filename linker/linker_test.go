@@ -2425,8 +2425,7 @@ func TestLinkerSymbolCollisionNoSource(t *testing.T) {
 		Resolver: resolver,
 	}
 	_, err := compiler.Compile(context.Background(), "foo.proto")
-	require.Error(t, err)
-	assert.EqualError(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
+	require.ErrorContains(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
 }
 
 func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
@@ -2571,7 +2570,7 @@ func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
 			}
 			_, err := compiler.Compile(context.Background(), "foo.proto")
 			if tc.expectedErr != "" {
-				assert.EqualError(t, err, tc.expectedErr)
+				require.EqualError(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 			}
