@@ -26,14 +26,25 @@ type hasOptionNode interface {
 	FileNode() ast.FileDeclNode // needed in order to query for NodeInfo
 }
 
+func FindFirstOption(res hasOptionNode, handler *reporter.Handler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
+	return findOption(res, handler, scope, opts, name, false, true)
+}
+
 func FindOption(res hasOptionNode, handler *reporter.Handler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
+	return findOption(res, handler, scope, opts, name, true, false)
+}
+
+func findOption(res hasOptionNode, handler *reporter.Handler, scope string, opts []*descriptorpb.UninterpretedOption, name string, exact, first bool) (int, error) {
 	found := -1
 	for i, opt := range opts {
-		if len(opt.Name) != 1 {
+		if exact && len(opt.Name) != 1 {
 			continue
 		}
 		if opt.Name[0].GetIsExtension() || opt.Name[0].GetNamePart() != name {
 			continue
+		}
+		if first {
+			return i, nil
 		}
 		if found >= 0 {
 			optNode := res.OptionNode(opt)

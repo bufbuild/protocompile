@@ -278,6 +278,37 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 			return err
 		}
 	}
+
+	// We also copy features for map fields down to their synthesized key and value fields.
+	for _, fld := range md.GetField() {
+		entryName := internal.InitCap(internal.JSONName(fld.GetName())) + "Entry"
+		if fld.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED ||
+			fld.GetType() != descriptorpb.FieldDescriptorProto_TYPE_MESSAGE &&
+				fld.GetTypeName() != "."+fqn+"."+entryName {
+			// can't be a map field
+			continue
+		}
+		if fld.Options == nil || fld.Options.Features == nil {
+			// no features to propagate
+			continue
+		}
+		for _, nmd := range md.GetNestedType() {
+			if nmd.GetName() == entryName {
+				// found the entry message
+				if !nmd.GetOptions().GetMapEntry() {
+					break // not a map
+				}
+				for _, mapField := range nmd.Field {
+					if mapField.Options == nil {
+						mapField.Options = &descriptorpb.FieldOptions{}
+					}
+					mapField.Options.Features = proto.Clone(fld.Options.Features).(*descriptorpb.FeatureSet) //nolint:errcheck
+				}
+				break
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -792,7 +823,7 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 	opts := elem.GetOptions()
 	uo := opts.GetUninterpretedOption()
 	if len(uo) > 0 {
-		remain, err := interp.interpretOptions(fqn, target.t, elem, opts, uo)
+		remain, err := interp.interpretOptions(fqn, elem, opts, uo)
 		if err != nil {
 			return err
 		}
@@ -808,7 +839,6 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 // In such a case, the returned slice contains the options which could not be interpreted.
 func (interp *interpreter) interpretOptions(
 	fqn string,
-	targetType descriptorpb.FieldOptions_OptionTargetType,
 	element, opts proto.Message,
 	uninterpreted []*descriptorpb.UninterpretedOption,
 ) ([]*descriptorpb.UninterpretedOption, error) {
@@ -913,14 +943,6 @@ func (interp *interpreter) interpretOptions(
 	return nil, nil
 }
 
-func (interp *interpreter) syntax() string {
-	syntax := interp.file.FileDescriptorProto().GetSyntax()
-	if syntax == "" {
-		return "proto2"
-	}
-	return syntax
-}
-
 // isKnownField returns true if the given option is for a known field of the
 // given options message descriptor and will be serialized using the expected
 // wire type for that known field.
@@ -981,10 +1003,6 @@ func wireTypeForKind(kind protoreflect.Kind) protowire.Type {
 		// everything else uses varint
 		return protowire.VarintType
 	}
-}
-
-func targetTypeString(t descriptorpb.FieldOptions_OptionTargetType) string {
-	return strings.ToLower(strings.ReplaceAll(strings.TrimPrefix(t.String(), "TARGET_TYPE_"), "_", " "))
 }
 
 func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error {
@@ -2105,14 +2123,4 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 		val:    protoreflect.ValueOfMessage(msg),
 		msgVal: flds,
 	}, nil
-}
-
-func editionNode(file file) ast.Node {
-	if fileNode := file.AST(); fileNode != nil {
-		if fileNode.Edition == nil {
-			return fileNode
-		}
-		return fileNode.Edition
-	}
-	return file.FileNode()
 }

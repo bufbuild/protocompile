@@ -794,6 +794,89 @@ func TestBasicValidation(t *testing.T) {
 					     reserved foo, _bar123, A_B_C_1_2_3;
 					   }`,
 		},
+		"failure_use_of_packed_with_editions": {
+			contents: `edition = "2023";
+					   message Foo {
+					     repeated bool foo = 1 [packed=false];
+					   }`,
+			expectedErr: `test.proto:3:69: field Foo.foo: packed option is not allowed in editions; use option features.repeated_field_encoding instead`,
+		},
+		"failure_use_of_features_without_editions_file": {
+			contents: `syntax = "proto3";
+					   option features.utf8_validation = VERIFY;
+					   message Foo {
+					     string foo = 1;
+					   }`,
+			expectedErr: `test.proto:2:51: file options: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_message": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     option features = {};
+					     string foo = 1;
+					   }`,
+			expectedErr: `test.proto:3:53: message Foo: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_field": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+					   }`,
+			expectedErr: `test.proto:3:62: field Foo.foo: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_oneof": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     oneof x {
+					       option features = {};
+					       string foo = 1;
+					     }
+					   }`,
+			expectedErr: `test.proto:4:55: oneof Foo.x: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_ext_range": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     extensions 1 to 100 [features={}];
+					   }`,
+			expectedErr: `test.proto:3:67: message Foo: option 'features' may only be used with editions but file uses proto2 syntax`,
+		},
+		"failure_use_of_features_without_editions_enum": {
+			contents: `syntax = "proto2";
+					   enum Foo {
+					     option features.enum_type = CLOSED;
+					     VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:3:53: enum Foo: option 'features' may only be used with editions but file uses proto2 syntax`,
+		},
+		"failure_use_of_features_without_editions_enum_val": {
+			contents: `syntax = "proto2";
+					   enum Foo {
+					     VALUE = 0 [features={}];
+					   }`,
+			expectedErr: `test.proto:3:57: enum value VALUE: option 'features' may only be used with editions but file uses proto2 syntax`,
+		},
+		"failure_use_of_features_without_editions_service": {
+			contents: `syntax = "proto3";
+					   message Foo {}
+					   service FooService {
+					     option features = {};
+					     rpc Do(Foo) returns (foo);
+					   }
+					   `,
+			expectedErr: `test.proto:4:53: service FooService: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_method": {
+			contents: `syntax = "proto3";
+					   message Foo {}
+					   service FooService {
+					     rpc Do(Foo) returns (foo) {
+					       option features = {};
+					     }
+					   }
+					   `,
+			expectedErr: `test.proto:5:55: method FooService.Do: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
 	}
 
 	for name, tc := range testCases {

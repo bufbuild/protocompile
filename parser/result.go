@@ -43,6 +43,19 @@ const (
 	syntaxEditions
 )
 
+func (s syntaxType) String() string {
+	switch s {
+	case syntaxProto2:
+		return "proto2"
+	case syntaxProto3:
+		return "proto3"
+	case syntaxEditions:
+		return "editions"
+	default:
+		return fmt.Sprintf("unknown(%d)", s)
+	}
+}
+
 type result struct {
 	file  *ast.FileNode
 	proto *descriptorpb.FileDescriptorProto

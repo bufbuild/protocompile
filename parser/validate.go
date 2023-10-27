@@ -45,6 +45,10 @@ func validateBasic(res *result, handler *reporter.Handler) {
 		return
 	}
 
+	if err := validateNoFeatures(res, syntax, "file options", fd.Options.GetUninterpretedOption(), handler); err != nil {
+		return
+	}
+
 	_ = walk.DescriptorProtos(fd,
 		func(name protoreflect.FullName, d proto.Message) error {
 			switch d := d.(type) {
@@ -53,12 +57,28 @@ func validateBasic(res *result, handler *reporter.Handler) {
 					// exit func is not called when enter returns error
 					return err
 				}
+			case *descriptorpb.FieldDescriptorProto:
+				if err := validateField(res, syntax, name, d, handler); err != nil {
+					return err
+				}
+			case *descriptorpb.OneofDescriptorProto:
+				if err := validateNoFeatures(res, syntax, fmt.Sprintf("oneof %s", name), d.Options.GetUninterpretedOption(), handler); err != nil {
+					return err
+				}
 			case *descriptorpb.EnumDescriptorProto:
 				if err := validateEnum(res, syntax, name, d, handler); err != nil {
 					return err
 				}
-			case *descriptorpb.FieldDescriptorProto:
-				if err := validateField(res, syntax, name, d, handler); err != nil {
+			case *descriptorpb.EnumValueDescriptorProto:
+				if err := validateNoFeatures(res, syntax, fmt.Sprintf("enum value %s", name), d.Options.GetUninterpretedOption(), handler); err != nil {
+					return err
+				}
+			case *descriptorpb.ServiceDescriptorProto:
+				if err := validateNoFeatures(res, syntax, fmt.Sprintf("service %s", name), d.Options.GetUninterpretedOption(), handler); err != nil {
+					return err
+				}
+			case *descriptorpb.MethodDescriptorProto:
+				if err := validateNoFeatures(res, syntax, fmt.Sprintf("method %s", name), d.Options.GetUninterpretedOption(), handler); err != nil {
 					return err
 				}
 			}
@@ -87,6 +107,23 @@ func validateImports(res *result, handler *reporter.Handler) error {
 	return nil
 }
 
+func validateNoFeatures(res *result, syntax syntaxType, scope string, opts []*descriptorpb.UninterpretedOption, handler *reporter.Handler) error {
+	if syntax == syntaxEditions {
+		// Editions is allowed to use features
+		return nil
+	}
+	if index, err := internal.FindFirstOption(res, handler, scope, opts, "features"); err != nil {
+		return err
+	} else if index >= 0 {
+		optNode := res.OptionNode(opts[index])
+		optNameNodeInfo := res.file.NodeInfo(optNode.GetName())
+		if err := handler.HandleErrorf(optNameNodeInfo.Start(), "%s: option 'features' may only be used with editions but file uses %s syntax", scope, syntax); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func validateMessage(res *result, syntax syntaxType, name protoreflect.FullName, md *descriptorpb.DescriptorProto, handler *reporter.Handler) error {
 	scope := fmt.Sprintf("message %s", name)
 
@@ -108,6 +145,10 @@ func validateMessage(res *result, syntax syntaxType, name protoreflect.FullName,
 		}
 	}
 
+	if err := validateNoFeatures(res, syntax, scope, md.Options.GetUninterpretedOption(), handler); err != nil {
+		return err
+	}
+
 	// reserved ranges should not overlap
 	rsvd := make(tagRanges, len(md.ReservedRange))
 	for i, r := range md.ReservedRange {
@@ -127,6 +168,9 @@ func validateMessage(res *result, syntax syntaxType, name protoreflect.FullName,
 	// extensions ranges should not overlap
 	exts := make(tagRanges, len(md.ExtensionRange))
 	for i, r := range md.ExtensionRange {
+		if err := validateNoFeatures(res, syntax, scope, r.Options.GetUninterpretedOption(), handler); err != nil {
+			return err
+		}
 		n := res.ExtensionRangeNode(r)
 		exts[i] = tagRange{start: r.GetStart(), end: r.GetEnd(), node: n}
 	}
@@ -281,6 +325,10 @@ func validateEnum(res *result, syntax syntaxType, name protoreflect.FullName, ed
 		}
 	}
 
+	if err := validateNoFeatures(res, syntax, scope, ed.Options.GetUninterpretedOption(), handler); err != nil {
+		return err
+	}
+
 	allowAlias := false
 	var allowAliasOpt *descriptorpb.UninterpretedOption
 	if index, err := internal.FindOption(res, handler, scope, ed.Options.GetUninterpretedOption(), "allow_alias"); err != nil {
@@ -432,7 +480,7 @@ func validateField(res *result, syntax syntaxType, name protoreflect.FullName, f
 			} else if index >= 0 {
 				optNode := res.OptionNode(fld.Options.GetUninterpretedOption()[index])
 				optNameNodeInfo := res.file.NodeInfo(optNode.GetName())
-				if err := handler.HandleErrorf(optNameNodeInfo.Start(), "%s: packed option is not allowed in aditions; use option features.repeated_field_encoding instead", scope); err != nil {
+				if err := handler.HandleErrorf(optNameNodeInfo.Start(), "%s: packed option is not allowed in editions; use option features.repeated_field_encoding instead", scope); err != nil {
 					return err
 				}
 			}
@@ -462,7 +510,7 @@ func validateField(res *result, syntax syntaxType, name protoreflect.FullName, f
 		}
 	}
 
-	return nil
+	return validateNoFeatures(res, syntax, scope, fld.Options.GetUninterpretedOption(), handler)
 }
 
 type tagRange struct {
