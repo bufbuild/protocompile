@@ -101,27 +101,10 @@ func validateMessage(res *result, syntax syntaxType, name protoreflect.FullName,
 	if index, err := internal.FindOption(res, handler, scope, md.Options.GetUninterpretedOption(), "map_entry"); err != nil {
 		return err
 	} else if index >= 0 {
-		opt := md.Options.UninterpretedOption[index]
-		optn := res.OptionNode(opt)
-		md.Options.UninterpretedOption = internal.RemoveOption(md.Options.UninterpretedOption, index)
-		valid := false
-		if opt.IdentifierValue != nil {
-			if opt.GetIdentifierValue() == "true" {
-				valid = true
-				optionNodeInfo := res.file.NodeInfo(optn.GetValue())
-				if err := handler.HandleErrorf(optionNodeInfo.Start(), "%s: map_entry option should not be set explicitly; use map type instead", scope); err != nil {
-					return err
-				}
-			} else if opt.GetIdentifierValue() == "false" {
-				valid = true
-				md.Options.MapEntry = proto.Bool(false)
-			}
-		}
-		if !valid {
-			optionNodeInfo := res.file.NodeInfo(optn.GetValue())
-			if err := handler.HandleErrorf(optionNodeInfo.Start(), "%s: expecting bool value for map_entry option", scope); err != nil {
-				return err
-			}
+		optNode := res.OptionNode(md.Options.GetUninterpretedOption()[index])
+		optNameNodeInfo := res.file.NodeInfo(optNode.GetName())
+		if err := handler.HandleErrorf(optNameNodeInfo.Start(), "%s: map_entry option should not be set explicitly; use map type instead", scope); err != nil {
+			return err
 		}
 	}
 

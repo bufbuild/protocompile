@@ -147,12 +147,12 @@ func TestBasicValidation(t *testing.T) {
 			expectedErr: `test.proto:1:38: extend sections must define at least one extension`,
 		},
 		"failure_explicit_map_entry_option": {
-			contents:    `message Foo { option map_entry = true; } message Bar { optional Foo foo = 1; }`,
-			expectedErr: `test.proto:1:34: message Foo: map_entry option should not be set explicitly; use map type instead`,
+			contents:    `message Foo { option map_entry = true; }`,
+			expectedErr: `test.proto:1:22: message Foo: map_entry option should not be set explicitly; use map type instead`,
 		},
-		"success_explicit_map_entry_option": {
-			// okay if explicit setting is false
-			contents: `message Foo { option map_entry = false; }`,
+		"failure_explicit_map_entry_option_false": {
+			contents:    `message Foo { option map_entry = false; }`,
+			expectedErr: `test.proto:1:22: message Foo: map_entry option should not be set explicitly; use map type instead`,
 		},
 		"failure_proto2_requires_label": {
 			contents:    `syntax = "proto2"; message Foo { string s = 1; }`,
@@ -272,9 +272,8 @@ func TestBasicValidation(t *testing.T) {
 			contents: `message Foo { reserved 1, 2 to 10, 11 to 20; extensions 21 to 22; }`,
 		},
 		"failure_message_reserved_start_after_end": {
-			contents:               `message Foo { reserved 10 to 1; }`,
-			expectedErr:            `test.proto:1:24: range, 10 to 1, is invalid: start must be <= end`,
-			expectedDiffWithProtoc: true, // bug in protoc: https://github.com/protocolbuffers/protobuf/issues/13442
+			contents:    `message Foo { reserved 10 to 1; }`,
+			expectedErr: `test.proto:1:24: range, 10 to 1, is invalid: start must be <= end`,
 		},
 		"failure_message_extensions_start_after_end": {
 			contents:    `message Foo { extensions 10 to 1; }`,
@@ -692,8 +691,7 @@ func TestBasicValidation(t *testing.T) {
 					   message Foo {
 					     reserved "foo", "_bar123", "A_B_C_1_2_3";
 					   }`,
-			expectedErr:            `test.proto:3:55: must use identifiers, not string literals, to reserved names with editions`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
+			expectedErr: `test.proto:3:55: must use identifiers, not string literals, to reserved names with editions`,
 		},
 		"failure_enum_invalid_reserved_name": {
 			contents: `syntax = "proto3";
@@ -751,8 +749,7 @@ func TestBasicValidation(t *testing.T) {
 					     BAR = 0;
 					     reserved "foo", "_bar123", "A_B_C_1_2_3";
 					   }`,
-			expectedErr:            `test.proto:4:55: must use identifiers, not string literals, to reserved names with editions`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
+			expectedErr: `test.proto:4:55: must use identifiers, not string literals, to reserved names with editions`,
 		},
 		"failure_message_reserved_ident_proto2": {
 			contents: `syntax = "proto2";
@@ -773,7 +770,6 @@ func TestBasicValidation(t *testing.T) {
 					   message Foo {
 					     reserved foo, _bar123, A_B_C_1_2_3;
 					   }`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
 		},
 		"failure_enum_reserved_ident_proto2": {
 			contents: `syntax = "proto2";
@@ -797,7 +793,6 @@ func TestBasicValidation(t *testing.T) {
 					     BAR = 0;
 					     reserved foo, _bar123, A_B_C_1_2_3;
 					   }`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet have support for identifiers with editions
 		},
 	}
 
