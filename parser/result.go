@@ -30,7 +30,9 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-var supportedEditions = map[string]struct{}{"2023": {}}
+var supportedEditions = map[string]descriptorpb.Edition{
+	"2023": descriptorpb.Edition_EDITION_2023,
+}
 
 // NB: protoreflect.Syntax doesn't yet know about editions, so we have to use our own type.
 type syntaxType int
@@ -40,6 +42,19 @@ const (
 	syntaxProto3
 	syntaxEditions
 )
+
+func (s syntaxType) String() string {
+	switch s {
+	case syntaxProto2:
+		return "proto2"
+	case syntaxProto3:
+		return "proto3"
+	case syntaxEditions:
+		return "editions"
+	default:
+		return fmt.Sprintf("unknown(%d)", s)
+	}
+}
 
 type result struct {
 	file  *ast.FileNode
@@ -125,9 +140,10 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		}
 		edition := file.Edition.Edition.AsString()
 		syntax = syntaxEditions
+
 		fd.Syntax = proto.String("editions")
-		fd.Edition = proto.String(edition)
-		if _, ok := supportedEditions[edition]; !ok {
+		editionEnum, ok := supportedEditions[edition]
+		if !ok {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
 			editionStrs := make([]string, 0, len(supportedEditions))
 			for supportedEdition := range supportedEditions {
@@ -138,6 +154,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 				return
 			}
 		}
+		fd.Edition = editionEnum.Enum()
 	default:
 		nodeInfo := file.NodeInfo(file)
 		handler.HandleWarningWithPos(nodeInfo.Start(), ErrNoSyntax)

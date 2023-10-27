@@ -147,12 +147,12 @@ func TestBasicValidation(t *testing.T) {
 			expectedErr: `test.proto:1:38: extend sections must define at least one extension`,
 		},
 		"failure_explicit_map_entry_option": {
-			contents:    `message Foo { option map_entry = true; } message Bar { optional Foo foo = 1; }`,
-			expectedErr: `test.proto:1:34: message Foo: map_entry option should not be set explicitly; use map type instead`,
+			contents:    `message Foo { option map_entry = true; }`,
+			expectedErr: `test.proto:1:22: message Foo: map_entry option should not be set explicitly; use map type instead`,
 		},
-		"success_explicit_map_entry_option": {
-			// okay if explicit setting is false
-			contents: `message Foo { option map_entry = false; }`,
+		"failure_explicit_map_entry_option_false": {
+			contents:    `message Foo { option map_entry = false; }`,
+			expectedErr: `test.proto:1:22: message Foo: map_entry option should not be set explicitly; use map type instead`,
 		},
 		"failure_proto2_requires_label": {
 			contents:    `syntax = "proto2"; message Foo { string s = 1; }`,
@@ -272,9 +272,8 @@ func TestBasicValidation(t *testing.T) {
 			contents: `message Foo { reserved 1, 2 to 10, 11 to 20; extensions 21 to 22; }`,
 		},
 		"failure_message_reserved_start_after_end": {
-			contents:               `message Foo { reserved 10 to 1; }`,
-			expectedErr:            `test.proto:1:24: range, 10 to 1, is invalid: start must be <= end`,
-			expectedDiffWithProtoc: true, // bug in protoc: https://github.com/protocolbuffers/protobuf/issues/13442
+			contents:    `message Foo { reserved 10 to 1; }`,
+			expectedErr: `test.proto:1:24: range, 10 to 1, is invalid: start must be <= end`,
 		},
 		"failure_message_extensions_start_after_end": {
 			contents:    `message Foo { extensions 10 to 1; }`,
@@ -692,8 +691,7 @@ func TestBasicValidation(t *testing.T) {
 					   message Foo {
 					     reserved "foo", "_bar123", "A_B_C_1_2_3";
 					   }`,
-			expectedErr:            `test.proto:3:55: must use identifiers, not string literals, to reserved names with editions`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
+			expectedErr: `test.proto:3:55: must use identifiers, not string literals, to reserved names with editions`,
 		},
 		"failure_enum_invalid_reserved_name": {
 			contents: `syntax = "proto3";
@@ -751,8 +749,7 @@ func TestBasicValidation(t *testing.T) {
 					     BAR = 0;
 					     reserved "foo", "_bar123", "A_B_C_1_2_3";
 					   }`,
-			expectedErr:            `test.proto:4:55: must use identifiers, not string literals, to reserved names with editions`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
+			expectedErr: `test.proto:4:55: must use identifiers, not string literals, to reserved names with editions`,
 		},
 		"failure_message_reserved_ident_proto2": {
 			contents: `syntax = "proto2";
@@ -773,7 +770,6 @@ func TestBasicValidation(t *testing.T) {
 					   message Foo {
 					     reserved foo, _bar123, A_B_C_1_2_3;
 					   }`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet include support for identifiers
 		},
 		"failure_enum_reserved_ident_proto2": {
 			contents: `syntax = "proto2";
@@ -797,7 +793,89 @@ func TestBasicValidation(t *testing.T) {
 					     BAR = 0;
 					     reserved foo, _bar123, A_B_C_1_2_3;
 					   }`,
-			expectedDiffWithProtoc: true, // protoc v24.0-rc2 doesn't yet have support for identifiers with editions
+		},
+		"failure_use_of_packed_with_editions": {
+			contents: `edition = "2023";
+					   message Foo {
+					     repeated bool foo = 1 [packed=false];
+					   }`,
+			expectedErr: `test.proto:3:69: field Foo.foo: packed option is not allowed in editions; use option features.repeated_field_encoding instead`,
+		},
+		"failure_use_of_features_without_editions_file": {
+			contents: `syntax = "proto3";
+					   option features.utf8_validation = VERIFY;
+					   message Foo {
+					     string foo = 1;
+					   }`,
+			expectedErr: `test.proto:2:51: file options: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_message": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     option features = {};
+					     string foo = 1;
+					   }`,
+			expectedErr: `test.proto:3:53: message Foo: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_field": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+					   }`,
+			expectedErr: `test.proto:3:62: field Foo.foo: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_oneof": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     oneof x {
+					       option features = {};
+					       string foo = 1;
+					     }
+					   }`,
+			expectedErr: `test.proto:4:55: oneof Foo.x: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_ext_range": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     extensions 1 to 100 [features={}];
+					   }`,
+			expectedErr: `test.proto:3:67: message Foo: option 'features' may only be used with editions but file uses proto2 syntax`,
+		},
+		"failure_use_of_features_without_editions_enum": {
+			contents: `syntax = "proto2";
+					   enum Foo {
+					     option features.enum_type = CLOSED;
+					     VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:3:53: enum Foo: option 'features' may only be used with editions but file uses proto2 syntax`,
+		},
+		"failure_use_of_features_without_editions_enum_val": {
+			contents: `syntax = "proto2";
+					   enum Foo {
+					     VALUE = 0 [features={}];
+					   }`,
+			expectedErr: `test.proto:3:57: enum value VALUE: option 'features' may only be used with editions but file uses proto2 syntax`,
+		},
+		"failure_use_of_features_without_editions_service": {
+			contents: `syntax = "proto3";
+					   message Foo {}
+					   service FooService {
+					     option features = {};
+					     rpc Do(Foo) returns (foo);
+					   }
+					   `,
+			expectedErr: `test.proto:4:53: service FooService: option 'features' may only be used with editions but file uses proto3 syntax`,
+		},
+		"failure_use_of_features_without_editions_method": {
+			contents: `syntax = "proto3";
+					   message Foo {}
+					   service FooService {
+					     rpc Do(Foo) returns (foo) {
+					       option features = {};
+					     }
+					   }
+					   `,
+			expectedErr: `test.proto:5:55: method FooService.Do: option 'features' may only be used with editions but file uses proto3 syntax`,
 		},
 	}
 
