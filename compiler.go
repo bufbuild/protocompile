@@ -141,13 +141,12 @@ func (c *Compiler) Compile(ctx context.Context, files ...string) (linker.Files, 
 	h := reporter.NewHandler(c.Reporter)
 
 	e := executor{
-		c:        c,
-		h:        h,
-		s:        semaphore.NewWeighted(int64(par)),
-		cancel:   cancel,
-		sym:      &linker.Symbols{},
-		resCache: &options.FeaturesResolverCache{},
-		results:  map[string]*result{},
+		c:       c,
+		h:       h,
+		s:       semaphore.NewWeighted(int64(par)),
+		cancel:  cancel,
+		sym:     &linker.Symbols{},
+		results: map[string]*result{},
 	}
 
 	// We lock now and create all tasks under lock to make sure that no
@@ -232,12 +231,11 @@ func (r *result) getBlockedOn() []string {
 }
 
 type executor struct {
-	c        *Compiler
-	h        *reporter.Handler
-	s        *semaphore.Weighted
-	cancel   context.CancelFunc
-	sym      *linker.Symbols
-	resCache *options.FeaturesResolverCache
+	c      *Compiler
+	h      *reporter.Handler
+	s      *semaphore.Weighted
+	cancel context.CancelFunc
+	sym    *linker.Symbols
 
 	descriptorProtoCheck    sync.Once
 	descriptorProtoIsCustom bool
@@ -577,10 +575,9 @@ func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescripto
 		return nil, err
 	}
 
-	interpretOpts := make([]options.InterpreterOption, 1, 2)
-	interpretOpts[0] = options.WithFeaturesResolverCache(t.e.resCache)
+	var interpretOpts []options.InterpreterOption
 	if overrideDescriptorProtoRes != nil {
-		interpretOpts = append(interpretOpts, options.WithOverrideDescriptorProto(overrideDescriptorProtoRes))
+		interpretOpts = []options.InterpreterOption{options.WithOverrideDescriptorProto(overrideDescriptorProtoRes)}
 	}
 
 	optsIndex, err := options.InterpretOptions(file, t.h, interpretOpts...)
