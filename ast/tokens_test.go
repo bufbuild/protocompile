@@ -38,15 +38,13 @@ func TestTokens(t *testing.T) {
 			t.Run(path, func(t *testing.T) {
 				t.Parallel()
 				data, err := os.ReadFile(path)
-				if !assert.Nil(t, err, "%v", err) {
-					return
-				}
+				require.NoError(t, err)
 				testTokensSequence(t, path, data)
 			})
 		}
 		return nil
 	})
-	assert.Nil(t, err, "%v", err)
+	assert.NoError(t, err) //nolint:testifylint // we want to continue even if err!=nil
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
 		testTokensSequence(t, "empty", []byte(`
@@ -58,9 +56,7 @@ func TestTokens(t *testing.T) {
 func testTokensSequence(t *testing.T, path string, data []byte) {
 	filename := filepath.Base(path)
 	root, err := parser.Parse(filename, bytes.NewReader(data), reporter.NewHandler(nil))
-	if !assert.Nil(t, err) {
-		return
-	}
+	require.NoError(t, err)
 	tokens := leavesAsSlice(root)
 	require.NoError(t, err)
 	// Make sure sequence matches the actual leaves in the tree

@@ -94,7 +94,7 @@ func TestCustomOptionsAreKnown(t *testing.T) {
 			}
 			files, err := compiler.Compile(context.Background(), "test.proto")
 			require.NoError(t, err)
-			require.Equal(t, 1, len(files))
+			require.Len(t, files, 1)
 			var knownOptionNames []string
 			fileOptions := files[0].Options().ProtoReflect()
 			assert.Empty(t, fileOptions.GetUnknown())
@@ -228,17 +228,11 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			t.Parallel()
 			h := reporter.NewHandler(nil)
 			ast, err := parser.Parse("test.proto", strings.NewReader(tc.contents), h)
-			if !assert.Nil(t, err, "failed to parse") {
-				return
-			}
+			require.NoError(t, err, "failed to parse")
 			res, err := parser.ResultFromAST(ast, true, h)
-			if !assert.Nil(t, err, "failed to produce descriptor proto") {
-				return
-			}
+			require.NoError(t, err, "failed to produce descriptor proto")
 			_, err = options.InterpretUnlinkedOptions(res)
-			if !assert.Nil(t, err, "failed to interpret options") {
-				return
-			}
+			require.NoError(t, err, "failed to interpret options")
 			actual := map[string]interface{}{}
 			buildUninterpretedMapForFile(res.FileDescriptorProto(), actual)
 			assert.Equal(t, tc.uninterpreted, actual, "resulted in wrong uninterpreted options")

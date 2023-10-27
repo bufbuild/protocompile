@@ -54,6 +54,7 @@ clean: ## Delete intermediate build artifacts
 .PHONY: test
 test: build ## Run unit tests
 	$(GO) test -race -cover ./...
+	cd internal/benchmarks && SKIP_DOWNLOAD_GOOGLEAPIS=true $(GO) test -race -cover ./...
 
 .PHONY: benchmarks
 benchmarks: build ## Run benchmarks

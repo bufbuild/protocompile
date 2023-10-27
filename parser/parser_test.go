@@ -37,16 +37,16 @@ func TestEmptyParse(t *testing.T) {
 	t.Parallel()
 	errHandler := reporter.NewHandler(nil)
 	ast, err := Parse("foo.proto", bytes.NewReader(nil), errHandler)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	result, err := ResultFromAST(ast, true, errHandler)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	fd := result.FileDescriptorProto()
 	assert.Equal(t, "foo.proto", fd.GetName())
-	assert.Equal(t, 0, len(fd.GetDependency()))
-	assert.Equal(t, 0, len(fd.GetMessageType()))
-	assert.Equal(t, 0, len(fd.GetEnumType()))
-	assert.Equal(t, 0, len(fd.GetExtension()))
-	assert.Equal(t, 0, len(fd.GetService()))
+	assert.Empty(t, fd.GetDependency())
+	assert.Empty(t, fd.GetMessageType())
+	assert.Empty(t, fd.GetEnumType())
+	assert.Empty(t, fd.GetExtension())
+	assert.Empty(t, fd.GetService())
 }
 
 func TestJunkParse(t *testing.T) {
@@ -61,7 +61,7 @@ func TestJunkParse(t *testing.T) {
 		protoName := fmt.Sprintf("%s.proto", name)
 		_, err := Parse(protoName, strings.NewReader(input), errHandler)
 		// we expect this to error... but we don't want it to panic
-		assert.NotNil(t, err, "junk input should have returned error")
+		require.Error(t, err, "junk input should have returned error")
 		t.Logf("error from parse: %v", err)
 	}
 }
@@ -75,101 +75,91 @@ func TestSimpleParse(t *testing.T) {
 	// it won't be fully correct until after linking. (So that will be tested
 	// below, where we parse *and* link.)
 	res, err := parseFileForTest("../internal/testdata/desc_test1.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test1.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasExtension(fd, "xtm"))
-		assert.True(t, hasMessage(fd, "TestMessage"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd := res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test1.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasExtension(fd, "xtm"))
+	assert.True(t, hasMessage(fd, "TestMessage"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/desc_test2.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test2.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasExtension(fd, "groupx"))
-		assert.True(t, hasMessage(fd, "GroupX"))
-		assert.True(t, hasMessage(fd, "Frobnitz"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test2.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasExtension(fd, "groupx"))
+	assert.True(t, hasMessage(fd, "GroupX"))
+	assert.True(t, hasMessage(fd, "Frobnitz"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/desc_test_defaults.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test_defaults.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasMessage(fd, "PrimitiveDefaults"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test_defaults.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasMessage(fd, "PrimitiveDefaults"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/desc_test_field_types.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test_field_types.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasEnum(fd, "TestEnum"))
-		assert.True(t, hasMessage(fd, "UnaryFields"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test_field_types.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasEnum(fd, "TestEnum"))
+	assert.True(t, hasMessage(fd, "UnaryFields"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/desc_test_options.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test_options.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasExtension(fd, "mfubar"))
-		assert.True(t, hasEnum(fd, "ReallySimpleEnum"))
-		assert.True(t, hasMessage(fd, "ReallySimpleMessage"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test_options.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasExtension(fd, "mfubar"))
+	assert.True(t, hasEnum(fd, "ReallySimpleEnum"))
+	assert.True(t, hasMessage(fd, "ReallySimpleMessage"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/desc_test_proto3.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test_proto3.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasEnum(fd, "Proto3Enum"))
-		assert.True(t, hasService(fd, "TestService"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test_proto3.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasEnum(fd, "Proto3Enum"))
+	assert.True(t, hasService(fd, "TestService"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/desc_test_wellknowntypes.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/desc_test_wellknowntypes.proto", fd.GetName())
-		assert.Equal(t, "testprotos", fd.GetPackage())
-		assert.True(t, hasMessage(fd, "TestWellKnownTypes"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/desc_test_wellknowntypes.proto", fd.GetName())
+	assert.Equal(t, "testprotos", fd.GetPackage())
+	assert.True(t, hasMessage(fd, "TestWellKnownTypes"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/nopkg/desc_test_nopkg.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg.proto", fd.GetName())
-		assert.Equal(t, "", fd.GetPackage())
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg.proto", fd.GetName())
+	assert.Equal(t, "", fd.GetPackage())
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/nopkg/desc_test_nopkg_new.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg_new.proto", fd.GetName())
-		assert.Equal(t, "", fd.GetPackage())
-		assert.True(t, hasMessage(fd, "TopLevel"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/nopkg/desc_test_nopkg_new.proto", fd.GetName())
+	assert.Equal(t, "", fd.GetPackage())
+	assert.True(t, hasMessage(fd, "TopLevel"))
+	protos[fd.GetName()] = res
 
 	res, err = parseFileForTest("../internal/testdata/pkg/desc_test_pkg.proto")
-	if assert.Nil(t, err, "%v", err) {
-		fd := res.FileDescriptorProto()
-		assert.Equal(t, "../internal/testdata/pkg/desc_test_pkg.proto", fd.GetName())
-		assert.Equal(t, "bufbuild.protocompile.test", fd.GetPackage())
-		assert.True(t, hasEnum(fd, "Foo"))
-		assert.True(t, hasMessage(fd, "Bar"))
-		protos[fd.GetName()] = res
-	}
+	require.NoError(t, err)
+	fd = res.FileDescriptorProto()
+	assert.Equal(t, "../internal/testdata/pkg/desc_test_pkg.proto", fd.GetName())
+	assert.Equal(t, "bufbuild.protocompile.test", fd.GetPackage())
+	assert.True(t, hasEnum(fd, "Foo"))
+	assert.True(t, hasMessage(fd, "Bar"))
+	protos[fd.GetName()] = res
 }
 
 func parseFileForTest(filename string) (Result, error) {
@@ -227,9 +217,7 @@ func hasService(fd *descriptorpb.FileDescriptorProto, name string) bool {
 func TestAggregateValueInUninterpretedOptions(t *testing.T) {
 	t.Parallel()
 	res, err := parseFileForTest("../internal/testdata/desc_test_complex.proto")
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	fd := res.FileDescriptorProto()
 
 	// service TestTestService, method UserAuth; first option
@@ -339,10 +327,8 @@ func TestPathological(t *testing.T) {
 				if canParse {
 					require.NoError(t, err)
 					_, err = ResultFromAST(fileNode, true, handler)
-					require.NotNil(t, err)
-				} else {
-					require.NotNil(t, err)
 				}
+				require.Error(t, err)
 			}
 		})
 	}

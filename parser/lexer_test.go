@@ -431,8 +431,7 @@ func TestLexerErrors(t *testing.T) {
 			var sym protoSymType
 			tok := l.Lex(&sym)
 			if assert.Equal(t, _ERROR, tok) {
-				assert.True(t, sym.err != nil)
-				assert.True(t, strings.Contains(sym.err.Error(), tc.expectedErr), "expected message to contain %q but does not: %q", tc.expectedErr, sym.err.Error())
+				require.ErrorContains(t, sym.err, tc.expectedErr, "expected message to contain %q but does not: %q", tc.expectedErr, sym.err.Error())
 			}
 		})
 	}

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/reporter"
@@ -271,7 +272,7 @@ func TestErrorReporting(t *testing.T) {
 					max = len(errs)
 				}
 			}
-			assert.True(t, max > 2, "case #%d: should not have called reporter so many times (%d), max expected errors only %d", i+1, count, max)
+			assert.Greater(t, max, 2, "case #%d: should not have called reporter so many times (%d), max expected errors only %d", i+1, count, max)
 		} else {
 			// less than threshold means reporter always returned nil,
 			// so parse returns ErrInvalidSource sentinel
@@ -425,7 +426,7 @@ func TestWarningReporting(t *testing.T) {
 				Reporter: reporter.NewReporter(nil, rep),
 			}
 			_, err := compiler.Compile(ctx, "test.proto")
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			var actualNotices []string
 			if len(msgs) > 0 {
