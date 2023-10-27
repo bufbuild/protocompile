@@ -444,8 +444,16 @@ func validateField(res *result, syntax syntaxType, name protoreflect.FullName, f
 					return err
 				}
 			}
-		}
-		if syntax == syntaxProto3 {
+			if index, err := internal.FindOption(res, handler, scope, fld.Options.GetUninterpretedOption(), "packed"); err != nil {
+				return err
+			} else if index >= 0 {
+				optNode := res.OptionNode(fld.Options.GetUninterpretedOption()[index])
+				optNameNodeInfo := res.file.NodeInfo(optNode.GetName())
+				if err := handler.HandleErrorf(optNameNodeInfo.Start(), "%s: packed option is not allowed in aditions; use option features.repeated_field_encoding instead", scope); err != nil {
+					return err
+				}
+			}
+		} else if syntax == syntaxProto3 {
 			if index, err := internal.FindOption(res, handler, scope, fld.Options.GetUninterpretedOption(), "default"); err != nil {
 				return err
 			} else if index >= 0 {
