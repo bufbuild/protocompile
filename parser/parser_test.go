@@ -67,6 +67,7 @@ func TestJunkParse(t *testing.T) {
 	for name, input := range inputs {
 		name, input := name, input
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			errHandler := reporter.NewHandler(reporter.NewReporter(
 				// returning nil means this will keep trying to parse after any error
 				func(err reporter.ErrorWithPos) error { return nil },
