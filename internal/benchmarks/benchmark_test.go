@@ -32,12 +32,14 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -46,6 +48,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/parser/imports"
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
@@ -350,6 +353,93 @@ func benchmarkGoogleapisProtoparse(b *testing.B, factory func() *protoparse.Pars
 			}
 		}
 		writeToNull(b, &fdSet)
+	}
+}
+
+func BenchmarkGoogleapisScanImports(b *testing.B) {
+	par := runtime.GOMAXPROCS(-1)
+	cpus := runtime.NumCPU()
+	if par > cpus {
+		par = cpus
+	}
+	type entry struct {
+		filename string
+		imports  []string
+	}
+	for i := 0; i < b.N; i++ {
+		workCh := make(chan string, par)
+		resultsCh := make(chan entry, par)
+		grp, ctx := errgroup.WithContext(context.Background())
+		// producer
+		grp.Go(func() error {
+			defer close(workCh)
+			for _, name := range googleapisSources {
+				select {
+				case workCh <- filepath.Join(googleapisDir, name):
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+			return nil
+		})
+		var numProcs atomic.Int32
+		numProcs.Store(int32(par))
+		for i := 0; i < par; i++ {
+			// consumers/processors
+			grp.Go(func() error {
+				defer func() {
+					if numProcs.Add(-1) == 0 {
+						// last one to leave closes the channel
+						close(resultsCh)
+					}
+				}()
+				for {
+					var filename string
+					select {
+					case name, ok := <-workCh:
+						if !ok {
+							return nil
+						}
+						filename = name
+					case <-ctx.Done():
+						return ctx.Err()
+					}
+					r, err := os.Open(filename)
+					var imps []string
+					if err != nil {
+						return err
+					}
+					imps, err = imports.ScanForImports(r)
+					_ = r.Close()
+					if err != nil {
+						return err
+					}
+					select {
+					case resultsCh <- entry{filename: filename, imports: imps}:
+					case <-ctx.Done():
+						return ctx.Err()
+					}
+				}
+			})
+		}
+		results := make(map[string][]string, len(googleapisSources))
+		grp.Go(func() error {
+			// accumulator
+			for {
+				select {
+				case entry, ok := <-resultsCh:
+					if !ok {
+						return nil
+					}
+					results[entry.filename] = entry.imports
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+		})
+
+		err := grp.Wait()
+		require.NoError(b, err)
 	}
 }
 
