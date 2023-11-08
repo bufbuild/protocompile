@@ -492,22 +492,12 @@ listLiteral : '[' listElements ']' {
 	}
 
 listElements : listElement {
-		if $1 == nil {
-			$$ = nil
-		} else {
-			$$ = &valueSlices{vals: []ast.ValueNode{$1}}
-		}
+		$$ = &valueSlices{vals: []ast.ValueNode{$1}}
 	}
 	| listElements ',' listElement {
-		if $3 == nil {
-			$$ = $1
-		} else if $1 == nil {
-			$$ = &valueSlices{vals: []ast.ValueNode{$3}}
-		} else {
-			$1.vals = append($1.vals, $3)
-			$1.commas = append($1.commas, $2)
-			$$ = $1
-		}
+		$1.vals = append($1.vals, $3)
+		$1.commas = append($1.commas, $2)
+		$$ = $1
 	}
 
 listElement : scalarValue

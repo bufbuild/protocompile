@@ -1629,24 +1629,14 @@ protodefault:
 	case 86:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			if protoDollar[1].v == nil {
-				protoVAL.sl = nil
-			} else {
-				protoVAL.sl = &valueSlices{vals: []ast.ValueNode{protoDollar[1].v}}
-			}
+			protoVAL.sl = &valueSlices{vals: []ast.ValueNode{protoDollar[1].v}}
 		}
 	case 87:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			if protoDollar[3].v == nil {
-				protoVAL.sl = protoDollar[1].sl
-			} else if protoDollar[1].sl == nil {
-				protoVAL.sl = &valueSlices{vals: []ast.ValueNode{protoDollar[3].v}}
-			} else {
-				protoDollar[1].sl.vals = append(protoDollar[1].sl.vals, protoDollar[3].v)
-				protoDollar[1].sl.commas = append(protoDollar[1].sl.commas, protoDollar[2].b)
-				protoVAL.sl = protoDollar[1].sl
-			}
+			protoDollar[1].sl.vals = append(protoDollar[1].sl.vals, protoDollar[3].v)
+			protoDollar[1].sl.commas = append(protoDollar[1].sl.commas, protoDollar[2].b)
+			protoVAL.sl = protoDollar[1].sl
 		}
 	case 90:
 		protoDollar = protoS[protopt-3 : protopt+1]
