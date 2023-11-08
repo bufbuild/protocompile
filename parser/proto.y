@@ -427,14 +427,14 @@ messageLiteralFieldEntry : messageLiteralField {
 	}
 
 messageLiteralField : messageLiteralFieldName ':' value {
-		if $1 != nil {
+		if $1 != nil && $2 != nil {
 			$$ = ast.NewMessageFieldNode($1, $2, $3)
 		} else {
 			$$ = nil
 		}
 	}
 	| messageLiteralFieldName messageValue {
-		if $1 != nil {
+		if $1 != nil && $2 != nil {
 			$$ = ast.NewMessageFieldNode($1, nil, $2)
 		} else {
 			$$ = nil
@@ -488,7 +488,7 @@ listLiteral : '[' listElements ']' {
 		$$ = ast.NewArrayLiteralNode($1, nil, nil, $2)
 	}
 	| '[' error ']' {
-		$$ = nil
+		$$ = ast.NewArrayLiteralNode($1, nil, nil, $3)
 	}
 
 listElements : listElement {
@@ -514,7 +514,7 @@ listOfMessagesLiteral : '[' messageLiterals ']' {
 		$$ = ast.NewArrayLiteralNode($1, nil, nil, $2)
 	}
 	| '[' error ']' {
-		$$ = nil
+		$$ = ast.NewArrayLiteralNode($1, nil, nil, $3)
 	}
 
 messageLiterals : messageLiteral {
