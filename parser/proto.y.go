@@ -1552,7 +1552,7 @@ protodefault:
 	case 68:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			if protoDollar[1].ref != nil {
+			if protoDollar[1].ref != nil && protoDollar[2].b != nil {
 				protoVAL.msgLitFld = ast.NewMessageFieldNode(protoDollar[1].ref, protoDollar[2].b, protoDollar[3].v)
 			} else {
 				protoVAL.msgLitFld = nil
@@ -1561,7 +1561,7 @@ protodefault:
 	case 69:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			if protoDollar[1].ref != nil {
+			if protoDollar[1].ref != nil && protoDollar[2].v != nil {
 				protoVAL.msgLitFld = ast.NewMessageFieldNode(protoDollar[1].ref, nil, protoDollar[2].v)
 			} else {
 				protoVAL.msgLitFld = nil
@@ -1624,19 +1624,29 @@ protodefault:
 	case 85:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			protoVAL.v = nil
+			protoVAL.v = ast.NewArrayLiteralNode(protoDollar[1].b, nil, nil, protoDollar[3].b)
 		}
 	case 86:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.sl = &valueSlices{vals: []ast.ValueNode{protoDollar[1].v}}
+			if protoDollar[1].v == nil {
+				protoVAL.sl = nil
+			} else {
+				protoVAL.sl = &valueSlices{vals: []ast.ValueNode{protoDollar[1].v}}
+			}
 		}
 	case 87:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			protoDollar[1].sl.vals = append(protoDollar[1].sl.vals, protoDollar[3].v)
-			protoDollar[1].sl.commas = append(protoDollar[1].sl.commas, protoDollar[2].b)
-			protoVAL.sl = protoDollar[1].sl
+			if protoDollar[3].v == nil {
+				protoVAL.sl = protoDollar[1].sl
+			} else if protoDollar[1].sl == nil {
+				protoVAL.sl = &valueSlices{vals: []ast.ValueNode{protoDollar[3].v}}
+			} else {
+				protoDollar[1].sl.vals = append(protoDollar[1].sl.vals, protoDollar[3].v)
+				protoDollar[1].sl.commas = append(protoDollar[1].sl.commas, protoDollar[2].b)
+				protoVAL.sl = protoDollar[1].sl
+			}
 		}
 	case 90:
 		protoDollar = protoS[protopt-3 : protopt+1]
@@ -1655,7 +1665,7 @@ protodefault:
 	case 92:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			protoVAL.v = nil
+			protoVAL.v = ast.NewArrayLiteralNode(protoDollar[1].b, nil, nil, protoDollar[3].b)
 		}
 	case 93:
 		protoDollar = protoS[protopt-1 : protopt+1]
