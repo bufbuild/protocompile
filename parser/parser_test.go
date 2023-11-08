@@ -51,18 +51,33 @@ func TestEmptyParse(t *testing.T) {
 
 func TestJunkParse(t *testing.T) {
 	t.Parallel()
-	errHandler := reporter.NewHandler(nil)
 	// inputs that have been found in the past to cause panics by oss-fuzz
 	inputs := map[string]string{
 		"case-34232": `'';`,
 		"case-34238": `.`,
+		"issue-196-a": `syntax = "proto3";
+		                message TestMessage {
+		                  option (ext) = { bad_array: [1,] }
+		                }`,
+		"issue-196-b": `syntax = "proto3";
+		                message TestMessage {
+		                  option (ext) = { bad_array [ , ] }
+		                }`,
 	}
 	for name, input := range inputs {
-		protoName := fmt.Sprintf("%s.proto", name)
-		_, err := Parse(protoName, strings.NewReader(input), errHandler)
-		// we expect this to error... but we don't want it to panic
-		require.Error(t, err, "junk input should have returned error")
-		t.Logf("error from parse: %v", err)
+		name, input := name, input
+		t.Run(name, func(t *testing.T) {
+			errHandler := reporter.NewHandler(reporter.NewReporter(
+				// returning nil means this will keep trying to parse after any error
+				func(err reporter.ErrorWithPos) error { return nil },
+				nil, // ignore warnings
+			))
+			protoName := fmt.Sprintf("%s.proto", name)
+			_, err := Parse(protoName, strings.NewReader(input), errHandler)
+			// we expect this to error... but we don't want it to panic
+			require.Error(t, err, "junk input should have returned error")
+			t.Logf("error from parse: %v", err)
+		})
 	}
 }
 
