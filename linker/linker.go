@@ -60,6 +60,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	}
 
 	r := &result{
+		FileDescriptor:       noOpFile,
 		Result:               parsed,
 		deps:                 dependencies,
 		descriptors:          map[string]protoreflect.Descriptor{},
