@@ -209,7 +209,7 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.field.proto.GetExtendee()) {
 					file := r.FileNode()
 					node := r.FieldNode(d.field.proto).FieldExtendee()
-					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "extend blocks in proto3 can only be used to define custom options"); err != nil {
+					if err := handler.HandleNodeErrorf(file, node, "extend blocks in proto3 can only be used to define custom options"); err != nil {
 						return err
 					}
 				}

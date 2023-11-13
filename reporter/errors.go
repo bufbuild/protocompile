@@ -44,7 +44,7 @@ func Error(pos ast.SourcePos, err error) ErrorWithPos {
 // Errorf creates a new ErrorWithPos whose underlying error is created using the
 // given message format and arguments (via fmt.Errorf).
 func Errorf(pos ast.SourcePos, format string, args ...interface{}) ErrorWithPos {
-	return errorWithSourcePos{pos: pos, underlying: fmt.Errorf(format, args...)}
+	return Error(pos, fmt.Errorf(format, args...))
 }
 
 type errorWithSourcePos struct {
@@ -66,3 +66,49 @@ func (e errorWithSourcePos) Unwrap() error {
 }
 
 var _ ErrorWithPos = errorWithSourcePos{}
+
+type ErrorWithNode interface {
+	ErrorWithPos
+	GetNode() ast.Node
+	GetFileNode() ast.FileDeclNode
+}
+
+// NodeError creates a new ErrorWithNode from the given error, file, and node.
+func NodeError(file ast.FileDeclNode, node ast.Node, err error) ErrorWithNode {
+	return errorWithNode{file: file, node: node, underlying: err}
+}
+
+// Errorf creates a new ErrorWithNode whose underlying error is created using the
+// given message format and arguments (via fmt.Errorf).
+func NodeErrorf(file ast.FileDeclNode, node ast.Node, format string, args ...interface{}) ErrorWithPos {
+	return NodeError(file, node, fmt.Errorf(format, args...))
+}
+
+type errorWithNode struct {
+	underlying error
+	node       ast.Node
+	file       ast.FileDeclNode
+}
+
+func (en errorWithNode) Error() string {
+	sourcePos := en.GetPosition()
+	return fmt.Sprintf("%s: %v", sourcePos, en.underlying)
+}
+
+func (en errorWithNode) GetPosition() ast.SourcePos {
+	return en.file.NodeInfo(en.node).Start()
+}
+
+func (en errorWithNode) GetNode() ast.Node {
+	return en.node
+}
+
+func (en errorWithNode) GetFileNode() ast.FileDeclNode {
+	return en.file
+}
+
+func (en errorWithNode) Unwrap() error {
+	return en.underlying
+}
+
+var _ ErrorWithNode = errorWithNode{}

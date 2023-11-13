@@ -172,6 +172,10 @@ func (h *Handler) HandleErrorf(pos ast.SourcePos, format string, args ...interfa
 	return h.HandleError(Errorf(pos, format, args...))
 }
 
+func (h *Handler) HandleNodeErrorf(file ast.FileDeclNode, node ast.Node, format string, args ...interface{}) error {
+	return h.HandleError(NodeErrorf(file, node, format, args...))
+}
+
 // HandleWarning handles the given warning. This will delegate to the handler's
 // configured reporter.
 func (h *Handler) HandleWarning(err ErrorWithPos) {
