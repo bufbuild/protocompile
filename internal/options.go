@@ -51,7 +51,7 @@ func findOption(res hasOptionNode, handler *reporter.Handler, scope string, opts
 			fn := res.FileNode()
 			node := optNode.GetName()
 			nodeInfo := fn.NodeInfo(node)
-			return -1, handler.HandleErrorf(nodeInfo.Start(), "%s: option %s cannot be defined more than once", scope, name)
+			return -1, handler.HandleErrorf(nodeInfo, "%s: option %s cannot be defined more than once", scope, name)
 		}
 		found = i
 	}
