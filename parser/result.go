@@ -122,7 +122,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			syntax = syntaxProto2
 		default:
 			nodeInfo := file.NodeInfo(file.Syntax.Syntax)
-			if handler.HandleErrorf(nodeInfo.Start(), `syntax value must be "proto2" or "proto3"`) != nil {
+			if handler.HandleErrorf(nodeInfo, `syntax value must be "proto2" or "proto3"`) != nil {
 				return
 			}
 		}
@@ -134,7 +134,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 	case file.Edition != nil:
 		if !internal.AllowEditions {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
-			if handler.HandleErrorf(nodeInfo.Start(), `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
+			if handler.HandleErrorf(nodeInfo, `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
 				return
 			}
 		}
@@ -150,14 +150,14 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
 			}
 			sort.Strings(editionStrs)
-			if handler.HandleErrorf(nodeInfo.Start(), `edition value %q not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
+			if handler.HandleErrorf(nodeInfo, `edition value %q not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
 				return
 			}
 		}
 		fd.Edition = editionEnum.Enum()
 	default:
 		nodeInfo := file.NodeInfo(file)
-		handler.HandleWarningWithPos(nodeInfo.Start(), ErrNoSyntax)
+		handler.HandleWarningWithPos(nodeInfo, ErrNoSyntax)
 	}
 
 	for _, decl := range file.Decls {
@@ -189,20 +189,20 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		case *ast.PackageNode:
 			if fd.Package != nil {
 				nodeInfo := file.NodeInfo(decl)
-				if handler.HandleErrorf(nodeInfo.Start(), "files should have only one package declaration") != nil {
+				if handler.HandleErrorf(nodeInfo, "files should have only one package declaration") != nil {
 					return
 				}
 			}
 			pkgName := string(decl.Name.AsIdentifier())
 			if len(pkgName) >= 512 {
 				nodeInfo := file.NodeInfo(decl.Name)
-				if handler.HandleErrorf(nodeInfo.Start(), "package name (with whitespace removed) must be less than 512 characters long") != nil {
+				if handler.HandleErrorf(nodeInfo, "package name (with whitespace removed) must be less than 512 characters long") != nil {
 					return
 				}
 			}
 			if strings.Count(pkgName, ".") > 100 {
 				nodeInfo := file.NodeInfo(decl.Name)
-				if handler.HandleErrorf(nodeInfo.Start(), "package name may not contain more than 100 periods") != nil {
+				if handler.HandleErrorf(nodeInfo, "package name may not contain more than 100 periods") != nil {
 					return
 				}
 			}
@@ -313,7 +313,7 @@ func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldD
 	}
 	if count == 0 {
 		nodeInfo := r.file.NodeInfo(ext)
-		_ = handler.HandleErrorf(nodeInfo.Start(), "extend sections must define at least one extension")
+		_ = handler.HandleErrorf(nodeInfo, "extend sections must define at least one extension")
 	}
 }
 
@@ -391,7 +391,7 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, max
 	}
 	if !unicode.IsUpper(rune(group.Name.Val[0])) {
 		nameNodeInfo := r.file.NodeInfo(group.Name)
-		_ = handler.HandleErrorf(nameNodeInfo.Start(), "group %s should have a name that starts with a capital letter", group.Name.Val)
+		_ = handler.HandleErrorf(nameNodeInfo, "group %s should have a name that starts with a capital letter", group.Name.Val)
 	}
 	fieldName := strings.ToLower(group.Name.Val)
 	fd := &descriptorpb.FieldDescriptorProto{
@@ -466,7 +466,7 @@ func (r *result) asEnumValue(ev *ast.EnumValueNode, handler *reporter.Handler) *
 	num, ok := ast.AsInt32(ev.Number, math.MinInt32, math.MaxInt32)
 	if !ok {
 		numberNodeInfo := r.file.NodeInfo(ev.Number)
-		_ = handler.HandleErrorf(numberNodeInfo.Start(), "value %d is out of range: should be between %d and %d", ev.Number.Value(), math.MinInt32, math.MaxInt32)
+		_ = handler.HandleErrorf(numberNodeInfo, "value %d is out of range: should be between %d and %d", ev.Number.Value(), math.MinInt32, math.MaxInt32)
 	}
 	evd := &descriptorpb.EnumValueDescriptorProto{Name: proto.String(ev.Name.Val), Number: proto.Int32(num)}
 	r.putEnumValueNode(evd, ev)
@@ -550,16 +550,16 @@ func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, synta
 	if syntax == syntaxEditions {
 		if len(node.Names) > 0 {
 			nameNodeInfo := r.file.NodeInfo(node.Names[0])
-			_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use identifiers, not string literals, to reserved names with editions`)
+			_ = handler.HandleErrorf(nameNodeInfo, `must use identifiers, not string literals, to reserved names with editions`)
 		}
 		for _, n := range node.Identifiers {
 			name := string(n.AsIdentifier())
-			nameNodePos := r.file.NodeInfo(n).Start()
+			nameNodeInfo := r.file.NodeInfo(n)
 			if existing, ok := alreadyReserved[name]; ok {
-				_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+				_ = handler.HandleErrorf(nameNodeInfo, "name %q is already reserved at %s", name, existing)
 				continue
 			}
-			alreadyReserved[name] = nameNodePos
+			alreadyReserved[name] = nameNodeInfo.Start()
 			*names = append(*names, name)
 		}
 		return
@@ -567,16 +567,16 @@ func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, synta
 
 	if len(node.Identifiers) > 0 {
 		nameNodeInfo := r.file.NodeInfo(node.Identifiers[0])
-		_ = handler.HandleErrorf(nameNodeInfo.Start(), `must use string literals, not identifiers, to reserved names with proto2 and proto3`)
+		_ = handler.HandleErrorf(nameNodeInfo, `must use string literals, not identifiers, to reserved names with proto2 and proto3`)
 	}
 	for _, n := range node.Names {
 		name := n.AsString()
-		nameNodePos := r.file.NodeInfo(n).Start()
+		nameNodeInfo := r.file.NodeInfo(n)
 		if existing, ok := alreadyReserved[name]; ok {
-			_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+			_ = handler.HandleErrorf(nameNodeInfo, "name %q is already reserved at %s", name, existing)
 			continue
 		}
-		alreadyReserved[name] = nameNodePos
+		alreadyReserved[name] = nameNodeInfo.Start()
 		*names = append(*names, name)
 	}
 }
@@ -590,7 +590,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 		// pinpoint the group keyword if the source is a group
 		n = grp.Keyword
 	}
-	_ = handler.HandleErrorf(r.file.NodeInfo(n).Start(), "message nesting depth must be less than 32")
+	_ = handler.HandleErrorf(r.file.NodeInfo(n), "message nesting depth must be less than 32")
 	return false
 }
 
@@ -615,7 +615,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		if syntax == syntaxProto3 {
 			node := r.OptionNode(messageSetOpt)
 			nodeInfo := r.file.NodeInfo(node)
-			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format are not allowed with proto3 syntax")
+			_ = handler.HandleErrorf(nodeInfo, "messages with message-set wire format are not allowed with proto3 syntax")
 		}
 		maxTag = internal.MaxTag // higher limit for messageset wire format
 	}
@@ -670,7 +670,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 			}
 			if ooFields == 0 {
 				declNodeInfo := r.file.NodeInfo(decl)
-				_ = handler.HandleErrorf(declNodeInfo.Start(), "oneof must contain at least one field")
+				_ = handler.HandleErrorf(declNodeInfo, "oneof must contain at least one field")
 			}
 		case *ast.MessageNode:
 			msgd.NestedType = append(msgd.NestedType, r.asMessageDescriptor(decl, syntax, handler, depth+1))
@@ -686,12 +686,12 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 		if len(msgd.Field) > 0 {
 			node := r.FieldNode(msgd.Field[0])
 			nodeInfo := r.file.NodeInfo(node)
-			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format cannot contain non-extension fields")
+			_ = handler.HandleErrorf(nodeInfo, "messages with message-set wire format cannot contain non-extension fields")
 		}
 		if len(msgd.ExtensionRange) == 0 {
 			node := r.OptionNode(messageSetOpt)
 			nodeInfo := r.file.NodeInfo(node)
-			_ = handler.HandleErrorf(nodeInfo.Start(), "messages with message-set wire format must contain at least one extension range")
+			_ = handler.HandleErrorf(nodeInfo, "messages with message-set wire format must contain at least one extension range")
 		}
 	}
 
@@ -722,7 +722,7 @@ func (r *result) isMessageSetWireFormat(scope string, md *descriptorpb.Descripto
 	default:
 		optNode := r.OptionNode(opt)
 		optNodeInfo := r.file.NodeInfo(optNode.GetValue())
-		return nil, handler.HandleErrorf(optNodeInfo.Start(), "%s: expecting bool value for message_set_wire_format option", scope)
+		return nil, handler.HandleErrorf(optNodeInfo, "%s: expecting bool value for message_set_wire_format option", scope)
 	}
 }
 
@@ -742,7 +742,7 @@ func (r *result) getRangeBounds(rng *ast.RangeNode, minVal, maxVal int32, handle
 	if !ok {
 		checkOrder = false
 		startValNodeInfo := r.file.NodeInfo(rng.StartVal)
-		_ = handler.HandleErrorf(startValNodeInfo.Start(), "range start %d is out of range: should be between %d and %d", rng.StartValue(), minVal, maxVal)
+		_ = handler.HandleErrorf(startValNodeInfo, "range start %d is out of range: should be between %d and %d", rng.StartValue(), minVal, maxVal)
 	}
 
 	end, ok := rng.EndValueAsInt32(minVal, maxVal)
@@ -750,13 +750,13 @@ func (r *result) getRangeBounds(rng *ast.RangeNode, minVal, maxVal int32, handle
 		checkOrder = false
 		if rng.EndVal != nil {
 			endValNodeInfo := r.file.NodeInfo(rng.EndVal)
-			_ = handler.HandleErrorf(endValNodeInfo.Start(), "range end %d is out of range: should be between %d and %d", rng.EndValue(), minVal, maxVal)
+			_ = handler.HandleErrorf(endValNodeInfo, "range end %d is out of range: should be between %d and %d", rng.EndValue(), minVal, maxVal)
 		}
 	}
 
 	if checkOrder && start > end {
 		rangeStartNodeInfo := r.file.NodeInfo(rng.RangeStart())
-		_ = handler.HandleErrorf(rangeStartNodeInfo.Start(), "range, %d to %d, is invalid: start must be <= end", start, end)
+		_ = handler.HandleErrorf(rangeStartNodeInfo, "range, %d to %d, is invalid: start must be <= end", start, end)
 	}
 
 	return start, end
@@ -782,11 +782,11 @@ func (r *result) asServiceDescriptor(svc *ast.ServiceNode) *descriptorpb.Service
 func (r *result) checkTag(n ast.Node, v uint64, maxTag int32) error {
 	switch {
 	case v < 1:
-		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d must be greater than zero", v)
+		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d must be greater than zero", v)
 	case v > uint64(maxTag):
-		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
+		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
 	case v >= internal.SpecialReservedStart && v <= internal.SpecialReservedEnd:
-		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
+		return reporter.Errorf(r.file.NodeInfo(n), "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
 	default:
 		return nil
 	}

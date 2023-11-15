@@ -30,26 +30,29 @@ var ErrInvalidSource = errors.New("parse failed: invalid proto source")
 // about the location in the file that caused the error.
 type ErrorWithPos interface {
 	error
-	// GetPosition returns the source position that caused the underlying error.
+	// GetPosition returns the start source position that caused the underlying error.
 	GetPosition() ast.SourcePos
+	// GetEndPosition returns the end source position that caused the underlying error.
+	GetEndPosition() ast.SourcePos
 	// Unwrap returns the underlying error.
 	Unwrap() error
 }
 
 // Error creates a new ErrorWithPos from the given error and source position.
-func Error(pos ast.SourcePos, err error) ErrorWithPos {
-	return errorWithSourcePos{pos: pos, underlying: err}
+func Error(span ast.SourceSpan, err error) ErrorWithPos {
+	return errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: err}
 }
 
 // Errorf creates a new ErrorWithPos whose underlying error is created using the
 // given message format and arguments (via fmt.Errorf).
-func Errorf(pos ast.SourcePos, format string, args ...interface{}) ErrorWithPos {
-	return errorWithSourcePos{pos: pos, underlying: fmt.Errorf(format, args...)}
+func Errorf(span ast.SourceSpan, format string, args ...interface{}) ErrorWithPos {
+	return errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: fmt.Errorf(format, args...)}
 }
 
 type errorWithSourcePos struct {
 	underlying error
-	pos        ast.SourcePos
+	startPos   ast.SourcePos
+	endPos     ast.SourcePos
 }
 
 func (e errorWithSourcePos) Error() string {
@@ -58,7 +61,11 @@ func (e errorWithSourcePos) Error() string {
 }
 
 func (e errorWithSourcePos) GetPosition() ast.SourcePos {
-	return e.pos
+	return e.startPos
+}
+
+func (e errorWithSourcePos) GetEndPosition() ast.SourcePos {
+	return e.endPos
 }
 
 func (e errorWithSourcePos) Unwrap() error {

@@ -399,8 +399,7 @@ type Item int
 // ItemInfo provides details about an item's location in the source file and
 // its contents.
 type ItemInfo interface {
-	Start() SourcePos
-	End() SourcePos
+	SourceSpan
 	LeadingWhitespace() string
 	RawText() string
 }
@@ -596,6 +595,46 @@ func (pos SourcePos) String() string {
 		return pos.Filename
 	}
 	return fmt.Sprintf("%s:%d:%d", pos.Filename, pos.Line, pos.Col)
+}
+
+func (pos SourcePos) AsSpan() SourceSpan {
+	return emptySpan{Pos: pos}
+}
+
+type emptySpan struct {
+	Pos SourcePos
+}
+
+func (e emptySpan) Start() SourcePos {
+	return e.Pos
+}
+
+func (e emptySpan) End() SourcePos {
+	return e.Pos
+}
+
+type posSpan struct {
+	StartPos SourcePos
+	EndPos   SourcePos
+}
+
+func (p posSpan) Start() SourcePos {
+	return p.StartPos
+}
+
+func (p posSpan) End() SourcePos {
+	return p.EndPos
+}
+
+func NewPosSpan(start SourcePos, end SourcePos) SourceSpan {
+	return posSpan{StartPos: start, EndPos: end}
+}
+
+var _ SourceSpan = emptySpan{}
+
+type SourceSpan interface {
+	Start() SourcePos
+	End() SourcePos
 }
 
 // Comments represents a range of sequential comments in a source file
