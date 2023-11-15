@@ -1287,8 +1287,8 @@ protodefault:
 	case 19:
 		protoDollar = protoS[protopt-0 : protopt+1]
 		{
-			lex := protolex.(*protoLex)
-			lex.Error("expected ';'")
+			// Continue parsing, but report an error.
+			protolex.(*protoLex).Error("expected ';'")
 			protoVAL.b = nil
 		}
 	case 20:
