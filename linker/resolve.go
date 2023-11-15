@@ -499,7 +499,7 @@ opts:
 				node := r.OptionNamePartNode(nm)
 				fqn, err := r.resolveExtensionName(nm.GetNamePart(), scopes)
 				if err != nil {
-					if err := handler.HandleErrorf(file.NodeInfo(node).Start(), "%v%v", mc, err); err != nil {
+					if err := handler.HandleNodeErrorf(file, node, "%v%v", mc, err); err != nil {
 						return err
 					}
 					continue opts

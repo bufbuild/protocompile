@@ -461,12 +461,12 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 
 func (interp *interpreter) defaultValue(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, val ast.ValueNode) (interface{}, error) {
 	if _, ok := val.(*ast.MessageLiteralNode); ok {
-		return -1, reporter.Errorf(interp.nodeInfo(val).Start(), "%vdefault value cannot be a message", mc)
+		return -1, reporter.NodeErrorf(interp.file.FileNode(), val, "%vdefault value cannot be a message", mc)
 	}
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
 		ed := resolveDescriptor[protoreflect.EnumDescriptor](interp.resolver, fld.GetTypeName())
 		if ed == nil {
-			return -1, reporter.Errorf(interp.nodeInfo(val).Start(), "%vunable to resolve enum type %q for field %q", mc, fld.GetTypeName(), fld.GetName())
+			return -1, reporter.NodeErrorf(interp.file.FileNode(), val, "%vunable to resolve enum type %q for field %q", mc, fld.GetTypeName(), fld.GetName())
 		}
 		_, name, err := interp.enumFieldValue(mc, ed, val, false)
 		if err != nil {
@@ -479,12 +479,12 @@ func (interp *interpreter) defaultValue(mc *internal.MessageContext, fld *descri
 
 func (interp *interpreter) defaultValueFromProto(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, opt *descriptorpb.UninterpretedOption, node ast.Node) (interface{}, error) {
 	if opt.AggregateValue != nil {
-		return -1, reporter.Errorf(interp.nodeInfo(node).Start(), "%vdefault value cannot be a message", mc)
+		return -1, reporter.NodeErrorf(interp.file.FileNode(), node, "%vdefault value cannot be a message", mc)
 	}
 	if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_ENUM {
 		ed := resolveDescriptor[protoreflect.EnumDescriptor](interp.resolver, fld.GetTypeName())
 		if ed == nil {
-			return -1, reporter.Errorf(interp.nodeInfo(node).Start(), "%vunable to resolve enum type %q for field %q", mc, fld.GetTypeName(), fld.GetName())
+			return -1, reporter.NodeErrorf(interp.file.FileNode(), node, "%vunable to resolve enum type %q for field %q", mc, fld.GetTypeName(), fld.GetName())
 		}
 		_, name, err := interp.enumFieldValueFromProto(mc, ed, opt, node)
 		if err != nil {
@@ -865,7 +865,7 @@ func (interp *interpreter) interpretOptions(
 		dm := dynamicpb.NewMessage(md)
 		if err := cloneInto(dm, opts, nil); err != nil {
 			node := interp.file.Node(element)
-			return nil, interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node).Start(), err))
+			return nil, interp.reporter.HandleError(reporter.NodeError(interp.file.FileNode(), node, err))
 		}
 		msg = dm
 	} else {
@@ -944,7 +944,7 @@ func (interp *interpreter) interpretOptions(
 
 	if err := validateRecursive(msg, ""); err != nil {
 		node := interp.file.Node(element)
-		if err := interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(), "error in %s options: %v", descriptorType(element), err); err != nil {
+		if err := interp.reporter.HandleNodeErrorf(interp.file.FileNode(), node, "error in %s options: %v", descriptorType(element), err); err != nil {
 			return nil, err
 		}
 	}
@@ -952,7 +952,7 @@ func (interp *interpreter) interpretOptions(
 	// now try to convert into the passed in message and fail if not successful
 	if err := cloneInto(opts, msg.Interface(), interp.resolver); err != nil {
 		node := interp.file.Node(element)
-		return nil, interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node).Start(), err))
+		return nil, interp.reporter.HandleError(reporter.NodeError(interp.file.FileNode(), node, err))
 	}
 
 	if interp.container != nil {
@@ -1252,21 +1252,21 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 		var err error
 		fld, err = interp.resolveExtensionType(extName)
 		if errors.Is(err, protoregistry.NotFound) {
-			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
+			return nil, interp.reporter.HandleNodeErrorf(interp.file.FileNode(), node,
 				"%vunrecognized extension %s of %s",
 				mc, extName, msg.Descriptor().FullName())
 		} else if err != nil {
-			return nil, interp.reporter.HandleErrorWithPos(interp.nodeInfo(node).Start(), err)
+			return nil, interp.reporter.HandleErrorWithNode(interp.file.FileNode(), node, err)
 		}
 		if fld.ContainingMessage().FullName() != msg.Descriptor().FullName() {
-			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
+			return nil, interp.reporter.HandleNodeErrorf(interp.file.FileNode(), node,
 				"%vextension %s should extend %s but instead extends %s",
 				mc, extName, msg.Descriptor().FullName(), fld.ContainingMessage().FullName())
 		}
 	} else {
 		fld = msg.Descriptor().Fields().ByName(protoreflect.Name(nm.GetNamePart()))
 		if fld == nil {
-			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
+			return nil, interp.reporter.HandleNodeErrorf(interp.file.FileNode(), node,
 				"%vfield %s of %s does not exist",
 				mc, nm.GetNamePart(), msg.Descriptor().FullName())
 		}
@@ -1277,12 +1277,12 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 		nextnode := interp.file.OptionNamePartNode(nextnm)
 		k := fld.Kind()
 		if k != protoreflect.MessageKind && k != protoreflect.GroupKind {
-			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(nextnode).Start(),
+			return nil, interp.reporter.HandleNodeErrorf(interp.file.FileNode(), nextnode,
 				"%vcannot set field %s because %s is not a message",
 				mc, nextnm.GetNamePart(), nm.GetNamePart())
 		}
 		if fld.Cardinality() == protoreflect.Repeated {
-			return nil, interp.reporter.HandleErrorf(interp.nodeInfo(nextnode).Start(),
+			return nil, interp.reporter.HandleNodeErrorf(interp.file.FileNode(), nextnode,
 				"%vcannot set field %s because %s is repeated (must use an aggregate)",
 				mc, nextnm.GetNamePart(), nm.GetNamePart())
 		}
@@ -1294,7 +1294,7 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 			if ood := fld.ContainingOneof(); ood != nil {
 				existingFld := msg.WhichOneof(ood)
 				if existingFld != nil && existingFld.Number() != fld.Number() {
-					return nil, interp.reporter.HandleErrorf(interp.nodeInfo(node).Start(),
+					return nil, interp.reporter.HandleNodeErrorf(interp.file.FileNode(), node,
 						"%voneof %q already has field %q set",
 						mc, ood.Name(), fieldName(existingFld))
 				}
@@ -1347,7 +1347,7 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 	if sl, ok := v.([]ast.ValueNode); ok {
 		// handle slices a little differently than the others
 		if fld.Cardinality() != protoreflect.Repeated {
-			return interpretedFieldValue{}, 0, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue is an array but field is not repeated", mc)
+			return interpretedFieldValue{}, 0, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue is an array but field is not repeated", mc)
 		}
 		origPath := mc.OptAggPath
 		defer func() {
@@ -1395,7 +1395,7 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 	if ood := fld.ContainingOneof(); ood != nil {
 		existingFld := msg.WhichOneof(ood)
 		if existingFld != nil && existingFld.Number() != fld.Number() {
-			return interpretedFieldValue{}, 0, reporter.Errorf(interp.nodeInfo(name).Start(), "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
+			return interpretedFieldValue{}, 0, reporter.NodeErrorf(interp.file.FileNode(), name, "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
 		}
 	}
 
@@ -1411,7 +1411,7 @@ func (interp *interpreter) setOptionField(mc *internal.MessageContext, msg proto
 		lv.Append(value.val)
 	default:
 		if msg.Has(fld) {
-			return interpretedFieldValue{}, 0, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
+			return interpretedFieldValue{}, 0, reporter.NodeErrorf(interp.file.FileNode(), name, "%vnon-repeated option field %s already set", mc, fieldName(fld))
 		}
 		msg.Set(fld, value.val)
 	}
@@ -1435,7 +1435,7 @@ func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, 
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		if opt.AggregateValue == nil {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting message, got %s", mc, optionValueKind(opt))
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting message, got %s", mc, optionValueKind(opt))
 		}
 		// We must parse the text format from the aggregate value string
 		fmd := fld.Message()
@@ -1445,13 +1445,13 @@ func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, 
 			AllowPartial: true,
 		}.Unmarshal([]byte(opt.GetAggregateValue()), tmpMsg)
 		if err != nil {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(node).Start(), "%vfailed to parse message literal %w", mc, err)
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), node, "%vfailed to parse message literal %w", mc, err)
 		}
 		msgData, err := proto.MarshalOptions{
 			AllowPartial: true,
 		}.Marshal(tmpMsg)
 		if err != nil {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(node).Start(), "%vfailed to serialize data from message literal %w", mc, err)
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), node, "%vfailed to serialize data from message literal %w", mc, err)
 		}
 		var data []byte
 		if k == protoreflect.GroupKind {
@@ -1478,14 +1478,14 @@ func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, 
 	if ood := fld.ContainingOneof(); ood != nil {
 		existingFld := msg.WhichOneof(ood)
 		if existingFld != nil && existingFld.Number() != fld.Number() {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), name, "%voneof %q already has field %q set", mc, ood.Name(), fieldName(existingFld))
 		}
 	}
 
 	switch {
 	case value.preserialized != nil:
 		if !fld.IsList() && !fld.IsMap() && msg.Has(fld) {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), name, "%vnon-repeated option field %s already set", mc, fieldName(fld))
 		}
 		// We have to merge the bytes for this field into the message.
 		// TODO: if a map field, error if key for this entry already set?
@@ -1495,13 +1495,13 @@ func (interp *interpreter) setOptionFieldFromProto(mc *internal.MessageContext, 
 			Merge:        true,
 		}.Unmarshal(value.preserialized, msg.Interface())
 		if err != nil {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%v failed to set value for field %v: %w", mc, fieldName(fld), err)
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), name, "%v failed to set value for field %v: %w", mc, fieldName(fld), err)
 		}
 	case fld.IsList():
 		msg.Mutable(fld).List().Append(value.val)
 	default:
 		if msg.Has(fld) {
-			return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(name).Start(), "%vnon-repeated option field %s already set", mc, fieldName(fld))
+			return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), name, "%vnon-repeated option field %s already set", mc, fieldName(fld))
 		}
 		msg.Set(fld, value.val)
 	}
@@ -1757,7 +1757,7 @@ func (interp *interpreter) fieldValue(mc *internal.MessageContext, msg protorefl
 			}
 			return interp.messageLiteralValue(mc, aggs, childMsg)
 		}
-		return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting message, got %s", mc, valueKind(v))
+		return interpretedFieldValue{}, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting message, got %s", mc, valueKind(v))
 
 	default:
 		v, err := interp.scalarFieldValue(mc, descriptorpb.FieldDescriptorProto_Type(k), val, insideMsgLiteral)
@@ -1778,34 +1778,34 @@ func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protor
 		name := protoreflect.Name(v)
 		ev := ed.Values().ByName(name)
 		if ev == nil {
-			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%venum %s has no value named %s", mc, ed.FullName(), v)
+			return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%venum %s has no value named %s", mc, ed.FullName(), v)
 		}
 		return ev.Number(), name, nil
 	case int64:
 		if !allowNumber {
-			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum name, got %s", mc, valueKind(v))
+			return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting enum name, got %s", mc, valueKind(v))
 		}
 		if v > math.MaxInt32 || v < math.MinInt32 {
-			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for an enum", mc, v)
+			return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for an enum", mc, v)
 		}
 		num = protoreflect.EnumNumber(v)
 	case uint64:
 		if !allowNumber {
-			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum name, got %s", mc, valueKind(v))
+			return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting enum name, got %s", mc, valueKind(v))
 		}
 		if v > math.MaxInt32 {
-			return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for an enum", mc, v)
+			return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for an enum", mc, v)
 		}
 		num = protoreflect.EnumNumber(v)
 	default:
-		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting enum, got %s", mc, valueKind(v))
+		return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting enum, got %s", mc, valueKind(v))
 	}
 	ev := ed.Values().ByNumber(num)
 	if ev != nil {
 		return num, ev.Name(), nil
 	}
 	if ed.Syntax() != protoreflect.Proto3 {
-		return 0, "", reporter.Errorf(interp.nodeInfo(val).Start(), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
+		return 0, "", reporter.NodeErrorf(interp.file.FileNode(), val, "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
 	}
 	// unknown value, but enum is open, so we allow it and return blank name
 	return num, "", nil
@@ -1822,11 +1822,11 @@ func (interp *interpreter) enumFieldValueFromProto(mc *internal.MessageContext, 
 		name := protoreflect.Name(opt.GetIdentifierValue())
 		ev := ed.Values().ByName(name)
 		if ev == nil {
-			return 0, "", reporter.Errorf(interp.nodeInfo(node).Start(), "%venum %s has no value named %s", mc, ed.FullName(), name)
+			return 0, "", reporter.NodeErrorf(interp.file.FileNode(), node, "%venum %s has no value named %s", mc, ed.FullName(), name)
 		}
 		return ev.Number(), name, nil
 	default:
-		return 0, "", reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting enum, got %s", mc, optionValueKind(opt))
+		return 0, "", reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting enum, got %s", mc, optionValueKind(opt))
 	}
 }
 
@@ -1859,67 +1859,67 @@ func (interp *interpreter) scalarFieldValue(mc *internal.MessageContext, fldType
 				}
 			}
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting bool, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting bool, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		if str, ok := v.(string); ok {
 			return []byte(str), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting bytes, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting bytes, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		if str, ok := v.(string); ok {
 			return str, nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting string, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting string, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_INT32, descriptorpb.FieldDescriptorProto_TYPE_SINT32, descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
 		if i, ok := v.(int64); ok {
 			if i > math.MaxInt32 || i < math.MinInt32 {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for int32", mc, i)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for int32", mc, i)
 			}
 			return int32(i), nil
 		}
 		if ui, ok := v.(uint64); ok {
 			if ui > math.MaxInt32 {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for int32", mc, ui)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for int32", mc, ui)
 			}
 			return int32(ui), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting int32, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting int32, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_UINT32, descriptorpb.FieldDescriptorProto_TYPE_FIXED32:
 		if i, ok := v.(int64); ok {
 			if i > math.MaxUint32 || i < 0 {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for uint32", mc, i)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for uint32", mc, i)
 			}
 			return uint32(i), nil
 		}
 		if ui, ok := v.(uint64); ok {
 			if ui > math.MaxUint32 {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for uint32", mc, ui)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for uint32", mc, ui)
 			}
 			return uint32(ui), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting uint32, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting uint32, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_INT64, descriptorpb.FieldDescriptorProto_TYPE_SINT64, descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
 		if i, ok := v.(int64); ok {
 			return i, nil
 		}
 		if ui, ok := v.(uint64); ok {
 			if ui > math.MaxInt64 {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for int64", mc, ui)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for int64", mc, ui)
 			}
 			return int64(ui), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting int64, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting int64, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_UINT64, descriptorpb.FieldDescriptorProto_TYPE_FIXED64:
 		if i, ok := v.(int64); ok {
 			if i < 0 {
-				return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vvalue %d is out of range for uint64", mc, i)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vvalue %d is out of range for uint64", mc, i)
 			}
 			return uint64(i), nil
 		}
 		if ui, ok := v.(uint64); ok {
 			return ui, nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting uint64, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting uint64, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 		if id, ok := v.(ast.Identifier); ok {
 			switch id {
@@ -1938,7 +1938,7 @@ func (interp *interpreter) scalarFieldValue(mc *internal.MessageContext, fldType
 		if u, ok := v.(uint64); ok {
 			return float64(u), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting double, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting double, got %s", mc, valueKind(v))
 	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT:
 		if id, ok := v.(ast.Identifier); ok {
 			switch id {
@@ -1957,9 +1957,9 @@ func (interp *interpreter) scalarFieldValue(mc *internal.MessageContext, fldType
 		if u, ok := v.(uint64); ok {
 			return float32(u), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vexpecting float, got %s", mc, valueKind(v))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vexpecting float, got %s", mc, valueKind(v))
 	default:
-		return nil, reporter.Errorf(interp.nodeInfo(val).Start(), "%vunrecognized field type: %s", mc, fldType)
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), val, "%vunrecognized field type: %s", mc, fldType)
 	}
 }
 
@@ -1976,49 +1976,49 @@ func (interp *interpreter) scalarFieldValueFromProto(mc *internal.MessageContext
 				return false, nil
 			}
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting bool, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting bool, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_BYTES:
 		if opt.StringValue != nil {
 			return opt.GetStringValue(), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting bytes, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting bytes, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_STRING:
 		if opt.StringValue != nil {
 			return string(opt.GetStringValue()), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting string, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting string, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_INT32, descriptorpb.FieldDescriptorProto_TYPE_SINT32, descriptorpb.FieldDescriptorProto_TYPE_SFIXED32:
 		if opt.NegativeIntValue != nil {
 			i := opt.GetNegativeIntValue()
 			if i > math.MaxInt32 || i < math.MinInt32 {
-				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for int32", mc, i)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vvalue %d is out of range for int32", mc, i)
 			}
 			return int32(i), nil
 		}
 		if opt.PositiveIntValue != nil {
 			ui := opt.GetPositiveIntValue()
 			if ui > math.MaxInt32 {
-				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for int32", mc, ui)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vvalue %d is out of range for int32", mc, ui)
 			}
 			return int32(ui), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting int32, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting int32, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_UINT32, descriptorpb.FieldDescriptorProto_TYPE_FIXED32:
 		if opt.NegativeIntValue != nil {
 			i := opt.GetNegativeIntValue()
 			if i > math.MaxUint32 || i < 0 {
-				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for uint32", mc, i)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vvalue %d is out of range for uint32", mc, i)
 			}
 			return uint32(i), nil
 		}
 		if opt.PositiveIntValue != nil {
 			ui := opt.GetPositiveIntValue()
 			if ui > math.MaxUint32 {
-				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for uint32", mc, ui)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vvalue %d is out of range for uint32", mc, ui)
 			}
 			return uint32(ui), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting uint32, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting uint32, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_INT64, descriptorpb.FieldDescriptorProto_TYPE_SINT64, descriptorpb.FieldDescriptorProto_TYPE_SFIXED64:
 		if opt.NegativeIntValue != nil {
 			return opt.GetNegativeIntValue(), nil
@@ -2026,16 +2026,16 @@ func (interp *interpreter) scalarFieldValueFromProto(mc *internal.MessageContext
 		if opt.PositiveIntValue != nil {
 			ui := opt.GetPositiveIntValue()
 			if ui > math.MaxInt64 {
-				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for int64", mc, ui)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vvalue %d is out of range for int64", mc, ui)
 			}
 			return int64(ui), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting int64, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting int64, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_UINT64, descriptorpb.FieldDescriptorProto_TYPE_FIXED64:
 		if opt.NegativeIntValue != nil {
 			i := opt.GetNegativeIntValue()
 			if i < 0 {
-				return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vvalue %d is out of range for uint64", mc, i)
+				return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vvalue %d is out of range for uint64", mc, i)
 			}
 			// should not be possible since i should always be negative...
 			return uint64(i), nil
@@ -2043,7 +2043,7 @@ func (interp *interpreter) scalarFieldValueFromProto(mc *internal.MessageContext
 		if opt.PositiveIntValue != nil {
 			return opt.GetPositiveIntValue(), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting uint64, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting uint64, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:
 		if opt.IdentifierValue != nil {
 			switch opt.GetIdentifierValue() {
@@ -2062,7 +2062,7 @@ func (interp *interpreter) scalarFieldValueFromProto(mc *internal.MessageContext
 		if opt.PositiveIntValue != nil {
 			return float64(opt.GetPositiveIntValue()), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting double, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting double, got %s", mc, optionValueKind(opt))
 	case descriptorpb.FieldDescriptorProto_TYPE_FLOAT:
 		if opt.IdentifierValue != nil {
 			switch opt.GetIdentifierValue() {
@@ -2081,9 +2081,9 @@ func (interp *interpreter) scalarFieldValueFromProto(mc *internal.MessageContext
 		if opt.PositiveIntValue != nil {
 			return float32(opt.GetPositiveIntValue()), nil
 		}
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vexpecting float, got %s", mc, optionValueKind(opt))
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vexpecting float, got %s", mc, optionValueKind(opt))
 	default:
-		return nil, reporter.Errorf(interp.nodeInfo(node).Start(), "%vunrecognized field type: %s", mc, fldType)
+		return nil, reporter.NodeErrorf(interp.file.FileNode(), node, "%vunrecognized field type: %s", mc, fldType)
 	}
 }
 

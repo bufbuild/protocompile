@@ -554,12 +554,11 @@ func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, synta
 		}
 		for _, n := range node.Identifiers {
 			name := string(n.AsIdentifier())
-			nameNodePos := r.file.NodeInfo(n).Start()
 			if existing, ok := alreadyReserved[name]; ok {
-				_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+				_ = handler.HandleNodeErrorf(r.file, n, "name %q is already reserved at %s", name, existing)
 				continue
 			}
-			alreadyReserved[name] = nameNodePos
+			alreadyReserved[name] = r.file.NodeInfo(n).Start()
 			*names = append(*names, name)
 		}
 		return
@@ -571,12 +570,11 @@ func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, synta
 	}
 	for _, n := range node.Names {
 		name := n.AsString()
-		nameNodePos := r.file.NodeInfo(n).Start()
 		if existing, ok := alreadyReserved[name]; ok {
-			_ = handler.HandleErrorf(nameNodePos, "name %q is already reserved at %s", name, existing)
+			_ = handler.HandleNodeErrorf(r.file, n, "name %q is already reserved at %s", name, existing)
 			continue
 		}
-		alreadyReserved[name] = nameNodePos
+		alreadyReserved[name] = r.file.NodeInfo(n).Start()
 		*names = append(*names, name)
 	}
 }
@@ -590,7 +588,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 		// pinpoint the group keyword if the source is a group
 		n = grp.Keyword
 	}
-	_ = handler.HandleErrorf(r.file.NodeInfo(n).Start(), "message nesting depth must be less than 32")
+	_ = handler.HandleNodeErrorf(r.file, n, "message nesting depth must be less than 32")
 	return false
 }
 
@@ -782,11 +780,11 @@ func (r *result) asServiceDescriptor(svc *ast.ServiceNode) *descriptorpb.Service
 func (r *result) checkTag(n ast.Node, v uint64, maxTag int32) error {
 	switch {
 	case v < 1:
-		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d must be greater than zero", v)
+		return reporter.NodeErrorf(r.file, n, "tag number %d must be greater than zero", v)
 	case v > uint64(maxTag):
-		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
+		return reporter.NodeErrorf(r.file, n, "tag number %d is higher than max allowed tag number (%d)", v, maxTag)
 	case v >= internal.SpecialReservedStart && v <= internal.SpecialReservedEnd:
-		return reporter.Errorf(r.file.NodeInfo(n).Start(), "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
+		return reporter.NodeErrorf(r.file, n, "tag number %d is in disallowed reserved range %d-%d", v, internal.SpecialReservedStart, internal.SpecialReservedEnd)
 	default:
 		return nil
 	}

@@ -162,6 +162,21 @@ func (h *Handler) HandleErrorWithPos(pos ast.SourcePos, err error) error {
 	return h.HandleError(err)
 }
 
+// HandleErrorWithNode handles an error with the given file and node.
+//
+// If the handler has already aborted (by returning a non-nil error from a prior
+// call to HandleError or HandleErrorf), that same error is returned and the
+// given error is not reported.
+func (h *Handler) HandleErrorWithNode(file ast.FileDeclNode, node ast.Node, err error) error {
+	if ewp, ok := err.(ErrorWithPos); ok {
+		// replace existing position with given node.
+		err = errorWithNode{file: file, node: node, underlying: ewp.Unwrap()}
+	} else {
+		err = errorWithNode{file: file, node: node, underlying: err}
+	}
+	return h.HandleError(err)
+}
+
 // HandleErrorf handles an error with the given source position, creating the
 // error using the given message format and arguments.
 //
@@ -201,6 +216,19 @@ func (h *Handler) HandleWarningWithPos(pos ast.SourcePos, err error) {
 		ewp = errorWithSourcePos{pos: pos, underlying: ewp.Unwrap()}
 	} else {
 		ewp = errorWithSourcePos{pos: pos, underlying: err}
+	}
+	h.HandleWarning(ewp)
+}
+
+// HandleWarningWithNode handles a warning with the given file and node. This will
+// delegate to the handler's configured reporter.
+func (h *Handler) HandleWarningWithNode(file ast.FileDeclNode, node ast.Node, err error) {
+	ewp, ok := err.(ErrorWithPos)
+	if ok {
+		// replace existing position with given node.
+		ewp = errorWithNode{file: file, node: node, underlying: ewp.Unwrap()}
+	} else {
+		ewp = errorWithNode{file: file, node: node, underlying: err}
 	}
 	h.HandleWarning(ewp)
 }

@@ -97,12 +97,11 @@ func validateImports(res *result, handler *reporter.Handler) error {
 		if !ok {
 			continue
 		}
-		startPos := fileNode.NodeInfo(decl).Start()
 		name := imp.Name.AsString()
 		if prev, ok := imports[name]; ok {
-			return handler.HandleErrorf(startPos, "%q was already imported at %v", name, prev)
+			return handler.HandleNodeErrorf(fileNode, decl, "%q was already imported at %v", name, prev)
 		}
-		imports[name] = startPos
+		imports[name] = fileNode.NodeInfo(decl).Start()
 	}
 	return nil
 }
