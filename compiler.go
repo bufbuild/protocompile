@@ -556,7 +556,7 @@ func handleImportCycle(h *reporter.Handler, span ast.SourceSpan, importSequence 
 func findImportSpan(res parser.Result, dep string) ast.SourceSpan {
 	root := res.AST()
 	if root == nil {
-		return ast.UnknownPos(res.FileNode().Name()).AsSpan()
+		return ast.UnknownSpan(res.FileNode().Name())
 	}
 	for _, decl := range root.Decls {
 		if imp, ok := decl.(*ast.ImportNode); ok {
@@ -566,7 +566,7 @@ func findImportSpan(res parser.Result, dep string) ast.SourceSpan {
 		}
 	}
 	// this should never happen...
-	return ast.UnknownPos(res.FileNode().Name()).AsSpan()
+	return ast.UnknownSpan(res.FileNode().Name())
 }
 
 func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescriptorProtoRes linker.File) (linker.File, error) {

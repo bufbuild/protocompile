@@ -1015,7 +1015,7 @@ func (interp *interpreter) validateFeatures(
 
 func (interp *interpreter) positionOfFeature(featuresInfo []*interpretedOption, fieldNumbers ...protoreflect.FieldNumber) ast.SourceSpan {
 	if interp.file.AST() == nil {
-		return ast.UnknownPos(interp.file.FileDescriptorProto().GetName()).AsSpan()
+		return ast.UnknownSpan(interp.file.FileDescriptorProto().GetName())
 	}
 	for _, info := range featuresInfo {
 		matched, remainingNumbers, node := matchInterpretedOption(info, fieldNumbers)
@@ -1029,7 +1029,7 @@ func (interp *interpreter) positionOfFeature(featuresInfo []*interpretedOption, 
 			return interp.file.FileNode().NodeInfo(node)
 		}
 	}
-	return ast.UnknownPos(interp.file.FileDescriptorProto().GetName()).AsSpan()
+	return ast.UnknownSpan(interp.file.FileDescriptorProto().GetName())
 }
 
 func matchInterpretedOption(info *interpretedOption, path []protoreflect.FieldNumber) (bool, []protoreflect.FieldNumber, ast.Node) {
@@ -1170,8 +1170,8 @@ func (interp *interpreter) toOptionBytes(mc *internal.MessageContext, results []
 		b, err = res.appendOptionBytes(b)
 		if err != nil {
 			if _, ok := err.(reporter.ErrorWithPos); !ok {
-				pos := ast.SourcePos{Filename: interp.file.AST().Name()}
-				err = reporter.Errorf(pos.AsSpan(), "%sfailed to encode options: %w", mc, err)
+				span := ast.UnknownSpan(interp.file.AST().Name())
+				err = reporter.Errorf(span, "%sfailed to encode options: %w", mc, err)
 			}
 			if err := interp.reporter.HandleError(err); err != nil {
 				return nil, err

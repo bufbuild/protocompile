@@ -111,7 +111,7 @@ func (r *result) CheckForUnusedImports(handler *reporter.Handler) {
 			if isPublic {
 				continue
 			}
-			span := ast.UnknownPos(fd.GetName()).AsSpan()
+			span := ast.UnknownSpan(fd.GetName())
 			if file != nil {
 				for _, decl := range file.Decls {
 					imp, ok := decl.(*ast.ImportNode)

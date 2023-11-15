@@ -37,7 +37,7 @@ func TestSymbolsPackages(t *testing.T) {
 	assert.Equal(t, &s.pkgTrie, s.getPackage(""))
 
 	h := reporter.NewHandler(nil)
-	span := ast.UnknownPos("foo.proto").AsSpan()
+	span := ast.UnknownSpan("foo.proto")
 	pkg, err := s.importPackages(span, "build.buf.foo.bar.baz", h)
 	require.NoError(t, err)
 	// new package has nothing in it
@@ -142,13 +142,13 @@ func TestSymbolExtensions(t *testing.T) {
 
 	var s Symbols
 
-	_, err := s.importPackages(ast.UnknownPos("foo.proto").AsSpan(), "foo.bar", reporter.NewHandler(nil))
+	_, err := s.importPackages(ast.UnknownSpan("foo.proto"), "foo.bar", reporter.NewHandler(nil))
 	require.NoError(t, err)
-	_, err = s.importPackages(ast.UnknownPos("google/protobuf/descriptor.proto").AsSpan(), "google.protobuf", reporter.NewHandler(nil))
+	_, err = s.importPackages(ast.UnknownSpan("google/protobuf/descriptor.proto"), "google.protobuf", reporter.NewHandler(nil))
 	require.NoError(t, err)
 
 	addExt := func(pkg, extendee protoreflect.FullName, num protoreflect.FieldNumber) error {
-		return s.AddExtension(pkg, extendee, num, ast.UnknownPos("foo.proto").AsSpan(), reporter.NewHandler(nil))
+		return s.AddExtension(pkg, extendee, num, ast.UnknownSpan("foo.proto"), reporter.NewHandler(nil))
 	}
 
 	t.Run("mismatch", func(t *testing.T) {

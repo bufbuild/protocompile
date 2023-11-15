@@ -30,46 +30,48 @@ var ErrInvalidSource = errors.New("parse failed: invalid proto source")
 // about the location in the file that caused the error.
 type ErrorWithPos interface {
 	error
+	ast.SourceSpan
 	// GetPosition returns the start source position that caused the underlying error.
 	GetPosition() ast.SourcePos
-	// GetEndPosition returns the end source position that caused the underlying error.
-	GetEndPosition() ast.SourcePos
 	// Unwrap returns the underlying error.
 	Unwrap() error
 }
 
 // Error creates a new ErrorWithPos from the given error and source position.
 func Error(span ast.SourceSpan, err error) ErrorWithPos {
-	return errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: err}
+	return errorWithSpan{span: span, underlying: err}
 }
 
 // Errorf creates a new ErrorWithPos whose underlying error is created using the
 // given message format and arguments (via fmt.Errorf).
 func Errorf(span ast.SourceSpan, format string, args ...interface{}) ErrorWithPos {
-	return errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: fmt.Errorf(format, args...)}
+	return errorWithSpan{span: span, underlying: fmt.Errorf(format, args...)}
 }
 
-type errorWithSourcePos struct {
+type errorWithSpan struct {
 	underlying error
-	startPos   ast.SourcePos
-	endPos     ast.SourcePos
+	span       ast.SourceSpan
 }
 
-func (e errorWithSourcePos) Error() string {
+func (e errorWithSpan) Error() string {
 	sourcePos := e.GetPosition()
 	return fmt.Sprintf("%s: %v", sourcePos, e.underlying)
 }
 
-func (e errorWithSourcePos) GetPosition() ast.SourcePos {
-	return e.startPos
+func (e errorWithSpan) GetPosition() ast.SourcePos {
+	return e.span.Start()
 }
 
-func (e errorWithSourcePos) GetEndPosition() ast.SourcePos {
-	return e.endPos
+func (e errorWithSpan) Start() ast.SourcePos {
+	return e.span.Start()
 }
 
-func (e errorWithSourcePos) Unwrap() error {
+func (e errorWithSpan) End() ast.SourcePos {
+	return e.span.End()
+}
+
+func (e errorWithSpan) Unwrap() error {
 	return e.underlying
 }
 
-var _ ErrorWithPos = errorWithSourcePos{}
+var _ ErrorWithPos = errorWithSpan{}

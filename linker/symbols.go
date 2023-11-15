@@ -283,9 +283,9 @@ func (s *packageSymbols) checkFileLocked(f protoreflect.FileDescriptor, handler 
 func sourceSpanForPackage(fd protoreflect.FileDescriptor) ast.SourceSpan {
 	loc := fd.SourceLocations().ByPath([]int32{internal.FilePackageTag})
 	if internal.IsZeroLocation(loc) {
-		return ast.UnknownPos(fd.Path()).AsSpan()
+		return ast.UnknownSpan(fd.Path())
 	}
-	return ast.NewPosSpan(
+	return ast.NewSourceSpan(
 		ast.SourcePos{
 			Filename: fd.Path(),
 			Line:     loc.StartLine,
@@ -302,11 +302,11 @@ func sourceSpanForPackage(fd protoreflect.FileDescriptor) ast.SourceSpan {
 func sourceSpanFor(d protoreflect.Descriptor) ast.SourceSpan {
 	file := d.ParentFile()
 	if file == nil {
-		return ast.UnknownPos(unknownFilePath).AsSpan()
+		return ast.UnknownSpan(unknownFilePath)
 	}
 	path, ok := internal.ComputePath(d)
 	if !ok {
-		return ast.UnknownPos(file.Path()).AsSpan()
+		return ast.UnknownSpan(file.Path())
 	}
 	namePath := path
 	switch d.(type) {
@@ -332,11 +332,11 @@ func sourceSpanFor(d protoreflect.Descriptor) ast.SourceSpan {
 	if internal.IsZeroLocation(loc) {
 		loc = file.SourceLocations().ByPath(path)
 		if internal.IsZeroLocation(loc) {
-			return ast.UnknownPos(file.Path()).AsSpan()
+			return ast.UnknownSpan(file.Path())
 		}
 	}
 
-	return ast.NewPosSpan(
+	return ast.NewSourceSpan(
 		ast.SourcePos{
 			Filename: file.Path(),
 			Line:     loc.StartLine,
@@ -353,11 +353,11 @@ func sourceSpanFor(d protoreflect.Descriptor) ast.SourceSpan {
 func sourceSpanForNumber(fd protoreflect.FieldDescriptor) ast.SourceSpan {
 	file := fd.ParentFile()
 	if file == nil {
-		return ast.UnknownPos(unknownFilePath).AsSpan()
+		return ast.UnknownSpan(unknownFilePath)
 	}
 	path, ok := internal.ComputePath(fd)
 	if !ok {
-		return ast.UnknownPos(file.Path()).AsSpan()
+		return ast.UnknownSpan(file.Path())
 	}
 	numberPath := path
 	numberPath = append(numberPath, internal.FieldNumberTag)
@@ -365,10 +365,10 @@ func sourceSpanForNumber(fd protoreflect.FieldDescriptor) ast.SourceSpan {
 	if internal.IsZeroLocation(loc) {
 		loc = file.SourceLocations().ByPath(path)
 		if internal.IsZeroLocation(loc) {
-			return ast.UnknownPos(file.Path()).AsSpan()
+			return ast.UnknownSpan(file.Path())
 		}
 	}
-	return ast.NewPosSpan(
+	return ast.NewSourceSpan(
 		ast.SourcePos{
 			Filename: file.Path(),
 			Line:     loc.StartLine,
@@ -495,7 +495,7 @@ func packageNameSpan(r *result) ast.SourceSpan {
 			}
 		}
 	}
-	return ast.UnknownPos(r.Path()).AsSpan()
+	return ast.UnknownSpan(r.Path())
 }
 
 func nameSpan(file ast.FileDeclNode, n ast.Node) ast.SourceSpan {

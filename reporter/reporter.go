@@ -155,9 +155,9 @@ func (h *Handler) HandleError(err error) error {
 func (h *Handler) HandleErrorWithPos(span ast.SourceSpan, err error) error {
 	if ewp, ok := err.(ErrorWithPos); ok {
 		// replace existing position with given one
-		err = errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: ewp.Unwrap()}
+		err = errorWithSpan{span: span, underlying: ewp.Unwrap()}
 	} else {
-		err = errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: err}
+		err = errorWithSpan{span: span, underlying: err}
 	}
 	return h.HandleError(err)
 }
@@ -194,9 +194,9 @@ func (h *Handler) HandleWarningWithPos(span ast.SourceSpan, err error) {
 	ewp, ok := err.(ErrorWithPos)
 	if ok {
 		// replace existing position with given one
-		ewp = errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: ewp.Unwrap()}
+		ewp = errorWithSpan{span: span, underlying: ewp.Unwrap()}
 	} else {
-		ewp = errorWithSourcePos{startPos: span.Start(), endPos: span.End(), underlying: err}
+		ewp = errorWithSpan{span: span, underlying: err}
 	}
 	h.HandleWarning(ewp)
 }

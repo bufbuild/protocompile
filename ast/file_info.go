@@ -597,45 +597,35 @@ func (pos SourcePos) String() string {
 	return fmt.Sprintf("%s:%d:%d", pos.Filename, pos.Line, pos.Col)
 }
 
-func (pos SourcePos) AsSpan() SourceSpan {
-	return emptySpan{Pos: pos}
-}
+// func (pos SourcePos) AsSpan() SourceSpan {
+// 	return NewSourceSpan(pos, pos)
+// }
 
-type emptySpan struct {
-	Pos SourcePos
-}
-
-func (e emptySpan) Start() SourcePos {
-	return e.Pos
-}
-
-func (e emptySpan) End() SourcePos {
-	return e.Pos
-}
-
-type posSpan struct {
-	StartPos SourcePos
-	EndPos   SourcePos
-}
-
-func (p posSpan) Start() SourcePos {
-	return p.StartPos
-}
-
-func (p posSpan) End() SourcePos {
-	return p.EndPos
-}
-
-func NewPosSpan(start SourcePos, end SourcePos) SourceSpan {
-	return posSpan{StartPos: start, EndPos: end}
-}
-
-var _ SourceSpan = emptySpan{}
-
+// SourceSpan represents a range of source positions.
 type SourceSpan interface {
 	Start() SourcePos
 	End() SourcePos
 }
+
+// NewSourceSpan creates a new span that covers the given range.
+func NewSourceSpan(start SourcePos, end SourcePos) SourceSpan {
+	return sourceSpan{StartPos: start, EndPos: end}
+}
+
+type sourceSpan struct {
+	StartPos SourcePos
+	EndPos   SourcePos
+}
+
+func (p sourceSpan) Start() SourcePos {
+	return p.StartPos
+}
+
+func (p sourceSpan) End() SourcePos {
+	return p.EndPos
+}
+
+var _ SourceSpan = sourceSpan{}
 
 // Comments represents a range of sequential comments in a source file
 // (e.g. no interleaving items or AST nodes).
