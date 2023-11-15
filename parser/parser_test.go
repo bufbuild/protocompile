@@ -82,6 +82,24 @@ func TestJunkParse(t *testing.T) {
 	}
 }
 
+func TestLenientParse_SemicolonLess(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]string{
+		"syntax": `syntax = "proto3"
+							 message Foo {}`,
+	}
+	for name, input := range inputs {
+		name, input := name, input
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			errHandler := reporter.NewHandler(nil)
+			protoName := fmt.Sprintf("%s.proto", name)
+			_, err := Parse(protoName, strings.NewReader(input), errHandler)
+			require.ErrorContains(t, err, "expected ';'")
+		})
+	}
+}
+
 func TestSimpleParse(t *testing.T) {
 	t.Parallel()
 	protos := map[string]Result{}

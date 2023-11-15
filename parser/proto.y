@@ -123,6 +123,7 @@ import (
 %type <mtdElement>   methodElement
 %type <mtdElements>  methodElements methodBody
 %type <mtdMsgType>   methodMessageType
+%type <b>            semicolon
 
 // same for terminals
 %token <s>   _STRING_LIT
@@ -214,7 +215,16 @@ fileElement : importDecl {
 		$$ = nil
 	}
 
-syntaxDecl : _SYNTAX '=' stringLit ';' {
+semicolon : ';' {
+		$$ = $1
+	}
+	| {
+		// Continue parsing, but report an error.
+		protolex.(*protoLex).Error("expected ';'")
+		$$ = nil
+	}
+
+syntaxDecl : _SYNTAX '=' stringLit semicolon {
 		$$ = ast.NewSyntaxNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
 
