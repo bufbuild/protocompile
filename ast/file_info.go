@@ -597,10 +597,6 @@ func (pos SourcePos) String() string {
 	return fmt.Sprintf("%s:%d:%d", pos.Filename, pos.Line, pos.Col)
 }
 
-// func (pos SourcePos) AsSpan() SourceSpan {
-// 	return NewSourceSpan(pos, pos)
-// }
-
 // SourceSpan represents a range of source positions.
 type SourceSpan interface {
 	Start() SourcePos
