@@ -137,28 +137,3 @@ func (e *EmptyDeclNode) oneofElement()   {}
 func (e *EmptyDeclNode) enumElement()    {}
 func (e *EmptyDeclNode) serviceElement() {}
 func (e *EmptyDeclNode) methodElement()  {}
-
-type NodeWithEmptyDecls[T Node] struct {
-	Decl       T
-	EmptyDecls []*EmptyDeclNode
-}
-
-func NewNodeWithEmptyDecls[T Node](decl T, extraSemicolons []*RuneNode) NodeWithEmptyDecls[T] {
-	emptyDecls := make([]*EmptyDeclNode, len(extraSemicolons))
-	for i, extraSemicolon := range extraSemicolons {
-		emptyDecls[i] = NewEmptyDeclNode(extraSemicolon)
-	}
-	return NodeWithEmptyDecls[T]{
-		Decl:       decl,
-		EmptyDecls: emptyDecls,
-	}
-}
-
-func ToServiceElements[T ServiceElement](nodes NodeWithEmptyDecls[T]) []ServiceElement {
-	serviceElements := make([]ServiceElement, len(nodes.EmptyDecls)+1)
-	serviceElements[0] = nodes.Decl
-	for i, emptyDecl := range nodes.EmptyDecls {
-		serviceElements[i+1] = emptyDecl
-	}
-	return serviceElements
-}

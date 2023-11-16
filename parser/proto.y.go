@@ -56,12 +56,12 @@ type protoSymType struct {
 	svc          *ast.ServiceNode
 	svcElement   ast.ServiceElement
 	svcElements  []ast.ServiceElement
-	mtd          ast.NodeWithEmptyDecls[*ast.RPCNode]
+	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElement   ast.RPCElement
 	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
-	optN         ast.NodeWithEmptyDecls[*ast.OptionNode]
+	optN         nodeWithEmptyDecls[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -1418,12 +1418,8 @@ protodefault:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
 			optName := ast.NewOptionNameNode(protoDollar[2].optNms.refs, protoDollar[2].optNms.dots)
-			if len(protoDollar[5].bs) == 0 {
-				protolex.(*protoLex).Error("expected ';'")
-				protoVAL.optN = ast.NewNodeWithEmptyDecls(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, nil), nil)
-			} else {
-				protoVAL.optN = ast.NewNodeWithEmptyDecls(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, protoDollar[5].bs[0]), protoDollar[5].bs[1:])
-			}
+			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[5].bs)
+			protoVAL.optN = newNodeWithEmptyDecls(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, semi), extra)
 		}
 	case 42:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2255,10 +2251,7 @@ protodefault:
 	case 221:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcElements = make([]ast.ServiceElement, len(protoDollar[1].bs))
-			for i, s := range protoDollar[1].bs {
-				protoVAL.svcElements[i] = ast.NewEmptyDeclNode(s)
-			}
+			protoVAL.svcElements = newEmptyServiceElements(protoDollar[1].bs)
 		}
 	case 222:
 		protoDollar = protoS[protopt-2 : protopt+1]
@@ -2284,12 +2277,12 @@ protodefault:
 	case 225:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcElements = ast.ToServiceElements(protoDollar[1].optN)
+			protoVAL.svcElements = toServiceElements(protoDollar[1].optN)
 		}
 	case 226:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcElements = ast.ToServiceElements(protoDollar[1].mtd)
+			protoVAL.svcElements = toServiceElements(protoDollar[1].mtd)
 		}
 	case 227:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2299,17 +2292,13 @@ protodefault:
 	case 228:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			if len(protoDollar[6].bs) == 0 {
-				protolex.(*protoLex).Error("expected ';'")
-				protoVAL.mtd = ast.NewNodeWithEmptyDecls(ast.NewRPCNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, nil), nil)
-			} else {
-				protoVAL.mtd = ast.NewNodeWithEmptyDecls(ast.NewRPCNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, protoDollar[6].bs[0]), protoDollar[6].bs[1:])
-			}
+			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[6].bs)
+			protoVAL.mtd = newNodeWithEmptyDecls(ast.NewRPCNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, semi), extra)
 		}
 	case 229:
 		protoDollar = protoS[protopt-9 : protopt+1]
 		{
-			protoVAL.mtd = ast.NewNodeWithEmptyDecls(ast.NewRPCNodeWithBody(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, protoDollar[6].b, protoDollar[7].mtdElements, protoDollar[8].b), protoDollar[9].bs)
+			protoVAL.mtd = newNodeWithEmptyDecls(ast.NewRPCNodeWithBody(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, protoDollar[6].b, protoDollar[7].mtdElements, protoDollar[8].b), protoDollar[9].bs)
 		}
 	case 230:
 		protoDollar = protoS[protopt-4 : protopt+1]

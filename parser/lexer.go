@@ -761,3 +761,11 @@ func (l *protoLex) errWithCurrentPos(err error, offset int) reporter.ErrorWithPo
 	pos := l.info.SourcePos(l.input.offset() + offset)
 	return reporter.Error(ast.NewSourceSpan(pos, pos), err)
 }
+
+func (l *protoLex) requireSemicolon(semicolons []*ast.RuneNode) (*ast.RuneNode, []*ast.RuneNode) {
+	if len(semicolons) == 0 {
+		l.Error("expected ';'")
+		return nil, nil
+	}
+	return semicolons[0], semicolons[1:]
+}

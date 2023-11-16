@@ -71,10 +71,13 @@ func NewOptionNode(keyword *KeywordNode, name *OptionNameNode, equals *RuneNode,
 	if val == nil {
 		panic("val is nil")
 	}
+	var children []Node
 	if semicolon == nil {
-		panic("semicolon is nil")
+		children = []Node{keyword, name, equals, val}
+	} else {
+		children = []Node{keyword, name, equals, val, semicolon}
 	}
-	children := []Node{keyword, name, equals, val, semicolon}
+
 	return &OptionNode{
 		compositeNode: compositeNode{
 			children: children,
