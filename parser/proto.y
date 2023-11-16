@@ -43,11 +43,12 @@ import (
 	svc          *ast.ServiceNode
 	svcElement   ast.ServiceElement
 	svcElements  []ast.ServiceElement
-	mtd          *ast.RPCNode
+	mtd          ast.NodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElement   ast.RPCElement
 	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
+	optN         ast.NodeWithEmptyDecls[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -68,6 +69,7 @@ import (
 	f            *ast.FloatLiteralNode
 	id           *ast.IdentNode
 	b            *ast.RuneNode
+	bs           []*ast.RuneNode
 	err          error
 }
 
@@ -81,6 +83,7 @@ import (
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
 %type <opt>          optionDecl compactOption
+%type <optN>         optionDeclNew
 %type <opts>         compactOptionDecls
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
@@ -117,13 +120,12 @@ import (
 %type <extElements>  extensionElements extensionBody
 %type <str>          stringLit
 %type <svc>          serviceDecl
-%type <svcElement>   serviceElement
-%type <svcElements>  serviceElements serviceBody
+%type <svcElements>  serviceElement serviceElements serviceBody
 %type <mtd>          methodDecl
 %type <mtdElement>   methodElement
 %type <mtdElements>  methodElements methodBody
 %type <mtdMsgType>   methodMessageType
-%type <b>            semicolon
+%type <bs>           semicolon semicolons
 
 // same for terminals
 %token <s>   _STRING_LIT
@@ -215,16 +217,21 @@ fileElement : importDecl {
 		$$ = nil
 	}
 
-semicolon : ';' {
+semicolons : ';' {
+		$$ = []*ast.RuneNode{$1}
+	}
+	| semicolons ';' {
+		$$ = append($1, $2)
+	}
+
+semicolon : semicolons {
 		$$ = $1
 	}
 	| {
-		// Continue parsing, but report an error.
-		protolex.(*protoLex).Error("expected ';'")
 		$$ = nil
 	}
 
-syntaxDecl : _SYNTAX '=' stringLit semicolon {
+syntaxDecl : _SYNTAX '=' stringLit ';' {
 		$$ = ast.NewSyntaxNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
 
@@ -307,6 +314,16 @@ mtdElementIdent : mtdElementName {
 optionDecl : _OPTION optionName '=' optionValue ';' {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
+	}
+
+optionDeclNew : _OPTION optionName '=' optionValue semicolon {
+		optName := ast.NewOptionNameNode($2.refs, $2.dots)
+		if len($5) == 0 {
+			protolex.(*protoLex).Error("expected ';'")
+			$$ = ast.NewNodeWithEmptyDecls(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, nil), nil)
+		} else {
+			$$ = ast.NewNodeWithEmptyDecls(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5[0]), $5[1:])
+		}
 	}
 
 optionName : identifier {
@@ -947,47 +964,52 @@ serviceDecl : _SERVICE identifier '{' serviceBody '}' {
 		$$ = ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
 
-serviceBody : {
-		$$ = nil
+serviceBody : semicolon {
+	  $$ = make([]ast.ServiceElement, len($1))
+		for i, s := range $1 {
+			$$[i] = ast.NewEmptyDeclNode(s)
+		}
 	}
-	| serviceElements
+	| semicolon serviceElements {
+	  $$ = make([]ast.ServiceElement, len($1) + len($2))
+		for i, s := range $1 {
+			$$[i] = ast.NewEmptyDeclNode(s)
+		}
+		for i, s := range $2 {
+			$$[i + len($1)] = s
+		}
+	}
 
 serviceElements : serviceElements serviceElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| serviceElement {
-		if $1 != nil {
-			$$ = []ast.ServiceElement{$1}
-		} else {
-			$$ = nil
-		}
+		$$ = $1
 	}
 
 // NB: doc suggests support for "stream" declaration, separate from "rpc", but
 // it does not appear to be supported in protoc (doc is likely from grammar for
 // Google-internal version of protoc, with support for streaming stubby)
-serviceElement : optionDecl {
-		$$ = $1
+serviceElement : optionDeclNew {
+		$$ = ast.ToServiceElements($1)
 	}
 	| methodDecl {
-		$$ = $1
-	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+		$$ = ast.ToServiceElements($1)
 	}
 	| error {
 		$$ = nil
 	}
 
-methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType ';' {
-		$$ = ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6)
+methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType semicolon {
+	  if len($6) == 0 {
+			protolex.(*protoLex).Error("expected ';'")
+			$$ = ast.NewNodeWithEmptyDecls(ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, nil), nil)
+		} else {
+			$$ = ast.NewNodeWithEmptyDecls(ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6[0]), $6[1:])
+		}
 	}
-	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' {
-		$$ = ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8)
+	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' semicolon {
+		$$ = ast.NewNodeWithEmptyDecls(ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8), $9)
 	}
 
 methodMessageType : '(' _STREAM typeName ')' {

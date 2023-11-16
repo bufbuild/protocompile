@@ -85,8 +85,12 @@ func TestJunkParse(t *testing.T) {
 func TestLenientParse_SemicolonLess(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]string{
-		"syntax": `syntax = "proto3"
-							 message Foo {}`,
+		"method": `syntax = "proto3";
+							 service Foo {
+								 ;
+								 rpc Bar (Baz) returns (Qux)
+								 rpc Qux (Baz) returns (Qux);;
+							 }`,
 	}
 	for name, input := range inputs {
 		name, input := name, input
