@@ -83,7 +83,7 @@ import (
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
 %type <opt>          optionDecl compactOption
-%type <optN>         optionDeclNew
+%type <optN>         optionDeclWithEmptyDecls
 %type <opts>         compactOptionDecls
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
@@ -125,7 +125,7 @@ import (
 %type <mtdElement>   methodElement
 %type <mtdElements>  methodElements methodBody
 %type <mtdMsgType>   methodMessageType
-%type <bs>           semicolon semicolons
+%type <bs>           semicolons semicolonList
 
 // same for terminals
 %token <s>   _STRING_LIT
@@ -217,14 +217,14 @@ fileElement : importDecl {
 		$$ = nil
 	}
 
-semicolons : ';' {
+semicolonList : ';' {
 		$$ = []*ast.RuneNode{$1}
 	}
-	| semicolons ';' {
+	| semicolonList ';' {
 		$$ = append($1, $2)
 	}
 
-semicolon : semicolons {
+semicolons : semicolonList {
 		$$ = $1
 	}
 	| {
@@ -316,7 +316,7 @@ optionDecl : _OPTION optionName '=' optionValue ';' {
 		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
 	}
 
-optionDeclNew : _OPTION optionName '=' optionValue semicolon {
+optionDeclWithEmptyDecls : _OPTION optionName '=' optionValue semicolons {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		semi, extra := protolex.(*protoLex).requireSemicolon($5)
 		$$ = newNodeWithEmptyDecls(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, semi), extra)
@@ -960,17 +960,11 @@ serviceDecl : _SERVICE identifier '{' serviceBody '}' {
 		$$ = ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
 
-serviceBody : semicolon {
-	  $$ = newEmptyServiceElements($1)
+serviceBody : semicolons {
+	  $$ = newServiceElements($1, nil)
 	}
-	| semicolon serviceElements {
-	  $$ = make([]ast.ServiceElement, len($1) + len($2))
-		for i, s := range $1 {
-			$$[i] = ast.NewEmptyDeclNode(s)
-		}
-		for i, s := range $2 {
-			$$[i + len($1)] = s
-		}
+	| semicolons serviceElements {
+		$$ = newServiceElements($1, $2)
 	}
 
 serviceElements : serviceElements serviceElement {
@@ -983,7 +977,7 @@ serviceElements : serviceElements serviceElement {
 // NB: doc suggests support for "stream" declaration, separate from "rpc", but
 // it does not appear to be supported in protoc (doc is likely from grammar for
 // Google-internal version of protoc, with support for streaming stubby)
-serviceElement : optionDeclNew {
+serviceElement : optionDeclWithEmptyDecls {
 		$$ = toServiceElements($1)
 	}
 	| methodDecl {
@@ -993,11 +987,11 @@ serviceElement : optionDeclNew {
 		$$ = nil
 	}
 
-methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType semicolon {
+methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($6)
 		$$ = newNodeWithEmptyDecls(ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, semi), extra)
 	}
-	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' semicolon {
+	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' semicolons {
 		$$ = newNodeWithEmptyDecls(ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8), $9)
 	}
 

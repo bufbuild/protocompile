@@ -2251,18 +2251,12 @@ protodefault:
 	case 221:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcElements = newEmptyServiceElements(protoDollar[1].bs)
+			protoVAL.svcElements = newServiceElements(protoDollar[1].bs, nil)
 		}
 	case 222:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.svcElements = make([]ast.ServiceElement, len(protoDollar[1].bs)+len(protoDollar[2].svcElements))
-			for i, s := range protoDollar[1].bs {
-				protoVAL.svcElements[i] = ast.NewEmptyDeclNode(s)
-			}
-			for i, s := range protoDollar[2].svcElements {
-				protoVAL.svcElements[i+len(protoDollar[1].bs)] = s
-			}
+			protoVAL.svcElements = newServiceElements(protoDollar[1].bs, protoDollar[2].svcElements)
 		}
 	case 223:
 		protoDollar = protoS[protopt-2 : protopt+1]

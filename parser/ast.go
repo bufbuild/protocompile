@@ -99,12 +99,13 @@ func newEmptyDeclNodes(semicolons []*ast.RuneNode) []*ast.EmptyDeclNode {
 	return emptyDecls
 }
 
-func newEmptyServiceElements(semicolons []*ast.RuneNode) []ast.ServiceElement {
-	emptyDecls := make([]ast.ServiceElement, len(semicolons))
-	for i, semicolon := range semicolons {
-		emptyDecls[i] = ast.NewEmptyDeclNode(semicolon)
+func newServiceElements(semicolons []*ast.RuneNode, elements []ast.ServiceElement) []ast.ServiceElement {
+	elems := make([]ast.ServiceElement, 0, len(semicolons)+len(elements))
+	for _, semicolon := range semicolons {
+		elems = append(elems, ast.NewEmptyDeclNode(semicolon))
 	}
-	return emptyDecls
+	elems = append(elems, elements...)
+	return elems
 }
 
 type nodeWithEmptyDecls[T ast.Node] struct {
