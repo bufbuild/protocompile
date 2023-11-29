@@ -356,7 +356,7 @@ func benchmarkGoogleapisProtoparse(b *testing.B, factory func() *protoparse.Pars
 	}
 }
 
-func BenchmarkGoogleapisScanImports(b *testing.B) {
+func BenchmarkGoogleapisFastScan(b *testing.B) {
 	par := runtime.GOMAXPROCS(-1)
 	cpus := runtime.NumCPU()
 	if par > cpus {
