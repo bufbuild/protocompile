@@ -56,6 +56,8 @@ const (
 	closeBraceToken   = tokenType('}')
 	closeBracketToken = tokenType(']')
 	closeAngleToken   = tokenType('>')
+	periodToken       = tokenType('.')
+	semicolonToken    = tokenType(';')
 )
 
 type runeReader struct {
