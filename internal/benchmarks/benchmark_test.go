@@ -48,7 +48,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
-	"github.com/bufbuild/protocompile/parser/imports"
+	"github.com/bufbuild/protocompile/parser/fastscan"
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
@@ -364,7 +364,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 	}
 	type entry struct {
 		filename   string
-		scanResult imports.ScanResult
+		scanResult fastscan.ScanResult
 	}
 	for i := 0; i < b.N; i++ {
 		workCh := make(chan string, par)
@@ -408,7 +408,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 					if err != nil {
 						return err
 					}
-					res, err := imports.ScanForImports(r)
+					res, err := fastscan.ScanForImports(r)
 					_ = r.Close()
 					if err != nil {
 						return err
@@ -421,7 +421,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 				}
 			})
 		}
-		results := make(map[string]imports.ScanResult, len(googleapisSources))
+		results := make(map[string]fastscan.ScanResult, len(googleapisSources))
 		grp.Go(func() error {
 			// accumulator
 			for {
