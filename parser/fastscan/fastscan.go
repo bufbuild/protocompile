@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package imports
+package fastscan
 
 import (
 	"io"
@@ -26,23 +26,38 @@ var closeSymbol = map[tokenType]tokenType{
 	openAngleToken:   closeAngleToken,
 }
 
-// ScanForImports scans the given reader, which should contain Protobuf source, and
-// returns the set of imports declared in the file. It returns an error if there is
+// Result is the result of scanning a Protobuf source file. It contains the
+// information extracted from the file.
+type Result struct {
+	PackageName string
+	Imports     []string
+}
+
+// Scan scans the given reader, which should contain Protobuf source, and
+// returns the set of imports declared in the file. The result also contains the
+// value of any package declaration in the file. It returns an error if there is
 // an I/O error reading from r. In the event of such an error, it will still return
-// a slice of imports that contains as many imports as were found before the I/O
-// error occurred.
-func ScanForImports(r io.Reader) ([]string, error) {
-	var imports []string
+// a result that contains as much information as was found before the I/O error
+// occurred.
+func Scan(r io.Reader) (Result, error) {
+	var res Result
+
+	var currentImport []string     // if non-nil, parsing an import statement
+	var packageComponents []string // if non-nil, parsing a package statement
+
+	// current stack of open blocks -- those starting with {, [, (, or < for
+	// which we haven't yet encountered the closing }, ], ), or >
 	var contextStack []tokenType
-	var currentImport []string
+	declarationStart := true
+
 	lexer := newLexer(r)
 	for {
 		token, text, err := lexer.Lex()
 		if err != nil {
-			return imports, err
+			return res, err
 		}
 		if token == eofToken {
-			return imports, nil
+			return res, nil
 		}
 
 		if currentImport != nil {
@@ -51,9 +66,23 @@ func ScanForImports(r io.Reader) ([]string, error) {
 				currentImport = append(currentImport, text.(string))
 			default:
 				if len(currentImport) > 0 {
-					imports = append(imports, strings.Join(currentImport, ""))
+					res.Imports = append(res.Imports, strings.Join(currentImport, ""))
 				}
 				currentImport = nil
+			}
+		}
+
+		if packageComponents != nil {
+			switch token {
+			case identifierToken:
+				packageComponents = append(packageComponents, text.(string))
+			case periodToken:
+				packageComponents = append(packageComponents, ".")
+			default:
+				if len(packageComponents) > 0 {
+					res.PackageName = strings.Join(packageComponents, "")
+				}
+				packageComponents = nil
 			}
 		}
 
@@ -65,9 +94,15 @@ func ScanForImports(r io.Reader) ([]string, error) {
 				contextStack = contextStack[:len(contextStack)-1]
 			}
 		case identifierToken:
-			if text == "import" && len(contextStack) == 0 {
-				currentImport = []string{}
+			if declarationStart && len(contextStack) == 0 {
+				if text == "import" {
+					currentImport = []string{}
+				} else if text == "package" {
+					packageComponents = []string{}
+				}
 			}
 		}
+
+		declarationStart = token == closeBraceToken || token == semicolonToken
 	}
 }
