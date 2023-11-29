@@ -364,7 +364,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 	}
 	type entry struct {
 		filename   string
-		scanResult fastscan.ScanResult
+		scanResult fastscan.Result
 	}
 	for i := 0; i < b.N; i++ {
 		workCh := make(chan string, par)
@@ -408,7 +408,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 					if err != nil {
 						return err
 					}
-					res, err := fastscan.ScanForImports(r)
+					res, err := fastscan.Scan(r)
 					_ = r.Close()
 					if err != nil {
 						return err
@@ -421,7 +421,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 				}
 			})
 		}
-		results := make(map[string]fastscan.ScanResult, len(googleapisSources))
+		results := make(map[string]fastscan.Result, len(googleapisSources))
 		grp.Go(func() error {
 			// accumulator
 			for {

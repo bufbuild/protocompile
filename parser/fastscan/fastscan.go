@@ -26,21 +26,21 @@ var closeSymbol = map[tokenType]tokenType{
 	openAngleToken:   closeAngleToken,
 }
 
-// ScanResult is the result of scanning a Protobuf source file. It contains the
+// Result is the result of scanning a Protobuf source file. It contains the
 // information extracted from the file.
-type ScanResult struct {
+type Result struct {
 	PackageName string
 	Imports     []string
 }
 
-// ScanForImports scans the given reader, which should contain Protobuf source, and
+// Scan scans the given reader, which should contain Protobuf source, and
 // returns the set of imports declared in the file. The result also contains the
 // value of any package declaration in in the file. It returns an error if there is
 // an I/O error reading from r. In the event of such an error, it will still return
 // a result that contains as much information as was found before the I/O error
 // occurred.
-func ScanForImports(r io.Reader) (ScanResult, error) {
-	var res ScanResult
+func Scan(r io.Reader) (Result, error) {
+	var res Result
 
 	var currentImport []string     // if non-nil, parsing an import statement
 	var packageComponents []string // if non-nil, parsing a package statement
