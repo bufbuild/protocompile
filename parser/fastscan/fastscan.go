@@ -35,7 +35,7 @@ type Result struct {
 
 // Scan scans the given reader, which should contain Protobuf source, and
 // returns the set of imports declared in the file. The result also contains the
-// value of any package declaration in in the file. It returns an error if there is
+// value of any package declaration in the file. It returns an error if there is
 // an I/O error reading from r. In the event of such an error, it will still return
 // a result that contains as much information as was found before the I/O error
 // occurred.
