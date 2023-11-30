@@ -48,7 +48,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
-	"github.com/bufbuild/protocompile/parser/imports"
+	"github.com/bufbuild/protocompile/parser/fastscan"
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
@@ -356,15 +356,15 @@ func benchmarkGoogleapisProtoparse(b *testing.B, factory func() *protoparse.Pars
 	}
 }
 
-func BenchmarkGoogleapisScanImports(b *testing.B) {
+func BenchmarkGoogleapisFastScan(b *testing.B) {
 	par := runtime.GOMAXPROCS(-1)
 	cpus := runtime.NumCPU()
 	if par > cpus {
 		par = cpus
 	}
 	type entry struct {
-		filename string
-		imports  []string
+		filename   string
+		scanResult fastscan.Result
 	}
 	for i := 0; i < b.N; i++ {
 		workCh := make(chan string, par)
@@ -405,24 +405,23 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 						return ctx.Err()
 					}
 					r, err := os.Open(filename)
-					var imps []string
 					if err != nil {
 						return err
 					}
-					imps, err = imports.ScanForImports(r)
+					res, err := fastscan.Scan(r)
 					_ = r.Close()
 					if err != nil {
 						return err
 					}
 					select {
-					case resultsCh <- entry{filename: filename, imports: imps}:
+					case resultsCh <- entry{filename: filename, scanResult: res}:
 					case <-ctx.Done():
 						return ctx.Err()
 					}
 				}
 			})
 		}
-		results := make(map[string][]string, len(googleapisSources))
+		results := make(map[string]fastscan.Result, len(googleapisSources))
 		grp.Go(func() error {
 			// accumulator
 			for {
@@ -431,7 +430,7 @@ func BenchmarkGoogleapisScanImports(b *testing.B) {
 					if !ok {
 						return nil
 					}
-					results[entry.filename] = entry.imports
+					results[entry.filename] = entry.scanResult
 				case <-ctx.Done():
 					return ctx.Err()
 				}

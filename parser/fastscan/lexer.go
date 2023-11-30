@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package imports
+package fastscan
 
 import (
 	"bufio"
@@ -56,6 +56,8 @@ const (
 	closeBraceToken   = tokenType('}')
 	closeBracketToken = tokenType(']')
 	closeAngleToken   = tokenType('>')
+	periodToken       = tokenType('.')
+	semicolonToken    = tokenType(';')
 )
 
 type runeReader struct {
