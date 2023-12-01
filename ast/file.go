@@ -181,10 +181,12 @@ func NewSyntaxNode(keyword *KeywordNode, equals *RuneNode, syntax StringValueNod
 	if syntax == nil {
 		panic("syntax is nil")
 	}
+	var children []Node
 	if semicolon == nil {
-		panic("semicolon is nil")
+		children = []Node{keyword, equals, syntax}
+	} else {
+		children = []Node{keyword, equals, syntax, semicolon}
 	}
-	children := []Node{keyword, equals, syntax, semicolon}
 	return &SyntaxNode{
 		compositeNode: compositeNode{
 			children: children,

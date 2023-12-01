@@ -82,6 +82,51 @@ func TestJunkParse(t *testing.T) {
 	}
 }
 
+func TestLenientParse_SemicolonLess(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]struct {
+		Error   string
+		NoError string
+	}{
+		"method": {
+			Error: `syntax = "proto3";
+							service Foo {
+								;
+								rpc Bar (Baz) returns (Qux)
+								rpc Qux (Baz) returns (Qux);;
+							}`,
+			NoError: `syntax = "proto3";
+									service Foo {
+										;
+										rpc Bar (Baz) returns (Qux);
+										rpc Qux (Baz) returns (Qux);;
+									}`,
+		},
+		"service-options": {
+			Error: `syntax = "proto3";
+							service Foo {
+								option (foo) = { bar: 1 }
+							}`,
+			NoError: `syntax = "proto3";
+								service Foo {
+								  option (foo) = { bar: 1 };
+								}`,
+		},
+	}
+	for name, input := range inputs {
+		name, input := name, input
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			errHandler := reporter.NewHandler(nil)
+			protoName := fmt.Sprintf("%s.proto", name)
+			_, err := Parse(protoName, strings.NewReader(input.NoError), errHandler)
+			require.NoError(t, err)
+			_, err = Parse(protoName, strings.NewReader(input.Error), errHandler)
+			require.ErrorContains(t, err, "expected ';'")
+		})
+	}
+}
+
 func TestSimpleParse(t *testing.T) {
 	t.Parallel()
 	protos := map[string]Result{}

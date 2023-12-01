@@ -90,3 +90,41 @@ func (list *messageFieldList) toNodes() ([]*ast.MessageFieldNode, []*ast.RuneNod
 	}
 	return fields, delimiters
 }
+
+func newEmptyDeclNodes(semicolons []*ast.RuneNode) []*ast.EmptyDeclNode {
+	emptyDecls := make([]*ast.EmptyDeclNode, len(semicolons))
+	for i, semicolon := range semicolons {
+		emptyDecls[i] = ast.NewEmptyDeclNode(semicolon)
+	}
+	return emptyDecls
+}
+
+func newServiceElements(semicolons []*ast.RuneNode, elements []ast.ServiceElement) []ast.ServiceElement {
+	elems := make([]ast.ServiceElement, 0, len(semicolons)+len(elements))
+	for _, semicolon := range semicolons {
+		elems = append(elems, ast.NewEmptyDeclNode(semicolon))
+	}
+	elems = append(elems, elements...)
+	return elems
+}
+
+type nodeWithEmptyDecls[T ast.Node] struct {
+	Node       T
+	EmptyDecls []*ast.EmptyDeclNode
+}
+
+func newNodeWithEmptyDecls[T ast.Node](node T, extraSemicolons []*ast.RuneNode) nodeWithEmptyDecls[T] {
+	return nodeWithEmptyDecls[T]{
+		Node:       node,
+		EmptyDecls: newEmptyDeclNodes(extraSemicolons),
+	}
+}
+
+func toServiceElements[T ast.ServiceElement](nodes nodeWithEmptyDecls[T]) []ast.ServiceElement {
+	serviceElements := make([]ast.ServiceElement, 1+len(nodes.EmptyDecls))
+	serviceElements[0] = nodes.Node
+	for i, emptyDecl := range nodes.EmptyDecls {
+		serviceElements[i+1] = emptyDecl
+	}
+	return serviceElements
+}

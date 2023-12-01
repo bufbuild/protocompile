@@ -43,11 +43,12 @@ import (
 	svc          *ast.ServiceNode
 	svcElement   ast.ServiceElement
 	svcElements  []ast.ServiceElement
-	mtd          *ast.RPCNode
+	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElement   ast.RPCElement
 	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
+	optN         nodeWithEmptyDecls[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -68,6 +69,7 @@ import (
 	f            *ast.FloatLiteralNode
 	id           *ast.IdentNode
 	b            *ast.RuneNode
+	bs           []*ast.RuneNode
 	err          error
 }
 
@@ -81,6 +83,7 @@ import (
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
 %type <opt>          optionDecl compactOption
+%type <optN>         optionDeclWithEmptyDecls
 %type <opts>         compactOptionDecls
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
@@ -117,12 +120,12 @@ import (
 %type <extElements>  extensionElements extensionBody
 %type <str>          stringLit
 %type <svc>          serviceDecl
-%type <svcElement>   serviceElement
-%type <svcElements>  serviceElements serviceBody
+%type <svcElements>  serviceElement serviceElements serviceBody
 %type <mtd>          methodDecl
 %type <mtdElement>   methodElement
 %type <mtdElements>  methodElements methodBody
 %type <mtdMsgType>   methodMessageType
+%type <bs>           semicolons semicolonList
 
 // same for terminals
 %token <s>   _STRING_LIT
@@ -214,6 +217,20 @@ fileElement : importDecl {
 		$$ = nil
 	}
 
+semicolonList : ';' {
+		$$ = []*ast.RuneNode{$1}
+	}
+	| semicolonList ';' {
+		$$ = append($1, $2)
+	}
+
+semicolons : semicolonList {
+		$$ = $1
+	}
+	| {
+		$$ = nil
+	}
+
 syntaxDecl : _SYNTAX '=' stringLit ';' {
 		$$ = ast.NewSyntaxNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
@@ -297,6 +314,12 @@ mtdElementIdent : mtdElementName {
 optionDecl : _OPTION optionName '=' optionValue ';' {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
+	}
+
+optionDeclWithEmptyDecls : _OPTION optionName '=' optionValue semicolons {
+		optName := ast.NewOptionNameNode($2.refs, $2.dots)
+		semi, extra := protolex.(*protoLex).requireSemicolon($5)
+		$$ = newNodeWithEmptyDecls(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, semi), extra)
 	}
 
 optionName : identifier {
@@ -937,47 +960,39 @@ serviceDecl : _SERVICE identifier '{' serviceBody '}' {
 		$$ = ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
 
-serviceBody : {
-		$$ = nil
+serviceBody : semicolons {
+	  $$ = newServiceElements($1, nil)
 	}
-	| serviceElements
+	| semicolons serviceElements {
+		$$ = newServiceElements($1, $2)
+	}
 
 serviceElements : serviceElements serviceElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| serviceElement {
-		if $1 != nil {
-			$$ = []ast.ServiceElement{$1}
-		} else {
-			$$ = nil
-		}
+		$$ = $1
 	}
 
 // NB: doc suggests support for "stream" declaration, separate from "rpc", but
 // it does not appear to be supported in protoc (doc is likely from grammar for
 // Google-internal version of protoc, with support for streaming stubby)
-serviceElement : optionDecl {
-		$$ = $1
+serviceElement : optionDeclWithEmptyDecls {
+		$$ = toServiceElements($1)
 	}
 	| methodDecl {
-		$$ = $1
-	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+		$$ = toServiceElements($1)
 	}
 	| error {
 		$$ = nil
 	}
 
-methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType ';' {
-		$$ = ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6)
+methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($6)
+		$$ = newNodeWithEmptyDecls(ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, semi), extra)
 	}
-	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' {
-		$$ = ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8)
+	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8), $9)
 	}
 
 methodMessageType : '(' _STREAM typeName ')' {
