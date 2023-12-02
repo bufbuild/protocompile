@@ -112,7 +112,7 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 								  option (foo) = { bar: 1 };
 								}`,
 		},
-		"rpc-options": {
+		"method-options": {
 			Error: `syntax = "proto3";
 							service Foo {
 								rpc Bar (Baz) returns (Qux) {
