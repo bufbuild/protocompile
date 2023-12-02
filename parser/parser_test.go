@@ -112,6 +112,22 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 								  option (foo) = { bar: 1 };
 								}`,
 		},
+		"rpc-options": {
+			Error: `syntax = "proto3";
+							service Foo {
+								rpc Bar (Baz) returns (Qux) {
+									;
+									option (foo) = { bar: 1 }
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								service Foo {
+									rpc Bar (Baz) returns (Qux) {
+										;
+										option (foo) = { bar: 1 };;
+									}
+								}`,
+		},
 	}
 	for name, input := range inputs {
 		name, input := name, input

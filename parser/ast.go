@@ -108,6 +108,15 @@ func newServiceElements(semicolons []*ast.RuneNode, elements []ast.ServiceElemen
 	return elems
 }
 
+func newMethodElements(semicolons []*ast.RuneNode, elements []ast.RPCElement) []ast.RPCElement {
+	elems := make([]ast.RPCElement, 0, len(semicolons)+len(elements))
+	for _, semicolon := range semicolons {
+		elems = append(elems, ast.NewEmptyDeclNode(semicolon))
+	}
+	elems = append(elems, elements...)
+	return elems
+}
+
 type nodeWithEmptyDecls[T ast.Node] struct {
 	Node       T
 	EmptyDecls []*ast.EmptyDeclNode
@@ -121,10 +130,19 @@ func newNodeWithEmptyDecls[T ast.Node](node T, extraSemicolons []*ast.RuneNode) 
 }
 
 func toServiceElements[T ast.ServiceElement](nodes nodeWithEmptyDecls[T]) []ast.ServiceElement {
-	serviceElements := make([]ast.ServiceElement, 1+len(nodes.EmptyDecls))
-	serviceElements[0] = nodes.Node
+	elements := make([]ast.ServiceElement, 1+len(nodes.EmptyDecls))
+	elements[0] = nodes.Node
 	for i, emptyDecl := range nodes.EmptyDecls {
-		serviceElements[i+1] = emptyDecl
+		elements[i+1] = emptyDecl
 	}
-	return serviceElements
+	return elements
+}
+
+func toMethodElements[T ast.RPCElement](nodes nodeWithEmptyDecls[T]) []ast.RPCElement {
+	elements := make([]ast.RPCElement, 1+len(nodes.EmptyDecls))
+	elements[0] = nodes.Node
+	for i, emptyDecl := range nodes.EmptyDecls {
+		elements[i+1] = emptyDecl
+	}
+	return elements
 }

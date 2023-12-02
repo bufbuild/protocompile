@@ -41,11 +41,9 @@ import (
 	extElement   ast.ExtendElement
 	extElements  []ast.ExtendElement
 	svc          *ast.ServiceNode
-	svcElement   ast.ServiceElement
 	svcElements  []ast.ServiceElement
 	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
-	mtdElement   ast.RPCElement
 	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
 	optN         nodeWithEmptyDecls[*ast.OptionNode]
@@ -122,8 +120,7 @@ import (
 %type <svc>          serviceDecl
 %type <svcElements>  serviceElement serviceElements serviceBody
 %type <mtd>          methodDecl
-%type <mtdElement>   methodElement
-%type <mtdElements>  methodElements methodBody
+%type <mtdElements>  methodElement methodElements methodBody
 %type <mtdMsgType>   methodMessageType
 %type <bs>           semicolons semicolonList
 
@@ -1002,31 +999,22 @@ methodMessageType : '(' _STREAM typeName ')' {
 		$$ = ast.NewRPCTypeNode($1, nil, $2, $3)
 	}
 
-methodBody : {
-		$$ = nil
+methodBody : semicolons {
+		$$ = newMethodElements($1, nil)
 	}
-	| methodElements
+	| semicolons methodElements {
+		$$ = newMethodElements($1, $2)
+	}
 
 methodElements : methodElements methodElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| methodElement {
-		if $1 != nil {
-			$$ = []ast.RPCElement{$1}
-		} else {
-			$$ = nil
-		}
-	}
-
-methodElement : optionDecl {
 		$$ = $1
 	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+
+methodElement : optionDeclWithEmptyDecls {
+		$$ = toMethodElements($1)
 	}
 	| error {
 		$$ = nil
