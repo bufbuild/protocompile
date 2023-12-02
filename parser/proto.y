@@ -33,10 +33,11 @@ import (
 	ooElements   []ast.OneofElement
 	ext          *ast.ExtensionRangeNode
 	resvd        *ast.ReservedNode
+	resvdN       nodeWithEmptyDecls[*ast.ReservedNode]
 	en           *ast.EnumNode
 	enElement    ast.EnumElement
 	enElements   []ast.EnumElement
-	env          *ast.EnumValueNode
+	env          nodeWithEmptyDecls[*ast.EnumValueNode]
 	extend       *ast.ExtendNode
 	extElement   ast.ExtendElement
 	extElements  []ast.ExtendElement
@@ -105,13 +106,13 @@ import (
 %type <ooElement>    oneofElement
 %type <ooElements>   oneofElements oneofBody
 %type <names>        fieldNameStrings fieldNameIdents
-%type <resvd>        msgReserved enumReserved reservedNames
+%type <resvd>        msgReserved reservedNames
+%type <resvdN>       enumReserved reservedNamesWithEmptyDecls
 %type <rng>          tagRange enumValueRange
 %type <rngs>         tagRanges enumValueRanges
 %type <ext>          extensionRangeDecl
 %type <en>           enumDecl
-%type <enElement>    enumElement
-%type <enElements>   enumElements enumBody
+%type <enElements>   enumElement enumElements enumBody
 %type <env>          enumValueDecl
 %type <extend>       extensionDecl
 %type <extElement>   extensionElement
@@ -752,16 +753,26 @@ msgReserved : _RESERVED tagRanges ';' {
 	}
 	| reservedNames
 
-enumReserved : _RESERVED enumValueRanges ';' {
-		$$ = ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3)
+enumReserved : _RESERVED enumValueRanges semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, semi), extra)
 	}
-	| reservedNames
+	| reservedNamesWithEmptyDecls
 
 reservedNames : _RESERVED fieldNameStrings ';' {
 		$$ = ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, $3)
 	}
 	| _RESERVED fieldNameIdents ';' {
 		$$ = ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3)
+	}
+
+reservedNamesWithEmptyDecls : _RESERVED fieldNameStrings semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, semi), extra)
+	}
+	| _RESERVED fieldNameIdents semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, semi), extra)
 	}
 
 fieldNameStrings : stringLit {
@@ -792,41 +803,32 @@ enumBody : {
 	| enumElements
 
 enumElements : enumElements enumElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| enumElement {
-		if $1 != nil {
-			$$ = []ast.EnumElement{$1}
-		} else {
-			$$ = nil
-		}
+		$$ = $1
 	}
 
-enumElement : optionDecl {
-		$$ = $1
+enumElement : optionDeclWithEmptyDecls {
+		$$ = toEnumElements($1)
 	}
 	| enumValueDecl {
-		$$ = $1
+		$$ = toEnumElements($1)
 	}
 	| enumReserved {
-		$$ = $1
-	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+		$$ = toEnumElements($1)
 	}
 	| error {
 		$$ = nil
 	}
 
-enumValueDecl : enumValueName '=' enumValueNumber ';' {
-		$$ = ast.NewEnumValueNode($1, $2, $3, nil, $4)
+enumValueDecl : enumValueName '=' enumValueNumber semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithEmptyDecls(ast.NewEnumValueNode($1, $2, $3, nil, semi), extra)
 	}
-	|  enumValueName '=' enumValueNumber compactOptions ';' {
-		$$ = ast.NewEnumValueNode($1, $2, $3, $4, $5)
+	|  enumValueName '=' enumValueNumber compactOptions semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($5)
+		$$ = newNodeWithEmptyDecls(ast.NewEnumValueNode($1, $2, $3, $4, semi), extra)
 	}
 
 messageDecl : _MESSAGE identifier '{' messageBody '}' {

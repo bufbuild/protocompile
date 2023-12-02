@@ -146,3 +146,12 @@ func toMethodElements[T ast.RPCElement](nodes nodeWithEmptyDecls[T]) []ast.RPCEl
 	}
 	return elements
 }
+
+func toEnumElements[T ast.EnumElement](nodes nodeWithEmptyDecls[T]) []ast.EnumElement {
+	elements := make([]ast.EnumElement, 1+len(nodes.EmptyDecls))
+	elements[0] = nodes.Node
+	for i, emptyDecl := range nodes.EmptyDecls {
+		elements[i+1] = emptyDecl
+	}
+	return elements
+}

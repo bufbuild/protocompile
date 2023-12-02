@@ -128,6 +128,16 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 									}
 								}`,
 		},
+		"enum-value": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								FOO = 0
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									FOO = 0;
+								}`,
+		},
 	}
 	for name, input := range inputs {
 		name, input := name, input
