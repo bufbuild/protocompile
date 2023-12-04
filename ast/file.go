@@ -331,10 +331,12 @@ func NewPackageNode(keyword *KeywordNode, name IdentValueNode, semicolon *RuneNo
 	if name == nil {
 		panic("name is nil")
 	}
+	var children []Node
 	if semicolon == nil {
-		panic("semicolon is nil")
+		children = []Node{keyword, name}
+	} else {
+		children = []Node{keyword, name, semicolon}
 	}
-	children := []Node{keyword, name, semicolon}
 	return &PackageNode{
 		compositeNode: compositeNode{
 			children: children,
