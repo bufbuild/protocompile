@@ -225,13 +225,6 @@ semicolons : semicolonList {
 		$$ = nil
 	}
 
-semicolon : ';' {
-		$$ = $1
-	}
-	| {
-		$$ = nil
-	}
-
 syntaxDecl : _SYNTAX '=' stringLit ';' {
 		$$ = ast.NewSyntaxNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
