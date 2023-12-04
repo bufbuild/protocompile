@@ -753,9 +753,8 @@ msgReserved : _RESERVED tagRanges ';' {
 	}
 	| reservedNames
 
-enumReserved : _RESERVED enumValueRanges semicolons {
-		semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, semi), extra)
+enumReserved : _RESERVED enumValueRanges ';' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
 	}
 	| reservedNamesWithEmptyDecls
 
@@ -766,13 +765,11 @@ reservedNames : _RESERVED fieldNameStrings ';' {
 		$$ = ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3)
 	}
 
-reservedNamesWithEmptyDecls : _RESERVED fieldNameStrings semicolons {
-	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, semi), extra)
+reservedNamesWithEmptyDecls : _RESERVED fieldNameStrings ';' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, $3), $4)
 	}
-	| _RESERVED fieldNameIdents semicolons {
-		semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, semi), extra)
+	| _RESERVED fieldNameIdents ';' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3), $4)
 	}
 
 fieldNameStrings : stringLit {
