@@ -88,6 +88,22 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 		Error   string
 		NoError string
 	}{
+		"import": {
+			Error: `syntax = "proto3";
+							import "foo.proto"
+							message Foo {}`,
+			NoError: `syntax = "proto3";
+								import "foo.proto";;
+								message Foo {};`,
+		},
+		"file-options": {
+			Error: `syntax = "proto3";
+							option (foo) = 1
+							message Foo {}`,
+			NoError: `syntax = "proto3";
+								option (foo) = 1;;
+								message Foo {};`,
+		},
 		"method": {
 			Error: `syntax = "proto3";
 							service Foo {
