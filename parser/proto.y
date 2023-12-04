@@ -598,6 +598,10 @@ fieldCardinality : _REQUIRED
 compactOptions: '[' compactOptionDecls ']' {
 		$$ = ast.NewCompactOptionsNode($1, $2.options, $2.commas, $3)
 	}
+	| '[' ']' {
+		protolex.(*protoLex).Error("compact options must have at least one option")
+		$$ = ast.NewCompactOptionsNode($1, nil, nil, $2)
+	}
 
 compactOptionDecls : compactOption {
 		$$ = &compactOptionSlices{options: []*ast.OptionNode{$1}}
