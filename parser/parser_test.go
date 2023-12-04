@@ -162,6 +162,38 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 									FOO = 0;;
 								}`,
 		},
+		"enum-value-options": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								FOO = 0 [foo = 1]
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									FOO = 0 [foo = 1];
+								}`,
+		},
+		"enum-options": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								option (foo) = 1
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									;
+									option (foo) = 1;;
+								}`,
+		},
+		"enum-reserved": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								reserved "FOO"
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									;
+									reserved "FOO";;
+								}`,
+		},
 	}
 	for name, input := range inputs {
 		name, input := name, input
