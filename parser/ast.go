@@ -126,6 +126,15 @@ func newFileElements(semicolons []*ast.RuneNode, elements []ast.FileElement) []a
 	return elems
 }
 
+func newEnumElements(semicolons []*ast.RuneNode, elements []ast.EnumElement) []ast.EnumElement {
+	elems := make([]ast.EnumElement, 0, len(semicolons)+len(elements))
+	for _, semicolon := range semicolons {
+		elems = append(elems, ast.NewEmptyDeclNode(semicolon))
+	}
+	elems = append(elems, elements...)
+	return elems
+}
+
 type nodeWithEmptyDecls[T ast.Node] struct {
 	Node       T
 	EmptyDecls []*ast.EmptyDeclNode

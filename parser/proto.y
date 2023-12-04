@@ -76,6 +76,8 @@ import (
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
+// TODO: Remove all *N types by migrating all usage to them, then removing the old types
+// and renaming the *N types to the old types.
 %type <file>         file
 %type <syn>          syntaxDecl
 %type <ed>           editionDecl
@@ -759,6 +761,8 @@ msgReserved : _RESERVED tagRanges ';' {
 	| reservedNames
 
 enumReserved : _RESERVED enumValueRanges ';' semicolons {
+	  // TODO: Tolerate a missing semicolon here. This currnelty creates an shift/reduce conflict
+		// between `reserved 1 to 10` and `reserved 1` followed by `to 10`.
 		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
 	}
 	| reservedNamesWithEmptyDecls
@@ -770,11 +774,13 @@ reservedNames : _RESERVED fieldNameStrings ';' {
 		$$ = ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3)
 	}
 
-reservedNamesWithEmptyDecls : _RESERVED fieldNameStrings ';' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, $3), $4)
+reservedNamesWithEmptyDecls : _RESERVED fieldNameStrings semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, semi), extra)
 	}
-	| _RESERVED fieldNameIdents ';' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3), $4)
+	| _RESERVED fieldNameIdents semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, semi), extra)
 	}
 
 fieldNameStrings : stringLit {
@@ -803,10 +809,12 @@ enumDeclWithEmptyDecls : _ENUM identifier '{' enumBody '}' semicolons {
 		$$ = newNodeWithEmptyDecls(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
-enumBody : {
-		$$ = nil
+enumBody : semicolons {
+		$$ = newEnumElements($1, nil)
 	}
-	| enumElements
+	| semicolons enumElements {
+		$$ = newEnumElements($1, $2)
+	}
 
 enumElements : enumElements enumElement {
 		$$ = append($1, $2...)
