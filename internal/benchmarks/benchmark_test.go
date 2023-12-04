@@ -408,7 +408,7 @@ func BenchmarkGoogleapisFastScan(b *testing.B) {
 					if err != nil {
 						return err
 					}
-					res, err := fastscan.Scan(r)
+					res, err := fastscan.Scan(filename, r)
 					_ = r.Close()
 					if err != nil {
 						return err
