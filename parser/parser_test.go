@@ -88,6 +88,30 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 		Error   string
 		NoError string
 	}{
+		"package": {
+			Error: `syntax = "proto3";
+							package foo
+							message Foo {}`,
+			NoError: `syntax = "proto3";
+								package foo;
+								message Foo {};`,
+		},
+		"import": {
+			Error: `syntax = "proto3";
+							import "foo.proto"
+							message Foo {}`,
+			NoError: `syntax = "proto3";
+								import "foo.proto";;
+								message Foo {};`,
+		},
+		"file-options": {
+			Error: `syntax = "proto3";
+							option (foo) = 1
+							message Foo {}`,
+			NoError: `syntax = "proto3";
+								option (foo) = 1;;
+								message Foo {};`,
+		},
 		"method": {
 			Error: `syntax = "proto3";
 							service Foo {
@@ -110,6 +134,22 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 			NoError: `syntax = "proto3";
 								service Foo {
 								  option (foo) = { bar: 1 };
+								}`,
+		},
+		"method-options": {
+			Error: `syntax = "proto3";
+							service Foo {
+								rpc Bar (Baz) returns (Qux) {
+									;
+									option (foo) = { bar: 1 }
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								service Foo {
+									rpc Bar (Baz) returns (Qux) {
+										;
+										option (foo) = { bar: 1 };;
+									}
 								}`,
 		},
 	}

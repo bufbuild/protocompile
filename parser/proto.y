@@ -17,11 +17,11 @@ import (
 	file         *ast.FileNode
 	syn          *ast.SyntaxNode
 	ed           *ast.EditionNode
-	fileElement  ast.FileElement
 	fileElements []ast.FileElement
-	pkg          *ast.PackageNode
-	imprt        *ast.ImportNode
+	pkg          nodeWithEmptyDecls[*ast.PackageNode]
+	imprt        nodeWithEmptyDecls[*ast.ImportNode]
 	msg          *ast.MessageNode
+	msgN         nodeWithEmptyDecls[*ast.MessageNode]
 	msgElement   ast.MessageElement
 	msgElements  []ast.MessageElement
 	fld          *ast.FieldNode
@@ -34,18 +34,18 @@ import (
 	ext          *ast.ExtensionRangeNode
 	resvd        *ast.ReservedNode
 	en           *ast.EnumNode
+	enN          nodeWithEmptyDecls[*ast.EnumNode]
 	enElement    ast.EnumElement
 	enElements   []ast.EnumElement
 	env          *ast.EnumValueNode
 	extend       *ast.ExtendNode
+	extendN      nodeWithEmptyDecls[*ast.ExtendNode]
 	extElement   ast.ExtendElement
 	extElements  []ast.ExtendElement
-	svc          *ast.ServiceNode
-	svcElement   ast.ServiceElement
+	svc          nodeWithEmptyDecls[*ast.ServiceNode]
 	svcElements  []ast.ServiceElement
 	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
-	mtdElement   ast.RPCElement
 	mtdElements  []ast.RPCElement
 	opt          *ast.OptionNode
 	optN         nodeWithEmptyDecls[*ast.OptionNode]
@@ -78,8 +78,7 @@ import (
 %type <file>         file
 %type <syn>          syntaxDecl
 %type <ed>           editionDecl
-%type <fileElement>  fileElement
-%type <fileElements> fileElements
+%type <fileElements> fileBody fileElement fileElements
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
 %type <opt>          optionDecl compactOption
@@ -102,6 +101,7 @@ import (
 %type <mapFld>       mapFieldDecl
 %type <mapType>      mapType
 %type <msg>          messageDecl
+%type <msgN>				 messageDeclWithEmptyDecls
 %type <msgElement>   messageElement
 %type <msgElements>  messageElements messageBody
 %type <ooElement>    oneofElement
@@ -112,18 +112,19 @@ import (
 %type <rngs>         tagRanges enumValueRanges
 %type <ext>          extensionRangeDecl
 %type <en>           enumDecl
+%type <enN>					 enumDeclWithEmptyDecls
 %type <enElement>    enumElement
 %type <enElements>   enumElements enumBody
 %type <env>          enumValueDecl
 %type <extend>       extensionDecl
+%type <extendN>      extensionDeclWithEmptyDecls
 %type <extElement>   extensionElement
 %type <extElements>  extensionElements extensionBody
 %type <str>          stringLit
 %type <svc>          serviceDecl
 %type <svcElements>  serviceElement serviceElements serviceBody
 %type <mtd>          methodDecl
-%type <mtdElement>   methodElement
-%type <mtdElements>  methodElements methodBody
+%type <mtdElements>  methodElement methodElements methodBody
 %type <mtdMsgType>   methodMessageType
 %type <bs>           semicolons semicolonList
 
@@ -153,17 +154,17 @@ file : syntaxDecl {
 		$$ = ast.NewFileNodeWithEdition(lex.info, $1, nil, lex.eof)
 		lex.res = $$
 	}
-	| fileElements  {
+	| fileBody  {
 		lex := protolex.(*protoLex)
 		$$ = ast.NewFileNode(lex.info, nil, $1, lex.eof)
 		lex.res = $$
 	}
-	| syntaxDecl fileElements {
+	| syntaxDecl fileBody {
 		lex := protolex.(*protoLex)
 		$$ = ast.NewFileNode(lex.info, $1, $2, lex.eof)
 		lex.res = $$
 	}
-	| editionDecl fileElements {
+	| editionDecl fileBody {
 		lex := protolex.(*protoLex)
 		$$ = ast.NewFileNodeWithEdition(lex.info, $1, $2, lex.eof)
 		lex.res = $$
@@ -174,44 +175,37 @@ file : syntaxDecl {
 		lex.res = $$
 	}
 
+fileBody : semicolons fileElements {
+		$$ = newFileElements($1, $2)
+	}
+
 fileElements : fileElements fileElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| fileElement {
-		if $1 != nil {
-			$$ = []ast.FileElement{$1}
-		} else {
-			$$ = nil
-		}
+		$$ = $1
 	}
 
 fileElement : importDecl {
-		$$ = $1
+		$$ = toFileElements($1)
 	}
 	| packageDecl {
-		$$ = $1
+		$$ = toFileElements($1)
 	}
-	| optionDecl {
-		$$ = $1
+	| optionDeclWithEmptyDecls {
+		$$ = toFileElements($1)
 	}
-	| messageDecl {
-		$$ = $1
+	| messageDeclWithEmptyDecls {
+		$$ = toFileElements($1)
 	}
-	| enumDecl {
-		$$ = $1
+	| enumDeclWithEmptyDecls {
+		$$ = toFileElements($1)
 	}
-	| extensionDecl {
-		$$ = $1
+	| extensionDeclWithEmptyDecls {
+		$$ = toFileElements($1)
 	}
 	| serviceDecl {
-		$$ = $1
-	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+		$$ = toFileElements($1)
 	}
 	| error {
 		$$ = nil
@@ -239,18 +233,22 @@ editionDecl : _EDITION '=' stringLit ';' {
 		$$ = ast.NewEditionNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
 
-importDecl : _IMPORT stringLit ';' {
-		$$ = ast.NewImportNode($1.ToKeyword(), nil, nil, toStringValueNode($2), $3)
+importDecl : _IMPORT stringLit semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewImportNode($1.ToKeyword(), nil, nil, toStringValueNode($2), semi), extra)
 	}
-	| _IMPORT _WEAK stringLit ';' {
-		$$ = ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), toStringValueNode($3), $4)
+	| _IMPORT _WEAK stringLit semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithEmptyDecls(ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), toStringValueNode($3), semi), extra)
 	}
-	| _IMPORT _PUBLIC stringLit ';' {
-		$$ = ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, toStringValueNode($3), $4)
+	| _IMPORT _PUBLIC stringLit semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithEmptyDecls(ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, toStringValueNode($3), semi), extra)
 	}
 
-packageDecl : _PACKAGE qualifiedIdentifier ';' {
-		$$ = ast.NewPackageNode($1.ToKeyword(), $2.toIdentValueNode(nil), $3)
+packageDecl : _PACKAGE qualifiedIdentifier semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithEmptyDecls(ast.NewPackageNode($1.ToKeyword(), $2.toIdentValueNode(nil), semi), extra)
 	}
 
 qualifiedIdentifier : identifier {
@@ -793,6 +791,10 @@ enumDecl : _ENUM identifier '{' enumBody '}' {
 		$$ = ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
 
+enumDeclWithEmptyDecls : _ENUM identifier '{' enumBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+	}
+
 enumBody : {
 		$$ = nil
 	}
@@ -838,6 +840,10 @@ enumValueDecl : enumValueName '=' enumValueNumber ';' {
 
 messageDecl : _MESSAGE identifier '{' messageBody '}' {
 		$$ = ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5)
+	}
+
+messageDeclWithEmptyDecls : _MESSAGE identifier '{' messageBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
 messageBody : {
@@ -914,6 +920,10 @@ extensionDecl : _EXTEND typeName '{' extensionBody '}' {
 		$$ = ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5)
 	}
 
+extensionDeclWithEmptyDecls : _EXTEND typeName '{' extensionBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+	}
+
 extensionBody : {
 		$$ = nil
 	}
@@ -960,8 +970,8 @@ extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _I
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
-serviceDecl : _SERVICE identifier '{' serviceBody '}' {
-		$$ = ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5)
+serviceDecl : _SERVICE identifier '{' serviceBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
 serviceBody : semicolons {
@@ -1006,31 +1016,22 @@ methodMessageType : '(' _STREAM typeName ')' {
 		$$ = ast.NewRPCTypeNode($1, nil, $2, $3)
 	}
 
-methodBody : {
-		$$ = nil
+methodBody : semicolons {
+		$$ = newMethodElements($1, nil)
 	}
-	| methodElements
+	| semicolons methodElements {
+		$$ = newMethodElements($1, $2)
+	}
 
 methodElements : methodElements methodElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| methodElement {
-		if $1 != nil {
-			$$ = []ast.RPCElement{$1}
-		} else {
-			$$ = nil
-		}
-	}
-
-methodElement : optionDecl {
 		$$ = $1
 	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+
+methodElement : optionDeclWithEmptyDecls {
+		$$ = toMethodElements($1)
 	}
 	| error {
 		$$ = nil
