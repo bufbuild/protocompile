@@ -1995,8 +1995,8 @@ protodefault:
 	case 167:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
-			// TODO: Tolerate a missing semicolon here. This currnelty creates an shift/reduce conflict
-			// between `reserved 1 to 10` and `reserved 1` followed by `to 10`.
+			// TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
+			// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
 			protoVAL.resvdN = newNodeWithEmptyDecls(ast.NewReservedRangesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].b), protoDollar[4].bs)
 		}
 	case 169:
