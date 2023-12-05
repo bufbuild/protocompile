@@ -761,8 +761,8 @@ msgReserved : _RESERVED tagRanges ';' {
 	| reservedNames
 
 enumReserved : _RESERVED enumValueRanges ';' semicolons {
-	  // TODO: Tolerate a missing semicolon here. This currnelty creates an shift/reduce conflict
-		// between `reserved 1 to 10` and `reserved 1` followed by `to 10`.
+	  // TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
+		// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
 		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
 	}
 	| reservedNamesWithEmptyDecls
