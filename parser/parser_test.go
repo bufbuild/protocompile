@@ -194,6 +194,48 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 									reserved "FOO";;
 								}`,
 		},
+		"oneof-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								oneof bar {
+									option (foo) = 1
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									oneof bar {
+										option (foo) = 1;
+									};
+								}`,
+		},
+		"oneof-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								oneof bar {
+									int32 baz = 1
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									oneof bar {
+										int32 baz = 1;
+									};
+								}`,
+		},
+		"oneof-field-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								oneof bar {
+									int32 baz = 1 [foo = 1]
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									oneof bar {
+										int32 baz = 1 [foo = 1];
+									};
+								}`,
+		},
 	}
 	for name, input := range inputs {
 		name, input := name, input
