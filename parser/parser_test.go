@@ -236,6 +236,36 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 									};
 								}`,
 		},
+		"extension-field": {
+			Error: `syntax = "proto3";
+							extend Foo {
+								int32 bar = 1
+							}`,
+			NoError: `syntax = "proto3";
+								extend Foo {
+									int32 bar = 1;
+								}`,
+		},
+		"extension-field-cardinality": {
+			Error: `syntax = "proto3";
+							extend Foo {
+								repeated int32 bar = 1
+							}`,
+			NoError: `syntax = "proto3";
+								extend Foo {
+									repeated int32 bar = 1;
+								}`,
+		},
+		"extension-field-options": {
+			Error: `syntax = "proto3";
+							extend Foo {
+								int32 bar = 1 [foo = 1]
+							}`,
+			NoError: `syntax = "proto3";
+								extend Foo {
+									int32 bar = 1 [foo = 1];
+								}`,
+		},
 	}
 	for name, input := range inputs {
 		name, input := name, input

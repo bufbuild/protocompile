@@ -978,16 +978,16 @@ extensionElement : extensionFieldDecl {
 		$$ = nil
 	}
 
-extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT ';' {
+extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT semicolon {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
 	}
-	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions semicolon {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
 	}
-	| extElementTypeIdent identifier '=' _INT_LIT ';' {
+	| extElementTypeIdent identifier '=' _INT_LIT semicolon {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
 	}
-	| extElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+	| extElementTypeIdent identifier '=' _INT_LIT compactOptions semicolon {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
