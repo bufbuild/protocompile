@@ -290,16 +290,17 @@ func NewReservedNamesNode(keyword *KeywordNode, names []StringValueNode, commas 
 	if keyword == nil {
 		panic("keyword is nil")
 	}
-	if semicolon == nil {
-		panic("semicolon is nil")
-	}
 	if len(names) == 0 {
 		panic("must have at least one name")
 	}
 	if len(commas) != len(names)-1 {
 		panic(fmt.Sprintf("%d names requires %d commas, not %d", len(names), len(names)-1, len(commas)))
 	}
-	children := make([]Node, 0, len(names)*2+1)
+	numChildren := len(names) * 2
+	if semicolon != nil {
+		numChildren++
+	}
+	children := make([]Node, 0, numChildren)
 	children = append(children, keyword)
 	for i, name := range names {
 		if i > 0 {
@@ -313,7 +314,9 @@ func NewReservedNamesNode(keyword *KeywordNode, names []StringValueNode, commas 
 		}
 		children = append(children, name)
 	}
-	children = append(children, semicolon)
+	if semicolon != nil {
+		children = append(children, semicolon)
+	}
 	return &ReservedNode{
 		compositeNode: compositeNode{
 			children: children,

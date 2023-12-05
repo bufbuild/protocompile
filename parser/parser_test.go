@@ -140,7 +140,6 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 			Error: `syntax = "proto3";
 							service Foo {
 								rpc Bar (Baz) returns (Qux) {
-									;
 									option (foo) = { bar: 1 }
 								}
 							}`,
@@ -150,6 +149,49 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 										;
 										option (foo) = { bar: 1 };;
 									}
+								}`,
+		},
+		"enum-value": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								FOO = 0
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									;
+									FOO = 0;;
+								}`,
+		},
+		"enum-value-options": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								FOO = 0 [foo = 1]
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									FOO = 0 [foo = 1];
+								}`,
+		},
+		"enum-options": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								option (foo) = 1
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									;
+									option (foo) = 1;;
+								}`,
+		},
+		"enum-reserved": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								reserved "FOO"
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									;
+									reserved "FOO";;
 								}`,
 		},
 	}

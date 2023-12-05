@@ -126,6 +126,15 @@ func newFileElements(semicolons []*ast.RuneNode, elements []ast.FileElement) []a
 	return elems
 }
 
+func newEnumElements(semicolons []*ast.RuneNode, elements []ast.EnumElement) []ast.EnumElement {
+	elems := make([]ast.EnumElement, 0, len(semicolons)+len(elements))
+	for _, semicolon := range semicolons {
+		elems = append(elems, ast.NewEmptyDeclNode(semicolon))
+	}
+	elems = append(elems, elements...)
+	return elems
+}
+
 type nodeWithEmptyDecls[T ast.Node] struct {
 	Node       T
 	EmptyDecls []*ast.EmptyDeclNode
@@ -158,6 +167,15 @@ func toMethodElements[T ast.RPCElement](nodes nodeWithEmptyDecls[T]) []ast.RPCEl
 
 func toFileElements[T ast.FileElement](nodes nodeWithEmptyDecls[T]) []ast.FileElement {
 	elements := make([]ast.FileElement, 1+len(nodes.EmptyDecls))
+	elements[0] = nodes.Node
+	for i, emptyDecl := range nodes.EmptyDecls {
+		elements[i+1] = emptyDecl
+	}
+	return elements
+}
+
+func toEnumElements[T ast.EnumElement](nodes nodeWithEmptyDecls[T]) []ast.EnumElement {
+	elements := make([]ast.EnumElement, 1+len(nodes.EmptyDecls))
 	elements[0] = nodes.Node
 	for i, emptyDecl := range nodes.EmptyDecls {
 		elements[i+1] = emptyDecl
