@@ -16,11 +16,11 @@ package fastscan
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"strings"
 
 	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/reporter"
 )
 
 var closeSymbol = map[tokenType]tokenType{
@@ -49,74 +49,38 @@ type Import struct {
 // Scan does not fully parse the source, so there are many kinds of syntax errors
 // that will not be recognized. A full parser should be used to reliably detect
 // errors in the source. But if the scanner happens to see things that are clearly
-// wrong while scanning for the package and imports, it will return them.
-type SyntaxError struct {
-	errs []singleSyntaxError
-}
+// wrong while scanning for the package and imports, it will return them. The
+// slice contains one error for each location where a syntax issue is found.
+type SyntaxError []reporter.ErrorWithPos
 
 // Error implements the error interface, returning an error message with the
 // details of the syntax error issues.
-func (e *SyntaxError) Error() string {
+func (e SyntaxError) Error() string {
 	var buf bytes.Buffer
-	for i := range e.errs {
+	for i := range e {
 		if i > 0 {
 			buf.WriteByte('\n')
 		}
-		buf.WriteString(e.errs[i].Error())
+		buf.WriteString(e[i].Error())
 	}
 	return buf.String()
 }
 
-// Len returns the number of different locations where a syntax error was
-// identified.
-func (e *SyntaxError) Len() int {
-	return len(e.errs)
-}
-
-// Get returns details for a syntax error at a single location.
-func (e *SyntaxError) Get(i int) error {
-	return &e.errs[i]
-}
-
-// GetPosition returns the location in the source file where a syntax error
-// was identified.
-func (e *SyntaxError) GetPosition(i int) ast.SourcePos {
-	return ast.SourcePos{
-		Filename: e.errs[i].filename,
-		Line:     e.errs[i].line,
-		Col:      e.errs[i].col,
-	}
-}
-
 // Unwrap returns an error for each location where a syntax error was
 // identified.
-func (e *SyntaxError) Unwrap() []error {
-	slice := make([]error, len(e.errs))
-	for i := range e.errs {
-		slice[i] = &e.errs[i]
+func (e SyntaxError) Unwrap() []error {
+	slice := make([]error, len(e))
+	for i := range e {
+		slice[i] = e[i]
 	}
 	return slice
 }
 
-func newSyntaxError(errs []singleSyntaxError) error {
+func newSyntaxError(errs []reporter.ErrorWithPos) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	return &SyntaxError{errs: errs}
-}
-
-type singleSyntaxError struct {
-	msg       string
-	filename  string
-	line, col int
-}
-
-func (s *singleSyntaxError) Error() string {
-	file := s.filename
-	if file == "" {
-		file = "<input>"
-	}
-	return fmt.Sprintf("%s:%d:%d: %s", file, s.line, s.col, s.msg)
+	return SyntaxError(errs)
 }
 
 // Scan scans the given reader, which should contain Protobuf source, and
@@ -135,15 +99,31 @@ func Scan(filename string, r io.Reader) (Result, error) {
 	var currentImport []string     // if non-nil, parsing an import statement
 	var isPublic, isWeak bool      // if public or weak keyword observed in current import statement
 	var packageComponents []string // if non-nil, parsing a package statement
-	var syntaxErrs []singleSyntaxError
+	var syntaxErrs []reporter.ErrorWithPos
 
 	// current stack of open blocks -- those starting with {, [, (, or < for
 	// which we haven't yet encountered the closing }, ], ), or >
 	var contextStack []tokenType
 	declarationStart := true
 
-	var prevLine, prevCol int
 	lexer := newLexer(r)
+
+	if filename == "" {
+		filename = "<input>"
+	}
+	getSpan := func(line, col int) ast.SourceSpan {
+		pos := ast.SourcePos{
+			Filename: filename,
+			Line:     line,
+			Col:      col,
+		}
+		return ast.NewSourceSpan(pos, pos)
+	}
+	getLatestSpan := func() ast.SourceSpan {
+		return getSpan(lexer.prevTokenLine+1, lexer.prevTokenCol+1)
+	}
+
+	var prevLine, prevCol int
 	for {
 		token, text, err := lexer.Lex()
 		if err != nil {
@@ -168,11 +148,10 @@ func Scan(filename string, r io.Reader) (Result, error) {
 			default:
 				if len(currentImport) > 0 {
 					if token != semicolonToken {
-						syntaxErrs = append(syntaxErrs, singleSyntaxError{
-							msg:  fmt.Sprintf("unexpected %s; expecting semicolon", token.describe()),
-							line: lexer.prevTokenLine + 1,
-							col:  lexer.prevTokenCol + 1,
-						})
+						syntaxErrs = append(syntaxErrs,
+							reporter.Errorf(getLatestSpan(),
+								"unexpected %s; expecting semicolon", token.describe()),
+						)
 					}
 					res.Imports = append(res.Imports, Import{
 						Path:     strings.Join(currentImport, ""),
@@ -180,12 +159,10 @@ func Scan(filename string, r io.Reader) (Result, error) {
 						IsWeak:   isWeak,
 					})
 				} else {
-					syntaxErrs = append(syntaxErrs, singleSyntaxError{
-						msg:      fmt.Sprintf("unexpected %s; expecting import path string", token.describe()),
-						filename: filename,
-						line:     lexer.prevTokenLine + 1,
-						col:      lexer.prevTokenCol + 1,
-					})
+					syntaxErrs = append(syntaxErrs,
+						reporter.Errorf(getLatestSpan(),
+							"unexpected %s; expecting import path string", token.describe()),
+					)
 				}
 				currentImport = nil
 			}
@@ -195,51 +172,45 @@ func Scan(filename string, r io.Reader) (Result, error) {
 			switch token {
 			case identifierToken:
 				if len(packageComponents) > 0 && packageComponents[len(packageComponents)-1] != "." {
-					syntaxErrs = append(syntaxErrs, singleSyntaxError{
-						msg:  "package name should have a period between name components",
-						line: lexer.prevTokenLine + 1,
-						col:  lexer.prevTokenCol + 1,
-					})
+					syntaxErrs = append(syntaxErrs,
+						reporter.Errorf(getLatestSpan(),
+							"package name should have a period between name components"),
+					)
 				}
 				packageComponents = append(packageComponents, text.(string))
 			case periodToken:
 				if len(packageComponents) == 0 {
-					syntaxErrs = append(syntaxErrs, singleSyntaxError{
-						msg:  "package name should not begin with a period",
-						line: lexer.prevTokenLine + 1,
-						col:  lexer.prevTokenCol + 1,
-					})
+					syntaxErrs = append(syntaxErrs,
+						reporter.Errorf(getLatestSpan(),
+							"package name should not begin with a period"),
+					)
 				} else if packageComponents[len(packageComponents)-1] == "." {
-					syntaxErrs = append(syntaxErrs, singleSyntaxError{
-						msg:  "package name should not have two periods in a row",
-						line: lexer.prevTokenLine + 1,
-						col:  lexer.prevTokenCol + 1,
-					})
+					syntaxErrs = append(syntaxErrs,
+						reporter.Errorf(getLatestSpan(),
+							"package name should not have two periods in a row"),
+					)
 				}
 				packageComponents = append(packageComponents, ".")
 			default:
 				if len(packageComponents) > 0 {
 					if token != semicolonToken {
-						syntaxErrs = append(syntaxErrs, singleSyntaxError{
-							msg:  fmt.Sprintf("unexpected %s; expecting semicolon", token.describe()),
-							line: lexer.prevTokenLine + 1,
-							col:  lexer.prevTokenCol + 1,
-						})
+						syntaxErrs = append(syntaxErrs,
+							reporter.Errorf(getLatestSpan(),
+								"unexpected %s; expecting semicolon", token.describe()),
+						)
 					}
 					if packageComponents[len(packageComponents)-1] == "." {
-						syntaxErrs = append(syntaxErrs, singleSyntaxError{
-							msg:  "package name should not end with a period",
-							line: prevLine + 1,
-							col:  prevCol + 1,
-						})
+						syntaxErrs = append(syntaxErrs,
+							reporter.Errorf(getSpan(prevLine+1, prevCol+1),
+								"package name should not end with a period"),
+						)
 					}
 					res.PackageName = strings.Join(packageComponents, "")
 				} else {
-					syntaxErrs = append(syntaxErrs, singleSyntaxError{
-						msg:  fmt.Sprintf("unexpected %s; expecting package name", token.describe()),
-						line: lexer.prevTokenLine + 1,
-						col:  lexer.prevTokenCol + 1,
-					})
+					syntaxErrs = append(syntaxErrs,
+						reporter.Errorf(getLatestSpan(),
+							"unexpected %s; expecting package name", token.describe()),
+					)
 				}
 				packageComponents = nil
 			}

@@ -171,14 +171,14 @@ func TestScan(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
-			var syntaxErr *SyntaxError
+			var syntaxErr SyntaxError
 			require.ErrorAs(t, err, &syntaxErr)
-			assert.Len(t, testCase.expectedErrors, syntaxErr.Len())
-			for i := 0; i < len(testCase.expectedErrors) && i < syntaxErr.Len(); i++ {
+			assert.Len(t, syntaxErr, len(testCase.expectedErrors))
+			for i := 0; i < len(testCase.expectedErrors) && i < len(syntaxErr); i++ {
 				// Not using require here because we want to accumulate info about other errors
 				// instead of failing fast.
 				//nolint:testifylint
-				assert.ErrorContains(t, syntaxErr.Get(i), testCase.expectedErrors[i])
+				assert.ErrorContains(t, syntaxErr[i], testCase.expectedErrors[i])
 			}
 		})
 	}
