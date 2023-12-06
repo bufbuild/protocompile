@@ -29,7 +29,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -441,6 +443,71 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 					return res, err
 				}
 				res.Proto = parseResult.FileDescriptorProto()
+				return res, nil
+			},
+		)),
+	}
+	filesFromNoAST, err := compiler.Compile(context.Background(), fileNames...)
+	require.NoError(t, err)
+
+	for _, file := range files {
+		fromNoAST := filesFromNoAST.FindFileByPath(file.Path())
+		require.NotNil(t, fromNoAST)
+		fd := file.(linker.Result).FileDescriptorProto()
+		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
+		// final protos, with options interpreted, match
+		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
+		require.Empty(t, diff)
+	}
+
+	// Also make sure the canonical bytes are correct
+	for _, file := range filesFromNoAST {
+		res := file.(linker.Result)
+		canonicalFd := res.CanonicalProto()
+		data, err := proto.Marshal(canonicalFd)
+		require.NoError(t, err)
+		fromCanonical := &descriptorpb.FileDescriptorProto{}
+		err = proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(file)}.Unmarshal(data, fromCanonical)
+		require.NoError(t, err)
+		origFd := res.FileDescriptorProto()
+		diff := cmp.Diff(origFd, fromCanonical, protocmp.Transform())
+		require.Empty(t, diff)
+	}
+}
+
+//nolint:errcheck
+func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
+	t.Parallel()
+	// Similar to above test, where we have descriptor protos and no AST. But this
+	// time, interpreting options is a no-op because they all have options already.
+
+	// First compile from source, so we interpret options with an AST
+	fileNames := []string{"desc_test_options.proto", "desc_test_comments.proto", "desc_test_complex.proto"}
+	compiler := &protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			ImportPaths: []string{"../internal/testdata"},
+		}),
+	}
+	files, err := compiler.Compile(context.Background(), fileNames...)
+	require.NoError(t, err)
+
+	// Now compile with just the protos, with options already interpreted, to make
+	// sure it's a no-op and that we don't mangle any already-interpreted options.
+	compiler = &protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(protocompile.ResolverFunc(
+			func(name string) (protocompile.SearchResult, error) {
+				var res protocompile.SearchResult
+				fd := files.FindFileByPath(name)
+				if fd == nil {
+					file, err := protoregistry.GlobalFiles.FindFileByPath(name)
+					if err != nil {
+						return res, err
+					}
+					res.Proto = protodesc.ToFileDescriptorProto(file)
+				} else {
+					res.Proto = fd.(linker.Result).FileDescriptorProto()
+				}
+				res.Proto = proto.Clone(res.Proto).(*descriptorpb.FileDescriptorProto)
 				return res, nil
 			},
 		)),
