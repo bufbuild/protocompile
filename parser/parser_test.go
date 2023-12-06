@@ -408,6 +408,47 @@ func TestLenientParse_EmptyCompactOptions(t *testing.T) {
 	}
 }
 
+func TestLenientParse_EmptyCompactValue(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]struct {
+		Error   string
+		NoError string
+	}{
+		"field-options": {
+			Error: `syntax = "proto2";
+							message Foo {
+								optional int32 bar = 1 [deprecated=true, default];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									optional int32 bar = 1 [deprecated=true, default=1];
+								}`,
+		},
+		"enum-options": {
+			Error: `syntax = "proto3";
+							enum Foo {
+								FOO = 0 [deprecated];
+							}`,
+			NoError: `syntax = "proto3";
+								enum Foo {
+									FOO = 0 [deprecated=true];
+								}`,
+		},
+	}
+	for name, input := range inputs {
+		name, input := name, input
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			errHandler := reporter.NewHandler(nil)
+			protoName := fmt.Sprintf("%s.proto", name)
+			_, err := Parse(protoName, strings.NewReader(input.NoError), errHandler)
+			require.NoError(t, err)
+			_, err = Parse(protoName, strings.NewReader(input.Error), errHandler)
+			require.ErrorContains(t, err, "compact option must have a value")
+		})
+	}
+}
+
 func TestSimpleParse(t *testing.T) {
 	t.Parallel()
 	protos := map[string]Result{}
