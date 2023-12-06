@@ -17,6 +17,7 @@ package fastscan
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -59,6 +60,21 @@ const (
 	periodToken       = tokenType('.')
 	semicolonToken    = tokenType(';')
 )
+
+func (t tokenType) describe() string {
+	switch t {
+	case eofToken:
+		return "<eof>"
+	case stringToken:
+		return "string literal"
+	case numberToken:
+		return "numeric literal"
+	case identifierToken:
+		return "identifier"
+	default:
+		return fmt.Sprintf("'%c'", rune(t))
+	}
+}
 
 type runeReader struct {
 	rr     *bufio.Reader
@@ -108,13 +124,17 @@ func (rr *runeReader) endMark() string {
 	return m
 }
 
-type protoLex struct {
+type lexer struct {
 	input *runeReader
+	// start of the next rune in the input
+	curLine, curCol int
+	// start of the previously read full token
+	prevTokenLine, prevTokenCol int
 }
 
 var utf8Bom = []byte{0xEF, 0xBB, 0xBF}
 
-func newLexer(in io.Reader) *protoLex {
+func newLexer(in io.Reader) *lexer {
 	br := bufio.NewReader(in)
 
 	// if file has UTF8 byte order marker preface, consume it
@@ -123,12 +143,24 @@ func newLexer(in io.Reader) *protoLex {
 		_, _ = br.Discard(3)
 	}
 
-	return &protoLex{
+	return &lexer{
 		input: &runeReader{rr: br},
 	}
 }
 
-func (l *protoLex) Lex() (tokenType, any, error) {
+func (l *lexer) adjustPos(c rune) {
+	switch c {
+	case '\n':
+		l.curLine++
+		l.curCol = 0
+	case '\t':
+		l.curCol += 8 - (l.curCol % 8)
+	default:
+		l.curCol++
+	}
+}
+
+func (l *lexer) Lex() (tokenType, any, error) {
 	l.input.endMark() // reset, just in case
 
 	for {
@@ -145,10 +177,13 @@ func (l *protoLex) Lex() (tokenType, any, error) {
 		}
 
 		if strings.ContainsRune("\n\r\t\f\v ", c) {
+			l.adjustPos(c)
 			continue
 		}
 
 		l.input.startMark(c)
+		l.prevTokenLine, l.prevTokenCol = l.curLine, l.curCol
+		l.adjustPos(c)
 		if c == '.' {
 			// decimal literals could start with a dot
 			cn, err := l.input.readRune()
@@ -156,6 +191,7 @@ func (l *protoLex) Lex() (tokenType, any, error) {
 				return tokenType(c), nil, nil
 			}
 			if cn >= '0' && cn <= '9' {
+				l.adjustPos(cn)
 				token := l.readNumber(c, cn)
 				return numberToken, token, nil
 			}
@@ -165,9 +201,8 @@ func (l *protoLex) Lex() (tokenType, any, error) {
 
 		if c == '_' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
 			// identifier
-			token := []rune{c}
-			token = l.readIdentifier(token)
-			return identifierToken, string(token), nil
+			token := l.readIdentifier(c)
+			return identifierToken, token, nil
 		}
 
 		if c >= '0' && c <= '9' {
@@ -189,10 +224,12 @@ func (l *protoLex) Lex() (tokenType, any, error) {
 				return tokenType(c), nil, nil
 			}
 			if cn == '/' {
+				l.adjustPos(cn)
 				l.skipToEndOfLineComment()
 				continue
 			}
 			if cn == '*' {
+				l.adjustPos(cn)
 				l.skipToEndOfBlockComment()
 				continue
 			}
@@ -203,7 +240,7 @@ func (l *protoLex) Lex() (tokenType, any, error) {
 	}
 }
 
-func (l *protoLex) readNumber(sofar ...rune) string {
+func (l *lexer) readNumber(sofar ...rune) string {
 	token := sofar
 	allowExpSign := false
 	for {
@@ -223,6 +260,7 @@ func (l *protoLex) readNumber(sofar ...rune) string {
 			l.input.unreadRune(c)
 			break
 		}
+		l.adjustPos(c)
 		if c == 'e' || c == 'E' {
 			// scientific notation char can be followed by
 			// an exponent sign
@@ -233,7 +271,7 @@ func (l *protoLex) readNumber(sofar ...rune) string {
 	return string(token)
 }
 
-func (l *protoLex) readIdentifier(sofar []rune) []rune {
+func (l *lexer) readIdentifier(sofar ...rune) string {
 	token := sofar
 	for {
 		c, err := l.input.readRune()
@@ -244,18 +282,20 @@ func (l *protoLex) readIdentifier(sofar []rune) []rune {
 			l.input.unreadRune(c)
 			break
 		}
+		l.adjustPos(c)
 		token = append(token, c)
 	}
-	return token
+	return string(token)
 }
 
-func (l *protoLex) readStringLiteral(quote rune) string {
+func (l *lexer) readStringLiteral(quote rune) string {
 	var buf bytes.Buffer
 	for {
 		c, err := l.input.readRune()
 		if err != nil {
 			break
 		}
+		l.adjustPos(c)
 		if c == quote {
 			break
 		}
@@ -415,30 +455,33 @@ func (l *protoLex) readStringLiteral(quote rune) string {
 	return buf.String()
 }
 
-func (l *protoLex) skipToEndOfLineComment() {
+func (l *lexer) skipToEndOfLineComment() {
 	for {
 		c, err := l.input.readRune()
 		if err != nil {
 			return
 		}
+		l.adjustPos(c)
 		if c == '\n' {
 			return
 		}
 	}
 }
 
-func (l *protoLex) skipToEndOfBlockComment() {
+func (l *lexer) skipToEndOfBlockComment() {
 	for {
 		c, err := l.input.readRune()
 		if err != nil {
 			return
 		}
+		l.adjustPos(c)
 		if c == '*' {
 			c, err := l.input.readRune()
 			if err != nil {
 				return
 			}
 			if c == '/' {
+				l.adjustPos(c)
 				return
 			}
 			l.input.unreadRune(c)
