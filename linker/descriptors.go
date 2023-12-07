@@ -325,10 +325,19 @@ func (r *result) CanonicalProto() *descriptorpb.FileDescriptorProto {
 	return fd
 }
 
+func (r *result) storeOptionBytes(opts, origOpts proto.Message) {
+	optionBytes := r.optionBytes[origOpts]
+	if len(optionBytes) == 0 {
+		// If we don't know about this options message, leave it alone.
+		return
+	}
+	proto.Reset(opts)
+	opts.ProtoReflect().SetUnknown(optionBytes)
+}
+
 func (r *result) storeOptionBytesInFile(fd, origFd *descriptorpb.FileDescriptorProto) {
 	if fd.Options != nil {
-		fd.Options.Reset()
-		fd.Options.ProtoReflect().SetUnknown(r.optionBytes[origFd.Options])
+		r.storeOptionBytes(fd.Options, origFd.Options)
 	}
 
 	for i, md := range fd.MessageType {
@@ -349,15 +358,13 @@ func (r *result) storeOptionBytesInFile(fd, origFd *descriptorpb.FileDescriptorP
 	for i, sd := range fd.Service {
 		origSd := origFd.Service[i]
 		if sd.Options != nil {
-			sd.Options.Reset()
-			sd.Options.ProtoReflect().SetUnknown(r.optionBytes[origSd.Options])
+			r.storeOptionBytes(sd.Options, origSd.Options)
 		}
 
 		for j, mtd := range sd.Method {
 			origMtd := origSd.Method[j]
 			if mtd.Options != nil {
-				mtd.Options.Reset()
-				mtd.Options.ProtoReflect().SetUnknown(r.optionBytes[origMtd.Options])
+				r.storeOptionBytes(mtd.Options, origMtd.Options)
 			}
 		}
 	}
@@ -372,8 +379,7 @@ func (r *result) storeOptionBytesInMessage(md, origMd *descriptorpb.DescriptorPr
 	}
 
 	if md.Options != nil {
-		md.Options.Reset()
-		md.Options.ProtoReflect().SetUnknown(r.optionBytes[origMd.Options])
+		r.storeOptionBytes(md.Options, origMd.Options)
 	}
 
 	for i, fld := range md.Field {
@@ -384,16 +390,14 @@ func (r *result) storeOptionBytesInMessage(md, origMd *descriptorpb.DescriptorPr
 	for i, ood := range md.OneofDecl {
 		origOod := origMd.OneofDecl[i]
 		if ood.Options != nil {
-			ood.Options.Reset()
-			ood.Options.ProtoReflect().SetUnknown(r.optionBytes[origOod.Options])
+			r.storeOptionBytes(ood.Options, origOod.Options)
 		}
 	}
 
 	for i, exr := range md.ExtensionRange {
 		origExr := origMd.ExtensionRange[i]
 		if exr.Options != nil {
-			exr.Options.Reset()
-			exr.Options.ProtoReflect().SetUnknown(r.optionBytes[origExr.Options])
+			r.storeOptionBytes(exr.Options, origExr.Options)
 		}
 	}
 
@@ -415,23 +419,20 @@ func (r *result) storeOptionBytesInMessage(md, origMd *descriptorpb.DescriptorPr
 
 func (r *result) storeOptionBytesInEnum(ed, origEd *descriptorpb.EnumDescriptorProto) {
 	if ed.Options != nil {
-		ed.Options.Reset()
-		ed.Options.ProtoReflect().SetUnknown(r.optionBytes[origEd.Options])
+		r.storeOptionBytes(ed.Options, origEd.Options)
 	}
 
 	for i, evd := range ed.Value {
 		origEvd := origEd.Value[i]
 		if evd.Options != nil {
-			evd.Options.Reset()
-			evd.Options.ProtoReflect().SetUnknown(r.optionBytes[origEvd.Options])
+			r.storeOptionBytes(evd.Options, origEvd.Options)
 		}
 	}
 }
 
 func (r *result) storeOptionBytesInField(fld, origFld *descriptorpb.FieldDescriptorProto) {
 	if fld.Options != nil {
-		fld.Options.Reset()
-		fld.Options.ProtoReflect().SetUnknown(r.optionBytes[origFld.Options])
+		r.storeOptionBytes(fld.Options, origFld.Options)
 	}
 }
 
