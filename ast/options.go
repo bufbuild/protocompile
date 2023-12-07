@@ -100,13 +100,18 @@ func NewCompactOptionNode(name *OptionNameNode, equals *RuneNode, val ValueNode)
 	if name == nil {
 		panic("name is nil")
 	}
-	if equals == nil {
-		panic("equals is nil")
+	if equals == nil && val != nil {
+		panic("equals is nil but val is not")
 	}
-	if val == nil {
-		panic("val is nil")
+	if val == nil && equals != nil {
+		panic("val is nil but equals is not")
 	}
-	children := []Node{name, equals, val}
+	var children []Node
+	if equals == nil && val == nil {
+		children = []Node{name}
+	} else {
+		children = []Node{name, equals, val}
+	}
 	return &OptionNode{
 		compositeNode: compositeNode{
 			children: children,
