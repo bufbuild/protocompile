@@ -1331,25 +1331,25 @@ protodefault:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[3].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, nil, toStringValueNode(protoDollar[2].str), semi), extra)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, nil, toStringValueNode(protoDollar[2].str), semi), extra...)
 		}
 	case 27:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, protoDollar[2].id.ToKeyword(), toStringValueNode(protoDollar[3].str), semi), extra)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, protoDollar[2].id.ToKeyword(), toStringValueNode(protoDollar[3].str), semi), extra...)
 		}
 	case 28:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), nil, toStringValueNode(protoDollar[3].str), semi), extra)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), nil, toStringValueNode(protoDollar[3].str), semi), extra...)
 		}
 	case 29:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[3].bs)
-			protoVAL.pkg = newNodeWithRunes(ast.NewPackageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].cid.toIdentValueNode(nil), semi), extra)
+			protoVAL.pkg = newNodeWithRunes(ast.NewPackageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].cid.toIdentValueNode(nil), semi), extra...)
 		}
 	case 30:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -1434,7 +1434,7 @@ protodefault:
 		{
 			optName := ast.NewOptionNameNode(protoDollar[2].optNms.refs, protoDollar[2].optNms.dots)
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[5].bs)
-			protoVAL.opt = newNodeWithRunes(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, semi), extra)
+			protoVAL.opt = newNodeWithRunes(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, semi), extra...)
 		}
 	case 44:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -1829,17 +1829,17 @@ protodefault:
 	case 125:
 		protoDollar = protoS[protopt-9 : protopt+1]
 		{
-			protoVAL.msgGrp = newNodeWithRunes(ast.NewGroupNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, protoDollar[6].b, protoDollar[7].msgElements, protoDollar[8].b), protoDollar[9].bs)
+			protoVAL.msgGrp = newNodeWithRunes(ast.NewGroupNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, protoDollar[6].b, protoDollar[7].msgElements, protoDollar[8].b), protoDollar[9].bs...)
 		}
 	case 126:
 		protoDollar = protoS[protopt-10 : protopt+1]
 		{
-			protoVAL.msgGrp = newNodeWithRunes(ast.NewGroupNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, protoDollar[7].b, protoDollar[8].msgElements, protoDollar[9].b), protoDollar[10].bs)
+			protoVAL.msgGrp = newNodeWithRunes(ast.NewGroupNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, protoDollar[7].b, protoDollar[8].msgElements, protoDollar[9].b), protoDollar[10].bs...)
 		}
 	case 127:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.oo = newNodeWithRunes(ast.NewOneofNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].ooElements, protoDollar[5].b), protoDollar[6].bs)
+			protoVAL.oo = newNodeWithRunes(ast.NewOneofNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].ooElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 128:
 		protoDollar = protoS[protopt-0 : protopt+1]
@@ -1913,13 +1913,13 @@ protodefault:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[5].bs)
-			protoVAL.mapFld = newNodeWithRunes(ast.NewMapFieldNode(protoDollar[1].mapType, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, nil, semi), extra)
+			protoVAL.mapFld = newNodeWithRunes(ast.NewMapFieldNode(protoDollar[1].mapType, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, nil, semi), extra...)
 		}
 	case 142:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[6].bs)
-			protoVAL.mapFld = newNodeWithRunes(ast.NewMapFieldNode(protoDollar[1].mapType, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, protoDollar[5].cmpctOpts, semi), extra)
+			protoVAL.mapFld = newNodeWithRunes(ast.NewMapFieldNode(protoDollar[1].mapType, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, protoDollar[5].cmpctOpts, semi), extra...)
 		}
 	case 143:
 		protoDollar = protoS[protopt-6 : protopt+1]
@@ -1931,13 +1931,13 @@ protodefault:
 		{
 			// TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
 			// between `extensions 1 to 10` and `extensions 1` followed by `to = 10`.
-			protoVAL.ext = newNodeWithRunes(ast.NewExtensionRangeNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, nil, protoDollar[3].b), protoDollar[4].bs)
+			protoVAL.ext = newNodeWithRunes(ast.NewExtensionRangeNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, nil, protoDollar[3].b), protoDollar[4].bs...)
 		}
 	case 157:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.ext = newNodeWithRunes(ast.NewExtensionRangeNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].cmpctOpts, semi), extra)
+			protoVAL.ext = newNodeWithRunes(ast.NewExtensionRangeNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].cmpctOpts, semi), extra...)
 		}
 	case 158:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2008,26 +2008,26 @@ protodefault:
 		{
 			// TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
 			// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
-			protoVAL.resvd = newNodeWithRunes(ast.NewReservedRangesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].b), protoDollar[4].bs)
+			protoVAL.resvd = newNodeWithRunes(ast.NewReservedRangesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].b), protoDollar[4].bs...)
 		}
 	case 172:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			// TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
 			// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
-			protoVAL.resvd = newNodeWithRunes(ast.NewReservedRangesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].b), protoDollar[4].bs)
+			protoVAL.resvd = newNodeWithRunes(ast.NewReservedRangesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].rngs.ranges, protoDollar[2].rngs.commas, protoDollar[3].b), protoDollar[4].bs...)
 		}
 	case 174:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[3].bs)
-			protoVAL.resvd = newNodeWithRunes(ast.NewReservedNamesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].names.names, protoDollar[2].names.commas, semi), extra)
+			protoVAL.resvd = newNodeWithRunes(ast.NewReservedNamesNode(protoDollar[1].id.ToKeyword(), protoDollar[2].names.names, protoDollar[2].names.commas, semi), extra...)
 		}
 	case 175:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[3].bs)
-			protoVAL.resvd = newNodeWithRunes(ast.NewReservedIdentifiersNode(protoDollar[1].id.ToKeyword(), protoDollar[2].names.idents, protoDollar[2].names.commas, semi), extra)
+			protoVAL.resvd = newNodeWithRunes(ast.NewReservedIdentifiersNode(protoDollar[1].id.ToKeyword(), protoDollar[2].names.idents, protoDollar[2].names.commas, semi), extra...)
 		}
 	case 176:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2056,7 +2056,7 @@ protodefault:
 	case 180:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.en = newNodeWithRunes(ast.NewEnumNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].enElements, protoDollar[5].b), protoDollar[6].bs)
+			protoVAL.en = newNodeWithRunes(ast.NewEnumNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].enElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 181:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2102,18 +2102,18 @@ protodefault:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.env = newNodeWithRunes(ast.NewEnumValueNode(protoDollar[1].id, protoDollar[2].b, protoDollar[3].il, nil, semi), extra)
+			protoVAL.env = newNodeWithRunes(ast.NewEnumValueNode(protoDollar[1].id, protoDollar[2].b, protoDollar[3].il, nil, semi), extra...)
 		}
 	case 190:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[5].bs)
-			protoVAL.env = newNodeWithRunes(ast.NewEnumValueNode(protoDollar[1].id, protoDollar[2].b, protoDollar[3].il, protoDollar[4].cmpctOpts, semi), extra)
+			protoVAL.env = newNodeWithRunes(ast.NewEnumValueNode(protoDollar[1].id, protoDollar[2].b, protoDollar[3].il, protoDollar[4].cmpctOpts, semi), extra...)
 		}
 	case 191:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.msg = newNodeWithRunes(ast.NewMessageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].msgElements, protoDollar[5].b), protoDollar[6].bs)
+			protoVAL.msg = newNodeWithRunes(ast.NewMessageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].msgElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 192:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2194,30 +2194,30 @@ protodefault:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
 			semis, extra := protolex.(*protoLex).requireSemicolon(protoDollar[6].bs)
-			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, semis), extra)
+			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, nil, semis), extra...)
 		}
 	case 208:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
 			semis, extra := protolex.(*protoLex).requireSemicolon(protoDollar[7].bs)
-			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, semis), extra)
+			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].id, protoDollar[4].b, protoDollar[5].i, protoDollar[6].cmpctOpts, semis), extra...)
 		}
 	case 209:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
 			semis, extra := protolex.(*protoLex).requireSemicolon(protoDollar[5].bs)
-			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(nil, protoDollar[1].tid, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, nil, semis), extra)
+			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(nil, protoDollar[1].tid, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, nil, semis), extra...)
 		}
 	case 210:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
 			semis, extra := protolex.(*protoLex).requireSemicolon(protoDollar[6].bs)
-			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(nil, protoDollar[1].tid, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, protoDollar[5].cmpctOpts, semis), extra)
+			protoVAL.msgFld = newNodeWithRunes(ast.NewFieldNode(nil, protoDollar[1].tid, protoDollar[2].id, protoDollar[3].b, protoDollar[4].i, protoDollar[5].cmpctOpts, semis), extra...)
 		}
 	case 211:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.extend = newNodeWithRunes(ast.NewExtendNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].b, protoDollar[4].extElements, protoDollar[5].b), protoDollar[6].bs)
+			protoVAL.extend = newNodeWithRunes(ast.NewExtendNode(protoDollar[1].id.ToKeyword(), protoDollar[2].tid, protoDollar[3].b, protoDollar[4].extElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 212:
 		protoDollar = protoS[protopt-0 : protopt+1]
@@ -2285,7 +2285,7 @@ protodefault:
 	case 224:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.svc = newNodeWithRunes(ast.NewServiceNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].svcElements, protoDollar[5].b), protoDollar[6].bs)
+			protoVAL.svc = newNodeWithRunes(ast.NewServiceNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].svcElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 225:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2326,12 +2326,12 @@ protodefault:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[6].bs)
-			protoVAL.mtd = newNodeWithRunes(ast.NewRPCNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, semi), extra)
+			protoVAL.mtd = newNodeWithRunes(ast.NewRPCNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, semi), extra...)
 		}
 	case 233:
 		protoDollar = protoS[protopt-9 : protopt+1]
 		{
-			protoVAL.mtd = newNodeWithRunes(ast.NewRPCNodeWithBody(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, protoDollar[6].b, protoDollar[7].mtdElements, protoDollar[8].b), protoDollar[9].bs)
+			protoVAL.mtd = newNodeWithRunes(ast.NewRPCNodeWithBody(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].mtdMsgType, protoDollar[4].id.ToKeyword(), protoDollar[5].mtdMsgType, protoDollar[6].b, protoDollar[7].mtdElements, protoDollar[8].b), protoDollar[9].bs...)
 		}
 	case 234:
 		protoDollar = protoS[protopt-4 : protopt+1]

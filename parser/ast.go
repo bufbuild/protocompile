@@ -127,7 +127,7 @@ type nodeWithRunes[T ast.Node] struct {
 	Runes []*ast.RuneNode
 }
 
-func newNodeWithRunes[T ast.Node](node T, trailingRunes []*ast.RuneNode) nodeWithRunes[T] {
+func newNodeWithRunes[T ast.Node](node T, trailingRunes ...*ast.RuneNode) nodeWithRunes[T] {
 	return nodeWithRunes[T]{
 		Node:  node,
 		Runes: trailingRunes,
