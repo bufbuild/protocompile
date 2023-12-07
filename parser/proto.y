@@ -171,7 +171,7 @@ file : syntaxDecl {
 	}
 
 fileBody : semicolons fileElements {
-		$$ = newElements(toFileElement, $1, $2)
+		$$ = prependElements(toFileElement, $1, $2)
 	}
 
 fileElements : fileElements fileElement {
@@ -819,10 +819,10 @@ enumDecl : _ENUM identifier '{' enumBody '}' semicolons {
 	}
 
 enumBody : semicolons {
-		$$ = newElements(toEnumElement, $1, nil)
+		$$ = prependElements(toEnumElement, $1, nil)
 	}
 	| semicolons enumElements {
-		$$ = newElements(toEnumElement, $1, $2)
+		$$ = prependElements(toEnumElement, $1, $2)
 	}
 
 enumElements : enumElements enumElement {
@@ -859,10 +859,10 @@ messageDecl : _MESSAGE identifier '{' messageBody '}' semicolons {
 	}
 
 messageBody : semicolons {
-		$$ = newElements(toMessageElement, $1, nil)
+		$$ = prependElements(toMessageElement, $1, nil)
 	}
 	| semicolons messageElements {
-		$$ = newElements(toMessageElement, $1, $2)
+		$$ = prependElements(toMessageElement, $1, $2)
 	}
 
 messageElements : messageElements messageElement {
@@ -978,10 +978,10 @@ serviceDecl : _SERVICE identifier '{' serviceBody '}' semicolons {
 	}
 
 serviceBody : semicolons {
-	  $$ = newElements(toServiceElement, $1, nil)
+	  $$ = prependElements(toServiceElement, $1, nil)
 	}
 	| semicolons serviceElements {
-		$$ = newElements(toServiceElement, $1, $2)
+		$$ = prependElements(toServiceElement, $1, $2)
 	}
 
 serviceElements : serviceElements serviceElement {
@@ -1020,10 +1020,10 @@ methodMessageType : '(' _STREAM typeName ')' {
 	}
 
 methodBody : semicolons {
-		$$ = newElements(toMethodElement, $1, nil)
+		$$ = prependElements(toMethodElement, $1, nil)
 	}
 	| semicolons methodElements {
-		$$ = newElements(toMethodElement, $1, $2)
+		$$ = prependElements(toMethodElement, $1, $2)
 	}
 
 methodElements : methodElements methodElement {

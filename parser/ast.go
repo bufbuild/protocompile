@@ -93,7 +93,7 @@ func (list *messageFieldList) toNodes() ([]*ast.MessageFieldNode, []*ast.RuneNod
 	return fields, delimiters
 }
 
-func newElements[T ast.Node](convFn func(*ast.RuneNode) T, semicolons []*ast.RuneNode, elements []T) []T {
+func prependElements[T ast.Node](convFn func(*ast.RuneNode) T, semicolons []*ast.RuneNode, elements []T) []T {
 	elems := make([]T, 0, len(semicolons)+len(elements))
 	for _, semicolon := range semicolons {
 		elems = append(elems, convFn(semicolon))

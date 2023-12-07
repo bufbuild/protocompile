@@ -1234,7 +1234,7 @@ protodefault:
 	case 7:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.fileElements = newElements(toFileElement, protoDollar[1].bs, protoDollar[2].fileElements)
+			protoVAL.fileElements = prependElements(toFileElement, protoDollar[1].bs, protoDollar[2].fileElements)
 		}
 	case 8:
 		protoDollar = protoS[protopt-2 : protopt+1]
@@ -2061,12 +2061,12 @@ protodefault:
 	case 181:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enElements = newElements(toEnumElement, protoDollar[1].bs, nil)
+			protoVAL.enElements = prependElements(toEnumElement, protoDollar[1].bs, nil)
 		}
 	case 182:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.enElements = newElements(toEnumElement, protoDollar[1].bs, protoDollar[2].enElements)
+			protoVAL.enElements = prependElements(toEnumElement, protoDollar[1].bs, protoDollar[2].enElements)
 		}
 	case 183:
 		protoDollar = protoS[protopt-2 : protopt+1]
@@ -2118,12 +2118,12 @@ protodefault:
 	case 192:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgElements = newElements(toMessageElement, protoDollar[1].bs, nil)
+			protoVAL.msgElements = prependElements(toMessageElement, protoDollar[1].bs, nil)
 		}
 	case 193:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.msgElements = newElements(toMessageElement, protoDollar[1].bs, protoDollar[2].msgElements)
+			protoVAL.msgElements = prependElements(toMessageElement, protoDollar[1].bs, protoDollar[2].msgElements)
 		}
 	case 194:
 		protoDollar = protoS[protopt-2 : protopt+1]
@@ -2290,12 +2290,12 @@ protodefault:
 	case 225:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcElements = newElements(toServiceElement, protoDollar[1].bs, nil)
+			protoVAL.svcElements = prependElements(toServiceElement, protoDollar[1].bs, nil)
 		}
 	case 226:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.svcElements = newElements(toServiceElement, protoDollar[1].bs, protoDollar[2].svcElements)
+			protoVAL.svcElements = prependElements(toServiceElement, protoDollar[1].bs, protoDollar[2].svcElements)
 		}
 	case 227:
 		protoDollar = protoS[protopt-2 : protopt+1]
@@ -2346,12 +2346,12 @@ protodefault:
 	case 236:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.mtdElements = newElements(toMethodElement, protoDollar[1].bs, nil)
+			protoVAL.mtdElements = prependElements(toMethodElement, protoDollar[1].bs, nil)
 		}
 	case 237:
 		protoDollar = protoS[protopt-2 : protopt+1]
 		{
-			protoVAL.mtdElements = newElements(toMethodElement, protoDollar[1].bs, protoDollar[2].mtdElements)
+			protoVAL.mtdElements = prependElements(toMethodElement, protoDollar[1].bs, protoDollar[2].mtdElements)
 		}
 	case 238:
 		protoDollar = protoS[protopt-2 : protopt+1]
