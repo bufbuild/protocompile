@@ -343,22 +343,30 @@ func NewCompactOptionsNode(openBracket *RuneNode, opts []*OptionNode, commas []*
 	if len(opts) == 0 && len(commas) != 0 {
 		panic("opts is empty but commas is not")
 	}
-	if len(opts) > 0 && len(commas) != len(opts)-1 {
+	if len(opts) != len(commas) && len(opts) != len(commas)+1 {
 		panic(fmt.Sprintf("%d opts requires %d commas, not %d", len(opts), len(opts)-1, len(commas)))
 	}
-	children := make([]Node, 0, len(opts)*2+1)
+	children := make([]Node, 0, len(opts)+len(commas)+2)
 	children = append(children, openBracket)
-	for i, opt := range opts {
-		if i > 0 {
-			if commas[i-1] == nil {
-				panic(fmt.Sprintf("commas[%d] is nil", i-1))
+	if len(opts) > 0 {
+		for i, opt := range opts {
+			if i > 0 {
+				if commas[i-1] == nil {
+					panic(fmt.Sprintf("commas[%d] is nil", i-1))
+				}
+				children = append(children, commas[i-1])
 			}
-			children = append(children, commas[i-1])
+			if opt == nil {
+				panic(fmt.Sprintf("opts[%d] is nil", i))
+			}
+			children = append(children, opt)
 		}
-		if opt == nil {
-			panic(fmt.Sprintf("opts[%d] is nil", i))
+		if len(opts) == len(commas) { // Add the erroneous, but tolerated trailing comma.
+			if commas[len(commas)-1] == nil {
+				panic(fmt.Sprintf("commas[%d] is nil", len(commas)-1))
+			}
+			children = append(children, commas[len(commas)-1])
 		}
-		children = append(children, opt)
 	}
 	children = append(children, closeBracket)
 

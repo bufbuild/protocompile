@@ -78,8 +78,8 @@ import (
 %type <fileElements> fileBody fileElement fileElements
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
-%type <optRaw>       compactOption oneofOptionDecl compactOptionFinal
-%type <opt>          optionDecl compactOptionEntry
+%type <optRaw>       compactOption oneofOptionDecl
+%type <opt>          optionDecl compactOptionEntry compactOptionFinal
 %type <opts>         compactOptionDecls compactOptionLeadingDecls
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
@@ -605,10 +605,11 @@ compactOptions : '[' compactOptionDecls ']' {
 	}
 
 compactOptionDecls : compactOptionFinal {
-		$$ = &compactOptionSlices{options: []*ast.OptionNode{$1}}
+		$$ = &compactOptionSlices{options: []*ast.OptionNode{$1.Node}, commas: $1.Runes}
 	}
 	| compactOptionLeadingDecls compactOptionFinal {
-		$1.options = append($1.options, $2)
+		$1.options = append($1.options, $2.Node)
+		$1.commas = append($1.commas, $2.Runes...)
 		$$ = $1
 	}
 
@@ -621,10 +622,12 @@ compactOptionLeadingDecls : compactOptionEntry {
 		$$ = $1
 	}
 
-compactOptionFinal : compactOption
+compactOptionFinal : compactOption {
+		$$ = newNodeWithRunes($1)
+	}
 	| compactOptionEntry {
 		protolex.(*protoLex).Error("unexpected ','")
-		$$ = $1.Node
+		$$ = $1
 	}
 
 compactOptionEntry : compactOption ',' {
