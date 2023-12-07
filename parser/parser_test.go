@@ -449,6 +449,38 @@ func TestLenientParse_EmptyCompactValue(t *testing.T) {
 	}
 }
 
+func TestLenientParse_OptionsTrailingComma(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]struct {
+		Error   string
+		NoError string
+	}{
+		"field-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [default=1,];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [default=1];
+								}`,
+		},
+	}
+	for name, input := range inputs {
+		name, input := name, input
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			errHandler := reporter.NewHandler(nil)
+			protoName := fmt.Sprintf("%s.proto", name)
+			_, err := Parse(protoName, strings.NewReader(input.NoError), errHandler)
+			require.NoError(t, err)
+			ast, err := Parse(protoName, strings.NewReader(input.Error), errHandler)
+			require.ErrorContains(t, err, "unexpected ','")
+			require.NotNil(t, ast)
+		})
+	}
+}
+
 func TestSimpleParse(t *testing.T) {
 	t.Parallel()
 	protos := map[string]Result{}
