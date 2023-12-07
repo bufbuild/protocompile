@@ -266,6 +266,92 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 									int32 bar = 1 [foo = 1];
 								}`,
 		},
+		"message-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									;
+									int32 bar = 1;;
+								}`,
+		},
+		"message-field-cardinality": {
+			Error: `syntax = "proto3";
+							message Foo {
+								repeated int32 bar = 1
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									repeated int32 bar = 1;
+								}`,
+		},
+		"message-field-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [foo = 1]
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [foo = 1];
+								}`,
+		},
+		"message-reserved": {
+			Error: `syntax = "proto3";
+							message Foo {
+								reserved "FOO"
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									;
+									reserved "FOO";;
+								}`,
+		},
+		"message-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo) = 1
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									;
+									option (foo) = 1;;
+								}`,
+		},
+		"message-map-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								map<string, int32> bar = 1
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									;
+									map<string, int32> bar = 1;;
+								}`,
+		},
+		"message-map-field-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								map<string, int32> bar = 1 [foo = 1]
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									;
+									map<string, int32> bar = 1 [foo = 1];;
+								}`,
+		},
+		"message-option": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo) = 1
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									;
+									option (foo) = 1;;
+								}`,
+		},
 	}
 	for name, input := range inputs {
 		name, input := name, input

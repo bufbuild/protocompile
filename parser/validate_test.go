@@ -349,7 +349,7 @@ func TestBasicValidation(t *testing.T) {
 		},
 		"failure_message_decl_start_w_reserved2": {
 			contents:    `syntax = "proto3"; enum reserved { unset = 0; } message Foo { reserved bar = 1; }`,
-			expectedErr: `test.proto:1:76: syntax error: unexpected '=', expecting ';' or ','`,
+			expectedErr: `test.proto:1:76: expected ';'`,
 		},
 		"failure_message_decl_start_w_extend": {
 			contents:    `syntax = "proto3"; enum extend { unset = 0; } message Foo { extend bar = 1; }`,

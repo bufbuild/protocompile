@@ -20,27 +20,23 @@ import (
 	fileElements []ast.FileElement
 	pkg          nodeWithEmptyDecls[*ast.PackageNode]
 	imprt        nodeWithEmptyDecls[*ast.ImportNode]
-	msg          *ast.MessageNode
-	msgN         nodeWithEmptyDecls[*ast.MessageNode]
-	msgElement   ast.MessageElement
+	msg          nodeWithEmptyDecls[*ast.MessageNode]
 	msgElements  []ast.MessageElement
 	fld          *ast.FieldNode
-	mapFld       *ast.MapFieldNode
+	msgFld       nodeWithEmptyDecls[*ast.FieldNode]
+	mapFld       nodeWithEmptyDecls[*ast.MapFieldNode]
 	mapType      *ast.MapTypeNode
 	grp          *ast.GroupNode
-	oo           *ast.OneofNode
+	msgGrp       nodeWithEmptyDecls[*ast.GroupNode]
+	oo           nodeWithEmptyDecls[*ast.OneofNode]
 	ooElement    ast.OneofElement
 	ooElements   []ast.OneofElement
-	ext          *ast.ExtensionRangeNode
-	resvd        *ast.ReservedNode
-	resvdN       nodeWithEmptyDecls[*ast.ReservedNode]
-	en           *ast.EnumNode
-	enN          nodeWithEmptyDecls[*ast.EnumNode]
-	enElement    ast.EnumElement
+	ext          nodeWithEmptyDecls[*ast.ExtensionRangeNode]
+	resvd        nodeWithEmptyDecls[*ast.ReservedNode]
+	en           nodeWithEmptyDecls[*ast.EnumNode]
 	enElements   []ast.EnumElement
 	env          nodeWithEmptyDecls[*ast.EnumValueNode]
-	extend       *ast.ExtendNode
-	extendN      nodeWithEmptyDecls[*ast.ExtendNode]
+	extend       nodeWithEmptyDecls[*ast.ExtendNode]
 	extElement   ast.ExtendElement
 	extElements  []ast.ExtendElement
 	svc          nodeWithEmptyDecls[*ast.ServiceNode]
@@ -48,8 +44,8 @@ import (
 	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElements  []ast.RPCElement
-	opt          *ast.OptionNode
-	optN         nodeWithEmptyDecls[*ast.OptionNode]
+	optRaw       *ast.OptionNode
+	opt          nodeWithEmptyDecls[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -76,16 +72,14 @@ import (
 
 // any non-terminal which returns a value needs a type, which is
 // really a field name in the above union struct
-// TODO: Remove all *N types by migrating all usage to them, then removing the old types
-// and renaming the *N types to the old types.
 %type <file>         file
 %type <syn>          syntaxDecl
 %type <ed>           editionDecl
 %type <fileElements> fileBody fileElement fileElements
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
-%type <opt>          optionDecl compactOption oneofOptionDecl
-%type <optN>         optionDeclWithEmptyDecls
+%type <optRaw>       compactOption oneofOptionDecl
+%type <opt>          optionDecl
 %type <opts>         compactOptionDecls
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
@@ -98,29 +92,26 @@ import (
 %type <sl>           listElements messageLiterals
 %type <msgLitFlds>   messageLiteralFieldEntry messageLiteralFields messageTextFormat
 %type <msgLitFld>    messageLiteralField
-%type <fld>          messageFieldDecl oneofFieldDecl extensionFieldDecl
+%type <msgFld>       messageFieldDecl
+%type <fld>          oneofFieldDecl extensionFieldDecl
 %type <oo>           oneofDecl
 %type <grp>          groupDecl oneofGroupDecl
+%type <msgGrp>       messageGroupDecl
 %type <mapFld>       mapFieldDecl
 %type <mapType>      mapType
 %type <msg>          messageDecl
-%type <msgN>				 messageDeclWithEmptyDecls
-%type <msgElement>   messageElement
-%type <msgElements>  messageElements messageBody
+%type <msgElements>  messageElement messageElements messageBody
 %type <ooElement>    oneofElement
 %type <ooElements>   oneofElements oneofBody
 %type <names>        fieldNameStrings fieldNameIdents
-%type <resvd>        msgReserved reservedNames
-%type <resvdN>       enumReserved reservedNamesWithEmptyDecls
+%type <resvd>        msgReserved enumReserved reservedNames
 %type <rng>          tagRange enumValueRange
 %type <rngs>         tagRanges enumValueRanges
 %type <ext>          extensionRangeDecl
 %type <en>           enumDecl
-%type <enN>					 enumDeclWithEmptyDecls
 %type <enElements>   enumElement enumElements enumBody
 %type <env>          enumValueDecl
 %type <extend>       extensionDecl
-%type <extendN>      extensionDeclWithEmptyDecls
 %type <extElement>   extensionElement
 %type <extElements>  extensionElements extensionBody
 %type <str>          stringLit
@@ -196,16 +187,16 @@ fileElement : importDecl {
 	| packageDecl {
 		$$ = toFileElements($1)
 	}
-	| optionDeclWithEmptyDecls {
+	| optionDecl {
 		$$ = toFileElements($1)
 	}
-	| messageDeclWithEmptyDecls {
+	| messageDecl {
 		$$ = toFileElements($1)
 	}
-	| enumDeclWithEmptyDecls {
+	| enumDecl {
 		$$ = toFileElements($1)
 	}
-	| extensionDeclWithEmptyDecls {
+	| extensionDecl {
 		$$ = toFileElements($1)
 	}
 	| serviceDecl {
@@ -321,17 +312,12 @@ mtdElementIdent : mtdElementName {
 		$$ = $1
 	}
 
-optionDecl : _OPTION optionName '=' optionValue ';' {
-		optName := ast.NewOptionNameNode($2.refs, $2.dots)
-		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
-	}
-
 oneofOptionDecl : _OPTION optionName '=' optionValue semicolon {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
 	}
 
-optionDeclWithEmptyDecls : _OPTION optionName '=' optionValue semicolons {
+optionDecl : _OPTION optionName '=' optionValue semicolons {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		semi, extra := protolex.(*protoLex).requireSemicolon($5)
 		$$ = newNodeWithEmptyDecls(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, semi), extra)
@@ -639,8 +625,15 @@ groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' 
 		$$ = ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9)
 	}
 
-oneofDecl : _ONEOF identifier '{' oneofBody '}' {
-		$$ = ast.NewOneofNode($1.ToKeyword(), $2, $3, $4, $5)
+messageGroupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8), $9)
+	}
+	| fieldCardinality _GROUP identifier '=' _INT_LIT compactOptions '{' messageBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9), $10)
+	}
+
+oneofDecl : _ONEOF identifier '{' oneofBody '}' semicolons {
+		$$ = newNodeWithEmptyDecls(ast.NewOneofNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
 oneofBody : {
@@ -693,11 +686,13 @@ oneofGroupDecl : _GROUP identifier '=' _INT_LIT '{' messageBody '}' {
 		$$ = ast.NewGroupNode(nil, $1.ToKeyword(), $2, $3, $4, $5, $6, $7, $8)
 	}
 
-mapFieldDecl : mapType identifier '=' _INT_LIT ';' {
-		$$ = ast.NewMapFieldNode($1, $2, $3, $4, nil, $5)
+mapFieldDecl : mapType identifier '=' _INT_LIT semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($5)
+		$$ = newNodeWithEmptyDecls(ast.NewMapFieldNode($1, $2, $3, $4, nil, semi), extra)
 	}
-	| mapType identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewMapFieldNode($1, $2, $3, $4, $5, $6)
+	| mapType identifier '=' _INT_LIT compactOptions semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($6)
+		$$ = newNodeWithEmptyDecls(ast.NewMapFieldNode($1, $2, $3, $4, $5, semi), extra)
 	}
 
 mapType : _MAP '<' mapKeyType ',' typeName '>' {
@@ -717,11 +712,14 @@ mapKeyType : _INT32
 	| _BOOL
 	| _STRING
 
-extensionRangeDecl : _EXTENSIONS tagRanges ';' {
-		$$ = ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, nil, $3)
+extensionRangeDecl : _EXTENSIONS tagRanges ';' semicolons {
+	  // TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
+		// between `extensions 1 to 10` and `extensions 1` followed by `to = 10`.
+		$$ = newNodeWithEmptyDecls(ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, nil, $3), $4)
 	}
-	| _EXTENSIONS tagRanges compactOptions ';' {
-		$$ = ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, $3, $4)
+	| _EXTENSIONS tagRanges compactOptions semicolons {
+		semi, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithEmptyDecls(ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, $3, semi), extra)
 	}
 
 tagRanges : tagRange {
@@ -769,8 +767,10 @@ enumValueNumber : _INT_LIT {
 		$$ = ast.NewNegativeIntLiteralNode($1, $2)
 	}
 
-msgReserved : _RESERVED tagRanges ';' {
-		$$ = ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3)
+msgReserved : _RESERVED tagRanges ';' semicolons {
+	  // TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
+		// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
+		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
 	}
 	| reservedNames
 
@@ -779,16 +779,9 @@ enumReserved : _RESERVED enumValueRanges ';' semicolons {
 		// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
 		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
 	}
-	| reservedNamesWithEmptyDecls
+	| reservedNames
 
-reservedNames : _RESERVED fieldNameStrings ';' {
-		$$ = ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, $3)
-	}
-	| _RESERVED fieldNameIdents ';' {
-		$$ = ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, $3)
-	}
-
-reservedNamesWithEmptyDecls : _RESERVED fieldNameStrings semicolons {
+reservedNames : _RESERVED fieldNameStrings semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
 		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, semi), extra)
 	}
@@ -815,11 +808,7 @@ fieldNameIdents : identifier {
 		$$ = $1
 	}
 
-enumDecl : _ENUM identifier '{' enumBody '}' {
-		$$ = ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5)
-	}
-
-enumDeclWithEmptyDecls : _ENUM identifier '{' enumBody '}' semicolons {
+enumDecl : _ENUM identifier '{' enumBody '}' semicolons {
 		$$ = newNodeWithEmptyDecls(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
@@ -837,7 +826,7 @@ enumElements : enumElements enumElement {
 		$$ = $1
 	}
 
-enumElement : optionDeclWithEmptyDecls {
+enumElement : optionDecl {
 		$$ = toEnumElements($1)
 	}
 	| enumValueDecl {
@@ -859,89 +848,76 @@ enumValueDecl : enumValueName '=' enumValueNumber semicolons {
 		$$ = newNodeWithEmptyDecls(ast.NewEnumValueNode($1, $2, $3, $4, semi), extra)
 	}
 
-messageDecl : _MESSAGE identifier '{' messageBody '}' {
-		$$ = ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5)
-	}
-
-messageDeclWithEmptyDecls : _MESSAGE identifier '{' messageBody '}' semicolons {
+messageDecl : _MESSAGE identifier '{' messageBody '}' semicolons {
 		$$ = newNodeWithEmptyDecls(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
-messageBody : {
-		$$ = nil
+messageBody : semicolons {
+		$$ = newMessageElements($1, nil)
 	}
-	| messageElements
+	| semicolons messageElements {
+		$$ = newMessageElements($1, $2)
+	}
 
 messageElements : messageElements messageElement {
-		if $2 != nil {
-			$$ = append($1, $2)
-		} else {
-			$$ = $1
-		}
+		$$ = append($1, $2...)
 	}
 	| messageElement {
-		if $1 != nil {
-			$$ = []ast.MessageElement{$1}
-		} else {
-			$$ = nil
-		}
+		$$ = $1
 	}
 
 messageElement : messageFieldDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| enumDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| messageDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| extensionDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| extensionRangeDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
-	| groupDecl {
-		$$ = $1
+	| messageGroupDecl {
+		$$ = toMessageElements($1)
 	}
 	| optionDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| oneofDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| mapFieldDecl {
-		$$ = $1
+		$$ = toMessageElements($1)
 	}
 	| msgReserved {
-		$$ = $1
-	}
-	| ';' {
-		$$ = ast.NewEmptyDeclNode($1)
+		$$ = toMessageElements($1)
 	}
 	| error {
 		$$ = nil
 	}
 
-messageFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT ';' {
-		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
+messageFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($6)
+		$$ = newNodeWithEmptyDecls(ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, semis), extra)
 	}
-	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
+	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($7)
+		$$ = newNodeWithEmptyDecls(ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, semis), extra)
 	}
-	| msgElementTypeIdent identifier '=' _INT_LIT ';' {
-		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
+	| msgElementTypeIdent identifier '=' _INT_LIT semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($5)
+		$$ = newNodeWithEmptyDecls(ast.NewFieldNode(nil, $1, $2, $3, $4, nil, semis), extra)
 	}
-	| msgElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
-		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
+	| msgElementTypeIdent identifier '=' _INT_LIT compactOptions semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($6)
+		$$ = newNodeWithEmptyDecls(ast.NewFieldNode(nil, $1, $2, $3, $4, $5, semis), extra)
 	}
 
-extensionDecl : _EXTEND typeName '{' extensionBody '}' {
-		$$ = ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5)
-	}
-
-extensionDeclWithEmptyDecls : _EXTEND typeName '{' extensionBody '}' semicolons {
+extensionDecl : _EXTEND typeName '{' extensionBody '}' semicolons {
 		$$ = newNodeWithEmptyDecls(ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5), $6)
 	}
 
@@ -1012,7 +988,7 @@ serviceElements : serviceElements serviceElement {
 // NB: doc suggests support for "stream" declaration, separate from "rpc", but
 // it does not appear to be supported in protoc (doc is likely from grammar for
 // Google-internal version of protoc, with support for streaming stubby)
-serviceElement : optionDeclWithEmptyDecls {
+serviceElement : optionDecl {
 		$$ = toServiceElements($1)
 	}
 	| methodDecl {
@@ -1051,7 +1027,7 @@ methodElements : methodElements methodElement {
 		$$ = $1
 	}
 
-methodElement : optionDeclWithEmptyDecls {
+methodElement : optionDecl {
 		$$ = toMethodElements($1)
 	}
 	| error {

@@ -135,6 +135,15 @@ func newEnumElements(semicolons []*ast.RuneNode, elements []ast.EnumElement) []a
 	return elems
 }
 
+func newMessageElements(semicolons []*ast.RuneNode, elements []ast.MessageElement) []ast.MessageElement {
+	elems := make([]ast.MessageElement, 0, len(semicolons)+len(elements))
+	for _, semicolon := range semicolons {
+		elems = append(elems, ast.NewEmptyDeclNode(semicolon))
+	}
+	elems = append(elems, elements...)
+	return elems
+}
+
 type nodeWithEmptyDecls[T ast.Node] struct {
 	Node       T
 	EmptyDecls []*ast.EmptyDeclNode
@@ -176,6 +185,15 @@ func toFileElements[T ast.FileElement](nodes nodeWithEmptyDecls[T]) []ast.FileEl
 
 func toEnumElements[T ast.EnumElement](nodes nodeWithEmptyDecls[T]) []ast.EnumElement {
 	elements := make([]ast.EnumElement, 1+len(nodes.EmptyDecls))
+	elements[0] = nodes.Node
+	for i, emptyDecl := range nodes.EmptyDecls {
+		elements[i+1] = emptyDecl
+	}
+	return elements
+}
+
+func toMessageElements[T ast.MessageElement](nodes nodeWithEmptyDecls[T]) []ast.MessageElement {
+	elements := make([]ast.MessageElement, 1+len(nodes.EmptyDecls))
 	elements[0] = nodes.Node
 	for i, emptyDecl := range nodes.EmptyDecls {
 		elements[i+1] = emptyDecl
