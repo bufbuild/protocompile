@@ -57,8 +57,8 @@ type protoSymType struct {
 	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElements  []ast.RPCElement
-	opt          *ast.OptionNode
-	optWE        nodeWithEmptyDecls[*ast.OptionNode]
+	optRaw       *ast.OptionNode
+	opt          nodeWithEmptyDecls[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -1259,7 +1259,7 @@ protodefault:
 	case 12:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.fileElements = toFileElements(protoDollar[1].optWE)
+			protoVAL.fileElements = toFileElements(protoDollar[1].opt)
 		}
 	case 13:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -1427,14 +1427,14 @@ protodefault:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
 			optName := ast.NewOptionNameNode(protoDollar[2].optNms.refs, protoDollar[2].optNms.dots)
-			protoVAL.opt = ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, protoDollar[5].b)
+			protoVAL.optRaw = ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, protoDollar[5].b)
 		}
 	case 43:
 		protoDollar = protoS[protopt-5 : protopt+1]
 		{
 			optName := ast.NewOptionNameNode(protoDollar[2].optNms.refs, protoDollar[2].optNms.dots)
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[5].bs)
-			protoVAL.optWE = newNodeWithEmptyDecls(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, semi), extra)
+			protoVAL.opt = newNodeWithEmptyDecls(ast.NewOptionNode(protoDollar[1].id.ToKeyword(), optName, protoDollar[3].b, protoDollar[4].v, semi), extra)
 		}
 	case 44:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -1794,12 +1794,12 @@ protodefault:
 	case 119:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.opts = &compactOptionSlices{options: []*ast.OptionNode{protoDollar[1].opt}}
+			protoVAL.opts = &compactOptionSlices{options: []*ast.OptionNode{protoDollar[1].optRaw}}
 		}
 	case 120:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
-			protoDollar[1].opts.options = append(protoDollar[1].opts.options, protoDollar[3].opt)
+			protoDollar[1].opts.options = append(protoDollar[1].opts.options, protoDollar[3].optRaw)
 			protoDollar[1].opts.commas = append(protoDollar[1].opts.commas, protoDollar[2].b)
 			protoVAL.opts = protoDollar[1].opts
 		}
@@ -1807,7 +1807,7 @@ protodefault:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			optName := ast.NewOptionNameNode(protoDollar[1].optNms.refs, protoDollar[1].optNms.dots)
-			protoVAL.opt = ast.NewCompactOptionNode(optName, protoDollar[2].b, protoDollar[3].v)
+			protoVAL.optRaw = ast.NewCompactOptionNode(optName, protoDollar[2].b, protoDollar[3].v)
 		}
 	case 122:
 		protoDollar = protoS[protopt-8 : protopt+1]
@@ -1860,7 +1860,7 @@ protodefault:
 	case 131:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.ooElement = protoDollar[1].opt
+			protoVAL.ooElement = protoDollar[1].optRaw
 		}
 	case 132:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2074,7 +2074,7 @@ protodefault:
 	case 184:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.enElements = toEnumElements(protoDollar[1].optWE)
+			protoVAL.enElements = toEnumElements(protoDollar[1].opt)
 		}
 	case 185:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2161,7 +2161,7 @@ protodefault:
 	case 201:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.msgElements = toMessageElements(protoDollar[1].optWE)
+			protoVAL.msgElements = toMessageElements(protoDollar[1].opt)
 		}
 	case 202:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2303,7 +2303,7 @@ protodefault:
 	case 228:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.svcElements = toServiceElements(protoDollar[1].optWE)
+			protoVAL.svcElements = toServiceElements(protoDollar[1].opt)
 		}
 	case 229:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2359,7 +2359,7 @@ protodefault:
 	case 239:
 		protoDollar = protoS[protopt-1 : protopt+1]
 		{
-			protoVAL.mtdElements = toMethodElements(protoDollar[1].optWE)
+			protoVAL.mtdElements = toMethodElements(protoDollar[1].opt)
 		}
 	case 240:
 		protoDollar = protoS[protopt-1 : protopt+1]

@@ -44,8 +44,8 @@ import (
 	mtd          nodeWithEmptyDecls[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElements  []ast.RPCElement
-	opt          *ast.OptionNode
-	optWE        nodeWithEmptyDecls[*ast.OptionNode]
+	optRaw       *ast.OptionNode
+	opt          nodeWithEmptyDecls[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -78,8 +78,8 @@ import (
 %type <fileElements> fileBody fileElement fileElements
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
-%type <opt>          compactOption oneofOptionDecl
-%type <optWE>        optionDecl
+%type <optRaw>       compactOption oneofOptionDecl
+%type <opt>          optionDecl
 %type <opts>         compactOptionDecls
 %type <ref>          extensionName messageLiteralFieldName
 %type <optNms>       optionName
@@ -96,10 +96,10 @@ import (
 %type <fld>          oneofFieldDecl extensionFieldDecl
 %type <oo>           oneofDecl
 %type <grp>          groupDecl oneofGroupDecl
-%type <msgGrp>			 messageGroupDecl
+%type <msgGrp>       messageGroupDecl
 %type <mapFld>       mapFieldDecl
 %type <mapType>      mapType
-%type <msg>			 	   messageDecl
+%type <msg>          messageDecl
 %type <msgElements>  messageElement messageElements messageBody
 %type <ooElement>    oneofElement
 %type <ooElements>   oneofElements oneofBody
@@ -108,7 +108,7 @@ import (
 %type <rng>          tagRange enumValueRange
 %type <rngs>         tagRanges enumValueRanges
 %type <ext>          extensionRangeDecl
-%type <en>					 enumDecl
+%type <en>           enumDecl
 %type <enElements>   enumElement enumElements enumBody
 %type <env>          enumValueDecl
 %type <extend>       extensionDecl
