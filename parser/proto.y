@@ -47,7 +47,8 @@ import (
 	optRaw       *ast.OptionNode
 	opt          nodeWithRunes[*ast.OptionNode]
 	opts         *compactOptionSlices
-	ref          *ast.FieldReferenceNode
+	refRaw       *ast.FieldReferenceNode
+	ref			     nodeWithRunes[*ast.FieldReferenceNode]
 	optNms       *fieldRefSlices
 	cmpctOpts    *ast.CompactOptionsNode
 	rng          *ast.RangeNode
@@ -81,8 +82,9 @@ import (
 %type <optRaw>       compactOption oneofOptionDecl
 %type <opt>          optionDecl compactOptionEntry compactOptionFinal
 %type <opts>         compactOptionDecls compactOptionLeadingDecls
-%type <ref>          extensionName messageLiteralFieldName
-%type <optNms>       optionName
+%type <refRaw>       extensionName messageLiteralFieldName optionNamePart
+%type <ref>          optionNameEntry optionNameFinal
+%type <optNms>       optionName optionNameLeading
 %type <cmpctOpts>    compactOptions
 %type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
 %type <il>           enumValueNumber
@@ -323,21 +325,40 @@ optionDecl : _OPTION optionName '=' optionValue semicolons {
 		$$ = newNodeWithRunes(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, semi), extra...)
 	}
 
-optionName : identifier {
-		fieldReferenceNode := ast.NewFieldReferenceNode($1)
-		$$ = &fieldRefSlices{refs: []*ast.FieldReferenceNode{fieldReferenceNode}}
-	}
-	| optionName '.' identifier {
-		$1.refs = append($1.refs, ast.NewFieldReferenceNode($3))
-		$1.dots = append($1.dots, $2)
-		$$ = $1
+optionNamePart : identifier {
+		$$ = ast.NewFieldReferenceNode($1)
 	}
 	| extensionName {
-		$$ = &fieldRefSlices{refs: []*ast.FieldReferenceNode{$1}}
+		$$ = $1
 	}
-	| optionName '.' extensionName {
-		$1.refs = append($1.refs, $3)
-		$1.dots = append($1.dots, $2)
+
+optionNameEntry : optionNamePart '.' {
+		$$ = newNodeWithRunes($1, $2)
+	}
+
+optionNameFinal : optionNamePart {
+		$$ = newNodeWithRunes($1)
+	}
+	| optionNameEntry {
+		protolex.(*protoLex).Error("unexpected '.'")
+		$$ = $1
+	}
+
+optionNameLeading : optionNameEntry {
+	  $$ = &fieldRefSlices{refs: []*ast.FieldReferenceNode{$1.Node}, dots: $1.Runes}
+  }
+	| optionNameLeading optionNameEntry {
+		$1.refs = append($1.refs, $2.Node)
+		$1.dots = append($1.dots, $2.Runes...)
+		$$ = $1
+	}
+
+optionName : optionNameFinal {
+	  $$ = &fieldRefSlices{refs: []*ast.FieldReferenceNode{$1.Node}, dots: $1.Runes}
+	}
+	| optionNameLeading optionNameFinal {
+		$1.refs = append($1.refs, $2.Node)
+		$1.dots = append($1.dots, $2.Runes...)
 		$$ = $1
 	}
 
