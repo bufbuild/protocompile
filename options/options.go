@@ -326,8 +326,11 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 	return nil
 }
 
+var emptyFieldOptions = &descriptorpb.FieldOptions{}
+
 func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.FieldDescriptorProto) error {
 	opts := fld.GetOptions()
+	emptyOptionsAlreadyPresent := opts != nil && len(opts.GetUninterpretedOption()) == 0
 
 	// First process pseudo-options
 	if len(opts.GetUninterpretedOption()) > 0 {
@@ -338,8 +341,12 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 
 	// Must re-check length of uninterpreted options since above step could remove some.
 	if len(opts.GetUninterpretedOption()) == 0 {
-		// If no options to interpret, clear out options.
-		fld.Options = nil
+		// If the message has no other interpreted options, we clear it out. But don't
+		// do that if the descriptor came in with empty options or if it already has
+		// interpreted option fields.
+		if opts != nil && !emptyOptionsAlreadyPresent && proto.Equal(fld.Options, emptyFieldOptions) {
+			fld.Options = nil
+		}
 		return nil
 	}
 
