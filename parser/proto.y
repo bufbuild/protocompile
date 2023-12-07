@@ -84,7 +84,7 @@ import (
 %type <fileElements> fileBody fileElement fileElements
 %type <imprt>        importDecl
 %type <pkg>          packageDecl
-%type <opt>          optionDecl compactOption
+%type <opt>          optionDecl compactOption oneofOptionDecl
 %type <optN>         optionDeclWithEmptyDecls
 %type <opts>         compactOptionDecls
 %type <ref>          extensionName messageLiteralFieldName
@@ -129,6 +129,7 @@ import (
 %type <mtd>          methodDecl
 %type <mtdElements>  methodElement methodElements methodBody
 %type <mtdMsgType>   methodMessageType
+%type <b>            semicolon
 %type <bs>           semicolons semicolonList
 
 // same for terminals
@@ -228,6 +229,14 @@ semicolons : semicolonList {
 		$$ = nil
 	}
 
+semicolon : ';' {
+		$$ = $1
+	} |
+	{
+		protolex.(*protoLex).Error("expected ';'")
+		$$ = nil
+	}
+
 syntaxDecl : _SYNTAX '=' stringLit ';' {
 		$$ = ast.NewSyntaxNode($1.ToKeyword(), $2, toStringValueNode($3), $4)
 	}
@@ -313,6 +322,11 @@ mtdElementIdent : mtdElementName {
 	}
 
 optionDecl : _OPTION optionName '=' optionValue ';' {
+		optName := ast.NewOptionNameNode($2.refs, $2.dots)
+		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
+	}
+
+oneofOptionDecl : _OPTION optionName '=' optionValue semicolon {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		$$ = ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, $5)
 	}
@@ -649,7 +663,7 @@ oneofElements : oneofElements oneofElement {
 		}
 	}
 
-oneofElement : optionDecl {
+oneofElement : oneofOptionDecl {
 		$$ = $1
 	}
 	| oneofFieldDecl {
@@ -665,10 +679,10 @@ oneofElement : optionDecl {
 		$$ = nil
 	}
 
-oneofFieldDecl : oneofElementTypeIdent identifier '=' _INT_LIT ';' {
+oneofFieldDecl : oneofElementTypeIdent identifier '=' _INT_LIT semicolon {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
 	}
-	| oneofElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+	| oneofElementTypeIdent identifier '=' _INT_LIT compactOptions semicolon {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
@@ -964,16 +978,16 @@ extensionElement : extensionFieldDecl {
 		$$ = nil
 	}
 
-extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT ';' {
+extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT semicolon {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, $6)
 	}
-	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions semicolon {
 		$$ = ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, $7)
 	}
-	| extElementTypeIdent identifier '=' _INT_LIT ';' {
+	| extElementTypeIdent identifier '=' _INT_LIT semicolon {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, nil, $5)
 	}
-	| extElementTypeIdent identifier '=' _INT_LIT compactOptions ';' {
+	| extElementTypeIdent identifier '=' _INT_LIT compactOptions semicolon {
 		$$ = ast.NewFieldNode(nil, $1, $2, $3, $4, $5, $6)
 	}
 
