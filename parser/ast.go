@@ -93,10 +93,10 @@ func (list *messageFieldList) toNodes() ([]*ast.MessageFieldNode, []*ast.RuneNod
 	return fields, delimiters
 }
 
-func prependElements[T ast.Node](convFn func(*ast.RuneNode) T, semicolons []*ast.RuneNode, elements []T) []T {
-	elems := make([]T, 0, len(semicolons)+len(elements))
-	for _, semicolon := range semicolons {
-		elems = append(elems, convFn(semicolon))
+func prependRunes[T ast.Node](convert func(*ast.RuneNode) T, runes []*ast.RuneNode, elements []T) []T {
+	elems := make([]T, 0, len(runes)+len(elements))
+	for _, rune := range runes {
+		elems = append(elems, convert(rune))
 	}
 	elems = append(elems, elements...)
 	return elems
@@ -134,11 +134,11 @@ func newNodeWithRunes[T ast.Node](node T, trailingRunes ...*ast.RuneNode) nodeWi
 	}
 }
 
-func toElements[T ast.Node](convFn func(*ast.RuneNode) T, node T, semicolons []*ast.RuneNode) []T {
-	elements := make([]T, 1+len(semicolons))
+func toElements[T ast.Node](convert func(*ast.RuneNode) T, node T, runes []*ast.RuneNode) []T {
+	elements := make([]T, 1+len(runes))
 	elements[0] = node
-	for i, semi := range semicolons {
-		elements[i+1] = convFn(semi)
+	for i, rune := range runes {
+		elements[i+1] = convert(rune)
 	}
 	return elements
 }
