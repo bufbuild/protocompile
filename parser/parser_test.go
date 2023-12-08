@@ -92,12 +92,19 @@ func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCas
 		name, testCase := name, testCase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			errHandler := reporter.NewHandler(nil)
 			protoName := fmt.Sprintf("%s.proto", name)
-			_, err := Parse(protoName, strings.NewReader(testCase.NoError), errHandler)
+			_, err := Parse(protoName, strings.NewReader(testCase.NoError), reporter.NewHandler(nil))
 			require.NoError(t, err)
-			_, err = Parse(protoName, strings.NewReader(testCase.Error), errHandler)
-			require.ErrorContains(t, err, expected)
+
+			producedError := false
+			errHandler := reporter.NewHandler(reporter.NewReporter(func(err reporter.ErrorWithPos) error {
+				if strings.Contains(err.Error(), expected) {
+					producedError = true
+				}
+				return nil
+			}, nil))
+			_, _ = Parse(protoName, strings.NewReader(testCase.Error), errHandler)
+			require.Truef(t, producedError, "expected error containing %q", expected)
 		})
 	}
 }
@@ -442,6 +449,43 @@ func TestLenientParse_OptionsTrailingComma(t *testing.T) {
 		},
 	}
 	runParseErrorTestCases(t, inputs, "unexpected ','")
+}
+
+func TestLenientParse_OptionNameTrailingDot(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]parseErrorTestCase{
+		"field-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [default.=1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [default=1];
+								}`,
+		},
+		"field-options-ext": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [(foo).=1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [(foo)=1];
+								}`,
+		},
+		"field-options-both": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [baz.(foo).=1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [baz.(foo)=1];
+								}`,
+		},
+	}
+	runParseErrorTestCases(t, inputs, "unexpected '.'")
 }
 
 func TestSimpleParse(t *testing.T) {

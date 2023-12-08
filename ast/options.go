@@ -159,10 +159,10 @@ func NewOptionNameNode(parts []*FieldReferenceNode, dots []*RuneNode) *OptionNam
 	if len(parts) == 0 {
 		panic("must have at least one part")
 	}
-	if len(dots) != len(parts)-1 {
+	if len(dots) != len(parts)-1 && len(dots) != len(parts) {
 		panic(fmt.Sprintf("%d parts requires %d dots, not %d", len(parts), len(parts)-1, len(dots)))
 	}
-	children := make([]Node, 0, len(parts)*2-1)
+	children := make([]Node, 0, len(parts)+len(dots))
 	for i, part := range parts {
 		if part == nil {
 			panic(fmt.Sprintf("parts[%d] is nil", i))
@@ -174,6 +174,12 @@ func NewOptionNameNode(parts []*FieldReferenceNode, dots []*RuneNode) *OptionNam
 			children = append(children, dots[i-1])
 		}
 		children = append(children, part)
+	}
+	if len(dots) == len(parts) { // Add the erroneous, but tolerated trailing dot.
+		if dots[len(dots)-1] == nil {
+			panic(fmt.Sprintf("dots[%d] is nil", len(dots)-1))
+		}
+		children = append(children, dots[len(dots)-1])
 	}
 	return &OptionNameNode{
 		compositeNode: compositeNode{
