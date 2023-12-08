@@ -617,7 +617,7 @@ compactOption : optionName '=' optionValue {
 		optName := ast.NewOptionNameNode($1.refs, $1.dots)
 		$$ = ast.NewCompactOptionNode(optName, $2, $3)
 	}
-	|	optionName {
+	| optionName {
 		optName := ast.NewOptionNameNode($1.refs, $1.dots)
 		protolex.(*protoLex).Error("compact option must have a value")
 		$$ = ast.NewCompactOptionNode(optName, nil, nil)
