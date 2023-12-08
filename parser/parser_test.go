@@ -82,12 +82,29 @@ func TestJunkParse(t *testing.T) {
 	}
 }
 
+type parseErrorTestCase struct {
+	Error   string
+	NoError string
+}
+
+func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCase, expected string) {
+	for name, testCase := range testCases {
+		name, testCase := name, testCase
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			errHandler := reporter.NewHandler(nil)
+			protoName := fmt.Sprintf("%s.proto", name)
+			_, err := Parse(protoName, strings.NewReader(testCase.NoError), errHandler)
+			require.NoError(t, err)
+			_, err = Parse(protoName, strings.NewReader(testCase.Error), errHandler)
+			require.ErrorContains(t, err, expected)
+		})
+	}
+}
+
 func TestLenientParse_SemicolonLess(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]struct {
-		Error   string
-		NoError string
-	}{
+	inputs := map[string]parseErrorTestCase{
 		"package": {
 			Error: `syntax = "proto3";
 							package foo
@@ -353,26 +370,12 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 								}`,
 		},
 	}
-	for name, input := range inputs {
-		name, input := name, input
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			errHandler := reporter.NewHandler(nil)
-			protoName := fmt.Sprintf("%s.proto", name)
-			_, err := Parse(protoName, strings.NewReader(input.NoError), errHandler)
-			require.NoError(t, err)
-			_, err = Parse(protoName, strings.NewReader(input.Error), errHandler)
-			require.ErrorContains(t, err, "expected ';'")
-		})
-	}
+	runParseErrorTestCases(t, inputs, "expected ';'")
 }
 
 func TestLenientParse_EmptyCompactOptions(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]struct {
-		Error   string
-		NoError string
-	}{
+	inputs := map[string]parseErrorTestCase{
 		"field-options": {
 			Error: `syntax = "proto3";
 							message Foo {
@@ -394,26 +397,12 @@ func TestLenientParse_EmptyCompactOptions(t *testing.T) {
 								}`,
 		},
 	}
-	for name, input := range inputs {
-		name, input := name, input
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			errHandler := reporter.NewHandler(nil)
-			protoName := fmt.Sprintf("%s.proto", name)
-			_, err := Parse(protoName, strings.NewReader(input.NoError), errHandler)
-			require.NoError(t, err)
-			_, err = Parse(protoName, strings.NewReader(input.Error), errHandler)
-			require.ErrorContains(t, err, "compact options must have at least one option")
-		})
-	}
+	runParseErrorTestCases(t, inputs, "compact options must have at least one option")
 }
 
 func TestLenientParse_EmptyCompactValue(t *testing.T) {
 	t.Parallel()
-	inputs := map[string]struct {
-		Error   string
-		NoError string
-	}{
+	inputs := map[string]parseErrorTestCase{
 		"field-options": {
 			Error: `syntax = "proto2";
 							message Foo {
@@ -435,18 +424,24 @@ func TestLenientParse_EmptyCompactValue(t *testing.T) {
 								}`,
 		},
 	}
-	for name, input := range inputs {
-		name, input := name, input
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			errHandler := reporter.NewHandler(nil)
-			protoName := fmt.Sprintf("%s.proto", name)
-			_, err := Parse(protoName, strings.NewReader(input.NoError), errHandler)
-			require.NoError(t, err)
-			_, err = Parse(protoName, strings.NewReader(input.Error), errHandler)
-			require.ErrorContains(t, err, "compact option must have a value")
-		})
+	runParseErrorTestCases(t, inputs, "compact option must have a value")
+}
+
+func TestLenientParse_OptionsTrailingComma(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]parseErrorTestCase{
+		"field-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [default=1,];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [default=1];
+								}`,
+		},
 	}
+	runParseErrorTestCases(t, inputs, "unexpected ','")
 }
 
 func TestSimpleParse(t *testing.T) {
