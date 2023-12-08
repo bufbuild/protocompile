@@ -18,34 +18,34 @@ import (
 	syn          *ast.SyntaxNode
 	ed           *ast.EditionNode
 	fileElements []ast.FileElement
-	pkg          nodeWithEmptyDecls[*ast.PackageNode]
-	imprt        nodeWithEmptyDecls[*ast.ImportNode]
-	msg          nodeWithEmptyDecls[*ast.MessageNode]
+	pkg          nodeWithRunes[*ast.PackageNode]
+	imprt        nodeWithRunes[*ast.ImportNode]
+	msg          nodeWithRunes[*ast.MessageNode]
 	msgElements  []ast.MessageElement
 	fld          *ast.FieldNode
-	msgFld       nodeWithEmptyDecls[*ast.FieldNode]
-	mapFld       nodeWithEmptyDecls[*ast.MapFieldNode]
+	msgFld       nodeWithRunes[*ast.FieldNode]
+	mapFld       nodeWithRunes[*ast.MapFieldNode]
 	mapType      *ast.MapTypeNode
 	grp          *ast.GroupNode
-	msgGrp       nodeWithEmptyDecls[*ast.GroupNode]
-	oo           nodeWithEmptyDecls[*ast.OneofNode]
+	msgGrp       nodeWithRunes[*ast.GroupNode]
+	oo           nodeWithRunes[*ast.OneofNode]
 	ooElement    ast.OneofElement
 	ooElements   []ast.OneofElement
-	ext          nodeWithEmptyDecls[*ast.ExtensionRangeNode]
-	resvd        nodeWithEmptyDecls[*ast.ReservedNode]
-	en           nodeWithEmptyDecls[*ast.EnumNode]
+	ext          nodeWithRunes[*ast.ExtensionRangeNode]
+	resvd        nodeWithRunes[*ast.ReservedNode]
+	en           nodeWithRunes[*ast.EnumNode]
 	enElements   []ast.EnumElement
-	env          nodeWithEmptyDecls[*ast.EnumValueNode]
-	extend       nodeWithEmptyDecls[*ast.ExtendNode]
+	env          nodeWithRunes[*ast.EnumValueNode]
+	extend       nodeWithRunes[*ast.ExtendNode]
 	extElement   ast.ExtendElement
 	extElements  []ast.ExtendElement
-	svc          nodeWithEmptyDecls[*ast.ServiceNode]
+	svc          nodeWithRunes[*ast.ServiceNode]
 	svcElements  []ast.ServiceElement
-	mtd          nodeWithEmptyDecls[*ast.RPCNode]
+	mtd          nodeWithRunes[*ast.RPCNode]
 	mtdMsgType   *ast.RPCTypeNode
 	mtdElements  []ast.RPCElement
 	optRaw       *ast.OptionNode
-	opt          nodeWithEmptyDecls[*ast.OptionNode]
+	opt          nodeWithRunes[*ast.OptionNode]
 	opts         *compactOptionSlices
 	ref          *ast.FieldReferenceNode
 	optNms       *fieldRefSlices
@@ -171,7 +171,7 @@ file : syntaxDecl {
 	}
 
 fileBody : semicolons fileElements {
-		$$ = newFileElements($1, $2)
+		$$ = prependRunes(toFileElement, $1, $2)
 	}
 
 fileElements : fileElements fileElement {
@@ -182,25 +182,25 @@ fileElements : fileElements fileElement {
 	}
 
 fileElement : importDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| packageDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| optionDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| messageDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| enumDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| extensionDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| serviceDecl {
-		$$ = toFileElements($1)
+	  $$ = toElements[ast.FileElement](toFileElement, $1.Node, $1.Runes)
 	}
 	| error {
 		$$ = nil
@@ -238,20 +238,20 @@ editionDecl : _EDITION '=' stringLit ';' {
 
 importDecl : _IMPORT stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewImportNode($1.ToKeyword(), nil, nil, toStringValueNode($2), semi), extra)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, nil, toStringValueNode($2), semi), extra...)
 	}
 	| _IMPORT _WEAK stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithEmptyDecls(ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), toStringValueNode($3), semi), extra)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), toStringValueNode($3), semi), extra...)
 	}
 	| _IMPORT _PUBLIC stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithEmptyDecls(ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, toStringValueNode($3), semi), extra)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, toStringValueNode($3), semi), extra...)
 	}
 
 packageDecl : _PACKAGE qualifiedIdentifier semicolons {
 		semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewPackageNode($1.ToKeyword(), $2.toIdentValueNode(nil), semi), extra)
+		$$ = newNodeWithRunes(ast.NewPackageNode($1.ToKeyword(), $2.toIdentValueNode(nil), semi), extra...)
 	}
 
 qualifiedIdentifier : identifier {
@@ -320,7 +320,7 @@ oneofOptionDecl : _OPTION optionName '=' optionValue semicolon {
 optionDecl : _OPTION optionName '=' optionValue semicolons {
 		optName := ast.NewOptionNameNode($2.refs, $2.dots)
 		semi, extra := protolex.(*protoLex).requireSemicolon($5)
-		$$ = newNodeWithEmptyDecls(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, semi), extra)
+		$$ = newNodeWithRunes(ast.NewOptionNode($1.ToKeyword(), optName, $3, $4, semi), extra...)
 	}
 
 optionName : identifier {
@@ -596,7 +596,7 @@ fieldCardinality : _REQUIRED
 	| _OPTIONAL
 	| _REPEATED
 
-compactOptions: '[' compactOptionDecls ']' {
+compactOptions : '[' compactOptionDecls ']' {
 		$$ = ast.NewCompactOptionsNode($1, $2.options, $2.commas, $3)
 	}
 	| '[' ']' {
@@ -613,15 +613,16 @@ compactOptionDecls : compactOption {
 		$$ = $1
 	}
 
-compactOption: optionName '=' optionValue {
+compactOption : optionName '=' optionValue {
 		optName := ast.NewOptionNameNode($1.refs, $1.dots)
 		$$ = ast.NewCompactOptionNode(optName, $2, $3)
-	} |
-	optionName {
+	}
+	| optionName {
 		optName := ast.NewOptionNameNode($1.refs, $1.dots)
 		protolex.(*protoLex).Error("compact option must have a value")
 		$$ = ast.NewCompactOptionNode(optName, nil, nil)
 	}
+
 
 groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' {
 		$$ = ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8)
@@ -631,14 +632,14 @@ groupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' 
 	}
 
 messageGroupDecl : fieldCardinality _GROUP identifier '=' _INT_LIT '{' messageBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8), $9)
+		$$ = newNodeWithRunes(ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, nil, $6, $7, $8), $9...)
 	}
 	| fieldCardinality _GROUP identifier '=' _INT_LIT compactOptions '{' messageBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9), $10)
+		$$ = newNodeWithRunes(ast.NewGroupNode($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6, $7, $8, $9), $10...)
 	}
 
 oneofDecl : _ONEOF identifier '{' oneofBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewOneofNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+		$$ = newNodeWithRunes(ast.NewOneofNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 
 oneofBody : {
@@ -693,11 +694,11 @@ oneofGroupDecl : _GROUP identifier '=' _INT_LIT '{' messageBody '}' {
 
 mapFieldDecl : mapType identifier '=' _INT_LIT semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($5)
-		$$ = newNodeWithEmptyDecls(ast.NewMapFieldNode($1, $2, $3, $4, nil, semi), extra)
+		$$ = newNodeWithRunes(ast.NewMapFieldNode($1, $2, $3, $4, nil, semi), extra...)
 	}
 	| mapType identifier '=' _INT_LIT compactOptions semicolons {
 		semi, extra := protolex.(*protoLex).requireSemicolon($6)
-		$$ = newNodeWithEmptyDecls(ast.NewMapFieldNode($1, $2, $3, $4, $5, semi), extra)
+		$$ = newNodeWithRunes(ast.NewMapFieldNode($1, $2, $3, $4, $5, semi), extra...)
 	}
 
 mapType : _MAP '<' mapKeyType ',' typeName '>' {
@@ -720,11 +721,11 @@ mapKeyType : _INT32
 extensionRangeDecl : _EXTENSIONS tagRanges ';' semicolons {
 	  // TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
 		// between `extensions 1 to 10` and `extensions 1` followed by `to = 10`.
-		$$ = newNodeWithEmptyDecls(ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, nil, $3), $4)
+		$$ = newNodeWithRunes(ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, nil, $3), $4...)
 	}
 	| _EXTENSIONS tagRanges compactOptions semicolons {
 		semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithEmptyDecls(ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, $3, semi), extra)
+		$$ = newNodeWithRunes(ast.NewExtensionRangeNode($1.ToKeyword(), $2.ranges, $2.commas, $3, semi), extra...)
 	}
 
 tagRanges : tagRange {
@@ -775,24 +776,24 @@ enumValueNumber : _INT_LIT {
 msgReserved : _RESERVED tagRanges ';' semicolons {
 	  // TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
 		// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
-		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
+		$$ = newNodeWithRunes(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4...)
 	}
 	| reservedNames
 
 enumReserved : _RESERVED enumValueRanges ';' semicolons {
 	  // TODO: Tolerate a missing semicolon here. This currnelty creates a shift/reduce conflict
 		// between `reserved 1 to 10` and `reserved 1` followed by `to = 10`.
-		$$ = newNodeWithEmptyDecls(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4)
+		$$ = newNodeWithRunes(ast.NewReservedRangesNode($1.ToKeyword(), $2.ranges, $2.commas, $3), $4...)
 	}
 	| reservedNames
 
 reservedNames : _RESERVED fieldNameStrings semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, semi), extra)
+		$$ = newNodeWithRunes(ast.NewReservedNamesNode($1.ToKeyword(), $2.names, $2.commas, semi), extra...)
 	}
 	| _RESERVED fieldNameIdents semicolons {
 		semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithEmptyDecls(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, semi), extra)
+		$$ = newNodeWithRunes(ast.NewReservedIdentifiersNode($1.ToKeyword(), $2.idents, $2.commas, semi), extra...)
 	}
 
 fieldNameStrings : stringLit {
@@ -814,14 +815,14 @@ fieldNameIdents : identifier {
 	}
 
 enumDecl : _ENUM identifier '{' enumBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+		$$ = newNodeWithRunes(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 
 enumBody : semicolons {
-		$$ = newEnumElements($1, nil)
+		$$ = prependRunes(toEnumElement, $1, nil)
 	}
 	| semicolons enumElements {
-		$$ = newEnumElements($1, $2)
+		$$ = prependRunes(toEnumElement, $1, $2)
 	}
 
 enumElements : enumElements enumElement {
@@ -832,13 +833,13 @@ enumElements : enumElements enumElement {
 	}
 
 enumElement : optionDecl {
-		$$ = toEnumElements($1)
+		$$ = toElements[ast.EnumElement](toEnumElement, $1.Node, $1.Runes)
 	}
 	| enumValueDecl {
-		$$ = toEnumElements($1)
+		$$ = toElements[ast.EnumElement](toEnumElement, $1.Node, $1.Runes)
 	}
 	| enumReserved {
-		$$ = toEnumElements($1)
+		$$ = toElements[ast.EnumElement](toEnumElement, $1.Node, $1.Runes)
 	}
 	| error {
 		$$ = nil
@@ -846,22 +847,22 @@ enumElement : optionDecl {
 
 enumValueDecl : enumValueName '=' enumValueNumber semicolons {
 		semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithEmptyDecls(ast.NewEnumValueNode($1, $2, $3, nil, semi), extra)
+		$$ = newNodeWithRunes(ast.NewEnumValueNode($1, $2, $3, nil, semi), extra...)
 	}
 	|  enumValueName '=' enumValueNumber compactOptions semicolons {
 		semi, extra := protolex.(*protoLex).requireSemicolon($5)
-		$$ = newNodeWithEmptyDecls(ast.NewEnumValueNode($1, $2, $3, $4, semi), extra)
+		$$ = newNodeWithRunes(ast.NewEnumValueNode($1, $2, $3, $4, semi), extra...)
 	}
 
 messageDecl : _MESSAGE identifier '{' messageBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+		$$ = newNodeWithRunes(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 
 messageBody : semicolons {
-		$$ = newMessageElements($1, nil)
+		$$ = prependRunes(toMessageElement, $1, nil)
 	}
 	| semicolons messageElements {
-		$$ = newMessageElements($1, $2)
+		$$ = prependRunes(toMessageElement, $1, $2)
 	}
 
 messageElements : messageElements messageElement {
@@ -872,34 +873,34 @@ messageElements : messageElements messageElement {
 	}
 
 messageElement : messageFieldDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| enumDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| messageDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| extensionDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| extensionRangeDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| messageGroupDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| optionDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| oneofDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| mapFieldDecl {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| msgReserved {
-		$$ = toMessageElements($1)
+		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
 	| error {
 		$$ = nil
@@ -907,23 +908,23 @@ messageElement : messageFieldDecl {
 
 messageFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT semicolons {
 		semis, extra := protolex.(*protoLex).requireSemicolon($6)
-		$$ = newNodeWithEmptyDecls(ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, semis), extra)
+		$$ = newNodeWithRunes(ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, nil, semis), extra...)
 	}
 	| fieldCardinality notGroupElementTypeIdent identifier '=' _INT_LIT compactOptions semicolons {
 		semis, extra := protolex.(*protoLex).requireSemicolon($7)
-		$$ = newNodeWithEmptyDecls(ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, semis), extra)
+		$$ = newNodeWithRunes(ast.NewFieldNode($1.ToKeyword(), $2, $3, $4, $5, $6, semis), extra...)
 	}
 	| msgElementTypeIdent identifier '=' _INT_LIT semicolons {
 		semis, extra := protolex.(*protoLex).requireSemicolon($5)
-		$$ = newNodeWithEmptyDecls(ast.NewFieldNode(nil, $1, $2, $3, $4, nil, semis), extra)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, $3, $4, nil, semis), extra...)
 	}
 	| msgElementTypeIdent identifier '=' _INT_LIT compactOptions semicolons {
 		semis, extra := protolex.(*protoLex).requireSemicolon($6)
-		$$ = newNodeWithEmptyDecls(ast.NewFieldNode(nil, $1, $2, $3, $4, $5, semis), extra)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, $3, $4, $5, semis), extra...)
 	}
 
 extensionDecl : _EXTEND typeName '{' extensionBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+		$$ = newNodeWithRunes(ast.NewExtendNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 
 extensionBody : {
@@ -973,14 +974,14 @@ extensionFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _I
 	}
 
 serviceDecl : _SERVICE identifier '{' serviceBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5), $6)
+		$$ = newNodeWithRunes(ast.NewServiceNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 
 serviceBody : semicolons {
-	  $$ = newServiceElements($1, nil)
+	  $$ = prependRunes(toServiceElement, $1, nil)
 	}
 	| semicolons serviceElements {
-		$$ = newServiceElements($1, $2)
+		$$ = prependRunes(toServiceElement, $1, $2)
 	}
 
 serviceElements : serviceElements serviceElement {
@@ -994,10 +995,10 @@ serviceElements : serviceElements serviceElement {
 // it does not appear to be supported in protoc (doc is likely from grammar for
 // Google-internal version of protoc, with support for streaming stubby)
 serviceElement : optionDecl {
-		$$ = toServiceElements($1)
+		$$ = toElements[ast.ServiceElement](toServiceElement, $1.Node, $1.Runes)
 	}
 	| methodDecl {
-		$$ = toServiceElements($1)
+		$$ = toElements[ast.ServiceElement](toServiceElement, $1.Node, $1.Runes)
 	}
 	| error {
 		$$ = nil
@@ -1005,10 +1006,10 @@ serviceElement : optionDecl {
 
 methodDecl : _RPC identifier methodMessageType _RETURNS methodMessageType semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($6)
-		$$ = newNodeWithEmptyDecls(ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, semi), extra)
+		$$ = newNodeWithRunes(ast.NewRPCNode($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, semi), extra...)
 	}
 	| _RPC identifier methodMessageType _RETURNS methodMessageType '{' methodBody '}' semicolons {
-		$$ = newNodeWithEmptyDecls(ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8), $9)
+		$$ = newNodeWithRunes(ast.NewRPCNodeWithBody($1.ToKeyword(), $2, $3, $4.ToKeyword(), $5, $6, $7, $8), $9...)
 	}
 
 methodMessageType : '(' _STREAM typeName ')' {
@@ -1019,10 +1020,10 @@ methodMessageType : '(' _STREAM typeName ')' {
 	}
 
 methodBody : semicolons {
-		$$ = newMethodElements($1, nil)
+		$$ = prependRunes(toMethodElement, $1, nil)
 	}
 	| semicolons methodElements {
-		$$ = newMethodElements($1, $2)
+		$$ = prependRunes(toMethodElement, $1, $2)
 	}
 
 methodElements : methodElements methodElement {
@@ -1033,7 +1034,7 @@ methodElements : methodElements methodElement {
 	}
 
 methodElement : optionDecl {
-		$$ = toMethodElements($1)
+		$$ = toElements[ast.RPCElement](toMethodElement, $1.Node, $1.Runes)
 	}
 	| error {
 		$$ = nil
