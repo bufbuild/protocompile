@@ -496,6 +496,58 @@ func TestLenientParse_OptionNameTrailingDot(t *testing.T) {
 									int32 bar = 1 [(type)=1];
 								}`,
 		},
+		"message-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo.) = 1;
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = 1;
+								}`,
+		},
+		"message-option-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo.) = {
+									[type.]: <a: 1>
+								};
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = {
+										[type]: <a: 1>
+									};
+								}`,
+		},
+		"message-option-any-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo) = {
+									[url.com/type.]: <a: 1>
+								};
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = {
+										[url.com/type]: <a: 1>
+									};
+								}`,
+		},
+		"message-option-any-field-url": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo) = {
+									[url.com./type]: <a: 1>
+								};
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = {
+										[url.com/type]: <a: 1>
+									};
+								}`,
+		},
 		"map-value-type": {
 			Error: `syntax = "proto3";
 							message Foo {

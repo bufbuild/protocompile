@@ -545,10 +545,10 @@ messageLiteralField : messageLiteralFieldName ':' value {
 messageLiteralFieldName : identifier {
 		$$ = ast.NewFieldReferenceNode($1)
 	}
-	| '[' qualifiedIdentifier ']' {
+	| '[' qualifiedIdentifierDot ']' {
 		$$ = ast.NewExtensionFieldReferenceNode($1, $2.toIdentValueNode(nil), $3)
 	}
-	| '[' qualifiedIdentifier '/' qualifiedIdentifier ']' {
+	| '[' qualifiedIdentifierDot '/' qualifiedIdentifierDot ']' {
 		$$ = ast.NewAnyTypeReferenceNode($1, $2.toIdentValueNode(nil), $3, $4.toIdentValueNode(nil), $5)
 	}
 	| '[' error ']' {
