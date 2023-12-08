@@ -54,6 +54,7 @@ import (
 	rng          *ast.RangeNode
 	rngs         *rangeSlices
 	names        *nameSlices
+	cidPart      nodeWithRunes[*ast.IdentNode]
 	cid          *identSlices
 	tid          ast.IdentValueNode
 	sl           *valueSlices
@@ -89,7 +90,8 @@ import (
 %type <v>            value optionValue scalarValue messageLiteralWithBraces messageLiteral numLit listLiteral listElement listOfMessagesLiteral messageValue
 %type <il>           enumValueNumber
 %type <id>           identifier mapKeyType msgElementName extElementName oneofElementName notGroupElementName mtdElementName enumValueName fieldCardinality
-%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent notGroupElementIdent mtdElementIdent
+%type <cidPart>      qualifiedIdentifierEntry qualifiedIdentifierFinal mtdElementIdentEntry mtdElementIdentFinal
+%type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent notGroupElementIdent mtdElementIdent qualifiedIdentifierDot qualifiedIdentifierLeading mtdElementIdentLeading
 %type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent notGroupElementTypeIdent mtdElementTypeIdent
 %type <sl>           listElements messageLiterals
 %type <msgLitFlds>   messageLiteralFieldEntry messageLiteralFields messageTextFormat
@@ -265,6 +267,36 @@ qualifiedIdentifier : identifier {
 		$$ = $1
 	}
 
+qualifiedIdentifierDot : qualifiedIdentifierFinal {
+		$$ = &identSlices{idents: []*ast.IdentNode{$1.Node}, dots: $1.Runes}
+	}
+	| qualifiedIdentifierLeading qualifiedIdentifierFinal {
+		$1.idents = append($1.idents, $2.Node)
+		$1.dots = append($1.dots, $2.Runes...)
+		$$ = $1
+	}
+
+qualifiedIdentifierLeading : qualifiedIdentifierEntry {
+	  $$ = &identSlices{idents: []*ast.IdentNode{$1.Node}, dots: $1.Runes}
+	}
+	| qualifiedIdentifierLeading qualifiedIdentifierEntry {
+		$1.idents = append($1.idents, $2.Node)
+		$1.dots = append($1.dots, $2.Runes...)
+		$$ = $1
+	}
+
+qualifiedIdentifierFinal : identifier {
+		$$ = newNodeWithRunes($1)
+	}
+	| qualifiedIdentifierEntry {
+		protolex.(*protoLex).Error("unexpected '.'")
+		$$ = $1
+	}
+
+qualifiedIdentifierEntry : identifier '.' {
+		$$ = newNodeWithRunes($1, $2)
+	}
+
 // to mimic limitations of protoc recursive-descent parser,
 // we don't allowed message statement keywords as identifiers
 // (or oneof statement keywords [e.g. "option"] below)
@@ -305,13 +337,34 @@ notGroupElementIdent : notGroupElementName {
 		$$ = $1
 	}
 
-mtdElementIdent : mtdElementName {
-		$$ = &identSlices{idents: []*ast.IdentNode{$1}}
+mtdElementIdent : mtdElementIdentFinal {
+		$$ = &identSlices{idents: []*ast.IdentNode{$1.Node}, dots: $1.Runes}
 	}
-	| mtdElementIdent '.' identifier {
-		$1.idents = append($1.idents, $3)
-		$1.dots = append($1.dots, $2)
+	| mtdElementIdentLeading mtdElementIdentFinal {
+		$1.idents = append($1.idents, $2.Node)
+		$1.dots = append($1.dots, $2.Runes...)
 		$$ = $1
+	}
+
+mtdElementIdentLeading : mtdElementIdentEntry {
+	  $$ = &identSlices{idents: []*ast.IdentNode{$1.Node}, dots: $1.Runes}
+	}
+	| mtdElementIdentLeading mtdElementIdentEntry {
+		$1.idents = append($1.idents, $2.Node)
+		$1.dots = append($1.dots, $2.Runes...)
+		$$ = $1
+	}
+
+mtdElementIdentFinal : mtdElementName {
+	  $$ = newNodeWithRunes($1)
+  }
+  | mtdElementIdentEntry {
+		protolex.(*protoLex).Error("unexpected '.'")
+		$$ = $1
+	}
+
+mtdElementIdentEntry : mtdElementName '.' {
+	  $$ = newNodeWithRunes($1, $2)
 	}
 
 oneofOptionDecl : _OPTION optionName '=' optionValue semicolon {
@@ -492,10 +545,10 @@ messageLiteralField : messageLiteralFieldName ':' value {
 messageLiteralFieldName : identifier {
 		$$ = ast.NewFieldReferenceNode($1)
 	}
-	| '[' qualifiedIdentifier ']' {
+	| '[' qualifiedIdentifierDot ']' {
 		$$ = ast.NewExtensionFieldReferenceNode($1, $2.toIdentValueNode(nil), $3)
 	}
-	| '[' qualifiedIdentifier '/' qualifiedIdentifier ']' {
+	| '[' qualifiedIdentifierDot '/' qualifiedIdentifierDot ']' {
 		$$ = ast.NewAnyTypeReferenceNode($1, $2.toIdentValueNode(nil), $3, $4.toIdentValueNode(nil), $5)
 	}
 	| '[' error ']' {
@@ -571,10 +624,10 @@ messageLiterals : messageLiteral {
 		$$ = $1
 	}
 
-typeName : qualifiedIdentifier {
+typeName : qualifiedIdentifierDot {
 		$$ = $1.toIdentValueNode(nil)
 	}
-	| '.' qualifiedIdentifier {
+	| '.' qualifiedIdentifierDot {
 		$$ = $2.toIdentValueNode($1)
 	}
 
@@ -609,7 +662,7 @@ notGroupElementTypeIdent : notGroupElementIdent {
 mtdElementTypeIdent : mtdElementIdent {
 		$$ = $1.toIdentValueNode(nil)
 	}
-	| '.' qualifiedIdentifier {
+	| '.' qualifiedIdentifierDot {
 		$$ = $2.toIdentValueNode($1)
 	}
 

@@ -97,14 +97,16 @@ func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCas
 			require.NoError(t, err)
 
 			producedError := false
+			var errs []error
 			errHandler := reporter.NewHandler(reporter.NewReporter(func(err reporter.ErrorWithPos) error {
+				errs = append(errs, err)
 				if strings.Contains(err.Error(), expected) {
 					producedError = true
 				}
 				return nil
 			}, nil))
 			_, _ = Parse(protoName, strings.NewReader(testCase.Error), errHandler)
-			require.Truef(t, producedError, "expected error containing %q", expected)
+			require.Truef(t, producedError, "expected error containing %q, got %v", expected, errs)
 		})
 	}
 }
@@ -482,6 +484,108 @@ func TestLenientParse_OptionNameTrailingDot(t *testing.T) {
 			NoError: `syntax = "proto3";
 								message Foo {
 									int32 bar = 1 [baz.(foo)=1];
+								}`,
+		},
+		"field-options-type": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar = 1 [(type.)=1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [(type)=1];
+								}`,
+		},
+		"message-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo.) = 1;
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = 1;
+								}`,
+		},
+		"message-option-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo.) = {
+									[type.]: <a: 1>
+								};
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = {
+										[type]: <a: 1>
+									};
+								}`,
+		},
+		"message-option-any-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo) = {
+									[url.com/type.]: <a: 1>
+								};
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = {
+										[url.com/type]: <a: 1>
+									};
+								}`,
+		},
+		"message-option-any-field-url": {
+			Error: `syntax = "proto3";
+							message Foo {
+								option (foo) = {
+									[url.com./type]: <a: 1>
+								};
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									option (foo) = {
+										[url.com/type]: <a: 1>
+									};
+								}`,
+		},
+		"map-value-type": {
+			Error: `syntax = "proto3";
+							message Foo {
+								map<string, type.> bar = 1;
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									map<string, type> bar = 1;
+								}`,
+		},
+		"extension": {
+			Error: `syntax = "proto3";
+							extend Foo. {
+								int32 bar = 1;
+							}`,
+			NoError: `syntax = "proto3";
+								extend Foo {
+									int32 bar = 1;
+								}`,
+		},
+		"method-type": {
+			Error: `syntax = "proto3";
+							service Foo {
+								rpc Bar(type.) returns (type);
+							}`,
+			NoError: `syntax = "proto3";
+								service Foo {
+									rpc Bar(type) returns (type);
+								}`,
+		},
+		"method-stream-type": {
+			Error: `syntax = "proto3";
+							service Foo {
+								rpc Bar(stream type) returns (stream A.B.);
+							}`,
+			NoError: `syntax = "proto3";
+								service Foo {
+									rpc Bar(stream type) returns (stream A.B);
 								}`,
 		},
 	}
