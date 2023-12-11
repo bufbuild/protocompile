@@ -642,6 +642,32 @@ func TestBasicValidation(t *testing.T) {
 					   } }`,
 			expectedErr: `test.proto:11:72: message nesting depth must be less than 32`,
 		},
+		"failure_positive_sign_not_allowed_in_default_val": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     int32 bar = 1 [default = +123];
+					   }`,
+			expectedErr: `test.proto:3:71: syntax error: unexpected '+'`,
+		},
+		"failure_positive_sign_not_allowed_in_enum_val": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = +1;
+					   }`,
+			expectedErr: `test.proto:3:52: syntax error: unexpected '+', expecting int literal or '-'`,
+		},
+		"failure_positive_sign_not_allowed_in_message_literal": {
+			contents: `syntax = "proto3";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     Foo foo = 10101;
+					   }
+					   message Foo {
+					     repeated float bar = 1;
+					   }
+					   option (foo) = { bar: +1.01 bar: +inf };`,
+			expectedErr: `test.proto:9:66: syntax error: unexpected '+'`,
+		},
 		"failure_message_invalid_reserved_name": {
 			contents: `syntax = "proto3";
 					   message Foo {

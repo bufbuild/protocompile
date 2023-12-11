@@ -436,22 +436,12 @@ numLit : _FLOAT_LIT {
 	| '-' _FLOAT_LIT {
 		$$ = ast.NewSignedFloatLiteralNode($1, $2)
 	}
-	| '+' _FLOAT_LIT {
-		$$ = ast.NewSignedFloatLiteralNode($1, $2)
-	}
-	| '+' _INF {
-		f := ast.NewSpecialFloatLiteralNode($2.ToKeyword())
-		$$ = ast.NewSignedFloatLiteralNode($1, f)
-	}
 	| '-' _INF {
 		f := ast.NewSpecialFloatLiteralNode($2.ToKeyword())
 		$$ = ast.NewSignedFloatLiteralNode($1, f)
 	}
 	| _INT_LIT {
 		$$ = $1
-	}
-	| '+' _INT_LIT {
-		$$ = ast.NewPositiveUintLiteralNode($1, $2)
 	}
 	| '-' _INT_LIT {
 		if $2.Val > math.MaxInt64 + 1 {
