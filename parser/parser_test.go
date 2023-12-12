@@ -379,7 +379,7 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 								}`,
 		},
 	}
-	runParseErrorTestCases(t, inputs, "expected ';'")
+	runParseErrorTestCases(t, inputs, "syntax error: expecting ';'")
 }
 
 func TestLenientParse_EmptyCompactOptions(t *testing.T) {
@@ -450,7 +450,7 @@ func TestLenientParse_OptionsTrailingComma(t *testing.T) {
 								}`,
 		},
 	}
-	runParseErrorTestCases(t, inputs, "unexpected ','")
+	runParseErrorTestCases(t, inputs, "syntax error: unexpected ','")
 }
 
 func TestLenientParse_OptionNameTrailingDot(t *testing.T) {
@@ -589,7 +589,7 @@ func TestLenientParse_OptionNameTrailingDot(t *testing.T) {
 								}`,
 		},
 	}
-	runParseErrorTestCases(t, inputs, "unexpected '.'")
+	runParseErrorTestCases(t, inputs, "syntax error: unexpected '.'")
 }
 
 func TestSimpleParse(t *testing.T) {

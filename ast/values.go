@@ -320,12 +320,14 @@ type SpecialFloatLiteralNode struct {
 }
 
 // NewSpecialFloatLiteralNode returns a new *SpecialFloatLiteralNode for the
-// given keyword, which must be "inf" or "nan".
+// given keyword. The given keyword should be "inf", "infinity", or "nan"
+// in any case.
 func NewSpecialFloatLiteralNode(name *KeywordNode) *SpecialFloatLiteralNode {
 	var f float64
-	if name.Val == "inf" {
+	switch strings.ToLower(name.Val) {
+	case "inf", "infinity":
 		f = math.Inf(1)
-	} else {
+	default:
 		f = math.NaN()
 	}
 	return &SpecialFloatLiteralNode{
