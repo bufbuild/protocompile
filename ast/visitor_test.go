@@ -192,10 +192,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			*methodCalled = "*UintLiteralNode"
 			return nil
 		},
-		DoVisitPositiveUintLiteralNode: func(*PositiveUintLiteralNode) error {
-			*methodCalled = "*PositiveUintLiteralNode"
-			return nil
-		},
 		DoVisitNegativeIntLiteralNode: func(*NegativeIntLiteralNode) error {
 			*methodCalled = "*NegativeIntLiteralNode"
 			return nil
@@ -351,9 +347,6 @@ func testVisitors(methodCalled *string) (*SimpleVisitor, []*SimpleVisitor) {
 			DoVisitUintLiteralNode: v.DoVisitUintLiteralNode,
 		},
 		{
-			DoVisitPositiveUintLiteralNode: v.DoVisitPositiveUintLiteralNode,
-		},
-		{
 			DoVisitNegativeIntLiteralNode: v.DoVisitNegativeIntLiteralNode,
 		},
 		{
@@ -476,9 +469,6 @@ func TestVisitorAll(t *testing.T) {
 		},
 		(*UintLiteralNode)(nil): {
 			"*UintLiteralNode", "ValueNode", "IntValueNode", "FloatValueNode", "TerminalNode", "Node",
-		},
-		(*PositiveUintLiteralNode)(nil): {
-			"*PositiveUintLiteralNode", "ValueNode", "IntValueNode", "CompositeNode", "Node",
 		},
 		(*NegativeIntLiteralNode)(nil): {
 			"*NegativeIntLiteralNode", "ValueNode", "IntValueNode", "CompositeNode", "Node",

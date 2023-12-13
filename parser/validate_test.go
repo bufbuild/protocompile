@@ -349,7 +349,7 @@ func TestBasicValidation(t *testing.T) {
 		},
 		"failure_message_decl_start_w_reserved2": {
 			contents:    `syntax = "proto3"; enum reserved { unset = 0; } message Foo { reserved bar = 1; }`,
-			expectedErr: `test.proto:1:76: expected ';'`,
+			expectedErr: `test.proto:1:76: syntax error: expecting ';'`,
 		},
 		"failure_message_decl_start_w_extend": {
 			contents:    `syntax = "proto3"; enum extend { unset = 0; } message Foo { extend bar = 1; }`,
@@ -641,6 +641,129 @@ func TestBasicValidation(t *testing.T) {
 					   } } } }
 					   } }`,
 			expectedErr: `test.proto:11:72: message nesting depth must be less than 32`,
+		},
+		"failure_positive_sign_not_allowed_in_default_val": {
+			contents: `syntax = "proto3";
+					   message Foo {
+					     int32 bar = 1 [default = +123];
+					   }`,
+			expectedErr: `test.proto:3:71: syntax error: unexpected '+'`,
+		},
+		"failure_positive_sign_not_allowed_in_enum_val": {
+			contents: `syntax = "proto3";
+					   enum Foo {
+					     BAR = +1;
+					   }`,
+			expectedErr: `test.proto:3:52: syntax error: unexpected '+', expecting int literal or '-'`,
+		},
+		"failure_positive_sign_not_allowed_in_message_literal": {
+			contents: `syntax = "proto3";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     Foo foo = 10101;
+					   }
+					   message Foo {
+					     repeated float bar = 1;
+					   }
+					   option (foo) = { bar: +1.01 bar: +inf };`,
+			expectedErr: `test.proto:9:66: syntax error: unexpected '+'`,
+		},
+		"success_inf_nan_in_default_value": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     optional float bar = 1 [default = inf];
+					     optional double baz = 2 [default = nan];
+					     optional double fizz = 3 [default = -inf];
+					     optional float buzz = 4 [default = -nan];
+					   }`,
+		},
+		"failure_inf_upper_in_default_value": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     optional float bar = 1 [default = -Inf];
+					   }`,
+			expectedErr: `test.proto:3:81: syntax error: unexpected identifier, expecting int literal or float literal or "inf" or "nan"`,
+		},
+		"failure_infinity_upper_in_default_value": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     optional float bar = 1 [default = -infinity];
+					   }`,
+			expectedErr: `test.proto:3:81: syntax error: unexpected identifier, expecting int literal or float literal or "inf" or "nan"`,
+		},
+		"failure_nan_upper_in_default_value": {
+			contents: `syntax = "proto2";
+					   message Foo {
+					     optional float bar = 1 [default = -NaN];
+					   }`,
+			expectedErr: `test.proto:3:81: syntax error: unexpected identifier, expecting int literal or float literal or "inf" or "nan"`,
+		},
+		"success_inf_nan_in_option_value": {
+			contents: `syntax = "proto3";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     repeated double foo = 10101;
+					   }
+					   option (foo) = inf;
+					   option (foo) = -inf;
+					   option (foo) = nan;
+					   option (foo) = -nan;`,
+			// Bug in protoc, see https://github.com/protocolbuffers/protobuf/issues/15010
+			expectedDiffWithProtoc: true,
+		},
+		"failure_inf_upper_in_option_value": {
+			contents: `syntax = "proto2";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     repeated double foo = 10101;
+					   }
+					   option (foo) = -Inf;`,
+			expectedErr: `test.proto:6:60: syntax error: unexpected identifier, expecting int literal or float literal or "inf" or "nan"`,
+		},
+		"failure_infinity_upper_in_option_value": {
+			contents: `syntax = "proto2";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     repeated double foo = 10101;
+					   }
+					   option (foo) = -infinity;`,
+			expectedErr: `test.proto:6:60: syntax error: unexpected identifier, expecting int literal or float literal or "inf" or "nan"`,
+		},
+		"failure_nan_upper_in_option_value": {
+			contents: `syntax = "proto2";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     repeated double foo = 10101;
+					   }
+					   option (foo) = -NaN;`,
+			expectedErr: `test.proto:6:60: syntax error: unexpected identifier, expecting int literal or float literal or "inf" or "nan"`,
+		},
+		"success_inf_nan_in_message_literal": {
+			contents: `syntax = "proto3";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     Foo foo = 10101;
+					   }
+					   message Foo {
+					     repeated float bar = 1;
+					   }
+					   option (foo) = {
+					     bar: inf      bar: -inf      bar: INF      bar: -Inf
+					     bar: infinity bar: -infinity bar: INFiniTY bar: -Infinity
+					     bar: nan      bar: -nan      bar: NAN      bar: -NaN
+					   };`,
+		},
+		"failure_invalid_signed_identifier_in_message_literal": {
+			contents: `syntax = "proto3";
+					   import "google/protobuf/descriptor.proto";
+					   extend google.protobuf.FileOptions {
+					     Foo foo = 10101;
+					   }
+					   message Foo {
+					     repeated float bar = 1;
+					   }
+					   option (foo) = { bar: -Infin };`,
+			expectedErr: `test.proto:9:67: only identifiers "inf", "infinity", or "nan" may appear after negative sign`,
 		},
 		"failure_message_invalid_reserved_name": {
 			contents: `syntax = "proto3";
