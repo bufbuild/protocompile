@@ -55,7 +55,7 @@ type errorWithSpan struct {
 
 func (e errorWithSpan) Error() string {
 	sourcePos := e.GetPosition()
-	return fmt.Sprintf("%s: %v", sourcePos, e.underlying)
+	return fmt.Sprintf("%s:%v", sourcePos, e.underlying)
 }
 
 func (e errorWithSpan) GetPosition() ast.SourcePos {
