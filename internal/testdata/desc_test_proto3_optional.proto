@@ -4,6 +4,8 @@ import "google/protobuf/descriptor.proto";
 
 option go_package = "github.com/bufbuild/protocompile/internal/testprotos";
 
+package testprotos;
+
 message MessageWithOptionalFields {
     optional string foo = 1;
     optional int64 bar = 2;
