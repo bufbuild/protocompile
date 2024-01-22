@@ -7,7 +7,7 @@ require (
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/jhump/protoreflect v1.14.1 // MUST NOT be updated to v1.15 or higher
 	github.com/stretchr/testify v1.8.4
-	google.golang.org/protobuf v1.31.1-0.20231027082548-f4a6c1f6e5c1
+	google.golang.org/protobuf v1.32.0
 )
 
 require golang.org/x/sync v0.5.0
