@@ -41,6 +41,24 @@ import (
 // Note that linking does NOT interpret options. So options messages in the
 // returned value have all values stored in UninterpretedOptions fields.
 func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *reporter.Handler) (Result, error) {
+	return linkAny(parsed, dependencies, symbols, handler)
+}
+
+// LinkDynamic handles linking a parsed descriptor proto into a fully-linked descriptor.
+// If the given parser.Result has imports, they must all be resolvable in the given
+// dependencies.
+//
+// The handler value is used to report any link errors. If any such errors are
+// reported, this function returns a non-nil error. The Result value returned
+// also implements protoreflect.FileDescriptor.
+//
+// Note that linking does NOT interpret options. So options messages in the
+// returned value have all values stored in UninterpretedOptions fields.
+func LinkDynamic(parsed parser.Result, dependencies Dependencies, handler *reporter.Handler) (Result, error) {
+	return linkAny(parsed, dependencies, nil, handler)
+}
+
+func linkAny(parsed parser.Result, dependencies Dependencies, symbols *Symbols, handler *reporter.Handler) (Result, error) {
 	if symbols == nil {
 		symbols = &Symbols{}
 	}

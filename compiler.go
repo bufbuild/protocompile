@@ -510,7 +510,7 @@ func (t *task) asFile(ctx context.Context, name string, r SearchResult) (linker.
 		t.released = false
 	}
 
-	return t.link(parseRes, deps, overrideDescriptorProto)
+	return t.link(parseRes, linker.Files(deps), overrideDescriptorProto)
 }
 
 func (e *executor) checkForDependencyCycle(res *result, sequence []string, span ast.SourceSpan, checked map[string]struct{}) error {
@@ -569,8 +569,15 @@ func findImportSpan(res parser.Result, dep string) ast.SourceSpan {
 	return ast.UnknownSpan(res.FileNode().Name())
 }
 
-func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescriptorProtoRes linker.File) (linker.File, error) {
-	file, err := linker.Link(parseRes, deps, t.e.sym, t.h)
+func (t *task) link(parseRes parser.Result, deps linker.Dependencies, overrideDescriptorProtoRes linker.File) (linker.File, error) {
+	var file linker.Result
+	var err error
+	if files, ok := deps.(linker.Files); ok {
+		// use type assertion to support usage of t.e.sym
+		file, err = linker.Link(parseRes, files, t.e.sym, t.h)
+	} else {
+		file, err = linker.LinkDynamic(parseRes, deps, t.h)
+	}
 	if err != nil {
 		return nil, err
 	}

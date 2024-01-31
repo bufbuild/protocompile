@@ -145,6 +145,11 @@ func (f *file) FindExtensionByNumber(msg protoreflect.FullName, tag protoreflect
 
 var _ File = (*file)(nil)
 
+// Dependencies represents a set of protobuf files.
+type Dependencies interface {
+	FindFileByPath(path string) File
+}
+
 // Files represents a set of protobuf files. It is a slice of File values, but
 // also provides a method for easily looking up files by path and name.
 type Files []File
@@ -169,6 +174,8 @@ func (f Files) FindFileByPath(path string) File {
 func (f Files) AsResolver() Resolver {
 	return filesResolver(f)
 }
+
+var _ Dependencies = Files{}
 
 // Resolver is an interface that can resolve various kinds of queries about
 // descriptors. It satisfies the resolver interfaces defined in protodesc

@@ -141,7 +141,7 @@ type result struct {
 	protoreflect.FileDescriptor
 	parser.Result
 	prefix string
-	deps   Files
+	deps   Dependencies
 
 	// A map of all descriptors keyed by their fully-qualified name (without
 	// any leading dot).
