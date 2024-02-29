@@ -84,13 +84,13 @@ func NewFieldNode(label *KeywordNode, fieldType IdentValueNode, name *IdentNode,
 	if name == nil {
 		panic("name is nil")
 	}
-	if equals == nil {
-		panic("equals is nil")
-	}
-	if tag == nil {
-		panic("tag is nil")
-	}
 	numChildren := 4
+	if equals != nil {
+		numChildren++
+	}
+	if tag != nil {
+		numChildren++
+	}
 	if semicolon != nil {
 		numChildren++
 	}
@@ -104,7 +104,13 @@ func NewFieldNode(label *KeywordNode, fieldType IdentValueNode, name *IdentNode,
 	if label != nil {
 		children = append(children, label)
 	}
-	children = append(children, fieldType, name, equals, tag)
+	children = append(children, fieldType, name)
+	if equals != nil {
+		children = append(children, equals)
+	}
+	if tag != nil {
+		children = append(children, tag)
+	}
 	if opts != nil {
 		children = append(children, opts)
 	}
@@ -145,6 +151,9 @@ func (n *FieldNode) FieldType() Node {
 }
 
 func (n *FieldNode) FieldTag() Node {
+	if n.Tag == nil {
+		return nil
+	}
 	return n.Tag
 }
 
@@ -237,20 +246,20 @@ func NewGroupNode(label *KeywordNode, keyword *KeywordNode, name *IdentNode, equ
 	if name == nil {
 		panic("name is nil")
 	}
-	if equals == nil {
-		panic("equals is nil")
-	}
-	if tag == nil {
-		panic("tag is nil")
-	}
 	if openBrace == nil {
 		panic("openBrace is nil")
 	}
 	if closeBrace == nil {
 		panic("closeBrace is nil")
 	}
-	numChildren := 6 + len(decls)
+	numChildren := 4 + len(decls)
 	if label != nil {
+		numChildren++
+	}
+	if equals != nil {
+		numChildren++
+	}
+	if tag != nil {
 		numChildren++
 	}
 	if opts != nil {
@@ -260,7 +269,13 @@ func NewGroupNode(label *KeywordNode, keyword *KeywordNode, name *IdentNode, equ
 	if label != nil {
 		children = append(children, label)
 	}
-	children = append(children, keyword, name, equals, tag)
+	children = append(children, keyword, name)
+	if equals != nil {
+		children = append(children, equals)
+	}
+	if tag != nil {
+		children = append(children, tag)
+	}
 	if opts != nil {
 		children = append(children, opts)
 	}
@@ -302,6 +317,9 @@ func (n *GroupNode) FieldType() Node {
 }
 
 func (n *GroupNode) FieldTag() Node {
+	if n.Tag == nil {
+		return nil
+	}
 	return n.Tag
 }
 
@@ -537,13 +555,13 @@ func NewMapFieldNode(mapType *MapTypeNode, name *IdentNode, equals *RuneNode, ta
 	if name == nil {
 		panic("name is nil")
 	}
-	if equals == nil {
-		panic("equals is nil")
+	numChildren := 2
+	if equals != nil {
+		numChildren++
 	}
-	if tag == nil {
-		panic("tag is nil")
+	if tag != nil {
+		numChildren++
 	}
-	numChildren := 4
 	if opts != nil {
 		numChildren++
 	}
@@ -551,7 +569,13 @@ func NewMapFieldNode(mapType *MapTypeNode, name *IdentNode, equals *RuneNode, ta
 		numChildren++
 	}
 	children := make([]Node, 0, numChildren)
-	children = append(children, mapType, name, equals, tag)
+	children = append(children, mapType, name)
+	if equals != nil {
+		children = append(children, equals)
+	}
+	if tag != nil {
+		children = append(children, tag)
+	}
 	if opts != nil {
 		children = append(children, opts)
 	}
@@ -585,6 +609,9 @@ func (n *MapFieldNode) FieldType() Node {
 }
 
 func (n *MapFieldNode) FieldTag() Node {
+	if n.Tag == nil {
+		return nil
+	}
 	return n.Tag
 }
 
@@ -660,6 +687,9 @@ func (n *SyntheticMapField) FieldType() Node {
 }
 
 func (n *SyntheticMapField) FieldTag() Node {
+	if n.Tag == nil {
+		return nil
+	}
 	return n.Tag
 }
 

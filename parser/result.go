@@ -332,9 +332,12 @@ func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
 }
 
 func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, syntax syntaxType, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
-	tag := node.Tag.Val
-	if err := r.checkTag(node.Tag, tag, maxTag); err != nil {
-		_ = handler.HandleError(err)
+	var tag uint64
+	if node.Tag != nil {
+		tag = node.Tag.Val
+		if err := r.checkTag(node.Tag, tag, maxTag); err != nil {
+			_ = handler.HandleError(err)
+		}
 	}
 	fd := newFieldDescriptor(node.Name.Val, string(node.FldType.AsIdentifier()), int32(tag), asLabel(&node.Label))
 	r.putFieldNode(fd, node)
@@ -385,9 +388,12 @@ func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descripto
 }
 
 func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
-	tag := group.Tag.Val
-	if err := r.checkTag(group.Tag, tag, maxTag); err != nil {
-		_ = handler.HandleError(err)
+	var tag uint64
+	if group.Tag != nil {
+		tag = group.Tag.Val
+		if err := r.checkTag(group.Tag, tag, maxTag); err != nil {
+			_ = handler.HandleError(err)
+		}
 	}
 	if !unicode.IsUpper(rune(group.Name.Val[0])) {
 		nameNodeInfo := r.file.NodeInfo(group.Name)
@@ -416,9 +422,12 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, max
 }
 
 func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
-	tag := mapField.Tag.Val
-	if err := r.checkTag(mapField.Tag, tag, maxTag); err != nil {
-		_ = handler.HandleError(err)
+	var tag uint64
+	if mapField.Tag != nil {
+		tag = mapField.Tag.Val
+		if err := r.checkTag(mapField.Tag, tag, maxTag); err != nil {
+			_ = handler.HandleError(err)
+		}
 	}
 	r.checkDepth(depth, mapField, handler)
 	var lbl *descriptorpb.FieldDescriptorProto_Label
