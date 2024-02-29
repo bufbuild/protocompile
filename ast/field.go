@@ -84,7 +84,7 @@ func NewFieldNode(label *KeywordNode, fieldType IdentValueNode, name *IdentNode,
 	if name == nil {
 		panic("name is nil")
 	}
-	numChildren := 4
+	numChildren := 2
 	if equals != nil {
 		numChildren++
 	}
