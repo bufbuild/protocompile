@@ -93,7 +93,9 @@ func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCas
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			protoName := fmt.Sprintf("%s.proto", name)
-			_, err := Parse(protoName, strings.NewReader(testCase.NoError), reporter.NewHandler(nil))
+			ast, err := Parse(protoName, strings.NewReader(testCase.NoError), reporter.NewHandler(nil))
+			require.NoError(t, err)
+			_, err = ResultFromAST(ast, true, reporter.NewHandler(nil))
 			require.NoError(t, err)
 
 			producedError := false
@@ -105,10 +107,172 @@ func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCas
 				}
 				return nil
 			}, nil))
-			_, _ = Parse(protoName, strings.NewReader(testCase.Error), errHandler)
+			file, err := Parse(protoName, strings.NewReader(testCase.Error), errHandler)
+			if err == nil {
+				_, _ = ResultFromAST(file, true, errHandler)
+			}
 			require.Truef(t, producedError, "expected error containing %q, got %v", expected, errs)
 		})
 	}
+}
+
+func TestLenientParse_NoFieldID(t *testing.T) {
+	t.Parallel()
+	inputs := map[string]parseErrorTestCase{
+		"field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar;
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1;
+								}`,
+		},
+		"field-cardinality": {
+			Error: `syntax = "proto3";
+							message Foo {
+								repeated int32 bar;
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									repeated int32 bar = 1;
+								}`,
+		},
+		"field-compact-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								int32 bar [foo = 1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									int32 bar = 1 [foo = 1];
+								}`,
+		},
+		"field-cardinality-compact-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								repeated int32 bar [foo = 1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									repeated int32 bar = 1 [foo = 1];
+								}`,
+		},
+		"map-field": {
+			Error: `syntax = "proto3";
+							message Foo {
+								map<string, int32> bar;
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									map<string, int32> bar = 1;
+								}`,
+		},
+		"map-field-compact-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								map<string, int32> bar [foo = 1];
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									map<string, int32> bar = 1 [foo = 1];
+								}`,
+		},
+		"oneof": {
+			Error: `syntax = "proto3";
+							message Foo {
+								oneof bar {
+									int32 baz;
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									oneof bar {
+										int32 baz = 1;
+									}
+								}`,
+		},
+		"oneof-compact-options": {
+			Error: `syntax = "proto3";
+							message Foo {
+								oneof bar {
+									int32 baz [foo = 1];
+								}
+							}`,
+			NoError: `syntax = "proto3";
+								message Foo {
+									oneof bar {
+										int32 baz = 1 [foo = 1];
+									}
+								}`,
+		},
+		"oneof-group": {
+			Error: `syntax = "proto2";
+							message Foo {
+								oneof bar {
+									group Baz {
+										optional int32 baz = 1;
+									}
+								}
+							}`,
+			NoError: `syntax = "proto2";
+								message Foo {
+									oneof bar {
+										group Baz = 1 {
+											optional int32 baz = 1;
+										}
+									}
+								}`,
+		},
+		"oneof-group-compact-options": {
+			Error: `syntax = "proto2";
+							message Foo {
+								oneof bar {
+									group Baz [foo = 1] {
+										optional int32 baz = 1;
+									}
+								}
+							}`,
+			NoError: `syntax = "proto2";
+								message Foo {
+									oneof bar {
+										group Baz = 1 [foo = 1] {
+											optional int32 baz = 1;
+										}
+									}
+								}`,
+		},
+		"group-cardinality": {
+			Error: `syntax = "proto2";
+							message Foo {
+								repeated group Bar {
+									optional int32 baz = 1;
+								}
+							}`,
+			NoError: `syntax = "proto2";
+								message Foo {
+									repeated group Bar = 1 {
+										optional int32 baz = 1;
+									}
+								}`,
+		},
+		"group-cardinality-compact-options": {
+			Error: `syntax = "proto2";
+							message Foo {
+								repeated group Bar [foo = 1] {
+									optional int32 baz = 1;
+								}
+							}`,
+			NoError: `syntax = "proto2";
+								message Foo {
+									repeated group Bar = 1 [foo = 1] {
+										optional int32 baz = 1;
+									}
+								}`,
+		},
+	}
+	runParseErrorTestCases(t, inputs, "missing field tag number")
 }
 
 func TestLenientParse_SemicolonLess(t *testing.T) {
@@ -201,22 +365,26 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 		"enum-options": {
 			Error: `syntax = "proto3";
 							enum Foo {
+								FOO = 0;
 								option (foo) = 1
 							}`,
 			NoError: `syntax = "proto3";
 								enum Foo {
 									;
+									FOO = 0;
 									option (foo) = 1;;
 								}`,
 		},
 		"enum-reserved": {
 			Error: `syntax = "proto3";
 							enum Foo {
+								BAR = 0;
 								reserved "FOO"
 							}`,
 			NoError: `syntax = "proto3";
 								enum Foo {
 									;
+									BAR = 0;
 									reserved "FOO";;
 								}`,
 		},
@@ -225,12 +393,14 @@ func TestLenientParse_SemicolonLess(t *testing.T) {
 							message Foo {
 								oneof bar {
 									option (foo) = 1
+									int32 baz = 1;
 								}
 							}`,
 			NoError: `syntax = "proto3";
 								message Foo {
 									oneof bar {
 										option (foo) = 1;
+										int32 baz = 1;
 									};
 								}`,
 		},
@@ -386,13 +556,13 @@ func TestLenientParse_EmptyCompactOptions(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]parseErrorTestCase{
 		"field-options": {
-			Error: `syntax = "proto3";
+			Error: `syntax = "proto2";
 							message Foo {
-								int32 bar = 1 [];
+								optional int32 bar = 1 [];
 							}`,
-			NoError: `syntax = "proto3";
+			NoError: `syntax = "proto2";
 								message Foo {
-									int32 bar = 1 [default=1];
+									optional int32 bar = 1 [default=1];
 								}`,
 		},
 		"enum-options": {
@@ -417,7 +587,7 @@ func TestLenientParse_EmptyCompactValue(t *testing.T) {
 							message Foo {
 								optional int32 bar = 1 [deprecated=true, default];
 							}`,
-			NoError: `syntax = "proto3";
+			NoError: `syntax = "proto2";
 								message Foo {
 									optional int32 bar = 1 [deprecated=true, default=1];
 								}`,
@@ -440,13 +610,13 @@ func TestLenientParse_OptionsTrailingComma(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]parseErrorTestCase{
 		"field-options": {
-			Error: `syntax = "proto3";
+			Error: `syntax = "proto2";
 							message Foo {
-								int32 bar = 1 [default=1,];
+								optional int32 bar = 1 [default=1,];
 							}`,
-			NoError: `syntax = "proto3";
+			NoError: `syntax = "proto2";
 								message Foo {
-									int32 bar = 1 [default=1];
+									optional int32 bar = 1 [default=1];
 								}`,
 		},
 	}
@@ -457,13 +627,13 @@ func TestLenientParse_OptionNameTrailingDot(t *testing.T) {
 	t.Parallel()
 	inputs := map[string]parseErrorTestCase{
 		"field-options": {
-			Error: `syntax = "proto3";
+			Error: `syntax = "proto2";
 							message Foo {
-								int32 bar = 1 [default.=1];
+								optional int32 bar = 1 [default.=1];
 							}`,
-			NoError: `syntax = "proto3";
+			NoError: `syntax = "proto2";
 								message Foo {
-									int32 bar = 1 [default=1];
+									optional int32 bar = 1 [default=1];
 								}`,
 		},
 		"field-options-ext": {

@@ -456,6 +456,12 @@ func validateField(res *result, syntax syntaxType, name protoreflect.FullName, f
 	}
 
 	node := res.FieldNode(fld)
+	if fld.Number == nil {
+		fieldTagNodeInfo := res.file.NodeInfo(node)
+		if err := handler.HandleErrorf(fieldTagNodeInfo, "%s: missing field tag number", scope); err != nil {
+			return err
+		}
+	}
 	if syntax != syntaxProto2 {
 		if fld.GetType() == descriptorpb.FieldDescriptorProto_TYPE_GROUP {
 			groupNodeInfo := res.file.NodeInfo(node.GetGroupKeyword())

@@ -332,11 +332,14 @@ func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
 }
 
 func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, syntax syntaxType, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
-	tag := node.Tag.Val
-	if err := r.checkTag(node.Tag, tag, maxTag); err != nil {
-		_ = handler.HandleError(err)
+	var tag *int32
+	if node.Tag != nil {
+		if err := r.checkTag(node.Tag, node.Tag.Val, maxTag); err != nil {
+			_ = handler.HandleError(err)
+		}
+		tag = proto.Int32(int32(node.Tag.Val))
 	}
-	fd := newFieldDescriptor(node.Name.Val, string(node.FldType.AsIdentifier()), int32(tag), asLabel(&node.Label))
+	fd := newFieldDescriptor(node.Name.Val, string(node.FldType.AsIdentifier()), tag, asLabel(&node.Label))
 	r.putFieldNode(fd, node)
 	if opts := node.Options.GetElements(); len(opts) > 0 {
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}
@@ -365,11 +368,11 @@ var fieldTypes = map[string]descriptorpb.FieldDescriptorProto_Type{
 	"bytes":    descriptorpb.FieldDescriptorProto_TYPE_BYTES,
 }
 
-func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descriptorpb.FieldDescriptorProto_Label) *descriptorpb.FieldDescriptorProto {
+func newFieldDescriptor(name string, fieldType string, tag *int32, lbl *descriptorpb.FieldDescriptorProto_Label) *descriptorpb.FieldDescriptorProto {
 	fd := &descriptorpb.FieldDescriptorProto{
 		Name:     proto.String(name),
 		JsonName: proto.String(internal.JSONName(name)),
-		Number:   proto.Int32(tag),
+		Number:   tag,
 		Label:    lbl,
 	}
 	t, ok := fieldTypes[fieldType]
@@ -385,9 +388,12 @@ func newFieldDescriptor(name string, fieldType string, tag int32, lbl *descripto
 }
 
 func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
-	tag := group.Tag.Val
-	if err := r.checkTag(group.Tag, tag, maxTag); err != nil {
-		_ = handler.HandleError(err)
+	var tag *int32
+	if group.Tag != nil {
+		if err := r.checkTag(group.Tag, group.Tag.Val, maxTag); err != nil {
+			_ = handler.HandleError(err)
+		}
+		tag = proto.Int32(int32(group.Tag.Val))
 	}
 	if !unicode.IsUpper(rune(group.Name.Val[0])) {
 		nameNodeInfo := r.file.NodeInfo(group.Name)
@@ -397,7 +403,7 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, max
 	fd := &descriptorpb.FieldDescriptorProto{
 		Name:     proto.String(fieldName),
 		JsonName: proto.String(internal.JSONName(fieldName)),
-		Number:   proto.Int32(int32(tag)),
+		Number:   tag,
 		Label:    asLabel(&group.Label),
 		Type:     descriptorpb.FieldDescriptorProto_TYPE_GROUP.Enum(),
 		TypeName: proto.String(group.Name.Val),
@@ -416,21 +422,24 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, max
 }
 
 func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
-	tag := mapField.Tag.Val
-	if err := r.checkTag(mapField.Tag, tag, maxTag); err != nil {
-		_ = handler.HandleError(err)
+	var tag *int32
+	if mapField.Tag != nil {
+		if err := r.checkTag(mapField.Tag, mapField.Tag.Val, maxTag); err != nil {
+			_ = handler.HandleError(err)
+		}
+		tag = proto.Int32(int32(mapField.Tag.Val))
 	}
 	r.checkDepth(depth, mapField, handler)
 	var lbl *descriptorpb.FieldDescriptorProto_Label
 	if syntax == syntaxProto2 {
 		lbl = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
 	}
-	keyFd := newFieldDescriptor("key", mapField.MapType.KeyType.Val, 1, lbl)
+	keyFd := newFieldDescriptor("key", mapField.MapType.KeyType.Val, proto.Int32(1), lbl)
 	r.putFieldNode(keyFd, mapField.KeyField())
-	valFd := newFieldDescriptor("value", string(mapField.MapType.ValueType.AsIdentifier()), 2, lbl)
+	valFd := newFieldDescriptor("value", string(mapField.MapType.ValueType.AsIdentifier()), proto.Int32(2), lbl)
 	r.putFieldNode(valFd, mapField.ValueField())
 	entryName := internal.InitCap(internal.JSONName(mapField.Name.Val)) + "Entry"
-	fd := newFieldDescriptor(mapField.Name.Val, entryName, int32(tag), descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum())
+	fd := newFieldDescriptor(mapField.Name.Val, entryName, tag, descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum())
 	if opts := mapField.Options.GetElements(); len(opts) > 0 {
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}
 	}
