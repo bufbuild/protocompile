@@ -456,7 +456,7 @@ func validateField(res *result, syntax syntaxType, name protoreflect.FullName, f
 	}
 
 	node := res.FieldNode(fld)
-	if fld.GetNumber() == 0 && node.FieldTag() == nil {
+	if fld.Number == nil {
 		fieldTagNodeInfo := res.file.NodeInfo(node)
 		if err := handler.HandleErrorf(fieldTagNodeInfo, "%s: missing field tag number", scope); err != nil {
 			return err

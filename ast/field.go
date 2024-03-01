@@ -152,7 +152,7 @@ func (n *FieldNode) FieldType() Node {
 
 func (n *FieldNode) FieldTag() Node {
 	if n.Tag == nil {
-		return nil
+		return n
 	}
 	return n.Tag
 }
@@ -318,7 +318,7 @@ func (n *GroupNode) FieldType() Node {
 
 func (n *GroupNode) FieldTag() Node {
 	if n.Tag == nil {
-		return nil
+		return n
 	}
 	return n.Tag
 }
@@ -610,7 +610,7 @@ func (n *MapFieldNode) FieldType() Node {
 
 func (n *MapFieldNode) FieldTag() Node {
 	if n.Tag == nil {
-		return nil
+		return n
 	}
 	return n.Tag
 }
@@ -688,7 +688,7 @@ func (n *SyntheticMapField) FieldType() Node {
 
 func (n *SyntheticMapField) FieldTag() Node {
 	if n.Tag == nil {
-		return nil
+		return n
 	}
 	return n.Tag
 }
