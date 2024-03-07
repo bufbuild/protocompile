@@ -78,7 +78,6 @@ func (t tokenType) describe() string {
 
 type runeReader struct {
 	rr     *bufio.Reader
-	marked []rune
 	unread []rune
 	err    error
 }
@@ -90,38 +89,17 @@ func (rr *runeReader) readRune() (r rune, err error) {
 	if len(rr.unread) > 0 {
 		r := rr.unread[len(rr.unread)-1]
 		rr.unread = rr.unread[:len(rr.unread)-1]
-		if rr.marked != nil {
-			rr.marked = append(rr.marked, r)
-		}
 		return r, nil
 	}
 	r, _, err = rr.rr.ReadRune()
 	if err != nil {
 		rr.err = err
-	} else if rr.marked != nil {
-		rr.marked = append(rr.marked, r)
 	}
 	return r, err
 }
 
 func (rr *runeReader) unreadRune(r rune) {
-	if rr.marked != nil {
-		if rr.marked[len(rr.marked)-1] != r {
-			panic("unread rune is not the same as last marked rune!")
-		}
-		rr.marked = rr.marked[:len(rr.marked)-1]
-	}
 	rr.unread = append(rr.unread, r)
-}
-
-func (rr *runeReader) startMark(initial rune) {
-	rr.marked = []rune{initial}
-}
-
-func (rr *runeReader) endMark() string {
-	m := string(rr.marked)
-	rr.marked = rr.marked[:0]
-	return m
 }
 
 type lexer struct {
@@ -161,8 +139,6 @@ func (l *lexer) adjustPos(c rune) {
 }
 
 func (l *lexer) Lex() (tokenType, any, error) {
-	l.input.endMark() // reset, just in case
-
 	for {
 		c, err := l.input.readRune()
 		if err == io.EOF {
@@ -181,7 +157,6 @@ func (l *lexer) Lex() (tokenType, any, error) {
 			continue
 		}
 
-		l.input.startMark(c)
 		l.prevTokenLine, l.prevTokenCol = l.curLine, l.curCol
 		l.adjustPos(c)
 		if c == '.' {
