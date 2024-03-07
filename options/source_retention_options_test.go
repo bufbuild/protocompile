@@ -84,7 +84,8 @@ func TestStripSourceOnlyOptions(t *testing.T) {
 	extSourceRetention := dynamicpb.NewExtensionType(optsFile.Extensions().ByName("source_retention"))
 
 	// Create a message with these options.
-	options := (&descriptorpb.FileOptions{}).ProtoReflect()
+	optionsMsg := &descriptorpb.FileOptions{}
+	options := optionsMsg.ProtoReflect()
 	options.Set(extNoRetention.TypeDescriptor(), protoreflect.ValueOfString("abc"))
 	listVal := extUnknownRetention.New().List()
 	listVal.Append(protoreflect.ValueOfString("foo"))
@@ -99,7 +100,6 @@ func TestStripSourceOnlyOptions(t *testing.T) {
 	listVal.Append(protoreflect.ValueOfInt32(-456))
 	options.Set(extSourceRetention.TypeDescriptor(), protoreflect.ValueOfList(listVal))
 
-	optionsMsg := options.Interface()
 	actualOptionsAfterStrip, err := stripSourceRetentionOptions(optionsMsg)
 	require.NoError(t, err)
 
@@ -114,6 +114,18 @@ func TestStripSourceOnlyOptions(t *testing.T) {
 
 	require.Same(t, actualOptionsAfterStrip, optionsMsg)
 	require.Empty(t, cmp.Diff(optionsAfterStrip, actualOptionsAfterStrip, protocmp.Transform()))
+
+	// If we have an options message with ONLY source-retention fields, then
+	// stripping the options results in a nil message (effectively clearing
+	// the descriptor's options field).
+	optionsMsg.Reset()
+	options = optionsMsg.ProtoReflect() // weird that we have to call this again (bug in protobuf-go?)
+	options.Set(extSourceRetention.TypeDescriptor(), protoreflect.ValueOfList(listVal))
+
+	actualOptionsAfterStrip, err = stripSourceRetentionOptions(optionsMsg)
+	require.NoError(t, err)
+
+	require.Same(t, (*descriptorpb.FileOptions)(nil), actualOptionsAfterStrip)
 }
 
 func TestStripSourceOnlyOptionsFromFile(t *testing.T) {

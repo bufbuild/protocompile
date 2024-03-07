@@ -87,7 +87,8 @@ func StripSourceRetentionOptionsFromFile(file *descriptorpb.FileDescriptorProto)
 func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 	optionsRef := options.ProtoReflect()
 	// See if there are any options to strip.
-	var found bool
+	var hasFieldToStrip bool
+	var numFieldsToKeep int
 	var err error
 	optionsRef.Range(func(field protoreflect.FieldDescriptor, val protoreflect.Value) bool {
 		fieldOpts, ok := field.Options().(*descriptorpb.FieldOptions)
@@ -96,8 +97,9 @@ func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 			return false
 		}
 		if fieldOpts.GetRetention() == descriptorpb.FieldOptions_RETENTION_SOURCE {
-			found = true
-			return false
+			hasFieldToStrip = true
+		} else {
+			numFieldsToKeep++
 		}
 		return true
 	})
@@ -105,11 +107,17 @@ func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 	if err != nil {
 		return zero, err
 	}
-	if !found {
+	if !hasFieldToStrip {
 		return options, nil
 	}
 
-	// There is at least one. So we need to make a copy that does not have those options.
+	if numFieldsToKeep == 0 {
+		// Stripping the message would remove *all* options. In that case,
+		// we'll clear out the options by returning the zero value (i.e. nil).
+		return zero, nil
+	}
+
+	// There is at least one option to remove. So we need to make a copy that does not have those options.
 	newOptions := optionsRef.New()
 	ret, ok := newOptions.Interface().(M)
 	if !ok {
