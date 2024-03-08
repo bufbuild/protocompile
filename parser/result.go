@@ -23,38 +23,13 @@ import (
 	"unicode"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 )
-
-var supportedEditions = map[string]descriptorpb.Edition{
-	"2023": descriptorpb.Edition_EDITION_2023,
-}
-
-// NB: protoreflect.Syntax doesn't yet know about editions, so we have to use our own type.
-type syntaxType int
-
-const (
-	syntaxProto2 = syntaxType(iota)
-	syntaxProto3
-	syntaxEditions
-)
-
-func (s syntaxType) String() string {
-	switch s {
-	case syntaxProto2:
-		return "proto2"
-	case syntaxProto3:
-		return "proto3"
-	case syntaxEditions:
-		return "editions"
-	default:
-		return fmt.Sprintf("unknown(%d)", s)
-	}
-}
 
 type result struct {
 	file  *ast.FileNode
@@ -112,14 +87,14 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 
 	r.putFileNode(fd, file)
 
-	var syntax syntaxType
+	var syntax protoreflect.Syntax
 	switch {
 	case file.Syntax != nil:
 		switch file.Syntax.Syntax.AsString() {
 		case "proto3":
-			syntax = syntaxProto3
+			syntax = protoreflect.Proto3
 		case "proto2":
-			syntax = syntaxProto2
+			syntax = protoreflect.Proto2
 		default:
 			nodeInfo := file.NodeInfo(file.Syntax.Syntax)
 			if handler.HandleErrorf(nodeInfo, `syntax value must be "proto2" or "proto3"`) != nil {
@@ -128,7 +103,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		}
 
 		// proto2 is the default, so no need to set for that value
-		if syntax != syntaxProto2 {
+		if syntax != protoreflect.Proto2 {
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
 	case file.Edition != nil:
@@ -139,14 +114,14 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			}
 		}
 		edition := file.Edition.Edition.AsString()
-		syntax = syntaxEditions
+		syntax = protoreflect.Editions
 
 		fd.Syntax = proto.String("editions")
-		editionEnum, ok := supportedEditions[edition]
+		editionEnum, ok := internal.SupportedEditions[edition]
 		if !ok {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
-			editionStrs := make([]string, 0, len(supportedEditions))
-			for supportedEdition := range supportedEditions {
+			editionStrs := make([]string, 0, len(internal.SupportedEditions))
+			for supportedEdition := range internal.SupportedEditions {
 				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
 			}
 			sort.Strings(editionStrs)
@@ -156,6 +131,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		}
 		fd.Edition = editionEnum.Enum()
 	default:
+		syntax = protoreflect.Proto2
 		nodeInfo := file.NodeInfo(file)
 		handler.HandleWarningWithPos(nodeInfo, ErrNoSyntax)
 	}
@@ -291,7 +267,7 @@ func (r *result) asUninterpretedOptionName(parts []*ast.FieldReferenceNode) []*d
 	return ret
 }
 
-func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldDescriptorProto, msgs *[]*descriptorpb.DescriptorProto, syntax syntaxType, handler *reporter.Handler, depth int) {
+func (r *result) addExtensions(ext *ast.ExtendNode, flds *[]*descriptorpb.FieldDescriptorProto, msgs *[]*descriptorpb.DescriptorProto, syntax protoreflect.Syntax, handler *reporter.Handler, depth int) {
 	extendee := string(ext.Extendee.AsIdentifier())
 	count := 0
 	for _, decl := range ext.Decls {
@@ -331,7 +307,7 @@ func asLabel(lbl *ast.FieldLabel) *descriptorpb.FieldDescriptorProto_Label {
 	}
 }
 
-func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, syntax syntaxType, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
+func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, syntax protoreflect.Syntax, handler *reporter.Handler) *descriptorpb.FieldDescriptorProto {
 	var tag *int32
 	if node.Tag != nil {
 		if err := r.checkTag(node.Tag, node.Tag.Val, maxTag); err != nil {
@@ -344,7 +320,7 @@ func (r *result) asFieldDescriptor(node *ast.FieldNode, maxTag int32, syntax syn
 	if opts := node.Options.GetElements(); len(opts) > 0 {
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}
 	}
-	if syntax == syntaxProto3 && fd.Label != nil && fd.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
+	if syntax == protoreflect.Proto3 && fd.Label != nil && fd.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
 		fd.Proto3Optional = proto.Bool(true)
 	}
 	return fd
@@ -387,7 +363,7 @@ func newFieldDescriptor(name string, fieldType string, tag *int32, lbl *descript
 	return fd
 }
 
-func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
+func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax protoreflect.Syntax, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	var tag *int32
 	if group.Tag != nil {
 		if err := r.checkTag(group.Tag, group.Tag.Val, maxTag); err != nil {
@@ -421,7 +397,7 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax syntaxType, max
 	return fd, md
 }
 
-func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax syntaxType, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
+func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax protoreflect.Syntax, maxTag int32, handler *reporter.Handler, depth int) (*descriptorpb.FieldDescriptorProto, *descriptorpb.DescriptorProto) {
 	var tag *int32
 	if mapField.Tag != nil {
 		if err := r.checkTag(mapField.Tag, mapField.Tag.Val, maxTag); err != nil {
@@ -431,7 +407,7 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax syntaxType,
 	}
 	r.checkDepth(depth, mapField, handler)
 	var lbl *descriptorpb.FieldDescriptorProto_Label
-	if syntax == syntaxProto2 {
+	if syntax == protoreflect.Proto2 {
 		lbl = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
 	}
 	keyFd := newFieldDescriptor("key", mapField.MapType.KeyType.Val, proto.Int32(1), lbl)
@@ -512,7 +488,7 @@ func (r *result) asMethodDescriptor(node *ast.RPCNode) *descriptorpb.MethodDescr
 	return md
 }
 
-func (r *result) asEnumDescriptor(en *ast.EnumNode, syntax syntaxType, handler *reporter.Handler) *descriptorpb.EnumDescriptorProto {
+func (r *result) asEnumDescriptor(en *ast.EnumNode, syntax protoreflect.Syntax, handler *reporter.Handler) *descriptorpb.EnumDescriptorProto {
 	ed := &descriptorpb.EnumDescriptorProto{Name: proto.String(en.Name.Val)}
 	r.putEnumNode(ed, en)
 	rsvdNames := map[string]ast.SourcePos{}
@@ -545,7 +521,7 @@ func (r *result) asEnumReservedRange(rng *ast.RangeNode, handler *reporter.Handl
 	return rr
 }
 
-func (r *result) asMessageDescriptor(node *ast.MessageNode, syntax syntaxType, handler *reporter.Handler, depth int) *descriptorpb.DescriptorProto {
+func (r *result) asMessageDescriptor(node *ast.MessageNode, syntax protoreflect.Syntax, handler *reporter.Handler, depth int) *descriptorpb.DescriptorProto {
 	msgd := &descriptorpb.DescriptorProto{Name: proto.String(node.Name.Val)}
 	r.putMessageNode(msgd, node)
 	// don't bother processing body if we've exceeded depth
@@ -555,8 +531,8 @@ func (r *result) asMessageDescriptor(node *ast.MessageNode, syntax syntaxType, h
 	return msgd
 }
 
-func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, syntax syntaxType, handler *reporter.Handler, alreadyReserved map[string]ast.SourcePos) {
-	if syntax == syntaxEditions {
+func (r *result) addReservedNames(names *[]string, node *ast.ReservedNode, syntax protoreflect.Syntax, handler *reporter.Handler, alreadyReserved map[string]ast.SourcePos) {
+	if syntax == protoreflect.Editions {
 		if len(node.Names) > 0 {
 			nameNodeInfo := r.file.NodeInfo(node.Names[0])
 			_ = handler.HandleErrorf(nameNodeInfo, `must use identifiers, not string literals, to reserved names with editions`)
@@ -603,7 +579,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 	return false
 }
 
-func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.MessageBody, syntax syntaxType, handler *reporter.Handler, depth int) {
+func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.MessageBody, syntax protoreflect.Syntax, handler *reporter.Handler, depth int) {
 	// first process any options
 	for _, decl := range body.Decls {
 		if opt, ok := decl.(*ast.OptionNode); ok {
@@ -621,7 +597,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	if err != nil {
 		return
 	} else if messageSetOpt != nil {
-		if syntax == syntaxProto3 {
+		if syntax == protoreflect.Proto3 {
 			node := r.OptionNode(messageSetOpt)
 			nodeInfo := r.file.NodeInfo(node)
 			_ = handler.HandleErrorf(nodeInfo, "messages with message-set wire format are not allowed with proto3 syntax")
@@ -705,7 +681,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 	}
 
 	// process any proto3_optional fields
-	if syntax == syntaxProto3 {
+	if syntax == protoreflect.Proto3 {
 		r.processProto3OptionalFields(msgd)
 	}
 }

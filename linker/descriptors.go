@@ -201,6 +201,8 @@ func (r *result) Syntax() protoreflect.Syntax {
 		return protoreflect.Proto2
 	case "proto3":
 		return protoreflect.Proto3
+	case "editions":
+		return protoreflect.Editions
 	default:
 		return 0 // ???
 	}
