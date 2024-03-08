@@ -20,6 +20,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/internal"
 )
 
 // StripSourceRetentionOptionsFromFile returns a file descriptor proto that omits any
@@ -31,36 +33,47 @@ import (
 // original file. So callers should not mutate the returned file unless mutating the
 // input file is also safe.
 func StripSourceRetentionOptionsFromFile(file *descriptorpb.FileDescriptorProto) (*descriptorpb.FileDescriptorProto, error) {
+	var path sourcePath
+	var removedPaths *sourcePathTrie
+	if file.SourceCodeInfo != nil && len(file.SourceCodeInfo.Location) > 0 {
+		path = make(sourcePath, 0, 16)
+		removedPaths = &sourcePathTrie{}
+	}
 	var dirty bool
-	newOpts, err := stripSourceRetentionOptions(file.GetOptions())
+	optionsPath := path.push(internal.FileOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(file.GetOptions(), optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if newOpts != file.GetOptions() {
 		dirty = true
 	}
-	newMsgs, changed, err := updateAll(file.GetMessageType(), stripSourceRetentionOptionsFromMessage)
+	msgsPath := path.push(internal.FileMessagesTag)
+	newMsgs, changed, err := stripOptionsFromAll(file.GetMessageType(), stripSourceRetentionOptionsFromMessage, msgsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newEnums, changed, err := updateAll(file.GetEnumType(), stripSourceRetentionOptionsFromEnum)
+	enumsPath := path.push(internal.FileEnumsTag)
+	newEnums, changed, err := stripOptionsFromAll(file.GetEnumType(), stripSourceRetentionOptionsFromEnum, enumsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newExts, changed, err := updateAll(file.GetExtension(), stripSourceRetentionOptionsFromField)
+	extsPath := path.push(internal.FileExtensionsTag)
+	newExts, changed, err := stripOptionsFromAll(file.GetExtension(), stripSourceRetentionOptionsFromField, extsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newSvcs, changed, err := updateAll(file.GetService(), stripSourceRetentionOptionsFromService)
+	svcsPath := path.push(internal.FileServicesTag)
+	newSvcs, changed, err := stripOptionsFromAll(file.GetService(), stripSourceRetentionOptionsFromService, svcsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +94,69 @@ func StripSourceRetentionOptionsFromFile(file *descriptorpb.FileDescriptorProto)
 	newFile.EnumType = newEnums
 	newFile.Extension = newExts
 	newFile.Service = newSvcs
+	newFile.SourceCodeInfo = stripSourcePathsForSourceRetentionOptions(newFile.SourceCodeInfo, removedPaths)
 	return newFile, nil
 }
 
-func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
+type sourcePath protoreflect.SourcePath
+
+func (p sourcePath) push(element int32) sourcePath {
+	if p == nil {
+		return nil
+	}
+	return append(p, element)
+}
+
+type sourcePathTrie struct {
+	removed  bool
+	children map[int32]*sourcePathTrie
+}
+
+func (t *sourcePathTrie) addPath(p sourcePath) {
+	if t == nil {
+		return
+	}
+	if len(p) == 0 {
+		t.removed = true
+		return
+	}
+	child := t.children[p[0]]
+	if child == nil {
+		if t.children == nil {
+			t.children = map[int32]*sourcePathTrie{}
+		}
+		child = &sourcePathTrie{}
+		t.children[p[0]] = child
+	}
+	child.addPath(p[1:])
+}
+
+func (t *sourcePathTrie) isRemoved(p []int32) bool {
+	if t == nil {
+		return false
+	}
+	if t.removed {
+		return true
+	}
+	if len(p) == 0 {
+		return false
+	}
+	child := t.children[p[0]]
+	if child == nil {
+		return false
+	}
+	return child.isRemoved(p[1:])
+}
+
+func stripSourceRetentionOptions[M proto.Message](
+	options M,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (M, error) {
 	optionsRef := options.ProtoReflect()
 	// See if there are any options to strip.
-	var found bool
+	var hasFieldToStrip bool
+	var numFieldsToKeep int
 	var err error
 	optionsRef.Range(func(field protoreflect.FieldDescriptor, val protoreflect.Value) bool {
 		fieldOpts, ok := field.Options().(*descriptorpb.FieldOptions)
@@ -96,8 +165,9 @@ func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 			return false
 		}
 		if fieldOpts.GetRetention() == descriptorpb.FieldOptions_RETENTION_SOURCE {
-			found = true
-			return false
+			hasFieldToStrip = true
+		} else {
+			numFieldsToKeep++
 		}
 		return true
 	})
@@ -105,11 +175,18 @@ func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 	if err != nil {
 		return zero, err
 	}
-	if !found {
+	if !hasFieldToStrip {
 		return options, nil
 	}
 
-	// There is at least one. So we need to make a copy that does not have those options.
+	if numFieldsToKeep == 0 {
+		// Stripping the message would remove *all* options. In that case,
+		// we'll clear out the options by returning the zero value (i.e. nil).
+		removedPaths.addPath(path) // clear out all source locations, too
+		return zero, nil
+	}
+
+	// There is at least one option to remove. So we need to make a copy that does not have those options.
 	newOptions := optionsRef.New()
 	ret, ok := newOptions.Interface().(M)
 	if !ok {
@@ -123,6 +200,8 @@ func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 		}
 		if fieldOpts.GetRetention() != descriptorpb.FieldOptions_RETENTION_SOURCE {
 			newOptions.Set(field, val)
+		} else {
+			removedPaths.addPath(path.push(int32(field.Number())))
 		}
 		return true
 	})
@@ -132,51 +211,62 @@ func stripSourceRetentionOptions[M proto.Message](options M) (M, error) {
 	return ret, nil
 }
 
-func stripSourceRetentionOptionsFromMessage(msg *descriptorpb.DescriptorProto) (*descriptorpb.DescriptorProto, error) {
+func stripSourceRetentionOptionsFromMessage(
+	msg *descriptorpb.DescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.DescriptorProto, error) {
 	var dirty bool
-	newOpts, err := stripSourceRetentionOptions(msg.Options)
+	optionsPath := path.push(internal.MessageOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(msg.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if newOpts != msg.Options {
 		dirty = true
 	}
-	newFields, changed, err := updateAll(msg.Field, stripSourceRetentionOptionsFromField)
+	fieldsPath := path.push(internal.MessageFieldsTag)
+	newFields, changed, err := stripOptionsFromAll(msg.Field, stripSourceRetentionOptionsFromField, fieldsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newOneofs, changed, err := updateAll(msg.OneofDecl, stripSourceRetentionOptionsFromOneof)
+	oneofsPath := path.push(internal.MessageOneofsTag)
+	newOneofs, changed, err := stripOptionsFromAll(msg.OneofDecl, stripSourceRetentionOptionsFromOneof, oneofsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newExtRanges, changed, err := updateAll(msg.ExtensionRange, stripSourceRetentionOptionsFromExtensionRange)
+	extRangesPath := path.push(internal.MessageExtensionRangesTag)
+	newExtRanges, changed, err := stripOptionsFromAll(msg.ExtensionRange, stripSourceRetentionOptionsFromExtensionRange, extRangesPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newMsgs, changed, err := updateAll(msg.NestedType, stripSourceRetentionOptionsFromMessage)
+	msgsPath := path.push(internal.MessageNestedMessagesTag)
+	newMsgs, changed, err := stripOptionsFromAll(msg.NestedType, stripSourceRetentionOptionsFromMessage, msgsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newEnums, changed, err := updateAll(msg.EnumType, stripSourceRetentionOptionsFromEnum)
+	enumsPath := path.push(internal.MessageEnumsTag)
+	newEnums, changed, err := stripOptionsFromAll(msg.EnumType, stripSourceRetentionOptionsFromEnum, enumsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if changed {
 		dirty = true
 	}
-	newExts, changed, err := updateAll(msg.Extension, stripSourceRetentionOptionsFromField)
+	extsPath := path.push(internal.MessageExtensionsTag)
+	newExts, changed, err := stripOptionsFromAll(msg.Extension, stripSourceRetentionOptionsFromField, extsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +292,13 @@ func stripSourceRetentionOptionsFromMessage(msg *descriptorpb.DescriptorProto) (
 	return newMsg, nil
 }
 
-func stripSourceRetentionOptionsFromField(field *descriptorpb.FieldDescriptorProto) (*descriptorpb.FieldDescriptorProto, error) {
-	newOpts, err := stripSourceRetentionOptions(field.Options)
+func stripSourceRetentionOptionsFromField(
+	field *descriptorpb.FieldDescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.FieldDescriptorProto, error) {
+	optionsPath := path.push(internal.FieldOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(field.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -218,8 +313,13 @@ func stripSourceRetentionOptionsFromField(field *descriptorpb.FieldDescriptorPro
 	return newField, nil
 }
 
-func stripSourceRetentionOptionsFromOneof(oneof *descriptorpb.OneofDescriptorProto) (*descriptorpb.OneofDescriptorProto, error) {
-	newOpts, err := stripSourceRetentionOptions(oneof.Options)
+func stripSourceRetentionOptionsFromOneof(
+	oneof *descriptorpb.OneofDescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.OneofDescriptorProto, error) {
+	optionsPath := path.push(internal.OneofOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(oneof.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -234,8 +334,13 @@ func stripSourceRetentionOptionsFromOneof(oneof *descriptorpb.OneofDescriptorPro
 	return newOneof, nil
 }
 
-func stripSourceRetentionOptionsFromExtensionRange(extRange *descriptorpb.DescriptorProto_ExtensionRange) (*descriptorpb.DescriptorProto_ExtensionRange, error) {
-	newOpts, err := stripSourceRetentionOptions(extRange.Options)
+func stripSourceRetentionOptionsFromExtensionRange(
+	extRange *descriptorpb.DescriptorProto_ExtensionRange,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.DescriptorProto_ExtensionRange, error) {
+	optionsPath := path.push(internal.ExtensionRangeOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(extRange.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -250,16 +355,22 @@ func stripSourceRetentionOptionsFromExtensionRange(extRange *descriptorpb.Descri
 	return newExtRange, nil
 }
 
-func stripSourceRetentionOptionsFromEnum(enum *descriptorpb.EnumDescriptorProto) (*descriptorpb.EnumDescriptorProto, error) {
+func stripSourceRetentionOptionsFromEnum(
+	enum *descriptorpb.EnumDescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.EnumDescriptorProto, error) {
 	var dirty bool
-	newOpts, err := stripSourceRetentionOptions(enum.Options)
+	optionsPath := path.push(internal.EnumOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(enum.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if newOpts != enum.Options {
 		dirty = true
 	}
-	newVals, changed, err := updateAll(enum.Value, stripSourceRetentionOptionsFromEnumValue)
+	valsPath := path.push(internal.EnumValuesTag)
+	newVals, changed, err := stripOptionsFromAll(enum.Value, stripSourceRetentionOptionsFromEnumValue, valsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -280,8 +391,13 @@ func stripSourceRetentionOptionsFromEnum(enum *descriptorpb.EnumDescriptorProto)
 	return newEnum, nil
 }
 
-func stripSourceRetentionOptionsFromEnumValue(enumVal *descriptorpb.EnumValueDescriptorProto) (*descriptorpb.EnumValueDescriptorProto, error) {
-	newOpts, err := stripSourceRetentionOptions(enumVal.Options)
+func stripSourceRetentionOptionsFromEnumValue(
+	enumVal *descriptorpb.EnumValueDescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.EnumValueDescriptorProto, error) {
+	optionsPath := path.push(internal.EnumValOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(enumVal.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -296,16 +412,22 @@ func stripSourceRetentionOptionsFromEnumValue(enumVal *descriptorpb.EnumValueDes
 	return newEnumVal, nil
 }
 
-func stripSourceRetentionOptionsFromService(svc *descriptorpb.ServiceDescriptorProto) (*descriptorpb.ServiceDescriptorProto, error) {
+func stripSourceRetentionOptionsFromService(
+	svc *descriptorpb.ServiceDescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.ServiceDescriptorProto, error) {
 	var dirty bool
-	newOpts, err := stripSourceRetentionOptions(svc.Options)
+	optionsPath := path.push(internal.ServiceOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(svc.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
 	if newOpts != svc.Options {
 		dirty = true
 	}
-	newMethods, changed, err := updateAll(svc.Method, stripSourceRetentionOptionsFromMethod)
+	methodsPath := path.push(internal.ServiceMethodsTag)
+	newMethods, changed, err := stripOptionsFromAll(svc.Method, stripSourceRetentionOptionsFromMethod, methodsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -326,8 +448,13 @@ func stripSourceRetentionOptionsFromService(svc *descriptorpb.ServiceDescriptorP
 	return newSvc, nil
 }
 
-func stripSourceRetentionOptionsFromMethod(method *descriptorpb.MethodDescriptorProto) (*descriptorpb.MethodDescriptorProto, error) {
-	newOpts, err := stripSourceRetentionOptions(method.Options)
+func stripSourceRetentionOptionsFromMethod(
+	method *descriptorpb.MethodDescriptorProto,
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) (*descriptorpb.MethodDescriptorProto, error) {
+	optionsPath := path.push(internal.MethodOptionsTag)
+	newOpts, err := stripSourceRetentionOptions(method.Options, optionsPath, removedPaths)
 	if err != nil {
 		return nil, err
 	}
@@ -340,6 +467,27 @@ func stripSourceRetentionOptionsFromMethod(method *descriptorpb.MethodDescriptor
 	}
 	newMethod.Options = newOpts
 	return newMethod, nil
+}
+
+func stripSourcePathsForSourceRetentionOptions(
+	sourceInfo *descriptorpb.SourceCodeInfo,
+	removedPaths *sourcePathTrie,
+) *descriptorpb.SourceCodeInfo {
+	if sourceInfo == nil || len(sourceInfo.Location) == 0 || removedPaths == nil {
+		// nothing to do
+		return sourceInfo
+	}
+	newLocations := make([]*descriptorpb.SourceCodeInfo_Location, len(sourceInfo.Location))
+	var i int
+	for _, loc := range sourceInfo.Location {
+		if removedPaths.isRemoved(loc.Path) {
+			continue
+		}
+		newLocations[i] = loc
+		i++
+	}
+	newLocations = newLocations[:i]
+	return &descriptorpb.SourceCodeInfo{Location: newLocations}
 }
 
 func shallowCopy[M proto.Message](msg M) (M, error) {
@@ -356,17 +504,23 @@ func shallowCopy[M proto.Message](msg M) (M, error) {
 	return ret, nil
 }
 
-// updateAll applies the given function to each element in the given slice. It
-// returns the new slice and a bool indicating whether anything was actually
-// changed. If the second value is false, then the returned slice is the same
-// slice as the input slice. Usually, T is a pointer type, in which case the
-// given updateFunc should NOT mutate the input value. Instead, it should return
-// the input value if only if there is no update needed. If a mutation is needed,
-// it should return a new value.
-func updateAll[T comparable](slice []T, updateFunc func(T) (T, error)) ([]T, bool, error) {
+// stripOptionsFromAll applies the given function to each element in the given
+// slice in order to remove source-retention options from it. It returns the new
+// slice and a bool indicating whether anything was actually changed. If the
+// second value is false, then the returned slice is the same slice as the input
+// slice. Usually, T is a pointer type, in which case the given updateFunc should
+// NOT mutate the input value. Instead, it should return the input value if only
+// if there is no update needed. If a mutation is needed, it should return a new
+// value.
+func stripOptionsFromAll[T comparable](
+	slice []T,
+	updateFunc func(T, sourcePath, *sourcePathTrie) (T, error),
+	path sourcePath,
+	removedPaths *sourcePathTrie,
+) ([]T, bool, error) {
 	var updated []T // initialized lazily, only when/if a copy is needed
 	for i, item := range slice {
-		newItem, err := updateFunc(item)
+		newItem, err := updateFunc(item, path.push(int32(i)), removedPaths)
 		if err != nil {
 			return nil, false, err
 		}
