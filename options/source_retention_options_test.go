@@ -27,6 +27,8 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+
+	"github.com/bufbuild/protocompile/internal"
 )
 
 func TestStripSourceOnlyOptions(t *testing.T) {
@@ -100,7 +102,7 @@ func TestStripSourceOnlyOptions(t *testing.T) {
 	listVal.Append(protoreflect.ValueOfInt32(-456))
 	options.Set(extSourceRetention.TypeDescriptor(), protoreflect.ValueOfList(listVal))
 
-	actualOptionsAfterStrip, err := stripSourceRetentionOptions(optionsMsg)
+	actualOptionsAfterStrip, err := stripSourceRetentionOptions(optionsMsg, nil, nil)
 	require.NoError(t, err)
 
 	require.NotSame(t, actualOptionsAfterStrip, optionsMsg)
@@ -109,7 +111,7 @@ func TestStripSourceOnlyOptions(t *testing.T) {
 	// If we do it again, there are no changes to made (since source-only options were
 	// already stripped). So we should get back unmodified value.
 	optionsMsg = actualOptionsAfterStrip
-	actualOptionsAfterStrip, err = stripSourceRetentionOptions(optionsMsg)
+	actualOptionsAfterStrip, err = stripSourceRetentionOptions(optionsMsg, nil, nil)
 	require.NoError(t, err)
 
 	require.Same(t, actualOptionsAfterStrip, optionsMsg)
@@ -122,7 +124,7 @@ func TestStripSourceOnlyOptions(t *testing.T) {
 	options = optionsMsg.ProtoReflect() // weird that we have to call this again (bug in protobuf-go?)
 	options.Set(extSourceRetention.TypeDescriptor(), protoreflect.ValueOfList(listVal))
 
-	actualOptionsAfterStrip, err = stripSourceRetentionOptions(optionsMsg)
+	actualOptionsAfterStrip, err = stripSourceRetentionOptions(optionsMsg, nil, nil)
 	require.NoError(t, err)
 
 	require.Same(t, (*descriptorpb.FileOptions)(nil), actualOptionsAfterStrip)
@@ -178,13 +180,7 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 			makeCustomOptionSet(20000, extendee, prefix+"rep_", descriptorpb.FieldDescriptorProto_LABEL_REPEATED)...,
 		)
 	}
-	combineAll := func(exts ...[]*descriptorpb.FieldDescriptorProto) []*descriptorpb.FieldDescriptorProto {
-		result := exts[0]
-		for _, exts := range exts[1:] {
-			result = append(result, exts...)
-		}
-		return result
-	}
+
 	optsFileProto := &descriptorpb.FileDescriptorProto{
 		Name:       proto.String("opts.proto"),
 		Package:    proto.String("foo.bar"),
@@ -272,6 +268,35 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 	svcOpts, svcOptsStripped := applyCustomOptions(&descriptorpb.ServiceOptions{}, "svc_", optsFile)
 	methodOpts, methodOptsStripped := applyCustomOptions(&descriptorpb.MethodOptions{}, "method_", optsFile)
 
+	allLocations := func(pathPrefix ...int32) []*descriptorpb.SourceCodeInfo_Location {
+		return []*descriptorpb.SourceCodeInfo_Location{
+			{Path: append(pathPrefix, 10000)},
+			{Path: append(pathPrefix, 10001)},
+			{Path: append(pathPrefix, 10002)},
+			{Path: append(pathPrefix, 10003)},
+			{Path: append(pathPrefix, 10003, 1)},
+			{Path: append(pathPrefix, 20000)},
+			{Path: append(pathPrefix, 20001)},
+			{Path: append(pathPrefix, 20002)},
+			{Path: append(pathPrefix, 20003)},
+			{Path: append(pathPrefix, 20003, 0, 1)},
+			{Path: append(pathPrefix, 20003, 1, 1)},
+			{Path: append(pathPrefix, 20003, 2, 1)},
+		}
+	}
+	strippedLocations := func(pathPrefix ...int32) []*descriptorpb.SourceCodeInfo_Location {
+		return []*descriptorpb.SourceCodeInfo_Location{
+			{Path: append(pathPrefix, 10000)},
+			{Path: append(pathPrefix, 10001)},
+			{Path: append(pathPrefix, 10002)},
+			// 10003 is source retention
+			{Path: append(pathPrefix, 20000)},
+			{Path: append(pathPrefix, 20001)},
+			{Path: append(pathPrefix, 20002)},
+			// 20003 is source retention
+		}
+	}
+
 	beforeFile := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("foo.proto"),
 		Options: fileOpts.(*descriptorpb.FileOptions),
@@ -289,6 +314,14 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 						Options:    fieldOpts.(*descriptorpb.FieldOptions),
 						OneofIndex: proto.Int32(0),
 					},
+					{
+						Name:     proto.String("another_field"),
+						Number:   proto.Int32(2),
+						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						JsonName: proto.String("anotherField"),
+						Options:  fieldOpts.(*descriptorpb.FieldOptions),
+					},
 				},
 				OneofDecl: []*descriptorpb.OneofDescriptorProto{
 					{
@@ -303,6 +336,51 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 						Options: extRangeOpts.(*descriptorpb.ExtensionRangeOptions),
 					},
 				},
+				NestedType: []*descriptorpb.DescriptorProto{
+					{
+						Name:    proto.String("NestedMessage"),
+						Options: msgOpts.(*descriptorpb.MessageOptions),
+						Field: []*descriptorpb.FieldDescriptorProto{
+							{
+								Name:       proto.String("field"),
+								Number:     proto.Int32(1),
+								Label:      descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+								Type:       descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+								JsonName:   proto.String("field"),
+								Options:    fieldOpts.(*descriptorpb.FieldOptions),
+								OneofIndex: proto.Int32(0),
+							},
+						},
+					},
+				},
+				EnumType: []*descriptorpb.EnumDescriptorProto{
+					{
+						Name:    proto.String("NestedEnum"),
+						Options: enumOpts.(*descriptorpb.EnumOptions),
+						Value: []*descriptorpb.EnumValueDescriptorProto{
+							{
+								Name:    proto.String("ZERO"),
+								Number:  proto.Int32(0),
+								Options: enumValOpts.(*descriptorpb.EnumValueOptions),
+							},
+							{
+								Name:    proto.String("ONE"),
+								Number:  proto.Int32(1),
+								Options: enumValOpts.(*descriptorpb.EnumValueOptions),
+							},
+						},
+					},
+				},
+				Extension: []*descriptorpb.FieldDescriptorProto{
+					{
+						Extendee: proto.String(".Message"),
+						Name:     proto.String("ext"),
+						Number:   proto.Int32(101),
+						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Options:  fieldOpts.(*descriptorpb.FieldOptions),
+					},
+				},
 			},
 		},
 		EnumType: []*descriptorpb.EnumDescriptorProto{
@@ -315,7 +393,22 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 						Number:  proto.Int32(0),
 						Options: enumValOpts.(*descriptorpb.EnumValueOptions),
 					},
+					{
+						Name:    proto.String("ONE"),
+						Number:  proto.Int32(1),
+						Options: enumValOpts.(*descriptorpb.EnumValueOptions),
+					},
 				},
+			},
+		},
+		Extension: []*descriptorpb.FieldDescriptorProto{
+			{
+				Extendee: proto.String(".Message"),
+				Name:     proto.String("ext"),
+				Number:   proto.Int32(100),
+				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+				Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+				Options:  fieldOpts.(*descriptorpb.FieldOptions),
 			},
 		},
 		Service: []*descriptorpb.ServiceDescriptorProto{
@@ -331,6 +424,28 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 					},
 				},
 			},
+		},
+		SourceCodeInfo: &descriptorpb.SourceCodeInfo{
+			Location: combineAll(
+				allLocations(internal.FileOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageFieldsTag, 0, internal.FieldOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageFieldsTag, 1, internal.FieldOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageOneofsTag, 0, internal.OneofOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageExtensionRangesTag, 0, internal.ExtensionRangeOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageNestedMessagesTag, 0, internal.MessageOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageNestedMessagesTag, 0, internal.MessageFieldsTag, 0, internal.FieldOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageEnumsTag, 0, internal.EnumOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageEnumsTag, 0, internal.EnumValuesTag, 0, internal.EnumValOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageEnumsTag, 0, internal.EnumValuesTag, 1, internal.EnumValOptionsTag),
+				allLocations(internal.FileMessagesTag, 0, internal.MessageExtensionsTag, 0, internal.FieldOptionsTag),
+				allLocations(internal.FileEnumsTag, 0, internal.EnumOptionsTag),
+				allLocations(internal.FileEnumsTag, 0, internal.EnumValuesTag, 0, internal.EnumValOptionsTag),
+				allLocations(internal.FileEnumsTag, 0, internal.EnumValuesTag, 1, internal.EnumValOptionsTag),
+				allLocations(internal.FileExtensionsTag, 0, internal.FieldOptionsTag),
+				allLocations(internal.FileServicesTag, 0, internal.ServiceOptionsTag),
+				allLocations(internal.FileServicesTag, 0, internal.ServiceMethodsTag, 0, internal.MethodOptionsTag),
+			),
 		},
 	}
 
@@ -352,6 +467,14 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 						Options:    fieldOptsStripped.(*descriptorpb.FieldOptions),
 						OneofIndex: proto.Int32(0),
 					},
+					{
+						Name:     proto.String("another_field"),
+						Number:   proto.Int32(2),
+						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						JsonName: proto.String("anotherField"),
+						Options:  fieldOptsStripped.(*descriptorpb.FieldOptions),
+					},
 				},
 				OneofDecl: []*descriptorpb.OneofDescriptorProto{
 					{
@@ -366,6 +489,51 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 						Options: extRangeOptsStripped.(*descriptorpb.ExtensionRangeOptions),
 					},
 				},
+				NestedType: []*descriptorpb.DescriptorProto{
+					{
+						Name:    proto.String("NestedMessage"),
+						Options: msgOptsStripped.(*descriptorpb.MessageOptions),
+						Field: []*descriptorpb.FieldDescriptorProto{
+							{
+								Name:       proto.String("field"),
+								Number:     proto.Int32(1),
+								Label:      descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+								Type:       descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+								JsonName:   proto.String("field"),
+								Options:    fieldOptsStripped.(*descriptorpb.FieldOptions),
+								OneofIndex: proto.Int32(0),
+							},
+						},
+					},
+				},
+				EnumType: []*descriptorpb.EnumDescriptorProto{
+					{
+						Name:    proto.String("NestedEnum"),
+						Options: enumOptsStripped.(*descriptorpb.EnumOptions),
+						Value: []*descriptorpb.EnumValueDescriptorProto{
+							{
+								Name:    proto.String("ZERO"),
+								Number:  proto.Int32(0),
+								Options: enumValOptsStripped.(*descriptorpb.EnumValueOptions),
+							},
+							{
+								Name:    proto.String("ONE"),
+								Number:  proto.Int32(1),
+								Options: enumValOptsStripped.(*descriptorpb.EnumValueOptions),
+							},
+						},
+					},
+				},
+				Extension: []*descriptorpb.FieldDescriptorProto{
+					{
+						Extendee: proto.String(".Message"),
+						Name:     proto.String("ext"),
+						Number:   proto.Int32(101),
+						Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Options:  fieldOptsStripped.(*descriptorpb.FieldOptions),
+					},
+				},
 			},
 		},
 		EnumType: []*descriptorpb.EnumDescriptorProto{
@@ -378,7 +546,22 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 						Number:  proto.Int32(0),
 						Options: enumValOptsStripped.(*descriptorpb.EnumValueOptions),
 					},
+					{
+						Name:    proto.String("ONE"),
+						Number:  proto.Int32(1),
+						Options: enumValOptsStripped.(*descriptorpb.EnumValueOptions),
+					},
 				},
+			},
+		},
+		Extension: []*descriptorpb.FieldDescriptorProto{
+			{
+				Extendee: proto.String(".Message"),
+				Name:     proto.String("ext"),
+				Number:   proto.Int32(100),
+				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+				Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+				Options:  fieldOptsStripped.(*descriptorpb.FieldOptions),
 			},
 		},
 		Service: []*descriptorpb.ServiceDescriptorProto{
@@ -395,6 +578,28 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 				},
 			},
 		},
+		SourceCodeInfo: &descriptorpb.SourceCodeInfo{
+			Location: combineAll(
+				strippedLocations(internal.FileOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageFieldsTag, 0, internal.FieldOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageFieldsTag, 1, internal.FieldOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageOneofsTag, 0, internal.OneofOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageExtensionRangesTag, 0, internal.ExtensionRangeOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageNestedMessagesTag, 0, internal.MessageOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageNestedMessagesTag, 0, internal.MessageFieldsTag, 0, internal.FieldOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageEnumsTag, 0, internal.EnumOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageEnumsTag, 0, internal.EnumValuesTag, 0, internal.EnumValOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageEnumsTag, 0, internal.EnumValuesTag, 1, internal.EnumValOptionsTag),
+				strippedLocations(internal.FileMessagesTag, 0, internal.MessageExtensionsTag, 0, internal.FieldOptionsTag),
+				strippedLocations(internal.FileEnumsTag, 0, internal.EnumOptionsTag),
+				strippedLocations(internal.FileEnumsTag, 0, internal.EnumValuesTag, 0, internal.EnumValOptionsTag),
+				strippedLocations(internal.FileEnumsTag, 0, internal.EnumValuesTag, 1, internal.EnumValOptionsTag),
+				strippedLocations(internal.FileExtensionsTag, 0, internal.FieldOptionsTag),
+				strippedLocations(internal.FileServicesTag, 0, internal.ServiceOptionsTag),
+				strippedLocations(internal.FileServicesTag, 0, internal.ServiceMethodsTag, 0, internal.MethodOptionsTag),
+			),
+		},
 	}
 
 	actualStrippedFile, err := StripSourceRetentionOptionsFromFile(beforeFile)
@@ -410,11 +615,11 @@ func TestStripSourceOnlyOptionsFromFile(t *testing.T) {
 	require.Empty(t, cmp.Diff(afterFile, doubleStrippedFile, protocmp.Transform()))
 }
 
-func TestUpdateAll(t *testing.T) {
+func TestStripOptionsFromAll(t *testing.T) {
 	t.Parallel()
 
 	errInvalid := errors.New("invalid value")
-	updateFunc := func(i *int32) (*int32, error) {
+	updateFunc := func(i *int32, _ sourcePath, _ *sourcePathTrie) (*int32, error) {
 		if i == nil {
 			return proto.Int32(-1), nil
 		}
@@ -432,7 +637,7 @@ func TestUpdateAll(t *testing.T) {
 		proto.Int32(3), proto.Int32(4), proto.Int32(5),
 		proto.Int32(6), proto.Int32(7), proto.Int32(8),
 	}
-	newVals, changed, err := updateAll(vals, updateFunc)
+	newVals, changed, err := stripOptionsFromAll(vals, updateFunc, nil, nil)
 	require.NoError(t, err)
 	require.True(t, changed)
 	expected := []*int32{
@@ -446,7 +651,7 @@ func TestUpdateAll(t *testing.T) {
 		nil, proto.Int32(1), proto.Int32(2),
 		proto.Int32(3), proto.Int32(4), proto.Int32(5),
 	}
-	newVals, changed, err = updateAll(vals, updateFunc)
+	newVals, changed, err = stripOptionsFromAll(vals, updateFunc, nil, nil)
 	require.NoError(t, err)
 	require.True(t, changed)
 	expected = []*int32{
@@ -460,7 +665,7 @@ func TestUpdateAll(t *testing.T) {
 		proto.Int32(0), proto.Int32(1), proto.Int32(2),
 		proto.Int32(3), proto.Int32(4), proto.Int32(5),
 	}
-	newVals, changed, err = updateAll(vals, updateFunc)
+	newVals, changed, err = stripOptionsFromAll(vals, updateFunc, nil, nil)
 	require.NoError(t, err)
 	require.False(t, changed)
 	require.Equal(t, vals, newVals)
@@ -470,6 +675,14 @@ func TestUpdateAll(t *testing.T) {
 		proto.Int32(0), proto.Int32(1), proto.Int32(2),
 		proto.Int32(3), proto.Int32(-101), proto.Int32(5),
 	}
-	_, _, err = updateAll(vals, updateFunc)
+	_, _, err = stripOptionsFromAll(vals, updateFunc, nil, nil)
 	require.ErrorIs(t, err, errInvalid)
+}
+
+func combineAll[T any](slices ...[]T) []T {
+	result := slices[0]
+	for _, exts := range slices[1:] {
+		result = append(result, exts...)
+	}
+	return result
 }
