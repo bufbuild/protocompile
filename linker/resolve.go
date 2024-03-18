@@ -395,10 +395,14 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 		f.msgType = dsc
 	case protoreflect.EnumDescriptor:
 		proto3 := r.Syntax() == protoreflect.Proto3
-		enumIsProto3 := dsc.Syntax() == protoreflect.Proto3
-		if fld.GetExtendee() == "" && proto3 && !enumIsProto3 {
-			// fields in a proto3 message cannot refer to proto2 enums
-			return handler.HandleErrorf(file.NodeInfo(node.FieldType()), "%s: cannot use proto2 enum %s in a proto3 message", scope, fld.GetTypeName())
+		enumIsClosed := dsc.IsClosed()
+		if fld.GetExtendee() == "" && proto3 && enumIsClosed {
+			// fields in a proto3 message cannot refer to closed enums
+			return handler.HandleErrorf(file.NodeInfo(node.FieldType()), "%s: cannot use enum with closed semantics %s in a proto3 message", scope, fld.GetTypeName())
+		}
+		if f.Cardinality() == protoreflect.Optional && !f.HasPresence() && enumIsClosed {
+			// fields in a proto3 message cannot refer to closed enums
+			return handler.HandleErrorf(file.NodeInfo(node.FieldType()), "%s.%s: implicit fields may only used enums with open semantics", scope, fld.GetTypeName())
 		}
 		typeName := "." + string(dsc.FullName())
 		if fld.GetTypeName() != typeName {

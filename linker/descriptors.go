@@ -552,7 +552,22 @@ var _ protoreflect.MessageDescriptor = (*msgDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*msgDescriptor)(nil)
 
 func (r *result) createMessageDescriptor(md *descriptorpb.DescriptorProto, parent protoreflect.Descriptor, index int, fqn string) *msgDescriptor {
-	ret := &msgDescriptor{MessageDescriptor: noOpMessage, file: r, parent: parent, index: index, proto: md, fqn: fqn}
+	var messageDesc protoreflect.MessageDescriptor
+	switch p := parent.(type) {
+	case *result:
+		if p.FileDescriptor == noOpFile {
+			messageDesc = noOpMessage
+		} else {
+			messageDesc = p.FileDescriptor.Messages().Get(index)
+		}
+	case *msgDescriptor:
+		if p.MessageDescriptor == noOpMessage {
+			messageDesc = noOpMessage
+		} else {
+			messageDesc = p.MessageDescriptor.Messages().Get(index)
+		}
+	}
+	ret := &msgDescriptor{MessageDescriptor: messageDesc, file: r, parent: parent, index: index, proto: md, fqn: fqn}
 	r.descriptors[fqn] = ret
 
 	prefix := fqn + "."
@@ -790,7 +805,22 @@ var _ protoreflect.EnumDescriptor = (*enumDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*enumDescriptor)(nil)
 
 func (r *result) createEnumDescriptor(ed *descriptorpb.EnumDescriptorProto, parent protoreflect.Descriptor, index int, fqn string) *enumDescriptor {
-	ret := &enumDescriptor{EnumDescriptor: noOpEnum, file: r, parent: parent, index: index, proto: ed, fqn: fqn}
+	var enumDesc protoreflect.EnumDescriptor
+	switch p := parent.(type) {
+	case *result:
+		if p.FileDescriptor == noOpFile {
+			enumDesc = noOpEnum
+		} else {
+			enumDesc = p.FileDescriptor.Enums().Get(index)
+		}
+	case *msgDescriptor:
+		if p.MessageDescriptor == noOpMessage {
+			enumDesc = noOpEnum
+		} else {
+			enumDesc = p.MessageDescriptor.Enums().Get(index)
+		}
+	}
+	ret := &enumDescriptor{EnumDescriptor: enumDesc, file: r, parent: parent, index: index, proto: ed, fqn: fqn}
 	r.descriptors[fqn] = ret
 
 	// Unlike all other elements, the fully-qualified name of enum values
@@ -941,7 +971,13 @@ var _ protoreflect.EnumValueDescriptor = (*enValDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*enValDescriptor)(nil)
 
 func (r *result) createEnumValueDescriptor(ed *descriptorpb.EnumValueDescriptorProto, parent *enumDescriptor, index int, fqn string) *enValDescriptor {
-	ret := &enValDescriptor{EnumValueDescriptor: noOpEnumValue, file: r, parent: parent, index: index, proto: ed, fqn: fqn}
+	var enumValueDesc protoreflect.EnumValueDescriptor
+	if parent.EnumDescriptor == noOpEnum {
+		enumValueDesc = noOpEnumValue
+	} else {
+		enumValueDesc = parent.EnumDescriptor.Values().Get(index)
+	}
+	ret := &enValDescriptor{EnumValueDescriptor: enumValueDesc, file: r, parent: parent, index: index, proto: ed, fqn: fqn}
 	r.descriptors[fqn] = ret
 	return ret
 }
@@ -1028,7 +1064,22 @@ type extTypeDescriptor struct {
 var _ protoutil.DescriptorProtoWrapper = &extTypeDescriptor{}
 
 func (r *result) createExtTypeDescriptor(fd *descriptorpb.FieldDescriptorProto, parent protoreflect.Descriptor, index int, fqn string) *extTypeDescriptor {
-	ret := &fldDescriptor{FieldDescriptor: noOpExtension, file: r, parent: parent, index: index, proto: fd, fqn: fqn}
+	var extDesc protoreflect.FieldDescriptor
+	switch p := parent.(type) {
+	case *result:
+		if p.FileDescriptor == noOpFile {
+			extDesc = noOpField
+		} else {
+			extDesc = p.FileDescriptor.Extensions().Get(index)
+		}
+	case *msgDescriptor:
+		if p.MessageDescriptor == noOpMessage {
+			extDesc = noOpField
+		} else {
+			extDesc = p.MessageDescriptor.Extensions().Get(index)
+		}
+	}
+	ret := &fldDescriptor{FieldDescriptor: extDesc, file: r, parent: parent, index: index, proto: fd, fqn: fqn}
 	r.descriptors[fqn] = ret
 	return &extTypeDescriptor{ExtensionTypeDescriptor: dynamicpb.NewExtensionType(ret).TypeDescriptor(), field: ret}
 }
@@ -1111,7 +1162,13 @@ var _ protoreflect.FieldDescriptor = (*fldDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*fldDescriptor)(nil)
 
 func (r *result) createFieldDescriptor(fd *descriptorpb.FieldDescriptorProto, parent *msgDescriptor, index int, fqn string) *fldDescriptor {
-	ret := &fldDescriptor{FieldDescriptor: noOpField, file: r, parent: parent, index: index, proto: fd, fqn: fqn}
+	var fieldDesc protoreflect.FieldDescriptor
+	if parent.MessageDescriptor == noOpMessage {
+		fieldDesc = noOpField
+	} else {
+		fieldDesc = parent.MessageDescriptor.Fields().Get(index)
+	}
+	ret := &fldDescriptor{FieldDescriptor: fieldDesc, file: r, parent: parent, index: index, proto: fd, fqn: fqn}
 	r.descriptors[fqn] = ret
 	return ret
 }
@@ -1196,6 +1253,9 @@ func (f *fldDescriptor) TextName() string {
 }
 
 func (f *fldDescriptor) HasPresence() bool {
+	if f.FieldDescriptor != noOpField {
+		return f.FieldDescriptor.HasPresence()
+	}
 	if f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
 		return false
 	}
@@ -1210,6 +1270,9 @@ func (f *fldDescriptor) IsExtension() bool {
 }
 
 func (f *fldDescriptor) HasOptionalKeyword() bool {
+	if f.FieldDescriptor != noOpField {
+		return f.FieldDescriptor.HasOptionalKeyword()
+	}
 	if f.proto.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL {
 		return false
 	}
@@ -1229,6 +1292,9 @@ func (f *fldDescriptor) IsWeak() bool {
 }
 
 func (f *fldDescriptor) IsPacked() bool {
+	if f.FieldDescriptor != noOpField {
+		return f.FieldDescriptor.IsPacked()
+	}
 	opts := f.proto.GetOptions()
 	if opts.GetPacked() {
 		return true
@@ -1588,7 +1654,13 @@ var _ protoreflect.OneofDescriptor = (*oneofDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*oneofDescriptor)(nil)
 
 func (r *result) createOneofDescriptor(ood *descriptorpb.OneofDescriptorProto, parent *msgDescriptor, index int, fqn string) *oneofDescriptor {
-	ret := &oneofDescriptor{OneofDescriptor: noOpOneof, file: r, parent: parent, index: index, proto: ood, fqn: fqn}
+	var oneofDesc protoreflect.OneofDescriptor
+	if parent.MessageDescriptor == noOpMessage {
+		oneofDesc = noOpOneof
+	} else {
+		oneofDesc = parent.MessageDescriptor.Oneofs().Get(index)
+	}
+	ret := &oneofDescriptor{OneofDescriptor: oneofDesc, file: r, parent: parent, index: index, proto: ood, fqn: fqn}
 	r.descriptors[fqn] = ret
 
 	var fields []*fldDescriptor

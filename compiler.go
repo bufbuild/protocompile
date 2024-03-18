@@ -570,7 +570,20 @@ func findImportSpan(res parser.Result, dep string) ast.SourceSpan {
 }
 
 func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescriptorProtoRes linker.File) (linker.File, error) {
-	file, err := linker.Link(parseRes, deps, t.e.sym, t.h)
+	// This cloning is necessary because options.InterpretUnlinkedOptions
+	// modifies the parseRes' descriptor proto and some tests are sensitive to
+	// this because after this modification the descriptor proto is no longer
+	// equivalent to the "canonical" descriptor proto. Not sure if users care
+	// though.
+	r := parseRes
+	if parseRes.AST() != nil {
+		r = parser.Clone(parseRes)
+		_, err := options.InterpretUnlinkedOptions(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+	file, err := linker.Link(parseRes, r, deps, t.e.sym, t.h)
 	if err != nil {
 		return nil, err
 	}

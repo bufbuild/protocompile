@@ -391,8 +391,8 @@ func TestOptionsEncoding(t *testing.T) {
 			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
 			err = uOpts.Unmarshal(protoData, canonicalProto)
 			require.NoError(t, err)
-			if !proto.Equal(res.FileDescriptorProto(), canonicalProto) {
-				t.Fatal("canonical proto != proto")
+			if diff := cmp.Diff(res.FileDescriptorProto(), canonicalProto, protocmp.Transform()); diff != "" {
+				t.Fatal("canonical proto != proto:\n%v", diff)
 			}
 
 			// drum roll... make sure the bytes match the protoc output

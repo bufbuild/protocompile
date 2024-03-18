@@ -17,6 +17,7 @@ package linker
 import (
 	"fmt"
 
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -40,7 +41,7 @@ import (
 //
 // Note that linking does NOT interpret options. So options messages in the
 // returned value have all values stored in UninterpretedOptions fields.
-func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *reporter.Handler) (Result, error) {
+func Link(parsed, parsedWithResolvedOptions parser.Result, dependencies Files, symbols *Symbols, handler *reporter.Handler) (Result, error) {
 	if symbols == nil {
 		symbols = &Symbols{}
 	}
@@ -58,9 +59,31 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 			return nil, err
 		}
 	}
+	files := []*descriptorpb.FileDescriptorProto{parsedWithResolvedOptions.FileDescriptorProto()}
+	for _, f := range dependencies {
+		files = append(files, protodesc.ToFileDescriptorProto(f))
+	}
+	fds := &descriptorpb.FileDescriptorSet{
+		File: files,
+	}
+	var fd protoreflect.FileDescriptor
+
+	if reg, err := (protodesc.FileOptions{AllowUnresolvable: true}.NewFiles(fds)); err != nil {
+		// There might be cases where protodescs validation is stricter or
+		// dependencies are missing and to keep backwards compatibility, we do
+		// not propagate the error (so that invalid protos keep compiling as
+		// before).
+		fd = noOpFile
+	} else {
+		fd, err = reg.FindFileByPath(parsed.FileDescriptorProto().GetName())
+		if err != nil {
+			// should this be a panic?
+			fd = noOpFile
+		}
+	}
 
 	r := &result{
-		FileDescriptor:       noOpFile,
+		FileDescriptor:       fd,
 		Result:               parsed,
 		deps:                 dependencies,
 		descriptors:          map[string]protoreflect.Descriptor{},

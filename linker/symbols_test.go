@@ -205,7 +205,7 @@ func parseAndLink(t *testing.T, contents string) Result {
 	depAsFile, err := NewFileRecursive(dep)
 	require.NoError(t, err)
 	depFiles := Files{depAsFile}
-	linkResult, err := Link(parseResult, depFiles, nil, h)
+	linkResult, err := Link(parseResult, parseResult, depFiles, nil, h)
 	require.NoError(t, err)
 	return linkResult
 }
