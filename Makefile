@@ -144,8 +144,11 @@ internal/testdata/desc_test_defaults.protoset: $(PROTOC) internal/testdata/desc_
 internal/testdata/desc_test_proto3_optional.protoset: $(PROTOC) internal/testdata/desc_test_proto3_optional.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
-internal/testdata/descriptor_impl_tests.protoset: $(PROTOC) internal/testdata/desc_test2.proto internal/testdata/desc_test_defaults.proto internal/testdata/desc_test_proto3.proto internal/testdata/desc_test_proto3_optional.proto
+internal/testdata/descriptor_impl_tests.protoset: $(PROTOC) internal/testdata/desc_test2.proto internal/testdata/desc_test_complex.proto internal/testdata/desc_test_defaults.proto internal/testdata/desc_test_proto3.proto internal/testdata/desc_test_proto3_optional.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+
+internal/testdata/descriptor_editions_impl_tests.protoset: $(PROTOC) internal/testdata/editions/all_default_features.proto internal/testdata/editions/features_with_overrides.proto
+	cd $(@D)/editions && $(PROTOC) --experimental_editions --descriptor_set_out=../$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
 internal/testdata/editions/all.protoset: $(PROTOC) $(sort $(wildcard internal/testdata/editions/*.proto))
 	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
@@ -165,6 +168,7 @@ test-descriptors: internal/testdata/desc_test_complex.protoset
 test-descriptors: internal/testdata/desc_test_defaults.protoset
 test-descriptors: internal/testdata/desc_test_proto3_optional.protoset
 test-descriptors: internal/testdata/descriptor_impl_tests.protoset
+test-descriptors: internal/testdata/descriptor_editions_impl_tests.protoset
 test-descriptors: internal/testdata/editions/all.protoset
 test-descriptors: internal/testdata/source_info.protoset
 test-descriptors: internal/testdata/options/test.protoset

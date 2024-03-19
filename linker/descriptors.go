@@ -208,6 +208,19 @@ func (r *result) Syntax() protoreflect.Syntax {
 	}
 }
 
+func (r *result) Edition() descriptorpb.Edition {
+	switch r.Syntax() {
+	case protoreflect.Proto2:
+		return descriptorpb.Edition_EDITION_PROTO2
+	case protoreflect.Proto3:
+		return descriptorpb.Edition_EDITION_PROTO3
+	case protoreflect.Editions:
+		return r.FileDescriptorProto().GetEdition()
+	default:
+		return descriptorpb.Edition_EDITION_UNKNOWN // ???
+	}
+}
+
 func (r *result) Name() protoreflect.Name {
 	return ""
 }
@@ -858,6 +871,22 @@ func (e *enumDescriptor) ReservedRanges() protoreflect.EnumRanges {
 	return e.rsvdRanges
 }
 
+func (e *enumDescriptor) IsClosed() bool {
+	switch e.Syntax() {
+	case protoreflect.Proto2:
+		return true
+	case protoreflect.Proto3:
+		return false
+	case protoreflect.Editions:
+		enumType := resolveFeature(e, func(features *descriptorpb.FeatureSet) (descriptorpb.FeatureSet_EnumType, bool) {
+			return features.GetEnumType(), features != nil && features.EnumType != nil
+		})
+		return enumType == descriptorpb.FeatureSet_CLOSED
+	default:
+		return false // ???
+	}
+}
+
 type enumRanges struct {
 	protoreflect.EnumRanges
 	ranges [][2]protoreflect.EnumNumber
@@ -1201,10 +1230,24 @@ func (f *fldDescriptor) HasPresence() bool {
 	if f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
 		return false
 	}
-	return f.IsExtension() ||
-		f.Syntax() == protoreflect.Proto2 ||
+	if f.IsExtension() ||
 		f.Kind() == protoreflect.MessageKind || f.Kind() == protoreflect.GroupKind ||
-		f.proto.OneofIndex != nil
+		f.proto.OneofIndex != nil {
+		return true
+	}
+	switch f.Syntax() {
+	case protoreflect.Proto2:
+		return true
+	case protoreflect.Proto3:
+		return false
+	case protoreflect.Editions:
+		fieldPresence := resolveFeature(f, func(features *descriptorpb.FeatureSet) (descriptorpb.FeatureSet_FieldPresence, bool) {
+			return features.GetFieldPresence(), features != nil && features.FieldPresence != nil
+		})
+		return fieldPresence == descriptorpb.FeatureSet_EXPLICIT || fieldPresence == descriptorpb.FeatureSet_LEGACY_REQUIRED
+	default:
+		return true // ???
+	}
 }
 
 func (f *fldDescriptor) IsExtension() bool {
@@ -1231,29 +1274,41 @@ func (f *fldDescriptor) IsWeak() bool {
 }
 
 func (f *fldDescriptor) IsPacked() bool {
-	opts := f.proto.GetOptions()
-	if opts.GetPacked() {
-		return true
-	}
-	if opts != nil && opts.Packed != nil {
-		// explicitly not packed
-		return false
-	}
+	switch f.Syntax() {
+	case protoreflect.Proto2:
+		return f.proto.GetOptions().GetPacked()
 
-	// proto3 defaults to packed for repeated scalar numeric fields
-	if f.file.Syntax() != protoreflect.Proto3 {
-		return false
-	}
-	if f.proto.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
-		return false
-	}
-	switch f.proto.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_GROUP, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE,
-		descriptorpb.FieldDescriptorProto_TYPE_BYTES, descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return false
+	case protoreflect.Proto3:
+		opts := f.proto.GetOptions()
+		if opts.GetPacked() {
+			// explicitly packed
+			return true
+		}
+		if opts != nil && opts.Packed != nil {
+			// explicitly not packed
+			return false
+		}
+		// proto3 defaults to packed for repeated scalar numeric fields
+		if f.proto.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
+			return false
+		}
+		switch f.proto.GetType() {
+		case descriptorpb.FieldDescriptorProto_TYPE_GROUP, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE,
+			descriptorpb.FieldDescriptorProto_TYPE_BYTES, descriptorpb.FieldDescriptorProto_TYPE_STRING:
+			return false
+		default:
+			// all others can be packed
+			return true
+		}
+
+	case protoreflect.Editions:
+		fieldEncoding := resolveFeature(f, func(features *descriptorpb.FeatureSet) (descriptorpb.FeatureSet_RepeatedFieldEncoding, bool) {
+			return features.GetRepeatedFieldEncoding(), features != nil && features.RepeatedFieldEncoding != nil
+		})
+		return fieldEncoding == descriptorpb.FeatureSet_PACKED
+
 	default:
-		// all others can be packed
-		return true
+		return f.proto.GetOptions().GetPacked() // ???
 	}
 }
 
