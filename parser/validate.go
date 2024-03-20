@@ -353,14 +353,6 @@ func validateEnum(res *result, syntax protoreflect.Syntax, name protoreflect.Ful
 		}
 	}
 
-	if syntax == protoreflect.Proto3 && len(ed.Value) > 0 && ed.Value[0].GetNumber() != 0 {
-		evNode := res.EnumValueNode(ed.Value[0])
-		evNodeInfo := res.file.NodeInfo(evNode.GetNumber())
-		if err := handler.HandleErrorf(evNodeInfo, "%s: proto3 requires that first value in enum have numeric value of 0", scope); err != nil {
-			return err
-		}
-	}
-
 	// check for aliases
 	vals := map[int32]string{}
 	hasAlias := false

@@ -165,3 +165,19 @@ func getEditionDefaults(edition descriptorpb.Edition) *descriptorpb.FeatureSet {
 	})
 	return editionDefaults[edition]
 }
+
+func isJSONCompliant(d protoreflect.Descriptor) bool {
+	switch d.Syntax() {
+	case protoreflect.Proto2:
+		return false
+	case protoreflect.Proto3:
+		return true
+	case protoreflect.Editions:
+		jsonFormat := resolveFeature(d, func(features *descriptorpb.FeatureSet) (descriptorpb.FeatureSet_JsonFormat, bool) {
+			return features.GetJsonFormat(), features != nil && features.JsonFormat != nil
+		})
+		return jsonFormat == descriptorpb.FeatureSet_ALLOW
+	default:
+		return false // ???
+	}
+}

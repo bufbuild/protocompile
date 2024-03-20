@@ -105,7 +105,6 @@ func TestErrorReporting(t *testing.T) {
 			expectedErrs: [][]string{
 				{
 					"test.proto:4:62: tag number 0 must be greater than zero",
-					"test.proto:8:55: enum Bar: proto3 requires that first value in enum have numeric value of 0",
 					"test.proto:9:56: enum Bar: values BAZ and BUZZ both have the same numeric value 1; use allow_alias option if intentional",
 				},
 			},
