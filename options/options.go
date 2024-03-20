@@ -657,7 +657,7 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 			continue
 		}
 		switch {
-		case f.packed && canPack(f.kind):
+		case f.packed && internal.CanPack(f.kind):
 			// for packed repeated numeric fields, all runs of values are merged into one packed list
 			num := f.number
 			j := i
@@ -701,15 +701,6 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 	}
 
 	return b, nil
-}
-
-func canPack(k protoreflect.Kind) bool {
-	switch k {
-	case protoreflect.MessageKind, protoreflect.GroupKind, protoreflect.StringKind, protoreflect.BytesKind:
-		return false
-	default:
-		return true
-	}
 }
 
 func appendOptionBytesPacked(b []byte, k protoreflect.Kind, flds []*interpretedField) ([]byte, error) {
@@ -1104,7 +1095,7 @@ func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) b
 		// If path prefix exists, this field is nested inside a message.
 		// And messages use bytes wire type.
 		wireType = protowire.BytesType
-	case opt.repeated && opt.packed && canPack(opt.kind):
+	case opt.repeated && opt.packed && internal.CanPack(opt.kind):
 		// Packed repeated numeric scalars use bytes wire type.
 		wireType = protowire.BytesType
 	default:
@@ -1113,7 +1104,7 @@ func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) b
 
 	// And then we see if the wire type we just determined is compatible with
 	// the field descriptor we found.
-	if fd.IsList() && canPack(fd.Kind()) && wireType == protowire.BytesType {
+	if fd.IsList() && internal.CanPack(fd.Kind()) && wireType == protowire.BytesType {
 		// Even if fd.IsPacked() is false, bytes type is still accepted for
 		// repeated scalar numerics, so that changing a repeated field from
 		// packed to not-packed (or vice versa) is a compatible change.

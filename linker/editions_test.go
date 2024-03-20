@@ -24,6 +24,14 @@ import (
 	"github.com/bufbuild/protocompile/internal"
 )
 
+func TestFieldDescriptors(t *testing.T) {
+	assert.NotNil(t, fieldPresenceField, "field_presence")
+	assert.NotNil(t, repeatedFieldEncodingField, "repeated_field_encoding")
+	assert.NotNil(t, messageEncodingField, "message_encoding")
+	assert.NotNil(t, enumTypeField, "enum_type")
+	assert.NotNil(t, jsonFormatField, "json_format")
+}
+
 func TestGetEditionDefaults(t *testing.T) {
 	t.Parallel()
 	// Make sure all supported editions have defaults.

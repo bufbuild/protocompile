@@ -27,6 +27,13 @@ import (
 var (
 	editionDefaults     map[descriptorpb.Edition]*descriptorpb.FeatureSet
 	editionDefaultsInit sync.Once
+
+	featureSetDescriptor       = (*descriptorpb.FeatureSet)(nil).ProtoReflect().Descriptor()
+	fieldPresenceField         = featureSetDescriptor.Fields().ByName("field_presence")
+	repeatedFieldEncodingField = featureSetDescriptor.Fields().ByName("repeated_field_encoding")
+	messageEncodingField       = featureSetDescriptor.Fields().ByName("message_encoding")
+	enumTypeField              = featureSetDescriptor.Fields().ByName("enum_type")
+	jsonFormatField            = featureSetDescriptor.Fields().ByName("json_format")
 )
 
 type hasFeatures interface {
@@ -47,10 +54,9 @@ var _ hasFeatures = (*descriptorpb.MethodOptions)(nil)
 // to extract a value from a feature set. The function should return false as the
 // second argument if the first value it returns was not actually present in the
 // feature set.
-func resolveFeature[T any](d protoreflect.Descriptor, accessor func(*descriptorpb.FeatureSet) (T, bool)) T {
+func resolveFeature(d protoreflect.Descriptor, field protoreflect.FieldDescriptor) protoreflect.Value {
 	if d == nil {
-		var zero T
-		return zero
+		return protoreflect.Value{}
 	}
 	for {
 		var features *descriptorpb.FeatureSet
@@ -58,23 +64,22 @@ func resolveFeature[T any](d protoreflect.Descriptor, accessor func(*descriptorp
 			// It should not be possible for 'ok' to ever be false...
 			features = withFeatures.GetFeatures()
 		}
-		val, ok := accessor(features)
-		if ok {
-			return val
+		featuresRef := features.ProtoReflect()
+		if featuresRef.Has(field) {
+			return featuresRef.Get(field)
 		}
 		parent := d.Parent()
 		if parent == nil {
 			// We've reached the end of the inheritance chain. So we fall back to a default.
-			return getFeatureDefault(d, accessor)
+			return getFeatureDefault(d, field)
 		}
 		d = parent
 	}
 }
 
-func getFeatureDefault[T any](d protoreflect.Descriptor, accessor func(*descriptorpb.FeatureSet) (T, bool)) T {
+func getFeatureDefault(d protoreflect.Descriptor, field protoreflect.FieldDescriptor) protoreflect.Value {
 	defaults := getEditionDefaults(getEdition(d))
-	val, _ := accessor(defaults)
-	return val
+	return defaults.ProtoReflect().Get(field) // returns the default if field is not present
 }
 
 type hasEdition interface {
@@ -173,10 +178,8 @@ func isJSONCompliant(d protoreflect.Descriptor) bool {
 	case protoreflect.Proto3:
 		return true
 	case protoreflect.Editions:
-		jsonFormat := resolveFeature(d, func(features *descriptorpb.FeatureSet) (descriptorpb.FeatureSet_JsonFormat, bool) {
-			return features.GetJsonFormat(), features != nil && features.JsonFormat != nil
-		})
-		return jsonFormat == descriptorpb.FeatureSet_ALLOW
+		jsonFormat := resolveFeature(d, jsonFormatField)
+		return descriptorpb.FeatureSet_JsonFormat(jsonFormat.Enum()) == descriptorpb.FeatureSet_ALLOW
 	default:
 		return false // ???
 	}
