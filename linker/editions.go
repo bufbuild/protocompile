@@ -78,7 +78,11 @@ func getFeatureDefault[T any](d protoreflect.Descriptor, accessor func(*descript
 }
 
 type hasEdition interface {
-	Edition() descriptorpb.Edition
+	// Edition returns the numeric value of a google.protobuf.Edition enum
+	// value that corresponds to the edition of this file. If the file does
+	// not use editions, it should return the enum value that corresponds
+	// to the syntax level, EDITION_PROTO2 or EDITION_PROTO3.
+	Edition() int32
 }
 
 var _ hasEdition = (*result)(nil)
@@ -94,7 +98,7 @@ func getEdition(d protoreflect.Descriptor) descriptorpb.Edition {
 		// and then querying for the edition from that. :/
 		return descriptorpb.Edition_EDITION_UNKNOWN
 	}
-	return withEdition.Edition()
+	return descriptorpb.Edition(withEdition.Edition())
 }
 
 func getEditionDefaults(edition descriptorpb.Edition) *descriptorpb.FeatureSet {

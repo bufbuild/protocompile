@@ -208,16 +208,16 @@ func (r *result) Syntax() protoreflect.Syntax {
 	}
 }
 
-func (r *result) Edition() descriptorpb.Edition {
+func (r *result) Edition() int32 {
 	switch r.Syntax() {
 	case protoreflect.Proto2:
-		return descriptorpb.Edition_EDITION_PROTO2
+		return int32(descriptorpb.Edition_EDITION_PROTO2)
 	case protoreflect.Proto3:
-		return descriptorpb.Edition_EDITION_PROTO3
+		return int32(descriptorpb.Edition_EDITION_PROTO3)
 	case protoreflect.Editions:
-		return r.FileDescriptorProto().GetEdition()
+		return int32(r.FileDescriptorProto().GetEdition())
 	default:
-		return descriptorpb.Edition_EDITION_UNKNOWN // ???
+		return int32(descriptorpb.Edition_EDITION_UNKNOWN) // ???
 	}
 }
 
