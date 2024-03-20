@@ -148,6 +148,7 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 		if !assert.Equal(t, expFld.Name(), actFld.Name(), "%s: field name at index %d", where, i) {
 			continue
 		}
+		assert.Equal(t, expFld.Kind(), actFld.Kind(), "%s: field kind at index %d (%s)", where, i, expFld.Name())
 
 		// default values
 

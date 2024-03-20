@@ -1205,6 +1205,14 @@ func (f *fldDescriptor) Cardinality() protoreflect.Cardinality {
 }
 
 func (f *fldDescriptor) Kind() protoreflect.Kind {
+	if f.proto.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE && f.Syntax() == protoreflect.Editions {
+		messageEncoding := resolveFeature(f, func(features *descriptorpb.FeatureSet) (descriptorpb.FeatureSet_MessageEncoding, bool) {
+			return features.GetMessageEncoding(), features != nil && features.MessageEncoding != nil
+		})
+		if messageEncoding == descriptorpb.FeatureSet_DELIMITED {
+			return protoreflect.GroupKind
+		}
+	}
 	return protoreflect.Kind(f.proto.GetType())
 }
 
