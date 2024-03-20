@@ -25,6 +25,7 @@ import (
 )
 
 func TestFieldDescriptors(t *testing.T) {
+	t.Parallel()
 	assert.NotNil(t, fieldPresenceField, "field_presence")
 	assert.NotNil(t, repeatedFieldEncodingField, "repeated_field_encoding")
 	assert.NotNil(t, messageEncodingField, "message_encoding")
