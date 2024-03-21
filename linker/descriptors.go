@@ -201,8 +201,23 @@ func (r *result) Syntax() protoreflect.Syntax {
 		return protoreflect.Proto2
 	case "proto3":
 		return protoreflect.Proto3
+	case "editions":
+		return protoreflect.Editions
 	default:
 		return 0 // ???
+	}
+}
+
+func (r *result) Edition() int32 {
+	switch r.Syntax() {
+	case protoreflect.Proto2:
+		return int32(descriptorpb.Edition_EDITION_PROTO2)
+	case protoreflect.Proto3:
+		return int32(descriptorpb.Edition_EDITION_PROTO3)
+	case protoreflect.Editions:
+		return int32(r.FileDescriptorProto().GetEdition())
+	default:
+		return int32(descriptorpb.Edition_EDITION_UNKNOWN) // ???
 	}
 }
 
@@ -856,6 +871,11 @@ func (e *enumDescriptor) ReservedRanges() protoreflect.EnumRanges {
 	return e.rsvdRanges
 }
 
+func (e *enumDescriptor) IsClosed() bool {
+	enumType := resolveFeature(e, enumTypeField)
+	return descriptorpb.FeatureSet_EnumType(enumType.Enum()) == descriptorpb.FeatureSet_CLOSED
+}
+
 type enumRanges struct {
 	protoreflect.EnumRanges
 	ranges [][2]protoreflect.EnumNumber
@@ -1174,6 +1194,12 @@ func (f *fldDescriptor) Cardinality() protoreflect.Cardinality {
 }
 
 func (f *fldDescriptor) Kind() protoreflect.Kind {
+	if f.proto.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE && f.Syntax() == protoreflect.Editions {
+		messageEncoding := resolveFeature(f, messageEncodingField)
+		if descriptorpb.FeatureSet_MessageEncoding(messageEncoding.Enum()) == descriptorpb.FeatureSet_DELIMITED {
+			return protoreflect.GroupKind
+		}
+	}
 	return protoreflect.Kind(f.proto.GetType())
 }
 
@@ -1199,10 +1225,13 @@ func (f *fldDescriptor) HasPresence() bool {
 	if f.proto.GetLabel() == descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
 		return false
 	}
-	return f.IsExtension() ||
-		f.Syntax() == protoreflect.Proto2 ||
+	if f.IsExtension() ||
 		f.Kind() == protoreflect.MessageKind || f.Kind() == protoreflect.GroupKind ||
-		f.proto.OneofIndex != nil
+		f.proto.OneofIndex != nil {
+		return true
+	}
+	fieldPresence := descriptorpb.FeatureSet_FieldPresence(resolveFeature(f, fieldPresenceField).Enum())
+	return fieldPresence == descriptorpb.FeatureSet_EXPLICIT || fieldPresence == descriptorpb.FeatureSet_LEGACY_REQUIRED
 }
 
 func (f *fldDescriptor) IsExtension() bool {
@@ -1229,30 +1258,16 @@ func (f *fldDescriptor) IsWeak() bool {
 }
 
 func (f *fldDescriptor) IsPacked() bool {
+	if f.Cardinality() != protoreflect.Repeated || !internal.CanPack(f.Kind()) {
+		return false
+	}
 	opts := f.proto.GetOptions()
-	if opts.GetPacked() {
-		return true
-	}
 	if opts != nil && opts.Packed != nil {
-		// explicitly not packed
-		return false
+		// packed option is set explicitly
+		return *opts.Packed
 	}
-
-	// proto3 defaults to packed for repeated scalar numeric fields
-	if f.file.Syntax() != protoreflect.Proto3 {
-		return false
-	}
-	if f.proto.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
-		return false
-	}
-	switch f.proto.GetType() {
-	case descriptorpb.FieldDescriptorProto_TYPE_GROUP, descriptorpb.FieldDescriptorProto_TYPE_MESSAGE,
-		descriptorpb.FieldDescriptorProto_TYPE_BYTES, descriptorpb.FieldDescriptorProto_TYPE_STRING:
-		return false
-	default:
-		// all others can be packed
-		return true
-	}
+	fieldEncoding := resolveFeature(f, repeatedFieldEncodingField)
+	return descriptorpb.FeatureSet_RepeatedFieldEncoding(fieldEncoding.Enum()) == descriptorpb.FeatureSet_PACKED
 }
 
 func (f *fldDescriptor) IsList() bool {

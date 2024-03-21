@@ -26,6 +26,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
@@ -39,29 +40,39 @@ func TestFields(t *testing.T) {
 	files, err := protodesc.NewFiles(fds)
 	require.NoError(t, err)
 
-	testFileNames := []string{
-		"desc_test2.proto",
-		"desc_test_defaults.proto",
-		"desc_test_proto3.proto",
-		"desc_test_proto3_optional.proto",
+	editionFDs := prototest.LoadDescriptorSet(t, "../internal/testdata/descriptor_editions_impl_tests.protoset", nil)
+	editionFiles, err := protodesc.NewFiles(editionFDs)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		filename string
+		fileSet  *protoregistry.Files
+	}{
+		{"desc_test2.proto", files},
+		{"desc_test_complex.proto", files},
+		{"desc_test_defaults.proto", files},
+		{"desc_test_proto3.proto", files},
+		{"desc_test_proto3_optional.proto", files},
+		{"all_default_features.proto", editionFiles},
+		{"features_with_overrides.proto", editionFiles},
 	}
-	for _, testFileName := range testFileNames {
-		testFileName := testFileName // must not capture loop variable below, for thread safety
-		t.Run(testFileName, func(t *testing.T) {
+	for _, testCase := range testCases {
+		testCase := testCase // must not capture loop variable below, for thread safety
+		t.Run(testCase.filename, func(t *testing.T) {
 			t.Parallel()
-			protocFd, err := files.FindFileByPath(testFileName)
+			protocFd, err := testCase.fileSet.FindFileByPath(testCase.filename)
 			require.NoError(t, err)
 
 			compiler := protocompile.Compiler{
 				Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-					ImportPaths: []string{"../internal/testdata"},
+					ImportPaths: []string{"../internal/testdata", "../internal/testdata/editions"},
 				}),
 			}
-			results, err := compiler.Compile(context.Background(), testFileName)
+			results, err := compiler.Compile(context.Background(), testCase.filename)
 			require.NoError(t, err)
 			fd := results[0]
 
-			checkAttributes(t, protocFd, fd, fmt.Sprintf("%q", testFileName))
+			checkAttributes(t, protocFd, fd, fmt.Sprintf("%q", testCase.filename))
 		})
 	}
 }
@@ -100,12 +111,12 @@ func TestUnescape(t *testing.T) {
 }
 
 type container interface {
-	Extensions() protoreflect.ExtensionDescriptors
 	Messages() protoreflect.MessageDescriptors
+	Enums() protoreflect.EnumDescriptors
+	Extensions() protoreflect.ExtensionDescriptors
 }
 
 func checkAttributes(t *testing.T, exp, actual container, path string) {
-	checkAttributesInFields(t, exp.Extensions(), actual.Extensions(), fmt.Sprintf("extensions in %s", path))
 	if assert.Equal(t, exp.Messages().Len(), actual.Messages().Len()) {
 		for i := 0; i < exp.Messages().Len(); i++ {
 			expMsg := exp.Messages().Get(i)
@@ -116,6 +127,8 @@ func checkAttributes(t *testing.T, exp, actual container, path string) {
 			checkAttributes(t, expMsg, actMsg, fmt.Sprintf("%s.%s", path, expMsg.Name()))
 		}
 	}
+	checkAttributesInEnums(t, exp.Enums(), actual.Enums(), fmt.Sprintf("enums in %s", path))
+	checkAttributesInFields(t, exp.Extensions(), actual.Extensions(), fmt.Sprintf("extensions in %s", path))
 
 	if expMsg, ok := exp.(protoreflect.MessageDescriptor); ok {
 		actMsg, ok := actual.(protoreflect.MessageDescriptor)
@@ -135,6 +148,11 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 		if !assert.Equal(t, expFld.Name(), actFld.Name(), "%s: field name at index %d", where, i) {
 			continue
 		}
+		assert.Equal(t, expFld.Kind(), actFld.Kind(), "%s: field kind at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.IsList(), actFld.IsList(), "%s: field is list at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.IsMap(), actFld.IsMap(), "%s: field is map at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.JSONName(), actFld.JSONName(), "%s: field json name at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.HasJSONName(), actFld.HasJSONName(), "%s: field has json name at index %d (%s)", where, i, expFld.Name())
 
 		// default values
 
@@ -201,5 +219,19 @@ func checkAttributesInOneofs(t *testing.T, exp, actual protoreflect.OneofDescrip
 		if !assert.Equal(t, expOo.Name(), actOo.Name(), "%s: oneof name at index %d", where, i) {
 			continue
 		}
+	}
+}
+
+func checkAttributesInEnums(t *testing.T, exp, actual protoreflect.EnumDescriptors, where string) {
+	if !assert.Equal(t, exp.Len(), actual.Len(), "%s: number of enums", where) {
+		return
+	}
+	for i := 0; i < exp.Len(); i++ {
+		expEnum := exp.Get(i)
+		actEnum := actual.Get(i)
+		if !assert.Equal(t, expEnum.Name(), actEnum.Name(), "%s: enum name at index %d", where, i) {
+			continue
+		}
+		assert.Equal(t, expEnum.IsClosed(), actEnum.IsClosed(), "%s: enum is closed at index %d (%s)", where, i, expEnum.Name())
 	}
 }

@@ -34,22 +34,15 @@ func (r *result) ValidateOptions(handler *reporter.Handler) error {
 	return walk.Descriptors(r, func(d protoreflect.Descriptor) error {
 		switch d := d.(type) {
 		case protoreflect.FieldDescriptor:
-			if d.IsExtension() {
-				if err := r.validateExtension(d, handler); err != nil {
-					return err
-				}
-			}
-			if err := r.validatePacked(d, handler); err != nil {
+			if err := r.validateField(d, handler); err != nil {
 				return err
 			}
 		case protoreflect.MessageDescriptor:
-			md := d.(*msgDescriptor) //nolint:errcheck
-			if err := r.validateJSONNamesInMessage(md.proto, handler); err != nil {
+			if err := r.validateMessage(d, handler); err != nil {
 				return err
 			}
 		case protoreflect.EnumDescriptor:
-			ed := d.(*enumDescriptor) //nolint:errcheck
-			if err := r.validateJSONNamesInEnum(ed.proto, handler); err != nil {
+			if err := r.validateEnum(d, handler); err != nil {
 				return err
 			}
 		}
@@ -57,45 +50,72 @@ func (r *result) ValidateOptions(handler *reporter.Handler) error {
 	})
 }
 
-func (r *result) validateExtension(fld protoreflect.FieldDescriptor, handler *reporter.Handler) error {
-	// NB: It's a little gross that we don't enforce these in validateBasic().
-	// But it requires linking to resolve the extendee, so we can interrogate
-	// its descriptor.
+func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *reporter.Handler) error {
 	if xtd, ok := fld.(protoreflect.ExtensionTypeDescriptor); ok {
 		fld = xtd.Descriptor()
 	}
-	fd := fld.(*fldDescriptor) //nolint:errcheck
-	if fld.ContainingMessage().Options().(*descriptorpb.MessageOptions).GetMessageSetWireFormat() {
+	fd, ok := fld.(*fldDescriptor)
+	if !ok {
+		// should not be possible
+		return fmt.Errorf("field descriptor is wrong type: expecting %T, got %T", (*fldDescriptor)(nil), fld)
+	}
+	if fld.IsExtension() {
+		if err := r.validateExtension(fd, handler); err != nil {
+			return err
+		}
+	}
+	if err := r.validatePacked(fd, handler); err != nil {
+		return err
+	}
+	if fd.Kind() == protoreflect.EnumKind {
+		requiresOpen := !fd.IsList() && !fd.HasPresence()
+		if requiresOpen && fd.Enum().IsClosed() {
+			// Fields in a proto3 message cannot refer to proto2 enums.
+			// In editions, this translates to implicit presence fields
+			// not being able to refer to closed enums.
+			// TODO: This really should be based solely on whether the enum's first
+			//       value is zero, NOT based on if it's open vs closed.
+			//       https://github.com/protocolbuffers/protobuf/issues/16249
+			file := r.FileNode()
+			info := file.NodeInfo(r.FieldNode(fd.proto).FieldType())
+			if err := handler.HandleErrorf(info, "cannot use closed enum %s in a field with implicit presence", fd.Enum().FullName()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler) error {
+	// NB: It's a little gross that we don't enforce these in validateBasic().
+	// But it requires linking to resolve the extendee, so we can interrogate
+	// its descriptor.
+	if fd.ContainingMessage().Options().(*descriptorpb.MessageOptions).GetMessageSetWireFormat() {
 		// Message set wire format requires that all extensions be messages
 		// themselves (no scalar extensions)
-		if fld.Kind() != protoreflect.MessageKind {
+		if fd.Kind() != protoreflect.MessageKind {
 			file := r.FileNode()
 			info := file.NodeInfo(r.FieldNode(fd.proto).FieldType())
 			return handler.HandleErrorf(info, "messages with message-set wire format cannot contain scalar extensions, only messages")
 		}
-		if fld.Cardinality() == protoreflect.Repeated {
+		if fd.Cardinality() == protoreflect.Repeated {
 			file := r.FileNode()
 			info := file.NodeInfo(r.FieldNode(fd.proto).FieldLabel())
 			return handler.HandleErrorf(info, "messages with message-set wire format cannot contain repeated extensions, only optional")
 		}
-	} else if fld.Number() > internal.MaxNormalTag {
+	} else if fd.Number() > internal.MaxNormalTag {
 		// In validateBasic() we just made sure these were within bounds for any message. But
 		// now that things are linked, we can check if the extendee is messageset wire format
 		// and, if not, enforce tighter limit.
 		file := r.FileNode()
 		info := file.NodeInfo(r.FieldNode(fd.proto).FieldTag())
-		return handler.HandleErrorf(info, "tag number %d is higher than max allowed tag number (%d)", fld.Number(), internal.MaxNormalTag)
+		return handler.HandleErrorf(info, "tag number %d is higher than max allowed tag number (%d)", fd.Number(), internal.MaxNormalTag)
 	}
 
 	return nil
 }
 
-func (r *result) validatePacked(fld protoreflect.FieldDescriptor, handler *reporter.Handler) error {
-	if xtd, ok := fld.(protoreflect.ExtensionTypeDescriptor); ok {
-		fld = xtd.Descriptor()
-	}
-
-	fd := fld.(*fldDescriptor) //nolint:errcheck
+func (r *result) validatePacked(fd *fldDescriptor, handler *reporter.Handler) error {
 	if !fd.proto.GetOptions().GetPacked() {
 		// if packed isn't true, nothing to validate
 		return nil
@@ -118,41 +138,77 @@ func (r *result) validatePacked(fld protoreflect.FieldDescriptor, handler *repor
 	return nil
 }
 
-func (r *result) validateJSONNamesInMessage(md *descriptorpb.DescriptorProto, handler *reporter.Handler) error {
+func (r *result) validateMessage(d protoreflect.MessageDescriptor, handler *reporter.Handler) error {
+	md, ok := d.(*msgDescriptor)
+	if !ok {
+		// should not be possible
+		return fmt.Errorf("message descriptor is wrong type: expecting %T, got %T", (*msgDescriptor)(nil), d)
+	}
+
+	if err := r.validateJSONNamesInMessage(md, handler); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *result) validateJSONNamesInMessage(md *msgDescriptor, handler *reporter.Handler) error {
 	if err := r.validateFieldJSONNames(md, false, handler); err != nil {
 		return err
 	}
 	if err := r.validateFieldJSONNames(md, true, handler); err != nil {
 		return err
 	}
-
-	for _, nmd := range md.GetNestedType() {
-		if err := r.validateJSONNamesInMessage(nmd, handler); err != nil {
-			return err
-		}
-	}
-	for _, ed := range md.GetEnumType() {
-		if err := r.validateJSONNamesInEnum(ed, handler); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
-func (r *result) validateJSONNamesInEnum(ed *descriptorpb.EnumDescriptorProto, handler *reporter.Handler) error {
-	seen := map[string]*descriptorpb.EnumValueDescriptorProto{}
-	for _, evd := range ed.GetValue() {
-		scope := "enum value " + ed.GetName() + "." + evd.GetName()
+func (r *result) validateEnum(d protoreflect.EnumDescriptor, handler *reporter.Handler) error {
+	ed, ok := d.(*enumDescriptor)
+	if !ok {
+		// should not be possible
+		return fmt.Errorf("enum descriptor is wrong type: expecting %T, got %T", (*enumDescriptor)(nil), d)
+	}
 
-		name := canonicalEnumValueName(evd.GetName(), ed.GetName())
+	firstValue := ed.Values().Get(0)
+	if !ed.IsClosed() && firstValue.Number() != 0 {
+		// TODO: This check doesn't really belong here. Whether the
+		//       first value is zero s/b orthogonal to whether the
+		//       allowed values are open or closed.
+		//       https://github.com/protocolbuffers/protobuf/issues/16249
+		file := r.FileNode()
+		evd, ok := firstValue.(*enValDescriptor)
+		if !ok {
+			// should not be possible
+			return fmt.Errorf("enum value descriptor is wrong type: expecting %T, got %T", (*enValDescriptor)(nil), firstValue)
+		}
+		info := file.NodeInfo(r.EnumValueNode(evd.proto).GetNumber())
+		if err := handler.HandleErrorf(info, "first value of open enum %s must be zero", ed.FullName()); err != nil {
+			return err
+		}
+	}
+
+	if err := r.validateJSONNamesInEnum(ed, handler); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *result) validateJSONNamesInEnum(ed *enumDescriptor, handler *reporter.Handler) error {
+	seen := map[string]*descriptorpb.EnumValueDescriptorProto{}
+	for _, evd := range ed.proto.GetValue() {
+		scope := "enum value " + ed.proto.GetName() + "." + evd.GetName()
+
+		name := canonicalEnumValueName(evd.GetName(), ed.proto.GetName())
 		if existing, ok := seen[name]; ok && evd.GetNumber() != existing.GetNumber() {
 			fldNode := r.EnumValueNode(evd)
 			existingNode := r.EnumValueNode(existing)
 			conflictErr := fmt.Errorf("%s: camel-case name (with optional enum name prefix removed) %q conflicts with camel-case name of enum value %s, defined at %v",
 				scope, name, existing.GetName(), r.FileNode().NodeInfo(existingNode).Start())
 
-			// Since proto2 did not originally have a JSON format, we report conflicts as just warnings
-			if r.Syntax() != protoreflect.Proto3 {
+			// Since proto2 did not originally have a JSON format, we report conflicts as just warnings.
+			// With editions, not fully supporting JSON is allowed via feature: json_format == BEST_EFFORT
+			if !isJSONCompliant(ed) {
 				handler.HandleWarningWithPos(r.FileNode().NodeInfo(fldNode), conflictErr)
 			} else if err := handler.HandleErrorf(r.FileNode().NodeInfo(fldNode), conflictErr.Error()); err != nil {
 				return err
@@ -164,7 +220,7 @@ func (r *result) validateJSONNamesInEnum(ed *descriptorpb.EnumDescriptorProto, h
 	return nil
 }
 
-func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCustom bool, handler *reporter.Handler) error {
+func (r *result) validateFieldJSONNames(md *msgDescriptor, useCustom bool, handler *reporter.Handler) error {
 	type jsonName struct {
 		source *descriptorpb.FieldDescriptorProto
 		// true if orig is a custom JSON name (vs. the field's default JSON name)
@@ -172,8 +228,8 @@ func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCus
 	}
 	seen := map[string]jsonName{}
 
-	for _, fd := range md.GetField() {
-		scope := "field " + md.GetName() + "." + fd.GetName()
+	for _, fd := range md.proto.GetField() {
+		scope := "field " + md.proto.GetName() + "." + fd.GetName()
 		defaultName := internal.JSONName(fd.GetName())
 		name := defaultName
 		custom := false
@@ -203,7 +259,8 @@ func (r *result) validateFieldJSONNames(md *descriptorpb.DescriptorProto, useCus
 
 				// Since proto2 did not originally have default JSON names, we report conflicts
 				// between default names (neither is a custom name) as just warnings.
-				if r.Syntax() != protoreflect.Proto3 && !custom && !existing.custom {
+				// With editions, not fully supporting JSON is allowed via feature: json_format == BEST_EFFORT
+				if !isJSONCompliant(md) && !custom && !existing.custom {
 					handler.HandleWarning(conflictErr)
 				} else if err := handler.HandleError(conflictErr); err != nil {
 					return err

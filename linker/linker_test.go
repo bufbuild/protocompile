@@ -2233,6 +2233,12 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:4:5: feature "enum_type" is allowed on [enum,file], not on field`,
 		},
+		"failure_proto3_enum_zero_value": {
+			input: map[string]string{
+				"test.proto": `syntax = "proto3"; enum Foo { FIRST = 1; }`,
+			},
+			expectedErr: `test.proto:1:39: first value of open enum Foo must be zero`,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -2386,7 +2392,7 @@ func TestProto3Enums(t *testing.T) {
 			}
 			_, err := compiler.Compile(context.Background(), "f1.proto", "f2.proto")
 			if o1 != o2 && o2 == "proto3" {
-				expected := "f2.proto:1:54: field foo.bar: cannot use proto2 enum bar in a proto3 message"
+				expected := "f2.proto:1:54: cannot use closed enum bar in a field with implicit presence"
 				if err == nil {
 					t.Errorf("expecting validation error; instead got no error")
 				} else if err.Error() != expected {

@@ -219,6 +219,17 @@ func ComputePath(d protoreflect.Descriptor) (protoreflect.SourcePath, bool) {
 	}
 }
 
+// CanPack returns true if a repeated field of the given kind
+// can use packed encoding.
+func CanPack(k protoreflect.Kind) bool {
+	switch k {
+	case protoreflect.MessageKind, protoreflect.GroupKind, protoreflect.StringKind, protoreflect.BytesKind:
+		return false
+	default:
+		return true
+	}
+}
+
 func reverse(p protoreflect.SourcePath) protoreflect.SourcePath {
 	for i, j := 0, len(p)-1; i < j; i, j = i+1, j-1 {
 		p[i], p[j] = p[j], p[i]
