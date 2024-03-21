@@ -67,6 +67,13 @@ type interpreter struct {
 	lenient                 bool
 	reporter                *reporter.Handler
 	index                   sourceinfo.OptionIndex
+	neededOpenEnums         map[protoreflect.EnumDescriptor][]enumValRef
+}
+
+type enumValRef struct {
+	number protoreflect.EnumNumber
+	value  ast.Node
+	mc     *internal.MessageContext
 }
 
 type file interface {
@@ -187,6 +194,18 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 			err := interpretElementOptions(&interp, mtdFqn, targetTypeMethod, mtd)
 			if err != nil {
 				return nil, err
+			}
+		}
+	}
+	// Now that we're done, we need to go back and check any enum value references
+	// that couldn't be validated.
+	for ed, refs := range interp.neededOpenEnums {
+		if ed.IsClosed() {
+			for _, ref := range refs {
+				err := handler.HandleErrorf(interp.nodeInfo(ref.value), "%vclosed enum %s has no value with number %d", ref.mc, ed.FullName(), ref.number)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -1802,11 +1821,35 @@ func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protor
 	if ev != nil {
 		return num, ev.Name(), nil
 	}
+	// NB: We have to look at the syntax instead of directly using ed.IsClosed because we
+	// may still be interpreting options that would be used by the implementation of IsClosed.
 	if ed.Syntax() != protoreflect.Proto3 {
-		return 0, "", reporter.Errorf(interp.nodeInfo(val), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
+		if ed.Syntax() == protoreflect.Editions && interp.file == any(ed.ParentFile()) {
+			// Oof. We are still interpreting options for this file. Yet we need
+			// options in order to decide if this enum value is allowed (only if
+			// the enum is open).
+			//
+			// So, for now, we will assume it's valid and then report an error
+			// later, after all options in the file are interpreted, to check if
+			// it was allowed.
+			interp.needOpenEnum(mc, ed, val, num)
+			return num, "", nil
+		}
+		return num, "", reporter.Errorf(interp.nodeInfo(val), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
 	}
 	// unknown value, but enum is open, so we allow it and return blank name
 	return num, "", nil
+}
+
+func (interp *interpreter) needOpenEnum(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, val ast.Node, number protoreflect.EnumNumber) {
+	if interp.neededOpenEnums == nil {
+		interp.neededOpenEnums = map[protoreflect.EnumDescriptor][]enumValRef{}
+	}
+	interp.neededOpenEnums[ed] = append(interp.neededOpenEnums[ed], enumValRef{
+		number: number,
+		value:  val,
+		mc:     mc,
+	})
 }
 
 // enumFieldValueFromProto resolves the given uninterpreted option value as an enum value descriptor.

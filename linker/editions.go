@@ -55,8 +55,12 @@ var _ hasFeatures = (*descriptorpb.MethodOptions)(nil)
 // second argument if the first value it returns was not actually present in the
 // feature set.
 func resolveFeature(d protoreflect.Descriptor, field protoreflect.FieldDescriptor) protoreflect.Value {
-	if d == nil {
-		return protoreflect.Value{}
+	edition := getEdition(d)
+	if edition == descriptorpb.Edition_EDITION_PROTO2 || edition == descriptorpb.Edition_EDITION_PROTO3 {
+		// these syntax levels can't specify features, so we can short-circuit the search
+		// through the descriptor hierarchy for feature overrides
+		defaults := getEditionDefaults(edition)
+		return defaults.ProtoReflect().Get(field) // returns default value if field is not present
 	}
 	for {
 		var features *descriptorpb.FeatureSet
@@ -71,15 +75,11 @@ func resolveFeature(d protoreflect.Descriptor, field protoreflect.FieldDescripto
 		parent := d.Parent()
 		if parent == nil {
 			// We've reached the end of the inheritance chain. So we fall back to a default.
-			return getFeatureDefault(d, field)
+			defaults := getEditionDefaults(edition)
+			return defaults.ProtoReflect().Get(field)
 		}
 		d = parent
 	}
-}
-
-func getFeatureDefault(d protoreflect.Descriptor, field protoreflect.FieldDescriptor) protoreflect.Value {
-	defaults := getEditionDefaults(getEdition(d))
-	return defaults.ProtoReflect().Get(field) // returns the default if field is not present
 }
 
 type hasEdition interface {
@@ -172,15 +172,6 @@ func getEditionDefaults(edition descriptorpb.Edition) *descriptorpb.FeatureSet {
 }
 
 func isJSONCompliant(d protoreflect.Descriptor) bool {
-	switch d.Syntax() {
-	case protoreflect.Proto2:
-		return false
-	case protoreflect.Proto3:
-		return true
-	case protoreflect.Editions:
-		jsonFormat := resolveFeature(d, jsonFormatField)
-		return descriptorpb.FeatureSet_JsonFormat(jsonFormat.Enum()) == descriptorpb.FeatureSet_ALLOW
-	default:
-		return false // ???
-	}
+	jsonFormat := resolveFeature(d, jsonFormatField)
+	return descriptorpb.FeatureSet_JsonFormat(jsonFormat.Enum()) == descriptorpb.FeatureSet_ALLOW
 }
