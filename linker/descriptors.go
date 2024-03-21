@@ -1268,7 +1268,6 @@ func (f *fldDescriptor) IsPacked() bool {
 	}
 	fieldEncoding := resolveFeature(f, repeatedFieldEncodingField)
 	return descriptorpb.FeatureSet_RepeatedFieldEncoding(fieldEncoding.Enum()) == descriptorpb.FeatureSet_PACKED
-
 }
 
 func (f *fldDescriptor) IsList() bool {
