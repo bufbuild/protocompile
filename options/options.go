@@ -67,13 +67,24 @@ type interpreter struct {
 	lenient                 bool
 	reporter                *reporter.Handler
 	index                   sourceinfo.OptionIndex
-	neededOpenEnums         map[protoreflect.EnumDescriptor][]enumValRef
+	// If we have to defer some checks for enum being open vs closed, we
+	// accumulate them here and then check them at the end.
+	neededOpenEnums map[protoreflect.EnumDescriptor][]enumValRef
+	// If we have to defer some computation of canonical option bytes,
+	// we accumulate them here and then compute them at the end.
+	deferredOptionBytes []deferredInterpretedOptions
 }
 
 type enumValRef struct {
 	number protoreflect.EnumNumber
 	value  ast.Node
 	mc     *internal.MessageContext
+}
+
+type deferredInterpretedOptions struct {
+	opts   proto.Message
+	mc     *internal.MessageContext
+	values []*interpretedOption
 }
 
 type file interface {
@@ -208,6 +219,11 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 				}
 			}
 		}
+	}
+	// And if there were any options that needed to defer serialization, we can
+	// process the, now.
+	if err := interp.setDeferredOptionBytes(); err != nil {
+		return nil, err
 	}
 	return interp.index, nil
 }
@@ -549,19 +565,35 @@ func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.Enu
 // which options appear).
 type interpretedOption struct {
 	unknown    bool
-	pathPrefix []int32
+	pathPrefix []interpretedEnclosingTag
 	interpretedField
 }
 
+func (o *interpretedOption) needToDefer() bool {
+	for _, pathElem := range o.pathPrefix {
+		if pathElem.deferredKind != nil {
+			return true
+		}
+	}
+	return o.interpretedField.needToDefer()
+}
+
 func (o *interpretedOption) toSourceInfo() *sourceinfo.OptionSourceInfo {
-	return o.interpretedField.toSourceInfo(o.pathPrefix)
+	var path []int32
+	if len(o.pathPrefix) > 0 {
+		path = make([]int32, len(o.pathPrefix))
+		for i := range o.pathPrefix {
+			path[i] = o.pathPrefix[i].tag
+		}
+	}
+	return o.interpretedField.toSourceInfo(path)
 }
 
 func (o *interpretedOption) appendOptionBytes(b []byte) ([]byte, error) {
 	return o.appendOptionBytesWithPath(b, o.pathPrefix)
 }
 
-func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) ([]byte, error) {
+func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []interpretedEnclosingTag) ([]byte, error) {
 	if len(path) == 0 {
 		return appendOptionBytesSingle(b, &o.interpretedField)
 	}
@@ -572,8 +604,28 @@ func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []int32) ([
 	if err != nil {
 		return nil, err
 	}
-	b = protowire.AppendTag(b, protowire.Number(path[0]), protowire.BytesType)
-	return protowire.AppendBytes(b, enclosed), nil
+	kind := path[0].kind
+	if path[0].deferredKind != nil {
+		kind = path[0].deferredKind()
+	}
+	if kind == protoreflect.GroupKind {
+		b = protowire.AppendTag(b, protowire.Number(path[0].tag), protowire.StartGroupType)
+		b = append(b, enclosed...)
+		b = protowire.AppendTag(b, protowire.Number(path[0].tag), protowire.EndGroupType)
+	} else {
+		b = protowire.AppendTag(b, protowire.Number(path[0].tag), protowire.BytesType)
+		b = protowire.AppendBytes(b, enclosed)
+	}
+	return b, nil
+}
+
+type interpretedEnclosingTag struct {
+	tag  int32
+	kind protoreflect.Kind // indicates whether we need to use group encoding or not
+	// if non-nil, this option should not be serialized until all options in the
+	// file are interpreted and kind should be ignored in favor of the value
+	// this function returns.
+	deferredKind func() protoreflect.Kind
 }
 
 // interpretedField represents a field in an options message that is the
@@ -592,12 +644,38 @@ type interpretedField struct {
 	index int32
 	// true if this is a repeated field
 	repeated bool
-	// true if this is a repeated field that stores scalar values in packed form
-	packed bool
+	packed   bool
+	// if non-nil, this option should not be serialized until all options in the
+	// file are interpreted and packed should be ignored in favor of the value
+	// this function returns.
+	deferredPacked func() bool
 	// the field's kind
 	kind protoreflect.Kind
+	// if non-nil, this option should not be serialized until all options in the
+	// file are interpreted and kind should be ignored in favor of the value
+	// this function returns.
+	deferredKind func() protoreflect.Kind
 
 	value interpretedFieldValue
+}
+
+func (f *interpretedField) needToDefer() bool {
+	if f.deferredPacked != nil || f.deferredKind != nil {
+		return true
+	}
+	for _, fld := range f.value.msgVal {
+		if fld.needToDefer() {
+			return true
+		}
+	}
+	for _, elems := range f.value.msgListVal {
+		for _, fld := range elems {
+			if fld.needToDefer() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (f *interpretedField) path(prefix []int32) []int32 {
@@ -675,8 +753,12 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 			b = append(b, f.value.preserialized...)
 			continue
 		}
+		packed := f.packed
+		if f.deferredPacked != nil {
+			packed = f.deferredPacked()
+		}
 		switch {
-		case f.packed && internal.CanPack(f.kind):
+		case packed && internal.CanPack(f.kind):
 			// for packed repeated numeric fields, all runs of values are merged into one packed list
 			num := f.number
 			j := i
@@ -748,7 +830,11 @@ func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
 		return append(b, f.value.preserialized...), nil
 	}
 	num := protowire.Number(f.number)
-	switch f.kind {
+	kind := f.kind
+	if f.deferredKind != nil {
+		kind = f.deferredKind()
+	}
+	switch kind {
 	case protoreflect.MessageKind:
 		enclosed, err := appendOptionBytes(nil, f.value.msgVal)
 		if err != nil {
@@ -777,15 +863,15 @@ func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
 	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Uint32Kind, protoreflect.Uint64Kind,
 		protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.EnumKind, protoreflect.BoolKind:
 		b = protowire.AppendTag(b, num, protowire.VarintType)
-		return appendNumericValueBytes(b, f.kind, f.value.val)
+		return appendNumericValueBytes(b, kind, f.value.val)
 
 	case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
 		b = protowire.AppendTag(b, num, protowire.Fixed32Type)
-		return appendNumericValueBytes(b, f.kind, f.value.val)
+		return appendNumericValueBytes(b, kind, f.value.val)
 
 	case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
 		b = protowire.AppendTag(b, num, protowire.Fixed64Type)
-		return appendNumericValueBytes(b, f.kind, f.value.val)
+		return appendNumericValueBytes(b, kind, f.value.val)
 
 	default:
 		return nil, fmt.Errorf("unknown field kind: %v", f.kind)
@@ -949,11 +1035,9 @@ func (interp *interpreter) interpretOptions(
 		proto.Merge(opts, optsClone)
 
 		if interp.container != nil {
-			b, err := interp.toOptionBytes(mc, results)
-			if err != nil {
+			if err := interp.setOptionBytes(mc, opts, results); err != nil {
 				return nil, err
 			}
-			interp.container.AddOptionBytes(opts, b)
 		}
 
 		return remain, nil
@@ -973,14 +1057,46 @@ func (interp *interpreter) interpretOptions(
 	}
 
 	if interp.container != nil {
-		b, err := interp.toOptionBytes(mc, results)
-		if err != nil {
+		if err := interp.setOptionBytes(mc, opts, results); err != nil {
 			return nil, err
 		}
-		interp.container.AddOptionBytes(opts, b)
 	}
 
 	return nil, nil
+}
+
+func (interp *interpreter) setOptionBytes(mc *internal.MessageContext, opts proto.Message, values []*interpretedOption) error {
+	for _, val := range values {
+		// If computing bytes for any value must be deferred, then save the information and return.
+		if val.needToDefer() {
+			interp.deferredOptionBytes = append(
+				interp.deferredOptionBytes,
+				deferredInterpretedOptions{
+					opts:   opts,
+					mc:     mc,
+					values: values,
+				},
+			)
+			return nil
+		}
+	}
+	b, err := interp.toOptionBytes(mc, values)
+	if err != nil {
+		return err
+	}
+	interp.container.AddOptionBytes(opts, b)
+	return nil
+}
+
+func (interp *interpreter) setDeferredOptionBytes() error {
+	for _, deferred := range interp.deferredOptionBytes {
+		b, err := interp.toOptionBytes(deferred.mc, deferred.values)
+		if err != nil {
+			return err
+		}
+		interp.container.AddOptionBytes(deferred.opts, b)
+	}
+	return nil
 }
 
 func (interp *interpreter) validateFeatures(
@@ -1051,7 +1167,7 @@ func (interp *interpreter) positionOfFeature(featuresInfo []*interpretedOption, 
 
 func matchInterpretedOption(info *interpretedOption, path []protoreflect.FieldNumber) (bool, []protoreflect.FieldNumber, ast.Node) {
 	for i := 0; i < len(path) && i < len(info.pathPrefix); i++ {
-		if info.pathPrefix[i] != int32(path[i]) {
+		if info.pathPrefix[i].tag != int32(path[i]) {
 			return false, nil, nil
 		}
 	}
@@ -1092,7 +1208,7 @@ func findInterpretedFieldForFeature(opt *interpretedField, path []protoreflect.F
 func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) bool {
 	var num int32
 	if len(opt.pathPrefix) > 0 {
-		num = opt.pathPrefix[0]
+		num = opt.pathPrefix[0].tag
 	} else {
 		num = opt.number
 	}
@@ -1257,7 +1373,7 @@ func validateRecursive(msg protoreflect.Message, prefix string) error {
 // msg must be an options message. For nameIndex > 0, msg is a nested message inside of the
 // options message. The given pathPrefix is the path (sequence of field numbers and indices
 // with a FileDescriptorProto as the start) up to but not including the given nameIndex.
-func (interp *interpreter) interpretField(mc *internal.MessageContext, msg protoreflect.Message, opt *descriptorpb.UninterpretedOption, nameIndex int, pathPrefix []int32) (*interpretedOption, error) {
+func (interp *interpreter) interpretField(mc *internal.MessageContext, msg protoreflect.Message, opt *descriptorpb.UninterpretedOption, nameIndex int, pathPrefix []interpretedEnclosingTag) (*interpretedOption, error) {
 	var fld protoreflect.FieldDescriptor
 	nm := opt.GetName()[nameIndex]
 	node := interp.file.OptionNamePartNode(nm)
@@ -1321,7 +1437,17 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 			msg.Set(fld, fldVal)
 		}
 		// recurse to set next part of name
-		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, int32(fld.Number())))
+		enclosing := interpretedEnclosingTag{
+			tag:  int32(fld.Number()),
+			kind: fld.Kind(),
+		}
+		if fld.Kind() == protoreflect.MessageKind &&
+			fld.ParentFile() == any(interp.file) && fld.Syntax() == protoreflect.Editions {
+			// It's possible that this is actually group encoded, but we won't know until we
+			// finish interpreting options in this file.
+			enclosing.deferredKind = fld.Kind
+		}
+		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, enclosing))
 	}
 
 	optNode := interp.file.OptionNode(opt)
@@ -1340,7 +1466,7 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 	if err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
-	return &interpretedOption{
+	interpOpt := &interpretedOption{
 		pathPrefix: pathPrefix,
 		interpretedField: interpretedField{
 			node:     optNode,
@@ -1353,7 +1479,15 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 			// (only values in message literals will be serialized
 			// in packed format)
 		},
-	}, nil
+	}
+	if interpOpt.kind == protoreflect.MessageKind &&
+		fld.ParentFile() == any(interp.file) && fld.Syntax() == protoreflect.Editions {
+		// We need to finish interpreting options in this file before we can
+		// be certain whether this field uses delimited encoding or not
+		interpOpt.deferredKind = fld.Kind
+	}
+
+	return interpOpt, nil
 }
 
 // setOptionField sets the value for field fld in the given message msg to the value represented
@@ -2279,15 +2413,30 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			if err != nil {
 				return interpretedFieldValue{}, err
 			}
-			flds = append(flds, &interpretedField{
+			interpFld := &interpretedField{
 				node:     fieldNode,
 				number:   int32(ffld.Number()),
 				index:    int32(index),
 				kind:     ffld.Kind(),
 				repeated: ffld.Cardinality() == protoreflect.Repeated,
-				packed:   ffld.IsPacked(),
 				value:    res,
-			})
+			}
+			if interpFld.repeated && internal.CanPack(ffld.Kind()) {
+				if ffld.ParentFile() == any(interp.file) && ffld.Syntax() == protoreflect.Editions {
+					// We need to finish interpreting options in this file before we can
+					// be certain whether this field is packed or not.
+					interpFld.deferredPacked = ffld.IsPacked
+				} else {
+					interpFld.packed = ffld.IsPacked()
+				}
+			}
+			if interpFld.kind == protoreflect.MessageKind &&
+				ffld.ParentFile() == any(interp.file) && ffld.Syntax() == protoreflect.Editions {
+				// We need to finish interpreting options in this file before we can
+				// be certain whether this field uses delimited encoding or not
+				interpFld.deferredKind = ffld.Kind
+			}
+			flds = append(flds, interpFld)
 		}
 	}
 	return interpretedFieldValue{

@@ -36,12 +36,20 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
 )
+
+func TestMain(m *testing.M) {
+	// Enable just for tests.
+	internal.AllowEditions = true
+	status := m.Run()
+	os.Exit(status)
+}
 
 type ident string
 type aggregate string
@@ -347,6 +355,7 @@ func TestOptionsEncoding(t *testing.T) {
 	testCases := map[string]string{
 		"proto2":   "options/test.proto",
 		"proto3":   "options/test_proto3.proto",
+		"editions": "options/test_editions.proto",
 		"defaults": "desc_test_defaults.proto",
 	}
 	for syntax, file := range testCases {
@@ -391,9 +400,7 @@ func TestOptionsEncoding(t *testing.T) {
 			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
 			err = uOpts.Unmarshal(protoData, canonicalProto)
 			require.NoError(t, err)
-			if !proto.Equal(res.FileDescriptorProto(), canonicalProto) {
-				t.Fatal("canonical proto != proto")
-			}
+			require.Empty(t, cmp.Diff(res.FileDescriptorProto(), canonicalProto, protocmp.Transform()), "canonical proto != proto")
 
 			// drum roll... make sure the bytes match the protoc output
 			expectedData, err := os.ReadFile(descriptorSetFile)
