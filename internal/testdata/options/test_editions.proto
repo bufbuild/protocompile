@@ -1,10 +1,21 @@
 edition = "2023";
 
+import "google/protobuf/any.proto";
 import "google/protobuf/descriptor.proto";
 
 message Foo {
   string name = 1;
-  Foo foo = 2 [features.message_encoding = DELIMITED];
+  Foo foo = 2 [
+    (any) = {
+      [type.googleapis.com/Foo]: {
+        Foo: {
+          name: "abc",
+          Foo: { name: "xyz" }
+        }
+      }
+    },
+    features.message_encoding = DELIMITED
+  ];
   Foo other = 3;
   Val val = 4;
   repeated Foo children = 5 [features.message_encoding = DELIMITED];
@@ -23,6 +34,10 @@ extend google.protobuf.FileOptions {
   repeated Foo others = 10104;
 }
 
+extend google.protobuf.FieldOptions {
+  google.protobuf.Any any = 10101;
+}
+
 option (delimited).name = "123";
 option (delimited).foo.name = "abc";
 option (delimited).foo.val = VAL1;
@@ -38,9 +53,11 @@ option (delimited).other.val = VAL0;
 option (other) = {
   name: "123"
   val: VAL0
-  // NOTE: We can't currently refer to foo or children in here
-  // because referring to delimited-encoded fields inside a
-  // message literal is currently broken in protoc :(
+  Foo <name:"456">
+  // NOTE: We can't currently refer to children in here
+  // because referring to delimited-encoded fields whose
+  // name != lower-case(type-name) inside a message
+  // literal is currently broken in protoc :(
   // https://github.com/protocolbuffers/protobuf/issues/16239
 };
 

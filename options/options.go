@@ -67,36 +67,6 @@ type interpreter struct {
 	lenient                 bool
 	reporter                *reporter.Handler
 	index                   sourceinfo.OptionIndex
-	// If we have to defer some checks for enum being open vs closed, we
-	// accumulate them here and then check them at the end.
-	neededOpenEnums map[protoreflect.EnumDescriptor][]enumValRef
-	// If we have to defer some computation of canonical option bytes,
-	// we accumulate them here and then compute them at the end.
-	deferredOptionBytes []deferredInterpretedOptions
-	// If there are Any values that need options in the file to be
-	// interpreted to be correctly serialized, they are accumulated
-	// here.
-	deferredAnyValues []deferredAnyValue
-}
-
-type enumValRef struct {
-	number protoreflect.EnumNumber
-	value  ast.Node
-	mc     *internal.MessageContext
-}
-
-type deferredInterpretedOptions struct {
-	opts   proto.Message
-	mc     *internal.MessageContext
-	values []*interpretedOption
-}
-
-type deferredAnyValue struct {
-	typeURL      string
-	initialValue []byte
-	value        *interpretedFieldValue
-	node         ast.Node
-	mc           *internal.MessageContext
 }
 
 type file interface {
@@ -178,72 +148,62 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 	for _, opt := range interpOpts {
 		opt(&interp)
 	}
+	// We have to do this in two phases. First we interpret non-custom options.
+	// This allows us to handle standard options and features that may needed to
+	// correctly reference the custom options in the second phase.
+	if err := interp.interpretFileOptions(file, false); err != nil {
+		return nil, err
+	}
+	// Now we can do custom options.
+	if err := interp.interpretFileOptions(file, true); err != nil {
+		return nil, err
+	}
+	return interp.index, nil
+}
 
+func (interp *interpreter) interpretFileOptions(file file, customOpts bool) error {
 	fd := file.FileDescriptorProto()
 	prefix := fd.GetPackage()
 	if prefix != "" {
 		prefix += "."
 	}
-	err := interpretElementOptions(&interp, fd.GetName(), targetTypeFile, fd)
+	err := interpretElementOptions(interp, fd.GetName(), targetTypeFile, fd, customOpts)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, md := range fd.GetMessageType() {
 		fqn := prefix + md.GetName()
-		if err := interp.interpretMessageOptions(fqn, md); err != nil {
-			return nil, err
+		if err := interp.interpretMessageOptions(fqn, md, customOpts); err != nil {
+			return err
 		}
 	}
 	for _, fld := range fd.GetExtension() {
 		fqn := prefix + fld.GetName()
-		if err := interp.interpretFieldOptions(fqn, fld); err != nil {
-			return nil, err
+		if err := interp.interpretFieldOptions(fqn, fld, customOpts); err != nil {
+			return err
 		}
 	}
 	for _, ed := range fd.GetEnumType() {
 		fqn := prefix + ed.GetName()
-		if err := interp.interpretEnumOptions(fqn, ed); err != nil {
-			return nil, err
+		if err := interp.interpretEnumOptions(fqn, ed, customOpts); err != nil {
+			return err
 		}
 	}
 	for _, sd := range fd.GetService() {
 		fqn := prefix + sd.GetName()
-		err := interpretElementOptions(&interp, fqn, targetTypeService, sd)
+		err := interpretElementOptions(interp, fqn, targetTypeService, sd, customOpts)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, mtd := range sd.GetMethod() {
 			mtdFqn := fqn + "." + mtd.GetName()
-			err := interpretElementOptions(&interp, mtdFqn, targetTypeMethod, mtd)
+			err := interpretElementOptions(interp, mtdFqn, targetTypeMethod, mtd, customOpts)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
-	// Now that we're done, we need to go back and check any enum value references
-	// that couldn't be validated.
-	for ed, refs := range interp.neededOpenEnums {
-		if ed.IsClosed() {
-			for _, ref := range refs {
-				err := handler.HandleErrorf(interp.nodeInfo(ref.value), "%vclosed enum %s has no value with number %d", ref.mc, ed.FullName(), ref.number)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-	// Update serialized values in Any messages if necessary. We do this before
-	// the step below as this will memoize serialized forms that get re-used for
-	// computing canonical option bytes below.
-	if err := interp.setDeferredAnyValues(); err != nil {
-		return nil, err
-	}
-	// Finally, if there were any options that needed to defer serialization, we
-	// can process them now.
-	if err := interp.setDeferredOptionBytes(); err != nil {
-		return nil, err
-	}
-	return interp.index, nil
+	return nil
 }
 
 func resolveDescriptor[T protoreflect.Descriptor](res linker.Resolver, name string) T {
@@ -298,46 +258,46 @@ func (interp *interpreter) nodeInfo(n ast.Node) ast.NodeInfo {
 	return interp.file.FileNode().NodeInfo(n)
 }
 
-func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.DescriptorProto) error {
-	err := interpretElementOptions(interp, fqn, targetTypeMessage, md)
+func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.DescriptorProto, customOpts bool) error {
+	err := interpretElementOptions(interp, fqn, targetTypeMessage, md, customOpts)
 	if err != nil {
 		return err
 	}
 	for _, fld := range md.GetField() {
 		fldFqn := fqn + "." + fld.GetName()
-		if err := interp.interpretFieldOptions(fldFqn, fld); err != nil {
+		if err := interp.interpretFieldOptions(fldFqn, fld, customOpts); err != nil {
 			return err
 		}
 	}
 	for _, ood := range md.GetOneofDecl() {
 		oodFqn := fqn + "." + ood.GetName()
-		err := interpretElementOptions(interp, oodFqn, targetTypeOneof, ood)
+		err := interpretElementOptions(interp, oodFqn, targetTypeOneof, ood, customOpts)
 		if err != nil {
 			return err
 		}
 	}
 	for _, fld := range md.GetExtension() {
 		fldFqn := fqn + "." + fld.GetName()
-		if err := interp.interpretFieldOptions(fldFqn, fld); err != nil {
+		if err := interp.interpretFieldOptions(fldFqn, fld, customOpts); err != nil {
 			return err
 		}
 	}
 	for _, er := range md.GetExtensionRange() {
 		erFqn := fmt.Sprintf("%s.%d-%d", fqn, er.GetStart(), er.GetEnd())
-		err := interpretElementOptions(interp, erFqn, targetTypeExtensionRange, er)
+		err := interpretElementOptions(interp, erFqn, targetTypeExtensionRange, er, customOpts)
 		if err != nil {
 			return err
 		}
 	}
 	for _, nmd := range md.GetNestedType() {
 		nmdFqn := fqn + "." + nmd.GetName()
-		if err := interp.interpretMessageOptions(nmdFqn, nmd); err != nil {
+		if err := interp.interpretMessageOptions(nmdFqn, nmd, customOpts); err != nil {
 			return err
 		}
 	}
 	for _, ed := range md.GetEnumType() {
 		edFqn := fqn + "." + ed.GetName()
-		if err := interp.interpretEnumOptions(edFqn, ed); err != nil {
+		if err := interp.interpretEnumOptions(edFqn, ed, customOpts); err != nil {
 			return err
 		}
 	}
@@ -381,12 +341,12 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 
 var emptyFieldOptions = &descriptorpb.FieldOptions{}
 
-func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.FieldDescriptorProto) error {
+func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.FieldDescriptorProto, customOpts bool) error {
 	opts := fld.GetOptions()
 	emptyOptionsAlreadyPresent := opts != nil && len(opts.GetUninterpretedOption()) == 0
 
-	// First process pseudo-options
-	if len(opts.GetUninterpretedOption()) > 0 {
+	// For non-custom phase, first process pseudo-options
+	if len(opts.GetUninterpretedOption()) > 0 && !customOpts {
 		if err := interp.interpretFieldPseudoOptions(fqn, fld, opts); err != nil {
 			return err
 		}
@@ -404,7 +364,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 	}
 
 	// Then process actual options.
-	return interpretElementOptions(interp, fqn, targetTypeField, fld)
+	return interpretElementOptions(interp, fqn, targetTypeField, fld, customOpts)
 }
 
 func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descriptorpb.FieldDescriptorProto, opts *descriptorpb.FieldOptions) error {
@@ -561,14 +521,14 @@ func encodeDefaultBytes(b []byte) string {
 	return buf.String()
 }
 
-func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.EnumDescriptorProto) error {
-	err := interpretElementOptions(interp, fqn, targetTypeEnum, ed)
+func (interp *interpreter) interpretEnumOptions(fqn string, ed *descriptorpb.EnumDescriptorProto, customOpts bool) error {
+	err := interpretElementOptions(interp, fqn, targetTypeEnum, ed, customOpts)
 	if err != nil {
 		return err
 	}
 	for _, evd := range ed.GetValue() {
 		evdFqn := fqn + "." + evd.GetName()
-		err := interpretElementOptions(interp, evdFqn, targetTypeEnumValue, evd)
+		err := interpretElementOptions(interp, evdFqn, targetTypeEnumValue, evd, customOpts)
 		if err != nil {
 			return err
 		}
@@ -585,15 +545,6 @@ type interpretedOption struct {
 	unknown    bool
 	pathPrefix []interpretedEnclosingTag
 	interpretedField
-}
-
-func (o *interpretedOption) needToDefer() bool {
-	for _, pathElem := range o.pathPrefix {
-		if pathElem.deferredKind != nil {
-			return true
-		}
-	}
-	return o.interpretedField.needToDefer()
 }
 
 func (o *interpretedOption) toSourceInfo() *sourceinfo.OptionSourceInfo {
@@ -622,11 +573,7 @@ func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []interpret
 	if err != nil {
 		return nil, err
 	}
-	kind := path[0].kind
-	if path[0].deferredKind != nil {
-		kind = path[0].deferredKind()
-	}
-	if kind == protoreflect.GroupKind {
+	if path[0].kind == protoreflect.GroupKind {
 		b = protowire.AppendTag(b, protowire.Number(path[0].tag), protowire.StartGroupType)
 		b = append(b, enclosed...)
 		b = protowire.AppendTag(b, protowire.Number(path[0].tag), protowire.EndGroupType)
@@ -640,10 +587,6 @@ func (o *interpretedOption) appendOptionBytesWithPath(b []byte, path []interpret
 type interpretedEnclosingTag struct {
 	tag  int32
 	kind protoreflect.Kind // indicates whether we need to use group encoding or not
-	// if non-nil, this option should not be serialized until all options in the
-	// file are interpreted and kind should be ignored in favor of the value
-	// this function returns.
-	deferredKind func() protoreflect.Kind
 }
 
 // interpretedField represents a field in an options message that is the
@@ -663,25 +606,9 @@ type interpretedField struct {
 	// true if this is a repeated field
 	repeated bool
 	packed   bool
-	// if non-nil, this option should not be serialized until all options in the
-	// file are interpreted and packed should be ignored in favor of the value
-	// this function returns.
-	deferredPacked func() bool
-	// the field's kind
-	kind protoreflect.Kind
-	// if non-nil, this option should not be serialized until all options in the
-	// file are interpreted and kind should be ignored in favor of the value
-	// this function returns.
-	deferredKind func() protoreflect.Kind
+	kind     protoreflect.Kind
 
 	value interpretedFieldValue
-}
-
-func (f *interpretedField) needToDefer() bool {
-	if f.deferredPacked != nil || f.deferredKind != nil {
-		return true
-	}
-	return f.value.needToDefer()
 }
 
 func (f *interpretedField) path(prefix []int32) []int32 {
@@ -745,22 +672,6 @@ type interpretedFieldValue struct {
 	msgListVal [][]*interpretedField
 }
 
-func (v *interpretedFieldValue) needToDefer() bool {
-	for _, fld := range v.msgVal {
-		if fld.needToDefer() {
-			return true
-		}
-	}
-	for _, elems := range v.msgListVal {
-		for _, fld := range elems {
-			if fld.needToDefer() {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 	// protoc emits messages sorted by field number
 	if len(flds) > 1 {
@@ -775,12 +686,8 @@ func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
 			b = append(b, f.value.preserialized...)
 			continue
 		}
-		packed := f.packed
-		if f.deferredPacked != nil {
-			packed = f.deferredPacked()
-		}
 		switch {
-		case packed && internal.CanPack(f.kind):
+		case f.packed && internal.CanPack(f.kind):
 			// for packed repeated numeric fields, all runs of values are merged into one packed list
 			num := f.number
 			j := i
@@ -852,11 +759,7 @@ func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
 		return append(b, f.value.preserialized...), nil
 	}
 	num := protowire.Number(f.number)
-	kind := f.kind
-	if f.deferredKind != nil {
-		kind = f.deferredKind()
-	}
-	switch kind {
+	switch f.kind {
 	case protoreflect.MessageKind:
 		enclosed, err := appendOptionBytes(nil, f.value.msgVal)
 		if err != nil {
@@ -885,15 +788,15 @@ func appendOptionBytesSingle(b []byte, f *interpretedField) ([]byte, error) {
 	case protoreflect.Int32Kind, protoreflect.Int64Kind, protoreflect.Uint32Kind, protoreflect.Uint64Kind,
 		protoreflect.Sint32Kind, protoreflect.Sint64Kind, protoreflect.EnumKind, protoreflect.BoolKind:
 		b = protowire.AppendTag(b, num, protowire.VarintType)
-		return appendNumericValueBytes(b, kind, f.value.val)
+		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	case protoreflect.Fixed32Kind, protoreflect.Sfixed32Kind, protoreflect.FloatKind:
 		b = protowire.AppendTag(b, num, protowire.Fixed32Type)
-		return appendNumericValueBytes(b, kind, f.value.val)
+		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	case protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind, protoreflect.DoubleKind:
 		b = protowire.AppendTag(b, num, protowire.Fixed64Type)
-		return appendNumericValueBytes(b, kind, f.value.val)
+		return appendNumericValueBytes(b, f.kind, f.value.val)
 
 	default:
 		return nil, fmt.Errorf("unknown field kind: %v", f.kind)
@@ -940,11 +843,6 @@ func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value
 	}
 }
 
-type anyValueKey struct {
-	typeURL string
-	value   string
-}
-
 // optionsContainer may be optionally implemented by a linker.Result. It is
 // not part of the linker.Result interface as it is meant only for internal use.
 // This allows the option interpreter step to store extra metadata about the
@@ -963,11 +861,12 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 	fqn string,
 	target *targetType[Elem, OptsStruct, Opts],
 	elem Elem,
+	customOpts bool,
 ) error {
 	opts := elem.GetOptions()
 	uo := opts.GetUninterpretedOption()
 	if len(uo) > 0 {
-		remain, err := interp.interpretOptions(fqn, target.t, elem, opts, uo)
+		remain, err := interp.interpretOptions(fqn, target.t, elem, opts, uo, customOpts)
 		if err != nil {
 			return err
 		}
@@ -986,6 +885,7 @@ func (interp *interpreter) interpretOptions(
 	targetType descriptorpb.FieldOptions_OptionTargetType,
 	element, opts proto.Message,
 	uninterpreted []*descriptorpb.UninterpretedOption,
+	customOpts bool,
 ) ([]*descriptorpb.UninterpretedOption, error) {
 	optsDesc := opts.ProtoReflect().Descriptor()
 	optsFqn := string(optsDesc.FullName())
@@ -1011,6 +911,11 @@ func (interp *interpreter) interpretOptions(
 	results := make([]*interpretedOption, 0, len(uninterpreted))
 	var featuresInfo []*interpretedOption
 	for _, uo := range uninterpreted {
+		if uo.Name[0].GetIsExtension() != customOpts {
+			// We're not looking at these this phase.
+			remain = append(remain, uo)
+			continue
+		}
 		node := interp.file.OptionNode(uo)
 		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == "uninterpreted_option" {
 			if interp.lenient {
@@ -1089,63 +994,15 @@ func (interp *interpreter) interpretOptions(
 		}
 	}
 
-	return nil, nil
+	return remain, nil
 }
 
 func (interp *interpreter) setOptionBytes(mc *internal.MessageContext, opts proto.Message, values []*interpretedOption) error {
-	for _, val := range values {
-		// If computing bytes for any value must be deferred, then save the information and return.
-		if val.needToDefer() {
-			interp.deferredOptionBytes = append(
-				interp.deferredOptionBytes,
-				deferredInterpretedOptions{
-					opts:   opts,
-					mc:     mc,
-					values: values,
-				},
-			)
-			return nil
-		}
-	}
 	b, err := interp.toOptionBytes(mc, values)
 	if err != nil {
 		return err
 	}
 	interp.container.AddOptionBytes(opts, b)
-	return nil
-}
-
-func (interp *interpreter) setDeferredOptionBytes() error {
-	for _, deferred := range interp.deferredOptionBytes {
-		b, err := interp.toOptionBytes(deferred.mc, deferred.values)
-		if err != nil {
-			return err
-		}
-		interp.container.AddOptionBytes(deferred.opts, b)
-	}
-	return nil
-}
-
-func (interp *interpreter) setDeferredAnyValues() error {
-	var rewrites map[anyValueKey][]byte
-	for _, deferred := range interp.deferredAnyValues {
-		b, err := appendOptionBytes(nil, deferred.value.msgVal)
-		if err != nil {
-			return interp.reporter.HandleErrorf(interp.nodeInfo(deferred.node), "%vfailed to serialize message value: %w", deferred.mc, err)
-		}
-		if bytes.Equal(b, deferred.initialValue) {
-			// no change in serialized form, so nothing else to do
-			continue
-		}
-		deferred.value.preserialized = asMessageBytes(2, b) // memoize
-		if rewrites == nil {
-			rewrites = map[anyValueKey][]byte{}
-		}
-		rewrites[anyValueKey{typeURL: deferred.typeURL, value: string(deferred.initialValue)}] = b
-	}
-	if len(rewrites) > 0 {
-		rewriteAnyValuesInFile(interp.file.FileDescriptorProto(), rewrites)
-	}
 	return nil
 }
 
@@ -1274,17 +1131,13 @@ func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) b
 	}
 
 	// We figure out the wire type this interpreted field will use when serialized.
-	packed := opt.packed
-	if opt.deferredPacked != nil {
-		packed = opt.deferredPacked()
-	}
 	var wireType protowire.Type
 	switch {
 	case len(opt.pathPrefix) > 0:
 		// If path prefix exists, this field is nested inside a message.
 		// And messages use bytes wire type.
 		wireType = protowire.BytesType
-	case opt.repeated && packed && internal.CanPack(opt.kind):
+	case opt.repeated && opt.packed && internal.CanPack(opt.kind):
 		// Packed repeated numeric scalars use bytes wire type.
 		wireType = protowire.BytesType
 	default:
@@ -1495,12 +1348,6 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 			tag:  int32(fld.Number()),
 			kind: fld.Kind(),
 		}
-		if fld.Kind() == protoreflect.MessageKind &&
-			fld.ParentFile() == any(interp.file) && fld.Syntax() == protoreflect.Editions {
-			// It's possible that this is actually group encoded, but we won't know until we
-			// finish interpreting options in this file.
-			enclosing.deferredKind = fld.Kind
-		}
 		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, enclosing))
 	}
 
@@ -1520,7 +1367,8 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 	if err != nil {
 		return nil, interp.reporter.HandleError(err)
 	}
-	interpOpt := &interpretedOption{
+
+	return &interpretedOption{
 		pathPrefix: pathPrefix,
 		interpretedField: interpretedField{
 			node:     optNode,
@@ -1533,15 +1381,7 @@ func (interp *interpreter) interpretField(mc *internal.MessageContext, msg proto
 			// (only values in message literals will be serialized
 			// in packed format)
 		},
-	}
-	if interpOpt.kind == protoreflect.MessageKind &&
-		fld.ParentFile() == any(interp.file) && fld.Syntax() == protoreflect.Editions {
-		// We need to finish interpreting options in this file before we can
-		// be certain whether this field uses delimited encoding or not
-		interpOpt.deferredKind = fld.Kind
-	}
-
-	return interpOpt, nil
+	}, nil
 }
 
 // setOptionField sets the value for field fld in the given message msg to the value represented
@@ -1800,23 +1640,23 @@ type listValue []protoreflect.Value
 
 var _ protoreflect.List = (*listValue)(nil)
 
-func (l listValue) Len() int {
-	return len(l)
+func (l *listValue) Len() int {
+	return len(*l)
 }
 
-func (l listValue) Get(i int) protoreflect.Value {
-	return l[i]
+func (l *listValue) Get(i int) protoreflect.Value {
+	return (*l)[i]
 }
 
-func (l listValue) Set(i int, value protoreflect.Value) {
-	l[i] = value
+func (l *listValue) Set(i int, value protoreflect.Value) {
+	(*l)[i] = value
 }
 
 func (l *listValue) Append(value protoreflect.Value) {
 	*l = append(*l, value)
 }
 
-func (l listValue) AppendMutable() protoreflect.Value {
+func (l *listValue) AppendMutable() protoreflect.Value {
 	panic("AppendMutable not supported")
 }
 
@@ -1824,11 +1664,11 @@ func (l *listValue) Truncate(i int) {
 	*l = (*l)[:i]
 }
 
-func (l listValue) NewElement() protoreflect.Value {
+func (l *listValue) NewElement() protoreflect.Value {
 	panic("NewElement not supported")
 }
 
-func (l listValue) IsValid() bool {
+func (l *listValue) IsValid() bool {
 	return true
 }
 
@@ -2009,35 +1849,11 @@ func (interp *interpreter) enumFieldValue(mc *internal.MessageContext, ed protor
 	if ev != nil {
 		return num, ev.Name(), nil
 	}
-	// NB: We have to look at the syntax instead of directly using ed.IsClosed because we
-	// may still be interpreting options that would be used by the implementation of IsClosed.
-	if ed.Syntax() != protoreflect.Proto3 {
-		if ed.Syntax() == protoreflect.Editions && interp.file == any(ed.ParentFile()) {
-			// Oof. We are still interpreting options for this file. Yet we need
-			// options in order to decide if this enum value is allowed (only if
-			// the enum is open).
-			//
-			// So, for now, we will assume it's valid and then report an error
-			// later, after all options in the file are interpreted, to check if
-			// it was allowed.
-			interp.needOpenEnum(mc, ed, val, num)
-			return num, "", nil
-		}
+	if ed.IsClosed() {
 		return num, "", reporter.Errorf(interp.nodeInfo(val), "%vclosed enum %s has no value with number %d", mc, ed.FullName(), num)
 	}
 	// unknown value, but enum is open, so we allow it and return blank name
 	return num, "", nil
-}
-
-func (interp *interpreter) needOpenEnum(mc *internal.MessageContext, ed protoreflect.EnumDescriptor, val ast.Node, number protoreflect.EnumNumber) {
-	if interp.neededOpenEnums == nil {
-		interp.neededOpenEnums = map[protoreflect.EnumDescriptor][]enumValRef{}
-	}
-	interp.neededOpenEnums[ed] = append(interp.neededOpenEnums[ed], enumValRef{
-		number: number,
-		value:  val,
-		mc:     mc,
-	})
 }
 
 // enumFieldValueFromProto resolves the given uninterpreted option value as an enum value descriptor.
@@ -2412,6 +2228,7 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val), "%vfailed to serialize message value: %w", mc, err)
 			}
 			msg.Set(valueDescriptor, protoreflect.ValueOfBytes(b))
+			msgVal.preserialized = asMessageBytes(2, b) // no need to recompute this for canonical option bytes
 			flds = []*interpretedField{
 				{
 					node:   fieldNode.Name,
@@ -2430,21 +2247,6 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 					kind:  protoreflect.MessageKind,
 					value: msgVal,
 				},
-			}
-			if msgVal.needToDefer() {
-				// Some values can't be serialized correctly until after options in this
-				// file are interpreted. So we'll have to replace this value later.
-				interp.deferredAnyValues = append(interp.deferredAnyValues, deferredAnyValue{
-					typeURL:      fullURL,
-					initialValue: b,
-					value:        &flds[1].value,
-					node:         fieldNode.Val,
-					mc:           mc,
-				})
-			} else {
-				// We have the serialized form, so don't bother re-computing later if/when
-				// we need the canonical bytes.
-				msgVal.preserialized = asMessageBytes(2, b)
 			}
 		} else {
 			var ffld protoreflect.FieldDescriptor
@@ -2469,8 +2271,13 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 				// Groups are indicated in the text format by the group name (which is
 				// camel-case), NOT the field name (which is lower-case).
 				// ...but only regular fields, not extensions that are groups...
-				if ffld != nil && ffld.Kind() == protoreflect.GroupKind && ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) {
-					// this is kind of silly to fail here, but this mimics protoc behavior
+				if ffld != nil && ffld.Kind() == protoreflect.GroupKind &&
+					string(ffld.Name()) == strings.ToLower(string(ffld.Message().Name())) &&
+					ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) {
+					// This is kind of silly to fail here, but this mimics protoc behavior.
+					// We only fail when this really looks like a group since we need to be
+					// able to use the field name for fields in editions files that use the
+					// delimited message encoding and don't use proto2 group naming.
 					return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name), "%vfield %s not found (did you mean the group named %s?)", mc, fieldNode.Name.Value(), ffld.Message().Name())
 				}
 				if ffld == nil {
@@ -2502,134 +2309,21 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			if err != nil {
 				return interpretedFieldValue{}, err
 			}
-			interpFld := &interpretedField{
+			flds = append(flds, &interpretedField{
 				node:     fieldNode,
 				number:   int32(ffld.Number()),
 				index:    int32(index),
 				kind:     ffld.Kind(),
 				repeated: ffld.Cardinality() == protoreflect.Repeated,
+				packed:   ffld.IsPacked(),
 				value:    res,
-			}
-			if interpFld.repeated && internal.CanPack(ffld.Kind()) {
-				if ffld.ParentFile() == any(interp.file) {
-					// We need to finish interpreting options in this file before we can
-					// be certain whether this field is packed or not.
-					interpFld.deferredPacked = ffld.IsPacked
-				} else {
-					interpFld.packed = ffld.IsPacked()
-				}
-			}
-			if interpFld.kind == protoreflect.MessageKind &&
-				ffld.ParentFile() == any(interp.file) && ffld.Syntax() == protoreflect.Editions {
-				// We need to finish interpreting options in this file before we can
-				// be certain whether this field uses delimited encoding or not
-				interpFld.deferredKind = ffld.Kind
-			}
-			flds = append(flds, interpFld)
+			})
 		}
 	}
 	return interpretedFieldValue{
 		val:    protoreflect.ValueOfMessage(msg),
 		msgVal: flds,
 	}, nil
-}
-
-func rewriteAnyValuesInFile(fd *descriptorpb.FileDescriptorProto, rewrites map[anyValueKey][]byte) {
-	rewriteAnyValues(fd.Options.ProtoReflect(), rewrites)
-	for _, md := range fd.MessageType {
-		rewriteAnyValuesInMessage(md, rewrites)
-	}
-	for _, ed := range fd.EnumType {
-		rewriteAnyValuesInEnum(ed, rewrites)
-	}
-	for _, extd := range fd.Extension {
-		rewriteAnyValues(extd.Options.ProtoReflect(), rewrites)
-	}
-	for _, sd := range fd.Service {
-		rewriteAnyValues(sd.Options.ProtoReflect(), rewrites)
-		for _, mtd := range sd.Method {
-			rewriteAnyValues(mtd.Options.ProtoReflect(), rewrites)
-		}
-	}
-}
-
-func rewriteAnyValuesInMessage(md *descriptorpb.DescriptorProto, rewrites map[anyValueKey][]byte) {
-	rewriteAnyValues(md.Options.ProtoReflect(), rewrites)
-	for _, fld := range md.Field {
-		rewriteAnyValues(fld.Options.ProtoReflect(), rewrites)
-	}
-	for _, ood := range md.OneofDecl {
-		rewriteAnyValues(ood.Options.ProtoReflect(), rewrites)
-	}
-	for _, extr := range md.ExtensionRange {
-		rewriteAnyValues(extr.Options.ProtoReflect(), rewrites)
-	}
-	for _, nmd := range md.NestedType {
-		rewriteAnyValuesInMessage(nmd, rewrites)
-	}
-	for _, ed := range md.EnumType {
-		rewriteAnyValuesInEnum(ed, rewrites)
-	}
-	for _, extd := range md.Extension {
-		rewriteAnyValues(extd.Options.ProtoReflect(), rewrites)
-	}
-}
-
-func rewriteAnyValuesInEnum(ed *descriptorpb.EnumDescriptorProto, rewrites map[anyValueKey][]byte) {
-	rewriteAnyValues(ed.Options.ProtoReflect(), rewrites)
-	for _, evd := range ed.Value {
-		rewriteAnyValues(evd.Options.ProtoReflect(), rewrites)
-	}
-}
-
-func rewriteAnyValues(msg protoreflect.Message, rewrites map[anyValueKey][]byte) {
-	rewriteAnyValue(msg, rewrites)
-	msg.Range(func(fld protoreflect.FieldDescriptor, val protoreflect.Value) bool {
-		switch {
-		case fld.IsList() && isMessageKind(fld.Kind()):
-			listVal := val.List()
-			for i, length := 0, listVal.Len(); i < length; i++ {
-				rewriteAnyValues(listVal.Get(i).Message(), rewrites)
-			}
-		case fld.IsMap() && isMessageKind(fld.MapValue().Kind()):
-			val.Map().Range(func(_ protoreflect.MapKey, val protoreflect.Value) bool {
-				rewriteAnyValues(val.Message(), rewrites)
-				return true
-			})
-		case !fld.IsMap() && isMessageKind(fld.Kind()):
-			rewriteAnyValues(val.Message(), rewrites)
-		}
-		return true
-	})
-}
-
-func rewriteAnyValue(msg protoreflect.Message, rewrites map[anyValueKey][]byte) {
-	md := msg.Descriptor()
-	if md.FullName() != "google.protobuf.Any" {
-		return
-	}
-	urlField := md.Fields().ByNumber(1)
-	if urlField == nil || urlField.Kind() != protoreflect.StringKind || urlField.IsList() {
-		return // not a valid Any message
-	}
-	valField := md.Fields().ByNumber(2)
-	if valField == nil || valField.Kind() != protoreflect.BytesKind || valField.IsList() {
-		return // not a valid Any message
-	}
-	key := anyValueKey{
-		typeURL: msg.Get(urlField).String(),
-		value:   string(msg.Get(valField).Bytes()),
-	}
-	newValue, ok := rewrites[key]
-	if !ok {
-		// no replacement
-		return
-	}
-	msg.Set(valField, protoreflect.ValueOfBytes(newValue))
-}
-
-func isMessageKind(kind protoreflect.Kind) bool {
-	return kind == protoreflect.MessageKind || kind == protoreflect.GroupKind
 }
 
 func asMessageBytes(tag protowire.Number, data []byte) []byte {
