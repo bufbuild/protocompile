@@ -73,6 +73,10 @@ type interpreter struct {
 	// If we have to defer some computation of canonical option bytes,
 	// we accumulate them here and then compute them at the end.
 	deferredOptionBytes []deferredInterpretedOptions
+	// If there are Any values that need options in the file to be
+	// interpreted to be correctly serialized, they are accumulated
+	// here.
+	deferredAnyValues []deferredAnyValue
 }
 
 type enumValRef struct {
@@ -85,6 +89,14 @@ type deferredInterpretedOptions struct {
 	opts   proto.Message
 	mc     *internal.MessageContext
 	values []*interpretedOption
+}
+
+type deferredAnyValue struct {
+	typeURL      string
+	initialValue []byte
+	value        *interpretedFieldValue
+	node         ast.Node
+	mc           *internal.MessageContext
 }
 
 type file interface {
@@ -220,8 +232,14 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 			}
 		}
 	}
-	// And if there were any options that needed to defer serialization, we can
-	// process the, now.
+	// Update serialized values in Any messages if necessary. We do this before
+	// the step below as this will memoize serialized forms that get re-used for
+	// computing canonical option bytes below.
+	if err := interp.setDeferredAnyValues(); err != nil {
+		return nil, err
+	}
+	// Finally, if there were any options that needed to defer serialization, we
+	// can process them now.
 	if err := interp.setDeferredOptionBytes(); err != nil {
 		return nil, err
 	}
@@ -663,19 +681,7 @@ func (f *interpretedField) needToDefer() bool {
 	if f.deferredPacked != nil || f.deferredKind != nil {
 		return true
 	}
-	for _, fld := range f.value.msgVal {
-		if fld.needToDefer() {
-			return true
-		}
-	}
-	for _, elems := range f.value.msgListVal {
-		for _, fld := range elems {
-			if fld.needToDefer() {
-				return true
-			}
-		}
-	}
-	return false
+	return f.value.needToDefer()
 }
 
 func (f *interpretedField) path(prefix []int32) []int32 {
@@ -737,6 +743,22 @@ type interpretedFieldValue struct {
 	msgVal []*interpretedField
 	// non-nil for non-empty lists of message values
 	msgListVal [][]*interpretedField
+}
+
+func (v *interpretedFieldValue) needToDefer() bool {
+	for _, fld := range v.msgVal {
+		if fld.needToDefer() {
+			return true
+		}
+	}
+	for _, elems := range v.msgListVal {
+		for _, fld := range elems {
+			if fld.needToDefer() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func appendOptionBytes(b []byte, flds []*interpretedField) ([]byte, error) {
@@ -918,6 +940,11 @@ func appendNumericValueBytes(b []byte, k protoreflect.Kind, v protoreflect.Value
 	}
 }
 
+type anyValueKey struct {
+	typeURL string
+	value   string
+}
+
 // optionsContainer may be optionally implemented by a linker.Result. It is
 // not part of the linker.Result interface as it is meant only for internal use.
 // This allows the option interpreter step to store extra metadata about the
@@ -1095,6 +1122,29 @@ func (interp *interpreter) setDeferredOptionBytes() error {
 			return err
 		}
 		interp.container.AddOptionBytes(deferred.opts, b)
+	}
+	return nil
+}
+
+func (interp *interpreter) setDeferredAnyValues() error {
+	var rewrites map[anyValueKey][]byte
+	for _, deferred := range interp.deferredAnyValues {
+		b, err := appendOptionBytes(nil, deferred.value.msgVal)
+		if err != nil {
+			return interp.reporter.HandleErrorf(interp.nodeInfo(deferred.node), "%vfailed to serialize message value: %w", deferred.mc, err)
+		}
+		if bytes.Equal(b, deferred.initialValue) {
+			// no change in serialized form, so nothing else to do
+			continue
+		}
+		deferred.value.preserialized = asMessageBytes(2, b) // memoize
+		if rewrites == nil {
+			rewrites = map[anyValueKey][]byte{}
+		}
+		rewrites[anyValueKey{typeURL: deferred.typeURL, value: string(deferred.initialValue)}] = b
+	}
+	if len(rewrites) > 0 {
+		rewriteAnyValuesInFile(interp.file.FileDescriptorProto(), rewrites)
 	}
 	return nil
 }
@@ -2303,7 +2353,6 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 	// message is empty, because that indicates to
 	// caller that the result is not a message
 	flds := make([]*interpretedField, 0, len(fieldNodes))
-	var foundAnyNode bool
 	for _, fieldNode := range fieldNodes {
 		if origPath == "" {
 			mc.OptAggPath = fieldNode.Name.Value()
@@ -2311,13 +2360,12 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			mc.OptAggPath = origPath + "." + fieldNode.Name.Value()
 		}
 		if fieldNode.Name.IsAnyTypeReference() {
+			if len(fieldNodes) > 1 {
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%v any type references cannot be mixed with other fields", mc)
+			}
 			if fmd.FullName() != "google.protobuf.Any" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
 			}
-			if foundAnyNode {
-				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%vmultiple any type references are not allowed", mc)
-			}
-			foundAnyNode = true
 			urlPrefix := fieldNode.Name.URLPrefix.AsIdentifier()
 			msgName := fieldNode.Name.Name.AsIdentifier()
 			fullURL := fmt.Sprintf("%s/%s", urlPrefix, msgName)
@@ -2326,7 +2374,8 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			// URLs into message descriptors. The default resolver would be
 			// implemented as below, only accepting "type.googleapis.com" and
 			// "type.googleprod.com" as hosts/prefixes and using the compiled
-			// file's transitive closure to find the named message.
+			// file's transitive closure to find the named message, since that
+			// is what protoc does.
 			if urlPrefix != "type.googleapis.com" && urlPrefix != "type.googleprod.com" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%vcould not resolve type reference %s", mc, fullURL)
 			}
@@ -2351,16 +2400,52 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 			if typeURLDescriptor == nil || typeURLDescriptor.Kind() != protoreflect.StringKind {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name), "%vfailed to set type_url string field on Any: %w", mc, err)
 			}
-			msg.Set(typeURLDescriptor, protoreflect.ValueOfString(fullURL))
+			typeURLVal := protoreflect.ValueOfString(fullURL)
+			msg.Set(typeURLDescriptor, typeURLVal)
 			valueDescriptor := fmd.Fields().ByNumber(2)
 			if valueDescriptor == nil || valueDescriptor.Kind() != protoreflect.BytesKind {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name), "%vfailed to set value bytes field on Any: %w", mc, err)
 			}
-			b, err := proto.MarshalOptions{Deterministic: true}.Marshal(msgVal.val.Message().Interface())
+
+			b, err := appendOptionBytes(nil, msgVal.msgVal)
 			if err != nil {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Val), "%vfailed to serialize message value: %w", mc, err)
 			}
 			msg.Set(valueDescriptor, protoreflect.ValueOfBytes(b))
+			flds = []*interpretedField{
+				{
+					node:   fieldNode.Name,
+					number: 1,
+					kind:   protoreflect.StringKind,
+					value: interpretedFieldValue{
+						val: typeURLVal,
+					},
+				},
+				{
+					node:   fieldNode.Val,
+					number: 2,
+					// Technically this field is a "bytes" kind. But the actual
+					// byte output is the same, and this way we can defer the
+					// computation of those bytes until later if needed.
+					kind:  protoreflect.MessageKind,
+					value: msgVal,
+				},
+			}
+			if msgVal.needToDefer() {
+				// Some values can't be serialized correctly until after options in this
+				// file are interpreted. So we'll have to replace this value later.
+				interp.deferredAnyValues = append(interp.deferredAnyValues, deferredAnyValue{
+					typeURL:      fullURL,
+					initialValue: b,
+					value:        &flds[1].value,
+					node:         fieldNode.Val,
+					mc:           mc,
+				})
+			} else {
+				// We have the serialized form, so don't bother re-computing later if/when
+				// we need the canonical bytes.
+				msgVal.preserialized = asMessageBytes(2, b)
+			}
 		} else {
 			var ffld protoreflect.FieldDescriptor
 			var err error
@@ -2447,4 +2532,108 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 		val:    protoreflect.ValueOfMessage(msg),
 		msgVal: flds,
 	}, nil
+}
+
+func rewriteAnyValuesInFile(fd *descriptorpb.FileDescriptorProto, rewrites map[anyValueKey][]byte) {
+	rewriteAnyValues(fd.Options.ProtoReflect(), rewrites)
+	for _, md := range fd.MessageType {
+		rewriteAnyValuesInMessage(md, rewrites)
+	}
+	for _, ed := range fd.EnumType {
+		rewriteAnyValuesInEnum(ed, rewrites)
+	}
+	for _, extd := range fd.Extension {
+		rewriteAnyValues(extd.Options.ProtoReflect(), rewrites)
+	}
+	for _, sd := range fd.Service {
+		rewriteAnyValues(sd.Options.ProtoReflect(), rewrites)
+		for _, mtd := range sd.Method {
+			rewriteAnyValues(mtd.Options.ProtoReflect(), rewrites)
+		}
+	}
+}
+
+func rewriteAnyValuesInMessage(md *descriptorpb.DescriptorProto, rewrites map[anyValueKey][]byte) {
+	rewriteAnyValues(md.Options.ProtoReflect(), rewrites)
+	for _, fld := range md.Field {
+		rewriteAnyValues(fld.Options.ProtoReflect(), rewrites)
+	}
+	for _, ood := range md.OneofDecl {
+		rewriteAnyValues(ood.Options.ProtoReflect(), rewrites)
+	}
+	for _, extr := range md.ExtensionRange {
+		rewriteAnyValues(extr.Options.ProtoReflect(), rewrites)
+	}
+	for _, nmd := range md.NestedType {
+		rewriteAnyValuesInMessage(nmd, rewrites)
+	}
+	for _, ed := range md.EnumType {
+		rewriteAnyValuesInEnum(ed, rewrites)
+	}
+	for _, extd := range md.Extension {
+		rewriteAnyValues(extd.Options.ProtoReflect(), rewrites)
+	}
+}
+
+func rewriteAnyValuesInEnum(ed *descriptorpb.EnumDescriptorProto, rewrites map[anyValueKey][]byte) {
+	rewriteAnyValues(ed.Options.ProtoReflect(), rewrites)
+	for _, evd := range ed.Value {
+		rewriteAnyValues(evd.Options.ProtoReflect(), rewrites)
+	}
+}
+
+func rewriteAnyValues(msg protoreflect.Message, rewrites map[anyValueKey][]byte) {
+	rewriteAnyValue(msg, rewrites)
+	msg.Range(func(fld protoreflect.FieldDescriptor, val protoreflect.Value) bool {
+		switch {
+		case fld.IsList() && isMessageKind(fld.Kind()):
+			listVal := val.List()
+			for i, length := 0, listVal.Len(); i < length; i++ {
+				rewriteAnyValues(listVal.Get(i).Message(), rewrites)
+			}
+		case fld.IsMap() && isMessageKind(fld.MapValue().Kind()):
+			val.Map().Range(func(_ protoreflect.MapKey, val protoreflect.Value) bool {
+				rewriteAnyValues(val.Message(), rewrites)
+				return true
+			})
+		case !fld.IsMap() && isMessageKind(fld.Kind()):
+			rewriteAnyValues(val.Message(), rewrites)
+		}
+		return true
+	})
+}
+
+func rewriteAnyValue(msg protoreflect.Message, rewrites map[anyValueKey][]byte) {
+	md := msg.Descriptor()
+	if md.FullName() != "google.protobuf.Any" {
+		return
+	}
+	urlField := md.Fields().ByNumber(1)
+	if urlField == nil || urlField.Kind() != protoreflect.StringKind || urlField.IsList() {
+		return // not a valid Any message
+	}
+	valField := md.Fields().ByNumber(2)
+	if valField == nil || valField.Kind() != protoreflect.BytesKind || valField.IsList() {
+		return // not a valid Any message
+	}
+	key := anyValueKey{
+		typeURL: msg.Get(urlField).String(),
+		value:   string(msg.Get(valField).Bytes()),
+	}
+	newValue, ok := rewrites[key]
+	if !ok {
+		// no replacement
+		return
+	}
+	msg.Set(valField, protoreflect.ValueOfBytes(newValue))
+}
+
+func isMessageKind(kind protoreflect.Kind) bool {
+	return kind == protoreflect.MessageKind || kind == protoreflect.GroupKind
+}
+
+func asMessageBytes(tag protowire.Number, data []byte) []byte {
+	result := make([]byte, 0, protowire.SizeTag(tag)+protowire.SizeBytes(len(data)))
+	result = protowire.AppendTag(result, tag, protowire.BytesType)
+	return protowire.AppendBytes(result, data)
 }
