@@ -2177,7 +2177,7 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 		}
 		if fieldNode.Name.IsAnyTypeReference() {
 			if len(fieldNodes) > 1 {
-				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%v any type references cannot be mixed with other fields", mc)
+				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%vany type references cannot be repeated or mixed with other fields", mc)
 			}
 			if fmd.FullName() != "google.protobuf.Any" {
 				return interpretedFieldValue{}, reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%vtype references are only allowed for google.protobuf.Any, but this type is %s", mc, fmd.FullName())
