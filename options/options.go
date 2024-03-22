@@ -1224,13 +1224,17 @@ func isKnownField(desc protoreflect.MessageDescriptor, opt *interpretedOption) b
 	}
 
 	// We figure out the wire type this interpreted field will use when serialized.
+	packed := opt.packed
+	if opt.deferredPacked != nil {
+		packed = opt.deferredPacked()
+	}
 	var wireType protowire.Type
 	switch {
 	case len(opt.pathPrefix) > 0:
 		// If path prefix exists, this field is nested inside a message.
 		// And messages use bytes wire type.
 		wireType = protowire.BytesType
-	case opt.repeated && opt.packed && internal.CanPack(opt.kind):
+	case opt.repeated && packed && internal.CanPack(opt.kind):
 		// Packed repeated numeric scalars use bytes wire type.
 		wireType = protowire.BytesType
 	default:
@@ -2422,7 +2426,7 @@ func (interp *interpreter) messageLiteralValue(mc *internal.MessageContext, fiel
 				value:    res,
 			}
 			if interpFld.repeated && internal.CanPack(ffld.Kind()) {
-				if ffld.ParentFile() == any(interp.file) && ffld.Syntax() == protoreflect.Editions {
+				if ffld.ParentFile() == any(interp.file) {
 					// We need to finish interpreting options in this file before we can
 					// be certain whether this field is packed or not.
 					interpFld.deferredPacked = ffld.IsPacked

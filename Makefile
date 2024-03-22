@@ -156,6 +156,9 @@ internal/testdata/editions/all.protoset: $(PROTOC) $(sort $(wildcard internal/te
 internal/testdata/source_info.protoset: $(PROTOC) internal/testdata/desc_test_options.proto internal/testdata/desc_test_comments.proto internal/testdata/desc_test_complex.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_source_info -I. $(filter-out protoc,$(^F))
 
+internal/testdata/options/options.protoset: $(PROTOC) internal/testdata/options/options.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
+
 internal/testdata/options/test.protoset: $(PROTOC) internal/testdata/options/test.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
 
@@ -174,6 +177,7 @@ test-descriptors: internal/testdata/descriptor_impl_tests.protoset
 test-descriptors: internal/testdata/descriptor_editions_impl_tests.protoset
 test-descriptors: internal/testdata/editions/all.protoset
 test-descriptors: internal/testdata/source_info.protoset
+test-descriptors: internal/testdata/options/options.protoset
 test-descriptors: internal/testdata/options/test.protoset
 test-descriptors: internal/testdata/options/test_proto3.protoset
 test-descriptors: internal/testdata/options/test_editions.protoset

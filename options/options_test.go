@@ -353,14 +353,15 @@ func qualify(qualifier, name string) string {
 func TestOptionsEncoding(t *testing.T) {
 	t.Parallel()
 	testCases := map[string]string{
-		"proto2":   "options/test.proto",
-		"proto3":   "options/test_proto3.proto",
-		"editions": "options/test_editions.proto",
-		"defaults": "desc_test_defaults.proto",
+		"proto2-opts-same-file": "options/options.proto",
+		"proto2":                "options/test.proto",
+		"proto3":                "options/test_proto3.proto",
+		"editions":              "options/test_editions.proto",
+		"defaults":              "desc_test_defaults.proto",
 	}
-	for syntax, file := range testCases {
+	for testCaseName, file := range testCases {
 		file := file // must not capture loop variable below, for thread safety
-		t.Run(syntax, func(t *testing.T) {
+		t.Run(testCaseName, func(t *testing.T) {
 			t.Parallel()
 			fileToCompile := strings.TrimPrefix(file, "options/")
 			importPath := "../internal/testdata"
