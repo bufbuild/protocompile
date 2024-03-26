@@ -585,7 +585,7 @@ func (t *task) link(parseRes parser.Result, deps linker.Files, overrideDescripto
 		return nil, err
 	}
 	// now that options are interpreted, we can do some additional checks
-	if err := file.ValidateOptions(t.h); err != nil {
+	if err := file.ValidateOptions(t.h, t.e.sym); err != nil {
 		return nil, err
 	}
 	if t.r.explicitFile {

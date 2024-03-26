@@ -25,7 +25,7 @@ import "fmt"
 // This also allows NoSourceNode to be used in place of one of the above
 // for some usages.
 type MessageDeclNode interface {
-	Node
+	NodeWithOptions
 	MessageName() Node
 }
 
@@ -90,6 +90,16 @@ func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, 
 
 func (n *MessageNode) MessageName() Node {
 	return n.Name
+}
+
+func (n *MessageNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, decl := range n.Decls {
+		if opt, ok := decl.(*OptionNode); ok {
+			if !fn(opt) {
+				return
+			}
+		}
+	}
 }
 
 // MessageBody represents the body of a message. It is used by both

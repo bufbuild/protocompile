@@ -124,6 +124,10 @@ func (n NoSourceNode) MessageName() Node {
 	return n
 }
 
+func (n NoSourceNode) OneofName() Node {
+	return n
+}
+
 func (n NoSourceNode) GetInputType() Node {
 	return n
 }
@@ -134,4 +138,10 @@ func (n NoSourceNode) GetOutputType() Node {
 
 func (n NoSourceNode) Value() interface{} {
 	return nil
+}
+
+func (n NoSourceNode) RangeCompactOptions(func(*OptionNode) bool) {
+}
+
+func (n NoSourceNode) RangeOptions(func(*OptionNode) bool) {
 }

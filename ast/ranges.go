@@ -33,7 +33,7 @@ type ExtensionRangeNode struct {
 	Semicolon *RuneNode
 }
 
-func (e *ExtensionRangeNode) msgElement() {}
+func (*ExtensionRangeNode) msgElement() {}
 
 // NewExtensionRangeNode creates a new *ExtensionRangeNode. All args must be
 // non-nil except opts, which may be nil.
@@ -87,6 +87,14 @@ func NewExtensionRangeNode(keyword *KeywordNode, ranges []*RangeNode, commas []*
 		Commas:    commas,
 		Options:   opts,
 		Semicolon: semicolon,
+	}
+}
+
+func (e *ExtensionRangeNode) RangeCompactOptions(fn func(*OptionNode) bool) {
+	for _, opt := range e.Options.Options {
+		if !fn(opt) {
+			return
+		}
 	}
 }
 
