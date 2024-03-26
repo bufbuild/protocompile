@@ -602,7 +602,10 @@ func (s *Symbols) AddExtensionDeclaration(extension, extendee protoreflect.FullN
 			// This is a declaration that has already been added. Ignore.
 			return nil
 		}
-		return handler.HandleErrorf(span, "extension %s already declared as extending %s with tag %d at %v", extension, extendee, tag, existing.pos)
+		return handler.HandleErrorf(span, "extension %s already declared as extending %s with tag %d at %v", extension, existing.extendee, existing.tag, existing.pos)
+	}
+	if s.extDecls == nil {
+		s.extDecls = map[protoreflect.FullName]extDecl{}
 	}
 	s.extDecls[extension] = extDecl{
 		pos:      span.Start(),

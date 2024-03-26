@@ -2234,6 +2234,579 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:1:39: first value of open enum Foo must be zero`,
 		},
+		"success_extension_declarations": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					import "extendee.proto";
+					package foo;
+					extend A {
+						// No declarations, so not validated.
+						optional bool one = 1;
+						optional string five = 5;
+						optional Msg ten = 10;
+						// But these ones must match declaration.
+						optional int32 eleven = 11;
+						repeated Enum twelve = 12;
+						optional Msg thirteen = 13;
+						optional group Fourteen = 14 { }
+					}
+					enum Enum { ZERO=0; }
+					message Msg { }
+				`,
+				"extendee.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 to 10;
+						extensions 11 to 15 [
+							verification=DECLARATION,
+							declaration={
+								number: 11
+								full_name: ".foo.eleven"
+								type: "int32"
+							},
+							declaration={
+								number: 12
+								full_name: ".foo.twelve"
+								type: ".foo.Enum"
+								repeated: true
+							},
+							declaration={
+								number: 13
+								full_name: ".foo.thirteen"
+								type: ".foo.Msg"
+							},
+							declaration={
+								number: 14
+								full_name: ".foo.fourteen"
+								type: ".foo.Fourteen"
+							},
+							declaration={
+								number: 15
+								reserved: true
+							}
+						];
+					}
+				`,
+			},
+		},
+		"failure_extension_declaration_without_verification": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							declaration={
+								number: 11
+								full_name: ".foo.eleven"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:29: extension range cannot have declarations and have verification of UNVERIFIED`,
+		},
+		"failure_extension_declaration_without_verification2": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=UNVERIFIED,
+							declaration={
+								number: 11
+								full_name: ".foo.eleven"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:30: extension range cannot have declarations and have verification of UNVERIFIED`,
+		},
+		"failure_extension_declaration_without_number": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								full_name: ".foo.bar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:5:29: extension declaration is missing required field number`,
+		},
+		"failure_extension_declaration_with_incorrect_number": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 2
+								full_name: ".foo.bar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 2 not in [1,1]`,
+		},
+		"failure_extension_declaration_with_number_out_of_range": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 100 to 500 [
+							verification=DECLARATION,
+							declaration={
+								number: 99
+								full_name: ".foo.bar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 99 not in [100,500]`,
+		},
+		"failure_extension_declaration_with_number_out_of_range2": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 100 to 500, 1000 to 5000 [
+							verification=DECLARATION,
+							declaration={
+								number: 501
+								full_name: ".foo.bar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 501 not in [100,500]`,
+		},
+		"failure_extension_declaration_with_number_out_of_range_multiple_ranges": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 to 3, 5 to 10, 100 to 500 [
+							verification=DECLARATION,
+							declaration={
+								number: 3
+								full_name: ".foo.bar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 3 not in [5,10]; when using declarations, extends statements should indicate only a single span of field numbers`,
+		},
+		"failure_extension_declaration_without_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:5:29: extension declaration that is not marked reserved must have a full_name`,
+		},
+		"failure_extension_declaration_with_name_without_dot": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: "foo.bar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:7:36: extension declaration full name "foo.bar" should start with a leading dot (.)`,
+		},
+		"failure_extension_declaration_with_invalid_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".123.5-7.Foobar"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:7:36: extension declaration full name ".123.5-7.Foobar" is not a valid qualified name`,
+		},
+		"failure_extension_declaration_without_type": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:5:29: extension declaration that is not marked reserved must have a type`,
+		},
+		"failure_extension_declaration_with_type_without_dot": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "foo.Bar"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:8:31: extension declaration type "foo.Bar" must be a builtin type or start with a leading dot (.)`,
+		},
+		"failure_extension_declaration_with_invalid_type": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: ".123.Foobar"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr:            `test.proto:8:31: extension declaration type ".123.Foobar" is not a valid qualified name`,
+			expectedDiffWithProtoc: true, // Oops. protoc's name validation seems incomplete
+		},
+		"failure_extension_declaration_with_reserved_should_not_have_name": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								reserved: true
+								full_name: ".foo.bar"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:8:36: extension declaration is marked reserved so full_name should not be present`,
+		},
+		"failure_extension_declaration_with_reserved_should_not_have_type": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								reserved: true
+								type: ".foo.bar"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:8:31: extension declaration is marked reserved so type should not be present`,
+		},
+		// This exercises the code that finds the relevant node to make sure it track indexes of
+		// repeated fields correctly.
+		"failure_extension_declaration_report_correct_location_with_multiple_declarations": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 to 3 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								reserved: true
+							},
+							declaration={
+								number: 2
+								reserved: true
+								type: ".foo.bar"
+							},
+							declaration={
+								number: 3
+								full_name: ".foo.bar"
+								type: ".foo.bar"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:12:31: extension declaration is marked reserved so type should not be present`,
+		},
+		"failure_extension_declarations_repeated_tags": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 to 10 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.Bar"
+								type: "int32"
+							},
+							declaration={
+								number: 1
+								full_name: ".foo.Baz"
+								type: "string"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:12:33: extension for tag number 1 already declared at test.proto:7:33`,
+		},
+		"failure_extension_declared_multiple_times": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 to 10 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.Bar"
+								type: "int32"
+							},
+							declaration={
+								number: 5
+								full_name: ".foo.Bar"
+								type: "string"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test.proto:13:36: extension foo.Bar already declared as extending foo.A with tag 1 at test.proto:8:36`,
+		},
+		"failure_extension_declared_multiple_times_across_files": {
+			input: map[string]string{
+				"test1.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 to 10 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.Bar"
+								type: "int32"
+							},
+							declaration={
+								number: 5
+								full_name: ".foo.Baz"
+								type: "int32"
+							}
+						];
+					}
+				`,
+				"test2.proto": `
+					syntax = "proto2";
+					import "test1.proto";
+					message B {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.Baz"
+								type: "int32"
+							}
+						];
+					}
+				`,
+			},
+			expectedErr: `test2.proto:8:36: extension foo.Baz already declared as extending foo.A with tag 5 at test1.proto:13:36`,
+			// protoc only validates that the same name doesn't appear again inside
+			// the same extendable message
+			expectedDiffWithProtoc: true,
+		},
+		"failure_extension_number_is_reserved": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								reserved: true
+							}
+						];
+					}
+					extend A {
+						optional string s = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:13:29: cannot use field number 1 for an extension because it is reserved in declaration at test.proto:8:35`,
+		},
+		"failure_extension_name_does_not_match_declaration": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						optional string s = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:14:25: expected extension with number 1 to be named .foo.bar, not foo.s, per declaration at test.proto:8:36`,
+		},
+		"failure_extension_type_does_not_match_declaration": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						optional uint32 bar = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:14:18: expected extension with number 1 to have type string, not uint32, per declaration at test.proto:9:31`,
+		},
+		"failure_extension_label_does_not_match_declaration": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+								repeated: true
+							}
+						];
+					}
+					extend A {
+						optional string bar = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:15:9: expected extension with number 1 to be repeated, not optional, per declaration at test.proto:10:35`,
+		},
+		"failure_extension_label_does_not_match_declaration2": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						repeated string bar = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:14:9: expected extension with number 1 to be optional, not repeated, per declaration at test.proto:6:29`,
+		},
+		"failure_extension_matches_no_declaration": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 to 3 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						repeated string bar = 3;
+					}
+				`,
+			},
+			expectedErr: `test.proto:14:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:5:30`,
+		},
 	}
 
 	for name, tc := range testCases {
@@ -2336,6 +2909,7 @@ func compile(t *testing.T, input map[string]string) (linker.Files, error) {
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			Accessor: acc,
 		}),
+		SourceInfoMode: protocompile.SourceInfoExtraOptionLocations,
 	}
 	return compiler.Compile(context.Background(), names...)
 }

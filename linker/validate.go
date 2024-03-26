@@ -16,6 +16,7 @@ package linker
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -148,31 +149,31 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 			found = true
 			if extDecl.GetReserved() {
 				file := r.FileNode()
-				info := file.NodeInfo(r.FieldNode(fd.proto))
-				span, _ := findExtensionRangeOptionSpan(r, msg, i, extRange,
+				info := file.NodeInfo(r.FieldNode(fd.proto).FieldTag())
+				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationReservedTag)
 				err := handler.HandleErrorf(info, "cannot use field number %d for an extension because it is reserved in declaration at %v",
-					fd.Number(), span)
+					fd.Number(), span.Start())
 				if err != nil {
 					return err
 				}
-			} else if extDecl.GetFullName() != string(fd.FullName()) {
+			} else if extDecl.GetFullName() != "."+string(fd.FullName()) {
 				file := r.FileNode()
-				info := file.NodeInfo(r.FieldNode(fd.proto))
-				span, _ := findExtensionRangeOptionSpan(r, msg, i, extRange,
+				info := file.NodeInfo(r.FieldNode(fd.proto).FieldName())
+				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationFullNameTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to be named %s, not %s, per declaration at %v",
-					fd.Number(), extDecl.GetFullName(), fd.FullName(), span)
+					fd.Number(), extDecl.GetFullName(), fd.FullName(), span.Start())
 				if err != nil {
 					return err
 				}
 			} else if extDecl.GetType() != getTypeName(fd) {
 				file := r.FileNode()
-				info := file.NodeInfo(r.FieldNode(fd.proto))
-				span, _ := findExtensionRangeOptionSpan(r, msg, i, extRange,
+				info := file.NodeInfo(r.FieldNode(fd.proto).FieldType())
+				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationTypeTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to have type %s, not %s, per declaration at %v",
-					fd.Number(), extDecl.GetType(), getTypeName(fd), span)
+					fd.Number(), extDecl.GetType(), getTypeName(fd), span.Start())
 				if err != nil {
 					return err
 				}
@@ -182,11 +183,11 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 					expected, actual = actual, expected
 				}
 				file := r.FileNode()
-				info := file.NodeInfo(r.FieldNode(fd.proto))
-				span, _ := findExtensionRangeOptionSpan(r, msg, i, extRange,
+				info := file.NodeInfo(r.FieldNode(fd.proto).FieldLabel())
+				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationRepeatedTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to be %s, not %s, per declaration at %v",
-					fd.Number(), expected, actual, span)
+					fd.Number(), expected, actual, span.Start())
 				if err != nil {
 					return err
 				}
@@ -195,10 +196,11 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 		}
 		if !found {
 			file := r.FileNode()
-			info := file.NodeInfo(r.FieldNode(fd.proto))
-			span, _ := findExtensionRangeOptionSpan(r, msg, i, extRange, internal.ExtensionRangeOptionsVerificationTag)
+			info := file.NodeInfo(r.FieldNode(fd.proto).FieldTag())
+			span, _ := findExtensionRangeOptionSpan(fd.ParentFile(), msg, i, extRange,
+				internal.ExtensionRangeOptionsVerificationTag)
 			err := handler.HandleErrorf(info, "expected extension with number %d to be declared in type %s, but no declaration found at %v",
-				fd.Number(), fd.ContainingMessage().FullName(), span)
+				fd.Number(), fd.ContainingMessage().FullName(), span.Start())
 			if err != nil {
 				return err
 			}
@@ -369,6 +371,10 @@ func (r *result) validateFieldJSONNames(md *msgDescriptor, useCustom bool, handl
 func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *reporter.Handler, symbols *Symbols) error {
 	for i, extRange := range md.proto.ExtensionRange {
 		opts := extRange.GetOptions()
+		if len(opts.GetDeclaration()) == 0 {
+			// nothing to check
+			continue
+		}
 		if len(opts.GetDeclaration()) > 0 && opts.GetVerification() == descriptorpb.ExtensionRangeOptions_UNVERIFIED {
 			span, ok := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsVerificationTag)
 			if !ok {
@@ -378,20 +384,56 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				return err
 			}
 		}
+		declsByTag := map[int32]ast.SourcePos{}
 		for i, extDecl := range extRange.GetOptions().GetDeclaration() {
 			if extDecl.Number == nil {
 				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, int32(i))
 				if err := handler.HandleErrorf(span, "extension declaration is missing required field number"); err != nil {
 					return err
 				}
-			}
-			if extDecl.GetNumber() < extRange.GetStart() || extDecl.GetNumber() >= extRange.GetEnd() {
-				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
+			} else {
+				extensionNumberSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationNumberTag)
-				err := handler.HandleErrorf(span, "extension declaration has number outside the range: %d not in [%d,%d]",
-					extDecl.GetNumber(), extRange.GetStart(), extRange.GetEnd()-1)
-				if err != nil {
-					return err
+				if extDecl.GetNumber() < extRange.GetStart() || extDecl.GetNumber() >= extRange.GetEnd() {
+					// Number is out of range.
+					// See if one of the other ranges on the same extends statement includes the number,
+					// so we can provide a helpful message.
+					var suffix string
+					if extRange, ok := r.ExtensionsNode(extRange).(*ast.ExtensionRangeNode); ok {
+						for _, rng := range extRange.Ranges {
+							start, _ := rng.StartVal.AsInt64()
+							var end int64
+							switch {
+							case rng.Max != nil:
+								end = math.MaxInt64
+							case rng.EndVal != nil:
+								end, _ = rng.EndVal.AsInt64()
+							default:
+								end = start
+							}
+							if int64(extDecl.GetNumber()) >= start && int64(extDecl.GetNumber()) <= end {
+								// Found another range that matches
+								suffix = "; when using declarations, extends statements should indicate only a single span of field numbers"
+								break
+							}
+						}
+					}
+					err := handler.HandleErrorf(extensionNumberSpan, "extension declaration has number outside the range: %d not in [%d,%d]%s",
+						extDecl.GetNumber(), extRange.GetStart(), extRange.GetEnd()-1, suffix)
+					if err != nil {
+						return err
+					}
+				} else {
+					// Valid number; make sure it's not a duplicate
+					if existing, ok := declsByTag[extDecl.GetNumber()]; ok {
+						err := handler.HandleErrorf(extensionNumberSpan, "extension for tag number %d already declared at %v",
+							extDecl.GetNumber(), existing)
+						if err != nil {
+							return err
+						}
+					} else {
+						declsByTag[extDecl.GetNumber()] = extensionNumberSpan.Start()
+					}
 				}
 			}
 
@@ -419,16 +461,19 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 					return err
 				}
 			}
+			var extensionFullName protoreflect.FullName
 			extensionNameSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
 				internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationFullNameTag)
 			if !strings.HasPrefix(extDecl.GetFullName(), ".") {
-				if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name should start with a leading dot (.)"); err != nil {
+				if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q should start with a leading dot (.)", extDecl.GetFullName()); err != nil {
 					return err
 				}
+				extensionFullName = protoreflect.FullName(extDecl.GetFullName())
+			} else {
+				extensionFullName = protoreflect.FullName(extDecl.GetFullName()[1:])
 			}
-			extensionFullName := protoreflect.FullName(extDecl.GetFullName()[1:])
-			if extensionFullName.IsValid() {
-				if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name is not a valid qualified name"); err != nil {
+			if !extensionFullName.IsValid() {
+				if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q is not a valid qualified name", extDecl.GetFullName()); err != nil {
 					return err
 				}
 			}
@@ -443,17 +488,17 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				}
 			}
 			if strings.HasPrefix(extDecl.GetType(), ".") {
-				if protoreflect.FullName(extDecl.GetType()[1:]).IsValid() {
+				if !protoreflect.FullName(extDecl.GetType()[1:]).IsValid() {
 					span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
 						internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
-					if err := handler.HandleErrorf(span, "extension declaration type is not a valid qualified name"); err != nil {
+					if err := handler.HandleErrorf(span, "extension declaration type %q is not a valid qualified name", extDecl.GetType()); err != nil {
 						return err
 					}
 				}
 			} else if !isBuiltinTypeName(extDecl.GetType()) {
 				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
-				if err := handler.HandleErrorf(span, "extension declaration type must be a builtin type or start with a leading dot (.)"); err != nil {
+				if err := handler.HandleErrorf(span, "extension declaration type %q must be a builtin type or start with a leading dot (.)", extDecl.GetType()); err != nil {
 					return err
 				}
 			}
@@ -679,14 +724,17 @@ func findOptionSpan(
 			// Either an exact match (if equal) or this option points *inside* the
 			// item we care about (if greater). Either way, the first such result
 			// is a keeper.
-			bestMatch = n
+			bestMatch = n.Val
 			bestMatchLen = len(n.Name.Parts)
 			return false
 		}
 		// We've got more path elements to try to match with the value.
 		match, matchLen := findMatchingValueNode(desc, path[len(n.Name.Parts):], nextIsIndex, 0, &repeatedIndices, n.Val)
 		if match != nil {
-			bestMatch, bestMatchLen = match, matchLen+len(n.Name.Parts)
+			totalMatchLen := matchLen + len(n.Name.Parts)
+			if totalMatchLen > bestMatchLen {
+				bestMatch, bestMatchLen = match, totalMatchLen
+			}
 		}
 		return bestMatchLen != len(path) // no exact match, so keep looking
 	})
