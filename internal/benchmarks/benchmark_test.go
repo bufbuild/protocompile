@@ -46,7 +46,6 @@ import (
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal/protoc"
-	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/parser/fastscan"
 	"github.com/bufbuild/protocompile/protoutil"
@@ -235,7 +234,7 @@ func downloadAndExpand(url, targetDir string) (e error) {
 }
 
 func BenchmarkGoogleapisProtocompile(b *testing.B) {
-	benchmarkGoogleapisProtocompile(b, false, func() *protocompile.Compiler {
+	benchmarkGoogleapisProtocompile(b, func() *protocompile.Compiler {
 		return &protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 				ImportPaths: []string{googleapisDir},
@@ -246,20 +245,8 @@ func BenchmarkGoogleapisProtocompile(b *testing.B) {
 	})
 }
 
-func BenchmarkGoogleapisProtocompileCanonical(b *testing.B) {
-	benchmarkGoogleapisProtocompile(b, true, func() *protocompile.Compiler {
-		return &protocompile.Compiler{
-			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
-				ImportPaths: []string{googleapisDir},
-			}),
-			SourceInfoMode: protocompile.SourceInfoStandard,
-			// leave MaxParallelism unset to let it use all cores available
-		}
-	})
-}
-
 func BenchmarkGoogleapisProtocompileNoSourceInfo(b *testing.B) {
-	benchmarkGoogleapisProtocompile(b, false, func() *protocompile.Compiler {
+	benchmarkGoogleapisProtocompile(b, func() *protocompile.Compiler {
 		return &protocompile.Compiler{
 			Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 				ImportPaths: []string{googleapisDir},
@@ -270,23 +257,19 @@ func BenchmarkGoogleapisProtocompileNoSourceInfo(b *testing.B) {
 	})
 }
 
-func benchmarkGoogleapisProtocompile(b *testing.B, canonicalBytes bool, factory func() *protocompile.Compiler) {
+func benchmarkGoogleapisProtocompile(b *testing.B, factory func() *protocompile.Compiler) {
 	for i := 0; i < b.N; i++ {
-		benchmarkProtocompile(b, factory(), googleapisSources, canonicalBytes)
+		benchmarkProtocompile(b, factory(), googleapisSources)
 	}
 }
 
-func benchmarkProtocompile(b *testing.B, c *protocompile.Compiler, sources []string, canonicalBytes bool) {
+func benchmarkProtocompile(b *testing.B, c *protocompile.Compiler, sources []string) {
 	fds, err := c.Compile(context.Background(), sources...)
 	require.NoError(b, err)
 	var fdSet descriptorpb.FileDescriptorSet
 	fdSet.File = make([]*descriptorpb.FileDescriptorProto, len(fds))
 	for i, fd := range fds {
-		if canonicalBytes {
-			fdSet.File[i] = fd.(linker.Result).CanonicalProto()
-		} else {
-			fdSet.File[i] = protoutil.ProtoFromFileDescriptor(fd)
-		}
+		fdSet.File[i] = protoutil.ProtoFromFileDescriptor(fd)
 	}
 	// protoc is writing output to file descriptor set, so we should, too
 	writeToNull(b, &fdSet)
@@ -484,7 +467,7 @@ func BenchmarkGoogleapisProtocompileSingleThreaded(b *testing.B) {
 				// need to run a single-threaded compile
 				MaxParallelism: 1,
 			}
-			benchmarkProtocompile(b, c, googleapisSources, false)
+			benchmarkProtocompile(b, c, googleapisSources)
 		}
 	})
 }
