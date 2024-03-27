@@ -2213,7 +2213,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:3:18: feature "enum_type" is allowed on [enum,file], not on field`,
+			expectedErr: `test.proto:3:27: feature "enum_type" is allowed on [enum,file], not on field`,
 		},
 		"failure_editions_feature_on_wrong_target_type_msg_literal": {
 			input: map[string]string{

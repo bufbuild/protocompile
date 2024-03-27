@@ -19,21 +19,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/bufbuild/protocompile/protoutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
@@ -42,6 +39,7 @@ import (
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -399,8 +397,7 @@ func TestOptionsEncoding(t *testing.T) {
 			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
 			err = uOpts.Unmarshal(expectedData, expectedFdset)
 			require.NoError(t, err)
-			diff := cmp.Diff(expectedFdset, actualFdset, protocmp.Transform())
-			if !assert.Empty(t, diff) {
+			if !prototest.AssertMessagesEqual(t, expectedFdset, actualFdset, file) {
 				outputDescriptorSetFile := strings.ReplaceAll(descriptorSetFile, ".proto", ".actual.proto")
 				actualData, err := proto.Marshal(actualFdset)
 				require.NoError(t, err)
@@ -415,7 +412,6 @@ func TestOptionsEncoding(t *testing.T) {
 	}
 }
 
-//nolint:errcheck
 func TestInterpretOptionsWithoutAST(t *testing.T) {
 	t.Parallel()
 
@@ -460,8 +456,7 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 		fd := file.(linker.Result).FileDescriptorProto()
 		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
 		// final protos, with options interpreted, match
-		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
-		require.Empty(t, diff)
+		prototest.AssertMessagesEqual(t, fd, fdFromNoAST, file.Path())
 	}
 }
 
@@ -511,7 +506,6 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 		fd := file.(linker.Result).FileDescriptorProto()
 		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
 		// final protos, with options interpreted, match
-		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
-		require.Empty(t, diff)
+		prototest.AssertMessagesEqual(t, fd, fdFromNoAST, file.Path())
 	}
 }

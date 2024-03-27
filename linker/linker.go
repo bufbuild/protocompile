@@ -17,10 +17,11 @@ package linker
 import (
 	"fmt"
 
+	"google.golang.org/protobuf/reflect/protoreflect"
+
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // Link handles linking a parsed descriptor proto into a fully-linked descriptor.

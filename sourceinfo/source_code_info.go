@@ -177,7 +177,7 @@ func generateSourceInfoForFile(opts OptionIndex, sci *sourceCodeInfo, file *ast.
 			generateSourceCodeInfoForEnum(opts, sci, child, append(path, internal.FileEnumsTag, enumIndex))
 			enumIndex++
 		case *ast.ExtendNode:
-			extsPath := append(path, internal.FileExtensionsTag)
+			extsPath := append(path, internal.FileExtensionsTag) //nolint:gocritic // intentionally creating new slice var
 			// we clone the path here so that append can't mutate extsPath, since they may share storage
 			msgsPath := append(internal.ClonePath(path), internal.FileMessagesTag)
 			generateSourceCodeInfoForExtensions(opts, sci, child, &extendIndex, &msgIndex, extsPath, msgsPath)
@@ -341,7 +341,7 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.MessageFieldsTag, fieldIndex))
 			fieldIndex++
 		case *ast.GroupNode:
-			fldPath := append(path, internal.MessageFieldsTag, fieldIndex)
+			fldPath := append(path, internal.MessageFieldsTag, fieldIndex) //nolint:gocritic // intentionally creating new slice var
 			generateSourceCodeInfoForField(opts, sci, child, fldPath)
 			fieldIndex++
 			// we clone the path here so that append can't mutate fldPath, since they may share storage
@@ -353,7 +353,7 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 			fieldIndex++
 			nestedMsgIndex++
 		case *ast.OneofNode:
-			fldsPath := append(path, internal.MessageFieldsTag)
+			fldsPath := append(path, internal.MessageFieldsTag) //nolint:gocritic // intentionally creating new slice var
 			// we clone the path here and below so that append ops can't mutate
 			// fldPath or msgsPath, since they may otherwise share storage
 			msgsPath := append(internal.ClonePath(path), internal.MessageNestedMessagesTag)
@@ -367,7 +367,7 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 			generateSourceCodeInfoForEnum(opts, sci, child, append(path, internal.MessageEnumsTag, nestedEnumIndex))
 			nestedEnumIndex++
 		case *ast.ExtendNode:
-			extsPath := append(path, internal.MessageExtensionsTag)
+			extsPath := append(path, internal.MessageExtensionsTag) //nolint:gocritic // intentionally creating new slice var
 			// we clone the path here so that append can't mutate extsPath, since they may share storage
 			msgsPath := append(internal.ClonePath(path), internal.MessageNestedMessagesTag)
 			generateSourceCodeInfoForExtensions(opts, sci, child, &extendIndex, &nestedMsgIndex, extsPath, msgsPath)

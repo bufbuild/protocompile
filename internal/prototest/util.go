@@ -15,7 +15,6 @@
 package prototest
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -73,27 +72,11 @@ func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptor
 	return nil
 }
 
-func AssertMessagesEqual(t *testing.T, exp, act proto.Message, msgAndArgs ...interface{}) {
+func AssertMessagesEqual(t *testing.T, exp, act proto.Message, description string) bool {
 	t.Helper()
-	AssertMessagesEqualWithOptions(t, exp, act, nil, msgAndArgs...)
-}
-
-func AssertMessagesEqualWithOptions(t *testing.T, exp, act proto.Message, opts []cmp.Option, msgAndArgs ...interface{}) {
-	t.Helper()
-	cmpOpts := []cmp.Option{protocmp.Transform()}
-	cmpOpts = append(cmpOpts, opts...)
-	if diff := cmp.Diff(exp, act, cmpOpts...); diff != "" {
-		var prefix string
-		if len(msgAndArgs) == 1 {
-			if msg, ok := msgAndArgs[0].(string); ok {
-				prefix = msg + ": "
-			} else {
-				prefix = fmt.Sprintf("%+v: ", msgAndArgs[0])
-			}
-		} else if len(msgAndArgs) > 1 {
-			prefix = fmt.Sprintf(msgAndArgs[0].(string)+": ", msgAndArgs[1:]...)
-		}
-
-		t.Errorf("%smessage mismatch (-want +got):\n%v", prefix, diff)
+	if diff := cmp.Diff(exp, act, protocmp.Transform()); diff != "" {
+		t.Errorf("%s: message mismatch (-want, +got):\n%s", description, diff)
+		return false
 	}
+	return true
 }

@@ -586,7 +586,7 @@ func (interp *interpreter) interpretOptions(
 		ElementType: descriptorType(element),
 	}
 	var remain []*descriptorpb.UninterpretedOption
-	var featuresInfo []optionSourceInfo
+	var features []*ast.OptionNode
 	for _, uo := range uninterpreted {
 		if uo.Name[0].GetIsExtension() != customOpts {
 			// We're not looking at these this phase.
@@ -613,15 +613,15 @@ func (interp *interpreter) interpretOptions(
 			}
 			return nil, err
 		}
-		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == featuresFieldName && srcInfo != nil {
-			featuresInfo = append(featuresInfo, optionSourceInfo{node: node, OptionSourceInfo: srcInfo})
-		}
 		if optn, ok := node.(*ast.OptionNode); ok && srcInfo != nil {
 			interp.index[optn] = srcInfo
+			if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == featuresFieldName {
+				features = append(features, optn)
+			}
 		}
 	}
 
-	if err := interp.validateFeatures(targetType, msg, featuresInfo); err != nil && !interp.lenient {
+	if err := interp.validateFeatures(targetType, msg, features); err != nil && !interp.lenient {
 		return nil, err
 	}
 
@@ -662,7 +662,7 @@ func (interp *interpreter) interpretOptions(
 func (interp *interpreter) validateFeatures(
 	targetType descriptorpb.FieldOptions_OptionTargetType,
 	opts protoreflect.Message,
-	featuresInfo []optionSourceInfo,
+	features []*ast.OptionNode,
 ) error {
 	fld := opts.Descriptor().Fields().ByName(featuresFieldName)
 	if fld == nil {
@@ -674,9 +674,9 @@ func (interp *interpreter) validateFeatures(
 		// TODO: should this return an error?
 		return nil
 	}
-	features := opts.Get(fld).Message()
+	featureSet := opts.Get(fld).Message()
 	var err error
-	features.Range(func(featureField protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+	featureSet.Range(func(featureField protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
 		opts, ok := featureField.Options().(*descriptorpb.FieldOptions)
 		if !ok {
 			return true
@@ -694,7 +694,7 @@ func (interp *interpreter) validateFeatures(
 			for i, t := range opts.Targets {
 				allowedTypes[i] = targetTypeString(t)
 			}
-			pos := interp.positionOfFeature(featuresInfo, fld.Number(), featureField.Number())
+			pos := interp.positionOfFeature(features, featuresFieldName, featureField.Name())
 			if len(opts.Targets) == 1 && opts.Targets[0] == descriptorpb.FieldOptions_TARGET_TYPE_UNKNOWN {
 				err = interp.reporter.HandleErrorf(pos, "feature field %q may not be used explicitly", featureField.Name())
 			} else {
@@ -706,78 +706,51 @@ func (interp *interpreter) validateFeatures(
 	return err
 }
 
-func (interp *interpreter) positionOfFeature(featuresInfo []optionSourceInfo, fieldNumbers ...protoreflect.FieldNumber) ast.SourceSpan {
+func (interp *interpreter) positionOfFeature(features []*ast.OptionNode, fieldNames ...protoreflect.Name) ast.SourceSpan {
 	if interp.file.AST() == nil {
 		return ast.UnknownSpan(interp.file.FileDescriptorProto().GetName())
 	}
-	for _, info := range featuresInfo {
-		matched, remainingNumbers, node := matchInterpretedOption(info, fieldNumbers)
+	for _, feature := range features {
+		matched, remainingNames, nodePos, nodeValue := matchInterpretedOption(feature, fieldNames)
 		if !matched {
 			continue
 		}
-		if len(remainingNumbers) > 0 {
-			node = findInterpretedFieldForFeature(info, remainingNumbers)
+		if len(remainingNames) > 0 {
+			nodePos = findInterpretedFieldForFeature(nodePos, nodeValue, remainingNames)
 		}
-		if node != nil {
-			return interp.file.FileNode().NodeInfo(node)
+		if nodePos != nil {
+			return interp.file.FileNode().NodeInfo(nodePos)
 		}
 	}
 	return ast.UnknownSpan(interp.file.FileDescriptorProto().GetName())
 }
 
-type optionSourceInfo struct {
-	node ast.Node
-	*sourceinfo.OptionSourceInfo
-}
-
-func matchInterpretedOption(info optionSourceInfo, path []protoreflect.FieldNumber) (bool, []protoreflect.FieldNumber, ast.Node) {
-	for i := 0; i < len(path) && i < len(info.Path); i++ {
-		if info.Path[i] != int32(path[i]) {
-			return false, nil, nil
+func matchInterpretedOption(node *ast.OptionNode, path []protoreflect.Name) (bool, []protoreflect.Name, ast.Node, ast.ValueNode) {
+	for i := 0; i < len(path) && i < len(node.Name.Parts); i++ {
+		part := node.Name.Parts[i]
+		if !part.IsExtension() && protoreflect.Name(part.Name.AsIdentifier()) != path[i] {
+			return false, nil, nil, nil
 		}
 	}
-	if len(path) <= len(info.Path) {
-		// no more path elements to match
-		node := info.node
-		if optsNode, ok := node.(*ast.OptionNode); ok {
-			// Do we need to check this? It should always be true...
-			if len(optsNode.Name.Parts) == len(info.Path)+1 {
-				node = optsNode.Name.Parts[len(path)-1]
-			}
-		}
-		return true, nil, node
+	if len(path) <= len(node.Name.Parts) {
+		// No more path elements to match. Report location
+		// of the final element of path inside option name.
+		return true, nil, node.Name.Parts[len(path)-1], node.Val
 	}
-	return true, path[len(info.Path):], info.node
+	return true, path[len(node.Name.Parts):], node.Name.Parts[len(node.Name.Parts)-1], node.Val
 }
 
-func findInterpretedFieldForFeature(opt optionSourceInfo, path []protoreflect.FieldNumber) ast.Node {
+func findInterpretedFieldForFeature(nodePos ast.Node, nodeValue ast.ValueNode, path []protoreflect.Name) ast.Node {
 	if len(path) == 0 {
-		return opt.node
+		return nodePos
 	}
-	msgNode, ok := opt.node.(*ast.MessageLiteralNode)
-	if !ok {
-		return nil
-	}
-	msgSrcInfo, ok := opt.Children.(*sourceinfo.MessageLiteralSourceInfo)
+	msgNode, ok := nodeValue.(*ast.MessageLiteralNode)
 	if !ok {
 		return nil
 	}
 	for _, fldNode := range msgNode.Elements {
-		fldSrcInfo := msgSrcInfo.Fields[fldNode]
-		var number int32
-		if fldSrcInfo.Repeated {
-			// Last element in path is an index. So the next-to-last is a field number
-			number = fldSrcInfo.Path[len(fldSrcInfo.Path)-2]
-		} else {
-			// Last element in path is the field number
-			number = fldSrcInfo.Path[len(fldSrcInfo.Path)-1]
-		}
-		if number == int32(path[0]) {
-			fldOptSrcInfo := optionSourceInfo{
-				node:             fldNode.Val,
-				OptionSourceInfo: fldSrcInfo,
-			}
-			if res := findInterpretedFieldForFeature(fldOptSrcInfo, path[1:]); res != nil {
+		if fldNode.Name.Open == nil && protoreflect.Name(fldNode.Name.Name.AsIdentifier()) == path[0] {
+			if res := findInterpretedFieldForFeature(fldNode.Name, fldNode.Val, path[1:]); res != nil {
 				return res
 			}
 		}
@@ -902,6 +875,7 @@ func (interp *interpreter) interpretField(
 				mc, nm.GetNamePart(), msg.Descriptor().FullName())
 		}
 	}
+	pathPrefix = append(pathPrefix, int32(fld.Number()))
 
 	if len(opt.GetName()) > nameIndex+1 {
 		nextnm := opt.GetName()[nameIndex+1]
@@ -935,7 +909,7 @@ func (interp *interpreter) interpretField(
 			msg.Set(fld, fldVal)
 		}
 		// recurse to set next part of name
-		return interp.interpretField(mc, fdm, opt, nameIndex+1, append(pathPrefix, int32(fld.Number())))
+		return interp.interpretField(mc, fdm, opt, nameIndex+1, pathPrefix)
 	}
 
 	optNode := interp.file.OptionNode(opt)
@@ -944,7 +918,8 @@ func (interp *interpreter) interpretField(
 	var err error
 	if optValNode.Value() == nil {
 		err = interp.setOptionFieldFromProto(mc, msg, fld, node, opt, optValNode)
-		srcInfo = &sourceinfo.OptionSourceInfo{Path: internal.ClonePath(pathPrefix)}
+		srcInfoVal := newSrcInfo(pathPrefix, false, nil)
+		srcInfo = &srcInfoVal
 	} else {
 		srcInfo, err = interp.setOptionField(mc, msg, fld, node, optValNode, false, pathPrefix)
 	}
@@ -999,11 +974,8 @@ func (interp *interpreter) setOptionField(
 			}
 			childVals[index] = srcInfo
 		}
-		return &sourceinfo.OptionSourceInfo{
-			Path:     internal.ClonePath(append(pathPrefix, int32(firstIndex))),
-			Repeated: true,
-			Children: &sourceinfo.ArrayLiteralSourceInfo{Elements: childVals},
-		}, nil
+		srcInfo := newSrcInfo(append(pathPrefix, int32(firstIndex)), true, &sourceinfo.ArrayLiteralSourceInfo{Elements: childVals})
+		return &srcInfo, nil
 	}
 
 	if fld.IsMap() {
@@ -1068,11 +1040,12 @@ func (interp *interpreter) setOptionFieldFromProto(
 		}
 		// We must parse the text format from the aggregate value string
 		var elem protoreflect.Message
-		if fld.IsMap() {
+		switch {
+		case fld.IsMap():
 			elem = dynamicpb.NewMessage(fld.Message())
-		} else if fld.IsList() {
+		case fld.IsList():
 			elem = msg.Get(fld).List().NewElement().Message()
-		} else {
+		default:
 			elem = msg.NewField(fld).Message()
 		}
 		err := prototext.UnmarshalOptions{
@@ -1267,12 +1240,7 @@ func (interp *interpreter) fieldValue(
 		if err != nil {
 			return protoreflect.Value{}, sourceinfo.OptionSourceInfo{}, err
 		}
-		return protoreflect.ValueOfEnum(num),
-			sourceinfo.OptionSourceInfo{
-				Path:     pathPrefix,
-				Repeated: repeated,
-			},
-			nil
+		return protoreflect.ValueOfEnum(num), newSrcInfo(pathPrefix, repeated, nil), nil
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		v := val.Value()
@@ -1300,12 +1268,7 @@ func (interp *interpreter) fieldValue(
 		if err != nil {
 			return protoreflect.Value{}, sourceinfo.OptionSourceInfo{}, err
 		}
-		return protoreflect.ValueOf(v),
-			sourceinfo.OptionSourceInfo{
-				Path:     pathPrefix,
-				Repeated: repeated,
-			},
-			nil
+		return protoreflect.ValueOf(v), newSrcInfo(pathPrefix, repeated, nil), nil
 	}
 }
 
@@ -1821,10 +1784,14 @@ func (interp *interpreter) messageLiteralValue(
 		}
 	}
 	return protoreflect.ValueOfMessage(msg),
-		sourceinfo.OptionSourceInfo{
-			Path:     internal.ClonePath(pathPrefix),
-			Repeated: repeated,
-			Children: &sourceinfo.MessageLiteralSourceInfo{Fields: flds},
-		},
+		newSrcInfo(pathPrefix, repeated, &sourceinfo.MessageLiteralSourceInfo{Fields: flds}),
 		nil
+}
+
+func newSrcInfo(path []int32, repeated bool, children sourceinfo.OptionChildrenSourceInfo) sourceinfo.OptionSourceInfo {
+	return sourceinfo.OptionSourceInfo{
+		Path:     internal.ClonePath(path),
+		Repeated: repeated,
+		Children: children,
+	}
 }
