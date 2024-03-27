@@ -74,7 +74,7 @@ func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptor
 
 func AssertMessagesEqual(t *testing.T, exp, act proto.Message, description string) bool {
 	t.Helper()
-	if diff := cmp.Diff(exp, act, protocmp.Transform()); diff != "" {
+	if diff := cmp.Diff(exp, act, protocmp.Transform(), cmpopts.EquateNaNs()); diff != "" {
 		t.Errorf("%s: message mismatch (-want, +got):\n%s", description, diff)
 		return false
 	}
