@@ -243,4 +243,9 @@ const (
 	// UninterpretedNameNameTag is the tag number of the name element in an
 	// uninterpreted option name proto.
 	UninterpretedNameNameTag = 1
+
+	// AnyTypeURLTag is the tag number of the type_url field of the Any proto.
+	AnyTypeURLTag = 1
+	// AnyValueTag is the tag number of the value field of the Any proto.
+	AnyValueTag = 2
 )

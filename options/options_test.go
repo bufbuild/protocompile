@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/bufbuild/protocompile/protoutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -386,34 +387,29 @@ func TestOptionsEncoding(t *testing.T) {
 			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
 			prototest.CheckFiles(t, res, fdset, false)
 
-			canonicalProto := res.CanonicalProto()
 			actualFdset := &descriptorpb.FileDescriptorSet{
-				File: []*descriptorpb.FileDescriptorProto{canonicalProto},
+				File: []*descriptorpb.FileDescriptorProto{protoutil.ProtoFromFileDescriptor(res)},
 			}
-			actualData, err := proto.Marshal(actualFdset)
-			require.NoError(t, err)
 
-			// semantic check that unmarshalling the "canonical bytes" results
-			// in the same proto as when not using "canonical bytes"
-			protoData, err := proto.Marshal(canonicalProto)
-			require.NoError(t, err)
-			proto.Reset(canonicalProto)
-			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
-			err = uOpts.Unmarshal(protoData, canonicalProto)
-			require.NoError(t, err)
-			require.Empty(t, cmp.Diff(res.FileDescriptorProto(), canonicalProto, protocmp.Transform()), "canonical proto != proto")
-
-			// drum roll... make sure the bytes match the protoc output
+			// drum roll... make sure the descriptors we produce are semantically equivalent
+			// to those produced by protoc
 			expectedData, err := os.ReadFile(descriptorSetFile)
 			require.NoError(t, err)
-			if !bytes.Equal(actualData, expectedData) {
+			expectedFdset := &descriptorpb.FileDescriptorSet{}
+			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
+			err = uOpts.Unmarshal(expectedData, expectedFdset)
+			require.NoError(t, err)
+			diff := cmp.Diff(expectedFdset, actualFdset, protocmp.Transform())
+			if !assert.Empty(t, diff) {
 				outputDescriptorSetFile := strings.ReplaceAll(descriptorSetFile, ".proto", ".actual.proto")
+				actualData, err := proto.Marshal(actualFdset)
+				require.NoError(t, err)
 				err = os.WriteFile(outputDescriptorSetFile, actualData, 0644)
 				if err != nil {
-					t.Log("failed to write actual to file")
+					t.Logf("failed to write actual to file: %v", err)
+				} else {
+					t.Logf("wrote actual contents to %s", outputDescriptorSetFile)
 				}
-
-				t.Fatalf("descriptor set bytes not equal (created file %q with actual bytes)", outputDescriptorSetFile)
 			}
 		})
 	}
@@ -467,20 +463,6 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
 		require.Empty(t, diff)
 	}
-
-	// Also make sure the canonical bytes are correct
-	for _, file := range filesFromNoAST {
-		res := file.(linker.Result)
-		canonicalFd := res.CanonicalProto()
-		data, err := proto.Marshal(canonicalFd)
-		require.NoError(t, err)
-		fromCanonical := &descriptorpb.FileDescriptorProto{}
-		err = proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(file)}.Unmarshal(data, fromCanonical)
-		require.NoError(t, err)
-		origFd := res.FileDescriptorProto()
-		diff := cmp.Diff(origFd, fromCanonical, protocmp.Transform())
-		require.Empty(t, diff)
-	}
 }
 
 //nolint:errcheck
@@ -530,20 +512,6 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
 		// final protos, with options interpreted, match
 		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
-		require.Empty(t, diff)
-	}
-
-	// Also make sure the canonical bytes are correct
-	for _, file := range filesFromNoAST {
-		res := file.(linker.Result)
-		canonicalFd := res.CanonicalProto()
-		data, err := proto.Marshal(canonicalFd)
-		require.NoError(t, err)
-		fromCanonical := &descriptorpb.FileDescriptorProto{}
-		err = proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(file)}.Unmarshal(data, fromCanonical)
-		require.NoError(t, err)
-		origFd := res.FileDescriptorProto()
-		diff := cmp.Diff(origFd, fromCanonical, protocmp.Transform())
 		require.Empty(t, diff)
 	}
 }
