@@ -613,10 +613,12 @@ func (interp *interpreter) interpretOptions(
 			}
 			return nil, err
 		}
-		if optn, ok := node.(*ast.OptionNode); ok && srcInfo != nil {
-			interp.index[optn] = srcInfo
+		if optn, ok := node.(*ast.OptionNode); ok {
 			if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == featuresFieldName {
 				features = append(features, optn)
+			}
+			if srcInfo != nil {
+				interp.index[optn] = srcInfo
 			}
 		}
 	}
