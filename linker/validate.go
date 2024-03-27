@@ -157,7 +157,9 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				if err != nil {
 					return err
 				}
-			} else if extDecl.GetFullName() != "."+string(fd.FullName()) {
+				break
+			}
+			if extDecl.GetFullName() != "."+string(fd.FullName()) {
 				file := r.FileNode()
 				info := file.NodeInfo(r.FieldNode(fd.proto).FieldName())
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
@@ -167,7 +169,8 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				if err != nil {
 					return err
 				}
-			} else if extDecl.GetType() != getTypeName(fd) {
+			}
+			if extDecl.GetType() != getTypeName(fd) {
 				file := r.FileNode()
 				info := file.NodeInfo(r.FieldNode(fd.proto).FieldType())
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
@@ -177,7 +180,8 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				if err != nil {
 					return err
 				}
-			} else if extDecl.GetRepeated() != (fd.Cardinality() == protoreflect.Repeated) {
+			}
+			if extDecl.GetRepeated() != (fd.Cardinality() == protoreflect.Repeated) {
 				expected, actual := "repeated", "optional"
 				if !extDecl.GetRepeated() {
 					expected, actual = actual, expected
@@ -650,9 +654,10 @@ func findExtensionRangeOptionSpan(
 		return ast.UnknownSpan(file.Path()), true
 	}
 
+	//nolint:gocritic // intentionally assigning to different slice variables
 	extRangePath := append(msgPath, internal.MessageExtensionRangesTag, int32(extRangeIndex))
-	optsPath := append(extRangePath, internal.ExtensionRangeOptionsTag)
-	fullPath := append(optsPath, path...)
+	optsPath := append(extRangePath, internal.ExtensionRangeOptionsTag) //nolint:gocritic
+	fullPath := append(optsPath, path...)                               //nolint:gocritic
 	srcLoc := srcLocs.ByPath(fullPath)
 	if srcLoc.Path != nil {
 		// found it
@@ -795,7 +800,6 @@ func findMatchingValueNode(
 			// We're done matching!
 			return val, matchLen
 		}
-		currIsRepeated = false
 	}
 
 	msgValue, ok := val.(*ast.MessageLiteralNode)

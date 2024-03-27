@@ -1008,7 +1008,7 @@ func asExtsNode(er *descriptorpb.DescriptorProto_ExtensionRange) proto.Message {
 
 // a simple marker type that allows us to have two distinct keys in a map for
 // the same ExtensionRange proto -- one for the range itself and another to
-// associate with the enclosing/parent AST node
+// associate with the enclosing/parent AST node.
 type extsParent struct {
 	*descriptorpb.DescriptorProto_ExtensionRange
 }
