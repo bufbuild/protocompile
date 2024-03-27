@@ -34,6 +34,9 @@ import (
 // ValidateOptions runs some validation checks on the result that can only
 // be done after options are interpreted.
 func (r *result) ValidateOptions(handler *reporter.Handler, symbols *Symbols) error {
+	if err := r.validateFile(handler); err != nil {
+		return err
+	}
 	return walk.Descriptors(r, func(d protoreflect.Descriptor) error {
 		switch d := d.(type) {
 		case protoreflect.FieldDescriptor:
@@ -56,6 +59,45 @@ func (r *result) ValidateOptions(handler *reporter.Handler, symbols *Symbols) er
 	})
 }
 
+func (r *result) validateFile(handler *reporter.Handler) error {
+	opts := r.FileDescriptorProto().GetOptions()
+	if opts.GetOptimizeFor() != descriptorpb.FileOptions_LITE_RUNTIME {
+		// Non-lite files may not import lite files.
+		imports := r.Imports()
+		for i, length := 0, imports.Len(); i < length; i++ {
+			dep := imports.Get(i)
+			depOpts, ok := dep.Options().(*descriptorpb.FileOptions)
+			if !ok {
+				continue // what else to do?
+			}
+			if depOpts.GetOptimizeFor() == descriptorpb.FileOptions_LITE_RUNTIME {
+				err := handler.HandleErrorf(r.getImportLocation(dep.Path()), "a file that does not use optimize_for=LITE_RUNTIME may not import file %q that does", dep.Path())
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if isEditions(r) {
+		// Validate features
+		if opts.GetFeatures().GetFieldPresence() == descriptorpb.FeatureSet_LEGACY_REQUIRED {
+			span := r.findOptionSpan(r, internal.FileOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			err := handler.HandleErrorf(span, "LEGACY_REQUIRED field presence cannot be set as the default for a file")
+			if err != nil {
+				return err
+			}
+		}
+		if opts != nil && opts.JavaStringCheckUtf8 != nil {
+			span := r.findOptionSpan(r, internal.FileOptionsJavaStringCheckUTF8Tag)
+			err := handler.HandleErrorf(span, `file option java_string_check_utf8 is not allowed with editions; import "google/protobuf/java_features.proto" and use the (pb.java).utf8_validation instead`)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *reporter.Handler) error {
 	if xtd, ok := fld.(protoreflect.ExtensionTypeDescriptor); ok {
 		fld = xtd.Descriptor()
@@ -64,6 +106,29 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 	if !ok {
 		// should not be possible
 		return fmt.Errorf("field descriptor is wrong type: expecting %T, got %T", (*fldDescriptor)(nil), fld)
+	}
+	if fd.proto.Options != nil && fd.proto.Options.Ctype != nil {
+		if descriptorpb.Edition(r.Edition()) >= descriptorpb.Edition_EDITION_2024 {
+			// We don't support edition 2024 yet, but we went ahead and mimic'ed this check
+			// from protoc, which currently has experimental support for 2024.
+			span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+			if err := handler.HandleErrorf(span, "ctype option cannot be used as of edition 2024; use features.string_type instead"); err != nil {
+				return err
+			}
+		} else if descriptorpb.Edition(r.Edition()) == descriptorpb.Edition_EDITION_2023 {
+			if fld.Kind() != protoreflect.StringKind && fld.Kind() != protoreflect.BytesKind {
+				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+				if err := handler.HandleErrorf(span, "ctype option can only be used on string and bytes fields"); err != nil {
+					return err
+				}
+			}
+			if fd.proto.Options.GetCtype() == descriptorpb.FieldOptions_CORD && fd.IsExtension() {
+				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+				if err := handler.HandleErrorf(span, "ctype option cannot be CORD for extension fields"); err != nil {
+					return err
+				}
+			}
+		}
 	}
 	if fld.IsExtension() {
 		if err := r.validateExtension(fd, handler); err != nil {
@@ -87,6 +152,19 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 			if err := handler.HandleErrorf(info, "cannot use closed enum %s in a field with implicit presence", fd.Enum().FullName()); err != nil {
 				return err
 			}
+		}
+	}
+	if fd.HasDefault() && !fd.HasPresence() {
+		span := r.findScalarOptionSpan(r.FieldNode(fd.proto), "default")
+		err := handler.HandleErrorf(span, "default value is not allowed on fields with implicit presence")
+		if err != nil {
+			return err
+		}
+	}
+
+	if isEditions(r) {
+		if err := r.validateFieldFeatures(fd, handler); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -215,6 +293,13 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 }
 
 func (r *result) validatePacked(fd *fldDescriptor, handler *reporter.Handler) error {
+	if fd.proto.Options != nil && fd.proto.Options.Packed != nil && isEditions(r) {
+		span := r.findOptionSpan(fd, internal.FieldOptionsPackedTag)
+		err := handler.HandleErrorf(span, "packed option cannot be used with editions; use features.repeated_field_encoding=PACKED instead")
+		if err != nil {
+			return err
+		}
+	}
 	if !fd.proto.GetOptions().GetPacked() {
 		// if packed isn't true, nothing to validate
 		return nil
@@ -232,7 +317,82 @@ func (r *result) validatePacked(fd *fldDescriptor, handler *reporter.Handler) er
 		descriptorpb.FieldDescriptorProto_TYPE_MESSAGE, descriptorpb.FieldDescriptorProto_TYPE_GROUP:
 		file := r.FileNode()
 		info := file.NodeInfo(r.FieldNode(fd.proto).FieldType())
-		return handler.HandleErrorf(info, "packed option is only allowed on numeric, boolean, and enum fields")
+		err := handler.HandleErrorf(info, "packed option is only allowed on numeric, boolean, and enum fields")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *result) validateFieldFeatures(fld *fldDescriptor, handler *reporter.Handler) error {
+	if msg, ok := fld.Parent().(*msgDescriptor); ok && msg.proto.GetOptions().GetMapEntry() {
+		// Skip validating features on fields of synthetic map entry messages.
+		// We blindly propagate them from the map field's features, but some may
+		// really only apply to the map field and not to a key or value entry field.
+		return nil
+	}
+	features := fld.proto.GetOptions().GetFeatures()
+	if features == nil {
+		// No features to validate.
+		return nil
+	}
+	if features.FieldPresence != nil {
+		switch {
+		case fld.proto.OneofIndex != nil:
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			if err := handler.HandleErrorf(span, "oneof fields may not specify field presence"); err != nil {
+				return err
+			}
+		case fld.Cardinality() == protoreflect.Repeated:
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			if err := handler.HandleErrorf(span, "repeated fields may not specify field presence"); err != nil {
+				return err
+			}
+		case fld.IsExtension():
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			if err := handler.HandleErrorf(span, "extension fields may not specify field presence"); err != nil {
+				return err
+			}
+		case fld.Message() != nil && features.GetFieldPresence() == descriptorpb.FeatureSet_IMPLICIT:
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetFieldPresenceTag)
+			if err := handler.HandleErrorf(span, "message fields may not specify implicit presence"); err != nil {
+				return err
+			}
+		}
+	}
+	if features.RepeatedFieldEncoding != nil {
+		if fld.Cardinality() != protoreflect.Repeated {
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetRepeatedFieldEncodingTag)
+			if err := handler.HandleErrorf(span, "only repeated fields may specify repeated field encoding"); err != nil {
+				return err
+			}
+		} else if !internal.CanPack(fld.Kind()) && features.GetRepeatedFieldEncoding() == descriptorpb.FeatureSet_PACKED {
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetRepeatedFieldEncodingTag)
+			if err := handler.HandleErrorf(span, "only repeated primitive fields may specify packed encoding"); err != nil {
+				return err
+			}
+		}
+	}
+	if features.Utf8Validation != nil {
+		isMap := fld.IsMap()
+		if (!isMap && fld.Kind() != protoreflect.StringKind) ||
+			(isMap &&
+				fld.MapKey().Kind() != protoreflect.StringKind &&
+				fld.MapValue().Kind() != protoreflect.StringKind) {
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetUTF8ValidationTag)
+			if err := handler.HandleErrorf(span, "only string fields may specify UTF8 validation"); err != nil {
+				return err
+			}
+		}
+	}
+	if features.MessageEncoding != nil {
+		if fld.Message() == nil || fld.IsMap() {
+			span := r.findOptionSpan(fld, internal.FieldOptionsFeaturesTag, internal.FeatureSetMessageEncodingTag)
+			if err := handler.HandleErrorf(span, "only message fields may specify message encoding"); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -638,7 +798,7 @@ func findExtensionRangeOptionSpan(
 		// Find the location using the AST, which will generally be higher fidelity
 		// than what we might find in a file descriptor's source code info.
 		exts := r.ExtensionsNode(extRange)
-		return findOptionSpan(r.FileNode(), exts, extRange.Options.ProtoReflect().Descriptor(), path)
+		return findOptionSpan(r.FileNode(), exts, extRange.Options.ProtoReflect().Descriptor(), path...)
 	}
 
 	srcLocs := file.SourceLocations()
@@ -687,11 +847,40 @@ func findExtensionRangeOptionSpan(
 	return ast.UnknownSpan(file.Path()), false
 }
 
+func (r *result) findScalarOptionSpan(
+	root ast.NodeWithOptions,
+	name string,
+) ast.SourceSpan {
+	match := ast.Node(root)
+	root.RangeOptions(func(n *ast.OptionNode) bool {
+		if len(n.Name.Parts) == 1 && !n.Name.Parts[0].IsExtension() &&
+			string(n.Name.Parts[0].Name.AsIdentifier()) == name {
+			match = n
+			return false
+		}
+		return true
+	})
+	return r.FileNode().NodeInfo(match)
+}
+
+func (r *result) findOptionSpan(
+	d protoutil.DescriptorProtoWrapper,
+	path ...int32,
+) ast.SourceSpan {
+	node := r.Node(d.AsProto())
+	nodeWithOpts, ok := node.(ast.NodeWithOptions)
+	if !ok {
+		return r.FileNode().NodeInfo(node)
+	}
+	span, _ := findOptionSpan(r.FileNode(), nodeWithOpts, d.Options().ProtoReflect().Descriptor(), path...)
+	return span
+}
+
 func findOptionSpan(
 	file ast.FileDeclNode,
 	root ast.NodeWithOptions,
 	md protoreflect.MessageDescriptor,
-	path protoreflect.SourcePath,
+	path ...int32,
 ) (ast.SourceSpan, bool) {
 	bestMatch := ast.Node(root)
 	var bestMatchLen int
@@ -887,4 +1076,26 @@ func asSpan(file string, srcLoc protoreflect.SourceLocation) ast.SourceSpan {
 			Col:      srcLoc.EndColumn + 1,
 		},
 	)
+}
+
+func (r *result) getImportLocation(path string) ast.SourceSpan {
+	node, ok := r.FileNode().(*ast.FileNode)
+	if !ok {
+		return ast.UnknownSpan(path)
+	}
+	for _, decl := range node.Decls {
+		imp, ok := decl.(*ast.ImportNode)
+		if !ok {
+			continue
+		}
+		if imp.Name.AsString() == path {
+			return node.NodeInfo(imp.Name)
+		}
+	}
+	// Couldn't find it? Should never happen...
+	return ast.UnknownSpan(path)
+}
+
+func isEditions(r *result) bool {
+	return descriptorpb.Edition(r.Edition()) >= descriptorpb.Edition_EDITION_2023
 }
