@@ -2232,7 +2232,13 @@ func TestLinkerValidation(t *testing.T) {
 			input: map[string]string{
 				"test.proto": `syntax = "proto3"; enum Foo { FIRST = 1; }`,
 			},
-			expectedErr: `test.proto:1:39: first value of open enum Foo must be zero`,
+			expectedErr: `test.proto:1:39: enum Foo: proto3 requires that first value of enum have numeric value zero`,
+		},
+		"failure_editions_open_enum_zero_value": {
+			input: map[string]string{
+				"test.proto": `edition = "2023"; enum Foo { FIRST = 1; }`,
+			},
+			expectedErr: `test.proto:1:38: first value of open enum Foo must have numeric value zero`,
 		},
 		"success_extension_declarations": {
 			input: map[string]string{

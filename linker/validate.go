@@ -281,7 +281,7 @@ func (r *result) validateEnum(d protoreflect.EnumDescriptor, handler *reporter.H
 			return fmt.Errorf("enum value descriptor is wrong type: expecting %T, got %T", (*enValDescriptor)(nil), firstValue)
 		}
 		info := file.NodeInfo(r.EnumValueNode(evd.proto).GetNumber())
-		if err := handler.HandleErrorf(info, "first value of open enum %s must be zero", ed.FullName()); err != nil {
+		if err := handler.HandleErrorf(info, "first value of open enum %s must have numeric value zero", ed.FullName()); err != nil {
 			return err
 		}
 	}
