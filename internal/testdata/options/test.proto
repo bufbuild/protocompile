@@ -11,8 +11,9 @@ syntax = "proto2";
 package bufbuild.protocompile.test;
 
 import "options.proto";
-// pull in extra/forked enum options to make sure they are encoded as expected
-import "google/protobuf/descriptor.proto";
+// We don't need to explicitly import google/protobuf/descriptor.proto since
+// the customizations (extra non-custom enum options) are pulled in
+// implicitly by options.proto.
 
 option (file_i) = 1;
 option (file_i) = 2;

@@ -25,23 +25,30 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
+
+func TestMain(m *testing.M) {
+	// Enable just for tests.
+	internal.AllowEditions = true
+	status := m.Run()
+	os.Exit(status)
+}
 
 type ident string
 type aggregate string
@@ -345,13 +352,15 @@ func qualify(qualifier, name string) string {
 func TestOptionsEncoding(t *testing.T) {
 	t.Parallel()
 	testCases := map[string]string{
-		"proto2":   "options/test.proto",
-		"proto3":   "options/test_proto3.proto",
-		"defaults": "desc_test_defaults.proto",
+		"proto2-opts-same-file": "options/options.proto",
+		"proto2":                "options/test.proto",
+		"proto3":                "options/test_proto3.proto",
+		"editions":              "options/test_editions.proto",
+		"defaults":              "desc_test_defaults.proto",
 	}
-	for syntax, file := range testCases {
+	for testCaseName, file := range testCases {
 		file := file // must not capture loop variable below, for thread safety
-		t.Run(syntax, func(t *testing.T) {
+		t.Run(testCaseName, func(t *testing.T) {
 			t.Parallel()
 			fileToCompile := strings.TrimPrefix(file, "options/")
 			importPath := "../internal/testdata"
@@ -376,42 +385,33 @@ func TestOptionsEncoding(t *testing.T) {
 			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
 			prototest.CheckFiles(t, res, fdset, false)
 
-			canonicalProto := res.CanonicalProto()
 			actualFdset := &descriptorpb.FileDescriptorSet{
-				File: []*descriptorpb.FileDescriptorProto{canonicalProto},
-			}
-			actualData, err := proto.Marshal(actualFdset)
-			require.NoError(t, err)
-
-			// semantic check that unmarshalling the "canonical bytes" results
-			// in the same proto as when not using "canonical bytes"
-			protoData, err := proto.Marshal(canonicalProto)
-			require.NoError(t, err)
-			proto.Reset(canonicalProto)
-			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
-			err = uOpts.Unmarshal(protoData, canonicalProto)
-			require.NoError(t, err)
-			if !proto.Equal(res.FileDescriptorProto(), canonicalProto) {
-				t.Fatal("canonical proto != proto")
+				File: []*descriptorpb.FileDescriptorProto{protoutil.ProtoFromFileDescriptor(res)},
 			}
 
-			// drum roll... make sure the bytes match the protoc output
+			// drum roll... make sure the descriptors we produce are semantically equivalent
+			// to those produced by protoc
 			expectedData, err := os.ReadFile(descriptorSetFile)
 			require.NoError(t, err)
-			if !bytes.Equal(actualData, expectedData) {
+			expectedFdset := &descriptorpb.FileDescriptorSet{}
+			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
+			err = uOpts.Unmarshal(expectedData, expectedFdset)
+			require.NoError(t, err)
+			if !prototest.AssertMessagesEqual(t, expectedFdset, actualFdset, file) {
 				outputDescriptorSetFile := strings.ReplaceAll(descriptorSetFile, ".proto", ".actual.proto")
+				actualData, err := proto.Marshal(actualFdset)
+				require.NoError(t, err)
 				err = os.WriteFile(outputDescriptorSetFile, actualData, 0644)
 				if err != nil {
-					t.Log("failed to write actual to file")
+					t.Logf("failed to write actual to file: %v", err)
+				} else {
+					t.Logf("wrote actual contents to %s", outputDescriptorSetFile)
 				}
-
-				t.Fatalf("descriptor set bytes not equal (created file %q with actual bytes)", outputDescriptorSetFile)
 			}
 		})
 	}
 }
 
-//nolint:errcheck
 func TestInterpretOptionsWithoutAST(t *testing.T) {
 	t.Parallel()
 
@@ -456,22 +456,7 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 		fd := file.(linker.Result).FileDescriptorProto()
 		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
 		// final protos, with options interpreted, match
-		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
-		require.Empty(t, diff)
-	}
-
-	// Also make sure the canonical bytes are correct
-	for _, file := range filesFromNoAST {
-		res := file.(linker.Result)
-		canonicalFd := res.CanonicalProto()
-		data, err := proto.Marshal(canonicalFd)
-		require.NoError(t, err)
-		fromCanonical := &descriptorpb.FileDescriptorProto{}
-		err = proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(file)}.Unmarshal(data, fromCanonical)
-		require.NoError(t, err)
-		origFd := res.FileDescriptorProto()
-		diff := cmp.Diff(origFd, fromCanonical, protocmp.Transform())
-		require.Empty(t, diff)
+		prototest.AssertMessagesEqual(t, fd, fdFromNoAST, file.Path())
 	}
 }
 
@@ -521,21 +506,6 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 		fd := file.(linker.Result).FileDescriptorProto()
 		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
 		// final protos, with options interpreted, match
-		diff := cmp.Diff(fd, fdFromNoAST, protocmp.Transform())
-		require.Empty(t, diff)
-	}
-
-	// Also make sure the canonical bytes are correct
-	for _, file := range filesFromNoAST {
-		res := file.(linker.Result)
-		canonicalFd := res.CanonicalProto()
-		data, err := proto.Marshal(canonicalFd)
-		require.NoError(t, err)
-		fromCanonical := &descriptorpb.FileDescriptorProto{}
-		err = proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(file)}.Unmarshal(data, fromCanonical)
-		require.NoError(t, err)
-		origFd := res.FileDescriptorProto()
-		diff := cmp.Diff(origFd, fromCanonical, protocmp.Transform())
-		require.Empty(t, diff)
+		prototest.AssertMessagesEqual(t, fd, fdFromNoAST, file.Path())
 	}
 }

@@ -7,6 +7,7 @@ syntax = "proto2";
 
 package bufbuild.protocompile.test;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/descriptor.proto";
 
 message Extendable {
@@ -186,3 +187,44 @@ extend google.protobuf.MethodOptions {
   optional AllTypes rpc = 1001;
   repeated int32 rpc_i = 1002 [packed = true];
 }
+
+// Also test encoding of options where option is defined in
+// the same file as the usage. This makes sure we correctly
+// defer computation of option bytes until we know enough
+// to do so correctly (since option bytes encoding could
+// depend on interpretation of other options in this file).
+extend google.protobuf.FileOptions {
+  optional group FileGroup = 1003 {
+    optional string s = 1;
+    optional int32 i32 = 2;
+    repeated int32 array = 3 [packed=true];
+  }
+  repeated group FileGroups = 1004 {
+    optional string s = 1;
+    optional int32 i32 = 2;
+  }
+  optional google.protobuf.Any any = 1005;
+}
+
+option (filegroup) = {
+  array: [1,2,3,4,5,6,7,8]
+};
+option (filegroup).s = "abc";
+option (filegroup).i32 = -123;
+
+option (filegroups) = {
+  s: "abc"
+  i32: 123
+};
+
+option (filegroups) = {
+  s: "xyz"
+  i32: 456
+};
+
+option (any) = {
+  [type.googleapis.com/bufbuild.protocompile.test.AllTypes]: {
+    pr_i32: [0,1,2,3]
+    str: "foo"
+  }
+};

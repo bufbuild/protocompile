@@ -230,6 +230,12 @@ func CanPack(k protoreflect.Kind) bool {
 	}
 }
 
+func ClonePath(path protoreflect.SourcePath) protoreflect.SourcePath {
+	clone := make(protoreflect.SourcePath, len(path))
+	copy(clone, path)
+	return clone
+}
+
 func reverse(p protoreflect.SourcePath) protoreflect.SourcePath {
 	for i, j := 0, len(p)-1; i < j; i, j = i+1, j-1 {
 		p[i], p[j] = p[j], p[i]

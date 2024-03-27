@@ -459,35 +459,19 @@ func TestLinkerValidation(t *testing.T) {
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to max; } extend Foo { optional Foo bar = 536870912; }",
 			},
 		},
-		"failure_message_set_wire_format_scalar2": {
-			input: map[string]string{
-				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to 100; } extend Foo { optional int32 bar = 1; }",
-			},
-			expectedErr: "foo.proto:1:99: messages with message-set wire format cannot contain scalar extensions, only messages",
-		},
-		"success_message_set_wire_format2": {
-			input: map[string]string{
-				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to 100; } extend Foo { optional Foo bar = 1; }",
-			},
-		},
 		"failure_message_set_wire_format_repeated": {
 			input: map[string]string{
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to 100; } extend Foo { repeated Foo bar = 1; }",
 			},
 			expectedErr: "foo.proto:1:90: messages with message-set wire format cannot contain repeated extensions, only optional",
 		},
-		"success_large_extension_message_set_wire_format": {
-			input: map[string]string{
-				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to max; } extend Foo { optional Foo bar = 536870912; }",
-			},
-		},
-		"failure_string_value_leading_dot": {
+		"failure_resolve_first_part_of_name": {
 			input: map[string]string{
 				"foo.proto": `syntax = "proto3"; package com.google; import "google/protobuf/wrappers.proto"; message Foo { google.protobuf.StringValue str = 1; }`,
 			},
 			expectedErr: "foo.proto:1:95: field com.google.Foo.str: unknown type google.protobuf.StringValue; resolved to com.google.protobuf.StringValue which is not defined; consider using a leading dot",
 		},
-		"success_group_message_extension": {
+		"success_group_in_custom_option": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -499,7 +483,7 @@ func TestLinkerValidation(t *testing.T) {
 					message Baz { option (foo).bar.name = "abc"; }`,
 			},
 		},
-		"failure_group_extension_not_exist": {
+		"failure_group_in_custom_option_referred_by_type_name": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -512,7 +496,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:7:28: message Baz: option (foo).Bar.name: field Bar of Foo does not exist",
 		},
-		"success_group_extension": {
+		"success_group_custom_option": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -523,7 +507,7 @@ func TestLinkerValidation(t *testing.T) {
 					message Bar { option (foo).name = "abc"; }`,
 			},
 		},
-		"failure_group_not_extension": {
+		"failure_group_custom_option_referred_by_type_name": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -535,7 +519,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:6:22: message Bar: invalid extension: Foo is a message, not an extension",
 		},
-		"success_group_custom_option": {
+		"success_group_in_custom_option_msg_literal": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -547,7 +531,7 @@ func TestLinkerValidation(t *testing.T) {
 					message Baz { option (foo) = { Bar< name: "abc" > }; }`,
 			},
 		},
-		"failure_group_custom_option": {
+		"failure_group_in_custom_option_msg_literal_referred_by_field_name": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -560,7 +544,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:7:32: message Baz: option (foo): field bar not found (did you mean the group named Bar?)",
 		},
-		"success_group_custom_option2": {
+		"success_group_extension_in_custom_option_msg_literal": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -571,7 +555,7 @@ func TestLinkerValidation(t *testing.T) {
 					message Baz { option (foo) = { [bar]< name: "abc" > }; }`,
 			},
 		},
-		"failure_group_extension_field_not_found": {
+		"failure_group_extension_in_custom_option_msg_literal_referred_by_type_name": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -583,7 +567,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:6:33: message Baz: option (foo): invalid extension: Bar is a message, not an extension",
 		},
-		"failure_oneof_extension_already_set": {
+		"failure_oneof_extension_already_set_msg_literal": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -594,7 +578,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:5:43: message Baz: option (foo): oneof "bar" already has field "baz" set`,
 		},
-		"failure_oneof_extension_already_set2": {
+		"failure_oneof_extension_already_set": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -611,7 +595,7 @@ func TestLinkerValidation(t *testing.T) {
 			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
 			//  Difference is expected in the test before it is fixed.
 		},
-		"failure_oneof_extension_already_set3": {
+		"failure_oneof_extension_already_set_implied_by_destructured_option": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -628,7 +612,7 @@ func TestLinkerValidation(t *testing.T) {
 			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
 			//  Difference is expected in the test before it is fixed.
 		},
-		"failure_oneof_extension_already_set4": {
+		"failure_oneof_extension_already_set_implied_by_deeply_nested_destructured_option": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -645,7 +629,7 @@ func TestLinkerValidation(t *testing.T) {
 			// TODO: This is a bug of protoc (https://github.com/protocolbuffers/protobuf/issues/9125).
 			//  Difference is expected in the test before it is fixed.
 		},
-		"success_repeated_extensions": {
+		"success_empty_array_literal_no_leading_colon_if_msg": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -658,7 +642,7 @@ func TestLinkerValidation(t *testing.T) {
 					};`,
 			},
 		},
-		"failure_repeated_primitive_no_leading_colon": {
+		"failure_empty_array_literal_require_leading_colon_if_scalar": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -672,7 +656,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:6:8: syntax error: unexpected value, expecting ':'`,
 		},
-		"success_extension_repeated_field_values": {
+		"success_array_literal": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -685,7 +669,7 @@ func TestLinkerValidation(t *testing.T) {
 					};`,
 			},
 		},
-		"failure_extension_unexpected_string_literal": {
+		"failure_array_literal_require_leading_colon_if_scalar": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -699,7 +683,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:6:9: syntax error: unexpected string literal, expecting '{' or '<' or ']'`,
 		},
-		"failure_extension_enum_value_not_message": {
+		"failure_scoping_resolves_to_sibling_not_parent": {
 			input: map[string]string{
 				"foo.proto": `
 					package foo.bar;
@@ -712,7 +696,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `foo.proto:6:10: extendee is invalid: foo.bar.M.M is an enum value, not a message`,
 		},
-		"failure_json_name_extension": {
+		"failure_json_name_on_extension": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -723,7 +707,8 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:4:26: field foobar: option json_name is not allowed on extensions",
 		},
-		"success_json_name_extension_default": {
+		"success_json_name_on_extension_ok_if_default": {
+			// Unclear if this should really be valid... But it's what protoc does.
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -743,7 +728,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:3:36: field Foo.foobar: option json_name value cannot start with '[' and end with ']'; that is reserved for representing extensions",
 		},
-		"success_json_name_not_quite_extension": {
+		"success_json_name_not_quite_extension_okay": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -776,7 +761,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:4:3: field Foo.e: google.protobuf.Struct.FieldsEntry is a synthetic map entry and may not be referenced explicitly",
 		},
-		"failure_proto3_extend_add_field": {
+		"failure_proto3_can_only_extend_options": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -819,7 +804,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:6:3: syntax error: unexpected ';'",
 		},
-		"failure_oneof_field_conflict": {
+		"failure_oneof_conflicts_with_contained_field": {
 			input: map[string]string{
 				"a.proto": `
 					syntax = "proto3";
@@ -831,7 +816,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `a.proto:4:15: symbol "m.z" already defined at a.proto:3:9`,
 		},
-		"failure_oneof_field_conflict2": {
+		"failure_oneof_conflicts_with_adjacent_field": {
 			input: map[string]string{
 				"a.proto": `
 					syntax="proto3";
@@ -842,7 +827,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `a.proto:4:9: symbol "m.z" already defined at a.proto:3:10`,
 		},
-		"failure_oneof_conflicts": {
+		"failure_oneof_conflicts_with_other_oneof": {
 			input: map[string]string{
 				"a.proto": `
 					syntax="proto3";
@@ -853,7 +838,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `a.proto:4:9: symbol "m.z" already defined at a.proto:3:9`,
 		},
-		"success_message_literals": {
+		"success_custom_option_enums_look_like_msg_literal_keywords": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto3";
@@ -966,7 +951,11 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:9:10: extendee is invalid: foo.bar.c.b is an extension, not a message",
 		},
-		"failure_extension_resolution_unknown": {
+		"failure_msg_literal_scoping_rules_limited": {
+			// This is due to an unfortunate way of how message literals are actually implemented
+			// in protoc. It just uses the text format, so parsing the text format has different
+			// (and much more limited) resolution/scoping rules for relative references than other
+			// references in protobuf language.
 			input: map[string]string{
 				"test.proto": `
 					syntax="proto2";
@@ -985,7 +974,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:11:6: message foo.bar.b: option (foo.bar.msga): unknown extension c.i",
 		},
-		"failure_extension_resolution_unknown2": {
+		"failure_msg_literal_scoping_rules_limited2": {
 			input: map[string]string{
 				"test.proto": `
 					syntax="proto2";
@@ -1004,7 +993,11 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:11:6: message foo.bar.b: option (foo.bar.msga): unknown extension i",
 		},
-		"failure_extension_resolution_unknown3": {
+		"failure_option_scoping_rules_limited": {
+			// This is an unfortunate side effect of having no language spec and so accidental
+			// quirks in the implementation end up as part of the language :(
+			// In this case, names in the option can't resolve to siblings, but must resolve
+			// to a scope at least one level higher.
 			input: map[string]string{
 				"test.proto": `
 					syntax="proto2";
@@ -1021,7 +1014,7 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension c.f",
 		},
-		"failure_extension_resolution_unknown4": {
+		"failure_option_scoping_rules_limited2": {
 			input: map[string]string{
 				"test.proto": `
 					syntax="proto2";
@@ -1038,7 +1031,9 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:10:17: message foo.bar.b: unknown extension f",
 		},
-		"success_nested_extension_resolution_custom_options": {
+		"success_option_and_msg_literal_scoping_rules": {
+			// This demonstrates all the ways one can successfully refer to extensions
+			// in option names and in message literals.
 			input: map[string]string{
 				"test.proto": `
 					syntax="proto2";
@@ -1065,7 +1060,7 @@ func TestLinkerValidation(t *testing.T) {
 					}`,
 			},
 		},
-		"failure_extension_resolution_unknown_nested": {
+		"failure_msg_literal_scoping_rules_limited3": {
 			input: map[string]string{
 				"test.proto": `
 					syntax="proto2";
@@ -1203,7 +1198,7 @@ func TestLinkerValidation(t *testing.T) {
 					  };
 					}`,
 			},
-			expectedErr: "foo.proto:13:6: message foo.bar.Baz: option (foo.bar.any): multiple any type references are not allowed",
+			expectedErr: "foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): any type references cannot be repeated or mixed with other fields",
 		},
 		"failure_scope_type_name": {
 			input: map[string]string{
@@ -2218,7 +2213,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:3:18: feature "enum_type" is allowed on [enum,file], not on field`,
+			expectedErr: `test.proto:3:27: feature "enum_type" is allowed on [enum,file], not on field`,
 		},
 		"failure_editions_feature_on_wrong_target_type_msg_literal": {
 			input: map[string]string{

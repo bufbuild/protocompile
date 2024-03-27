@@ -14,9 +14,8 @@ syntax = "proto3";
 
 package bufbuild.protocompile.test;
 
-import "options.proto";
-// pull in extra/forked enum options to make sure they are encoded as expected
 import "google/protobuf/descriptor.proto";
+import "options.proto";
 
 // Repeated scalar fields are packed by default in proto3. So we define some extra
 // options here just for testing that.
