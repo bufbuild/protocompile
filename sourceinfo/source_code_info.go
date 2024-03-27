@@ -51,10 +51,6 @@ type OptionSourceInfo struct {
 	// the descriptor, which is a parent of the options message (since that
 	// is how the pseudo-options are actually stored).
 	Path []int32
-	// If true, this is a path to a value for a repeated field. That means
-	// that the last element in Path is an index, and the next to the last
-	// element is a field number.
-	Repeated bool
 	// Children can be an *ArrayLiteralSourceInfo, a *MessageLiteralSourceInfo,
 	// or nil, depending on whether the option's value is an
 	// *ast.ArrayLiteralNode, an *ast.MessageLiteralNode, or neither.

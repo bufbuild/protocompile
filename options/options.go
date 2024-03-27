@@ -918,7 +918,7 @@ func (interp *interpreter) interpretField(
 	var err error
 	if optValNode.Value() == nil {
 		err = interp.setOptionFieldFromProto(mc, msg, fld, node, opt, optValNode)
-		srcInfoVal := newSrcInfo(pathPrefix, false, nil)
+		srcInfoVal := newSrcInfo(pathPrefix, nil)
 		srcInfo = &srcInfoVal
 	} else {
 		srcInfo, err = interp.setOptionField(mc, msg, fld, node, optValNode, false, pathPrefix)
@@ -961,7 +961,7 @@ func (interp *interpreter) setOptionField(
 		}
 		for index, item := range sl {
 			mc.OptAggPath = fmt.Sprintf("%s[%d]", origPath, index)
-			value, srcInfo, err := interp.fieldValue(mc, msg, fld, item, insideMsgLiteral, append(pathPrefix, int32(firstIndex+index)), true)
+			value, srcInfo, err := interp.fieldValue(mc, msg, fld, item, insideMsgLiteral, append(pathPrefix, int32(firstIndex+index)))
 			if err != nil {
 				return nil, err
 			}
@@ -974,7 +974,7 @@ func (interp *interpreter) setOptionField(
 			}
 			childVals[index] = srcInfo
 		}
-		srcInfo := newSrcInfo(append(pathPrefix, int32(firstIndex)), true, &sourceinfo.ArrayLiteralSourceInfo{Elements: childVals})
+		srcInfo := newSrcInfo(append(pathPrefix, int32(firstIndex)), &sourceinfo.ArrayLiteralSourceInfo{Elements: childVals})
 		return &srcInfo, nil
 	}
 
@@ -984,7 +984,7 @@ func (interp *interpreter) setOptionField(
 		pathPrefix = append(pathPrefix, int32(msg.Get(fld).List().Len()))
 	}
 
-	value, srcInfo, err := interp.fieldValue(mc, msg, fld, val, insideMsgLiteral, pathPrefix, fld.Cardinality() == protoreflect.Repeated)
+	value, srcInfo, err := interp.fieldValue(mc, msg, fld, val, insideMsgLiteral, pathPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -1231,7 +1231,6 @@ func (interp *interpreter) fieldValue(
 	val ast.ValueNode,
 	insideMsgLiteral bool,
 	pathPrefix []int32,
-	repeated bool,
 ) (protoreflect.Value, sourceinfo.OptionSourceInfo, error) {
 	k := fld.Kind()
 	switch k {
@@ -1240,7 +1239,7 @@ func (interp *interpreter) fieldValue(
 		if err != nil {
 			return protoreflect.Value{}, sourceinfo.OptionSourceInfo{}, err
 		}
-		return protoreflect.ValueOfEnum(num), newSrcInfo(pathPrefix, repeated, nil), nil
+		return protoreflect.ValueOfEnum(num), newSrcInfo(pathPrefix, nil), nil
 
 	case protoreflect.MessageKind, protoreflect.GroupKind:
 		v := val.Value()
@@ -1258,7 +1257,7 @@ func (interp *interpreter) fieldValue(
 				// Normal message field
 				childMsg = msg.NewField(fld).Message()
 			}
-			return interp.messageLiteralValue(mc, aggs, childMsg, pathPrefix, repeated)
+			return interp.messageLiteralValue(mc, aggs, childMsg, pathPrefix)
 		}
 		return protoreflect.Value{}, sourceinfo.OptionSourceInfo{},
 			reporter.Errorf(interp.nodeInfo(val), "%vexpecting message, got %s", mc, valueKind(v))
@@ -1268,7 +1267,7 @@ func (interp *interpreter) fieldValue(
 		if err != nil {
 			return protoreflect.Value{}, sourceinfo.OptionSourceInfo{}, err
 		}
-		return protoreflect.ValueOf(v), newSrcInfo(pathPrefix, repeated, nil), nil
+		return protoreflect.ValueOf(v), newSrcInfo(pathPrefix, nil), nil
 	}
 }
 
@@ -1643,7 +1642,6 @@ func (interp *interpreter) messageLiteralValue(
 	fieldNodes []*ast.MessageFieldNode,
 	msg protoreflect.Message,
 	pathPrefix []int32,
-	repeated bool,
 ) (protoreflect.Value, sourceinfo.OptionSourceInfo, error) {
 	fmd := msg.Descriptor()
 	origPath := mc.OptAggPath
@@ -1691,7 +1689,7 @@ func (interp *interpreter) messageLiteralValue(
 					reporter.Errorf(interp.nodeInfo(fieldNode.Name.URLPrefix), "%vcould not resolve type reference %s", mc, fullURL)
 			}
 			// parse the message value
-			msgVal, valueSrcInfo, err := interp.messageLiteralValue(mc, anyFields, dynamicpb.NewMessage(anyMd), append(pathPrefix, internal.AnyValueTag), false)
+			msgVal, valueSrcInfo, err := interp.messageLiteralValue(mc, anyFields, dynamicpb.NewMessage(anyMd), append(pathPrefix, internal.AnyValueTag))
 			if err != nil {
 				return protoreflect.Value{}, sourceinfo.OptionSourceInfo{}, err
 			}
@@ -1784,14 +1782,13 @@ func (interp *interpreter) messageLiteralValue(
 		}
 	}
 	return protoreflect.ValueOfMessage(msg),
-		newSrcInfo(pathPrefix, repeated, &sourceinfo.MessageLiteralSourceInfo{Fields: flds}),
+		newSrcInfo(pathPrefix, &sourceinfo.MessageLiteralSourceInfo{Fields: flds}),
 		nil
 }
 
-func newSrcInfo(path []int32, repeated bool, children sourceinfo.OptionChildrenSourceInfo) sourceinfo.OptionSourceInfo {
+func newSrcInfo(path []int32, children sourceinfo.OptionChildrenSourceInfo) sourceinfo.OptionSourceInfo {
 	return sourceinfo.OptionSourceInfo{
 		Path:     internal.ClonePath(path),
-		Repeated: repeated,
 		Children: children,
 	}
 }
