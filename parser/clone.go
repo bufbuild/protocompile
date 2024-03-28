@@ -106,6 +106,7 @@ func recreateNodeIndexForMessage(orig, clone *result, origProto, cloneProto *des
 	}
 	for i, origExtr := range origProto.ExtensionRange {
 		cloneExtr := cloneProto.ExtensionRange[i]
+		updateNodeIndex(orig, clone, asExtsNode(origExtr), asExtsNode(cloneExtr))
 		updateNodeIndexWithOptions[*descriptorpb.ExtensionRangeOptions](orig, clone, origExtr, cloneExtr)
 	}
 	for i, origRr := range origProto.ReservedRange {

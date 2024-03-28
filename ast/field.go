@@ -27,7 +27,7 @@ import "fmt"
 // This also allows NoSourceNode and SyntheticMapField to be used in place of
 // one of the above for some usages.
 type FieldDeclNode interface {
-	Node
+	NodeWithCompactOptions
 	FieldLabel() Node
 	FieldName() Node
 	FieldType() Node
@@ -170,6 +170,14 @@ func (n *FieldNode) GetGroupKeyword() Node {
 
 func (n *FieldNode) GetOptions() *CompactOptionsNode {
 	return n.Options
+}
+
+func (n *FieldNode) RangeCompactOptions(fn func(*OptionNode) bool) {
+	for _, opt := range n.Options.Options {
+		if !fn(opt) {
+			return
+		}
+	}
 }
 
 // FieldLabel represents the label of a field, which indicates its cardinality
@@ -338,8 +346,26 @@ func (n *GroupNode) GetOptions() *CompactOptionsNode {
 	return n.Options
 }
 
+func (n *GroupNode) RangeCompactOptions(fn func(*OptionNode) bool) {
+	for _, opt := range n.Options.Options {
+		if !fn(opt) {
+			return
+		}
+	}
+}
+
 func (n *GroupNode) MessageName() Node {
 	return n.Name
+}
+
+func (n *GroupNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, decl := range n.Decls {
+		if opt, ok := decl.(*OptionNode); ok {
+			if !fn(opt) {
+				return
+			}
+		}
+	}
 }
 
 // OneofDeclNode is a node in the AST that defines a oneof. There are
@@ -350,9 +376,13 @@ func (n *GroupNode) MessageName() Node {
 // This also allows NoSourceNode to be used in place of one of the above
 // for some usages.
 type OneofDeclNode interface {
-	Node
+	NodeWithOptions
 	OneofName() Node
 }
+
+var _ OneofDeclNode = (*OneofNode)(nil)
+var _ OneofDeclNode = (*SyntheticOneof)(nil)
+var _ OneofDeclNode = NoSourceNode{}
 
 // OneofNode represents a one-of declaration. Example:
 //
@@ -425,6 +455,16 @@ func (n *OneofNode) OneofName() Node {
 	return n.Name
 }
 
+func (n *OneofNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, decl := range n.Decls {
+		if opt, ok := decl.(*OptionNode); ok {
+			if !fn(opt) {
+				return
+			}
+		}
+	}
+}
+
 // OneofElement is an interface implemented by all AST nodes that can
 // appear in the body of a oneof declaration.
 type OneofElement interface {
@@ -469,6 +509,9 @@ func (n *SyntheticOneof) TrailingComments() []Comment {
 
 func (n *SyntheticOneof) OneofName() Node {
 	return n.Field.FieldName()
+}
+
+func (n *SyntheticOneof) RangeOptions(_ func(*OptionNode) bool) {
 }
 
 // MapTypeNode represents the type declaration for a map field. It defines
@@ -627,8 +670,19 @@ func (n *MapFieldNode) GetOptions() *CompactOptionsNode {
 	return n.Options
 }
 
+func (n *MapFieldNode) RangeCompactOptions(fn func(*OptionNode) bool) {
+	for _, opt := range n.Options.Options {
+		if !fn(opt) {
+			return
+		}
+	}
+}
+
 func (n *MapFieldNode) MessageName() Node {
 	return n.Name
+}
+
+func (n *MapFieldNode) RangeOptions(_ func(*OptionNode) bool) {
 }
 
 func (n *MapFieldNode) KeyField() *SyntheticMapField {
@@ -703,4 +757,7 @@ func (n *SyntheticMapField) GetGroupKeyword() Node {
 
 func (n *SyntheticMapField) GetOptions() *CompactOptionsNode {
 	return nil
+}
+
+func (n *SyntheticMapField) RangeCompactOptions(_ func(*OptionNode) bool) {
 }
