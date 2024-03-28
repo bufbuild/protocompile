@@ -2305,7 +2305,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:4:29: extension range cannot have declarations and have verification of UNVERIFIED`,
+			expectedErr: `test.proto:4:17: extension range cannot have declarations and have verification of UNVERIFIED`,
 		},
 		"failure_extension_declaration_without_verification2": {
 			input: map[string]string{
@@ -2340,7 +2340,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:5:29: extension declaration is missing required field number`,
+			expectedErr: `test.proto:5:17: extension declaration is missing required field number`,
 		},
 		"failure_extension_declaration_with_incorrect_number": {
 			input: map[string]string{
@@ -2358,7 +2358,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 2 not in [1,1]`,
+			expectedErr: `test.proto:6:25: extension declaration has number outside the range: 2 not in [1,1]`,
 		},
 		"failure_extension_declaration_with_number_out_of_range": {
 			input: map[string]string{
@@ -2376,7 +2376,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 99 not in [100,500]`,
+			expectedErr: `test.proto:6:25: extension declaration has number outside the range: 99 not in [100,500]`,
 		},
 		"failure_extension_declaration_with_number_out_of_range2": {
 			input: map[string]string{
@@ -2394,7 +2394,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 501 not in [100,500]`,
+			expectedErr: `test.proto:6:25: extension declaration has number outside the range: 501 not in [100,500]`,
 		},
 		"failure_extension_declaration_with_number_out_of_range_multiple_ranges": {
 			input: map[string]string{
@@ -2412,7 +2412,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:6:33: extension declaration has number outside the range: 3 not in [5,10]; when using declarations, extends statements should indicate only a single span of field numbers`,
+			expectedErr: `test.proto:6:25: extension declaration has number outside the range: 3 not in [5,10]; when using declarations, extends statements should indicate only a single span of field numbers`,
 		},
 		"failure_extension_declaration_without_name": {
 			input: map[string]string{
@@ -2429,7 +2429,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:5:29: extension declaration that is not marked reserved must have a full_name`,
+			expectedErr: `test.proto:5:17: extension declaration that is not marked reserved must have a full_name`,
 		},
 		"failure_extension_declaration_with_name_without_dot": {
 			input: map[string]string{
@@ -2447,7 +2447,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:7:36: extension declaration full name "foo.bar" should start with a leading dot (.)`,
+			expectedErr: `test.proto:7:25: extension declaration full name "foo.bar" should start with a leading dot (.)`,
 		},
 		"failure_extension_declaration_with_invalid_name": {
 			input: map[string]string{
@@ -2465,7 +2465,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:7:36: extension declaration full name ".123.5-7.Foobar" is not a valid qualified name`,
+			expectedErr: `test.proto:7:25: extension declaration full name ".123.5-7.Foobar" is not a valid qualified name`,
 		},
 		"failure_extension_declaration_without_type": {
 			input: map[string]string{
@@ -2482,7 +2482,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:5:29: extension declaration that is not marked reserved must have a type`,
+			expectedErr: `test.proto:5:17: extension declaration that is not marked reserved must have a type`,
 		},
 		"failure_extension_declaration_with_type_without_dot": {
 			input: map[string]string{
@@ -2500,7 +2500,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:8:31: extension declaration type "foo.Bar" must be a builtin type or start with a leading dot (.)`,
+			expectedErr: `test.proto:8:25: extension declaration type "foo.Bar" must be a builtin type or start with a leading dot (.)`,
 		},
 		"failure_extension_declaration_with_invalid_type": {
 			input: map[string]string{
@@ -2518,7 +2518,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr:            `test.proto:8:31: extension declaration type ".123.Foobar" is not a valid qualified name`,
+			expectedErr:            `test.proto:8:25: extension declaration type ".123.Foobar" is not a valid qualified name`,
 			expectedDiffWithProtoc: true, // Oops. protoc's name validation seems incomplete
 		},
 		"failure_extension_declaration_with_reserved_should_not_have_name": {
@@ -2537,7 +2537,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:8:36: extension declaration is marked reserved so full_name should not be present`,
+			expectedErr: `test.proto:8:25: extension declaration is marked reserved so full_name should not be present`,
 		},
 		"failure_extension_declaration_with_reserved_should_not_have_type": {
 			input: map[string]string{
@@ -2555,7 +2555,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:8:31: extension declaration is marked reserved so type should not be present`,
+			expectedErr: `test.proto:8:25: extension declaration is marked reserved so type should not be present`,
 		},
 		// This exercises the code that finds the relevant node to make sure it track indexes of
 		// repeated fields correctly.
@@ -2584,7 +2584,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:12:31: extension declaration is marked reserved so type should not be present`,
+			expectedErr: `test.proto:12:25: extension declaration is marked reserved so type should not be present`,
 		},
 		"failure_extension_declarations_repeated_tags": {
 			input: map[string]string{
@@ -2608,7 +2608,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:12:33: extension for tag number 1 already declared at test.proto:7:33`,
+			expectedErr: `test.proto:12:25: extension for tag number 1 already declared at test.proto:7:25`,
 		},
 		"failure_extension_declared_multiple_times": {
 			input: map[string]string{
@@ -2632,7 +2632,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:13:36: extension foo.Bar already declared as extending foo.A with tag 1 at test.proto:8:36`,
+			expectedErr: `test.proto:13:25: extension foo.Bar already declared as extending foo.A with tag 1 at test.proto:8:25`,
 		},
 		"failure_extension_declared_multiple_times_across_files": {
 			input: map[string]string{
@@ -2670,7 +2670,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test2.proto:8:36: extension foo.Baz already declared as extending foo.A with tag 5 at test1.proto:13:36`,
+			expectedErr: `test2.proto:8:25: extension foo.Baz already declared as extending foo.A with tag 5 at test1.proto:13:25`,
 			// protoc only validates that the same name doesn't appear again inside
 			// the same extendable message
 			expectedDiffWithProtoc: true,
@@ -2694,7 +2694,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:13:29: cannot use field number 1 for an extension because it is reserved in declaration at test.proto:8:35`,
+			expectedErr: `test.proto:13:29: cannot use field number 1 for an extension because it is reserved in declaration at test.proto:8:25`,
 		},
 		"failure_extension_name_does_not_match_declaration": {
 			input: map[string]string{
@@ -2716,7 +2716,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:14:25: expected extension with number 1 to be named .foo.bar, not foo.s, per declaration at test.proto:8:36`,
+			expectedErr: `test.proto:14:25: expected extension with number 1 to be named .foo.bar, not foo.s, per declaration at test.proto:8:25`,
 		},
 		"failure_extension_type_does_not_match_declaration": {
 			input: map[string]string{
@@ -2738,7 +2738,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:14:18: expected extension with number 1 to have type string, not uint32, per declaration at test.proto:9:31`,
+			expectedErr: `test.proto:14:18: expected extension with number 1 to have type string, not uint32, per declaration at test.proto:9:25`,
 		},
 		"failure_extension_label_does_not_match_declaration": {
 			input: map[string]string{
@@ -2761,7 +2761,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:15:9: expected extension with number 1 to be repeated, not optional, per declaration at test.proto:10:35`,
+			expectedErr: `test.proto:15:9: expected extension with number 1 to be repeated, not optional, per declaration at test.proto:10:25`,
 		},
 		"failure_extension_label_does_not_match_declaration2": {
 			input: map[string]string{
@@ -2783,7 +2783,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:14:9: expected extension with number 1 to be optional, not repeated, per declaration at test.proto:6:29`,
+			expectedErr: `test.proto:14:9: expected extension with number 1 to be optional, not repeated, per declaration at test.proto:6:17`,
 		},
 		"failure_extension_matches_no_declaration": {
 			input: map[string]string{

@@ -734,7 +734,14 @@ func findOptionSpan(
 			return false
 		}
 		// We've got more path elements to try to match with the value.
-		match, matchLen := findMatchingValueNode(desc, path[len(n.Name.Parts):], nextIsIndex, 0, &repeatedIndices, n.Val)
+		match, matchLen := findMatchingValueNode(
+			desc,
+			path[len(n.Name.Parts):],
+			nextIsIndex,
+			0,
+			&repeatedIndices,
+			n,
+			n.Val)
 		if match != nil {
 			totalMatchLen := matchLen + len(n.Name.Parts)
 			if totalMatchLen > bestMatchLen {
@@ -752,6 +759,7 @@ func findMatchingValueNode(
 	currIsRepeated bool,
 	repeatedCount int,
 	repeatedIndices *[]int,
+	node ast.Node,
 	val ast.ValueNode,
 ) (ast.Node, int) {
 	var matchLen int
@@ -784,7 +792,15 @@ func findMatchingValueNode(
 		matchLen++
 		path = path[1:]
 		// Recurse into array element.
-		nextMatch, nextMatchLen := findMatchingValueNode(md, path, false, repeatedCount, repeatedIndices, elem)
+		nextMatch, nextMatchLen := findMatchingValueNode(
+			md,
+			path,
+			false,
+			repeatedCount,
+			repeatedIndices,
+			elem,
+			elem,
+		)
 		return nextMatch, nextMatchLen + matchLen
 	}
 
@@ -798,14 +814,14 @@ func findMatchingValueNode(
 		path = path[1:]
 		if len(path) == 0 {
 			// We're done matching!
-			return val, matchLen
+			return node, matchLen
 		}
 	}
 
 	msgValue, ok := val.(*ast.MessageLiteralNode)
 	if !ok {
 		// We can't go any further
-		return val, matchLen
+		return node, matchLen
 	}
 
 	var wantField protoreflect.FieldDescriptor
@@ -829,7 +845,7 @@ func findMatchingValueNode(
 		path = path[1:]
 		if len(path) == 0 {
 			// Perfect match!
-			return field.Val, matchLen
+			return field, matchLen
 		}
 		nextMatch, nextMatchLen := findMatchingValueNode(
 			wantField.Message(),
@@ -837,13 +853,14 @@ func findMatchingValueNode(
 			wantField.Cardinality() == protoreflect.Repeated,
 			repeatedCount,
 			repeatedIndices,
+			field,
 			field.Val,
 		)
 		return nextMatch, nextMatchLen + matchLen
 	}
 
 	// If we didn't find the right field, just return what we have so far.
-	return val, matchLen
+	return node, matchLen
 }
 
 func isDescendantPath(descendant, ancestor protoreflect.SourcePath) bool {
