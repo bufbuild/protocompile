@@ -89,7 +89,7 @@ func (r *result) validateFile(handler *reporter.Handler) error {
 		}
 		if opts != nil && opts.JavaStringCheckUtf8 != nil {
 			span := r.findOptionSpan(r, internal.FileOptionsJavaStringCheckUTF8Tag)
-			err := handler.HandleErrorf(span, `file option java_string_check_utf8 is not allowed with editions; import "google/protobuf/java_features.proto" and use the (pb.java).utf8_validation instead`)
+			err := handler.HandleErrorf(span, `file option java_string_check_utf8 is not allowed with editions; import "google/protobuf/java_features.proto" and use (pb.java).utf8_validation instead`)
 			if err != nil {
 				return err
 			}
@@ -917,7 +917,7 @@ func findOptionSpan(
 			// Either an exact match (if equal) or this option points *inside* the
 			// item we care about (if greater). Either way, the first such result
 			// is a keeper.
-			bestMatch = n.Val
+			bestMatch = n.Name.Parts[len(path)-1]
 			bestMatchLen = len(n.Name.Parts)
 			return false
 		}
