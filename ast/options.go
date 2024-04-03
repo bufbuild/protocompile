@@ -407,30 +407,7 @@ var _ NodeWithOptions = OneofDeclNode(nil)
 var _ NodeWithOptions = (*EnumNode)(nil)
 var _ NodeWithOptions = (*ServiceNode)(nil)
 var _ NodeWithOptions = RPCDeclNode(nil)
+var _ NodeWithOptions = FieldDeclNode(nil)
+var _ NodeWithOptions = EnumValueDeclNode(nil)
+var _ NodeWithOptions = (*ExtensionRangeNode)(nil)
 var _ NodeWithOptions = NoSourceNode{}
-
-// NodeWithCompactOptions represents a node in the AST that contains
-// compact options.
-type NodeWithCompactOptions interface {
-	Node
-	RangeCompactOptions(func(*OptionNode) bool)
-}
-
-var _ NodeWithCompactOptions = FieldDeclNode(nil)
-var _ NodeWithCompactOptions = EnumValueDeclNode(nil)
-var _ NodeWithCompactOptions = (*ExtensionRangeNode)(nil)
-var _ NodeWithCompactOptions = NoSourceNode{}
-
-// AsNodeWithOptions returns a NodeWithOptions whose RangeOptions method
-// iterates through the given node's compact options.
-func AsNodeWithOptions(n NodeWithCompactOptions) NodeWithOptions {
-	return nodeWithOptsFromCompact{n}
-}
-
-type nodeWithOptsFromCompact struct {
-	NodeWithCompactOptions
-}
-
-func (n nodeWithOptsFromCompact) RangeOptions(f func(*OptionNode) bool) {
-	n.NodeWithCompactOptions.RangeCompactOptions(f)
-}

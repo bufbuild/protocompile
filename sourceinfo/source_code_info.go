@@ -310,10 +310,10 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 	case *ast.MessageNode:
 		openBrace = n.OpenBrace
 		decls = n.Decls
-	case *ast.GroupNode:
+	case *ast.SyntheticGroupMessageNode:
 		openBrace = n.OpenBrace
 		decls = n.Decls
-	case *ast.MapFieldNode:
+	case *ast.SyntheticMapEntryNode:
 		sci.newLoc(n, path)
 		// map entry so nothing else to do
 		return
@@ -342,7 +342,7 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 			fieldIndex++
 			// we clone the path here so that append can't mutate fldPath, since they may share storage
 			msgPath := append(internal.ClonePath(path), internal.MessageNestedMessagesTag, nestedMsgIndex)
-			generateSourceCodeInfoForMessage(opts, sci, child, fldPath, msgPath)
+			generateSourceCodeInfoForMessage(opts, sci, child.AsMessage(), fldPath, msgPath)
 			nestedMsgIndex++
 		case *ast.MapFieldNode:
 			generateSourceCodeInfoForField(opts, sci, child, append(path, internal.MessageFieldsTag, fieldIndex))
@@ -469,7 +469,7 @@ func generateSourceCodeInfoForExtensions(opts OptionIndex, sci *sourceCodeInfo, 
 			fldPath = append(fldPath, *extendIndex)
 			generateSourceCodeInfoForField(opts, sci, decl, fldPath)
 			*extendIndex++
-			generateSourceCodeInfoForMessage(opts, sci, decl, fldPath, append(msgPath, *msgIndex))
+			generateSourceCodeInfoForMessage(opts, sci, decl.AsMessage(), fldPath, append(msgPath, *msgIndex))
 			*msgIndex++
 		}
 	}
@@ -492,7 +492,7 @@ func generateSourceCodeInfoForOneof(opts OptionIndex, sci *sourceCodeInfo, n *as
 			fldPath = append(fldPath, *fieldIndex)
 			generateSourceCodeInfoForField(opts, sci, child, fldPath)
 			*fieldIndex++
-			generateSourceCodeInfoForMessage(opts, sci, child, fldPath, append(nestedMsgPath, *nestedMsgIndex))
+			generateSourceCodeInfoForMessage(opts, sci, child.AsMessage(), fldPath, append(nestedMsgPath, *nestedMsgIndex))
 			*nestedMsgIndex++
 		}
 	}

@@ -389,9 +389,10 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax protoreflect.Sy
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}
 	}
 	md := &descriptorpb.DescriptorProto{Name: proto.String(group.Name.Val)}
-	r.putMessageNode(md, group)
+	groupMsg := group.AsMessage()
+	r.putMessageNode(md, groupMsg)
 	// don't bother processing body if we've exceeded depth
-	if r.checkDepth(depth, group, handler) {
+	if r.checkDepth(depth, groupMsg, handler) {
 		r.addMessageBody(md, &group.MessageBody, syntax, handler, depth)
 	}
 	return fd, md
@@ -405,7 +406,8 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax protoreflec
 		}
 		tag = proto.Int32(int32(mapField.Tag.Val))
 	}
-	r.checkDepth(depth, mapField, handler)
+	mapEntry := mapField.AsMessage()
+	r.checkDepth(depth, mapEntry, handler)
 	var lbl *descriptorpb.FieldDescriptorProto_Label
 	if syntax == protoreflect.Proto2 {
 		lbl = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
@@ -425,7 +427,7 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax protoreflec
 		Options: &descriptorpb.MessageOptions{MapEntry: proto.Bool(true)},
 		Field:   []*descriptorpb.FieldDescriptorProto{keyFd, valFd},
 	}
-	r.putMessageNode(md, mapField)
+	r.putMessageNode(md, mapEntry)
 	return fd, md
 }
 
@@ -571,7 +573,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 		return true
 	}
 	n := ast.Node(node)
-	if grp, ok := n.(*ast.GroupNode); ok {
+	if grp, ok := n.(*ast.SyntheticGroupMessageNode); ok {
 		// pinpoint the group keyword if the source is a group
 		n = grp.Keyword
 	}
@@ -890,11 +892,11 @@ func (r *result) OneofNode(o *descriptorpb.OneofDescriptorProto) ast.OneofDeclNo
 	return r.nodes[o].(ast.OneofDeclNode)
 }
 
-func (r *result) ExtensionsNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithCompactOptions {
+func (r *result) ExtensionsNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithOptions {
 	if r.nodes == nil {
 		return ast.NewNoSourceNode(r.proto.GetName())
 	}
-	return r.nodes[asExtsNode(e)].(ast.NodeWithCompactOptions)
+	return r.nodes[asExtsNode(e)].(ast.NodeWithOptions)
 }
 
 func (r *result) ExtensionRangeNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.RangeDeclNode {

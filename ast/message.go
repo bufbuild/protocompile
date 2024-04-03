@@ -19,8 +19,8 @@ import "fmt"
 // MessageDeclNode is a node in the AST that defines a message type. This
 // includes normal message fields as well as implicit messages:
 //   - *MessageNode
-//   - *GroupNode (the group is a field and inline message type)
-//   - *MapFieldNode (map fields implicitly define a MapEntry message type)
+//   - *SyntheticGroupMessageNode (the group is a field and inline message type)
+//   - *SyntheticMapEntryNode (map fields implicitly define a MapEntry message type)
 //
 // This also allows NoSourceNode to be used in place of one of the above
 // for some usages.
@@ -30,8 +30,8 @@ type MessageDeclNode interface {
 }
 
 var _ MessageDeclNode = (*MessageNode)(nil)
-var _ MessageDeclNode = (*GroupNode)(nil)
-var _ MessageDeclNode = (*MapFieldNode)(nil)
+var _ MessageDeclNode = (*SyntheticGroupMessageNode)(nil)
+var _ MessageDeclNode = (*SyntheticMapEntryNode)(nil)
 var _ MessageDeclNode = NoSourceNode{}
 
 // MessageNode represents a message declaration. Example:

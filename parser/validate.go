@@ -287,7 +287,7 @@ func findMessageReservedNameNode(msgNode ast.MessageDeclNode, name string) ast.N
 	switch msgNode := msgNode.(type) {
 	case *ast.MessageNode:
 		decls = msgNode.Decls
-	case *ast.GroupNode:
+	case *ast.SyntheticGroupMessageNode:
 		decls = msgNode.Decls
 	default:
 		// leave decls empty

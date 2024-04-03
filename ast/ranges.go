@@ -90,7 +90,7 @@ func NewExtensionRangeNode(keyword *KeywordNode, ranges []*RangeNode, commas []*
 	}
 }
 
-func (e *ExtensionRangeNode) RangeCompactOptions(fn func(*OptionNode) bool) {
+func (e *ExtensionRangeNode) RangeOptions(fn func(*OptionNode) bool) {
 	for _, opt := range e.Options.Options {
 		if !fn(opt) {
 			return

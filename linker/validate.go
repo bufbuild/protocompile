@@ -638,7 +638,7 @@ func findExtensionRangeOptionSpan(
 		// Find the location using the AST, which will generally be higher fidelity
 		// than what we might find in a file descriptor's source code info.
 		exts := r.ExtensionsNode(extRange)
-		return findOptionSpan(r.FileNode(), exts, ast.AsNodeWithOptions(exts), extRange.Options.ProtoReflect().Descriptor(), path)
+		return findOptionSpan(r.FileNode(), exts, extRange.Options.ProtoReflect().Descriptor(), path)
 	}
 
 	srcLocs := file.SourceLocations()
@@ -689,15 +689,14 @@ func findExtensionRangeOptionSpan(
 
 func findOptionSpan(
 	file ast.FileDeclNode,
-	root ast.Node,
-	rootWithOpts ast.NodeWithOptions,
+	root ast.NodeWithOptions,
 	md protoreflect.MessageDescriptor,
 	path protoreflect.SourcePath,
 ) (ast.SourceSpan, bool) {
-	bestMatch := root
+	bestMatch := ast.Node(root)
 	var bestMatchLen int
 	var repeatedIndices []int
-	rootWithOpts.RangeOptions(func(n *ast.OptionNode) bool {
+	root.RangeOptions(func(n *ast.OptionNode) bool {
 		desc := md
 		limit := len(n.Name.Parts)
 		if limit > len(path) {

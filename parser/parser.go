@@ -166,7 +166,7 @@ type Result interface {
 	// statement in a message that corresponds to the given range. This will be
 	// the parent of the node returned by ExtensionRangeNode, which contains the
 	// options that apply to all child ranges.
-	ExtensionsNode(*descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithCompactOptions
+	ExtensionsNode(*descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithOptions
 
 	// MessageReservedRangeNode returns the AST node corresponding to the given
 	// reserved range. This can return nil, such as if the given range is not
