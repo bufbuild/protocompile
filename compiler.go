@@ -29,6 +29,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
@@ -110,6 +111,18 @@ const (
 	// bitwise-OR'ing it with SourceInfoExtraComments.
 	SourceInfoExtraOptionLocations = SourceInfoMode(4)
 )
+
+// EnableEditions can be called to opt into this repo's support for Protobuf
+// editions. Once the implementation of editions is complete, this function
+// will be REMOVED and editions support will always be enabled.
+//
+// The internal flag that this touches is not synchronized and calling this
+// function is not thread-safe. So this must be called prior to using the
+// compiler, ideally from an init() function or as one of the first things
+// done from a main() function.
+func EnableEditions() {
+	internal.AllowEditions = true
+}
 
 // Compile compiles the given file names into fully-linked descriptors. The
 // compiler's resolver is used to locate source code (or intermediate artifacts
