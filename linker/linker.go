@@ -114,7 +114,7 @@ type Result interface {
 	// be done after options are interpreted. Any errors or warnings encountered
 	// will be reported via the given handler. If any error is reported, this
 	// function returns a non-nil error.
-	ValidateOptions(handler *reporter.Handler) error
+	ValidateOptions(handler *reporter.Handler, symbols *Symbols) error
 	// CheckForUnusedImports is used to report warnings for unused imports. This
 	// should be called after options have been interpreted. Otherwise, the logic
 	// could incorrectly report imports as unused if the only symbol used were a

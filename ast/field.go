@@ -27,7 +27,7 @@ import "fmt"
 // This also allows NoSourceNode and SyntheticMapField to be used in place of
 // one of the above for some usages.
 type FieldDeclNode interface {
-	Node
+	NodeWithOptions
 	FieldLabel() Node
 	FieldName() Node
 	FieldType() Node
@@ -170,6 +170,14 @@ func (n *FieldNode) GetGroupKeyword() Node {
 
 func (n *FieldNode) GetOptions() *CompactOptionsNode {
 	return n.Options
+}
+
+func (n *FieldNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, opt := range n.Options.Options {
+		if !fn(opt) {
+			return
+		}
+	}
 }
 
 // FieldLabel represents the label of a field, which indicates its cardinality
@@ -338,8 +346,38 @@ func (n *GroupNode) GetOptions() *CompactOptionsNode {
 	return n.Options
 }
 
-func (n *GroupNode) MessageName() Node {
+func (n *GroupNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, opt := range n.Options.Options {
+		if !fn(opt) {
+			return
+		}
+	}
+}
+
+func (n *GroupNode) AsMessage() *SyntheticGroupMessageNode {
+	return (*SyntheticGroupMessageNode)(n)
+}
+
+// SyntheticGroupMessageNode is a view of a GroupNode that implements MessageDeclNode.
+// Since a group field implicitly defines a message type, this node represents
+// that message type while the corresponding GroupNode represents the field.
+//
+// This type is considered synthetic since it never appears in a file's AST, but
+// is only returned from other accessors (e.g. GroupNode.AsMessage).
+type SyntheticGroupMessageNode GroupNode
+
+func (n *SyntheticGroupMessageNode) MessageName() Node {
 	return n.Name
+}
+
+func (n *SyntheticGroupMessageNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, decl := range n.Decls {
+		if opt, ok := decl.(*OptionNode); ok {
+			if !fn(opt) {
+				return
+			}
+		}
+	}
 }
 
 // OneofDeclNode is a node in the AST that defines a oneof. There are
@@ -350,9 +388,13 @@ func (n *GroupNode) MessageName() Node {
 // This also allows NoSourceNode to be used in place of one of the above
 // for some usages.
 type OneofDeclNode interface {
-	Node
+	NodeWithOptions
 	OneofName() Node
 }
+
+var _ OneofDeclNode = (*OneofNode)(nil)
+var _ OneofDeclNode = (*SyntheticOneof)(nil)
+var _ OneofDeclNode = NoSourceNode{}
 
 // OneofNode represents a one-of declaration. Example:
 //
@@ -425,6 +467,16 @@ func (n *OneofNode) OneofName() Node {
 	return n.Name
 }
 
+func (n *OneofNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, decl := range n.Decls {
+		if opt, ok := decl.(*OptionNode); ok {
+			if !fn(opt) {
+				return
+			}
+		}
+	}
+}
+
 // OneofElement is an interface implemented by all AST nodes that can
 // appear in the body of a oneof declaration.
 type OneofElement interface {
@@ -439,7 +491,11 @@ var _ OneofElement = (*EmptyDeclNode)(nil)
 
 // SyntheticOneof is not an actual node in the AST but a synthetic node
 // that represents the oneof implied by a proto3 optional field.
+//
+// This type is considered synthetic since it never appears in a file's AST,
+// but is only returned from other functions (e.g. NewSyntheticOneof).
 type SyntheticOneof struct {
+	// The proto3 optional field that implies the presence of this oneof.
 	Field *FieldNode
 }
 
@@ -469,6 +525,9 @@ func (n *SyntheticOneof) TrailingComments() []Comment {
 
 func (n *SyntheticOneof) OneofName() Node {
 	return n.Field.FieldName()
+}
+
+func (n *SyntheticOneof) RangeOptions(_ func(*OptionNode) bool) {
 }
 
 // MapTypeNode represents the type declaration for a map field. It defines
@@ -627,8 +686,16 @@ func (n *MapFieldNode) GetOptions() *CompactOptionsNode {
 	return n.Options
 }
 
-func (n *MapFieldNode) MessageName() Node {
-	return n.Name
+func (n *MapFieldNode) RangeOptions(fn func(*OptionNode) bool) {
+	for _, opt := range n.Options.Options {
+		if !fn(opt) {
+			return
+		}
+	}
+}
+
+func (n *MapFieldNode) AsMessage() *SyntheticMapEntryNode {
+	return (*SyntheticMapEntryNode)(n)
 }
 
 func (n *MapFieldNode) KeyField() *SyntheticMapField {
@@ -639,9 +706,28 @@ func (n *MapFieldNode) ValueField() *SyntheticMapField {
 	return NewSyntheticMapField(n.MapType.ValueType, 2)
 }
 
+// SyntheticMapEntryNode is a view of a MapFieldNode that implements MessageDeclNode.
+// Since a map field implicitly defines a message type for the map entry,
+// this node represents that message type.
+//
+// This type is considered synthetic since it never appears in a file's AST, but
+// is only returned from other accessors (e.g. MapFieldNode.AsMessage).
+type SyntheticMapEntryNode MapFieldNode
+
+func (n *SyntheticMapEntryNode) MessageName() Node {
+	return n.Name
+}
+
+func (n *SyntheticMapEntryNode) RangeOptions(_ func(*OptionNode) bool) {
+}
+
 // SyntheticMapField is not an actual node in the AST but a synthetic node
 // that implements FieldDeclNode. These are used to represent the implicit
 // field declarations of the "key" and "value" fields in a map entry.
+//
+// This type is considered synthetic since it never appears in a file's AST,
+// but is only returned from other accessors and functions (e.g.
+// MapFieldNode.KeyField, MapFieldNode.ValueField, and NewSyntheticMapField).
 type SyntheticMapField struct {
 	Ident IdentValueNode
 	Tag   *UintLiteralNode
@@ -703,4 +789,7 @@ func (n *SyntheticMapField) GetGroupKeyword() Node {
 
 func (n *SyntheticMapField) GetOptions() *CompactOptionsNode {
 	return nil
+}
+
+func (n *SyntheticMapField) RangeOptions(_ func(*OptionNode) bool) {
 }

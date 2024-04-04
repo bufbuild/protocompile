@@ -387,7 +387,7 @@ func TestVisitorAll(t *testing.T) {
 			"*FieldNode", "FieldDeclNode", "CompositeNode", "Node",
 		},
 		(*GroupNode)(nil): {
-			"*GroupNode", "FieldDeclNode", "MessageDeclNode", "CompositeNode", "Node",
+			"*GroupNode", "FieldDeclNode", "CompositeNode", "Node",
 		},
 		(*OneofNode)(nil): {
 			"*OneofNode", "CompositeNode", "Node",
@@ -396,7 +396,7 @@ func TestVisitorAll(t *testing.T) {
 			"*MapTypeNode", "CompositeNode", "Node",
 		},
 		(*MapFieldNode)(nil): {
-			"*MapFieldNode", "FieldDeclNode", "MessageDeclNode", "CompositeNode", "Node",
+			"*MapFieldNode", "FieldDeclNode", "CompositeNode", "Node",
 		},
 		(*FileNode)(nil): {
 			"*FileNode", "CompositeNode", "Node",
@@ -493,22 +493,27 @@ func TestVisitorAll(t *testing.T) {
 		},
 	}
 
-	for n, expectedCalls := range testCases {
-		var call string
-		v, all := testVisitors(&call)
-		_ = Visit(n, v)
-		assert.Equal(t, expectedCalls[0], call)
-		var allCalls []string
-		for _, v := range all {
-			call = ""
+	for n := range testCases {
+		n := n
+		expectedCalls := testCases[n]
+		t.Run(fmt.Sprintf("%T", n), func(t *testing.T) {
+			t.Parallel()
+			var call string
+			v, all := testVisitors(&call)
 			_ = Visit(n, v)
-			if call != "" {
-				allCalls = append(allCalls, call)
+			assert.Equal(t, expectedCalls[0], call)
+			var allCalls []string
+			for _, v := range all {
+				call = ""
+				_ = Visit(n, v)
+				if call != "" {
+					allCalls = append(allCalls, call)
+				}
 			}
-		}
-		sort.Strings(allCalls)
-		sort.Strings(expectedCalls)
-		assert.Equal(t, expectedCalls, allCalls)
+			sort.Strings(allCalls)
+			sort.Strings(expectedCalls)
+			assert.Equal(t, expectedCalls, allCalls)
+		})
 	}
 }
 
@@ -516,127 +521,133 @@ func TestVisitorPriorityOrder(t *testing.T) {
 	t.Parallel()
 	// This tests a handful of cases, concrete types that implement numerous interfaces,
 	// and verifies that the preferred function on the visitor is called when present.
-	var call string
-	var n Node
 
-	v, _ := testVisitors(&call)
-	n = (*StringLiteralNode)(nil)
+	t.Run("StringLiteralNode", func(t *testing.T) {
+		t.Parallel()
+		var call string
+		v, _ := testVisitors(&call)
+		n := (*StringLiteralNode)(nil)
 
-	v.DoVisitStringLiteralNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "StringValueNode", call)
-	call = ""
-	v.DoVisitStringValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "ValueNode", call)
-	call = ""
-	v.DoVisitValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "TerminalNode", call)
-	call = ""
-	v.DoVisitTerminalNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "Node", call)
-	call = ""
-	v.DoVisitNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "", call)
+		v.DoVisitStringLiteralNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "StringValueNode", call)
+		call = ""
+		v.DoVisitStringValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "ValueNode", call)
+		call = ""
+		v.DoVisitValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "TerminalNode", call)
+		call = ""
+		v.DoVisitTerminalNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "Node", call)
+		call = ""
+		v.DoVisitNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "", call)
+	})
+	t.Run("CompoundStringLiteralNode", func(t *testing.T) {
+		t.Parallel()
+		var call string
+		v, _ := testVisitors(&call)
+		n := (*CompoundStringLiteralNode)(nil)
 
-	v, _ = testVisitors(&call)
-	n = (*CompoundStringLiteralNode)(nil)
+		v.DoVisitCompoundStringLiteralNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "StringValueNode", call)
+		call = ""
+		v.DoVisitStringValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "ValueNode", call)
+		call = ""
+		v.DoVisitValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "CompositeNode", call)
+		call = ""
+		v.DoVisitCompositeNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "Node", call)
+		call = ""
+		v.DoVisitNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "", call)
+	})
+	t.Run("UintLiteralNode", func(t *testing.T) {
+		t.Parallel()
+		var call string
+		v, _ := testVisitors(&call)
+		n := (*UintLiteralNode)(nil)
 
-	v.DoVisitCompoundStringLiteralNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "StringValueNode", call)
-	call = ""
-	v.DoVisitStringValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "ValueNode", call)
-	call = ""
-	v.DoVisitValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "CompositeNode", call)
-	call = ""
-	v.DoVisitCompositeNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "Node", call)
-	call = ""
-	v.DoVisitNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "", call)
+		v.DoVisitUintLiteralNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "IntValueNode", call)
+		call = ""
+		v.DoVisitIntValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "FloatValueNode", call)
+		call = ""
+		v.DoVisitFloatValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "ValueNode", call)
+		call = ""
+		v.DoVisitValueNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "TerminalNode", call)
+		call = ""
+		v.DoVisitTerminalNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "Node", call)
+		call = ""
+		v.DoVisitNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "", call)
+	})
+	t.Run("GroupNode", func(t *testing.T) {
+		t.Parallel()
+		var call string
+		v, _ := testVisitors(&call)
+		n := (*GroupNode)(nil)
 
-	v, _ = testVisitors(&call)
-	n = (*UintLiteralNode)(nil)
+		v.DoVisitGroupNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "FieldDeclNode", call)
+		call = ""
+		v.DoVisitFieldDeclNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "CompositeNode", call)
+		call = ""
+		v.DoVisitCompositeNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "Node", call)
+		call = ""
+		v.DoVisitNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "", call)
+	})
+	t.Run("MapFieldNode", func(t *testing.T) {
+		t.Parallel()
+		var call string
+		v, _ := testVisitors(&call)
+		n := (*MapFieldNode)(nil)
 
-	v.DoVisitUintLiteralNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "IntValueNode", call)
-	call = ""
-	v.DoVisitIntValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "FloatValueNode", call)
-	call = ""
-	v.DoVisitFloatValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "ValueNode", call)
-	call = ""
-	v.DoVisitValueNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "TerminalNode", call)
-	call = ""
-	v.DoVisitTerminalNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "Node", call)
-	call = ""
-	v.DoVisitNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "", call)
-
-	v, _ = testVisitors(&call)
-	n = (*GroupNode)(nil)
-
-	v.DoVisitGroupNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "FieldDeclNode", call)
-	call = ""
-	v.DoVisitFieldDeclNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "MessageDeclNode", call)
-	call = ""
-	v.DoVisitMessageDeclNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "CompositeNode", call)
-	call = ""
-	v.DoVisitCompositeNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "Node", call)
-	call = ""
-	v.DoVisitNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "", call)
-
-	v, _ = testVisitors(&call)
-	n = (*MapFieldNode)(nil)
-
-	v.DoVisitMapFieldNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "FieldDeclNode", call)
-	call = ""
-	v.DoVisitFieldDeclNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "MessageDeclNode", call)
-	call = ""
-	v.DoVisitMessageDeclNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "CompositeNode", call)
-	call = ""
-	v.DoVisitCompositeNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "Node", call)
-	call = ""
-	v.DoVisitNode = nil
-	_ = Visit(n, v)
-	assert.Equal(t, "", call)
+		v.DoVisitMapFieldNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "FieldDeclNode", call)
+		call = ""
+		v.DoVisitFieldDeclNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "CompositeNode", call)
+		call = ""
+		v.DoVisitCompositeNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "Node", call)
+		call = ""
+		v.DoVisitNode = nil
+		_ = Visit(n, v)
+		assert.Equal(t, "", call)
+	})
 }
 
 func TestDoGenerate(t *testing.T) {

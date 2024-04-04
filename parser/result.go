@@ -389,9 +389,10 @@ func (r *result) asGroupDescriptors(group *ast.GroupNode, syntax protoreflect.Sy
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}
 	}
 	md := &descriptorpb.DescriptorProto{Name: proto.String(group.Name.Val)}
-	r.putMessageNode(md, group)
+	groupMsg := group.AsMessage()
+	r.putMessageNode(md, groupMsg)
 	// don't bother processing body if we've exceeded depth
-	if r.checkDepth(depth, group, handler) {
+	if r.checkDepth(depth, groupMsg, handler) {
 		r.addMessageBody(md, &group.MessageBody, syntax, handler, depth)
 	}
 	return fd, md
@@ -405,7 +406,8 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax protoreflec
 		}
 		tag = proto.Int32(int32(mapField.Tag.Val))
 	}
-	r.checkDepth(depth, mapField, handler)
+	mapEntry := mapField.AsMessage()
+	r.checkDepth(depth, mapEntry, handler)
 	var lbl *descriptorpb.FieldDescriptorProto_Label
 	if syntax == protoreflect.Proto2 {
 		lbl = descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum()
@@ -425,7 +427,7 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax protoreflec
 		Options: &descriptorpb.MessageOptions{MapEntry: proto.Bool(true)},
 		Field:   []*descriptorpb.FieldDescriptorProto{keyFd, valFd},
 	}
-	r.putMessageNode(md, mapField)
+	r.putMessageNode(md, mapEntry)
 	return fd, md
 }
 
@@ -441,7 +443,7 @@ func (r *result) asExtensionRanges(node *ast.ExtensionRangeNode, maxTag int32, h
 		if len(opts) > 0 {
 			er.Options = &descriptorpb.ExtensionRangeOptions{UninterpretedOption: opts}
 		}
-		r.putExtensionRangeNode(er, rng)
+		r.putExtensionRangeNode(er, node, rng)
 		ers[i] = er
 	}
 	return ers
@@ -571,7 +573,7 @@ func (r *result) checkDepth(depth int, node ast.MessageDeclNode, handler *report
 		return true
 	}
 	n := ast.Node(node)
-	if grp, ok := n.(*ast.GroupNode); ok {
+	if grp, ok := n.(*ast.SyntheticGroupMessageNode); ok {
 		// pinpoint the group keyword if the source is a group
 		n = grp.Keyword
 	}
@@ -883,11 +885,18 @@ func (r *result) FieldNode(f *descriptorpb.FieldDescriptorProto) ast.FieldDeclNo
 	return r.nodes[f].(ast.FieldDeclNode)
 }
 
-func (r *result) OneofNode(o *descriptorpb.OneofDescriptorProto) ast.Node {
+func (r *result) OneofNode(o *descriptorpb.OneofDescriptorProto) ast.OneofDeclNode {
 	if r.nodes == nil {
 		return ast.NewNoSourceNode(r.proto.GetName())
 	}
-	return r.nodes[o]
+	return r.nodes[o].(ast.OneofDeclNode)
+}
+
+func (r *result) ExtensionsNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithOptions {
+	if r.nodes == nil {
+		return ast.NewNoSourceNode(r.proto.GetName())
+	}
+	return r.nodes[asExtsNode(e)].(ast.NodeWithOptions)
 }
 
 func (r *result) ExtensionRangeNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.RangeDeclNode {
@@ -904,11 +913,11 @@ func (r *result) MessageReservedRangeNode(rr *descriptorpb.DescriptorProto_Reser
 	return r.nodes[rr].(ast.RangeDeclNode)
 }
 
-func (r *result) EnumNode(e *descriptorpb.EnumDescriptorProto) ast.Node {
+func (r *result) EnumNode(e *descriptorpb.EnumDescriptorProto) ast.NodeWithOptions {
 	if r.nodes == nil {
 		return ast.NewNoSourceNode(r.proto.GetName())
 	}
-	return r.nodes[e]
+	return r.nodes[e].(ast.NodeWithOptions)
 }
 
 func (r *result) EnumValueNode(e *descriptorpb.EnumValueDescriptorProto) ast.EnumValueDeclNode {
@@ -925,11 +934,11 @@ func (r *result) EnumReservedRangeNode(rr *descriptorpb.EnumDescriptorProto_Enum
 	return r.nodes[rr].(ast.RangeDeclNode)
 }
 
-func (r *result) ServiceNode(s *descriptorpb.ServiceDescriptorProto) ast.Node {
+func (r *result) ServiceNode(s *descriptorpb.ServiceDescriptorProto) ast.NodeWithOptions {
 	if r.nodes == nil {
 		return ast.NewNoSourceNode(r.proto.GetName())
 	}
-	return r.nodes[s]
+	return r.nodes[s].(ast.NodeWithOptions)
 }
 
 func (r *result) MethodNode(m *descriptorpb.MethodDescriptorProto) ast.RPCDeclNode {
@@ -963,7 +972,8 @@ func (r *result) putOneofNode(o *descriptorpb.OneofDescriptorProto, n ast.OneofD
 	r.nodes[o] = n
 }
 
-func (r *result) putExtensionRangeNode(e *descriptorpb.DescriptorProto_ExtensionRange, n *ast.RangeNode) {
+func (r *result) putExtensionRangeNode(e *descriptorpb.DescriptorProto_ExtensionRange, er *ast.ExtensionRangeNode, n *ast.RangeNode) {
+	r.nodes[asExtsNode(e)] = er
 	r.nodes[e] = n
 }
 
@@ -993,3 +1003,14 @@ func (r *result) putMethodNode(m *descriptorpb.MethodDescriptorProto, n *ast.RPC
 
 // NB: If we ever add other put*Node methods, to index other kinds of elements in the descriptor
 //     proto hierarchy, we need to update the index recreation logic in clone.go, too.
+
+func asExtsNode(er *descriptorpb.DescriptorProto_ExtensionRange) proto.Message {
+	return extsParent{er}
+}
+
+// a simple marker type that allows us to have two distinct keys in a map for
+// the same ExtensionRange proto -- one for the range itself and another to
+// associate with the enclosing/parent AST node.
+type extsParent struct {
+	*descriptorpb.DescriptorProto_ExtensionRange
+}
