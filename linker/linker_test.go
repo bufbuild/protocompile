@@ -152,8 +152,20 @@ func TestLinkerValidation(t *testing.T) {
 				"foo.proto":  `option optimize_for=LITE_RUNTIME;`,
 				"foo2.proto": `import "foo.proto"; message baz{}`,
 			},
-			// since files are compiled concurrently, there are two possible outcomes
 			expectedErr: `foo2.proto:1:8: a file that does not use optimize_for=LITE_RUNTIME may not import file "foo.proto" that does`,
+		},
+		"success_import_nonlite_from_lite": {
+			input: map[string]string{
+				"foo.proto":  `import "foo2.proto"; option optimize_for=LITE_RUNTIME;`,
+				"foo2.proto": `message baz{}`,
+			},
+		},
+		"failure_extend_nonlite_from_lite": {
+			input: map[string]string{
+				"foo.proto":  `import "foo2.proto"; option optimize_for=LITE_RUNTIME; extend Baz { optional string s = 1; }`,
+				"foo2.proto": `message Baz { extensions 1 to 100; }`,
+			},
+			expectedErr: `foo.proto:1:69: extensions in a file that uses optimize_for=LITE_RUNTIME may not extend messages in file "foo2.proto" which does not`,
 		},
 		"failure_enum_cpp_scope": {
 			input: map[string]string{
@@ -1095,6 +1107,67 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:12:8: message foo.bar.a.b: option (foo.bar.msga): unknown extension b.c.i",
 		},
+		"success_lazy": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					message Baz {
+						Baz baz = 1 [lazy=true];
+						repeated Baz bazzes = 2 [lazy=true];
+						Baz buzz = 3 [unverified_lazy=true];
+						repeated Baz buzzes = 4 [unverified_lazy=true];
+						map<string,string> m1 = 5 [lazy=true];
+						map<string,string> m2 = 6 [unverified_lazy=true];
+					}`,
+			},
+		},
+		"failure_lazy_not_message": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					message Baz {
+						string str = 1 [lazy=true];
+					}`,
+			},
+			expectedErr: "foo.proto:4:25: lazy option can only be used with message fields",
+		},
+		"failure_unverified_lazy_not_message": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					message Baz {
+						string str = 1 [unverified_lazy=true];
+					}`,
+			},
+			expectedErr: "foo.proto:4:25: unverified_lazy option can only be used with message fields",
+		},
+		"failure_lazy_group": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					package foo.bar;
+					message Baz {
+						optional group Buzz = 1 [lazy=true] {
+							optional string s = 1; 
+						}
+					}`,
+			},
+			expectedErr: "foo.proto:4:34: lazy option can only be used with message fields, not groups",
+		},
+		"failure_lazy_editions_delimited": {
+			input: map[string]string{
+				"foo.proto": `
+					edition = "2023";
+					package foo.bar;
+					message Baz {
+						Baz baz = 1 [lazy=true, features.message_encoding=DELIMITED];
+					}`,
+			},
+			expectedErr: "foo.proto:4:22: lazy option can only be used with message fields that use length-prefixed encoding",
+		},
 		"success_any_message_literal": {
 			input: map[string]string{
 				"foo.proto": `
@@ -1295,6 +1368,43 @@ func TestLinkerValidation(t *testing.T) {
 					  }
 					}`,
 			},
+		},
+		"success_jstype": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foo = 1 [jstype=JS_NORMAL];
+					  bool bar = 2 [jstype=JS_NORMAL];
+					  uint32 u32 = 3 [jstype=JS_NORMAL];
+					  // only 64-bit integer types can specify value other than normal
+					  int64 a = 4 [jstype=JS_STRING];
+					  uint64 b = 5 [jstype=JS_NUMBER];
+					  sint64 c = 6 [jstype=JS_STRING];
+					  fixed64 d = 7 [jstype=JS_NUMBER];
+					  sfixed64 e = 8 [jstype=JS_STRING];
+					}`,
+			},
+		},
+		"failure_jstype_not_numeric": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foo = 1 [jstype=JS_STRING];
+					}`,
+			},
+			expectedErr: `foo.proto:3:19: only 64-bit integer fields (int64, uint64, sint64, fixed64, and sfixed64) can specify a jstype other than JS_NORMAL`,
+		},
+		"failure_jstype_not_64bit": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  uint32 foo = 1 [jstype=JS_NUMBER];
+					}`,
+			},
+			expectedErr: `foo.proto:3:19: only 64-bit integer fields (int64, uint64, sint64, fixed64, and sfixed64) can specify a jstype other than JS_NORMAL`,
 		},
 		"failure_json_name_conflict_default": {
 			input: map[string]string{

@@ -186,6 +186,15 @@ const (
 	// FieldOptionsPackedTag is the number of the packed field in the
 	// FieldOptions proto.
 	FieldOptionsPackedTag = 2
+	// FieldOptionsLazyTag is the number of the lazy field in the
+	// FieldOptions proto.
+	FieldOptionsLazyTag = 5
+	// FieldOptionsJSTypeTag is the number of the jstype field in the
+	// FieldOptions proto.
+	FieldOptionsJSTypeTag = 6
+	// FieldOptionsUnverifiedLazyTag is the number of the unverified_lazy
+	// field in the FieldOptions proto.
+	FieldOptionsUnverifiedLazyTag = 15
 	// FieldOptionsFeaturesTag is the tag number of the features field in the
 	// FieldOptions proto.
 	FieldOptionsFeaturesTag = 21

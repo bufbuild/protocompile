@@ -107,34 +107,7 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 		// should not be possible
 		return fmt.Errorf("field descriptor is wrong type: expecting %T, got %T", (*fldDescriptor)(nil), fld)
 	}
-	if fd.proto.Options != nil && fd.proto.Options.Ctype != nil {
-		if descriptorpb.Edition(r.Edition()) >= descriptorpb.Edition_EDITION_2024 {
-			// We don't support edition 2024 yet, but we went ahead and mimic'ed this check
-			// from protoc, which currently has experimental support for 2024.
-			span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
-			if err := handler.HandleErrorf(span, "ctype option cannot be used as of edition 2024; use features.string_type instead"); err != nil {
-				return err
-			}
-		} else if descriptorpb.Edition(r.Edition()) == descriptorpb.Edition_EDITION_2023 {
-			if fld.Kind() != protoreflect.StringKind && fld.Kind() != protoreflect.BytesKind {
-				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
-				if err := handler.HandleErrorf(span, "ctype option can only be used on string and bytes fields"); err != nil {
-					return err
-				}
-			}
-			if fd.proto.Options.GetCtype() == descriptorpb.FieldOptions_CORD && fd.IsExtension() {
-				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
-				if err := handler.HandleErrorf(span, "ctype option cannot be CORD for extension fields"); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	if fld.IsExtension() {
-		if err := r.validateExtension(fd, handler); err != nil {
-			return err
-		}
-	}
+
 	if err := r.validatePacked(fd, handler); err != nil {
 		return err
 	}
@@ -161,12 +134,77 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 			return err
 		}
 	}
-
+	if fd.proto.Options != nil && fd.proto.Options.Ctype != nil {
+		if descriptorpb.Edition(r.Edition()) >= descriptorpb.Edition_EDITION_2024 {
+			// We don't support edition 2024 yet, but we went ahead and mimic'ed this check
+			// from protoc, which currently has experimental support for 2024.
+			span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+			if err := handler.HandleErrorf(span, "ctype option cannot be used as of edition 2024; use features.string_type instead"); err != nil {
+				return err
+			}
+		} else if descriptorpb.Edition(r.Edition()) == descriptorpb.Edition_EDITION_2023 {
+			if fld.Kind() != protoreflect.StringKind && fld.Kind() != protoreflect.BytesKind {
+				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+				if err := handler.HandleErrorf(span, "ctype option can only be used on string and bytes fields"); err != nil {
+					return err
+				}
+			}
+			if fd.proto.Options.GetCtype() == descriptorpb.FieldOptions_CORD && fd.IsExtension() {
+				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
+				if err := handler.HandleErrorf(span, "ctype option cannot be CORD for extension fields"); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if (fd.proto.Options.GetLazy() || fd.proto.Options.GetUnverifiedLazy()) && fd.Kind() != protoreflect.MessageKind {
+		var span ast.SourceSpan
+		var optionName string
+		if fd.proto.Options.GetLazy() {
+			span = r.findOptionSpan(fd, internal.FieldOptionsLazyTag)
+			optionName = "lazy"
+		} else {
+			span = r.findOptionSpan(fd, internal.FieldOptionsUnverifiedLazyTag)
+			optionName = "unverified_lazy"
+		}
+		var suffix string
+		if fd.Kind() == protoreflect.GroupKind {
+			if isEditions(r) {
+				suffix = " that use length-prefixed encoding"
+			} else {
+				suffix = ", not groups"
+			}
+		}
+		if err := handler.HandleErrorf(span, "%s option can only be used with message fields%s", optionName, suffix); err != nil {
+			return err
+		}
+	}
+	if fd.proto.Options.GetJstype() != descriptorpb.FieldOptions_JS_NORMAL {
+		switch fd.Kind() {
+		case protoreflect.Int64Kind, protoreflect.Uint64Kind, protoreflect.Sint64Kind,
+			protoreflect.Fixed64Kind, protoreflect.Sfixed64Kind:
+			// allowed only for 64-bit integer types
+		default:
+			span := r.findOptionSpan(fd, internal.FieldOptionsJSTypeTag)
+			err := handler.HandleErrorf(span, "only 64-bit integer fields (int64, uint64, sint64, fixed64, and sfixed64) can specify a jstype other than JS_NORMAL")
+			if err != nil {
+				return err
+			}
+		}
+	}
 	if isEditions(r) {
 		if err := r.validateFieldFeatures(fd, handler); err != nil {
 			return err
 		}
 	}
+
+	if fld.IsExtension() {
+		// More checks if this is an extension field.
+		if err := r.validateExtension(fd, handler); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -203,6 +241,19 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 		err := handler.HandleErrorf(info, "tag number %d is higher than max allowed tag number (%d)", fd.Number(), internal.MaxNormalTag)
 		if err != nil {
 			return err
+		}
+	}
+
+	fileOpts := r.FileDescriptorProto().GetOptions()
+	if fileOpts.GetOptimizeFor() == descriptorpb.FileOptions_LITE_RUNTIME {
+		extendeeFileOpts, _ := msg.ParentFile().Options().(*descriptorpb.FileOptions)
+		if extendeeFileOpts.GetOptimizeFor() != descriptorpb.FileOptions_LITE_RUNTIME {
+			file := r.FileNode()
+			info := file.NodeInfo(r.FieldNode(fd.proto))
+			err := handler.HandleErrorf(info, "extensions in a file that uses optimize_for=LITE_RUNTIME may not extend messages in file %q which does not", msg.ParentFile().Path())
+			if err != nil {
+				return err
+			}
 		}
 	}
 
