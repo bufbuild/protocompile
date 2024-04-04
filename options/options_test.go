@@ -45,7 +45,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// Enable just for tests.
-	internal.AllowEditions = true
+	internal.AllowEditionsForTest()
 	status := m.Run()
 	os.Exit(status)
 }

@@ -107,7 +107,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
 	case file.Edition != nil:
-		if !internal.AllowEditions {
+		if !internal.IsEditionsAllowed() {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
 			if handler.HandleErrorf(nodeInfo, `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
 				return

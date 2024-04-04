@@ -16,10 +16,20 @@ package internal
 
 import "google.golang.org/protobuf/types/descriptorpb"
 
-// AllowEditions is set to true in tests to enable editions syntax for testing.
-// This will be removed and editions will be allowed by non-test code once the
+var allowEditions = false
+
+// AllowEditionsForTest is called to enable editions syntax for testing. This
+// will be removed and editions will be allowed by non-test code once the
 // implementation is complete.
-var AllowEditions = false
+func AllowEditionsForTest() {
+	allowEditions = true
+}
+
+// IsEditionsAllowed returns true if editions syntax is allowed by the compiler.
+// This is currently only enabled from tests.
+func IsEditionsAllowed() bool {
+	return allowEditions
+}
 
 // SupportedEditions is the exhaustive set of editions that protocompile
 // can support. We don't allow it to compile future/unknown editions, to
