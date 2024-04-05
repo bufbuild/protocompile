@@ -6,7 +6,7 @@ require (
 	github.com/bufbuild/protocompile v0.9.0
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/jhump/protoreflect v1.14.1 // MUST NOT be updated to v1.15 or higher
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	google.golang.org/protobuf v1.33.1-0.20240319125436-3039476726e4
 )
 
