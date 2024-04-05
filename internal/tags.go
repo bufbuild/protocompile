@@ -61,6 +61,9 @@ const (
 	// FileOptionsTag is the tag number of the options element in a file
 	// descriptor proto.
 	FileOptionsTag = 8
+	// FileOptionsJavaStringCheckUTF8Tag is the tag number of the java_string_check_utf8
+	// field in the FileOptions proto.
+	FileOptionsJavaStringCheckUTF8Tag = 27
 	// FileOptionsFeaturesTag is the tag number of the features field in the
 	// FileOptions proto.
 	FileOptionsFeaturesTag = 50
@@ -177,6 +180,21 @@ const (
 	// FieldOptionsTag is the tag number of the options element in a field
 	// descriptor proto.
 	FieldOptionsTag = 8
+	// FieldOptionsCTypeTag is the number of the ctype field in the
+	// FieldOptions proto.
+	FieldOptionsCTypeTag = 1
+	// FieldOptionsPackedTag is the number of the packed field in the
+	// FieldOptions proto.
+	FieldOptionsPackedTag = 2
+	// FieldOptionsLazyTag is the number of the lazy field in the
+	// FieldOptions proto.
+	FieldOptionsLazyTag = 5
+	// FieldOptionsJSTypeTag is the number of the jstype field in the
+	// FieldOptions proto.
+	FieldOptionsJSTypeTag = 6
+	// FieldOptionsUnverifiedLazyTag is the number of the unverified_lazy
+	// field in the FieldOptions proto.
+	FieldOptionsUnverifiedLazyTag = 15
 	// FieldOptionsFeaturesTag is the tag number of the features field in the
 	// FieldOptions proto.
 	FieldOptionsFeaturesTag = 21
@@ -296,4 +314,23 @@ const (
 	AnyTypeURLTag = 1
 	// AnyValueTag is the tag number of the value field of the Any proto.
 	AnyValueTag = 2
+
+	// FeatureSetFieldPresenceTag is the tag number of the field_presence field
+	// in the FeatureSet proto.
+	FeatureSetFieldPresenceTag = 1
+	// FeatureSetEnumTypeTag is the tag number of the enum_type field in the
+	// FeatureSet proto.
+	FeatureSetEnumTypeTag = 2
+	// FeatureSetRepeatedFieldEncodingTag is the tag number of the repeated_field_encoding
+	// field in the FeatureSet proto.
+	FeatureSetRepeatedFieldEncodingTag = 3
+	// FeatureSetUTF8ValidationTag is the tag number of the utf8_validation field
+	// in the FeatureSet proto.
+	FeatureSetUTF8ValidationTag = 4
+	// FeatureSetMessageEncodingTag is the tag number of the message_encoding
+	// field in the FeatureSet proto.
+	FeatureSetMessageEncodingTag = 5
+	// FeatureSetJSONFormatTag is the tag number of the json_format field in
+	// the FeatureSet proto.
+	FeatureSetJSONFormatTag = 6
 )

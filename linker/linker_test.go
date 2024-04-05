@@ -147,6 +147,26 @@ func TestLinkerValidation(t *testing.T) {
 			expectedErr: `foo.proto:1:8: cycle found in imports: "foo.proto" -> "foo2.proto" -> "foo.proto"` +
 				` || foo2.proto:1:8: cycle found in imports: "foo2.proto" -> "foo.proto" -> "foo2.proto"`,
 		},
+		"failure_import_lite_from_nonlite": {
+			input: map[string]string{
+				"foo.proto":  `option optimize_for=LITE_RUNTIME;`,
+				"foo2.proto": `import "foo.proto"; message baz{}`,
+			},
+			expectedErr: `foo2.proto:1:8: a file that does not use optimize_for=LITE_RUNTIME may not import file "foo.proto" that does`,
+		},
+		"success_import_nonlite_from_lite": {
+			input: map[string]string{
+				"foo.proto":  `import "foo2.proto"; option optimize_for=LITE_RUNTIME;`,
+				"foo2.proto": `message baz{}`,
+			},
+		},
+		"failure_extend_nonlite_from_lite": {
+			input: map[string]string{
+				"foo.proto":  `import "foo2.proto"; option optimize_for=LITE_RUNTIME; extend Baz { optional string s = 1; }`,
+				"foo2.proto": `message Baz { extensions 1 to 100; }`,
+			},
+			expectedErr: `foo.proto:1:69: extensions in a file that uses optimize_for=LITE_RUNTIME may not extend messages in file "foo2.proto" which does not`,
+		},
 		"failure_enum_cpp_scope": {
 			input: map[string]string{
 				"foo.proto": "enum foo { bar = 1; baz = 2; } enum fu { bar = 1; baz = 2; }",
@@ -289,6 +309,12 @@ func TestLinkerValidation(t *testing.T) {
 				"foo.proto": "package fu.baz; message foobar{ optional string a = 1 [default = 1.234]; }",
 			},
 			expectedErr: "foo.proto:1:66: field fu.baz.foobar.a: option default: expecting string, got double",
+		},
+		"failure_editions_default_with_implicit_presence": {
+			input: map[string]string{
+				"foo.proto": `edition = "2023"; message Foo { string s = 1 [default="abc", features.field_presence=IMPLICIT]; }`,
+			},
+			expectedErr: "foo.proto:1:47: default value is not allowed on fields with implicit presence",
 		},
 		"failure_enum_default_not_found": {
 			input: map[string]string{
@@ -1081,6 +1107,67 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "test.proto:12:8: message foo.bar.a.b: option (foo.bar.msga): unknown extension b.c.i",
 		},
+		"success_lazy": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					message Baz {
+						Baz baz = 1 [lazy=true];
+						repeated Baz bazzes = 2 [lazy=true];
+						Baz buzz = 3 [unverified_lazy=true];
+						repeated Baz buzzes = 4 [unverified_lazy=true];
+						map<string,string> m1 = 5 [lazy=true];
+						map<string,string> m2 = 6 [unverified_lazy=true];
+					}`,
+			},
+		},
+		"failure_lazy_not_message": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					message Baz {
+						string str = 1 [lazy=true];
+					}`,
+			},
+			expectedErr: "foo.proto:4:25: lazy option can only be used with message fields",
+		},
+		"failure_unverified_lazy_not_message": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					package foo.bar;
+					message Baz {
+						string str = 1 [unverified_lazy=true];
+					}`,
+			},
+			expectedErr: "foo.proto:4:25: unverified_lazy option can only be used with message fields",
+		},
+		"failure_lazy_group": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto2";
+					package foo.bar;
+					message Baz {
+						optional group Buzz = 1 [lazy=true] {
+							optional string s = 1; 
+						}
+					}`,
+			},
+			expectedErr: "foo.proto:4:34: lazy option can only be used with message fields, not groups",
+		},
+		"failure_lazy_editions_delimited": {
+			input: map[string]string{
+				"foo.proto": `
+					edition = "2023";
+					package foo.bar;
+					message Baz {
+						Baz baz = 1 [lazy=true, features.message_encoding=DELIMITED];
+					}`,
+			},
+			expectedErr: "foo.proto:4:22: lazy option can only be used with message fields that use length-prefixed encoding",
+		},
 		"success_any_message_literal": {
 			input: map[string]string{
 				"foo.proto": `
@@ -1281,6 +1368,43 @@ func TestLinkerValidation(t *testing.T) {
 					  }
 					}`,
 			},
+		},
+		"success_jstype": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foo = 1 [jstype=JS_NORMAL];
+					  bool bar = 2 [jstype=JS_NORMAL];
+					  uint32 u32 = 3 [jstype=JS_NORMAL];
+					  // only 64-bit integer types can specify value other than normal
+					  int64 a = 4 [jstype=JS_STRING];
+					  uint64 b = 5 [jstype=JS_NUMBER];
+					  sint64 c = 6 [jstype=JS_STRING];
+					  fixed64 d = 7 [jstype=JS_NUMBER];
+					  sfixed64 e = 8 [jstype=JS_STRING];
+					}`,
+			},
+		},
+		"failure_jstype_not_numeric": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  string foo = 1 [jstype=JS_STRING];
+					}`,
+			},
+			expectedErr: `foo.proto:3:19: only 64-bit integer fields (int64, uint64, sint64, fixed64, and sfixed64) can specify a jstype other than JS_NORMAL`,
+		},
+		"failure_jstype_not_64bit": {
+			input: map[string]string{
+				"foo.proto": `
+					syntax = "proto3";
+					message Foo {
+					  uint32 foo = 1 [jstype=JS_NUMBER];
+					}`,
+			},
+			expectedErr: `foo.proto:3:19: only 64-bit integer fields (int64, uint64, sint64, fixed64, and sfixed64) can specify a jstype other than JS_NORMAL`,
 		},
 		"failure_json_name_conflict_default": {
 			input: map[string]string{
@@ -2204,6 +2328,18 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:3:3: packed option is only allowed on repeated fields`,
 		},
+		"failure_editions_packed_option_not_allowed": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						repeated uint32 ids = 1 [packed=true];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:34: field foo.A.ids: packed option is not allowed in editions; use option features.repeated_field_encoding instead`,
+		},
 		"failure_editions_feature_on_wrong_target_type": {
 			input: map[string]string{
 				"test.proto": `
@@ -2232,7 +2368,13 @@ func TestLinkerValidation(t *testing.T) {
 			input: map[string]string{
 				"test.proto": `syntax = "proto3"; enum Foo { FIRST = 1; }`,
 			},
-			expectedErr: `test.proto:1:39: first value of open enum Foo must be zero`,
+			expectedErr: `test.proto:1:39: enum Foo: proto3 requires that first value of enum have numeric value zero`,
+		},
+		"failure_editions_open_enum_zero_value": {
+			input: map[string]string{
+				"test.proto": `edition = "2023"; enum Foo { FIRST = 1; }`,
+			},
+			expectedErr: `test.proto:1:38: first value of open enum Foo must have numeric value zero`,
 		},
 		"success_extension_declarations": {
 			input: map[string]string{
@@ -2323,7 +2465,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:4:30: extension range cannot have declarations and have verification of UNVERIFIED`,
+			expectedErr: `test.proto:4:17: extension range cannot have declarations and have verification of UNVERIFIED`,
 		},
 		"failure_extension_declaration_without_number": {
 			input: map[string]string{
@@ -2805,7 +2947,302 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:14:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:5:30`,
+			expectedErr: `test.proto:14:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:5:17`,
+		},
+		"success_field_presence": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					option features.field_presence = IMPLICIT;
+					message A {
+						B b = 1 [features.field_presence = LEGACY_REQUIRED];
+						message B {
+							string s = 1 [features.field_presence = EXPLICIT];
+						}
+						A a = 2 [features.field_presence = EXPLICIT];
+						uint64 u = 3 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+		},
+		"failure_field_presence_on_oneof_field": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						oneof b {
+							string s = 1 [features.field_presence = EXPLICIT];
+							int64 n = 2;
+						}
+					}
+				`,
+			},
+			expectedErr: `test.proto:5:40: oneof fields may not specify field presence`,
+		},
+		"failure_field_presence_on_repeated_field": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						repeated string s = 1 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:41: repeated fields may not specify field presence`,
+		},
+		"failure_field_presence_on_map_field": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						map<string,string> s = 1 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:44: repeated fields may not specify field presence`,
+		},
+		"failure_field_presence_on_message_field": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						A a = 1 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:27: message fields may not specify implicit presence`,
+		},
+		"failure_field_presence_on_extension_field": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						extensions 1 to 100;
+					}
+					extend A {
+						string s = 1 [features = {
+							field_presence:LEGACY_REQUIRED
+						}];
+					}
+				`,
+			},
+			expectedErr: `test.proto:8:17: extension fields may not specify field presence`,
+		},
+		"failure_field_presence_on_file": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					option features={
+						field_presence : LEGACY_REQUIRED;
+					};
+					message A {
+						string s = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:9: LEGACY_REQUIRED field presence cannot be set as the default for a file`,
+		},
+		"success_repeated_field_encoding": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					option features.repeated_field_encoding=EXPANDED;
+					message A {
+						repeated string s = 1 [features.repeated_field_encoding=EXPANDED];
+						map<string,string> m = 2 [features.repeated_field_encoding=EXPANDED];
+						repeated A a = 3 [features.repeated_field_encoding=EXPANDED];
+						repeated bool b = 4 [features.repeated_field_encoding=PACKED];
+						repeated double d = 5 [features.repeated_field_encoding=PACKED];
+						repeated E e = 6 [features.repeated_field_encoding=PACKED];
+						enum E { ZERO=0; }
+					}
+				`,
+			},
+		},
+		"failure_repeated_field_encoding_not_repeated": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						string s = 1 [features.repeated_field_encoding=EXPANDED];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:32: only repeated fields may specify repeated field encoding`,
+		},
+		"failure_repeated_field_encoding_not_packable": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						repeated string s = 1 [features.repeated_field_encoding=PACKED];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:41: only repeated primitive fields may specify packed encoding`,
+		},
+		"failure_repeated_field_encoding_not_packable_map": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						map<string,string> s = 1 [features.repeated_field_encoding=PACKED];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:44: only repeated primitive fields may specify packed encoding`,
+		},
+		"success_utf8_validation": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					option features = {
+						utf8_validation:NONE;
+					};
+					message A {
+						string s = 1 [features.utf8_validation=VERIFY];
+						map<string,A> ma = 2 [features.utf8_validation=VERIFY];
+						map<uint32,string> mu = 3 [features.utf8_validation=VERIFY];
+						map<string,string> ms = 4 [features.utf8_validation=VERIFY];
+					}
+				`,
+			},
+		},
+		"failure_utf8_validation_not_string": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						bytes s = 1 [features.utf8_validation=VERIFY];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:31: only string fields may specify UTF8 validation`,
+		},
+		"failure_utf8_validation_not_string_map": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						map<uint32,bytes> m = 1 [features.utf8_validation=VERIFY];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:43: only string fields may specify UTF8 validation`,
+		},
+		"failure_utf8_validation_java_option": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					option java_string_check_utf8 = true;
+					message A {
+						map<uint32,bytes> m = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:3:8: file option java_string_check_utf8 is not allowed with editions; import "google/protobuf/java_features.proto" and use (pb.java).utf8_validation instead`,
+		},
+		"success_message_encoding": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					option features.message_encoding = DELIMITED;
+					message A {
+						A a = 1 [features={
+							message_encoding : LENGTH_PREFIXED,
+						}];
+						repeated A as = 2 [features.message_encoding=DELIMITED];
+					}
+				`,
+			},
+		},
+		"failure_message_encoding_not_message": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						repeated string s = 1 [features={
+							message_encoding : LENGTH_PREFIXED,
+						}];
+					}
+				`,
+			},
+			expectedErr: `test.proto:5:17: only message fields may specify message encoding`,
+		},
+		"failure_message_encoding_map": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						map<string,string> m = 1 [features={
+							message_encoding : LENGTH_PREFIXED,
+						}];
+					}
+				`,
+			},
+			expectedErr: `test.proto:5:17: only message fields may specify message encoding`,
+		},
+		"success_editions_ctype": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						string s = 1 [ctype=CORD];
+						bytes b = 2 [ctype=STRING_PIECE];
+						repeated string r = 3 [ctype=STRING];
+						extensions 10 to 100;
+					}
+					extend A {
+						string ext = 10 [ctype=STRING_PIECE];
+					}
+				`,
+			},
+		},
+		"failure_editions_ctype_not_string_or_bytes": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						uint32 s = 1 [ctype=STRING_PIECE];
+					}
+				`,
+			},
+			expectedErr: `test.proto:4:23: ctype option can only be used on string and bytes fields`,
+		},
+		"failure_editions_ctype_ext_cannot_be_cord": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					message A {
+						extensions 10 to 100;
+					}
+					extend A {
+						string ext = 10 [ctype=CORD];
+					}
+				`,
+			},
+			expectedErr: `test.proto:7:26: ctype option cannot be CORD for extension fields`,
 		},
 	}
 

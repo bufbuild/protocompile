@@ -248,6 +248,10 @@ func TestBasicValidation(t *testing.T) {
 			contents:    `enum Foo { V0 = 0; reserved 1 to 20; reserved 20 to 40; reserved "V2"; }`,
 			expectedErr: `test.proto:1:47: enum Foo: reserved ranges overlap: 1 to 20 and 20 to 40`,
 		},
+		"failure_proto3_enum_zero_value": {
+			contents:    `syntax = "proto3"; enum Foo { FIRST = 1; }`,
+			expectedErr: `test.proto:1:39: enum Foo: proto3 requires that first value of enum have numeric value zero`,
+		},
 		"failure_message_number_conflict": {
 			contents:    `syntax = "proto3"; message Foo { string s = 1; int32 i = 1; }`,
 			expectedErr: `test.proto:1:58: message Foo: fields s and i both have the same tag 1`,
