@@ -1736,22 +1736,12 @@ func (interp *interpreter) messageLiteralValue(
 				}
 			} else {
 				ffld = fmd.Fields().ByName(protoreflect.Name(fieldNode.Name.Value()))
-				// Groups are indicated in the text format by the group name (which is
-				// camel-case), NOT the field name (which is lower-case).
-				// ...but only regular fields, not extensions that are groups...
-				if ffld != nil && ffld.Kind() == protoreflect.GroupKind &&
-					string(ffld.Name()) == strings.ToLower(string(ffld.Message().Name())) &&
-					ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) {
-					// This is kind of silly to fail here, but this mimics protoc behavior.
-					// We only fail when this really looks like a group since we need to be
-					// able to use the field name for fields in editions files that use the
-					// delimited message encoding and don't use proto2 group naming.
-					return protoreflect.Value{}, sourceinfo.OptionSourceInfo{},
-						reporter.Errorf(interp.nodeInfo(fieldNode.Name), "%vfield %s not found (did you mean the group named %s?)", mc, fieldNode.Name.Value(), ffld.Message().Name())
-				}
 				if ffld == nil {
 					err = protoregistry.NotFound
-					// could be a group name
+					// It could be the type name. Groups, in proto2, are indicated in the
+					// text format by the type name (which is camel-case, from the name of
+					// the group in source), NOT the synthesized field name (which is the
+					// lower-case version of the group name in source).
 					for i := 0; i < fmd.Fields().Len(); i++ {
 						fd := fmd.Fields().Get(i)
 						if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(fieldNode.Name.Value()) {

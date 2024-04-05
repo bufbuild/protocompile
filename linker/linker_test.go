@@ -557,7 +557,7 @@ func TestLinkerValidation(t *testing.T) {
 					message Baz { option (foo) = { Bar< name: "abc" > }; }`,
 			},
 		},
-		"failure_group_in_custom_option_msg_literal_referred_by_field_name": {
+		"success_group_in_custom_option_msg_literal_referred_by_field_name": {
 			input: map[string]string{
 				"foo.proto": `
 					syntax = "proto2";
@@ -568,7 +568,7 @@ func TestLinkerValidation(t *testing.T) {
 					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
 					message Baz { option (foo) = { bar< name: "abc" > }; }`,
 			},
-			expectedErr: "foo.proto:7:32: message Baz: option (foo): field bar not found (did you mean the group named Bar?)",
+			expectedDiffWithProtoc: true, // protoc will allows this in v27.0
 		},
 		"success_group_extension_in_custom_option_msg_literal": {
 			input: map[string]string{
