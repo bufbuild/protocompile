@@ -148,11 +148,16 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 		if !assert.Equal(t, expFld.Name(), actFld.Name(), "%s: field name at index %d", where, i) {
 			continue
 		}
+		assert.Equal(t, expFld.Number(), actFld.Number(), "%s: field number at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.Cardinality(), actFld.Cardinality(), "%s: field cardinality at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.Kind(), actFld.Kind(), "%s: field kind at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsList(), actFld.IsList(), "%s: field is list at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsMap(), actFld.IsMap(), "%s: field is map at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.JSONName(), actFld.JSONName(), "%s: field json name at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.HasJSONName(), actFld.HasJSONName(), "%s: field has json name at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.IsExtension(), actFld.IsExtension(), "%s: field is extension at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.IsPacked(), actFld.IsPacked(), "%s: field is packed at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.ContainingOneof() == nil, actFld.ContainingOneof() == nil, "%s: field containing oneof at index %d (%s)", where, i, expFld.Name())
 
 		// default values
 

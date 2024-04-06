@@ -1047,6 +1047,12 @@ func (f *fldDescriptor) Cardinality() protoreflect.Cardinality {
 	case descriptorpb.FieldDescriptorProto_LABEL_REQUIRED:
 		return protoreflect.Required
 	case descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL:
+		if f.Syntax() == protoreflect.Editions {
+			fieldPresence := descriptorpb.FeatureSet_FieldPresence(resolveFeature(f, fieldPresenceField).Enum())
+			if fieldPresence == descriptorpb.FeatureSet_LEGACY_REQUIRED {
+				return protoreflect.Required
+			}
+		}
 		return protoreflect.Optional
 	default:
 		return 0
