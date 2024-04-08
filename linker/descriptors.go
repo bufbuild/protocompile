@@ -1047,6 +1047,14 @@ func (f *fldDescriptor) Cardinality() protoreflect.Cardinality {
 	case descriptorpb.FieldDescriptorProto_LABEL_REQUIRED:
 		return protoreflect.Required
 	case descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL:
+		if f.Syntax() == protoreflect.Editions {
+			// Editions does not use label to indicate required. It instead
+			// uses a feature, and label is always optional.
+			fieldPresence := descriptorpb.FeatureSet_FieldPresence(resolveFeature(f, fieldPresenceField).Enum())
+			if fieldPresence == descriptorpb.FeatureSet_LEGACY_REQUIRED {
+				return protoreflect.Required
+			}
+		}
 		return protoreflect.Optional
 	default:
 		return 0
@@ -1055,6 +1063,8 @@ func (f *fldDescriptor) Cardinality() protoreflect.Cardinality {
 
 func (f *fldDescriptor) Kind() protoreflect.Kind {
 	if f.proto.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE && f.Syntax() == protoreflect.Editions {
+		// In editions, "group encoding" (aka "delimited encoding") is toggled
+		// via a feature. So we report group kind when that feature is enabled.
 		messageEncoding := resolveFeature(f, messageEncodingField)
 		if descriptorpb.FeatureSet_MessageEncoding(messageEncoding.Enum()) == descriptorpb.FeatureSet_DELIMITED {
 			return protoreflect.GroupKind
