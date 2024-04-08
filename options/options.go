@@ -1738,17 +1738,17 @@ func (interp *interpreter) messageLiteralValue(
 				ffld = fmd.Fields().ByName(protoreflect.Name(fieldNode.Name.Value()))
 				if ffld == nil {
 					err = protoregistry.NotFound
-					// It could be the type name. Groups, in proto2, are indicated in the
-					// text format by the type name (which is camel-case, from the name of
-					// the group in source), NOT the synthesized field name (which is the
-					// lower-case version of the group name in source).
-					for i := 0; i < fmd.Fields().Len(); i++ {
-						fd := fmd.Fields().Get(i)
-						if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(fieldNode.Name.Value()) {
-							// found it!
-							ffld = fd
+					// It could be a group, where the field-name is the lower-case
+					// form of the group type name.
+					ffld = fmd.Fields().ByName(protoreflect.Name(strings.ToLower(fieldNode.Name.Value())))
+					if ffld != nil {
+						if ffld.Kind() != protoreflect.GroupKind ||
+							ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) ||
+							ffld.Message().FullName().Parent() != ffld.FullName().Parent() {
+							// It doesn't look like a proto2 group, so this is not a match.
+							ffld = nil
+						} else {
 							err = nil
-							break
 						}
 					}
 				}
