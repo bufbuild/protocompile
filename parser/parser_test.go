@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1007,11 +1008,23 @@ func TestPathological(t *testing.T) {
 				allowedDuration = 10 * time.Second
 				t.Logf("allowing %v since race detector is enabled", allowedDuration)
 			}
+			var timerDone sync.WaitGroup
+			timerDone.Add(1)
 			timer := time.AfterFunc(allowedDuration, func() {
+				defer timerDone.Done()
 				t.Errorf("test took too long to execute (> %v)", allowedDuration)
 				cancel()
 			})
-			defer timer.Stop()
+			defer func() {
+				if !timer.Stop() {
+					// We must wait for the stop function to finish. Otherwise, we could
+					// tickle a weird panic -- if this function returns and THEN the
+					// timer goroutine tries to report an error using its *testing.T,
+					// the test framework panics:
+					//   Fail in goroutine after TestPathological has completed
+					timerDone.Wait()
+				}
+			}()
 
 			for i := 0; i < 3; i++ {
 				if ctx.Err() != nil {
