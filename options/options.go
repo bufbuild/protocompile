@@ -1738,17 +1738,20 @@ func (interp *interpreter) messageLiteralValue(
 				ffld = fmd.Fields().ByName(protoreflect.Name(fieldNode.Name.Value()))
 				if ffld == nil {
 					err = protoregistry.NotFound
-					// It could be a group, where the field-name is the lower-case
-					// form of the group type name.
+					// It could be a proto2 group, where the text format refers to the group type
+					// name, and the field name is the lower-cased form of that.
 					ffld = fmd.Fields().ByName(protoreflect.Name(strings.ToLower(fieldNode.Name.Value())))
 					if ffld != nil {
-						if ffld.Kind() != protoreflect.GroupKind ||
-							ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) ||
-							ffld.Message().FullName().Parent() != ffld.FullName().Parent() {
+						// In editions, we support using the group type name only for fields that
+						// "look like" proto2 groups.
+						if protoreflect.Name(fieldNode.Name.Value()) == ffld.Message().Name() && // text format uses type name
+							ffld.Message().FullName().Parent() == ffld.FullName().Parent() && // message and field declared in same scope
+							ffld.Kind() == protoreflect.GroupKind /* uses delimited encoding */ {
+							// This one looks like a proto2 group, so it's a keeper.
+							err = nil
+						} else {
 							// It doesn't look like a proto2 group, so this is not a match.
 							ffld = nil
-						} else {
-							err = nil
 						}
 					}
 				}
