@@ -379,25 +379,25 @@ func TestOptionsEncoding(t *testing.T) {
 			}
 			require.NoError(t, err)
 
+			// Make sure we can round-trip the descriptors
 			res, ok := fds[0].(linker.Result)
 			require.True(t, ok)
-			descriptorSetFile := fmt.Sprintf("../internal/testdata/%sset", file)
-			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, linker.ResolverFromFile(fds[0]))
-			prototest.CheckFiles(t, res, fdset, false)
-
 			actualFdset := &descriptorpb.FileDescriptorSet{
 				File: []*descriptorpb.FileDescriptorProto{protoutil.ProtoFromFileDescriptor(res)},
 			}
+			data, err := proto.Marshal(actualFdset)
+			require.NoError(t, err)
+			resolver := linker.ResolverFromFile(fds[0])
+			var roundTripped descriptorpb.FileDescriptorSet
+			err = proto.UnmarshalOptions{Resolver: resolver}.Unmarshal(data, &roundTripped)
+			require.NoError(t, err)
+			prototest.AssertMessagesEqual(t, actualFdset, &roundTripped, "round-tripped "+file)
 
 			// drum roll... make sure the descriptors we produce are semantically equivalent
 			// to those produced by protoc
-			expectedData, err := os.ReadFile(descriptorSetFile)
-			require.NoError(t, err)
-			expectedFdset := &descriptorpb.FileDescriptorSet{}
-			uOpts := proto.UnmarshalOptions{Resolver: linker.ResolverFromFile(fds[0])}
-			err = uOpts.Unmarshal(expectedData, expectedFdset)
-			require.NoError(t, err)
-			if !prototest.AssertMessagesEqual(t, expectedFdset, actualFdset, file) {
+			descriptorSetFile := fmt.Sprintf("../internal/testdata/%sset", file)
+			fdset := prototest.LoadDescriptorSet(t, descriptorSetFile, resolver)
+			if !prototest.CheckFiles(t, res, fdset, false) {
 				outputDescriptorSetFile := strings.ReplaceAll(descriptorSetFile, ".proto", ".actual.proto")
 				actualData, err := proto.Marshal(actualFdset)
 				require.NoError(t, err)

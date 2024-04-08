@@ -5,21 +5,34 @@ import "google/protobuf/descriptor.proto";
 
 message Foo {
   string name = 1;
-  Foo foo = 2 [
+  Bar bar = 2 [
     (any) = {
       [type.googleapis.com/Foo]: {
-        Foo: {
+        Bar: {
           name: "abc",
-          Foo: { name: "xyz" }
         }
       }
     },
     features.message_encoding = DELIMITED
   ];
-  Foo other = 3;
+  message Bar {
+    string name = 1;
+    Val val = 2;
+  }
+  Bar other = 3;
   Val val = 4;
-  repeated Foo children = 5 [features.message_encoding = DELIMITED];
+  repeated Child child = 5 [features.message_encoding = DELIMITED];
+  message Child {
+    string name = 1;
+    Val val = 2;
+  }
 }
+
+message Foos {
+  string name = 1;
+  Val val = 2;
+}
+
 
 enum Val {
   option features.enum_type = CLOSED;
@@ -28,44 +41,37 @@ enum Val {
 }
 
 extend google.protobuf.FileOptions {
-  Foo delimited = 10101 [features.message_encoding = DELIMITED];
+  Foo foo = 10101 [features.message_encoding = DELIMITED];
   Foo other = 10102;
-  repeated Foo delimiteds = 10103 [features.message_encoding = DELIMITED];
-  repeated Foo others = 10104;
+  repeated Foos foos = 10103 [features.message_encoding = DELIMITED];
+  repeated Foos others = 10104;
 }
 
 extend google.protobuf.FieldOptions {
   google.protobuf.Any any = 10101;
 }
 
-option (delimited).name = "123";
-option (delimited).foo.name = "abc";
-option (delimited).foo.val = VAL1;
-option (delimited).foo.children = {
-  name: "abc-1"
-};
-option (delimited).foo.children = {
-  name: "abc-2"
-};
-option (delimited).other.name = "xyz";
-option (delimited).other.val = VAL0;
+option (foo).name = "123";
+option (foo).bar.name = "abc";
+option (foo).bar.val = VAL1;
+option (foo).other.name = "xyz";
+option (foo).other.val = VAL0;
+option (foo).child = {name: "name"};
+option (foo).child = {name: "nom"};
 
 option (other) = {
   name: "123"
   val: VAL0
-  Foo <name:"456">
-  // NOTE: We can't currently refer to children in here
-  // because referring to delimited-encoded fields whose
-  // name != lower-case(type-name) inside a message
-  // literal is currently broken in protoc :(
-  // https://github.com/protocolbuffers/protobuf/issues/16239
+  Bar <name:"456">
+  Child <name: "abc">
+  Child <name: "789" val: VAL1>
 };
 
-option (delimiteds) = {
+option (foos) = {
   name: "ABC"
   val: 1
 };
-option (delimiteds) = {
+option (foos) = {
   name: "XYZ"
   val: 1
 };
@@ -74,7 +80,7 @@ option (others) = {
   name: "123"
   val: 0
 };
-option (delimiteds) = {
+option (foos) = {
   name: "1234"
   val: 0
 };

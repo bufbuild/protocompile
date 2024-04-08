@@ -40,27 +40,31 @@ func LoadDescriptorSet(t *testing.T, path string, res linker.Resolver) *descript
 	return &fdset
 }
 
-func CheckFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descriptorpb.FileDescriptorSet, recursive bool) {
+func CheckFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descriptorpb.FileDescriptorSet, recursive bool) bool {
 	t.Helper()
-	checkFiles(t, act, expSet, recursive, map[string]struct{}{})
+	return checkFiles(t, act, expSet, recursive, map[string]struct{}{})
 }
 
-func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descriptorpb.FileDescriptorSet, recursive bool, checked map[string]struct{}) {
+func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descriptorpb.FileDescriptorSet, recursive bool, checked map[string]struct{}) bool {
 	if _, ok := checked[act.Path()]; ok {
 		// already checked
-		return
+		return true
 	}
 	checked[act.Path()] = struct{}{}
 
 	expProto := findFileInSet(expSet, act.Path())
 	actProto := protoutil.ProtoFromFileDescriptor(act)
-	AssertMessagesEqual(t, expProto, actProto, expProto.GetName())
+	ret := AssertMessagesEqual(t, expProto, actProto, expProto.GetName())
 
 	if recursive {
 		for i := 0; i < act.Imports().Len(); i++ {
-			checkFiles(t, act.Imports().Get(i), expSet, true, checked)
+			if !checkFiles(t, act.Imports().Get(i), expSet, true, checked) {
+				ret = false
+			}
 		}
 	}
+
+	return ret
 }
 
 func findFileInSet(fps *descriptorpb.FileDescriptorSet, name string) *descriptorpb.FileDescriptorProto {

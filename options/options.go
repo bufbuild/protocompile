@@ -1736,29 +1736,22 @@ func (interp *interpreter) messageLiteralValue(
 				}
 			} else {
 				ffld = fmd.Fields().ByName(protoreflect.Name(fieldNode.Name.Value()))
-				// Groups are indicated in the text format by the group name (which is
-				// camel-case), NOT the field name (which is lower-case).
-				// ...but only regular fields, not extensions that are groups...
-				if ffld != nil && ffld.Kind() == protoreflect.GroupKind &&
-					string(ffld.Name()) == strings.ToLower(string(ffld.Message().Name())) &&
-					ffld.Message().Name() != protoreflect.Name(fieldNode.Name.Value()) {
-					// This is kind of silly to fail here, but this mimics protoc behavior.
-					// We only fail when this really looks like a group since we need to be
-					// able to use the field name for fields in editions files that use the
-					// delimited message encoding and don't use proto2 group naming.
-					return protoreflect.Value{}, sourceinfo.OptionSourceInfo{},
-						reporter.Errorf(interp.nodeInfo(fieldNode.Name), "%vfield %s not found (did you mean the group named %s?)", mc, fieldNode.Name.Value(), ffld.Message().Name())
-				}
 				if ffld == nil {
 					err = protoregistry.NotFound
-					// could be a group name
-					for i := 0; i < fmd.Fields().Len(); i++ {
-						fd := fmd.Fields().Get(i)
-						if fd.Kind() == protoreflect.GroupKind && fd.Message().Name() == protoreflect.Name(fieldNode.Name.Value()) {
-							// found it!
-							ffld = fd
+					// It could be a proto2 group, where the text format refers to the group type
+					// name, and the field name is the lower-cased form of that.
+					ffld = fmd.Fields().ByName(protoreflect.Name(strings.ToLower(fieldNode.Name.Value())))
+					if ffld != nil {
+						// In editions, we support using the group type name only for fields that
+						// "look like" proto2 groups.
+						if protoreflect.Name(fieldNode.Name.Value()) == ffld.Message().Name() && // text format uses type name
+							ffld.Message().FullName().Parent() == ffld.FullName().Parent() && // message and field declared in same scope
+							ffld.Kind() == protoreflect.GroupKind /* uses delimited encoding */ {
+							// This one looks like a proto2 group, so it's a keeper.
 							err = nil
-							break
+						} else {
+							// It doesn't look like a proto2 group, so this is not a match.
+							ffld = nil
 						}
 					}
 				}
