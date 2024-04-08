@@ -39,7 +39,7 @@ func BinaryPath(rootDir string) (string, error) {
 		return "", err
 	}
 	version := strings.TrimSpace(string(data))
-	protocPath := filepath.Join(rootDir, fmt.Sprintf("internal/testdata/protoc/%s/bin/protoc", version))
+	protocPath := filepath.Join(rootDir, fmt.Sprintf(".tmp/cache/protoc/%s/bin/protoc", version))
 	if runtime.GOOS == "windows" {
 		protocPath += ".exe"
 	}
