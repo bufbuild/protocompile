@@ -21,7 +21,7 @@ PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
 # though the version tag does not :(
 PROTOC_ARTIFACT_VERSION := $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+)$$/-rc-\1/g')
-PROTOC_DIR ?= $(abspath $(CACHE)/protoc/$(PROTOC_VERSION))
+PROTOC_DIR := $(abspath $(CACHE)/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
 LOWER_UNAME_OS := $(shell echo $(UNAME_OS) | tr A-Z a-z)
