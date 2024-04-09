@@ -7,6 +7,7 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 BIN ?= $(abspath .tmp/bin)
+CACHE := $(abspath .tmp/cache)
 COPYRIGHT_YEARS := 2020-2024
 LICENSE_IGNORE := -e /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
@@ -20,7 +21,7 @@ PROTOC_VERSION := $(shell cat ./.protoc_version)
 # For release candidates, the download artifact has a dash between "rc" and the number even
 # though the version tag does not :(
 PROTOC_ARTIFACT_VERSION := $(shell echo $(PROTOC_VERSION) | sed -E 's/-rc([0-9]+)$$/-rc-\1/g')
-PROTOC_DIR ?= $(abspath ./internal/testdata/protoc/$(PROTOC_VERSION))
+PROTOC_DIR := $(abspath $(CACHE)/protoc/$(PROTOC_VERSION))
 PROTOC := $(PROTOC_DIR)/bin/protoc
 
 LOWER_UNAME_OS := $(shell echo $(UNAME_OS) | tr A-Z a-z)
@@ -120,14 +121,14 @@ $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	cd $(TOOLS_MOD_DIR) && \
 		GOWORK=off $(GO) build -o $@ golang.org/x/tools/cmd/goyacc
 
-internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip:
+$(CACHE)/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
 	curl -o $@ -fsSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_ARTIFACT_VERSION)-$(PROTOC_ARTIFACT_SUFFIX).zip
 
 .PHONY: protoc
 protoc: $(PROTOC)
 
-$(PROTOC): internal/testdata/protoc/cache/protoc-$(PROTOC_VERSION).zip
+$(PROTOC): $(CACHE)/protoc-$(PROTOC_VERSION).zip
 	@mkdir -p $(@D)
 	unzip -o -q $< -d $(PROTOC_DIR) && \
 	touch $@
