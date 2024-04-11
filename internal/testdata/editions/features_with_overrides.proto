@@ -12,18 +12,7 @@ message Foo {
   int32 def = 3;
   repeated bool ghi = 4 [features.repeated_field_encoding = EXPANDED];
   map<string, string> jkl = 5 [features.utf8_validation = NONE];
-  // TODO: A bug in the protobuf-go runtime prevents it from processing
-  //       this field. The "delimited" encoding appears to trigger
-  //       proto2 group validation rules, so it requires that the
-  //       message type be a nested message in the same scope and be
-  //       named the same as the field, but with initial capital letter.
-  //       So we instead have to use a type that makes it happy...
-  //       https://github.com/golang/protobuf/issues/1603
-  //Bar mno = 6 [features.message_encoding = DELIMITED];
-  Mno mno = 6 [features.message_encoding = DELIMITED];
-  message Mno {
-    bytes other = 1;
-  }
+  Bar mno = 6 [features.message_encoding = DELIMITED];
   repeated double pqr = 7;
   map<string, Bar> stu = 8;
 }
