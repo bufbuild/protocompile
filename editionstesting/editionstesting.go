@@ -17,7 +17,7 @@
 // complete. Once that support is complete, this package will be removed.
 package editionstesting
 
-import "github.com/bufbuild/protocompile/internal"
+import "github.com/bufbuild/protocompile/internal/editions"
 
 // AllowEditions can be called to opt into this repo's support for Protobuf
 // editions. This is primarily intended for testing. This repo's support
@@ -31,5 +31,5 @@ import "github.com/bufbuild/protocompile/internal"
 // compiler, ideally from an init() function or as one of the first things
 // done from a main() function.
 func AllowEditions() {
-	internal.AllowEditions = true
+	editions.AllowEditions = true
 }

@@ -28,6 +28,7 @@ import (
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -107,7 +108,7 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
 	case file.Edition != nil:
-		if !internal.AllowEditions {
+		if !editions.AllowEditions {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
 			if handler.HandleErrorf(nodeInfo, `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
 				return
@@ -117,11 +118,11 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		syntax = protoreflect.Editions
 
 		fd.Syntax = proto.String("editions")
-		editionEnum, ok := internal.SupportedEditions[edition]
+		editionEnum, ok := editions.SupportedEditions[edition]
 		if !ok {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
-			editionStrs := make([]string, 0, len(internal.SupportedEditions))
-			for supportedEdition := range internal.SupportedEditions {
+			editionStrs := make([]string, 0, len(editions.SupportedEditions))
+			for supportedEdition := range editions.SupportedEditions {
 				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
 			}
 			sort.Strings(editionStrs)
