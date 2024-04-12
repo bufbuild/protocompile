@@ -1378,7 +1378,8 @@ func TestLinkerValidation(t *testing.T) {
 					  };
 					}`,
 			},
-			expectedErr: `foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): any type references cannot be repeated or mixed with other fields`,
+			expectedErr: `foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): any type references cannot be repeated or mixed with other fields` +
+				` && foo.proto:13:6: message foo.bar.Baz: option (foo.bar.any): any type references cannot be repeated or mixed with other fields`,
 		},
 		"failure_scope_type_name": {
 			input: map[string]string{
@@ -2443,7 +2444,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:3:27: feature "enum_type" is allowed on [enum,file], not on field`,
+			expectedErr: `test.proto:3:27: field "google.protobuf.FeatureSet.enum_type" is allowed on [enum,file], not on field`,
 		},
 		"failure_editions_feature_on_wrong_target_type_msg_literal": {
 			input: map[string]string{
@@ -2456,7 +2457,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:4:5: feature "enum_type" is allowed on [enum,file], not on field`,
+			expectedErr: `test.proto:4:5: field "google.protobuf.FeatureSet.enum_type" is allowed on [enum,file], not on field`,
 		},
 		"failure_proto3_enum_zero_value": {
 			input: map[string]string{
