@@ -561,7 +561,7 @@ func (interp *interpreter) interpretOptions(
 	// see if the parse included an override copy for these options
 	if md := interp.resolveOptionsType(optsFqn); md != nil {
 		dm := dynamicpb.NewMessage(md)
-		if err := cloneInto(dm, opts, nil); err != nil {
+		if err := cloneInto(dm, opts, interp.resolver); err != nil {
 			node := interp.file.Node(element)
 			return nil, interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node), err))
 		}
@@ -650,6 +650,9 @@ func (interp *interpreter) interpretOptions(
 	return remain, nil
 }
 
+// checkFieldUsage verifies that the given option field can be used
+// for the given target type. It reports an error if not and returns
+// a non-nil error if the handler returned a non-nil error.
 func (interp *interpreter) checkFieldUsage(
 	targetType descriptorpb.FieldOptions_OptionTargetType,
 	fld protoreflect.FieldDescriptor,
@@ -701,7 +704,15 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 	if err != nil {
 		return err
 	}
-	return proto.UnmarshalOptions{Resolver: res, AllowPartial: true}.Unmarshal(data, dest)
+	unmarshaler := proto.UnmarshalOptions{AllowPartial: true}
+	if res != nil {
+		unmarshaler.Resolver = res
+	} else {
+		// Use a typed nil, which returns "not found" to all queries
+		// and prevents fallback to protoregistry.GlobalTypes.
+		unmarshaler.Resolver = (*protoregistry.Types)(nil)
+	}
+	return unmarshaler.Unmarshal(data, dest)
 }
 
 func (interp *interpreter) validateRecursive(
@@ -1140,7 +1151,7 @@ func (interp *interpreter) setOptionFieldFromProto(
 		if err != nil {
 			return interp.reporter.HandleErrorf(interp.nodeInfo(node), "%vfailed to parse message literal %w", mc, err)
 		}
-		if err := interp.checkFieldUsages(targetType, elem, node); err != nil {
+		if err := interp.checkFieldUsagesInMessage(targetType, elem, node); err != nil {
 			return err
 		}
 		value = protoreflect.ValueOfMessage(elem)
@@ -1175,7 +1186,15 @@ func (interp *interpreter) setOptionFieldFromProto(
 	return nil
 }
 
-func (interp *interpreter) checkFieldUsages(
+// checkFieldUsagesInMessage verifies that all fields present in the given
+// message can be used for the given target type. When an AST is
+// present, we validate each field as it is processed. But without
+// an AST, we unmarshal a message from an uninterpreted option's
+// aggregate value string, and then must make sure that all fields
+// set in that message are valid. This reports an error for each
+// invalid field it encounters and returns a non-nil error if/when
+// the handler returns a non-nil error.
+func (interp *interpreter) checkFieldUsagesInMessage(
 	targetType descriptorpb.FieldOptions_OptionTargetType,
 	msg protoreflect.Message,
 	node ast.Node,
@@ -1190,7 +1209,7 @@ func (interp *interpreter) checkFieldUsages(
 		case fld.IsList() && fld.Message() != nil:
 			listVal := val.List()
 			for i, length := 0, listVal.Len(); i < length; i++ {
-				err = interp.checkFieldUsages(targetType, listVal.Get(i).Message(), node)
+				err = interp.checkFieldUsagesInMessage(targetType, listVal.Get(i).Message(), node)
 				if err != nil {
 					return false
 				}
@@ -1198,11 +1217,11 @@ func (interp *interpreter) checkFieldUsages(
 		case fld.IsMap() && fld.MapValue().Message() != nil:
 			mapVal := val.Map()
 			mapVal.Range(func(_ protoreflect.MapKey, val protoreflect.Value) bool {
-				err = interp.checkFieldUsages(targetType, val.Message(), node)
+				err = interp.checkFieldUsagesInMessage(targetType, val.Message(), node)
 				return err == nil
 			})
 		case !fld.IsMap() && fld.Message() != nil:
-			err = interp.checkFieldUsages(targetType, val.Message(), node)
+			err = interp.checkFieldUsagesInMessage(targetType, val.Message(), node)
 		}
 		return err == nil
 	})
@@ -1250,6 +1269,9 @@ type msgLiteralResolver struct {
 }
 
 func (r *msgLiteralResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
+	if r.interp.resolver == nil {
+		return nil, protoregistry.NotFound
+	}
 	return r.interp.resolver.FindMessageByName(message)
 }
 
@@ -1267,6 +1289,9 @@ func (r *msgLiteralResolver) FindMessageByURL(url string) (protoreflect.MessageT
 }
 
 func (r *msgLiteralResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
+	if r.interp.resolver == nil {
+		return nil, protoregistry.NotFound
+	}
 	// In a message literal, extension name may be partially qualified, relative to package.
 	// So we have to search through package scopes.
 	pkg := r.pkg
@@ -1288,6 +1313,9 @@ func (r *msgLiteralResolver) FindExtensionByName(field protoreflect.FullName) (p
 }
 
 func (r *msgLiteralResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
+	if r.interp.resolver == nil {
+		return nil, protoregistry.NotFound
+	}
 	return r.interp.resolver.FindExtensionByNumber(message, field)
 }
 
