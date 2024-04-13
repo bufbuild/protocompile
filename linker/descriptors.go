@@ -29,6 +29,7 @@ import (
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/protoutil"
 )
@@ -57,6 +58,14 @@ var (
 	noOpExtension protoreflect.ExtensionDescriptor
 	noOpService   protoreflect.ServiceDescriptor
 	noOpMethod    protoreflect.MethodDescriptor
+)
+
+var (
+	fieldPresenceField         = editions.FeatureSetDescriptor.Fields().ByName("field_presence")
+	repeatedFieldEncodingField = editions.FeatureSetDescriptor.Fields().ByName("repeated_field_encoding")
+	messageEncodingField       = editions.FeatureSetDescriptor.Fields().ByName("message_encoding")
+	enumTypeField              = editions.FeatureSetDescriptor.Fields().ByName("enum_type")
+	jsonFormatField            = editions.FeatureSetDescriptor.Fields().ByName("json_format")
 )
 
 func init() {
@@ -168,6 +177,7 @@ type result struct {
 var _ protoreflect.FileDescriptor = (*result)(nil)
 var _ Result = (*result)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*result)(nil)
+var _ editions.HasEdition = (*result)(nil)
 
 func (r *result) RemoveAST() {
 	r.Result = parser.ResultWithoutAST(r.FileDescriptorProto())
@@ -1774,4 +1784,31 @@ func (r *result) hasSource() bool {
 	n := r.FileNode()
 	_, ok := n.(*ast.FileNode)
 	return ok
+}
+
+// resolveFeature resolves a feature for the given descriptor. If the given element
+// is in a proto2 or proto3 syntax file, this skips resolution and just returns the
+// relevant default (since such files are not allowed to override features).
+//
+// If neither the given element nor any of its ancestors override the given feature,
+// the relevant default is returned.
+func resolveFeature(element protoreflect.Descriptor, feature protoreflect.FieldDescriptor) protoreflect.Value {
+	edition := editions.GetEdition(element)
+	if edition == descriptorpb.Edition_EDITION_PROTO2 || edition == descriptorpb.Edition_EDITION_PROTO3 {
+		// these syntax levels can't specify features, so we can short-circuit the search
+		// through the descriptor hierarchy for feature overrides
+		defaults := editions.GetEditionDefaults(edition)
+		return defaults.ProtoReflect().Get(feature) // returns default value if field is not present
+	}
+	val, err := editions.ResolveFeature(element, feature)
+	if err == nil && val.IsValid() {
+		return val
+	}
+	defaults := editions.GetEditionDefaults(edition)
+	return defaults.ProtoReflect().Get(feature)
+}
+
+func isJSONCompliant(d protoreflect.Descriptor) bool {
+	jsonFormat := resolveFeature(d, jsonFormatField)
+	return descriptorpb.FeatureSet_JsonFormat(jsonFormat.Enum()) == descriptorpb.FeatureSet_ALLOW
 }

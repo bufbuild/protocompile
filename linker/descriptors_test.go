@@ -17,18 +17,28 @@ package linker
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNoOpDescriptors(t *testing.T) {
 	t.Parallel()
-	require.NotNil(t, noOpFile)
-	require.NotNil(t, noOpMessage)
-	require.NotNil(t, noOpOneof)
-	require.NotNil(t, noOpField)
-	require.NotNil(t, noOpEnum)
-	require.NotNil(t, noOpEnumValue)
-	require.NotNil(t, noOpExtension)
-	require.NotNil(t, noOpService)
-	require.NotNil(t, noOpMethod)
+	assert.NotNil(t, noOpFile)
+	assert.NotNil(t, noOpMessage)
+	assert.NotNil(t, noOpOneof)
+	assert.NotNil(t, noOpField)
+	assert.NotNil(t, noOpEnum)
+	assert.NotNil(t, noOpEnumValue)
+	assert.NotNil(t, noOpExtension)
+	assert.NotNil(t, noOpService)
+	assert.NotNil(t, noOpMethod)
+}
+
+func TestFeatureFieldDescriptors(t *testing.T) {
+	t.Parallel()
+	// Sanity checks the initialized values of these package vars.
+	assert.NotNil(t, fieldPresenceField, "field_presence")
+	assert.NotNil(t, repeatedFieldEncodingField, "repeated_field_encoding")
+	assert.NotNil(t, messageEncodingField, "message_encoding")
+	assert.NotNil(t, enumTypeField, "enum_type")
+	assert.NotNil(t, jsonFormatField, "json_format")
 }
