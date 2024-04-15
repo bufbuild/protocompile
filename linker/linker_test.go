@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"unicode"
 
@@ -169,7 +170,7 @@ func TestLinkerValidation(t *testing.T) {
 		},
 		"failure_enum_cpp_scope": {
 			input: map[string]string{
-				"foo.proto": "enum foo { bar = 1; baz = 2; } enum fu { bar = 1; baz = 2; }",
+				"foo.proto": "enum foo { bar = 1; baz = 2; } enum fu { bar = 1; }",
 			},
 			expectedErr: `foo.proto:1:42: symbol "bar" already defined at foo.proto:1:12; protobuf uses C++ scoping rules for enum values, so they exist in the scope enclosing the enum`,
 		},
@@ -461,7 +462,17 @@ func TestLinkerValidation(t *testing.T) {
 					extend google.protobuf.FileOptions { optional foo f = 20000; }
 					option (f) = { a: "a" };`,
 			},
-			expectedErr: "foo.proto:1:1: error in file options: some required fields missing: (f).b",
+			expectedErr: "foo.proto:4:1: error in file options: some required fields missing: (f).b",
+		},
+		"failure_option_required_field_unset2": {
+			input: map[string]string{
+				"foo.proto": `
+					import "google/protobuf/descriptor.proto";
+					message foo { required string a = 1; required string b = 2; }
+					extend google.protobuf.FileOptions { optional foo f = 20000; }
+					option (f).a = "a";`,
+			},
+			expectedErr: "foo.proto:4:1: error in file options: some required fields missing: (f).b",
 		},
 		"failure_message_set_wire_format_scalar": {
 			input: map[string]string{
@@ -971,7 +982,10 @@ func TestLinkerValidation(t *testing.T) {
 					  option (foo) = True; option (foo) = False;
 					}`,
 			},
-			expectedErr: "foo.proto:6:18: message Baz: option (foo): expecting bool, got identifier",
+			expectedErr: `foo.proto:6:18: message Baz: option (foo): expecting bool, got identifier` +
+				` && foo.proto:6:36: message Baz: option (foo): expecting bool, got identifier` +
+				` && foo.proto:7:18: message Baz: option (foo): expecting bool, got identifier` +
+				` && foo.proto:7:39: message Baz: option (foo): expecting bool, got identifier`,
 		},
 		"success_message_literals_boolean_names": {
 			// but inside message literals, boolean values can be
@@ -1364,7 +1378,7 @@ func TestLinkerValidation(t *testing.T) {
 					  };
 					}`,
 			},
-			expectedErr: "foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): any type references cannot be repeated or mixed with other fields",
+			expectedErr: `foo.proto:9:6: message foo.bar.Baz: option (foo.bar.any): any type references cannot be repeated or mixed with other fields`,
 		},
 		"failure_scope_type_name": {
 			input: map[string]string{
@@ -2190,7 +2204,8 @@ func TestLinkerValidation(t *testing.T) {
 					service FooService { rpc Do(stream.Foo) returns (stream.Foo); }
 				`,
 			},
-			expectedErr: `test.proto:3:35: method FooService.Do: unknown request type .Foo`,
+			expectedErr: `test.proto:3:35: method FooService.Do: unknown request type .Foo` +
+				` && test.proto:3:56: method FooService.Do: unknown response type .Foo`,
 		},
 		"success_stream_looks_like_name": {
 			input: map[string]string{
@@ -2511,14 +2526,14 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 		},
-		"failure_extension_declaration_without_verification": {
+		"success_extension_declaration_without_verification": {
 			input: map[string]string{
 				"test.proto": `
 					syntax = "proto2";
 					message A {
 						extensions 1 [
 							declaration={
-								number: 11
+								number: 1
 								full_name: ".foo.eleven"
 								type: "int32"
 							}
@@ -2526,14 +2541,13 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:4:17: extension range cannot have declarations and have verification of UNVERIFIED`,
 		},
-		"failure_extension_declaration_without_verification2": {
+		"failure_extension_declaration_but_range_unverified": {
 			input: map[string]string{
 				"test.proto": `
 					syntax = "proto2";
 					message A {
-						extensions 1 [
+						extensions 11 [
 							verification=UNVERIFIED,
 							declaration={
 								number: 11
@@ -2615,14 +2629,15 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:6:25: extension declaration has number outside the range: 501 not in [100,500]`,
+			expectedErr: `test.proto:6:25: extension declaration has number outside the range: 501 not in [100,500]` +
+				` && test.proto:6:25: extension declaration has number outside the range: 501 not in [1000,5000]`,
 		},
 		"failure_extension_declaration_with_number_out_of_range_multiple_ranges": {
 			input: map[string]string{
 				"test.proto": `
 					syntax = "proto2";
 					message A {
-						extensions 1 to 3, 5 to 10, 100 to 500 [
+						extensions 1 to 3, 5 to 10 [
 							verification=DECLARATION,
 							declaration={
 								number: 3
@@ -3337,29 +3352,48 @@ func TestLinkerValidation(t *testing.T) {
 			for filename, data := range tc.input {
 				tc.input[filename] = removePrefixIndent(data)
 			}
-			_, err := compile(t, tc.input)
-			var panicErr protocompile.PanicError
-			if errors.As(err, &panicErr) {
-				t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
+			_, errs := compile(t, tc.input)
+
+			actualErrs := make([]string, len(errs))
+			for i := range errs {
+				actualErrs[i] = errs[i].Error()
 			}
+			expectedErrs := strings.Split(tc.expectedErr, "&&")
+			for i, expectedErr := range expectedErrs {
+				expectedErrs[i] = strings.TrimSpace(expectedErr)
+			}
+
 			switch {
 			case tc.expectedErr == "":
-				if err != nil {
-					t.Errorf("expecting no error; instead got error %q", err)
-				}
-			case err == nil:
+				assert.Empty(t, errs, "expecting no error; instead got error:\n%s", strings.Join(actualErrs, "\n"))
+			case len(errs) == 0:
 				t.Errorf("expecting validation error %q; instead got no error", tc.expectedErr)
 			default:
-				msgs := strings.Split(tc.expectedErr, " || ")
-				found := false
-				for _, errMsg := range msgs {
-					if err.Error() == errMsg {
-						found = true
-						break
-					}
+				assert.Len(t, errs, len(expectedErrs), "wrong number of errors reported")
+				limit := len(expectedErrs)
+				if limit > len(errs) {
+					limit = len(errs)
 				}
-				if !found {
-					t.Errorf("expecting validation error %q; instead got: %q", tc.expectedErr, err)
+				for i := 0; i < limit; i++ {
+					err := errs[i]
+					var panicErr protocompile.PanicError
+					if errors.As(err, &panicErr) {
+						t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
+					}
+					expectedErr := expectedErrs[i]
+					msgs := strings.Split(expectedErr, "||")
+					found := false
+					for _, errMsg := range msgs {
+						if err.Error() == strings.TrimSpace(errMsg) {
+							found = true
+							break
+						}
+					}
+					var errNum string
+					if len(errs) > 1 {
+						errNum = fmt.Sprintf("#%d", i+1)
+					}
+					assert.True(t, found, "expecting validation error%s %q; instead got: %q", errNum, expectedErr, err)
 				}
 			}
 
@@ -3407,7 +3441,7 @@ func removePrefixIndent(s string) string {
 	return strings.Join(lines, "\n")
 }
 
-func compile(t *testing.T, input map[string]string) (linker.Files, error) {
+func compile(t *testing.T, input map[string]string) (linker.Files, []error) {
 	t.Helper()
 	acc := func(filename string) (io.ReadCloser, error) {
 		f, ok := input[filename]
@@ -3421,13 +3455,36 @@ func compile(t *testing.T, input map[string]string) (linker.Files, error) {
 		names = append(names, k)
 	}
 
+	// We use a reporter that returns nil, so the compile operation
+	// will always keep going
+	var errsMu sync.Mutex
+	var errs []error
+	rep := reporter.NewReporter(
+		func(err reporter.ErrorWithPos) error {
+			errsMu.Lock()
+			defer errsMu.Unlock()
+			errs = append(errs, err)
+			return nil
+		},
+		nil,
+	)
+
 	compiler := protocompile.Compiler{
 		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
 			Accessor: acc,
 		}),
+		Reporter:       rep,
 		SourceInfoMode: protocompile.SourceInfoExtraOptionLocations,
 	}
-	return compiler.Compile(context.Background(), names...)
+	files, err := compiler.Compile(context.Background(), names...)
+	if err != nil && len(errs) == 0 {
+		t.Log("compiler.Compile returned an error but none were reported")
+		return files, []error{err}
+	}
+	if err == nil {
+		assert.Empty(t, errs, "compiler.Compile returned no error though %d errors were reported", len(errs))
+	}
+	return files, errs
 }
 
 func TestProto3Enums(t *testing.T) {
