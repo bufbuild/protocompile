@@ -590,7 +590,12 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 			// nothing to check
 			continue
 		}
-		if len(opts.GetDeclaration()) > 0 && opts.GetVerification() == descriptorpb.ExtensionRangeOptions_UNVERIFIED {
+		// Strange that the "has_verification" check is here, but this
+		// mimics protoc:
+		//   https://github.com/protocolbuffers/protobuf/blob/v26.1/src/google/protobuf/descriptor.cc#L8187-L8188
+		// The effect is that you can add declarations even when the range
+		// is in default unverified state, and they just have no effect. ¯\_(ツ)_/¯
+		if opts.Verification != nil && opts.GetVerification() == descriptorpb.ExtensionRangeOptions_UNVERIFIED {
 			span, ok := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsVerificationTag)
 			if !ok {
 				span, _ = findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, 0)
@@ -675,25 +680,26 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				if err := handler.HandleErrorf(span, "extension declaration that is not marked reserved must have a full_name"); err != nil {
 					return err
 				}
-			}
-			var extensionFullName protoreflect.FullName
-			extensionNameSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-				internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationFullNameTag)
-			if !strings.HasPrefix(extDecl.GetFullName(), ".") {
-				if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q should start with a leading dot (.)", extDecl.GetFullName()); err != nil {
-					return err
-				}
-				extensionFullName = protoreflect.FullName(extDecl.GetFullName())
 			} else {
-				extensionFullName = protoreflect.FullName(extDecl.GetFullName()[1:])
-			}
-			if !extensionFullName.IsValid() {
-				if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q is not a valid qualified name", extDecl.GetFullName()); err != nil {
+				var extensionFullName protoreflect.FullName
+				extensionNameSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
+					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationFullNameTag)
+				if !strings.HasPrefix(extDecl.GetFullName(), ".") {
+					if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q should start with a leading dot (.)", extDecl.GetFullName()); err != nil {
+						return err
+					}
+					extensionFullName = protoreflect.FullName(extDecl.GetFullName())
+				} else {
+					extensionFullName = protoreflect.FullName(extDecl.GetFullName()[1:])
+				}
+				if !extensionFullName.IsValid() {
+					if err := handler.HandleErrorf(extensionNameSpan, "extension declaration full name %q is not a valid qualified name", extDecl.GetFullName()); err != nil {
+						return err
+					}
+				}
+				if err := symbols.AddExtensionDeclaration(extensionFullName, md.FullName(), protoreflect.FieldNumber(extDecl.GetNumber()), extensionNameSpan, handler); err != nil {
 					return err
 				}
-			}
-			if err := symbols.AddExtensionDeclaration(extensionFullName, md.FullName(), protoreflect.FieldNumber(extDecl.GetNumber()), extensionNameSpan, handler); err != nil {
-				return err
 			}
 
 			if extDecl.Type == nil {
@@ -701,20 +707,21 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				if err := handler.HandleErrorf(span, "extension declaration that is not marked reserved must have a type"); err != nil {
 					return err
 				}
-			}
-			if strings.HasPrefix(extDecl.GetType(), ".") {
-				if !protoreflect.FullName(extDecl.GetType()[1:]).IsValid() {
+			} else {
+				if strings.HasPrefix(extDecl.GetType(), ".") {
+					if !protoreflect.FullName(extDecl.GetType()[1:]).IsValid() {
+						span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
+							internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
+						if err := handler.HandleErrorf(span, "extension declaration type %q is not a valid qualified name", extDecl.GetType()); err != nil {
+							return err
+						}
+					}
+				} else if !isBuiltinTypeName(extDecl.GetType()) {
 					span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
 						internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
-					if err := handler.HandleErrorf(span, "extension declaration type %q is not a valid qualified name", extDecl.GetType()); err != nil {
+					if err := handler.HandleErrorf(span, "extension declaration type %q must be a builtin type or start with a leading dot (.)", extDecl.GetType()); err != nil {
 						return err
 					}
-				}
-			} else if !isBuiltinTypeName(extDecl.GetType()) {
-				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
-				if err := handler.HandleErrorf(span, "extension declaration type %q must be a builtin type or start with a leading dot (.)", extDecl.GetType()); err != nil {
-					return err
 				}
 			}
 		}

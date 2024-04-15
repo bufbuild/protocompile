@@ -173,6 +173,11 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 		}
 	}
 
+	// This is to de-dupe extendee-releated error messages when the same
+	// extendee is referenced from multiple extension field definitions.
+	// We leave it nil if there's no AST.
+	var extendeeNodes map[ast.Node]struct{}
+
 	return walk.DescriptorsEnterAndExit(r,
 		func(d protoreflect.Descriptor) error {
 			fqn := d.FullName()
@@ -203,7 +208,10 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 						return err
 					}
 				}
-				if err := resolveFieldTypes(d.field, handler, s, scopes); err != nil {
+				if extendeeNodes == nil && r.AST() != nil {
+					extendeeNodes = map[ast.Node]struct{}{}
+				}
+				if err := resolveFieldTypes(d.field, handler, extendeeNodes, s, scopes); err != nil {
 					return err
 				}
 				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.field.proto.GetExtendee()) {
@@ -219,7 +227,7 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 						return err
 					}
 				}
-				if err := resolveFieldTypes(d, handler, s, scopes); err != nil {
+				if err := resolveFieldTypes(d, handler, nil, s, scopes); err != nil {
 					return err
 				}
 			case *oneofDescriptor:
@@ -291,7 +299,7 @@ func allowedProto3Extendee(n string) bool {
 	return ok
 }
 
-func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, scopes []scope) error {
+func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, extendees map[ast.Node]struct{}, s *Symbols, scopes []scope) error {
 	r := f.file
 	fld := f.proto
 	file := r.FileNode()
@@ -299,17 +307,37 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, s *Symbols, 
 	scope := fmt.Sprintf("field %s", f.fqn)
 	if fld.GetExtendee() != "" {
 		scope := fmt.Sprintf("extension %s", f.fqn)
+		var alreadyReported bool
+		var extendeePrefix string
+		if extendees == nil {
+			extendeePrefix = scope + ": "
+		} else {
+			_, alreadyReported = extendees[node.FieldExtendee()]
+			if !alreadyReported {
+				extendees[node.FieldExtendee()] = struct{}{}
+			}
+		}
 		dsc := r.resolve(fld.GetExtendee(), false, scopes)
 		if dsc == nil {
-			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()), "unknown extendee type %s", fld.GetExtendee())
+			if alreadyReported {
+				return nil
+			}
+			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()), "%sunknown extendee type %s", extendeePrefix, fld.GetExtendee())
 		}
 		if isSentinelDescriptor(dsc) {
-			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()), "unknown extendee type %s; resolved to %s which is not defined; consider using a leading dot", fld.GetExtendee(), dsc.FullName())
+			if alreadyReported {
+				return nil
+			}
+			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()), "%sunknown extendee type %s; resolved to %s which is not defined; consider using a leading dot", extendeePrefix, fld.GetExtendee(), dsc.FullName())
 		}
 		extd, ok := dsc.(protoreflect.MessageDescriptor)
 		if !ok {
-			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()), "extendee is invalid: %s is %s, not a message", dsc.FullName(), descriptorTypeWithArticle(dsc))
+			if alreadyReported {
+				return nil
+			}
+			return handler.HandleErrorf(file.NodeInfo(node.FieldExtendee()), "%sextendee is invalid: %s is %s, not a message", extendeePrefix, dsc.FullName(), descriptorTypeWithArticle(dsc))
 		}
+
 		f.extendee = extd
 		extendeeName := "." + string(dsc.FullName())
 		if fld.GetExtendee() != extendeeName {

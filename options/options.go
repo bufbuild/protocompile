@@ -586,15 +586,24 @@ func (interp *interpreter) interpretOptions(
 		ElementType: descriptorType(element),
 	}
 	var remain []*descriptorpb.UninterpretedOption
+	var optNodes []*ast.OptionNode
 	var features []*ast.OptionNode
 	for _, uo := range uninterpreted {
-		if uo.Name[0].GetIsExtension() != customOpts {
+		isCustom := uo.Name[0].GetIsExtension()
+		if isCustom != customOpts {
 			// We're not looking at these this phase.
 			remain = append(remain, uo)
 			continue
 		}
+		firstName := uo.Name[0].GetNamePart()
+		if targetType == descriptorpb.FieldOptions_TARGET_TYPE_FIELD &&
+			!isCustom && (firstName == "default" || firstName == "json_name") {
+			// Field pseudo-option that we can skip and is handled elsewhere.
+			remain = append(remain, uo)
+			continue
+		}
 		node := interp.file.OptionNode(uo)
-		if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == "uninterpreted_option" {
+		if !isCustom && firstName == "uninterpreted_option" {
 			if interp.lenient {
 				remain = append(remain, uo)
 				continue
@@ -614,7 +623,8 @@ func (interp *interpreter) interpretOptions(
 			return nil, err
 		}
 		if optn, ok := node.(*ast.OptionNode); ok {
-			if !uo.Name[0].GetIsExtension() && uo.Name[0].GetNamePart() == featuresFieldName {
+			optNodes = append(optNodes, optn)
+			if !isCustom && uo.Name[0].GetNamePart() == featuresFieldName {
 				features = append(features, optn)
 			}
 			if srcInfo != nil {
@@ -645,11 +655,8 @@ func (interp *interpreter) interpretOptions(
 		return remain, nil
 	}
 
-	if err := validateRecursive(msg, ""); err != nil {
-		node := interp.file.Node(element)
-		if err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "error in %s options: %v", descriptorType(element), err); err != nil {
-			return nil, err
-		}
+	if err := interp.validateRecursive(msg, "", element, nil, false, optNodes); err != nil {
+		return nil, err
 	}
 
 	// now try to convert into the passed in message and fail if not successful
@@ -768,20 +775,32 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 	if dest.ProtoReflect().Descriptor() == src.ProtoReflect().Descriptor() {
 		proto.Reset(dest)
 		proto.Merge(dest, src)
-		return proto.CheckInitialized(dest)
+		return nil
 	}
 
 	// If descriptors are not the same, we could have field descriptors in src that
 	// don't match the ones in dest. There's no easy/sane way to handle that. So we
 	// just marshal to bytes and back to do this
-	data, err := proto.Marshal(src)
+	marshaler := proto.MarshalOptions{
+		// We've already validated required fields before this point,
+		// so we can allow partial here.
+		AllowPartial: true,
+	}
+	data, err := marshaler.Marshal(src)
 	if err != nil {
 		return err
 	}
-	return proto.UnmarshalOptions{Resolver: res}.Unmarshal(data, dest)
+	return proto.UnmarshalOptions{Resolver: res, AllowPartial: true}.Unmarshal(data, dest)
 }
 
-func validateRecursive(msg protoreflect.Message, prefix string) error {
+func (interp *interpreter) validateRecursive(
+	msg protoreflect.Message,
+	prefix string,
+	element proto.Message,
+	path []int32,
+	inMap bool,
+	optNodes []*ast.OptionNode,
+) error {
 	flds := msg.Descriptor().Fields()
 	var missingFields []string
 	for i := 0; i < flds.Len(); i++ {
@@ -791,48 +810,190 @@ func validateRecursive(msg protoreflect.Message, prefix string) error {
 		}
 	}
 	if len(missingFields) > 0 {
-		return fmt.Errorf("some required fields missing: %v", strings.Join(missingFields, ", "))
+		node, _ := findOptionNode[*ast.OptionNode](
+			path,
+			optionsRanger(optNodes),
+			func(n *ast.OptionNode) *sourceinfo.OptionSourceInfo {
+				return interp.index[n]
+			},
+		)
+		if node == nil {
+			node = interp.file.Node(element)
+		}
+		err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "error in %s options: some required fields missing: %v", descriptorType(element), strings.Join(missingFields, ", "))
+		if err != nil {
+			return err
+		}
 	}
 
 	var err error
 	msg.Range(func(fld protoreflect.FieldDescriptor, val protoreflect.Value) bool {
-		if fld.IsMap() {
-			md := fld.MapValue().Message()
-			if md != nil {
-				val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
-					chprefix := fmt.Sprintf("%s%s[%v].", prefix, fieldName(fld), k)
-					err = validateRecursive(v.Message(), chprefix)
-					return err == nil
-				})
+		chpath := path
+		if !inMap {
+			chpath = append(chpath, int32(fld.Number()))
+		}
+		switch {
+		case fld.IsMap() && fld.MapValue().Message() != nil:
+			val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
+				chprefix := fmt.Sprintf("%s%s[%v].", prefix, fieldName(fld), k)
+				err = interp.validateRecursive(v.Message(), chprefix, element, chpath, true, optNodes)
+				return err == nil
+			})
+			if err != nil {
+				return false
+			}
+		case fld.IsList() && fld.Message() != nil:
+			sl := val.List()
+			for i := 0; i < sl.Len(); i++ {
+				v := sl.Get(i)
+				chprefix := fmt.Sprintf("%s%s[%d].", prefix, fieldName(fld), i)
+				if !inMap {
+					chpath = append(chpath, int32(i))
+				}
+				err = interp.validateRecursive(v.Message(), chprefix, element, chpath, inMap, optNodes)
 				if err != nil {
 					return false
 				}
 			}
-		} else {
-			md := fld.Message()
-			if md != nil {
-				if fld.IsList() {
-					sl := val.List()
-					for i := 0; i < sl.Len(); i++ {
-						v := sl.Get(i)
-						chprefix := fmt.Sprintf("%s%s[%d].", prefix, fieldName(fld), i)
-						err = validateRecursive(v.Message(), chprefix)
-						if err != nil {
-							return false
-						}
-					}
-				} else {
-					chprefix := fmt.Sprintf("%s%s.", prefix, fieldName(fld))
-					err = validateRecursive(val.Message(), chprefix)
-					if err != nil {
-						return false
-					}
-				}
+		case !fld.IsMap() && fld.Message() != nil:
+			chprefix := fmt.Sprintf("%s%s.", prefix, fieldName(fld))
+			err = interp.validateRecursive(val.Message(), chprefix, element, chpath, inMap, optNodes)
+			if err != nil {
+				return false
 			}
 		}
 		return true
 	})
 	return err
+}
+
+func findOptionNode[N ast.Node](
+	path []int32,
+	nodes interface {
+		Range(func(N, ast.ValueNode) bool)
+	},
+	srcInfoAccessor func(N) *sourceinfo.OptionSourceInfo,
+) (ast.Node, int) {
+	var bestMatch ast.Node
+	var bestMatchLen int
+	nodes.Range(func(node N, val ast.ValueNode) bool {
+		srcInfo := srcInfoAccessor(node)
+		if srcInfo.Path[0] < 0 {
+			// negative first value means it's a field pseudo-option; skip
+			return true
+		}
+		match, matchLen := findOptionValueNode(path, node, val, srcInfo)
+		if matchLen > bestMatchLen {
+			bestMatch = match
+			bestMatchLen = matchLen
+			if matchLen >= len(path) {
+				// not going to find a better one
+				return false
+			}
+		}
+		return true
+	})
+	return bestMatch, bestMatchLen
+}
+
+type optionsRanger []*ast.OptionNode
+
+func (r optionsRanger) Range(f func(*ast.OptionNode, ast.ValueNode) bool) {
+	for _, elem := range r {
+		if !f(elem, elem.Val) {
+			return
+		}
+	}
+}
+
+type valueRanger []ast.ValueNode
+
+func (r valueRanger) Range(f func(ast.ValueNode, ast.ValueNode) bool) {
+	for _, elem := range r {
+		if !f(elem, elem) {
+			return
+		}
+	}
+}
+
+type fieldRanger map[*ast.MessageFieldNode]*sourceinfo.OptionSourceInfo
+
+func (r fieldRanger) Range(f func(*ast.MessageFieldNode, ast.ValueNode) bool) {
+	for elem := range r {
+		if !f(elem, elem.Val) {
+			return
+		}
+	}
+}
+
+func isPathMatch(a, b []int32) bool {
+	length := len(a)
+	if len(b) < length {
+		length = len(b)
+	}
+	for i := 0; i < length; i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func findOptionValueNode(
+	path []int32,
+	node ast.Node,
+	value ast.ValueNode,
+	srcInfo *sourceinfo.OptionSourceInfo,
+) (ast.Node, int) {
+	srcInfoPath := srcInfo.Path
+	if _, ok := srcInfo.Children.(*sourceinfo.ArrayLiteralSourceInfo); ok {
+		// Last path element for array source info is the index of the
+		// first element. So exclude in the comparison, since path could
+		// indicate a later index, which is present in the array.
+		srcInfoPath = srcInfo.Path[:len(srcInfo.Path)-1]
+	}
+
+	if !isPathMatch(path, srcInfoPath) {
+		return nil, 0
+	}
+	if len(srcInfoPath) >= len(path) {
+		return node, len(path)
+	}
+
+	switch children := srcInfo.Children.(type) {
+	case *sourceinfo.ArrayLiteralSourceInfo:
+		array, ok := value.(*ast.ArrayLiteralNode)
+		if !ok {
+			break // should never happen
+		}
+		var i int
+		match, matchLen := findOptionNode[ast.ValueNode](
+			path,
+			valueRanger(array.Elements),
+			func(_ ast.ValueNode) *sourceinfo.OptionSourceInfo {
+				val := &children.Elements[i]
+				i++
+				return val
+			},
+		)
+		if match != nil {
+			return match, matchLen
+		}
+
+	case *sourceinfo.MessageLiteralSourceInfo:
+		match, matchLen := findOptionNode[*ast.MessageFieldNode](
+			path,
+			fieldRanger(children.Fields),
+			func(n *ast.MessageFieldNode) *sourceinfo.OptionSourceInfo {
+				return children.Fields[n]
+			},
+		)
+		if match != nil {
+			return match, matchLen
+		}
+	}
+
+	return node, len(srcInfoPath)
 }
 
 // interpretField interprets the option described by opt, as a field inside the given msg. This
