@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -3369,6 +3370,20 @@ func TestLinkerValidation(t *testing.T) {
 			case len(errs) == 0:
 				t.Errorf("expecting validation error %q; instead got no error", tc.expectedErr)
 			default:
+				if len(expectedErrs) == 1 && len(errs) > 1 && len(errs) == strings.Count(expectedErrs[0], "||")+1 {
+					// We were expecting one or another error, but got all of them. This can
+					// happen since the multiple errors are triggered concurrently and
+					// non-deterministically. When it happens, we sort both lists, since we
+					// otherwise don't know in what order they could arrive.
+					expectedErrs = strings.Split(expectedErrs[0], "||")
+					for i := range expectedErrs {
+						expectedErrs[i] = strings.TrimSpace(expectedErrs[i])
+					}
+					sort.Strings(expectedErrs)
+					sort.Slice(errs, func(i, j int) bool {
+						return errs[i].Error() < errs[j].Error()
+					})
+				}
 				assert.Len(t, errs, len(expectedErrs), "wrong number of errors reported")
 				limit := len(expectedErrs)
 				if limit > len(errs) {
