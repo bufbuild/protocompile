@@ -658,6 +658,14 @@ func (interp *interpreter) checkFieldUsage(
 	fld protoreflect.FieldDescriptor,
 	node ast.Node,
 ) error {
+	msgOpts, _ := fld.ContainingMessage().Options().(*descriptorpb.MessageOptions)
+	if msgOpts.GetMessageSetWireFormat() && !internal.CanSerializeMessageSets {
+		err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "field %q may not be used in an option: it uses 'message set wire format' legacy proto1 feature which is not supported", fld.FullName())
+		if err != nil {
+			return err
+		}
+	}
+
 	opts, ok := fld.Options().(*descriptorpb.FieldOptions)
 	if !ok {
 		return nil
