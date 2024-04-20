@@ -420,7 +420,7 @@ func (s *packageSymbols) commitFileLocked(f protoreflect.FileDescriptor) {
 }
 
 func (s *Symbols) importResultWithExtensions(pkg *packageSymbols, r *result, handler *reporter.Handler) error {
-	imported, err := pkg.importResult(r, handler)
+	imported, err := pkg.importResult(r, handler, nil)
 	if err != nil {
 		return err
 	}
@@ -442,16 +442,16 @@ func (s *Symbols) importResultWithExtensions(pkg *packageSymbols, r *result, han
 	})
 }
 
-func (s *Symbols) importResult(r *result, handler *reporter.Handler) error {
+func (s *Symbols) importResult(r *result, handler *reporter.Handler, pool *allocPool) error {
 	pkg, err := s.importPackages(packageNameSpan(r), r.Package(), handler)
 	if err != nil || pkg == nil {
 		return err
 	}
-	_, err = pkg.importResult(r, handler)
+	_, err = pkg.importResult(r, handler, pool)
 	return err
 }
 
-func (s *packageSymbols) importResult(r *result, handler *reporter.Handler) (bool, error) {
+func (s *packageSymbols) importResult(r *result, handler *reporter.Handler, pool *allocPool) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -461,7 +461,7 @@ func (s *packageSymbols) importResult(r *result, handler *reporter.Handler) (boo
 	}
 
 	// first pass: check for conflicts
-	if err := s.checkResultLocked(r, handler); err != nil {
+	if err := s.checkResultLocked(r, handler, pool); err != nil {
 		return false, err
 	}
 	if err := handler.Error(); err != nil {
@@ -474,10 +474,36 @@ func (s *packageSymbols) importResult(r *result, handler *reporter.Handler) (boo
 	return true, nil
 }
 
-func (s *packageSymbols) checkResultLocked(r *result, handler *reporter.Handler) error {
+func (s *packageSymbols) checkResultLocked(r *result, handler *reporter.Handler, pool *allocPool) error {
 	resultSyms := map[protoreflect.FullName]symbolEntry{}
 	return walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		_, isEnumVal := d.(*descriptorpb.EnumValueDescriptorProto)
+		var isEnumVal bool
+		if pool != nil {
+			switch d := d.(type) {
+			case *descriptorpb.DescriptorProto:
+				pool.numMessages++
+			case *descriptorpb.FieldDescriptorProto:
+				if d.Extendee != nil {
+					pool.numExtensions++
+				} else {
+					pool.numFields++
+				}
+			case *descriptorpb.OneofDescriptorProto:
+				pool.numOneofs++
+			case *descriptorpb.EnumDescriptorProto:
+				pool.numEnums++
+			case *descriptorpb.EnumValueDescriptorProto:
+				pool.numEnumValues++
+				isEnumVal = true
+			case *descriptorpb.ServiceDescriptorProto:
+				pool.numServices++
+			case *descriptorpb.MethodDescriptorProto:
+				pool.numMethods++
+			}
+		} else {
+			_, isEnumVal = d.(*descriptorpb.EnumValueDescriptorProto)
+		}
+
 		file := r.FileNode()
 		node := r.Node(d)
 		span := nameSpan(file, node)

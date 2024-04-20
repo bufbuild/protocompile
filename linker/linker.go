@@ -71,7 +71,8 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	// First, we put all symbols into a single pool, which lets us ensure there
 	// are no duplicate symbols and will also let us resolve and revise all type
 	// references in next step.
-	if err := symbols.importResult(r, handler); err != nil {
+	pool := &allocPool{}
+	if err := symbols.importResult(r, handler, pool); err != nil {
 		return nil, err
 	}
 
@@ -81,7 +82,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	// message references since we don't actually know message or enum until
 	// link time), and references will be re-written to be fully-qualified
 	// references (e.g. start with a dot ".").
-	if err := r.resolveReferences(handler, symbols); err != nil {
+	if err := r.resolveReferences(handler, symbols, pool); err != nil {
 		return nil, err
 	}
 

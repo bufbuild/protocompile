@@ -403,10 +403,10 @@ type msgDescriptors struct {
 	msgs []msgDescriptor
 }
 
-func (r *result) createMessages(prefix string, parent protoreflect.Descriptor, msgProtos []*descriptorpb.DescriptorProto) msgDescriptors {
-	msgs := make([]msgDescriptor, len(msgProtos))
+func (r *result) createMessages(prefix string, parent protoreflect.Descriptor, msgProtos []*descriptorpb.DescriptorProto, pool *allocPool) msgDescriptors {
+	msgs := pool.getMessages(len(msgProtos))
 	for i, msgProto := range msgProtos {
-		r.createMessageDescriptor(&msgs[i], msgProto, parent, i, prefix+msgProto.GetName())
+		r.createMessageDescriptor(&msgs[i], msgProto, parent, i, prefix+msgProto.GetName(), pool)
 	}
 	return msgDescriptors{msgs: msgs}
 }
@@ -451,7 +451,7 @@ type msgDescriptor struct {
 var _ protoreflect.MessageDescriptor = (*msgDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*msgDescriptor)(nil)
 
-func (r *result) createMessageDescriptor(ret *msgDescriptor, md *descriptorpb.DescriptorProto, parent protoreflect.Descriptor, index int, fqn string) {
+func (r *result) createMessageDescriptor(ret *msgDescriptor, md *descriptorpb.DescriptorProto, parent protoreflect.Descriptor, index int, fqn string, pool *allocPool) {
 	r.descriptors[fqn] = ret
 
 	ret.MessageDescriptor = noOpMessage
@@ -464,11 +464,11 @@ func (r *result) createMessageDescriptor(ret *msgDescriptor, md *descriptorpb.De
 	prefix := fqn + "."
 	// NB: We MUST create fields before oneofs so that we can populate the
 	//  set of fields that belong to the oneof
-	ret.fields = r.createFields(prefix, ret, md.Field)
-	ret.oneofs = r.createOneofs(prefix, ret, md.OneofDecl)
-	ret.nestedMessages = r.createMessages(prefix, ret, md.NestedType)
-	ret.nestedEnums = r.createEnums(prefix, ret, md.EnumType)
-	ret.nestedExtensions = r.createExtensions(prefix, ret, md.Extension)
+	ret.fields = r.createFields(prefix, ret, md.Field, pool)
+	ret.oneofs = r.createOneofs(prefix, ret, md.OneofDecl, pool)
+	ret.nestedMessages = r.createMessages(prefix, ret, md.NestedType, pool)
+	ret.nestedEnums = r.createEnums(prefix, ret, md.EnumType, pool)
+	ret.nestedExtensions = r.createExtensions(prefix, ret, md.Extension, pool)
 	ret.extRanges = createFieldRanges(md.ExtensionRange)
 	ret.rsvdRanges = createFieldRanges(md.ReservedRange)
 	ret.rsvdNames = names{s: md.ReservedName}
@@ -651,10 +651,10 @@ type enumDescriptors struct {
 	enums []enumDescriptor
 }
 
-func (r *result) createEnums(prefix string, parent protoreflect.Descriptor, enumProtos []*descriptorpb.EnumDescriptorProto) enumDescriptors {
-	enums := make([]enumDescriptor, len(enumProtos))
+func (r *result) createEnums(prefix string, parent protoreflect.Descriptor, enumProtos []*descriptorpb.EnumDescriptorProto, pool *allocPool) enumDescriptors {
+	enums := pool.getEnums(len(enumProtos))
 	for i, enumProto := range enumProtos {
-		r.createEnumDescriptor(&enums[i], enumProto, parent, i, prefix+enumProto.GetName())
+		r.createEnumDescriptor(&enums[i], enumProto, parent, i, prefix+enumProto.GetName(), pool)
 	}
 	return enumDescriptors{enums: enums}
 }
@@ -694,7 +694,7 @@ type enumDescriptor struct {
 var _ protoreflect.EnumDescriptor = (*enumDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*enumDescriptor)(nil)
 
-func (r *result) createEnumDescriptor(ret *enumDescriptor, ed *descriptorpb.EnumDescriptorProto, parent protoreflect.Descriptor, index int, fqn string) {
+func (r *result) createEnumDescriptor(ret *enumDescriptor, ed *descriptorpb.EnumDescriptorProto, parent protoreflect.Descriptor, index int, fqn string, pool *allocPool) {
 	r.descriptors[fqn] = ret
 
 	ret.EnumDescriptor = noOpEnum
@@ -709,7 +709,7 @@ func (r *result) createEnumDescriptor(ret *enumDescriptor, ed *descriptorpb.Enum
 	// the enum's parent element. This follows C++ scoping rules for
 	// enum values.
 	prefix := strings.TrimSuffix(fqn, ed.GetName())
-	ret.values = r.createEnumValues(prefix, ret, ed.Value)
+	ret.values = r.createEnumValues(prefix, ret, ed.Value, pool)
 	ret.rsvdRanges = createEnumRanges(ed.ReservedRange)
 	ret.rsvdNames = names{s: ed.ReservedName}
 }
@@ -809,8 +809,8 @@ type enValDescriptors struct {
 	vals []enValDescriptor
 }
 
-func (r *result) createEnumValues(prefix string, parent *enumDescriptor, enValProtos []*descriptorpb.EnumValueDescriptorProto) enValDescriptors {
-	vals := make([]enValDescriptor, len(enValProtos))
+func (r *result) createEnumValues(prefix string, parent *enumDescriptor, enValProtos []*descriptorpb.EnumValueDescriptorProto, pool *allocPool) enValDescriptors {
+	vals := pool.getEnumValues(len(enValProtos))
 	for i, enValProto := range enValProtos {
 		r.createEnumValueDescriptor(&vals[i], enValProto, parent, i, prefix+enValProto.GetName())
 	}
@@ -916,8 +916,8 @@ type extDescriptors struct {
 	exts []extTypeDescriptor
 }
 
-func (r *result) createExtensions(prefix string, parent protoreflect.Descriptor, extProtos []*descriptorpb.FieldDescriptorProto) extDescriptors {
-	exts := make([]extTypeDescriptor, len(extProtos))
+func (r *result) createExtensions(prefix string, parent protoreflect.Descriptor, extProtos []*descriptorpb.FieldDescriptorProto, pool *allocPool) extDescriptors {
+	exts := pool.getExtensions(len(extProtos))
 	for i, extProto := range extProtos {
 		r.createExtTypeDescriptor(&exts[i], extProto, parent, i, prefix+extProto.GetName())
 	}
@@ -974,8 +974,8 @@ type fldDescriptors struct {
 	fields []*fldDescriptor
 }
 
-func (r *result) createFields(prefix string, parent *msgDescriptor, fldProtos []*descriptorpb.FieldDescriptorProto) fldDescriptors {
-	fields := make([]fldDescriptor, len(fldProtos))
+func (r *result) createFields(prefix string, parent *msgDescriptor, fldProtos []*descriptorpb.FieldDescriptorProto, pool *allocPool) fldDescriptors {
+	fields := pool.getFields(len(fldProtos))
 	fieldPtrs := make([]*fldDescriptor, len(fldProtos))
 	for i, fldProto := range fldProtos {
 		r.createFieldDescriptor(&fields[i], fldProto, parent, i, prefix+fldProto.GetName())
@@ -1498,8 +1498,8 @@ type oneofDescriptors struct {
 	oneofs []oneofDescriptor
 }
 
-func (r *result) createOneofs(prefix string, parent *msgDescriptor, ooProtos []*descriptorpb.OneofDescriptorProto) oneofDescriptors {
-	oos := make([]oneofDescriptor, len(ooProtos))
+func (r *result) createOneofs(prefix string, parent *msgDescriptor, ooProtos []*descriptorpb.OneofDescriptorProto, pool *allocPool) oneofDescriptors {
+	oos := pool.getOneofs(len(ooProtos))
 	for i, fldProto := range ooProtos {
 		r.createOneofDescriptor(&oos[i], fldProto, parent, i, prefix+fldProto.GetName())
 	}
@@ -1614,10 +1614,10 @@ type svcDescriptors struct {
 	svcs []svcDescriptor
 }
 
-func (r *result) createServices(prefix string, svcProtos []*descriptorpb.ServiceDescriptorProto) svcDescriptors {
-	svcs := make([]svcDescriptor, len(svcProtos))
+func (r *result) createServices(prefix string, svcProtos []*descriptorpb.ServiceDescriptorProto, pool *allocPool) svcDescriptors {
+	svcs := pool.getServices(len(svcProtos))
 	for i, svcProto := range svcProtos {
-		r.createServiceDescriptor(&svcs[i], svcProto, i, prefix+svcProto.GetName())
+		r.createServiceDescriptor(&svcs[i], svcProto, i, prefix+svcProto.GetName(), pool)
 	}
 	return svcDescriptors{svcs: svcs}
 }
@@ -1653,7 +1653,7 @@ type svcDescriptor struct {
 var _ protoreflect.ServiceDescriptor = (*svcDescriptor)(nil)
 var _ protoutil.DescriptorProtoWrapper = (*svcDescriptor)(nil)
 
-func (r *result) createServiceDescriptor(ret *svcDescriptor, sd *descriptorpb.ServiceDescriptorProto, index int, fqn string) {
+func (r *result) createServiceDescriptor(ret *svcDescriptor, sd *descriptorpb.ServiceDescriptorProto, index int, fqn string, pool *allocPool) {
 	r.descriptors[fqn] = ret
 	ret.ServiceDescriptor = noOpService
 	ret.file = r
@@ -1662,7 +1662,7 @@ func (r *result) createServiceDescriptor(ret *svcDescriptor, sd *descriptorpb.Se
 	ret.fqn = fqn
 
 	prefix := fqn + "."
-	ret.methods = r.createMethods(prefix, ret, sd.Method)
+	ret.methods = r.createMethods(prefix, ret, sd.Method, pool)
 }
 
 func (s *svcDescriptor) ServiceDescriptorProto() *descriptorpb.ServiceDescriptorProto {
@@ -1714,8 +1714,8 @@ type mtdDescriptors struct {
 	mtds []mtdDescriptor
 }
 
-func (r *result) createMethods(prefix string, parent *svcDescriptor, mtdProtos []*descriptorpb.MethodDescriptorProto) mtdDescriptors {
-	mtds := make([]mtdDescriptor, len(mtdProtos))
+func (r *result) createMethods(prefix string, parent *svcDescriptor, mtdProtos []*descriptorpb.MethodDescriptorProto, pool *allocPool) mtdDescriptors {
+	mtds := pool.getMethods(len(mtdProtos))
 	for i, mtdProto := range mtdProtos {
 		r.createMethodDescriptor(&mtds[i], mtdProto, parent, i, prefix+mtdProto.GetName())
 	}
