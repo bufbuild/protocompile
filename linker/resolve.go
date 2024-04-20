@@ -211,7 +211,7 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 				if extendeeNodes == nil && r.AST() != nil {
 					extendeeNodes = map[ast.Node]struct{}{}
 				}
-				if err := resolveFieldTypes(d.field, handler, extendeeNodes, s, scopes); err != nil {
+				if err := resolveFieldTypes(&d.field, handler, extendeeNodes, s, scopes); err != nil {
 					return err
 				}
 				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.field.proto.GetExtendee()) {
