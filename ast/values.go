@@ -54,7 +54,7 @@ var _ ValueNode = (*SpecialFloatLiteralNode)(nil)
 var _ ValueNode = (*SignedFloatLiteralNode)(nil)
 var _ ValueNode = (*ArrayLiteralNode)(nil)
 var _ ValueNode = (*MessageLiteralNode)(nil)
-var _ ValueNode = NoSourceNode{}
+var _ ValueNode = (*NoSourceNode)(nil)
 
 // StringValueNode is an AST node that represents a string literal.
 // Such a node can be a single literal (*StringLiteralNode) or a

@@ -36,14 +36,15 @@ type result struct {
 	file  *ast.FileNode
 	proto *descriptorpb.FileDescriptorProto
 
-	nodes map[proto.Message]ast.Node
+	nodes   map[proto.Message]ast.Node
+	ifNoAST *ast.NoSourceNode
 }
 
 // ResultWithoutAST returns a parse result that has no AST. All methods for
 // looking up AST nodes return a placeholder node that contains only the filename
 // in position information.
 func ResultWithoutAST(proto *descriptorpb.FileDescriptorProto) Result {
-	return &result{proto: proto}
+	return &result{proto: proto, ifNoAST: ast.NewNoSourceNode(proto.GetName())}
 }
 
 // ResultFromAST constructs a descriptor proto from the given AST. The returned
@@ -846,105 +847,105 @@ func (r *result) processProto3OptionalFields(msgd *descriptorpb.DescriptorProto)
 
 func (r *result) Node(m proto.Message) ast.Node {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[m]
 }
 
 func (r *result) FileNode() ast.FileDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[r.proto].(ast.FileDeclNode)
 }
 
 func (r *result) OptionNode(o *descriptorpb.UninterpretedOption) ast.OptionDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[o].(ast.OptionDeclNode)
 }
 
 func (r *result) OptionNamePartNode(o *descriptorpb.UninterpretedOption_NamePart) ast.Node {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[o]
 }
 
 func (r *result) MessageNode(m *descriptorpb.DescriptorProto) ast.MessageDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[m].(ast.MessageDeclNode)
 }
 
 func (r *result) FieldNode(f *descriptorpb.FieldDescriptorProto) ast.FieldDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[f].(ast.FieldDeclNode)
 }
 
 func (r *result) OneofNode(o *descriptorpb.OneofDescriptorProto) ast.OneofDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[o].(ast.OneofDeclNode)
 }
 
 func (r *result) ExtensionsNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithOptions {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[asExtsNode(e)].(ast.NodeWithOptions)
 }
 
 func (r *result) ExtensionRangeNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.RangeDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[e].(ast.RangeDeclNode)
 }
 
 func (r *result) MessageReservedRangeNode(rr *descriptorpb.DescriptorProto_ReservedRange) ast.RangeDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[rr].(ast.RangeDeclNode)
 }
 
 func (r *result) EnumNode(e *descriptorpb.EnumDescriptorProto) ast.NodeWithOptions {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[e].(ast.NodeWithOptions)
 }
 
 func (r *result) EnumValueNode(e *descriptorpb.EnumValueDescriptorProto) ast.EnumValueDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[e].(ast.EnumValueDeclNode)
 }
 
 func (r *result) EnumReservedRangeNode(rr *descriptorpb.EnumDescriptorProto_EnumReservedRange) ast.RangeDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[rr].(ast.RangeDeclNode)
 }
 
 func (r *result) ServiceNode(s *descriptorpb.ServiceDescriptorProto) ast.NodeWithOptions {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[s].(ast.NodeWithOptions)
 }
 
 func (r *result) MethodNode(m *descriptorpb.MethodDescriptorProto) ast.RPCDeclNode {
 	if r.nodes == nil {
-		return ast.NewNoSourceNode(r.proto.GetName())
+		return r.ifNoAST
 	}
 	return r.nodes[m].(ast.RPCDeclNode)
 }

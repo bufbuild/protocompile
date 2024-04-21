@@ -108,7 +108,7 @@ type RangeDeclNode interface {
 }
 
 var _ RangeDeclNode = (*RangeNode)(nil)
-var _ RangeDeclNode = NoSourceNode{}
+var _ RangeDeclNode = (*NoSourceNode)(nil)
 
 // RangeNode represents a range expression, used in both extension ranges and
 // reserved ranges. Example:
