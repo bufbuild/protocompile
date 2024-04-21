@@ -67,12 +67,13 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 		prefix:               prefix,
 		optionQualifiedNames: map[ast.IdentValueNode]string{},
 	}
+	// First, we create the hierarchy of descendant descriptors.
+	r.createDescendants()
 
-	// First, we put all symbols into a single pool, which lets us ensure there
+	// Then we can put all symbols into a single pool, which lets us ensure there
 	// are no duplicate symbols and will also let us resolve and revise all type
 	// references in next step.
-	pool := &allocPool{}
-	if err := symbols.importResult(r, handler, pool); err != nil {
+	if err := symbols.importResult(r, handler); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +83,7 @@ func Link(parsed parser.Result, dependencies Files, symbols *Symbols, handler *r
 	// message references since we don't actually know message or enum until
 	// link time), and references will be re-written to be fully-qualified
 	// references (e.g. start with a dot ".").
-	if err := r.resolveReferences(handler, symbols, pool); err != nil {
+	if err := r.resolveReferences(handler, symbols); err != nil {
 		return nil, err
 	}
 

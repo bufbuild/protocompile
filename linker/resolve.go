@@ -152,9 +152,10 @@ func descriptorTypeWithArticle(d protoreflect.Descriptor) string {
 	}
 }
 
-func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols, pool *allocPool) error {
-	// first create the full descriptor hierarchy
+func (r *result) createDescendants() {
 	fd := r.FileDescriptorProto()
+	pool := &allocPool{}
+	pool.countElements(fd)
 	prefix := ""
 	if fd.GetPackage() != "" {
 		prefix = fd.GetPackage() + "."
@@ -164,8 +165,11 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols, pool *
 	r.enums = r.createEnums(prefix, r, fd.EnumType, pool)
 	r.extensions = r.createExtensions(prefix, r, fd.Extension, pool)
 	r.services = r.createServices(prefix, fd.Service, pool)
+}
 
-	// then resolve symbol references
+func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error {
+	fd := r.FileDescriptorProto()
+
 	scopes := []scope{fileScope(r)}
 	if fd.Options != nil {
 		if err := r.resolveOptions(handler, "file", protoreflect.FullName(fd.GetName()), fd.Options.UninterpretedOption, scopes); err != nil {

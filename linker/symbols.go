@@ -18,12 +18,11 @@ import (
 	"strings"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/walk"
 )
@@ -320,6 +319,9 @@ func sourceSpanFor(d protoreflect.Descriptor) ast.SourceSpan {
 	if file == nil {
 		return ast.UnknownSpan(unknownFilePath)
 	}
+	if result, ok := file.(*result); ok {
+		return nameSpan(result.FileNode(), result.Node(protoutil.ProtoFromDescriptor(d)))
+	}
 	path, ok := internal.ComputePath(d)
 	if !ok {
 		return ast.UnknownSpan(file.Path())
@@ -420,7 +422,7 @@ func (s *packageSymbols) commitFileLocked(f protoreflect.FileDescriptor) {
 }
 
 func (s *Symbols) importResultWithExtensions(pkg *packageSymbols, r *result, handler *reporter.Handler) error {
-	imported, err := pkg.importResult(r, handler, nil)
+	imported, err := pkg.importResult(r, handler)
 	if err != nil {
 		return err
 	}
@@ -442,16 +444,16 @@ func (s *Symbols) importResultWithExtensions(pkg *packageSymbols, r *result, han
 	})
 }
 
-func (s *Symbols) importResult(r *result, handler *reporter.Handler, pool *allocPool) error {
+func (s *Symbols) importResult(r *result, handler *reporter.Handler) error {
 	pkg, err := s.importPackages(packageNameSpan(r), r.Package(), handler)
 	if err != nil || pkg == nil {
 		return err
 	}
-	_, err = pkg.importResult(r, handler, pool)
+	_, err = pkg.importResult(r, handler)
 	return err
 }
 
-func (s *packageSymbols) importResult(r *result, handler *reporter.Handler, pool *allocPool) (bool, error) {
+func (s *packageSymbols) importResult(r *result, handler *reporter.Handler) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -461,7 +463,7 @@ func (s *packageSymbols) importResult(r *result, handler *reporter.Handler, pool
 	}
 
 	// first pass: check for conflicts
-	if err := s.checkResultLocked(r, handler, pool); err != nil {
+	if err := s.checkResultLocked(r, handler); err != nil {
 		return false, err
 	}
 	if err := handler.Error(); err != nil {
@@ -469,58 +471,33 @@ func (s *packageSymbols) importResult(r *result, handler *reporter.Handler, pool
 	}
 
 	// second pass: commit all symbols
-	s.commitResultLocked(r)
+	s.commitFileLocked(r)
 
 	return true, nil
 }
 
-func (s *packageSymbols) checkResultLocked(r *result, handler *reporter.Handler, pool *allocPool) error {
+func (s *packageSymbols) checkResultLocked(r *result, handler *reporter.Handler) error {
 	resultSyms := map[protoreflect.FullName]symbolEntry{}
-	return walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		var isEnumVal bool
-		if pool != nil {
-			switch d := d.(type) {
-			case *descriptorpb.DescriptorProto:
-				pool.numMessages++
-			case *descriptorpb.FieldDescriptorProto:
-				if d.Extendee != nil {
-					pool.numExtensions++
-				} else {
-					pool.numFields++
-				}
-			case *descriptorpb.OneofDescriptorProto:
-				pool.numOneofs++
-			case *descriptorpb.EnumDescriptorProto:
-				pool.numEnums++
-			case *descriptorpb.EnumValueDescriptorProto:
-				pool.numEnumValues++
-				isEnumVal = true
-			case *descriptorpb.ServiceDescriptorProto:
-				pool.numServices++
-			case *descriptorpb.MethodDescriptorProto:
-				pool.numMethods++
-			}
-		} else {
-			_, isEnumVal = d.(*descriptorpb.EnumValueDescriptorProto)
-		}
-
+	return walk.Descriptors(r, func(d protoreflect.Descriptor) error {
+		_, isEnumVal := d.(protoreflect.EnumValueDescriptor)
 		file := r.FileNode()
-		node := r.Node(d)
+		name := d.FullName()
+		node := r.Node(protoutil.ProtoFromDescriptor(d))
 		span := nameSpan(file, node)
 		// check symbols already in this symbol table
-		if existing, ok := s.symbols[fqn]; ok {
-			if err := reportSymbolCollision(span, fqn, isEnumVal, existing, handler); err != nil {
+		if existing, ok := s.symbols[name]; ok {
+			if err := reportSymbolCollision(span, name, isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
 
 		// also check symbols from this result (that are not yet in symbol table)
-		if existing, ok := resultSyms[fqn]; ok {
-			if err := reportSymbolCollision(span, fqn, isEnumVal, existing, handler); err != nil {
+		if existing, ok := resultSyms[name]; ok {
+			if err := reportSymbolCollision(span, name, isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
-		resultSyms[fqn] = symbolEntry{
+		resultSyms[name] = symbolEntry{
 			span:        span,
 			isEnumValue: isEnumVal,
 		}
@@ -560,26 +537,6 @@ func nameSpan(file ast.FileDeclNode, n ast.Node) ast.SourceSpan {
 	default:
 		return file.NodeInfo(n)
 	}
-}
-
-func (s *packageSymbols) commitResultLocked(r *result) {
-	if s.symbols == nil {
-		s.symbols = map[protoreflect.FullName]symbolEntry{}
-	}
-	if s.exts == nil {
-		s.exts = map[extNumber]ast.SourceSpan{}
-	}
-	_ = walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		span := nameSpan(r.FileNode(), r.Node(d))
-		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
-		s.symbols[fqn] = symbolEntry{span: span, isEnumValue: isEnumValue}
-		return nil
-	})
-
-	if s.files == nil {
-		s.files = map[protoreflect.FileDescriptor]struct{}{}
-	}
-	s.files[r] = struct{}{}
 }
 
 // AddExtension records the given extension, which is used to ensure that no two files
