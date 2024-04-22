@@ -998,12 +998,12 @@ func TestPathological(t *testing.T) {
 			// 3 iterations and no longer than 1 second (which is a stricter deadline).
 			allowedDuration := time.Second
 			if internal.IsRace {
-				// We increase that threshold to 10 seconds when the race detector is enabled.
+				// We increase that threshold to 20 seconds when the race detector is enabled.
 				// The race detector has been observed to make it take ~8x as long. If coverage
-				// is *also* enabled, the test can take 19x as long(!!). But 10s should still
-				// be a reasonable limit in practice. (Unfortunately, there doesn't appear to
-				// be a way to easily detect if coverage is enabled.)
-				allowedDuration = 10 * time.Second
+				// is *also* enabled, the test can take 19x as long(!!). Unfortunately, there
+				// doesn't appear to be a way to easily detect if coverage is enabled, so we
+				// always increase the timeout when race detector is enabled.
+				allowedDuration = 20 * time.Second
 				t.Logf("allowing %v since race detector is enabled", allowedDuration)
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), allowedDuration)
