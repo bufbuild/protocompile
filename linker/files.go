@@ -201,7 +201,7 @@ type fileResolver struct {
 }
 
 func (r fileResolver) FindFileByPath(path string) (protoreflect.FileDescriptor, error) {
-	return resolveInFile(r.f, false, map[string]struct{}{}, func(f File) (protoreflect.FileDescriptor, error) {
+	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.FileDescriptor, error) {
 		if f.Path() == path {
 			return f, nil
 		}
@@ -210,7 +210,7 @@ func (r fileResolver) FindFileByPath(path string) (protoreflect.FileDescriptor, 
 }
 
 func (r fileResolver) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
-	return resolveInFile(r.f, false, map[string]struct{}{}, func(f File) (protoreflect.Descriptor, error) {
+	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.Descriptor, error) {
 		if d := f.FindDescriptorByName(name); d != nil {
 			return d, nil
 		}
@@ -219,7 +219,7 @@ func (r fileResolver) FindDescriptorByName(name protoreflect.FullName) (protoref
 }
 
 func (r fileResolver) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {
-	return resolveInFile(r.f, false, map[string]struct{}{}, func(f File) (protoreflect.MessageType, error) {
+	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.MessageType, error) {
 		d := f.FindDescriptorByName(message)
 		if d != nil {
 			md, ok := d.(protoreflect.MessageDescriptor)
@@ -243,7 +243,7 @@ func messageNameFromURL(url string) string {
 }
 
 func (r fileResolver) FindExtensionByName(field protoreflect.FullName) (protoreflect.ExtensionType, error) {
-	return resolveInFile(r.f, false, map[string]struct{}{}, func(f File) (protoreflect.ExtensionType, error) {
+	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.ExtensionType, error) {
 		d := f.FindDescriptorByName(field)
 		if d != nil {
 			fld, ok := d.(protoreflect.FieldDescriptor)
@@ -260,7 +260,7 @@ func (r fileResolver) FindExtensionByName(field protoreflect.FullName) (protoref
 }
 
 func (r fileResolver) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
-	return resolveInFile(r.f, false, map[string]struct{}{}, func(f File) (protoreflect.ExtensionType, error) {
+	return resolveInFile(r.f, false, nil, func(f File) (protoreflect.ExtensionType, error) {
 		ext := findExtension(f, message, field)
 		if ext != nil {
 			return ext.Type(), nil
