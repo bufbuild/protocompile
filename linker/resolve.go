@@ -34,11 +34,15 @@ func (r *result) ResolveMessageLiteralExtensionName(node ast.IdentValueNode) str
 	return r.optionQualifiedNames[node]
 }
 
-func (r *result) resolveElement(name protoreflect.FullName, checkedCache []string) protoreflect.Descriptor {
+func (r *result) resolveElement(name protoreflect.FullName, checkedCache map[string]struct{}) protoreflect.Descriptor {
 	if len(name) > 0 && name[0] == '.' {
 		name = name[1:]
 	}
-	res, _ := resolveInFile(r, false, checkedCache[:0], func(f File) (protoreflect.Descriptor, error) {
+	// clear cached map instance before use
+	for k := range checkedCache {
+		delete(checkedCache, k)
+	}
+	res, _ := resolveInFile(r, false, checkedCache, func(f File) (protoreflect.Descriptor, error) {
 		d := resolveElementInFile(name, f)
 		if d != nil {
 			return d, nil
@@ -48,16 +52,14 @@ func (r *result) resolveElement(name protoreflect.FullName, checkedCache []strin
 	return res
 }
 
-func resolveInFile[T any](f File, publicImportsOnly bool, checked []string, fn func(File) (T, error)) (T, error) {
+func resolveInFile[T any](f File, publicImportsOnly bool, checked map[string]struct{}, fn func(File) (T, error)) (T, error) {
 	var zero T
 	path := f.Path()
-	for _, str := range checked {
-		if str == path {
-			// already checked
-			return zero, protoregistry.NotFound
-		}
+	if _, ok := checked[path]; ok {
+		// already checked
+		return zero, protoregistry.NotFound
 	}
-	checked = append(checked, path)
+	checked[path] = struct{}{}
 
 	res, err := fn(f)
 	if err == nil {
@@ -168,7 +170,7 @@ func (r *result) createDescendants() {
 
 func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error {
 	fd := r.FileDescriptorProto()
-	checkedCache := make([]string, 0, 16)
+	checkedCache := make(map[string]struct{}, 16)
 	scopes := []scope{fileScope(r, checkedCache)}
 	if fd.Options != nil {
 		if err := r.resolveOptions(handler, "file", protoreflect.FullName(fd.GetName()), fd.Options.UninterpretedOption, scopes, checkedCache); err != nil {
@@ -302,7 +304,7 @@ func allowedProto3Extendee(n string) bool {
 	return ok
 }
 
-func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, extendees map[ast.Node]struct{}, s *Symbols, scopes []scope, checkedCache []string) error {
+func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, extendees map[ast.Node]struct{}, s *Symbols, scopes []scope, checkedCache map[string]struct{}) error {
 	r := f.file
 	fld := f.proto
 	file := r.FileNode()
@@ -466,7 +468,7 @@ func isValidMap(mapField protoreflect.FieldDescriptor, mapEntry protoreflect.Mes
 		string(mapEntry.Name()) == internal.InitCap(internal.JSONName(string(mapField.Name())))+"Entry"
 }
 
-func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []scope, checkedCache []string) error {
+func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []scope, checkedCache map[string]struct{}) error {
 	scope := fmt.Sprintf("method %s", m.fqn)
 	r := m.file
 	mtd := m.proto
@@ -518,7 +520,7 @@ func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []sc
 	return nil
 }
 
-func (r *result) resolveOptions(handler *reporter.Handler, elemType string, elemName protoreflect.FullName, opts []*descriptorpb.UninterpretedOption, scopes []scope, checkedCache []string) error {
+func (r *result) resolveOptions(handler *reporter.Handler, elemType string, elemName protoreflect.FullName, opts []*descriptorpb.UninterpretedOption, scopes []scope, checkedCache map[string]struct{}) error {
 	mc := &internal.MessageContext{
 		File:        r,
 		ElementName: string(elemName),
@@ -552,7 +554,7 @@ opts:
 	return nil
 }
 
-func (r *result) resolveOptionValue(handler *reporter.Handler, mc *internal.MessageContext, val ast.ValueNode, scopes []scope, checkedCache []string) error {
+func (r *result) resolveOptionValue(handler *reporter.Handler, mc *internal.MessageContext, val ast.ValueNode, scopes []scope, checkedCache map[string]struct{}) error {
 	optVal := val.Value()
 	switch optVal := optVal.(type) {
 	case []ast.ValueNode:
@@ -610,7 +612,7 @@ func (r *result) resolveOptionValue(handler *reporter.Handler, mc *internal.Mess
 	return nil
 }
 
-func (r *result) resolveExtensionName(name string, scopes []scope, checkedCache []string) (string, error) {
+func (r *result) resolveExtensionName(name string, scopes []scope, checkedCache map[string]struct{}) (string, error) {
 	dsc := r.resolve(name, false, scopes, checkedCache)
 	if dsc == nil {
 		return "", fmt.Errorf("unknown extension %s", name)
@@ -626,7 +628,7 @@ func (r *result) resolveExtensionName(name string, scopes []scope, checkedCache 
 	return string("." + dsc.FullName()), nil
 }
 
-func (r *result) resolve(name string, onlyTypes bool, scopes []scope, checkedCache []string) protoreflect.Descriptor {
+func (r *result) resolve(name string, onlyTypes bool, scopes []scope, checkedCache map[string]struct{}) protoreflect.Descriptor {
 	if strings.HasPrefix(name, ".") {
 		// already fully-qualified
 		return r.resolveElement(protoreflect.FullName(name[1:]), checkedCache)
@@ -674,7 +676,7 @@ func isType(d protoreflect.Descriptor) bool {
 // can be declared.
 type scope func(firstName, fullName string) protoreflect.Descriptor
 
-func fileScope(r *result, checkedCache []string) scope {
+func fileScope(r *result, checkedCache map[string]struct{}) scope {
 	// we search symbols in this file, but also symbols in other files that have
 	// the same package as this file or a "parent" package (in protobuf,
 	// packages are a hierarchy like C++ namespaces)
