@@ -152,20 +152,22 @@ func descriptorTypeWithArticle(d protoreflect.Descriptor) string {
 	}
 }
 
-func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error {
-	// first create the full descriptor hierarchy
+func (r *result) createDescendants() {
 	fd := r.FileDescriptorProto()
+	pool := newAllocPool(fd)
 	prefix := ""
 	if fd.GetPackage() != "" {
 		prefix = fd.GetPackage() + "."
 	}
 	r.imports = r.createImports()
-	r.messages = r.createMessages(prefix, r, fd.MessageType)
-	r.enums = r.createEnums(prefix, r, fd.EnumType)
-	r.extensions = r.createExtensions(prefix, r, fd.Extension)
-	r.services = r.createServices(prefix, fd.Service)
+	r.messages = r.createMessages(prefix, r, fd.MessageType, pool)
+	r.enums = r.createEnums(prefix, r, fd.EnumType, pool)
+	r.extensions = r.createExtensions(prefix, r, fd.Extension, pool)
+	r.services = r.createServices(prefix, fd.Service, pool)
+}
 
-	// then resolve symbol references
+func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error {
+	fd := r.FileDescriptorProto()
 	checkedCache := make([]string, 0, 16)
 	scopes := []scope{fileScope(r, checkedCache)}
 	if fd.Options != nil {
@@ -212,7 +214,7 @@ func (r *result) resolveReferences(handler *reporter.Handler, s *Symbols) error 
 				if extendeeNodes == nil && r.AST() != nil {
 					extendeeNodes = map[ast.Node]struct{}{}
 				}
-				if err := resolveFieldTypes(d.field, handler, extendeeNodes, s, scopes, checkedCache); err != nil {
+				if err := resolveFieldTypes(&d.field, handler, extendeeNodes, s, scopes, checkedCache); err != nil {
 					return err
 				}
 				if r.Syntax() == protoreflect.Proto3 && !allowedProto3Extendee(d.field.proto.GetExtendee()) {
