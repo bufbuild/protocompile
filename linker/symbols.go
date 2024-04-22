@@ -616,36 +616,20 @@ func (s *Symbols) AddExtensionDeclaration(extension, extendee protoreflect.FullN
 // Lookup finds the registered location of the given name. If the given name has
 // not been seen/registered, nil is returned.
 func (s *Symbols) Lookup(name protoreflect.FullName) ast.SourceSpan {
-	pkg := name.Parent()
-	for {
-		pkgSyms := s.getPackage(pkg, false)
-		if pkgSyms != nil {
-			if entry, ok := pkgSyms.symbols[name]; ok {
-				return entry.span
-			}
-			return nil
-		}
-		if pkg == "" {
-			return nil
-		}
-		pkg = pkg.Parent()
+	// note: getPackage never returns nil when exact=false
+	pkgSyms := s.getPackage(name, false)
+	if entry, ok := pkgSyms.symbols[name]; ok {
+		return entry.span
 	}
+	return nil
 }
 
 // LookupExtension finds the registered location of the given extension. If the given
 // extension has not been seen/registered, nil is returned.
 func (s *Symbols) LookupExtension(messageName protoreflect.FullName, extensionNumber protoreflect.FieldNumber) ast.SourceSpan {
-	pkg := messageName.Parent()
-	for {
-		pkgSyms := s.getPackage(pkg, false)
-		if pkgSyms != nil {
-			return pkgSyms.exts[extNumber{messageName, extensionNumber}]
-		}
-		if pkg == "" {
-			return nil
-		}
-		pkg = pkg.Parent()
-	}
+	// note: getPackage never returns nil when exact=false
+	pkgSyms := s.getPackage(messageName, false)
+	return pkgSyms.exts[extNumber{messageName, extensionNumber}]
 }
 
 type nameEnumerator struct {
