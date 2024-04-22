@@ -34,7 +34,7 @@ func TestSymbolsPackages(t *testing.T) {
 
 	var s Symbols
 	// default/nameless package is the root
-	assert.Equal(t, &s.pkgTrie, s.getPackage(""))
+	assert.Equal(t, &s.pkgTrie, s.getPackage("", true))
 
 	h := reporter.NewHandler(nil)
 	span := ast.UnknownSpan("foo.proto")
@@ -46,7 +46,7 @@ func TestSymbolsPackages(t *testing.T) {
 	assert.Empty(t, pkg.symbols)
 	assert.Empty(t, pkg.exts)
 
-	assert.Equal(t, pkg, s.getPackage("build.buf.foo.bar.baz"))
+	assert.Equal(t, pkg, s.getPackage("build.buf.foo.bar.baz", true))
 
 	// verify that trie was created correctly:
 	//   each package has just one entry, which is its immediate sub-package
@@ -115,7 +115,7 @@ func TestSymbolsImport(t *testing.T) {
 
 			// verify contents of s
 
-			pkg := s.getPackage("foo.bar")
+			pkg := s.getPackage("foo.bar", true)
 			syms := pkg.symbols
 			assert.Len(t, syms, 6)
 			assert.Contains(t, syms, protoreflect.FullName("foo.bar.Foo"))
@@ -129,7 +129,7 @@ func TestSymbolsImport(t *testing.T) {
 			assert.Contains(t, exts, extNumber{"foo.bar.Foo", 10})
 			assert.Contains(t, exts, extNumber{"foo.bar.Foo", 11})
 
-			pkg = s.getPackage("google.protobuf")
+			pkg = s.getPackage("google.protobuf", true)
 			exts = pkg.exts
 			assert.Len(t, exts, 1)
 			assert.Contains(t, exts, extNumber{"google.protobuf.FieldOptions", 20000})
@@ -179,13 +179,13 @@ func TestSymbolExtensions(t *testing.T) {
 
 	// verify contents of s
 
-	pkg := s.getPackage("foo.bar")
+	pkg := s.getPackage("foo.bar", true)
 	exts := pkg.exts
 	assert.Len(t, exts, 2)
 	assert.Contains(t, exts, extNumber{"foo.bar.Foo", 11})
 	assert.Contains(t, exts, extNumber{"foo.bar.Foo", 12})
 
-	pkg = s.getPackage("google.protobuf")
+	pkg = s.getPackage("google.protobuf", true)
 	exts = pkg.exts
 	assert.Len(t, exts, 3)
 	assert.Contains(t, exts, extNumber{"google.protobuf.FileOptions", 10101})
