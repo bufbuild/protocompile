@@ -18,12 +18,11 @@ import (
 	"strings"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protocompile/walk"
 )
@@ -320,6 +319,9 @@ func sourceSpanFor(d protoreflect.Descriptor) ast.SourceSpan {
 	if file == nil {
 		return ast.UnknownSpan(unknownFilePath)
 	}
+	if result, ok := file.(*result); ok {
+		return nameSpan(result.FileNode(), result.Node(protoutil.ProtoFromDescriptor(d)))
+	}
 	path, ok := internal.ComputePath(d)
 	if !ok {
 		return ast.UnknownSpan(file.Path())
@@ -469,32 +471,33 @@ func (s *packageSymbols) importResult(r *result, handler *reporter.Handler) (boo
 	}
 
 	// second pass: commit all symbols
-	s.commitResultLocked(r)
+	s.commitFileLocked(r)
 
 	return true, nil
 }
 
 func (s *packageSymbols) checkResultLocked(r *result, handler *reporter.Handler) error {
 	resultSyms := map[protoreflect.FullName]symbolEntry{}
-	return walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		_, isEnumVal := d.(*descriptorpb.EnumValueDescriptorProto)
+	return walk.Descriptors(r, func(d protoreflect.Descriptor) error {
+		_, isEnumVal := d.(protoreflect.EnumValueDescriptor)
 		file := r.FileNode()
-		node := r.Node(d)
+		name := d.FullName()
+		node := r.Node(protoutil.ProtoFromDescriptor(d))
 		span := nameSpan(file, node)
 		// check symbols already in this symbol table
-		if existing, ok := s.symbols[fqn]; ok {
-			if err := reportSymbolCollision(span, fqn, isEnumVal, existing, handler); err != nil {
+		if existing, ok := s.symbols[name]; ok {
+			if err := reportSymbolCollision(span, name, isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
 
 		// also check symbols from this result (that are not yet in symbol table)
-		if existing, ok := resultSyms[fqn]; ok {
-			if err := reportSymbolCollision(span, fqn, isEnumVal, existing, handler); err != nil {
+		if existing, ok := resultSyms[name]; ok {
+			if err := reportSymbolCollision(span, name, isEnumVal, existing, handler); err != nil {
 				return err
 			}
 		}
-		resultSyms[fqn] = symbolEntry{
+		resultSyms[name] = symbolEntry{
 			span:        span,
 			isEnumValue: isEnumVal,
 		}
@@ -534,26 +537,6 @@ func nameSpan(file ast.FileDeclNode, n ast.Node) ast.SourceSpan {
 	default:
 		return file.NodeInfo(n)
 	}
-}
-
-func (s *packageSymbols) commitResultLocked(r *result) {
-	if s.symbols == nil {
-		s.symbols = map[protoreflect.FullName]symbolEntry{}
-	}
-	if s.exts == nil {
-		s.exts = map[extNumber]ast.SourceSpan{}
-	}
-	_ = walk.DescriptorProtos(r.FileDescriptorProto(), func(fqn protoreflect.FullName, d proto.Message) error {
-		span := nameSpan(r.FileNode(), r.Node(d))
-		_, isEnumValue := d.(protoreflect.EnumValueDescriptor)
-		s.symbols[fqn] = symbolEntry{span: span, isEnumValue: isEnumValue}
-		return nil
-	})
-
-	if s.files == nil {
-		s.files = map[protoreflect.FileDescriptor]struct{}{}
-	}
-	s.files[r] = struct{}{}
 }
 
 // AddExtension records the given extension, which is used to ensure that no two files
