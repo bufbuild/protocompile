@@ -154,8 +154,7 @@ func descriptorTypeWithArticle(d protoreflect.Descriptor) string {
 
 func (r *result) createDescendants() {
 	fd := r.FileDescriptorProto()
-	pool := &allocPool{}
-	pool.countElements(fd)
+	pool := newAllocPool(fd)
 	prefix := ""
 	if fd.GetPackage() != "" {
 		prefix = fd.GetPackage() + "."
