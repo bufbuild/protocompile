@@ -78,7 +78,7 @@ func init() {
 		},
 	}
 	for _, feature := range otherFeatures {
-		// First see if the program has gneerated Go code for this
+		// First see if the program has generated Go code for this
 		// file linked in:
 		fd, err := protoregistry.GlobalFiles.FindFileByPath(feature.Name)
 		if err == nil {
