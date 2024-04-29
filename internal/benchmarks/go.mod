@@ -3,7 +3,7 @@ module github.com/bufbuild/protocompile/internal/benchmarks
 go 1.19
 
 require (
-	github.com/bufbuild/protocompile v0.12.0
+	github.com/bufbuild/protocompile v0.13.0
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/jhump/protoreflect v1.14.1 // MUST NOT be updated to v1.15 or higher
 	github.com/stretchr/testify v1.9.0
