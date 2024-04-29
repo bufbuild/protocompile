@@ -29,6 +29,7 @@ func TestStdImports(t *testing.T) {
 	c := Compiler{Resolver: WithStandardImports(&SourceResolver{})}
 	ctx := context.Background()
 	for name, fileProto := range standardImports {
+		t.Log(name)
 		fds, err := c.Compile(ctx, name)
 		if err != nil {
 			t.Errorf("failed to compile %q: %v", name, err)

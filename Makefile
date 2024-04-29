@@ -82,7 +82,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 	cd internal/benchmarks && $(BIN)/golangci-lint run --fix
 
 .PHONY: generate
-generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ## Regenerate code and licenses
+generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ext-features-descriptors ## Regenerate code and licenses
 	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
@@ -183,3 +183,11 @@ test-descriptors: internal/testdata/options/options.protoset
 test-descriptors: internal/testdata/options/test.protoset
 test-descriptors: internal/testdata/options/test_proto3.protoset
 test-descriptors: internal/testdata/options/test_editions.protoset
+
+internal/featuresext/cpp_features.protoset: $(PROTOC)
+	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) google/protobuf/cpp_features.proto
+internal/featuresext/java_features.protoset: $(PROTOC)
+	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) google/protobuf/java_features.proto
+
+.PHONY: ext-features-descriptors
+ext-features-descriptors: internal/featuresext/cpp_features.protoset internal/featuresext/java_features.protoset
