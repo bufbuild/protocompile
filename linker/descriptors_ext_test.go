@@ -154,6 +154,7 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 		assert.Equal(t, expFld.IsList(), actFld.IsList(), "%s: field is list at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsMap(), actFld.IsMap(), "%s: field is map at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.JSONName(), actFld.JSONName(), "%s: field json name at index %d (%s)", where, i, expFld.Name())
+		assert.Equal(t, expFld.TextName(), actFld.TextName(), "%s: field text name at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.HasJSONName(), actFld.HasJSONName(), "%s: field has json name at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsExtension(), actFld.IsExtension(), "%s: field is extension at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsPacked(), actFld.IsPacked(), "%s: field is packed at index %d (%s)", where, i, expFld.Name())

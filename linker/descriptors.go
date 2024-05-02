@@ -1015,10 +1015,9 @@ func (f *fldDescriptors) ByTextName(s string) protoreflect.FieldDescriptor {
 	if fld != nil {
 		return fld
 	}
-	// Groups use type name instead
+	// Groups use type name instead, so we fallback to slow search
 	for _, fld := range f.fields {
-		if fld.proto.GetType() == descriptorpb.FieldDescriptorProto_TYPE_GROUP &&
-			string(fld.Message().Name()) == s {
+		if fld.TextName() == s {
 			return fld
 		}
 	}
@@ -1153,7 +1152,19 @@ func (f *fldDescriptor) TextName() string {
 	if f.IsExtension() {
 		return fmt.Sprintf("[%s]", f.FullName())
 	}
+	if f.looksLikeGroup() {
+		// groups use the type name
+		return string(protoreflect.FullName(f.proto.GetTypeName()).Name())
+	}
 	return string(f.Name())
+}
+
+func (f *fldDescriptor) looksLikeGroup() bool {
+	// It looks like a group if it uses group/delimited encoding (checked via f.Kind)
+	// and the message type is a sibling whose name is a mixed-case version of the field name.
+	return f.Kind() == protoreflect.GroupKind &&
+		f.Message().FullName().Parent() == f.FullName().Parent() &&
+		string(f.Name()) == strings.ToLower(string(f.Message().Name()))
 }
 
 func (f *fldDescriptor) HasPresence() bool {

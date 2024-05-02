@@ -49,3 +49,10 @@ enum EyeColor {
 service FooService {
   rpc DoSomething(Foo) returns (Foo);
 }
+
+message Baz {
+  Group group = 1 [features.message_encoding=DELIMITED]; // looks like a group
+  message Group {
+    string name = 1;
+  }
+}
