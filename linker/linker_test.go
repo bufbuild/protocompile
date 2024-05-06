@@ -572,9 +572,6 @@ func TestLinkerValidation(t *testing.T) {
 					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
 					message Baz { option (foo) = { bar< name: "abc" > }; }`,
 			},
-			// protoc will allow this in v27.0:
-			// https://github.com/protocolbuffers/protobuf/commit/29c69ff00b58b60e67fcf40fd810009bd39b86c6
-			expectedDiffWithProtoc: true,
 		},
 		"success_group_in_custom_option_msg_literal": {
 			// However, groups MAY be referred by group name (i.e. message name)
@@ -652,9 +649,6 @@ func TestLinkerValidation(t *testing.T) {
 					message Baz { option (foo) = { Bar< name: "abc" > }; }`,
 			},
 			expectedErr: `foo.proto:8:32: message Baz: option (foo): field Bar not found`,
-			// protoc will fix this in v27.0:
-			// https://github.com/protocolbuffers/protobuf/commit/29c69ff00b58b60e67fcf40fd810009bd39b86c6
-			expectedDiffWithProtoc: true,
 		},
 		"failure_not_looks_like_group_in_custom_option_msg_literal_wrong_field_name": {
 			input: map[string]string{
