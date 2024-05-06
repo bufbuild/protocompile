@@ -34,7 +34,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
-	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
@@ -42,13 +41,6 @@ import (
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
-
-func TestMain(m *testing.M) {
-	// Enable just for tests.
-	editions.AllowEditions = true
-	status := m.Run()
-	os.Exit(status)
-}
 
 type ident string
 type aggregate string

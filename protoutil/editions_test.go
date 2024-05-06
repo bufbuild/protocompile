@@ -16,7 +16,6 @@ package protoutil_test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,13 +30,6 @@ import (
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/protoutil"
 )
-
-func TestMain(m *testing.M) {
-	// Enable just for tests.
-	editions.AllowEditions = true
-	status := m.Run()
-	os.Exit(status)
-}
 
 func TestResolveFeature(t *testing.T) {
 	t.Parallel()

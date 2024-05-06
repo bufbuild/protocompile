@@ -31,11 +31,6 @@ import (
 )
 
 var (
-	// AllowEditions is set to true in tests to enable editions syntax for testing.
-	// This will be removed and editions will be allowed by non-test code once the
-	// implementation is complete.
-	AllowEditions = false
-
 	// SupportedEditions is the exhaustive set of editions that protocompile
 	// can support. We don't allow it to compile future/unknown editions, to
 	// make sure we don't generate incorrect descriptors, in the event that
