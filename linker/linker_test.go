@@ -466,6 +466,33 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:4:1: error in file options: some required fields missing: (f).b",
 		},
+		"success_extensions_do_not_inherit_file_field_presence": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					option features.field_presence = IMPLICIT;
+					message Foo {
+					  extensions 1 to 100;
+					}
+					enum Enum {
+					  option features.enum_type = CLOSED;
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					extend Foo {
+					  string s = 1 [default="abc"];
+					  Enum en = 2;
+					  repeated Enum ens = 3;
+					}`,
+			},
+			// This will be fixed before the v27.0 final release but is currently
+			// broken in v27.0-rc1. It reports issues with all three extensions:
+			//    test.proto:12:10: Implicit presence fields can't specify defaults.
+			//    test.proto:13:8: Implicit presence enum fields must always be open.
+			//    test.proto:14:17: Implicit presence enum fields must always be open.
+			// https://github.com/protocolbuffers/protobuf/issues/16664
+			expectedDiffWithProtoc: true,
+		},
 		"failure_message_set_wire_format_scalar": {
 			input: map[string]string{
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to 100; } extend Foo { optional int32 bar = 1; }",
