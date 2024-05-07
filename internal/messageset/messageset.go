@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package options
+package messageset
 
 import (
 	"math"
@@ -28,7 +28,9 @@ var (
 	messageSetSupportInit sync.Once
 )
 
-func canSerializeMessageSets() bool {
+// CanSupportMessageSets returns true if the protobuf-go runtime supports
+// serializing messages with the message set wire format.
+func CanSupportMessageSets() bool {
 	messageSetSupportInit.Do(func() {
 		// We check using the protodesc package, instead of just relying
 		// on protolegacy build tag, in case someone links in a fork of

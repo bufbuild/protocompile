@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build protolegacy
-// +build protolegacy
+//go:build !protolegacy
+// +build !protolegacy
 
-package options
+package messageset
 
 import (
 	"testing"
@@ -25,5 +25,5 @@ import (
 
 func TestCanSerializeMessageSets(t *testing.T) {
 	t.Parallel()
-	assert.True(t, canSerializeMessageSets())
+	assert.False(t, CanSupportMessageSets())
 }
