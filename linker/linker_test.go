@@ -2954,7 +2954,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:14:25: expected extension with number 1 to be named .foo.bar, not foo.s, per declaration at test.proto:8:25`,
+			expectedErr: `test.proto:14:25: expected extension with number 1 to be named foo.bar, not foo.s, per declaration at test.proto:8:25`,
 		},
 		"failure_extension_name_does_not_match_declaration2": {
 			input: map[string]string{
@@ -2975,7 +2975,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:13:25: expected extension with number 1 to be named .foo.bar, not foo.s, per declaration at test.proto:7:25`,
+			expectedErr: `test.proto:13:25: expected extension with number 1 to be named foo.bar, not foo.s, per declaration at test.proto:7:25`,
 		},
 		"failure_extension_type_does_not_match_declaration": {
 			input: map[string]string{
@@ -3009,7 +3009,7 @@ func TestLinkerValidation(t *testing.T) {
 							declaration={
 								number: 1
 								full_name: ".foo.bar"
-								type: "string"
+								type: ".foo.A"
 							}
 						];
 					}
@@ -3018,7 +3018,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:13:18: expected extension with number 1 to have type string, not uint32, per declaration at test.proto:8:25`,
+			expectedErr: `test.proto:13:18: expected extension with number 1 to have type foo.A, not uint32, per declaration at test.proto:8:25`,
 		},
 		"failure_extension_label_does_not_match_declaration": {
 			input: map[string]string{

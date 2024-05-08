@@ -294,7 +294,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationFullNameTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to be named %s, not %s, per declaration at %v",
-					fd.Number(), extDecl.GetFullName(), fd.FullName(), span.Start())
+					fd.Number(), strings.TrimPrefix(extDecl.GetFullName(), "."), fd.FullName(), span.Start())
 				if err != nil {
 					return err
 				}
@@ -305,7 +305,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationTypeTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to have type %s, not %s, per declaration at %v",
-					fd.Number(), extDecl.GetType(), getTypeName(fd), span.Start())
+					fd.Number(), strings.TrimPrefix(extDecl.GetType(), "."), getTypeName(fd), span.Start())
 				if err != nil {
 					return err
 				}
