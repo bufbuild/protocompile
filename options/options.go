@@ -801,11 +801,8 @@ func (interp *interpreter) validateRecursive(
 		if !inMap {
 			chpath = append(chpath, int32(fld.Number()))
 		}
-		chIsFeatures := false
 		chInFeatures := isFeatures || inFeatures
-		if !chInFeatures && len(path) == 0 && fld.Name() == "features" {
-			chIsFeatures = true
-		}
+		chIsFeatures := !chInFeatures && len(path) == 0 && fld.Name() == "features"
 
 		if chInFeatures {
 			opts, _ := fld.Options().(*descriptorpb.FieldOptions)
