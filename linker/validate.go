@@ -267,7 +267,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 		if extRangeOpts == nil {
 			break
 		}
-		if extRangeOpts.GetVerification() == descriptorpb.ExtensionRangeOptions_UNVERIFIED {
+		if len(extRangeOpts.Declaration) == 0 && extRangeOpts.GetVerification() != descriptorpb.ExtensionRangeOptions_DECLARATION {
 			break
 		}
 		var found bool
@@ -294,7 +294,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationFullNameTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to be named %s, not %s, per declaration at %v",
-					fd.Number(), extDecl.GetFullName(), fd.FullName(), span.Start())
+					fd.Number(), strings.TrimPrefix(extDecl.GetFullName(), "."), fd.FullName(), span.Start())
 				if err != nil {
 					return err
 				}
@@ -305,7 +305,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 				span, _ := findExtensionRangeOptionSpan(msg.ParentFile(), msg, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(j), internal.ExtensionRangeOptionsDeclarationTypeTag)
 				err := handler.HandleErrorf(info, "expected extension with number %d to have type %s, not %s, per declaration at %v",
-					fd.Number(), extDecl.GetType(), getTypeName(fd), span.Start())
+					fd.Number(), strings.TrimPrefix(extDecl.GetType(), "."), getTypeName(fd), span.Start())
 				if err != nil {
 					return err
 				}
@@ -590,17 +590,15 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 			// nothing to check
 			continue
 		}
-		// Strange that the "has_verification" check is here, but this
-		// mimics protoc:
-		//   https://github.com/protocolbuffers/protobuf/blob/v26.1/src/google/protobuf/descriptor.cc#L8187-L8188
-		// The effect is that you can add declarations even when the range
-		// is in default unverified state, and they just have no effect. ¯\_(ツ)_/¯
-		if opts.Verification != nil && opts.GetVerification() == descriptorpb.ExtensionRangeOptions_UNVERIFIED {
+		// If any declarations are present, verification is assumed to be
+		// DECLARATION. It's an error for declarations to be present but the
+		// verification field explicitly set to something other than that.
+		if opts.Verification != nil && opts.GetVerification() != descriptorpb.ExtensionRangeOptions_DECLARATION {
 			span, ok := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsVerificationTag)
 			if !ok {
 				span, _ = findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, 0)
 			}
-			if err := handler.HandleErrorf(span, "extension range cannot have declarations and have verification of UNVERIFIED"); err != nil {
+			if err := handler.HandleErrorf(span, "extension range cannot have declarations and have verification of %s", opts.GetVerification()); err != nil {
 				return err
 			}
 		}
