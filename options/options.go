@@ -41,6 +41,7 @@ import (
 
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/messageset"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
@@ -659,7 +660,7 @@ func (interp *interpreter) checkFieldUsage(
 	node ast.Node,
 ) error {
 	msgOpts, _ := fld.ContainingMessage().Options().(*descriptorpb.MessageOptions)
-	if msgOpts.GetMessageSetWireFormat() && !canSerializeMessageSets() {
+	if msgOpts.GetMessageSetWireFormat() && !messageset.CanSupportMessageSets() {
 		err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "field %q may not be used in an option: it uses 'message set wire format' legacy proto1 feature which is not supported", fld.FullName())
 		if err != nil {
 			return err
