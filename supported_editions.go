@@ -24,13 +24,7 @@ import (
 // the given edition. This returns true for the special EDITION_PROTO2 and
 // EDITION_PROTO3 as well as all actual editions supported.
 func IsEditionSupported(edition descriptorpb.Edition) bool {
-	if edition == descriptorpb.Edition_EDITION_PROTO2 || edition == descriptorpb.Edition_EDITION_PROTO3 {
-		return true
-	}
-	for _, supportedEdition := range editions.SupportedEditions {
-		if edition == supportedEdition {
-			return true
-		}
-	}
-	return false
+	return edition == descriptorpb.Edition_EDITION_PROTO2 ||
+		edition == descriptorpb.Edition_EDITION_PROTO3 ||
+		(edition >= editions.MinSupportedEdition && edition <= editions.MaxSupportedEdition)
 }

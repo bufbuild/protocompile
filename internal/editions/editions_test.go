@@ -48,3 +48,20 @@ func TestGetEditionDefaults(t *testing.T) {
 	assert.Equal(t, descriptorpb.FeatureSet_EXPLICIT, features.GetFieldPresence())
 	assert.Equal(t, descriptorpb.FeatureSet_PACKED, features.GetRepeatedFieldEncoding())
 }
+
+func TestComputeSupportedEditions(t *testing.T) {
+	t.Parallel()
+	assert.Equal(t,
+		map[string]descriptorpb.Edition{
+			"2023": descriptorpb.Edition_EDITION_2023,
+		},
+		computeSupportedEditions(descriptorpb.Edition_EDITION_2023, descriptorpb.Edition_EDITION_2023),
+	)
+	assert.Equal(t,
+		map[string]descriptorpb.Edition{
+			"2023": descriptorpb.Edition_EDITION_2023,
+			"2024": descriptorpb.Edition_EDITION_2024,
+		},
+		computeSupportedEditions(descriptorpb.Edition_EDITION_2023, descriptorpb.Edition_EDITION_2024),
+	)
+}
