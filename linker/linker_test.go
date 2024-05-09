@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -36,7 +35,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
-	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/messageset"
 	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/internal/prototest"
@@ -44,13 +42,6 @@ import (
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
-
-func TestMain(m *testing.M) {
-	// Enable just for tests.
-	editions.AllowEditions = true
-	status := m.Run()
-	os.Exit(status)
-}
 
 func TestSimpleLink(t *testing.T) {
 	t.Parallel()
@@ -480,6 +471,33 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: "foo.proto:4:1: error in file options: some required fields missing: (f).b",
 		},
+		"success_extensions_do_not_inherit_file_field_presence": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					option features.field_presence = IMPLICIT;
+					message Foo {
+					  extensions 1 to 100;
+					}
+					enum Enum {
+					  option features.enum_type = CLOSED;
+					  ZERO = 0;
+					  ONE = 1;
+					}
+					extend Foo {
+					  string s = 1 [default="abc"];
+					  Enum en = 2;
+					  repeated Enum ens = 3;
+					}`,
+			},
+			// This will be fixed before the v27.0 final release but is currently
+			// broken in v27.0-rc1. It reports issues with all three extensions:
+			//    test.proto:12:10: Implicit presence fields can't specify defaults.
+			//    test.proto:13:8: Implicit presence enum fields must always be open.
+			//    test.proto:14:17: Implicit presence enum fields must always be open.
+			// https://github.com/protocolbuffers/protobuf/issues/16664
+			expectedDiffWithProtoc: true,
+		},
 		"failure_message_set_wire_format_scalar": {
 			input: map[string]string{
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to 100; } extend Foo { optional int32 bar = 1; }",
@@ -579,9 +597,6 @@ func TestLinkerValidation(t *testing.T) {
 					extend google.protobuf.MessageOptions { optional Foo foo = 10001; }
 					message Baz { option (foo) = { bar< name: "abc" > }; }`,
 			},
-			// protoc will allow this in v27.0:
-			// https://github.com/protocolbuffers/protobuf/commit/29c69ff00b58b60e67fcf40fd810009bd39b86c6
-			expectedDiffWithProtoc: true,
 		},
 		"success_group_in_custom_option_msg_literal": {
 			// However, groups MAY be referred by group name (i.e. message name)
@@ -659,9 +674,6 @@ func TestLinkerValidation(t *testing.T) {
 					message Baz { option (foo) = { Bar< name: "abc" > }; }`,
 			},
 			expectedErr: `foo.proto:8:32: message Baz: option (foo): field Bar not found`,
-			// protoc will fix this in v27.0:
-			// https://github.com/protocolbuffers/protobuf/commit/29c69ff00b58b60e67fcf40fd810009bd39b86c6
-			expectedDiffWithProtoc: true,
 		},
 		"failure_not_looks_like_group_in_custom_option_msg_literal_wrong_field_name": {
 			input: map[string]string{
@@ -3434,6 +3446,319 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 			expectedErr: `test.proto:7:26: ctype option cannot be CORD for extension fields`,
+		},
+		"success_feature_within_lifetime": {
+			input: map[string]string{
+				"feature.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional FeatureSet features = 50 [
+							// Ignored on "features" itself, only
+							// validated on fields therein.
+							feature_support = {
+								edition_introduced: EDITION_2024
+							}
+						];
+					}
+					message FeatureSet {
+						optional bool flag = 20 [
+							feature_support = {
+								edition_introduced: EDITION_PROTO2
+								edition_deprecated: EDITION_2024
+								edition_removed: EDITION_99997_TEST_ONLY
+							}
+						];
+						optional bool other = 21 [
+							feature_support = {
+								edition_introduced: EDITION_PROTO2
+								edition_deprecated: EDITION_2024
+								edition_removed: EDITION_99997_TEST_ONLY
+							}
+						];
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					import "feature.proto";
+					package foo;
+					option features = { flag: true };
+					option features.other = true;
+					`,
+			},
+		},
+		"success_feature_deprecated": {
+			input: map[string]string{
+				"feature.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional FeatureSet features = 50 [
+							// Ignored on "features" itself, only
+							// validated on fields therein.
+							feature_support = {
+								edition_introduced: EDITION_PROTO2
+								edition_removed: EDITION_2023
+							}
+						];
+					}
+					message FeatureSet {
+						optional bool flag = 20 [
+							feature_support = {
+								edition_introduced: EDITION_PROTO2
+								edition_deprecated: EDITION_PROTO3
+								deprecation_warning: "foo"
+							}
+						];
+						optional bool other = 21 [
+							feature_support = {
+								edition_introduced: EDITION_PROTO2
+								edition_deprecated: EDITION_PROTO3
+								deprecation_warning: "foo"
+							}
+						];
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					import "feature.proto";
+					package foo;
+					option features = { flag: true };
+					option features.other = true;
+					`,
+			},
+		},
+		"failure_feature_not_yet_introduced": {
+			input: map[string]string{
+				"feature.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional FeatureSet features = 50;
+					}
+					message FeatureSet {
+						optional bool flag = 20 [
+							feature_support = {
+								edition_introduced: EDITION_2024
+							}
+						];
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					import "feature.proto";
+					package foo;
+					option features.flag = true;
+					`,
+			},
+			expectedErr: `test.proto:4:1: field "google.protobuf.FeatureSet.flag" was not introduced until edition 2024`,
+		},
+		"failure_feature_not_yet_introduced_msg_literal": {
+			input: map[string]string{
+				"feature.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional FeatureSet features = 50;
+					}
+					message FeatureSet {
+						optional bool flag = 20 [
+							feature_support = {
+								edition_introduced: EDITION_2024
+							}
+						];
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					import "feature.proto";
+					package foo;
+					option features = { flag: true };
+					`,
+			},
+			expectedErr: `test.proto:4:21: field "google.protobuf.FeatureSet.flag" was not introduced until edition 2024`,
+		},
+		"failure_feature_removed": {
+			input: map[string]string{
+				"feature.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional FeatureSet features = 50;
+					}
+					message FeatureSet {
+						optional bool flag = 20 [
+							feature_support = {
+								edition_removed: EDITION_PROTO3
+							}
+						];
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					import "feature.proto";
+					package foo;
+					option features.flag = true;
+					`,
+			},
+			expectedErr: `test.proto:4:1: field "google.protobuf.FeatureSet.flag" was removed in edition proto3`,
+		},
+		"failure_feature_removed_msg_literal": {
+			input: map[string]string{
+				"feature.proto": `
+					syntax = "proto2";
+					package google.protobuf;
+					message FileOptions {
+						optional FeatureSet features = 50;
+					}
+					message FeatureSet {
+						optional bool flag = 20 [
+							feature_support = {
+								edition_removed: EDITION_PROTO3
+							}
+						];
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					import "feature.proto";
+					package foo;
+					option features = { flag: true };
+					`,
+			},
+			expectedErr: `test.proto:4:21: field "google.protobuf.FeatureSet.flag" was removed in edition proto3`,
+		},
+		"success_custom_feature_within_lifetime": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					package foo;
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_2023
+								edition_deprecated: EDITION_2024
+								edition_removed: EDITION_2024
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 1000;
+					}
+					option features.(custom).flag = true;
+					`,
+			},
+		},
+		"success_custom_feature_deprecated": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					package foo;
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_2023
+								edition_deprecated: EDITION_2023
+								edition_removed: EDITION_2024
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 1000;
+					}
+					option features.(custom).flag = true;
+					`,
+			},
+		},
+		"failure_custom_feature_not_yet_introduced": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					package foo;
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_2024
+								edition_deprecated: EDITION_2024
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 1000;
+					}
+					option features.(custom).flag = true;
+					`,
+			},
+			expectedErr: `test.proto:15:1: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
+		},
+		"failure_custom_feature_not_yet_introduced_msg_literal": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					package foo;
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_2024
+								edition_deprecated: EDITION_2024
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 1000;
+					}
+					option features.(custom) = { flag: true };
+					`,
+			},
+			expectedErr: `test.proto:15:30: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
+		},
+		"failure_custom_feature_not_yet_introduced_msg_literal2": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					package foo;
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_2024
+								edition_deprecated: EDITION_2024
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 1000;
+					}
+					option features = { [foo.custom]: { flag: true } };
+					`,
+			},
+			expectedErr: `test.proto:15:37: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
+		},
+		"failure_custom_feature_removed": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					package foo;
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_PROTO2
+								edition_removed: EDITION_2023
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 1000;
+					}
+					option features.(custom).flag = true;
+					`,
+			},
+			expectedErr: `test.proto:15:1: field "foo.CustomFeatures.flag" was removed in edition 2023`,
 		},
 	}
 

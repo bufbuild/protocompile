@@ -150,10 +150,10 @@ internal/testdata/descriptor_impl_tests.protoset: $(PROTOC) internal/testdata/de
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
 internal/testdata/descriptor_editions_impl_tests.protoset: $(PROTOC) internal/testdata/editions/all_default_features.proto internal/testdata/editions/features_with_overrides.proto
-	cd $(@D)/editions && $(PROTOC) --experimental_editions --descriptor_set_out=../$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+	cd $(@D)/editions && $(PROTOC) --descriptor_set_out=../$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
 internal/testdata/editions/all.protoset: $(PROTOC) $(sort $(wildcard internal/testdata/editions/*.proto))
-	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_imports -I. $(filter-out protoc,$(^F))
 
 internal/testdata/source_info.protoset: $(PROTOC) internal/testdata/desc_test_options.proto internal/testdata/desc_test_comments.proto internal/testdata/desc_test_complex.proto
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) --include_source_info -I. $(filter-out protoc,$(^F))
@@ -168,7 +168,7 @@ internal/testdata/options/test_proto3.protoset: $(PROTOC) internal/testdata/opti
 	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
 
 internal/testdata/options/test_editions.protoset: $(PROTOC) internal/testdata/options/test_editions.proto
-	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) -I. $(filter-out protoc,$(^F))
 
 .PHONY: test-descriptors
 test-descriptors: internal/testdata/all.protoset
@@ -185,9 +185,9 @@ test-descriptors: internal/testdata/options/test_proto3.protoset
 test-descriptors: internal/testdata/options/test_editions.protoset
 
 internal/featuresext/cpp_features.protoset: $(PROTOC)
-	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) google/protobuf/cpp_features.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) google/protobuf/cpp_features.proto
 internal/featuresext/java_features.protoset: $(PROTOC)
-	cd $(@D) && $(PROTOC) --experimental_editions --descriptor_set_out=$(@F) google/protobuf/java_features.proto
+	cd $(@D) && $(PROTOC) --descriptor_set_out=$(@F) google/protobuf/java_features.proto
 
 .PHONY: ext-features-descriptors
 ext-features-descriptors: internal/featuresext/cpp_features.protoset internal/featuresext/java_features.protoset

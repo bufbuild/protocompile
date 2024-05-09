@@ -20,6 +20,7 @@ package editions
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"google.golang.org/protobuf/encoding/prototext"
@@ -30,20 +31,22 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-var (
-	// AllowEditions is set to true in tests to enable editions syntax for testing.
-	// This will be removed and editions will be allowed by non-test code once the
-	// implementation is complete.
-	AllowEditions = false
+const (
+	// MinSupportedEdition is the earliest edition supported by this module.
+	// It should be 2023 (the first edition) for the indefinite future.
+	MinSupportedEdition = descriptorpb.Edition_EDITION_2023
 
+	// MaxSupportedEdition is the most recent edition supported by this module.
+	MaxSupportedEdition = descriptorpb.Edition_EDITION_2023
+)
+
+var (
 	// SupportedEditions is the exhaustive set of editions that protocompile
 	// can support. We don't allow it to compile future/unknown editions, to
 	// make sure we don't generate incorrect descriptors, in the event that
 	// a future edition introduces a change or new feature that requires
 	// new logic in the compiler.
-	SupportedEditions = map[string]descriptorpb.Edition{
-		"2023": descriptorpb.Edition_EDITION_2023,
-	}
+	SupportedEditions = computeSupportedEditions(MinSupportedEdition, MaxSupportedEdition)
 
 	// FeatureSetDescriptor is the message descriptor for the compiled-in
 	// version (in the descriptorpb package) of the google.protobuf.FeatureSet
@@ -338,4 +341,16 @@ func asExtensionType(ext protoreflect.ExtensionDescriptor) protoreflect.Extensio
 		return xtd.Type()
 	}
 	return dynamicpb.NewExtensionType(ext)
+}
+
+func computeSupportedEditions(min, max descriptorpb.Edition) map[string]descriptorpb.Edition {
+	supportedEditions := map[string]descriptorpb.Edition{}
+	for editionNum := range descriptorpb.Edition_name {
+		edition := descriptorpb.Edition(editionNum)
+		if edition >= min && edition <= max {
+			name := strings.TrimPrefix(edition.String(), "EDITION_")
+			supportedEditions[name] = edition
+		}
+	}
+	return supportedEditions
 }

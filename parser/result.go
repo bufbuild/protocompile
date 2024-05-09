@@ -109,12 +109,6 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 			fd.Syntax = proto.String(file.Syntax.Syntax.AsString())
 		}
 	case file.Edition != nil:
-		if !editions.AllowEditions {
-			nodeInfo := file.NodeInfo(file.Edition.Edition)
-			if handler.HandleErrorf(nodeInfo, `editions are not yet supported; use syntax proto2 or proto3 instead`) != nil {
-				return
-			}
-		}
 		edition := file.Edition.Edition.AsString()
 		syntax = protoreflect.Editions
 

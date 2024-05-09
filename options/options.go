@@ -533,13 +533,40 @@ func interpretElementOptions[Elem elementType[OptsStruct, Opts], OptsStruct any,
 	customOpts bool,
 ) error {
 	opts := elem.GetOptions()
-	uo := opts.GetUninterpretedOption()
-	if len(uo) > 0 {
-		remain, err := interp.interpretOptions(fqn, target.t, elem, opts, uo, customOpts)
+	uninterpreted := opts.GetUninterpretedOption()
+	if len(uninterpreted) > 0 {
+		remain, err := interp.interpretOptions(fqn, target.t, elem, opts, uninterpreted, customOpts)
 		if err != nil {
 			return err
 		}
 		target.setUninterpretedOptions(opts, remain)
+	} else if customOpts {
+		// If customOpts is true, we are in second pass of interpreting.
+		// For second pass, even if there are no options to interpret, we still
+		// need to verify feature usage.
+		features := opts.GetFeatures()
+		var msg protoreflect.Message
+		if len(features.ProtoReflect().GetUnknown()) > 0 {
+			// We need to first convert to a message that uses the sources' definition
+			// of FeatureSet.
+			optsDesc := opts.ProtoReflect().Descriptor()
+			optsFqn := string(optsDesc.FullName())
+			if md := interp.resolveOptionsType(optsFqn); md != nil {
+				dm := dynamicpb.NewMessage(md)
+				if err := cloneInto(dm, opts, interp.resolver); err != nil {
+					node := interp.file.Node(elem)
+					return interp.reporter.HandleError(reporter.Error(interp.nodeInfo(node), err))
+				}
+				msg = dm
+			}
+		}
+		if msg == nil {
+			msg = opts.ProtoReflect()
+		}
+		err := interp.validateRecursive(false, msg, "", elem, nil, false, false, false)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -577,7 +604,6 @@ func (interp *interpreter) interpretOptions(
 		ElementType: descriptorType(element),
 	}
 	var remain []*descriptorpb.UninterpretedOption
-	var optNodes []*ast.OptionNode
 	for _, uo := range uninterpreted {
 		isCustom := uo.Name[0].GetIsExtension()
 		if isCustom != customOpts {
@@ -612,11 +638,21 @@ func (interp *interpreter) interpretOptions(
 			}
 			return nil, err
 		}
-		if optn, ok := node.(*ast.OptionNode); ok {
-			optNodes = append(optNodes, optn)
-			if srcInfo != nil {
+
+		if srcInfo != nil {
+			if optn, ok := node.(*ast.OptionNode); ok {
 				interp.index[optn] = srcInfo
 			}
+		}
+	}
+
+	// customOpts is true for the second pass, which is also when we want to validate feature usage.
+	doValidation := customOpts
+	if doValidation {
+		validateRequiredFields := !interp.lenient
+		err := interp.validateRecursive(validateRequiredFields, msg, "", element, nil, false, false, false)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -630,16 +666,19 @@ func (interp *interpreter) interpretOptions(
 			// the work we've done so far.
 			return uninterpreted, nil
 		}
+		if doValidation {
+			if err := proto.CheckInitialized(optsClone); err != nil {
+				// Conversion from dynamic message failed to set some required fields.
+				// TODO above applies here as well...
+				return uninterpreted, nil
+			}
+		}
 		// conversion from dynamic message above worked, so now
 		// it is safe to overwrite the passed in message
 		proto.Reset(opts)
 		proto.Merge(opts, optsClone)
 
 		return remain, nil
-	}
-
-	if err := interp.validateRecursive(msg, "", element, nil, false, optNodes); err != nil {
-		return nil, err
 	}
 
 	// now try to convert into the passed in message and fail if not successful
@@ -694,6 +733,10 @@ func targetTypeString(t descriptorpb.FieldOptions_OptionTargetType) string {
 	return strings.ToLower(strings.ReplaceAll(strings.TrimPrefix(t.String(), "TARGET_TYPE_"), "_", " "))
 }
 
+func editionString(t descriptorpb.Edition) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimPrefix(t.String(), "EDITION_"), "_", "-"))
+}
+
 func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error {
 	if dest.ProtoReflect().Descriptor() == src.ProtoReflect().Descriptor() {
 		proto.Reset(dest)
@@ -725,35 +768,30 @@ func cloneInto(dest proto.Message, src proto.Message, res linker.Resolver) error
 }
 
 func (interp *interpreter) validateRecursive(
+	validateRequiredFields bool,
 	msg protoreflect.Message,
 	prefix string,
 	element proto.Message,
 	path []int32,
+	isFeatures bool,
+	inFeatures bool,
 	inMap bool,
-	optNodes []*ast.OptionNode,
 ) error {
-	flds := msg.Descriptor().Fields()
-	var missingFields []string
-	for i := 0; i < flds.Len(); i++ {
-		fld := flds.Get(i)
-		if fld.Cardinality() == protoreflect.Required && !msg.Has(fld) {
-			missingFields = append(missingFields, fmt.Sprintf("%s%s", prefix, fld.Name()))
+	if validateRequiredFields {
+		flds := msg.Descriptor().Fields()
+		var missingFields []string
+		for i := 0; i < flds.Len(); i++ {
+			fld := flds.Get(i)
+			if fld.Cardinality() == protoreflect.Required && !msg.Has(fld) {
+				missingFields = append(missingFields, fmt.Sprintf("%s%s", prefix, fld.Name()))
+			}
 		}
-	}
-	if len(missingFields) > 0 {
-		node, _ := findOptionNode[*ast.OptionNode](
-			path,
-			optionsRanger(optNodes),
-			func(n *ast.OptionNode) *sourceinfo.OptionSourceInfo {
-				return interp.index[n]
-			},
-		)
-		if node == nil {
-			node = interp.file.Node(element)
-		}
-		err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "error in %s options: some required fields missing: %v", descriptorType(element), strings.Join(missingFields, ", "))
-		if err != nil {
-			return err
+		if len(missingFields) > 0 {
+			node := interp.findOptionNode(path, element)
+			err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "error in %s options: some required fields missing: %v", descriptorType(element), strings.Join(missingFields, ", "))
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -763,11 +801,43 @@ func (interp *interpreter) validateRecursive(
 		if !inMap {
 			chpath = append(chpath, int32(fld.Number()))
 		}
+		chInFeatures := isFeatures || inFeatures
+		chIsFeatures := !chInFeatures && len(path) == 0 && fld.Name() == "features"
+
+		if chInFeatures {
+			opts, _ := fld.Options().(*descriptorpb.FieldOptions)
+			if opts != nil && opts.FeatureSupport != nil {
+				edition := interp.file.FileDescriptorProto().GetEdition()
+				if opts.FeatureSupport.EditionIntroduced != nil && edition < opts.FeatureSupport.GetEditionIntroduced() {
+					node := interp.findOptionNode(chpath, element)
+					err = interp.reporter.HandleErrorf(interp.nodeInfo(node), "field %q was not introduced until edition %s", fld.FullName(), editionString(opts.FeatureSupport.GetEditionIntroduced()))
+					if err != nil {
+						return false
+					}
+				}
+				if opts.FeatureSupport.EditionRemoved != nil && edition >= opts.FeatureSupport.GetEditionRemoved() {
+					node := interp.findOptionNode(chpath, element)
+					err = interp.reporter.HandleErrorf(interp.nodeInfo(node), "field %q was removed in edition %s", fld.FullName(), editionString(opts.FeatureSupport.GetEditionRemoved()))
+					if err != nil {
+						return false
+					}
+				}
+				if opts.FeatureSupport.EditionDeprecated != nil && edition >= opts.FeatureSupport.GetEditionDeprecated() {
+					node := interp.findOptionNode(chpath, element)
+					var suffix string
+					if opts.FeatureSupport.GetDeprecationWarning() != "" {
+						suffix = ": " + opts.FeatureSupport.GetDeprecationWarning()
+					}
+					interp.reporter.HandleWarningf(interp.nodeInfo(node), "field %q is deprecated as of edition %s%s", fld.FullName(), editionString(opts.FeatureSupport.GetEditionDeprecated()), suffix)
+				}
+			}
+		}
+
 		switch {
 		case fld.IsMap() && fld.MapValue().Message() != nil:
 			val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
 				chprefix := fmt.Sprintf("%s%s[%v].", prefix, fieldName(fld), k)
-				err = interp.validateRecursive(v.Message(), chprefix, element, chpath, true, optNodes)
+				err = interp.validateRecursive(validateRequiredFields, v.Message(), chprefix, element, chpath, chIsFeatures, chInFeatures, true)
 				return err == nil
 			})
 			if err != nil {
@@ -781,14 +851,14 @@ func (interp *interpreter) validateRecursive(
 				if !inMap {
 					chpath = append(chpath, int32(i))
 				}
-				err = interp.validateRecursive(v.Message(), chprefix, element, chpath, inMap, optNodes)
+				err = interp.validateRecursive(validateRequiredFields, v.Message(), chprefix, element, chpath, chIsFeatures, chInFeatures, inMap)
 				if err != nil {
 					return false
 				}
 			}
 		case !fld.IsMap() && fld.Message() != nil:
 			chprefix := fmt.Sprintf("%s%s.", prefix, fieldName(fld))
-			err = interp.validateRecursive(val.Message(), chprefix, element, chpath, inMap, optNodes)
+			err = interp.validateRecursive(validateRequiredFields, val.Message(), chprefix, element, chpath, chIsFeatures, chInFeatures, inMap)
 			if err != nil {
 				return false
 			}
@@ -796,6 +866,28 @@ func (interp *interpreter) validateRecursive(
 		return true
 	})
 	return err
+}
+
+func (interp *interpreter) findOptionNode(
+	path []int32,
+	element proto.Message,
+) ast.Node {
+	elementNode := interp.file.Node(element)
+	nodeWithOpts, _ := elementNode.(ast.NodeWithOptions)
+	if nodeWithOpts == nil {
+		return elementNode
+	}
+	node, _ := findOptionNode[*ast.OptionNode](
+		path,
+		optionsRanger{nodeWithOpts},
+		func(n *ast.OptionNode) *sourceinfo.OptionSourceInfo {
+			return interp.index[n]
+		},
+	)
+	if node != nil {
+		return node
+	}
+	return elementNode
 }
 
 func findOptionNode[N ast.Node](
@@ -827,14 +919,14 @@ func findOptionNode[N ast.Node](
 	return bestMatch, bestMatchLen
 }
 
-type optionsRanger []*ast.OptionNode
+type optionsRanger struct {
+	node ast.NodeWithOptions
+}
 
 func (r optionsRanger) Range(f func(*ast.OptionNode, ast.ValueNode) bool) {
-	for _, elem := range r {
-		if !f(elem, elem.Val) {
-			return
-		}
-	}
+	r.node.RangeOptions(func(optNode *ast.OptionNode) bool {
+		return f(optNode, optNode.Val)
+	})
 }
 
 type valueRanger []ast.ValueNode

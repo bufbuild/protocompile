@@ -34,7 +34,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
-	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
@@ -42,13 +41,6 @@ import (
 	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
-
-func TestMain(m *testing.M) {
-	// Enable just for tests.
-	editions.AllowEditions = true
-	status := m.Run()
-	os.Exit(status)
-}
 
 type ident string
 type aggregate string
@@ -508,4 +500,107 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 		// final protos, with options interpreted, match
 		prototest.AssertMessagesEqual(t, fd, fdFromNoAST, file.Path())
 	}
+}
+
+func TestInterpretOptionsFeatureLifetimeWarnings(t *testing.T) {
+	t.Parallel()
+	sources := map[string]string{
+		"feature.proto": `
+			syntax = "proto2";
+			package google.protobuf;
+			message FileOptions {
+				optional FeatureSet features = 50;
+			}
+			message FeatureSet {
+				extensions 1000;
+				optional bool okay = 200 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+					}
+				];
+				optional bool removed = 201 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+						edition_removed: EDITION_2024
+					}
+				];
+				optional bool deprecated = 202 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+						edition_deprecated: EDITION_2023
+						deprecation_warning: "do not use this!"
+					}
+				];
+				optional bool deprecated_and_removed = 203 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+						edition_deprecated: EDITION_2023
+						deprecation_warning: "don't use this either!"
+						edition_removed: EDITION_2024
+					}
+				];
+			}
+			`,
+		"test.proto": `
+			edition = "2023";
+			import "feature.proto";
+			extend google.protobuf.FeatureSet {
+				Custom custom = 1000;
+			}
+			message Custom {
+				bool okay = 200 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+					}
+				];
+				bool removed = 201 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+						edition_removed: EDITION_2024
+					}
+				];
+				bool deprecated = 202 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+						edition_deprecated: EDITION_2023
+						deprecation_warning: "custom feature is not to be used"
+					}
+				];
+				bool deprecated_and_removed = 203 [
+					feature_support = {
+						edition_introduced: EDITION_2023
+						edition_deprecated: EDITION_2023
+						deprecation_warning: "other custom feature is not to be used either"
+						edition_removed: EDITION_2024
+					}
+				];
+			}
+			option features.okay = true;
+			option features.deprecated = true;
+			option features.deprecated_and_removed = true;
+			option features.(custom).okay = true;
+			option features.(custom).deprecated = true;
+			option features.(custom).deprecated_and_removed = true;
+			`,
+	}
+	var warnings []string
+	rep := reporter.NewReporter(nil, func(err reporter.ErrorWithPos) {
+		warnings = append(warnings, err.Error())
+	})
+	compiler := &protocompile.Compiler{
+		Resolver: protocompile.WithStandardImports(&protocompile.SourceResolver{
+			Accessor: protocompile.SourceAccessorFromMap(sources),
+		}),
+		Reporter: rep,
+	}
+	_, err := compiler.Compile(context.Background(), "test.proto")
+	require.NoError(t, err)
+	expectedWarnings := []string{
+		`test.proto:36:25: field "google.protobuf.FeatureSet.deprecated" is deprecated as of edition 2023: do not use this!`,
+		`test.proto:37:25: field "google.protobuf.FeatureSet.deprecated_and_removed" is deprecated as of edition 2023: don't use this either!`,
+		`test.proto:39:25: field "Custom.deprecated" is deprecated as of edition 2023: custom feature is not to be used`,
+		`test.proto:40:25: field "Custom.deprecated_and_removed" is deprecated as of edition 2023: other custom feature is not to be used either`,
+	}
+	sort.Strings(warnings)
+	assert.Equal(t, expectedWarnings, warnings)
 }
