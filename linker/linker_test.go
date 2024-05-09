@@ -29,13 +29,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
 	"github.com/bufbuild/protocompile"
+	"github.com/bufbuild/protocompile/internal/messageset"
 	"github.com/bufbuild/protocompile/internal/protoc"
 	"github.com/bufbuild/protocompile/internal/prototest"
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/bufbuild/protocompile/protoutil"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -116,6 +120,7 @@ func TestLinkerValidation(t *testing.T) {
 		// Expected error message - leave empty if input is expected to succeed
 		expectedErr            string
 		expectedDiffWithProtoc bool
+		expectProtodescFail    bool
 	}{
 		"success_multi_namespace": {
 			input: map[string]string{
@@ -503,6 +508,7 @@ func TestLinkerValidation(t *testing.T) {
 			input: map[string]string{
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to 100; } extend Foo { optional Foo bar = 1; }",
 			},
+			expectProtodescFail: !messageset.CanSupportMessageSets(),
 		},
 		"failure_tag_out_of_range": {
 			input: map[string]string{
@@ -514,6 +520,7 @@ func TestLinkerValidation(t *testing.T) {
 			input: map[string]string{
 				"foo.proto": "message Foo { option message_set_wire_format = true; extensions 1 to max; } extend Foo { optional Foo bar = 536870912; }",
 			},
+			expectProtodescFail: !messageset.CanSupportMessageSets(),
 		},
 		"failure_message_set_wire_format_repeated": {
 			input: map[string]string{
@@ -1578,6 +1585,10 @@ func TestLinkerValidation(t *testing.T) {
 					  string FOO_BAR = 2;
 					}`,
 			},
+			// protodesc.NewFile is applying overly strict checks on name
+			// collisions in proto3 files.
+			// https://github.com/golang/protobuf/issues/1616
+			expectProtodescFail: true,
 		},
 		"failure_json_name_conflict_leading_underscores": {
 			input: map[string]string{
@@ -2966,7 +2977,28 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:14:25: expected extension with number 1 to be named .foo.bar, not foo.s, per declaration at test.proto:8:25`,
+			expectedErr: `test.proto:14:25: expected extension with number 1 to be named foo.bar, not foo.s, per declaration at test.proto:8:25`,
+		},
+		"failure_extension_name_does_not_match_declaration2": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						optional string s = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:13:25: expected extension with number 1 to be named foo.bar, not foo.s, per declaration at test.proto:7:25`,
 		},
 		"failure_extension_type_does_not_match_declaration": {
 			input: map[string]string{
@@ -2989,6 +3021,27 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 			expectedErr: `test.proto:14:18: expected extension with number 1 to have type string, not uint32, per declaration at test.proto:9:25`,
+		},
+		"failure_extension_type_does_not_match_declaration2": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: ".foo.A"
+							}
+						];
+					}
+					extend A {
+						optional uint32 bar = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:13:18: expected extension with number 1 to have type foo.A, not uint32, per declaration at test.proto:8:25`,
 		},
 		"failure_extension_label_does_not_match_declaration": {
 			input: map[string]string{
@@ -3035,6 +3088,27 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:14:9: expected extension with number 1 to be optional, not repeated, per declaration at test.proto:6:17`,
 		},
+		"failure_extension_label_does_not_match_declaration3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 [
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						repeated string bar = 1;
+					}
+				`,
+			},
+			expectedErr: `test.proto:13:9: expected extension with number 1 to be optional, not repeated, per declaration at test.proto:5:17`,
+		},
 		"failure_extension_matches_no_declaration": {
 			input: map[string]string{
 				"test.proto": `
@@ -3056,6 +3130,27 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 			expectedErr: `test.proto:14:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:5:17`,
+		},
+		"failure_extension_matches_no_declaration2": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 to 3 [
+							declaration={
+								number: 1
+								full_name: ".foo.bar"
+								type: "string"
+							}
+						];
+					}
+					extend A {
+						repeated string bar = 3;
+					}
+				`,
+			},
+			expectedErr: `test.proto:13:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:4:9`,
 		},
 		"success_field_presence": {
 			input: map[string]string{
@@ -3679,7 +3774,7 @@ func TestLinkerValidation(t *testing.T) {
 			for filename, data := range tc.input {
 				tc.input[filename] = removePrefixIndent(data)
 			}
-			_, errs := compile(t, tc.input)
+			files, errs := compile(t, tc.input)
 
 			actualErrs := make([]string, len(errs))
 			for i := range errs {
@@ -3735,6 +3830,17 @@ func TestLinkerValidation(t *testing.T) {
 						errNum = fmt.Sprintf("#%d", i+1)
 					}
 					assert.True(t, found, "expecting validation error%s %q; instead got: %q", errNum, expectedErr, err)
+				}
+			}
+
+			// Make sure protobuf-go can handle resulting files
+			if len(errs) == 0 && len(files) > 0 {
+				err := convertToProtoreflectDescriptors(files)
+				if tc.expectProtodescFail {
+					// This is a known case where it cannot handle the file.
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
 				}
 			}
 
@@ -4308,4 +4414,29 @@ func testByProtoc(t *testing.T, files map[string]string, fileNames []string) boo
 	}
 	require.NoError(t, err)
 	return true
+}
+
+func convertToProtoreflectDescriptors(files linker.Files) error {
+	allFiles := make(map[string]*descriptorpb.FileDescriptorProto, len(files))
+	addFileDescriptorsToMap(files, allFiles)
+	fileSlice := make([]*descriptorpb.FileDescriptorProto, 0, len(allFiles))
+	for _, fileProto := range allFiles {
+		fileSlice = append(fileSlice, fileProto)
+	}
+	_, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{File: fileSlice})
+	return err
+}
+
+func addFileDescriptorsToMap[F protoreflect.FileDescriptor](files []F, allFiles map[string]*descriptorpb.FileDescriptorProto) {
+	for _, file := range files {
+		if _, exists := allFiles[file.Path()]; exists {
+			continue // already added this one
+		}
+		allFiles[file.Path()] = protoutil.ProtoFromFileDescriptor(file)
+		deps := make([]protoreflect.FileDescriptor, file.Imports().Len())
+		for i := 0; i < file.Imports().Len(); i++ {
+			deps[i] = file.Imports().Get(i).FileDescriptor
+		}
+		addFileDescriptorsToMap(deps, allFiles)
+	}
 }
