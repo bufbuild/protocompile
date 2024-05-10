@@ -3152,6 +3152,23 @@ func TestLinkerValidation(t *testing.T) {
 			},
 			expectedErr: `test.proto:13:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:4:9`,
 		},
+		"failure_extension_matches_no_declaration3": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					package foo;
+					message A {
+						extensions 1 to 3 [
+							verification=DECLARATION
+						];
+					}
+					extend A {
+						repeated string bar = 3;
+					}
+				`,
+			},
+			expectedErr: `test.proto:9:31: expected extension with number 3 to be declared in type foo.A, but no declaration found at test.proto:5:17`,
+		},
 		"success_field_presence": {
 			input: map[string]string{
 				"test.proto": `
