@@ -264,7 +264,7 @@ func adaptFeatureSet(msg *descriptorpb.FeatureSet, field protoreflect.FieldDescr
 		// let's try to parse the unrecognized bytes, just in case they contain
 		// this extension.
 		temp := &descriptorpb.FeatureSet{}
-		unmarshaler := prototext.UnmarshalOptions{
+		unmarshaler := proto.UnmarshalOptions{
 			AllowPartial: true,
 			Resolver:     resolverForExtension{field},
 		}
