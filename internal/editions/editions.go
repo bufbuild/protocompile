@@ -91,6 +91,12 @@ func ResolveFeature(
 			features = withFeatures.GetFeatures()
 		}
 
+		// TODO: adaptFeatureSet is only looking at the first field. But if we needed to
+		//       support an extension field inside a custom feature, we'd really need
+		//       to check all fields. That gets particularly complicated if the traversal
+		//       path of fields includes list and map values. Luckily, features are not
+		//       supposed to be repeated and not supposed to themselves have extensions.
+		//       So this should be fine, at least for now.
 		msgRef, err := adaptFeatureSet(features, fields[0])
 		if err != nil {
 			return protoreflect.Value{}, err
@@ -255,32 +261,36 @@ func GetFeatureDefault(edition descriptorpb.Edition, container protoreflect.Mess
 func adaptFeatureSet(msg *descriptorpb.FeatureSet, field protoreflect.FieldDescriptor) (protoreflect.Message, error) {
 	msgRef := msg.ProtoReflect()
 	if field.IsExtension() {
-		// Extensions can always be used directly with the feature set, even if
-		// field.ContainingMessage() != FeatureSetDescriptor.
-		if msgRef.Has(field) || len(msgRef.GetUnknown()) == 0 {
-			return msgRef, nil
+		// Extensions can be used directly with the feature set, even if
+		// field.ContainingMessage() != FeatureSetDescriptor. But only if
+		// the value is either not a message or is a message with the
+		// right descriptor, i.e. val.Descriptor() == field.Message().
+		if valueMatchesDescriptor(msgRef, field) {
+			if msgRef.Has(field) || len(msgRef.GetUnknown()) == 0 {
+				return msgRef, nil
+			}
+			// The field is not present, but the message has unrecognized values. So
+			// let's try to parse the unrecognized bytes, just in case they contain
+			// this extension.
+			temp := &descriptorpb.FeatureSet{}
+			unmarshaler := proto.UnmarshalOptions{
+				AllowPartial: true,
+				Resolver:     resolverForExtension{field},
+			}
+			if err := unmarshaler.Unmarshal(msgRef.GetUnknown(), temp); err != nil {
+				return nil, fmt.Errorf("failed to parse unrecognized fields of FeatureSet: %w", err)
+			}
+			return temp.ProtoReflect(), nil
 		}
-		// The field is not present, but the message has unrecognized values. So
-		// let's try to parse the unrecognized bytes, just in case they contain
-		// this extension.
-		temp := &descriptorpb.FeatureSet{}
-		unmarshaler := proto.UnmarshalOptions{
-			AllowPartial: true,
-			Resolver:     resolverForExtension{field},
-		}
-		if err := unmarshaler.Unmarshal(msgRef.GetUnknown(), temp); err != nil {
-			return nil, fmt.Errorf("failed to parse unrecognized fields of FeatureSet: %w", err)
-		}
-		return temp.ProtoReflect(), nil
-	}
-
-	if field.ContainingMessage() == FeatureSetDescriptor {
+	} else if field.ContainingMessage() == FeatureSetDescriptor {
 		// Known field, not dynamically generated. Can directly use with the feature set.
 		return msgRef, nil
 	}
 
-	// If we get here, we have a dynamic field descriptor. We want to copy its
-	// value into a dynamic message, which requires marshalling/unmarshalling.
+	// If we get here, we have a dynamic field descriptor or an extension
+	// descriptor whose message type does not match the descriptor of the
+	// stored value. We need to copy its value into a dynamic message,
+	// which requires marshalling/unmarshalling.
 	msgField := FeatureSetDescriptor.Fields().ByNumber(field.Number())
 	// We only need to copy over the unrecognized bytes (if any)
 	// and the same field (if present).
@@ -353,4 +363,32 @@ func computeSupportedEditions(min, max descriptorpb.Edition) map[string]descript
 		}
 	}
 	return supportedEditions
+}
+
+func valueMatchesDescriptor(msg protoreflect.Message, field protoreflect.FieldDescriptor) bool {
+	if !msg.Has(field) || field.Message() == nil {
+		// nothing to match
+		return true
+	}
+	val := msg.Get(field)
+	switch {
+	case field.IsMap():
+		if expectedDescriptor := field.MapValue().Message(); expectedDescriptor != nil {
+			// We know msg.Has(field) is true, from above, so there's at least one entry.
+			var matches bool
+			val.Map().Range(func(_ protoreflect.MapKey, val protoreflect.Value) bool {
+				matches = val.Message().Descriptor() == expectedDescriptor
+				return false
+			})
+			return matches
+		}
+		return true // nothing to match
+	case field.IsList():
+		// We know msg.Has(field) is true, from above, so there's at least one entry.
+		return val.List().Get(0).Message().Descriptor() == field.Message()
+	case !field.IsMap():
+		return val.Message().Descriptor() == field.Message()
+	default:
+		return true
+	}
 }
