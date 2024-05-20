@@ -25,6 +25,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
+	"google.golang.org/protobuf/types/gofeaturespb"
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/internal/editions"
@@ -377,6 +378,7 @@ func TestResolveCustomFeature(t *testing.T) {
 			}),
 		}
 		file, _ := compileFile(t, "test.proto", sourceResolver, descriptorProto)
+		// First we resolve the feature with the given file.
 		// Then we'll do a second pass where we resolve the
 		// feature, but all extensions are unrecognized. Both
 		// ways should work.
@@ -412,6 +414,143 @@ func TestResolveCustomFeature(t *testing.T) {
 			require.Equal(t, protoreflect.EnumNumber(2), val.Enum())
 		}
 	})
+}
+
+func TestResolveCustomFeature_Generated(t *testing.T) {
+	t.Parallel()
+	descriptorProto := protodesc.ToFileDescriptorProto(
+		(*descriptorpb.FileDescriptorProto)(nil).ProtoReflect().Descriptor().ParentFile(),
+	)
+	goFeaturesProto := protodesc.ToFileDescriptorProto(
+		(*gofeaturespb.GoFeatures)(nil).ProtoReflect().Descriptor().ParentFile(),
+	)
+
+	// We can do proto2 and proto3 in the same way since they
+	// can't override feature values.
+	preEditionsTestCases := []struct {
+		syntax        string
+		expectedValue bool
+	}{
+		{
+			syntax:        "proto2",
+			expectedValue: true,
+		},
+		{
+			syntax:        "proto3",
+			expectedValue: false,
+		},
+	}
+	for _, testCase := range preEditionsTestCases {
+		testCase := testCase
+		t.Run(testCase.syntax, func(t *testing.T) {
+			t.Parallel()
+			sourceResolver := &protocompile.SourceResolver{
+				Accessor: protocompile.SourceAccessorFromMap(map[string]string{
+					"test.proto": `
+						syntax = "` + testCase.syntax + `";
+						import "google/protobuf/go_features.proto";
+						enum Foo {
+							ZERO = 0;
+						}`,
+				}),
+			}
+			file, _ := compileFile(t, "test.proto", sourceResolver, descriptorProto, goFeaturesProto)
+			// First we resolve the feature with the given file.
+			// Then we'll do a second pass where we resolve the
+			// feature, but all extensions are unrecognized. Both
+			// ways should work.
+			for _, clearKnownExts := range []bool{false, true} {
+				if clearKnownExts {
+					clearKnownExtensionsFromFile(t, protoutil.ProtoFromFileDescriptor(file))
+				}
+
+				extType := gofeaturespb.E_Go
+				feature := gofeaturespb.E_Go.TypeDescriptor().Message().Fields().ByName("legacy_unmarshal_json_enum")
+				require.NotNil(t, feature)
+
+				// Default for edition
+				val, err := protoutil.ResolveCustomFeature(file, extType, feature)
+				require.NoError(t, err)
+				require.Equal(t, testCase.expectedValue, val.Bool())
+
+				// Same value for an element therein
+				elem := file.FindDescriptorByName("Foo")
+				require.NotNil(t, elem)
+				val, err = protoutil.ResolveCustomFeature(elem, extType, feature)
+				require.NoError(t, err)
+				require.Equal(t, testCase.expectedValue, val.Bool())
+			}
+		})
+	}
+
+	editionsTestCases := []struct {
+		name              string
+		source            string
+		expectedFileValue bool
+		expectedEnumValue bool
+	}{
+		{
+			name: "editions-2023-default",
+			source: `
+				edition = "2023";
+				import "google/protobuf/go_features.proto";
+				enum Foo {
+					ZERO = 0;
+				}`,
+			expectedFileValue: false,
+			expectedEnumValue: false,
+		},
+		{
+			name: "editions-override",
+			source: `
+				edition = "2023";
+				import "google/protobuf/go_features.proto";
+				enum Foo {
+					option features.(pb.go).legacy_unmarshal_json_enum = true;
+					ZERO = 0;
+				}`,
+			expectedFileValue: false,
+			expectedEnumValue: true,
+		},
+	}
+
+	for _, testCase := range editionsTestCases {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			sourceResolver := &protocompile.SourceResolver{
+				Accessor: protocompile.SourceAccessorFromMap(map[string]string{
+					"test.proto": testCase.source,
+				}),
+			}
+			file, _ := compileFile(t, "test.proto", sourceResolver, descriptorProto, goFeaturesProto)
+			// First we resolve the feature with the given file.
+			// Then we'll do a second pass where we resolve the
+			// feature, but all extensions are unrecognized. Both
+			// ways should work.
+			for _, clearKnownExts := range []bool{false, true} {
+				if clearKnownExts {
+					clearKnownExtensionsFromFile(t, protoutil.ProtoFromFileDescriptor(file))
+				}
+
+				extType := gofeaturespb.E_Go
+				feature := gofeaturespb.E_Go.TypeDescriptor().Message().Fields().ByName("legacy_unmarshal_json_enum")
+				require.NotNil(t, feature)
+
+				val, err := protoutil.ResolveCustomFeature(file, extType, feature)
+				require.NoError(t, err)
+				require.Equal(t, testCase.expectedFileValue, val.Bool())
+
+				// Override
+				elem := file.FindDescriptorByName("Foo")
+				require.NotNil(t, elem)
+				val, err = protoutil.ResolveCustomFeature(elem, extType, feature)
+				require.NoError(t, err)
+				require.Equal(t, testCase.expectedEnumValue, val.Bool())
+			}
+		})
+	}
 }
 
 func compileFile(
