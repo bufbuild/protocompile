@@ -261,7 +261,8 @@ func GetFeatureDefault(edition descriptorpb.Edition, container protoreflect.Mess
 func adaptFeatureSet(msg *descriptorpb.FeatureSet, field protoreflect.FieldDescriptor) (protoreflect.Message, error) {
 	msgRef := msg.ProtoReflect()
 	var actualField protoreflect.FieldDescriptor
-	if field.IsExtension() {
+	switch {
+	case field.IsExtension():
 		// Extensions can be used directly with the feature set, even if
 		// field.ContainingMessage() != FeatureSetDescriptor. But only if
 		// the value is either not a message or is a message with the
@@ -283,12 +284,11 @@ func adaptFeatureSet(msg *descriptorpb.FeatureSet, field protoreflect.FieldDescr
 			}
 			return temp.ProtoReflect(), nil
 		}
-	} else if field.ContainingMessage() == FeatureSetDescriptor {
+	case field.ContainingMessage() == FeatureSetDescriptor:
 		// Known field, not dynamically generated. Can directly use with the feature set.
 		return msgRef, nil
-	} else {
+	default:
 		actualField = FeatureSetDescriptor.Fields().ByNumber(field.Number())
-
 	}
 
 	// If we get here, we have a dynamic field descriptor or an extension
