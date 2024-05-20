@@ -260,12 +260,13 @@ func GetFeatureDefault(edition descriptorpb.Edition, container protoreflect.Mess
 
 func adaptFeatureSet(msg *descriptorpb.FeatureSet, field protoreflect.FieldDescriptor) (protoreflect.Message, error) {
 	msgRef := msg.ProtoReflect()
+	var actualField protoreflect.FieldDescriptor
 	if field.IsExtension() {
 		// Extensions can be used directly with the feature set, even if
 		// field.ContainingMessage() != FeatureSetDescriptor. But only if
 		// the value is either not a message or is a message with the
 		// right descriptor, i.e. val.Descriptor() == field.Message().
-		if valueMatchesDescriptor(msgRef, field) {
+		if actualField = actualDescriptor(msgRef, field); actualField == nil || actualField == field {
 			if msgRef.Has(field) || len(msgRef.GetUnknown()) == 0 {
 				return msgRef, nil
 			}
@@ -285,24 +286,26 @@ func adaptFeatureSet(msg *descriptorpb.FeatureSet, field protoreflect.FieldDescr
 	} else if field.ContainingMessage() == FeatureSetDescriptor {
 		// Known field, not dynamically generated. Can directly use with the feature set.
 		return msgRef, nil
+	} else {
+		actualField = FeatureSetDescriptor.Fields().ByNumber(field.Number())
+
 	}
 
 	// If we get here, we have a dynamic field descriptor or an extension
 	// descriptor whose message type does not match the descriptor of the
 	// stored value. We need to copy its value into a dynamic message,
 	// which requires marshalling/unmarshalling.
-	msgField := FeatureSetDescriptor.Fields().ByNumber(field.Number())
 	// We only need to copy over the unrecognized bytes (if any)
 	// and the same field (if present).
 	data := msgRef.GetUnknown()
-	if msgField != nil && msgRef.Has(msgField) {
+	if actualField != nil && msgRef.Has(actualField) {
 		subset := &descriptorpb.FeatureSet{}
-		subset.ProtoReflect().Set(msgField, msgRef.Get(msgField))
-		fieldBytes, err := proto.MarshalOptions{AllowPartial: true}.Marshal(subset)
+		subset.ProtoReflect().Set(actualField, msgRef.Get(actualField))
+		var err error
+		data, err = proto.MarshalOptions{AllowPartial: true}.MarshalAppend(data, subset)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal FeatureSet field %s to bytes: %w", field.Name(), err)
 		}
-		data = append(data, fieldBytes...)
 	}
 	if len(data) == 0 {
 		// No relevant data to copy over, so we can just return
@@ -365,30 +368,53 @@ func computeSupportedEditions(min, max descriptorpb.Edition) map[string]descript
 	return supportedEditions
 }
 
-func valueMatchesDescriptor(msg protoreflect.Message, field protoreflect.FieldDescriptor) bool {
-	if !msg.Has(field) || field.Message() == nil {
-		// nothing to match
-		return true
+// actualDescriptor returns the actual field descriptor referenced by msg that
+// corresponds to the given ext (i.e. same number). It returns nil if msg has
+// no reference, if the actual descriptor is the same as ext, or if ext is
+// otherwise safe to use as is.
+func actualDescriptor(msg protoreflect.Message, ext protoreflect.ExtensionDescriptor) protoreflect.FieldDescriptor {
+	if !msg.Has(ext) || ext.Message() == nil {
+		// nothing to match; safe as is
+		return nil
 	}
-	val := msg.Get(field)
+	val := msg.Get(ext)
 	switch {
-	case field.IsMap():
-		if expectedDescriptor := field.MapValue().Message(); expectedDescriptor != nil {
-			// We know msg.Has(field) is true, from above, so there's at least one entry.
-			var matches bool
-			val.Map().Range(func(_ protoreflect.MapKey, val protoreflect.Value) bool {
-				matches = val.Message().Descriptor() == expectedDescriptor
-				return false
-			})
-			return matches
+	case ext.IsMap(): // should not actually be possible
+		expectedDescriptor := ext.MapValue().Message()
+		if expectedDescriptor == nil {
+			return nil // nothing to match
 		}
-		return true // nothing to match
-	case field.IsList():
 		// We know msg.Has(field) is true, from above, so there's at least one entry.
-		return val.List().Get(0).Message().Descriptor() == field.Message()
-	case !field.IsMap():
-		return val.Message().Descriptor() == field.Message()
-	default:
-		return true
+		var matches bool
+		val.Map().Range(func(_ protoreflect.MapKey, val protoreflect.Value) bool {
+			matches = val.Message().Descriptor() == expectedDescriptor
+			return false
+		})
+		if matches {
+			return nil
+		}
+	case ext.IsList():
+		// We know msg.Has(field) is true, from above, so there's at least one entry.
+		if val.List().Get(0).Message().Descriptor() == ext.Message() {
+			return nil
+		}
+	case !ext.IsMap():
+		if val.Message().Descriptor() == ext.Message() {
+			return nil
+		}
 	}
+	// The underlying message descriptors do not match. So we need to return
+	// the actual field descriptor. Sadly, protoreflect.Message provides no way
+	// to query the field descriptor in a message by number. For non-extensions,
+	// one can query the associated message descriptor. But for extensions, we
+	// have to do the slow thing, and range through all fields looking for it.
+	var actualField protoreflect.FieldDescriptor
+	msg.Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+		if fd.Number() == ext.Number() {
+			actualField = fd
+			return false
+		}
+		return true
+	})
+	return actualField
 }
