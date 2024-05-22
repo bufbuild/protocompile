@@ -484,10 +484,9 @@ func TestResolveCustomFeature_Generated(t *testing.T) {
 	}
 
 	editionsTestCases := []struct {
-		name              string
-		source            string
-		expectedFileValue bool
-		expectedEnumValue bool
+		name           string
+		source         string
+		exopectedValue bool
 	}{
 		{
 			name: "editions-2023-default",
@@ -497,8 +496,7 @@ func TestResolveCustomFeature_Generated(t *testing.T) {
 				enum Foo {
 					ZERO = 0;
 				}`,
-			expectedFileValue: false,
-			expectedEnumValue: false,
+			exopectedValue: false,
 		},
 		{
 			name: "editions-override",
@@ -509,8 +507,7 @@ func TestResolveCustomFeature_Generated(t *testing.T) {
 					option features.(pb.go).legacy_unmarshal_json_enum = true;
 					ZERO = 0;
 				}`,
-			expectedFileValue: false,
-			expectedEnumValue: true,
+			exopectedValue: true,
 		},
 	}
 
@@ -540,14 +537,16 @@ func TestResolveCustomFeature_Generated(t *testing.T) {
 
 				val, err := protoutil.ResolveCustomFeature(file, extType, feature)
 				require.NoError(t, err)
-				require.Equal(t, testCase.expectedFileValue, val.Bool())
+				// Edition default is false, and can't be overridden at the file level,
+				// so this should always be false.
+				require.False(t, val.Bool())
 
 				// Override
 				elem := file.FindDescriptorByName("Foo")
 				require.NotNil(t, elem)
 				val, err = protoutil.ResolveCustomFeature(elem, extType, feature)
 				require.NoError(t, err)
-				require.Equal(t, testCase.expectedEnumValue, val.Bool())
+				require.Equal(t, testCase.exopectedValue, val.Bool())
 			}
 		})
 	}
