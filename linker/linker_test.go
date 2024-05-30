@@ -490,13 +490,6 @@ func TestLinkerValidation(t *testing.T) {
 					  repeated Enum ens = 3;
 					}`,
 			},
-			// This will be fixed before the v27.0 final release but is currently
-			// broken in v27.0-rc1. It reports issues with all three extensions:
-			//    test.proto:12:10: Implicit presence fields can't specify defaults.
-			//    test.proto:13:8: Implicit presence enum fields must always be open.
-			//    test.proto:14:17: Implicit presence enum fields must always be open.
-			// https://github.com/protocolbuffers/protobuf/issues/16664
-			expectedDiffWithProtoc: true,
 		},
 		"failure_message_set_wire_format_scalar": {
 			input: map[string]string{
@@ -1585,10 +1578,6 @@ func TestLinkerValidation(t *testing.T) {
 					  string FOO_BAR = 2;
 					}`,
 			},
-			// protodesc.NewFile is applying overly strict checks on name
-			// collisions in proto3 files.
-			// https://github.com/golang/protobuf/issues/1616
-			expectProtodescFail: true,
 		},
 		"failure_json_name_conflict_leading_underscores": {
 			input: map[string]string{
