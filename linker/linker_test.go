@@ -3636,10 +3636,10 @@ func TestLinkerValidation(t *testing.T) {
 		},
 		"success_custom_feature_within_lifetime": {
 			input: map[string]string{
-				"test.proto": `
+				"feature.proto": `
 					edition = "2023";
-					import "google/protobuf/descriptor.proto";
 					package foo;
+					import "google/protobuf/descriptor.proto";
 					message CustomFeatures {
 						bool flag = 1 [
 							feature_support = {
@@ -3650,13 +3650,18 @@ func TestLinkerValidation(t *testing.T) {
 						];
 					}
 					extend google.protobuf.FeatureSet {
-						CustomFeatures custom = 1000;
+						CustomFeatures custom = 9995;
 					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					import "feature.proto";
 					option features.(custom).flag = true;
 					`,
 			},
 		},
-		"success_custom_feature_deprecated": {
+		"failure_custom_feature_in_same_file": {
 			input: map[string]string{
 				"test.proto": `
 					edition = "2023";
@@ -3672,18 +3677,46 @@ func TestLinkerValidation(t *testing.T) {
 						];
 					}
 					extend google.protobuf.FeatureSet {
-						CustomFeatures custom = 1000;
+						CustomFeatures custom = 9995;
 					}
+					option features.(custom).flag = true;
+					`,
+			},
+			expectedErr: `test.proto:16:1: custom feature (foo.custom) cannot be used from the same file in which it is defined`,
+		},
+		"success_custom_feature_deprecated": {
+			input: map[string]string{
+				"feature.proto": `
+					edition = "2023";
+					package foo;
+					import "google/protobuf/descriptor.proto";
+					message CustomFeatures {
+						bool flag = 1 [
+							feature_support = {
+								edition_introduced: EDITION_2023
+								edition_deprecated: EDITION_2023
+								edition_removed: EDITION_2024
+							}
+						];
+					}
+					extend google.protobuf.FeatureSet {
+						CustomFeatures custom = 9995;
+					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					import "feature.proto";
 					option features.(custom).flag = true;
 					`,
 			},
 		},
 		"failure_custom_feature_not_yet_introduced": {
 			input: map[string]string{
-				"test.proto": `
+				"feature.proto": `
 					edition = "2023";
-					import "google/protobuf/descriptor.proto";
 					package foo;
+					import "google/protobuf/descriptor.proto";
 					message CustomFeatures {
 						bool flag = 1 [
 							feature_support = {
@@ -3693,19 +3726,24 @@ func TestLinkerValidation(t *testing.T) {
 						];
 					}
 					extend google.protobuf.FeatureSet {
-						CustomFeatures custom = 1000;
+						CustomFeatures custom = 9995;
 					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					import "feature.proto";
 					option features.(custom).flag = true;
 					`,
 			},
-			expectedErr: `test.proto:15:1: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
+			expectedErr: `test.proto:4:1: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
 		},
 		"failure_custom_feature_not_yet_introduced_msg_literal": {
 			input: map[string]string{
-				"test.proto": `
+				"feature.proto": `
 					edition = "2023";
-					import "google/protobuf/descriptor.proto";
 					package foo;
+					import "google/protobuf/descriptor.proto";
 					message CustomFeatures {
 						bool flag = 1 [
 							feature_support = {
@@ -3715,19 +3753,24 @@ func TestLinkerValidation(t *testing.T) {
 						];
 					}
 					extend google.protobuf.FeatureSet {
-						CustomFeatures custom = 1000;
+						CustomFeatures custom = 9995;
 					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					import "feature.proto";
 					option features.(custom) = { flag: true };
 					`,
 			},
-			expectedErr: `test.proto:15:30: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
+			expectedErr: `test.proto:4:30: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
 		},
 		"failure_custom_feature_not_yet_introduced_msg_literal2": {
 			input: map[string]string{
-				"test.proto": `
+				"feature.proto": `
 					edition = "2023";
-					import "google/protobuf/descriptor.proto";
 					package foo;
+					import "google/protobuf/descriptor.proto";
 					message CustomFeatures {
 						bool flag = 1 [
 							feature_support = {
@@ -3737,19 +3780,24 @@ func TestLinkerValidation(t *testing.T) {
 						];
 					}
 					extend google.protobuf.FeatureSet {
-						CustomFeatures custom = 1000;
+						CustomFeatures custom = 9995;
 					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					import "feature.proto";
 					option features = { [foo.custom]: { flag: true } };
 					`,
 			},
-			expectedErr: `test.proto:15:37: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
+			expectedErr: `test.proto:4:37: field "foo.CustomFeatures.flag" was not introduced until edition 2024`,
 		},
 		"failure_custom_feature_removed": {
 			input: map[string]string{
-				"test.proto": `
+				"feature.proto": `
 					edition = "2023";
-					import "google/protobuf/descriptor.proto";
 					package foo;
+					import "google/protobuf/descriptor.proto";
 					message CustomFeatures {
 						bool flag = 1 [
 							feature_support = {
@@ -3759,12 +3807,17 @@ func TestLinkerValidation(t *testing.T) {
 						];
 					}
 					extend google.protobuf.FeatureSet {
-						CustomFeatures custom = 1000;
+						CustomFeatures custom = 9995;
 					}
+					`,
+				"test.proto": `
+					edition = "2023";
+					package foo;
+					import "feature.proto";
 					option features.(custom).flag = true;
 					`,
 			},
-			expectedErr: `test.proto:15:1: field "foo.CustomFeatures.flag" was removed in edition 2023`,
+			expectedErr: `test.proto:4:1: field "foo.CustomFeatures.flag" was removed in edition 2023`,
 		},
 	}
 

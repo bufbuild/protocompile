@@ -505,7 +505,7 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 func TestInterpretOptionsFeatureLifetimeWarnings(t *testing.T) {
 	t.Parallel()
 	sources := map[string]string{
-		"feature.proto": `
+		"features.proto": `
 			syntax = "proto2";
 			package google.protobuf;
 			message FileOptions {
@@ -541,9 +541,9 @@ func TestInterpretOptionsFeatureLifetimeWarnings(t *testing.T) {
 				];
 			}
 			`,
-		"test.proto": `
+		"custom_features.proto": `
 			edition = "2023";
-			import "feature.proto";
+			import "features.proto";
 			extend google.protobuf.FeatureSet {
 				Custom custom = 1000;
 			}
@@ -575,6 +575,11 @@ func TestInterpretOptionsFeatureLifetimeWarnings(t *testing.T) {
 					}
 				];
 			}
+			`,
+		"test.proto": `
+			edition = "2023";
+			import "features.proto";
+			import "custom_features.proto";
 			option features.okay = true;
 			option features.deprecated = true;
 			option features.deprecated_and_removed = true;
@@ -596,10 +601,10 @@ func TestInterpretOptionsFeatureLifetimeWarnings(t *testing.T) {
 	_, err := compiler.Compile(context.Background(), "test.proto")
 	require.NoError(t, err)
 	expectedWarnings := []string{
-		`test.proto:36:25: field "google.protobuf.FeatureSet.deprecated" is deprecated as of edition 2023: do not use this!`,
-		`test.proto:37:25: field "google.protobuf.FeatureSet.deprecated_and_removed" is deprecated as of edition 2023: don't use this either!`,
-		`test.proto:39:25: field "Custom.deprecated" is deprecated as of edition 2023: custom feature is not to be used`,
-		`test.proto:40:25: field "Custom.deprecated_and_removed" is deprecated as of edition 2023: other custom feature is not to be used either`,
+		`test.proto:10:25: field "Custom.deprecated_and_removed" is deprecated as of edition 2023: other custom feature is not to be used either`,
+		`test.proto:6:25: field "google.protobuf.FeatureSet.deprecated" is deprecated as of edition 2023: do not use this!`,
+		`test.proto:7:25: field "google.protobuf.FeatureSet.deprecated_and_removed" is deprecated as of edition 2023: don't use this either!`,
+		`test.proto:9:25: field "Custom.deprecated" is deprecated as of edition 2023: custom feature is not to be used`,
 	}
 	sort.Strings(warnings)
 	assert.Equal(t, expectedWarnings, warnings)

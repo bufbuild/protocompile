@@ -804,6 +804,23 @@ func (interp *interpreter) validateRecursive(
 		chInFeatures := isFeatures || inFeatures
 		chIsFeatures := !chInFeatures && len(path) == 0 && fld.Name() == "features"
 
+		if (isFeatures || (inFeatures && fld.IsExtension())) &&
+			interp.file.FileNode().Name() == fld.ParentFile().Path() {
+			var what, name string
+			if fld.IsExtension() {
+				what = "custom feature"
+				name = "(" + string(fld.FullName()) + ")"
+			} else {
+				what = "feature"
+				name = string(fld.Name())
+			}
+			node := interp.findOptionNode(path, element)
+			err = interp.reporter.HandleErrorf(interp.nodeInfo(node), "%s %s cannot be used from the same file in which it is defined", what, name)
+			if err != nil {
+				return false
+			}
+		}
+
 		if chInFeatures {
 			// Validate feature usage against feature settings.
 
