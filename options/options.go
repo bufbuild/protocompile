@@ -804,35 +804,74 @@ func (interp *interpreter) validateRecursive(
 		chInFeatures := isFeatures || inFeatures
 		chIsFeatures := !chInFeatures && len(path) == 0 && fld.Name() == "features"
 
+		if (isFeatures || (inFeatures && fld.IsExtension())) &&
+			interp.file.FileNode().Name() == fld.ParentFile().Path() {
+			var what, name string
+			if fld.IsExtension() {
+				what = "custom feature"
+				name = "(" + string(fld.FullName()) + ")"
+			} else {
+				what = "feature"
+				name = string(fld.Name())
+			}
+			node := interp.findOptionNode(path, element)
+			err = interp.reporter.HandleErrorf(interp.nodeInfo(node), "%s %s cannot be used from the same file in which it is defined", what, name)
+			if err != nil {
+				return false
+			}
+		}
+
 		if chInFeatures {
+			// Validate feature usage against feature settings.
+
+			// First, check the feature support settings of the field.
 			opts, _ := fld.Options().(*descriptorpb.FieldOptions)
+			edition := interp.file.FileDescriptorProto().GetEdition()
 			if opts != nil && opts.FeatureSupport != nil {
-				edition := interp.file.FileDescriptorProto().GetEdition()
-				if opts.FeatureSupport.EditionIntroduced != nil && edition < opts.FeatureSupport.GetEditionIntroduced() {
-					node := interp.findOptionNode(chpath, element)
-					err = interp.reporter.HandleErrorf(interp.nodeInfo(node), "field %q was not introduced until edition %s", fld.FullName(), editionString(opts.FeatureSupport.GetEditionIntroduced()))
+				err = interp.validateFeatureSupport(edition, opts.FeatureSupport, "field", string(fld.FullName()), chpath, element)
+				if err != nil {
+					return false
+				}
+			}
+			// Then, if it's an enum or has an enum, check the feature support settings of the enum values.
+			var enum protoreflect.EnumDescriptor
+			if fld.Enum() != nil {
+				enum = fld.Enum()
+			} else if fld.IsMap() && fld.MapValue().Enum() != nil {
+				enum = fld.MapValue().Enum()
+			}
+			if enum != nil {
+				switch {
+				case fld.IsMap():
+					val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
+						// Can't construct path to particular map entry since we don't this entry's index.
+						// So we leave chpath alone, and it will have to point to the whole map value (or
+						// the first entry if the map is de-structured across multiple option statements).
+						err = interp.validateEnumValueFeatureSupport(edition, enum, v.Enum(), chpath, element)
+						return err == nil
+					})
 					if err != nil {
 						return false
 					}
-				}
-				if opts.FeatureSupport.EditionRemoved != nil && edition >= opts.FeatureSupport.GetEditionRemoved() {
-					node := interp.findOptionNode(chpath, element)
-					err = interp.reporter.HandleErrorf(interp.nodeInfo(node), "field %q was removed in edition %s", fld.FullName(), editionString(opts.FeatureSupport.GetEditionRemoved()))
+				case fld.IsList():
+					sl := val.List()
+					for i := 0; i < sl.Len(); i++ {
+						v := sl.Get(i)
+						err = interp.validateEnumValueFeatureSupport(edition, enum, v.Enum(), append(chpath, int32(i)), element)
+						if err != nil {
+							return false
+						}
+					}
+				default:
+					err = interp.validateEnumValueFeatureSupport(edition, enum, val.Enum(), chpath, element)
 					if err != nil {
 						return false
 					}
-				}
-				if opts.FeatureSupport.EditionDeprecated != nil && edition >= opts.FeatureSupport.GetEditionDeprecated() {
-					node := interp.findOptionNode(chpath, element)
-					var suffix string
-					if opts.FeatureSupport.GetDeprecationWarning() != "" {
-						suffix = ": " + opts.FeatureSupport.GetDeprecationWarning()
-					}
-					interp.reporter.HandleWarningf(interp.nodeInfo(node), "field %q is deprecated as of edition %s%s", fld.FullName(), editionString(opts.FeatureSupport.GetEditionDeprecated()), suffix)
 				}
 			}
 		}
 
+		// If it's a message or contains a message, recursively validate fields in those messages.
 		switch {
 		case fld.IsMap() && fld.MapValue().Message() != nil:
 			val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
@@ -866,6 +905,57 @@ func (interp *interpreter) validateRecursive(
 		return true
 	})
 	return err
+}
+
+func (interp *interpreter) validateEnumValueFeatureSupport(
+	edition descriptorpb.Edition,
+	enum protoreflect.EnumDescriptor,
+	number protoreflect.EnumNumber,
+	path []int32,
+	element proto.Message,
+) error {
+	enumVal := enum.Values().ByNumber(number)
+	if enumVal == nil {
+		return nil
+	}
+	enumValOpts, _ := enumVal.Options().(*descriptorpb.EnumValueOptions)
+	if enumValOpts == nil || enumValOpts.FeatureSupport == nil {
+		return nil
+	}
+	return interp.validateFeatureSupport(edition, enumValOpts.FeatureSupport, "enum value", string(enumVal.Name()), path, element)
+}
+
+func (interp *interpreter) validateFeatureSupport(
+	edition descriptorpb.Edition,
+	featureSupport *descriptorpb.FieldOptions_FeatureSupport,
+	what string,
+	name string,
+	path []int32,
+	element proto.Message,
+) error {
+	if featureSupport.EditionIntroduced != nil && edition < featureSupport.GetEditionIntroduced() {
+		node := interp.findOptionNode(path, element)
+		err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "%s %q was not introduced until edition %s", what, name, editionString(featureSupport.GetEditionIntroduced()))
+		if err != nil {
+			return err
+		}
+	}
+	if featureSupport.EditionRemoved != nil && edition >= featureSupport.GetEditionRemoved() {
+		node := interp.findOptionNode(path, element)
+		err := interp.reporter.HandleErrorf(interp.nodeInfo(node), "%s %q was removed in edition %s", what, name, editionString(featureSupport.GetEditionRemoved()))
+		if err != nil {
+			return err
+		}
+	}
+	if featureSupport.EditionDeprecated != nil && edition >= featureSupport.GetEditionDeprecated() {
+		node := interp.findOptionNode(path, element)
+		var suffix string
+		if featureSupport.GetDeprecationWarning() != "" {
+			suffix = ": " + featureSupport.GetDeprecationWarning()
+		}
+		interp.reporter.HandleWarningf(interp.nodeInfo(node), "%s %q is deprecated as of edition %s%s", what, name, editionString(featureSupport.GetEditionDeprecated()), suffix)
+	}
+	return nil
 }
 
 func (interp *interpreter) findOptionNode(
