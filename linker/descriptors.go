@@ -1126,7 +1126,8 @@ func (f *fldDescriptor) Cardinality() protoreflect.Cardinality {
 }
 
 func (f *fldDescriptor) Kind() protoreflect.Kind {
-	if f.proto.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE && f.Syntax() == protoreflect.Editions {
+	if f.proto.GetType() == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE && f.Syntax() == protoreflect.Editions &&
+		!f.IsMap() && !f.parentIsMap() {
 		// In editions, "group encoding" (aka "delimited encoding") is toggled
 		// via a feature. So we report group kind when that feature is enabled.
 		messageEncoding := resolveFeature(f, messageEncodingField)
@@ -1238,6 +1239,11 @@ func (f *fldDescriptor) isMapEntry() bool {
 		return false
 	}
 	return f.Message().IsMapEntry()
+}
+
+func (f *fldDescriptor) parentIsMap() bool {
+	parent, ok := f.parent.(protoreflect.MessageDescriptor)
+	return ok && parent.IsMapEntry()
 }
 
 func (f *fldDescriptor) MapKey() protoreflect.FieldDescriptor {
