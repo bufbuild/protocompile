@@ -151,13 +151,7 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 		}
 		assert.Equal(t, expFld.Number(), actFld.Number(), "%s: field number at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.Cardinality(), actFld.Cardinality(), "%s: field cardinality at index %d (%s)", where, i, expFld.Name())
-		if isMapOrMapEntryMessageValue(actFld) {
-			// TODO: Remove this branch and just use the check below once the protobuf-go runtime fixes
-			//       https://github.com/golang/protobuf/issues/1615
-			assert.Equal(t, protoreflect.MessageKind, actFld.Kind(), "%s: field kind at index %d (%s)", where, i, expFld.Name())
-		} else {
-			assert.Equal(t, expFld.Kind(), actFld.Kind(), "%s: field kind at index %d (%s)", where, i, expFld.Name())
-		}
+		assert.Equal(t, expFld.Kind(), actFld.Kind(), "%s: field kind at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsList(), actFld.IsList(), "%s: field is list at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.IsMap(), actFld.IsMap(), "%s: field is map at index %d (%s)", where, i, expFld.Name())
 		assert.Equal(t, expFld.JSONName(), actFld.JSONName(), "%s: field json name at index %d (%s)", where, i, expFld.Name())
@@ -247,15 +241,4 @@ func checkAttributesInEnums(t *testing.T, exp, actual protoreflect.EnumDescripto
 		}
 		assert.Equal(t, expEnum.IsClosed(), actEnum.IsClosed(), "%s: enum is closed at index %d (%s)", where, i, expEnum.Name())
 	}
-}
-
-func isMapOrMapEntryMessageValue(field protoreflect.FieldDescriptor) bool {
-	if field.IsMap() {
-		return true // map field
-	}
-	if field.Message() == nil {
-		return false // not a message field
-	}
-	parent, ok := field.Parent().(protoreflect.MessageDescriptor)
-	return ok && parent.IsMapEntry()
 }
