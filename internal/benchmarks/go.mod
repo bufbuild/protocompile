@@ -3,11 +3,11 @@ module github.com/bufbuild/protocompile/internal/benchmarks
 go 1.19
 
 require (
-	github.com/bufbuild/protocompile v0.13.0
+	github.com/bufbuild/protocompile v0.14.0
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/jhump/protoreflect v1.14.1 // MUST NOT be updated to v1.15 or higher
 	github.com/stretchr/testify v1.9.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2-0.20240529085009-ca837e5c658b
 )
 
 require golang.org/x/sync v0.7.0
