@@ -3,7 +3,7 @@ module github.com/bufbuild/protocompile/internal/tools
 go 1.18
 
 require (
-	github.com/bufbuild/buf v1.34.0
+	github.com/bufbuild/buf v1.35.1
 	github.com/golangci/golangci-lint v1.55.2
 	golang.org/x/tools v0.23.0
 )
