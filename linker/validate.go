@@ -655,30 +655,12 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				}
 			}
 
-			if extDecl.GetReserved() {
-				if extDecl.FullName != nil {
-					span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-						internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationFullNameTag)
-					if err := handler.HandleErrorf(span, "extension declaration is marked reserved so full_name should not be present"); err != nil {
-						return err
-					}
-				}
-				if extDecl.Type != nil {
-					span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
-						internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationTypeTag)
-					if err := handler.HandleErrorf(span, "extension declaration is marked reserved so type should not be present"); err != nil {
-						return err
-					}
-				}
-				continue
-			}
-
-			if extDecl.FullName == nil {
+			if extDecl.FullName == nil && !extDecl.GetReserved() {
 				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, int32(i))
 				if err := handler.HandleErrorf(span, "extension declaration that is not marked reserved must have a full_name"); err != nil {
 					return err
 				}
-			} else {
+			} else if extDecl.FullName != nil {
 				var extensionFullName protoreflect.FullName
 				extensionNameSpan, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
 					internal.ExtensionRangeOptionsDeclarationTag, int32(i), internal.ExtensionRangeOptionsDeclarationFullNameTag)
@@ -700,12 +682,12 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 				}
 			}
 
-			if extDecl.Type == nil {
+			if extDecl.Type == nil && !extDecl.GetReserved() {
 				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange, internal.ExtensionRangeOptionsDeclarationTag, int32(i))
 				if err := handler.HandleErrorf(span, "extension declaration that is not marked reserved must have a type"); err != nil {
 					return err
 				}
-			} else {
+			} else if extDecl.Type != nil {
 				if strings.HasPrefix(extDecl.GetType(), ".") {
 					if !protoreflect.FullName(extDecl.GetType()[1:]).IsValid() {
 						span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
@@ -720,6 +702,20 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 					if err := handler.HandleErrorf(span, "extension declaration type %q must be a builtin type or start with a leading dot (.)", extDecl.GetType()); err != nil {
 						return err
 					}
+				}
+			}
+
+			if extDecl.GetReserved() && (extDecl.FullName == nil) != (extDecl.Type == nil) {
+				var fieldTag int32
+				if extDecl.FullName != nil {
+					fieldTag = internal.ExtensionRangeOptionsDeclarationFullNameTag
+				} else {
+					fieldTag = internal.ExtensionRangeOptionsDeclarationTypeTag
+				}
+				span, _ := findExtensionRangeOptionSpan(r, md, i, extRange,
+					internal.ExtensionRangeOptionsDeclarationTag, int32(i), fieldTag)
+				if err := handler.HandleErrorf(span, "extension declarations that are reserved should specify both full_name and type or neither"); err != nil {
+					return err
 				}
 			}
 		}

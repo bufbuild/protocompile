@@ -2771,7 +2771,7 @@ func TestLinkerValidation(t *testing.T) {
 			expectedErr:            `test.proto:8:25: extension declaration type ".123.Foobar" is not a valid qualified name`,
 			expectedDiffWithProtoc: true, // Oops. protoc's name validation seems incomplete
 		},
-		"failure_extension_declaration_with_reserved_should_not_have_name": {
+		"failure_extension_declaration_with_reserved_only_name": {
 			input: map[string]string{
 				"test.proto": `
 					syntax = "proto2";
@@ -2787,9 +2787,9 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:8:25: extension declaration is marked reserved so full_name should not be present`,
+			expectedErr: `test.proto:8:25: extension declarations that are reserved should specify both full_name and type or neither`,
 		},
-		"failure_extension_declaration_with_reserved_should_not_have_type": {
+		"failure_extension_declaration_with_reserved_only_type": {
 			input: map[string]string{
 				"test.proto": `
 					syntax = "proto2";
@@ -2805,7 +2805,41 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:8:25: extension declaration is marked reserved so type should not be present`,
+			expectedErr: `test.proto:8:25: extension declarations that are reserved should specify both full_name and type or neither`,
+		},
+		"success_extension_declaration_with_reserved_without_name_and_type": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								reserved: true
+							}
+						];
+					}
+				`,
+			},
+		},
+		"success_extension_declaration_with_reserved_name_and_type": {
+			input: map[string]string{
+				"test.proto": `
+					syntax = "proto2";
+					message A {
+						extensions 1 [
+							verification=DECLARATION,
+							declaration={
+								number: 1
+								reserved: true
+								full_name: ".foo.bar"
+								type: ".foo.Baz"
+							}
+						];
+					}
+				`,
+			},
 		},
 		// This exercises the code that finds the relevant node to make sure it track indexes of
 		// repeated fields correctly.
@@ -2834,7 +2868,7 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:12:25: extension declaration is marked reserved so type should not be present`,
+			expectedErr: `test.proto:12:25: extension declarations that are reserved should specify both full_name and type or neither`,
 		},
 		"failure_extension_declarations_repeated_tags": {
 			input: map[string]string{
