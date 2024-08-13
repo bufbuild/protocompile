@@ -520,7 +520,7 @@ func (r *result) validateJSONNamesInEnum(ed *enumDescriptor, handler *reporter.H
 			// With editions, not fully supporting JSON is allowed via feature: json_format == BEST_EFFORT
 			if !isJSONCompliant(ed) {
 				handler.HandleWarningWithPos(r.FileNode().NodeInfo(fldNode), conflictErr)
-			} else if err := handler.HandleErrorf(r.FileNode().NodeInfo(fldNode), conflictErr.Error()); err != nil {
+			} else if err := handler.HandleErrorWithPos(r.FileNode().NodeInfo(fldNode), conflictErr); err != nil {
 				return err
 			}
 		} else {
