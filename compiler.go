@@ -17,6 +17,7 @@ package protocompile
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -563,7 +564,7 @@ func handleImportCycle(h *reporter.Handler, span ast.SourceSpan, importSequence 
 	}
 	_, _ = fmt.Fprintf(&buf, "%q", dep)
 	// error is saved and returned in caller
-	_ = h.HandleErrorf(span, buf.String())
+	_ = h.HandleErrorWithPos(span, errors.New(buf.String()))
 }
 
 func findImportSpan(res parser.Result, dep string) ast.SourceSpan {
