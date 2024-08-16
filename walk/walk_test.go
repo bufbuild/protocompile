@@ -62,7 +62,7 @@ func TestDescriptorProtosEnterAndExit(t *testing.T) {
 			nameStack = append(nameStack, string(fullName))
 			return nil
 		},
-		func(name protoreflect.FullName, message proto.Message) error {
+		func(_ protoreflect.FullName, _ proto.Message) error {
 			nameStack = nameStack[:len(nameStack)-1]
 			return nil
 		},

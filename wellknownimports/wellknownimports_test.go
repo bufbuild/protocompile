@@ -49,7 +49,7 @@ func TestWithStandardImports(t *testing.T) {
 	// make sure we can successfully compile them all
 	c := protocompile.Compiler{
 		Resolver: WithStandardImports(&protocompile.SourceResolver{
-			Accessor: func(path string) (io.ReadCloser, error) {
+			Accessor: func(_ string) (io.ReadCloser, error) {
 				return nil, os.ErrNotExist
 			},
 		}),
@@ -84,7 +84,7 @@ func TestWithStandardImports(t *testing.T) {
 				require.True(t, ok)
 				extRangeCount += len(opts.GetDeclaration())
 			}
-			require.Greater(t, extRangeCount, 0, "no declarations found for FeatureSet for %q", name)
+			require.Positive(t, extRangeCount, "no declarations found for FeatureSet for %q", name)
 		}
 	}
 }

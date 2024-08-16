@@ -167,7 +167,7 @@ func checkClone(t *testing.T, orig, clone Result, isProtoClone bool) {
 		}
 		// we already covered all cases where they are not equal above
 		// except cases that are absent from cloneRevIndex
-		assert.NotZero(t, len(cloneMsgs), "mismatch for number of messages associated with %T (expect %+v, got %+v)", node, origMsgs, cloneMsgs)
+		assert.NotEmpty(t, cloneMsgs, "mismatch for number of messages associated with %T (expect %+v, got %+v)", node, origMsgs, cloneMsgs)
 	}
 
 	assert.Equal(t, origSyntheticMapFields, cloneSyntheticMapFields)

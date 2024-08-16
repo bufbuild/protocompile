@@ -99,7 +99,7 @@ func TestCustomOptionsAreKnown(t *testing.T) {
 			var knownOptionNames []string
 			fileOptions := files[0].Options().ProtoReflect()
 			assert.Empty(t, fileOptions.GetUnknown())
-			fileOptions.Range(func(fd protoreflect.FieldDescriptor, val protoreflect.Value) bool {
+			fileOptions.Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
 				if fd.IsExtension() {
 					knownOptionNames = append(knownOptionNames, string(fd.FullName()))
 				}

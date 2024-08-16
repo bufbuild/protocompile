@@ -97,7 +97,7 @@ func TestUnescape(t *testing.T) {
 		},
 	}
 	compiler := protocompile.Compiler{
-		Resolver: protocompile.WithStandardImports(protocompile.ResolverFunc(func(path string) (protocompile.SearchResult, error) {
+		Resolver: protocompile.WithStandardImports(protocompile.ResolverFunc(func(_ string) (protocompile.SearchResult, error) {
 			return protocompile.SearchResult{Proto: fileProto}, nil
 		})),
 	}
@@ -128,14 +128,14 @@ func checkAttributes(t *testing.T, exp, actual container, path string) {
 			checkAttributes(t, expMsg, actMsg, fmt.Sprintf("%s.%s", path, expMsg.Name()))
 		}
 	}
-	checkAttributesInEnums(t, exp.Enums(), actual.Enums(), fmt.Sprintf("enums in %s", path))
-	checkAttributesInFields(t, exp.Extensions(), actual.Extensions(), fmt.Sprintf("extensions in %s", path))
+	checkAttributesInEnums(t, exp.Enums(), actual.Enums(), "enums in "+path)
+	checkAttributesInFields(t, exp.Extensions(), actual.Extensions(), "extensions in "+path)
 
 	if expMsg, ok := exp.(protoreflect.MessageDescriptor); ok {
 		actMsg, ok := actual.(protoreflect.MessageDescriptor)
 		require.True(t, ok)
-		checkAttributesInFields(t, expMsg.Fields(), actMsg.Fields(), fmt.Sprintf("fields in %s", path))
-		checkAttributesInOneofs(t, expMsg.Oneofs(), actMsg.Oneofs(), fmt.Sprintf("oneofs in %s", path))
+		checkAttributesInFields(t, expMsg.Fields(), actMsg.Fields(), "fields in "+path)
+		checkAttributesInOneofs(t, expMsg.Oneofs(), actMsg.Oneofs(), "oneofs in "+path)
 	}
 }
 

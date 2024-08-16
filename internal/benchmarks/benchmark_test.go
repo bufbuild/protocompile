@@ -111,7 +111,7 @@ func TestMain(m *testing.M) {
 			return
 		}
 
-		googleapisDir = filepath.Join(dir, fmt.Sprintf("googleapis-%s", googleapisCommit)) + "/"
+		googleapisDir = filepath.Join(dir, "googleapis-"+googleapisCommit) + "/"
 		var sourceSize int64
 		err = filepath.Walk(googleapisDir, func(path string, info fs.FileInfo, err error) error {
 			if err != nil {

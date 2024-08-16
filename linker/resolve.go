@@ -467,7 +467,7 @@ func isValidMap(mapField protoreflect.FieldDescriptor, mapEntry protoreflect.Mes
 }
 
 func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []scope, checkedCache []string) error {
-	scope := fmt.Sprintf("method %s", m.fqn)
+	scope := "method " + m.fqn
 	r := m.file
 	mtd := m.proto
 	file := r.FileNode()

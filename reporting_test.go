@@ -265,13 +265,13 @@ func TestErrorReporting(t *testing.T) {
 			assert.Equal(t, tooManyErrors, err, "case #%d: parse should have failed with too many errors", i+1)
 			assert.Equal(t, 3, count, "case #%d: parse should have called reporter 3 times", i+1)
 			// this should only be possible if one of the errors scenarios expects >2 errors
-			max := 0
+			maxErrs := 0
 			for _, errs := range tc.expectedErrs {
-				if len(errs) > max {
-					max = len(errs)
+				if len(errs) > maxErrs {
+					maxErrs = len(errs)
 				}
 			}
-			assert.Greater(t, max, 2, "case #%d: should not have called reporter so many times (%d), max expected errors only %d", i+1, count, max)
+			assert.Greater(t, maxErrs, 2, "case #%d: should not have called reporter so many times (%d), max expected errors only %d", i+1, count, maxErrs)
 		} else {
 			// less than threshold means reporter always returned nil,
 			// so parse returns ErrInvalidSource sentinel

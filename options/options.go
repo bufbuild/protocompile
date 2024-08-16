@@ -357,7 +357,7 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 }
 
 func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descriptorpb.FieldDescriptorProto, opts *descriptorpb.FieldOptions) error {
-	scope := fmt.Sprintf("field %s", fqn)
+	scope := "field " + fqn
 	uo := opts.UninterpretedOption
 
 	// process json_name pseudo-option
@@ -843,7 +843,7 @@ func (interp *interpreter) validateRecursive(
 			if enum != nil {
 				switch {
 				case fld.IsMap():
-					val.Map().Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
+					val.Map().Range(func(_ protoreflect.MapKey, v protoreflect.Value) bool {
 						// Can't construct path to particular map entry since we don't this entry's index.
 						// So we leave chpath alone, and it will have to point to the whole map value (or
 						// the first entry if the map is de-structured across multiple option statements).
