@@ -25,21 +25,21 @@ import (
 func TestIsEditionSupported(t *testing.T) {
 	t.Parallel()
 
-	var min, max descriptorpb.Edition
-	min = math.MaxInt32
+	var minEdition, maxEdition descriptorpb.Edition
+	minEdition = math.MaxInt32
 
 	for editionNum := range descriptorpb.Edition_name {
 		edition := descriptorpb.Edition(editionNum)
 		if IsEditionSupported(edition) {
-			if edition < min {
-				min = edition
+			if edition < minEdition {
+				minEdition = edition
 			}
-			if edition > max {
-				max = edition
+			if edition > maxEdition {
+				maxEdition = edition
 			}
 		}
 	}
 
-	assert.Equal(t, descriptorpb.Edition_EDITION_PROTO2, min)
-	assert.Equal(t, descriptorpb.Edition_EDITION_2023, max)
+	assert.Equal(t, descriptorpb.Edition_EDITION_PROTO2, minEdition)
+	assert.Equal(t, descriptorpb.Edition_EDITION_2023, maxEdition)
 }

@@ -17,7 +17,6 @@ package parser
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -70,10 +69,10 @@ func TestJunkParse(t *testing.T) {
 			t.Parallel()
 			errHandler := reporter.NewHandler(reporter.NewReporter(
 				// returning nil means this will keep trying to parse after any error
-				func(err reporter.ErrorWithPos) error { return nil },
+				func(_ reporter.ErrorWithPos) error { return nil },
 				nil, // ignore warnings
 			))
-			protoName := fmt.Sprintf("%s.proto", name)
+			protoName := name + ".proto"
 			_, err := Parse(protoName, strings.NewReader(input), errHandler)
 			// we expect this to error... but we don't want it to panic
 			require.Error(t, err, "junk input should have returned error")
@@ -92,7 +91,7 @@ func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCas
 		name, testCase := name, testCase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			protoName := fmt.Sprintf("%s.proto", name)
+			protoName := name + ".proto"
 			ast, err := Parse(protoName, strings.NewReader(testCase.NoError), reporter.NewHandler(nil))
 			require.NoError(t, err)
 			_, err = ResultFromAST(ast, true, reporter.NewHandler(nil))

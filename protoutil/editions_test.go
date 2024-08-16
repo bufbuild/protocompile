@@ -609,7 +609,7 @@ func addDepsToResolver(resolver protocompile.Resolver, deps ...*descriptorpb.Fil
 func clearKnownExtensionsFromFile(t *testing.T, file *descriptorpb.FileDescriptorProto) {
 	t.Helper()
 	clearKnownExtensionsFromOptions(t, file.GetOptions())
-	err := walk.DescriptorProtos(file, func(name protoreflect.FullName, element proto.Message) error {
+	err := walk.DescriptorProtos(file, func(_ protoreflect.FullName, element proto.Message) error {
 		switch element := element.(type) {
 		case *descriptorpb.DescriptorProto:
 			clearKnownExtensionsFromOptions(t, element.GetOptions())

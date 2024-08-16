@@ -236,12 +236,12 @@ func DescriptorProtos(file *descriptorpb.FileDescriptorProto, fn func(protorefle
 // the function is called for a descriptor proto only after it is called for any
 // descendants.
 func DescriptorProtosEnterAndExit(file *descriptorpb.FileDescriptorProto, enter, exit func(protoreflect.FullName, proto.Message) error) error {
-	enterWithPath := func(n protoreflect.FullName, p protoreflect.SourcePath, m proto.Message) error {
+	enterWithPath := func(n protoreflect.FullName, _ protoreflect.SourcePath, m proto.Message) error {
 		return enter(n, m)
 	}
-	var exitWithPath func(n protoreflect.FullName, p protoreflect.SourcePath, m proto.Message) error
+	var exitWithPath func(protoreflect.FullName, protoreflect.SourcePath, proto.Message) error
 	if exit != nil {
-		exitWithPath = func(n protoreflect.FullName, p protoreflect.SourcePath, m proto.Message) error {
+		exitWithPath = func(n protoreflect.FullName, _ protoreflect.SourcePath, m proto.Message) error {
 			return exit(n, m)
 		}
 	}
