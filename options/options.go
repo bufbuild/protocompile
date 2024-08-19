@@ -52,10 +52,17 @@ type interpreter struct {
 	file                    file
 	resolver                linker.Resolver
 	overrideDescriptorProto linker.File
-	lenient                 bool
-	reporter                *reporter.Handler
-	index                   sourceinfo.OptionIndex
-	pathBuffer              []int32
+
+	index      sourceinfo.OptionIndex
+	pathBuffer []int32
+
+	reporter internal.ErrorHandler
+	lenient  bool
+
+	// lenienceEnabled is set to true when errors reported to reporter
+	// should be lenient
+	lenienceEnabled    bool
+	lenientErrReported bool
 }
 
 type file interface {
@@ -107,7 +114,7 @@ func InterpretOptions(linked linker.Result, handler *reporter.Handler, opts ...I
 // Any options that are uninterpretable (due to such errors) will remain in the
 // "uninterpreted_option" fields.
 func InterpretOptionsLenient(linked linker.Result, opts ...InterpreterOption) (sourceinfo.OptionIndex, error) {
-	return interpretOptions(true, linked, linker.ResolverFromFile(linked), reporter.NewHandler(nil), opts)
+	return interpretOptions(true, linked, linker.ResolverFromFile(linked), nil, opts)
 }
 
 // InterpretUnlinkedOptions does a best-effort attempt to interpret options in
@@ -122,20 +129,29 @@ func InterpretOptionsLenient(linked linker.Result, opts ...InterpreterOption) (s
 // effectively ignored. Any options that are uninterpretable (due to such
 // errors) will remain in the "uninterpreted_option" fields.
 func InterpretUnlinkedOptions(parsed parser.Result, opts ...InterpreterOption) (sourceinfo.OptionIndex, error) {
-	return interpretOptions(true, noResolveFile{parsed}, nil, reporter.NewHandler(nil), opts)
+	return interpretOptions(true, noResolveFile{parsed}, nil, nil, opts)
 }
 
 func interpretOptions(lenient bool, file file, res linker.Resolver, handler *reporter.Handler, interpOpts []InterpreterOption) (sourceinfo.OptionIndex, error) {
-	interp := interpreter{
+	interp := &interpreter{
 		file:       file,
 		resolver:   res,
 		lenient:    lenient,
-		reporter:   handler,
 		index:      sourceinfo.OptionIndex{},
 		pathBuffer: make([]int32, 0, 16),
 	}
+	var errHandler internal.ErrorHandler
+	switch {
+	case lenient:
+		errHandler = (*lenientHandler)(interp)
+	case handler == nil:
+		errHandler = reporter.NewHandler(nil)
+	default:
+		errHandler = handler
+	}
+	interp.reporter = errHandler
 	for _, opt := range interpOpts {
-		opt(&interp)
+		opt(interp)
 	}
 	// We have to do this in two phases. First we interpret non-custom options.
 	// This allows us to handle standard options and features that may needed to
@@ -336,7 +352,10 @@ func (interp *interpreter) interpretFieldOptions(fqn string, fld *descriptorpb.F
 
 	// For non-custom phase, first process pseudo-options
 	if len(opts.GetUninterpretedOption()) > 0 && !customOpts {
-		if err := interp.interpretFieldPseudoOptions(fqn, fld, opts); err != nil {
+		interp.enableLenience(true)
+		err := interp.interpretFieldPseudoOptions(fqn, fld, opts)
+		interp.enableLenience(false)
+		if err != nil {
 			return err
 		}
 	}
@@ -361,11 +380,9 @@ func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descript
 	uo := opts.UninterpretedOption
 
 	// process json_name pseudo-option
-	index, err := internal.FindOption(interp.file, interp.reporter, scope, uo, "json_name")
-	if err != nil && !interp.lenient {
+	if index, err := internal.FindOption(interp.file, interp.reporter, scope, uo, "json_name"); err != nil {
 		return err
-	}
-	if index >= 0 {
+	} else if index >= 0 {
 		opt := uo[index]
 		optNode := interp.file.OptionNode(opt)
 		if opt.StringValue == nil {
@@ -389,7 +406,7 @@ func (interp *interpreter) interpretFieldPseudoOptions(fqn string, fld *descript
 	}
 
 	// and process default pseudo-option
-	if index, err := interp.processDefaultOption(scope, fqn, fld, uo); err != nil && !interp.lenient {
+	if index, err := interp.processDefaultOption(scope, fqn, fld, uo); err != nil {
 		return err
 	} else if index >= 0 {
 		// attribute source code info
@@ -630,13 +647,15 @@ func (interp *interpreter) interpretOptions(
 			}
 		}
 		mc.Option = uo
+		interp.enableLenience(true)
 		srcInfo, err := interp.interpretField(targetType, mc, msg, uo, 0, interp.pathBuffer)
+		interp.enableLenience(false)
 		if err != nil {
-			if interp.lenient {
-				remain = append(remain, uo)
-				continue
-			}
 			return nil, err
+		}
+		if interp.lenientErrReported {
+			remain = append(remain, uo)
+			continue
 		}
 
 		if srcInfo != nil {
@@ -991,6 +1010,11 @@ func findOptionNode[N ast.Node](
 	var bestMatchLen int
 	nodes.Range(func(node N, val ast.ValueNode) bool {
 		srcInfo := srcInfoAccessor(node)
+		if srcInfo == nil {
+			// can happen if we are lenient when interpreting -- this node
+			// could not be interpreted and thus has no source info; skip
+			return true
+		}
 		if srcInfo.Path[0] < 0 {
 			// negative first value means it's a field pseudo-option; skip
 			return true
@@ -1417,6 +1441,17 @@ func (interp *interpreter) checkFieldUsagesInMessage(
 		return err == nil
 	})
 	return err
+}
+
+func (interp *interpreter) enableLenience(enable bool) {
+	if !interp.lenient {
+		return // nothing to do
+	}
+	if enable {
+		// reset the flag that tracks if an error has been reported
+		interp.lenientErrReported = false
+	}
+	interp.lenienceEnabled = enable
 }
 
 func setMapEntry(
@@ -2214,4 +2249,33 @@ func newSrcInfo(path []int32, children sourceinfo.OptionChildrenSourceInfo) sour
 		Path:     internal.ClonePath(path),
 		Children: children,
 	}
+}
+
+type lenientHandler interpreter
+
+func (h *lenientHandler) HandleErrorf(span ast.SourceSpan, msg string, args ...interface{}) error {
+	if h.lenienceEnabled {
+		h.lenientErrReported = true
+		return nil
+	}
+	return reporter.Error(span, fmt.Errorf(msg, args...))
+}
+
+func (h *lenientHandler) HandleErrorWithPos(span ast.SourceSpan, err error) error {
+	if h.lenienceEnabled {
+		h.lenientErrReported = true
+		return nil
+	}
+	return reporter.Error(span, err)
+}
+
+func (h *lenientHandler) HandleError(err error) error {
+	if h.lenienceEnabled {
+		h.lenientErrReported = true
+		return nil
+	}
+	return err
+}
+
+func (h *lenientHandler) HandleWarningf(_ ast.SourceSpan, _ string, _ ...interface{}) {
 }
