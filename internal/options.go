@@ -25,15 +25,17 @@ type hasOptionNode interface {
 	FileNode() ast.FileDeclNode // needed in order to query for NodeInfo
 }
 
-func FindFirstOption(res hasOptionNode, handler ErrorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
+type errorHandler func(span ast.SourceSpan, format string, args ...interface{}) error
+
+func FindFirstOption(res hasOptionNode, handler errorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
 	return findOption(res, handler, scope, opts, name, false, true)
 }
 
-func FindOption(res hasOptionNode, handler ErrorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
+func FindOption(res hasOptionNode, handler errorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
 	return findOption(res, handler, scope, opts, name, true, false)
 }
 
-func findOption(res hasOptionNode, handler ErrorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string, exact, first bool) (int, error) {
+func findOption(res hasOptionNode, handler errorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string, exact, first bool) (int, error) {
 	found := -1
 	for i, opt := range opts {
 		if exact && len(opt.Name) != 1 {
@@ -50,7 +52,7 @@ func findOption(res hasOptionNode, handler ErrorHandler, scope string, opts []*d
 			fn := res.FileNode()
 			node := optNode.GetName()
 			nodeInfo := fn.NodeInfo(node)
-			return -1, handler.HandleErrorf(nodeInfo, "%s: option %s cannot be defined more than once", scope, name)
+			return -1, handler(nodeInfo, "%s: option %s cannot be defined more than once", scope, name)
 		}
 		found = i
 	}
@@ -66,16 +68,4 @@ func RemoveOption(uo []*descriptorpb.UninterpretedOption, indexToRemove int) []*
 	default:
 		return append(uo[:indexToRemove], uo[indexToRemove+1:]...)
 	}
-}
-
-// ErrorHandler is a value that handles errors and warnings. If it returns an error
-// from any of its handle calls, compilation aborts with that error. If it returns
-// nil, compilation will continue to the end of the current stage.
-//
-// See [reporter.Handler].
-type ErrorHandler interface {
-	HandleErrorf(span ast.SourceSpan, format string, args ...interface{}) error
-	HandleError(err error) error
-	HandleErrorWithPos(span ast.SourceSpan, err error) error
-	HandleWarningf(span ast.SourceSpan, format string, args ...interface{})
 }
