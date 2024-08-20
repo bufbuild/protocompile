@@ -130,6 +130,16 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			},
 		},
 		{
+			name:     "file options, not custom",
+			contents: `option go_package = "foo.bar"; option must_link = "FOO";`,
+			uninterpreted: map[string]interface{}{
+				"test.proto:must_link": "FOO",
+			},
+			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
+				assert.Equal(t, "foo.bar", fd.GetOptions().GetGoPackage())
+			},
+		},
+		{
 			name:     "message options",
 			contents: `message Test { option (must.link) = 1.234; option deprecated = true; }`,
 			uninterpreted: map[string]interface{}{
@@ -242,6 +252,25 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOptionsInUnlinkedFileInvalid(t *testing.T) {
+	t.Parallel()
+	h := reporter.NewHandler(nil)
+	ast, err := parser.Parse(
+		"test.proto",
+		strings.NewReader(
+			`syntax = "proto2";
+			    package foo;
+			    option malformed_non_existent = true;
+			    option features.utf8_validation = NONE;`,
+		), h)
+	require.NoError(t, err, "failed to parse")
+	res, err := parser.ResultFromAST(ast, false, h)
+	require.NoError(t, err, "failed to produce descriptor proto")
+	_, err = options.InterpretUnlinkedOptions(res)
+	require.ErrorContains(t, err,
+		`test.proto:4:29: field "google.protobuf.FeatureSet.utf8_validation" was not introduced until edition 2023`)
 }
 
 func buildUninterpretedMapForFile(fd *descriptorpb.FileDescriptorProto, opts map[string]interface{}) {

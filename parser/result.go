@@ -686,7 +686,7 @@ func (r *result) addMessageBody(msgd *descriptorpb.DescriptorProto, body *ast.Me
 
 func (r *result) isMessageSetWireFormat(scope string, md *descriptorpb.DescriptorProto, handler *reporter.Handler) (*descriptorpb.UninterpretedOption, error) {
 	uo := md.GetOptions().GetUninterpretedOption()
-	index, err := internal.FindOption(r, handler, scope, uo, "message_set_wire_format")
+	index, err := internal.FindOption(r, handler.HandleErrorf, scope, uo, "message_set_wire_format")
 	if err != nil {
 		return nil, err
 	}
