@@ -5,7 +5,7 @@ go 1.22.1
 toolchain go1.23.0
 
 require (
-	github.com/bufbuild/buf v1.37.0
+	github.com/bufbuild/buf v1.38.0
 	github.com/golangci/golangci-lint v1.60.1
 	golang.org/x/tools v0.24.0
 )
