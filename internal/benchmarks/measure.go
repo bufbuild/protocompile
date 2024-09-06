@@ -17,7 +17,6 @@ package benchmarks
 import (
 	"math/bits"
 	"reflect"
-	"unsafe"
 
 	"github.com/igrmk/treemap/v2"
 )
@@ -171,9 +170,7 @@ func (t *measuringTape) measure(value reflect.Value) {
 		}
 
 	case reflect.String:
-		str := value.String()
-		hdr := (*reflect.StringHeader)(unsafe.Pointer(&str))
-		t.insert(hdr.Data, uint64(hdr.Len))
+		t.insert(value.Pointer(), uint64(value.Len()))
 
 	case reflect.Struct:
 		for i := 0; i < value.NumField(); i++ {

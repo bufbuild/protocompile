@@ -34,7 +34,7 @@ func pathKey(p protoreflect.SourcePath) interface{} {
 		// Reflection code below doesn't work with nil slices
 		return [0]int32{}
 	}
-	hdr := (*reflect.SliceHeader)(unsafe.Pointer(reflect.ValueOf(&p).Pointer()))
-	array := reflect.NewAt(reflect.ArrayOf(hdr.Len, pathElementType), unsafe.Pointer(hdr.Data))
+	data := unsafe.Pointer(unsafe.SliceData(p))
+	array := reflect.NewAt(reflect.ArrayOf(len(p), pathElementType), data)
 	return array.Elem().Interface()
 }

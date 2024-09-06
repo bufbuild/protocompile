@@ -83,6 +83,9 @@ issues:
     # Don't ban use of fmt.Errorf to create new errors, but the remaining
     # checks from err113 are useful.
     - "do not define dynamic errors.*"
+    # The integer overflow is excessively noisy since it doesn't seem to
+    # go away by adding appropriate range checks.
+    - "G115: integer overflow conversion.*"
   exclude-rules:
     # Benchmarks can't be run in parallel
     - path: benchmark_test\.go
