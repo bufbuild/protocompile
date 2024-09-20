@@ -18,6 +18,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/bufbuild/protocompile/report2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,12 +35,12 @@ func TestNilToken(t *testing.T) {
 func TestLeafTokens(t *testing.T) {
 	assert := assert.New(t)
 
-	ctx := NewContext("test", "abc def ghi")
+	ctx := newContext(report2.File{Path: "test", Text: "abc def ghi"})
 
 	abc := ctx.PushToken(3, TokenIdent)
-	ctx.PushToken(1, TokenWhitespace)
+	ctx.PushToken(1, TokenSpace)
 	def := ctx.PushToken(3, TokenIdent)
-	ctx.PushToken(1, TokenWhitespace)
+	ctx.PushToken(1, TokenSpace)
 	ghi := ctx.PushToken(3, TokenIdent)
 
 	assertIdent := func(tok Token, a, b int, text string) {
@@ -72,18 +73,20 @@ func TestLeafTokens(t *testing.T) {
 func TestTreeTokens(t *testing.T) {
 	assert := assert.New(t)
 
-	ctx := NewContext("test", "abc(def(x), ghi)")
+	ctx := newContext(report2.File{Path: "test", Text: "abc def ghi"})
 
 	_ = ctx.PushToken(3, TokenIdent)
 	open := ctx.PushToken(1, TokenPunct)
 	def := ctx.PushToken(3, TokenIdent)
 	open2 := ctx.PushToken(1, TokenPunct)
 	x := ctx.PushToken(1, TokenIdent)
-	close2 := ctx.PushCloseToken(1, TokenPunct, open2)
+	close2 := ctx.PushToken(1, TokenIdent)
+	ctx.FuseTokens(open2, close2)
 	comma := ctx.PushToken(1, TokenPunct)
-	space := ctx.PushToken(1, TokenWhitespace)
+	space := ctx.PushToken(1, TokenSpace)
 	ghi := ctx.PushToken(3, TokenIdent)
-	close := ctx.PushCloseToken(1, TokenPunct, open)
+	close := ctx.PushToken(1, TokenPunct)
+	ctx.FuseTokens(open, close)
 
 	assert.True(!open.IsLeaf())
 	assert.True(!open2.IsLeaf())

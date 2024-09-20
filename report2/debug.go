@@ -12,4 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast2
+package report2
+
+import (
+	"os"
+	"strings"
+)
+
+const (
+	debugOff int = iota
+	debugMinimal
+	debugFull
+)
+
+// debugEnabled is the status of the PROTOCOMPILE_DEBUG environment variable at
+// startup. This cannot be set in any way except by environment variable. It is
+// used to enable diagnostic-debugging functionality.
+var debugMode = func() int {
+	switch strings.ToLower(os.Getenv("PROTOCOMPILE_DEBUG")) {
+	case "", "0", "off", "false":
+		return debugOff
+	case "full":
+		return debugFull
+	default:
+		return debugMinimal
+	}
+}()

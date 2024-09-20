@@ -16,10 +16,9 @@ package ast2
 
 import (
 	"fmt"
-	"slices"
-	"strings"
-	"sync"
-	"unicode/utf16"
+	"math"
+
+	"github.com/bufbuild/protocompile/report2"
 )
 
 // Context is where all of the book-keeping for the AST of a particular file is kept.
@@ -27,9 +26,10 @@ import (
 // Virtually all operations inside of package ast2 involve a Context. However, most of
 // the exported types carry their Context with them, so you don't need to worry about
 // passing it around.
+//
+// Context implements [Slice] over [Token]s.
 type Context struct {
-	// The data of the file we've parsed.
-	path, text string
+	file *report2.IndexedFile
 
 	// Storage for tokens.
 	stream          []tokenImpl
@@ -52,24 +52,26 @@ type Context struct {
 	bodies   pointers[rawBody]
 	fields   pointers[rawField]
 	methods  pointers[rawMethod]
+	ranges   pointers[rawRange]
+	options  pointers[rawOption]
 
 	// Storage for Types.
 	modifieds pointers[rawModified]
 	generics  pointers[rawGeneric]
 
-	// Protects the two line-related fields.
-	linesOnce sync.Once
-	// A prefix sum of the line lengths of text. Given a byte offset, it is possible
-	// to recover which line that offset is on by performing a binary search on this
-	// list.
-	//
-	// Alternatively, this slice can be interpreted as the index after each \n in the
-	// original file.
-	lines []int
-	// Similar to the above, but instead using the length of each line in code units
-	// if it was transcoded to UTF-16. This is required for compatibility with LSP.
-	utf16Lines []int
+	// Storage for Exprs.
+	signedExprs  pointers[rawExprSigned]
+	rangeExprs   pointers[rawExprRange]
+	arrayExprs   pointers[rawExprArray]
+	messageExprs pointers[rawExprMessage]
+	fieldExprs   pointers[rawExprField]
+
+	// Storage for Keys.
+	extnKeys pointers[rawKeyExtension]
+	anyKeys  pointers[rawKeyAny]
 }
+
+var _ Slice[Token] = (*Context)(nil)
 
 // Contextual is any AST type that carries a context (virtually all of them).
 type Contextual interface {
@@ -79,9 +81,18 @@ type Contextual interface {
 	Context() *Context
 }
 
-// NewContext creates a fresh context for a particular file.
-func NewContext(path, text string) *Context {
-	return &Context{path: path, text: text}
+// newContext creates a fresh context for a particular file.
+func newContext(file report2.File) *Context {
+	c := &Context{file: report2.NewIndexedFile(file), literals: map[rawToken]any{}}
+	c.NewBody(Token{}) // This is the rawBody for the whole file.
+	return c
+}
+
+// Parse parses a Protobuf file, and places any diagnostics encountered in report.
+func Parse(file report2.File, report *report2.Report) File {
+	lexer := lexer{Context: newContext(file)}
+	lexer.Lex(report)
+	return lexer.Context.Root()
 }
 
 // Context implements [Contextual] for Context.
@@ -93,12 +104,38 @@ func (c *Context) Context() *Context {
 //
 // This path is not used for anything except for diagnostics.
 func (c *Context) Path() string {
-	return c.path
+	return c.file.File().Path
 }
 
 // Returns the full text of the file.
 func (c *Context) Text() string {
-	return c.text
+	return c.file.File().Text
+}
+
+// Root returns the root AST node for this context.
+func (c *Context) Root() File {
+	// NewContext() sticks the root at the beginning of bodies for us.
+	return File{decl[Body](1).With(c)}
+}
+
+// Len returns the number of non-synthetic tokens in this context.
+func (c *Context) Len() int {
+	return len(c.stream)
+}
+
+// At returns the nth non-synthetic token in this context.
+func (c *Context) At(n int) Token {
+	_ = c.stream[n]
+	return rawToken(n + 1).With(c)
+}
+
+// Iter is an iterator over the non-synthetic tokens in this context.
+func (c *Context) Iter(yield func(int, Token) bool) {
+	for i := range c.Len() {
+		if !yield(i, rawToken(i+1).With(c)) {
+			break
+		}
+	}
 }
 
 // NewSpan creates a new span in this context.
@@ -117,9 +154,33 @@ func (c *Context) NewSpan(start, end int) Span {
 	return Span{withContext{c}, start, end}
 }
 
+// NewPragma creates a new Pragma node.
+func (c *Context) NewPragma(args PragmaArgs) Pragma {
+	c.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Semicolon)
+	c.pragmas.Append(rawPragma{
+		keyword: args.Keyword.id,
+		equals:  args.Equals.id,
+		semi:    args.Semicolon.id,
+	})
+	pragma := decl[Pragma](c.pragmas.Len()).With(c)
+	pragma.SetValue(args.Value)
+	return pragma
+}
+
+// NewBody creates a new [Body] in this context, with the given token (nillable) as the braces.
+func (c *Context) NewBody(braces Token) Body {
+	c.panicIfNotOurs(braces)
+	c.bodies.Append(rawBody{braces: braces.id})
+	return decl[Body](c.bodies.Len()).With(c)
+}
+
 // PushToken mints the next token referring to a piece of the input source.
 func (c *Context) PushToken(length int, kind TokenKind) Token {
 	c.panicIfNil()
+
+	if length < 0 || length > math.MaxInt32 {
+		panic(fmt.Sprintf("protocompile/ast: PushToken() called with invalid length: %d", length))
+	}
 
 	var prevEnd int
 	if len(c.stream) != 0 {
@@ -134,28 +195,35 @@ func (c *Context) PushToken(length int, kind TokenKind) Token {
 	return Token{withContext{c}, rawToken(len(c.stream))}
 }
 
-// PushToken mints the next token referring to a piece of the input source, and
-// marks it as a close token for open.
+// FuseTokens marks a pair of tokens as their respective open and close.
 //
-// If open is synthethic or not currently a leaf, this function panics.
-func (c *Context) PushCloseToken(length int, kind TokenKind, open Token) Token {
+// If open or close are synthethic or not currently a leaf, this function panics.
+func (c *Context) FuseTokens(open, close Token) {
 	c.panicIfNil()
 
-	impl := open.impl()
-	if impl == nil {
-		panic("protocompile/ast: called PushCloseToken() with a synthetic open token")
+	impl1 := open.impl()
+	if impl1 == nil {
+		panic("protocompile/ast: called FuseTokens() with a synthetic open token")
 	}
-	if !impl.IsLeaf() {
-		panic("protocompile/ast: called PushCloseToken() with non-leaf as the open token")
+	if !impl1.IsLeaf() {
+		panic("protocompile/ast: called FuseTokens() with non-leaf as the open token")
 	}
 
-	tok := c.PushToken(length, kind)
+	impl2 := close.impl()
+	if impl2 == nil {
+		panic("protocompile/ast: called FuseTokens() with a synthetic open token")
+	}
+	if !impl2.IsLeaf() {
+		panic("protocompile/ast: called FuseTokens() with non-leaf as the open token")
+	}
 
-	diff := int32(tok.id - open.id)
-	impl.kindAndOffset |= diff << tokenOffsetShift
-	tok.impl().kindAndOffset |= -diff << tokenOffsetShift
+	diff := int32(close.id - open.id)
+	if diff <= 0 {
+		panic("protocompile/ast: called FuseTokens() with out-of-order")
+	}
 
-	return tok
+	impl1.kindAndOffset |= diff << tokenOffsetShift
+	impl2.kindAndOffset |= -diff << tokenOffsetShift
 }
 
 // NewIdent mints a new synthetic identifier token with the given name.
@@ -210,60 +278,6 @@ func (c *Context) NewOpenClose(open, close Token, children ...Token) {
 	close.synthetic().otherEnd = open.id
 }
 
-// Location returns location information for the given byte offset.
-func (c *Context) Location(offset int) Location {
-	c.panicIfNil()
-
-	c.linesOnce.Do(func() {
-		// Compute the prefix sum on-demand.
-		var next, next16 int
-		rest := c.text
-
-		// We add 1 to the return value of IndexByte because we want to work
-		// with the index immediately *after* the newline byte.
-		for newline := strings.IndexByte(rest, '\n') + 1; newline != 0; {
-			line := rest[:newline]
-			rest = rest[newline:]
-
-			c.lines = append(c.lines, next)
-			next += newline
-
-			// Calculate the length of `line` in UTF-16 code units.
-			var utf16Len int
-			for _, r := range line {
-				utf16Len += utf16.RuneLen(r)
-			}
-
-			c.utf16Lines = append(c.utf16Lines, next16)
-			next16 += utf16Len
-		}
-
-		c.lines = append(c.lines, next)
-		c.utf16Lines = append(c.utf16Lines, next16)
-	})
-
-	// Find the smallest index in c.lines such that lines[line] <= offset
-	line, _ := slices.BinarySearch(c.lines, offset)
-
-	// Calculate the column.
-	// TODO: Use unicode width properly.
-	column := offset - c.lines[line]
-
-	// Calculate the UTF-16 offset of of the offset within its line.
-	chunk := c.text[c.lines[line]:offset]
-	var utf16Col int
-	for _, r := range chunk {
-		utf16Col += utf16.RuneLen(r)
-	}
-
-	return Location{
-		Offset: offset,
-		Line:   line + 1,
-		Column: column + 1,
-		UTF16:  utf16Col,
-	}
-}
-
 func (c *Context) newSynth(tok tokenSynthetic) Token {
 	c.panicIfNil()
 
@@ -276,7 +290,25 @@ func (c *Context) newSynth(tok tokenSynthetic) Token {
 //
 // This is helpful for immediately panicking on function entry.
 func (c *Context) panicIfNil() {
-	_ = c.path
+	_ = c.file
+}
+
+// ours checks that a contextual value is owned by this context, and panics if not.
+//
+// Does not panic if that is nil or has a nil context. Panics if c is nil.
+func (c *Context) panicIfNotOurs(that ...Contextual) {
+	c.panicIfNil()
+	for _, that := range that {
+		if that == nil {
+			continue
+		}
+
+		c2 := that.Context()
+		if c2 == nil || c2 == c {
+			continue
+		}
+		panic(fmt.Sprintf("protocompile/ast: attempt to mix different contexts: %p(%q) and %p(%q)", c, c.Path(), c2, c2.Path()))
+	}
 }
 
 // withContext is an embedable type that provides common operations involving
@@ -301,5 +333,5 @@ func (c withContext) Nil() bool {
 //
 // This is helpful for immediately panicking on function entry.
 func (c *withContext) panicIfNil() {
-	_ = c.ctx.path
+	c.Context().panicIfNil()
 }

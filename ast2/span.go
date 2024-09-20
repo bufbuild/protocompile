@@ -14,7 +14,11 @@
 
 package ast2
 
-import "math"
+import (
+	"math"
+
+	"github.com/bufbuild/protocompile/report2"
+)
 
 // Spanner is any type that has a span, given as a range of tokens.
 type Spanner interface {
@@ -37,6 +41,8 @@ type Span struct {
 	start, end int
 }
 
+var _ report2.Span = Span{}
+
 // Span implements [Spanner] for Span.
 func (s Span) Span() Span {
 	return s
@@ -47,14 +53,19 @@ func (s Span) Offsets() (start, end int) {
 	return s.start, s.end
 }
 
+// File returns the file this span is for.
+func (s Span) File() report2.File {
+	return s.Context().file.File()
+}
+
 // Start returns the start location for this span.
-func (s Span) Start() Location {
-	return s.Context().Location(s.start)
+func (s Span) Start() report2.Location {
+	return s.Context().file.Search(s.start)
 }
 
 // Start returns the end location for this span.
-func (s Span) End() Location {
-	return s.Context().Location(s.end)
+func (s Span) End() report2.Location {
+	return s.Context().file.Search(s.end)
 }
 
 // JoinSpans joins a collection of spans, returning the smallest span that
@@ -83,24 +94,4 @@ func JoinSpans(spans ...Spanner) Span {
 		return Span{}
 	}
 	return span
-}
-
-// Location is a user-displayable location within a source code file.
-type Location struct {
-	// The byte offset for this location.
-	Offset int
-
-	// The line and column for this location, 1-indexed.
-	//
-	// Note that Column is not Offset with the length of all
-	// previous lines subtracted off; it takes into account the
-	// Unicode width. The rune A is one column wide, the rune
-	// 貓 is two columns wide, and the multi-rune emoji presentation
-	// sequence 🐈‍⬛ is also two columns wide.
-	Line, Column int
-
-	// The ostensible UTF-16 codepoint offset from the start of the line
-	// for this location. This exists for the benefit of LSP
-	// implementations.
-	UTF16 int
 }
