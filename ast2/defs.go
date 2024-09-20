@@ -22,8 +22,11 @@ import "iter"
 type Message struct {
 	withContext
 
+	idx int
 	raw *rawDef
 }
+
+var _ Decl = Message{}
 
 // Keyword returns the "message" keyword for this definition.
 func (m Message) Keyword() Token {
@@ -52,7 +55,11 @@ func (m Message) Span() Span {
 }
 
 func (Message) with(ctx *Context, idx int) Decl {
-	return Message{withContext{ctx}, ctx.defs.At(idx)}
+	return Message{withContext{ctx}, idx, ctx.defs.At(idx)}
+}
+
+func (m Message) declIndex() int {
+	return m.idx
 }
 
 // Enum is an enum definition.
@@ -61,8 +68,11 @@ func (Message) with(ctx *Context, idx int) Decl {
 type Enum struct {
 	withContext
 
+	idx int
 	raw *rawDef
 }
+
+var _ Decl = Enum{}
 
 // Keyword returns the "enum" keyword for this definition.
 func (e Enum) Keyword() Token {
@@ -91,7 +101,11 @@ func (e Enum) Span() Span {
 }
 
 func (Enum) with(ctx *Context, idx int) Decl {
-	return Enum{withContext{ctx}, ctx.defs.At(idx)}
+	return Enum{withContext{ctx}, idx, ctx.defs.At(idx)}
+}
+
+func (e Enum) declIndex() int {
+	return e.idx
 }
 
 // Extends is an extension definition.
@@ -100,8 +114,11 @@ func (Enum) with(ctx *Context, idx int) Decl {
 type Extends struct {
 	withContext
 
+	idx int
 	raw *rawDef
 }
+
+var _ Decl = Extends{}
 
 // Keyword returns the "service" keyword for this definition.
 func (e Extends) Keyword() Token {
@@ -128,7 +145,11 @@ func (e Extends) Span() Span {
 }
 
 func (Extends) with(ctx *Context, idx int) Decl {
-	return Extends{withContext{ctx}, ctx.defs.At(idx)}
+	return Extends{withContext{ctx}, idx, ctx.defs.At(idx)}
+}
+
+func (e Extends) declIndex() int {
+	return e.idx
 }
 
 // Service is a service definition.
@@ -137,8 +158,11 @@ func (Extends) with(ctx *Context, idx int) Decl {
 type Service struct {
 	withContext
 
+	idx int
 	raw *rawDef
 }
+
+var _ Decl = Service{}
 
 // Keyword returns the "service" keyword for this definition.
 func (s Service) Keyword() Token {
@@ -167,7 +191,11 @@ func (s Service) Span() Span {
 }
 
 func (Service) with(ctx *Context, idx int) Decl {
-	return Service{withContext{ctx}, ctx.defs.At(idx)}
+	return Service{withContext{ctx}, idx, ctx.defs.At(idx)}
+}
+
+func (s Service) declIndex() int {
+	return s.idx
 }
 
 // rawDef is the backing data shared by all "definition-like" structures
@@ -175,7 +203,7 @@ func (Service) with(ctx *Context, idx int) Decl {
 type rawDef struct {
 	keyword rawToken
 	name    rawPath
-	body    rawDecl[Body]
+	body    decl[Body]
 }
 
 // Body is the body of a definition like a [Message], or the whole contents of a [File]. The
@@ -188,19 +216,24 @@ type rawDef struct {
 type Body struct {
 	withContext
 
+	idx int
 	raw *rawBody
 }
 
 type rawBody struct {
 	braces rawToken
 
-	// These slices are co-indexed
+	// These slices are co-indexed; they are parallelizes to save
+	// three bytes per decl (declKind is 1 byte, but decl is 4; if
+	// they're stored in AOS format, we waste 3 bytes of padding).
 	kinds   []declKind
-	indices []uint32
+	indices []decl[Decl]
 }
 
-// Body implements Slice[Node].
-var _ Slice[Decl] = Body{}
+var (
+	_ Decl           = Body{}
+	_ Inserter[Decl] = Body{}
+)
 
 // Braces returns this body's surrounding braces, if it has any.
 func (b Body) Braces() Token {
@@ -227,7 +260,7 @@ func (b Body) Len() int {
 
 // At returns the nth element of this body.
 func (b Body) At(n int) Decl {
-	return b.raw.kinds[n].reify().with(b.Context(), int(b.raw.indices[n]))
+	return b.raw.kinds[n].reify().with(b.Context(), int(b.raw.indices[n]-1))
 }
 
 // Iter is an iterator over the nodes inside this body.
@@ -237,6 +270,29 @@ func (b Body) Iter(yield func(int, Decl) bool) {
 			break
 		}
 	}
+}
+
+// Append appends a new declaration to this body.
+func (b Body) Append(d Decl) {
+	b.Insert(b.Len(), d)
+}
+
+// Insert inserts a new declaration at the given index.
+func (b Body) Insert(n int, d Decl) {
+	b.Context().panicIfNotOurs(d)
+
+	insertSlice(&b.raw.kinds, n, d.declKind())
+	insertSlice(&b.raw.indices, n, decl[Decl](d.declIndex()+1))
+}
+
+// Delete deletes the declaration at the given index.
+func (b Body) Delete(n int) {
+	deleteSlice(&b.raw.kinds, n)
+	deleteSlice(&b.raw.indices, n)
+}
+
+func (b Body) declIndex() int {
+	return b.idx
 }
 
 // Decls returns an iterator over the nodes within a body of a particular type.
@@ -255,5 +311,5 @@ func Decls[T Decl](b Body) iter.Seq2[int, T] {
 }
 
 func (Body) with(ctx *Context, idx int) Decl {
-	return Body{withContext{ctx}, ctx.bodies.At(idx)}
+	return Body{withContext{ctx}, idx, ctx.bodies.At(idx)}
 }

@@ -46,16 +46,60 @@ type Slice[T any] interface {
 	Iter(yield func(int, T) bool)
 }
 
+// Inserter is a [Slice] that allows insertion and removal of elements at specific
+// indices.
+//
+// Insertion/removal behavior while calling Iter() is unspecified.
+type Inserter[T any] interface {
+	Slice[T]
+
+	// Append appends a value to this sequence.
+	Append(value T)
+
+	// Inserts a value at the index n, shifting things around as needed.
+	//
+	// Panics if n > Len(). Insert(Len(), x) will append.
+	Insert(n int, value T)
+
+	// Delete deletes T from the index n.
+	//
+	// Panics if n >= Len().
+	Delete(n int)
+}
+
 // Commas is like [Slice], but it's for a comma-delimited list of some kind.
 //
 // This makes it easy to work with the list as though it's a slice, while also
 // allowing access to the commas.
 type Commas[T any] interface {
-	Slice[T]
+	Inserter[T]
 
 	// Comma is like [Slice.At] but returns the comma that follows the nth
 	// element.
+	//
+	// May be nil, either because it's the last element (a common situation
+	// where there is no comma) or it was added with Insert() rather than
+	// InsertComma().
 	Comma(n int) Token
+
+	// InsertComma is like Append, but includes an explicit comma.
+	AppendComma(value T, comma Token)
+
+	// InsertComma is like Insert, but includes an explicit comma.
+	InsertComma(n int, value T, comma Token)
+}
+
+// GoSlice implements Slice in the obvious way.
+type GoSlice[T any] []T
+
+func (s GoSlice[T]) Len() int   { return len(s) }
+func (s GoSlice[T]) At(n int) T { return s[n] }
+func (s GoSlice[T]) Iter(yield func(int, T) bool) {
+	for i, v := range s {
+		if !yield(i, v) {
+			break
+		}
+	}
 }
 
 // pointers is a growable slice that provides pointer stability: it does not
@@ -202,4 +246,38 @@ func (p *pointers[T]) coordinates(idx int) (int, int) {
 	idx -= p.lenOfFirstNSlices(slice)
 
 	return slice, idx
+}
+
+// insertSlice implements Inserter.Insert for an ordinary Go slice; this is a helper
+// for implementing Inserter.
+func insertSlice[T any](slice *[]T, n int, value T) {
+	if n == len(*slice) {
+		*slice = append(*slice, value)
+		return
+	}
+
+	// First, append a zero value to make sure we can perform the copy.
+	var zero T
+	*slice = append(*slice, zero)
+
+	// Then, copy all elements after n one spot forward.
+	copy((*slice)[n+1:len(*slice)-1], (*slice)[n:len(*slice)-2])
+
+	// Finally, insert the value.
+	(*slice)[n] = value
+}
+
+// deleteSlice implements Inserter.Delete for an ordinary Go slice; this is a helper
+// for implementing Inserter.
+func deleteSlice[T any](slice *[]T, n int) {
+	if n == 0 {
+		*slice = (*slice)[1:]
+		return
+	}
+	if n == len(*slice)-1 {
+		*slice = (*slice)[:len(*slice)-1]
+	}
+
+	// Hard case: have to perform a copy.
+	copy((*slice)[n:len(*slice)-2], (*slice)[n+1:len(*slice)-1])
 }

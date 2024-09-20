@@ -43,6 +43,9 @@ const (
 	// all group fields.
 	BuiltinGroup
 
+	// This corresponds to the builtin "constant" max, used in range expressions.
+	BuiltinMax
+
 	builtinCount
 
 	BuiltinFloat32 = BuiltinFloat
@@ -68,8 +71,10 @@ var builtinByName = map[string]Builtin{
 	"bool":   BuiltinBool,
 	"string": BuiltinString,
 	"bytes":  BuiltinBytes,
-	"map":    BuiltinMap,
-	"group":  BuiltinGroup,
+
+	"map":   BuiltinMap,
+	"group": BuiltinGroup,
+	"max":   BuiltinMax,
 }
 
 var builtinNames = func() []string {
@@ -99,4 +104,21 @@ func (b Builtin) String() string {
 		return builtinNames[int(b)]
 	}
 	return fmt.Sprintf("builtin%d", int(b))
+}
+
+// IsPrimitive returns if this builtin name refers to one of the primitive types.
+func (b Builtin) IsPrimitive() bool {
+	switch b {
+	case BuiltinInt32, BuiltinInt64,
+		BuiltinUInt32, BuiltinUInt64,
+		BuiltinSInt32, BuiltinSInt64,
+		BuiltinFloat, BuiltinDouble,
+		BuiltinFixed32, BuiltinFixed64,
+		BuiltinSFixed32, BuiltinSFixed64,
+		BuiltinBool,
+		BuiltinString, BuiltinBytes:
+		return true
+	default:
+		return false
+	}
 }
