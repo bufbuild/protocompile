@@ -51,12 +51,25 @@ func (f File) Imports() iter.Seq2[int, Import] {
 type Pragma struct {
 	withContext
 
+	idx int
 	raw *rawPragma
 }
 
 type rawPragma struct {
-	keyword, equals, value, semi rawToken
+	keyword, equals, semi rawToken
+	value                 rawExpr
 }
+
+// PragmaArgs is arguments for creating a [Pragma] with [Context.NewPragma].
+type PragmaArgs struct {
+	// Must be "syntax" or "edition".
+	Keyword   Token
+	Equals    Token
+	Value     Expr
+	Semicolon Token
+}
+
+var _ Decl = Pragma{}
 
 // Keyword returns the keyword for this pragma.
 func (p Pragma) Keyword() Token {
@@ -84,8 +97,18 @@ func (p Pragma) Equals() Token {
 //
 // May be nil, if the user wrote something like syntax;. It can also be
 // a number or an identifier, for cases like edition = 2024; or syntax = proto2;.
-func (p Pragma) Value() Token {
+func (p Pragma) Value() Expr {
 	return p.raw.value.With(p)
+}
+
+// SetValue replaces this pragma's value.
+func (p Pragma) SetValue(e Expr) {
+	p.Context().panicIfNotOurs(e)
+	if e == nil {
+		p.raw.value = rawExpr{}
+	}
+
+	p.raw.value = e.rawExpr()
 }
 
 // Semicolon returns this pragma's ending semicolon.
@@ -101,13 +124,18 @@ func (p Pragma) Span() Span {
 }
 
 func (Pragma) with(ctx *Context, idx int) Decl {
-	return Pragma{withContext{ctx}, ctx.pragmas.At(idx)}
+	return Pragma{withContext{ctx}, idx, ctx.pragmas.At(idx)}
+}
+
+func (p Pragma) declIndex() int {
+	return p.idx
 }
 
 // Package is the package declaration for a file.
 type Package struct {
 	withContext
 
+	idx int
 	raw *rawPackage
 }
 
@@ -116,6 +144,8 @@ type rawPackage struct {
 	path    rawPath
 	semi    rawToken
 }
+
+var _ Decl = Package{}
 
 // Keyword returns the "package" keyword for this declaration.
 func (p Package) Keyword() Token {
@@ -142,19 +172,26 @@ func (p Package) Span() Span {
 }
 
 func (Package) with(ctx *Context, idx int) Decl {
-	return Package{withContext{ctx}, ctx.packages.At(idx)}
+	return Package{withContext{ctx}, idx, ctx.packages.At(idx)}
+}
+
+func (p Package) declIndex() int {
+	return p.idx
 }
 
 // Import is an import declaration within a file.
 type Import struct {
 	withContext
 
+	idx int
 	raw *rawImport
 }
 
 type rawImport struct {
 	keyword, modifier, filePath, semi rawToken
 }
+
+var _ Decl = Import{}
 
 // Keyword returns the "import" keyword for this pragma.
 func (i Import) Keyword() Token {
@@ -198,5 +235,9 @@ func (i Import) Span() Span {
 }
 
 func (Import) with(ctx *Context, idx int) Decl {
-	return Import{withContext{ctx}, ctx.imports.At(idx)}
+	return Import{withContext{ctx}, idx, ctx.imports.At(idx)}
+}
+
+func (i Import) declIndex() int {
+	return i.idx
 }

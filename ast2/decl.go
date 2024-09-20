@@ -26,6 +26,8 @@ const (
 	declBody
 	declField
 	declMethod
+	declRange
+	declOption
 )
 
 // Decl is a Protobuf declaration.
@@ -42,33 +44,52 @@ type Decl interface {
 	with(ctx *Context, idx int) Decl
 
 	// kind returns what kind of decl this is.
-	kind() declKind
+	declKind() declKind
+	// declIndex returns the index this declaration occupies in its owning
+	// context. This is 0-indexed, and must be incremented
+	declIndex() int
 }
 
-func (File) kind() declKind    { return declFile }
-func (Pragma) kind() declKind  { return declPragma }
-func (Package) kind() declKind { return declPackage }
-func (Import) kind() declKind  { return declImport }
-func (Message) kind() declKind { return declMessage }
-func (Enum) kind() declKind    { return declEnum }
-func (Extends) kind() declKind { return declExtends }
-func (Service) kind() declKind { return declService }
-func (Body) kind() declKind    { return declBody }
-func (Field) kind() declKind   { return declField }
-func (Method) kind() declKind  { return declMethod }
+func (File) declKind() declKind    { return declFile }
+func (Pragma) declKind() declKind  { return declPragma }
+func (Package) declKind() declKind { return declPackage }
+func (Import) declKind() declKind  { return declImport }
+func (Message) declKind() declKind { return declMessage }
+func (Enum) declKind() declKind    { return declEnum }
+func (Extends) declKind() declKind { return declExtends }
+func (Service) declKind() declKind { return declService }
+func (Body) declKind() declKind    { return declBody }
+func (Field) declKind() declKind   { return declField }
+func (Method) declKind() declKind  { return declMethod }
+func (Range) declKind() declKind   { return declRange }
+func (Option) declKind() declKind  { return declOption }
 
-// declID is a reference to a declaration inside some Context.
-type rawDecl[_ Decl] uint32
+type declKind int8
+
+// decl is a typed reference to a declaration inside some Context.
+//
+// Note: decl indices are one-indexed, to allow for the zero value
+// to represent nil.
+type decl[T Decl] uint32
+
+func declFor[T Decl](d T) decl[T] {
+	if d.Context() == nil {
+		return decl[T](0)
+	}
+	return decl[T](d.declIndex() + 1)
+}
 
 // Wrap wraps this declID with a context to present to the user.
-func (d rawDecl[T]) With(c Contextual) T {
+func (d decl[T]) With(c Contextual) T {
 	ctx := c.Context()
 
 	var decl T
-	return decl.with(ctx, int(uint32(d))).(T)
-}
+	if d == 0 {
+		return decl
+	}
 
-type declKind int8
+	return decl.with(ctx, int(uint32(d)-1)).(T)
+}
 
 // reify returns the corresponding nil Decl for the given kind,
 // such that k.reify().kind() == k.
@@ -94,6 +115,10 @@ func (k declKind) reify() Decl {
 		return Field{}
 	case declMethod:
 		return Method{}
+	case declRange:
+		return Range{}
+	case declOption:
+		return Option{}
 	default:
 		return nil
 	}

@@ -16,7 +16,6 @@ package ast2
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"unicode"
@@ -31,24 +30,46 @@ const (
 const (
 	TokenUnrecognized TokenKind = iota // Unrecognized garbage in the input file.
 
-	TokenWhitespace // Non-comment contiguous whitespace.
-	TokenComment    // A single comment.
-	TokenIdent      // An identifier.
-	TokenString     // A string token. May be a non-leaf for non-contiguous quoted strings.
-	TokenNumber     // A run of digits that is some kind of number.
-	TokenPunct      // Some punctuation. May be a non-leaf for delimiters like {}.
-	_TokenUnused    // Reserved for future use.
+	TokenSpace   // Non-comment contiguous whitespace.
+	TokenComment // A single comment.
+	TokenIdent   // An identifier.
+	TokenString  // A string token. May be a non-leaf for non-contiguous quoted strings.
+	TokenNumber  // A run of digits that is some kind of number.
+	TokenPunct   // Some punctuation. May be a non-leaf for delimiters like {}.
+	_TokenUnused // Reserved for future use.
 
 	// DO NOT ADD MORE TOKEN KINDS: ONLY THREE BITS ARE AVAILABLE
 	// TO STORE THEM.
 )
 
 // TokenKind identifies what kind of token a particular [Token] is.
-type TokenKind uint32
+type TokenKind byte
 
 // IsSkippable returns whether this is a whitespace or comment token.
 func (t TokenKind) IsSkippable() bool {
-	return t == TokenWhitespace || t == TokenComment
+	return t == TokenSpace || t == TokenComment
+}
+
+// String implements [strings.Stringer] for TokenKind.
+func (t TokenKind) String() string {
+	switch t {
+	case TokenUnrecognized:
+		return "TokenUnrecognized"
+	case TokenSpace:
+		return "TokenSpace"
+	case TokenComment:
+		return "TokenComment"
+	case TokenIdent:
+		return "TokenIdent"
+	case TokenString:
+		return "TokenString"
+	case TokenNumber:
+		return "TokenNumber"
+	case TokenPunct:
+		return "TokenPunct"
+	default:
+		return fmt.Sprintf("TokenKind(%d)", int(t))
+	}
 }
 
 // Token is a lexical element of a Protobuf file.
@@ -280,11 +301,11 @@ func (t Token) Inclusive(yield func(Token) bool) {
 	yield(end)
 }
 
-// AsInt converts this token into an unsigned integer if it is a numeric token.
+// AsUInt converts this token into an unsigned integer if it is a numeric token.
+// bits is the maximum number of bits that are used to represent this value.
 //
-// Otherwise, returns 0, false.
+// Otherwise, or if the result would overflow, returns 0, false.
 func (t Token) AsInt() (uint64, bool) {
-
 	if t.Kind() != TokenNumber {
 		return 0, false
 	}
@@ -304,19 +325,10 @@ func (t Token) AsInt() (uint64, bool) {
 // not precisely representable as a float64, it is clamped to an infinity or
 // rounded (ties-to-even).
 //
-// This function handles the special inf and nan tokens if allowSpecial is set.
+// This function does not handle the special non-finite values inf and nan.
 //
 // Otherwise, returns 0.0, false.
-func (t Token) AsFloat(allowSpecial bool) (float64, bool) {
-	if allowSpecial {
-		switch t.Text() {
-		case "inf":
-			return math.Inf(1), true
-		case "nan":
-			return math.NaN(), true
-		}
-	}
-
+func (t Token) AsFloat() (float64, bool) {
 	if t.Kind() != TokenNumber {
 		return 0, false
 	}
@@ -359,7 +371,11 @@ func (t Token) AsString() (string, bool) {
 	// leaf string whose quotes we can just pull of off the
 	// token, after removing the quotes.
 	text := t.Text()
-	return text[1 : len(text)-2], true
+	if len(text) < 2 {
+		// Some kind of invalid, unterminated string token.
+		return "", true
+	}
+	return text[1 : len(text)-1], true
 }
 
 // String implements [strings.Stringer] for Token.

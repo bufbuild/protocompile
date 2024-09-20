@@ -172,6 +172,9 @@ func (p Path) first() (Token, bool) {
 //
 //  3. A single synthetic token and a nil token. If this token has children, those are
 //     the path components. Otherwise, the token itself is the sole token.
+//
+// NOTE: Multiple compressed representations in this package depend on the fact that
+// if raw[0] < 0, then raw[1] == 0 for all valid paths.
 type rawPath [2]rawToken
 
 // Wrap wraps this rawPath with a context to present to the user.
