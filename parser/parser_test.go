@@ -984,9 +984,11 @@ func TestPathological(t *testing.T) {
 	// adequate performance.
 	//   https://oss-fuzz.com/testcase-detail/4766256800858112
 	//   https://oss-fuzz.com/testcase-detail/4952577018298368
+	//   https://oss-fuzz.com/testcase-detail/5539164995518464
 	testCases := map[string]bool{
 		"pathological.proto":  true,
 		"pathological2.proto": false,
+		"pathological3.proto": false,
 	}
 	for fileName := range testCases {
 		fileName, canParse := fileName, testCases[fileName] // don't want test func below to capture loop var
