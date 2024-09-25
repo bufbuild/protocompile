@@ -76,6 +76,11 @@ func (rr *runeReader) getMark() string {
 	return string(rr.data[rr.mark:rr.pos])
 }
 
+type comment struct {
+	tok     ast.Token
+	isBlock bool
+}
+
 type protoLex struct {
 	input   *runeReader
 	info    *ast.FileInfo
@@ -86,7 +91,10 @@ type protoLex struct {
 	prevOffset int
 	eof        ast.Token
 
-	comments []ast.Token
+	prevLine, curLine int
+
+	maybeDonateComment int
+	comments           []comment
 }
 
 var utf8Bom = []byte{0xEF, 0xBB, 0xBF}
@@ -160,6 +168,12 @@ var keywords = map[string]int{
 func (l *protoLex) maybeNewLine(r rune) {
 	if r == '\n' {
 		l.info.AddLine(l.input.offset())
+		l.curLine++
+		if len(l.comments) > 0 && l.comments[0].isBlock && l.maybeDonateComment > 0 {
+			// Newline after trailing block comment? Increment the signal that
+			// we may be able to donate comment to previous token.
+			l.maybeDonateComment++
+		}
 	}
 }
 
@@ -305,13 +319,15 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 				return int(c)
 			}
 			if cn == '/' {
+				startLine := l.curLine
 				if hasErr := l.skipToEndOfLineComment(lval); hasErr {
 					return _ERROR
 				}
-				l.comments = append(l.comments, l.newToken())
+				l.addComment(false, startLine)
 				continue
 			}
 			if cn == '*' {
+				startLine := l.curLine
 				ok, hasErr := l.skipToEndOfBlockComment(lval)
 				if hasErr {
 					return _ERROR
@@ -320,7 +336,7 @@ func (l *protoLex) Lex(lval *protoSymType) int {
 					l.setError(lval, errors.New("block comment never terminates, unexpected EOF"))
 					return _ERROR
 				}
-				l.comments = append(l.comments, l.newToken())
+				l.addComment(true, startLine)
 				continue
 			}
 			l.input.unreadRune(szn)
@@ -366,34 +382,37 @@ func (l *protoLex) newToken() ast.Token {
 	return l.info.AddToken(offset, length)
 }
 
+func (l *protoLex) addComment(isBlock bool, startLine int) {
+	if len(l.comments) == 0 && startLine == l.prevLine {
+		l.maybeDonateComment++
+	}
+	l.comments = append(l.comments, comment{l.newToken(), isBlock})
+}
+
 func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
-	comments := l.comments
-	l.comments = nil
-	var prevTrailingComments []ast.Token
+	comments, maybeDonateComment := l.comments, l.maybeDonateComment
+	l.comments, l.maybeDonateComment = nil, 0
+	var prevTrailingComments []comment
 	if l.prevSym != nil && len(comments) > 0 {
-		prevEnd := l.info.NodeInfo(l.prevSym).End().Line
-		info := l.info.NodeInfo(n)
-		nStart := info.Start().Line
-		if nStart == prevEnd {
+		cur := l.curLine
+		if cur == l.prevLine {
 			if rn, ok := n.(*ast.RuneNode); ok && rn.Rune == 0 {
-				// if current token is EOF, pretend its on separate line
+				// if current token is EOF, pretend it's on separate line
 				// so that the logic below can attribute a final trailing
 				// comment to the previous token
-				nStart++
+				cur++
 			}
 		}
-		c := comments[0]
-		commentInfo := l.info.TokenInfo(c)
-		commentStart := commentInfo.Start().Line
-		if nStart > prevEnd && commentStart == prevEnd {
+		if cur > l.prevLine && maybeDonateComment > 0 {
 			// Comment starts right after the previous token. If it's a
 			// line comment, we record that as a trailing comment.
 			//
 			// But if it's a block comment, it is only a trailing comment
 			// if there are multiple comments or if the block comment ends
-			// on a line before n.
-			canDonate := strings.HasPrefix(commentInfo.RawText(), "//") ||
-				len(comments) > 1 || commentInfo.End().Line < nStart
+			// on a line before n. This lattermost condition is signaled
+			// via l.maybeDonateComment > 1.
+			canDonate := !comments[0].isBlock ||
+				len(comments) > 1 || maybeDonateComment > 1
 
 			if canDonate {
 				prevTrailingComments = comments[:1]
@@ -404,13 +423,14 @@ func (l *protoLex) setPrevAndAddComments(n ast.TerminalNode) {
 
 	// now we can associate comments
 	for _, c := range prevTrailingComments {
-		l.info.AddComment(c, l.prevSym.Token())
+		l.info.AddComment(c.tok, l.prevSym.Token())
 	}
 	for _, c := range comments {
-		l.info.AddComment(c, n.Token())
+		l.info.AddComment(c.tok, n.Token())
 	}
 
 	l.prevSym = n
+	l.prevLine = l.curLine
 }
 
 func (l *protoLex) setString(lval *protoSymType, val string) {
