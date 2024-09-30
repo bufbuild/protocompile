@@ -1,0 +1,7 @@
+error: missing quotes around syntax value
+  --> testdata/parser/syntax/unquoted.proto:15:10
+   | 
+15 | syntax = proto2;
+   |          ^^^^^^ help: wrap this in quotes
+
+encountered 1 error

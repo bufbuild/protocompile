@@ -1,0 +1,1 @@
+error: testdata/parser/syntax/edition_proto2.proto:15:11: "proto2" is not a valid edition

@@ -1,0 +1,7 @@
+error: missing quotes around edition value
+  --> testdata/parser/syntax/unquoted_edition.proto:15:11
+   | 
+15 | edition = 2023;
+   |           ^^^^ help: wrap this in quotes
+
+encountered 1 error
