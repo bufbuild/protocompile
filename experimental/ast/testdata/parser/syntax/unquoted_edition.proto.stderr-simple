@@ -1,0 +1,1 @@
+error: testdata/parser/syntax/unquoted_edition.proto:15:11: missing quotes around edition value

@@ -1,0 +1,9 @@
+error: syntax declaration must be the first declaration in a file
+  --> testdata/parser/syntax/not_first.proto:17:1
+   | 
+15 | package test;
+   | -------------^^^^^ expected this to be the first declaration
+   | |
+   | previous declaration
+
+encountered 1 error

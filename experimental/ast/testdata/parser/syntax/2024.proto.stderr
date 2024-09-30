@@ -1,0 +1,8 @@
+error: "2024" is not a valid edition
+  --> testdata/parser/syntax/2024.proto:15:11
+   | 
+15 | edition = "2024";
+   |           ^^^^^^ 
+   = note: protocompile only recognizes "2023"
+
+encountered 1 error

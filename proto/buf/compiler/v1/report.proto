@@ -1,0 +1,87 @@
+// Copyright 2020-2024 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package buf.compiler.v1;
+
+// A diagnostic report, consisting of `Diagnostics` and the `File`s they diagnose.
+message Report {
+  // A file involved in a diagnostic `Report`.
+  message File {
+    // The path to this file. Does not need to be meaningful as a file-system path.
+    string path = 1;
+
+    // The textual contents of this file.
+    bytes text = 2;
+  }
+
+  repeated File files = 1;
+  repeated Diagnostic diagnostics = 2;
+}
+
+// A diagnostic within a `Report`.
+message Diagnostic {
+  // The message to show for this diagnostic. This should fit on one line.
+  string message = 1;
+
+  // The level for this diagnostic.
+  Level level = 2;
+
+  // An optional path to show in the diagnostic, if it has no annotations.
+  // This is useful for e.g. diagnostics that would have no spans.
+  string path = 3;
+
+  // Annotations for source code relevant to this diagnostic.
+  repeated Annotation annotations = 4;
+
+  // Notes about the error to show to the user. May span multiple lines.
+  repeated string notes = 5;
+  // Helpful suggestions to the user.
+  repeated string help = 6;
+
+  // Debugging information related to the diagnostic. This should only be
+  // used for information about debugging a tool or compiler that emits the
+  // diagnostic, not the code being diagnosed.
+  repeated string debug = 7;
+}
+
+// A diagnostic level. This affects how (and whether) it is shown to users.
+enum Level {
+  LEVEL_UNSPECIFIED = 0;
+  LEVEL_ERROR = 1;
+  LEVEL_WARNING = 2;
+  LEVEL_REMARK = 3;
+}
+
+// A file annotation within a `Diagnostic`. This corresponds to a single
+// span of source code in a `Report`'s file.
+message Annotation {
+  // The index of `Report.files` this annotation is for.
+  //
+  // This is not a whole `File`, to help keep serialized reports slim.
+  int32 file = 1;
+
+  // The start offset of the annotated snippet, in bytes.
+  uint32 start = 2;
+  // The end offset of the annotated snippet, in bytes.
+  uint32 end = 3;
+
+  // A message to show under this snippet. May be empty.
+  string message = 4;
+
+  // Whether this is a "primary" snippet, which is used for deciding whether or not
+  // to mark the snippet with the same color as the overall diagnostic.
+  bool primary = 5;
+}

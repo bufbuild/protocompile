@@ -1,0 +1,10 @@
+version: v2
+modules:
+  - path: proto
+    name: buf.build/bufbuild/pbc
+lint:
+  use:
+    - STANDARD
+breaking:
+  use:
+    - WIRE_JS

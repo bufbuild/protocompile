@@ -1,0 +1,39 @@
+{
+  "file": {
+    "path": "testdata/parser/syntax/unquoted_edition.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKZWRpdGlvbiA9IDIwMjM7CgpwYWNrYWdlIHRlc3Q7"
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_EDITION",
+        "value": {
+          "literal": {
+            "intValue": "2023",
+            "span": { "start": 616, "end": 620 }
+          }
+        },
+        "span": { "start": 606, "end": 621 },
+        "keywordSpan": { "start": 606, "end": 613 },
+        "equalsSpan": { "start": 614, "end": 615 },
+        "semicolonSpan": { "start": 620, "end": 621 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 631, "end": 635 }
+            }
+          ],
+          "span": { "start": 631, "end": 635 }
+        },
+        "span": { "start": 623, "end": 636 },
+        "keywordSpan": { "start": 623, "end": 630 },
+        "semicolonSpan": { "start": 635, "end": 636 }
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+error: "proto2" is not a valid edition
+  --> testdata/parser/syntax/edition_proto2.proto:15:11
+   | 
+15 | edition = "proto2";
+   |           ^^^^^^^^ 
+   = note: protocompile only recognizes "2023"
+
+encountered 1 error
