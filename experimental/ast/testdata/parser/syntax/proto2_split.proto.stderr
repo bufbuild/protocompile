@@ -1,0 +1,7 @@
+warning: syntax value should be a single, escape-less string
+  --> testdata/parser/syntax/proto2_split.proto:15:10
+   | 
+15 | syntax = "proto" "2";
+   |          ^^^^^^^^^^^ help: change this to "proto2"
+
+ encountered  1 warning

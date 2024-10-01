@@ -383,7 +383,7 @@ escapeLoop:
 		}
 
 		if r != '\\' {
-			// We intentionally do not legalize against \0 and \n. The above warning
+			// We intentionally do not legalize against literal \0 and \n. The above warning
 			// covers \0 and legalizing against \n is user-hostile. This is valuable for
 			// e.g. strings that contain CEL code.
 			//
@@ -395,7 +395,7 @@ escapeLoop:
 		}
 
 		if !haveEsc {
-			buf.WriteString(l.Text()[start : l.cursor-1])
+			buf.WriteString(l.Text()[start+1 : l.cursor-1])
 			haveEsc = true
 		}
 
@@ -458,6 +458,7 @@ escapeLoop:
 				}
 				r = l.Peek()
 
+				value *= 16
 				switch {
 				case r >= '0' && r <= '9':
 					value |= uint32(r) - '0'
@@ -470,7 +471,6 @@ escapeLoop:
 				}
 				_ = l.Pop()
 
-				value *= 16
 				consumed++
 			}
 

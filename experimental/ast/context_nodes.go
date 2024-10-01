@@ -24,11 +24,12 @@ func (c *Context) NewDeclEmpty(semicolon Token) DeclEmpty {
 
 // NewDeclSyntax creates a new DeclPragma node.
 func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
-	c.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Semicolon)
+	c.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Options, args.Semicolon)
 
 	c.decls.syntaxes.Append(rawDeclSyntax{
 		keyword: args.Keyword.raw,
 		equals:  args.Equals.raw,
+		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
 
@@ -40,11 +41,12 @@ func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 
 // NewDeclPackage creates a new DeclPackage node.
 func (c *Context) NewDeclPackage(args DeclPackageArgs) DeclPackage {
-	c.panicIfNotOurs(args.Keyword, args.Path, args.Semicolon)
+	c.panicIfNotOurs(args.Keyword, args.Path, args.Options, args.Semicolon)
 
 	c.decls.packages.Append(rawDeclPackage{
 		keyword: args.Keyword.raw,
 		path:    args.Path.raw,
+		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
 	return decl[DeclPackage](c.decls.packages.Len()).With(c)
@@ -52,12 +54,12 @@ func (c *Context) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 
 // NewDeclImport creates a new DeclImport node.
 func (c *Context) NewDeclImport(args DeclImportArgs) DeclImport {
-	c.panicIfNotOurs(args.Keyword, args.Modifier, args.FilePath, args.Semicolon)
+	c.panicIfNotOurs(args.Keyword, args.Modifier, args.ImportPath, args.Options, args.Semicolon)
 
 	c.decls.imports.Append(rawDeclImport{
 		keyword:  args.Keyword.raw,
 		modifier: args.Modifier.raw,
-		filePath: args.FilePath.raw,
+		options:  args.Options.rawOptions(),
 		semi:     args.Semicolon.raw,
 	})
 	return decl[DeclImport](c.decls.imports.Len()).With(c)
@@ -70,9 +72,10 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 		args.Equals, args.Value, args.Options, args.Body, args.Semicolon)
 
 	c.decls.defs.Append(rawDeclDef{
-		name:   args.Name.raw,
-		equals: args.Equals.raw,
-		semi:   args.Semicolon.raw,
+		name:    args.Name.raw,
+		equals:  args.Equals.raw,
+		options: args.Options.rawOptions(),
+		semi:    args.Semicolon.raw,
 	})
 	decl := decl[DeclDef](c.decls.defs.Len()).With(c)
 
@@ -85,12 +88,6 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 	if !args.Returns.Nil() {
 		decl.raw.signature = &rawSignature{
 			returns: args.Returns.raw,
-		}
-	}
-
-	if !args.Options.Nil() {
-		decl.raw.options = &rawOptions{
-			brackets: args.Options.raw,
 		}
 	}
 
@@ -114,15 +111,10 @@ func (c *Context) NewDeclRange(args DeclRangeArgs) DeclRange {
 
 	c.decls.ranges.Append(rawDeclRange{
 		keyword: args.Keyword.raw,
+		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
 	decl := decl[DeclRange](c.decls.ranges.Len()).With(c)
-
-	if !args.Options.Nil() {
-		decl.raw.options = &rawOptions{
-			brackets: args.Options.raw,
-		}
-	}
 
 	return decl
 }
@@ -239,10 +231,9 @@ func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 
 // NewOptions creates a new Options node.
 func (c *Context) NewOptions(brackets Token) Options {
-	// Options is the only node type that is not stored directly in the context,
-	// but this is an implementation detail.
-	return Options{
-		withContext{c},
-		&rawOptions{brackets: brackets.raw},
-	}
+	c.panicIfNotOurs(brackets)
+	c.options.Append(optionsImpl{
+		brackets: brackets.raw,
+	})
+	return rawOptions(c.options.Len()).With(c)
 }

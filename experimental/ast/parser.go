@@ -101,30 +101,45 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			break
 		}
 
-		eq := parsePunct(errs, cursor, punctArgs{
+		args := DeclSyntaxArgs{
+			Keyword: kw,
+		}
+
+		args.Equals = parsePunct(errs, cursor, punctArgs{
 			want:  "=",
 			where: "in " + kw.Text() + " declaration",
 		})
 
-		value := parseExpr(errs, cursor)
+		if !args.Equals.Nil() || canStartExpr(cursor.Peek()) {
+			// If there is a trailing ; instead of an expression, make sure we can include
+			// it in the span for the the decl. If we don't do this, parseExpr will throw it
+			// away.
+			if semi := cursor.Peek(); semi.Text() == ";" {
+				args.Semicolon = semi
+			}
+			args.Value = parseExpr(errs, cursor)
+		}
+
+		if next := cursor.Peek(); next.Text() == "[" {
+			args.Options = cursor.Context().NewOptions(cursor.Pop())
+			parseOptions(errs, args.Options.Brackets(), args.Options)
+		}
+
 		// Only diagnose a missing semicolon if we successfully parsed some
 		// kind of partially-valid expression. Otherwise, we might diagnose
 		// the same extraneous ; twice.
-		semi := parsePunct(errs, cursor, punctArgs{
-			want:           ";",
-			where:          "in " + kw.Text() + " declaration",
-			diagnoseUnless: value == nil,
-		})
+		if args.Semicolon.Nil() {
+			args.Semicolon = parsePunct(errs, cursor, punctArgs{
+				want:           ";",
+				where:          "in " + kw.Text() + " declaration",
+				diagnoseUnless: args.Equals.Nil() || args.Value == nil,
+			})
+		}
 
-		return cursor.Context().NewDeclSyntax(DeclSyntaxArgs{
-			Keyword:   kw,
-			Equals:    eq,
-			Value:     value,
-			Semicolon: semi,
-		})
+		return cursor.Context().NewDeclSyntax(args)
 
 	case "package":
-		if next.Text() != ";" {
+		if !next.Nil() && next.Text() != ";" {
 			// If it's not followed by a semi, let it be diagnosed as a field.
 			break
 		}
@@ -137,35 +152,41 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 		})
 
 	case "import":
-		modifier := path.AsIdent().Name()
-		if !path.Nil() && modifier != "public" && modifier != "weak" {
-			// For import to be valid, it needs to either be alone or the path
-			// must be public or weak.
+		// If the import is followed by an expression or a ;, we assume it's a real import.
+		if canStartExpr(cursor.Peek()) && cursor.Peek().Text() != ";" {
+			// Otherwise it's probably a weird field.
 			break
 		}
 
-		var filePath Token
-		if next := cursor.Peek(); next.Kind() == TokenString {
-			filePath = next
-			cursor.Pop()
-		} else {
-			// If it's not followed by a quoted string, let it be diagnosed as a field.
-			break
+		args := DeclImportArgs{
+			Keyword: kw,
+		}
+
+		modifier := path.AsIdent().Name()
+		if modifier == "public" || modifier == "weak" {
+			args.Modifier = path.AsIdent()
+		} else if !path.Nil() {
+			// This will catch someone writing `import foo.bar;` when we legalize.
+			args.ImportPath = ExprPath{Path: path}
+		}
+
+		if args.ImportPath == nil && canStartExpr(cursor.Peek()) {
+			args.ImportPath = parseExpr(errs, cursor)
+		}
+
+		if next := cursor.Peek(); next.Text() == "[" {
+			args.Options = cursor.Context().NewOptions(cursor.Pop())
+			parseOptions(errs, args.Options.Brackets(), args.Options)
 		}
 
 		// Check for a trailing semicolon.
-		semi := parsePunct(errs, cursor, punctArgs{
+		args.Semicolon = parsePunct(errs, cursor, punctArgs{
 			want:           ";",
-			diagnoseUnless: filePath.Nil(),
+			diagnoseUnless: args.ImportPath == nil,
 			where:          "in import",
 		})
 
-		return cursor.Context().NewDeclImport(DeclImportArgs{
-			Keyword:   kw,
-			Modifier:  path.AsIdent(),
-			FilePath:  filePath,
-			Semicolon: semi,
-		})
+		return cursor.Context().NewDeclImport(args)
 
 	case "reserved", "extensions":
 		if next.Text() == "=" {
@@ -211,9 +232,10 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			})
 		}
 
-		var options Token
+		var options Options
 		if next := cursor.Peek(); next.Text() == "[" {
-			options = cursor.Pop()
+			options = cursor.Context().NewOptions(cursor.Pop())
+			parseOptions(errs, options.Brackets(), options)
 		}
 
 		// Parse a semicolon, if possible.
@@ -232,10 +254,6 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			range_.AppendComma(e.expr, e.comma)
 		}
 
-		if !options.Nil() {
-			parseOptions(errs, options, range_.Options())
-		}
-
 		return range_
 	}
 
@@ -244,7 +262,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 		Name: path,
 	}
 
-	var inputs, outputs, braces Token
+	var inputs, outputs, braces, brackets Token
 
 	// Try to parse the various "followers".
 	var mark CursorMark
@@ -295,7 +313,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 					what:   "compact options list",
 				})
 			} else {
-				args.Options = next
+				brackets = next
 			}
 		}
 
@@ -385,8 +403,13 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 	if !outputs.Nil() {
 		parseTypes(outputs, def.WithSignature().Outputs())
 	}
-	if !args.Options.Nil() {
-		parseOptions(errs, args.Options, def.WithOptions())
+	if !brackets.Nil() {
+		var options Options
+		if next := cursor.Peek(); next.Text() == "[" {
+			options = cursor.Context().NewOptions(cursor.Pop())
+			parseOptions(errs, options.Brackets(), options)
+		}
+		def.SetOptions(options)
 	}
 	if !braces.Nil() {
 		where := where
@@ -517,7 +540,7 @@ func parseOperator(errs *report.Report, cursor *Cursor, expr Expr, prec int) Exp
 // contain any infix operators.
 //
 // May return nil if parsing completely fails.
-func parseAtomicExpr(errs *report.Report, cursor *Cursor) (expr Expr) {
+func parseAtomicExpr(errs *report.Report, cursor *Cursor) Expr {
 	next := cursor.Peek()
 	if next.Nil() {
 		return nil
@@ -525,10 +548,10 @@ func parseAtomicExpr(errs *report.Report, cursor *Cursor) (expr Expr) {
 
 	switch {
 	case next.Kind() == TokenString, next.Kind() == TokenNumber:
-		expr = ExprLiteral{Token: cursor.Pop()}
+		return ExprLiteral{Token: cursor.Pop()}
 
 	case canStartPath(next):
-		expr = ExprPath{Path: parsePath(errs, cursor)}
+		return ExprPath{Path: parsePath(errs, cursor)}
 
 	case next.Text() == "[":
 		brackets := cursor.Pop()
@@ -542,6 +565,7 @@ func parseAtomicExpr(errs *report.Report, cursor *Cursor) (expr Expr) {
 			array.AppendComma(expr, comma)
 			return true
 		})
+		return array
 
 	case next.Text() == "{":
 		cursor.Pop()
@@ -565,6 +589,7 @@ func parseAtomicExpr(errs *report.Report, cursor *Cursor) (expr Expr) {
 			dict.AppendComma(field, comma)
 			return true
 		})
+		return dict
 
 	case next.Text() == "-":
 		// NOTE: Protobuf does not (currently) have any suffix expressions, like a function
@@ -572,7 +597,7 @@ func parseAtomicExpr(errs *report.Report, cursor *Cursor) (expr Expr) {
 		// function that calls parseAtomicExpr.
 		cursor.Pop()
 		inner := parseAtomicExpr(errs, cursor)
-		expr = cursor.Context().NewExprPrefixed(ExprPrefixedArgs{
+		return cursor.Context().NewExprPrefixed(ExprPrefixedArgs{
 			Prefix: next,
 			Expr:   inner,
 		})
@@ -588,7 +613,7 @@ func parseAtomicExpr(errs *report.Report, cursor *Cursor) (expr Expr) {
 		})
 	}
 
-	return expr
+	return nil
 }
 
 // parseType attempts to parse a type, optionally followed by a non-absolute path.
@@ -637,10 +662,19 @@ func parseType(errs *report.Report, cursor *Cursor) (Type, Path) {
 			break
 		}
 
+		// There is one slightly squirrelly case: if the user wrote package .foo.bar;
+		// it will get picked up as the single path package.foo.bar. In this case, we would
+		// like to break apart the type so that it can diagnose as a package.
+		probablePackage := len(mods) == 0 && ident.Text() == "package" && !canStartPath(cursor.Peek())
+		splitFirst := probablePackage
+
 		// Check if ident is a modifier, and if so, peel it off.
 		if mod := TypePrefixByName(ident.Name()); mod != TypePrefixUnknown {
 			mods = append(mods, ident)
+			splitFirst = true
+		}
 
+		if splitFirst {
 			// Drop the first component from the path.
 			if len(components) == 1 {
 				tyPath = Path{}
@@ -649,6 +683,10 @@ func parseType(errs *report.Report, cursor *Cursor) (Type, Path) {
 			} else {
 				tyPath.raw[0] = components[1].Name().raw
 			}
+		}
+
+		if probablePackage {
+			return rawType{ident.raw, ident.raw}.With(cursor), tyPath
 		}
 	}
 

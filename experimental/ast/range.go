@@ -32,16 +32,14 @@ type rawDeclRange struct {
 		expr  rawExpr
 		comma rawToken
 	}
-	options *rawOptions
+	options rawOptions
 	semi    rawToken
 }
 
 // DeclRangeArgs is arguments for [Context.NewDeclRange].
 type DeclRangeArgs struct {
-	Keyword Token
-	// NOTE: This is only the [] for the options. To populate the options list,
-	// you will need to mutate through [DeclRange.Options].
-	Options   Token
+	Keyword   Token
+	Options   Options
 	Semicolon Token
 }
 
@@ -120,20 +118,16 @@ func (d DeclRange) InsertComma(n int, expr Expr, comma Token) {
 	}{toRawExpr(expr), comma.raw})
 }
 
-// Options returns this range's options list.
-//
-// Returns nil if this range does not have options.
+// Options returns the compact options list for this range.
 func (d DeclRange) Options() Options {
 	return d.raw.options.With(d)
 }
 
-// WithOptions is like Options, but it adds an empty options list if it would
-// return nil.
-func (d DeclRange) WithOptions() Options {
-	if d.Options().Nil() {
-		d.raw.options = new(rawOptions)
-	}
-	return d.Options()
+// SetOptions sets the compact options list for this definition.
+//
+// Setting it to a nil Options clears it.
+func (d DeclRange) SetOptions(opts Options) {
+	d.raw.options = opts.rawOptions()
 }
 
 // Semicolon returns this range's ending semicolon.

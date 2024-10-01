@@ -1,0 +1,7 @@
+error: package names cannot be absolute paths
+  --> testdata/parser/package/absolute.proto:17:9
+   | 
+17 | package .test.test2;
+   |         ^ help: remove this dot
+
+encountered 1 error

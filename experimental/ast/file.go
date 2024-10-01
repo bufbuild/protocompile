@@ -56,6 +56,7 @@ type DeclSyntax struct {
 type rawDeclSyntax struct {
 	keyword, equals, semi rawToken
 	value                 rawExpr
+	options               rawOptions
 }
 
 // DeclSyntaxArgs is arguments for [Context.NewDeclSyntax].
@@ -64,6 +65,7 @@ type DeclSyntaxArgs struct {
 	Keyword   Token
 	Equals    Token
 	Value     Expr
+	Options   Options
 	Semicolon Token
 }
 
@@ -106,6 +108,20 @@ func (d DeclSyntax) SetValue(expr Expr) {
 	d.raw.value = toRawExpr(expr)
 }
 
+// Options returns the compact options list for this declaration.
+//
+// Syntax declarations cannot have options, but we parse them anyways.
+func (d DeclSyntax) Options() Options {
+	return d.raw.options.With(d)
+}
+
+// SetOptions sets the compact options list for this definition.
+//
+// Setting it to a nil Options clears it.
+func (d DeclSyntax) SetOptions(opts Options) {
+	d.raw.options = opts.rawOptions()
+}
+
 // Semicolon returns this pragma's ending semicolon.
 //
 // May be nil, if the user forgot it.
@@ -138,12 +154,14 @@ type rawDeclPackage struct {
 	keyword rawToken
 	path    rawPath
 	semi    rawToken
+	options rawOptions
 }
 
 // DeclPackageArgs is arguments for [Context.NewDeclPackage].
 type DeclPackageArgs struct {
 	Keyword   Token
 	Path      Path
+	Options   Options
 	Semicolon Token
 }
 
@@ -159,6 +177,20 @@ func (d DeclPackage) Keyword() Token {
 // May be nil, if the user wrote something like package;.
 func (d DeclPackage) Path() Path {
 	return d.raw.path.With(d)
+}
+
+// Options returns the compact options list for this declaration.
+//
+// Package declarations cannot have options, but we parse them anyways.
+func (d DeclPackage) Options() Options {
+	return d.raw.options.With(d)
+}
+
+// SetOptions sets the compact options list for this definition.
+//
+// Setting it to a nil Options clears it.
+func (d DeclPackage) SetOptions(opts Options) {
+	d.raw.options = opts.rawOptions()
 }
 
 // Semicolon returns this package's ending semicolon.
@@ -190,15 +222,18 @@ type DeclImport struct {
 }
 
 type rawDeclImport struct {
-	keyword, modifier, filePath, semi rawToken
+	keyword, modifier, semi rawToken
+	importPath              rawExpr
+	options                 rawOptions
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
 type DeclImportArgs struct {
-	Keyword   Token
-	Modifier  Token
-	FilePath  Token
-	Semicolon Token
+	Keyword    Token
+	Modifier   Token
+	ImportPath Expr
+	Options    Options
+	Semicolon  Token
 }
 
 var _ Decl = DeclImport{}
@@ -228,8 +263,29 @@ func (d DeclImport) IsWeak() bool {
 // ImportPath returns the file path for this import as a string.
 //
 // May be nil, if the user forgot it.
-func (d DeclImport) ImportPath() Token {
-	return d.raw.filePath.With(d)
+func (d DeclImport) ImportPath() Expr {
+	return d.raw.importPath.With(d)
+}
+
+// SetValue sets the expression for this import's file path.
+//
+// If passed nil, this clears the path expression.
+func (d DeclImport) SetImportPath() Expr {
+	return d.raw.importPath.With(d)
+}
+
+// Options returns the compact options list for this declaration.
+//
+// Imports cannot have options, but we parse them anyways.
+func (d DeclImport) Options() Options {
+	return d.raw.options.With(d)
+}
+
+// SetOptions sets the compact options list for this definition.
+//
+// Setting it to a nil Options clears it.
+func (d DeclImport) SetOptions(opts Options) {
+	d.raw.options = opts.rawOptions()
 }
 
 // Semicolon returns this import's ending semicolon.

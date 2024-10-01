@@ -41,7 +41,7 @@ type rawDeclDef struct {
 	equals rawToken
 	value  rawExpr
 
-	options *rawOptions
+	options rawOptions
 	body    decl[DeclBody]
 	semi    rawToken
 }
@@ -61,9 +61,7 @@ type DeclDefArgs struct {
 	Equals Token
 	Value  Expr
 
-	// NOTE: Like with Returns, this is only the token for the [] around
-	// the options. To actually add entries, you will need to use DeclDef.Options.
-	Options Token
+	Options Options
 
 	Body      DeclBody
 	Semicolon Token
@@ -159,27 +157,15 @@ func (d DeclDef) SetValue(expr Expr) {
 }
 
 // Options returns the compact options list for this definition.
-//
-// Not all defs have options, so this function may return a nil Options.
-// If you want to add one, use [DeclDef.WithOptions].
 func (d DeclDef) Options() Options {
-	if d.raw.options == nil {
-		return Options{}
-	}
-
-	return Options{
-		d.withContext,
-		d.raw.options,
-	}
+	return d.raw.options.With(d)
 }
 
-// WithOptions is like Options, but it adds an empty options list if it would
-// return nil.
-func (d DeclDef) WithOptions() Options {
-	if d.Options().Nil() {
-		d.raw.options = new(rawOptions)
-	}
-	return d.Options()
+// SetOptions sets the compact options list for this definition.
+//
+// Setting it to a nil Options clears it.
+func (d DeclDef) SetOptions(opts Options) {
+	d.raw.options = opts.rawOptions()
 }
 
 // Body returns this definition's body, if it has one.

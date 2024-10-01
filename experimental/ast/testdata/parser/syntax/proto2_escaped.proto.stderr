@@ -1,0 +1,7 @@
+warning: syntax value should be a single, escape-less string
+  --> testdata/parser/syntax/proto2_escaped.proto:15:10
+   | 
+15 | syntax = "proto\x32";
+   |          ^^^^^^^^^^^ help: change this to "proto2"
+
+ encountered  1 warning

@@ -178,8 +178,15 @@ func (t Token) Span() Span {
 		return Span{}
 	}
 
-	start, end := t.offsets()
-	return t.Context().NewSpan(start, end)
+	if !t.IsLeaf() {
+		start, end := t.StartEnd()
+		a, _ := start.offsets()
+		_, b := end.offsets()
+
+		return t.Context().NewSpan(a, b)
+	}
+
+	return t.Context().NewSpan(t.offsets())
 }
 
 // StartEnd returns the open and close tokens for this token.

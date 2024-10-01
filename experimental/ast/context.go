@@ -45,6 +45,8 @@ type Context struct {
 	decls decls
 	types types
 	exprs exprs
+
+	options pointers[optionsImpl]
 }
 
 // Contextual is any AST type that carries a context (virtually all of them).
