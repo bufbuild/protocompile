@@ -35,37 +35,24 @@ func legalize(r *report.Report, parent, node Spanner) {
 		node.Iter(func(i int, decl Decl) bool {
 			switch decl := decl.(type) {
 			case DeclSyntax:
-				if syntax.Nil() {
-					if i > 0 {
-						r.Errorf("syntax declaration must be the first declaration in a file").With(
-							report.Snippetf(decl, "expected this to be the first declaration"),
-							report.Snippetf(node.At(0), "previous declaration"),
-						)
-					}
-					syntax = decl
-				} else {
-					r.Error(ErrMoreThanOne{
-						First:  syntax,
-						Second: decl,
-						what:   "syntax declaration",
-					})
+				if i > 0 {
+					r.Errorf("syntax declaration must be the first declaration in a file").With(
+						report.Snippetf(decl, "expected this to be the first declaration"),
+						report.Snippetf(node.At(0), "previous declaration"),
+					)
 				}
+				syntax = decl
+
 			case DeclPackage:
-				if pkg.Nil() {
-					if (syntax.Nil() && i > 0) || i > 1 {
+				if i != 0 {
+					if _, ok := node.At(i - 1).(DeclSyntax); !ok {
 						r.Errorf("package declaration can only come after a syntax declaration").With(
 							report.Snippetf(decl, "expected this to follow a syntax declaration"),
 							report.Snippetf(node.At(i-1), "previous declaration"),
 						)
 					}
-					pkg = decl
-				} else {
-					r.Error(ErrMoreThanOne{
-						First:  pkg,
-						Second: decl,
-						what:   "package declaration",
-					})
 				}
+				pkg = decl
 			}
 
 			legalize(r, node, decl)
@@ -84,10 +71,14 @@ func legalize(r *report.Report, parent, node Spanner) {
 			r.Error(ErrInvalidChild{parent, node})
 		}
 
-		if node.Value() == nil {
-			r.Errorf("missing value after `=` for %s", describe(node)).With(
-				report.Snippetf(node, "expected a string literal"),
+		if !node.Options().Nil() {
+			r.Errorf("options are not permitted on syntax declarations").With(
+				report.Snippetf(node.Options(), "help: remove this"),
 			)
+		}
+
+		// NOTE: node can only be nil if an error occurred in the parser.
+		if node.Value() == nil {
 			return
 		}
 
@@ -141,5 +132,95 @@ func legalize(r *report.Report, parent, node Spanner) {
 			where: "in " + describe(node),
 			want:  []string{"string literal"},
 		})
+
+	case DeclPackage:
+		if _, ok := parent.(File); !ok {
+			r.Error(ErrInvalidChild{parent, node})
+		}
+
+		if !node.Options().Nil() {
+			r.Errorf("options are not permitted on syntax declarations").With(
+				report.Snippetf(node.Options(), "help: remove this"),
+			)
+		}
+
+		if node.Path().Nil() {
+			r.Errorf("missing package name").With(
+				report.Snippetf(node, "help: add a path after `package`"),
+			)
+			return
+		}
+
+		var idx int
+		node.Path().Components(func(pc PathComponent) bool {
+			if pc.Separator().Text() == "/" {
+				r.Errorf("package names cannot contain slashes").With(
+					report.Snippet(pc.Separator()),
+				)
+				return false
+			}
+
+			if idx == 0 && !pc.Separator().Nil() {
+				r.Errorf("package names cannot be absolute paths").With(
+					report.Snippetf(pc.Separator(), "help: remove this dot"),
+				)
+				return false
+			}
+
+			if pc.IsExtension() {
+				r.Errorf("package names cannot contain extension names").With(
+					report.Snippet(pc.Name()),
+				)
+				return false
+			}
+
+			idx++
+			return true
+		})
+
+	case DeclImport:
+		if _, ok := parent.(File); !ok {
+			r.Error(ErrInvalidChild{parent, node})
+		}
+
+		if node.IsWeak() {
+			r.Warnf("weak imports are discouraged and broken in some runtimes").With(
+				report.Snippet(node.Modifier()),
+			)
+		}
+
+		if !node.Options().Nil() {
+			r.Errorf("options are not permitted on syntax declarations").With(
+				report.Snippetf(node.Options(), "help: remove this"),
+			)
+		}
+
+		switch expr := node.ImportPath().(type) {
+		case ExprLiteral:
+			if expr.Token.Kind() == TokenString {
+				value, _ := expr.Token.AsString()
+				if !expr.Token.IsPureString() {
+					r.Warnf("import path should be a single, escape-less string").With(
+						report.Snippetf(expr.Token, `help: change this to "%s"`, value),
+					)
+				}
+				return
+			}
+		case ExprPath:
+			r.Errorf("cannot import by Protobuf symbol").With(
+				report.Snippetf(expr, "expected a quoted filesystem path"),
+			)
+			return
+		}
+
+		r.Error(errUnexpected{
+			node:  node.ImportPath(),
+			where: "in " + describe(node),
+			want:  []string{"string literal"},
+		})
+
+	case DeclDef:
+
+	case DeclRange:
 	}
 }

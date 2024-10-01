@@ -1,0 +1,41 @@
+{
+  "file": {
+    "path": "testdata/parser/syntax/lonely.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKZWRpdGlvbjsKCnN5bnRheCA9IDsKCnBhY2thZ2UgdGVzdDs="
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_EDITION",
+        "span": { "start": 606, "end": 614 },
+        "keywordSpan": { "start": 606, "end": 613 },
+        "semicolonSpan": { "start": 613, "end": 614 }
+      }
+    },
+    {
+      "syntax": {
+        "kind": "KIND_SYNTAX",
+        "span": { "start": 616, "end": 626 },
+        "keywordSpan": { "start": 616, "end": 622 },
+        "equalsSpan": { "start": 623, "end": 624 },
+        "semicolonSpan": { "start": 625, "end": 626 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 636, "end": 640 }
+            }
+          ],
+          "span": { "start": 636, "end": 640 }
+        },
+        "span": { "start": 628, "end": 641 },
+        "keywordSpan": { "start": 628, "end": 635 },
+        "semicolonSpan": { "start": 640, "end": 641 }
+      }
+    }
+  ]
+}

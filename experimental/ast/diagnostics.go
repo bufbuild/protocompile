@@ -381,30 +381,29 @@ func (e errUnexpected) Error() string {
 	if e.got == "" {
 		e.got = describe(e.node)
 	}
-
-	var buf strings.Builder
-	fmt.Fprintf(&buf, "unexpected %s", e.got)
 	if e.where != "" {
-		fmt.Fprintf(&buf, " %s", e.where)
+		return fmt.Sprintf("unexpected %s %s", e.got, e.where)
 	}
+	return fmt.Sprintf("unexpected %s", e.got)
+}
+
+func (e errUnexpected) Diagnose(d *report.Diagnostic) {
+	var buf strings.Builder
 	switch len(e.want) {
 	case 0:
 	case 1:
-		fmt.Fprintf(&buf, "; expected %s", e.want[0])
+		fmt.Fprintf(&buf, "expected %s", e.want[0])
 	case 2:
-		fmt.Fprintf(&buf, "; expected %s or %s", e.want[0], e.want[1])
+		fmt.Fprintf(&buf, "expected %s or %s", e.want[0], e.want[1])
 	default:
-		buf.WriteString("; expected ")
+		buf.WriteString("expected ")
 		for _, want := range e.want[:len(e.want)-1] {
 			fmt.Fprintf(&buf, "%s, ", want)
 		}
 		fmt.Fprintf(&buf, "or %s", e.want[len(e.want)-1])
 	}
-	return buf.String()
-}
 
-func (e errUnexpected) Diagnose(d *report.Diagnostic) {
-	d.With(report.Snippet(e.node))
+	d.With(report.Snippetf(e.node, "%s", buf.String()))
 }
 
 // describe attempts to generate a user-friendly name for `node`.

@@ -21,10 +21,11 @@ package ast
 type Options struct {
 	withContext
 
-	raw *rawOptions
+	idx int
+	raw *optionsImpl
 }
 
-type rawOptions struct {
+type optionsImpl struct {
 	brackets rawToken
 	options  []struct {
 		option rawOption
@@ -114,13 +115,24 @@ func (o Options) Span() Span {
 	return JoinSpans(o.Brackets())
 }
 
-func (o *rawOptions) With(c Contextual) Options {
-	if o == nil {
+func (o Options) rawOptions() rawOptions {
+	if o.Nil() {
+		return 0
+	}
+
+	return rawOptions(o.idx + 1)
+}
+
+type rawOptions uint32
+
+func (o rawOptions) With(c Contextual) Options {
+	if o == 0 {
 		return Options{}
 	}
 	return Options{
 		withContext{c.Context()},
-		o,
+		int(o),
+		c.Context().options.At(int(o - 1)),
 	}
 }
 

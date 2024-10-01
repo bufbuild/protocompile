@@ -152,7 +152,7 @@ func (d *Diagnostic) Render(style Style) string {
 		if path == "" {
 			path = "<unknown>"
 		}
-		fmt.Fprintf(&out, "--> %s:?:?", path)
+		fmt.Fprintf(&out, "--> %s", path)
 	}
 
 	// Render the footers. For simplicity we collect them into an array first.
@@ -436,7 +436,7 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 			cur.underlines = append(cur.underlines, strings.TrimRight(prefix+string(buf), " "))
 		}
 
-		return false
+		return true
 	})
 
 	// Now that we've laid out the underlines, we can add the ends of all of the multilines.
@@ -493,6 +493,8 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 		if i != 0 && info[i-1].shouldEmit && containsPrintable(lines[i]) {
 			cur.shouldEmit = true
 		} else if i+1 < len(info) && info[i+1].shouldEmit && containsPrintable(lines[i]) {
+			cur.shouldEmit = true
+		} else if i != 0 && info[i-1].shouldEmit && i+1 < len(info) && info[i+1].shouldEmit {
 			cur.shouldEmit = true
 		}
 	}

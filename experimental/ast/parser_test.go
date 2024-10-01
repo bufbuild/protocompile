@@ -39,7 +39,6 @@ func TestParser(t *testing.T) {
 		Outputs: []corpora.Output{
 			{Extension: "lex.tsv"},
 			{Extension: "ast.json"},
-			{Extension: "stderr-simple"},
 			{Extension: "stderr"},
 		},
 
@@ -94,7 +93,6 @@ func TestParser(t *testing.T) {
 			return []string{
 				tokens.String(),
 				ast,
-				r.Render(report.Simple),
 				r.Render(report.Monochrome),
 			}
 		},
