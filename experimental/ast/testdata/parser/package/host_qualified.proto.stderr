@@ -1,7 +1,0 @@
-error: package names cannot contain slashes
-  --> testdata/parser/package/host_qualified.proto:17:18
-   | 
-17 | package buf.build/test.test2;
-   |                  ^ 
-
-encountered 1 error

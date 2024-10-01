@@ -1,7 +1,0 @@
-error: missing package name
-  --> testdata/parser/package/no_path.proto:17:1
-   | 
-17 | package;
-   | ^^^^^^^^ help: add a path after `package`
-
-encountered 1 error

@@ -1,8 +1,0 @@
-error: "proto4" is not a valid syntax
-  --> testdata/parser/syntax/proto4.proto:15:10
-   | 
-15 | syntax = "proto4";
-   |          ^^^^^^^^ 
-   = note: protocompile only recognizes "proto2", "proto3"
-
-encountered 1 error

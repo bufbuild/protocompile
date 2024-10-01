@@ -1,7 +1,0 @@
-warning: missing package declaration
- --> testdata/parser/package/empty.proto
-   = note: omitting the `package` keyword implies an empty package
-   = help: using the empty package is discouraged
-   = help: explicitly add `package ...;` at the top of the file, after the syntax declaration
-
- encountered  1 warning

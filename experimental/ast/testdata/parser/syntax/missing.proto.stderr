@@ -1,6 +1,0 @@
-warning: missing syntax declaration
- --> testdata/parser/syntax/missing.proto
-   = note: omitting the `syntax` keyword implies "proto2" by default
-   = help: explicitly add `syntax = "proto2";` at the top of the file
-
- encountered  1 warning

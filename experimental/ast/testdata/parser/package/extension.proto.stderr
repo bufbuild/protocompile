@@ -1,7 +1,0 @@
-error: package names cannot contain extension names
-  --> testdata/parser/package/extension.proto:17:14
-   | 
-17 | package test.(extension.path).test;
-   |              ^^^^^^^^^^^^^^^^ 
-
-encountered 1 error
