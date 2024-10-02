@@ -15,11 +15,12 @@
 package report
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"sync"
 
-	"github.com/bufbuild/protocompile/internal/width"
+	"github.com/rivo/uniseg"
 )
 
 // The size we render all tabstops as.
@@ -150,7 +151,21 @@ func (i *IndexedFile) Search(offset int) Location {
 
 	// Calculate the column.
 	chunk := i.file.Text[i.lines[line]:offset]
-	column := width.Width(chunk, TabstopWidth)
+	fmt.Printf("%q  %d:%d\n", chunk, i.lines[line], offset)
+	var column int
+	// We can't just use StringWidth, because that doesn't respect tabstops
+	// correctly.
+	for {
+		nextTab := strings.IndexByte(chunk, '\t')
+		if nextTab != -1 {
+			column += uniseg.StringWidth(chunk[:nextTab])
+			column += TabstopWidth - (column % TabstopWidth)
+			chunk = chunk[nextTab+1:]
+		} else {
+			column += uniseg.StringWidth(chunk)
+			break
+		}
+	}
 
 	// Calculate the UTF-16 offset of of the offset within its line.
 	var utf16Col int

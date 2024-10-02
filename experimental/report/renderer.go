@@ -22,7 +22,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/internal/width"
+	"github.com/rivo/uniseg"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -760,17 +760,24 @@ func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 		fmt.Fprintf(out, "\n%s%*d | %s%s", c.nBlue, lineBarWidth, lineno, sidebar, c.reset)
 		lastEmit = lineno
 
-		// Print out runes one by one, so we account for tabs correctly.
-		var ruler width.Ruler
-		for _, r := range line {
-			if r == '\t' {
-				out.WriteByte(' ')
-				for ruler.Measure(' ')%TabstopWidth != 0 {
-					out.WriteByte(' ')
-				}
+		// Replace tabstops with spaces.
+		var column int
+		// We can't just use StringWidth, because that doesn't respect tabstops
+		// correctly.
+		for {
+			nextTab := strings.IndexByte(line, '\t')
+			if nextTab != -1 {
+				column += uniseg.StringWidth(line[:nextTab])
+				out.WriteString(line[:nextTab])
+
+				tab := TabstopWidth - (column % TabstopWidth)
+				column += tab
+				padBy(out, tab)
+
+				line = line[nextTab+1:]
 			} else {
-				ruler.Measure(r)
-				out.WriteRune(r)
+				out.WriteString(line)
+				break
 			}
 		}
 
