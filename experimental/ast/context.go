@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // Context is where all of the book-keeping for the AST of a particular file is kept.
@@ -46,7 +47,7 @@ type Context struct {
 	types types
 	exprs exprs
 
-	options pointers[optionsImpl]
+	options arena.Arena[optionsImpl]
 }
 
 // Contextual is any AST type that carries a context (virtually all of them).
@@ -102,7 +103,7 @@ func (c *Context) Text() string {
 // Root returns the root AST node for this context.
 func (c *Context) Root() File {
 	// NewContext() sticks the root at the beginning of bodies for us.
-	return File{decl[DeclBody](1).With(c)}
+	return File{wrapDecl[DeclBody](1, c)}
 }
 
 // Tokens returns a flat slice over all of the non-synthetic tokens in this context,

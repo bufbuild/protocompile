@@ -16,6 +16,9 @@ package ast
 
 import (
 	"math"
+	"slices"
+
+	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 const (
@@ -73,16 +76,16 @@ type Expr interface {
 	AsMessage() Commas[ExprKV]
 
 	exprKind() exprKind
-	exprIndex() int
+	exprIndex() arena.Untyped
 }
 
 // exprs is storage for the various kinds of Exprs in a Context.
 type exprs struct {
-	prefixes pointers[rawExprPrefixed]
-	ranges   pointers[rawExprRange]
-	arrays   pointers[rawExprArray]
-	dicts    pointers[rawExprDict]
-	fields   pointers[rawExprKV]
+	prefixes arena.Arena[rawExprPrefixed]
+	ranges   arena.Arena[rawExprRange]
+	arrays   arena.Arena[rawExprArray]
+	dicts    arena.Arena[rawExprDict]
+	fields   arena.Arena[rawExprKV]
 }
 
 func (ExprLiteral) exprKind() exprKind  { return exprLiteral }
@@ -93,13 +96,13 @@ func (ExprArray) exprKind() exprKind    { return exprArray }
 func (ExprDict) exprKind() exprKind     { return exprDict }
 func (ExprKV) exprKind() exprKind       { return exprField }
 
-func (e ExprLiteral) exprIndex() int  { return int(e.Token.raw) - 1 }
-func (ExprPath) exprIndex() int       { return -1 }
-func (e ExprPrefixed) exprIndex() int { return e.idx }
-func (e ExprRange) exprIndex() int    { return e.idx }
-func (e ExprArray) exprIndex() int    { return e.idx }
-func (e ExprDict) exprIndex() int     { return e.idx }
-func (e ExprKV) exprIndex() int       { return e.idx }
+func (e ExprLiteral) exprIndex() arena.Untyped  { return arena.Untyped(e.Token.raw) }
+func (ExprPath) exprIndex() arena.Untyped       { return 0 }
+func (e ExprPrefixed) exprIndex() arena.Untyped { return e.ptr }
+func (e ExprRange) exprIndex() arena.Untyped    { return e.ptr }
+func (e ExprArray) exprIndex() arena.Untyped    { return e.ptr }
+func (e ExprDict) exprIndex() arena.Untyped     { return e.ptr }
+func (e ExprKV) exprIndex() arena.Untyped       { return e.ptr }
 
 // ExprLiteral is an expression corresponding to a string or number literal.
 type ExprLiteral struct {
@@ -197,7 +200,7 @@ type ExprPrefixed struct {
 	baseExpr
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawExprPrefixed
 }
 
@@ -302,7 +305,7 @@ type ExprRange struct {
 	baseExpr
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawExprRange
 }
 
@@ -351,7 +354,7 @@ type ExprArray struct {
 	baseExpr
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawExprArray
 }
 
@@ -407,7 +410,7 @@ func (e ExprArray) Insert(n int, expr Expr) {
 
 // Delete implements [Inserter] for ExprArray.
 func (e ExprArray) Delete(n int) {
-	deleteSlice(&e.raw.args, n)
+	e.raw.args = slices.Delete(e.raw.args, n, n+1)
 }
 
 // Comma implements [Commas] for ExprArray.
@@ -424,7 +427,7 @@ func (e ExprArray) AppendComma(expr Expr, comma Token) {
 func (e ExprArray) InsertComma(n int, expr Expr, comma Token) {
 	e.Context().panicIfNotOurs(expr, comma)
 
-	insertSlice(&e.raw.args, n, struct {
+	e.raw.args = slices.Insert(e.raw.args, n, struct {
 		expr  rawExpr
 		comma rawToken
 	}{toRawExpr(expr), comma.raw})
@@ -445,14 +448,14 @@ type ExprDict struct {
 	baseExpr
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawExprDict
 }
 
 type rawExprDict struct {
 	braces rawToken
 	fields []struct {
-		idx   uint32
+		ptr   arena.Untyped
 		comma rawToken
 	}
 }
@@ -476,12 +479,12 @@ func (e ExprDict) Len() int {
 
 // At implements [Slice] for ExprMessage.
 func (e ExprDict) At(n int) ExprKV {
-	idx := int(e.raw.fields[n].idx)
+	ptr := e.raw.fields[n].ptr
 	return ExprKV{
 		baseExpr{},
 		e.withContext,
-		idx,
-		e.Context().exprs.fields.At(idx),
+		ptr,
+		e.Context().exprs.fields.At(ptr),
 	}
 }
 
@@ -491,8 +494,8 @@ func (e ExprDict) Iter(yield func(int, ExprKV) bool) {
 		e := ExprKV{
 			baseExpr{},
 			e.withContext,
-			int(f.idx),
-			e.Context().exprs.fields.At(int(f.idx)),
+			f.ptr,
+			e.Context().exprs.fields.At(f.ptr),
 		}
 		if !yield(i, e) {
 			break
@@ -512,7 +515,7 @@ func (e ExprDict) Insert(n int, expr ExprKV) {
 
 // Delete implements [Inserter] for ExprMessage.
 func (e ExprDict) Delete(n int) {
-	deleteSlice(&e.raw.fields, n)
+	e.raw.fields = slices.Delete(e.raw.fields, n, n+1)
 }
 
 // Comma implements [Commas] for ExprMessage.
@@ -532,10 +535,10 @@ func (e ExprDict) InsertComma(n int, expr ExprKV, comma Token) {
 		panic("protocompile/ast: cannot append nil ExprField to ExprMessage")
 	}
 
-	insertSlice(&e.raw.fields, n, struct {
-		idx   uint32
+	e.raw.fields = slices.Insert(e.raw.fields, n, struct {
+		ptr   arena.Untyped
 		comma rawToken
-	}{uint32(expr.idx), comma.raw})
+	}{expr.ptr, comma.raw})
 }
 
 // AsMessage implements [Expr] for ExprMessage.
@@ -555,7 +558,7 @@ type ExprKV struct {
 	baseExpr
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawExprKV
 }
 
@@ -637,20 +640,20 @@ func (e rawExpr) With(c Contextual) Expr {
 
 	if e[0] < 0 && e[1] != 0 {
 		c := c.Context()
-		idx := int(e[1]) - 1
+		ptr := arena.Untyped(e[1])
 		switch exprKind(^e[0]) {
 		case exprLiteral:
-			return ExprLiteral{Token: rawToken(idx + 1).With(c)}
+			return ExprLiteral{Token: rawToken(ptr).With(c)}
 		case exprPrefixed:
-			return ExprPrefixed{withContext: withContext{c}, raw: c.exprs.prefixes.At(idx)}
+			return ExprPrefixed{withContext: withContext{c}, raw: c.exprs.prefixes.At(ptr)}
 		case exprRange:
-			return ExprRange{withContext: withContext{c}, raw: c.exprs.ranges.At(idx)}
+			return ExprRange{withContext: withContext{c}, raw: c.exprs.ranges.At(ptr)}
 		case exprArray:
-			return ExprArray{withContext: withContext{c}, raw: c.exprs.arrays.At(idx)}
+			return ExprArray{withContext: withContext{c}, raw: c.exprs.arrays.At(ptr)}
 		case exprDict:
-			return ExprDict{withContext: withContext{c}, raw: c.exprs.dicts.At(idx)}
+			return ExprDict{withContext: withContext{c}, raw: c.exprs.dicts.At(ptr)}
 		case exprField:
-			return ExprKV{withContext: withContext{c}, raw: c.exprs.fields.At(idx)}
+			return ExprKV{withContext: withContext{c}, raw: c.exprs.fields.At(ptr)}
 		default:
 			return nil
 		}

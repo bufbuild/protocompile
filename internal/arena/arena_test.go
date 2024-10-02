@@ -12,37 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package arena_test
 
 import (
 	"testing"
 
+	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPointers(t *testing.T) {
 	assert := assert.New(t)
 
-	var p pointers[int]
-	assert.Equal(0, p.Len())
+	var a arena.Arena[int]
 
-	p.Append(5)
-	assert.Equal(1, p.Len())
-	assert.Equal(5, *p.At(0))
+	p1 := a.New(5)
+	p2 := p1.In(&a)
+	assert.Equal(5, *p1.In(&a))
 
 	for i := 0; i < 16; i++ {
-		p.Append(i + 5)
+		a.New(i + 5)
 	}
-	assert.Equal(17, p.Len())
-	assert.Equal(19, *p.At(15))
-	assert.Equal(20, *p.At(16))
+	assert.Equal(19, *arena.Pointer[int](16).In(&a))
+	assert.Equal(20, *arena.Pointer[int](17).In(&a))
+	assert.True(p1.In(&a) == p2)
 
 	for i := 0; i < 32; i++ {
-		p.Append(i + 21)
+		a.New(i + 21)
 	}
-	assert.Equal(49, p.Len())
-	assert.Equal(51, *p.At(47))
-	assert.Equal(52, *p.At(48))
+	assert.Equal(51, *arena.Pointer[int](48).In(&a))
+	assert.Equal(52, *arena.Pointer[int](49).In(&a))
+	assert.True(p1.In(&a) == p2)
 
-	assert.Equal("[5 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19|20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51|52]", p.String())
+	assert.Equal("[5 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19|20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51|52]", a.String())
 }

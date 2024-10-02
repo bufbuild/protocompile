@@ -14,6 +14,11 @@
 
 package ast
 
+import (
+	"github.com/bufbuild/protocompile/internal/arena"
+	"golang.org/x/exp/slices"
+)
+
 // Options represents the collection of options attached to a field-like declaration,
 // contained within square brackets.
 //
@@ -21,7 +26,7 @@ package ast
 type Options struct {
 	withContext
 
-	idx int
+	ptr arena.Pointer[optionsImpl]
 	raw *optionsImpl
 }
 
@@ -83,7 +88,7 @@ func (o Options) Insert(n int, option Option) {
 
 // Delete implements [Inserter] for Options.
 func (o Options) Delete(n int) {
-	deleteSlice(&o.raw.options, n)
+	o.raw.options = slices.Delete(o.raw.options, n, n+1)
 }
 
 // Comma implements [Commas] for Options.
@@ -100,14 +105,17 @@ func (o Options) AppendComma(option Option, comma Token) {
 func (o Options) InsertComma(n int, option Option, comma Token) {
 	o.Context().panicIfNotOurs(option.Path, option.Equals, option.Value, comma)
 
-	insertSlice(&o.raw.options, n, struct {
+	o.raw.options = slices.Insert(o.raw.options, n, struct {
 		option rawOption
 		comma  rawToken
-	}{rawOption{
-		path:   option.Path.raw,
-		equals: option.Equals.raw,
-		value:  toRawExpr(option.Value),
-	}, comma.raw})
+	}{
+		rawOption{
+			path:   option.Path.raw,
+			equals: option.Equals.raw,
+			value:  toRawExpr(option.Value),
+		},
+		comma.raw,
+	})
 }
 
 // Span implements [Spanner] for Options.
@@ -120,10 +128,10 @@ func (o Options) rawOptions() rawOptions {
 		return 0
 	}
 
-	return rawOptions(o.idx + 1)
+	return rawOptions(o.ptr + 1)
 }
 
-type rawOptions uint32
+type rawOptions arena.Pointer[optionsImpl]
 
 func (o rawOptions) With(c Contextual) Options {
 	if o == 0 {
@@ -131,8 +139,8 @@ func (o rawOptions) With(c Contextual) Options {
 	}
 	return Options{
 		withContext{c.Context()},
-		int(o),
-		c.Context().options.At(int(o - 1)),
+		arena.Pointer[optionsImpl](o),
+		c.Context().options.At(arena.Untyped(o)),
 	}
 }
 

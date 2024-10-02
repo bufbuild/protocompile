@@ -53,7 +53,7 @@ func (e ErrNotUTF8) Error() string {
 func (e ErrNotUTF8) Diagnose(d *report.Diagnostic) {
 	d.With(
 		report.InFile(e.Path),
-		report.Note("found a 0x%02x byte at offset %d", e.Byte, e.At),
+		report.Notef("found a 0x%02x byte at offset %d", e.Byte, e.At),
 	)
 }
 
@@ -305,7 +305,7 @@ func (e ErrUnknownSyntax) Diagnose(d *report.Diagnostic) {
 			list.WriteRune('"')
 		}
 
-		d.With(report.Note("protocompile only recognizes %v", list.String()))
+		d.With(report.Notef("protocompile only recognizes %v", list.String()))
 	}
 }
 

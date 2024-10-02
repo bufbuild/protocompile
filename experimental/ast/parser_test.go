@@ -22,7 +22,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/internal/corpora"
+	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/tidwall/pretty"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -32,69 +32,65 @@ const jsonSpanSub = `{ "start": $1, "end": $2 }`
 var jsonSpanPat = regexp.MustCompile(`\{\s*"start":\s*(\d+),\s*"end":\s*(\d+)\s*\}`)
 
 func TestParser(t *testing.T) {
-	corpora.Corpus{
+	renderer := report.Renderer{
+		ShowRemarks: true,
+	}
+
+	corpus := golden.Corpus{
 		Root:      "testdata/parser",
 		Refresh:   "PROTOCOMPILE_REFRESH",
 		Extension: "proto",
-		Outputs: []corpora.Output{
+		Outputs: []golden.Output{
 			{Extension: "lex.tsv"},
 			{Extension: "ast.json"},
 			{Extension: "stderr"},
 		},
+	}
+	corpus.Run(t, func(t *testing.T, path, text string, results []string) {
+		var r report.Report
+		defer func() {
+			// Dump out the report in a defer so it shows up even if we panic.
+			text, _ := renderer.Render(&r)
+			results[2] = text
+		}()
 
-		Test: func(t *testing.T, path, text string) []string {
-			var r report.Report
-			defer func() {
-				v := recover()
-				if v != nil {
-					t.Logf("\n%s", r.Render(report.Monochrome))
-					panic(v)
-				}
-			}()
+		file := ast.Parse(report.File{Path: path, Text: text}, &r)
+		proto := ast.FileToProto(file)
 
-			file := ast.Parse(report.File{Path: path, Text: text}, &r)
-			proto := ast.FileToProto(file)
+		var tokens strings.Builder
+		file.Context().Tokens().Iter(func(i int, tok ast.Token) bool {
+			start, end := tok.Span().Offsets()
+			loc := tok.Span().Start()
+			fmt.Fprintf(&tokens, "%4d:%#04x\t%v\t%d:%d\t%d:%d:%d", i, i, tok.Kind(), start, end, loc.Line, loc.Column, loc.UTF16)
+			if v, ok := tok.AsInt(); ok {
+				fmt.Fprintf(&tokens, "\t%d", v)
+			} else if v, ok := tok.AsFloat(); ok {
+				fmt.Fprintf(&tokens, "\t%f", v)
+			} else if v, ok := tok.AsString(); ok {
+				fmt.Fprintf(&tokens, "\t%q", v)
+			}
+			fmt.Fprintf(&tokens, "\t%q\n", tok.Text())
 
-			var tokens strings.Builder
-			file.Context().Tokens().Iter(func(i int, tok ast.Token) bool {
-				start, end := tok.Span().Offsets()
-				loc := tok.Span().Start()
-				fmt.Fprintf(&tokens, "%4d:%#04x\t%v\t%d:%d\t%d:%d:%d", i, i, tok.Kind(), start, end, loc.Line, loc.Column, loc.UTF16)
-				if v, ok := tok.AsInt(); ok {
-					fmt.Fprintf(&tokens, "\t%d", v)
-				} else if v, ok := tok.AsFloat(); ok {
-					fmt.Fprintf(&tokens, "\t%f", v)
-				} else if v, ok := tok.AsString(); ok {
-					fmt.Fprintf(&tokens, "\t%q", v)
-				}
-				fmt.Fprintf(&tokens, "\t%q\n", tok.Text())
+			return true
+		})
+		results[0] = tokens.String()
 
-				return true
+		jsonOptions := protojson.MarshalOptions{
+			Multiline: true,
+			Indent:    "  ",
+		}
+
+		json, err := jsonOptions.Marshal(proto)
+		if err != nil {
+			results[1] = fmt.Sprint("marshal error:", err)
+		} else {
+			json = pretty.PrettyOptions(json, &pretty.Options{
+				Indent: "  ",
 			})
+			results[1] = string(json)
+		}
 
-			jsonOptions := protojson.MarshalOptions{
-				Multiline: true,
-				Indent:    "  ",
-			}
-			var ast string
-			json, err := jsonOptions.Marshal(proto)
-			if err != nil {
-				ast = fmt.Sprint("marshal error:", err)
-			} else {
-				json = pretty.PrettyOptions(json, &pretty.Options{
-					Indent: "  ",
-				})
-				ast = string(json)
-			}
-
-			// Compact all of the Span objects into single lines.
-			ast = jsonSpanPat.ReplaceAllString(ast, jsonSpanSub)
-
-			return []string{
-				tokens.String(),
-				ast,
-				r.Render(report.Monochrome),
-			}
-		},
-	}.Run(t)
+		// Compact all of the Span objects into single lines.
+		results[1] = jsonSpanPat.ReplaceAllString(results[1], jsonSpanSub)
+	})
 }

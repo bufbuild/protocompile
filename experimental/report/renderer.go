@@ -695,7 +695,6 @@ func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 		if info[i].shouldEmit {
 			mustEmit[i] = true
 		}
-<<<<<<< HEAD:experimental/report/renderer.go
 	}
 	for i := range info {
 		// At least two of the below conditions must be true for
@@ -713,15 +712,6 @@ func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 		}
 		if score >= 2 {
 			info[i].shouldEmit = true
-=======
-
-		if i != 0 && info[i-1].shouldEmit && containsPrintable(lines[i]) {
-			cur.shouldEmit = true
-		} else if i+1 < len(info) && info[i+1].shouldEmit && containsPrintable(lines[i]) {
-			cur.shouldEmit = true
-		} else if i != 0 && info[i-1].shouldEmit && i+1 < len(info) && info[i+1].shouldEmit {
-			cur.shouldEmit = true
->>>>>>> 58daa70 (start implementing legalize):experimental/report/render.go
 		}
 	}
 

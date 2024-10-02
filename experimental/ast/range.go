@@ -14,6 +14,12 @@
 
 package ast
 
+import (
+	"slices"
+
+	"github.com/bufbuild/protocompile/internal/arena"
+)
+
 // DeclRange represents an extension or reserved range declaration. They are almost identical
 // syntactically so they use the same AST node.
 //
@@ -22,7 +28,7 @@ package ast
 type DeclRange struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclRange
 }
 
@@ -95,7 +101,7 @@ func (d DeclRange) Insert(n int, expr Expr) {
 
 // Delete implements [Inserter] for Range.
 func (d DeclRange) Delete(n int) {
-	deleteSlice(&d.raw.args, n)
+	d.raw.args = slices.Delete(d.raw.args, n, n+1)
 }
 
 // Comma implements [Commas] for Range.
@@ -112,7 +118,7 @@ func (d DeclRange) AppendComma(expr Expr, comma Token) {
 func (d DeclRange) InsertComma(n int, expr Expr, comma Token) {
 	d.Context().panicIfNotOurs(expr, comma)
 
-	insertSlice(&d.raw.args, n, struct {
+	d.raw.args = slices.Insert(d.raw.args, n, struct {
 		expr  rawExpr
 		comma rawToken
 	}{toRawExpr(expr), comma.raw})
@@ -146,10 +152,10 @@ func (d DeclRange) Span() Span {
 	return span
 }
 
-func (DeclRange) with(ctx *Context, idx int) Decl {
-	return DeclRange{withContext{ctx}, idx, ctx.decls.ranges.At(idx)}
+func (DeclRange) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclRange{withContext{ctx}, ptr, ctx.decls.ranges.At(ptr)}
 }
 
-func (d DeclRange) declIndex() int {
-	return d.idx
+func (d DeclRange) declIndex() arena.Untyped {
+	return d.ptr
 }

@@ -14,6 +14,8 @@
 
 package ast
 
+import "github.com/bufbuild/protocompile/internal/arena"
+
 // File is the top-level AST node for a Protobuf file.
 //
 // A file is a list of declarations (in other words, it is a [DeclBody]). The File type provides
@@ -49,7 +51,7 @@ func (f File) Imports() func(func(int, DeclImport) bool) {
 type DeclSyntax struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclSyntax
 }
 
@@ -134,19 +136,19 @@ func (d DeclSyntax) Span() Span {
 	return JoinSpans(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
 }
 
-func (DeclSyntax) with(ctx *Context, idx int) Decl {
-	return DeclSyntax{withContext{ctx}, idx, ctx.decls.syntaxes.At(idx)}
+func (DeclSyntax) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclSyntax{withContext{ctx}, ptr, ctx.decls.syntaxes.At(ptr)}
 }
 
-func (d DeclSyntax) declIndex() int {
-	return d.idx
+func (d DeclSyntax) declIndex() arena.Untyped {
+	return d.ptr
 }
 
 // DeclPackage is the package declaration for a file.
 type DeclPackage struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclPackage
 }
 
@@ -205,19 +207,19 @@ func (d DeclPackage) Span() Span {
 	return JoinSpans(d.Keyword(), d.Path(), d.Semicolon())
 }
 
-func (DeclPackage) with(ctx *Context, idx int) Decl {
-	return DeclPackage{withContext{ctx}, idx, ctx.decls.packages.At(idx)}
+func (DeclPackage) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclPackage{withContext{ctx}, ptr, ctx.decls.packages.At(ptr)}
 }
 
-func (d DeclPackage) declIndex() int {
-	return d.idx
+func (d DeclPackage) declIndex() arena.Untyped {
+	return d.ptr
 }
 
 // DeclImport is an import declaration within a file.
 type DeclImport struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclImport
 }
 
@@ -300,10 +302,10 @@ func (d DeclImport) Span() Span {
 	return JoinSpans(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
 }
 
-func (DeclImport) with(ctx *Context, idx int) Decl {
-	return DeclImport{withContext{ctx}, idx, ctx.decls.imports.At(idx)}
+func (DeclImport) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclImport{withContext{ctx}, ptr, ctx.decls.imports.At(ptr)}
 }
 
-func (d DeclImport) declIndex() int {
-	return d.idx
+func (d DeclImport) declIndex() arena.Untyped {
+	return d.ptr
 }

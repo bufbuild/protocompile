@@ -1,6 +1,10 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bufbuild/protocompile/internal/arena"
+)
 
 const (
 	declEmpty declKind = iota + 1
@@ -23,24 +27,23 @@ type Decl interface {
 	// extracted from the given context and index.
 	//
 	// Not to be called directly; see rawDecl[T].With().
-	with(ctx *Context, idx int) Decl
+	with(ctx *Context, ptr arena.Untyped) Decl
 
 	// kind returns what kind of decl this is.
 	declKind() declKind
-	// declIndex returns the index this declaration occupies in its owning
-	// context. This is 0-indexed, and must be incremented
-	declIndex() int
+	// declIndex returns the untyped arena pointer for this declaration.
+	declIndex() arena.Untyped
 }
 
 // decls is storage for every kind of Decl in a Context.
 type decls struct {
-	empties  pointers[rawDeclEmpty]
-	syntaxes pointers[rawDeclSyntax]
-	packages pointers[rawDeclPackage]
-	imports  pointers[rawDeclImport]
-	defs     pointers[rawDeclDef]
-	bodies   pointers[rawDeclBody]
-	ranges   pointers[rawDeclRange]
+	empties  arena.Arena[rawDeclEmpty]
+	syntaxes arena.Arena[rawDeclSyntax]
+	packages arena.Arena[rawDeclPackage]
+	imports  arena.Arena[rawDeclImport]
+	defs     arena.Arena[rawDeclDef]
+	bodies   arena.Arena[rawDeclBody]
+	ranges   arena.Arena[rawDeclRange]
 }
 
 func (DeclEmpty) declKind() declKind   { return declEmpty }
@@ -54,8 +57,7 @@ func (DeclRange) declKind() declKind   { return declRange }
 // DeclEmpty is an empty declaration, a lone ;.
 type DeclEmpty struct {
 	withContext
-
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclEmpty
 }
 
@@ -75,37 +77,22 @@ func (e DeclEmpty) Span() Span {
 	return e.Semicolon().Span()
 }
 
-func (DeclEmpty) with(ctx *Context, idx int) Decl {
-	return DeclEmpty{withContext{ctx}, idx, ctx.decls.empties.At(idx)}
+func (DeclEmpty) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclEmpty{withContext{ctx}, ptr, ctx.decls.empties.At(ptr)}
 }
 
-func (e DeclEmpty) declIndex() int {
-	return e.idx
-}
-
-// decl is a typed reference to a declaration inside some Context.
-//
-// Note: decl indices are one-indexed, to allow for the zero value
-// to represent nil.
-type decl[T Decl] uint32
-
-func declFor[T Decl](d T) decl[T] {
-	if d.Context() == nil {
-		return decl[T](0)
-	}
-	return decl[T](d.declIndex() + 1)
+func (e DeclEmpty) declIndex() arena.Untyped {
+	return e.ptr
 }
 
 // Wrap wraps this declID with a context to present to the user.
-func (d decl[T]) With(c Contextual) T {
+func wrapDecl[T Decl](p arena.Untyped, c Contextual) T {
 	ctx := c.Context()
-
 	var decl T
-	if d == 0 {
+	if p.Nil() {
 		return decl
 	}
-
-	return decl.with(ctx, int(uint32(d)-1)).(T)
+	return decl.with(ctx, p).(T)
 }
 
 type declKind int8

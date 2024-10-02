@@ -14,6 +14,12 @@
 
 package ast
 
+import (
+	"slices"
+
+	"github.com/bufbuild/protocompile/internal/arena"
+)
+
 // DeclBody is the body of a [DeclDef], or the whole contents of a [File]. The
 // protocompile AST is very lenient, and allows any declaration to exist anywhere, for the
 // benefit of rich diagnostics and refactorings. For example, it is possible to represent an
@@ -24,7 +30,7 @@ package ast
 type DeclBody struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclBody
 }
 
@@ -34,8 +40,8 @@ type rawDeclBody struct {
 	// These slices are co-indexed; they are parallelizes to save
 	// three bytes per decl (declKind is 1 byte, but decl is 4; if
 	// they're stored in AOS format, we waste 3 bytes of padding).
-	kinds   []declKind
-	indices []decl[Decl]
+	kinds []declKind
+	ptrs  []arena.Untyped
 }
 
 var (
@@ -63,13 +69,12 @@ func (d DeclBody) Span() Span {
 
 // Len returns the number of declarations inside of this body.
 func (d DeclBody) Len() int {
-	return len(d.raw.indices)
+	return len(d.raw.ptrs)
 }
 
 // At returns the nth element of this body.
 func (d DeclBody) At(n int) Decl {
-	return d.raw.kinds[n].reify().with(
-		d.Context(), int(d.raw.indices[n]-1))
+	return d.raw.kinds[n].reify().with(d.Context(), d.raw.ptrs[n])
 }
 
 // Iter is an iterator over the nodes inside this body.
@@ -90,18 +95,18 @@ func (d DeclBody) Append(value Decl) {
 func (d DeclBody) Insert(n int, value Decl) {
 	d.Context().panicIfNotOurs(value)
 
-	insertSlice(&d.raw.kinds, n, value.declKind())
-	insertSlice(&d.raw.indices, n, decl[Decl](value.declIndex()+1))
+	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.declKind())
+	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.declIndex())
 }
 
 // Delete deletes the declaration at the given index.
 func (d DeclBody) Delete(n int) {
-	deleteSlice(&d.raw.kinds, n)
-	deleteSlice(&d.raw.indices, n)
+	d.raw.kinds = slices.Delete(d.raw.kinds, n, n+1)
+	d.raw.ptrs = slices.Delete(d.raw.ptrs, n, n+1)
 }
 
-func (d DeclBody) declIndex() int {
-	return d.idx
+func (d DeclBody) declIndex() arena.Untyped {
+	return d.ptr
 }
 
 // Decls returns an iterator over the nodes within a body of a particular type.
@@ -120,6 +125,6 @@ func Decls[T Decl](d DeclBody) func(func(int, T) bool) {
 	}
 }
 
-func (DeclBody) with(ctx *Context, idx int) Decl {
-	return DeclBody{withContext{ctx}, idx, ctx.decls.bodies.At(idx)}
+func (DeclBody) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclBody{withContext{ctx}, ptr, ctx.decls.bodies.At(ptr)}
 }

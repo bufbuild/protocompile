@@ -16,6 +16,9 @@ package ast
 
 import (
 	"fmt"
+	"slices"
+
+	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 const (
@@ -87,22 +90,22 @@ type Type interface {
 	Spanner
 
 	typeKind() typeKind
-	typeIndex() int
+	typeIndex() arena.Untyped
 }
 
 // types is storage for every kind of Type in a Context.
 type types struct {
-	modifieds pointers[rawPrefixed]
-	generics  pointers[rawGeneric]
+	modifieds arena.Arena[rawPrefixed]
+	generics  arena.Arena[rawGeneric]
 }
 
 func (TypePath) typeKind() typeKind     { return typePath }
 func (TypePrefixed) typeKind() typeKind { return typeModified }
 func (TypeGeneric) typeKind() typeKind  { return typeGeneric }
 
-func (TypePath) typeIndex() int       { return -1 }
-func (t TypePrefixed) typeIndex() int { return t.idx }
-func (t TypeGeneric) typeIndex() int  { return t.idx }
+func (TypePath) typeIndex() arena.Untyped       { return 0 }
+func (t TypePrefixed) typeIndex() arena.Untyped { return t.ptr }
+func (t TypeGeneric) typeIndex() arena.Untyped  { return t.ptr }
 
 // TypePath is a type that is a simple path reference.
 type TypePath struct {
@@ -119,7 +122,7 @@ var _ Type = TypePath{}
 type TypePrefixed struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawPrefixed
 }
 
@@ -180,7 +183,7 @@ func (t TypePrefixed) Span() Span {
 type TypeGeneric struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawGeneric
 }
 
@@ -291,7 +294,7 @@ func (d TypeList) Insert(n int, ty Type) {
 
 // Delete implements [Inserter] for TypeGeneric.
 func (d TypeList) Delete(n int) {
-	deleteSlice(&d.raw.args, n)
+	d.raw.args = slices.Delete(d.raw.args, n, n+1)
 }
 
 // Comma implements [Commas] for MethodTypes.
@@ -308,7 +311,7 @@ func (d TypeList) AppendComma(ty Type, comma Token) {
 func (d TypeList) InsertComma(n int, ty Type, comma Token) {
 	d.Context().panicIfNotOurs(ty, comma)
 
-	insertSlice(&d.raw.args, n, struct {
+	d.raw.args = slices.Insert(d.raw.args, n, struct {
 		ty    rawType
 		comma rawToken
 	}{toRawType(ty), comma.raw})
@@ -356,12 +359,12 @@ func (t rawType) With(c Contextual) Type {
 
 	if t[0] < 0 && t[1] != 0 {
 		c := c.Context()
-		idx := int(t[1]) - 1
+		ptr := arena.Untyped(t[1])
 		switch typeKind(^t[0]) {
 		case typeModified:
-			return TypePrefixed{withContext{c}, idx, c.types.modifieds.At(idx)}
+			return TypePrefixed{withContext{c}, ptr, c.types.modifieds.At(ptr)}
 		case typeGeneric:
-			return TypeGeneric{withContext{c}, idx, c.types.generics.At(idx)}
+			return TypeGeneric{withContext{c}, ptr, c.types.generics.At(ptr)}
 		default:
 			panic(fmt.Sprintf("protocompile/ast: invalid typeKind: %d", ^t[0]))
 		}

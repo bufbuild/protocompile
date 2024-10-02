@@ -14,26 +14,28 @@
 
 package ast
 
+import "github.com/bufbuild/protocompile/internal/arena"
+
 // NewDeclEmpty creates a new DeclEmpty node.
 func (c *Context) NewDeclEmpty(semicolon Token) DeclEmpty {
 	c.panicIfNotOurs(semicolon)
 
-	c.decls.empties.Append(rawDeclEmpty{semi: semicolon.raw})
-	return decl[DeclEmpty](c.decls.empties.Len()).With(c)
+	ptr := c.decls.empties.New(rawDeclEmpty{semi: semicolon.raw})
+	return wrapDecl[DeclEmpty](arena.Untyped(ptr), c)
 }
 
 // NewDeclSyntax creates a new DeclPragma node.
 func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	c.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Options, args.Semicolon)
 
-	c.decls.syntaxes.Append(rawDeclSyntax{
+	ptr := c.decls.syntaxes.New(rawDeclSyntax{
 		keyword: args.Keyword.raw,
 		equals:  args.Equals.raw,
 		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
 
-	decl := decl[DeclSyntax](c.decls.syntaxes.Len()).With(c)
+	decl := wrapDecl[DeclSyntax](arena.Untyped(ptr), c)
 	decl.SetValue(args.Value)
 
 	return decl
@@ -43,26 +45,26 @@ func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 func (c *Context) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	c.panicIfNotOurs(args.Keyword, args.Path, args.Options, args.Semicolon)
 
-	c.decls.packages.Append(rawDeclPackage{
+	ptr := c.decls.packages.New(rawDeclPackage{
 		keyword: args.Keyword.raw,
 		path:    args.Path.raw,
 		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
-	return decl[DeclPackage](c.decls.packages.Len()).With(c)
+	return wrapDecl[DeclPackage](arena.Untyped(ptr), c)
 }
 
 // NewDeclImport creates a new DeclImport node.
 func (c *Context) NewDeclImport(args DeclImportArgs) DeclImport {
 	c.panicIfNotOurs(args.Keyword, args.Modifier, args.ImportPath, args.Options, args.Semicolon)
 
-	c.decls.imports.Append(rawDeclImport{
+	ptr := c.decls.imports.New(rawDeclImport{
 		keyword:  args.Keyword.raw,
 		modifier: args.Modifier.raw,
 		options:  args.Options.rawOptions(),
 		semi:     args.Semicolon.raw,
 	})
-	return decl[DeclImport](c.decls.imports.Len()).With(c)
+	return wrapDecl[DeclImport](arena.Untyped(ptr), c)
 }
 
 // NewDeclDef creates a new DeclDef node.
@@ -71,13 +73,13 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 		args.Keyword, args.Type, args.Name, args.Returns,
 		args.Equals, args.Value, args.Options, args.Body, args.Semicolon)
 
-	c.decls.defs.Append(rawDeclDef{
+	ptr := c.decls.defs.New(rawDeclDef{
 		name:    args.Name.raw,
 		equals:  args.Equals.raw,
 		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
-	decl := decl[DeclDef](c.decls.defs.Len()).With(c)
+	decl := wrapDecl[DeclDef](arena.Untyped(ptr), c)
 
 	if args.Type != nil {
 		decl.SetType(args.Type)
@@ -101,20 +103,20 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 func (c *Context) NewDeclBody(braces Token) DeclBody {
 	c.panicIfNotOurs(braces)
 
-	c.decls.bodies.Append(rawDeclBody{braces: braces.raw})
-	return decl[DeclBody](c.decls.bodies.Len()).With(c)
+	ptr := c.decls.bodies.New(rawDeclBody{braces: braces.raw})
+	return wrapDecl[DeclBody](arena.Untyped(ptr), c)
 }
 
 // NewDeclRange creates a new DeclRange node.
 func (c *Context) NewDeclRange(args DeclRangeArgs) DeclRange {
 	c.panicIfNotOurs(args.Keyword, args.Options, args.Semicolon)
 
-	c.decls.ranges.Append(rawDeclRange{
+	ptr := c.decls.ranges.New(rawDeclRange{
 		keyword: args.Keyword.raw,
 		options: args.Options.rawOptions(),
 		semi:    args.Semicolon.raw,
 	})
-	decl := decl[DeclRange](c.decls.ranges.Len()).With(c)
+	decl := wrapDecl[DeclRange](arena.Untyped(ptr), c)
 
 	return decl
 }
@@ -123,13 +125,13 @@ func (c *Context) NewDeclRange(args DeclRangeArgs) DeclRange {
 func (c *Context) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 	c.panicIfNotOurs(args.Prefix, args.Expr)
 
-	raw := c.exprs.prefixes.Append(rawExprPrefixed{
+	ptr := c.exprs.prefixes.New(rawExprPrefixed{
 		prefix: args.Prefix.raw,
 	})
 	expr := ExprPrefixed{
 		withContext: withContext{c},
-		idx:         c.exprs.prefixes.Len() - 1,
-		raw:         raw,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.exprs.prefixes),
 	}
 	expr.SetExpr(args.Expr)
 	return expr
@@ -139,13 +141,13 @@ func (c *Context) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 func (c *Context) NewExprRange(args ExprRangeArgs) ExprRange {
 	c.panicIfNotOurs(args.Start, args.To, args.End)
 
-	raw := c.exprs.ranges.Append(rawExprRange{
+	ptr := c.exprs.ranges.New(rawExprRange{
 		to: args.To.raw,
 	})
 	expr := ExprRange{
 		withContext: withContext{c},
-		idx:         c.exprs.ranges.Len() - 1,
-		raw:         raw,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.exprs.ranges),
 	}
 	expr.SetBounds(args.Start, args.End)
 	return expr
@@ -155,13 +157,13 @@ func (c *Context) NewExprRange(args ExprRangeArgs) ExprRange {
 func (c *Context) NewExprArray(brackets Token) ExprArray {
 	c.panicIfNotOurs(brackets)
 
-	raw := c.exprs.arrays.Append(rawExprArray{
+	ptr := c.exprs.arrays.New(rawExprArray{
 		brackets: brackets.raw,
 	})
 	return ExprArray{
 		withContext: withContext{c},
-		idx:         c.exprs.arrays.Len() - 1,
-		raw:         raw,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.exprs.arrays),
 	}
 }
 
@@ -169,13 +171,13 @@ func (c *Context) NewExprArray(brackets Token) ExprArray {
 func (c *Context) NewExprDict(braces Token) ExprDict {
 	c.panicIfNotOurs(braces)
 
-	raw := c.exprs.dicts.Append(rawExprDict{
+	ptr := c.exprs.dicts.New(rawExprDict{
 		braces: braces.raw,
 	})
 	return ExprDict{
 		withContext: withContext{c},
-		idx:         c.exprs.dicts.Len() - 1,
-		raw:         raw,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.exprs.dicts),
 	}
 }
 
@@ -183,13 +185,13 @@ func (c *Context) NewExprDict(braces Token) ExprDict {
 func (c *Context) NewExprKV(args ExprKVArgs) ExprKV {
 	c.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
-	raw := c.exprs.fields.Append(rawExprKV{
+	ptr := c.exprs.fields.New(rawExprKV{
 		colon: args.Colon.raw,
 	})
 	expr := ExprKV{
 		withContext: withContext{c},
-		idx:         c.exprs.fields.Len() - 1,
-		raw:         raw,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.exprs.fields),
 	}
 	expr.SetKey(args.Key)
 	expr.SetValue(args.Value)
@@ -200,13 +202,13 @@ func (c *Context) NewExprKV(args ExprKVArgs) ExprKV {
 func (c *Context) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 	c.panicIfNotOurs(args.Prefix, args.Type)
 
-	raw := c.types.modifieds.Append(rawPrefixed{
+	ptr := c.types.modifieds.New(rawPrefixed{
 		prefix: args.Prefix.raw,
 	})
 	ty := TypePrefixed{
 		withContext: withContext{c},
-		idx:         c.types.modifieds.Len() - 1,
-		raw:         raw,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.types.modifieds),
 	}
 	ty.SetType(args.Type)
 
@@ -217,23 +219,23 @@ func (c *Context) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	c.panicIfNotOurs(args.Path, args.AngleBrackets)
 
-	ty := c.types.generics.Append(rawGeneric{
+	ptr := c.types.generics.New(rawGeneric{
 		path: args.Path.raw,
 		args: rawTypeList{brackets: args.AngleBrackets.raw},
 	})
 
 	return TypeGeneric{
 		withContext: withContext{c},
-		idx:         c.types.generics.Len() - 1,
-		raw:         ty,
+		ptr:         arena.Untyped(ptr),
+		raw:         ptr.In(&c.types.generics),
 	}
 }
 
 // NewOptions creates a new Options node.
 func (c *Context) NewOptions(brackets Token) Options {
 	c.panicIfNotOurs(brackets)
-	c.options.Append(optionsImpl{
+	ptr := c.options.New(optionsImpl{
 		brackets: brackets.raw,
 	})
-	return rawOptions(c.options.Len()).With(c)
+	return rawOptions(ptr).With(c)
 }

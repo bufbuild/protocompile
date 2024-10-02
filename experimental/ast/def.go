@@ -14,6 +14,8 @@
 
 package ast
 
+import "github.com/bufbuild/protocompile/internal/arena"
+
 // DeclDef is a general Protobuf definition.
 //
 // This [Decl] represents the union of several similar AST nodes, to aid in permissive
@@ -28,7 +30,7 @@ package ast
 type DeclDef struct {
 	withContext
 
-	idx int
+	ptr arena.Untyped
 	raw *rawDeclDef
 }
 
@@ -42,7 +44,7 @@ type rawDeclDef struct {
 	value  rawExpr
 
 	options rawOptions
-	body    decl[DeclBody]
+	body    arena.Pointer[rawDeclBody]
 	semi    rawToken
 }
 
@@ -170,12 +172,12 @@ func (d DeclDef) SetOptions(opts Options) {
 
 // Body returns this definition's body, if it has one.
 func (d DeclDef) Body() DeclBody {
-	return d.raw.body.With(d)
+	return wrapDecl[DeclBody](arena.Untyped(d.raw.body), d)
 }
 
 // SetBody sets the body for this definition.
 func (d DeclDef) SetBody(b DeclBody) {
-	d.raw.body = declFor(b)
+	d.raw.body = arena.Pointer[rawDeclBody](b.ptr)
 }
 
 // Semicolon returns the ending semicolon token for this definition.
@@ -321,12 +323,12 @@ func (d DeclDef) Span() Span {
 	)
 }
 
-func (DeclDef) with(ctx *Context, idx int) Decl {
-	return DeclDef{withContext{ctx}, idx, ctx.decls.defs.At(idx)}
+func (DeclDef) with(ctx *Context, ptr arena.Untyped) Decl {
+	return DeclDef{withContext{ctx}, ptr, ctx.decls.defs.At(ptr)}
 }
 
-func (d DeclDef) declIndex() int {
-	return d.idx
+func (d DeclDef) declIndex() arena.Untyped {
+	return d.ptr
 }
 
 // Signature is a type signature of the form (types) returns (types).
