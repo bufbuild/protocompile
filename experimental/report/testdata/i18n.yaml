@@ -44,11 +44,15 @@ diagnostics:
         file: 1
         start: 8
         end: 31
+
+  # NOTE: This test does not produce correct output because it requires
+  # bidi handling. Its primary purpose is to show we get it absolutely
+  # wrong. Rust *also* gets this completely wrong, so we're not gonna bother
+  # yet, either. https://godbolt.org/z/Eb8eo3fW9
+  #
+  # That said, here are detailed instructions on how to go about fixing
+  # this: https://github.com/rust-lang/rust/issues/113363
   - message: "bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts"
-    # NOTE: This test does not produce correct output because it requires
-    # bidi handling. Its primary purpose is to show we get it absolutely
-    # wrong. Rust *also* gets this completely wrong, so it doesn't seem worth
-    # fixing... https://godbolt.org/z/Eb8eo3fW9
     level: LEVEL_ERROR
     annotations:
       - file: 0
