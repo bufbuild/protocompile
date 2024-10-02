@@ -15,7 +15,6 @@
 package report
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -151,7 +150,6 @@ func (i *IndexedFile) Search(offset int) Location {
 
 	// Calculate the column.
 	chunk := i.file.Text[i.lines[line]:offset]
-	fmt.Printf("%q  %d:%d\n", chunk, i.lines[line], offset)
 	var column int
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.

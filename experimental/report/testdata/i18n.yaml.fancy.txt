@@ -4,7 +4,7 @@ error: emoji, CJK, bidi
  5 | message 🐈‍⬛ {
    |         ^^ 
  6 |   string 黑猫 = 1;
-   |          ---- note: may not look right on some surfaces
+   |          ---- note: some surfaces render CJK as sub-two-column
   ::: bar.proto:1:9
    | 
  1 | import "חתול שחור.proto";
