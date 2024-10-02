@@ -7,4 +7,4 @@ lint:
     - STANDARD
 breaking:
   use:
-    - WIRE_JS
+    - WIRE_JSON
