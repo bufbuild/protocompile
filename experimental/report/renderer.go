@@ -15,6 +15,7 @@
 package report
 
 import (
+	"bytes"
 	"fmt"
 	"math/bits"
 	"slices"
@@ -24,31 +25,59 @@ import (
 	"github.com/bufbuild/protocompile/internal/width"
 )
 
-// Render renders this diagnostic report in a format suitable for showing to a user.
-func (r *Report) Render(style Style) string {
+// Renderer configures a diagnostic rendering operation.
+type Renderer struct {
+	// If set, uses a compact one-line format for each diagnostic.
+	Austere bool
+
+	// If set, rendering results are enriched with ANSI color escapes.
+	Colorize bool
+
+	// Upgrades all warnings to errors.
+	WarningsAreErrors bool
+
+	// If set, remark diagnostics will be printed.
+	//
+	// Ignored by [Renderer.RenderDiagnostic].
+	ShowRemarks bool
+
+	// If set, rendering a diagnostic will show the debug footer.
+	ShowDebug bool
+}
+
+// Render renders a diagnostic report.
+//
+// In addition to returning the rendering result, returns whether any
+// errors occurred.
+func (r Renderer) Render(report *Report) (text string, haveErrors bool) {
 	var out strings.Builder
 	var errors, warnings int
-	for _, diagnostic := range *r {
-		out.WriteString(diagnostic.Render(style))
+	for _, diagnostic := range report.Diagnostics {
+		if !r.ShowRemarks && diagnostic.Level == Remark {
+			continue
+		}
+
+		out.WriteString(r.Diagnostic(diagnostic))
 		out.WriteString("\n")
-		if style != Simple {
+		if !r.Austere {
 			out.WriteString("\n")
 		}
 		if diagnostic.Level == Error {
 			errors++
 		}
 		if diagnostic.Level == Warning {
-			warnings++
+			if r.WarningsAreErrors {
+				errors++
+			} else {
+				warnings++
+			}
 		}
 	}
-	if style == Simple {
-		return out.String()
+	if r.Austere {
+		return out.String(), errors > 0
 	}
 
-	var color color
-	if style == Colored {
-		color = ansiColor()
-	}
+	c := r.colors()
 
 	pluralize := func(count int, what string) string {
 		if count == 1 {
@@ -58,53 +87,79 @@ func (r *Report) Render(style Style) string {
 	}
 
 	if errors > 0 {
-		fmt.Fprint(&out, color.bRed, "encountered ", pluralize(errors, "error"))
+		fmt.Fprint(&out, c.bRed, "encountered ", pluralize(errors, "error"))
 		if warnings > 0 {
 			fmt.Fprint(&out, " and ", pluralize(warnings, "warning"))
 		}
-		fmt.Fprintln(&out, color.reset)
+		fmt.Fprintln(&out, c.reset)
 	} else if warnings > 0 {
-		fmt.Fprintln(&out, color.bYellow, "encountered ", pluralize(warnings, "warning"))
+		fmt.Fprintln(&out, c.bYellow, "encountered ", pluralize(warnings, "warning"))
 	}
 
-	out.WriteString(color.reset)
-	return out.String()
+	out.WriteString(c.reset)
+	return out.String(), errors > 0
 }
 
-// Render renders this diagnostic in a format suitable for showing to a user.
-func (d *Diagnostic) Render(style Style) string {
+// Diagnostic renders a single
+func (r *Renderer) Diagnostic(d Diagnostic) string {
 	var level string
 	switch d.Level {
 	case Error:
 		level = "error"
 	case Warning:
-		level = "warning"
+		if r.WarningsAreErrors {
+			level = "error"
+		} else {
+			level = "warning"
+		}
 	case Remark:
 		level = "remark"
 	}
 
-	// For the simply style, we imitate the Go compiler.
-	if style == Simple {
+	c := r.colors()
+
+	// For the simple style, we imitate the Go compiler.
+	if r.Austere {
 		annotation := d.Primary()
-		if annotation.File.Path == "" {
-			annotation.File.Path = "<unknown>"
-		}
+
 		if annotation.Start.Line == 0 {
-			return fmt.Sprintf("%s: %s: %s", level, annotation.File.Path, d.Err.Error())
+			if annotation.File.Path == "" {
+				return fmt.Sprintf(
+					"%s%s: %s%s",
+					c.ColorForLevel(d.Level),
+					level,
+					d.Err.Error(),
+					c.reset,
+				)
+			}
+
+			return fmt.Sprintf(
+				"%s%s: %s: %s%s",
+				c.ColorForLevel(d.Level),
+				level,
+				annotation.File.Path,
+				d.Err.Error(),
+				c.reset,
+			)
 		}
-		return fmt.Sprintf("%s: %s:%d:%d: %s", level, annotation.File.Path, annotation.Start.Line, annotation.Start.Column, d.Err.Error())
+
+		return fmt.Sprintf(
+			"%s%s: %s:%d:%d: %s%s",
+			c.ColorForLevel(d.Level),
+			level,
+			annotation.File.Path,
+			annotation.Start.Line,
+			annotation.Start.Column,
+			d.Err.Error(),
+			c.reset,
+		)
 	}
 
 	// For the other styles, we imitate the Rust compiler. See
 	// https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 
-	var color color
-	if style == Colored {
-		color = ansiColor()
-	}
-
 	var out strings.Builder
-	fmt.Fprint(&out, color.BoldForLevel(d.Level), level, ": ", d.Err.Error(), color.reset)
+	fmt.Fprint(&out, c.BoldForLevel(d.Level), level, ": ", d.Err.Error(), c.reset)
 
 	// Figure out how wide the line bar needs to be. This is given by
 	// the width of the largest line value among the annotations.
@@ -119,7 +174,7 @@ func (d *Diagnostic) Render(style Style) string {
 	parts := partition(d.Annotations, func(a, b *Annotation) bool { return a.File.Path != b.File.Path })
 	parts(func(i int, annotations []Annotation) bool {
 		out.WriteByte('\n')
-		out.WriteString(color.nBlue)
+		out.WriteString(c.nBlue)
 		padBy(&out, lineBarWidth)
 
 		if i == 0 {
@@ -133,54 +188,119 @@ func (d *Diagnostic) Render(style Style) string {
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.
 		out.WriteByte('\n')
-		out.WriteString(color.nBlue)
+		out.WriteString(c.nBlue)
 		padBy(&out, lineBarWidth)
 		out.WriteString(" | ")
 
 		window := buildWindow(d.Level, annotations)
-		window.Render(lineBarWidth, &color, &out)
+		window.Render(lineBarWidth, &c, &out)
 		return true
 	})
 
 	// Render a remedial file name for spanless errors.
-	if len(d.Annotations) == 0 {
+	if len(d.Annotations) == 0 && d.InFile != "" {
 		out.WriteByte('\n')
-		out.WriteString(color.nBlue)
+		out.WriteString(c.nBlue)
 		padBy(&out, lineBarWidth-1)
 
-		path := d.InFile
-		if path == "" {
-			path = "<unknown>"
-		}
-		fmt.Fprintf(&out, "--> %s", path)
+		fmt.Fprintf(&out, "--> %s", d.InFile)
 	}
 
 	// Render the footers. For simplicity we collect them into an array first.
-	var footers [][2]string
+	var footers [][3]string
 	for _, note := range d.Notes {
-		footers = append(footers, [2]string{"note", note})
+		footers = append(footers, [3]string{c.bCyan, "note", note})
 	}
 	for _, help := range d.Help {
-		footers = append(footers, [2]string{"help", help})
+		footers = append(footers, [3]string{c.bCyan, "help", help})
 	}
-	for i, frame := range d.trace {
-		if debugMode < debugFull && i > 0 {
-			break
-		}
-		// Dump the stack trace for the diagnostic if one was included.
-		footers = append(footers, [2]string{"debug", fmt.Sprintf("at %s", frame.Function)})
-		footers = append(footers, [2]string{"debug", fmt.Sprintf("   %s:%d", frame.File, frame.Line)})
+	for _, debug := range d.Debug {
+		footers = append(footers, [3]string{c.bRed, "debug", debug})
 	}
 	for _, footer := range footers {
 		out.WriteByte('\n')
-		out.WriteString(color.nBlue)
+		out.WriteString(c.nBlue)
 		padBy(&out, lineBarWidth)
 		out.WriteString(" = ")
-		fmt.Fprint(&out, color.bCyan, footer[0], ": ", color.reset, footer[1])
+		fmt.Fprint(&out, footer[0], footer[1], ": ", c.reset)
+		for i, line := range strings.Split(footer[2], "\n") {
+			if i > 0 {
+				out.WriteByte('\n')
+				margin := lineBarWidth + 3 + len(footer[1]) + 2
+				padBy(&out, margin)
+			}
+			out.WriteString(line)
+		}
 	}
 
-	out.WriteString(color.reset)
+	out.WriteString(c.reset)
 	return out.String()
+}
+
+func (r *Renderer) colors() color {
+	if !r.Colorize {
+		return color{r: r}
+	}
+
+	return color{
+		r:       r,
+		reset:   "\033[0m",
+		nRed:    "\033[0;31m",
+		nYellow: "\033[0;33m",
+		nCyan:   "\033[0;36m",
+		nBlue:   "\033[0;34m",
+		bRed:    "\033[1;31m",
+		bYellow: "\033[1;33m",
+		bCyan:   "\033[1;36m",
+		bBlue:   "\033[1;34m",
+	}
+}
+
+// color is the colors used for pretty-rendering diagnostics.
+type color struct {
+	r *Renderer
+
+	reset string
+	// Normal colors.
+	nRed, nYellow, nCyan, nBlue string
+	// Bold colors.
+	bRed, bYellow, bCyan, bBlue string
+}
+
+func (c color) ColorForLevel(l Level) string {
+	switch l {
+	case Error:
+		return c.nRed
+	case Warning:
+		if c.r.WarningsAreErrors {
+			return c.nRed
+		}
+		return c.nYellow
+	case Remark:
+		return c.nCyan
+	case note:
+		return c.nBlue
+	default:
+		return ""
+	}
+}
+
+func (c color) BoldForLevel(l Level) string {
+	switch l {
+	case Error:
+		return c.bRed
+	case Warning:
+		if c.r.WarningsAreErrors {
+			return c.nRed
+		}
+		return c.bYellow
+	case Remark:
+		return c.bCyan
+	case note:
+		return c.bBlue
+	default:
+		return ""
+	}
 }
 
 // window is an intermediate structure for rendering an annotated code snippet
@@ -227,14 +347,29 @@ func buildWindow(level Level, annotations []Annotation) *window {
 	// Now, convert each span into an underline or multiline.
 	for _, snippet := range annotations {
 		if snippet.Start.Line != snippet.End.Line {
+
 			w.multilines = append(w.multilines, multiline{
-				start:   snippet.Start.Line,
-				end:     snippet.End.Line,
-				width:   snippet.End.Column,
-				level:   note,
-				message: snippet.Message,
+				start:      snippet.Start.Line,
+				end:        snippet.End.Line,
+				startWidth: snippet.Start.Column,
+				endWidth:   snippet.End.Column,
+				level:      note,
+				message:    snippet.Message,
 			})
 			ml := &w.multilines[len(w.multilines)-1]
+
+			// Calculate whether this snippet starts on the first non-space rune of
+			// the line.
+			if snippet.Start.Offset != 0 {
+				firstLineStart := strings.LastIndexByte(w.file.Text[:snippet.Start.Offset-1], '\n')
+				if !strings.ContainsFunc(
+					w.file.Text[firstLineStart+1:snippet.Start.Offset-1],
+					func(r rune) bool { return !unicode.IsSpace(r) },
+				) {
+					ml.startWidth = 0
+				}
+			}
+
 			if snippet.Primary {
 				ml.level = level
 			}
@@ -264,7 +399,7 @@ func buildWindow(level Level, annotations []Annotation) *window {
 	return w
 }
 
-func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
+func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 	type lineInfo struct {
 		sidebar    []*multiline
 		underlines []string
@@ -316,18 +451,13 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 
 		// Arrange for a "sidebar prefix" for this line. This is determined by any sidebars that are
 		// active on this line, even if they end on it.
-		var prefixB strings.Builder
-		for _, ml := range cur.sidebar {
-			prefixB.WriteString(color.BoldForLevel(ml.level))
-			prefixB.WriteByte('|')
-		}
-		if prefixB.Len() > 0 {
-			prefixB.WriteByte(' ')
-		}
-		prefix := prefixB.String()
+		sidebar := renderSidebar(sidebarLen, -1, -1, c, cur.sidebar)
 
 		// Lay out the physical underlines in reverse order. This will cause longer lines to be
 		// laid out first, which will be overwritten by shorter ones.
+		//
+		// We use a slice instead of a strings.Builder so we can overwrite parts
+		// as we render different "layers".
 		var buf []byte
 		for i := len(part) - 1; i >= 0; i-- {
 			element := part[i]
@@ -349,15 +479,15 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 		parts(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
-				out.WriteString(color.reset)
+				out.WriteString(c.reset)
 			} else {
-				out.WriteString(color.BoldForLevel(level))
+				out.WriteString(c.BoldForLevel(level))
 			}
 			for range line {
 				switch level {
 				case 0:
 					out.WriteByte(' ')
-				case note, Remark:
+				case note:
 					out.WriteByte('-')
 				default:
 					out.WriteByte('^')
@@ -376,7 +506,7 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 			}
 		}
 		underlines := strings.TrimRight(out.String(), " ")
-		cur.underlines = []string{prefix + underlines + " " + color.BoldForLevel(rightmost.level) + rightmost.message}
+		cur.underlines = []string{sidebar + underlines + " " + c.BoldForLevel(rightmost.level) + rightmost.message}
 
 		// Now, do all the other messages, one per line. For each message, we also
 		// need to draw pipes (|) above each one to connect it to its underline.
@@ -391,29 +521,41 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 			}
 			rest = append(rest, ul)
 		}
+
 		for idx := range rest {
 			buf = buf[:0] // Clear the temp buffer.
 
-			// First, lay out the pipes.
+			// First, lay out the pipes. Note that rest is not necessarily
+			// ordered from right to left, so we need to sort the pipes first.
+			// To deal with this, we make a copy of rest[idx:], sort it appropriately,
+			// and then lay things out.
+			//
+			// This is quadratic, but no one is going to put more than like. five snippets
+			// in a line, so it's fine.
+			restSorted := slices.Clone(rest[idx:])
+			slices.SortFunc(restSorted, func(a, b *underline) int {
+				return a.start - b.start
+			})
+
 			var nonColorLen int
-			for _, ul := range rest[idx:] {
-				idx := ul.start - 1
-				for nonColorLen < idx {
+			for _, ul := range restSorted {
+				col := ul.start - 1
+				for nonColorLen < col {
 					buf = append(buf, ' ')
 					nonColorLen++
 				}
 
-				if nonColorLen == idx {
+				if nonColorLen == col {
 					// Two pipes may appear on the same column!
 					// This is why this is in a conditional.
-					buf = append(buf, color.BoldForLevel(ul.level)...)
+					buf = append(buf, c.BoldForLevel(ul.level)...)
 					buf = append(buf, '|')
 					nonColorLen++
 				}
 			}
 
 			// Spat in the one with all the pipes in it as-is.
-			cur.underlines = append(cur.underlines, strings.TrimRight(prefix+string(buf), " "))
+			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
 
 			// Then, splat in the message. having two rows like this ensures that
 			// each message has one pipe directly above it.
@@ -423,114 +565,200 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 				actualStart := ul.start - 1
 				for _, other := range rest[idx:] {
 					if other.start <= ul.start {
-						actualStart += len(color.BoldForLevel(ul.level))
+						actualStart += len(c.BoldForLevel(ul.level))
 					}
 				}
-				// FIXME: This assumes that ul.message does not contain wide characters.
 				for len(buf) < actualStart+len(ul.message)+1 {
 					buf = append(buf, ' ')
 				}
 
+				// Make sure we don't crop *part* of an escape. To do this, we look for
+				// the last ESC in the region we're going to replace. If it is not
+				// followed by an m, we need to insert that many spaces into buf to avoid
+				// overwriting it.
+				writeTo := buf[actualStart:][:len(ul.message)]
+				lastEsc := bytes.LastIndexByte(writeTo, 033)
+				if lastEsc != -1 && !bytes.ContainsRune(writeTo[lastEsc:], 'm') {
+					// If we got here, it means we're going to crop an escape if
+					// we don't do something about it.
+					spaceNeeded := len(writeTo) - lastEsc
+					for i := 0; i < spaceNeeded; i++ {
+						buf = append(buf, 0)
+					}
+					copy(buf[actualStart+lastEsc+spaceNeeded:], buf[actualStart+lastEsc:])
+				}
+
 				copy(buf[actualStart:], ul.message)
 			}
-			cur.underlines = append(cur.underlines, strings.TrimRight(prefix+string(buf), " "))
+			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
 		}
 
 		return true
 	})
 
-	// Now that we've laid out the underlines, we can add the ends of all of the multilines.
+	// Now that we've laid out the underlines, we can add the starts and ends of all
+	// of the multilines, which go after the underlines.
+	//
 	// The result is that a multiline will look like this:
 	//
-	// / code
+	//   code
+	//  ____^
 	// | code code code
-	// |______________^ message
+	// \______________^ message
+	var line strings.Builder
 	for i := range info {
 		cur := &info[i]
-		var line strings.Builder
+		prevStart := -1
 		for j, ml := range cur.sidebar {
-			line.Reset()
-			if ml.end-w.start != i {
+			if ml == nil {
 				continue
 			}
 
-			for _, ml := range cur.sidebar[:j+1] {
-				if ml == nil {
-					line.WriteByte(' ')
+			line.Reset()
+			var isStart bool
+			switch w.start + i {
+			case ml.start:
+				if ml.startWidth == 0 {
 					continue
 				}
-				line.WriteString(color.BoldForLevel(ml.level))
-				line.WriteByte('|')
+
+				isStart = true
+				fallthrough
+			case ml.end:
+				// We need to be flush with the sidebar here, so we trim the trailing space.
+				sidebar := []byte(strings.TrimRight(renderSidebar(0, -1, prevStart, c, cur.sidebar[:j+1]), " "))
+
+				// We also need to erase the bars of any multis that are before this multi
+				// and start/end on the same line.
+				if !isStart {
+					for i, otherML := range cur.sidebar[:j+1] {
+						if otherML != nil && otherML.end == ml.end {
+							// We assume all the color codes have the same byte length.
+							codeLen := len(c.bBlue)
+							idx := i*(2+codeLen) + codeLen
+							if idx < len(sidebar) {
+								sidebar[idx] = ' '
+							}
+						}
+					}
+				}
+
+				// Delete the last pipe and replace it with a slash or space, depending.
+				// on orientation.
+				line.Write(sidebar[:len(sidebar)-1])
+				if isStart {
+					line.WriteByte(' ')
+				} else {
+					line.WriteByte('\\')
+				}
+
+				// Pad out to the gutter of the code block.
+				remaining := sidebarLen - (j + 1)
+				padByRune(&line, remaining*2, '_')
+
+				// Pad to right before we need to insert a ^ or -
+				if isStart {
+					padByRune(&line, ml.startWidth-1, '_')
+				} else {
+					padByRune(&line, ml.endWidth-1, '_')
+				}
+
+				if ml.level == note {
+					line.WriteByte('-')
+				} else {
+					line.WriteByte('^')
+				}
+				if !isStart && ml.message != "" {
+					line.WriteByte(' ')
+					line.WriteString(ml.message)
+				}
+				cur.underlines = append(cur.underlines, line.String())
 			}
 
-			line.WriteString(color.BoldForLevel(ml.level))
-			padByRune(&line, len(cur.sidebar)-j-1+ml.width, '_')
-
-			if ml.level == note {
-				line.WriteString("^ ")
+			if isStart {
+				prevStart = j
 			} else {
-				line.WriteString("- ")
+				prevStart = -1
 			}
-			line.WriteString(ml.message)
-			cur.underlines = append(cur.underlines, line.String())
 		}
 	}
 
 	// Make sure to emit any lines adjacent to another line we want to emit, so long as that
 	// line contains printable characters.
+	//
+	// We copy a set of all the lines we plan to emit before this transformation;
+	// otherwise, doing it in-place will cause every nonempty line after a must-emit line
+	// to be shown, which we don't want.
+	mustEmit := make(map[int]bool)
 	for i := range info {
-		cur := &info[i]
-
-		containsPrintable := func(s string) bool {
-			for _, r := range s {
-				if unicode.IsGraphic(r) {
-					return true
-				}
-			}
-			return false
+		if info[i].shouldEmit {
+			mustEmit[i] = true
 		}
-
-		if i != 0 && info[i-1].shouldEmit && containsPrintable(lines[i]) {
-			cur.shouldEmit = true
-		} else if i+1 < len(info) && info[i+1].shouldEmit && containsPrintable(lines[i]) {
-			cur.shouldEmit = true
-		} else if i != 0 && info[i-1].shouldEmit && i+1 < len(info) && info[i+1].shouldEmit {
-			cur.shouldEmit = true
+	}
+	for i := range info {
+		// At least two of the below conditions must be true for
+		// this line to be shown. Annoyingly, go does not have a conversion
+		// from bool to int...
+		var score int
+		if strings.IndexFunc(lines[i], unicode.IsGraphic) != 0 {
+			score++
+		}
+		if mustEmit[i-1] {
+			score++
+		}
+		if mustEmit[i+1] {
+			score++
+		}
+		if score >= 2 {
+			info[i].shouldEmit = true
 		}
 	}
 
+	lastEmit := w.start
 	for i, line := range lines {
 		cur := &info[i]
 		lineno := i + w.start
-
-		var sidebar strings.Builder
-		for _, ml := range cur.sidebar {
-			sidebar.WriteString(color.BoldForLevel(ml.level))
-			if lineno == ml.start {
-				sidebar.WriteByte('/')
-			} else {
-				sidebar.WriteByte('|')
-			}
-		}
-		if sidebar.Len() > 0 {
-			sidebar.WriteByte(' ')
-		}
 
 		if !cur.shouldEmit {
 			continue
 		}
 
+		// If the last multi of the previous line starts on that line, make its
+		// pipe here a slash so that it connects properly.
+		slashAt := -1
+		if i > 0 {
+			prevSidebar := info[i-1].sidebar
+			if len(prevSidebar) > 0 &&
+				prevSidebar[len(prevSidebar)-1].start == lineno-1 &&
+				prevSidebar[len(prevSidebar)-1].startWidth > 0 {
+				slashAt = len(prevSidebar) - 1
+			}
+		}
+		sidebar := renderSidebar(sidebarLen, lineno, slashAt, c, cur.sidebar)
+
 		if i > 0 && !info[i-1].shouldEmit {
 			// Generate a visual break if this is right after a real line.
 			out.WriteByte('\n')
-			out.WriteString(color.bBlue)
-			padBy(out, lineBarWidth)
-			out.WriteString(" ~ ")
-			out.WriteString(sidebar.String())
+			out.WriteString(c.nBlue)
+			padBy(out, lineBarWidth-2)
+			out.WriteString("...  ")
+
+			// Generate a sidebar as before but this time we want to look at the
+			// last line that was actually emitted.
+			slashAt := -1
+			prevSidebar := info[lastEmit].sidebar
+			if len(prevSidebar) > 0 &&
+				prevSidebar[len(prevSidebar)-1].start == lastEmit &&
+				prevSidebar[len(prevSidebar)-1].startWidth > 0 {
+				slashAt = len(prevSidebar) - 1
+			}
+
+			out.WriteString(renderSidebar(sidebarLen, lineno, slashAt, c, cur.sidebar))
 		}
 
 		// Ok, we are definitely printing this line out.
-		fmt.Fprintf(out, "\n%s%*d | %s%s", color.nBlue, lineBarWidth, lineno, sidebar.String(), color.reset)
+		fmt.Fprintf(out, "\n%s%*d | %s%s", c.nBlue, lineBarWidth, lineno, sidebar, c.reset)
+		lastEmit = lineno
 
 		// Print out runes one by one, so we account for tabs correctly.
 		var ruler width.Ruler
@@ -549,7 +777,7 @@ func (w *window) Render(lineBarWidth int, color *color, out *strings.Builder) {
 		// If this happens to be an annotated line, this is when it gets annotated.
 		for _, line := range cur.underlines {
 			out.WriteByte('\n')
-			out.WriteString(color.bBlue)
+			out.WriteString(c.nBlue)
 			padBy(out, lineBarWidth)
 			out.WriteString(" | ")
 			out.WriteString(line)
@@ -582,63 +810,34 @@ func cmpUnderlines(a, b underline) int {
 }
 
 type multiline struct {
-	start, end int
-	width      int
-	level      Level
-	message    string
+	start, end           int
+	startWidth, endWidth int
+	level                Level
+	message              string
 }
 
-// color is the colors used for pretty-rendering diagnostics.
-type color struct {
-	reset string
-	// Normal colors.
-	nRed, nYellow, nCyan, nBlue string
-	// Bold colors.
-	bRed, bYellow, bCyan, bBlue string
-}
+func renderSidebar(bars, lineno, slashAt int, c *color, multis []*multiline) string {
+	var sidebar strings.Builder
+	for i, ml := range multis {
+		if ml == nil {
+			sidebar.WriteString("  ")
+			continue
+		}
 
-func ansiColor() color {
-	return color{
-		reset:   "\033[0m",
-		nRed:    "\033[0;31m",
-		nYellow: "\033[0;33m",
-		nCyan:   "\033[0;36m",
-		nBlue:   "\033[0;34m",
-		bRed:    "\033[1;31m",
-		bYellow: "\033[1;33m",
-		bCyan:   "\033[1;36m",
-		bBlue:   "\033[1;34m",
+		sidebar.WriteString(c.BoldForLevel(ml.level))
+		if lineno != ml.start && slashAt != i {
+			sidebar.WriteByte('|')
+		} else if ml.startWidth == 0 || slashAt == i {
+			sidebar.WriteByte('/')
+		} else {
+			sidebar.WriteByte(' ')
+		}
+		sidebar.WriteByte(' ')
 	}
-}
-
-func (c color) ColorForLevel(l Level) string {
-	switch l {
-	case Error:
-		return c.nRed
-	case Warning:
-		return c.nYellow
-	case Remark:
-		return c.nCyan
-	case note:
-		return c.nBlue
-	default:
-		return ""
+	for sidebar.Len() < bars*2 {
+		sidebar.WriteByte(' ')
 	}
-}
-
-func (c color) BoldForLevel(l Level) string {
-	switch l {
-	case Error:
-		return c.bRed
-	case Warning:
-		return c.bYellow
-	case Remark:
-		return c.bCyan
-	case note:
-		return c.bBlue
-	default:
-		return ""
-	}
+	return sidebar.String()
 }
 
 // partition returns an iterator of subslices of s such that each yielded

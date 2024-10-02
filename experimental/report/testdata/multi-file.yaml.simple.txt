@@ -1,0 +1,2 @@
+error: foo.proto:3:9: two files
+error: foo.proto:3:9: three files

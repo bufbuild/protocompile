@@ -1,0 +1,12 @@
+error: system not supported
+
+error: could not open file "foo.proto": os error 2: no such file or directory
+ --> foo.proto
+
+warning: file consists only of the byte `0xaa`
+ --> foo.proto
+   = note: that means that the file is screaming
+   = help: you should delete it to put it out of its misery
+   = debug: 0xaaaaaaaaaaaaaaaa
+
+encountered 2 errors and 1 warning

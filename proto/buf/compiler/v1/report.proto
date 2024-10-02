@@ -33,15 +33,45 @@ message Report {
 
 // A diagnostic within a `Report`.
 message Diagnostic {
-  // The message to show for this diagnostic. This should fit on one line.
+  // A diagnostic level. This affects how (and whether) it is shown to users.
+  enum Level {
+    LEVEL_UNSPECIFIED = 0;
+    LEVEL_ERROR = 1;
+    LEVEL_WARNING = 2;
+    LEVEL_REMARK = 3;
+  }
+
+  // A file annotation within a `Diagnostic`. This corresponds to a single
+  // span of source code in a `Report`'s file.
+  message Annotation {
+    // A message to show under this snippet. May be empty.
+    string message = 1;
+
+    // Whether this is a "primary" snippet, which is used for deciding whether or not
+    // to mark the snippet with the same color as the overall diagnostic.
+    bool primary = 2;
+
+    // The index of `Report.files` of the file this annotation is for.
+    //
+    // This is not a whole `Report.File` to help keep serialized reports slim. This
+    // avoids neeidng to duplicate the whole text of the file one for every annotation.
+    uint32 file = 3;
+
+    // The start offset of the annotated snippet, in bytes.
+    uint32 start = 4;
+    // The end offset of the annotated snippet, in bytes.
+    uint32 end = 5;
+  }
+
+  // Required. The message to show for this diagnostic. This should fit on one line.
   string message = 1;
 
-  // The level for this diagnostic.
+  // Required. The level for this diagnostic.
   Level level = 2;
 
   // An optional path to show in the diagnostic, if it has no annotations.
   // This is useful for e.g. diagnostics that would have no spans.
-  string path = 3;
+  string in_file = 3;
 
   // Annotations for source code relevant to this diagnostic.
   repeated Annotation annotations = 4;
@@ -55,33 +85,4 @@ message Diagnostic {
   // used for information about debugging a tool or compiler that emits the
   // diagnostic, not the code being diagnosed.
   repeated string debug = 7;
-}
-
-// A diagnostic level. This affects how (and whether) it is shown to users.
-enum Level {
-  LEVEL_UNSPECIFIED = 0;
-  LEVEL_ERROR = 1;
-  LEVEL_WARNING = 2;
-  LEVEL_REMARK = 3;
-}
-
-// A file annotation within a `Diagnostic`. This corresponds to a single
-// span of source code in a `Report`'s file.
-message Annotation {
-  // The index of `Report.files` this annotation is for.
-  //
-  // This is not a whole `File`, to help keep serialized reports slim.
-  int32 file = 1;
-
-  // The start offset of the annotated snippet, in bytes.
-  uint32 start = 2;
-  // The end offset of the annotated snippet, in bytes.
-  uint32 end = 3;
-
-  // A message to show under this snippet. May be empty.
-  string message = 4;
-
-  // Whether this is a "primary" snippet, which is used for deciding whether or not
-  // to mark the snippet with the same color as the overall diagnostic.
-  bool primary = 5;
 }

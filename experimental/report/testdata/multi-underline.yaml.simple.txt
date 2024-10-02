@@ -1,0 +1,2 @@
+error: foo.proto:6:12: `size_t` is not a built-in Protobuf type
+warning: foo.proto:3:9: these are pretty bad names

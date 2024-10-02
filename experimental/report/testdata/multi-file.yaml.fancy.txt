@@ -1,0 +1,28 @@
+error: two files
+  --> foo.proto:3:9
+   | 
+ 3 | package abc.xyz;
+   |         ^^^^^^^ foo
+ 4 | 
+ 5 | message Blah {
+   |         ---- bar
+  ::: bar.proto:3:9
+   | 
+ 3 | package abc.xyz2;
+   |         ------- baz
+
+error: three files
+  --> foo.proto:3:9
+   | 
+ 3 | package abc.xyz;
+   |         ^^^^^^^ foo
+  ::: bar.proto:3:9
+   | 
+ 3 | package abc.xyz2;
+   |         ------- baz
+  ::: foo.proto:5:9
+   | 
+ 5 | message Blah {
+   |         ---- bar
+
+encountered 2 errors
