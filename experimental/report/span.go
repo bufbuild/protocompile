@@ -165,7 +165,7 @@ func (i *IndexedFile) Search(offset int) Location {
 		}
 	}
 
-	// Calculate the UTF-16 offset of of the offset within its line.
+	// Calculate the UTF-16 offset of the offset within its line.
 	var utf16Col int
 	for _, r := range chunk {
 		utf16Col += utf16RuneLen(r)

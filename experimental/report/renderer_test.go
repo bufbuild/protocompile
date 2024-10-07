@@ -21,11 +21,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/internal/golden"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/golden"
 )
 
 var ansiEscapePat = regexp.MustCompile("\033\\[([\\d;]*)m")
@@ -58,6 +59,8 @@ func ansiToMarkup(text string) string {
 }
 
 func TestRender(t *testing.T) {
+	t.Parallel()
+
 	corpus := golden.Corpus{
 		Root:      "testdata",
 		Refresh:   "PROTOCOMPILE_REFRESH",

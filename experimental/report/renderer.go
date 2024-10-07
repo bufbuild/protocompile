@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math/bits"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -100,7 +101,7 @@ func (r Renderer) Render(report *Report) (text string, haveErrors bool) {
 	return out.String(), errors > 0
 }
 
-// Diagnostic renders a single
+// Diagnostic renders a single diagnostic to a string.
 func (r *Renderer) Diagnostic(d Diagnostic) string {
 	var level string
 	switch d.Level {
@@ -167,7 +168,7 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 	for _, snip := range d.Annotations {
 		greatestLine = max(greatestLine, snip.End.Line)
 	}
-	lineBarWidth := len(fmt.Sprint(greatestLine)) // Easier than messing with math.Log10()
+	lineBarWidth := len(strconv.Itoa(greatestLine)) // Easier than messing with math.Log10()
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
@@ -207,7 +208,7 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 	}
 
 	// Render the footers. For simplicity we collect them into an array first.
-	var footers [][3]string
+	footers := make([][3]string, 0, len(d.Notes)+len(d.Help)+len(d.Debug))
 	for _, note := range d.Notes {
 		footers = append(footers, [3]string{c.bCyan, "note", note})
 	}
@@ -347,7 +348,6 @@ func buildWindow(level Level, annotations []Annotation) *window {
 	// Now, convert each span into an underline or multiline.
 	for _, snippet := range annotations {
 		if snippet.Start.Line != snippet.End.Line {
-
 			w.multilines = append(w.multilines, multiline{
 				start:      snippet.Start.Line,
 				end:        snippet.End.Line,
@@ -596,6 +596,7 @@ func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 		return true
 	})
 
+	//nolint:dupword
 	// Now that we've laid out the underlines, we can add the starts and ends of all
 	// of the multilines, which go after the underlines.
 	//
@@ -832,11 +833,15 @@ func renderSidebar(bars, lineno, slashAt int, c *color, multis []*multiline) str
 		}
 
 		sidebar.WriteString(c.BoldForLevel(ml.level))
-		if lineno != ml.start && slashAt != i {
-			sidebar.WriteByte('|')
-		} else if ml.startWidth == 0 || slashAt == i {
+
+		switch {
+		case slashAt == i:
 			sidebar.WriteByte('/')
-		} else {
+		case lineno != ml.start:
+			sidebar.WriteByte('|')
+		case ml.startWidth == 0:
+			sidebar.WriteByte('/')
+		default:
 			sidebar.WriteByte(' ')
 		}
 		sidebar.WriteByte(' ')
@@ -855,6 +860,8 @@ func renderSidebar(bars, lineno, slashAt int, c *color, multis []*multiline) str
 // as the subslices [a a a], [b], and [c c c].
 //
 // Will never yield an empty slice.
+//
+//nolint:dupword
 func partition[T any](s []T, delimit func(a, b *T) bool) func(func(int, []T) bool) {
 	return func(yield func(int, []T) bool) {
 		var start int

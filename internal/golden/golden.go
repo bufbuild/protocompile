@@ -105,8 +105,12 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 
 	// Execute the tests.
 	for _, path := range tests {
+		path := path // Avoid loop variable capture.
+
 		name, _ := filepath.Rel(testDir, path)
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
 			bytes, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("corpora: error while loading input file %q: %v", path, err)
@@ -114,6 +118,8 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 
 			input := string(bytes)
 			results := make([]string, len(c.Outputs))
+
+			//nolint:revive,predeclared // it's fine to use panic as a name here.
 			panic, panicStack := catch(func() { test(t, name, input, results) })
 			if panic != nil {
 				t.Logf("test panicked: %v\n%s", panic, panicStack)
@@ -161,7 +167,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 							t.Fail()
 						}
 					} else {
-						os.WriteFile(path, []byte(results[i]), 0770)
+						err := os.WriteFile(path, []byte(results[i]), 0600)
 						if err != nil {
 							t.Logf("corpora: error while writing output file %q: %v", path, err)
 							t.Fail()
@@ -169,7 +175,6 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 					}
 				}
 			}
-
 		})
 	}
 }
@@ -233,7 +238,9 @@ func callerDir(skip int) string {
 	return filepath.Dir(file)
 }
 
-// catch runs cb and places any panic it results in in panic.
+// catch runs cb and places any panic it results in panic.
+//
+//nolint:revive,predeclared // it's fine to use panic as a name here.
 func catch(cb func()) (panic any, stack []byte) {
 	defer func() {
 		panic = recover()

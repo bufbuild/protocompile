@@ -21,8 +21,9 @@ import (
 	"slices"
 	"strings"
 
-	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1"
 	"google.golang.org/protobuf/proto"
+
+	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1"
 )
 
 const (
@@ -438,6 +439,8 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 }
 
 // push is the core "make me a diagnostic" function.
+//
+//nolint:unparam
 func (r *Report) push(skip int, err error, level Level) *Diagnostic {
 	r.Diagnostics = append(r.Diagnostics, Diagnostic{
 		Err:   err,
