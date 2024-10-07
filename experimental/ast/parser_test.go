@@ -50,6 +50,7 @@ func TestParser(t *testing.T) {
 		var r report.Report
 		defer func() {
 			// Dump out the report in a defer so it shows up even if we panic.
+			r.Sort()
 			text, _ := renderer.Render(&r)
 			results[2] = text
 		}()

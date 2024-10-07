@@ -68,9 +68,16 @@ func newContext(file report.File) *Context {
 // Parse parses a Protobuf file, and places any diagnostics encountered in report.
 func Parse(file report.File, report *report.Report) File {
 	lexer := lexer{Context: newContext(file)}
+
+	report.Stage++
 	lexer.Lex(report)
+
+	report.Stage++
 	parse(report, lexer.Context)
+
+	report.Stage++
 	legalize(report, nil, lexer.Context.Root())
+
 	return lexer.Context.Root()
 }
 
