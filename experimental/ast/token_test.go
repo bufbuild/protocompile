@@ -70,7 +70,7 @@ func TestLeafTokens(t *testing.T) {
 func TestTreeTokens(t *testing.T) {
 	assert := assert.New(t)
 
-	ctx := newContext(report.File{Path: "test", Text: "abc def ghi"})
+	ctx := newContext(report.File{Path: "test", Text: "abc(def(x), ghi)"})
 
 	_ = ctx.PushToken(3, TokenIdent)
 	open := ctx.PushToken(1, TokenPunct)

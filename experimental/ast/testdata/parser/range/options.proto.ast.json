@@ -1,0 +1,152 @@
+{
+  "file": {
+    "path": "testdata/parser/range/options.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKc3ludGF4ID0gInByb3RvMiI7CgpwYWNrYWdlIHRlc3Q7CgptZXNzYWdlIEZvbyB7CiAgICBleHRlbnNpb25zIDEgWyhhbGxvd2VkKSA9IHRydWVdOwogICAgcmVzZXJ2ZWQgMSBbKGFsbG93ZWQpID0gZmFsc2VdOwp9"
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_SYNTAX",
+        "value": {
+          "literal": {
+            "stringValue": "proto2",
+            "span": { "start": 615, "end": 623 }
+          }
+        },
+        "span": { "start": 606, "end": 624 },
+        "keywordSpan": { "start": 606, "end": 612 },
+        "equalsSpan": { "start": 613, "end": 614 },
+        "semicolonSpan": { "start": 623, "end": 624 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 634, "end": 638 }
+            }
+          ],
+          "span": { "start": 634, "end": 638 }
+        },
+        "span": { "start": 626, "end": 639 },
+        "keywordSpan": { "start": 626, "end": 633 },
+        "semicolonSpan": { "start": 638, "end": 639 }
+      }
+    },
+    {
+      "def": {
+        "kind": "KIND_MESSAGE",
+        "name": {
+          "components": [
+            {
+              "ident": "Foo",
+              "componentSpan": { "start": 649, "end": 652 }
+            }
+          ],
+          "span": { "start": 649, "end": 652 }
+        },
+        "body": {
+          "decls": [
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 670, "end": 671 }
+                    }
+                  }
+                ],
+                "options": {
+                  "entries": [
+                    {
+                      "path": {
+                        "components": [
+                          {
+                            "extension": {
+                              "span": { "start": 674, "end": 681 }
+                            },
+                            "componentSpan": { "start": 674, "end": 681 }
+                          }
+                        ],
+                        "span": { "start": 673, "end": 682 }
+                      },
+                      "value": {
+                        "path": {
+                          "components": [
+                            {
+                              "ident": "true",
+                              "componentSpan": { "start": 685, "end": 689 }
+                            }
+                          ],
+                          "span": { "start": 685, "end": 689 }
+                        }
+                      },
+                      "equalsSpan": { "start": 683, "end": 684 }
+                    }
+                  ],
+                  "span": { "start": 672, "end": 690 }
+                },
+                "span": { "start": 659, "end": 691 },
+                "keywordSpan": { "start": 659, "end": 669 },
+                "semicolonSpan": { "start": 690, "end": 691 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 705, "end": 706 }
+                    }
+                  }
+                ],
+                "options": {
+                  "entries": [
+                    {
+                      "path": {
+                        "components": [
+                          {
+                            "extension": {
+                              "span": { "start": 709, "end": 716 }
+                            },
+                            "componentSpan": { "start": 709, "end": 716 }
+                          }
+                        ],
+                        "span": { "start": 708, "end": 717 }
+                      },
+                      "value": {
+                        "path": {
+                          "components": [
+                            {
+                              "ident": "false",
+                              "componentSpan": { "start": 720, "end": 725 }
+                            }
+                          ],
+                          "span": { "start": 720, "end": 725 }
+                        }
+                      },
+                      "equalsSpan": { "start": 718, "end": 719 }
+                    }
+                  ],
+                  "span": { "start": 707, "end": 726 }
+                },
+                "span": { "start": 696, "end": 727 },
+                "keywordSpan": { "start": 696, "end": 704 },
+                "semicolonSpan": { "start": 726, "end": 727 }
+              }
+            }
+          ],
+          "span": { "start": 653, "end": 729 }
+        },
+        "span": { "start": 641, "end": 729 },
+        "keywordSpan": { "start": 641, "end": 648 }
+      }
+    }
+  ]
+}

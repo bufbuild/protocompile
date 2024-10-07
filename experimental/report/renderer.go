@@ -358,6 +358,10 @@ func buildWindow(level Level, annotations []Annotation) *window {
 			})
 			ml := &w.multilines[len(w.multilines)-1]
 
+			if ml.startWidth == ml.endWidth {
+				ml.endWidth++
+			}
+
 			// Calculate whether this snippet starts on the first non-space rune of
 			// the line.
 			if snippet.Start.Offset != 0 {
@@ -387,6 +391,9 @@ func buildWindow(level Level, annotations []Annotation) *window {
 		ul := &w.underlines[len(w.underlines)-1]
 		if snippet.Primary {
 			ul.level = level
+		}
+		if ul.start == ul.end {
+			ul.end++
 		}
 
 		// Make sure no empty underlines exist.
@@ -701,7 +708,7 @@ func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 		// this line to be shown. Annoyingly, go does not have a conversion
 		// from bool to int...
 		var score int
-		if strings.IndexFunc(lines[i], unicode.IsGraphic) != 0 {
+		if strings.IndexFunc(lines[i], unicode.IsGraphic) != -1 {
 			score++
 		}
 		if mustEmit[i-1] {
@@ -747,7 +754,7 @@ func (w *window) Render(lineBarWidth int, c *color, out *strings.Builder) {
 			// Generate a sidebar as before but this time we want to look at the
 			// last line that was actually emitted.
 			slashAt := -1
-			prevSidebar := info[lastEmit].sidebar
+			prevSidebar := info[lastEmit-w.start].sidebar
 			if len(prevSidebar) > 0 &&
 				prevSidebar[len(prevSidebar)-1].start == lastEmit &&
 				prevSidebar[len(prevSidebar)-1].startWidth > 0 {

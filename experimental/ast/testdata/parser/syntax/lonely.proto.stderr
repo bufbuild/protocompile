@@ -4,12 +4,6 @@ error: unexpected `;` in edition declaration
 15 | edition;
    |        ^ expected `=`
 
-error: unexpected `;`
-  --> testdata/parser/syntax/lonely.proto:17:10
-   | 
-17 | syntax = ;
-   |          ^ expected identifier, number, string, `.`, `-`, `(...)`, `[...]`, or `{...}`
-
 error: syntax declaration must be the first declaration in a file
   --> testdata/parser/syntax/lonely.proto:17:1
    | 
@@ -19,4 +13,4 @@ error: syntax declaration must be the first declaration in a file
 17 | syntax = ;
    | ^^^^^^^^^^ expected this to be the first declaration
 
-encountered 3 errors
+encountered 2 errors

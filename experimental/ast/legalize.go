@@ -32,6 +32,7 @@ func legalize(r *report.Report, parent, node Spanner) {
 	case File:
 		var syntax DeclSyntax
 		var pkg DeclPackage
+		imports := map[string]DeclImport{}
 		node.Iter(func(i int, decl Decl) bool {
 			switch decl := decl.(type) {
 			case DeclSyntax:
@@ -53,6 +54,26 @@ func legalize(r *report.Report, parent, node Spanner) {
 					}
 				}
 				pkg = decl
+
+			// Note that this causes only imports in the file level to be deduplicated;
+			// this is on purpose.
+			case DeclImport:
+				if str, ok := decl.ImportPath().(ExprLiteral); ok {
+					path, ok := str.Token.AsString()
+					if !ok {
+						break
+					}
+
+					if prev, ok := imports[path]; ok {
+						r.Warn(ErrDuplicateImport{
+							First:  prev,
+							Second: decl,
+							Path:   path,
+						})
+					} else {
+						imports[path] = decl
+					}
+				}
 			}
 
 			legalize(r, node, decl)
@@ -91,6 +112,17 @@ func legalize(r *report.Report, parent, node Spanner) {
 			values = knownEditions
 		}
 
+		expectQuoted := func(value string, tok Token) bool {
+			if !slices.Contains(values, value) {
+				return false
+			}
+
+			r.Errorf("missing quotes around %s value", what).With(
+				report.Snippetf(tok, "help: wrap this in quotes"),
+			)
+			return true
+		}
+
 		switch expr := node.Value().(type) {
 		case ExprLiteral:
 			if expr.Token.Kind() == TokenString {
@@ -99,31 +131,19 @@ func legalize(r *report.Report, parent, node Spanner) {
 				value, ok := expr.Token.AsString()
 				if ok && !slices.Contains(values, value) {
 					r.Error(ErrUnknownSyntax{Node: node, Value: expr.Token})
-				} else if !expr.Token.IsPureString() {
-					r.Warnf("%s value should be a single, escape-less string", what).With(
-						report.Snippetf(expr.Token, `help: change this to "%s"`, value),
-					)
+				} else {
+					legalizePureString(r, "`"+what+"` value", expr.Token)
 				}
 				return
-			} else {
+			} else if expectQuoted(expr.Token.Text(), expr.Token) {
 				// This might be an unquoted edition.
-				value := expr.Token.Text()
-				if slices.Contains(values, value) {
-					r.Errorf("missing quotes around %s value", what).With(
-						report.Snippetf(expr, "help: wrap this in quotes"),
-					)
-					return
-				}
+				return
 			}
 		case ExprPath:
-			// Single identifier means the user forgot the quotes around protoN.
-			if name := expr.Path.AsIdent(); !name.Nil() {
-				if slices.Contains(values, name.Name()) {
-					r.Errorf("missing quotes around %s value", what).With(
-						report.Snippetf(expr, "help: wrap this in quotes"),
-					)
-					return
-				}
+			// Single identifier means the user forgot the quotes around proto3
+			// or such.
+			if name := expr.Path.AsIdent(); !name.Nil() && expectQuoted(name.Name(), name) {
+				return
 			}
 		}
 
@@ -196,15 +216,20 @@ func legalize(r *report.Report, parent, node Spanner) {
 		}
 
 		switch expr := node.ImportPath().(type) {
+		case nil:
+			// Select a token to place the suggestion after.
+			importAfter := node.Modifier()
+			if importAfter.Nil() {
+				importAfter = node.Keyword()
+			}
+
+			r.Errorf("import is missing a file path").With(
+				report.Snippetf(importAfter, "help: insert the name of the file to import after this keyword"),
+			)
+			return
 		case ExprLiteral:
 			if expr.Token.Kind() == TokenString {
-				value, _ := expr.Token.AsString()
-				if !expr.Token.IsPureString() {
-					r.Warnf("import path should be a single, escape-less string").With(
-						report.Snippetf(expr.Token, `help: change this to "%s"`, value),
-					)
-				}
-				return
+				legalizePureString(r, "import path", expr.Token)
 			}
 		case ExprPath:
 			r.Errorf("cannot import by Protobuf symbol").With(
@@ -221,6 +246,94 @@ func legalize(r *report.Report, parent, node Spanner) {
 
 	case DeclDef:
 
+		node.Body().Iter(func(_ int, decl Decl) bool {
+			legalize(r, node, decl)
+			return true
+		})
+
 	case DeclRange:
+		parent, ok := parent.(DeclDef)
+		if !ok {
+			r.Error(ErrInvalidChild{parent, node})
+			return
+		}
+		def := parent.Classify()
+		switch def.(type) {
+		case DefMessage, DefEnum:
+		default:
+			r.Error(ErrInvalidChild{parent, node})
+			return
+		}
+
+		if node.IsReserved() && !node.Options().Nil() {
+			r.Errorf("options are not permitted on reserved ranges").With(
+				report.Snippetf(node.Options(), "help: remove this"),
+			)
+		}
+
+		// TODO: Most of this should probably get hoisted to wherever it is that we do
+		// type checking once that exists.
+		node.Iter(func(_ int, expr Expr) bool {
+			switch expr := expr.(type) {
+			case ExprRange:
+				ensureInt32 := func(expr Expr) {
+					_, ok := expr.AsInt32()
+					if !ok {
+						r.Errorf("mismatched types").With(
+							report.Snippetf(expr, "expected `int32`"),
+							report.Snippetf(node.Keyword(), "expected due to this"),
+						)
+					}
+				}
+
+				start, end := expr.Bounds()
+				ensureInt32(start)
+				if path, ok := end.(ExprPath); ok && path.AsIdent().Name() == "max" {
+					// End is allowed to be "max".
+				} else {
+					ensureInt32(end)
+				}
+				return true
+			case ExprPath:
+				if node.IsReserved() && !expr.Path.AsIdent().Nil() {
+					return true
+				}
+				// TODO: diagnose against a lone "max" ExprPath in an extension
+				// range.
+			case ExprLiteral:
+				if node.IsReserved() && expr.Token.Kind() == TokenString {
+					if text, ok := expr.Token.AsString(); ok && !isASCIIIdent(text) {
+						r.Error(ErrNonASCIIIdent{Token: expr.Token})
+					} else {
+						legalizePureString(r, "reserved field name", expr.Token)
+					}
+					return true
+				}
+			}
+
+			_, ok := expr.AsInt32()
+			if !ok {
+				allowedTypes := "expected `int32` or `int32` range"
+				if node.IsReserved() {
+					allowedTypes = "expected `int32`, `int32` range, `string`, or identifier"
+				}
+				r.Errorf("mismatched types").With(
+					report.Snippetf(expr, allowedTypes),
+					report.Snippetf(node.Keyword(), "expected due to this"),
+				)
+			}
+
+			return true
+		})
+	}
+}
+
+func legalizePureString(r *report.Report, what string, tok Token) {
+	if value, ok := tok.AsString(); ok {
+		if !tok.IsPureString() {
+			r.Warnf("%s should be a single, escape-less string", what).With(
+				report.Snippetf(tok, `help: change this to %q`, value),
+			)
+		}
 	}
 }

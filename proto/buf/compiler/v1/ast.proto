@@ -122,7 +122,7 @@ message Decl {
     }
 
     Modifier modifier = 1;
-    string import_path = 2;
+    Expr import_path = 2;
     Options options = 3;
 
     Span span = 10;

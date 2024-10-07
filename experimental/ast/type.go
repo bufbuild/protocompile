@@ -349,7 +349,7 @@ func toRawType(t Type) rawType {
 	if path, ok := t.(TypePath); ok {
 		return rawType(path.Path.raw)
 	}
-	return rawType{^rawToken(t.typeKind()), rawToken(t.typeIndex() + 1)}
+	return rawType{^rawToken(t.typeKind()), rawToken(t.typeIndex())}
 }
 
 func (t rawType) With(c Contextual) Type {

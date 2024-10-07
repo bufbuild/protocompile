@@ -1,0 +1,59 @@
+{
+  "file": {
+    "path": "testdata/parser/import/eof_after_kw.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKc3ludGF4ID0gInByb3RvMiI7CgpwYWNrYWdlIHRlc3Q7CgppbXBvcnQgImZvby5wcm90byI7CmltcG9ydA=="
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_SYNTAX",
+        "value": {
+          "literal": {
+            "stringValue": "proto2",
+            "span": { "start": 615, "end": 623 }
+          }
+        },
+        "span": { "start": 606, "end": 624 },
+        "keywordSpan": { "start": 606, "end": 612 },
+        "equalsSpan": { "start": 613, "end": 614 },
+        "semicolonSpan": { "start": 623, "end": 624 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 634, "end": 638 }
+            }
+          ],
+          "span": { "start": 634, "end": 638 }
+        },
+        "span": { "start": 626, "end": 639 },
+        "keywordSpan": { "start": 626, "end": 633 },
+        "semicolonSpan": { "start": 638, "end": 639 }
+      }
+    },
+    {
+      "import": {
+        "importPath": {
+          "literal": {
+            "stringValue": "foo.proto",
+            "span": { "start": 648, "end": 659 }
+          }
+        },
+        "span": { "start": 641, "end": 660 },
+        "keywordSpan": { "start": 641, "end": 647 },
+        "importPathSpan": { "start": 648, "end": 659 },
+        "semicolonSpan": { "start": 659, "end": 660 }
+      }
+    },
+    {
+      "import": {
+        "span": { "start": 661, "end": 667 },
+        "keywordSpan": { "start": 661, "end": 667 }
+      }
+    }
+  ]
+}

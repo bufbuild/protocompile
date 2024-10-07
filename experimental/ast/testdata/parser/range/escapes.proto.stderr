@@ -1,0 +1,19 @@
+warning: reserved field name should be a single, escape-less string
+  --> testdata/parser/range/escapes.proto:20:14
+   | 
+20 |     reserved "foo" "bar";
+   |              ^^^^^^^^^^^ help: change this to "foobar"
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/parser/range/escapes.proto:21:14
+   | 
+21 |     reserved "foo\n", "b\x61r";
+   |              ^^^^^^^ 
+
+warning: reserved field name should be a single, escape-less string
+  --> testdata/parser/range/escapes.proto:21:23
+   | 
+21 |     reserved "foo\n", "b\x61r";
+   |                       ^^^^^^^^ help: change this to "bar"
+
+encountered 1 error and 2 warnings

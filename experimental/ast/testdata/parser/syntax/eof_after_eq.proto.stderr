@@ -1,0 +1,13 @@
+error: unexpected end-of-file in expression
+  --> testdata/parser/syntax/eof_after_eq.proto:15:9
+   | 
+15 | syntax = 
+   |         ^ expected identifier, number, string, `.`, `-`, `(...)`, `[...]`, or `{...}`
+
+warning: missing package declaration
+ --> testdata/parser/syntax/eof_after_eq.proto
+   = note: omitting the `package` keyword implies an empty package
+   = help: using the empty package is discouraged
+   = help: explicitly add `package ...;` at the top of the file, after the syntax declaration
+
+encountered 1 error and 1 warning

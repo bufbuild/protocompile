@@ -1,0 +1,25 @@
+error: unexpected string literal in import
+  --> testdata/parser/import/ok.proto:19:8
+   | 
+19 | import "foo.proto";
+   |        ^^^^^^^^^^^ expected string literal
+
+warning: weak imports are discouraged and broken in some runtimes
+  --> testdata/parser/import/ok.proto:20:8
+   | 
+20 | import weak "weak.proto";
+   |        ^^^^ 
+
+error: unexpected string literal in weak import
+  --> testdata/parser/import/ok.proto:20:13
+   | 
+20 | import weak "weak.proto";
+   |             ^^^^^^^^^^^^ expected string literal
+
+error: unexpected string literal in public import
+  --> testdata/parser/import/ok.proto:21:15
+   | 
+21 | import public "public.proto";
+   |               ^^^^^^^^^^^^^^ expected string literal
+
+encountered 3 errors and 1 warning

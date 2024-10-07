@@ -629,7 +629,7 @@ func toRawExpr(e Expr) rawExpr {
 		return rawExpr(path.Path.raw)
 	}
 
-	return rawExpr{^rawToken(e.exprKind()), rawToken(e.exprIndex() + 1)}
+	return rawExpr{^rawToken(e.exprKind()), rawToken(e.exprIndex())}
 }
 
 // With extracts an expression out of a context at the given index to present to the user.

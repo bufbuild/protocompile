@@ -1,0 +1,7 @@
+error: unexpected path in syntax declaration
+  --> testdata/parser/syntax/invalid.proto:15:10
+   | 
+15 | syntax = invalid;
+   |          ^^^^^^^ expected string literal
+
+encountered 1 error

@@ -1,0 +1,43 @@
+error: options are not permitted on syntax declarations
+  --> testdata/parser/import/options.proto:19:20
+   | 
+19 | import "foo.proto" [(not.allowed) = "here"];
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
+
+error: unexpected string literal in import
+  --> testdata/parser/import/options.proto:19:8
+   | 
+19 | import "foo.proto" [(not.allowed) = "here"];
+   |        ^^^^^^^^^^^ expected string literal
+
+warning: weak imports are discouraged and broken in some runtimes
+  --> testdata/parser/import/options.proto:20:8
+   | 
+20 | import weak "weak.proto" [(not.allowed) = "here"];
+   |        ^^^^ 
+
+error: options are not permitted on syntax declarations
+  --> testdata/parser/import/options.proto:20:26
+   | 
+20 | import weak "weak.proto" [(not.allowed) = "here"];
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
+
+error: unexpected string literal in weak import
+  --> testdata/parser/import/options.proto:20:13
+   | 
+20 | import weak "weak.proto" [(not.allowed) = "here"];
+   |             ^^^^^^^^^^^^ expected string literal
+
+error: options are not permitted on syntax declarations
+  --> testdata/parser/import/options.proto:21:30
+   | 
+21 | import public "public.proto" [(not.allowed) = "here"];
+   |                              ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
+
+error: unexpected string literal in public import
+  --> testdata/parser/import/options.proto:21:15
+   | 
+21 | import public "public.proto" [(not.allowed) = "here"];
+   |               ^^^^^^^^^^^^^^ expected string literal
+
+encountered 6 errors and 1 warning

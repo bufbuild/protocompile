@@ -144,10 +144,9 @@ func declToProto(decl Decl) *compilerv1.Decl {
 			mod = compilerv1.Decl_Import_MODIFIER_PUBLIC
 		}
 
-		file, _ := decl.ImportPath().AsString()
 		return &compilerv1.Decl{Decl: &compilerv1.Decl_Import_{Import: &compilerv1.Decl_Import{
 			Modifier:       mod,
-			ImportPath:     file,
+			ImportPath:     exprToProto(decl.ImportPath()),
 			Options:        optionsToProto(decl.Options()),
 			Span:           spanToProto(decl),
 			KeywordSpan:    spanToProto(decl.Keyword()),

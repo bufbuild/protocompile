@@ -1,0 +1,13 @@
+error: unexpected string literal in import
+  --> testdata/parser/import/eof_after_kw.proto:19:8
+   | 
+19 | import "foo.proto";
+   |        ^^^^^^^^^^^ expected string literal
+
+error: import is missing a file path
+  --> testdata/parser/import/eof_after_kw.proto:20:1
+   | 
+20 | import
+   | ^^^^^^ help: insert the name of the file to import after this keyword
+
+encountered 2 errors

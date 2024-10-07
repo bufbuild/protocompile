@@ -1,0 +1,98 @@
+{
+  "file": {
+    "path": "testdata/parser/range/escapes.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKc3ludGF4ID0gInByb3RvMiI7CgpwYWNrYWdlIHRlc3Q7CgptZXNzYWdlIEZvbyB7CiAgICByZXNlcnZlZCAiZm9vIiAiYmFyIjsKICAgIHJlc2VydmVkICJmb29cbiIsICJiXHg2MXIiOwp9"
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_SYNTAX",
+        "value": {
+          "literal": {
+            "stringValue": "proto2",
+            "span": { "start": 615, "end": 623 }
+          }
+        },
+        "span": { "start": 606, "end": 624 },
+        "keywordSpan": { "start": 606, "end": 612 },
+        "equalsSpan": { "start": 613, "end": 614 },
+        "semicolonSpan": { "start": 623, "end": 624 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 634, "end": 638 }
+            }
+          ],
+          "span": { "start": 634, "end": 638 }
+        },
+        "span": { "start": 626, "end": 639 },
+        "keywordSpan": { "start": 626, "end": 633 },
+        "semicolonSpan": { "start": 638, "end": 639 }
+      }
+    },
+    {
+      "def": {
+        "kind": "KIND_MESSAGE",
+        "name": {
+          "components": [
+            {
+              "ident": "Foo",
+              "componentSpan": { "start": 649, "end": 652 }
+            }
+          ],
+          "span": { "start": 649, "end": 652 }
+        },
+        "body": {
+          "decls": [
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "stringValue": "foobar",
+                      "span": { "start": 668, "end": 679 }
+                    }
+                  }
+                ],
+                "span": { "start": 659, "end": 680 },
+                "keywordSpan": { "start": 659, "end": 667 },
+                "semicolonSpan": { "start": 679, "end": 680 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "stringValue": "foo\n",
+                      "span": { "start": 694, "end": 701 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "stringValue": "bar",
+                      "span": { "start": 703, "end": 711 }
+                    }
+                  }
+                ],
+                "span": { "start": 685, "end": 712 },
+                "keywordSpan": { "start": 685, "end": 693 },
+                "semicolonSpan": { "start": 711, "end": 712 }
+              }
+            }
+          ],
+          "span": { "start": 653, "end": 714 }
+        },
+        "span": { "start": 641, "end": 714 },
+        "keywordSpan": { "start": 641, "end": 648 }
+      }
+    }
+  ]
+}

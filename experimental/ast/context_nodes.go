@@ -64,7 +64,9 @@ func (c *Context) NewDeclImport(args DeclImportArgs) DeclImport {
 		options:  args.Options.ptr,
 		semi:     args.Semicolon.raw,
 	})
-	return wrapDecl[DeclImport](arena.Untyped(ptr), c)
+	decl := wrapDecl[DeclImport](arena.Untyped(ptr), c)
+	decl.SetImportPath(args.ImportPath)
+	return decl
 }
 
 // NewDeclDef creates a new DeclDef node.

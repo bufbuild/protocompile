@@ -48,6 +48,11 @@ func (c *Context) PushToken(length int, kind TokenKind) Token {
 		prevEnd = int(c.stream[len(c.stream)-1].end)
 	}
 
+	end := prevEnd + length
+	if end > len(c.Text()) {
+		panic(fmt.Sprintf("protocompile/ast: PushToken() overflowed backing text: %d > %d", end, len(c.Text())))
+	}
+
 	c.stream = append(c.stream, tokenImpl{
 		end:           uint32(prevEnd + length),
 		kindAndOffset: int32(kind) & tokenKindMask,

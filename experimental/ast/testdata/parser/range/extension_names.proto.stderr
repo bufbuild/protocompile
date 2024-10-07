@@ -1,0 +1,17 @@
+error: mismatched types
+  --> testdata/parser/range/extension_names.proto:20:16
+   | 
+20 |     extensions foo, "bar";
+   |     ---------- ^^^ expected `int32` or `int32` range
+   |     |
+   |     expected due to this
+
+error: mismatched types
+  --> testdata/parser/range/extension_names.proto:20:21
+   | 
+20 |     extensions foo, "bar";
+   |     ----------      ^^^^^ expected `int32` or `int32` range
+   |     |
+   |     expected due to this
+
+encountered 2 errors

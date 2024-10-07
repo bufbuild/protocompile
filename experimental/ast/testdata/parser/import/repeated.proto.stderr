@@ -1,0 +1,43 @@
+error: unexpected string literal in import
+  --> testdata/parser/import/repeated.proto:19:8
+   | 
+19 | import "foo.proto";
+   |        ^^^^^^^^^^^ expected string literal
+
+warning: "foo.proto" imported twice
+  --> testdata/parser/import/repeated.proto:20:1
+   | 
+19 | import "foo.proto";
+   | ------------------- previously imported here
+20 | import "foo.proto"; // Second
+   | ^^^^^^^^^^^^^^^^^^^ help: remove this import
+
+error: unexpected string literal in import
+  --> testdata/parser/import/repeated.proto:20:8
+   | 
+20 | import "foo.proto"; // Second
+   |        ^^^^^^^^^^^ expected string literal
+
+warning: "foo.proto" imported twice
+  --> testdata/parser/import/repeated.proto:22:1
+   | 
+19 | import "foo.proto";
+   | ------------------- previously imported here
+20 | import "foo.proto"; // Second
+...  
+22 | import "foo\x2eproto";
+   | ^^^^^^^^^^^^^^^^^^^^^^ help: remove this import
+
+warning: import path should be a single, escape-less string
+  --> testdata/parser/import/repeated.proto:22:8
+   | 
+22 | import "foo\x2eproto";
+   |        ^^^^^^^^^^^^^^ help: change this to "foo.proto"
+
+error: unexpected string literal in import
+  --> testdata/parser/import/repeated.proto:22:8
+   | 
+22 | import "foo\x2eproto";
+   |        ^^^^^^^^^^^^^^ expected string literal
+
+encountered 3 errors and 3 warnings

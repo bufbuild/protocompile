@@ -19,6 +19,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -366,6 +367,23 @@ func (e ErrInvalidChild) Diagnose(d *report.Diagnostic) {
 	}
 }
 
+// ErrDuplicateImport indicates that a particular import occurred twice.
+type ErrDuplicateImport struct {
+	First, Second DeclImport
+	Path          string
+}
+
+func (e ErrDuplicateImport) Error() string {
+	return fmt.Sprintf("%q imported twice", e.Path)
+}
+
+func (e ErrDuplicateImport) Diagnose(d *report.Diagnostic) {
+	d.With(
+		report.Snippetf(e.Second, "help: remove this import"),
+		report.Snippetf(e.First, "previously imported here"),
+	)
+}
+
 // ** PRIVATE ** //
 
 // errUnexpected is a low-level parser error for when we hit a token we don't
@@ -375,6 +393,38 @@ type errUnexpected struct {
 	where string
 	want  []string
 	got   string
+}
+
+// errEOF constructs an errUnexpected for an exhausted cursor.
+func errEOF(cursor *Cursor, where string, want []string) errUnexpected {
+	if cursor.stream != nil {
+		panic("protocompile/ast: passed synthetic cursor to internal function errEOF(); this is a bug in protocompile")
+	}
+
+	// Generating a nice error depends on whether this cursor points past the
+	// end of the stream array or not.
+	ctx := cursor.Context()
+	next := cursor.start
+	if int(next) > len(ctx.stream) {
+		// Find the last non-space rune; we moor the span immediately after it.
+		eof := strings.LastIndexFunc(ctx.Text(), func(r rune) bool { return !unicode.IsSpace(r) })
+		if eof == -1 {
+			eof = 0 // The whole file is whitespace.
+		}
+
+		return errUnexpected{
+			node:  ctx.NewSpan(eof+1, eof+1),
+			where: where,
+			want:  want,
+			got:   "end-of-file",
+		}
+	}
+
+	return errUnexpected{
+		node:  next.With(ctx),
+		where: where,
+		want:  want,
+	}
 }
 
 func (e errUnexpected) Error() string {

@@ -1,0 +1,25 @@
+warning: import path should be a single, escape-less string
+  --> testdata/parser/import/escapes.proto:19:8
+   | 
+19 | import "foo\x2eproto";
+   |        ^^^^^^^^^^^^^^ help: change this to "foo.proto"
+
+error: unexpected string literal in import
+  --> testdata/parser/import/escapes.proto:19:8
+   | 
+19 | import "foo\x2eproto";
+   |        ^^^^^^^^^^^^^^ expected string literal
+
+warning: import path should be a single, escape-less string
+  --> testdata/parser/import/escapes.proto:20:8
+   | 
+20 | import "bar" ".proto";
+   |        ^^^^^^^^^^^^^^ help: change this to "bar.proto"
+
+error: unexpected string literal in import
+  --> testdata/parser/import/escapes.proto:20:8
+   | 
+20 | import "bar" ".proto";
+   |        ^^^^^^^^^^^^^^ expected string literal
+
+encountered 2 errors and 2 warnings

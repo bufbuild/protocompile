@@ -1,0 +1,25 @@
+error: cannot import by Protobuf symbol
+  --> testdata/parser/import/symbol.proto:19:8
+   | 
+19 | import my.Proto;
+   |        ^^^^^^^^ expected a quoted filesystem path
+
+warning: weak imports are discouraged and broken in some runtimes
+  --> testdata/parser/import/symbol.proto:20:8
+   | 
+20 | import weak my.Proto;
+   |        ^^^^ 
+
+error: cannot import by Protobuf symbol
+  --> testdata/parser/import/symbol.proto:20:13
+   | 
+20 | import weak my.Proto;
+   |             ^^^^^^^^ expected a quoted filesystem path
+
+error: cannot import by Protobuf symbol
+  --> testdata/parser/import/symbol.proto:21:15
+   | 
+21 | import public my.Proto;
+   |               ^^^^^^^^ expected a quoted filesystem path
+
+encountered 3 errors and 1 warning

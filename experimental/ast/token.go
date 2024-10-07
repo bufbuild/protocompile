@@ -474,7 +474,7 @@ func (c *Cursor) PeekSkippable() Token {
 		}
 		return c.stream[c.idx].With(c)
 	}
-	if c.start == c.end {
+	if c.start >= c.end {
 		return Token{}
 	}
 	return c.start.With(c)

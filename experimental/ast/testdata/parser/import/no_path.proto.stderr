@@ -1,0 +1,25 @@
+error: import is missing a file path
+  --> testdata/parser/import/no_path.proto:19:1
+   | 
+19 | import;
+   | ^^^^^^ help: insert the name of the file to import after this keyword
+
+warning: weak imports are discouraged and broken in some runtimes
+  --> testdata/parser/import/no_path.proto:20:8
+   | 
+20 | import weak;
+   |        ^^^^ 
+
+error: import is missing a file path
+  --> testdata/parser/import/no_path.proto:20:8
+   | 
+20 | import weak;
+   |        ^^^^ help: insert the name of the file to import after this keyword
+
+error: import is missing a file path
+  --> testdata/parser/import/no_path.proto:21:8
+   | 
+21 | import public;
+   |        ^^^^^^ help: insert the name of the file to import after this keyword
+
+encountered 3 errors and 1 warning

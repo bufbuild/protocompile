@@ -1,0 +1,7 @@
+error: missing package name
+  --> testdata/parser/package/42.proto:17:1
+   | 
+17 | package 42;
+   | ^^^^^^^^^^ help: add a path after `package`
+
+encountered 1 error

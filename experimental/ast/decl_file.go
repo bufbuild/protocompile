@@ -272,8 +272,8 @@ func (d DeclImport) ImportPath() Expr {
 // SetValue sets the expression for this import's file path.
 //
 // If passed nil, this clears the path expression.
-func (d DeclImport) SetImportPath() Expr {
-	return d.raw.importPath.With(d)
+func (d DeclImport) SetImportPath(expr Expr) {
+	d.raw.importPath = toRawExpr(expr)
 }
 
 // Options returns the compact options list for this declaration.

@@ -1,0 +1,7 @@
+error: options are not permitted on syntax declarations
+  --> testdata/parser/syntax/options.proto:15:19
+   | 
+15 | syntax = "proto2" [(not.allowed) = "here"];
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
+
+encountered 1 error

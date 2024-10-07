@@ -1,0 +1,567 @@
+{
+  "file": {
+    "path": "testdata/parser/range/ok.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKc3ludGF4ID0gInByb3RvMiI7CgpwYWNrYWdlIHRlc3Q7CgptZXNzYWdlIEZvbyB7CiAgICBleHRlbnNpb25zIDE7CiAgICBleHRlbnNpb25zIDEgdG8gMjsKICAgIGV4dGVuc2lvbnMgLTUgdG8gMHgyMDsKICAgIGV4dGVuc2lvbnMgMCB0byBtYXg7CiAgICBleHRlbnNpb25zIDEsIDIsIDMsIDQgdG8gNSwgNjsKICAgIAogICAgcmVzZXJ2ZWQgMSwgImZvbyI7CiAgICByZXNlcnZlZCAyLCAzLCA1IHRvIDcsIGZvbywgImJhciI7Cn0KCmVudW0gRm9vIHsKICAgIGV4dGVuc2lvbnMgMTsKICAgIGV4dGVuc2lvbnMgMSB0byAyOwogICAgZXh0ZW5zaW9ucyAtNSB0byAweDIwOwogICAgZXh0ZW5zaW9ucyAwIHRvIG1heDsKICAgIGV4dGVuc2lvbnMgMSwgMiwgMywgNCB0byA1LCA2OwogICAgCiAgICByZXNlcnZlZCAxLCAiZm9vIjsKICAgIHJlc2VydmVkIDIsIDMsIDUgdG8gNywgZm9vLCAiYmFyIjsKfQ=="
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_SYNTAX",
+        "value": {
+          "literal": {
+            "stringValue": "proto2",
+            "span": { "start": 615, "end": 623 }
+          }
+        },
+        "span": { "start": 606, "end": 624 },
+        "keywordSpan": { "start": 606, "end": 612 },
+        "equalsSpan": { "start": 613, "end": 614 },
+        "semicolonSpan": { "start": 623, "end": 624 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 634, "end": 638 }
+            }
+          ],
+          "span": { "start": 634, "end": 638 }
+        },
+        "span": { "start": 626, "end": 639 },
+        "keywordSpan": { "start": 626, "end": 633 },
+        "semicolonSpan": { "start": 638, "end": 639 }
+      }
+    },
+    {
+      "def": {
+        "kind": "KIND_MESSAGE",
+        "name": {
+          "components": [
+            {
+              "ident": "Foo",
+              "componentSpan": { "start": 649, "end": 652 }
+            }
+          ],
+          "span": { "start": 649, "end": 652 }
+        },
+        "body": {
+          "decls": [
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 670, "end": 671 }
+                    }
+                  }
+                ],
+                "span": { "start": 659, "end": 672 },
+                "keywordSpan": { "start": 659, "end": 669 },
+                "semicolonSpan": { "start": 671, "end": 672 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "1",
+                          "span": { "start": 688, "end": 689 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "2",
+                          "span": { "start": 693, "end": 694 }
+                        }
+                      },
+                      "span": { "start": 688, "end": 694 },
+                      "toSpan": { "start": 690, "end": 692 }
+                    }
+                  }
+                ],
+                "span": { "start": 677, "end": 695 },
+                "keywordSpan": { "start": 677, "end": 687 },
+                "semicolonSpan": { "start": 694, "end": 695 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "range": {
+                      "start": {
+                        "prefixed": {
+                          "prefix": "PREFIX_MINUS",
+                          "expr": {
+                            "literal": {
+                              "intValue": "5",
+                              "span": { "start": 712, "end": 713 }
+                            }
+                          },
+                          "span": { "start": 711, "end": 713 },
+                          "prefixSpan": { "start": 711, "end": 712 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "32",
+                          "span": { "start": 717, "end": 721 }
+                        }
+                      },
+                      "span": { "start": 711, "end": 721 },
+                      "toSpan": { "start": 714, "end": 716 }
+                    }
+                  }
+                ],
+                "span": { "start": 700, "end": 722 },
+                "keywordSpan": { "start": 700, "end": 710 },
+                "semicolonSpan": { "start": 721, "end": 722 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "0",
+                          "span": { "start": 738, "end": 739 }
+                        }
+                      },
+                      "end": {
+                        "path": {
+                          "components": [
+                            {
+                              "ident": "max",
+                              "componentSpan": { "start": 743, "end": 746 }
+                            }
+                          ],
+                          "span": { "start": 743, "end": 746 }
+                        }
+                      },
+                      "span": { "start": 738, "end": 746 },
+                      "toSpan": { "start": 740, "end": 742 }
+                    }
+                  }
+                ],
+                "span": { "start": 727, "end": 747 },
+                "keywordSpan": { "start": 727, "end": 737 },
+                "semicolonSpan": { "start": 746, "end": 747 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 763, "end": 764 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "2",
+                      "span": { "start": 766, "end": 767 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "3",
+                      "span": { "start": 769, "end": 770 }
+                    }
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "4",
+                          "span": { "start": 772, "end": 773 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "5",
+                          "span": { "start": 777, "end": 778 }
+                        }
+                      },
+                      "span": { "start": 772, "end": 778 },
+                      "toSpan": { "start": 774, "end": 776 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "6",
+                      "span": { "start": 780, "end": 781 }
+                    }
+                  }
+                ],
+                "span": { "start": 752, "end": 782 },
+                "keywordSpan": { "start": 752, "end": 762 },
+                "semicolonSpan": { "start": 781, "end": 782 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 801, "end": 802 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "stringValue": "foo",
+                      "span": { "start": 804, "end": 809 }
+                    }
+                  }
+                ],
+                "span": { "start": 792, "end": 810 },
+                "keywordSpan": { "start": 792, "end": 800 },
+                "semicolonSpan": { "start": 809, "end": 810 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "2",
+                      "span": { "start": 824, "end": 825 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "3",
+                      "span": { "start": 827, "end": 828 }
+                    }
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "5",
+                          "span": { "start": 830, "end": 831 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "7",
+                          "span": { "start": 835, "end": 836 }
+                        }
+                      },
+                      "span": { "start": 830, "end": 836 },
+                      "toSpan": { "start": 832, "end": 834 }
+                    }
+                  },
+                  {
+                    "path": {
+                      "components": [
+                        {
+                          "ident": "foo",
+                          "componentSpan": { "start": 838, "end": 841 }
+                        }
+                      ],
+                      "span": { "start": 838, "end": 841 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "stringValue": "bar",
+                      "span": { "start": 843, "end": 848 }
+                    }
+                  }
+                ],
+                "span": { "start": 815, "end": 849 },
+                "keywordSpan": { "start": 815, "end": 823 },
+                "semicolonSpan": { "start": 848, "end": 849 }
+              }
+            }
+          ],
+          "span": { "start": 653, "end": 851 }
+        },
+        "span": { "start": 641, "end": 851 },
+        "keywordSpan": { "start": 641, "end": 648 }
+      }
+    },
+    {
+      "def": {
+        "kind": "KIND_ENUM",
+        "name": {
+          "components": [
+            {
+              "ident": "Foo",
+              "componentSpan": { "start": 858, "end": 861 }
+            }
+          ],
+          "span": { "start": 858, "end": 861 }
+        },
+        "body": {
+          "decls": [
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 879, "end": 880 }
+                    }
+                  }
+                ],
+                "span": { "start": 868, "end": 881 },
+                "keywordSpan": { "start": 868, "end": 878 },
+                "semicolonSpan": { "start": 880, "end": 881 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "1",
+                          "span": { "start": 897, "end": 898 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "2",
+                          "span": { "start": 902, "end": 903 }
+                        }
+                      },
+                      "span": { "start": 897, "end": 903 },
+                      "toSpan": { "start": 899, "end": 901 }
+                    }
+                  }
+                ],
+                "span": { "start": 886, "end": 904 },
+                "keywordSpan": { "start": 886, "end": 896 },
+                "semicolonSpan": { "start": 903, "end": 904 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "range": {
+                      "start": {
+                        "prefixed": {
+                          "prefix": "PREFIX_MINUS",
+                          "expr": {
+                            "literal": {
+                              "intValue": "5",
+                              "span": { "start": 921, "end": 922 }
+                            }
+                          },
+                          "span": { "start": 920, "end": 922 },
+                          "prefixSpan": { "start": 920, "end": 921 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "32",
+                          "span": { "start": 926, "end": 930 }
+                        }
+                      },
+                      "span": { "start": 920, "end": 930 },
+                      "toSpan": { "start": 923, "end": 925 }
+                    }
+                  }
+                ],
+                "span": { "start": 909, "end": 931 },
+                "keywordSpan": { "start": 909, "end": 919 },
+                "semicolonSpan": { "start": 930, "end": 931 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "0",
+                          "span": { "start": 947, "end": 948 }
+                        }
+                      },
+                      "end": {
+                        "path": {
+                          "components": [
+                            {
+                              "ident": "max",
+                              "componentSpan": { "start": 952, "end": 955 }
+                            }
+                          ],
+                          "span": { "start": 952, "end": 955 }
+                        }
+                      },
+                      "span": { "start": 947, "end": 955 },
+                      "toSpan": { "start": 949, "end": 951 }
+                    }
+                  }
+                ],
+                "span": { "start": 936, "end": 956 },
+                "keywordSpan": { "start": 936, "end": 946 },
+                "semicolonSpan": { "start": 955, "end": 956 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_EXTENSIONS",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 972, "end": 973 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "2",
+                      "span": { "start": 975, "end": 976 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "3",
+                      "span": { "start": 978, "end": 979 }
+                    }
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "4",
+                          "span": { "start": 981, "end": 982 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "5",
+                          "span": { "start": 986, "end": 987 }
+                        }
+                      },
+                      "span": { "start": 981, "end": 987 },
+                      "toSpan": { "start": 983, "end": 985 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "6",
+                      "span": { "start": 989, "end": 990 }
+                    }
+                  }
+                ],
+                "span": { "start": 961, "end": 991 },
+                "keywordSpan": { "start": 961, "end": 971 },
+                "semicolonSpan": { "start": 990, "end": 991 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "1",
+                      "span": { "start": 1010, "end": 1011 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "stringValue": "foo",
+                      "span": { "start": 1013, "end": 1018 }
+                    }
+                  }
+                ],
+                "span": { "start": 1001, "end": 1019 },
+                "keywordSpan": { "start": 1001, "end": 1009 },
+                "semicolonSpan": { "start": 1018, "end": 1019 }
+              }
+            },
+            {
+              "range": {
+                "kind": "KIND_RESERVED",
+                "ranges": [
+                  {
+                    "literal": {
+                      "intValue": "2",
+                      "span": { "start": 1033, "end": 1034 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "intValue": "3",
+                      "span": { "start": 1036, "end": 1037 }
+                    }
+                  },
+                  {
+                    "range": {
+                      "start": {
+                        "literal": {
+                          "intValue": "5",
+                          "span": { "start": 1039, "end": 1040 }
+                        }
+                      },
+                      "end": {
+                        "literal": {
+                          "intValue": "7",
+                          "span": { "start": 1044, "end": 1045 }
+                        }
+                      },
+                      "span": { "start": 1039, "end": 1045 },
+                      "toSpan": { "start": 1041, "end": 1043 }
+                    }
+                  },
+                  {
+                    "path": {
+                      "components": [
+                        {
+                          "ident": "foo",
+                          "componentSpan": { "start": 1047, "end": 1050 }
+                        }
+                      ],
+                      "span": { "start": 1047, "end": 1050 }
+                    }
+                  },
+                  {
+                    "literal": {
+                      "stringValue": "bar",
+                      "span": { "start": 1052, "end": 1057 }
+                    }
+                  }
+                ],
+                "span": { "start": 1024, "end": 1058 },
+                "keywordSpan": { "start": 1024, "end": 1032 },
+                "semicolonSpan": { "start": 1057, "end": 1058 }
+              }
+            }
+          ],
+          "span": { "start": 862, "end": 1060 }
+        },
+        "span": { "start": 853, "end": 1060 },
+        "keywordSpan": { "start": 853, "end": 857 }
+      }
+    }
+  ]
+}

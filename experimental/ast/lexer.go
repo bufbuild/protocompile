@@ -165,11 +165,8 @@ func (l *lexer) Lex(errs *report.Report) {
 			token := l.PushToken(l.cursor-start, TokenIdent)
 
 			// Legalize non-ASCII runes.
-			for _, r := range token.Text() {
-				if r >= 0x80 {
-					errs.Error(ErrNonASCIIIdent{Token: token})
-					break
-				}
+			if !isASCIIIdent(token.Text()) {
+				errs.Error(ErrNonASCIIIdent{Token: token})
 			}
 
 		default: // Consume as much stuff we don't understand as possible, diagnose it.
@@ -463,9 +460,9 @@ escapeLoop:
 				case r >= '0' && r <= '9':
 					value |= uint32(r) - '0'
 				case r >= 'a' && r <= 'f':
-					value |= uint32(r) - 'a'
+					value |= uint32(r) - 'a' + 10
 				case r >= 'A' && r <= 'F':
-					value |= uint32(r) - 'A'
+					value |= uint32(r) - 'A' + 10
 				default:
 					break digits
 				}
@@ -564,7 +561,7 @@ func (l *lexer) SeekInclusive(needle string) (string, bool) {
 // SeekEOF seeks the cursor to the end of the file and returns the remaining text.
 func (l *lexer) SeekEOF() string {
 	rest := l.Rest()
-	l.cursor = len(rest)
+	l.cursor += len(rest)
 	return rest
 }
 
@@ -581,4 +578,13 @@ func decodeRune(s string) rune {
 		return -1
 	}
 	return r
+}
+
+func isASCIIIdent(s string) bool {
+	for _, r := range s {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+			return false
+		}
+	}
+	return true
 }

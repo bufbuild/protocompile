@@ -1,0 +1,196 @@
+{
+  "file": {
+    "path": "testdata/parser/import/options.proto",
+    "text": "Ly8gQ29weXJpZ2h0IDIwMjAtMjAyNCBCdWYgVGVjaG5vbG9naWVzLCBJbmMuCi8vCi8vIExpY2Vuc2VkIHVuZGVyIHRoZSBBcGFjaGUgTGljZW5zZSwgVmVyc2lvbiAyLjAgKHRoZSAiTGljZW5zZSIpOwovLyB5b3UgbWF5IG5vdCB1c2UgdGhpcyBmaWxlIGV4Y2VwdCBpbiBjb21wbGlhbmNlIHdpdGggdGhlIExpY2Vuc2UuCi8vIFlvdSBtYXkgb2J0YWluIGEgY29weSBvZiB0aGUgTGljZW5zZSBhdAovLwovLyAgICAgIGh0dHA6Ly93d3cuYXBhY2hlLm9yZy9saWNlbnNlcy9MSUNFTlNFLTIuMAovLwovLyBVbmxlc3MgcmVxdWlyZWQgYnkgYXBwbGljYWJsZSBsYXcgb3IgYWdyZWVkIHRvIGluIHdyaXRpbmcsIHNvZnR3YXJlCi8vIGRpc3RyaWJ1dGVkIHVuZGVyIHRoZSBMaWNlbnNlIGlzIGRpc3RyaWJ1dGVkIG9uIGFuICJBUyBJUyIgQkFTSVMsCi8vIFdJVEhPVVQgV0FSUkFOVElFUyBPUiBDT05ESVRJT05TIE9GIEFOWSBLSU5ELCBlaXRoZXIgZXhwcmVzcyBvciBpbXBsaWVkLgovLyBTZWUgdGhlIExpY2Vuc2UgZm9yIHRoZSBzcGVjaWZpYyBsYW5ndWFnZSBnb3Zlcm5pbmcgcGVybWlzc2lvbnMgYW5kCi8vIGxpbWl0YXRpb25zIHVuZGVyIHRoZSBMaWNlbnNlLgoKc3ludGF4ID0gInByb3RvMiI7CgpwYWNrYWdlIHRlc3Q7CgppbXBvcnQgImZvby5wcm90byIgWyhub3QuYWxsb3dlZCkgPSAiaGVyZSJdOwppbXBvcnQgd2VhayAid2Vhay5wcm90byIgWyhub3QuYWxsb3dlZCkgPSAiaGVyZSJdOwppbXBvcnQgcHVibGljICJwdWJsaWMucHJvdG8iIFsobm90LmFsbG93ZWQpID0gImhlcmUiXTs="
+  },
+  "decls": [
+    {
+      "syntax": {
+        "kind": "KIND_SYNTAX",
+        "value": {
+          "literal": {
+            "stringValue": "proto2",
+            "span": { "start": 615, "end": 623 }
+          }
+        },
+        "span": { "start": 606, "end": 624 },
+        "keywordSpan": { "start": 606, "end": 612 },
+        "equalsSpan": { "start": 613, "end": 614 },
+        "semicolonSpan": { "start": 623, "end": 624 }
+      }
+    },
+    {
+      "package": {
+        "path": {
+          "components": [
+            {
+              "ident": "test",
+              "componentSpan": { "start": 634, "end": 638 }
+            }
+          ],
+          "span": { "start": 634, "end": 638 }
+        },
+        "span": { "start": 626, "end": 639 },
+        "keywordSpan": { "start": 626, "end": 633 },
+        "semicolonSpan": { "start": 638, "end": 639 }
+      }
+    },
+    {
+      "import": {
+        "importPath": {
+          "literal": {
+            "stringValue": "foo.proto",
+            "span": { "start": 648, "end": 659 }
+          }
+        },
+        "options": {
+          "entries": [
+            {
+              "path": {
+                "components": [
+                  {
+                    "extension": {
+                      "components": [
+                        {
+                          "ident": "not",
+                          "componentSpan": { "start": 662, "end": 665 }
+                        },
+                        {
+                          "ident": "allowed",
+                          "separator": "SEPARATOR_DOT",
+                          "componentSpan": { "start": 666, "end": 673 },
+                          "separatorSpan": { "start": 665, "end": 666 }
+                        }
+                      ],
+                      "span": { "start": 662, "end": 673 }
+                    },
+                    "componentSpan": { "start": 662, "end": 673 }
+                  }
+                ],
+                "span": { "start": 661, "end": 674 }
+              },
+              "value": {
+                "literal": {
+                  "stringValue": "here",
+                  "span": { "start": 677, "end": 683 }
+                }
+              },
+              "equalsSpan": { "start": 675, "end": 676 }
+            }
+          ],
+          "span": { "start": 660, "end": 684 }
+        },
+        "span": { "start": 641, "end": 685 },
+        "keywordSpan": { "start": 641, "end": 647 },
+        "importPathSpan": { "start": 648, "end": 659 },
+        "semicolonSpan": { "start": 684, "end": 685 }
+      }
+    },
+    {
+      "import": {
+        "modifier": "MODIFIER_WEAK",
+        "importPath": {
+          "literal": {
+            "stringValue": "weak.proto",
+            "span": { "start": 698, "end": 710 }
+          }
+        },
+        "options": {
+          "entries": [
+            {
+              "path": {
+                "components": [
+                  {
+                    "extension": {
+                      "components": [
+                        {
+                          "ident": "not",
+                          "componentSpan": { "start": 713, "end": 716 }
+                        },
+                        {
+                          "ident": "allowed",
+                          "separator": "SEPARATOR_DOT",
+                          "componentSpan": { "start": 717, "end": 724 },
+                          "separatorSpan": { "start": 716, "end": 717 }
+                        }
+                      ],
+                      "span": { "start": 713, "end": 724 }
+                    },
+                    "componentSpan": { "start": 713, "end": 724 }
+                  }
+                ],
+                "span": { "start": 712, "end": 725 }
+              },
+              "value": {
+                "literal": {
+                  "stringValue": "here",
+                  "span": { "start": 728, "end": 734 }
+                }
+              },
+              "equalsSpan": { "start": 726, "end": 727 }
+            }
+          ],
+          "span": { "start": 711, "end": 735 }
+        },
+        "span": { "start": 686, "end": 736 },
+        "keywordSpan": { "start": 686, "end": 692 },
+        "modifierSpan": { "start": 693, "end": 697 },
+        "importPathSpan": { "start": 698, "end": 710 },
+        "semicolonSpan": { "start": 735, "end": 736 }
+      }
+    },
+    {
+      "import": {
+        "modifier": "MODIFIER_PUBLIC",
+        "importPath": {
+          "literal": {
+            "stringValue": "public.proto",
+            "span": { "start": 751, "end": 765 }
+          }
+        },
+        "options": {
+          "entries": [
+            {
+              "path": {
+                "components": [
+                  {
+                    "extension": {
+                      "components": [
+                        {
+                          "ident": "not",
+                          "componentSpan": { "start": 768, "end": 771 }
+                        },
+                        {
+                          "ident": "allowed",
+                          "separator": "SEPARATOR_DOT",
+                          "componentSpan": { "start": 772, "end": 779 },
+                          "separatorSpan": { "start": 771, "end": 772 }
+                        }
+                      ],
+                      "span": { "start": 768, "end": 779 }
+                    },
+                    "componentSpan": { "start": 768, "end": 779 }
+                  }
+                ],
+                "span": { "start": 767, "end": 780 }
+              },
+              "value": {
+                "literal": {
+                  "stringValue": "here",
+                  "span": { "start": 783, "end": 789 }
+                }
+              },
+              "equalsSpan": { "start": 781, "end": 782 }
+            }
+          ],
+          "span": { "start": 766, "end": 790 }
+        },
+        "span": { "start": 737, "end": 791 },
+        "keywordSpan": { "start": 737, "end": 743 },
+        "modifierSpan": { "start": 744, "end": 750 },
+        "importPathSpan": { "start": 751, "end": 765 },
+        "semicolonSpan": { "start": 790, "end": 791 }
+      }
+    }
+  ]
+}

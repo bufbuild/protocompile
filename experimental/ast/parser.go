@@ -110,25 +110,28 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			where: "in " + kw.Text() + " declaration",
 		})
 
+		// Regardless of if we see an = sign, try to parse an expression if we
+		// can,
 		if !args.Equals.Nil() || canStartExpr(cursor.Peek()) {
 			// If there is a trailing ; instead of an expression, make sure we can include
 			// it in the span for the the decl. If we don't do this, parseExpr will throw it
 			// away.
 			if semi := cursor.Peek(); semi.Text() == ";" {
-				args.Semicolon = semi
+				args.Semicolon = cursor.Pop()
+			} else {
+				args.Value = parseExpr(errs, cursor)
 			}
-			args.Value = parseExpr(errs, cursor)
-		}
-
-		if next := cursor.Peek(); next.Text() == "[" {
-			args.Options = cursor.Context().NewOptions(cursor.Pop())
-			parseOptions(errs, args.Options.Brackets(), args.Options)
 		}
 
 		// Only diagnose a missing semicolon if we successfully parsed some
 		// kind of partially-valid expression. Otherwise, we might diagnose
 		// the same extraneous ; twice.
 		if args.Semicolon.Nil() {
+			if next := cursor.Peek(); next.Text() == "[" {
+				args.Options = cursor.Context().NewOptions(cursor.Pop())
+				parseOptions(errs, args.Options.Brackets(), args.Options)
+			}
+
 			args.Semicolon = parsePunct(errs, cursor, punctArgs{
 				want:           ";",
 				where:          "in " + kw.Text() + " declaration",
@@ -139,8 +142,9 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 		return cursor.Context().NewDeclSyntax(args)
 
 	case "package":
-		if !next.Nil() && next.Text() != ";" {
-			// If it's not followed by a semi, let it be diagnosed as a field.
+		if where != "" && next.Text() == "=" {
+			// If it's followed by an = sign and not at the top level, treat
+			// it as a field.
 			break
 		}
 
@@ -152,9 +156,9 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 		})
 
 	case "import":
-		// If the import is followed by an expression or a ;, we assume it's a real import.
-		if canStartExpr(cursor.Peek()) && cursor.Peek().Text() != ";" {
-			// Otherwise it's probably a weird field.
+		if where != "" && next.Text() == "=" {
+			// If it's followed by an = sign and not at the top level, treat
+			// it as a field.
 			break
 		}
 
@@ -170,7 +174,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			args.ImportPath = ExprPath{Path: path}
 		}
 
-		if args.ImportPath == nil && canStartExpr(cursor.Peek()) {
+		if args.ImportPath == nil && canStartExpr(next) {
 			args.ImportPath = parseExpr(errs, cursor)
 		}
 
@@ -211,7 +215,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 				done = true
 			}
 			exprs = append(exprs, exprComma{expr, comma})
-			bad = bad || exprs == nil
+			bad = bad || expr == nil
 		}
 
 		if !done {
@@ -221,8 +225,10 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 				if next == ";" || next == "[" {
 					return nil, false
 				}
+
 				expr := parseExpr(errs, cursor)
-				bad = bad || exprs == nil
+				bad = bad || expr == nil
+
 				return expr, expr != nil
 			})
 
@@ -270,6 +276,8 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 		cursor.ensureProgress(mark)
 		mark = cursor.Mark()
 
+		// Note that the inputs and outputs of a method are parsed
+		// separately, so foo(bar) and foo returns (bar) are both possible.
 		next := cursor.Peek()
 		if next.Text() == "(" {
 			cursor.Pop()
@@ -284,7 +292,6 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			}
 			continue
 		}
-
 		if next.Text() == "returns" {
 			args.Returns = cursor.Pop()
 			next := parsePunct(errs, cursor, punctArgs{
@@ -496,10 +503,14 @@ func parseExpr(errs *report.Report, cursor *Cursor) Expr {
 // with higher (or equal) precedence values.
 func parseOperator(errs *report.Report, cursor *Cursor, expr Expr, prec int) Expr {
 	if expr == nil {
-		expr = parseAtomicExpr(errs, cursor)
-	}
-	if expr == nil {
-		return nil
+		if prec >= 2 {
+			expr = parseAtomicExpr(errs, cursor)
+		} else {
+			expr = parseOperator(errs, cursor, expr, prec+1)
+		}
+		if expr == nil {
+			return nil
+		}
 	}
 
 	lookahead := cursor.Peek()
@@ -541,8 +552,13 @@ func parseOperator(errs *report.Report, cursor *Cursor, expr Expr, prec int) Exp
 //
 // May return nil if parsing completely fails.
 func parseAtomicExpr(errs *report.Report, cursor *Cursor) Expr {
+	exprPrefix := []string{
+		"identifier", "number", "string", "`.`", "`-`", "`(...)`", "`[...]`", "`{...}`",
+	}
+
 	next := cursor.Peek()
 	if next.Nil() {
+		errs.Error(errEOF(cursor, "in expression", exprPrefix))
 		return nil
 	}
 
@@ -607,9 +623,7 @@ func parseAtomicExpr(errs *report.Report, cursor *Cursor) Expr {
 		cursor.Pop()
 		errs.Error(errUnexpected{
 			node: next,
-			want: []string{
-				"identifier", "number", "string", "`.`", "`-`", "`(...)`", "`[...]`", "`{...}`",
-			},
+			want: exprPrefix,
 		})
 	}
 
@@ -777,7 +791,7 @@ func parseType(errs *report.Report, cursor *Cursor) (Type, Path) {
 // that the end of the list has been reached.
 func commaDelimited[T any](
 	commasRequired bool,
-	errs *report.Report,
+	_ *report.Report,
 	cursor *Cursor,
 	parse func(*Cursor) (T, bool),
 ) func(func(T, Token) bool) {
@@ -797,12 +811,6 @@ func commaDelimited[T any](
 			}
 
 			if commasRequired && comma.Nil() {
-				if next := cursor.Peek(); !next.Nil() {
-					errs.Error(errUnexpected{
-						node: next,
-						want: []string{"`,`"},
-					})
-				}
 				break
 			}
 		}
@@ -876,7 +884,9 @@ pathLoop:
 			}
 
 			// Recurse into this token and check it, too, contains a path. We throw
-			// the result away once we're done. We also need to check there are no
+			// the result away once we're done, because we don't need to store it;
+			// a Path simply stores its start and end tokens and knows how to
+			// recurse into extensions. We also need to check there are no
 			// extraneous tokens.
 			contents := next.Children()
 			parsePath(errs, contents)
@@ -933,11 +943,15 @@ func parsePunct(errs *report.Report, cursor *Cursor, args punctArgs) Token {
 		return cursor.Pop()
 	}
 	if !args.diagnoseUnless {
-		errs.Error(errUnexpected{
-			node:  next,
-			where: args.where,
-			want:  []string{"`" + args.want + "`"},
-		})
+		if next.Nil() {
+			errs.Error(errEOF(cursor, args.where, []string{"`" + args.want + "`"}))
+		} else {
+			errs.Error(errUnexpected{
+				node:  next,
+				where: args.where,
+				want:  []string{"`" + args.want + "`"},
+			})
+		}
 	}
 	return Token{}
 }
