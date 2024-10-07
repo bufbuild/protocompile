@@ -47,7 +47,7 @@ type Context struct {
 	types types
 	exprs exprs
 
-	options arena.Arena[optionsImpl]
+	options arena.Arena[rawCompactOptions]
 }
 
 // Contextual is any AST type that carries a context (virtually all of them).
@@ -103,7 +103,7 @@ func (c *Context) Text() string {
 // Root returns the root AST node for this context.
 func (c *Context) Root() File {
 	// NewContext() sticks the root at the beginning of bodies for us.
-	return File{wrapDecl[DeclBody](1, c)}
+	return File{wrapDecl[DeclScope](1, c)}
 }
 
 // Tokens returns a flat slice over all of the non-synthetic tokens in this context,

@@ -95,6 +95,7 @@ message Decl {
 
     Kind kind = 1;
     Expr value = 2;
+    Options options = 3;
 
     Span span = 10;
     Span keyword_span = 11;
@@ -105,6 +106,7 @@ message Decl {
   // A package declaration.
   message Package {
     Path path = 1;
+    Options options = 2;
 
     Span span = 10;
     Span keyword_span = 11;
@@ -121,6 +123,7 @@ message Decl {
 
     Modifier modifier = 1;
     string import_path = 2;
+    Options options = 3;
 
     Span span = 10;
     Span keyword_span = 11;

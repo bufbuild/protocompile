@@ -19,18 +19,18 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Options represents the collection of options attached to a field-like declaration,
+// CompactOptions represents the collection of options attached to a field-like declaration,
 // contained within square brackets.
 //
-// Options implements [Commas] over its options.
-type Options struct {
+// CompactOptions implements [Commas] over its options.
+type CompactOptions struct {
 	withContext
 
-	ptr arena.Pointer[optionsImpl]
-	raw *optionsImpl
+	ptr arena.Pointer[rawCompactOptions]
+	raw *rawCompactOptions
 }
 
-type optionsImpl struct {
+type rawCompactOptions struct {
 	brackets rawToken
 	options  []struct {
 		option rawOption
@@ -38,8 +38,9 @@ type optionsImpl struct {
 	}
 }
 
-var _ Commas[Option] = Options{}
+var _ Commas[Option] = CompactOptions{}
 
+// Option is a key-value pair inside of a [CompactOptions] or a [DefOption].
 type Option struct {
 	Path   Path
 	Equals Token
@@ -53,22 +54,22 @@ type rawOption struct {
 }
 
 // Brackets returns the token tree corresponding to the whole [...].
-func (o Options) Brackets() Token {
+func (o CompactOptions) Brackets() Token {
 	return o.raw.brackets.With(o)
 }
 
 // Len implements [Slice] for Options.
-func (o Options) Len() int {
+func (o CompactOptions) Len() int {
 	return len(o.raw.options)
 }
 
 // At implements [Slice] for Options.
-func (o Options) At(n int) Option {
+func (o CompactOptions) At(n int) Option {
 	return o.raw.options[n].option.With(o)
 }
 
 // Iter implements [Slice] for Options.
-func (o Options) Iter(yield func(int, Option) bool) {
+func (o CompactOptions) Iter(yield func(int, Option) bool) {
 	for i, arg := range o.raw.options {
 		if !yield(i, arg.option.With(o)) {
 			break
@@ -77,32 +78,32 @@ func (o Options) Iter(yield func(int, Option) bool) {
 }
 
 // Append implements [Inserter] for Options.
-func (o Options) Append(option Option) {
+func (o CompactOptions) Append(option Option) {
 	o.InsertComma(o.Len(), option, Token{})
 }
 
 // Insert implements [Inserter] for Options.
-func (o Options) Insert(n int, option Option) {
+func (o CompactOptions) Insert(n int, option Option) {
 	o.InsertComma(n, option, Token{})
 }
 
 // Delete implements [Inserter] for Options.
-func (o Options) Delete(n int) {
+func (o CompactOptions) Delete(n int) {
 	o.raw.options = slices.Delete(o.raw.options, n, n+1)
 }
 
 // Comma implements [Commas] for Options.
-func (o Options) Comma(n int) Token {
+func (o CompactOptions) Comma(n int) Token {
 	return o.raw.options[n].comma.With(o)
 }
 
 // AppendComma implements [Commas] for Options.
-func (o Options) AppendComma(option Option, comma Token) {
+func (o CompactOptions) AppendComma(option Option, comma Token) {
 	o.InsertComma(o.Len(), option, comma)
 }
 
 // InsertComma implements [Commas] for Options.
-func (o Options) InsertComma(n int, option Option, comma Token) {
+func (o CompactOptions) InsertComma(n int, option Option, comma Token) {
 	o.Context().panicIfNotOurs(option.Path, option.Equals, option.Value, comma)
 
 	o.raw.options = slices.Insert(o.raw.options, n, struct {
@@ -119,28 +120,18 @@ func (o Options) InsertComma(n int, option Option, comma Token) {
 }
 
 // Span implements [Spanner] for Options.
-func (o Options) Span() Span {
+func (o CompactOptions) Span() Span {
 	return JoinSpans(o.Brackets())
 }
 
-func (o Options) rawOptions() rawOptions {
-	if o.Nil() {
-		return 0
+func newOptions(ptr arena.Pointer[rawCompactOptions], c Contextual) CompactOptions {
+	if ptr.Nil() {
+		return CompactOptions{}
 	}
-
-	return rawOptions(o.ptr + 1)
-}
-
-type rawOptions arena.Pointer[optionsImpl]
-
-func (o rawOptions) With(c Contextual) Options {
-	if o == 0 {
-		return Options{}
-	}
-	return Options{
+	return CompactOptions{
 		withContext{c.Context()},
-		arena.Pointer[optionsImpl](o),
-		c.Context().options.At(arena.Untyped(o)),
+		ptr,
+		ptr.In(&c.Context().options),
 	}
 }
 

@@ -472,7 +472,7 @@ func describe(node Spanner) string {
 		}
 	case DeclEmpty:
 		return "empty declaration"
-	case DeclBody:
+	case DeclScope:
 		return "definition body"
 	case Decl:
 		return "declaration"
@@ -488,7 +488,7 @@ func describe(node Spanner) string {
 		return "expression"
 	case Type:
 		return "type"
-	case Options:
+	case CompactOptions:
 		return "compact options"
 	case Token:
 		switch node.Kind() {

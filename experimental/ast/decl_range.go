@@ -38,14 +38,14 @@ type rawDeclRange struct {
 		expr  rawExpr
 		comma rawToken
 	}
-	options rawOptions
+	options arena.Pointer[rawCompactOptions]
 	semi    rawToken
 }
 
 // DeclRangeArgs is arguments for [Context.NewDeclRange].
 type DeclRangeArgs struct {
 	Keyword   Token
-	Options   Options
+	Options   CompactOptions
 	Semicolon Token
 }
 
@@ -125,15 +125,15 @@ func (d DeclRange) InsertComma(n int, expr Expr, comma Token) {
 }
 
 // Options returns the compact options list for this range.
-func (d DeclRange) Options() Options {
-	return d.raw.options.With(d)
+func (d DeclRange) Options() CompactOptions {
+	return newOptions(d.raw.options, d)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
 // Setting it to a nil Options clears it.
-func (d DeclRange) SetOptions(opts Options) {
-	d.raw.options = opts.rawOptions()
+func (d DeclRange) SetOptions(opts CompactOptions) {
+	d.raw.options = opts.ptr
 }
 
 // Semicolon returns this range's ending semicolon.

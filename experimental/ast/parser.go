@@ -232,7 +232,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 			})
 		}
 
-		var options Options
+		var options CompactOptions
 		if next := cursor.Peek(); next.Text() == "[" {
 			options = cursor.Context().NewOptions(cursor.Pop())
 			parseOptions(errs, options.Brackets(), options)
@@ -404,7 +404,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 		parseTypes(outputs, def.WithSignature().Outputs())
 	}
 	if !brackets.Nil() {
-		var options Options
+		var options CompactOptions
 		if next := cursor.Peek(); next.Text() == "[" {
 			options = cursor.Context().NewOptions(cursor.Pop())
 			parseOptions(errs, options.Brackets(), options)
@@ -425,7 +425,7 @@ func parseDecl(errs *report.Report, cursor *Cursor, where string) Decl {
 }
 
 // parseBody parses an (optionally-{}-delimited) body of declarations.
-func parseBody(errs *report.Report, token Token, contents *Cursor, where string) DeclBody {
+func parseBody(errs *report.Report, token Token, contents *Cursor, where string) DeclScope {
 	body := contents.Context().NewDeclBody(token)
 
 	// Drain the contents of the body into it. Remember,
@@ -441,7 +441,7 @@ func parseBody(errs *report.Report, token Token, contents *Cursor, where string)
 }
 
 // parseOptions parses a compact options list out of a [] token.
-func parseOptions(errs *report.Report, brackets Token, options Options) Options {
+func parseOptions(errs *report.Report, brackets Token, options CompactOptions) CompactOptions {
 	cursor := brackets.Children()
 	delimited := commaDelimited(true, errs, cursor, func(cursor *Cursor) (Option, bool) {
 		path := parsePath(errs, cursor)

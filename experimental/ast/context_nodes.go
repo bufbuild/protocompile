@@ -31,7 +31,7 @@ func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	ptr := c.decls.syntaxes.New(rawDeclSyntax{
 		keyword: args.Keyword.raw,
 		equals:  args.Equals.raw,
-		options: args.Options.rawOptions(),
+		options: args.Options.ptr,
 		semi:    args.Semicolon.raw,
 	})
 
@@ -48,7 +48,7 @@ func (c *Context) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	ptr := c.decls.packages.New(rawDeclPackage{
 		keyword: args.Keyword.raw,
 		path:    args.Path.raw,
-		options: args.Options.rawOptions(),
+		options: args.Options.ptr,
 		semi:    args.Semicolon.raw,
 	})
 	return wrapDecl[DeclPackage](arena.Untyped(ptr), c)
@@ -61,7 +61,7 @@ func (c *Context) NewDeclImport(args DeclImportArgs) DeclImport {
 	ptr := c.decls.imports.New(rawDeclImport{
 		keyword:  args.Keyword.raw,
 		modifier: args.Modifier.raw,
-		options:  args.Options.rawOptions(),
+		options:  args.Options.ptr,
 		semi:     args.Semicolon.raw,
 	})
 	return wrapDecl[DeclImport](arena.Untyped(ptr), c)
@@ -76,7 +76,7 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 	ptr := c.decls.defs.New(rawDeclDef{
 		name:    args.Name.raw,
 		equals:  args.Equals.raw,
-		options: args.Options.rawOptions(),
+		options: args.Options.ptr,
 		semi:    args.Semicolon.raw,
 	})
 	decl := wrapDecl[DeclDef](arena.Untyped(ptr), c)
@@ -100,11 +100,11 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 }
 
 // NewDeclBody creates a new DeclBody node
-func (c *Context) NewDeclBody(braces Token) DeclBody {
+func (c *Context) NewDeclBody(braces Token) DeclScope {
 	c.panicIfNotOurs(braces)
 
-	ptr := c.decls.bodies.New(rawDeclBody{braces: braces.raw})
-	return wrapDecl[DeclBody](arena.Untyped(ptr), c)
+	ptr := c.decls.bodies.New(rawDeclScope{braces: braces.raw})
+	return wrapDecl[DeclScope](arena.Untyped(ptr), c)
 }
 
 // NewDeclRange creates a new DeclRange node.
@@ -113,7 +113,7 @@ func (c *Context) NewDeclRange(args DeclRangeArgs) DeclRange {
 
 	ptr := c.decls.ranges.New(rawDeclRange{
 		keyword: args.Keyword.raw,
-		options: args.Options.rawOptions(),
+		options: args.Options.ptr,
 		semi:    args.Semicolon.raw,
 	})
 	decl := wrapDecl[DeclRange](arena.Untyped(ptr), c)
@@ -232,10 +232,10 @@ func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 }
 
 // NewOptions creates a new Options node.
-func (c *Context) NewOptions(brackets Token) Options {
+func (c *Context) NewOptions(brackets Token) CompactOptions {
 	c.panicIfNotOurs(brackets)
-	ptr := c.options.New(optionsImpl{
+	ptr := c.options.New(rawCompactOptions{
 		brackets: brackets.raw,
 	})
-	return rawOptions(ptr).With(c)
+	return newOptions(ptr, c)
 }

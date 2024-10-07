@@ -120,6 +120,7 @@ func declToProto(decl Decl) *compilerv1.Decl {
 		return &compilerv1.Decl{Decl: &compilerv1.Decl_Syntax_{Syntax: &compilerv1.Decl_Syntax{
 			Kind:          kind,
 			Value:         exprToProto(decl.Value()),
+			Options:       optionsToProto(decl.Options()),
 			Span:          spanToProto(decl),
 			KeywordSpan:   spanToProto(decl.Keyword()),
 			EqualsSpan:    spanToProto(decl.Equals()),
@@ -129,6 +130,7 @@ func declToProto(decl Decl) *compilerv1.Decl {
 	case DeclPackage:
 		return &compilerv1.Decl{Decl: &compilerv1.Decl_Package_{Package: &compilerv1.Decl_Package{
 			Path:          pathToProto(decl.Path()),
+			Options:       optionsToProto(decl.Options()),
 			Span:          spanToProto(decl),
 			KeywordSpan:   spanToProto(decl.Keyword()),
 			SemicolonSpan: spanToProto(decl.Semicolon()),
@@ -146,6 +148,7 @@ func declToProto(decl Decl) *compilerv1.Decl {
 		return &compilerv1.Decl{Decl: &compilerv1.Decl_Import_{Import: &compilerv1.Decl_Import{
 			Modifier:       mod,
 			ImportPath:     file,
+			Options:        optionsToProto(decl.Options()),
 			Span:           spanToProto(decl),
 			KeywordSpan:    spanToProto(decl.Keyword()),
 			ModifierSpan:   spanToProto(decl.Modifier()),
@@ -153,7 +156,7 @@ func declToProto(decl Decl) *compilerv1.Decl {
 			SemicolonSpan:  spanToProto(decl.Semicolon()),
 		}}}
 
-	case DeclBody:
+	case DeclScope:
 		proto := &compilerv1.Decl_Body{
 			Span: spanToProto(decl),
 		}
@@ -261,7 +264,7 @@ func declToProto(decl Decl) *compilerv1.Decl {
 	panic(fmt.Sprint("typeToProto: unknown Decl implementation:", reflect.TypeOf(expr)))
 }
 
-func optionsToProto(options Options) *compilerv1.Options {
+func optionsToProto(options CompactOptions) *compilerv1.Options {
 	if options.Nil() {
 		return nil
 	}

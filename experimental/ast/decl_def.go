@@ -43,8 +43,8 @@ type rawDeclDef struct {
 	equals rawToken
 	value  rawExpr
 
-	options rawOptions
-	body    arena.Pointer[rawDeclBody]
+	options arena.Pointer[rawCompactOptions]
+	body    arena.Pointer[rawDeclScope]
 	semi    rawToken
 }
 
@@ -63,9 +63,9 @@ type DeclDefArgs struct {
 	Equals Token
 	Value  Expr
 
-	Options Options
+	Options CompactOptions
 
-	Body      DeclBody
+	Body      DeclScope
 	Semicolon Token
 }
 
@@ -159,25 +159,25 @@ func (d DeclDef) SetValue(expr Expr) {
 }
 
 // Options returns the compact options list for this definition.
-func (d DeclDef) Options() Options {
-	return d.raw.options.With(d)
+func (d DeclDef) Options() CompactOptions {
+	return newOptions(d.raw.options, d)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
 // Setting it to a nil Options clears it.
-func (d DeclDef) SetOptions(opts Options) {
-	d.raw.options = opts.rawOptions()
+func (d DeclDef) SetOptions(opts CompactOptions) {
+	d.raw.options = opts.ptr
 }
 
 // Body returns this definition's body, if it has one.
-func (d DeclDef) Body() DeclBody {
-	return wrapDecl[DeclBody](arena.Untyped(d.raw.body), d)
+func (d DeclDef) Body() DeclScope {
+	return wrapDecl[DeclScope](arena.Untyped(d.raw.body), d)
 }
 
 // SetBody sets the body for this definition.
-func (d DeclDef) SetBody(b DeclBody) {
-	d.raw.body = arena.Pointer[rawDeclBody](b.ptr)
+func (d DeclDef) SetBody(b DeclScope) {
+	d.raw.body = arena.Pointer[rawDeclScope](b.ptr)
 }
 
 // Semicolon returns the ending semicolon token for this definition.
@@ -371,3 +371,172 @@ func (s Signature) Outputs() TypeList {
 func (s Signature) Span() Span {
 	return JoinSpans(s.Inputs(), s.Returns(), s.Outputs())
 }
+
+// Def is the return type of [DeclDef.Classify].
+//
+// This interface is implemented by all the Def* types in this package, and
+// can be type-asserted to any of them, usually in a type switch.
+//
+// A [DeclDef] can't be mutated through a Def; instead, you will need to mutate
+// the general structure instead.
+type Def interface {
+	Spanner
+
+	isDef()
+}
+
+// DefMessage is a [DeclDef] projected into a message definition.
+//
+// See [DeclDef.Classify].
+type DefMessage struct {
+	Keyword Token
+	Name    Token
+	Body    DeclScope
+
+	Decl DeclDef
+}
+
+// DefEnum is a [DeclDef] projected into an enum definition.
+//
+// See [DeclDef.Classify].
+type DefEnum struct {
+	Keyword Token
+	Name    Token
+	Body    DeclScope
+
+	Decl DeclDef
+}
+
+// DefService is a [DeclDef] projected into a service definition.
+//
+// See [DeclDef.Classify]
+type DefService struct {
+	Keyword Token
+	Name    Token
+	Body    DeclScope
+
+	Decl DeclDef
+}
+
+// DefExtend is a [DeclDef] projected into an extension definition.
+//
+// See [DeclDef.Classify].
+type DefExtend struct {
+	Keyword  Token
+	Extendee Path
+	Body     DeclScope
+
+	Decl DeclDef
+}
+
+// DefField is a [DeclDef] projected into a field definition.
+//
+// See [DeclDef.Classify].
+type DefField struct {
+	Type      Type
+	Name      Token
+	Equals    Token
+	Tag       Expr
+	Options   CompactOptions
+	Semicolon Token
+
+	Decl DeclDef
+}
+
+// DefEnumValue is a [DeclDef] projected into an enum value definition.
+//
+// See [DeclDef.Classify].
+type DefEnumValue struct {
+	Name      Token
+	Equals    Token
+	Tag       Expr
+	Options   CompactOptions
+	Semicolon Token
+
+	Decl DeclDef
+}
+
+// DefEnumValue is a [DeclDef] projected into a oneof definition.
+//
+// See [DeclDef.Classify].
+type DefOneof struct {
+	Keyword Token
+	Name    Token
+	Body    DeclScope
+
+	Decl DeclDef
+}
+
+// DefGroup is a [DeclDef] projected into a group definition.
+//
+// See [DeclDef.Classify].
+type DefGroup struct {
+	Keyword Token
+	Name    Token
+	Equals  Token
+	Tag     Expr
+	Options CompactOptions
+	Body    DeclScope
+
+	Decl DeclDef
+}
+
+// DefMethod is a [DeclDef] projected into a method definition.
+//
+// See [DeclDef.Classify].
+type DefMethod struct {
+	Keyword   Token
+	Name      Token
+	Signature Signature
+	Body      DeclScope
+
+	Decl DeclDef
+}
+
+// DefOption is a [DeclDef] projected into a method definition.
+//
+// Yes, an option is technically not defining anything, just setting a value.
+// However, it's syntactically analogous to a definition!
+//
+// See [DeclDef.Classify].
+type DefOption struct {
+	Option
+
+	Keyword   Token
+	Semicolon Token
+
+	Decl DeclDef
+}
+
+func (DefMessage) isDef()   {}
+func (DefEnum) isDef()      {}
+func (DefService) isDef()   {}
+func (DefExtend) isDef()    {}
+func (DefField) isDef()     {}
+func (DefEnumValue) isDef() {}
+func (DefOneof) isDef()     {}
+func (DefGroup) isDef()     {}
+func (DefMethod) isDef()    {}
+func (DefOption) isDef()    {}
+
+func (d DefMessage) Span() Span   { return d.Decl.Span() }
+func (d DefEnum) Span() Span      { return d.Decl.Span() }
+func (d DefService) Span() Span   { return d.Decl.Span() }
+func (d DefExtend) Span() Span    { return d.Decl.Span() }
+func (d DefField) Span() Span     { return d.Decl.Span() }
+func (d DefEnumValue) Span() Span { return d.Decl.Span() }
+func (d DefOneof) Span() Span     { return d.Decl.Span() }
+func (d DefGroup) Span() Span     { return d.Decl.Span() }
+func (d DefMethod) Span() Span    { return d.Decl.Span() }
+func (d DefOption) Span() Span    { return d.Decl.Span() }
+
+func (d DefMessage) Context() *Context   { return d.Decl.Context() }
+func (d DefEnum) Context() *Context      { return d.Decl.Context() }
+func (d DefService) Context() *Context   { return d.Decl.Context() }
+func (d DefExtend) Context() *Context    { return d.Decl.Context() }
+func (d DefField) Context() *Context     { return d.Decl.Context() }
+func (d DefEnumValue) Context() *Context { return d.Decl.Context() }
+func (d DefOneof) Context() *Context     { return d.Decl.Context() }
+func (d DefGroup) Context() *Context     { return d.Decl.Context() }
+func (d DefMethod) Context() *Context    { return d.Decl.Context() }
+func (d DefOption) Context() *Context    { return d.Decl.Context() }

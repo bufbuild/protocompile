@@ -42,7 +42,7 @@ type decls struct {
 	packages arena.Arena[rawDeclPackage]
 	imports  arena.Arena[rawDeclImport]
 	defs     arena.Arena[rawDeclDef]
-	bodies   arena.Arena[rawDeclBody]
+	bodies   arena.Arena[rawDeclScope]
 	ranges   arena.Arena[rawDeclRange]
 }
 
@@ -51,7 +51,7 @@ func (DeclSyntax) declKind() declKind  { return declPragma }
 func (DeclPackage) declKind() declKind { return declPackage }
 func (DeclImport) declKind() declKind  { return declImport }
 func (DeclDef) declKind() declKind     { return declDef }
-func (DeclBody) declKind() declKind    { return declBody }
+func (DeclScope) declKind() declKind   { return declBody }
 func (DeclRange) declKind() declKind   { return declRange }
 
 // DeclEmpty is an empty declaration, a lone ;.
@@ -112,7 +112,7 @@ func (k declKind) reify() Decl {
 	case declDef:
 		return DeclDef{}
 	case declBody:
-		return DeclBody{}
+		return DeclScope{}
 	case declRange:
 		return DeclRange{}
 	default:
