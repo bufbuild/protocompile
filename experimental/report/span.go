@@ -57,11 +57,6 @@ type Location struct {
 	//
 	// Because these are 1-indexed, a zero Line can be used as a sentinel.
 	Line, Column int
-
-	// The ostensible UTF-16 codepoint offset from the start of the line
-	// for this location. This exists for the benefit of LSP
-	// implementations.
-	UTF16 int
 }
 
 // IndexedFile is an index of line information from a [File], which permits
@@ -77,9 +72,6 @@ type IndexedFile struct {
 	// Alternatively, this slice can be interpreted as the index after each \n in the
 	// original file.
 	lines []int
-	// Similar to the above, but instead using the length of each line in code units
-	// if it was transcoded to UTF-16. This is required for compatibility with LSP.
-	utf16Lines []int
 }
 
 // NewIndexedFile constructs a line index for the given text. This is O(n) in the size
@@ -111,7 +103,7 @@ func (i *IndexedFile) NewSpan(start, end int) Span {
 func (i *IndexedFile) Search(offset int) Location {
 	// Compute the prefix sum on-demand.
 	i.once.Do(func() {
-		var next, next16 int
+		var next int
 
 		// We add 1 to the return value of IndexByte because we want to work
 		// with the index immediately *after* the newline byte.
@@ -122,68 +114,46 @@ func (i *IndexedFile) Search(offset int) Location {
 				break
 			}
 
-			line := text[:newline]
 			text = text[newline:]
 
 			i.lines = append(i.lines, next)
 			next += newline
-
-			// Calculate the length of `line` in UTF-16 code units.
-			var utf16Len int
-			for _, r := range line {
-				utf16Len += utf16RuneLen(r)
-			}
-
-			i.utf16Lines = append(i.utf16Lines, next16)
-			next16 += utf16Len
 		}
 
 		i.lines = append(i.lines, next)
-		i.utf16Lines = append(i.utf16Lines, next16)
 	})
 
-	// Find the smallest index in c.liznes such that lines[line] <= offset.
+	// Find the smallest index in c.lines such that lines[line] <= offset.
 	line, exact := slices.BinarySearch(i.lines, offset)
 	if !exact {
 		line--
 	}
 
-	// Calculate the column.
-	chunk := i.file.Text[i.lines[line]:offset]
-	var column int
-	// We can't just use StringWidth, because that doesn't respect tabstops
-	// correctly.
-	for {
-		nextTab := strings.IndexByte(chunk, '\t')
-		if nextTab != -1 {
-			column += uniseg.StringWidth(chunk[:nextTab])
-			column += TabstopWidth - (column % TabstopWidth)
-			chunk = chunk[nextTab+1:]
-		} else {
-			column += uniseg.StringWidth(chunk)
-			break
-		}
-	}
-
-	// Calculate the UTF-16 offset of the offset within its line.
-	var utf16Col int
-	for _, r := range chunk {
-		utf16Col += utf16RuneLen(r)
-	}
-
+	column := stringWidth(0, i.file.Text[i.lines[line]:offset])
 	return Location{
 		Offset: offset,
 		Line:   line + 1,
 		Column: column + 1,
-		UTF16:  utf16Col,
 	}
 }
 
-func utf16RuneLen(r rune) int {
-	if r > 0xffff {
-		return 2
+// stringWidth calculates the rendered with of text if placed at the given column,
+// accounting for tabstops.
+func stringWidth(column int, text string) int {
+	// We can't just use StringWidth, because that doesn't respect tabstops
+	// correctly.
+	for {
+		nextTab := strings.IndexByte(text, '\t')
+		if nextTab != -1 {
+			column += uniseg.StringWidth(text[:nextTab])
+			column += TabstopWidth - (column % TabstopWidth)
+			text = text[nextTab+1:]
+		} else {
+			column += uniseg.StringWidth(text)
+			break
+		}
 	}
-	return 1
+	return column
 }
 
 type naiveSpan struct {

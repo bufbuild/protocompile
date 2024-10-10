@@ -23,7 +23,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1"
+	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
 
 const (

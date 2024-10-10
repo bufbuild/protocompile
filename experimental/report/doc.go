@@ -36,7 +36,7 @@ information themselves, to avoid recomputing it unnecessarily.
 
 # Defining Diagnostics
 
-Generally, to definite a diagnostic, you should define a new Go error type,
+Generally, to define a diagnostic, you should define a new Go error type,
 and then make it implement [Diagnose]. This has two benefits:
 
  1. When someone using your tool as a library looks through a Report, they
@@ -81,7 +81,7 @@ respect their intelligence.
     refer to "a diagnostic"; prefer something more specific, like "compiler
     error".
 
- 4. Error messages should succinct: short and sweet, keeping in mind (1).
+ 4. Error messages should be succinct: short and sweet, keeping in mind (1).
     Users will see these messages many, many times.
 
  5. The word "illegal" is illegal. We use this term inside the compiler, but

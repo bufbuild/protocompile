@@ -14,7 +14,7 @@
 
 syntax = "proto3";
 
-package buf.compiler.v1;
+package buf.compiler.v1alpha1;
 
 // A diagnostic report, consisting of `Diagnostics` and the `File`s they diagnose.
 message Report {

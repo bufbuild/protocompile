@@ -104,29 +104,29 @@ func TestRender(t *testing.T) {
 			t.Fatalf("failed to parse input %q: %v", path, err)
 		}
 
-		text, _ = report.Renderer{
-			Austere:     true,
+		text, _, _ = report.Renderer{
+			Compact:     true,
 			ShowRemarks: true,
 			ShowDebug:   true,
-		}.Render(r)
+		}.RenderString(r)
 		outputs[0] = text
 		if text != "" {
 			text += "\n"
 		}
 
-		text, _ = report.Renderer{
-			Austere:     false,
+		text, _, _ = report.Renderer{
+			Compact:     false,
 			ShowRemarks: true,
 			ShowDebug:   true,
-		}.Render(r)
+		}.RenderString(r)
 		outputs[1] = text
 
-		text, _ = report.Renderer{
+		text, _, _ = report.Renderer{
 			Colorize:    true,
-			Austere:     false,
+			Compact:     false,
 			ShowRemarks: true,
 			ShowDebug:   true,
-		}.Render(r)
+		}.RenderString(r)
 		outputs[2] = ansiToMarkup(text)
 	})
 }

@@ -1,5 +1,5 @@
 warning: whole block
-  --> foo.proto:5:2
+  --> foo.proto:5:1
    | 
  5 | / message Blah {
 ...  | 
@@ -7,7 +7,7 @@ warning: whole block
    | \_^ this block
 
 warning: nested blocks
-  --> foo.proto:5:2
+  --> foo.proto:5:1
    | 
  5 | /   message Blah {
  6 | |     required size_t x = 0;
@@ -18,8 +18,21 @@ warning: nested blocks
 12 | |   }
    | \___^ this block
 
+warning: parallel blocks
+  --> foo.proto:5:1
+   | 
+ 5 | / message Blah {
+ 6 | |   required size_t x = 0;
+ 7 | |   message Bonk {
+   | \__^ this block
+...    
+11 |     }
+   |  ___-
+12 | / }
+   | \_- and this block
+
 warning: nested blocks same start
-  --> foo.proto:5:2
+  --> foo.proto:5:1
    | 
  5 | / / message Blah {
 ...  | | 
@@ -29,7 +42,7 @@ warning: nested blocks same start
    | \___^ this block
 
 warning: nested blocks same end
-  --> foo.proto:5:2
+  --> foo.proto:5:1
    | 
  5 | /   message Blah {
  6 | |     required size_t x = 0;
@@ -40,7 +53,7 @@ warning: nested blocks same end
    |   \_- and this block
 
 warning: nested overlap
-  --> foo.proto:5:2
+  --> foo.proto:5:1
    | 
  5 | /   message Blah {
  6 | |     required size_t x = 0;
@@ -117,4 +130,4 @@ warning: braces nesting overlap (2)
 12 | |   }
    | \___^ and this block
 
- encountered  10 warnings
+ encountered  11 warnings

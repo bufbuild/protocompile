@@ -36,7 +36,7 @@ diagnostics:
     annotations:
     - message: "this block"
       file: 0
-      start: 38
+      start: 37
       end: 129
 
   - message: nested blocks
@@ -44,23 +44,35 @@ diagnostics:
     annotations:
     - message: "this block"
       file: 0
-      start: 38
+      start: 37
       end: 129
     - message: "and this block"
       file: 0
-      start: 80
+      start: 79
       end: 127
+
+  - message: parallel blocks
+    level: LEVEL_WARNING
+    annotations:
+    - message: "this block"
+      file: 0
+      start: 37
+      end: 79
+    - message: "and this block"
+      file: 0
+      start: 127
+      end: 129
 
   - message: nested blocks same start
     level: LEVEL_WARNING
     annotations:
     - message: "this block"
       file: 0
-      start: 38
+      start: 37
       end: 129
     - message: "and this block"
       file: 0
-      start: 38
+      start: 37
       end: 127
 
   - message: nested blocks same end
@@ -68,11 +80,11 @@ diagnostics:
     annotations:
     - message: "this block"
       file: 0
-      start: 38
+      start: 37
       end: 129
     - message: "and this block"
       file: 0
-      start: 80
+      start: 79
       end: 129
     
   - message: nested overlap
@@ -80,11 +92,11 @@ diagnostics:
     annotations:
     - message: "this block"
       file: 0
-      start: 38
+      start: 37
       end: 127
     - message: "and this block"
       file: 0
-      start: 80
+      start: 79
       end: 129
 
   - message: nesting just the braces

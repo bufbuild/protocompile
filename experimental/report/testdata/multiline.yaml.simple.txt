@@ -1,8 +1,9 @@
-warning: foo.proto:5:2: whole block
-warning: foo.proto:5:2: nested blocks
-warning: foo.proto:5:2: nested blocks same start
-warning: foo.proto:5:2: nested blocks same end
-warning: foo.proto:5:2: nested overlap
+warning: foo.proto:5:1: whole block
+warning: foo.proto:5:1: nested blocks
+warning: foo.proto:5:1: parallel blocks
+warning: foo.proto:5:1: nested blocks same start
+warning: foo.proto:5:1: nested blocks same end
+warning: foo.proto:5:1: nested overlap
 warning: foo.proto:5:15: nesting just the braces
 warning: foo.proto:5:15: nesting just the braces same start
 warning: foo.proto:5:15: nesting just the braces same start (2)
