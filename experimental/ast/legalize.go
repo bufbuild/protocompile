@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -245,6 +246,101 @@ func legalize(r *report.Report, parent, node Spanner) {
 		})
 
 	case DeclDef:
+		switch parent := parent.(type) {
+		case File:
+		case DeclDef:
+			if _, ok := parent.Classify().(DefMessage); !ok {
+				r.Error(ErrInvalidChild{parent, node})
+			}
+		default:
+			r.Error(ErrInvalidChild{parent, node})
+		}
+
+		// This part of legalization "essentially" re-implements Classify, but
+		// generates diagnostics instead of failing.
+		kw := node.Keyword()
+		switch kwText := kw.Text(); kwText {
+		case "message", "enum", "service", "extends", "oneof":
+			if kwText != "extends" && node.Name().AsIdent().Nil() {
+				r.Error(errUnexpected{
+					node:  node.Name(),
+					where: fmt.Sprintf("in %s name", kwText),
+					want:  []string{"identifier"},
+				})
+			}
+
+			if sig := node.Signature(); !sig.Nil() {
+				r.Error(errUnexpected{
+					node:  sig,
+					where: fmt.Sprintf("in %s definition", kwText),
+				})
+			}
+			if value := node.Value(); value != nil {
+				r.Error(errUnexpected{
+					node:  value,
+					where: fmt.Sprintf("in %s definition", kwText),
+				})
+			} else if eq := node.Equals(); !eq.Nil() {
+				r.Error(errUnexpected{
+					node:  value,
+					where: fmt.Sprintf("in %s definition", kwText),
+				})
+			}
+			if options := node.Options(); !options.Nil() {
+				r.Errorf("compact options are not permitted on %s definitions", kwText).With(
+					report.Snippetf(node.Options(), "help: remove this"),
+				)
+			}
+
+			// Parent must be file or message, unless it's a service,
+			// in which case it must be file, or unless it's a oneof, in which
+			// case it must be message.
+			switch parent := parent.(type) {
+			case File:
+				if kwText == "oneof" {
+					r.Error(ErrInvalidChild{parent, node})
+				}
+			case DeclDef:
+				if kwText == "service" || parent.Keyword().Text() != "message" {
+					r.Error(ErrInvalidChild{parent, node})
+				}
+			default:
+				r.Error(ErrInvalidChild{parent, node})
+			}
+		case "group":
+			if node.Name().AsIdent().Nil() {
+				r.Error(errUnexpected{
+					node:  node.Name(),
+					where: "in group name",
+					want:  []string{"identifier"},
+				})
+			}
+
+			if sig := node.Signature(); !sig.Nil() {
+				r.Error(errUnexpected{
+					node:  sig,
+					where: fmt.Sprintf("in %s definition", kwText),
+				})
+			}
+
+			if value := node.Value(); value == nil {
+				var numberAfter Spanner
+				if name := node.Name(); !name.Nil() {
+
+				}
+
+				numberAfter = node.Name()
+				if numberAfter.Nil() {
+					numberAfter = kw
+				}
+
+				// TODO: This should be moved to somewhere where we can suggest
+				// the next unallocated value as the field number.
+				r.Errorf("missing field number").With(
+					report.Snippetf(node.Options(), "help: remove this"),
+				)
+			}
+		}
 
 		node.Body().Iter(func(_ int, decl Decl) bool {
 			legalize(r, node, decl)
