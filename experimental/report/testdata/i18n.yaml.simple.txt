@@ -1,0 +1,2 @@
+error: foo.proto:5:9: emoji, CJK, bidi
+error: foo.proto:7:10: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts

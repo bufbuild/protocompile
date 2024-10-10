@@ -1,0 +1,13 @@
+⟨b.red⟩error: system not supported⟨reset⟩⟨reset⟩
+
+⟨b.red⟩error: could not open file "foo.proto": os error 2: no such file or directory⟨reset⟩
+⟨blu⟩ --> foo.proto⟨reset⟩
+
+⟨b.ylw⟩warning: file consists only of the byte `0xaa`⟨reset⟩
+⟨blu⟩ --> foo.proto
+⟨blu⟩   = ⟨b.cyn⟩note: ⟨reset⟩that means that the file is screaming
+⟨blu⟩   = ⟨b.cyn⟩help: ⟨reset⟩you should delete it to put it out of its misery
+⟨blu⟩   = ⟨b.red⟩debug: ⟨reset⟩0xaaaaaaaaaaaaaaaa⟨reset⟩
+
+⟨b.red⟩encountered 2 errors and 1 warning⟨reset⟩
+⟨reset⟩

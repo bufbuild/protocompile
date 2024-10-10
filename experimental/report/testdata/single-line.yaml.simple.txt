@@ -1,0 +1,6 @@
+remark: foo.proto:1:10: "proto4" isn't real, it can't hurt you
+error: foo.proto:3:1: package
+error: foo.proto:3:1: this is an overlapping error
+error: foo.proto:3:1: P A C K A G E
+error: foo.proto:3:3: P A C K A G E (different order)
+error: foo.proto:3:1: P A C K A G E (single letters)

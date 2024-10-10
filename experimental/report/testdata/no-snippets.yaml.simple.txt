@@ -1,0 +1,3 @@
+error: system not supported
+error: foo.proto: could not open file "foo.proto": os error 2: no such file or directory
+warning: foo.proto: file consists only of the byte `0xaa`
