@@ -1,0 +1,19 @@
+error: emoji, CJK, bidi
+  --> foo.proto:5:9
+   | 
+ 5 | message 🐈‍⬛ {
+   |         ^^ 
+ 6 |   string 黑猫 = 1;
+   |          ---- note: some surfaces render CJK as sub-two-column
+  ::: bar.proto:1:9
+   | 
+ 1 | import "חתול שחור.proto";
+   |         --------------- bidi works if it's quoted, at least
+
+error: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
+  --> foo.proto:7:10
+   | 
+ 7 |   string القطة السوداء = 2;
+   |          ^^^^^^^^ 
+
+encountered 2 errors
