@@ -20,11 +20,28 @@ package buf.compiler.v1alpha1;
 message Report {
   // A file involved in a diagnostic `Report`.
   message File {
-    // The path to this file. Does not need to be meaningful as a file-system path.
+    // The path to this file. Does not need to be meaningful as a file-system
+    // path.
     string path = 1;
 
-    // The textual contents of this file.
+    // The textual contents of this file. Presumed to be UTF-8, although it need
+    // not be.
     bytes text = 2;
+
+    // TODO: Before bumping this proto package to v1, we should consider making
+    // the following optimization. Currently, we ship the entire file regardless
+    // of whether all of it is used by a diagnostic. Instead, we should add some
+    // way to send only what's needed. Any of the following will do:
+    //
+    // 1. Truncate text to only include the parts used by the diagnostics, and
+    //    include start_offset and start_line to compensate for deleting a
+    //    prefix of the file.
+    // 2. Add a `repeated Hunk` field that includes whatever hunks of the file
+    //    are relevant, so that the file can be reconstructed (and filled with
+    //    e.g. nulls to compensate).
+    //
+    // It is not immediately clear if this optimization is necessary, because
+    // source code files are rarely beyond the order of kilobytes in size. 
   }
 
   repeated File files = 1;
