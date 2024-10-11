@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !appengine && !gopherjs && !purego
-// +build !appengine,!gopherjs,!purego
-
-// NB: other environments where unsafe is inappropriate should use "purego" build tag
-// https://github.com/golang/go/issues/23172
-
 package linker
 
 import (

@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Protobuf-go no longer supports purego. This test depends on protobuf for
-// decoding its inputs. Therefore, we disable it in purego mode.
-//go:build !purego
-
 package report_test
 
 import (
