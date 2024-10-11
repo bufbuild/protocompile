@@ -62,14 +62,12 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 			continue
 		}
 
-		_, err = fmt.Fprintln(out, r.Diagnostic(diagnostic))
-		if err != nil {
+		if _, err = fmt.Fprintln(out, r.diagnostic(diagnostic)); err != nil {
 			return
 		}
 
 		if !r.Compact {
-			_, err = fmt.Fprintln(out)
-			if err != nil {
+			if _, err = fmt.Fprintln(out); err != nil {
 				return
 			}
 		}
@@ -89,7 +87,7 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 		return
 	}
 
-	c := r.colors()
+	ss := newStyleSheet(&r)
 
 	pluralize := func(count int, what string) string {
 		if count == 1 {
@@ -99,29 +97,25 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 	}
 
 	if errorCount > 0 {
-		_, err = fmt.Fprint(out, c.bError, "encountered ", pluralize(errorCount, "error"))
-		if err != nil {
+		if _, err = fmt.Fprint(out, ss.bError, "encountered ", pluralize(errorCount, "error")); err != nil {
 			return
 		}
 
 		if warningCount > 0 {
-			_, err = fmt.Fprint(out, " and ", pluralize(warningCount, "warning"))
-			if err != nil {
+			if _, err = fmt.Fprint(out, " and ", pluralize(warningCount, "warning")); err != nil {
 				return
 			}
 		}
-		_, err = fmt.Fprintln(out, c.reset)
-		if err != nil {
+		if _, err = fmt.Fprintln(out, ss.reset); err != nil {
 			return
 		}
 	} else if warningCount > 0 {
-		_, err = fmt.Fprintln(out, c.bWarning, "encountered ", pluralize(warningCount, "warning"))
-		if err != nil {
+		if _, err = fmt.Fprintln(out, ss.bWarning, "encountered ", pluralize(warningCount, "warning")); err != nil {
 			return
 		}
 	}
 
-	_, err = fmt.Fprint(out, c.reset)
+	_, err = fmt.Fprint(out, ss.reset)
 	return
 }
 
@@ -132,8 +126,8 @@ func (r Renderer) RenderString(report *Report) (text string, errorCount, warning
 	return buf.String(), e, w
 }
 
-// Diagnostic renders a single diagnostic to a string.
-func (r *Renderer) Diagnostic(d Diagnostic) string {
+// diagnostic renders a single diagnostic to a string.
+func (r *Renderer) diagnostic(d Diagnostic) string {
 	var level string
 	switch d.Level {
 	case Error:
@@ -148,7 +142,7 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 		level = "remark"
 	}
 
-	c := r.colors()
+	ss := newStyleSheet(r)
 
 	// For the simple style, we imitate the Go compiler.
 	if r.Compact {
@@ -158,32 +152,32 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 			if annotation.File.Path == "" {
 				return fmt.Sprintf(
 					"%s%s: %s%s",
-					c.ColorForLevel(d.Level),
+					ss.ColorForLevel(d.Level),
 					level,
 					d.Err.Error(),
-					c.reset,
+					ss.reset,
 				)
 			}
 
 			return fmt.Sprintf(
 				"%s%s: %s: %s%s",
-				c.ColorForLevel(d.Level),
+				ss.ColorForLevel(d.Level),
 				level,
 				annotation.File.Path,
 				d.Err.Error(),
-				c.reset,
+				ss.reset,
 			)
 		}
 
 		return fmt.Sprintf(
 			"%s%s: %s:%d:%d: %s%s",
-			c.ColorForLevel(d.Level),
+			ss.ColorForLevel(d.Level),
 			level,
 			annotation.File.Path,
 			annotation.Start.Line,
 			annotation.Start.Column,
 			d.Err.Error(),
-			c.reset,
+			ss.reset,
 		)
 	}
 
@@ -191,7 +185,7 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 	// https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 
 	var out strings.Builder
-	fmt.Fprint(&out, c.BoldForLevel(d.Level), level, ": ", d.Err.Error(), c.reset)
+	fmt.Fprint(&out, ss.BoldForLevel(d.Level), level, ": ", d.Err.Error(), ss.reset)
 
 	// Figure out how wide the line bar needs to be. This is given by
 	// the width of the largest line value among the annotations.
@@ -206,7 +200,7 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 	parts := partition(d.Annotations, func(a, b *Annotation) bool { return a.File.Path != b.File.Path })
 	parts(func(i int, annotations []Annotation) bool {
 		out.WriteByte('\n')
-		out.WriteString(c.nAccent)
+		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth)
 
 		if i == 0 {
@@ -224,14 +218,14 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 		out.WriteString(" | ")
 
 		window := buildWindow(d.Level, annotations)
-		window.Render(lineBarWidth, &c, &out)
+		window.Render(lineBarWidth, &ss, &out)
 		return true
 	})
 
 	// Render a remedial file name for spanless errors.
 	if len(d.Annotations) == 0 && d.InFile != "" {
 		out.WriteByte('\n')
-		out.WriteString(c.nAccent)
+		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth-1)
 
 		fmt.Fprintf(&out, "--> %s", d.InFile)
@@ -240,20 +234,20 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 	// Render the footers. For simplicity we collect them into an array first.
 	footers := make([][3]string, 0, len(d.Notes)+len(d.Help)+len(d.Debug))
 	for _, note := range d.Notes {
-		footers = append(footers, [3]string{c.bRemark, "note", note})
+		footers = append(footers, [3]string{ss.bRemark, "note", note})
 	}
 	for _, help := range d.Help {
-		footers = append(footers, [3]string{c.bRemark, "help", help})
+		footers = append(footers, [3]string{ss.bRemark, "help", help})
 	}
 	for _, debug := range d.Debug {
-		footers = append(footers, [3]string{c.bError, "debug", debug})
+		footers = append(footers, [3]string{ss.bError, "debug", debug})
 	}
 	for _, footer := range footers {
 		out.WriteByte('\n')
-		out.WriteString(c.nAccent)
+		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth)
 		out.WriteString(" = ")
-		fmt.Fprint(&out, footer[0], footer[1], ": ", c.reset)
+		fmt.Fprint(&out, footer[0], footer[1], ": ", ss.reset)
 		for i, line := range strings.Split(footer[2], "\n") {
 			if i > 0 {
 				out.WriteByte('\n')
@@ -264,83 +258,8 @@ func (r *Renderer) Diagnostic(d Diagnostic) string {
 		}
 	}
 
-	out.WriteString(c.reset)
+	out.WriteString(ss.reset)
 	return out.String()
-}
-
-func (r *Renderer) colors() stylesheet {
-	if !r.Colorize {
-		return stylesheet{r: r}
-	}
-
-	return stylesheet{
-		r:     r,
-		reset: "\033[0m",
-		// Red.
-		nError: "\033[0;31m",
-		bError: "\033[1;31m",
-
-		// Yellow.
-		nWarning: "\033[0;33m",
-		bWarning: "\033[1;33m",
-
-		// Cyan.
-		nRemark: "\033[0;36m",
-		bRemark: "\033[1;36m",
-
-		// Blue. Used for "accents" such as non-primary span underlines, line
-		// numbers, and other rendering details to clearly separate them from
-		// the source code (which appears in white).
-		nAccent: "\033[0;34m",
-		bAccent: "\033[1;34m",
-	}
-}
-
-// stylesheet is the colors used for pretty-rendering diagnostics.
-type stylesheet struct {
-	r *Renderer
-
-	reset string
-	// Normal colors.
-	nError, nWarning, nRemark, nAccent string
-	// Bold colors.
-	bError, bWarning, bRemark, bAccent string
-}
-
-func (c stylesheet) ColorForLevel(l Level) string {
-	switch l {
-	case Error:
-		return c.nError
-	case Warning:
-		if c.r.WarningsAreErrors {
-			return c.nError
-		}
-		return c.nWarning
-	case Remark:
-		return c.nRemark
-	case note:
-		return c.nAccent
-	default:
-		return ""
-	}
-}
-
-func (c stylesheet) BoldForLevel(l Level) string {
-	switch l {
-	case Error:
-		return c.bError
-	case Warning:
-		if c.r.WarningsAreErrors {
-			return c.nError
-		}
-		return c.bWarning
-	case Remark:
-		return c.bRemark
-	case note:
-		return c.bAccent
-	default:
-		return ""
-	}
 }
 
 const maxMultilinesPerWindow = 8
@@ -461,7 +380,7 @@ func buildWindow(level Level, annotations []Annotation) *window {
 	return w
 }
 
-func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
+func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) {
 	// lineInfo is layout information for a single line of this window. There
 	// is one lineInfo for each line of w.file.Text we intend to render, as
 	// given by w.offsets.
@@ -539,7 +458,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 
 		// Arrange for a "sidebar prefix" for this line. This is determined by any sidebars that are
 		// active on this line, even if they end on it.
-		sidebar := renderSidebar(sidebarLen, -1, -1, c, cur.sidebar)
+		sidebar := renderSidebar(sidebarLen, -1, -1, ss, cur.sidebar)
 
 		// Lay out the physical underlines in reverse order. This will cause longer lines to be
 		// laid out first, which will be overwritten by shorter ones.
@@ -571,9 +490,9 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 		parts(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
-				out.WriteString(c.reset)
+				out.WriteString(ss.reset)
 			} else {
-				out.WriteString(c.BoldForLevel(level))
+				out.WriteString(ss.BoldForLevel(level))
 			}
 			for range line {
 				switch level {
@@ -598,7 +517,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 			}
 		}
 		underlines := strings.TrimRight(out.String(), " ")
-		cur.underlines = []string{sidebar + underlines + " " + c.BoldForLevel(rightmost.level) + rightmost.message}
+		cur.underlines = []string{sidebar + underlines + " " + ss.BoldForLevel(rightmost.level) + rightmost.message}
 
 		// Now, do all the other messages, one per line. For each message, we also
 		// need to draw pipes (|) above each one to connect it to its underline.
@@ -622,8 +541,9 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 			// To deal with this, we make a copy of rest[idx:], sort it appropriately,
 			// and then lay things out.
 			//
-			// This is quadratic, but no one is going to put more than like. five snippets
-			// in a line, so it's fine.
+			// This is quadratic, but no one is going to put more than like, five snippets
+			// in a whole diagnostic, much less five snippets that share a line, so
+			// this shouldn't be an issue.
 			restSorted := slices.Clone(rest[idx:])
 			slices.SortFunc(restSorted, func(a, b *underline) int {
 				return a.start - b.start
@@ -640,7 +560,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				if nonColorLen == col {
 					// Two pipes may appear on the same column!
 					// This is why this is in a conditional.
-					buf = append(buf, c.BoldForLevel(ul.level)...)
+					buf = append(buf, ss.BoldForLevel(ul.level)...)
 					buf = append(buf, '|')
 					nonColorLen++
 				}
@@ -657,7 +577,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				actualStart := ul.start - 1
 				for _, other := range rest[idx:] {
 					if other.start <= ul.start {
-						actualStart += len(c.BoldForLevel(ul.level))
+						actualStart += len(ss.BoldForLevel(ul.level))
 					}
 				}
 				for len(buf) < actualStart+len(ul.message)+1 {
@@ -699,17 +619,17 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 	// | code code code
 	// \______________^ message
 	var line strings.Builder
-	for i := range info {
-		cur := &info[i]
+	for lineIdx := range info {
+		cur := &info[lineIdx]
 		prevStart := -1
-		for j, ml := range cur.sidebar {
+		for mlIdx, ml := range cur.sidebar {
 			if ml == nil {
 				continue
 			}
 
 			line.Reset()
 			var isStart bool
-			switch w.start + i {
+			switch w.start + lineIdx {
 			case ml.start:
 				if ml.startWidth == 0 {
 					continue
@@ -719,16 +639,19 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				fallthrough
 			case ml.end:
 				// We need to be flush with the sidebar here, so we trim the trailing space.
-				sidebar := []byte(strings.TrimRight(renderSidebar(0, -1, prevStart, c, cur.sidebar[:j+1]), " "))
+				sidebar := []byte(strings.TrimRight(renderSidebar(0, -1, prevStart, ss, cur.sidebar[:mlIdx+1]), " "))
 
 				// We also need to erase the bars of any multis that are before this multi
 				// and start/end on the same line.
 				if !isStart {
-					for i, otherML := range cur.sidebar[:j+1] {
+					for mlIdx, otherML := range cur.sidebar[:mlIdx+1] {
 						if otherML != nil && otherML.end == ml.end {
-							// We assume all the color codes have the same byte length.
-							codeLen := len(c.bAccent)
-							idx := i*(2+codeLen) + codeLen
+							// All the color escapes have the same byte length, so we can use the length of
+							// any of them to measure how far we need to adjust the offset to get to the
+							// pipe. We need to account for one escape per multiline, and also need to skip
+							// past the color escape on the pipe we want to erase.
+							codeLen := len(ss.bAccent)
+							idx := mlIdx*(2+codeLen) + codeLen
 							if idx < len(sidebar) {
 								sidebar[idx] = ' '
 							}
@@ -746,7 +669,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				}
 
 				// Pad out to the gutter of the code block.
-				remaining := sidebarLen - (j + 1)
+				remaining := sidebarLen - (mlIdx + 1)
 				padByRune(&line, remaining*2, '_')
 
 				// Pad to right before we need to insert a ^ or -
@@ -761,6 +684,13 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				} else {
 					line.WriteByte('^')
 				}
+
+				// TODO: If the source code has extremely long lines, this will cause
+				// the message to wind up wrapped crazy far. It may be worth doing
+				// wrapping ourselves in some cases (beyond a threshold of, say, 120
+				// columns). It is unlikely users will hit this problem with "realistic"
+				// inputs, though, and e.g. rustc and clang do not bother to handle this
+				// case nicely.
 				if !isStart && ml.message != "" {
 					line.WriteByte(' ')
 					line.WriteString(ml.message)
@@ -769,7 +699,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 			}
 
 			if isStart {
-				prevStart = j
+				prevStart = mlIdx
 			} else {
 				prevStart = -1
 			}
@@ -827,12 +757,12 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				slashAt = len(prevSidebar) - 1
 			}
 		}
-		sidebar := renderSidebar(sidebarLen, lineno, slashAt, c, cur.sidebar)
+		sidebar := renderSidebar(sidebarLen, lineno, slashAt, ss, cur.sidebar)
 
 		if i > 0 && !info[i-1].shouldEmit {
 			// Generate a visual break if this is right after a real line.
 			out.WriteByte('\n')
-			out.WriteString(c.nAccent)
+			out.WriteString(ss.nAccent)
 			padBy(out, lineBarWidth-2)
 			out.WriteString("...  ")
 
@@ -846,11 +776,13 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 				slashAt = len(prevSidebar) - 1
 			}
 
-			out.WriteString(renderSidebar(sidebarLen, lineno, slashAt, c, cur.sidebar))
+			out.WriteString(renderSidebar(sidebarLen, lineno, slashAt, ss, cur.sidebar))
 		}
 
 		// Ok, we are definitely printing this line out.
-		fmt.Fprintf(out, "\n%s%*d | %s%s", c.nAccent, lineBarWidth, lineno, sidebar, c.reset)
+		//
+		// Note that sidebar already includes a trailing ss.reset for us.
+		fmt.Fprintf(out, "\n%s%*d | %s", ss.nAccent, lineBarWidth, lineno, sidebar)
 		lastEmit = lineno
 
 		// Replace tabstops with spaces.
@@ -877,7 +809,7 @@ func (w *window) Render(lineBarWidth int, c *stylesheet, out *strings.Builder) {
 		// If this happens to be an annotated line, this is when it gets annotated.
 		for _, line := range cur.underlines {
 			out.WriteByte('\n')
-			out.WriteString(c.nAccent)
+			out.WriteString(ss.nAccent)
 			padBy(out, lineBarWidth)
 			out.WriteString(" | ")
 			out.WriteString(line)
@@ -927,7 +859,7 @@ func cmpMultilines(a, b multiline) int {
 	return b.end - a.end
 }
 
-func renderSidebar(bars, lineno, slashAt int, c *stylesheet, multis []*multiline) string {
+func renderSidebar(bars, lineno, slashAt int, ss *styleSheet, multis []*multiline) string {
 	var sidebar strings.Builder
 	for i, ml := range multis {
 		if ml == nil {
@@ -935,7 +867,7 @@ func renderSidebar(bars, lineno, slashAt int, c *stylesheet, multis []*multiline
 			continue
 		}
 
-		sidebar.WriteString(c.BoldForLevel(ml.level))
+		sidebar.WriteString(ss.BoldForLevel(ml.level))
 
 		switch {
 		case slashAt == i:
@@ -952,35 +884,8 @@ func renderSidebar(bars, lineno, slashAt int, c *stylesheet, multis []*multiline
 	for sidebar.Len() < bars*2 {
 		sidebar.WriteByte(' ')
 	}
+	sidebar.WriteString(ss.reset)
 	return sidebar.String()
-}
-
-// partition returns an iterator of subslices of s such that each yielded
-// slice is delimited according to delimit. Also yields the starting index of
-// the subslice.
-//
-// In other words, suppose delimit is !=. Then, the slice [a a a b c c] is yielded
-// as the subslices [a a a], [b], and [c c c].
-//
-// Will never yield an empty slice.
-//
-//nolint:dupword
-func partition[T any](s []T, delimit func(a, b *T) bool) func(func(int, []T) bool) {
-	return func(yield func(int, []T) bool) {
-		var start int
-		for i := 1; i < len(s); i++ {
-			if delimit(&s[i-1], &s[i]) {
-				if !yield(start, s[start:i]) {
-					break
-				}
-				start = i
-			}
-		}
-		rest := s[start:]
-		if len(rest) > 0 {
-			yield(start, rest)
-		}
-	}
 }
 
 func padBy(out *strings.Builder, spaces int) {

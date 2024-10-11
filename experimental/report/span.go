@@ -137,7 +137,7 @@ func (i *IndexedFile) Search(offset int) Location {
 	}
 }
 
-// stringWidth calculates the rendered with of text if placed at the given column,
+// stringWidth calculates the rendered width of text if placed at the given column,
 // accounting for tabstops.
 func stringWidth(column int, text string) int {
 	// We can't just use StringWidth, because that doesn't respect tabstops

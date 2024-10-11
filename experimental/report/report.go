@@ -81,8 +81,17 @@ type Diagnostic struct {
 }
 
 // Annotation is an annotated source code snippet within a [Diagnostic].
+//
+// Snippets will render as annotated source code spans that show the context
+// around the annotated region. More literally, this is e.g. a red squiggly
+// line under some code.
 type Annotation struct {
-	// A message to show under this snippet. May be empty.
+	// A message to show under this snippet.
+	//
+	// May be empty, in which case it will simply render as the red/yellow/etc
+	// squiggly line with no note attached to it. This is useful for cases where
+	// the overall error message already explains what the problem is and there
+	// is no additional context that would be useful to add to the error.
 	Message string
 
 	// Whether this is a "primary" snippet, which is used for deciding whether or not
@@ -93,6 +102,9 @@ type Annotation struct {
 	// are treated as being part of the same file, regardless of that file's contents.
 	File File
 	// Start and end positions for this snippet, within the above file.
+	//
+	// May be zero-width, but the renderer will always render it as at least one
+	// column wide.
 	Start, End Location
 }
 
@@ -440,8 +452,14 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 
 // push is the core "make me a diagnostic" function.
 //
-//nolint:unparam
+//nolint:unparam  // For skip, see the comment below.
 func (r *Report) push(skip int, err error, level Level) *Diagnostic {
+	// The linter does not like that skip is statically a constant.
+	// We provide it as an argument for documentation purposes, so
+	// that callers of this function within this package can specify
+	// can specify how deeply-nested they are, even if they all have
+	// the same level of nesting right now.
+
 	r.Diagnostics = append(r.Diagnostics, Diagnostic{
 		Err:   err,
 		Level: level,
