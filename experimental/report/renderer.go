@@ -54,6 +54,8 @@ type Renderer struct {
 //
 // On the other hand, the actual error-typed return is an error when writing to
 // the writer.
+//
+//nolint:nakedret
 func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCount int, err error) {
 	for _, diagnostic := range report.Diagnostics {
 		if !r.ShowRemarks && diagnostic.Level == Remark {
