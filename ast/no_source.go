@@ -134,7 +134,7 @@ func (n *NoSourceNode) GetOutputType() Node {
 	return n
 }
 
-func (n *NoSourceNode) Value() interface{} {
+func (n *NoSourceNode) Value() any {
 	return nil
 }
 

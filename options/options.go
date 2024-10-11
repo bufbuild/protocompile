@@ -157,7 +157,7 @@ func interpretOptions(lenient bool, file file, res linker.Resolver, handler *rep
 	return interp.index, nil
 }
 
-func (interp *interpreter) handleErrorf(span ast.SourceSpan, msg string, args ...interface{}) error {
+func (interp *interpreter) handleErrorf(span ast.SourceSpan, msg string, args ...any) error {
 	if interp.lenienceEnabled {
 		interp.lenientErrReported = true
 		return nil
@@ -457,7 +457,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	}
 
 	val := optNode.GetValue()
-	var v interface{}
+	var v any
 	if val.Value() == nil {
 		// no value in the AST, so we dig the value out of the uninterpreted option proto
 		v, err = interp.defaultValueFromProto(mc, fld, opt, val)
@@ -500,7 +500,7 @@ func (interp *interpreter) processDefaultOption(scope string, fqn string, fld *d
 	return found, nil
 }
 
-func (interp *interpreter) defaultValue(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, val ast.ValueNode) (interface{}, error) {
+func (interp *interpreter) defaultValue(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, val ast.ValueNode) (any, error) {
 	if _, ok := val.(*ast.MessageLiteralNode); ok {
 		return -1, reporter.Errorf(interp.nodeInfo(val), "%vdefault value cannot be a message", mc)
 	}
@@ -518,7 +518,7 @@ func (interp *interpreter) defaultValue(mc *internal.MessageContext, fld *descri
 	return interp.scalarFieldValue(mc, fld.GetType(), val, false)
 }
 
-func (interp *interpreter) defaultValueFromProto(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, opt *descriptorpb.UninterpretedOption, node ast.Node) (interface{}, error) {
+func (interp *interpreter) defaultValueFromProto(mc *internal.MessageContext, fld *descriptorpb.FieldDescriptorProto, opt *descriptorpb.UninterpretedOption, node ast.Node) (any, error) {
 	if opt.AggregateValue != nil {
 		return -1, reporter.Errorf(interp.nodeInfo(node), "%vdefault value cannot be a message", mc)
 	}
@@ -1567,7 +1567,7 @@ func fieldName(fld protoreflect.FieldDescriptor) string {
 	return string(fld.Name())
 }
 
-func valueKind(val interface{}) string {
+func valueKind(val any) string {
 	switch val := val.(type) {
 	case ast.Identifier:
 		return "identifier"
@@ -1746,7 +1746,7 @@ func (interp *interpreter) scalarFieldValue(
 	fldType descriptorpb.FieldDescriptorProto_Type,
 	val ast.ValueNode,
 	insideMsgLiteral bool,
-) (interface{}, error) {
+) (any, error) {
 	v := val.Value()
 	switch fldType {
 	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
@@ -1884,7 +1884,7 @@ func (interp *interpreter) scalarFieldValueFromProto(
 	fldType descriptorpb.FieldDescriptorProto_Type,
 	opt *descriptorpb.UninterpretedOption,
 	node ast.Node,
-) (interface{}, error) {
+) (any, error) {
 	switch fldType {
 	case descriptorpb.FieldDescriptorProto_TYPE_BOOL:
 		if opt.IdentifierValue != nil {

@@ -109,7 +109,7 @@ foo
 		t          int
 		line, col  int
 		span       int
-		v          interface{}
+		v          any
 		comments   []string
 		trailCount int
 	}{
@@ -194,7 +194,7 @@ foo
 			t.Fatalf("lexer reported EOF but should have returned %v", exp)
 		}
 		var n ast.Node
-		var val interface{}
+		var val any
 		switch tok {
 		case _SYNTAX, _OPTION, _INT32, _SERVICE, _RPC, _MESSAGE, _NAME:
 			n = sym.id

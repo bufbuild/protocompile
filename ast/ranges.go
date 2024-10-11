@@ -185,7 +185,7 @@ func (n *RangeNode) RangeEnd() Node {
 	return n.StartVal
 }
 
-func (n *RangeNode) StartValue() interface{} {
+func (n *RangeNode) StartValue() any {
 	return n.StartVal.Value()
 }
 
@@ -193,7 +193,7 @@ func (n *RangeNode) StartValueAsInt32(minVal, maxVal int32) (int32, bool) {
 	return AsInt32(n.StartVal, minVal, maxVal)
 }
 
-func (n *RangeNode) EndValue() interface{} {
+func (n *RangeNode) EndValue() any {
 	if n.EndVal == nil {
 		return nil
 	}

@@ -23,7 +23,7 @@ import (
 
 var pathElementType = reflect.TypeOf(protoreflect.SourcePath{}).Elem()
 
-func pathKey(p protoreflect.SourcePath) interface{} {
+func pathKey(p protoreflect.SourcePath) any {
 	if p == nil {
 		// Reflection code below doesn't work with nil slices
 		return [0]int32{}
