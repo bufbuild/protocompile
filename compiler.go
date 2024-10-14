@@ -311,7 +311,7 @@ type PanicError struct {
 	// The file that was being processed when the panic occurred
 	File string
 	// The value returned by recover()
-	Value interface{}
+	Value any
 	// A formatted stack trace
 	Stack string
 }

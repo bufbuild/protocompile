@@ -162,7 +162,7 @@ func (h *Handler) HandleErrorWithPos(span ast.SourceSpan, err error) error {
 // If the handler has already aborted (by returning a non-nil error from a call
 // to HandleError or HandleErrorf), that same error is returned and the given
 // error is not reported.
-func (h *Handler) HandleErrorf(span ast.SourceSpan, format string, args ...interface{}) error {
+func (h *Handler) HandleErrorf(span ast.SourceSpan, format string, args ...any) error {
 	return h.HandleError(Errorf(span, format, args...))
 }
 
@@ -190,7 +190,7 @@ func (h *Handler) HandleWarningWithPos(span ast.SourceSpan, err error) {
 
 // HandleWarningf handles a warning with the given source position, creating the
 // actual error value using the given message format and arguments.
-func (h *Handler) HandleWarningf(span ast.SourceSpan, format string, args ...interface{}) {
+func (h *Handler) HandleWarningf(span ast.SourceSpan, format string, args ...any) {
 	h.HandleWarning(Errorf(span, format, args...))
 }
 

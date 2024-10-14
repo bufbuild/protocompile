@@ -50,7 +50,7 @@ func NewIdentNode(val string, tok Token) *IdentNode {
 	}
 }
 
-func (n *IdentNode) Value() interface{} {
+func (n *IdentNode) Value() any {
 	return n.AsIdentifier()
 }
 
@@ -129,7 +129,7 @@ func NewCompoundIdentNode(leadingDot *RuneNode, components []*IdentNode, dots []
 	}
 }
 
-func (n *CompoundIdentNode) Value() interface{} {
+func (n *CompoundIdentNode) Value() any {
 	return n.AsIdentifier()
 }
 

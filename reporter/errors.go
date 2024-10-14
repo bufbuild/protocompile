@@ -49,7 +49,7 @@ func Error(span ast.SourceSpan, err error) ErrorWithPos {
 
 // Errorf creates a new ErrorWithPos whose underlying error is created using the
 // given message format and arguments (via fmt.Errorf).
-func Errorf(span ast.SourceSpan, format string, args ...interface{}) ErrorWithPos {
+func Errorf(span ast.SourceSpan, format string, args ...any) ErrorWithPos {
 	return Error(span, fmt.Errorf(format, args...))
 }
 

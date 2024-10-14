@@ -116,13 +116,13 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 	testCases := []struct {
 		name             string
 		contents         string
-		uninterpreted    map[string]interface{}
+		uninterpreted    map[string]any
 		checkInterpreted func(*testing.T, *descriptorpb.FileDescriptorProto)
 	}{
 		{
 			name:     "file options",
 			contents: `option go_package = "foo.bar"; option (must.link) = "FOO";`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"test.proto:(must.link)": "FOO",
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -132,7 +132,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "file options, not custom",
 			contents: `option go_package = "foo.bar"; option must_link = "FOO";`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"test.proto:must_link": "FOO",
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -142,7 +142,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "message options",
 			contents: `message Test { option (must.link) = 1.234; option deprecated = true; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test:(must.link)": 1.234,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -152,7 +152,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "field options",
 			contents: `message Test { optional string uid = 1 [(must.link) = 10101, (must.link) = 20202, default = "fubar", json_name = "UID", deprecated = true]; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test.uid:(must.link)":   10101,
 				"Test.uid:(must.link)#1": 20202,
 			},
@@ -165,7 +165,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "field options, default uninterpretable",
 			contents: `enum TestEnum{ ZERO = 0; ONE = 1; } message Test { optional TestEnum uid = 1 [(must.link) = {foo: bar}, default = ONE, json_name = "UID", deprecated = true]; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test.uid:(must.link)": aggregate("foo : bar"),
 				"Test.uid:default":     ident("ONE"),
 			},
@@ -177,7 +177,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "oneof options",
 			contents: `message Test { oneof x { option (must.link) = true; option deprecated = true; string uid = 1; uint64 nnn = 2; } }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test.x:(must.link)": ident("true"),
 				"Test.x:deprecated":  ident("true"), // one-ofs do not have deprecated option :/
 			},
@@ -185,7 +185,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "extension range options",
 			contents: `message Test { extensions 100 to 200 [(must.link) = "foo", deprecated = true]; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test.100-200:(must.link)": "foo",
 				"Test.100-200:deprecated":  ident("true"), // extension ranges do not have deprecated option :/
 			},
@@ -193,7 +193,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "enum options",
 			contents: `enum Test { option allow_alias = true; option deprecated = true; option (must.link) = 123.456; ZERO = 0; ZILCH = 0; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test:(must.link)": 123.456,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -204,7 +204,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "enum value options",
 			contents: `enum Test { ZERO = 0 [deprecated = true, (must.link) = -222]; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test.ZERO:(must.link)": -222,
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -214,7 +214,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "service options",
 			contents: `service Test { option deprecated = true; option (must.link) = {foo:1, foo:2, bar:3}; }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test:(must.link)": aggregate("foo : 1 , foo : 2 , bar : 3"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -224,7 +224,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 		{
 			name:     "method options",
 			contents: `import "google/protobuf/empty.proto"; service Test { rpc Foo (google.protobuf.Empty) returns (google.protobuf.Empty) { option deprecated = true; option (must.link) = FOO; } }`,
-			uninterpreted: map[string]interface{}{
+			uninterpreted: map[string]any{
 				"Test.Foo:(must.link)": ident("FOO"),
 			},
 			checkInterpreted: func(t *testing.T, fd *descriptorpb.FileDescriptorProto) {
@@ -244,7 +244,7 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 			require.NoError(t, err, "failed to produce descriptor proto")
 			_, err = options.InterpretUnlinkedOptions(res)
 			require.NoError(t, err, "failed to interpret options")
-			actual := map[string]interface{}{}
+			actual := map[string]any{}
 			buildUninterpretedMapForFile(res.FileDescriptorProto(), actual)
 			assert.Equal(t, tc.uninterpreted, actual, "resulted in wrong uninterpreted options")
 			if tc.checkInterpreted != nil {
@@ -273,7 +273,7 @@ func TestOptionsInUnlinkedFileInvalid(t *testing.T) {
 		`test.proto:4:29: field "google.protobuf.FeatureSet.utf8_validation" was not introduced until edition 2023`)
 }
 
-func buildUninterpretedMapForFile(fd *descriptorpb.FileDescriptorProto, opts map[string]interface{}) {
+func buildUninterpretedMapForFile(fd *descriptorpb.FileDescriptorProto, opts map[string]any) {
 	buildUninterpretedMap(fd.GetName(), fd.GetOptions().GetUninterpretedOption(), opts)
 	for _, md := range fd.GetMessageType() {
 		buildUninterpretedMapForMessage(fd.GetPackage(), md, opts)
@@ -293,7 +293,7 @@ func buildUninterpretedMapForFile(fd *descriptorpb.FileDescriptorProto, opts map
 	}
 }
 
-func buildUninterpretedMapForMessage(qual string, md *descriptorpb.DescriptorProto, opts map[string]interface{}) {
+func buildUninterpretedMapForMessage(qual string, md *descriptorpb.DescriptorProto, opts map[string]any) {
 	fqn := qualify(qual, md.GetName())
 	buildUninterpretedMap(fqn, md.GetOptions().GetUninterpretedOption(), opts)
 	for _, fld := range md.GetField() {
@@ -316,7 +316,7 @@ func buildUninterpretedMapForMessage(qual string, md *descriptorpb.DescriptorPro
 	}
 }
 
-func buildUninterpretedMapForEnum(qual string, ed *descriptorpb.EnumDescriptorProto, opts map[string]interface{}) {
+func buildUninterpretedMapForEnum(qual string, ed *descriptorpb.EnumDescriptorProto, opts map[string]any) {
 	fqn := qualify(qual, ed.GetName())
 	buildUninterpretedMap(fqn, ed.GetOptions().GetUninterpretedOption(), opts)
 	for _, evd := range ed.GetValue() {
@@ -324,7 +324,7 @@ func buildUninterpretedMapForEnum(qual string, ed *descriptorpb.EnumDescriptorPr
 	}
 }
 
-func buildUninterpretedMap(prefix string, uos []*descriptorpb.UninterpretedOption, opts map[string]interface{}) {
+func buildUninterpretedMap(prefix string, uos []*descriptorpb.UninterpretedOption, opts map[string]any) {
 	for _, uo := range uos {
 		parts := make([]string, len(uo.GetName()))
 		for i, np := range uo.GetName() {
@@ -344,7 +344,7 @@ func buildUninterpretedMap(prefix string, uos []*descriptorpb.UninterpretedOptio
 			i++
 			key = fmt.Sprintf("%s#%d", uoName, i)
 		}
-		var val interface{}
+		var val any
 		switch {
 		case uo.AggregateValue != nil:
 			val = aggregate(uo.GetAggregateValue())

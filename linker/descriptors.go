@@ -280,8 +280,8 @@ func (r *result) SourceLocations() protoreflect.SourceLocations {
 	return &r.srcLocations
 }
 
-func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[interface{}]int {
-	index := map[interface{}]int{}
+func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[any]int {
+	index := map[any]int{}
 	for i, loc := range locs {
 		if loc.Next == 0 {
 			index[pathKey(loc.Path)] = i
@@ -368,7 +368,7 @@ type srcLocs struct {
 	protoreflect.SourceLocations
 	file  *result
 	locs  []protoreflect.SourceLocation
-	index map[interface{}]int
+	index map[any]int
 }
 
 func (s *srcLocs) Len() int {

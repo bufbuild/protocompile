@@ -40,7 +40,7 @@ type ValueNode interface {
 	// If the ValueNode is a NoSourceNode, indicating that there is no actual
 	// source code (and thus not AST information), then this method always
 	// returns nil.
-	Value() interface{}
+	Value() any
 }
 
 var _ ValueNode = (*IdentNode)(nil)
@@ -84,7 +84,7 @@ func NewStringLiteralNode(val string, tok Token) *StringLiteralNode {
 	}
 }
 
-func (n *StringLiteralNode) Value() interface{} {
+func (n *StringLiteralNode) Value() any {
 	return n.AsString()
 }
 
@@ -122,7 +122,7 @@ func NewCompoundLiteralStringNode(components ...*StringLiteralNode) *CompoundStr
 	}
 }
 
-func (n *CompoundStringLiteralNode) Value() interface{} {
+func (n *CompoundStringLiteralNode) Value() any {
 	return n.AsString()
 }
 
@@ -170,7 +170,7 @@ func NewUintLiteralNode(val uint64, tok Token) *UintLiteralNode {
 	}
 }
 
-func (n *UintLiteralNode) Value() interface{} {
+func (n *UintLiteralNode) Value() any {
 	return n.Val
 }
 
@@ -217,7 +217,7 @@ func NewNegativeIntLiteralNode(sign *RuneNode, i *UintLiteralNode) *NegativeIntL
 	}
 }
 
-func (n *NegativeIntLiteralNode) Value() interface{} {
+func (n *NegativeIntLiteralNode) Value() any {
 	return n.Val
 }
 
@@ -259,7 +259,7 @@ func NewFloatLiteralNode(val float64, tok Token) *FloatLiteralNode {
 	}
 }
 
-func (n *FloatLiteralNode) Value() interface{} {
+func (n *FloatLiteralNode) Value() any {
 	return n.AsFloat()
 }
 
@@ -291,7 +291,7 @@ func NewSpecialFloatLiteralNode(name *KeywordNode) *SpecialFloatLiteralNode {
 	}
 }
 
-func (n *SpecialFloatLiteralNode) Value() interface{} {
+func (n *SpecialFloatLiteralNode) Value() any {
 	return n.AsFloat()
 }
 
@@ -331,7 +331,7 @@ func NewSignedFloatLiteralNode(sign *RuneNode, f FloatValueNode) *SignedFloatLit
 	}
 }
 
-func (n *SignedFloatLiteralNode) Value() interface{} {
+func (n *SignedFloatLiteralNode) Value() any {
 	return n.Val
 }
 
@@ -400,7 +400,7 @@ func NewArrayLiteralNode(openBracket *RuneNode, vals []ValueNode, commas []*Rune
 	}
 }
 
-func (n *ArrayLiteralNode) Value() interface{} {
+func (n *ArrayLiteralNode) Value() any {
 	return n.Elements
 }
 
@@ -469,7 +469,7 @@ func NewMessageLiteralNode(openSym *RuneNode, vals []*MessageFieldNode, seps []*
 	}
 }
 
-func (n *MessageLiteralNode) Value() interface{} {
+func (n *MessageLiteralNode) Value() any {
 	return n.Elements
 }
 

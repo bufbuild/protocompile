@@ -25,7 +25,7 @@ type hasOptionNode interface {
 	FileNode() ast.FileDeclNode // needed in order to query for NodeInfo
 }
 
-type errorHandler func(span ast.SourceSpan, format string, args ...interface{}) error
+type errorHandler func(span ast.SourceSpan, format string, args ...any) error
 
 func FindFirstOption(res hasOptionNode, handler errorHandler, scope string, opts []*descriptorpb.UninterpretedOption, name string) (int, error) {
 	return findOption(res, handler, scope, opts, name, false, true)
