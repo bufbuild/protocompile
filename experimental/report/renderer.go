@@ -54,8 +54,6 @@ type Renderer struct {
 //
 // On the other hand, the actual error-typed return is an error when writing to
 // the writer.
-//
-//nolint:nakedret
 func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCount int, err error) {
 	for _, diagnostic := range report.Diagnostics {
 		if !r.ShowRemarks && diagnostic.Level == Remark {
@@ -63,12 +61,12 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 		}
 
 		if _, err = fmt.Fprintln(out, r.diagnostic(diagnostic)); err != nil {
-			return
+			return errorCount, warningCount, err
 		}
 
 		if !r.Compact {
 			if _, err = fmt.Fprintln(out); err != nil {
-				return
+				return errorCount, warningCount, err
 			}
 		}
 
@@ -84,7 +82,7 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 		}
 	}
 	if r.Compact {
-		return
+		return errorCount, warningCount, err
 	}
 
 	ss := newStyleSheet(&r)
@@ -98,25 +96,25 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 
 	if errorCount > 0 {
 		if _, err = fmt.Fprint(out, ss.bError, "encountered ", pluralize(errorCount, "error")); err != nil {
-			return
+			return errorCount, warningCount, err
 		}
 
 		if warningCount > 0 {
 			if _, err = fmt.Fprint(out, " and ", pluralize(warningCount, "warning")); err != nil {
-				return
+				return errorCount, warningCount, err
 			}
 		}
 		if _, err = fmt.Fprintln(out, ss.reset); err != nil {
-			return
+			return errorCount, warningCount, err
 		}
 	} else if warningCount > 0 {
 		if _, err = fmt.Fprintln(out, ss.bWarning, "encountered ", pluralize(warningCount, "warning")); err != nil {
-			return
+			return errorCount, warningCount, err
 		}
 	}
 
 	_, err = fmt.Fprint(out, ss.reset)
-	return
+	return errorCount, warningCount, err
 }
 
 // RenderString is a helper for calling [Renderer.Render] with a [strings.Builder].
