@@ -325,6 +325,10 @@ func buildWindow(level Level, annotations []Annotation) *window {
 			})
 			ml := &w.multilines[len(w.multilines)-1]
 
+			if ml.startWidth == ml.endWidth {
+				ml.endWidth++
+			}
+
 			// Calculate whether this snippet starts on the first non-space rune of
 			// the line.
 			if snippet.Start.Offset != 0 {
@@ -354,6 +358,9 @@ func buildWindow(level Level, annotations []Annotation) *window {
 		ul := &w.underlines[len(w.underlines)-1]
 		if snippet.Primary {
 			ul.level = level
+		}
+		if ul.start == ul.end {
+			ul.end++
 		}
 
 		if isMulti {
