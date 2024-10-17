@@ -62,7 +62,7 @@ func (p Path) AsBuiltin() Builtin {
 	return BuiltinByName(p.AsIdent().Text())
 }
 
-// Span implements [Spanner] for Path.
+// Span implements [Spanner].
 func (p Path) Span() Span {
 	return JoinSpans(p.raw[0].With(p), p.raw[1].With(p))
 }
@@ -190,7 +190,7 @@ func (p PathComponent) AsIdent() Token {
 //
 //  1. Two zero tokens. This is the nil path.
 //
-//  2. Two non-synthetic tokens. This means the path is all tokens between them including
+//  2. Two natural tokens. This means the path is all tokens between them including
 //     the end-point
 //
 //  3. A single synthetic token and a nil token. If this token has children, those are

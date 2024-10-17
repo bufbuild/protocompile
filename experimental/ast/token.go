@@ -51,7 +51,7 @@ func (t TokenKind) IsSkippable() bool {
 	return t == TokenSpace || t == TokenComment || t == TokenUnrecognized
 }
 
-// String implements [strings.Stringer] for TokenKind.
+// String implements [strings.Stringer].
 func (t TokenKind) String() string {
 	switch t {
 	case TokenUnrecognized:
@@ -172,7 +172,7 @@ func (t Token) Text() string {
 	return t.Context().Text()[start:end]
 }
 
-// Span implements [Spanner] for Token.
+// Span implements [Spanner].
 func (t Token) Span() Span {
 	if t.Nil() || t.IsSynthetic() {
 		return Span{}
@@ -373,7 +373,7 @@ func (t Token) IsPureString() bool {
 	return !present
 }
 
-// String implements [strings.Stringer] for Token.
+// String implements [strings.Stringer].
 func (t Token) String() string {
 	return t.raw.String()
 }
@@ -403,12 +403,12 @@ func (t Token) synthetic() *tokenSynthetic {
 type Cursor struct {
 	withContext
 
-	// This is used if this is a cursor over non-synthetic tokens.
+	// This is used if this is a cursor over natural tokens.
 	// start is inclusive, end is exclusive. start == end means the stream
 	// is empty.
 	start, end rawToken
 	// This is used if this is a cursor over the children of a synthetic token.
-	// If stream is nil, we know we're in the non-synthetic case.
+	// If stream is nil, we know we're in the natural case.
 	stream []rawToken
 	idx    int
 }
@@ -554,7 +554,7 @@ func (c *Cursor) IsSynthetic() bool {
 // rawToken is the ID of a token separated from its context.
 //
 // Let n := int(id). If n is zero, it is the nil token. If n is positive, it is
-// a non-synthetic token, whose index is n - 1. If it is negative, it is a
+// a natural token, whose index is n - 1. If it is negative, it is a
 // synthetic token, whose index is ^n.
 type rawToken int32
 

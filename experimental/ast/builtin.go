@@ -85,7 +85,8 @@ var (
 	}()
 )
 
-// Builtin is one of the built-in Protobuf types.
+// Builtin is one of the built-in Protobuf names. These represent particular
+// [Path] values that are well-known to the language.
 type Builtin int8
 
 // BuiltinByName looks up a builtin type by name.
@@ -96,7 +97,7 @@ func BuiltinByName(name string) Builtin {
 	return builtinByName[name]
 }
 
-// String implements [strings.Stringer] for Builtin.
+// String implements [strings.Stringer].
 func (b Builtin) String() string {
 	if int(b) < len(builtinNames) {
 		return builtinNames[int(b)]
@@ -104,8 +105,9 @@ func (b Builtin) String() string {
 	return fmt.Sprintf("builtin%d", int(b))
 }
 
-// IsPrimitive returns if this builtin name refers to one of the primitive types.
-func (b Builtin) IsPrimitive() bool {
+// IsScalarType returns if this builtin name refers to one of the built-in
+// scalar types.
+func (b Builtin) IsScalarType() bool {
 	switch b {
 	case BuiltinInt32, BuiltinInt64,
 		BuiltinUInt32, BuiltinUInt64,

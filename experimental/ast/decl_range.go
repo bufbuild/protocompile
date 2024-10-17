@@ -28,16 +28,13 @@ import (
 type DeclRange struct {
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawDeclRange]
 	raw *rawDeclRange
 }
 
 type rawDeclRange struct {
 	keyword rawToken
-	args    []struct {
-		expr  rawExpr
-		comma rawToken
-	}
+	args    []withComma[rawExpr]
 	options arena.Pointer[rawCompactOptions]
 	semi    rawToken
 }
@@ -69,63 +66,60 @@ func (d DeclRange) IsReserved() bool {
 	return d.Keyword().Text() == "reserved"
 }
 
-// Len implements [Slice] for Extensions.
+// Len implements [Slice].
 func (d DeclRange) Len() int {
 	return len(d.raw.args)
 }
 
-// At implements [Slice] for Range.
+// At implements [Slice].
 func (d DeclRange) At(n int) Expr {
-	return d.raw.args[n].expr.With(d)
+	return d.raw.args[n].Value.With(d)
 }
 
-// Iter implements [Slice] for Range.
+// Iter implements [Slice].
 func (d DeclRange) Iter(yield func(int, Expr) bool) {
 	for i, arg := range d.raw.args {
-		if !yield(i, arg.expr.With(d)) {
+		if !yield(i, arg.Value.With(d)) {
 			break
 		}
 	}
 }
 
-// Append implements [Inserter] for Range.
+// Append implements [Inserter].
 func (d DeclRange) Append(expr Expr) {
 	d.InsertComma(d.Len(), expr, Token{})
 }
 
-// Insert implements [Inserter] for Range.
+// Insert implements [Inserter].
 func (d DeclRange) Insert(n int, expr Expr) {
 	d.InsertComma(n, expr, Token{})
 }
 
-// Delete implements [Inserter] for Range.
+// Delete implements [Inserter].
 func (d DeclRange) Delete(n int) {
 	d.raw.args = slices.Delete(d.raw.args, n, n+1)
 }
 
-// Comma implements [Commas] for Range.
+// Comma implements [Commas].
 func (d DeclRange) Comma(n int) Token {
-	return d.raw.args[n].comma.With(d)
+	return d.raw.args[n].Comma.With(d)
 }
 
-// AppendComma implements [Commas] for Range.
+// AppendComma implements [Commas].
 func (d DeclRange) AppendComma(expr Expr, comma Token) {
 	d.InsertComma(d.Len(), expr, comma)
 }
 
-// InsertComma implements [Commas] for Range.
+// InsertComma implements [Commas].
 func (d DeclRange) InsertComma(n int, expr Expr, comma Token) {
 	d.Context().panicIfNotOurs(expr, comma)
 
-	d.raw.args = slices.Insert(d.raw.args, n, struct {
-		expr  rawExpr
-		comma rawToken
-	}{toRawExpr(expr), comma.raw})
+	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{toRawExpr(expr), comma.raw})
 }
 
 // Options returns the compact options list for this range.
 func (d DeclRange) Options() CompactOptions {
-	return newOptions(d.raw.options, d)
+	return wrapOptions(d, d.raw.options)
 }
 
 // SetOptions sets the compact options list for this definition.
@@ -142,19 +136,28 @@ func (d DeclRange) Semicolon() Token {
 	return d.raw.semi.With(d)
 }
 
-// Span implements [Spanner] for Range.
+// Span implements [Spanner].
 func (d DeclRange) Span() Span {
 	span := JoinSpans(d.Keyword(), d.Semicolon(), d.Options())
 	for _, arg := range d.raw.args {
-		span = JoinSpans(span, arg.expr.With(d), arg.comma.With(d))
+		span = JoinSpans(span, arg.Value.With(d), arg.Comma.With(d))
 	}
 	return span
 }
 
-func (DeclRange) with(ctx *Context, ptr arena.Untyped) Decl {
-	return DeclRange{withContext{ctx}, ptr, ctx.decls.ranges.At(ptr)}
+func (d DeclRange) declRaw() (declKind, arena.Untyped) {
+	return declRange, d.ptr.Untyped()
 }
 
-func (d DeclRange) declIndex() arena.Untyped {
-	return d.ptr
+func wrapDeclRange(c Contextual, ptr arena.Pointer[rawDeclRange]) DeclRange {
+	ctx := c.Context()
+	if ctx == nil || ptr.Nil() {
+		return DeclRange{}
+	}
+
+	return DeclRange{
+		withContext{ctx},
+		ptr,
+		ctx.decls.ranges.Deref(ptr),
+	}
 }

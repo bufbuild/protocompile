@@ -14,8 +14,7 @@
 
 package ast
 
-// Slice is a type that offers the same interface as an ordinary Go
-// slice.
+// Slice is a type that offers a Go slice's interface, but read-only.
 //
 // This is used to provide a consistent interface to various AST nodes that
 // contain a variable number of "something", but the actual backing array
@@ -26,7 +25,7 @@ type Slice[T any] interface {
 
 	// At returns the nth value of this slice.
 	//
-	// Panics if n >= Len().
+	// Panics if n is negative or n >= Len().
 	At(n int) T
 
 	// Iter is an iterator over the slice.
@@ -76,7 +75,12 @@ type Commas[T any] interface {
 	InsertComma(n int, value T, comma Token)
 }
 
-// FuncSlice implements Slice using an ordinary Go slice and a function to transform
+type withComma[T any] struct {
+	Value T
+	Comma rawToken
+}
+
+// funcSlice implements Slice using an ordinary Go slice and a function to transform
 // elements.
 type funcSlice[T, U any] struct {
 	s []T

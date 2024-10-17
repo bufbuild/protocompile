@@ -23,7 +23,7 @@ import (
 
 // Context is where all of the book-keeping for the AST of a particular file is kept.
 //
-// Virtually all operations inside of package ast2 involve a Context. However, most of
+// Virtually all operations inside of package ast involve a Context. However, most of
 // the exported types carry their Context with them, so you don't need to worry about
 // passing it around.
 type Context struct {
@@ -33,13 +33,21 @@ type Context struct {
 	stream          []tokenImpl
 	syntheticTokens []tokenSynthetic
 
-	// This contains materialized literals for some tokens.
+	// This contains materialized literals for some tokens. For example, given
+	// a token with text 1.5, this map will map that token's ID to the float
+	// value 1.5.
 	//
-	// Not all tokens will have an entry here; only those that have "unusual"
-	// representations. This means the lexer can deal with the complex parsing
-	// logic on our behalf in general, but common cases are re-parsed on-demand.
+	// Not all literal tokens will have an entry here; only those that have
+	// uncommon representations, such as hex literals, floats, and strings with
+	// escapes/implicit concatentation.
 	//
-	// All elements of this map are string, uint64, or float64.
+	// This means the lexer can deal with the complex literal parsing logic on
+	// our behalf in general, but common cases are re-parsed on-demand.
+	// Specifically, the most common literals (decimal integers and simple
+	// quoted strings) do not generate entries in this map and thus do not
+	// contribute at-rest memory usage.
+	//
+	// All values in this map are string, uint64, or float64.
 	literals map[rawToken]any
 
 	// Storage for the various node types.
@@ -65,7 +73,7 @@ func NewContext(file report.File) *Context {
 	return c
 }
 
-// Context implements [Contextual] for Context.
+// Context implements [Contextual].
 func (c *Context) Context() *Context {
 	return c
 }
@@ -93,11 +101,14 @@ func (c *Context) Text() string {
 
 // Root returns the root AST node for this context.
 func (c *Context) Root() File {
-	// NewContext() sticks the root at the beginning of bodies for us.
-	return File{wrapDecl[DeclScope](1, c)}
+	// NewContext() sticks the root at the beginning of decls.body for us, so
+	// there is always a DeclBody at index 0, which corresponds to the whole
+	// file. We use a 1 here, not a 0, because arena.Arena's indices are
+	// off-by-one to accommodate the nil representation.
+	return File{wrapDeclBody(c, 1)}
 }
 
-// Tokens returns a flat slice over all of the non-synthetic tokens in this context,
+// Tokens returns a flat slice over all of the natural tokens in this context,
 // with no respect to nesting.
 //
 // You should probably use [Context.Stream] instead of this.

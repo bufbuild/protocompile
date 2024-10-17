@@ -22,12 +22,6 @@ import (
 )
 
 const (
-	typePath typeKind = iota + 1
-	typeModified
-	typeGeneric
-)
-
-const (
 	TypePrefixUnknown TypePrefix = iota
 	TypePrefixOptional
 	TypePrefixRepeated
@@ -40,8 +34,6 @@ const (
 
 // TypePrefix is a prefix for a type, such as required, optional, or repeated.
 type TypePrefix int8
-
-type typeKind int8
 
 // TypePrefixByName looks up a prefix kind by name.
 //
@@ -61,7 +53,7 @@ func TypePrefixByName(name string) TypePrefix {
 	}
 }
 
-// String implements [strings.Stringer] for Modifier.
+// String implements [strings.Stringer].
 func (m TypePrefix) String() string {
 	switch m {
 	case TypePrefixUnknown:
@@ -89,23 +81,14 @@ func (m TypePrefix) String() string {
 type Type interface {
 	Spanner
 
-	typeKind() typeKind
-	typeIndex() arena.Untyped
+	typeRaw() (typeKind, arena.Untyped)
 }
 
 // types is storage for every kind of Type in a Context.
 type types struct {
-	modifieds arena.Arena[rawPrefixed]
-	generics  arena.Arena[rawGeneric]
+	prefixed arena.Arena[rawTypePrefixed]
+	generics arena.Arena[rawTypeGeneric]
 }
-
-func (TypePath) typeKind() typeKind     { return typePath }
-func (TypePrefixed) typeKind() typeKind { return typeModified }
-func (TypeGeneric) typeKind() typeKind  { return typeGeneric }
-
-func (TypePath) typeIndex() arena.Untyped       { return 0 }
-func (t TypePrefixed) typeIndex() arena.Untyped { return t.ptr }
-func (t TypeGeneric) typeIndex() arena.Untyped  { return t.ptr }
 
 // TypePath is a type that is a simple path reference.
 type TypePath struct {
@@ -115,6 +98,10 @@ type TypePath struct {
 
 var _ Type = TypePath{}
 
+func (TypePath) typeRaw() (typeKind, arena.Untyped) {
+	return typePath, arena.Nil()
+}
+
 // TypePrefixed is a type with a [TypePrefix].
 //
 // Unlike in ordinary Protobuf, the Protocompile AST permits arbitrary nesting
@@ -122,11 +109,11 @@ var _ Type = TypePath{}
 type TypePrefixed struct {
 	withContext
 
-	ptr arena.Untyped
-	raw *rawPrefixed
+	ptr arena.Pointer[rawTypePrefixed]
+	raw *rawTypePrefixed
 }
 
-type rawPrefixed struct {
+type rawTypePrefixed struct {
 	prefix rawToken
 	ty     rawType
 }
@@ -164,9 +151,13 @@ func (t TypePrefixed) SetType(ty Type) {
 	t.raw.ty = toRawType(ty)
 }
 
-// Span implements [Spanner] for TypePrefixed.
+// Span implements [Spanner].
 func (t TypePrefixed) Span() Span {
 	return JoinSpans(t.PrefixToken(), t.Type())
+}
+
+func (t TypePrefixed) typeRaw() (typeKind, arena.Untyped) {
+	return typePrefixed, t.ptr.Untyped()
 }
 
 // TypeGeneric is a type with generic arguments.
@@ -183,11 +174,11 @@ func (t TypePrefixed) Span() Span {
 type TypeGeneric struct {
 	withContext
 
-	ptr arena.Untyped
-	raw *rawGeneric
+	ptr arena.Pointer[rawTypeGeneric]
+	raw *rawTypeGeneric
 }
 
-type rawGeneric struct {
+type rawTypeGeneric struct {
 	path rawPath
 	args rawTypeList
 }
@@ -229,7 +220,7 @@ func (t TypeGeneric) Args() TypeList {
 	}
 }
 
-// Span implements [Spanner] for TypeGeneric.
+// Span implements [Spanner].
 func (t TypeGeneric) Span() Span {
 	return JoinSpans(t.Path(), t.Args())
 }
@@ -250,10 +241,7 @@ var (
 
 type rawTypeList struct {
 	brackets rawToken
-	args     []struct {
-		ty    rawType
-		comma rawToken
-	}
+	args     []withComma[rawType]
 }
 
 // Brackets returns the token tree for the brackets wrapping the argument list.
@@ -263,61 +251,58 @@ func (d TypeList) Brackets() Token {
 	return d.raw.brackets.With(d)
 }
 
-// Len implements [Slice] for MethodTypes.
+// Len implements [Slice].
 func (d TypeList) Len() int {
 	return len(d.raw.args)
 }
 
-// At implements [Slice] for MethodTypes.
+// At implements [Slice].
 func (d TypeList) At(n int) Type {
-	return d.raw.args[n].ty.With(d)
+	return d.raw.args[n].Value.With(d)
 }
 
-// At implements [Iter] for MethodTypes.
+// At implements [Iter].
 func (d TypeList) Iter(yield func(int, Type) bool) {
 	for i, arg := range d.raw.args {
-		if !yield(i, arg.ty.With(d)) {
+		if !yield(i, arg.Value.With(d)) {
 			break
 		}
 	}
 }
 
-// Append implements [Inserter] for TypeGeneric.
+// Append implements [Inserter].
 func (d TypeList) Append(ty Type) {
 	d.InsertComma(d.Len(), ty, Token{})
 }
 
-// Insert implements [Inserter] for TypeGeneric.
+// Insert implements [Inserter].
 func (d TypeList) Insert(n int, ty Type) {
 	d.InsertComma(n, ty, Token{})
 }
 
-// Delete implements [Inserter] for TypeGeneric.
+// Delete implements [Inserter].
 func (d TypeList) Delete(n int) {
 	d.raw.args = slices.Delete(d.raw.args, n, n+1)
 }
 
-// Comma implements [Commas] for MethodTypes.
+// Comma implements [Commas].
 func (d TypeList) Comma(n int) Token {
-	return d.raw.args[n].comma.With(d)
+	return d.raw.args[n].Comma.With(d)
 }
 
-// AppendComma implements [Commas] for MethodTypes.
+// AppendComma implements [Commas].
 func (d TypeList) AppendComma(ty Type, comma Token) {
 	d.InsertComma(d.Len(), ty, comma)
 }
 
-// InsertComma implements [Commas] for MethodTypes.
+// InsertComma implements [Commas].
 func (d TypeList) InsertComma(n int, ty Type, comma Token) {
 	d.Context().panicIfNotOurs(ty, comma)
 
-	d.raw.args = slices.Insert(d.raw.args, n, struct {
-		ty    rawType
-		comma rawToken
-	}{toRawType(ty), comma.raw})
+	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawType]{toRawType(ty), comma.raw})
 }
 
-// Span implements [Spanner] for MethodTypes.
+// Span implements [Spanner].
 func (d TypeList) Span() Span {
 	if !d.Brackets().Nil() {
 		return d.Brackets().Span()
@@ -325,10 +310,22 @@ func (d TypeList) Span() Span {
 
 	var span Span
 	for _, arg := range d.raw.args {
-		span = JoinSpans(span, arg.ty.With(d), arg.comma.With(d))
+		span = JoinSpans(span, arg.Value.With(d), arg.Comma.With(d))
 	}
 	return span
 }
+
+func (t TypeGeneric) typeRaw() (typeKind, arena.Untyped) {
+	return typeGeneric, t.ptr.Untyped()
+}
+
+const (
+	typePath typeKind = iota + 1
+	typePrefixed
+	typeGeneric
+)
+
+type typeKind int8
 
 // rawType is the raw representation of a type.
 //
@@ -349,7 +346,8 @@ func toRawType(t Type) rawType {
 	if path, ok := t.(TypePath); ok {
 		return rawType(path.Path.raw)
 	}
-	return rawType{^rawToken(t.typeKind()), rawToken(t.typeIndex())}
+	k, p := t.typeRaw()
+	return rawType{^rawToken(k), rawToken(p)}
 }
 
 func (t rawType) With(c Contextual) Type {
@@ -361,10 +359,12 @@ func (t rawType) With(c Contextual) Type {
 		c := c.Context()
 		ptr := arena.Untyped(t[1])
 		switch typeKind(^t[0]) {
-		case typeModified:
-			return TypePrefixed{withContext{c}, ptr, c.types.modifieds.At(ptr)}
+		case typePrefixed:
+			ptr := arena.Pointer[rawTypePrefixed](ptr)
+			return TypePrefixed{withContext{c}, ptr, c.types.prefixed.Deref(ptr)}
 		case typeGeneric:
-			return TypeGeneric{withContext{c}, ptr, c.types.generics.At(ptr)}
+			ptr := arena.Pointer[rawTypeGeneric](ptr)
+			return TypeGeneric{withContext{c}, ptr, c.types.generics.Deref(ptr)}
 		default:
 			panic(fmt.Sprintf("protocompile/ast: invalid typeKind: %d", ^t[0]))
 		}

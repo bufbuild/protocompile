@@ -15,26 +15,27 @@
 package ast
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-// DeclScope is the body of a [DeclDef], or the whole contents of a [File]. The
+// DeclBody is the body of a [DeclBody], or the whole contents of a [File]. The
 // protocompile AST is very lenient, and allows any declaration to exist anywhere, for the
 // benefit of rich diagnostics and refactorings. For example, it is possible to represent an
 // "orphaned" field or oneof outside of a message, or an RPC method inside of an enum, and
 // so on.
 //
-// DeclScope implements [Slice], providing access to its declarations.
-type DeclScope struct {
+// DeclBody implements [Slice], providing access to its declarations.
+type DeclBody struct {
 	withContext
 
-	ptr arena.Untyped
-	raw *rawDeclScope
+	ptr arena.Pointer[rawDeclBody]
+	raw *rawDeclBody
 }
 
-type rawDeclScope struct {
+type rawDeclBody struct {
 	braces rawToken
 
 	// These slices are co-indexed; they are parallelizes to save
@@ -45,17 +46,17 @@ type rawDeclScope struct {
 }
 
 var (
-	_ Decl           = DeclScope{}
-	_ Inserter[Decl] = DeclScope{}
+	_ Decl           = DeclBody{}
+	_ Inserter[Decl] = DeclBody{}
 )
 
 // Braces returns this body's surrounding braces, if it has any.
-func (d DeclScope) Braces() Token {
+func (d DeclBody) Braces() Token {
 	return d.raw.braces.With(d)
 }
 
-// Span implements [Spanner] for Body.
-func (d DeclScope) Span() Span {
+// Span implements [Spanner].
+func (d DeclBody) Span() Span {
 	if !d.Braces().Nil() {
 		return d.Braces().Span()
 	}
@@ -68,17 +69,37 @@ func (d DeclScope) Span() Span {
 }
 
 // Len returns the number of declarations inside of this body.
-func (d DeclScope) Len() int {
+func (d DeclBody) Len() int {
 	return len(d.raw.ptrs)
 }
 
 // At returns the nth element of this body.
-func (d DeclScope) At(n int) Decl {
-	return d.raw.kinds[n].reify().with(d.Context(), d.raw.ptrs[n])
+func (d DeclBody) At(n int) Decl {
+	k := d.raw.kinds[n]
+	p := d.raw.ptrs[n]
+
+	switch k {
+	case declEmpty:
+		return wrapDeclEmpty(d, arena.Pointer[rawDeclEmpty](p))
+	case declSyntax:
+		return wrapDeclSyntax(d, arena.Pointer[rawDeclSyntax](p))
+	case declPackage:
+		return wrapDeclPackage(d, arena.Pointer[rawDeclPackage](p))
+	case declImport:
+		return wrapDeclImport(d, arena.Pointer[rawDeclImport](p))
+	case declDef:
+		return wrapDeclDef(d, arena.Pointer[rawDeclDef](p))
+	case declScope:
+		return wrapDeclBody(d, arena.Pointer[rawDeclBody](p))
+	case declRange:
+		return wrapDeclRange(d, arena.Pointer[rawDeclRange](p))
+	default:
+		panic(fmt.Sprintf("protocompile/ast: unknown declKind %d: this is a bug in protocompile", k))
+	}
 }
 
 // Iter is an iterator over the nodes inside this body.
-func (d DeclScope) Iter(yield func(int, Decl) bool) {
+func (d DeclBody) Iter(yield func(int, Decl) bool) {
 	for i := range d.raw.kinds {
 		if !yield(i, d.At(i)) {
 			break
@@ -87,30 +108,27 @@ func (d DeclScope) Iter(yield func(int, Decl) bool) {
 }
 
 // Append appends a new declaration to this body.
-func (d DeclScope) Append(value Decl) {
+func (d DeclBody) Append(value Decl) {
 	d.Insert(d.Len(), value)
 }
 
 // Insert inserts a new declaration at the given index.
-func (d DeclScope) Insert(n int, value Decl) {
+func (d DeclBody) Insert(n int, value Decl) {
 	d.Context().panicIfNotOurs(value)
 
-	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.declKind())
-	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.declIndex())
+	kind, ptr := value.declRaw()
+	d.raw.kinds = slices.Insert(d.raw.kinds, n, kind)
+	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, ptr)
 }
 
 // Delete deletes the declaration at the given index.
-func (d DeclScope) Delete(n int) {
+func (d DeclBody) Delete(n int) {
 	d.raw.kinds = slices.Delete(d.raw.kinds, n, n+1)
 	d.raw.ptrs = slices.Delete(d.raw.ptrs, n, n+1)
 }
 
-func (d DeclScope) declIndex() arena.Untyped {
-	return d.ptr
-}
-
 // Decls returns an iterator over the nodes within a body of a particular type.
-func Decls[T Decl](d DeclScope) func(func(int, T) bool) {
+func Decls[T Decl](d DeclBody) func(func(int, T) bool) {
 	return func(yield func(int, T) bool) {
 		var idx int
 		d.Iter(func(_ int, decl Decl) bool {
@@ -125,6 +143,19 @@ func Decls[T Decl](d DeclScope) func(func(int, T) bool) {
 	}
 }
 
-func (DeclScope) with(ctx *Context, ptr arena.Untyped) Decl {
-	return DeclScope{withContext{ctx}, ptr, ctx.decls.bodies.At(ptr)}
+func (d DeclBody) declRaw() (declKind, arena.Untyped) {
+	return declScope, d.ptr.Untyped()
+}
+
+func wrapDeclBody(c Contextual, ptr arena.Pointer[rawDeclBody]) DeclBody {
+	ctx := c.Context()
+	if ctx == nil || ptr.Nil() {
+		return DeclBody{}
+	}
+
+	return DeclBody{
+		withContext{ctx},
+		ptr,
+		ctx.decls.bodies.Deref(ptr),
+	}
 }

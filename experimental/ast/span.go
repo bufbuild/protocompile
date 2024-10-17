@@ -43,7 +43,7 @@ type Span struct {
 
 var _ report.Span = Span{}
 
-// Span implements [Spanner] for Span.
+// Span implements [Spanner].
 func (s Span) Span() Span {
 	return s
 }
