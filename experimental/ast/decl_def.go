@@ -30,7 +30,7 @@ import "github.com/bufbuild/protocompile/internal/arena"
 type DeclDef struct {
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawDeclDef]
 	raw *rawDeclDef
 }
 
@@ -44,7 +44,7 @@ type rawDeclDef struct {
 	value  rawExpr
 
 	options arena.Pointer[rawCompactOptions]
-	body    arena.Pointer[rawDeclScope]
+	body    arena.Pointer[rawDeclBody]
 	semi    rawToken
 }
 
@@ -65,7 +65,7 @@ type DeclDefArgs struct {
 
 	Options CompactOptions
 
-	Body      DeclScope
+	Body      DeclBody
 	Semicolon Token
 }
 
@@ -160,7 +160,7 @@ func (d DeclDef) SetValue(expr Expr) {
 
 // Options returns the compact options list for this definition.
 func (d DeclDef) Options() CompactOptions {
-	return newOptions(d.raw.options, d)
+	return wrapOptions(d, d.raw.options)
 }
 
 // SetOptions sets the compact options list for this definition.
@@ -171,13 +171,13 @@ func (d DeclDef) SetOptions(opts CompactOptions) {
 }
 
 // Body returns this definition's body, if it has one.
-func (d DeclDef) Body() DeclScope {
-	return wrapDecl[DeclScope](arena.Untyped(d.raw.body), d)
+func (d DeclDef) Body() DeclBody {
+	return wrapDeclBody(d, d.raw.body)
 }
 
 // SetBody sets the body for this definition.
-func (d DeclDef) SetBody(b DeclScope) {
-	d.raw.body = arena.Pointer[rawDeclScope](b.ptr)
+func (d DeclDef) SetBody(b DeclBody) {
+	d.raw.body = b.ptr
 }
 
 // Semicolon returns the ending semicolon token for this definition.
@@ -305,7 +305,7 @@ func (d DeclDef) Classify() Def {
 	}
 }
 
-// Span implements [Spanner] for DeclDef.
+// Span implements [Spanner].
 func (d DeclDef) Span() Span {
 	if d.Nil() {
 		return Span{}
@@ -322,12 +322,21 @@ func (d DeclDef) Span() Span {
 	)
 }
 
-func (DeclDef) with(ctx *Context, ptr arena.Untyped) Decl {
-	return DeclDef{withContext{ctx}, ptr, ctx.decls.defs.At(ptr)}
+func (d DeclDef) declRaw() (declKind, arena.Untyped) {
+	return declDef, arena.Untyped(d.ptr)
 }
 
-func (d DeclDef) declIndex() arena.Untyped {
-	return d.ptr
+func wrapDeclDef(c Contextual, ptr arena.Pointer[rawDeclDef]) DeclDef {
+	ctx := c.Context()
+	if ctx == nil || ptr.Nil() {
+		return DeclDef{}
+	}
+
+	return DeclDef{
+		withContext{ctx},
+		ptr,
+		ctx.decls.defs.Deref(ptr),
+	}
 }
 
 // Signature is a type signature of the form (types) returns (types).
@@ -366,7 +375,7 @@ func (s Signature) Outputs() TypeList {
 	}
 }
 
-// Span implemented [Spanner] for Signature.
+// Span implemented [Spanner].
 func (s Signature) Span() Span {
 	return JoinSpans(s.Inputs(), s.Returns(), s.Outputs())
 }
@@ -390,10 +399,14 @@ type Def interface {
 type DefMessage struct {
 	Keyword Token
 	Name    Token
-	Body    DeclScope
+	Body    DeclBody
 
 	Decl DeclDef
 }
+
+func (DefMessage) isDef()              {}
+func (d DefMessage) Span() Span        { return d.Decl.Span() }
+func (d DefMessage) Context() *Context { return d.Decl.Context() }
 
 // DefEnum is a [DeclDef] projected into an enum definition.
 //
@@ -401,10 +414,14 @@ type DefMessage struct {
 type DefEnum struct {
 	Keyword Token
 	Name    Token
-	Body    DeclScope
+	Body    DeclBody
 
 	Decl DeclDef
 }
+
+func (DefEnum) isDef()              {}
+func (d DefEnum) Span() Span        { return d.Decl.Span() }
+func (d DefEnum) Context() *Context { return d.Decl.Context() }
 
 // DefService is a [DeclDef] projected into a service definition.
 //
@@ -412,10 +429,14 @@ type DefEnum struct {
 type DefService struct {
 	Keyword Token
 	Name    Token
-	Body    DeclScope
+	Body    DeclBody
 
 	Decl DeclDef
 }
+
+func (DefService) isDef()              {}
+func (d DefService) Span() Span        { return d.Decl.Span() }
+func (d DefService) Context() *Context { return d.Decl.Context() }
 
 // DefExtend is a [DeclDef] projected into an extension definition.
 //
@@ -423,10 +444,14 @@ type DefService struct {
 type DefExtend struct {
 	Keyword  Token
 	Extendee Path
-	Body     DeclScope
+	Body     DeclBody
 
 	Decl DeclDef
 }
+
+func (DefExtend) isDef()              {}
+func (d DefExtend) Span() Span        { return d.Decl.Span() }
+func (d DefExtend) Context() *Context { return d.Decl.Context() }
 
 // DefField is a [DeclDef] projected into a field definition.
 //
@@ -442,6 +467,10 @@ type DefField struct {
 	Decl DeclDef
 }
 
+func (DefField) isDef()              {}
+func (d DefField) Span() Span        { return d.Decl.Span() }
+func (d DefField) Context() *Context { return d.Decl.Context() }
+
 // DefEnumValue is a [DeclDef] projected into an enum value definition.
 //
 // See [DeclDef.Classify].
@@ -455,16 +484,24 @@ type DefEnumValue struct {
 	Decl DeclDef
 }
 
+func (DefEnumValue) isDef()              {}
+func (d DefEnumValue) Span() Span        { return d.Decl.Span() }
+func (d DefEnumValue) Context() *Context { return d.Decl.Context() }
+
 // DefEnumValue is a [DeclDef] projected into a oneof definition.
 //
 // See [DeclDef.Classify].
 type DefOneof struct {
 	Keyword Token
 	Name    Token
-	Body    DeclScope
+	Body    DeclBody
 
 	Decl DeclDef
 }
+
+func (DefOneof) isDef()              {}
+func (d DefOneof) Span() Span        { return d.Decl.Span() }
+func (d DefOneof) Context() *Context { return d.Decl.Context() }
 
 // DefGroup is a [DeclDef] projected into a group definition.
 //
@@ -475,10 +512,14 @@ type DefGroup struct {
 	Equals  Token
 	Tag     Expr
 	Options CompactOptions
-	Body    DeclScope
+	Body    DeclBody
 
 	Decl DeclDef
 }
+
+func (DefGroup) isDef()              {}
+func (d DefGroup) Span() Span        { return d.Decl.Span() }
+func (d DefGroup) Context() *Context { return d.Decl.Context() }
 
 // DefMethod is a [DeclDef] projected into a method definition.
 //
@@ -487,10 +528,14 @@ type DefMethod struct {
 	Keyword   Token
 	Name      Token
 	Signature Signature
-	Body      DeclScope
+	Body      DeclBody
 
 	Decl DeclDef
 }
+
+func (DefMethod) isDef()              {}
+func (d DefMethod) Span() Span        { return d.Decl.Span() }
+func (d DefMethod) Context() *Context { return d.Decl.Context() }
 
 // DefOption is a [DeclDef] projected into a method definition.
 //
@@ -507,35 +552,6 @@ type DefOption struct {
 	Decl DeclDef
 }
 
-func (DefMessage) isDef()   {}
-func (DefEnum) isDef()      {}
-func (DefService) isDef()   {}
-func (DefExtend) isDef()    {}
-func (DefField) isDef()     {}
-func (DefEnumValue) isDef() {}
-func (DefOneof) isDef()     {}
-func (DefGroup) isDef()     {}
-func (DefMethod) isDef()    {}
-func (DefOption) isDef()    {}
-
-func (d DefMessage) Span() Span   { return d.Decl.Span() }
-func (d DefEnum) Span() Span      { return d.Decl.Span() }
-func (d DefService) Span() Span   { return d.Decl.Span() }
-func (d DefExtend) Span() Span    { return d.Decl.Span() }
-func (d DefField) Span() Span     { return d.Decl.Span() }
-func (d DefEnumValue) Span() Span { return d.Decl.Span() }
-func (d DefOneof) Span() Span     { return d.Decl.Span() }
-func (d DefGroup) Span() Span     { return d.Decl.Span() }
-func (d DefMethod) Span() Span    { return d.Decl.Span() }
-func (d DefOption) Span() Span    { return d.Decl.Span() }
-
-func (d DefMessage) Context() *Context   { return d.Decl.Context() }
-func (d DefEnum) Context() *Context      { return d.Decl.Context() }
-func (d DefService) Context() *Context   { return d.Decl.Context() }
-func (d DefExtend) Context() *Context    { return d.Decl.Context() }
-func (d DefField) Context() *Context     { return d.Decl.Context() }
-func (d DefEnumValue) Context() *Context { return d.Decl.Context() }
-func (d DefOneof) Context() *Context     { return d.Decl.Context() }
-func (d DefGroup) Context() *Context     { return d.Decl.Context() }
-func (d DefMethod) Context() *Context    { return d.Decl.Context() }
-func (d DefOption) Context() *Context    { return d.Decl.Context() }
+func (DefOption) isDef()              {}
+func (d DefOption) Span() Span        { return d.Decl.Span() }
+func (d DefOption) Context() *Context { return d.Decl.Context() }

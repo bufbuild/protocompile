@@ -22,17 +22,6 @@ import (
 )
 
 const (
-	exprLiteral exprKind = iota + 1
-	exprPrefixed
-	exprPath
-	exprRange
-	exprArray
-	exprDict
-	exprField
-	expr
-)
-
-const (
 	ExprPrefixUnknown ExprPrefix = iota
 	ExprPrefixMinus
 )
@@ -75,8 +64,7 @@ type Expr interface {
 	AsArray() Commas[Expr]
 	AsMessage() Commas[ExprKV]
 
-	exprKind() exprKind
-	exprIndex() arena.Untyped
+	exprRaw() (exprKind, arena.Untyped)
 }
 
 // exprs is storage for the various kinds of Exprs in a Context.
@@ -85,24 +73,8 @@ type exprs struct {
 	ranges   arena.Arena[rawExprRange]
 	arrays   arena.Arena[rawExprArray]
 	dicts    arena.Arena[rawExprDict]
-	fields   arena.Arena[rawExprKV]
+	kvs      arena.Arena[rawExprKV]
 }
-
-func (ExprLiteral) exprKind() exprKind  { return exprLiteral }
-func (ExprPath) exprKind() exprKind     { return exprPath }
-func (ExprPrefixed) exprKind() exprKind { return exprPrefixed }
-func (ExprRange) exprKind() exprKind    { return exprRange }
-func (ExprArray) exprKind() exprKind    { return exprArray }
-func (ExprDict) exprKind() exprKind     { return exprDict }
-func (ExprKV) exprKind() exprKind       { return exprField }
-
-func (e ExprLiteral) exprIndex() arena.Untyped  { return arena.Untyped(e.Token.raw) }
-func (ExprPath) exprIndex() arena.Untyped       { return 0 }
-func (e ExprPrefixed) exprIndex() arena.Untyped { return e.ptr }
-func (e ExprRange) exprIndex() arena.Untyped    { return e.ptr }
-func (e ExprArray) exprIndex() arena.Untyped    { return e.ptr }
-func (e ExprDict) exprIndex() arena.Untyped     { return e.ptr }
-func (e ExprKV) exprIndex() arena.Untyped       { return e.ptr }
 
 // ExprLiteral is an expression corresponding to a string or number literal.
 type ExprLiteral struct {
@@ -114,43 +86,50 @@ type ExprLiteral struct {
 
 var _ Expr = ExprLiteral{}
 
-// AsInt32 implements [Expr] for ExprLiteral.
+// AsInt32 implements [Expr].
 func (e ExprLiteral) AsInt32() (int32, bool) {
 	n, ok := e.Token.AsInt()
 	return int32(n), ok && n <= uint64(math.MaxInt32)
 }
 
-// AsInt64 implements [Expr] for ExprLiteral.
+// AsInt64 implements [Expr].
 func (e ExprLiteral) AsInt64() (int64, bool) {
 	n, ok := e.Token.AsInt()
 	return int64(n), ok && n <= uint64(math.MaxInt64)
 }
 
-// AsUInt32 implements [Expr] for ExprLiteral.
+// AsUInt32 implements [Expr].
 func (e ExprLiteral) AsUInt32() (uint32, bool) {
 	n, ok := e.Token.AsInt()
 	return uint32(n), ok && n <= uint64(math.MaxUint32)
 }
 
-// AsUInt64 implements [Expr] for ExprLiteral.
+// AsUInt64 implements [Expr].
 func (e ExprLiteral) AsUInt64() (uint64, bool) {
 	return e.Token.AsInt()
 }
 
-// AsFloat32 implements [Expr] for ExprLiteral.
+// AsFloat32 implements [Expr].
 func (e ExprLiteral) AsFloat32() (float32, bool) {
 	n, ok := e.Token.AsFloat()
 	return float32(n), ok // Loss of precision is intentional.
 }
 
-// AsFloat64 implements [Expr] for ExprLiteral.
+// AsFloat64 implements [Expr].
 func (e ExprLiteral) AsFloat64() (float64, bool) {
 	return e.Token.AsFloat()
 }
 
-// AsString implements [Expr] for ExprLiteral.
+// AsString implements [Expr].
 func (e ExprLiteral) AsString() (string, bool) {
 	return e.Token.AsString()
+}
+
+func (e ExprLiteral) exprRaw() (exprKind, arena.Untyped) {
+	return exprLiteral,
+		// This is technically not a real pointer; we're instead smuggling a
+		// token ID through the pointer value.
+		arena.Untyped(e.Token.raw)
 }
 
 // ExprPath is a Protobuf path in expression position.
@@ -165,7 +144,7 @@ type ExprPath struct {
 
 var _ Expr = ExprPath{}
 
-// AsBool implements [Expr] for ExprPath.
+// AsBool implements [Expr].
 func (e ExprPath) AsBool() (bool, bool) {
 	switch e.AsIdent().Text() {
 	case "true":
@@ -177,13 +156,13 @@ func (e ExprPath) AsBool() (bool, bool) {
 	}
 }
 
-// AsFloat32 implements [Expr] for ExprPath.
+// AsFloat32 implements [Expr].
 func (e ExprPath) AsFloat32() (float32, bool) {
 	n, ok := e.AsFloat64()
 	return float32(n), ok
 }
 
-// AsFloat64 implements [Expr] for ExprPath.
+// AsFloat64 implements [Expr].
 func (e ExprPath) AsFloat64() (float64, bool) {
 	switch e.AsIdent().Text() {
 	case "inf":
@@ -195,12 +174,16 @@ func (e ExprPath) AsFloat64() (float64, bool) {
 	}
 }
 
+func (ExprPath) exprRaw() (exprKind, arena.Untyped) {
+	return exprPath, arena.Nil()
+}
+
 // ExprPrefixed is an expression prefixed with an operator.
 type ExprPrefixed struct {
 	baseExpr
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawExprPrefixed]
 	raw *rawExprPrefixed
 }
 
@@ -239,12 +222,12 @@ func (e ExprPrefixed) SetExpr(expr Expr) {
 	e.raw.expr = toRawExpr(expr)
 }
 
-// Span implements [Spanner] for ExprSigned.
+// Span implements [Spanner].
 func (e ExprPrefixed) Span() Span {
 	return JoinSpans(e.PrefixToken(), e.Expr())
 }
 
-// AsInt32 implements [Expr] for ExprSigned.
+// AsInt32 implements [Expr].
 func (e ExprPrefixed) AsInt32() (int32, bool) {
 	n, ok := e.AsInt64()
 	if !ok || n < int64(math.MinInt32) || n > int64(math.MaxInt32) {
@@ -254,7 +237,7 @@ func (e ExprPrefixed) AsInt32() (int32, bool) {
 	return int32(n), true
 }
 
-// AsInt64 implements [Expr] for ExprSigned.
+// AsInt64 implements [Expr].
 func (e ExprPrefixed) AsInt64() (int64, bool) {
 	n, ok := e.Expr().AsInt64()
 	if ok && n != -n {
@@ -272,30 +255,34 @@ func (e ExprPrefixed) AsInt64() (int64, bool) {
 	return 0, false
 }
 
-// AsUInt32 implements [Expr] for ExprSigned.
+// AsUInt32 implements [Expr].
 func (e ExprPrefixed) AsUInt32() (uint32, bool) {
 	// NOTE: - is not treated as two's complement here; we only allow -0
 	n, ok := e.Expr().AsUInt32()
 	return 0, ok && n == 0
 }
 
-// AsUInt64 implements [Expr] for ExprSigned.
+// AsUInt64 implements [Expr].
 func (e ExprPrefixed) AsUInt64() (uint64, bool) {
 	// NOTE: - is not treated as two's complement here; we only allow -0
 	n, ok := e.Expr().AsUInt64()
 	return 0, ok && n == 0
 }
 
-// AsFloat32 implements [Expr] for ExprSigned.
+// AsFloat32 implements [Expr].
 func (e ExprPrefixed) AsFloat32() (float32, bool) {
 	n, ok := e.Expr().AsFloat32()
 	return -n, ok
 }
 
-// AsFloat64 implements [Expr] for ExprSigned.
+// AsFloat64 implements [Expr].
 func (e ExprPrefixed) AsFloat64() (float64, bool) {
 	n, ok := e.Expr().AsFloat64()
 	return -n, ok
+}
+
+func (e ExprPrefixed) exprRaw() (exprKind, arena.Untyped) {
+	return exprPrefixed, e.ptr.Untyped()
 }
 
 // ExprRange represents a range of values, such as 1 to 4 or 5 to max.
@@ -305,13 +292,13 @@ type ExprRange struct {
 	baseExpr
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawExprRange]
 	raw *rawExprRange
 }
 
 type rawExprRange struct {
-	lo, hi rawExpr
-	to     rawToken
+	start, end rawExpr
+	to         rawToken
 }
 
 // ExprRangeArgs is arguments for [Context.NewExprRange].
@@ -325,15 +312,15 @@ var _ Expr = ExprRange{}
 
 // Bounds returns this range's bounds. These are inclusive bounds.
 func (e ExprRange) Bounds() (start, end Expr) {
-	return e.raw.lo.With(e), e.raw.hi.With(e)
+	return e.raw.start.With(e), e.raw.end.With(e)
 }
 
 // SetBounds set the expressions for this range's bounds.
 //
 // Clears the respective expressions when passed a nil expression.
 func (e ExprRange) SetBounds(start, end Expr) {
-	e.raw.lo = toRawExpr(start)
-	e.raw.hi = toRawExpr(end)
+	e.raw.start = toRawExpr(start)
+	e.raw.end = toRawExpr(end)
 }
 
 // Keyword returns the "to" keyword for this range.
@@ -341,10 +328,14 @@ func (e ExprRange) Keyword() Token {
 	return e.raw.to.With(e)
 }
 
-// Span implements [Spanner] for ExprRange.
+// Span implements [Spanner].
 func (e ExprRange) Span() Span {
 	lo, hi := e.Bounds()
 	return JoinSpans(lo, e.Keyword(), hi)
+}
+
+func (e ExprRange) exprRaw() (exprKind, arena.Untyped) {
+	return exprRange, e.ptr.Untyped()
 }
 
 // ExprArray represents an array of expressions between square brackets.
@@ -354,16 +345,13 @@ type ExprArray struct {
 	baseExpr
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawExprArray]
 	raw *rawExprArray
 }
 
 type rawExprArray struct {
 	brackets rawToken
-	args     []struct {
-		expr  rawExpr
-		comma rawToken
-	}
+	args     []withComma[rawExpr]
 }
 
 var (
@@ -378,68 +366,69 @@ func (e ExprArray) Brackets() Token {
 	return e.raw.brackets.With(e)
 }
 
-// Len implements [Slice] for ExprArray.
+// Len implements [Slice].
 func (e ExprArray) Len() int {
 	return len(e.raw.args)
 }
 
-// At implements [Slice] for ExprArray.
+// At implements [Slice].
 func (e ExprArray) At(n int) Expr {
-	return e.raw.args[n].expr.With(e)
+	return e.raw.args[n].Value.With(e)
 }
 
-// Iter implements [Slice] for ExprArray.
+// Iter implements [Slice].
 func (e ExprArray) Iter(yield func(int, Expr) bool) {
 	for i, arg := range e.raw.args {
-		if !yield(i, arg.expr.With(e)) {
+		if !yield(i, arg.Value.With(e)) {
 			break
 		}
 	}
 }
 
-// Append implements [Inserter] for ExprArray.
+// Append implements [Inserter].
 func (e ExprArray) Append(expr Expr) {
 	e.InsertComma(e.Len(), expr, Token{})
 }
 
-// Insert implements [Inserter] for ExprArray.
+// Insert implements [Inserter].
 func (e ExprArray) Insert(n int, expr Expr) {
 	e.InsertComma(n, expr, Token{})
 }
 
-// Delete implements [Inserter] for ExprArray.
+// Delete implements [Inserter].
 func (e ExprArray) Delete(n int) {
 	e.raw.args = slices.Delete(e.raw.args, n, n+1)
 }
 
-// Comma implements [Commas] for ExprArray.
+// Comma implements [Commas].
 func (e ExprArray) Comma(n int) Token {
-	return e.raw.args[n].comma.With(e)
+	return e.raw.args[n].Comma.With(e)
 }
 
-// AppendComma implements [Commas] for TypeGeneric.
+// AppendComma implements [Commas].
 func (e ExprArray) AppendComma(expr Expr, comma Token) {
 	e.InsertComma(e.Len(), expr, comma)
 }
 
-// InsertComma implements [Commas] for TypeGeneric.
+// InsertComma implements [Commas].
 func (e ExprArray) InsertComma(n int, expr Expr, comma Token) {
 	e.Context().panicIfNotOurs(expr, comma)
 
-	e.raw.args = slices.Insert(e.raw.args, n, struct {
-		expr  rawExpr
-		comma rawToken
-	}{toRawExpr(expr), comma.raw})
+	e.raw.args = slices.Insert(e.raw.args, n, withComma[rawExpr]{toRawExpr(expr), comma.raw})
 }
 
-// AsArray implements [Expr] for ExprArray.
+// AsArray implements [Expr].
 func (e ExprArray) AsArray() Commas[Expr] {
 	return e
 }
 
-// Span implements [Spanner] for ExprArray.
+// Span implements [Spanner].
 func (e ExprArray) Span() Span {
 	return e.Brackets().Span()
+}
+
+func (e ExprArray) exprRaw() (exprKind, arena.Untyped) {
+	return exprArray, e.ptr.Untyped()
 }
 
 // ExprDict represents a an array of message fields between curly braces.
@@ -447,16 +436,13 @@ type ExprDict struct {
 	baseExpr
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawExprDict]
 	raw *rawExprDict
 }
 
 type rawExprDict struct {
 	braces rawToken
-	fields []struct {
-		ptr   arena.Untyped
-		comma rawToken
-	}
+	fields []withComma[arena.Pointer[rawExprKV]]
 }
 
 var (
@@ -471,30 +457,30 @@ func (e ExprDict) Braces() Token {
 	return e.raw.braces.With(e)
 }
 
-// Len implements [Slice] for ExprMessage.
+// Len implements [Slice].
 func (e ExprDict) Len() int {
 	return len(e.raw.fields)
 }
 
-// At implements [Slice] for ExprMessage.
+// At implements [Slice].
 func (e ExprDict) At(n int) ExprKV {
-	ptr := e.raw.fields[n].ptr
+	ptr := e.raw.fields[n].Value
 	return ExprKV{
 		baseExpr{},
 		e.withContext,
 		ptr,
-		e.Context().exprs.fields.At(ptr),
+		e.Context().exprs.kvs.Deref(ptr),
 	}
 }
 
-// Iter implements [Slice] for ExprMessage.
+// Iter implements [Slice].
 func (e ExprDict) Iter(yield func(int, ExprKV) bool) {
 	for i, f := range e.raw.fields {
 		e := ExprKV{
 			baseExpr{},
 			e.withContext,
-			f.ptr,
-			e.Context().exprs.fields.At(f.ptr),
+			f.Value,
+			e.Context().exprs.kvs.Deref(f.Value),
 		}
 		if !yield(i, e) {
 			break
@@ -502,52 +488,53 @@ func (e ExprDict) Iter(yield func(int, ExprKV) bool) {
 	}
 }
 
-// Append implements [Inserter] for ExprMessage.
+// Append implements [Inserter].
 func (e ExprDict) Append(expr ExprKV) {
 	e.InsertComma(e.Len(), expr, Token{})
 }
 
-// Insert implements [Inserter] for ExprMessage.
+// Insert implements [Inserter].
 func (e ExprDict) Insert(n int, expr ExprKV) {
 	e.InsertComma(n, expr, Token{})
 }
 
-// Delete implements [Inserter] for ExprMessage.
+// Delete implements [Inserter].
 func (e ExprDict) Delete(n int) {
 	e.raw.fields = slices.Delete(e.raw.fields, n, n+1)
 }
 
-// Comma implements [Commas] for ExprMessage.
+// Comma implements [Commas].
 func (e ExprDict) Comma(n int) Token {
-	return e.raw.fields[n].comma.With(e)
+	return e.raw.fields[n].Comma.With(e)
 }
 
-// AppendComma implements [Commas] for TypeGeneric.
+// AppendComma implements [Commas].
 func (e ExprDict) AppendComma(expr ExprKV, comma Token) {
 	e.InsertComma(e.Len(), expr, comma)
 }
 
-// InsertComma implements [Commas] for TypeGeneric.
+// InsertComma implements [Commas].
 func (e ExprDict) InsertComma(n int, expr ExprKV, comma Token) {
 	e.Context().panicIfNotOurs(expr, comma)
 	if expr.Nil() {
 		panic("protocompile/ast: cannot append nil ExprField to ExprMessage")
 	}
 
-	e.raw.fields = slices.Insert(e.raw.fields, n, struct {
-		ptr   arena.Untyped
-		comma rawToken
-	}{expr.ptr, comma.raw})
+	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprKV]]{expr.ptr, comma.raw})
 }
 
-// AsMessage implements [Expr] for ExprMessage.
+// AsMessage implements [Expr].
 func (e ExprDict) AsMessage() Commas[ExprKV] {
 	return e
 }
 
-// Span implements [Spanner] for ExprMessage.
+// Span implements [Spanner].
 func (e ExprDict) Span() Span {
 	return e.Braces().Span()
+}
+
+func (e ExprDict) exprRaw() (exprKind, arena.Untyped) {
+	return exprDict, e.ptr.Untyped()
 }
 
 // ExprKV is a key-value pair within an [ExprDict].
@@ -557,7 +544,7 @@ type ExprKV struct {
 	baseExpr
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawExprKV]
 	raw *rawExprKV
 }
 
@@ -607,10 +594,25 @@ func (e ExprKV) SetValue(expr Expr) {
 	e.raw.value = toRawExpr(expr)
 }
 
-// Span implements [Spanner] for ExprField.
+// Span implements [Spanner].
 func (e ExprKV) Span() Span {
 	return JoinSpans(e.Key(), e.Colon(), e.Value())
 }
+
+func (e ExprKV) exprRaw() (exprKind, arena.Untyped) {
+	return exprKV, e.ptr.Untyped()
+}
+
+const (
+	exprLiteral exprKind = iota + 1
+	exprPrefixed
+	exprPath
+	exprRange
+	exprArray
+	exprDict
+	exprKV
+	expr
+)
 
 type exprKind int8
 
@@ -628,7 +630,8 @@ func toRawExpr(e Expr) rawExpr {
 		return rawExpr(path.Path.raw)
 	}
 
-	return rawExpr{^rawToken(e.exprKind()), rawToken(e.exprIndex())}
+	k, p := e.exprRaw()
+	return rawExpr{^rawToken(k), rawToken(p)}
 }
 
 // With extracts an expression out of a context at the given index to present to the user.
@@ -644,15 +647,20 @@ func (e rawExpr) With(c Contextual) Expr {
 		case exprLiteral:
 			return ExprLiteral{Token: rawToken(ptr).With(c)}
 		case exprPrefixed:
-			return ExprPrefixed{withContext: withContext{c}, raw: c.exprs.prefixes.At(ptr)}
+			ptr := arena.Pointer[rawExprPrefixed](ptr)
+			return ExprPrefixed{withContext: withContext{c}, ptr: ptr, raw: c.exprs.prefixes.Deref(ptr)}
 		case exprRange:
-			return ExprRange{withContext: withContext{c}, raw: c.exprs.ranges.At(ptr)}
+			ptr := arena.Pointer[rawExprRange](ptr)
+			return ExprRange{withContext: withContext{c}, ptr: ptr, raw: c.exprs.ranges.Deref(ptr)}
 		case exprArray:
-			return ExprArray{withContext: withContext{c}, raw: c.exprs.arrays.At(ptr)}
+			ptr := arena.Pointer[rawExprArray](ptr)
+			return ExprArray{withContext: withContext{c}, ptr: ptr, raw: c.exprs.arrays.Deref(ptr)}
 		case exprDict:
-			return ExprDict{withContext: withContext{c}, raw: c.exprs.dicts.At(ptr)}
-		case exprField:
-			return ExprKV{withContext: withContext{c}, raw: c.exprs.fields.At(ptr)}
+			ptr := arena.Pointer[rawExprDict](ptr)
+			return ExprDict{withContext: withContext{c}, ptr: ptr, raw: c.exprs.dicts.Deref(ptr)}
+		case exprKV:
+			ptr := arena.Pointer[rawExprKV](ptr)
+			return ExprKV{withContext: withContext{c}, ptr: ptr, raw: c.exprs.kvs.Deref(ptr)}
 		default:
 			return nil
 		}

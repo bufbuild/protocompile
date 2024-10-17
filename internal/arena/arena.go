@@ -69,21 +69,24 @@ func (p Pointer[T]) Nil() bool {
 	return Untyped(p).Nil()
 }
 
-// Looks up this pointer in the given arena.
+// Untyped erases this pointer's type.
 //
-// arena must be the arena tha allocated this pointer, otherwise this will
-// either return an arbitrary pointer or panic. If p is nil, this panics.
-func (p Pointer[T]) In(arena *Arena[T]) *T {
-	return arena.At(Untyped(p))
+// This function mostly exists for the aid of tab-completion.
+func (p Pointer[T]) Untyped() Untyped {
+	return Untyped(p)
 }
 
-// Arena is an arena that offers compressed pointers. Internally, it is a slice
+// Arena is an arena that offers compressed pointers. Conceptually, it is a slice
 // of T that guarantees the Ts will never be moved.
 //
 // It does this by maintaining a table of logarithmically-growing slices that
 // mimic the resizing behavior of an ordinary slice. This trades off the linear
 // 8-byte overhead of []*T for a logarithmic 24-byte overhead. Lookup time
 // remains O(1), at the cost of two pointer loads instead of one.
+//
+// It also does not discard already-allocated memory, reducing the amount of
+// garbage it produces over time compared to a plain []T used as an allocation
+// pool.
 //
 // A zero Arena[T] is empty and ready to use.
 type Arena[T any] struct {
@@ -111,14 +114,20 @@ func (a *Arena[T]) New(value T) Pointer[T] {
 	}
 
 	*last = append(*last, value)
-	return Pointer[T](Untyped(a.len()))
+	return Pointer[T](a.len()) // Note that len, not len-1, is intentional.
 }
 
-// At dereferences an untyped arena pointer, as if by [Pointer.In].
-func (a *Arena[T]) At(ptr Untyped) *T {
+// Deref looks up a pointer in this arena.
+//
+// This arena must be the one tha allocated this pointer, otherwise this will
+// either return an arbitrary pointer or panic.
+//
+// If p is nil, returns nil.
+func (a *Arena[T]) Deref(ptr Pointer[T]) *T {
 	if ptr.Nil() {
-		a = nil // Trigger an ordinary nil dereference on purpose.
+		return nil
 	}
+
 	slice, idx := a.coordinates(int(ptr) - 1)
 	return &a.table[slice][idx]
 }
@@ -132,7 +141,7 @@ func (a *Arena[T]) len() int {
 	return a.lenOfFirstNSlices(len(a.table)-1) + len(a.table[len(a.table)-1])
 }
 
-// String implements [strings.Stringer] for pointers.
+// String implements [strings.Stringer].
 func (a Arena[T]) String() string {
 	var b strings.Builder
 	b.WriteRune('[')

@@ -18,15 +18,15 @@ import "github.com/bufbuild/protocompile/internal/arena"
 
 // File is the top-level AST node for a Protobuf file.
 //
-// A file is a list of declarations (in other words, it is a [DeclScope]). The File type provides
+// A file is a list of declarations (in other words, it is a [DeclBody]). The File type provides
 // convenience functions for extracting salient elements, such as the [DeclSyntax] and the [DeclPackage].
 type File struct {
-	DeclScope
+	DeclBody
 }
 
 // Syntax returns this file's pragma, if it has one.
 func (f File) Syntax() (syntax DeclSyntax) {
-	Decls[DeclSyntax](f.DeclScope)(func(_ int, d DeclSyntax) bool {
+	Decls[DeclSyntax](f.DeclBody)(func(_ int, d DeclSyntax) bool {
 		syntax = d
 		return false
 	})
@@ -35,7 +35,7 @@ func (f File) Syntax() (syntax DeclSyntax) {
 
 // Package returns this file's package declaration, if it has one.
 func (f File) Package() (pkg DeclPackage) {
-	Decls[DeclPackage](f.DeclScope)(func(_ int, d DeclPackage) bool {
+	Decls[DeclPackage](f.DeclBody)(func(_ int, d DeclPackage) bool {
 		pkg = d
 		return false
 	})
@@ -44,14 +44,14 @@ func (f File) Package() (pkg DeclPackage) {
 
 // Imports returns an iterator over this file's import declarations.
 func (f File) Imports() func(func(int, DeclImport) bool) {
-	return Decls[DeclImport](f.DeclScope)
+	return Decls[DeclImport](f.DeclBody)
 }
 
 // DeclSyntax represents a language pragma, such as the syntax or edition keywords.
 type DeclSyntax struct {
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawDeclSyntax]
 	raw *rawDeclSyntax
 }
 
@@ -114,7 +114,7 @@ func (d DeclSyntax) SetValue(expr Expr) {
 //
 // Syntax declarations cannot have options, but we parse them anyways.
 func (d DeclSyntax) Options() CompactOptions {
-	return newOptions(d.raw.options, d)
+	return wrapOptions(d, d.raw.options)
 }
 
 // SetOptions sets the compact options list for this declaration.
@@ -131,24 +131,33 @@ func (d DeclSyntax) Semicolon() Token {
 	return d.raw.semi.With(d)
 }
 
-// Span implements [Spanner] for Message.
+// Span implements [Spanner].
 func (d DeclSyntax) Span() Span {
 	return JoinSpans(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
 }
 
-func (DeclSyntax) with(ctx *Context, ptr arena.Untyped) Decl {
-	return DeclSyntax{withContext{ctx}, ptr, ctx.decls.syntaxes.At(ptr)}
+func (d DeclSyntax) declRaw() (declKind, arena.Untyped) {
+	return declSyntax, d.ptr.Untyped()
 }
 
-func (d DeclSyntax) declIndex() arena.Untyped {
-	return d.ptr
+func wrapDeclSyntax(c Contextual, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
+	ctx := c.Context()
+	if ctx == nil || ptr.Nil() {
+		return DeclSyntax{}
+	}
+
+	return DeclSyntax{
+		withContext{ctx},
+		ptr,
+		ctx.decls.syntaxes.Deref(ptr),
+	}
 }
 
 // DeclPackage is the package declaration for a file.
 type DeclPackage struct {
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawDeclPackage]
 	raw *rawDeclPackage
 }
 
@@ -185,7 +194,7 @@ func (d DeclPackage) Path() Path {
 //
 // Package declarations cannot have options, but we parse them anyways.
 func (d DeclPackage) Options() CompactOptions {
-	return newOptions(d.raw.options, d)
+	return wrapOptions(d, d.raw.options)
 }
 
 // SetOptions sets the compact options list for this declaration.
@@ -202,24 +211,33 @@ func (d DeclPackage) Semicolon() Token {
 	return d.raw.semi.With(d)
 }
 
-// Span implements [Spanner] for DeclPackage.
+// Span implements [Spanner].
 func (d DeclPackage) Span() Span {
 	return JoinSpans(d.Keyword(), d.Path(), d.Semicolon())
 }
 
-func (DeclPackage) with(ctx *Context, ptr arena.Untyped) Decl {
-	return DeclPackage{withContext{ctx}, ptr, ctx.decls.packages.At(ptr)}
+func (d DeclPackage) declRaw() (declKind, arena.Untyped) {
+	return declPackage, d.ptr.Untyped()
 }
 
-func (d DeclPackage) declIndex() arena.Untyped {
-	return d.ptr
+func wrapDeclPackage(c Contextual, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
+	ctx := c.Context()
+	if ctx == nil || ptr.Nil() {
+		return DeclPackage{}
+	}
+
+	return DeclPackage{
+		withContext{ctx},
+		ptr,
+		ctx.decls.packages.Deref(ptr),
+	}
 }
 
 // DeclImport is an import declaration within a file.
 type DeclImport struct {
 	withContext
 
-	ptr arena.Untyped
+	ptr arena.Pointer[rawDeclImport]
 	raw *rawDeclImport
 }
 
@@ -280,7 +298,7 @@ func (d DeclImport) SetImportPath(expr Expr) {
 //
 // Imports cannot have options, but we parse them anyways.
 func (d DeclImport) Options() CompactOptions {
-	return newOptions(d.raw.options, d)
+	return wrapOptions(d, d.raw.options)
 }
 
 // SetOptions sets the compact options list for this declaration.
@@ -297,15 +315,24 @@ func (d DeclImport) Semicolon() Token {
 	return d.raw.semi.With(d)
 }
 
-// Span implements [Spanner] for DeclImport.
+// Span implements [Spanner].
 func (d DeclImport) Span() Span {
 	return JoinSpans(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
 }
 
-func (DeclImport) with(ctx *Context, ptr arena.Untyped) Decl {
-	return DeclImport{withContext{ctx}, ptr, ctx.decls.imports.At(ptr)}
+func (d DeclImport) declRaw() (declKind, arena.Untyped) {
+	return declImport, d.ptr.Untyped()
 }
 
-func (d DeclImport) declIndex() arena.Untyped {
-	return d.ptr
+func wrapDeclImport(c Contextual, ptr arena.Pointer[rawDeclImport]) DeclImport {
+	ctx := c.Context()
+	if ctx == nil || ptr.Nil() {
+		return DeclImport{}
+	}
+
+	return DeclImport{
+		withContext{ctx},
+		ptr,
+		ctx.decls.imports.Deref(ptr),
+	}
 }

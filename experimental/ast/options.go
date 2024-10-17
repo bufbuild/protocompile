@@ -33,10 +33,7 @@ type CompactOptions struct {
 
 type rawCompactOptions struct {
 	brackets rawToken
-	options  []struct {
-		option rawOption
-		comma  rawToken
-	}
+	options  []withComma[rawOption]
 }
 
 var _ Commas[Option] = CompactOptions{}
@@ -59,58 +56,55 @@ func (o CompactOptions) Brackets() Token {
 	return o.raw.brackets.With(o)
 }
 
-// Len implements [Slice] for Options.
+// Len implements [Slice].
 func (o CompactOptions) Len() int {
 	return len(o.raw.options)
 }
 
-// At implements [Slice] for Options.
+// At implements [Slice].
 func (o CompactOptions) At(n int) Option {
-	return o.raw.options[n].option.With(o)
+	return o.raw.options[n].Value.With(o)
 }
 
-// Iter implements [Slice] for Options.
+// Iter implements [Slice].
 func (o CompactOptions) Iter(yield func(int, Option) bool) {
 	for i, arg := range o.raw.options {
-		if !yield(i, arg.option.With(o)) {
+		if !yield(i, arg.Value.With(o)) {
 			break
 		}
 	}
 }
 
-// Append implements [Inserter] for Options.
+// Append implements [Inserter].
 func (o CompactOptions) Append(option Option) {
 	o.InsertComma(o.Len(), option, Token{})
 }
 
-// Insert implements [Inserter] for Options.
+// Insert implements [Inserter].
 func (o CompactOptions) Insert(n int, option Option) {
 	o.InsertComma(n, option, Token{})
 }
 
-// Delete implements [Inserter] for Options.
+// Delete implements [Inserter].
 func (o CompactOptions) Delete(n int) {
 	o.raw.options = slices.Delete(o.raw.options, n, n+1)
 }
 
-// Comma implements [Commas] for Options.
+// Comma implements [Commas].
 func (o CompactOptions) Comma(n int) Token {
-	return o.raw.options[n].comma.With(o)
+	return o.raw.options[n].Comma.With(o)
 }
 
-// AppendComma implements [Commas] for Options.
+// AppendComma implements [Commas].
 func (o CompactOptions) AppendComma(option Option, comma Token) {
 	o.InsertComma(o.Len(), option, comma)
 }
 
-// InsertComma implements [Commas] for Options.
+// InsertComma implements [Commas].
 func (o CompactOptions) InsertComma(n int, option Option, comma Token) {
 	o.Context().panicIfNotOurs(option.Path, option.Equals, option.Value, comma)
 
-	o.raw.options = slices.Insert(o.raw.options, n, struct {
-		option rawOption
-		comma  rawToken
-	}{
+	o.raw.options = slices.Insert(o.raw.options, n, withComma[rawOption]{
 		rawOption{
 			path:   option.Path.raw,
 			equals: option.Equals.raw,
@@ -120,19 +114,19 @@ func (o CompactOptions) InsertComma(n int, option Option, comma Token) {
 	})
 }
 
-// Span implements [Spanner] for Options.
+// Span implements [Spanner].
 func (o CompactOptions) Span() Span {
 	return JoinSpans(o.Brackets())
 }
 
-func newOptions(ptr arena.Pointer[rawCompactOptions], c Contextual) CompactOptions {
+func wrapOptions(c Contextual, ptr arena.Pointer[rawCompactOptions]) CompactOptions {
 	if ptr.Nil() {
 		return CompactOptions{}
 	}
 	return CompactOptions{
 		withContext{c.Context()},
 		ptr,
-		ptr.In(&c.Context().options),
+		c.Context().options.Deref(ptr),
 	}
 }
 

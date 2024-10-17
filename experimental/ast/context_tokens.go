@@ -126,26 +126,24 @@ func (c *Context) NewString(text string) Token {
 
 // NewOpenClose mints a new synthetic open/close pair using the given tokens.
 //
-// Panics if either open or close is non-synthetic or non-leaf.
-//
-//nolint:predeclared  // For close.
-func (c *Context) NewOpenClose(open, close Token, children ...Token) {
+// Panics if either open or close is natural or non-leaf.
+func (c *Context) NewOpenClose(openTok, closeTok Token, children ...Token) {
 	c.panicIfNil()
 
-	if !open.IsSynthetic() || !close.IsSynthetic() {
-		panic("protocompile/ast: called NewOpenClose() with non-synthetic delimiters")
+	if !openTok.IsSynthetic() || !closeTok.IsSynthetic() {
+		panic("protocompile/ast: called NewOpenClose() with natural delimiters")
 	}
-	if !open.IsLeaf() || !close.IsLeaf() {
+	if !openTok.IsLeaf() || !closeTok.IsLeaf() {
 		panic("protocompile/ast: called PushCloseToken() with non-leaf as a delimiter token")
 	}
 
-	synth := open.synthetic()
-	synth.otherEnd = close.raw
+	synth := openTok.synthetic()
+	synth.otherEnd = closeTok.raw
 	synth.children = make([]rawToken, len(children))
 	for i, t := range children {
 		synth.children[i] = t.raw
 	}
-	close.synthetic().otherEnd = open.raw
+	closeTok.synthetic().otherEnd = openTok.raw
 }
 
 func (c *Context) newSynth(tok tokenSynthetic) Token {
