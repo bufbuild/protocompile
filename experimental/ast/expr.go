@@ -133,8 +133,6 @@ func (e ExprLiteral) exprRaw() (exprKind, arena.Untyped) {
 }
 
 // ExprPath is a Protobuf path in expression position.
-//
-// Note: if this is BuiltinMax,.
 type ExprPath struct {
 	baseExpr
 
@@ -164,6 +162,9 @@ func (e ExprPath) AsFloat32() (float32, bool) {
 
 // AsFloat64 implements [Expr].
 func (e ExprPath) AsFloat64() (float64, bool) {
+	// TODO: Message literals also allow for an "infinity" token. Whether this
+	// is allowed is context-dependent, so we will probably need to replace the
+	// As* methods with something else.
 	switch e.AsIdent().Text() {
 	case "inf":
 		return math.Inf(1), true
@@ -229,56 +230,84 @@ func (e ExprPrefixed) Span() Span {
 
 // AsInt32 implements [Expr].
 func (e ExprPrefixed) AsInt32() (int32, bool) {
-	n, ok := e.AsInt64()
-	if !ok || n < int64(math.MinInt32) || n > int64(math.MaxInt32) {
+	switch e.Prefix() {
+	case ExprPrefixMinus:
+		n, ok := e.AsInt64()
+		if !ok || n < int64(math.MinInt32) || n > int64(math.MaxInt32) {
+			return 0, false
+		}
+
+		return int32(n), true
+	default:
 		return 0, false
 	}
-
-	return int32(n), true
 }
 
 // AsInt64 implements [Expr].
 func (e ExprPrefixed) AsInt64() (int64, bool) {
-	n, ok := e.Expr().AsInt64()
-	if ok && n != -n {
-		// If n == -n, that means n == MinInt32.
-		return -n, ok
+	switch e.Prefix() {
+	case ExprPrefixMinus:
+		switch n, ok := e.Expr().AsUInt64(); {
+		case !ok:
+			return 0, false
+		case n <= uint64(math.MaxInt64):
+			return -int64(n), true
+		case n == uint64(math.MaxInt64)+1:
+			// Need to handle the funny case where someone wrote -9223372036854775808, since
+			// 9223372036854775808 is not representable as an int64.
+			return math.MinInt64, true
+		default:
+			return 0, false
+		}
+	default:
+		return 0, false
 	}
-
-	// Need to handle the funny case where someone wrote -9223372036854775808, since
-	// 9223372036854775808 is not representable as an int64.
-	u, ok := e.Expr().AsUInt64()
-	if ok && u == uint64(math.MaxInt64) {
-		return math.MinInt64, true
-	}
-
-	return 0, false
 }
 
 // AsUInt32 implements [Expr].
 func (e ExprPrefixed) AsUInt32() (uint32, bool) {
-	// NOTE: - is not treated as two's complement here; we only allow -0
-	n, ok := e.Expr().AsUInt32()
-	return 0, ok && n == 0
+	switch e.Prefix() {
+	case ExprPrefixMinus:
+		// NOTE: - is not treated as two's complement here; we only allow -0
+		n, ok := e.Expr().AsUInt32()
+		return 0, ok && n == 0
+	default:
+		return 0, false
+	}
 }
 
 // AsUInt64 implements [Expr].
 func (e ExprPrefixed) AsUInt64() (uint64, bool) {
-	// NOTE: - is not treated as two's complement here; we only allow -0
-	n, ok := e.Expr().AsUInt64()
-	return 0, ok && n == 0
+	switch e.Prefix() {
+	case ExprPrefixMinus:
+		// NOTE: - is not treated as two's complement here; we only allow -0
+		n, ok := e.Expr().AsUInt64()
+		return 0, ok && n == 0
+	default:
+		return 0, false
+	}
 }
 
 // AsFloat32 implements [Expr].
 func (e ExprPrefixed) AsFloat32() (float32, bool) {
-	n, ok := e.Expr().AsFloat32()
-	return -n, ok
+	switch e.Prefix() {
+	case ExprPrefixMinus:
+		n, ok := e.Expr().AsFloat32()
+		return -n, ok
+	default:
+		return 0, false
+	}
 }
 
 // AsFloat64 implements [Expr].
 func (e ExprPrefixed) AsFloat64() (float64, bool) {
-	n, ok := e.Expr().AsFloat64()
-	return -n, ok
+	switch e.Prefix() {
+	case ExprPrefixMinus:
+		n, ok := e.Expr().AsFloat64()
+		return -n, ok
+	default:
+		return 0, false
+	}
 }
 
 func (e ExprPrefixed) exprRaw() (exprKind, arena.Untyped) {

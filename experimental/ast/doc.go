@@ -46,6 +46,21 @@
 // passed by value, because they are essentially pointers (and, in fact,
 // expose a Nil function for checking if they refer to a nil Context pointer).
 //
+// # Pointer-like types
+//
+// Virtually all AST nodes in this library are "pointer-like" types, in that
+// although they are not Go pointers, they do refer to something stored in a
+// [Context] somewhere. Internally, they contain a pointer to a [Context] and
+// a pointer to the compressed node representation inside the [Context]. This is
+// done so that we can avoid spending an extra eight or twelve bytes per
+// node-at-rest, and to minimize GC churn by avoiding pointer cycles in the
+// in-memory representation of the AST.
+//
+// All pointer-like types satisfy interface { Nil() bool }. The Nil() method
+// checks for the zero value, just like comparing a Go pointer to nil would.
+// Pointer-like types should generally be passed by value, not by pointer; all
+// of them have value receivers.
+//
 // # Synthetic Tokens
 //
 // To support use case (3), this library distinguishes between natural [Token]s

@@ -121,10 +121,14 @@ func (t Token) Kind() TokenKind {
 	return t.synthetic().kind
 }
 
-// Text returns the text fragment referred to by this token.
-// Note that this DOES NOT include any child tokens!
+// Text returns the text fragment referred to by this token. This does not
+// return the text contained inside of non-leaf tokens; if this token refers to
+// a token tree, this will return only the text of the open (or close) token.
 //
-// Returns empty string fot the nil token.
+// For example, for a matched pair of braces, this will only return the text of
+// the open brace, "{".
+//
+// Returns empty string for the nil token.
 func (t Token) Text() string {
 	if t.Nil() {
 		return ""
@@ -145,13 +149,21 @@ func (t Token) Text() string {
 					escaped.WriteString("\\r")
 				case r == '\t':
 					escaped.WriteString("\\t")
-				case r == '\x00':
+				case r == '\a':
+					escaped.WriteString("\\a")
+				case r == '\b':
+					escaped.WriteString("\\b")
+				case r == '\f':
+					escaped.WriteString("\\f")
+				case r == '\v':
+					escaped.WriteString("\\v")
+				case r == 0:
 					escaped.WriteString("\\0")
 				case r == '"':
 					escaped.WriteString("\\\"")
 				case r == '\\':
 					escaped.WriteString("\\\\")
-				case r < ' ':
+				case r < ' ' || r == '\x7f':
 					fmt.Fprintf(&escaped, "\\x%02x", r)
 				case unicode.IsGraphic(r):
 					escaped.WriteRune(r)
@@ -299,7 +311,7 @@ func (t Token) AsInt() (uint64, bool) {
 		return v, true
 	}
 
-	// Otherwise, it's an base 10 integer.
+	// Otherwise, it's a base 10 integer.
 	v, err := strconv.ParseUint(t.Text(), 10, 64)
 	return v, err == nil
 }
@@ -603,12 +615,12 @@ func (t tokenImpl) IsLeaf() bool {
 	return t.Offset() == 0
 }
 
-// IsLeaf checks whether this is a open token with a matching closer.
+// IsOpen checks whether this is a open token with a matching closer.
 func (t tokenImpl) IsOpen() bool {
 	return t.Offset() > 0
 }
 
-// IsLeaf checks whether this is a closer token with a matching opener.
+// IsClose checks whether this is a closer token with a matching opener.
 func (t tokenImpl) IsClose() bool {
 	return t.Offset() < 0
 }
