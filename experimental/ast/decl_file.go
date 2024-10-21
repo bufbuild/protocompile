@@ -14,7 +14,10 @@
 
 package ast
 
-import "github.com/bufbuild/protocompile/internal/arena"
+import (
+	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
 
 // File is the top-level AST node for a Protobuf file.
 //
@@ -26,34 +29,47 @@ type File struct {
 
 // Syntax returns this file's pragma, if it has one.
 func (f File) Syntax() (syntax DeclSyntax) {
-	Decls[DeclSyntax](f.DeclBody)(func(_ int, d DeclSyntax) bool {
-		syntax = d
-		return false
+	f.Iter(func(_ int, d DeclAny) bool {
+		if s := d.AsSyntax(); !s.Nil() {
+			syntax = s
+			return false
+		}
+		return true
 	})
 	return
 }
 
 // Package returns this file's package declaration, if it has one.
 func (f File) Package() (pkg DeclPackage) {
-	Decls[DeclPackage](f.DeclBody)(func(_ int, d DeclPackage) bool {
-		pkg = d
-		return false
+	f.Iter(func(_ int, d DeclAny) bool {
+		if p := d.AsPackage(); !p.Nil() {
+			pkg = p
+			return false
+		}
+		return true
 	})
 	return
 }
 
 // Imports returns an iterator over this file's import declarations.
-func (f File) Imports() func(func(int, DeclImport) bool) {
-	return Decls[DeclImport](f.DeclBody)
+func (f File) Imports() iter.Seq2[int, DeclImport] {
+	return func(yield func(int, DeclImport) bool) {
+		var i int
+		f.Iter(func(_ int, d DeclAny) bool {
+			if imp := d.AsImport(); !imp.Nil() {
+				if !yield(i, imp) {
+					return false
+				}
+				i++
+			}
+
+			return true
+		})
+	}
 }
 
 // DeclSyntax represents a language pragma, such as the syntax or edition keywords.
-type DeclSyntax struct {
-	withContext
-
-	ptr arena.Pointer[rawDeclSyntax]
-	raw *rawDeclSyntax
-}
+type DeclSyntax struct{ declImpl[rawDeclSyntax] }
 
 type rawDeclSyntax struct {
 	keyword, equals, semi rawToken
@@ -66,12 +82,10 @@ type DeclSyntaxArgs struct {
 	// Must be "syntax" or "edition".
 	Keyword   Token
 	Equals    Token
-	Value     Expr
+	Value     ExprAny
 	Options   CompactOptions
 	Semicolon Token
 }
-
-var _ Decl = DeclSyntax{}
 
 // Keyword returns the keyword for this pragma.
 func (d DeclSyntax) Keyword() Token {
@@ -99,15 +113,15 @@ func (d DeclSyntax) Equals() Token {
 //
 // May be nil, if the user wrote something like syntax;. It can also be
 // a number or an identifier, for cases like edition = 2024; or syntax = proto2;.
-func (d DeclSyntax) Value() Expr {
+func (d DeclSyntax) Value() ExprAny {
 	return d.raw.value.With(d)
 }
 
 // SetValue sets the expression for this pragma's value.
 //
 // If passed nil, this clears the value (e.g., for syntax = ;).
-func (d DeclSyntax) SetValue(expr Expr) {
-	d.raw.value = toRawExpr(expr)
+func (d DeclSyntax) SetValue(expr ExprAny) {
+	d.raw.value = expr.raw
 }
 
 // Options returns the compact options list for this declaration.
@@ -136,30 +150,12 @@ func (d DeclSyntax) Span() Span {
 	return JoinSpans(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
 }
 
-func (d DeclSyntax) declRaw() (declKind, arena.Untyped) {
-	return declSyntax, d.ptr.Untyped()
-}
-
 func wrapDeclSyntax(c Contextual, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
-	ctx := c.Context()
-	if ctx == nil || ptr.Nil() {
-		return DeclSyntax{}
-	}
-
-	return DeclSyntax{
-		withContext{ctx},
-		ptr,
-		ctx.decls.syntaxes.Deref(ptr),
-	}
+	return DeclSyntax{wrapDecl(c, ptr)}
 }
 
 // DeclPackage is the package declaration for a file.
-type DeclPackage struct {
-	withContext
-
-	ptr arena.Pointer[rawDeclPackage]
-	raw *rawDeclPackage
-}
+type DeclPackage struct{ declImpl[rawDeclPackage] }
 
 type rawDeclPackage struct {
 	keyword rawToken
@@ -175,8 +171,6 @@ type DeclPackageArgs struct {
 	Options   CompactOptions
 	Semicolon Token
 }
-
-var _ Decl = DeclPackage{}
 
 // Keyword returns the "package" keyword for this declaration.
 func (d DeclPackage) Keyword() Token {
@@ -216,30 +210,12 @@ func (d DeclPackage) Span() Span {
 	return JoinSpans(d.Keyword(), d.Path(), d.Semicolon())
 }
 
-func (d DeclPackage) declRaw() (declKind, arena.Untyped) {
-	return declPackage, d.ptr.Untyped()
-}
-
 func wrapDeclPackage(c Contextual, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
-	ctx := c.Context()
-	if ctx == nil || ptr.Nil() {
-		return DeclPackage{}
-	}
-
-	return DeclPackage{
-		withContext{ctx},
-		ptr,
-		ctx.decls.packages.Deref(ptr),
-	}
+	return DeclPackage{wrapDecl(c, ptr)}
 }
 
 // DeclImport is an import declaration within a file.
-type DeclImport struct {
-	withContext
-
-	ptr arena.Pointer[rawDeclImport]
-	raw *rawDeclImport
-}
+type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {
 	keyword, modifier, semi rawToken
@@ -251,12 +227,10 @@ type rawDeclImport struct {
 type DeclImportArgs struct {
 	Keyword    Token
 	Modifier   Token
-	ImportPath Expr
+	ImportPath ExprAny
 	Options    CompactOptions
 	Semicolon  Token
 }
-
-var _ Decl = DeclImport{}
 
 // Keyword returns the "import" keyword for this pragma.
 func (d DeclImport) Keyword() Token {
@@ -283,15 +257,15 @@ func (d DeclImport) IsWeak() bool {
 // ImportPath returns the file path for this import as a string.
 //
 // May be nil, if the user forgot it.
-func (d DeclImport) ImportPath() Expr {
+func (d DeclImport) ImportPath() ExprAny {
 	return d.raw.importPath.With(d)
 }
 
 // SetValue sets the expression for this import's file path.
 //
 // If passed nil, this clears the path expression.
-func (d DeclImport) SetImportPath(expr Expr) {
-	d.raw.importPath = toRawExpr(expr)
+func (d DeclImport) SetImportPath(expr ExprAny) {
+	d.raw.importPath = expr.raw
 }
 
 // Options returns the compact options list for this declaration.
@@ -320,19 +294,6 @@ func (d DeclImport) Span() Span {
 	return JoinSpans(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
 }
 
-func (d DeclImport) declRaw() (declKind, arena.Untyped) {
-	return declImport, d.ptr.Untyped()
-}
-
 func wrapDeclImport(c Contextual, ptr arena.Pointer[rawDeclImport]) DeclImport {
-	ctx := c.Context()
-	if ctx == nil || ptr.Nil() {
-		return DeclImport{}
-	}
-
-	return DeclImport{
-		withContext{ctx},
-		ptr,
-		ctx.decls.imports.Deref(ptr),
-	}
+	return DeclImport{wrapDecl(c, ptr)}
 }

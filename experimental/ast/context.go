@@ -39,7 +39,7 @@ type Context struct {
 	//
 	// Not all literal tokens will have an entry here; only those that have
 	// uncommon representations, such as hex literals, floats, and strings with
-	// escapes/implicit concatentation.
+	// escapes/implicit concatenation.
 	//
 	// This means the lexer can deal with the complex literal parsing logic on
 	// our behalf in general, but common cases are re-parsed on-demand.
