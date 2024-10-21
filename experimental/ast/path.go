@@ -118,7 +118,7 @@ type PathComponent struct {
 	separator, name Token
 }
 
-// Separator is the token that separates this component fromm the previous one, if
+// Separator is the token that separates this component from the previous one, if
 // any. This may be a dot or a slash.
 func (p PathComponent) Separator() Token {
 	return p.separator
@@ -138,8 +138,12 @@ func (p PathComponent) IsEmpty() bool {
 
 // IsExtension returns whether this path component is an extension component, i.e.
 // (a.b.c).
+//
+// This is unrelated to the [foo.bar/my.Type] URL-like Any paths that appear in
+// some expressions. Those are represented by allowing / as an alternative
+// separator to . in paths.
 func (p PathComponent) IsExtension() bool {
-	return p.Name().Kind() == TokenPunct
+	return !p.Name().IsLeaf()
 }
 
 // AsExtension returns the Path inside of this path component, if it is an extension
@@ -158,17 +162,10 @@ func (p PathComponent) AsExtension() Path {
 	// Find the first and last non-skippable tokens to be the bounds.
 	var first, last Token
 	p.Name().Children().Iter(func(token Token) bool {
-		if token.Kind().IsSkippable() {
-			return true
-		}
-
 		if first.Nil() {
 			first = token
-		} else {
-			// Only set last after seeing first, because then if we only
-			// ever see one non-skippable token, it will leave last nil.
-			last = token
 		}
+		last = token
 		return true
 	})
 
