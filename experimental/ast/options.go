@@ -42,7 +42,7 @@ var _ Commas[Option] = CompactOptions{}
 type Option struct {
 	Path   Path
 	Equals Token
-	Value  Expr
+	Value  ExprAny
 }
 
 type rawOption struct {
@@ -108,7 +108,7 @@ func (o CompactOptions) InsertComma(n int, option Option, comma Token) {
 		rawOption{
 			path:   option.Path.raw,
 			equals: option.Equals.raw,
-			value:  toRawExpr(option.Value),
+			value:  option.Value.raw,
 		},
 		comma.raw,
 	})

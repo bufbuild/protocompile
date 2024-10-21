@@ -32,7 +32,7 @@ func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	return wrapDeclSyntax(c, c.decls.syntaxes.New(rawDeclSyntax{
 		keyword: args.Keyword.raw,
 		equals:  args.Equals.raw,
-		value:   toRawExpr(args.Value),
+		value:   args.Value.raw,
 		options: args.Options.ptr,
 		semi:    args.Semicolon.raw,
 	}))
@@ -57,7 +57,7 @@ func (c *Context) NewDeclImport(args DeclImportArgs) DeclImport {
 	return wrapDeclImport(c, c.decls.imports.New(rawDeclImport{
 		keyword:    args.Keyword.raw,
 		modifier:   args.Modifier.raw,
-		importPath: toRawExpr(args.ImportPath),
+		importPath: args.ImportPath.raw,
 		options:    args.Options.ptr,
 		semi:       args.Semicolon.raw,
 	}))
@@ -72,16 +72,16 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 	decl := wrapDeclDef(c, c.decls.defs.New(rawDeclDef{
 		name:    args.Name.raw,
 		equals:  args.Equals.raw,
-		value:   toRawExpr(args.Value),
+		value:   args.Value.raw,
 		options: args.Options.ptr,
 		body:    args.Body.ptr,
 		semi:    args.Semicolon.raw,
 	}))
 
-	if args.Type != nil {
+	if args.Type.Nil() {
 		decl.SetType(args.Type)
 	} else {
-		decl.SetType(TypePath{Path: rawPath{args.Keyword.raw, args.Keyword.raw}.With(c)})
+		decl.SetType(TypePath{Path: rawPath{args.Keyword.raw, args.Keyword.raw}.With(c)}.AsAny())
 	}
 
 	if !args.Returns.Nil() {
@@ -123,13 +123,14 @@ func (c *Context) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 
 	ptr := c.exprs.prefixes.New(rawExprPrefixed{
 		prefix: args.Prefix.raw,
-		expr:   toRawExpr(args.Expr),
+		expr:   args.Expr.raw,
 	})
-	return ExprPrefixed{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.exprs.prefixes.Deref(ptr),
-	}
+	return ExprPrefixed{exprImpl[rawExprPrefixed]{
+		withContext{c},
+		c.exprs.prefixes.Deref(ptr),
+		ptr,
+		ExprKindPrefixed,
+	}}
 }
 
 // NewExprRange creates a new ExprRange node.
@@ -138,14 +139,15 @@ func (c *Context) NewExprRange(args ExprRangeArgs) ExprRange {
 
 	ptr := c.exprs.ranges.New(rawExprRange{
 		to:    args.To.raw,
-		start: toRawExpr(args.Start),
-		end:   toRawExpr(args.End),
+		start: args.Start.raw,
+		end:   args.End.raw,
 	})
-	return ExprRange{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.exprs.ranges.Deref(ptr),
-	}
+	return ExprRange{exprImpl[rawExprRange]{
+		withContext{c},
+		c.exprs.ranges.Deref(ptr),
+		ptr,
+		ExprKindRange,
+	}}
 }
 
 // NewExprArray creates a new ExprArray node.
@@ -157,11 +159,12 @@ func (c *Context) NewExprArray(brackets Token) ExprArray {
 	ptr := c.exprs.arrays.New(rawExprArray{
 		brackets: brackets.raw,
 	})
-	return ExprArray{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.exprs.arrays.Deref(ptr),
-	}
+	return ExprArray{exprImpl[rawExprArray]{
+		withContext{c},
+		c.exprs.arrays.Deref(ptr),
+		ptr,
+		ExprKindArray,
+	}}
 }
 
 // NewExprDict creates a new ExprDict node.
@@ -173,42 +176,45 @@ func (c *Context) NewExprDict(braces Token) ExprDict {
 	ptr := c.exprs.dicts.New(rawExprDict{
 		braces: braces.raw,
 	})
-	return ExprDict{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.exprs.dicts.Deref(ptr),
-	}
+	return ExprDict{exprImpl[rawExprDict]{
+		withContext{c},
+		c.exprs.dicts.Deref(ptr),
+		ptr,
+		ExprKindDict,
+	}}
 }
 
 // NewExprPrefixed creates a new ExprPrefixed node.
-func (c *Context) NewExprKV(args ExprKVArgs) ExprKV {
+func (c *Context) NewExprKV(args ExprKVArgs) ExprField {
 	c.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
-	ptr := c.exprs.kvs.New(rawExprKV{
-		key:   toRawExpr(args.Key),
+	ptr := c.exprs.fields.New(rawExprField{
+		key:   args.Key.raw,
 		colon: args.Colon.raw,
-		value: toRawExpr(args.Value),
+		value: args.Value.raw,
 	})
-	return ExprKV{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.exprs.kvs.Deref(ptr),
-	}
+	return ExprField{exprImpl[rawExprField]{
+		withContext{c},
+		c.exprs.fields.Deref(ptr),
+		ptr,
+		ExprKindField,
+	}}
 }
 
 // NewTypePrefixed creates a new TypePrefixed node.
 func (c *Context) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 	c.panicIfNotOurs(args.Prefix, args.Type)
 
-	ptr := c.types.prefixed.New(rawTypePrefixed{
+	ptr := c.types.prefixes.New(rawTypePrefixed{
 		prefix: args.Prefix.raw,
-		ty:     toRawType(args.Type),
+		ty:     args.Type.raw,
 	})
-	return TypePrefixed{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.types.prefixed.Deref(ptr),
-	}
+	return TypePrefixed{typeImpl[rawTypePrefixed]{
+		withContext{c},
+		c.types.prefixes.Deref(ptr),
+		ptr,
+		TypeKindPrefixed,
+	}}
 }
 
 // NewTypeGeneric creates a new TypeGeneric node.
@@ -221,11 +227,12 @@ func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 		path: args.Path.raw,
 		args: rawTypeList{brackets: args.AngleBrackets.raw},
 	})
-	return TypeGeneric{
-		withContext: withContext{c},
-		ptr:         ptr,
-		raw:         c.types.generics.Deref(ptr),
-	}
+	return TypeGeneric{typeImpl[rawTypeGeneric]{
+		withContext{c},
+		c.types.generics.Deref(ptr),
+		ptr,
+		TypeKindGeneric,
+	}}
 }
 
 // NewCompactOptions creates a new Options node.

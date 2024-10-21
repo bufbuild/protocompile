@@ -16,6 +16,24 @@ package ast
 
 import "github.com/bufbuild/protocompile/internal/arena"
 
+const (
+	DefKindMessage DefKind = iota + 1
+	DefKindEnum
+	DefKindService
+	DefKindExtend
+	DefKindField
+	DefKindOneof
+	DefKindGroup
+	DefKindEnumValue
+	DefKindMethod
+	DefKindOption
+)
+
+// DefKind is the kind of definition a [DeclDef] contains.
+//
+// See [DeclDef.Classify].
+type DefKind int8
+
 // DeclDef is a general Protobuf definition.
 //
 // This [Decl] represents the union of several similar AST nodes, to aid in permissive
@@ -27,12 +45,7 @@ import "github.com/bufbuild/protocompile/internal/arena"
 //
 // Generally, you should not need to work with DeclDef directly; instead, use the As* methods
 // to access the correct concrete syntax production a DeclDef represents.
-type DeclDef struct {
-	withContext
-
-	ptr arena.Pointer[rawDeclDef]
-	raw *rawDeclDef
-}
+type DeclDef struct{ declImpl[rawDeclDef] }
 
 type rawDeclDef struct {
 	ty   rawType // Not present for enum fields.
@@ -52,7 +65,7 @@ type rawDeclDef struct {
 type DeclDefArgs struct {
 	// If both Keyword and Type are set, Type will be prioritized.
 	Keyword Token
-	Type    Type
+	Type    TypeAny
 	Name    Path
 
 	// NOTE: the values for the type signature are not provided at
@@ -61,7 +74,7 @@ type DeclDefArgs struct {
 	Returns Token
 
 	Equals Token
-	Value  Expr
+	Value  ExprAny
 
 	Options CompactOptions
 
@@ -78,13 +91,13 @@ type DeclDefArgs struct {
 // identifier is that keyword.
 //
 // See [DeclDef.Keyword].
-func (d DeclDef) Type() Type {
-	return d.raw.ty.With(d)
+func (d DeclDef) Type() TypeAny {
+	return TypeAny{d.withContext, d.raw.ty}
 }
 
 // SetType sets the "prefix" type of this definition.
-func (d DeclDef) SetType(ty Type) {
-	d.raw.ty = toRawType(ty)
+func (d DeclDef) SetType(ty TypeAny) {
+	d.raw.ty = ty.raw
 }
 
 // Keyword returns the introducing keyword for this definition, if
@@ -92,10 +105,11 @@ func (d DeclDef) SetType(ty Type) {
 //
 // See [DeclDef.Type] for details on where this keyword comes from.
 func (d DeclDef) Keyword() Token {
-	path, ok := d.Type().(TypePath)
-	if !ok {
+	path := d.Type().AsPath()
+	if path.Nil() {
 		return Token{}
 	}
+
 	ident := path.Path.AsIdent()
 	switch ident.Text() {
 	case "message", "enum", "service", "extend", "oneof", "group", "rpc", "option":
@@ -147,15 +161,15 @@ func (d DeclDef) Equals() Token {
 // Value returns this definition's value. For a field, this will be the
 // tag number, while for an option, this will be the complex expression
 // representing its value.
-func (d DeclDef) Value() Expr {
+func (d DeclDef) Value() ExprAny {
 	return d.raw.value.With(d)
 }
 
 // SetValue sets the value of this definition.
 //
 // See [DeclDef.Value].
-func (d DeclDef) SetValue(expr Expr) {
-	d.raw.value = toRawExpr(expr)
+func (d DeclDef) SetValue(expr ExprAny) {
+	d.raw.value = expr.raw
 }
 
 // Options returns the compact options list for this definition.
@@ -186,123 +200,217 @@ func (d DeclDef) Semicolon() Token {
 	return d.raw.semi.With(d)
 }
 
-// Classify looks at all the fields in this definition and decides what kind of
-// definition it's supposed to represent.
+// AsMessage extracts the fields from this definition relevant to interpreting
+// it as a message.
 //
-// For nonsensical definitions, this returns nil, although it is not guaranteed
-// to return nil for *all* nonsensical definitions.
-func (d DeclDef) Classify() Def {
-	kw := d.Keyword()
-	nameID := d.Name().AsIdent()
-
-	eq := d.Equals()
-	value := d.Value()
-	noValue := eq.Nil() && value == nil
-
-	switch text := kw.Text(); text {
-	case "message", "enum", "service", "extend", "oneof":
-		if (!nameID.Nil() || text == "extend") && noValue &&
-			d.Signature().Nil() && d.Options().Nil() && !d.Body().Nil() {
-			switch text {
-			case "message":
-				return DefMessage{
-					Keyword: kw,
-					Name:    nameID,
-					Body:    d.Body(),
-					Decl:    d,
-				}
-			case "enum":
-				return DefEnum{
-					Keyword: kw,
-					Name:    nameID,
-					Body:    d.Body(),
-					Decl:    d,
-				}
-			case "service":
-				return DefService{
-					Keyword: kw,
-					Name:    nameID,
-					Body:    d.Body(),
-					Decl:    d,
-				}
-			case "oneof":
-				return DefOneof{
-					Keyword: kw,
-					Name:    nameID,
-					Body:    d.Body(),
-					Decl:    d,
-				}
-			case "extend":
-				return DefExtend{
-					Keyword:  kw,
-					Extendee: d.Name(),
-					Body:     d.Body(),
-					Decl:     d,
-				}
-			}
-		}
-	case "group":
-		if !nameID.Nil() && d.Signature().Nil() && value != nil {
-			return DefGroup{
-				Keyword: kw,
-				Name:    nameID,
-				Equals:  eq,
-				Tag:     value,
-				Options: d.Options(),
-				Body:    d.Body(),
-				Decl:    d,
-			}
-		}
-	case "option":
-		if value != nil && d.Signature().Nil() && d.Options().Nil() && d.Body().Nil() {
-			return DefOption{
-				Keyword: kw,
-				Option: Option{
-					Path:   d.Name(),
-					Equals: eq,
-					Value:  value,
-				},
-				Semicolon: d.Semicolon(),
-				Decl:      d,
-			}
-		}
-	case "rpc":
-		if !nameID.Nil() && noValue && !d.Signature().Nil() && d.Options().Nil() {
-			return DefMethod{
-				Keyword:   kw,
-				Name:      nameID,
-				Signature: d.Signature(),
-				Body:      d.Body(),
-				Decl:      d,
-			}
-		}
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsMessage() DefMessage {
+	return DefMessage{
+		Keyword: d.Keyword(),
+		Name:    d.Name().AsIdent(),
+		Body:    d.Body(),
+		Decl:    d,
 	}
+}
 
-	// At this point, having complex path, a signature or a body is invalid.
-	if nameID.Nil() || !d.Signature().Nil() || !d.Body().Nil() {
-		return nil
+// AsEnum extracts the fields from this definition relevant to interpreting
+// it as an enum.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsEnum() DefEnum {
+	return DefEnum{
+		Keyword: d.Keyword(),
+		Name:    d.Name().AsIdent(),
+		Body:    d.Body(),
+		Decl:    d,
 	}
+}
 
-	if d.Type() == nil {
-		return DefEnumValue{
-			Name:      nameID,
-			Equals:    eq,
-			Tag:       value,
-			Options:   d.Options(),
-			Semicolon: d.Semicolon(),
-			Decl:      d,
-		}
+// AsService extracts the fields from this definition relevant to interpreting
+// it as a service.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsService() DefService {
+	return DefService{
+		Keyword: d.Keyword(),
+		Name:    d.Name().AsIdent(),
+		Body:    d.Body(),
+		Decl:    d,
 	}
+}
 
+// AsExtend extracts the fields from this definition relevant to interpreting
+// it as a service.
+//
+// The return value's fields may be nil if they are not present.
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsExtend() DefExtend {
+	return DefExtend{
+		Keyword:  d.Keyword(),
+		Extendee: d.Name(),
+		Body:     d.Body(),
+		Decl:     d,
+	}
+}
+
+// AsField extracts the fields from this definition relevant to interpreting
+// it as a message field.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsField() DefField {
 	return DefField{
 		Type:      d.Type(),
-		Name:      nameID,
-		Equals:    eq,
-		Tag:       value,
+		Name:      d.Name().AsIdent(),
+		Equals:    d.Equals(),
+		Tag:       d.Value(),
 		Options:   d.Options(),
 		Semicolon: d.Semicolon(),
 		Decl:      d,
 	}
+}
+
+// AsOneof extracts the fields from this definition relevant to interpreting
+// it as a oneof.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsOneof() DefOneof {
+	return DefOneof{
+		Keyword: d.Keyword(),
+		Name:    d.Name().AsIdent(),
+		Body:    d.Body(),
+		Decl:    d,
+	}
+}
+
+// AsGroup extracts the fields from this definition relevant to interpreting
+// it as a group.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsGroup() DefGroup {
+	return DefGroup{
+		Keyword: d.Keyword(),
+		Name:    d.Name().AsIdent(),
+		Equals:  d.Equals(),
+		Tag:     d.Value(),
+		Options: d.Options(),
+		Decl:    d,
+	}
+}
+
+// AsEnumValue extracts the fields from this definition relevant to interpreting
+// it as an enum value.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsEnumValue() DefEnumValue {
+	return DefEnumValue{
+		Name:      d.Name().AsIdent(),
+		Equals:    d.Equals(),
+		Tag:       d.Value(),
+		Options:   d.Options(),
+		Semicolon: d.Semicolon(),
+		Decl:      d,
+	}
+}
+
+// AsMethod extracts the fields from this definition relevant to interpreting
+// it as a service method.
+//
+// The return value's fields may be nil if they are not present (in particular,
+// Name will be nil if d.Name() is not an identifier).
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsMethod() DefMethod {
+	return DefMethod{
+		Keyword:   d.Keyword(),
+		Name:      d.Name().AsIdent(),
+		Signature: d.Signature(),
+		Body:      d.Body(),
+		Decl:      d,
+	}
+}
+
+// AsMethod extracts the fields from this definition relevant to interpreting
+// it as an option.
+//
+// The return value's fields may be nil if they are not present.
+//
+// See [DeclDef.Classify].
+func (d DeclDef) AsOption() DefOption {
+	return DefOption{
+		Keyword: d.Keyword(),
+		Option: Option{
+			Path:   d.Name(),
+			Equals: d.Equals(),
+			Value:  d.Value(),
+		},
+		Semicolon: d.Semicolon(),
+		Decl:      d,
+	}
+}
+
+// Classify looks at all the fields in this definition and decides what kind of
+// definition it's supposed to represent.
+//
+// To select which definition this probably is, this function looks at
+// [DeclDef.Keyword]. If there is no keyword or it isn't something that it
+// recognizes, it is classified as either an enum value or a field, depending on
+// whether this definition has a type.
+//
+// The correct way to use this function is as the input value for a switch. The
+// cases of the switch should then use the As* methods, such as
+// [DeclDef.AsMessage], to extract the relevant fields.
+func (d DeclDef) Classify() DefKind {
+	switch d.Keyword().Text() {
+	case "message":
+		return DefKindMessage
+	case "enum":
+		return DefKindEnum
+	case "service":
+		return DefKindService
+	case "extend":
+		return DefKindExtend
+	case "oneof":
+		return DefKindOneof
+	case "group":
+		return DefKindGroup
+	case "rpc":
+		if d.Signature().Nil() {
+			// rpc foo = 1; is a valid field definition. We only consider
+			// this a method if there is a type signature on it.
+			break
+		}
+		return DefKindMethod
+	case "option":
+		return DefKindOption
+	}
+
+	if d.Type().Nil() {
+		return DefKindEnumValue
+	}
+
+	return DefKindField
 }
 
 // Span implements [Spanner].
@@ -322,21 +430,8 @@ func (d DeclDef) Span() Span {
 	)
 }
 
-func (d DeclDef) declRaw() (declKind, arena.Untyped) {
-	return declDef, arena.Untyped(d.ptr)
-}
-
 func wrapDeclDef(c Contextual, ptr arena.Pointer[rawDeclDef]) DeclDef {
-	ctx := c.Context()
-	if ctx == nil || ptr.Nil() {
-		return DeclDef{}
-	}
-
-	return DeclDef{
-		withContext{ctx},
-		ptr,
-		ctx.decls.defs.Deref(ptr),
-	}
+	return DeclDef{wrapDecl(c, ptr)}
 }
 
 // Signature is a type signature of the form (types) returns (types).
@@ -457,10 +552,10 @@ func (d DefExtend) Context() *Context { return d.Decl.Context() }
 //
 // See [DeclDef.Classify].
 type DefField struct {
-	Type      Type
+	Type      TypeAny
 	Name      Token
 	Equals    Token
-	Tag       Expr
+	Tag       ExprAny
 	Options   CompactOptions
 	Semicolon Token
 
@@ -477,7 +572,7 @@ func (d DefField) Context() *Context { return d.Decl.Context() }
 type DefEnumValue struct {
 	Name      Token
 	Equals    Token
-	Tag       Expr
+	Tag       ExprAny
 	Options   CompactOptions
 	Semicolon Token
 
@@ -510,7 +605,7 @@ type DefGroup struct {
 	Keyword Token
 	Name    Token
 	Equals  Token
-	Tag     Expr
+	Tag     ExprAny
 	Options CompactOptions
 	Body    DeclBody
 

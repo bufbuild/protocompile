@@ -24,6 +24,22 @@ type Path struct {
 	raw rawPath
 }
 
+// rawPath is the raw contents of a Path without its Context.
+//
+// This has one of the following configurations.
+//
+//  1. Two zero tokens. This is the nil path.
+//
+//  2. Two natural tokens. This means the path is all tokens between them including
+//     the end-point
+//
+//  3. A single synthetic token and a nil token. If this token has children, those are
+//     the path components. Otherwise, the token itself is the sole token.
+//
+// NOTE: Multiple compressed representations in this package depend on the fact that
+// if raw[0] < 0, then raw[1] == 0 for all valid paths.
+type rawPath [2]rawToken
+
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
 	var abs bool
@@ -112,6 +128,38 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	}
 }
 
+// TypePath is a simple path reference as a type.
+type TypePath struct {
+	// The path that refers to this type.
+	Path
+}
+
+// AsAny type-erases this type value.
+//
+// See [TypeAny] for more information.
+func (t TypePath) AsAny() TypeAny {
+	return TypeAny{
+		t.Path.withContext,
+		rawType(t.Path.raw),
+	}
+}
+
+// TypePath is a simple path reference in expression position.
+type ExprPath struct {
+	// The path backing this expression.
+	Path
+}
+
+// AsAny type-erases this type value.
+//
+// See [TypeAny] for more information.
+func (e ExprPath) AsAny() ExprAny {
+	return ExprAny{
+		e.Path.withContext,
+		rawExpr(e.Path.raw),
+	}
+}
+
 // PathComponent is a piece of a path. This is either an identifier or a nested path
 // (for an extension name).
 type PathComponent struct {
@@ -180,22 +228,6 @@ func (p PathComponent) AsIdent() Token {
 	}
 	return p.name
 }
-
-// rawPath is the raw contents of a Path without its Context.
-//
-// This has one of the following configurations.
-//
-//  1. Two zero tokens. This is the nil path.
-//
-//  2. Two natural tokens. This means the path is all tokens between them including
-//     the end-point
-//
-//  3. A single synthetic token and a nil token. If this token has children, those are
-//     the path components. Otherwise, the token itself is the sole token.
-//
-// NOTE: Multiple compressed representations in this package depend on the fact that
-// if raw[0] < 0, then raw[1] == 0 for all valid paths.
-type rawPath [2]rawToken
 
 // Wrap wraps this rawPath with a context to present to the user.
 func (p rawPath) With(c Contextual) Path {

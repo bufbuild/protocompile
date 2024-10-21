@@ -24,13 +24,8 @@ import (
 // syntactically so they use the same AST node.
 //
 // In the Protocompile AST, ranges can contain arbitrary expressions. Thus, DeclRange
-// implements [Comma[Expr]].
-type DeclRange struct {
-	withContext
-
-	ptr arena.Pointer[rawDeclRange]
-	raw *rawDeclRange
-}
+// implements [Comma[ExprAny]].
+type DeclRange struct{ declImpl[rawDeclRange] }
 
 type rawDeclRange struct {
 	keyword rawToken
@@ -47,8 +42,7 @@ type DeclRangeArgs struct {
 }
 
 var (
-	_ Decl         = DeclRange{}
-	_ Commas[Expr] = DeclRange{}
+	_ Commas[ExprAny] = DeclRange{}
 )
 
 // Keyword returns the keyword for this range.
@@ -72,12 +66,12 @@ func (d DeclRange) Len() int {
 }
 
 // At implements [Slice].
-func (d DeclRange) At(n int) Expr {
+func (d DeclRange) At(n int) ExprAny {
 	return d.raw.args[n].Value.With(d)
 }
 
 // Iter implements [Slice].
-func (d DeclRange) Iter(yield func(int, Expr) bool) {
+func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
 	for i, arg := range d.raw.args {
 		if !yield(i, arg.Value.With(d)) {
 			break
@@ -86,12 +80,12 @@ func (d DeclRange) Iter(yield func(int, Expr) bool) {
 }
 
 // Append implements [Inserter].
-func (d DeclRange) Append(expr Expr) {
+func (d DeclRange) Append(expr ExprAny) {
 	d.InsertComma(d.Len(), expr, Token{})
 }
 
 // Insert implements [Inserter].
-func (d DeclRange) Insert(n int, expr Expr) {
+func (d DeclRange) Insert(n int, expr ExprAny) {
 	d.InsertComma(n, expr, Token{})
 }
 
@@ -106,15 +100,15 @@ func (d DeclRange) Comma(n int) Token {
 }
 
 // AppendComma implements [Commas].
-func (d DeclRange) AppendComma(expr Expr, comma Token) {
+func (d DeclRange) AppendComma(expr ExprAny, comma Token) {
 	d.InsertComma(d.Len(), expr, comma)
 }
 
 // InsertComma implements [Commas].
-func (d DeclRange) InsertComma(n int, expr Expr, comma Token) {
+func (d DeclRange) InsertComma(n int, expr ExprAny, comma Token) {
 	d.Context().panicIfNotOurs(expr, comma)
 
-	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{toRawExpr(expr), comma.raw})
+	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{expr.raw, comma.raw})
 }
 
 // Options returns the compact options list for this range.
@@ -145,19 +139,6 @@ func (d DeclRange) Span() Span {
 	return span
 }
 
-func (d DeclRange) declRaw() (declKind, arena.Untyped) {
-	return declRange, d.ptr.Untyped()
-}
-
 func wrapDeclRange(c Contextual, ptr arena.Pointer[rawDeclRange]) DeclRange {
-	ctx := c.Context()
-	if ctx == nil || ptr.Nil() {
-		return DeclRange{}
-	}
-
-	return DeclRange{
-		withContext{ctx},
-		ptr,
-		ctx.decls.ranges.Deref(ptr),
-	}
+	return DeclRange{wrapDecl(c, ptr)}
 }
