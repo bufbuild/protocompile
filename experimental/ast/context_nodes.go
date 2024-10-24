@@ -69,28 +69,26 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 		args.Keyword, args.Type, args.Name, args.Returns,
 		args.Equals, args.Value, args.Options, args.Body, args.Semicolon)
 
-	decl := wrapDeclDef(c, c.decls.defs.New(rawDeclDef{
+	raw := rawDeclDef{
 		name:    args.Name.raw,
 		equals:  args.Equals.raw,
 		value:   args.Value.raw,
 		options: args.Options.ptr,
 		body:    args.Body.ptr,
 		semi:    args.Semicolon.raw,
-	}))
-
-	if args.Type.Nil() {
-		decl.SetType(args.Type)
-	} else {
-		decl.SetType(TypePath{Path: rawPath{args.Keyword.raw, args.Keyword.raw}.With(c)}.AsAny())
 	}
-
+	if !args.Type.Nil() {
+		raw.ty = args.Type.raw
+	} else {
+		raw.ty = rawType(rawPath{args.Keyword.raw, args.Keyword.raw})
+	}
 	if !args.Returns.Nil() {
-		decl.raw.signature = &rawSignature{
+		raw.signature = &rawSignature{
 			returns: args.Returns.raw,
 		}
 	}
 
-	return decl
+	return wrapDeclDef(c, c.decls.defs.New(raw))
 }
 
 // NewDeclBody creates a new DeclBody node.
@@ -235,7 +233,7 @@ func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	}}
 }
 
-// NewCompactOptions creates a new Options node.
+// NewCompactOptions creates a new CompactOptions node.
 func (c *Context) NewCompactOptions(brackets Token) CompactOptions {
 	c.panicIfNotOurs(brackets)
 

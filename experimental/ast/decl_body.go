@@ -15,7 +15,6 @@
 package ast
 
 import (
-	"fmt"
 	"slices"
 
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -69,26 +68,10 @@ func (d DeclBody) Len() int {
 
 // At returns the nth element of this body.
 func (d DeclBody) At(n int) DeclAny {
-	k := d.raw.kinds[n]
-	p := d.raw.ptrs[n]
-
-	switch k {
-	case DeclKindEmpty:
-		return wrapDeclEmpty(d, arena.Pointer[rawDeclEmpty](p)).AsAny()
-	case DeclKindSyntax:
-		return wrapDeclSyntax(d, arena.Pointer[rawDeclSyntax](p)).AsAny()
-	case DeclKindPackage:
-		return wrapDeclPackage(d, arena.Pointer[rawDeclPackage](p)).AsAny()
-	case DeclKindImport:
-		return wrapDeclImport(d, arena.Pointer[rawDeclImport](p)).AsAny()
-	case DeclKindDef:
-		return wrapDeclDef(d, arena.Pointer[rawDeclDef](p)).AsAny()
-	case DeclKindBody:
-		return wrapDeclBody(d, arena.Pointer[rawDeclBody](p)).AsAny()
-	case DeclKindRange:
-		return wrapDeclRange(d, arena.Pointer[rawDeclRange](p)).AsAny()
-	default:
-		panic(fmt.Sprintf("protocompile/ast: unknown declKind %d: this is a bug in protocompile", k))
+	return DeclAny{
+		withContext: d.withContext,
+		ptr:         d.raw.ptrs[n],
+		kind:        d.raw.kinds[n],
 	}
 }
 
