@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,7 +57,7 @@ those dependencies' dependencies. ([Run], however, returns all transitive errors
 [Executor] supports invalidating queries by URL, which will cause all queries
 that depended on that query to be discarded and require recomputing. This can be
 used e.g. to mark a file as changed and require that everything that that file
-depended on is recomputed. See [Executor.Invalidate].
+depended on is recomputed. See [Executor.Evict].
 */
 //nolint:dupword  // "that that" is grammatical!
 package incremental
