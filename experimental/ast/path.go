@@ -14,6 +14,8 @@
 
 package ast
 
+import "github.com/bufbuild/protocompile/experimental/ast/predeclared"
+
 // Path represents a multi-part identifier.
 //
 // This includes single identifiers like foo, references like foo.bar,
@@ -71,11 +73,11 @@ func (p Path) AsIdent() Token {
 	return tok
 }
 
-// AsBuiltin returns the builtin that this path represents.
+// AsPredeclared returns the [predeclared.Name] that this path represents.
 //
 // If this path does not represent a builtin, returns [BuiltinUnknown].
-func (p Path) AsBuiltin() Builtin {
-	return BuiltinByName(p.AsIdent().Text())
+func (p Path) AsPredeclared() predeclared.Name {
+	return predeclared.Lookup(p.AsIdent().Text())
 }
 
 // Span implements [Spanner].
