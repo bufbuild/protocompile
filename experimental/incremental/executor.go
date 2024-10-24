@@ -28,6 +28,11 @@ import (
 // See [New], [Run], and [Invalidate].
 type Executor struct {
 	dirty sync.RWMutex
+
+	// TODO: Evaluate alternatives. sync.Map is pretty bad at having predictable
+	// performance, and we may want to add eviction to keep memoization costs
+	// in a long-running process (like, say, a language server) down.
+	// See https://github.com/dgraph-io/ristretto as a potential alternative.
 	tasks sync.Map // [string, *task]
 
 	sema *semaphore.Weighted
@@ -82,6 +87,11 @@ func (e *Executor) URLs() (urls []string) {
 // Errors that occur during each query are contained within the returned results.
 // Unlike [Resolve], these contain the *transitive* errors for each query!
 //
+// Implementations of [Query].Execute MUST NOT UNDER ANY CIRCUMSTANCES call
+// Run. This will result in potential resource starvation or deadlocking, and
+// defeats other correctness verification (such as cycle detection). Instead,
+// use [Resolve], which takes a [Task] instead of an [Executor].
+//
 // Note: this function really wants to be a method of [Executor], but it isn't
 // because it's generic.
 func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results []Result[T], expired error) {
@@ -106,7 +116,7 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 		// We don't write to results here, to avoid a potential race with
 		// returning when ctx.Done() is closed.
 		rs, _ = Resolve(root, queries...)
-		close(root.result.done)
+		defer close(root.result.done)
 	}()
 
 	select {
@@ -116,8 +126,8 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 		return nil, context.Cause(ctx)
 	}
 
-	// Now, for each non-failed result, we need to walk their dependencies and
-	// collect their errors.
+	// Now, for each result, we need to walk their dependencies and collect
+	// their dependencies' non-fatal errors.
 	for i, query := range queries {
 		task := e.getTask(query.URL())
 		for dep := range task.deps {

@@ -93,6 +93,7 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 	for i, q := range queries {
 		i := i // Avoid pesky capture-by-ref of loop induction variables.
 
+		q := AnyQuery(q) // This will also cache the result of q.URL() for us.
 		deps[i] = caller.exec.getTask(q.URL())
 		async = run(caller, deps[i], q, wg, func() {
 			r := deps[i].result.Load()
@@ -162,8 +163,10 @@ func (t *Task) checkDone() {
 
 // task is book-keeping information for a memoized Task in an Executor.
 type task struct {
-	deps       map[*task]struct{} // Transitive.
-	downstream sync.Map           // [*task, struct{}]
+	deps map[*task]struct{} // Transitive.
+
+	// TODO: See the comment on Executor.tasks.
+	downstream sync.Map // [*task, struct{}]
 
 	// If this task has not been started yet, this is nil.
 	// Otherwise, if it is complete, result.done will be closed.
@@ -186,7 +189,7 @@ type result struct {
 
 // run executes a query in the context of some task and writes the result to
 // out.
-func run[T any](caller Task, task *task, q Query[T], wg *semaphore.Weighted, done func()) (async bool) {
+func run(caller Task, task *task, q Query[any], wg *semaphore.Weighted, done func()) (async bool) {
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := task.result.Load()
 	if r != nil && closed(r.done) {
@@ -255,7 +258,7 @@ func run[T any](caller Task, task *task, q Query[T], wg *semaphore.Weighted, don
 			task:   task,
 			result: r,
 			path: path{
-				Query: AnyQuery(q),
+				Query: q,
 				Prev:  &caller.path,
 			},
 		}
