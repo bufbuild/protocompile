@@ -180,9 +180,8 @@ func wrapDecl[Raw any](ctx Context, ptr arena.Pointer[Raw]) declImpl[Raw] {
 	if ctx == nil || ptr.Nil() {
 		return declImpl[Raw]{}
 	}
-	nodes := ctx.Nodes()
 
-	_, arena := declArena[Raw](&nodes.decls)
+	_, arena := declArena[Raw](&ctx.Nodes().decls)
 	return declImpl[Raw]{
 		internal.NewWith(ctx),
 		arena.Deref(ptr),
