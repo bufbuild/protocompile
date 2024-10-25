@@ -15,7 +15,7 @@
 package ast
 
 import (
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/bufbuild/protocompile/internal/arena"
 )
