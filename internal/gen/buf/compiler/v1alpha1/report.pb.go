@@ -251,9 +251,11 @@ type Report_File struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The path to this file. Does not need to be meaningful as a file-system path.
+	// The path to this file. Does not need to be meaningful as a file-system
+	// path.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	// The textual contents of this file.
+	// The textual contents of this file. Presumed to be UTF-8, although it need
+	// not be.
 	Text []byte `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
 }
 
