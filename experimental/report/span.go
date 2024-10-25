@@ -15,6 +15,7 @@
 package report
 
 import (
+	"math"
 	"slices"
 	"strings"
 	"sync"
@@ -25,13 +26,6 @@ import (
 // TabstopWidth is the size we render all tabstops as.
 const TabstopWidth int = 4
 
-// Span is any type that can be used to generate source code information for a diagnostic.
-type Span interface {
-	File() File
-	Start() Location
-	End() Location
-}
-
 // File is a source code file involved in a diagnostic.
 type File struct {
 	// The filesystem path for this string. It doesn't need to be a real path, but
@@ -40,6 +34,72 @@ type File struct {
 
 	// The complete text of the file.
 	Text string
+}
+
+// Spanner is any type with a span.
+type Spanner interface {
+	Span() Span
+}
+
+// Span is a location within a [File].
+type Span struct {
+	// The file this span refers to. The file must be indexed, since we plan to
+	// convert Start/End into editor coordinates.
+	*IndexedFile
+
+	// The start and end byte offsets for this span.
+	Start, End int
+}
+
+// Text returns the text corresponding to this span.
+func (s Span) Text() string {
+	return s.File().Text[s.Start:s.End]
+}
+
+// StartLoc returns the start location for this span.
+func (s Span) StartLoc() Location {
+	return s.Search(s.Start)
+}
+
+// EndLoc returns the end location for this span.
+func (s Span) EndLoc() Location {
+	return s.Search(s.End)
+}
+
+// Span implements [Spanner].
+func (s Span) Span() Span {
+	return s
+}
+
+// Join joins a collection of spans, returning the smallest span that
+// contains all of them.
+//
+// Nil spans among spans are ignored. If every span in spans is nil, returns
+// the nil span.
+//
+// If there are at least two distinct non-nil files among the spans,
+// this function panics.
+func Join(spans ...Spanner) Span {
+	joined := Span{Start: math.MaxInt}
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		span := span.Span()
+		if joined.IndexedFile == nil {
+			joined.IndexedFile = span.IndexedFile
+		} else if joined.IndexedFile != span.IndexedFile {
+			panic("protocompile/report: passed spans with distinct files to JoinSpans()")
+		}
+
+		joined.Start = min(joined.Start, span.Start)
+		joined.End = max(joined.End, span.End)
+	}
+
+	if joined.IndexedFile == nil {
+		return Span{}
+	}
+	return joined
 }
 
 // Location is a user-displayable location within a source code file.
@@ -85,17 +145,14 @@ func (i *IndexedFile) File() File {
 	return i.file
 }
 
-// NewSpan generates a span using the given start and end offsets.
-//
-// This is mostly intended for convenience; generally speaking, users of package report
-// will want to implement their own [Span] types that use a compressed representation,
-// and delay computation of line and column information as late as possible.
-func (i *IndexedFile) NewSpan(start, end int) Span {
-	return naiveSpan{
-		file:  i.File(),
-		start: i.Search(start),
-		end:   i.Search(end),
-	}
+// Path returns i.File().Path.
+func (i *IndexedFile) Path() string {
+	return i.File().Path
+}
+
+// Text returns i.File().Text.
+func (i *IndexedFile) Text() string {
+	return i.File().Text
 }
 
 // Search searches this index to build full Location information for the given byte
@@ -154,13 +211,3 @@ func stringWidth(column int, text string) int {
 	}
 	return column
 }
-
-type naiveSpan struct {
-	file       File
-	start, end Location
-}
-
-func (s naiveSpan) File() File      { return s.file }
-func (s naiveSpan) Start() Location { return s.start }
-func (s naiveSpan) End() Location   { return s.end }
-func (s naiveSpan) Span() Span      { return s }

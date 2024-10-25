@@ -17,6 +17,8 @@ package ast
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -30,7 +32,7 @@ import (
 type DeclBody struct{ declImpl[rawDeclBody] }
 
 type rawDeclBody struct {
-	braces rawToken
+	braces token.ID
 
 	// These slices are co-indexed; they are parallelizes to save
 	// three bytes per decl (declKind is 1 byte, but decl is 4; if
@@ -44,21 +46,21 @@ var (
 )
 
 // Braces returns this body's surrounding braces, if it has any.
-func (d DeclBody) Braces() Token {
-	return d.raw.braces.With(d)
+func (d DeclBody) Braces() token.Token {
+	return d.raw.braces.In(d.Context())
 }
 
-// Span implements [Spanner].
-func (d DeclBody) Span() Span {
+// Span implements [report.Spanner].
+func (d DeclBody) Span() report.Span {
 	if !d.Braces().Nil() {
 		return d.Braces().Span()
 	}
 
 	if d.Len() == 0 {
-		return Span{}
+		return report.Span{}
 	}
 
-	return JoinSpans(d.At(0), d.At(d.Len()-1))
+	return report.Join(d.At(0), d.At(d.Len()-1))
 }
 
 // Len returns the number of declarations inside of this body.
@@ -91,7 +93,7 @@ func (d DeclBody) Append(value DeclAny) {
 
 // Insert inserts a new declaration at the given index.
 func (d DeclBody) Insert(n int, value DeclAny) {
-	d.Context().panicIfNotOurs(value)
+	d.Context().Nodes().panicIfNotOurs(value)
 
 	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.kind)
 	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.ptr)
@@ -103,6 +105,6 @@ func (d DeclBody) Delete(n int) {
 	d.raw.ptrs = slices.Delete(d.raw.ptrs, n, n+1)
 }
 
-func wrapDeclBody(c Contextual, ptr arena.Pointer[rawDeclBody]) DeclBody {
+func wrapDeclBody(c Context, ptr arena.Pointer[rawDeclBody]) DeclBody {
 	return DeclBody{wrapDecl(c, ptr)}
 }

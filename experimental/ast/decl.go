@@ -17,6 +17,8 @@ package ast
 import (
 	"reflect"
 
+	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -65,7 +67,7 @@ func (d DeclAny) AsEmpty() DeclEmpty {
 		return DeclEmpty{}
 	}
 
-	return wrapDeclEmpty(d, arena.Pointer[rawDeclEmpty](d.ptr))
+	return wrapDeclEmpty(d.Context(), arena.Pointer[rawDeclEmpty](d.ptr))
 }
 
 // AsSyntax converts a DeclAny into a DeclSyntax, if that is the declaration
@@ -77,7 +79,7 @@ func (d DeclAny) AsSyntax() DeclSyntax {
 		return DeclSyntax{}
 	}
 
-	return wrapDeclSyntax(d, arena.Pointer[rawDeclSyntax](d.ptr))
+	return wrapDeclSyntax(d.Context(), arena.Pointer[rawDeclSyntax](d.ptr))
 }
 
 // AsPackage converts a DeclAny into a DeclPackage, if that is the declaration
@@ -89,7 +91,7 @@ func (d DeclAny) AsPackage() DeclPackage {
 		return DeclPackage{}
 	}
 
-	return wrapDeclPackage(d, arena.Pointer[rawDeclPackage](d.ptr))
+	return wrapDeclPackage(d.Context(), arena.Pointer[rawDeclPackage](d.ptr))
 }
 
 // AsImport converts a DeclAny into a DeclImport, if that is the declaration
@@ -101,7 +103,7 @@ func (d DeclAny) AsImport() DeclImport {
 		return DeclImport{}
 	}
 
-	return wrapDeclImport(d, arena.Pointer[rawDeclImport](d.ptr))
+	return wrapDeclImport(d.Context(), arena.Pointer[rawDeclImport](d.ptr))
 }
 
 // AsDef converts a DeclAny into a DeclDef, if that is the declaration
@@ -113,7 +115,7 @@ func (d DeclAny) AsDef() DeclDef {
 		return DeclDef{}
 	}
 
-	return wrapDeclDef(d, arena.Pointer[rawDeclDef](d.ptr))
+	return wrapDeclDef(d.Context(), arena.Pointer[rawDeclDef](d.ptr))
 }
 
 // AsBody converts a DeclAny into a DeclBody, if that is the declaration
@@ -125,7 +127,7 @@ func (d DeclAny) AsBody() DeclBody {
 		return DeclBody{}
 	}
 
-	return wrapDeclBody(d, arena.Pointer[rawDeclBody](d.ptr))
+	return wrapDeclBody(d.Context(), arena.Pointer[rawDeclBody](d.ptr))
 }
 
 // AsRange converts a DeclAny into a DeclRange, if that is the declaration
@@ -137,15 +139,15 @@ func (d DeclAny) AsRange() DeclRange {
 		return DeclRange{}
 	}
 
-	return wrapDeclRange(d, arena.Pointer[rawDeclRange](d.ptr))
+	return wrapDeclRange(d.Context(), arena.Pointer[rawDeclRange](d.ptr))
 }
 
-// Span implements [Spanner].
-func (d DeclAny) Span() Span {
+// Span implements [report.Spanner].
+func (d DeclAny) Span() report.Span {
 	// At most one of the below will produce a non-nil decl, and that will be
-	// the span selected by JoinSpans. If all of them are nil, this produces
+	// the span selected by report.Join. If all of them are nil, this produces
 	// the nil span.
-	return JoinSpans(
+	return report.Join(
 		d.AsEmpty(),
 		d.AsSyntax(),
 		d.AsPackage(),
@@ -166,7 +168,7 @@ type declImpl[Raw any] struct {
 //
 // See [DeclAny] for more information.
 func (d declImpl[Raw]) AsAny() DeclAny {
-	kind, arena := declArena[Raw](&d.ctx.decls)
+	kind, arena := declArena[Raw](&d.Context().Nodes().decls)
 	return DeclAny{
 		withContext: d.withContext,
 		ptr:         arena.Compress(d.raw).Untyped(),
@@ -174,15 +176,15 @@ func (d declImpl[Raw]) AsAny() DeclAny {
 	}
 }
 
-func wrapDecl[Raw any](c Contextual, ptr arena.Pointer[Raw]) declImpl[Raw] {
-	ctx := c.Context()
+func wrapDecl[Raw any](ctx Context, ptr arena.Pointer[Raw]) declImpl[Raw] {
 	if ctx == nil || ptr.Nil() {
 		return declImpl[Raw]{}
 	}
+	nodes := ctx.Nodes()
 
-	_, arena := declArena[Raw](&ctx.decls)
+	_, arena := declArena[Raw](&nodes.decls)
 	return declImpl[Raw]{
-		withContext{ctx},
+		internal.NewWith(ctx),
 		arena.Deref(ptr),
 	}
 }

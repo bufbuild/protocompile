@@ -17,6 +17,9 @@ package ast
 import (
 	"reflect"
 
+	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -73,8 +76,8 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 	}
 
 	return ExprLiteral{
-		//nolint:unconvert // Conversion to rawToken included for clarity.
-		Token: rawToken(e.raw[1]).With(e),
+		//nolint:unconvert // Conversion to token.ID included for clarity.
+		Token: token.ID(e.raw[1]).In(e.Context()),
 	}
 }
 
@@ -88,7 +91,7 @@ func (e ExprAny) AsPath() ExprPath {
 	}
 
 	return ExprPath{
-		Path: rawPath(e.raw).With(e),
+		Path: rawPath(e.raw).With(e.Context()),
 	}
 }
 
@@ -108,7 +111,7 @@ func (e ExprAny) AsPrefixed() ExprPrefixed {
 	ptr := arena.Pointer[rawExprPrefixed](e.ptr())
 	return ExprPrefixed{exprImpl[rawExprPrefixed]{
 		e.withContext,
-		e.Context().exprs.prefixes.Deref(ptr),
+		e.Context().Nodes().exprs.prefixes.Deref(ptr),
 	}}
 }
 
@@ -124,7 +127,7 @@ func (e ExprAny) AsRange() ExprRange {
 	ptr := arena.Pointer[rawExprRange](e.ptr())
 	return ExprRange{exprImpl[rawExprRange]{
 		e.withContext,
-		e.Context().exprs.ranges.Deref(ptr),
+		e.Context().Nodes().exprs.ranges.Deref(ptr),
 	}}
 }
 
@@ -140,7 +143,7 @@ func (e ExprAny) AsArray() ExprArray {
 	ptr := arena.Pointer[rawExprArray](e.ptr())
 	return ExprArray{exprImpl[rawExprArray]{
 		e.withContext,
-		e.Context().exprs.arrays.Deref(ptr),
+		e.Context().Nodes().exprs.arrays.Deref(ptr),
 	}}
 }
 
@@ -156,7 +159,7 @@ func (e ExprAny) AsDict() ExprDict {
 	ptr := arena.Pointer[rawExprDict](e.ptr())
 	return ExprDict{exprImpl[rawExprDict]{
 		e.withContext,
-		e.Context().exprs.dicts.Deref(ptr),
+		e.Context().Nodes().exprs.dicts.Deref(ptr),
 	}}
 }
 
@@ -172,16 +175,16 @@ func (e ExprAny) AsKV() ExprField {
 	ptr := arena.Pointer[rawExprField](e.ptr())
 	return ExprField{exprImpl[rawExprField]{
 		e.withContext,
-		e.Context().exprs.fields.Deref(ptr),
+		e.Context().Nodes().exprs.fields.Deref(ptr),
 	}}
 }
 
-// Span implements [Spanner].
-func (e ExprAny) Span() Span {
+// Span implements [report.Spanner].
+func (e ExprAny) Span() report.Span {
 	// At most one of the below will produce a non-nil type, and that will be
-	// the span selected by JoinSpans. If all of them are nil, this produces
+	// the span selected by report.Join. If all of them are nil, this produces
 	// the nil span.
-	return JoinSpans(
+	return report.Join(
 		e.AsLiteral(),
 		e.AsPath(),
 		e.AsPrefixed(),
@@ -207,20 +210,19 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	kind, arena := exprArena[Raw](&e.ctx.exprs)
+	kind, arena := exprArena[Raw](&e.Context().Nodes().exprs)
 	return ExprAny{
 		e.withContext,
-		rawExpr{^rawToken(kind), rawToken(arena.Compress(e.raw))},
+		rawExpr{^token.ID(kind), token.ID(arena.Compress(e.raw))},
 	}
 }
 
-func (e rawExpr) With(c Contextual) ExprAny {
-	ctx := c.Context()
+func (e rawExpr) With(ctx Context) ExprAny {
 	if ctx == nil || (e == rawExpr{}) {
 		return ExprAny{}
 	}
 
-	return ExprAny{withContext{ctx}, e}
+	return ExprAny{internal.NewWith(ctx), e}
 }
 
 // exprs is storage for the various kinds of Exprs in a Context.

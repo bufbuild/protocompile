@@ -61,20 +61,6 @@
 // Pointer-like types should generally be passed by value, not by pointer; all
 // of them have value receivers.
 //
-// # Synthetic Tokens
-//
-// To support use case (3), this library distinguishes between natural [Token]s
-// (those created by the parser) and synthetic [Token]s (those created
-// programmatically to modify/build an AST). There is no such distinction
-// between natural/synthetic AST nodes, since those can mix and match nodes that
-// contain natural and synthetic tokens, and the same New* functions on [Context]
-// are used by the parser and by AST rewriting.
-//
-// Synthetic tokens have a few important differences from ordinary tokens, the
-// most important of which is that they do not appear in the token stream (so
-// [Context.Stream] won't find them) and they do not have [Span]s, so they
-// cannot be used in diagnostics (Span() will return the nil [Span]).
-//
 // # Coming Soon
 //
 // This library will replace the existing [github.com/bufbuild/protocompile/ast]

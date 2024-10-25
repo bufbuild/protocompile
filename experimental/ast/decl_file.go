@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
@@ -72,7 +74,7 @@ func (f File) Imports() iter.Seq2[int, DeclImport] {
 type DeclSyntax struct{ declImpl[rawDeclSyntax] }
 
 type rawDeclSyntax struct {
-	keyword, equals, semi rawToken
+	keyword, equals, semi token.ID
 	value                 rawExpr
 	options               arena.Pointer[rawCompactOptions]
 }
@@ -80,16 +82,16 @@ type rawDeclSyntax struct {
 // DeclSyntaxArgs is arguments for [Context.NewDeclSyntax].
 type DeclSyntaxArgs struct {
 	// Must be "syntax" or "edition".
-	Keyword   Token
-	Equals    Token
+	Keyword   token.Token
+	Equals    token.Token
 	Value     ExprAny
 	Options   CompactOptions
-	Semicolon Token
+	Semicolon token.Token
 }
 
 // Keyword returns the keyword for this pragma.
-func (d DeclSyntax) Keyword() Token {
-	return d.raw.keyword.With(d)
+func (d DeclSyntax) Keyword() token.Token {
+	return d.raw.keyword.In(d.Context())
 }
 
 // IsSyntax checks whether this is an OG syntax pragma.
@@ -105,8 +107,8 @@ func (d DeclSyntax) IsEdition() bool {
 // Equals returns the equals sign after the keyword.
 //
 // May be nil, if the user wrote something like syntax "proto2";.
-func (d DeclSyntax) Equals() Token {
-	return d.raw.equals.With(d)
+func (d DeclSyntax) Equals() token.Token {
+	return d.raw.equals.In(d.Context())
 }
 
 // Value returns the value expression of this pragma.
@@ -114,7 +116,7 @@ func (d DeclSyntax) Equals() Token {
 // May be nil, if the user wrote something like syntax;. It can also be
 // a number or an identifier, for cases like edition = 2024; or syntax = proto2;.
 func (d DeclSyntax) Value() ExprAny {
-	return d.raw.value.With(d)
+	return d.raw.value.With(d.Context())
 }
 
 // SetValue sets the expression for this pragma's value.
@@ -128,29 +130,29 @@ func (d DeclSyntax) SetValue(expr ExprAny) {
 //
 // Syntax declarations cannot have options, but we parse them anyways.
 func (d DeclSyntax) Options() CompactOptions {
-	return wrapOptions(d, d.raw.options)
+	return wrapOptions(d.Context(), d.raw.options)
 }
 
 // SetOptions sets the compact options list for this declaration.
 //
 // Setting it to a nil Options clears it.
 func (d DeclSyntax) SetOptions(opts CompactOptions) {
-	d.raw.options = d.ctx.options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
 }
 
 // Semicolon returns this pragma's ending semicolon.
 //
 // May be nil, if the user forgot it.
-func (d DeclSyntax) Semicolon() Token {
-	return d.raw.semi.With(d)
+func (d DeclSyntax) Semicolon() token.Token {
+	return d.raw.semi.In(d.Context())
 }
 
-// Span implements [Spanner].
-func (d DeclSyntax) Span() Span {
-	return JoinSpans(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
+// report.Span implements [report.Spanner].
+func (d DeclSyntax) Span() report.Span {
+	return report.Join(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
 }
 
-func wrapDeclSyntax(c Contextual, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
+func wrapDeclSyntax(c Context, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
 	return DeclSyntax{wrapDecl(c, ptr)}
 }
 
@@ -158,59 +160,59 @@ func wrapDeclSyntax(c Contextual, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
 type DeclPackage struct{ declImpl[rawDeclPackage] }
 
 type rawDeclPackage struct {
-	keyword rawToken
+	keyword token.ID
 	path    rawPath
-	semi    rawToken
+	semi    token.ID
 	options arena.Pointer[rawCompactOptions]
 }
 
 // DeclPackageArgs is arguments for [Context.NewDeclPackage].
 type DeclPackageArgs struct {
-	Keyword   Token
+	Keyword   token.Token
 	Path      Path
 	Options   CompactOptions
-	Semicolon Token
+	Semicolon token.Token
 }
 
 // Keyword returns the "package" keyword for this declaration.
-func (d DeclPackage) Keyword() Token {
-	return d.raw.keyword.With(d)
+func (d DeclPackage) Keyword() token.Token {
+	return d.raw.keyword.In(d.Context())
 }
 
 // Path returns this package's path.
 //
 // May be nil, if the user wrote something like package;.
 func (d DeclPackage) Path() Path {
-	return d.raw.path.With(d)
+	return d.raw.path.With(d.Context())
 }
 
 // Options returns the compact options list for this declaration.
 //
 // Package declarations cannot have options, but we parse them anyways.
 func (d DeclPackage) Options() CompactOptions {
-	return wrapOptions(d, d.raw.options)
+	return wrapOptions(d.Context(), d.raw.options)
 }
 
 // SetOptions sets the compact options list for this declaration.
 //
 // Setting it to a nil Options clears it.
 func (d DeclPackage) SetOptions(opts CompactOptions) {
-	d.raw.options = d.ctx.options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
 }
 
 // Semicolon returns this package's ending semicolon.
 //
 // May be nil, if the user forgot it.
-func (d DeclPackage) Semicolon() Token {
-	return d.raw.semi.With(d)
+func (d DeclPackage) Semicolon() token.Token {
+	return d.raw.semi.In(d.Context())
 }
 
-// Span implements [Spanner].
-func (d DeclPackage) Span() Span {
-	return JoinSpans(d.Keyword(), d.Path(), d.Semicolon())
+// report.Span implements [report.Spanner].
+func (d DeclPackage) Span() report.Span {
+	return report.Join(d.Keyword(), d.Path(), d.Semicolon())
 }
 
-func wrapDeclPackage(c Contextual, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
+func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 	return DeclPackage{wrapDecl(c, ptr)}
 }
 
@@ -218,30 +220,30 @@ func wrapDeclPackage(c Contextual, ptr arena.Pointer[rawDeclPackage]) DeclPackag
 type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {
-	keyword, modifier, semi rawToken
+	keyword, modifier, semi token.ID
 	importPath              rawExpr
 	options                 arena.Pointer[rawCompactOptions]
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
 type DeclImportArgs struct {
-	Keyword    Token
-	Modifier   Token
+	Keyword    token.Token
+	Modifier   token.Token
 	ImportPath ExprAny
 	Options    CompactOptions
-	Semicolon  Token
+	Semicolon  token.Token
 }
 
 // Keyword returns the "import" keyword for this pragma.
-func (d DeclImport) Keyword() Token {
-	return d.raw.keyword.With(d)
+func (d DeclImport) Keyword() token.Token {
+	return d.raw.keyword.In(d.Context())
 }
 
 // Keyword returns the modifier keyword for this pragma.
 //
 // May be nil if there is no modifier.
-func (d DeclImport) Modifier() Token {
-	return d.raw.modifier.With(d)
+func (d DeclImport) Modifier() token.Token {
+	return d.raw.modifier.In(d.Context())
 }
 
 // IsSyntax checks whether this is an "import public".
@@ -258,7 +260,7 @@ func (d DeclImport) IsWeak() bool {
 //
 // May be nil, if the user forgot it.
 func (d DeclImport) ImportPath() ExprAny {
-	return d.raw.importPath.With(d)
+	return d.raw.importPath.With(d.Context())
 }
 
 // SetValue sets the expression for this import's file path.
@@ -272,28 +274,28 @@ func (d DeclImport) SetImportPath(expr ExprAny) {
 //
 // Imports cannot have options, but we parse them anyways.
 func (d DeclImport) Options() CompactOptions {
-	return wrapOptions(d, d.raw.options)
+	return wrapOptions(d.Context(), d.raw.options)
 }
 
 // SetOptions sets the compact options list for this declaration.
 //
 // Setting it to a nil Options clears it.
 func (d DeclImport) SetOptions(opts CompactOptions) {
-	d.raw.options = d.ctx.options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
 }
 
 // Semicolon returns this import's ending semicolon.
 //
 // May be nil, if the user forgot it.
-func (d DeclImport) Semicolon() Token {
-	return d.raw.semi.With(d)
+func (d DeclImport) Semicolon() token.Token {
+	return d.raw.semi.In(d.Context())
 }
 
-// Span implements [Spanner].
-func (d DeclImport) Span() Span {
-	return JoinSpans(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
+// report.Span implements [report.Spanner].
+func (d DeclImport) Span() report.Span {
+	return report.Join(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
 }
 
-func wrapDeclImport(c Contextual, ptr arena.Pointer[rawDeclImport]) DeclImport {
+func wrapDeclImport(c Context, ptr arena.Pointer[rawDeclImport]) DeclImport {
 	return DeclImport{wrapDecl(c, ptr)}
 }

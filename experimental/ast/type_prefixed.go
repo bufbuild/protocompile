@@ -16,6 +16,9 @@ package ast
 
 import (
 	"fmt"
+
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
 
 // TypePrefixed is a type with a [TypePrefix].
@@ -25,13 +28,13 @@ import (
 type TypePrefixed struct{ typeImpl[rawTypePrefixed] }
 
 type rawTypePrefixed struct {
-	prefix rawToken
+	prefix token.ID
 	ty     rawType
 }
 
 // TypePrefixedArgs is the arguments for [Context.NewTypePrefixed].
 type TypePrefixedArgs struct {
-	Prefix Token
+	Prefix token.Token
 	Type   TypeAny
 }
 
@@ -44,8 +47,8 @@ func (t TypePrefixed) Prefix() TypePrefix {
 }
 
 // PrefixToken returns the token representing this type's prefix.
-func (t TypePrefixed) PrefixToken() Token {
-	return t.raw.prefix.With(t)
+func (t TypePrefixed) PrefixToken() token.Token {
+	return t.raw.prefix.In(t.Context())
 }
 
 // Type returns the type that is being prefixed.
@@ -60,9 +63,9 @@ func (t TypePrefixed) SetType(ty TypeAny) {
 	t.raw.ty = ty.raw
 }
 
-// Span implements [Spanner].
-func (t TypePrefixed) Span() Span {
-	return JoinSpans(t.PrefixToken(), t.Type())
+// Span implements [report.Spanner].
+func (t TypePrefixed) Span() report.Span {
+	return report.Join(t.PrefixToken(), t.Type())
 }
 
 const (

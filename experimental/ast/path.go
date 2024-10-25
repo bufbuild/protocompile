@@ -14,7 +14,12 @@
 
 package ast
 
-import "github.com/bufbuild/protocompile/experimental/ast/predeclared"
+import (
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
+)
 
 // Path represents a multi-part identifier.
 //
@@ -40,7 +45,7 @@ type Path struct {
 //
 // NOTE: Multiple compressed representations in this package depend on the fact that
 // if raw[0] < 0, then raw[1] == 0 for all valid paths.
-type rawPath [2]rawToken
+type rawPath [2]token.ID
 
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
@@ -54,12 +59,12 @@ func (p Path) Absolute() bool {
 
 // AsIdent returns the single identifier that comprises this path, or
 // the nil token.
-func (p Path) AsIdent() Token {
-	var tok Token
+func (p Path) AsIdent() token.Token {
+	var tok token.Token
 	var count int
 	p.Components(func(c PathComponent) bool {
 		if count > 0 {
-			tok = Token{}
+			tok = token.Nil
 			return false
 		}
 
@@ -80,9 +85,9 @@ func (p Path) AsPredeclared() predeclared.Name {
 	return predeclared.Lookup(p.AsIdent().Text())
 }
 
-// Span implements [Spanner].
-func (p Path) Span() Span {
-	return JoinSpans(p.raw[0].With(p), p.raw[1].With(p))
+// report.Span implements [report.Spanner].
+func (p Path) Span() report.Span {
+	return report.Join(p.raw[0].In(p.Context()), p.raw[1].In(p.Context()))
 }
 
 // Components is an [iter.Seq] that ranges over each component in this path. Specifically,
@@ -92,24 +97,18 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		return
 	}
 
-	first := p.raw[0].With(p)
-	if synth := first.synthetic(); synth != nil {
+	first := p.raw[0].In(p.Context())
+	if first.IsSynthetic() {
 		panic("synthetic paths are not implemented yet")
 	}
 
-	cursor := Cursor{
-		withContext: p.withContext,
-		start:       p.raw[0],
-		end:         p.raw[1] + 1, // Remember, Cursor.end is exclusive!
-	}
-
-	var sep Token
+	var sep token.Token
 	var broken bool
-	cursor.Iter(func(tok Token) bool {
+	token.NewCursor(first, p.raw[1].In(p.Context())).Rest()(func(tok token.Token) bool {
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.Nil() {
 				// Uh-oh, empty path component!
-				if !yield(PathComponent{sep, Token{}}) {
+				if !yield(PathComponent{p.withContext, sep.ID(), 0}) {
 					broken = true
 					return false
 				}
@@ -118,15 +117,15 @@ func (p Path) Components(yield func(PathComponent) bool) {
 			return true
 		}
 
-		if !yield(PathComponent{sep, tok}) {
+		if !yield(PathComponent{p.withContext, sep.ID(), tok.ID()}) {
 			broken = true
 			return false
 		}
-		sep = Token{}
+		sep = token.Nil
 		return true
 	})
 	if !broken && !sep.Nil() {
-		yield(PathComponent{sep, Token{}})
+		yield(PathComponent{p.withContext, sep.ID(), 0})
 	}
 }
 
@@ -165,19 +164,20 @@ func (e ExprPath) AsAny() ExprAny {
 // PathComponent is a piece of a path. This is either an identifier or a nested path
 // (for an extension name).
 type PathComponent struct {
-	separator, name Token
+	withContext
+	separator, name token.ID
 }
 
 // Separator is the token that separates this component from the previous one, if
 // any. This may be a dot or a slash.
-func (p PathComponent) Separator() Token {
-	return p.separator
+func (p PathComponent) Separator() token.Token {
+	return p.separator.In(p.Context())
 }
 
 // Name is the token that represents this component's name. THis is either an
 // identifier or a (...) token containing a path.
-func (p PathComponent) Name() Token {
-	return p.name
+func (p PathComponent) Name() token.Token {
+	return p.name.In(p.Context())
 }
 
 // Returns whether this is an empty path component. Such components are not allowed
@@ -205,13 +205,13 @@ func (p PathComponent) AsExtension() Path {
 
 	// If this is a synthetic token, its children are already precisely a path,
 	// so we can use the "synthetic with children" form of Path.
-	if synth := p.Name().synthetic(); synth != nil {
-		return Path{withContext{p.Name().Context()}, rawPath{p.Name().raw, 0}}
+	if p.Name().IsSynthetic() {
+		return Path{p.withContext, rawPath{p.Name().ID(), 0}}
 	}
 
 	// Find the first and last non-skippable tokens to be the bounds.
-	var first, last Token
-	p.Name().Children().Iter(func(token Token) bool {
+	var first, last token.Token
+	p.Name().Children().Rest()(func(token token.Token) bool {
 		if first.Nil() {
 			first = token
 		}
@@ -219,23 +219,23 @@ func (p PathComponent) AsExtension() Path {
 		return true
 	})
 
-	return Path{withContext{p.Name().Context()}, rawPath{first.raw, last.raw}}
+	return Path{p.withContext, rawPath{first.ID(), last.ID()}}
 }
 
 // AsIdent returns the single identifier that makes up this path component, if
 // it is not an extension path component.
-func (p PathComponent) AsIdent() Token {
+func (p PathComponent) AsIdent() token.Token {
 	if p.IsExtension() {
-		return Token{}
+		return token.Nil
 	}
-	return p.name
+	return p.name.In(p.Context())
 }
 
 // Wrap wraps this rawPath with a context to present to the user.
-func (p rawPath) With(c Contextual) Path {
+func (p rawPath) With(c Context) Path {
 	if p[0] == 0 {
 		return Path{}
 	}
 
-	return Path{withContext{c.Context()}, p}
+	return Path{internal.NewWith(c), p}
 }

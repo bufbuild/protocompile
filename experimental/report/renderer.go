@@ -144,10 +144,11 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 
 	// For the simple style, we imitate the Go compiler.
 	if r.Compact {
-		annotation := d.Primary()
+		primary := d.Primary()
 
-		if annotation.Start.Line == 0 {
-			if annotation.File.Path == "" {
+		if primary.IndexedFile == nil {
+			path := d.InFile
+			if path == "" {
 				return fmt.Sprintf(
 					"%s%s: %s%s",
 					ss.ColorForLevel(d.Level),
@@ -161,19 +162,21 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 				"%s%s: %s: %s%s",
 				ss.ColorForLevel(d.Level),
 				level,
-				annotation.File.Path,
+				path,
 				d.Err.Error(),
 				ss.reset,
 			)
 		}
 
+		start := primary.StartLoc()
+
 		return fmt.Sprintf(
 			"%s%s: %s:%d:%d: %s%s",
 			ss.ColorForLevel(d.Level),
 			level,
-			annotation.File.Path,
-			annotation.Start.Line,
-			annotation.Start.Column,
+			primary.Path(),
+			start.Line,
+			start.Column,
 			d.Err.Error(),
 			ss.reset,
 		)
@@ -185,29 +188,35 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 	var out strings.Builder
 	fmt.Fprint(&out, ss.BoldForLevel(d.Level), level, ": ", d.Err.Error(), ss.reset)
 
+	locations := make([][2]Location, len(d.Annotations))
+	for i, snip := range d.Annotations {
+		locations[i][0] = snip.StartLoc()
+		locations[i][1] = snip.EndLoc()
+	}
+
 	// Figure out how wide the line bar needs to be. This is given by
 	// the width of the largest line value among the annotations.
 	var greatestLine int
-	for _, snip := range d.Annotations {
-		greatestLine = max(greatestLine, snip.End.Line)
+	for _, loc := range locations {
+		greatestLine = max(greatestLine, loc[1].Line)
 	}
 	lineBarWidth := len(strconv.Itoa(greatestLine)) // Easier than messing with math.Log10()
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := partition(d.Annotations, func(a, b *Annotation) bool { return a.File.Path != b.File.Path })
+	parts := partition(d.Annotations, func(a, b *Annotation) bool { return a.Path() != b.Path() })
 	parts(func(i int, annotations []Annotation) bool {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth)
 
+		primary := annotations[0]
+		start := locations[i][0]
+		arrow := ":::"
 		if i == 0 {
-			primary := d.Annotations[0]
-			fmt.Fprintf(&out, "--> %s:%d:%d", primary.File.Path, primary.Start.Line, primary.Start.Column)
-		} else {
-			primary := annotations[0]
-			fmt.Fprintf(&out, "::: %s:%d:%d", primary.File.Path, primary.Start.Line, primary.Start.Column)
+			arrow = "-->"
 		}
+		fmt.Fprintf(&out, "%s %s:%d:%d", arrow, primary.Path(), start.Line, start.Column)
 
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.
@@ -215,7 +224,7 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 		padBy(&out, lineBarWidth)
 		out.WriteString(" | ")
 
-		window := buildWindow(d.Level, annotations)
+		window := buildWindow(d.Level, locations[i:i+len(annotations)], annotations)
 		window.Render(lineBarWidth, &ss, &out)
 		return true
 	})
@@ -283,20 +292,20 @@ type window struct {
 // This is separate from [window.Render] because it performs certain layout
 // decisions that cannot happen in the middle of actually rendering the source
 // code (well, they could, but the resulting code would be far more complicated).
-func buildWindow(level Level, annotations []Annotation) *window {
+func buildWindow(level Level, locations [][2]Location, annotations []Annotation) *window {
 	w := new(window)
-	w.file = annotations[0].File
+	w.file = annotations[0].File()
 
 	// Calculate the range of the file we will be printing. This is given
 	// by every line that has a piece of diagnostic in it. To find this, we
 	// calculate the join of all of the spans in the window, and find the
 	// nearest \n runes in the text.
-	w.start = annotations[0].Start.Line
-	w.offsets[0] = annotations[0].Start.Offset
-	for _, snip := range annotations {
-		w.start = min(w.start, snip.Start.Line)
-		w.offsets[0] = min(w.offsets[0], snip.Start.Offset)
-		w.offsets[1] = max(w.offsets[1], snip.End.Offset)
+	w.start = locations[0][0].Line
+	w.offsets[0] = annotations[0].Start
+	for i, snip := range annotations {
+		w.start = min(w.start, locations[i][0].Line)
+		w.offsets[0] = min(w.offsets[0], snip.Start)
+		w.offsets[1] = max(w.offsets[1], snip.End)
 	}
 	// Now, find the newlines before and after the given ranges, respectively.
 	// This snaps the range to start immediately after a newline (or SOF) and
@@ -309,15 +318,15 @@ func buildWindow(level Level, annotations []Annotation) *window {
 	}
 
 	// Now, convert each span into an underline or multiline.
-	for _, snippet := range annotations {
-		isMulti := snippet.Start.Line != snippet.End.Line
+	for i, snippet := range annotations {
+		isMulti := locations[i][0].Line != locations[i][1].Line
 
 		if isMulti && len(w.multilines) < maxMultilinesPerWindow {
 			w.multilines = append(w.multilines, multiline{
-				start:      snippet.Start.Line,
-				end:        snippet.End.Line,
-				startWidth: snippet.Start.Column,
-				endWidth:   snippet.End.Column,
+				start:      locations[i][0].Line,
+				end:        locations[i][1].Line,
+				startWidth: locations[i][0].Column,
+				endWidth:   locations[i][1].Column,
 				level:      note,
 				message:    snippet.Message,
 			})
@@ -329,10 +338,10 @@ func buildWindow(level Level, annotations []Annotation) *window {
 
 			// Calculate whether this snippet starts on the first non-space rune of
 			// the line.
-			if snippet.Start.Offset != 0 {
-				firstLineStart := strings.LastIndexByte(w.file.Text[:snippet.Start.Offset], '\n')
+			if snippet.Start != 0 {
+				firstLineStart := strings.LastIndexByte(w.file.Text[:snippet.Start], '\n')
 				if !strings.ContainsFunc(
-					w.file.Text[firstLineStart+1:snippet.Start.Offset],
+					w.file.Text[firstLineStart+1:snippet.Start],
 					func(r rune) bool { return !unicode.IsSpace(r) },
 				) {
 					ml.startWidth = 0
@@ -346,9 +355,9 @@ func buildWindow(level Level, annotations []Annotation) *window {
 		}
 
 		w.underlines = append(w.underlines, underline{
-			line:    snippet.Start.Line,
-			start:   snippet.Start.Column,
-			end:     snippet.End.Column,
+			line:    locations[i][0].Line,
+			start:   locations[i][0].Column,
+			end:     locations[i][1].Column,
 			level:   note,
 			message: snippet.Message,
 		})
@@ -365,13 +374,13 @@ func buildWindow(level Level, annotations []Annotation) *window {
 			// This is an "overflow multiline" for diagnostics with too
 			// many multilines. In this case, we want to end the underline at
 			// the end of the first line.
-			lineEnd := strings.Index(w.file.Text[snippet.Start.Offset:], "\n")
+			lineEnd := strings.Index(w.file.Text[snippet.Start:], "\n")
 			if lineEnd == -1 {
 				lineEnd = len(w.file.Text)
 			} else {
-				lineEnd += snippet.Start.Offset
+				lineEnd += snippet.Start
 			}
-			ul.end = ul.start + stringWidth(ul.start, w.file.Text[snippet.Start.Offset:lineEnd])
+			ul.end = ul.start + stringWidth(ul.start, w.file.Text[snippet.Start:lineEnd])
 		}
 
 		// Make sure no empty underlines exist.

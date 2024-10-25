@@ -16,6 +16,9 @@ package ast
 
 import (
 	"slices"
+
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
 
 // ExprArray represents an array of expressions between square brackets.
@@ -24,7 +27,7 @@ import (
 type ExprArray struct{ exprImpl[rawExprArray] }
 
 type rawExprArray struct {
-	brackets rawToken
+	brackets token.ID
 	args     []withComma[rawExpr]
 }
 
@@ -33,8 +36,8 @@ var _ Commas[ExprAny] = ExprArray{}
 // Brackets returns the token tree corresponding to the whole [...].
 //
 // May be missing for a synthetic expression.
-func (e ExprArray) Brackets() Token {
-	return e.raw.brackets.With(e)
+func (e ExprArray) Brackets() token.Token {
+	return e.raw.brackets.In(e.Context())
 }
 
 // Len implements [Slice].
@@ -44,13 +47,13 @@ func (e ExprArray) Len() int {
 
 // At implements [Slice].
 func (e ExprArray) At(n int) ExprAny {
-	return e.raw.args[n].Value.With(e)
+	return e.raw.args[n].Value.With(e.Context())
 }
 
 // Iter implements [Slice].
 func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
 	for i, arg := range e.raw.args {
-		if !yield(i, arg.Value.With(e)) {
+		if !yield(i, arg.Value.With(e.Context())) {
 			break
 		}
 	}
@@ -58,12 +61,12 @@ func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
 
 // Append implements [Inserter].
 func (e ExprArray) Append(expr ExprAny) {
-	e.InsertComma(e.Len(), expr, Token{})
+	e.InsertComma(e.Len(), expr, token.Nil)
 }
 
 // Insert implements [Inserter].
 func (e ExprArray) Insert(n int, expr ExprAny) {
-	e.InsertComma(n, expr, Token{})
+	e.InsertComma(n, expr, token.Nil)
 }
 
 // Delete implements [Inserter].
@@ -72,23 +75,23 @@ func (e ExprArray) Delete(n int) {
 }
 
 // Comma implements [Commas].
-func (e ExprArray) Comma(n int) Token {
-	return e.raw.args[n].Comma.With(e)
+func (e ExprArray) Comma(n int) token.Token {
+	return e.raw.args[n].Comma.In(e.Context())
 }
 
 // AppendComma implements [Commas].
-func (e ExprArray) AppendComma(expr ExprAny, comma Token) {
+func (e ExprArray) AppendComma(expr ExprAny, comma token.Token) {
 	e.InsertComma(e.Len(), expr, comma)
 }
 
 // InsertComma implements [Commas].
-func (e ExprArray) InsertComma(n int, expr ExprAny, comma Token) {
-	e.Context().panicIfNotOurs(expr, comma)
+func (e ExprArray) InsertComma(n int, expr ExprAny, comma token.Token) {
+	e.Context().Nodes().panicIfNotOurs(expr, comma)
 
-	e.raw.args = slices.Insert(e.raw.args, n, withComma[rawExpr]{expr.raw, comma.raw})
+	e.raw.args = slices.Insert(e.raw.args, n, withComma[rawExpr]{expr.raw, comma.ID()})
 }
 
-// Span implements [Spanner].
-func (e ExprArray) Span() Span {
+// Span implements [report.Spanner].
+func (e ExprArray) Span() report.Span {
 	return e.Brackets().Span()
 }

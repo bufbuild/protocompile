@@ -86,6 +86,9 @@ type Diagnostic struct {
 // around the annotated region. More literally, this is e.g. a red squiggly
 // line under some code.
 type Annotation struct {
+	// The span for this annotation.
+	Span
+
 	// A message to show under this snippet.
 	//
 	// May be empty, in which case it will simply render as the red/yellow/etc
@@ -97,31 +100,19 @@ type Annotation struct {
 	// Whether this is a "primary" snippet, which is used for deciding whether or not
 	// to mark the snippet with the same color as the overall diagnostic.
 	Primary bool
-
-	// The file this snippet is from. Note that Annotations with the same file name
-	// are treated as being part of the same file, regardless of that file's contents.
-	File File
-	// Start and end positions for this snippet, within the above file.
-	//
-	// May be zero-width, but the renderer will always render it as at least one
-	// column wide.
-	Start, End Location
 }
 
-// Primary returns this diagnostic's primary snippet, if it has one.
+// Primary returns this diagnostic's primary span, if it has one.
 //
-// If it doesn't have one, it returns a dummy annotation referring to InFile.
-func (d *Diagnostic) Primary() Annotation {
+// If it doesn't have one, it returns the zero span.
+func (d *Diagnostic) Primary() Span {
 	for _, annotation := range d.Annotations {
 		if annotation.Primary {
-			return annotation
+			return annotation.Span
 		}
 	}
 
-	return Annotation{
-		File:    File{Path: d.InFile},
-		Primary: true,
-	}
+	return Span{}
 }
 
 // With applies the given options to this diagnostic.
@@ -144,7 +135,7 @@ func InFile(path string) DiagnosticOption {
 //
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
-func Snippet[Spanner interface{ Span() S }, S Span](at Spanner) DiagnosticOption {
+func Snippet(at Spanner) DiagnosticOption {
 	return Snippetf(at, "")
 }
 
@@ -152,7 +143,7 @@ func Snippet[Spanner interface{ Span() S }, S Span](at Spanner) DiagnosticOption
 //
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
-func Snippetf[Spanner interface{ Span() S }, S Span](at Spanner, format string, args ...any) DiagnosticOption {
+func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 	return SnippetAtf(at.Span(), format, args...)
 }
 
@@ -166,9 +157,7 @@ func SnippetAtf(span Span, format string, args ...any) DiagnosticOption {
 	// This is hoisted out to improve stack traces when something goes awry in the
 	// argument to With(). By hoisting, it correctly blames the right invocation to Snippet().
 	annotation := Annotation{
-		File:    span.File(),
-		Start:   span.Start(),
-		End:     span.End(),
+		Span:    span,
 		Message: fmt.Sprintf(format, args...),
 	}
 	return func(d *Diagnostic) {
@@ -303,7 +292,7 @@ func (r *Report) Sort() {
 		aPrime := a.Primary()
 		bPrime := b.Primary()
 
-		if diff := strings.Compare(aPrime.File.Path, bPrime.File.Path); diff != 0 {
+		if diff := strings.Compare(aPrime.Path(), bPrime.Path()); diff != 0 {
 			return diff
 		}
 
@@ -311,11 +300,11 @@ func (r *Report) Sort() {
 			return diff
 		}
 
-		if diff := aPrime.Start.Offset - bPrime.Start.Offset; diff != 0 {
+		if diff := aPrime.Start - bPrime.Start; diff != 0 {
 			return diff
 		}
 
-		if diff := aPrime.End.Offset - bPrime.End.Offset; diff != 0 {
+		if diff := aPrime.End - bPrime.End; diff != 0 {
 			return diff
 		}
 
@@ -346,21 +335,21 @@ func (r *Report) ToProto() proto.Message {
 		}
 
 		for _, snip := range d.Annotations {
-			file, ok := fileToIndex[snip.File.Path]
+			file, ok := fileToIndex[snip.Path()]
 			if !ok {
 				file = uint32(len(proto.Files))
-				fileToIndex[snip.File.Path] = file
+				fileToIndex[snip.Path()] = file
 
 				proto.Files = append(proto.Files, &compilerpb.Report_File{
-					Path: snip.File.Path,
-					Text: []byte(snip.File.Text),
+					Path: snip.Path(),
+					Text: []byte(snip.Text()),
 				})
 			}
 
 			dProto.Annotations = append(dProto.Annotations, &compilerpb.Diagnostic_Annotation{
 				File:    file,
-				Start:   uint32(snip.Start.Offset),
-				End:     uint32(snip.End.Offset),
+				Start:   uint32(snip.Start),
+				End:     uint32(snip.End),
 				Message: snip.Message,
 				Primary: snip.Primary,
 			})
@@ -431,9 +420,11 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 			}
 
 			d.Annotations = append(d.Annotations, Annotation{
-				File:    file.File(),
-				Start:   file.Search(int(snip.Start)),
-				End:     file.Search(int(snip.End)),
+				Span: Span{
+					IndexedFile: file,
+					Start:       int(snip.Start),
+					End:         int(snip.End),
+				},
 				Message: snip.Message,
 				Primary: snip.Primary,
 			})

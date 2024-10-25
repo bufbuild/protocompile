@@ -12,95 +12,115 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast_test
+package token_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
+
+type Context struct {
+	S *token.Stream
+}
+
+func (c *Context) Stream() *token.Stream {
+	return c.S
+}
+
+func NewContext(text string) *Context {
+	ctx := new(Context)
+	ctx.S = &token.Stream{
+		Context: ctx,
+		IndexedFile: report.NewIndexedFile(report.File{
+			Path: "test",
+			Text: text,
+		}),
+	}
+	return ctx
+}
 
 func TestNilToken(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	var n ast.Token
+	var n token.Token
 	assert.True(n.Nil())
 	assert.False(n.IsLeaf())
 	assert.False(n.IsSynthetic())
-	assert.Equal(ast.TokenUnrecognized, n.Kind())
+	assert.Equal(token.Unrecognized, n.Kind())
 }
 
 func TestLeafTokens(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := ast.NewContext(report.File{Path: "test", Text: "abc def ghi"})
+	ctx := NewContext("abc def ghi")
+	s := ctx.Stream()
 
-	abc := ctx.PushToken(3, ast.TokenIdent)
-	ctx.PushToken(1, ast.TokenSpace)
-	def := ctx.PushToken(3, ast.TokenIdent)
-	ctx.PushToken(1, ast.TokenSpace)
-	ghi := ctx.PushToken(3, ast.TokenIdent)
+	abc := s.Push(3, token.Ident)
+	s.Push(1, token.Space)
+	def := s.Push(3, token.Ident)
+	s.Push(1, token.Space)
+	ghi := s.Push(3, token.Ident)
 
-	assertIdent := func(tok ast.Token, a, b int, text string) {
-		start, end := tok.Span().Offsets()
-		assert.Equal(a, start)
-		assert.Equal(b, end)
+	assertIdent := func(tok token.Token, a, b int, text string) {
+		s := tok.Span()
+		assert.Equal(a, s.Start)
+		assert.Equal(b, s.End)
 
 		assert.False(tok.Nil())
 		assert.False(tok.IsSynthetic())
 		assert.True(tok.IsLeaf())
 		assert.Equal(text, tok.Text())
-		assert.Equal(ast.TokenIdent, abc.Kind())
-		tokensEq(t, collect(tok.Children().Iter))
+		assert.Equal(token.Ident, abc.Kind())
+		tokensEq(t, collect(tok.Children().Rest()))
 	}
 
 	assertIdent(abc, 0, 3, "abc")
 	assertIdent(def, 4, 7, "def")
 	assertIdent(ghi, 8, 11, "ghi")
 
-	jkl := ctx.NewIdent("jkl")
+	jkl := s.NewIdent("jkl")
 	assert.False(jkl.Nil())
 	assert.True(jkl.IsLeaf())
 	assert.True(jkl.IsSynthetic())
 	assert.Equal("jkl", jkl.Text())
-	tokensEq(t, collect(jkl.Children().Iter))
+	tokensEq(t, collect(jkl.Children().Rest()))
 }
 
 func TestTreeTokens(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := ast.NewContext(report.File{Path: "test", Text: "abc(def(x), ghi)"})
+	ctx := NewContext("abc(def(x), ghi)")
+	s := ctx.Stream()
 
-	_ = ctx.PushToken(3, ast.TokenIdent)
-	open := ctx.PushToken(1, ast.TokenPunct)
-	def := ctx.PushToken(3, ast.TokenIdent)
-	open2 := ctx.PushToken(1, ast.TokenPunct)
-	x := ctx.PushToken(1, ast.TokenIdent)
-	close2 := ctx.PushToken(1, ast.TokenPunct)
-	ctx.FuseTokens(open2, close2)
-	comma := ctx.PushToken(1, ast.TokenPunct)
-	space := ctx.PushToken(1, ast.TokenSpace)
-	ghi := ctx.PushToken(3, ast.TokenIdent)
-	close := ctx.PushToken(1, ast.TokenPunct) //nolint:revive,predeclared
-	ctx.FuseTokens(open, close)
-
-	_ = space
+	_ = s.Push(3, token.Ident)
+	open := s.Push(1, token.Punct)
+	def := s.Push(3, token.Ident)
+	open2 := s.Push(1, token.Punct)
+	x := s.Push(1, token.Ident)
+	close2 := s.Push(1, token.Punct)
+	token.Fuse(open2, close2)
+	comma := s.Push(1, token.Punct)
+	s.Push(1, token.Space)
+	ghi := s.Push(3, token.Ident)
+	close := s.Push(1, token.Punct) //nolint:revive,predeclared
+	token.Fuse(open, close)
 
 	assert.False(open.IsLeaf())
 	assert.False(open2.IsLeaf())
 	assert.False(close.IsLeaf())
 	assert.False(close2.IsLeaf())
 
-	assert.Equal(ast.TokenPunct, open.Kind())
-	assert.Equal(ast.TokenPunct, close.Kind())
-	assert.Equal(ast.TokenPunct, open2.Kind())
-	assert.Equal(ast.TokenPunct, close2.Kind())
+	assert.Equal(token.Punct, open.Kind())
+	assert.Equal(token.Punct, close.Kind())
+	assert.Equal(token.Punct, open2.Kind())
+	assert.Equal(token.Punct, close2.Kind())
 
 	start, end := open2.StartEnd()
 	tokenEq(t, start, open2)
@@ -116,15 +136,15 @@ func TestTreeTokens(t *testing.T) {
 	tokenEq(t, start, open)
 	tokenEq(t, end, close)
 
-	tokensEq(t, collect(open2.Children().Iter), x)
-	tokensEq(t, collect(close2.Children().Iter), x)
+	tokensEq(t, collect(open2.Children().Rest()), x)
+	tokensEq(t, collect(close2.Children().Rest()), x)
 
-	tokensEq(t, collect(open.Children().Iter), def, open2, comma, ghi)
-	tokensEq(t, collect(close.Children().Iter), def, open2, comma, ghi)
+	tokensEq(t, collect(open.Children().Rest()), def, open2, comma, ghi)
+	tokensEq(t, collect(close.Children().Rest()), def, open2, comma, ghi)
 
-	open3 := ctx.NewPunct("(")
-	close3 := ctx.NewPunct(")")
-	ctx.NewOpenClose(open3, close3, def, open2)
+	open3 := s.NewPunct("(")
+	close3 := s.NewPunct(")")
+	s.NewFused(open3, close3, def, open2)
 
 	assert.False(open3.IsLeaf())
 	assert.False(close3.IsLeaf())
@@ -135,17 +155,16 @@ func TestTreeTokens(t *testing.T) {
 	tokenEq(t, start, open3)
 	tokenEq(t, end, close3)
 
-	tokensEq(t, collect(open3.Children().Iter), def, open2)
-	tokensEq(t, collect(close3.Children().Iter), def, open2)
+	tokensEq(t, collect(close3.Children().Rest()), def, open2)
 }
 
 // tokenEq is the singular version of tokensEq.
-func tokenEq(t *testing.T, a, b ast.Token) {
-	tokensEq(t, []ast.Token{a}, b)
+func tokenEq(t *testing.T, a, b token.Token) {
+	tokensEq(t, []token.Token{a}, b)
 }
 
 // tokensEq is a helper for comparing tokens that results in more readable printouts.
-func tokensEq(t *testing.T, tokens []ast.Token, expected ...ast.Token) {
+func tokensEq(t *testing.T, tokens []token.Token, expected ...token.Token) {
 	a := make([]string, len(tokens))
 	for i, t := range tokens {
 		a[i] = t.String()

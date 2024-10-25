@@ -12,26 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package token
 
 import (
 	"github.com/bufbuild/protocompile/experimental/internal"
-	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// ExprLiteral is an expression corresponding to a string or number literal.
-type ExprLiteral struct {
-	// The token backing this expression. Must be [token.String] or [token.Number],
-	// and its Context() must be an ast.Context.
-	token.Token
+// Context is the owner of a [Stream].
+//
+// Each stream carries its full context with it, which may contain other
+// information, such as arenas for AST nodes.
+type Context interface {
+	Stream() *Stream
 }
 
-// AsAny type-erases this type value.
-//
-// See [TypeAny] for more information.
-func (e ExprLiteral) AsAny() ExprAny {
-	return ExprAny{
-		internal.NewWith(e.Token.Context().(Context)),
-		rawExpr{token.ID(ExprKindLiteral), e.Token.ID()},
-	}
-}
+type withContext = internal.With[Context]
