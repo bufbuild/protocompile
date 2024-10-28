@@ -100,7 +100,7 @@ type Arena[T any] struct {
 }
 
 // New allocates a new value on the arena.
-func (a *Arena[T]) New(value T) Pointer[T] {
+func (a *Arena[T]) New(value T) *T {
 	if a.table == nil {
 		a.table = [][]T{make([]T, 0, pointersMinLen)}
 	}
@@ -114,7 +114,29 @@ func (a *Arena[T]) New(value T) Pointer[T] {
 	}
 
 	*last = append(*last, value)
+	return &(*last)[len(*last)-1]
+}
+
+// NewCompressed allocates a new value on the arena, returning the result of
+// compressing the pointer.
+func (a *Arena[T]) NewCompressed(value T) Pointer[T] {
+	_ = a.New(value)
 	return Pointer[T](a.len()) // Note that len, not len-1, is intentional.
+}
+
+// Compress returns a compressed pointer into this arena if ptr belongs to it;
+// otherwise, returns nil.
+func (a *Arena[T]) Compress(ptr *T) Pointer[T] {
+	// Check the slices in reverse order: no matter the state of the arena,
+	// the majority of the allocated values will be in either the last or
+	// second-to-last slice.
+	for i := len(a.table) - 1; i >= 0; i-- {
+		idx := pointerIndex(ptr, a.table[i])
+		if idx != -1 {
+			return Pointer[T](idx + 1)
+		}
+	}
+	return 0
 }
 
 // Deref looks up a pointer in this arena.

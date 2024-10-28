@@ -26,8 +26,6 @@ import (
 // CompactOptions implements [Commas] over its options.
 type CompactOptions struct {
 	withContext
-
-	ptr arena.Pointer[rawCompactOptions]
 	raw *rawCompactOptions
 }
 
@@ -125,7 +123,6 @@ func wrapOptions(c Contextual, ptr arena.Pointer[rawCompactOptions]) CompactOpti
 	}
 	return CompactOptions{
 		withContext{c.Context()},
-		ptr,
 		c.Context().options.Deref(ptr),
 	}
 }

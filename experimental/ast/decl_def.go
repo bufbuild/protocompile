@@ -181,7 +181,7 @@ func (d DeclDef) Options() CompactOptions {
 //
 // Setting it to a nil Options clears it.
 func (d DeclDef) SetOptions(opts CompactOptions) {
-	d.raw.options = opts.ptr
+	d.raw.options = d.ctx.options.Compress(opts.raw)
 }
 
 // Body returns this definition's body, if it has one.
@@ -191,7 +191,7 @@ func (d DeclDef) Body() DeclBody {
 
 // SetBody sets the body for this definition.
 func (d DeclDef) SetBody(b DeclBody) {
-	d.raw.body = b.ptr
+	d.raw.body = d.ctx.decls.bodies.Compress(b.raw)
 }
 
 // Semicolon returns the ending semicolon token for this definition.

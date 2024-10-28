@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"reflect"
+
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -88,8 +90,6 @@ func (t TypeAny) AsPrefixed() TypePrefixed {
 	return TypePrefixed{typeImpl[rawTypePrefixed]{
 		t.withContext,
 		t.Context().types.prefixes.Deref(ptr),
-		ptr,
-		TypeKindPrefixed,
 	}}
 }
 
@@ -106,8 +106,6 @@ func (t TypeAny) AsGeneric() TypeGeneric {
 	return TypeGeneric{typeImpl[rawTypeGeneric]{
 		t.withContext,
 		t.Context().types.generics.Deref(ptr),
-		ptr,
-		TypeKindPrefixed,
 	}}
 }
 
@@ -131,9 +129,7 @@ func (t TypeAny) ptr() arena.Untyped {
 type typeImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
 	withContext
-	raw  *Raw
-	ptr  arena.Pointer[Raw]
-	kind TypeKind
+	raw *Raw
 }
 
 // AsAny type-erases this type value.
@@ -143,9 +139,11 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 	if t.Nil() {
 		return TypeAny{}
 	}
+
+	kind, arena := typeArena[Raw](&t.ctx.types)
 	return TypeAny{
 		t.withContext,
-		rawType{^rawToken(t.kind), rawToken(t.ptr)},
+		rawType{^rawToken(kind), rawToken(arena.Compress(t.raw))},
 	}
 }
 
@@ -162,4 +160,28 @@ func (t rawType) With(c Contextual) TypeAny {
 type types struct {
 	prefixes arena.Arena[rawTypePrefixed]
 	generics arena.Arena[rawTypeGeneric]
+}
+
+func typeArena[Raw any](types *types) (TypeKind, *arena.Arena[Raw]) {
+	var (
+		kind TypeKind
+		raw  Raw
+		// Needs to be an any because Go doesn't know that only the case below
+		// with the correct type for arena_ (if it were *arena.Arena[Raw]) will
+		// be evaluated.
+		arena_ any //nolint:revive // Named arena_ to avoid clashing with package arena.
+	)
+
+	switch any(raw).(type) {
+	case rawTypePrefixed:
+		kind = TypeKindPrefixed
+		arena_ = &types.prefixes
+	case rawTypeGeneric:
+		kind = TypeKindGeneric
+		arena_ = &types.generics
+	default:
+		panic("unknown type type " + reflect.TypeOf(raw).Name())
+	}
+
+	return kind, arena_.(*arena.Arena[Raw])
 }

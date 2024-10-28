@@ -135,7 +135,7 @@ func (d DeclSyntax) Options() CompactOptions {
 //
 // Setting it to a nil Options clears it.
 func (d DeclSyntax) SetOptions(opts CompactOptions) {
-	d.raw.options = opts.ptr
+	d.raw.options = d.ctx.options.Compress(opts.raw)
 }
 
 // Semicolon returns this pragma's ending semicolon.
@@ -195,7 +195,7 @@ func (d DeclPackage) Options() CompactOptions {
 //
 // Setting it to a nil Options clears it.
 func (d DeclPackage) SetOptions(opts CompactOptions) {
-	d.raw.options = opts.ptr
+	d.raw.options = d.ctx.options.Compress(opts.raw)
 }
 
 // Semicolon returns this package's ending semicolon.
@@ -279,7 +279,7 @@ func (d DeclImport) Options() CompactOptions {
 //
 // Setting it to a nil Options clears it.
 func (d DeclImport) SetOptions(opts CompactOptions) {
-	d.raw.options = opts.ptr
+	d.raw.options = d.ctx.options.Compress(opts.raw)
 }
 
 // Semicolon returns this import's ending semicolon.
