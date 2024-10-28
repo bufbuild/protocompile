@@ -12,20 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package arena defines an [Arena] type with compressed pointers.
-//
-// The benefits of using compressed pointers are as follows:
-//
-//  1. Pointers are only four bytes wide and four-byte aligned, saving on space
-//     in pointer-heavy graph data structures.
-//
-//  2. The GC has to do substantially less work on such graph data structures,
-//     because from its perspective, structures that only contain compressed
-//     pointers are not deeply-nested and require less traversal (remember,
-//     the bane of a GC is something that looks like a linked list).
-//
-//  3. Improved cache locality. All values inside of the same arena are likelier
-//     to be near each other.
 package arena
 
 import (
