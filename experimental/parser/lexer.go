@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package parser
 
 import (
 	"fmt"
@@ -23,6 +23,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/rivo/uniseg"
 )
 
 // Lex performs lexical analysis on the file contained in ctx, and appends any
@@ -42,12 +43,23 @@ type lexer struct {
 	*token.Stream // Embedded so we don't have to call Stream() everywhere.
 	*report.Report
 
+	// This is outlined so that it's easy to print in the panic handler.
+	lexerState
+}
+
+type lexerState struct {
 	cursor, count int
 	openStack     []token.Token
 }
 
 // Lex performs lexical analysis, and places any diagnostics in report.
 func (l *lexer) Lex() {
+	defer func() {
+		if panicked := recover(); panicked != nil {
+			panic(fmt.Sprintf("panic while lexing: %s; %#v", panicked, l.lexerState))
+		}
+	}()
+
 	// Check that the file isn't too big. We give up immediately if that's
 	// the case.
 	if len(l.Text()) > MaxFileSize {
@@ -81,10 +93,12 @@ func (l *lexer) Lex() {
 		prevCount = l.count
 
 		switch {
-		case unicode.IsSpace(r):
+		case unicode.In(r, unicode.Pattern_White_Space):
 			// Whitepace. Consume as much whitespace as possible and mint a
 			// whitespace token.
-			l.TakeWhile(unicode.IsSpace)
+			l.TakeWhile(func(r rune) bool {
+				return unicode.In(r, unicode.Pattern_White_Space)
+			})
 			l.Push(l.cursor-start, token.Space)
 
 		case r == '/' && l.Peek() == '/':
@@ -110,7 +124,7 @@ func (l *lexer) Lex() {
 			// to lex a partial comment is hopeless.
 
 			var text string
-			if comment, ok := l.SeekInclusive("\n"); ok {
+			if comment, ok := l.SeekInclusive("*/"); ok {
 				text = comment
 			} else {
 				// Create a span for the /*, that's what we're gonna highlight.
@@ -119,6 +133,8 @@ func (l *lexer) Lex() {
 			}
 			l.Push(len("/*")+len(text), token.Comment)
 		case r == '*' && l.Peek() == '/':
+			l.cursor++ // Skip the /.
+
 			// The user definitely thought nested comments were allowed. :/
 			tok := l.Push(len("*/"), token.Unrecognized)
 			l.Error(ErrUnterminated{Span: tok.Span()})
@@ -172,23 +188,43 @@ func (l *lexer) Lex() {
 			l.cursor -= utf8.RuneLen(r)
 			l.LexNumber()
 
-		case r == '_' || unicode.IsLetter(r): // Consume fairly-open-ended identifiers, legalize to ASCII later.
-			l.TakeWhile(func(r rune) bool {
-				return r == '_' || unicode.IsDigit(r) || unicode.IsLetter(r)
+		case r == '_' || xidStart(r):
+			// Back up behind the rune we just popped.
+			l.cursor -= utf8.RuneLen(r)
+			rawId := l.TakeWhile(xidContinue)
+
+			// Eject any trailing unprintable characters.
+			id := strings.TrimRightFunc(rawId, func(r rune) bool {
+				return !unicode.IsPrint(r)
 			})
-			tok := l.Push(l.cursor-start, token.Ident)
+			if id == "" {
+				// This "identifier" appears to consist entirely of unprintable
+				// characters (e.g. combining marks).
+				tok := l.Push(len(rawId), token.Unrecognized)
+				l.Error(ErrUnrecognized{Token: tok})
+				continue
+			}
+
+			l.cursor -= len(rawId) - len(id)
+			tok := l.Push(len(id), token.Ident)
 
 			// Legalize non-ASCII runes.
 			if !isASCIIIdent(tok.Text()) {
 				l.Error(ErrNonASCIIIdent{Token: tok})
 			}
 
-		default: // Consume as much stuff we don't understand as possible, diagnose it.
-			l.TakeWhile(func(r rune) bool {
+		default:
+			// Back up behind the rune we just popped.
+			l.cursor -= utf8.RuneLen(r)
+
+			// Consume as many grapheme clusters as possible, and diagnose it.
+			unknown := l.TakeGraphemesWhile(func(g string) bool {
+				r, _ := utf8.DecodeRuneInString(g)
 				return !strings.ContainsRune(";,/:=-.([{<>}])_\"'", r) &&
-					unicode.IsDigit(r) && unicode.IsLetter(r)
+					!xidContinue(r) &&
+					!unicode.In(r, unicode.Pattern_White_Space)
 			})
-			tok := l.Push(l.cursor-start, token.Unrecognized)
+			tok := l.Push(len(unknown), token.Unrecognized)
 			l.Error(ErrUnrecognized{Token: tok})
 		}
 	}
@@ -429,6 +465,8 @@ escapeLoop:
 			buf.WriteByte('\n')
 		case 'r':
 			buf.WriteByte('\r')
+		case 't':
+			buf.WriteByte('\t')
 		case 'v':
 			buf.WriteByte('\v') // U+000B
 		case '\\', '\'', '"', '?':
@@ -563,6 +601,21 @@ func (l *lexer) TakeWhile(f func(rune) bool) string {
 			break
 		}
 		_ = l.Pop()
+	}
+	return l.Text()[start:l.cursor]
+}
+
+// TakeWhile consumes grapheme clusters while they match the given function.
+// Returns consumed characters.
+func (l *lexer) TakeGraphemesWhile(f func(string) bool) string {
+	start := l.cursor
+
+	for gs := uniseg.NewGraphemes(l.Rest()); gs.Next(); {
+		g := gs.Str()
+		if !f(g) {
+			break
+		}
+		l.cursor += len(g)
 	}
 	return l.Text()[start:l.cursor]
 }

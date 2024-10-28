@@ -1,0 +1,7 @@
+error: encountered unterminated `/*` delimiter
+  --> testdata/lexer/comments/unterminated.proto:1:1
+   | 
+ 1 | /*
+   | ^^ expected to be closed by `*/`
+
+encountered 1 error

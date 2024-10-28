@@ -1,0 +1,31 @@
+error: unrecongnized token
+  --> testdata/lexer/idents/non-ascii.proto:1:7
+   | 
+ 1 | kitty_🐈<U+200D>⬛
+   |       ^^^^^^^^^^^^ 
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/lexer/idents/non-ascii.proto:2:1
+   | 
+ 2 | 黑猫 
+   | ^^^^ 
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/lexer/idents/non-ascii.proto:3:1
+   | 
+ 3 | काली बिल्ली
+   | ^^^^ 
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/lexer/idents/non-ascii.proto:3:6
+   | 
+ 3 | काली बिल्ली
+   |      ^^^^^ 
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/lexer/idents/non-ascii.proto:4:1
+   | 
+ 4 | 黑猫_suffix
+   | ^^^^^^^^^^^ 
+
+encountered 5 errors

@@ -1,0 +1,8 @@
+error: encountered unterminated `*/` delimiter
+  --> testdata/lexer/comments/nested.proto:4:1
+   | 
+ 4 | */
+   | ^^ expected to be opened by `/*`
+   = note: Protobuf does not support nested block comments
+
+encountered 1 error

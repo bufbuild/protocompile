@@ -44,20 +44,20 @@ func (t Kind) IsSkippable() bool {
 func (t Kind) String() string {
 	switch t {
 	case Unrecognized:
-		return "TokenUnrecognized"
+		return "Unrecognized"
 	case Space:
-		return "TokenSpace"
+		return "Space"
 	case Comment:
-		return "TokenComment"
+		return "Comment"
 	case Ident:
-		return "TokenIdent"
+		return "Ident"
 	case String:
-		return "TokenString"
+		return "String"
 	case Number:
-		return "TokenNumber"
+		return "Number"
 	case Punct:
-		return "TokenPunct"
+		return "Punct"
 	default:
-		return fmt.Sprintf("TokenKind(%d)", int(t))
+		return fmt.Sprintf("token.Kind(%d)", int(t))
 	}
 }

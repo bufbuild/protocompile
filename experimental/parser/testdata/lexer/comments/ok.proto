@@ -1,0 +1,8 @@
+// Single line comment.
+//go:style-intrinsic
+/*
+    Multiline comment
+*/
+
+//
+/**/ // Empty

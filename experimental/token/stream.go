@@ -116,7 +116,7 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}
 
-	if length < 0 || length > math.MaxInt32 {
+	if length <= 0 || length > math.MaxInt32 {
 		panic(fmt.Sprintf("protocompile/token: Push() called with invalid length: %d", length))
 	}
 

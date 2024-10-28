@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package parser
 
 import (
 	"fmt"
@@ -67,7 +67,10 @@ func (e ErrUnrecognized) Error() string {
 }
 
 func (e ErrUnrecognized) Diagnose(d *report.Diagnostic) {
-	d.With(report.Snippet(e.Token))
+	d.With(
+		report.Snippet(e.Token),
+		report.Debugf("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
+	)
 }
 
 // ErrUnterminated diagnoses a delimiter for which we found one half of a matched
@@ -107,12 +110,12 @@ func (e ErrUnterminated) Diagnose(d *report.Diagnostic) {
 	openTok, closeTok := e.OpenClose()
 
 	if text == openTok {
-		d.With(report.Snippetf(e.Span, "expected to be closed by `%s", closeTok))
+		d.With(report.Snippetf(e.Span, "expected to be closed by `%s`", closeTok))
 		if e.Mismatch.IndexedFile != nil {
 			d.With(report.Snippetf(e.Mismatch, "closed by this instead"))
 		}
 	} else {
-		d.With(report.Snippetf(e.Span, "expected to be opened by `%s", openTok))
+		d.With(report.Snippetf(e.Span, "expected to be opened by `%s`", openTok))
 	}
 	if text == "*/" {
 		d.With(report.Note("Protobuf does not support nested block comments"))
