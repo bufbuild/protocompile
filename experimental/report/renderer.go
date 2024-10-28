@@ -23,8 +23,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/rivo/uniseg"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -190,8 +188,8 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 
 	locations := make([][2]Location, len(d.Annotations))
 	for i, snip := range d.Annotations {
-		locations[i][0] = snip.StartLoc()
-		locations[i][1] = snip.EndLoc()
+		locations[i][0] = snip.search(snip.Start, false)
+		locations[i][1] = snip.search(snip.End, false)
 	}
 
 	// Figure out how wide the line bar needs to be. This is given by
@@ -246,8 +244,10 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 	for _, help := range d.Help {
 		footers = append(footers, [3]string{ss.bRemark, "help", help})
 	}
-	for _, debug := range d.Debug {
-		footers = append(footers, [3]string{ss.bError, "debug", debug})
+	if r.ShowDebug {
+		for _, debug := range d.Debug {
+			footers = append(footers, [3]string{ss.bError, "debug", debug})
+		}
 	}
 	for _, footer := range footers {
 		out.WriteByte('\n')
@@ -380,7 +380,7 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 			} else {
 				lineEnd += snippet.Start
 			}
-			ul.end = ul.start + stringWidth(ul.start, w.file.Text[snippet.Start:lineEnd])
+			ul.end = ul.start + stringWidth(ul.start, w.file.Text[snippet.Start:lineEnd], false, nil)
 		}
 
 		// Make sure no empty underlines exist.
@@ -799,26 +799,9 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 		fmt.Fprintf(out, "\n%s%*d | %s", ss.nAccent, lineBarWidth, lineno, sidebar)
 		lastEmit = lineno
 
-		// Replace tabstops with spaces.
-		var column int
-		// We can't just use StringWidth, because that doesn't respect tabstops
-		// correctly.
-		for {
-			nextTab := strings.IndexByte(line, '\t')
-			if nextTab != -1 {
-				column += uniseg.StringWidth(line[:nextTab])
-				out.WriteString(line[:nextTab])
-
-				tab := TabstopWidth - (column % TabstopWidth)
-				column += tab
-				padBy(out, tab)
-
-				line = line[nextTab+1:]
-			} else {
-				out.WriteString(line)
-				break
-			}
-		}
+		// Re-use the logic from width calculation to correctly format a line for
+		// showing in a terminal.
+		stringWidth(0, line, false, out)
 
 		// If this happens to be an annotated line, this is when it gets annotated.
 		for _, line := range cur.underlines {

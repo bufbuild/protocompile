@@ -15,10 +15,13 @@
 package report
 
 import (
+	"fmt"
 	"math"
 	"slices"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
 )
@@ -69,6 +72,11 @@ func (s Span) EndLoc() Location {
 // Span implements [Spanner].
 func (s Span) Span() Span {
 	return s
+}
+
+// String implements [string.Stringer].
+func (s Span) String() string {
+	return fmt.Sprintf("%s[%d:%d]", s.Path(), s.Start, s.End)
 }
 
 // Join joins a collection of spans, returning the smallest span that
@@ -158,6 +166,10 @@ func (i *IndexedFile) Text() string {
 // Search searches this index to build full Location information for the given byte
 // offset.
 func (i *IndexedFile) Search(offset int) Location {
+	return i.search(offset, true)
+}
+
+func (i *IndexedFile) search(offset int, allowNonPrint bool) Location {
 	// Compute the prefix sum on-demand.
 	i.once.Do(func() {
 		var next int
@@ -186,7 +198,7 @@ func (i *IndexedFile) Search(offset int) Location {
 		line--
 	}
 
-	column := stringWidth(0, i.file.Text[i.lines[line]:offset])
+	column := stringWidth(0, i.file.Text[i.lines[line]:offset], allowNonPrint, nil)
 	return Location{
 		Offset: offset,
 		Line:   line + 1,
@@ -196,18 +208,62 @@ func (i *IndexedFile) Search(offset int) Location {
 
 // stringWidth calculates the rendered width of text if placed at the given column,
 // accounting for tabstops.
-func stringWidth(column int, text string) int {
+func stringWidth(column int, text string, allowNonPrint bool, out *strings.Builder) int {
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.
-	for {
+	for text != "" {
 		nextTab := strings.IndexByte(text, '\t')
-		if nextTab == -1 {
-			column += uniseg.StringWidth(text)
-			break
+		haveTab := nextTab != -1
+		next := text
+		if haveTab {
+			next, text = text[:nextTab], text[nextTab+1:]
+		} else {
+			text = ""
 		}
-		column += uniseg.StringWidth(text[:nextTab])
-		column += TabstopWidth - (column % TabstopWidth)
-		text = text[nextTab+1:]
+
+		if !allowNonPrint {
+			// Handle unprintable characters. We render those as <U+NNNN>.
+			for next != "" {
+				nextNonPrint := strings.IndexFunc(next, nonPrint)
+				chunk := next
+				if nextNonPrint != -1 {
+					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
+					nonPrint, runeLen := utf8.DecodeRuneInString(next)
+					next = next[runeLen:]
+
+					escape := fmt.Sprintf("<U+%04X>", nonPrint)
+					if out != nil {
+						out.WriteString(chunk)
+						out.WriteString(escape)
+					}
+
+					column += uniseg.StringWidth(chunk) + len(escape)
+				} else {
+					if out != nil {
+						out.WriteString(chunk)
+					}
+					column += uniseg.StringWidth(chunk)
+					next = ""
+				}
+			}
+		} else {
+			column += uniseg.StringWidth(next)
+			if out != nil {
+				out.WriteString(next)
+			}
+		}
+
+		if haveTab {
+			tab := TabstopWidth - (column % TabstopWidth)
+			column += tab
+			if out != nil {
+				padBy(out, tab)
+			}
+		}
 	}
 	return column
+}
+
+func nonPrint(r rune) bool {
+	return !strings.ContainsRune(" \r\t\n", r) && !unicode.IsPrint(r)
 }

@@ -206,14 +206,14 @@ func Helpf(format string, args ...any) DiagnosticOption {
 // The arguments are stringified with [fmt.Sprint].
 func Debug(args ...any) DiagnosticOption {
 	return func(d *Diagnostic) {
-		d.Help = append(d.Help, fmt.Sprint(args...))
+		d.Debug = append(d.Debug, fmt.Sprint(args...))
 	}
 }
 
 // Debugf is like [Debug], but it calls [fmt.Sprintf] internally for you.
 func Debugf(format string, args ...any) DiagnosticOption {
 	return func(d *Diagnostic) {
-		d.Help = append(d.Help, fmt.Sprintf(format, args...))
+		d.Debug = append(d.Debug, fmt.Sprintf(format, args...))
 	}
 }
 

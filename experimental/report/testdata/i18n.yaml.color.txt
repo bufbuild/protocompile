@@ -1,8 +1,8 @@
 ⟨b.red⟩error: emoji, CJK, bidi⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:9
    | 
-⟨blu⟩ 5 | ⟨reset⟩message 🐈‍⬛ {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩        ⟨b.red⟩^^⟨reset⟩ ⟨b.red⟩
+⟨blu⟩ 5 | ⟨reset⟩message 🐈<U+200D>⬛ {
+⟨blu⟩   | ⟨reset⟩⟨reset⟩        ⟨b.red⟩^^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
 ⟨blu⟩ 6 | ⟨reset⟩  string 黑猫 = 1;
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩         ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩note: some surfaces render CJK as sub-two-column
 ⟨blu⟩  ::: bar.proto:1:9
