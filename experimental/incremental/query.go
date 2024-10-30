@@ -15,6 +15,7 @@
 package incremental
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -23,24 +24,26 @@ import (
 // Types which implement Query can be executed by an [Executor], which
 // automatically caches the results of a query.
 type Query[T any] interface {
-	// Returns a unique URL representing this query. Some conventional examples:
+	// Returns a unique key representing this query.
 	//
-	// file:///absolute/path.proto
-	//
-	// ast://my/proto/file.proto
-	//
-	// The incremental framework does not attempt to interpret these URLs, and
-	// only uses them as keys for memoization.
-	//
-	// If two distinct queries have the same URL, the incremental framework may
-	// produce incorrect results, or panic.
-	URL() string
+	// This should be a comparable struct type unique to the query type. Failure
+	// to do so may result in different queries with the same key, which may
+	// result in incorrect results or panics.
+	Key() any
 
 	// Executes this query. This function will only be called if the result of
 	// this query is not already in the [Executor]'s cache.
 	//
 	// The error return should only be used to signal if the query failed. For
 	// non-fatal errors, you should record that information with [Task.NonFatal].
+	//
+	// Implementations of this function MUST NOT call [Run] on the executor that
+	// is executing them. This will defeat correctness detection, and lead to
+	// resource starvation (and potentially deadlocks).
+	//
+	// Panicking in execute is not interpreted as a fatal error that should be
+	// memoized; instead, it is treated as cancellation of the context that
+	// was passed to [Run].
 	Execute(Task) (value T, fatal error)
 }
 
@@ -50,7 +53,7 @@ type ErrCycle struct {
 	//
 	// To inspect the concrete types of the cycle members, use [DowncastQuery],
 	// which will automatically unwrap any calls to [AnyQuery].
-	Cycle []Query[any]
+	Cycle []*AnyQuery
 }
 
 // Error implements [error].
@@ -61,50 +64,79 @@ func (e *ErrCycle) Error() string {
 		if i != 0 {
 			buf.WriteString(" -> ")
 		}
-		buf.WriteString(q.URL())
+		fmt.Fprintf(&buf, "%#v", q.Key())
 	}
 	return buf.String()
 }
 
-// AnyQuery type-erases a [Query].
+// ErrPanic is returned by [Run] if any of the queries it executes panic.
+// This error is used to cancel the [context.Context] that governs the call to
+// [Run].
+type ErrPanic struct {
+	Query     *AnyQuery // The query that panicked.
+	Panic     any       // The actual value passed to panic().
+	Backtrace string    // A backtrace for the panic.
+}
+
+// Error implements [error].
+func (e *ErrPanic) Error() string {
+	return fmt.Sprintf(
+		"call to Query.Execute (key: %#v) panicked: %v\n%s",
+		e.Query.Key(), e.Panic, e.Backtrace,
+	)
+}
+
+// AnyQuery is a [Query] that has been type-erased.
+type AnyQuery struct {
+	actual, key any
+	execute     func(Task) (any, error)
+}
+
+// AsAny type-erases a [Query].
 //
 // This is intended to be combined with [Resolve], for cases where queries
 // of different types want to be run in parallel.
-func AnyQuery[T any](q Query[T]) Query[any] {
-	if q, ok := any(q).(anyQuery); ok {
+//
+// Panics if q is nil.
+func AsAny[T any](q Query[T]) *AnyQuery {
+	if q, ok := any(q).(*AnyQuery); ok {
 		return q
 	}
 
-	return anyQuery{
-		url:     q.URL(),
+	return &AnyQuery{
+		key:     q.Key(),
 		execute: func(t Task) (any, error) { return q.Execute(t) },
 	}
 }
 
-// DowncastQuery undoes the effect of [AnyQuery].
+// Underlying returns the original, non-AnyQuery query this query was
+// constructed with.
+func (q *AnyQuery) Underlying() any {
+	return q.actual
+}
+
+// Key implements [Query].
+func (q *AnyQuery) Key() any { return q.key }
+
+// Execute implements [Query].
+func (q *AnyQuery) Execute(t Task) (any, error) { return q.execute(t) }
+
+// AsTyped undoes the effect of [AsAny].
 //
 // For some Query[any] values, you may be able to use ordinary Go type
 // assertions, if the underlying type actually implements Query[any]. However,
 // to downcast to a concrete Query[T] type, you must use this function.
-func DowncastQuery[Q Query[T], T any](q Query[any]) (downcast Q, ok bool) {
-	if downcast, ok = q.(Q); ok {
-		return
+func AsTyped[Q Query[T], T any](q Query[any]) (downcast Q, ok bool) {
+	if downcast, ok := q.(Q); ok {
+		return downcast, true
 	}
 
-	qAny, ok := q.(anyQuery)
+	qAny, ok := q.(*AnyQuery)
 	if !ok {
-		return
+		var zero Q
+		return zero, false
 	}
 
 	downcast, ok = qAny.actual.(Q)
-	return
+	return downcast, ok
 }
-
-type anyQuery struct {
-	actual  any
-	url     string
-	execute func(Task) (any, error)
-}
-
-func (q anyQuery) URL() string                 { return q.url }
-func (q anyQuery) Execute(t Task) (any, error) { return q.execute(t) }

@@ -28,7 +28,7 @@ inputs.
 
 # Implementing a Query
 
-Each query must provide a URL that uniquely identifies it, and a function for
+Each query must provide a key that uniquely identifies it, and a function for
 actually computing it. Queries can partially succeed: instead of a query
 returning (T, error), it only returns a T, and errors are flagged to the [Task]
 argument.
@@ -54,7 +54,7 @@ those dependencies' dependencies. ([Run], however, returns all transitive errors
 
 # Invalidating Queries
 
-[Executor] supports invalidating queries by URL, which will cause all queries
+[Executor] supports invalidating queries by key, which will cause all queries
 that depended on that query to be discarded and require recomputing. This can be
 used e.g. to mark a file as changed and require that everything that that file
 depended on is recomputed. See [Executor.Evict].

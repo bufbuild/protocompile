@@ -16,12 +16,12 @@ package incremental
 
 import (
 	"context"
-	"fmt"
+	"runtime/debug"
 	"slices"
 	"sync"
 	"sync/atomic"
 
-	"golang.org/x/sync/semaphore"
+	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Task represents a query that is currently being executed.
@@ -33,17 +33,20 @@ type Task struct {
 	// avoid user implementations of Query making this mistake (or inserting
 	// inappropriate timeouts), we pass the context as part of the task context.
 	ctx    context.Context //nolint:containedctx
+	cancel func(error)
+
 	exec   *Executor
 	task   *task
 	result *result
 
-	// As long as this is false, this task has an associated hold on exec.sema.
-	// This is to ensure that calls to Resolve can temporarily release this
-	// hold while waiting for their dependencies to finish.
-	done bool
-
 	// Intrusive linked list node for cycle detection.
 	path path
+}
+
+// Context returns the cancellation context for this task.
+func (t *Task) Context() context.Context {
+	t.checkDone()
+	return t.ctx
 }
 
 // Error adds errors to the current query, which will be propagated to all
@@ -60,9 +63,9 @@ func (t *Task) NonFatal(errs ...error) {
 // goroutine.
 //
 // If the context passed [Executor] expires, this will return [context.Cause].
-// The caller MUST immediately propagate this error to ensure the whole query
-// graph exits quickly. Failure to do so can result in deadlock or other
-// concurrent mayhem.
+// The caller must propagate this error to ensure the whole query graph exits
+// quickly. Failure to propagate the error will result in incorrect query
+// results.
 //
 // If a cycle is detected for a given query, the query will automatically fail
 // and produce an [ErrCycle] for its fatal error. If the call to [Query].Execute
@@ -84,29 +87,37 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 
 	results = make([]Result[T], len(queries))
 	deps := make([]*task, len(queries))
-	wg := semaphore.NewWeighted(int64(len(queries))) // Used like a sync.WaitGroup.
+
+	var wg sync.WaitGroup
+	wg.Add(len(queries))
 
 	// TODO: A potential optimization is to make the current goroutine
 	// execute the zeroth query, which saves on allocating a fresh g for
 	// *every* query.
-	async := false
+	anyAsync := false
 	for i, q := range queries {
 		i := i // Avoid pesky capture-by-ref of loop induction variables.
 
-		q := AnyQuery(q) // This will also cache the result of q.URL() for us.
-		deps[i] = caller.exec.getTask(q.URL())
-		async = run(caller, deps[i], q, wg, func() {
-			r := deps[i].result.Load()
-			if r.Value != nil {
-				// This type assertion will always succeed, unless the user has
-				// distinct queries with the same URL, which is a sufficiently
-				// unrecoverable condition that a panic is acceptable.
-				results[i].Value = r.Value.(T) //nolint:errcheck
+		q := AsAny(q) // This will also cache the result of q.URL() for us.
+		deps[i] = caller.exec.getTask(q.Key())
+
+		async := deps[i].run(caller, q, func(r *result) {
+			if r != nil {
+				if r.Value != nil {
+					// This type assertion will always succeed, unless the user has
+					// distinct queries with the same URL, which is a sufficiently
+					// unrecoverable condition that a panic is acceptable.
+					results[i].Value = r.Value.(T) //nolint:errcheck
+				}
+
+				results[i].NonFatal = r.NonFatal
+				results[i].Fatal = r.Fatal
 			}
 
-			results[i].NonFatal = r.NonFatal
-			results[i].Fatal = r.Fatal
-		}) || async // Need to avoid short-circuiting here!
+			wg.Done()
+		})
+
+		anyAsync = anyAsync || async
 	}
 
 	// Update dependency links for each of our dependencies. This occurs in a
@@ -134,18 +145,16 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 		}
 	}()
 
-	if async {
+	if anyAsync {
 		// Release our current hold on the global semaphore, since we're about to
 		// go to sleep. This avoids potential resource starvation for deeply-nested
 		// queries on low parallelism settings.
 		caller.exec.sema.Release(1)
+		wg.Wait()
 
-		// This blocks until all of the asynchronous queries have completed, or
-		// the context is cancelled.
-		if wg.Acquire(caller.ctx, int64(len(queries))) != nil ||
-			// Also, re-acquire from the global semaphore before returning, so
-			// execution of the calling task may resume.
-			caller.exec.sema.Acquire(caller.ctx, 1) != nil {
+		// Reacquire from the global semaphore before returning, so
+		// execution of the calling task may resume.
+		if caller.exec.sema.Acquire(caller.ctx, 1) != nil {
 			return nil, context.Cause(caller.ctx)
 		}
 	}
@@ -153,10 +162,10 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 	return results, nil
 }
 
-// checkDone panics if this task is completed. This is to avoid shenanigans with
+// checkDone returns an error if this task is completed. This is to avoid shenanigans with
 // tasks that escape their scope.
 func (t *Task) checkDone() {
-	if t.done {
+	if closed(t.result.done) {
 		panic("protocompile/incremental: use of Task after the associated Query.Execute call returned")
 	}
 }
@@ -187,116 +196,117 @@ type result struct {
 	done chan struct{}
 }
 
-// run executes a query in the context of some task and writes the result to
-// out.
-func run(caller Task, task *task, q Query[any], wg *semaphore.Weighted, done func()) (async bool) {
-	// Common case for cached values; no need to spawn a separate goroutine.
-	r := task.result.Load()
-	if r != nil && closed(r.done) {
-		done()
-		return false
-	}
+// path is a linked list node for tracking cycles in query dependencies.
+type path struct {
+	Query *AnyQuery
+	Prev  *path
+}
 
-	if wg.Acquire(caller.ctx, 1) != nil {
+// Walk returns an iterator over the linked list.
+func (p *path) Walk() iter.Seq[*path] {
+	return func(yield func(*path) bool) {
+		for node := p; node.Query != nil; node = node.Prev {
+			if !yield(node) {
+				return
+			}
+		}
+	}
+}
+
+// run executes a query in the context of some task and writes the result to out.
+func (t *task) run(caller Task, q *AnyQuery, done func(*result)) (async bool) {
+	// Common case for cached values; no need to spawn a separate goroutine.
+	r := t.result.Load()
+	if r != nil && closed(r.done) {
+		done(r)
 		return false
 	}
 
 	// Complete the rest of the computation asynchronously.
 	go func() {
-		defer wg.Release(1)
-
-		// Check for a potential cycle.
-		node := &caller.path
-		url := q.URL()
-		fmt.Println(url)
-		for node.Query != nil {
-			fmt.Println(node.Query.URL(), url)
-			if node.Query.URL() == url {
-				err := new(ErrCycle)
-
-				// Re-walk the list to collect the cycle itself.
-				node2 := &caller.path
-				for {
-					err.Cycle = append(err.Cycle, node2.Query)
-					if node2 == node {
-						break
-					}
-
-					node2 = node2.Prev
-				}
-				// Reverse the list so that dependency arrows point to the
-				// right (i.e., Cycle[n] depends on Cycle[n+1]).
-				slices.Reverse(err.Cycle)
-				// Insert a copy of the current query to complete the cycle.
-				err.Cycle = append(err.Cycle, AnyQuery(q))
-
-				r.Fatal = err
-				close(r.done)
-				done()
-				return
-			}
-			node = node.Prev
-		}
-
-		// Try to become the task responsible for computing the result.
-		r := &result{done: make(chan struct{})}
-		if !task.result.CompareAndSwap(nil, r) {
-			// We failed to become the executor, so we're gonna go to sleep
-			// until it's done.
-			r = task.result.Load()
-			select {
-			case <-r.done:
-				done()
-			case <-caller.ctx.Done():
-			}
-			return
-		}
-
-		callee := Task{
-			ctx:    caller.ctx,
-			exec:   caller.exec,
-			task:   task,
-			result: r,
-			path: path{
-				Query: q,
-				Prev:  &caller.path,
-			},
-		}
-
-		if caller.exec.sema.Acquire(caller.ctx, 1) != nil {
-			// We were cancelled, reset this task to the "incomplete" state.
-			task.result.Store(nil)
-		}
-
-		defer func() {
-			callee.done = true
-			caller.exec.sema.Release(1)
-			if closed(r.done) {
-				done()
-			} else {
-				// If the done channel is not closed, this means that we
-				// are panicking. Thus, we should abandon whatever partially
-				// complete value we have in the result by setting it to nil.
-				task.result.Store(nil)
-				close(r.done)
-			}
-		}()
-
-		r.Value, r.Fatal = q.Execute(callee)
-		if !closed(r.done) {
-			// if a cycle was detected, r.done may have already been closed.
-			// Thus, we need to avoid a double-close, which will panic.
-			close(r.done)
-		}
+		done(t.runAsync(caller, q))
 	}()
-
 	return true
 }
 
-// path is a linked list node for tracking cycles in query dependencies.
-type path struct {
-	Query Query[any]
-	Prev  *path
+func (t *task) runAsync(caller Task, q *AnyQuery) (output *result) {
+	output = t.result.Load()
+
+	defer func() {
+		if panicked := recover(); panicked != nil {
+			output = nil
+			caller.cancel(&ErrPanic{
+				Query:     q,
+				Panic:     panicked,
+				Backtrace: string(debug.Stack()),
+			})
+		}
+
+		if output != nil && !closed(output.done) {
+			close(output.done)
+		}
+	}()
+
+	// Check for a potential cycle.
+	var cycle *ErrCycle
+	caller.path.Walk()(func(node *path) bool {
+		if node.Query.Key() == q.Key() {
+			cycle = new(ErrCycle)
+
+			// Re-walk the list to collect the cycle itself.
+			caller.path.Walk()(func(node2 *path) bool {
+				cycle.Cycle = append(cycle.Cycle, node2.Query)
+				return node2 != node
+			})
+
+			// Reverse the list so that dependency arrows point to the
+			// right (i.e., Cycle[n] depends on Cycle[n+1]).
+			slices.Reverse(cycle.Cycle)
+
+			// Insert a copy of the current query to complete the cycle.
+			cycle.Cycle = append(cycle.Cycle, AsAny(q))
+			return false
+		}
+		return true
+	})
+	if cycle != nil {
+		output.Fatal = cycle
+		return output
+	}
+
+	// Try to become the leader (the task responsible for computing the result).
+	output = &result{done: make(chan struct{})}
+	if !t.result.CompareAndSwap(nil, output) {
+		// We failed to become the executor, so we're gonna go to sleep
+		// until it's done.
+		select {
+		case <-t.result.Load().done:
+		case <-caller.ctx.Done():
+		}
+
+		// Reload the result pointer. This is needed if the leader panics,
+		// because the result will be set to nil.
+		return t.result.Load()
+	}
+
+	callee := Task{
+		ctx:    caller.ctx,
+		exec:   caller.exec,
+		task:   t,
+		result: output,
+		path: path{
+			Query: q,
+			Prev:  &caller.path,
+		},
+	}
+
+	if callee.exec.sema.Acquire(caller.ctx, 1) != nil {
+		return nil
+	}
+	defer callee.exec.sema.Release(1)
+
+	output.Value, output.Fatal = q.Execute(callee)
+	return output
 }
 
 // closed checks if ch is closed. This may return false negatives, in that it

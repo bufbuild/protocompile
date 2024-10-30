@@ -16,6 +16,7 @@ package incremental
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"slices"
 	"sync"
@@ -33,7 +34,7 @@ type Executor struct {
 	// performance, and we may want to add eviction to keep memoization costs
 	// in a long-running process (like, say, a language server) down.
 	// See https://github.com/dgraph-io/ristretto as a potential alternative.
-	tasks sync.Map // [string, *task]
+	tasks sync.Map // [any, *task]
 
 	sema *semaphore.Weighted
 }
@@ -60,24 +61,26 @@ func WithParallelism(n int64) ExecutorOption {
 	return func(e *Executor) { e.sema = semaphore.NewWeighted(n) }
 }
 
-// URLs returns a snapshot of the URLs of which queries are present (and
+// Keys returns a snapshot of the keys of which queries are present (and
 // memoized) in an Executor.
 //
 // The returned slice is sorted.
-func (e *Executor) URLs() (urls []string) {
-	e.tasks.Range(func(url, t any) bool {
+func (e *Executor) Keys() (keys []string) {
+	e.tasks.Range(func(k, t any) bool {
 		task := t.(*task) //nolint:errcheck // All values in this map are tasks.
 		result := task.result.Load()
 		if result == nil || !closed(result.done) {
 			return true
 		}
-		urls = append(urls, url.(string))
+		keys = append(keys, fmt.Sprintf("%#v", k))
 		return true
 	})
 
-	slices.Sort(urls)
+	slices.Sort(keys)
 	return
 }
+
+var runExecutorKey byte
 
 // Run executes a set of queries on this executor in parallel.
 //
@@ -98,6 +101,17 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 	e.dirty.RLock()
 	defer e.dirty.RUnlock()
 
+	// Verify we haven't reëntrantly called Run.
+	if callers, ok := ctx.Value(&runExecutorKey).(*[]*Executor); ok {
+		if slices.Contains(*callers, e) {
+			panic("protocompile/incremental: reentrant call to Run")
+		}
+		*callers = append(*callers, e)
+	} else {
+		ctx = context.WithValue(ctx, &runExecutorKey, &[]*Executor{e})
+	}
+	ctx, cancel := context.WithCancelCause(ctx)
+
 	// Need to acquire a hold on the global semaphore to represent the root
 	// task we're about to execute.
 	if e.sema.Acquire(ctx, 1) != nil {
@@ -107,29 +121,20 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 
 	root := Task{
 		ctx:    ctx,
+		cancel: cancel,
 		exec:   e,
 		result: &result{done: make(chan struct{})},
 	}
 
-	var rs []Result[T]
-	go func() {
-		// We don't write to results here, to avoid a potential race with
-		// returning when ctx.Done() is closed.
-		rs, _ = Resolve(root, queries...)
-		defer close(root.result.done)
-	}()
-
-	select {
-	case <-root.result.done:
-		results = rs
-	case <-ctx.Done():
-		return nil, context.Cause(ctx)
+	results, expired = Resolve(root, queries...)
+	if expired != nil {
+		return nil, expired
 	}
 
 	// Now, for each result, we need to walk their dependencies and collect
 	// their dependencies' non-fatal errors.
 	for i, query := range queries {
-		task := e.getTask(query.URL())
+		task := e.getTask(query.Key())
 		for dep := range task.deps {
 			r := &results[i]
 			r.NonFatal = append(r.NonFatal, dep.result.Load().NonFatal...)
@@ -139,15 +144,15 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 	return results, nil
 }
 
-// Evict marks query URLs as invalid, requiring those queries, and their
-// dependencies, to be recomputed. URLs that are not cached are ignored.
+// Evict marks query keys as invalid, requiring those queries, and their
+// dependencies, to be recomputed. keys that are not cached are ignored.
 //
 // This function cannot execute in parallel with calls to [Run], and will take
 // an exclusive lock (note that [Run] calls themselves can be run in parallel).
-func (e *Executor) Evict(urls ...string) {
+func (e *Executor) Evict(keys ...any) {
 	var queue []*task
-	for _, url := range urls {
-		if t, ok := e.tasks.Load(url); ok {
+	for _, key := range keys {
+		if t, ok := e.tasks.Load(key); ok {
 			queue = append(queue, t.(*task))
 		} else {
 			return
@@ -175,13 +180,13 @@ func (e *Executor) Evict(urls ...string) {
 	}
 }
 
-// getTask returns (and creates if necessary) a task pointer for the given URL.
-func (e *Executor) getTask(url string) *task {
+// getTask returns (and creates if necessary) a task pointer for the given key.
+func (e *Executor) getTask(key any) *task {
 	// Avoid allocating a new task object in the common case.
-	if t, ok := e.tasks.Load(url); ok {
+	if t, ok := e.tasks.Load(key); ok {
 		return t.(*task)
 	}
 
-	t, _ := e.tasks.LoadOrStore(url, new(task))
+	t, _ := e.tasks.LoadOrStore(key, new(task))
 	return t.(*task)
 }
