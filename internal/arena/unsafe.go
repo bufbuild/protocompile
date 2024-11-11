@@ -15,18 +15,16 @@
 package arena
 
 import (
-	"runtime"
 	"unsafe"
 )
 
 // pointerIndex returns an integer n such that p == &s[n], or -1 if there is
 // no such integer.
+//
+//go:nosplit
 func pointerIndex[T any](p *T, s []T) int {
 	a := unsafe.Pointer(p)
 	b := unsafe.Pointer(unsafe.SliceData(s))
-	// KeepAlive escapes its argument, so this ensures that a and b have
-	// escaped to the heap and won't be moved.
-	runtime.KeepAlive([2]unsafe.Pointer{a, b})
 
 	diff := uintptr(a) - uintptr(b)
 	size := unsafe.Sizeof(*p)
@@ -43,7 +41,7 @@ func pointerIndex[T any](p *T, s []T) int {
 	//	  "negative" uintptrs are greater than.
 	//
 	// 3. That byteLen is not zero. If it is zero, this branch is taken
-	//    regardless of the value of diff.
+	//    regardless of the value of diff
 	//
 	// 4. That p is not nil. If it is nil, then either diff will be huge
 	//    (because s is a nonempty slice) or byteLen will be zero in which case
@@ -56,5 +54,12 @@ func pointerIndex[T any](p *T, s []T) int {
 		return -1
 	}
 
+	// NOTE: A check for diff % size is not necessary. This would only be needed
+	// if the user passed in a pointer that points into the slice, but which
+	// does not point to the start of one of the slice's elements. However,
+	// because the pointer and slice must have the same type, this would mean
+	// that such a pointee straddles two elements of the slice, which Go does
+	// not permit (such pointers can only be created by abusing the unsafe
+	// package).
 	return int(diff / size)
 }
