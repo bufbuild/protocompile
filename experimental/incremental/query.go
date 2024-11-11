@@ -104,6 +104,7 @@ func AsAny[T any](q Query[T]) *AnyQuery {
 	}
 
 	return &AnyQuery{
+		actual:  q,
 		key:     q.Key(),
 		execute: func(t Task) (any, error) { return q.Execute(t) },
 	}

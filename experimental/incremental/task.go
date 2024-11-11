@@ -98,14 +98,14 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 	for i, q := range queries {
 		i := i // Avoid pesky capture-by-ref of loop induction variables.
 
-		q := AsAny(q) // This will also cache the result of q.URL() for us.
+		q := AsAny(q) // This will also cache the result of q.Key() for us.
 		deps[i] = caller.exec.getTask(q.Key())
 
-		async := deps[i].run(caller, q, func(r *result) {
+		async := deps[i].start(caller, q, func(r *result) {
 			if r != nil {
 				if r.Value != nil {
 					// This type assertion will always succeed, unless the user has
-					// distinct queries with the same URL, which is a sufficiently
+					// distinct queries with the same key, which is a sufficiently
 					// unrecoverable condition that a panic is acceptable.
 					results[i].Value = r.Value.(T) //nolint:errcheck
 				}
@@ -213,8 +213,9 @@ func (p *path) Walk() iter.Seq[*path] {
 	}
 }
 
-// run executes a query in the context of some task and writes the result to out.
-func (t *task) run(caller Task, q *AnyQuery, done func(*result)) (async bool) {
+// start executes a query in the context of some task and records the result by
+// calling done.
+func (t *task) start(caller Task, q *AnyQuery, done func(*result)) (async bool) {
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
@@ -224,12 +225,14 @@ func (t *task) run(caller Task, q *AnyQuery, done func(*result)) (async bool) {
 
 	// Complete the rest of the computation asynchronously.
 	go func() {
-		done(t.runAsync(caller, q))
+		done(t.run(caller, q))
 	}()
 	return true
 }
 
-func (t *task) runAsync(caller Task, q *AnyQuery) (output *result) {
+// run actually executes the query passed to start. It is called on its own
+// goroutine.
+func (t *task) run(caller Task, q *AnyQuery) (output *result) {
 	output = t.result.Load()
 
 	defer func() {
