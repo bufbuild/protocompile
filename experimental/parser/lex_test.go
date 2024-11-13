@@ -16,6 +16,8 @@ package parser_test
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -40,6 +42,8 @@ func TestRender(t *testing.T) {
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
+		text = unescapeTestCase(text)
+
 		errs := &report.Report{Tracing: 10}
 		ctx := ast.NewContext(report.File{Path: path, Text: text})
 		parser.Lex(ctx, errs)
@@ -52,8 +56,11 @@ func TestRender(t *testing.T) {
 		outputs[1], _, _ = report.Renderer{}.RenderString(errs)
 
 		var tsv strings.Builder
+		var count int
 		tsv.WriteString("#\t\tkind\t\toffsets\t\tlinecol\t\ttext\n")
 		ctx.Stream().All()(func(tok token.Token) bool {
+			count++
+
 			sp := tok.Span()
 			start := ctx.Stream().IndexedFile.Search(sp.Start)
 			fmt.Fprintf(
@@ -64,17 +71,47 @@ func TestRender(t *testing.T) {
 				tok.Text(),
 			)
 
-			if v, ok := tok.AsInt(); ok {
-				fmt.Fprintf(&tsv, "\tint:%d", v)
+			if v := tok.AsBigInt(); v != nil {
+				fmt.Fprintf(&tsv, "\t\tint:%d", v)
 			} else if v, ok := tok.AsFloat(); ok {
-				fmt.Fprintf(&tsv, "\tfloat:%g", v)
+				fmt.Fprintf(&tsv, "\t\tfloat:%g", v)
 			} else if v, ok := tok.AsString(); ok {
-				fmt.Fprintf(&tsv, "\tstring:%q", v)
+				fmt.Fprintf(&tsv, "\t\tstring:%q", v)
+			}
+
+			if a, b := tok.StartEnd(); a != b {
+				if tok == a {
+					fmt.Fprintf(&tsv, "\t\tclose:%v", b.ID())
+				} else {
+					fmt.Fprintf(&tsv, "\t\topen:%v", a.ID())
+				}
 			}
 
 			tsv.WriteByte('\n')
 			return true
 		})
-		outputs[0] = tsv.String()
+		if count > 0 {
+			outputs[0] = tsv.String()
+		}
+	})
+}
+
+// Our lexer tests support Unicode escapes in the form $u{nnnn} and byte escapes
+// in the form $x{nn}. This is so that the checked-in files are human-readable
+// while potentially containing unprintable characters or invalid bytes.
+var escapePat = regexp.MustCompile(`\$([ux])\{(\w+)\}`)
+
+func unescapeTestCase(s string) string {
+	return escapePat.ReplaceAllStringFunc(s, func(needle string) string {
+		groups := escapePat.FindStringSubmatch(needle)
+		value, err := strconv.ParseInt(groups[2], 16, 32)
+		if err != nil {
+			panic(err)
+		}
+		if groups[1] == "x" {
+			return string([]byte{byte(value)})
+		} else {
+			return fmt.Sprintf("%c", value)
+		}
 	})
 }

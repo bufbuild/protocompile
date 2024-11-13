@@ -210,11 +210,11 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 
 		primary := annotations[0]
 		start := locations[i][0]
-		arrow := ":::"
+		sep := ":::"
 		if i == 0 {
-			arrow = "-->"
+			sep = "-->"
 		}
-		fmt.Fprintf(&out, "%s %s:%d:%d", arrow, primary.Path(), start.Line, start.Column)
+		fmt.Fprintf(&out, "%s %s:%d:%d", sep, primary.Path(), start.Line, start.Column)
 
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.

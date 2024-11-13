@@ -38,15 +38,16 @@ func (w With[Context]) Context() Context {
 
 // Nil checks whether this is this type's zero value.
 func (w With[Context]) Nil() bool {
-	var Nil Context
-	return w.ctx == Nil
+	var zero Context
+	return w.ctx == zero
 }
 
 // PanicIfNil panics if a context is nil.
 //
 // This is helpful for immediately panicking on function entry.
-func PanicIfNil[C comparable](with *With[C]) {
+func PanicIfNil[Context comparable](with *With[Context]) {
 	if with.Nil() {
-		panic(fmt.Errorf("use of zero value: %p", with))
+		var zero Context
+		panic(fmt.Errorf("value has nil context %T", zero))
 	}
 }

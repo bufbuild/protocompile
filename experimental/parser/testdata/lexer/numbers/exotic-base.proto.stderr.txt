@@ -1,0 +1,41 @@
+error: unsupported base for integer literal
+  --> testdata/lexer/numbers/exotic-base.proto:1:1
+   | 
+ 1 | 0b1100101
+   | ^^^^^^^^^ 
+   = note: Protobuf does not support binary integer literals
+
+error: unsupported base for integer literal
+  --> testdata/lexer/numbers/exotic-base.proto:2:1
+   | 
+ 2 | 0B1010101
+   | ^^^^^^^^^ 
+   = note: Protobuf does not support binary integer literals
+
+error: unsupported base for integer literal
+  --> testdata/lexer/numbers/exotic-base.proto:3:1
+   | 
+ 3 | 0o1234567
+   | ^^^^^^^^^ replace `0o` with `0`
+   = note: Protobuf does not support the `0o` prefix for octal literals
+
+error: unsupported base for integer literal
+  --> testdata/lexer/numbers/exotic-base.proto:4:1
+   | 
+ 4 | 0O1234567
+   | ^^^^^^^^^ replace `0o` with `0`
+   = note: Protobuf does not support the `0o` prefix for octal literals
+
+error: unexpected characters in floating-point literal
+  --> testdata/lexer/numbers/exotic-base.proto:6:1
+   | 
+ 6 | 0x10203.4
+   | ^^^^^^^^^ 
+
+error: unexpected characters in floating-point literal
+  --> testdata/lexer/numbers/exotic-base.proto:7:1
+   | 
+ 7 | 0X12.ffP10
+   | ^^^^^^^^^^ 
+
+encountered 6 errors

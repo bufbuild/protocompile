@@ -1,0 +1,12 @@
+#		kind		offsets		linecol		text
+0		Number		000:009		001:001		"0b1100101"		int:101
+1		Space		009:010		001:010		"\n"
+2		Number		010:019		002:001		"0B1010101"		int:85
+3		Space		019:020		002:010		"\n"
+4		Number		020:029		003:001		"0o1234567"		int:342391
+5		Space		029:030		003:010		"\n"
+6		Number		030:039		004:001		"0O1234567"		int:342391
+7		Space		039:041		004:010		"\n\n"
+8		Number		041:050		006:001		"0x10203.4"		float:NaN
+9		Space		050:051		006:010		"\n"
+10		Number		051:061		007:001		"0X12.ffP10"		float:NaN

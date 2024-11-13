@@ -224,7 +224,7 @@ func stringWidth(column int, text string, allowNonPrint bool, out *strings.Build
 		if !allowNonPrint {
 			// Handle unprintable characters. We render those as <U+NNNN>.
 			for next != "" {
-				nextNonPrint := strings.IndexFunc(next, nonPrint)
+				nextNonPrint := strings.IndexFunc(next, NonPrint)
 				chunk := next
 				if nextNonPrint != -1 {
 					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
@@ -264,6 +264,9 @@ func stringWidth(column int, text string, allowNonPrint bool, out *strings.Build
 	return column
 }
 
-func nonPrint(r rune) bool {
+// NonPrint defines whether or not a rune is considered "unprintable for the
+// purposes of diagnostics", that is, whether it is a rune that the diagnostics
+// engine will replace with <U+NNNN> when printing.
+func NonPrint(r rune) bool {
 	return !strings.ContainsRune(" \r\t\n", r) && !unicode.IsPrint(r)
 }

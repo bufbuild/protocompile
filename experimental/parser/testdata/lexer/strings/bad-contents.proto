@@ -1,0 +1,11 @@
+"this string
+contains a newline"
+"
+"
+
+"this string contains a nul: $x{00}"
+"this string contains a nul $x{00} in the middle"
+"$x{00}"
+
+"this string contains some other non-graphic character: $x{01}"
+"this is graphic but non-ASCII space: $u{00A0}"

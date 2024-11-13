@@ -16,6 +16,7 @@ package token
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"unicode"
@@ -207,14 +208,14 @@ func (t Token) StartEnd() (start, end Token) {
 //
 // Note: this function wants to be a method of [Token], but cannot because it
 // is generic.
-func SetValue[T uint64 | float64 | string](token Token, value T) {
+func SetValue[T uint64 | float64 | string | *big.Int](token Token, value T) {
 	if token.Nil() {
 		panic(fmt.Sprintf("protocompile/token: passed nil token to SetValue: %s", token))
 	}
 
 	var wantKind Kind
 	switch any(value).(type) {
-	case uint64, float64:
+	case uint64, float64, *big.Int:
 		wantKind = Number
 	case string:
 		wantKind = String
@@ -260,7 +261,7 @@ func ClearValue(token Token) {
 // If open or close are synthetic or not currently a leaf, have different
 // contexts, or are part of a frozen [Stream], this function panics.
 func Fuse(open, close Token) { //nolint:predeclared // For close.
-	if open.Context() != close.Context() {
+	if open.Context().Stream() != close.Context().Stream() {
 		panic("protocompile/token: attempted to fuse tokens from different streams")
 	}
 	if open.Context().Stream().frozen {
@@ -327,10 +328,8 @@ func (t Token) Name() string {
 	return t.Text()
 }
 
-// AsUInt converts this token into an unsigned integer if it is a numeric token.
-// bits is the maximum number of bits that are used to represent this value.
-//
-// Otherwise, or if the result would overflow, returns 0, false.
+// AsInt converts this token into an unsigned integer if it is an integer token.
+// Returns 0, false if it is not an integer or the result would overflow a uint64.
 func (t Token) AsInt() (uint64, bool) {
 	if t.Kind() != Number {
 		return 0, false
@@ -345,6 +344,30 @@ func (t Token) AsInt() (uint64, bool) {
 	// Otherwise, it's a base 10 integer.
 	v, err := strconv.ParseUint(t.Text(), 10, 64)
 	return v, err == nil
+}
+
+// AsBigInt converts this token into a big integer if it is an integer token.
+// Returns nil if it is not an integer.
+func (t Token) AsBigInt() *big.Int {
+	if t.Kind() != Number {
+		return nil
+	}
+
+	// Check if this is a big integer.
+	vAny, present := t.Context().Stream().literals[t.id]
+	if v, ok := vAny.(*big.Int); present && ok {
+		return v
+	}
+
+	// Otherwise, fall back to AsInt.
+	v, ok := t.AsInt()
+	if !ok {
+		return nil
+	}
+
+	n := new(big.Int)
+	n.SetUint64(v)
+	return n
 }
 
 // AsFloat converts this token into float if it is a numeric token. If the value is
@@ -366,6 +389,10 @@ func (t Token) AsFloat() (float64, bool) {
 	}
 	if v, ok := vAny.(uint64); present && ok {
 		return float64(v), true
+	}
+	if v, ok := vAny.(*big.Int); present && ok {
+		f, _ := v.Float64()
+		return f, true
 	}
 
 	// Otherwise, it's an base 10 integer.

@@ -32,7 +32,8 @@ import (
 // opaque.
 type ID int32
 
-// In associated this token with a context to present to the user.
+// In associated this token ID with a context. This allows token metadata,
+// such as position, text, and kind, to be looked up.
 //
 // No checks are performed to validate that this ID came from this context; the
 // caller is responsible for ensuring that themselves.
