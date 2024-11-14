@@ -163,11 +163,11 @@ func (e ExprAny) AsDict() ExprDict {
 	}}
 }
 
-// AsKV converts a ExprAny into a ExprKV, if that is the type
+// AsField converts a ExprAny into a ExprKV, if that is the type
 // it contains.
 //
 // Otherwise, returns nil.
-func (e ExprAny) AsKV() ExprField {
+func (e ExprAny) AsField() ExprField {
 	if e.Kind() != ExprKindField {
 		return ExprField{}
 	}
@@ -191,7 +191,7 @@ func (e ExprAny) Span() report.Span {
 		e.AsRange(),
 		e.AsArray(),
 		e.AsDict(),
-		e.AsKV(),
+		e.AsField(),
 	)
 }
 

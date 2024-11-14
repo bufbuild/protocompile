@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"google.golang.org/protobuf/proto"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -68,6 +70,38 @@ func (f File) Imports() iter.Seq2[int, DeclImport] {
 			return true
 		})
 	}
+}
+
+// ToProtoOptions contains options for the [File.ToProto] function.
+type ToProtoOptions struct {
+	// If set, no spans will be serialized.
+	//
+	// This operation only destroys non-semantic information.
+	ElideSpans bool
+
+	// If set, the contents of the file the AST was parsed from will not
+	// be serialized.
+	ElideFile bool
+}
+
+// ToProto converts this AST into a Protobuf representation, which may be
+// serialized.
+//
+// Note that package ast does not support deserialization from this proto;
+// instead, you will need to re-parse the text file included in the message.
+// This is because the AST is much richer than what is stored in this message;
+// the message only provides enough information for further semantic analysis
+// and diagnostic generation, but not for pretty-printing.
+//
+// Panics if the AST contains a cycle (e.g. a message that contains itself as
+// a nested message). Parsed ASTs will never contain cycles, but users may
+// modify them into a cyclic state.
+func (f File) ToProto(options *ToProtoOptions) proto.Message {
+	if options == nil {
+		options = new(ToProtoOptions)
+	}
+
+	return (&codec{ToProtoOptions: options}).file(f) // See codec.go
 }
 
 // DeclSyntax represents a language pragma, such as the syntax or edition keywords.
