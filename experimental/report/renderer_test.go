@@ -84,7 +84,7 @@ func TestRender(t *testing.T) {
 
 			// Convert files.text into base64 to appease protojson.
 			if files, ok := bag["files"]; ok {
-				for _, file := range files.([]any) {
+				for _, file := range files.([]any) { //nolint:errcheck
 					if file, ok := file.(map[string]any); ok {
 						if text, ok := file["text"].(string); ok {
 							file["text"] = base64.RawStdEncoding.EncodeToString([]byte(text))

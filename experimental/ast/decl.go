@@ -217,7 +217,7 @@ func wrapDecl[Raw any](c Contextual, ptr arena.Pointer[Raw]) declImpl[Raw] {
 
 	return declImpl[Raw]{
 		withContext{ctx},
-		arena_.(*arena.Arena[Raw]).Deref(ptr),
+		arena_.(*arena.Arena[Raw]).Deref(ptr), //nolint:errcheck
 		ptr,
 		kind,
 	}

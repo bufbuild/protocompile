@@ -65,7 +65,7 @@ func (c *Context) PushToken(length int, kind TokenKind) Token {
 //
 // If open or close are synthethic or not currently a leaf, this function panics.
 //
-//nolint:predeclared // For close.
+//nolint:predeclared,revive // For close.
 func (c *Context) FuseTokens(open, close Token) {
 	c.panicIfNil()
 

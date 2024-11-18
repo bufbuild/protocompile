@@ -168,6 +168,6 @@ func (c withContext) Nil() bool {
 // panicIfNil panics if this context is nil.
 //
 // This is helpful for immediately panicking on function entry.
-func (c *withContext) panicIfNil() {
+func (c withContext) panicIfNil() {
 	c.Context().panicIfNil()
 }

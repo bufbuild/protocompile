@@ -87,7 +87,7 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 		return
 	}
 
-	ss := newStyleSheet(&r)
+	ss := newStyleSheet(r)
 
 	pluralize := func(count int, what string) string {
 		if count == 1 {
@@ -127,7 +127,7 @@ func (r Renderer) RenderString(report *Report) (text string, errorCount, warning
 }
 
 // diagnostic renders a single diagnostic to a string.
-func (r *Renderer) diagnostic(d Diagnostic) string {
+func (r Renderer) diagnostic(d Diagnostic) string {
 	var level string
 	switch d.Level {
 	case Error:

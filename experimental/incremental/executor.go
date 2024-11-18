@@ -154,7 +154,7 @@ func (e *Executor) Evict(keys ...any) {
 	var queue []*task
 	for _, key := range keys {
 		if t, ok := e.tasks.Load(key); ok {
-			queue = append(queue, t.(*task))
+			queue = append(queue, t.(*task)) //nolint:errcheck
 		} else {
 			return
 		}
@@ -171,7 +171,7 @@ func (e *Executor) Evict(keys ...any) {
 		queue = queue[1:]
 
 		next.downstream.Range(func(k, _ any) bool {
-			queue = append(queue, k.(*task))
+			queue = append(queue, k.(*task)) //nolint:errcheck
 			return true
 		})
 
@@ -185,9 +185,9 @@ func (e *Executor) Evict(keys ...any) {
 func (e *Executor) getTask(key any) *task {
 	// Avoid allocating a new task object in the common case.
 	if t, ok := e.tasks.Load(key); ok {
-		return t.(*task)
+		return t.(*task) //nolint:errcheck
 	}
 
 	t, _ := e.tasks.LoadOrStore(key, new(task))
-	return t.(*task)
+	return t.(*task) //nolint:errcheck
 }

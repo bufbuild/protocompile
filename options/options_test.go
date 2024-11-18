@@ -474,8 +474,8 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 	for _, file := range files {
 		fromNoAST := filesFromNoAST.FindFileByPath(file.Path())
 		require.NotNil(t, fromNoAST)
-		fd := file.(linker.Result).FileDescriptorProto()
-		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto()
+		fd := file.(linker.Result).FileDescriptorProto()               //nolint:errcheck
+		fdFromNoAST := fromNoAST.(linker.Result).FileDescriptorProto() //nolint:errcheck
 		// final protos, with options interpreted, match
 		prototest.AssertMessagesEqual(t, fd, fdFromNoAST, file.Path())
 	}

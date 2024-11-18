@@ -136,7 +136,7 @@ func Scan(filename string, r io.Reader) (Result, error) {
 		if currentImport != nil {
 			switch token {
 			case stringToken:
-				currentImport = append(currentImport, text.(string))
+				currentImport = append(currentImport, text.(string)) //nolint:errcheck
 			case identifierToken:
 				ident := text.(string) //nolint:errcheck
 				if len(currentImport) == 0 && (ident == "public" || ident == "weak") {
@@ -177,7 +177,7 @@ func Scan(filename string, r io.Reader) (Result, error) {
 							"package name should have a period between name components"),
 					)
 				}
-				packageComponents = append(packageComponents, text.(string))
+				packageComponents = append(packageComponents, text.(string)) //nolint:errcheck
 			case periodToken:
 				if len(packageComponents) == 0 {
 					syntaxErrs = append(syntaxErrs,

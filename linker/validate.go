@@ -213,7 +213,7 @@ func (r *result) validateExtension(fd *fldDescriptor, handler *reporter.Handler)
 	// But it requires linking to resolve the extendee, so we can interrogate
 	// its descriptor.
 	msg := fd.ContainingMessage()
-	if msg.Options().(*descriptorpb.MessageOptions).GetMessageSetWireFormat() {
+	if msg.Options().(*descriptorpb.MessageOptions).GetMessageSetWireFormat() { //nolint:errcheck
 		// Message set wire format requires that all extensions be messages
 		// themselves (no scalar extensions)
 		if fd.Kind() != protoreflect.MessageKind {

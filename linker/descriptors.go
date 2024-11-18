@@ -1499,7 +1499,7 @@ func (f *fldDescriptor) ContainingMessage() protoreflect.MessageDescriptor {
 	if f.extendee != nil {
 		return f.extendee
 	}
-	return f.parent.(protoreflect.MessageDescriptor)
+	return f.parent.(protoreflect.MessageDescriptor) //nolint:errcheck
 }
 
 func (f *fldDescriptor) Enum() protoreflect.EnumDescriptor {
