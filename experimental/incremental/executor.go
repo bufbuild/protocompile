@@ -111,6 +111,7 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 		ctx = context.WithValue(ctx, &runExecutorKey, &[]*Executor{e})
 	}
 	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
 
 	// Need to acquire a hold on the global semaphore to represent the root
 	// task we're about to execute.
