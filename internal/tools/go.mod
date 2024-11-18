@@ -1,6 +1,7 @@
 module github.com/bufbuild/protocompile/internal/tools
 
-go 1.22.1
+go 1.22.7
+
 toolchain go1.23.0
 
 require (
