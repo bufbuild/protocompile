@@ -409,7 +409,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, extendees ma
 				isValid = isValidMap(f, dsc)
 				if isValid && f.index > 0 {
 					// also make sure there are no earlier fields that are valid for this map entry
-					flds := f.Parent().(protoreflect.MessageDescriptor).Fields()
+					flds := f.Parent().(protoreflect.MessageDescriptor).Fields() //nolint:errcheck
 					for i := 0; i < f.index; i++ {
 						if isValidMap(flds.Get(i), dsc) {
 							isValid = false

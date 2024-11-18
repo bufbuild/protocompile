@@ -272,7 +272,7 @@ func TestDataRace(t *testing.T) {
 		SourceInfoMode: SourceInfoStandard,
 	}).Compile(context.Background(), "desc_test_complex.proto")
 	require.NoError(t, err)
-	resolvedProto := files[0].(linker.Result).FileDescriptorProto()
+	resolvedProto := files[0].(linker.Result).FileDescriptorProto() //nolint:errcheck
 
 	descriptor, err := protoregistry.GlobalFiles.FindFileByPath(descriptorProtoPath)
 	require.NoError(t, err)

@@ -850,14 +850,14 @@ func (r *result) FileNode() ast.FileDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[r.proto].(ast.FileDeclNode)
+	return r.nodes[r.proto].(ast.FileDeclNode) //nolint:errcheck
 }
 
 func (r *result) OptionNode(o *descriptorpb.UninterpretedOption) ast.OptionDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[o].(ast.OptionDeclNode)
+	return r.nodes[o].(ast.OptionDeclNode) //nolint:errcheck
 }
 
 func (r *result) OptionNamePartNode(o *descriptorpb.UninterpretedOption_NamePart) ast.Node {
@@ -871,77 +871,77 @@ func (r *result) MessageNode(m *descriptorpb.DescriptorProto) ast.MessageDeclNod
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[m].(ast.MessageDeclNode)
+	return r.nodes[m].(ast.MessageDeclNode) //nolint:errcheck
 }
 
 func (r *result) FieldNode(f *descriptorpb.FieldDescriptorProto) ast.FieldDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[f].(ast.FieldDeclNode)
+	return r.nodes[f].(ast.FieldDeclNode) //nolint:errcheck
 }
 
 func (r *result) OneofNode(o *descriptorpb.OneofDescriptorProto) ast.OneofDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[o].(ast.OneofDeclNode)
+	return r.nodes[o].(ast.OneofDeclNode) //nolint:errcheck
 }
 
 func (r *result) ExtensionsNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.NodeWithOptions {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[asExtsNode(e)].(ast.NodeWithOptions)
+	return r.nodes[asExtsNode(e)].(ast.NodeWithOptions) //nolint:errcheck
 }
 
 func (r *result) ExtensionRangeNode(e *descriptorpb.DescriptorProto_ExtensionRange) ast.RangeDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[e].(ast.RangeDeclNode)
+	return r.nodes[e].(ast.RangeDeclNode) //nolint:errcheck
 }
 
 func (r *result) MessageReservedRangeNode(rr *descriptorpb.DescriptorProto_ReservedRange) ast.RangeDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[rr].(ast.RangeDeclNode)
+	return r.nodes[rr].(ast.RangeDeclNode) //nolint:errcheck
 }
 
 func (r *result) EnumNode(e *descriptorpb.EnumDescriptorProto) ast.NodeWithOptions {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[e].(ast.NodeWithOptions)
+	return r.nodes[e].(ast.NodeWithOptions) //nolint:errcheck
 }
 
 func (r *result) EnumValueNode(e *descriptorpb.EnumValueDescriptorProto) ast.EnumValueDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[e].(ast.EnumValueDeclNode)
+	return r.nodes[e].(ast.EnumValueDeclNode) //nolint:errcheck
 }
 
 func (r *result) EnumReservedRangeNode(rr *descriptorpb.EnumDescriptorProto_EnumReservedRange) ast.RangeDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[rr].(ast.RangeDeclNode)
+	return r.nodes[rr].(ast.RangeDeclNode) //nolint:errcheck
 }
 
 func (r *result) ServiceNode(s *descriptorpb.ServiceDescriptorProto) ast.NodeWithOptions {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[s].(ast.NodeWithOptions)
+	return r.nodes[s].(ast.NodeWithOptions) //nolint:errcheck
 }
 
 func (r *result) MethodNode(m *descriptorpb.MethodDescriptorProto) ast.RPCDeclNode {
 	if r.nodes == nil {
 		return r.ifNoAST
 	}
-	return r.nodes[m].(ast.RPCDeclNode)
+	return r.nodes[m].(ast.RPCDeclNode) //nolint:errcheck
 }
 
 func (r *result) putFileNode(f *descriptorpb.FileDescriptorProto, n *ast.FileNode) {

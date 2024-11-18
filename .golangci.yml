@@ -57,11 +57,10 @@ linters:
     - varnamelen
     # Other disabled linters
     - cyclop            # covered by gocyclo
-    - execinquery       # deprecated in golangci v1.58.0
+    - exportloopref     # deprecated in golangci-lint v1.60.2
     - funlen            # rely on code review to limit function length
     - gocognit          # dubious "cognitive overhead" quantification
     - gofumpt           # prefer standard gofmt
-    - gomnd             # some unnamed constants are okay
     - inamedparam       # named params in interface signatures are not always necessary
     - ireturn           # "accept interfaces, return structs" isn't ironclad
     - lll               # don't want hard limits for line length

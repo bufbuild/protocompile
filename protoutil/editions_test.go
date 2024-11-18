@@ -331,8 +331,8 @@ func TestResolveCustomFeature(t *testing.T) {
 				}
 
 				optionsFile := file.FindImportByPath("options.proto")
-				extType := dynamicpb.NewExtensionType(optionsFile.FindDescriptorByName("test.custom").(protoreflect.ExtensionDescriptor))
-				feature := optionsFile.FindDescriptorByName("test.CustomFeatures.encabulate").(protoreflect.FieldDescriptor) //nolint:errcheck
+				extType := dynamicpb.NewExtensionType(optionsFile.FindDescriptorByName("test.custom").(protoreflect.ExtensionDescriptor)) //nolint:errcheck
+				feature := optionsFile.FindDescriptorByName("test.CustomFeatures.encabulate").(protoreflect.FieldDescriptor)              //nolint:errcheck
 
 				val, err := protoutil.ResolveCustomFeature(file, extType, feature)
 				require.NoError(t, err)
@@ -388,8 +388,8 @@ func TestResolveCustomFeature(t *testing.T) {
 			}
 
 			optionsFile := file.FindImportByPath("options.proto")
-			extType := dynamicpb.NewExtensionType(optionsFile.FindDescriptorByName("test.custom").(protoreflect.ExtensionDescriptor))
-			feature := optionsFile.FindDescriptorByName("test.CustomFeatures.encabulate").(protoreflect.FieldDescriptor) //nolint:errcheck
+			extType := dynamicpb.NewExtensionType(optionsFile.FindDescriptorByName("test.custom").(protoreflect.ExtensionDescriptor)) //nolint:errcheck
+			feature := optionsFile.FindDescriptorByName("test.CustomFeatures.encabulate").(protoreflect.FieldDescriptor)              //nolint:errcheck
 
 			val, err := protoutil.ResolveCustomFeature(file, extType, feature)
 			require.NoError(t, err)

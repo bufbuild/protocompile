@@ -16,7 +16,7 @@ package report
 
 // styleSheet is the colors used for pretty-rendering diagnostics.
 type styleSheet struct {
-	r *Renderer
+	r Renderer
 
 	reset string
 	// Normal colors.
@@ -25,7 +25,7 @@ type styleSheet struct {
 	bError, bWarning, bRemark, bAccent string
 }
 
-func newStyleSheet(r *Renderer) styleSheet {
+func newStyleSheet(r Renderer) styleSheet {
 	if !r.Colorize {
 		return styleSheet{r: r}
 	}
