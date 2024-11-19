@@ -72,7 +72,7 @@
 ⟨blu⟩ 6 | ⟨b.ylw⟩/ ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨b.blu⟩  ⟨reset⟩  message Bonk {
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩| [0 ________________-
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/ ⟨reset⟩
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩  [0\___- and this block
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}

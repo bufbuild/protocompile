@@ -68,7 +68,7 @@ func (c *codec) span(s report.Spanner) *compilerpb.Span {
 	}
 
 	span := s.Span()
-	if span.IndexedFile == nil {
+	if span.Nil() {
 		return nil
 	}
 

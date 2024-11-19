@@ -24,6 +24,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bufbuild/protocompile/experimental/internal"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
 
@@ -118,13 +119,20 @@ func (d *Diagnostic) Primary() Span {
 }
 
 // With applies the given options to this diagnostic.
-func (d *Diagnostic) With(options ...DiagnosticOption) {
+//
+// Nil values are ignored.
+func (d *Diagnostic) With(options ...DiagnosticOption) *Diagnostic {
 	for _, option := range options {
-		option(d)
+		if option != nil {
+			option(d)
+		}
 	}
+	return d
 }
 
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
+//
+// Nil values passed to [Diagnostic.With] are ignored.
 type DiagnosticOption func(*Diagnostic)
 
 // InFile returns a DiagnosticOption that causes a diagnostic without a primary
@@ -133,10 +141,13 @@ func InFile(path string) DiagnosticOption {
 	return func(d *Diagnostic) { d.InFile = path }
 }
 
-// Snippetf returns a DiagnosticOption that adds a new snippet to a diagnostic.
+// Snippet returns a DiagnosticOption that adds a new snippet to a diagnostic.
 //
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
+//
+// If at is nil (be it a nil interface, or a value that has a Nil() function
+// that returns true), or returns a nil span, this function will return nil.
 func Snippet(at Spanner) DiagnosticOption {
 	return Snippetf(at, "")
 }
@@ -145,23 +156,26 @@ func Snippet(at Spanner) DiagnosticOption {
 //
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
+//
+// If at is nil (be it a nil interface, or a value that has a Nil() function
+// that returns true), or returns a nil span, this function will return nil.
 func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
-	return SnippetAtf(at.Span(), format, args...)
-}
+	if internal.Nil(at) {
+		return nil
+	}
 
-// SnippetAtf is like [Snippet], but takes a span rather than something with a Span() method.
-func SnippetAt(span Span) DiagnosticOption {
-	return SnippetAtf(span, "")
-}
+	span := at.Span()
+	if span.Nil() {
+		return nil
+	}
 
-// SnippetAtf is like [Snippetf], but takes a span rather than something with a Span() method.
-func SnippetAtf(span Span, format string, args ...any) DiagnosticOption {
 	// This is hoisted out to improve stack traces when something goes awry in the
 	// argument to With(). By hoisting, it correctly blames the right invocation to Snippet().
 	annotation := Annotation{
 		Span:    span,
 		Message: fmt.Sprintf(format, args...),
 	}
+
 	return func(d *Diagnostic) {
 		annotation.Primary = len(d.Annotations) == 0
 		d.Annotations = append(d.Annotations, annotation)
@@ -245,18 +259,24 @@ type Report struct {
 }
 
 // Error pushes an error diagnostic onto this report.
-func (r *Report) Error(err Diagnose) {
-	err.Diagnose(r.push(1, err, Error))
+func (r *Report) Error(err Diagnose) *Diagnostic {
+	d := r.push(1, err, Error)
+	err.Diagnose(d)
+	return d
 }
 
 // Warn pushes a warning diagnostic onto this report.
-func (r *Report) Warn(err Diagnose) {
-	err.Diagnose(r.push(1, err, Warning))
+func (r *Report) Warn(err Diagnose) *Diagnostic {
+	d := r.push(1, err, Warning)
+	err.Diagnose(d)
+	return d
 }
 
 // Remark pushes a remark diagnostic onto this report.
-func (r *Report) Remark(err Diagnose) {
-	err.Diagnose(r.push(1, err, Remark))
+func (r *Report) Remark(err Diagnose) *Diagnostic {
+	d := r.push(1, err, Remark)
+	err.Diagnose(d)
+	return d
 }
 
 // Errorf creates a new error diagnostic with an unspecified error type; analogous to
