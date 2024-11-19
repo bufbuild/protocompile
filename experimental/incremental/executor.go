@@ -156,21 +156,39 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 // This function cannot execute in parallel with calls to [Run], and will take
 // an exclusive lock (note that [Run] calls themselves can be run in parallel).
 func (e *Executor) Evict(keys ...any) {
+	unlock := e.evict(false, keys...)
+	if unlock != nil {
+		unlock()
+	}
+}
+
+// EvictAndLock is like [Executor.Evict], but it retains the exclusive lock and
+// returns an unlocker for it.
+//
+// This is useful for cases where performing an eviction requires mutating some
+// other state, such as touching a map, and future calls of [Run] should not
+// begin until that mutation is complete.
+func (e *Executor) EvictAndLock(keys ...any) func() {
+	return e.evict(true, keys...)
+}
+
+func (e *Executor) evict(alwaysLock bool, keys ...any) func() {
 	var queue []*task
 	for _, key := range keys {
 		if t, ok := e.tasks.Load(key); ok {
 			queue = append(queue, t.(*task)) //nolint:errcheck
-		} else {
-			return
 		}
 	}
 	if len(queue) == 0 {
-		return
+		if alwaysLock {
+			e.dirty.Lock()
+			return e.dirty.Unlock
+		}
+
+		return nil
 	}
 
 	e.dirty.Lock()
-	defer e.dirty.Unlock()
-
 	for len(queue) > 0 {
 		next := queue[0]
 		queue = queue[1:]
@@ -184,6 +202,7 @@ func (e *Executor) Evict(keys ...any) {
 		// unique ownership of the task.
 		*next = task{}
 	}
+	return e.dirty.Unlock
 }
 
 // getTask returns (and creates if necessary) a task pointer for the given key.

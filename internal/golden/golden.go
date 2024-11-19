@@ -30,12 +30,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"runtime/debug"
 	"strings"
 	"testing"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/bufbuild/protocompile/internal"
 	"github.com/pmezard/go-difflib/difflib"
 )
 
@@ -70,7 +70,7 @@ type Corpus struct {
 // test should write to outputs as early as possible to ensure that, if test panics, successfully
 // created test output can still be shown to the user.
 func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, outputs []string)) {
-	testDir := callerDir(0)
+	testDir := internal.CallerDir(0)
 	root := filepath.Join(testDir, c.Root)
 	t.Logf("corpora: searching for files in %q", root)
 
@@ -231,14 +231,6 @@ func CompareAndDiff(got, want string) string {
 	}
 
 	return strings.Join(lines, "\n")
-}
-
-func callerDir(skip int) string {
-	_, file, _, ok := runtime.Caller(skip + 2)
-	if !ok {
-		panic("corpora: could not determine test file's directory")
-	}
-	return filepath.Dir(file)
 }
 
 // catch runs cb and places any panic it results in panic.
