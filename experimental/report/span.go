@@ -22,7 +22,7 @@ import (
 	"github.com/rivo/uniseg"
 )
 
-// The size we render all tabstops as.
+// TabstopWidth is the size we render all tabstops as.
 const TabstopWidth int = 4
 
 // Span is any type that can be used to generate source code information for a diagnostic.
@@ -85,7 +85,7 @@ func (i *IndexedFile) File() File {
 	return i.file
 }
 
-// Span generates a span using this index.
+// NewSpan generates a span using the given start and end offsets.
 //
 // This is mostly intended for convenience; generally speaking, users of package report
 // will want to implement their own [Span] types that use a compressed representation,
@@ -144,14 +144,13 @@ func stringWidth(column int, text string) int {
 	// correctly.
 	for {
 		nextTab := strings.IndexByte(text, '\t')
-		if nextTab != -1 {
-			column += uniseg.StringWidth(text[:nextTab])
-			column += TabstopWidth - (column % TabstopWidth)
-			text = text[nextTab+1:]
-		} else {
+		if nextTab == -1 {
 			column += uniseg.StringWidth(text)
 			break
 		}
+		column += uniseg.StringWidth(text[:nextTab])
+		column += TabstopWidth - (column % TabstopWidth)
+		text = text[nextTab+1:]
 	}
 	return column
 }
