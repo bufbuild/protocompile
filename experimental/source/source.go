@@ -119,7 +119,7 @@ func (t Contents) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (t Contents) Execute(task incremental.Task) (value string, fatal error) {
+func (t Contents) Execute(incremental.Task) (value string, fatal error) {
 	text, err := t.Open(t.Path)
 	if err != nil {
 		r := new(report.AsError)

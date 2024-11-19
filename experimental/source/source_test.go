@@ -19,10 +19,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/bufbuild/protocompile/experimental/source"
-	"github.com/bufbuild/protocompile/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/internal"
 )
 
 func TestFS(t *testing.T) {

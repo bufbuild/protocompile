@@ -35,8 +35,9 @@ import (
 	"testing"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/bufbuild/protocompile/internal"
 	"github.com/pmezard/go-difflib/difflib"
+
+	"github.com/bufbuild/protocompile/internal"
 )
 
 // A corpus describes a test data corpus. This is essentially a way for doing table-driven
@@ -70,7 +71,7 @@ type Corpus struct {
 // test should write to outputs as early as possible to ensure that, if test panics, successfully
 // created test output can still be shown to the user.
 func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, outputs []string)) {
-	testDir := internal.CallerDir(0)
+	testDir := internal.CallerDir(1)
 	root := filepath.Join(testDir, c.Root)
 	t.Logf("corpora: searching for files in %q", root)
 
