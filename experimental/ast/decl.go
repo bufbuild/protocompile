@@ -234,5 +234,5 @@ func declArena[Raw any](decls *decls) (DeclKind, *arena.Arena[Raw]) {
 		panic("unknown decl type " + reflect.TypeOf(raw).Name())
 	}
 
-	return kind, arena_.(*arena.Arena[Raw])
+	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }

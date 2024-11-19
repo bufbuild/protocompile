@@ -262,5 +262,5 @@ func exprArena[Raw any](exprs *exprs) (ExprKind, *arena.Arena[Raw]) {
 		panic("unknown expr type " + reflect.TypeOf(raw).Name())
 	}
 
-	return kind, arena_.(*arena.Arena[Raw])
+	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }

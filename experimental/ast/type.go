@@ -183,5 +183,5 @@ func typeArena[Raw any](types *types) (TypeKind, *arena.Arena[Raw]) {
 		panic("unknown type type " + reflect.TypeOf(raw).Name())
 	}
 
-	return kind, arena_.(*arena.Arena[Raw])
+	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }
