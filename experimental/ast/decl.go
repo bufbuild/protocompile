@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"reflect"
+
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -156,21 +158,19 @@ func (d DeclAny) Span() Span {
 
 // declImpl is the common implementation of pointer-like Decl* types.
 type declImpl[Raw any] struct {
-	// NOTE: These fields are sorted by alignment.
 	withContext
-	raw  *Raw
-	ptr  arena.Pointer[Raw]
-	kind DeclKind
+	raw *Raw
 }
 
 // AsAny type-erases this declaration value.
 //
 // See [DeclAny] for more information.
 func (d declImpl[Raw]) AsAny() DeclAny {
+	kind, arena := declArena[Raw](&d.ctx.decls)
 	return DeclAny{
 		withContext: d.withContext,
-		ptr:         d.ptr.Untyped(),
-		kind:        d.kind,
+		ptr:         arena.Compress(d.raw).Untyped(),
+		kind:        kind,
 	}
 }
 
@@ -180,46 +180,10 @@ func wrapDecl[Raw any](c Contextual, ptr arena.Pointer[Raw]) declImpl[Raw] {
 		return declImpl[Raw]{}
 	}
 
-	var (
-		kind DeclKind
-		raw  Raw
-
-		// Needs to be an any because Go doesn't know that only the case below
-		// with the correct type for arena_ (if it were *arena.Arena[Raw]) will
-		// be evaluated.
-		arena_ any //nolint:revive // Named arena_ to avoid clashing with package arena.
-	)
-	switch any(raw).(type) {
-	case rawDeclEmpty:
-		kind = DeclKindEmpty
-		arena_ = &ctx.decls.empties
-	case rawDeclSyntax:
-		kind = DeclKindSyntax
-		arena_ = &ctx.decls.syntaxes
-	case rawDeclPackage:
-		kind = DeclKindPackage
-		arena_ = &ctx.decls.packages
-	case rawDeclImport:
-		kind = DeclKindImport
-		arena_ = &ctx.decls.imports
-	case rawDeclDef:
-		kind = DeclKindDef
-		arena_ = &ctx.decls.defs
-	case rawDeclBody:
-		kind = DeclKindBody
-		arena_ = &ctx.decls.bodies
-	case rawDeclRange:
-		kind = DeclKindRange
-		arena_ = &ctx.decls.ranges
-	default:
-		return declImpl[Raw]{}
-	}
-
+	_, arena := declArena[Raw](&ctx.decls)
 	return declImpl[Raw]{
 		withContext{ctx},
-		arena_.(*arena.Arena[Raw]).Deref(ptr), //nolint:errcheck
-		ptr,
-		kind,
+		arena.Deref(ptr),
 	}
 }
 
@@ -232,4 +196,43 @@ type decls struct {
 	defs     arena.Arena[rawDeclDef]
 	bodies   arena.Arena[rawDeclBody]
 	ranges   arena.Arena[rawDeclRange]
+}
+
+func declArena[Raw any](decls *decls) (DeclKind, *arena.Arena[Raw]) {
+	var (
+		kind DeclKind
+		raw  Raw
+		// Needs to be an any because Go doesn't know that only the case below
+		// with the correct type for arena_ (if it were *arena.Arena[Raw]) will
+		// be evaluated.
+		arena_ any //nolint:revive // Named arena_ to avoid clashing with package arena.
+	)
+
+	switch any(raw).(type) {
+	case rawDeclEmpty:
+		kind = DeclKindEmpty
+		arena_ = &decls.empties
+	case rawDeclSyntax:
+		kind = DeclKindSyntax
+		arena_ = &decls.syntaxes
+	case rawDeclPackage:
+		kind = DeclKindPackage
+		arena_ = &decls.packages
+	case rawDeclImport:
+		kind = DeclKindImport
+		arena_ = &decls.imports
+	case rawDeclDef:
+		kind = DeclKindDef
+		arena_ = &decls.defs
+	case rawDeclBody:
+		kind = DeclKindBody
+		arena_ = &decls.bodies
+	case rawDeclRange:
+		kind = DeclKindRange
+		arena_ = &decls.ranges
+	default:
+		panic("unknown decl type " + reflect.TypeOf(raw).Name())
+	}
+
+	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }

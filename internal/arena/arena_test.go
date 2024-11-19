@@ -28,7 +28,7 @@ func TestPointers(t *testing.T) {
 
 	var a arena.Arena[int]
 
-	p1 := a.New(5)
+	p1 := a.NewCompressed(5)
 	p2 := a.Deref(p1)
 	assert.Equal(5, *a.Deref(p1))
 
@@ -47,4 +47,18 @@ func TestPointers(t *testing.T) {
 	assert.Same(a.Deref(p1), p2)
 
 	assert.Equal("[5 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19|20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51|52]", a.String())
+}
+
+func TestCompress(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+
+	var a arena.Arena[int]
+
+	x := a.NewCompressed(5)
+	y := a.Deref(x)
+	assert.Equal(x, a.Compress(y))
+
+	assert.Equal(arena.Pointer[int](0), a.Compress(nil))
+	assert.Equal(arena.Pointer[int](0), a.Compress(new(int)))
 }

@@ -18,7 +18,7 @@ package ast
 func (c *Context) NewDeclEmpty(semicolon Token) DeclEmpty {
 	c.panicIfNotOurs(semicolon)
 
-	decl := wrapDeclEmpty(c, c.decls.empties.New(rawDeclEmpty{
+	decl := wrapDeclEmpty(c, c.decls.empties.NewCompressed(rawDeclEmpty{
 		semi: semicolon.raw,
 	}))
 
@@ -29,11 +29,11 @@ func (c *Context) NewDeclEmpty(semicolon Token) DeclEmpty {
 func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	c.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Options, args.Semicolon)
 
-	return wrapDeclSyntax(c, c.decls.syntaxes.New(rawDeclSyntax{
+	return wrapDeclSyntax(c, c.decls.syntaxes.NewCompressed(rawDeclSyntax{
 		keyword: args.Keyword.raw,
 		equals:  args.Equals.raw,
 		value:   args.Value.raw,
-		options: args.Options.ptr,
+		options: c.options.Compress(args.Options.raw),
 		semi:    args.Semicolon.raw,
 	}))
 }
@@ -42,10 +42,10 @@ func (c *Context) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 func (c *Context) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	c.panicIfNotOurs(args.Keyword, args.Path, args.Options, args.Semicolon)
 
-	return wrapDeclPackage(c, c.decls.packages.New(rawDeclPackage{
+	return wrapDeclPackage(c, c.decls.packages.NewCompressed(rawDeclPackage{
 		keyword: args.Keyword.raw,
 		path:    args.Path.raw,
-		options: args.Options.ptr,
+		options: c.options.Compress(args.Options.raw),
 		semi:    args.Semicolon.raw,
 	}))
 }
@@ -54,11 +54,11 @@ func (c *Context) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 func (c *Context) NewDeclImport(args DeclImportArgs) DeclImport {
 	c.panicIfNotOurs(args.Keyword, args.Modifier, args.ImportPath, args.Options, args.Semicolon)
 
-	return wrapDeclImport(c, c.decls.imports.New(rawDeclImport{
+	return wrapDeclImport(c, c.decls.imports.NewCompressed(rawDeclImport{
 		keyword:    args.Keyword.raw,
 		modifier:   args.Modifier.raw,
 		importPath: args.ImportPath.raw,
-		options:    args.Options.ptr,
+		options:    c.options.Compress(args.Options.raw),
 		semi:       args.Semicolon.raw,
 	}))
 }
@@ -73,8 +73,8 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 		name:    args.Name.raw,
 		equals:  args.Equals.raw,
 		value:   args.Value.raw,
-		options: args.Options.ptr,
-		body:    args.Body.ptr,
+		options: c.options.Compress(args.Options.raw),
+		body:    c.decls.bodies.Compress(args.Body.raw),
 		semi:    args.Semicolon.raw,
 	}
 	if !args.Type.Nil() {
@@ -88,7 +88,7 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 		}
 	}
 
-	return wrapDeclDef(c, c.decls.defs.New(raw))
+	return wrapDeclDef(c, c.decls.defs.NewCompressed(raw))
 }
 
 // NewDeclBody creates a new DeclBody node.
@@ -97,7 +97,7 @@ func (c *Context) NewDeclDef(args DeclDefArgs) DeclDef {
 func (c *Context) NewDeclBody(braces Token) DeclBody {
 	c.panicIfNotOurs(braces)
 
-	return wrapDeclBody(c, c.decls.bodies.New(rawDeclBody{
+	return wrapDeclBody(c, c.decls.bodies.NewCompressed(rawDeclBody{
 		braces: braces.raw,
 	}))
 }
@@ -108,9 +108,9 @@ func (c *Context) NewDeclBody(braces Token) DeclBody {
 func (c *Context) NewDeclRange(args DeclRangeArgs) DeclRange {
 	c.panicIfNotOurs(args.Keyword, args.Options, args.Semicolon)
 
-	return wrapDeclRange(c, c.decls.ranges.New(rawDeclRange{
+	return wrapDeclRange(c, c.decls.ranges.NewCompressed(rawDeclRange{
 		keyword: args.Keyword.raw,
-		options: args.Options.ptr,
+		options: c.options.Compress(args.Options.raw),
 		semi:    args.Semicolon.raw,
 	}))
 }
@@ -119,15 +119,12 @@ func (c *Context) NewDeclRange(args DeclRangeArgs) DeclRange {
 func (c *Context) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 	c.panicIfNotOurs(args.Prefix, args.Expr)
 
-	ptr := c.exprs.prefixes.New(rawExprPrefixed{
-		prefix: args.Prefix.raw,
-		expr:   args.Expr.raw,
-	})
 	return ExprPrefixed{exprImpl[rawExprPrefixed]{
 		withContext{c},
-		c.exprs.prefixes.Deref(ptr),
-		ptr,
-		ExprKindPrefixed,
+		c.exprs.prefixes.New(rawExprPrefixed{
+			prefix: args.Prefix.raw,
+			expr:   args.Expr.raw,
+		}),
 	}}
 }
 
@@ -135,16 +132,13 @@ func (c *Context) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 func (c *Context) NewExprRange(args ExprRangeArgs) ExprRange {
 	c.panicIfNotOurs(args.Start, args.To, args.End)
 
-	ptr := c.exprs.ranges.New(rawExprRange{
-		to:    args.To.raw,
-		start: args.Start.raw,
-		end:   args.End.raw,
-	})
 	return ExprRange{exprImpl[rawExprRange]{
 		withContext{c},
-		c.exprs.ranges.Deref(ptr),
-		ptr,
-		ExprKindRange,
+		c.exprs.ranges.New(rawExprRange{
+			to:    args.To.raw,
+			start: args.Start.raw,
+			end:   args.End.raw,
+		}),
 	}}
 }
 
@@ -154,14 +148,11 @@ func (c *Context) NewExprRange(args ExprRangeArgs) ExprRange {
 func (c *Context) NewExprArray(brackets Token) ExprArray {
 	c.panicIfNotOurs(brackets)
 
-	ptr := c.exprs.arrays.New(rawExprArray{
-		brackets: brackets.raw,
-	})
 	return ExprArray{exprImpl[rawExprArray]{
 		withContext{c},
-		c.exprs.arrays.Deref(ptr),
-		ptr,
-		ExprKindArray,
+		c.exprs.arrays.New(rawExprArray{
+			brackets: brackets.raw,
+		}),
 	}}
 }
 
@@ -171,14 +162,11 @@ func (c *Context) NewExprArray(brackets Token) ExprArray {
 func (c *Context) NewExprDict(braces Token) ExprDict {
 	c.panicIfNotOurs(braces)
 
-	ptr := c.exprs.dicts.New(rawExprDict{
-		braces: braces.raw,
-	})
 	return ExprDict{exprImpl[rawExprDict]{
 		withContext{c},
-		c.exprs.dicts.Deref(ptr),
-		ptr,
-		ExprKindDict,
+		c.exprs.dicts.New(rawExprDict{
+			braces: braces.raw,
+		}),
 	}}
 }
 
@@ -186,16 +174,13 @@ func (c *Context) NewExprDict(braces Token) ExprDict {
 func (c *Context) NewExprKV(args ExprKVArgs) ExprField {
 	c.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
-	ptr := c.exprs.fields.New(rawExprField{
-		key:   args.Key.raw,
-		colon: args.Colon.raw,
-		value: args.Value.raw,
-	})
 	return ExprField{exprImpl[rawExprField]{
 		withContext{c},
-		c.exprs.fields.Deref(ptr),
-		ptr,
-		ExprKindField,
+		c.exprs.fields.New(rawExprField{
+			key:   args.Key.raw,
+			colon: args.Colon.raw,
+			value: args.Value.raw,
+		}),
 	}}
 }
 
@@ -203,15 +188,12 @@ func (c *Context) NewExprKV(args ExprKVArgs) ExprField {
 func (c *Context) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 	c.panicIfNotOurs(args.Prefix, args.Type)
 
-	ptr := c.types.prefixes.New(rawTypePrefixed{
-		prefix: args.Prefix.raw,
-		ty:     args.Type.raw,
-	})
 	return TypePrefixed{typeImpl[rawTypePrefixed]{
 		withContext{c},
-		c.types.prefixes.Deref(ptr),
-		ptr,
-		TypeKindPrefixed,
+		c.types.prefixes.New(rawTypePrefixed{
+			prefix: args.Prefix.raw,
+			ty:     args.Type.raw,
+		}),
 	}}
 }
 
@@ -221,15 +203,12 @@ func (c *Context) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	c.panicIfNotOurs(args.Path, args.AngleBrackets)
 
-	ptr := c.types.generics.New(rawTypeGeneric{
-		path: args.Path.raw,
-		args: rawTypeList{brackets: args.AngleBrackets.raw},
-	})
 	return TypeGeneric{typeImpl[rawTypeGeneric]{
 		withContext{c},
-		c.types.generics.Deref(ptr),
-		ptr,
-		TypeKindGeneric,
+		c.types.generics.New(rawTypeGeneric{
+			path: args.Path.raw,
+			args: rawTypeList{brackets: args.AngleBrackets.raw},
+		}),
 	}}
 }
 
@@ -237,7 +216,7 @@ func (c *Context) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 func (c *Context) NewCompactOptions(brackets Token) CompactOptions {
 	c.panicIfNotOurs(brackets)
 
-	return wrapOptions(c, c.options.New(rawCompactOptions{
+	return wrapOptions(c, c.options.NewCompressed(rawCompactOptions{
 		brackets: brackets.raw,
 	}))
 }

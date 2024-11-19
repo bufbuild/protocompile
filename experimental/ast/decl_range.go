@@ -120,7 +120,7 @@ func (d DeclRange) Options() CompactOptions {
 //
 // Setting it to a nil Options clears it.
 func (d DeclRange) SetOptions(opts CompactOptions) {
-	d.raw.options = opts.ptr
+	d.raw.options = d.ctx.options.Compress(opts.raw)
 }
 
 // Semicolon returns this range's ending semicolon.

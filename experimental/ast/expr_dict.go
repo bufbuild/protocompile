@@ -48,8 +48,6 @@ func (e ExprDict) At(n int) ExprField {
 	return ExprField{exprImpl[rawExprField]{
 		e.withContext,
 		e.Context().exprs.fields.Deref(ptr),
-		ptr,
-		ExprKindField,
 	}}
 }
 
@@ -59,8 +57,6 @@ func (e ExprDict) Iter(yield func(int, ExprField) bool) {
 		e := ExprField{exprImpl[rawExprField]{
 			e.withContext,
 			e.Context().exprs.fields.Deref(f.Value),
-			f.Value,
-			ExprKindField,
 		}}
 		if !yield(i, e) {
 			break
@@ -100,7 +96,8 @@ func (e ExprDict) InsertComma(n int, expr ExprField, comma Token) {
 		panic("protocompile/ast: cannot append nil ExprField to ExprMessage")
 	}
 
-	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{expr.ptr, comma.raw})
+	ptr := e.ctx.exprs.fields.Compress(expr.raw)
+	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{ptr, comma.raw})
 }
 
 // AsMessage implements [ExprAny].

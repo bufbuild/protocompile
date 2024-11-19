@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"reflect"
+
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -107,8 +109,6 @@ func (e ExprAny) AsPrefixed() ExprPrefixed {
 	return ExprPrefixed{exprImpl[rawExprPrefixed]{
 		e.withContext,
 		e.Context().exprs.prefixes.Deref(ptr),
-		ptr,
-		ExprKindPrefixed,
 	}}
 }
 
@@ -125,8 +125,6 @@ func (e ExprAny) AsRange() ExprRange {
 	return ExprRange{exprImpl[rawExprRange]{
 		e.withContext,
 		e.Context().exprs.ranges.Deref(ptr),
-		ptr,
-		ExprKindPrefixed,
 	}}
 }
 
@@ -143,8 +141,6 @@ func (e ExprAny) AsArray() ExprArray {
 	return ExprArray{exprImpl[rawExprArray]{
 		e.withContext,
 		e.Context().exprs.arrays.Deref(ptr),
-		ptr,
-		ExprKindPrefixed,
 	}}
 }
 
@@ -161,8 +157,6 @@ func (e ExprAny) AsDict() ExprDict {
 	return ExprDict{exprImpl[rawExprDict]{
 		e.withContext,
 		e.Context().exprs.dicts.Deref(ptr),
-		ptr,
-		ExprKindPrefixed,
 	}}
 }
 
@@ -179,8 +173,6 @@ func (e ExprAny) AsKV() ExprField {
 	return ExprField{exprImpl[rawExprField]{
 		e.withContext,
 		e.Context().exprs.fields.Deref(ptr),
-		ptr,
-		ExprKindPrefixed,
 	}}
 }
 
@@ -204,9 +196,7 @@ func (e ExprAny) Span() Span {
 type exprImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
 	withContext
-	raw  *Raw
-	ptr  arena.Pointer[Raw]
-	kind ExprKind
+	raw *Raw
 }
 
 // AsAny type-erases this expression value.
@@ -216,9 +206,11 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 	if e.Nil() {
 		return ExprAny{}
 	}
+
+	kind, arena := exprArena[Raw](&e.ctx.exprs)
 	return ExprAny{
 		e.withContext,
-		rawExpr{^rawToken(e.kind), rawToken(e.ptr)},
+		rawExpr{^rawToken(kind), rawToken(arena.Compress(e.raw))},
 	}
 }
 
@@ -238,4 +230,37 @@ type exprs struct {
 	arrays   arena.Arena[rawExprArray]
 	dicts    arena.Arena[rawExprDict]
 	fields   arena.Arena[rawExprField]
+}
+
+func exprArena[Raw any](exprs *exprs) (ExprKind, *arena.Arena[Raw]) {
+	var (
+		kind ExprKind
+		raw  Raw
+		// Needs to be an any because Go doesn't know that only the case below
+		// with the correct type for arena_ (if it were *arena.Arena[Raw]) will
+		// be evaluated.
+		arena_ any //nolint:revive // Named arena_ to avoid clashing with package arena.
+	)
+
+	switch any(raw).(type) {
+	case rawExprPrefixed:
+		kind = ExprKindPrefixed
+		arena_ = &exprs.prefixes
+	case rawExprRange:
+		kind = ExprKindRange
+		arena_ = &exprs.ranges
+	case rawExprArray:
+		kind = ExprKindArray
+		arena_ = &exprs.arrays
+	case rawExprDict:
+		kind = ExprKindDict
+		arena_ = &exprs.dicts
+	case rawExprField:
+		kind = ExprKindField
+		arena_ = &exprs.fields
+	default:
+		panic("unknown expr type " + reflect.TypeOf(raw).Name())
+	}
+
+	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }
