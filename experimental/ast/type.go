@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	TypeKindPath TypeKind = iota + 1
+	TypeKindNil TypeKind = iota
+	TypeKindPath
 	TypeKindPrefixed
 	TypeKindGeneric
 )
@@ -62,6 +63,10 @@ type rawType rawPath
 // Kind returns the kind of type this is. This is suitable for use
 // in a switch statement.
 func (t TypeAny) Kind() TypeKind {
+	if t.Nil() {
+		return TypeKindNil
+	}
+
 	if t.raw[0] < 0 && t.raw[1] != 0 {
 		return TypeKind(^t.raw[0])
 	}
@@ -140,7 +145,7 @@ type typeImpl[Raw any] struct {
 // See [TypeAny] for more information.
 func (t typeImpl[Raw]) AsAny() TypeAny {
 	if t.Nil() {
-		return TypeAny{}
+		return TypeNil
 	}
 
 	kind, arena := typeArena[Raw](&t.Context().Nodes().types)
@@ -152,7 +157,7 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 
 func (t rawType) With(ctx Context) TypeAny {
 	if ctx == nil || (t == rawType{}) {
-		return TypeAny{}
+		return TypeNil
 	}
 
 	return TypeAny{internal.NewWith(ctx), t}

@@ -61,7 +61,7 @@ func (t TypeGeneric) Path() Path {
 // Returns nils if this is not a map, or it has the wrong number of generic arguments.
 func (t TypeGeneric) AsMap() (key, value TypeAny) {
 	if t.Path().AsPredeclared() != predeclared.Map || t.Args().Len() != 2 {
-		return TypeAny{}, TypeAny{}
+		return TypeNil, TypeNil
 	}
 
 	return t.Args().At(0), t.Args().At(1)

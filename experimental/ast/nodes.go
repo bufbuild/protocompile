@@ -43,6 +43,14 @@ func (n *Nodes) Root() File {
 	return File{wrapDeclBody(n.Context, 1)}
 }
 
+// NewPath creates a new Path with the given start and end nodes.
+//
+// Intended for use by the parser only.
+func (n *Nodes) NewPath(_ priv, start, end token.Token) Path {
+	n.panicIfNotOurs(start, end)
+	return rawPath{start.ID(), end.ID()}.With(n.Context)
+}
+
 // NewDeclEmpty creates a new DeclEmpty node.
 func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 	n.panicIfNotOurs(semicolon)
@@ -204,7 +212,7 @@ func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 }
 
 // NewExprPrefixed creates a new ExprPrefixed node.
-func (n *Nodes) NewExprKV(args ExprKVArgs) ExprField {
+func (n *Nodes) NewExprKV(args ExprFieldArgs) ExprField {
 	n.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
 	ptr := n.exprs.fields.NewCompressed(rawExprField{

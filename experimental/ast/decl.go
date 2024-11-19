@@ -23,7 +23,8 @@ import (
 )
 
 const (
-	DeclKindEmpty DeclKind = iota + 1
+	DeclKindNil DeclKind = iota
+	DeclKindEmpty
 	DeclKindSyntax
 	DeclKindPackage
 	DeclKindImport

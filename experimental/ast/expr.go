@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	ExprKindLiteral ExprKind = iota + 1
+	ExprKindNil ExprKind = iota
+	ExprKindLiteral
 	ExprKindPrefixed
 	ExprKindPath
 	ExprKindRange
@@ -60,6 +61,10 @@ type rawExpr rawPath
 // Kind returns the kind of expression this is. This is suitable for use
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
+	if e.Nil() {
+		return ExprKindNil
+	}
+
 	if e.raw[0] < 0 && e.raw[1] != 0 {
 		return ExprKind(^e.raw[0])
 	}
@@ -82,7 +87,7 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 }
 
 // AsPath converts a ExprAny into a ExprPath, if that is the type
-// it contains.
+// it contains.q
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsPath() ExprPath {
@@ -207,7 +212,7 @@ type exprImpl[Raw any] struct {
 // See [ExprAny] for more information.
 func (e exprImpl[Raw]) AsAny() ExprAny {
 	if e.Nil() {
-		return ExprAny{}
+		return ExprNil
 	}
 
 	kind, arena := exprArena[Raw](&e.Context().Nodes().exprs)
@@ -219,7 +224,7 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 
 func (e rawExpr) With(ctx Context) ExprAny {
 	if ctx == nil || (e == rawExpr{}) {
-		return ExprAny{}
+		return ExprNil
 	}
 
 	return ExprAny{internal.NewWith(ctx), e}

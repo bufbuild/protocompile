@@ -15,7 +15,10 @@
 package token
 
 import (
+	"fmt"
+
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
@@ -49,7 +52,7 @@ type CursorMark struct {
 // either token is synthetic.
 func NewCursor(start, end Token) *Cursor {
 	if start.Nil() || end.Nil() {
-		panic("protocompile/token: passed nil token to NewCursor")
+		panic(fmt.Sprintf("protocompile/token: passed nil token to NewCursor: %v, %v", start, end))
 	}
 	if start.Context() != end.Context() {
 		panic("protocompile/token: passed tokens from different context to NewCursor")
@@ -194,4 +197,26 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 			_ = c.PopSkippable()
 		}
 	}
+}
+
+// JustAfter returns a span for whatever comes immediately after the end of
+// this cursor (be that a token or the EOF). If it is a token, this will return
+// that token, too.
+//
+// Returns nil for a synthetic cursor.
+func (c *Cursor) JustAfter() (Token, report.Span) {
+	if c.stream != nil {
+		return Nil, report.Span{}
+	}
+
+	stream := c.Context().Stream()
+	if int(c.end) > len(stream.nats) {
+		// This is the case where this cursor is a Stream.Cursor(). Thus, the
+		// just-after span should be the EOF.
+		return Nil, stream.EOF()
+	}
+
+	// Otherwise, return end.
+	tok := c.end.In(c.Context())
+	return tok, stream.Span(tok.offsets())
 }

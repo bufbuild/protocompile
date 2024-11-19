@@ -388,24 +388,33 @@ func (d DeclDef) AsOption() DefOption {
 func (d DeclDef) Classify() DefKind {
 	switch d.Keyword().Text() {
 	case "message":
-		return DefKindMessage
-	case "enum":
-		return DefKindEnum
-	case "service":
-		return DefKindService
-	case "extend":
-		return DefKindExtend
-	case "oneof":
-		return DefKindOneof
-	case "group":
-		return DefKindGroup
-	case "rpc":
-		if d.Signature().Nil() {
-			// rpc foo = 1; is a valid field definition. We only consider
-			// this a method if there is a type signature on it.
-			break
+		if !d.Body().Nil() {
+			return DefKindMessage
 		}
-		return DefKindMethod
+	case "enum":
+		if !d.Body().Nil() {
+			return DefKindEnum
+		}
+	case "service":
+		if !d.Body().Nil() {
+			return DefKindService
+		}
+	case "extend":
+		if !d.Body().Nil() {
+			return DefKindExtend
+		}
+	case "oneof":
+		if !d.Body().Nil() {
+			return DefKindOneof
+		}
+	case "group":
+		if !d.Body().Nil() {
+			return DefKindGroup
+		}
+	case "rpc":
+		if !d.Signature().Nil() {
+			return DefKindMethod
+		}
 	case "option":
 		return DefKindOption
 	}

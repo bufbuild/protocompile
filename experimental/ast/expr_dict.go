@@ -122,8 +122,8 @@ type rawExprField struct {
 	colon      token.ID
 }
 
-// ExprKVArgs is arguments for [Context.NewExprKV].
-type ExprKVArgs struct {
+// ExprFieldArgs is arguments for [Context.NewExprKV].
+type ExprFieldArgs struct {
 	Key   ExprAny
 	Colon token.Token
 	Value ExprAny

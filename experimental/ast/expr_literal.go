@@ -36,6 +36,6 @@ func (e ExprLiteral) AsAny() ExprAny {
 	return ExprAny{
 		//nolint:errcheck // This assertion is required in the comment on e.Token.
 		internal.NewWith(e.Token.Context().(Context)),
-		rawExpr{token.ID(ExprKindLiteral), e.Token.ID()},
+		rawExpr{^token.ID(ExprKindLiteral), e.Token.ID()},
 	}
 }
