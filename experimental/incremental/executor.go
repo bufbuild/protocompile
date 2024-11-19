@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"slices"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/semaphore"
 )
@@ -37,6 +38,8 @@ type Executor struct {
 	tasks sync.Map // [any, *task]
 
 	sema *semaphore.Weighted
+
+	counter atomic.Uint64 // Used for generating sequence IDs for Result.Unchanged.
 }
 
 // ExecutorOption is an option func for [New].
@@ -120,11 +123,13 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 	}
 	defer e.sema.Release(1)
 
+	generation := e.counter.Add(1)
 	root := Task{
-		ctx:    ctx,
-		cancel: cancel,
-		exec:   e,
-		result: &result{done: make(chan struct{})},
+		ctx:        ctx,
+		cancel:     cancel,
+		exec:       e,
+		result:     &result{done: make(chan struct{})},
+		generation: generation,
 	}
 
 	results, expired = Resolve(root, queries...)
