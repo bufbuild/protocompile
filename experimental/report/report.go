@@ -361,7 +361,7 @@ func (r *Report) Sort() {
 // concrete types of Diagnostic.Err, replacing them with opaque [errors.New] values
 // on deserialization.
 //
-// It will also deduplicate [File] values based on their paths, paying no attention to
+// It will also deduplicate [File2] values based on their paths, paying no attention to
 // their contents.
 func (r *Report) ToProto() proto.Message {
 	proto := new(compilerpb.Report)
@@ -415,12 +415,9 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 		return err
 	}
 
-	files := make([]*IndexedFile, len(proto.Files))
+	files := make([]*File, len(proto.Files))
 	for i, fProto := range proto.Files {
-		files[i] = NewIndexedFile(File{
-			Path: fProto.Path,
-			Text: string(fProto.Text),
-		})
+		files[i] = NewFile(fProto.Path, string(fProto.Text))
 	}
 
 	for i, dProto := range proto.Diagnostics {
@@ -453,8 +450,8 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 			}
 
 			file := files[snip.File]
-			if int(snip.Start) >= len(file.File().Text) ||
-				int(snip.End) > len(file.File().Text) ||
+			if int(snip.Start) >= len(file.Text()) ||
+				int(snip.End) > len(file.Text()) ||
 				snip.Start > snip.End {
 				return fmt.Errorf(
 					"protocompile/report: out-of-bounds span for diagnostic[%d].annotation[%d]: [%d:%d]",
@@ -464,9 +461,9 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 
 			d.Annotations = append(d.Annotations, Annotation{
 				Span: Span{
-					IndexedFile: file,
-					Start:       int(snip.Start),
-					End:         int(snip.End),
+					File:  file,
+					Start: int(snip.Start),
+					End:   int(snip.End),
 				},
 				Message: snip.Message,
 				Primary: snip.Primary,

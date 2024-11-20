@@ -88,10 +88,10 @@ func (e ErrUnmatched) Diagnose(d *report.Diagnostic) {
 
 	if text == openTok {
 		d.With(report.Snippetf(e.Span, "expected a closing `%s`", closeTok))
-		if e.Mismatch.IndexedFile != nil {
+		if !e.Mismatch.Nil() {
 			d.With(report.Snippetf(e.Mismatch, "closed by this instead"))
 		}
-		if e.ShouldMatch.IndexedFile != nil {
+		if !e.ShouldMatch.Nil() {
 			d.With(report.Snippetf(e.ShouldMatch, "help: perhaps it was meant to match this?"))
 		}
 	} else {

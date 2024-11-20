@@ -34,11 +34,11 @@ type Context interface {
 type withContext = internal.With[Context]
 
 // newContext creates a fresh context for a particular file.
-func NewContext(file report.File) Context {
+func NewContext(file *report.File) Context {
 	c := new(context)
 	c.stream = &token.Stream{
-		Context:     c,
-		IndexedFile: report.NewIndexedFile(file),
+		Context: c,
+		File:    file,
 	}
 	c.nodes = &Nodes{
 		Context: c,

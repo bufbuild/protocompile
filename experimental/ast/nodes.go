@@ -284,8 +284,8 @@ func (n *Nodes) panicIfNotOurs(that ...any) {
 
 		panic(fmt.Sprintf(
 			"protocompile/ast: attempt to mix different contexts: %q vs %q",
-			n.Context.Stream().File().Path,
-			thatCtx.Stream().File().Path,
+			n.Context.Stream().Path(),
+			thatCtx.Stream().Path(),
 		))
 	}
 }

@@ -35,10 +35,7 @@ func NewContext(text string) *Context {
 	ctx := new(Context)
 	ctx.S = &token.Stream{
 		Context: ctx,
-		IndexedFile: report.NewIndexedFile(report.File{
-			Path: "test",
-			Text: text,
-		}),
+		File:    report.NewFile("test", text),
 	}
 	return ctx
 }
