@@ -125,11 +125,11 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 
 	generation := e.counter.Add(1)
 	root := Task{
-		ctx:        ctx,
-		cancel:     cancel,
-		exec:       e,
-		result:     &result{done: make(chan struct{})},
-		generation: generation,
+		ctx:    ctx,
+		cancel: cancel,
+		exec:   e,
+		result: &result{done: make(chan struct{})},
+		runID:  generation,
 	}
 
 	results, expired = Resolve(root, queries...)

@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -247,14 +248,18 @@ func TestUnchanged(t *testing.T) {
 		gsPerRun = 16
 	)
 
-	var wg, barrier sync.WaitGroup
 	for i := 0; i < runs; i++ {
 		exec.Evict(ParseInt{"42"})
 		results, _ := incremental.Run(ctx, exec, queries...)
 		for j, r := range results[1:] {
-			// All calls after an eviction should return false for Unchanged.
-			assert.False(r.Unchanged, "%d:%d", i, j)
+			// All calls after an eviction should return true for Changed.
+			assert.True(r.Changed, "%d", j)
 		}
+
+		var (
+			wg, barrier sync.WaitGroup
+			changed     atomic.Int32
+		)
 
 		exec.Evict(ParseInt{"42"})
 		barrier.Add(1)
@@ -262,39 +267,32 @@ func TestUnchanged(t *testing.T) {
 			wg.Add(1)
 			i := i
 			go func() {
-				barrier.Wait()
+				barrier.Wait() // Ensure all goroutines start together.
 				defer wg.Done()
 
 				results, _ := incremental.Run(ctx, exec, queries...)
-				for j, r := range results[1:] {
+				for j, r := range results {
 					// We don't know who the winning g that gets to do the
 					// computation will be be, so just require that all of the
 					// results within one run agree.
-					assert.Equal(results[0].Unchanged, r.Unchanged, "%d:%d", i, j)
+					assert.Equal(results[0].Changed, r.Changed, "%d:%d", i, j)
+				}
+
+				if results[0].Changed {
+					changed.Add(1)
 				}
 			}()
 		}
 		barrier.Done()
 		wg.Wait()
 
-		barrier.Add(1)
-		for i := 0; i < gsPerRun; i++ {
-			wg.Add(1)
-			i := i
-			go func() {
-				barrier.Wait()
-				defer wg.Done()
+		// Exactly one of the gs should have seen a change.
+		assert.Equal(int32(1), changed.Load())
 
-				results, _ := incremental.Run(ctx, exec, queries...)
-
-				for j, r := range results {
-					// All calls after at least one successful computation must
-					// result in Unchanged being true.
-					assert.True(r.Unchanged, "%d:%d", i, j)
-				}
-			}()
+		results, _ = incremental.Run(ctx, exec, queries...)
+		for j, r := range results[1:] {
+			// All calls after computation should return false for Changed.
+			assert.False(r.Changed, "%d", j)
 		}
-		barrier.Done()
-		wg.Wait()
 	}
 }
