@@ -38,6 +38,7 @@ type Task struct {
 	exec   *Executor
 	task   *task
 	result *result
+	runID  uint64
 
 	// Intrusive linked list node for cycle detection.
 	path path
@@ -112,6 +113,7 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 
 				results[i].NonFatal = r.NonFatal
 				results[i].Fatal = r.Fatal
+				results[i].Changed = r.runID == caller.runID
 			}
 
 			wg.Done()
@@ -185,15 +187,48 @@ type task struct {
 // Result is the Result of executing a query on an [Executor], either via
 // [Run] or [Resolve].
 type Result[T any] struct {
-	Value    T
+	Value T // Value is unspecified if Fatal is non-nil.
+
 	NonFatal []error
 	Fatal    error
+
+	// Set if this result has possibly changed since the last time [Run] call in
+	// which this query was computed.
+	//
+	// This has important semantics wrt to calls to [Run]. If *any* call to
+	// [Resolve] downstream of a particular call to [Run] returns a true value
+	// for Changed for a particular query, all such calls to [Resolve] will.
+	// This ensures that the value of Changed is deterministic regardless of
+	// the order in which queries are actually scheduled.
+	//
+	// This flag can be used to implement partial caching of a query. If a query
+	// calculates the result of merging several queries, it can use its own
+	// cached result (provided by the caller of [Run] in some way) and the value
+	// of [Changed] to only perform a partial mutation instead of a complete
+	// merge of the queries.
+	Changed bool
 }
 
 // result is a Result[any] with a completion channel appended to it.
 type result struct {
 	Result[any]
-	done chan struct{}
+
+	// This is the sequence ID of the Run call that caused this result to be
+	// computed. If it is equal to the ID of the current Run, it was computed
+	// during the current call. Otherwise, it is cached from a previous Run.
+	//
+	// Proof of correctness. As long as any Runs are ongoing, it is not possible
+	// for queries to be evicted, so once a query is calculated, its runID is
+	// fixed. Suppose two Runs race the same query. One of them will win as the
+	// leader, and the other will wait until it's done. The leader will mark it
+	// with its run ID, so the leader sees Changed and the loser sees !Changed.
+	// Any other queries from the same or other Runs racing this query will see
+	// the same result.
+	//
+	// Note that runID itself does not require synchronization, because loads of
+	// runID are synchronized-after the done channel being closed.
+	runID uint64
+	done  chan struct{}
 }
 
 // path is a linked list node for tracking cycles in query dependencies.
@@ -295,6 +330,7 @@ func (t *task) run(caller Task, q *AnyQuery) (output *result) {
 	callee := Task{
 		ctx:    caller.ctx,
 		exec:   caller.exec,
+		runID:  caller.runID,
 		task:   t,
 		result: output,
 		path: path{
@@ -309,6 +345,7 @@ func (t *task) run(caller Task, q *AnyQuery) (output *result) {
 	defer callee.exec.sema.Release(1)
 
 	output.Value, output.Fatal = q.Execute(callee)
+	output.runID = callee.runID
 	return output
 }
 

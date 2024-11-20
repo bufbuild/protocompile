@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -223,4 +225,74 @@ func TestCyclic(t *testing.T) {
 			`incremental_test.Cyclic{Mod:5, Step:3}`,
 		result[0].Fatal.Error(),
 	)
+}
+
+func TestUnchanged(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+
+	ctx := context.Background()
+	exec := incremental.New(
+		incremental.WithParallelism(4),
+	)
+
+	queries := make([]incremental.Query[int], 16)
+	for i := range queries {
+		queries[i] = ParseInt{"42"}
+	}
+
+	// Hammer the same query many, many times to ensure consistency across
+	// parallelized and serialized calls.
+	const (
+		runs     = 4
+		gsPerRun = 16
+	)
+
+	for i := 0; i < runs; i++ {
+		exec.Evict(ParseInt{"42"})
+		results, _ := incremental.Run(ctx, exec, queries...)
+		for j, r := range results[1:] {
+			// All calls after an eviction should return true for Changed.
+			assert.True(r.Changed, "%d", j)
+		}
+
+		var (
+			wg, barrier sync.WaitGroup
+			changed     atomic.Int32
+		)
+
+		exec.Evict(ParseInt{"42"})
+		barrier.Add(1)
+		for i := 0; i < gsPerRun; i++ {
+			wg.Add(1)
+			i := i
+			go func() {
+				barrier.Wait() // Ensure all goroutines start together.
+				defer wg.Done()
+
+				results, _ := incremental.Run(ctx, exec, queries...)
+				for j, r := range results {
+					// We don't know who the winning g that gets to do the
+					// computation will be be, so just require that all of the
+					// results within one run agree.
+					assert.Equal(results[0].Changed, r.Changed, "%d:%d", i, j)
+				}
+
+				if results[0].Changed {
+					changed.Add(1)
+				}
+			}()
+		}
+		barrier.Done()
+		wg.Wait()
+
+		// Exactly one of the gs should have seen a change.
+		assert.Equal(int32(1), changed.Load())
+
+		results, _ = incremental.Run(ctx, exec, queries...)
+		for j, r := range results[1:] {
+			// All calls after computation should return false for Changed.
+			assert.False(r.Changed, "%d", j)
+		}
+	}
 }
