@@ -70,11 +70,7 @@ func (d DeclBody) Len() int {
 
 // At returns the nth element of this body.
 func (d DeclBody) At(n int) DeclAny {
-	return DeclAny{
-		withContext: d.withContext,
-		ptr:         d.raw.ptrs[n],
-		kind:        d.raw.kinds[n],
-	}
+	return rawDecl{d.raw.ptrs[n], d.raw.kinds[n]}.With(d.Context())
 }
 
 // Iter is an iterator over the nodes inside this body.
@@ -95,8 +91,8 @@ func (d DeclBody) Append(value DeclAny) {
 func (d DeclBody) Insert(n int, value DeclAny) {
 	d.Context().Nodes().panicIfNotOurs(value)
 
-	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.kind)
-	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.ptr)
+	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.Kind())
+	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.raw.ptr)
 }
 
 // Delete deletes the declaration at the given index.

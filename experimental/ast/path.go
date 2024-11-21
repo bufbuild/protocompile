@@ -192,10 +192,7 @@ type TypePath struct {
 //
 // See [TypeAny] for more information.
 func (t TypePath) AsAny() TypeAny {
-	return TypeAny{
-		t.Path.withContext,
-		rawType(t.Path.raw),
-	}
+	return rawType(t.raw).With(t.Context())
 }
 
 // TypePath is a simple path reference in expression position.
@@ -208,10 +205,7 @@ type ExprPath struct {
 //
 // See [TypeAny] for more information.
 func (e ExprPath) AsAny() ExprAny {
-	return ExprAny{
-		e.Path.withContext,
-		rawExpr(e.Path.raw),
-	}
+	return rawExpr(e.raw).With(e.Context())
 }
 
 // PathComponent is a piece of a path. This is either an identifier or a nested path

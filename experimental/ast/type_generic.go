@@ -113,13 +113,13 @@ func (d TypeList) Len() int {
 
 // At implements [Slice].
 func (d TypeList) At(n int) TypeAny {
-	return TypeAny{d.withContext, d.raw.args[n].Value}
+	return d.raw.args[n].Value.With(d.Context())
 }
 
 // At implements [Iter].
 func (d TypeList) Iter(yield func(int, TypeAny) bool) {
 	for i, arg := range d.raw.args {
-		if !yield(i, TypeAny{d.withContext, arg.Value}) {
+		if !yield(i, arg.Value.With(d.Context())) {
 			break
 		}
 	}
@@ -165,7 +165,7 @@ func (d TypeList) Span() report.Span {
 
 	var span report.Span
 	for _, arg := range d.raw.args {
-		span = report.Join(span, TypeAny{d.withContext, arg.Value}, arg.Comma.In(d.Context()))
+		span = report.Join(span, arg.Value.With(d.Context()), arg.Comma.In(d.Context()))
 	}
 	return span
 }

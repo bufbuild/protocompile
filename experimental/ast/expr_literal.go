@@ -15,7 +15,6 @@
 package ast
 
 import (
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -33,9 +32,8 @@ type ExprLiteral struct {
 //
 // See [TypeAny] for more information.
 func (e ExprLiteral) AsAny() ExprAny {
-	return ExprAny{
+	return rawExpr{^token.ID(ExprKindLiteral), e.Token.ID()}.With(
 		//nolint:errcheck // This assertion is required in the comment on e.Token.
-		internal.NewWith(e.Token.Context().(Context)),
-		rawExpr{^token.ID(ExprKindLiteral), e.Token.ID()},
-	}
+		e.Token.Context().(Context),
+	)
 }

@@ -44,7 +44,8 @@ type TypeKind int8
 // allocations in functions that would return one of many different Type*
 // types.
 type TypeAny struct {
-	withContext
+	withContext // Must be nil if raw is nil.
+
 	raw rawType
 }
 
@@ -149,17 +150,13 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 	}
 
 	kind, arena := typeArena[Raw](&t.Context().Nodes().types)
-	return TypeAny{
-		t.withContext,
-		rawType{^token.ID(kind), token.ID(arena.Compress(t.raw))},
-	}
+	return rawType{^token.ID(kind), token.ID(arena.Compress(t.raw))}.With(t.Context())
 }
 
 func (t rawType) With(ctx Context) TypeAny {
 	if ctx == nil || (t == rawType{}) {
 		return TypeNil
 	}
-
 	return TypeAny{internal.NewWith(ctx), t}
 }
 

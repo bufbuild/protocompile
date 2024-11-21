@@ -96,7 +96,7 @@ type DeclDefArgs struct {
 //
 // See [DeclDef.Keyword].
 func (d DeclDef) Type() TypeAny {
-	return TypeAny{d.withContext, d.raw.ty}
+	return d.raw.ty.With(d.Context())
 }
 
 // SetType sets the "prefix" type of this definition.

@@ -48,7 +48,8 @@ type ExprKind int8
 // allocations in functions that would return one of many different ExprAny*
 // types.
 type ExprAny struct {
-	withContext
+	withContext // Must be nil if raw is nil.
+
 	raw rawExpr
 }
 
@@ -216,10 +217,7 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 	}
 
 	kind, arena := exprArena[Raw](&e.Context().Nodes().exprs)
-	return ExprAny{
-		e.withContext,
-		rawExpr{^token.ID(kind), token.ID(arena.Compress(e.raw))},
-	}
+	return rawExpr{^token.ID(kind), token.ID(arena.Compress(e.raw))}.With(e.Context())
 }
 
 func (e rawExpr) With(ctx Context) ExprAny {

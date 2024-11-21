@@ -48,15 +48,15 @@ type DeclKind int8
 // types.
 type DeclAny struct {
 	// NOTE: These fields are sorted by alignment.
-	withContext
-	ptr  arena.Untyped
-	kind DeclKind
+	withContext // Must be nil if raw is nil.
+
+	raw rawDecl
 }
 
 // Kind returns the kind of declaration this is. This is suitable for use
 // in a switch statement.
 func (d DeclAny) Kind() DeclKind {
-	return d.kind
+	return d.raw.kind
 }
 
 // AsEmpty converts a DeclAny into a DeclEmpty, if that is the declaration
@@ -64,11 +64,11 @@ func (d DeclAny) Kind() DeclKind {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsEmpty() DeclEmpty {
-	if d.kind != DeclKindEmpty {
+	if d.Kind() != DeclKindEmpty {
 		return DeclEmpty{}
 	}
 
-	return wrapDeclEmpty(d.Context(), arena.Pointer[rawDeclEmpty](d.ptr))
+	return wrapDeclEmpty(d.Context(), arena.Pointer[rawDeclEmpty](d.raw.ptr))
 }
 
 // AsSyntax converts a DeclAny into a DeclSyntax, if that is the declaration
@@ -76,11 +76,11 @@ func (d DeclAny) AsEmpty() DeclEmpty {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsSyntax() DeclSyntax {
-	if d.kind != DeclKindSyntax {
+	if d.Kind() != DeclKindSyntax {
 		return DeclSyntax{}
 	}
 
-	return wrapDeclSyntax(d.Context(), arena.Pointer[rawDeclSyntax](d.ptr))
+	return wrapDeclSyntax(d.Context(), arena.Pointer[rawDeclSyntax](d.raw.ptr))
 }
 
 // AsPackage converts a DeclAny into a DeclPackage, if that is the declaration
@@ -88,11 +88,11 @@ func (d DeclAny) AsSyntax() DeclSyntax {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsPackage() DeclPackage {
-	if d.kind != DeclKindPackage {
+	if d.Kind() != DeclKindPackage {
 		return DeclPackage{}
 	}
 
-	return wrapDeclPackage(d.Context(), arena.Pointer[rawDeclPackage](d.ptr))
+	return wrapDeclPackage(d.Context(), arena.Pointer[rawDeclPackage](d.raw.ptr))
 }
 
 // AsImport converts a DeclAny into a DeclImport, if that is the declaration
@@ -100,11 +100,11 @@ func (d DeclAny) AsPackage() DeclPackage {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsImport() DeclImport {
-	if d.kind != DeclKindImport {
+	if d.Kind() != DeclKindImport {
 		return DeclImport{}
 	}
 
-	return wrapDeclImport(d.Context(), arena.Pointer[rawDeclImport](d.ptr))
+	return wrapDeclImport(d.Context(), arena.Pointer[rawDeclImport](d.raw.ptr))
 }
 
 // AsDef converts a DeclAny into a DeclDef, if that is the declaration
@@ -112,11 +112,11 @@ func (d DeclAny) AsImport() DeclImport {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsDef() DeclDef {
-	if d.kind != DeclKindDef {
+	if d.Kind() != DeclKindDef {
 		return DeclDef{}
 	}
 
-	return wrapDeclDef(d.Context(), arena.Pointer[rawDeclDef](d.ptr))
+	return wrapDeclDef(d.Context(), arena.Pointer[rawDeclDef](d.raw.ptr))
 }
 
 // AsBody converts a DeclAny into a DeclBody, if that is the declaration
@@ -124,11 +124,11 @@ func (d DeclAny) AsDef() DeclDef {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsBody() DeclBody {
-	if d.kind != DeclKindBody {
+	if d.Kind() != DeclKindBody {
 		return DeclBody{}
 	}
 
-	return wrapDeclBody(d.Context(), arena.Pointer[rawDeclBody](d.ptr))
+	return wrapDeclBody(d.Context(), arena.Pointer[rawDeclBody](d.raw.ptr))
 }
 
 // AsRange converts a DeclAny into a DeclRange, if that is the declaration
@@ -136,11 +136,11 @@ func (d DeclAny) AsBody() DeclBody {
 //
 // Otherwise, returns nil.
 func (d DeclAny) AsRange() DeclRange {
-	if d.kind != DeclKindRange {
+	if d.Kind() != DeclKindRange {
 		return DeclRange{}
 	}
 
-	return wrapDeclRange(d.Context(), arena.Pointer[rawDeclRange](d.ptr))
+	return wrapDeclRange(d.Context(), arena.Pointer[rawDeclRange](d.raw.ptr))
 }
 
 // Span implements [report.Spanner].
@@ -159,6 +159,20 @@ func (d DeclAny) Span() report.Span {
 	)
 }
 
+// rawDecl is the actual data of a DeclAny.
+type rawDecl struct {
+	ptr  arena.Untyped
+	kind DeclKind
+}
+
+func (d rawDecl) With(c Context) DeclAny {
+	if c == nil || d.ptr.Nil() || d.kind == DeclKindNil {
+		return DeclNil
+	}
+
+	return DeclAny{internal.NewWith(c), d}
+}
+
 // declImpl is the common implementation of pointer-like Decl* types.
 type declImpl[Raw any] struct {
 	withContext
@@ -170,11 +184,7 @@ type declImpl[Raw any] struct {
 // See [DeclAny] for more information.
 func (d declImpl[Raw]) AsAny() DeclAny {
 	kind, arena := declArena[Raw](&d.Context().Nodes().decls)
-	return DeclAny{
-		withContext: d.withContext,
-		ptr:         arena.Compress(d.raw).Untyped(),
-		kind:        kind,
-	}
+	return rawDecl{arena.Compress(d.raw).Untyped(), kind}.With(d.Context())
 }
 
 func wrapDecl[Raw any](ctx Context, ptr arena.Pointer[Raw]) declImpl[Raw] {
