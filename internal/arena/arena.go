@@ -57,6 +57,14 @@ func (p Untyped) Nil() bool {
 	return p == 0
 }
 
+// String implements [fmt.Stringer].
+func (p Untyped) String() string {
+	if p.Nil() {
+		return "<nil>"
+	}
+	return fmt.Sprintf("0x%x", uint32(p))
+}
+
 // A compressed arena pointer.
 //
 // Cannot be dereferenced directly; see [Pointer.In].
@@ -74,6 +82,11 @@ func (p Pointer[T]) Nil() bool {
 // This function mostly exists for the aid of tab-completion.
 func (p Pointer[T]) Untyped() Untyped {
 	return Untyped(p)
+}
+
+// String implements [fmt.Stringer].
+func (p Pointer[T]) String() string {
+	return p.Untyped().String()
 }
 
 // Arena is an arena that offers compressed pointers. Conceptually, it is a slice
@@ -133,7 +146,7 @@ func (a *Arena[T]) Compress(ptr *T) Pointer[T] {
 	for i := len(a.table) - 1; i >= 0; i-- {
 		idx := pointerIndex(ptr, a.table[i])
 		if idx != -1 {
-			return Pointer[T](idx + 1)
+			return Pointer[T](a.lenOfFirstNSlices(i) + idx + 1)
 		}
 	}
 	return 0

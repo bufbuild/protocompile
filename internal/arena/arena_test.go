@@ -61,4 +61,11 @@ func TestCompress(t *testing.T) {
 
 	assert.Equal(arena.Pointer[int](0), a.Compress(nil))
 	assert.Equal(arena.Pointer[int](0), a.Compress(new(int)))
+
+	for i := 0; i < 16; i++ {
+		a.New(i + 5)
+	}
+	x = a.NewCompressed(5)
+	y = a.Deref(x)
+	assert.Equal(x, a.Compress(y))
 }
