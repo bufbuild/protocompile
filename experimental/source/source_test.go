@@ -23,13 +23,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bufbuild/protocompile/experimental/source"
-	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/prototest"
 )
 
 func TestFS(t *testing.T) {
 	t.Parallel()
 
-	opener := source.FS{FS: os.DirFS(internal.CallerDir(0))}
+	opener := source.FS{FS: os.DirFS(prototest.CallerDir(t))}
 
 	text, err := opener.Open("hello.txt")
 	require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestFS(t *testing.T) {
 func TestMap(t *testing.T) {
 	t.Parallel()
 
-	opener := source.Map{"hello.txt": "hello!\n"}
+	opener := source.NewMap(map[string]string{"hello.txt": "hello!\n"})
 
 	text, err := opener.Open("hello.txt")
 	require.NoError(t, err)
@@ -56,8 +56,8 @@ func TestOpeners(t *testing.T) {
 	t.Parallel()
 
 	opener := source.Openers{
-		&source.Map{"overlaid.txt": "overlaid!\n"},
-		&source.FS{FS: os.DirFS(internal.CallerDir(0))},
+		source.NewMap(map[string]string{"hello.txt": "hello!\n"}),
+		&source.FS{FS: os.DirFS(prototest.CallerDir(t))},
 	}
 
 	text, err := opener.Open("overlaid.txt")

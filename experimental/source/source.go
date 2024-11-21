@@ -21,13 +21,7 @@ import (
 	"io"
 	"io/fs"
 	"strings"
-
-	"github.com/bufbuild/protocompile/experimental/incremental"
-	"github.com/bufbuild/protocompile/experimental/report"
 )
-
-// Stage is the value this package uses for [report.Report].Stage.
-const Stage int = 0
 
 // Opener is a mechanism for opening files.
 //
@@ -45,14 +39,36 @@ type Opener interface {
 	Open(path string) (string, error)
 }
 
-// Map implements [Opener] via map lookup.
+// Map implements [Opener] via lookup of a built-in map. This map is not
+// directly accessible, to help avoid mistaken uses that cause different *Map
+// pointer values (for the same built-in map value) to wind up in different
+// queries, which breaks query caching.
 //
 // Missing entries result in [fs.ErrNotExist].
-type Map map[string]string
+type Map struct {
+	table map[string]string
+}
+
+// NewMap creates a new [Map] wrapping the given map.
+//
+// If passed nil, this will update the map to be an empty non-nil map.
+func NewMap(m map[string]string) *Map {
+	if m == nil {
+		m = map[string]string{}
+	}
+	return &Map{m}
+}
+
+// Get returns the map this [Map] wraps. This can be used to modify the map.
+//
+// Never returns nil.
+func (m *Map) Get() map[string]string {
+	return m.table
+}
 
 // Open implements [Opener].
 func (m *Map) Open(path string) (string, error) {
-	text, ok := (*m)[path]
+	text, ok := m.Get()[path]
 	if !ok {
 		return "", fs.ErrNotExist
 	}
@@ -96,35 +112,4 @@ func (o *Openers) Open(path string) (string, error) {
 		return text, err
 	}
 	return "", fs.ErrNotExist
-}
-
-// Contents is an [incremental.Query] for the contents of a file.
-type Contents struct {
-	Opener // Must be comparable.
-
-	Path string
-}
-
-var _ incremental.Query[string] = Contents{}
-
-// Key implements [incremental.Query].
-//
-// The key for a Contents query is the query itself. This means that a single
-// [incremental.Executor] can host Contents queries for multiple Openers. It
-// also means that the Openers must all be comparable. As the [Opener]
-// documentation states, implementations should take a pointer receiver so that
-// comparison uses object identity.
-func (t Contents) Key() any {
-	return t
-}
-
-// Execute implements [incremental.Query].
-func (t Contents) Execute(incremental.Task) (value string, fatal error) {
-	text, err := t.Open(t.Path)
-	if err != nil {
-		r := new(report.AsError)
-		r.Report.Error(&report.ErrInFile{Err: err, Path: t.Path})
-		return "", r
-	}
-	return text, nil
 }

@@ -12,24 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package prototest
 
 import (
 	"path/filepath"
 	"runtime"
+	"testing"
 )
 
 // CallerDir returns the directory of the file in which this function is called.
 //
+// This function is intended for tests to find their test data only. Panics
+// if called within a stripped binary.
+func CallerDir(t *testing.T) string {
+	return CallerDirWithSkip(t, 0)
+}
+
+// CallerDirWithSkip returns the directory of the file in which this function is
+// called.
+//
 // skip is the number of callers to skip, like in [runtime.Caller]. A value of
-// zero represents the caller of CallerDir.
+// zero represents the caller of CallerDirWithSkip.
 //
 // This function is intended for tests to find their test data only. Panics
 // if called within a stripped binary.
-func CallerDir(skip int) string {
+func CallerDirWithSkip(t *testing.T, skip int) string {
 	_, file, _, ok := runtime.Caller(skip + 1)
-	if !ok {
-		panic("protocompile/internal: could not determine test file's directory; the binary may have been stripped")
+	if ok {
+		t.Fatal("protocompile/internal: could not determine test file's directory; the binary may have been stripped")
 	}
 	return filepath.Dir(file)
 }
