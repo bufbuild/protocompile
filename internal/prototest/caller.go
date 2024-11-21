@@ -25,7 +25,7 @@ import (
 // This function is intended for tests to find their test data only. Panics
 // if called within a stripped binary.
 func CallerDir(t *testing.T) string {
-	return CallerDirWithSkip(t, 0)
+	return CallerDirWithSkip(t, 1)
 }
 
 // CallerDirWithSkip returns the directory of the file in which this function is
@@ -38,7 +38,7 @@ func CallerDir(t *testing.T) string {
 // if called within a stripped binary.
 func CallerDirWithSkip(t *testing.T, skip int) string {
 	_, file, _, ok := runtime.Caller(skip + 1)
-	if ok {
+	if !ok {
 		t.Fatal("protocompile/internal: could not determine test file's directory; the binary may have been stripped")
 	}
 	return filepath.Dir(file)

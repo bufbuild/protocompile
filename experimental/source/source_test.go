@@ -56,7 +56,7 @@ func TestOpeners(t *testing.T) {
 	t.Parallel()
 
 	opener := source.Openers{
-		source.NewMap(map[string]string{"hello.txt": "hello!\n"}),
+		source.NewMap(map[string]string{"overlaid.txt": "overlaid!\n"}),
 		&source.FS{FS: os.DirFS(prototest.CallerDir(t))},
 	}
 

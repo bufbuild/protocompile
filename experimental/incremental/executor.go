@@ -155,40 +155,29 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 //
 // This function cannot execute in parallel with calls to [Run], and will take
 // an exclusive lock (note that [Run] calls themselves can be run in parallel).
-func (e *Executor) Evict(keys ...any) {
-	unlock := e.evict(false, keys...)
-	if unlock != nil {
-		unlock()
-	}
+func (e *Executor) Evict(keys []any) {
+	e.EvictWithCleanup(keys, nil)
 }
 
-// EvictAndLock is like [Executor.Evict], but it retains the exclusive lock and
-// returns an unlocker for it.
+// EvictWithCleanup is like [Executor.Evict], but it executes the given cleanup
+// inside of the eviction critical section.
 //
-// This is useful for cases where performing an eviction requires mutating some
-// other state, such as touching a map, and future calls of [Run] should not
-// begin until that mutation is complete.
-func (e *Executor) EvictAndLock(keys ...any) func() {
-	return e.evict(true, keys...)
-}
-
-func (e *Executor) evict(alwaysLock bool, keys ...any) func() {
+// This function can be used to clean up after a query, or modify the result of
+// the evicted query by writing to a variable, without risking follow-up calls
+// to run seeing inconsistent state across multiple queries.
+func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	var queue []*task
 	for _, key := range keys {
 		if t, ok := e.tasks.Load(key); ok {
 			queue = append(queue, t.(*task)) //nolint:errcheck
 		}
 	}
-	if len(queue) == 0 {
-		if alwaysLock {
-			e.dirty.Lock()
-			return e.dirty.Unlock
-		}
-
-		return nil
+	if len(queue) == 0 && cleanup == nil {
+		return
 	}
 
 	e.dirty.Lock()
+	defer e.dirty.Unlock()
 	for len(queue) > 0 {
 		next := queue[0]
 		queue = queue[1:]
@@ -202,7 +191,10 @@ func (e *Executor) evict(alwaysLock bool, keys ...any) func() {
 		// unique ownership of the task.
 		*next = task{}
 	}
-	return e.dirty.Unlock
+
+	if cleanup != nil {
+		cleanup()
+	}
 }
 
 // getTask returns (and creates if necessary) a task pointer for the given key.
