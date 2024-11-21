@@ -81,12 +81,9 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 			return err
 		}
 		if !fi.IsDir() && strings.TrimPrefix(path.Ext(p), ".") == c.Extension {
-			if os.PathSeparator != '/' {
-				// Make sure the path is normalized regardless of platform. This
-				// is necessary to avoid breakages on Windows.
-				p = strings.ReplaceAll(p, fmt.Sprintf("%c", os.PathSeparator), "/")
-			}
-			tests = append(tests, p)
+			// Make sure the path is normalized regardless of platform. This
+			// is necessary to avoid breakages on Windows.
+			tests = append(tests, filepath.ToSlash(p))
 		}
 		return err
 	})

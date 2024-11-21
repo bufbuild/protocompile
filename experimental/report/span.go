@@ -76,7 +76,8 @@ func (s Span) Span() Span {
 
 // String implements [string.Stringer].
 func (s Span) String() string {
-	return fmt.Sprintf("%s[%d:%d]", s.Path(), s.Start, s.End)
+	start := s.StartLoc()
+	return fmt.Sprintf("%q:%d:%d[%d:%d]", s.Path(), start.Line, start.Column, s.Start, s.End)
 }
 
 // Join joins a collection of spans, returning the smallest span that

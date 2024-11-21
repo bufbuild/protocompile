@@ -23,6 +23,9 @@ import (
 type ExprLiteral struct {
 	// The token backing this expression. Must be [token.String] or [token.Number],
 	// and its Context() must be an ast.Context.
+	//
+	// If this token does not contain an ast.Context, ExprLiteral.AsAny will
+	// panic.
 	token.Token
 }
 
@@ -31,6 +34,7 @@ type ExprLiteral struct {
 // See [TypeAny] for more information.
 func (e ExprLiteral) AsAny() ExprAny {
 	return ExprAny{
+		//nolint:errcheck // This assertion is required in the comment on e.Token.
 		internal.NewWith(e.Token.Context().(Context)),
 		rawExpr{token.ID(ExprKindLiteral), e.Token.ID()},
 	}

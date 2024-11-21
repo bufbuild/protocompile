@@ -28,7 +28,7 @@ type ErrUnrecognized struct {
 
 // Error implements [error].
 func (e ErrUnrecognized) Error() string {
-	return "unrecongnized token"
+	return "unrecognized token"
 }
 
 // Diagnose implements [report.Diagnose].

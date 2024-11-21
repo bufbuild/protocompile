@@ -121,7 +121,7 @@ func (l *lexer) SpanFrom(start int) report.Span {
 // debugging.
 func (l *lexer) HandleICE() {
 	if panicked := recover(); panicked != nil {
-		panic(fmt.Sprintf("protocompile/parse: panic while lexing {cursor: %d, count: %d}: %s", l.cursor, l.count, panicked))
+		panic(fmt.Sprintf("protocompile/parse: panic while lexing {cursor: %d, count: %d}: %v", l.cursor, l.count, panicked))
 	}
 }
 

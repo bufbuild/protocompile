@@ -32,7 +32,7 @@ import (
 // opaque.
 type ID int32
 
-// In associated this token ID with a context. This allows token metadata,
+// In associates this token ID with a context. This allows token metadata,
 // such as position, text, and kind, to be looked up.
 //
 // No checks are performed to validate that this ID came from this context; the
@@ -101,7 +101,7 @@ func (t nat) IsClose() bool {
 //
 // If open or close are synthetic or not currently a leaf, this function panics.
 //
-//nolint:predeclared // For close.
+//nolint:predeclared,revive // For close.
 func fuseImpl(diff int32, open, close *nat) {
 	if diff <= 0 {
 		panic("protocompile/token: called Fuse() with out-of-order")

@@ -29,6 +29,7 @@ type parseIntResult struct {
 //
 // This function ignores any thousands separator underscores in digits.
 func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
+	var bigBase *big.Int
 	for _, r := range digits {
 		if r == '_' {
 			result.hasThousands = true
@@ -40,27 +41,24 @@ func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
 			return result, false
 		}
 
-		if result.big != nil {
-			result.big.Mul(result.big, big.NewInt(int64(base)))
-			result.big.Add(result.big, big.NewInt(int64(digit)))
-			continue
-		}
+		if result.big == nil {
+			// Perform arithmetic while checking for overflow.
+			extra, shift := bits.Mul64(result.small, uint64(base))
+			sum, carry := bits.Add64(shift, uint64(digit), 0)
+			if extra == 0 && carry == 0 {
+				result.small = sum
+				continue
+			}
 
-		// Perform arithmetic while checking for overflow.
-		extra, shift := bits.Mul64(result.small, uint64(base))
-		sum, carry := bits.Add64(shift, uint64(digit), 0)
-
-		if extra > 0 || carry > 0 {
-			// If we overflow, allocate a new big.Int and spill over to using
-			// it.
+			// We overflowed, so we need to spill into a big.Int.
 			result.big = new(big.Int)
 			result.big.SetUint64(result.small)
-			result.big.Mul(result.big, big.NewInt(int64(base)))
-			result.big.Add(result.big, big.NewInt(int64(digit)))
-			continue
+
+			bigBase = big.NewInt(int64(base)) // Memoize converting the base.
 		}
 
-		result.small = sum
+		result.big.Mul(result.big, bigBase)
+		result.big.Add(result.big, big.NewInt(int64(digit)))
 	}
 
 	return result, true

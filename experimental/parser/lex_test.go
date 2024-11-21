@@ -108,10 +108,10 @@ func unescapeTestCase(s string) string {
 		if err != nil {
 			panic(err)
 		}
+
 		if groups[1] == "x" {
 			return string([]byte{byte(value)})
-		} else {
-			return fmt.Sprintf("%c", value)
 		}
+		return string(rune(value))
 	})
 }

@@ -27,6 +27,16 @@ import (
 // Nil is the nil [Token], i.e., the zero value.
 var Nil Token
 
+// Value is a constraint that represents a literal scalar value in source.
+//
+// This union does not include bool because they are lexed as
+// identifiers and then later converted to boolean values based on their
+// context (since "true" and "false" are also valid identifiers for named
+// types).
+type Value interface {
+	uint64 | float64 | *big.Int | string
+}
+
 // Token is a lexical element of a Protobuf file.
 //
 // Protocompile's token stream is actually a tree of tokens. Some tokens, called
@@ -208,7 +218,7 @@ func (t Token) StartEnd() (start, end Token) {
 //
 // Note: this function wants to be a method of [Token], but cannot because it
 // is generic.
-func SetValue[T uint64 | float64 | string | *big.Int](token Token, value T) {
+func SetValue[T Value](token Token, value T) {
 	if token.Nil() {
 		panic(fmt.Sprintf("protocompile/token: passed nil token to SetValue: %s", token))
 	}
@@ -260,7 +270,7 @@ func ClearValue(token Token) {
 //
 // If open or close are synthetic or not currently a leaf, have different
 // contexts, or are part of a frozen [Stream], this function panics.
-func Fuse(open, close Token) { //nolint:predeclared // For close.
+func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
 	if open.Context().Stream() != close.Context().Stream() {
 		panic("protocompile/token: attempted to fuse tokens from different streams")
 	}

@@ -15,6 +15,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -64,7 +65,7 @@ func (e ErrInvalidBase) Error() string {
 
 // Diagnose implements [report.Diagnose].
 func (e ErrInvalidBase) Diagnose(d *report.Diagnostic) {
-	base := "<unknown>"
+	var base string
 	switch e.Base {
 	case 2:
 		base = "binary"
@@ -72,6 +73,8 @@ func (e ErrInvalidBase) Diagnose(d *report.Diagnostic) {
 		base = "octal"
 	case 16:
 		base = "hexadecimal"
+	default:
+		base = fmt.Sprintf("base-%d", e.Base)
 	}
 
 	isFloat := isFloatLiteral(e.Token)

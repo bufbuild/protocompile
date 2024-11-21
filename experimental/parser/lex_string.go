@@ -83,11 +83,12 @@ func lexStringContent(l *lexer) (sc stringContent) {
 	start := l.cursor
 	r := l.Pop()
 
-	if r == 0 {
+	switch {
+	case r == 0:
 		l.Errorf("unescaped NUL bytes are not permitted in string literals").With(
 			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
 		)
-	} else if r == '\n' {
+	case r == '\n':
 		// TODO: This diagnostic is simply user-hostile. We should remove it.
 		// Not having this is valuable for strings that contain e.g. CEL
 		// expressions, and there is no technical reason that Protobuf forbids
@@ -102,7 +103,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 			// tell users to split the string into multiple quoted fragments.
 			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
 		)
-	} else if report.NonPrint(r) {
+	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't
 		// ASCII whitespace.
 		var escape string

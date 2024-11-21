@@ -1,4 +1,4 @@
-error: unrecongnized token
+error: unrecognized token
   --> testdata/lexer/idents/non-ascii.proto:1:7
    | 
  1 | kitty_🐈<U+200D>⬛

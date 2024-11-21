@@ -58,8 +58,8 @@ func lexNumber(l *lexer) token.Token {
 
 	result, ok := parseInt(digits, base)
 	if !ok {
-		// This may be a floating-point number. That is identified by looking
-		// for a period.
+		// This may be a floating-point number. Confirm this by hunting
+		// for a for a decimal point or an exponent.
 		if strings.ContainsAny(digits, ".Ee") {
 			if legacyOctal {
 				base = 10
@@ -79,18 +79,15 @@ func lexNumber(l *lexer) token.Token {
 			hasThousands := len(filteredDigits) < len(digits)
 
 			// We want this to overflow to Infinity as needed, which ParseFloat
-			// will do for us. Otherwise it will ties-to-even as expected.
-			// Currently, the spec does not say "ties-to-even", but it says
-			// "nearest value", which everyone says when they mean
-			// "ties-to-even" whether they know it or not.
+			// will do for us. Otherwise it will ties-to-even as the
+			// protobuf.com spec requires.
 			//
 			// ParseFloat itself says it "returns the nearest floating-point
 			// number rounded using IEEE754 unbiased rounding", which is just a
-			// weird way to say "ties-to-even".
+			// weird, non-standard way to say "ties-to-even".
 			value, err := strconv.ParseFloat(digits, 64)
 
-			// NOTE: The strconv package promises us that this error is always
-			// of this type.
+			//nolint:errcheck // The strconv package guarantees this assertion.
 			if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
 				l.Error(ErrInvalidNumber{Token: tok})
 				token.SetValue(tok, math.NaN())
@@ -142,6 +139,8 @@ func lexRawNumber(l *lexer) token.Token {
 
 	for !l.Done() {
 		r := l.Peek()
+		//nolint:gocritic // This trips a noisy "use a switch" lint that makes
+		// this code less readable.
 		if r == 'e' || r == 'E' {
 			l.Pop()
 			r = l.Peek()
