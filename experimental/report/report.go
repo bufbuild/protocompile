@@ -64,6 +64,7 @@ type Diagnostic struct {
 	// The kind of diagnostic this is, which affects how and whether it is shown
 	// to users.
 	Level Level
+	isICE bool // Replaces "error" with "internal compiler error" in the renderer.
 
 	// Stage is an opaque identifier for the "stage" that a diagnostic occurred in.
 	// See [Report.Sort].
@@ -79,8 +80,6 @@ type Diagnostic struct {
 	// Notes and help messages to include at the end of the diagnostic, after the
 	// Annotations.
 	Notes, Help, Debug []string
-
-	isICE bool
 }
 
 // Annotation is an annotated source code snippet within a [Diagnostic].

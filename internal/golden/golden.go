@@ -81,9 +81,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 			return err
 		}
 		if !fi.IsDir() && strings.TrimPrefix(path.Ext(p), ".") == c.Extension {
-			// Make sure the path is normalized regardless of platform. This
-			// is necessary to avoid breakages on Windows.
-			tests = append(tests, filepath.ToSlash(p))
+			tests = append(tests, p)
 		}
 		return err
 	})
@@ -109,7 +107,10 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 	for _, path := range tests {
 		path := path // Avoid loop variable capture.
 
+		// Make sure the path is normalized regardless of platform. This
+		// is necessary to avoid breakages on Windows.
 		name, _ := filepath.Rel(testDir, path)
+		name = filepath.ToSlash(name)
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
