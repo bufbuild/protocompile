@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package queries provides specific [incremental.Query]s for various parts of
-// Protocompile. It is separate from package incremental itself because it is
+// package queries provides specific [incremental.Query] types for various parts
+// of Protocompile. It is separate from package incremental itself because it is
 // Protocompile-specific.
 package queries

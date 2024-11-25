@@ -16,10 +16,10 @@ package queries
 
 import "github.com/bufbuild/protocompile/experimental/report"
 
-// Values for [report.Report].Stage, which determine how diagnostics generated
-// across parts of the compiler are sorted.
+// Values for [report.Report].SortOrder, which determine how diagnostics
+// generated across parts of the compiler are sorted.
 const (
-	stageFile int = iota
+	stageFile int = iota * 10
 )
 
 // newReport returns a new report for the given stage.

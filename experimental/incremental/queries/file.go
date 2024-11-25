@@ -29,7 +29,7 @@ type File struct {
 	Path          string
 }
 
-var _ incremental.Query[report.File] = File{}
+var _ incremental.Query[*report.File] = File{}
 
 // Key implements [incremental.Query].
 //
@@ -43,13 +43,13 @@ func (t File) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (t File) Execute(incremental.Task) (report.File, error) {
+func (t File) Execute(incremental.Task) (*report.File, error) {
 	text, err := t.Open(t.Path)
 	if err != nil {
 		r := newReport(stageFile)
 		r.Report.Error(&report.ErrInFile{Err: err, Path: t.Path})
-		return report.File{}, r
+		return nil, r
 	}
 
-	return report.File{Path: t.Path, Text: text}, nil
+	return report.NewFile(t.Path, text), nil
 }

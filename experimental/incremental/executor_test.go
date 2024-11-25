@@ -157,7 +157,7 @@ func TestSum(t *testing.T) {
 		`incremental_test.Sum{Input:"1,2,2,oops,4"}`,
 	}, exec.Keys())
 
-	exec.Evict([]any{ParseInt{"4"}})
+	exec.Evict(ParseInt{"4"})
 	assert.Equal([]string{
 		`incremental_test.ParseInt{Input:"1"}`,
 		`incremental_test.ParseInt{Input:"2"}`,
@@ -249,7 +249,7 @@ func TestUnchanged(t *testing.T) {
 	)
 
 	for i := 0; i < runs; i++ {
-		exec.Evict([]any{ParseInt{"42"}})
+		exec.Evict(ParseInt{"42"})
 		results, _ := incremental.Run(ctx, exec, queries...)
 		for j, r := range results[1:] {
 			// All calls after an eviction should return true for Changed.
@@ -261,7 +261,7 @@ func TestUnchanged(t *testing.T) {
 			changed     atomic.Int32
 		)
 
-		exec.Evict([]any{ParseInt{"42"}})
+		exec.Evict(ParseInt{"42"})
 		barrier.Add(1)
 		for i := 0; i < gsPerRun; i++ {
 			wg.Add(1)
