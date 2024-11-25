@@ -65,7 +65,7 @@ func (e ExprPrefixed) PrefixToken() token.Token {
 
 // Expr returns the expression the prefix is applied to.
 func (e ExprPrefixed) Expr() ExprAny {
-	return e.raw.expr.With(e.Context())
+	return newExprAny(e.Context(), e.raw.expr)
 }
 
 // SetExpr sets the expression that the prefix is applied to.

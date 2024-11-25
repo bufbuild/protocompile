@@ -38,7 +38,7 @@ type ExprRangeArgs struct {
 
 // Bounds returns this range's bounds. These are inclusive bounds.
 func (e ExprRange) Bounds() (start, end ExprAny) {
-	return e.raw.start.With(e.Context()), e.raw.end.With(e.Context())
+	return newExprAny(e.Context(), e.raw.start), newExprAny(e.Context(), e.raw.end)
 }
 
 // SetBounds set the expressions for this range's bounds.

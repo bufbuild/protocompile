@@ -53,7 +53,7 @@ func (t TypePrefixed) PrefixToken() token.Token {
 
 // Type returns the type that is being prefixed.
 func (t TypePrefixed) Type() TypeAny {
-	return t.raw.ty.With(t.Context())
+	return newTypeAny(t.Context(), t.raw.ty)
 }
 
 // SetType sets the expression that is being prefixed.

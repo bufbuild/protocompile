@@ -12,9 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package internal_test
 
-import "github.com/bufbuild/protocompile/experimental/internal"
+import (
+	"fmt"
+	"testing"
 
-// See internal/donotuse.go.
-type priv = internal.ConsentToBeBrokenByUpdatesOrLogicBomb
+	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/experimental/internal"
+)
+
+func TestOxford(t *testing.T) {
+	t.Parallel()
+
+	join := func(s ...string) string {
+		return fmt.Sprint(internal.Oxford[string]{Conjunction: "and", Elements: s})
+	}
+
+	assert.Equal(t, "", join())
+	assert.Equal(t, "foo", join("foo"))
+	assert.Equal(t, "foo and bar", join("foo", "bar"))
+	assert.Equal(t, "foo, bar, and baz", join("foo", "bar", "baz"))
+	assert.Equal(t, "foo, bar, baz, and bang", join("foo", "bar", "baz", "bang"))
+}

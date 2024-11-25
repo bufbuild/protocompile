@@ -167,7 +167,7 @@ type rawDecl struct {
 
 func (d rawDecl) With(c Context) DeclAny {
 	if c == nil || d.ptr.Nil() || d.kind == DeclKindNil {
-		return DeclNil
+		return DeclAny{}
 	}
 
 	return DeclAny{internal.NewWith(c), d}

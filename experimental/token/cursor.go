@@ -203,7 +203,7 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 // this cursor (be that a token or the EOF). If it is a token, this will return
 // that token, too.
 //
-// Returns nil for a synthetic cursor.
+// Returns [Nil] for a synthetic cursor.
 func (c *Cursor) JustAfter() (Token, report.Span) {
 	if c.stream != nil {
 		return Nil, report.Span{}

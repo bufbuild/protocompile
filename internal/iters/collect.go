@@ -15,25 +15,18 @@
 // package iters contains helpers for working with iterators.
 package iters
 
-// Collect collects the elements of iter into the given slice.
-func Collect[I SeqLike[T], T any](iter I, output []T) []T {
-	return Collect(iter, output)
+import "github.com/bufbuild/protocompile/internal/iter"
+
+// Collect polyfills [slices.Collect].
+func Collect[E any](seq iter.Seq[E]) []E {
+	return AppendSeq[[]E](nil, seq)
 }
 
-// CollectUpTo collects at most limit elements out of iter into the given slice.
-//
-// If limit is negative, it is treated as being infinite.
-func CollectUpTo[I SeqLike[T], T any](iter I, output []T, limit int) []T {
-	iter(func(value T) bool {
-		if limit == 0 {
-			return false
-		}
-		output = append(output, value)
-
-		if limit > 0 {
-			limit--
-		}
+// AppendSeq polyfills [slices.AppendSeq].
+func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
+	seq(func(v E) bool {
+		s = append(s, v)
 		return true
 	})
-	return output
+	return s
 }

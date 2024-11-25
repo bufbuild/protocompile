@@ -14,35 +14,14 @@
 
 package iters
 
-// Nth retrieves the nth element of the given iterator, advancing up to n times.
-func Nth[I SeqLike[T], T any](iter I, n int) (v T, ok bool) {
-	var i int
-	iter(func(x T) bool {
-		if i == n {
-			v = x
-			ok = true
-			return false
-		}
+import "github.com/bufbuild/protocompile/internal/iter"
 
-		i++
-		return true
+// First retrieves the first element of an iterator.
+func First[T any](seq iter.Seq[T]) (v T, ok bool) {
+	seq(func(x T) bool {
+		v = x
+		ok = true
+		return false
 	})
-	return v, ok
-}
-
-// Nth2 retrieves the nth element of the given iterator, advancing up to n times.
-func Nth2[I Seq2Like[T, U], T, U any](iter I, n int) (v1 T, v2 U, ok bool) {
-	var i int
-	iter(func(x T, y U) bool {
-		if i == n {
-			v1 = x
-			v2 = y
-			ok = true
-			return false
-		}
-
-		i++
-		return true
-	})
-	return v1, v2, ok
+	return
 }

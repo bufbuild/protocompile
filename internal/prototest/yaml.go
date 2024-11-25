@@ -166,7 +166,8 @@ func (y *toYAML) write(v any) {
 		}
 
 		if isOneLine(v) {
-			if v.isArray {
+			switch {
+			case v.isArray:
 				y.out.WriteString("[")
 				for i, pair := range v.pairs {
 					if i > 0 {
@@ -175,9 +176,11 @@ func (y *toYAML) write(v any) {
 					y.write(pair[1])
 				}
 				y.out.WriteString("]")
-			} else if len(v.pairs) == 0 {
+
+			case len(v.pairs) == 0:
 				y.out.WriteString("{}")
-			} else {
+
+			default:
 				// Special case: if we are a list element, and there is only
 				// one entry, print it directly.
 				if len(v.pairs) == 1 && strings.HasSuffix(y.out.String(), "- ") {
@@ -257,10 +260,8 @@ type doc struct {
 func (d *doc) push(k, v any) {
 	if len(d.pairs) == 0 {
 		d.isArray = k == nil
-	} else {
-		if d.isArray != (k == nil) {
-			panic("misuse of doc.push()")
-		}
+	} else if d.isArray != (k == nil) {
+		panic("misuse of doc.push()")
 	}
 
 	d.pairs = append(d.pairs, [2]any{k, v})
@@ -301,6 +302,7 @@ func (d *doc) compress() {
 				outer, ok1 := pair[0].(protoreflect.Name)
 				inner, ok2 := v.pairs[0][0].(protoreflect.Name)
 				if ok1 && ok2 {
+					//nolint:unconvert // Conversion below is included for readability.
 					pair[0] = protoreflect.Name(outer + "." + inner)
 					pair[1] = v.pairs[0][1]
 				}
@@ -327,14 +329,14 @@ func cmpMapKeys(a, b [2]any) int {
 		case int32:
 			return key{which: 1, int64: int64(v)}
 		case int64:
-			return key{which: 1, int64: int64(v)}
+			return key{which: 1, int64: v}
 		case uint32:
 			return key{which: 1, int64: int64(v)}
 		case uint64:
 			if v <= math.MaxInt64 {
 				return key{which: 1, int64: int64(v)}
 			}
-			return key{which: 2, uint64: uint64(v)}
+			return key{which: 2, uint64: v}
 		case protoreflect.Name:
 			return key{which: 3, string: string(v)}
 		case string:

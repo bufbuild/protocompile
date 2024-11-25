@@ -12,29 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package ast2
 
 import (
+	"unsafe"
+
+	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// ExprLiteral is an expression corresponding to a string or number literal.
-type ExprLiteral struct {
-	// The token backing this expression. Must be [token.String] or [token.Number],
-	// and its Context() must be an ast.Context.
-	//
-	// If this token does not contain an ast.Context, ExprLiteral.AsAny will
-	// panic.
-	token.Token
+type fakePath struct {
+	with internal.With[ast.Context]
+	raw  struct{ Start, End token.ID }
 }
 
-// AsAny type-erases this type value.
+// NewPath creates a new parser-generated path.
 //
-// See [TypeAny] for more information.
-func (e ExprLiteral) AsAny() ExprAny {
-	return newExprAny(
-		//nolint:errcheck // This assertion is required in the comment on e.Token.
-		e.Context().(Context),
-		wrapPathLike(ExprKindLiteral, e.ID()),
-	)
+// This function should not be used outside of the parser, so it is implemented
+// using unsafe to avoid needing to export it.
+func NewPath(ctx ast.Context, start, end token.Token) ast.Path {
+	path := fakePath{
+		with: internal.NewWith(ctx),
+		raw:  struct{ Start, End token.ID }{start.ID(), end.ID()},
+	}
+
+	return *(*ast.Path)(unsafe.Pointer(&path))
 }

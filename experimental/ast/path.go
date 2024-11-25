@@ -29,30 +29,15 @@ import (
 // This includes single identifiers like foo, references like foo.bar,
 // and fully-qualified names like .foo.bar.
 type Path struct {
+	// The layout of this type is depended on in ast2/path.go
 	withContext
 
 	raw rawPath
 }
 
-// rawPath is the raw contents of a Path without its Context.
-//
-// This has one of the following configurations.
-//
-//  1. Two zero tokens. This is the nil path.
-//
-//  2. Two natural tokens. This means the path is all tokens between them including
-//     the end-point
-//
-//  3. A single synthetic token and a nil token. If this token has children, those are
-//     the path components. Otherwise, the token itself is the sole token.
-//
-// NOTE: Multiple compressed representations in this package depend on the fact that
-// if raw[0] < 0, then raw[1] == 0 for all valid paths.
-type rawPath [2]token.ID
-
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
-	first, ok := iters.Nth(p.Components, 0)
+	first, ok := iters.First(p.Components)
 	return ok && !first.Separator().Nil()
 }
 
@@ -68,7 +53,7 @@ func (p Path) ToRelative() Path {
 			return true
 		}
 
-		p.raw[0] = pc.name
+		p.raw.Start = pc.name
 		return false
 	})
 	return p
@@ -77,9 +62,9 @@ func (p Path) ToRelative() Path {
 // AsIdent returns the single identifier that comprises this path, or
 // the nil token.
 func (p Path) AsIdent() token.Token {
-	var prefix [2]PathComponent
-	iters.CollectUpTo(p.Components, prefix[:0], 2)
-	if !prefix[1].Nil() {
+	var buf [2]PathComponent
+	prefix := iters.AppendSeq(buf[:0], iters.Limit(2, p.Components))
+	if len(prefix) != 1 || !prefix[0].Separator().Nil() {
 		return token.Nil
 	}
 	return prefix[0].AsIdent()
@@ -94,7 +79,7 @@ func (p Path) AsPredeclared() predeclared.Name {
 
 // report.Span implements [report.Spanner].
 func (p Path) Span() report.Span {
-	return report.Join(p.raw[0].In(p.Context()), p.raw[1].In(p.Context()))
+	return report.Join(p.raw.Start.In(p.Context()), p.raw.End.In(p.Context()))
 }
 
 // Components is an [iter.Seq] that ranges over each component in this path. Specifically,
@@ -104,14 +89,14 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		return
 	}
 
-	first := p.raw[0].In(p.Context())
+	first := p.raw.Start.In(p.Context())
 	if first.IsSynthetic() {
 		panic("synthetic paths are not implemented yet")
 	}
 
 	var sep token.Token
 	var broken bool
-	token.NewCursor(first, p.raw[1].In(p.Context())).Rest()(func(tok token.Token) bool {
+	token.NewCursor(first, p.raw.End.In(p.Context())).Rest()(func(tok token.Token) bool {
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.Nil() {
 				// Uh-oh, empty path component!
@@ -148,10 +133,10 @@ func (p Path) Components(yield func(PathComponent) bool) {
 // This operation runs in O(n) time.
 func (p Path) Split(n int) (prefix, suffix Path) {
 	if n < 0 || p.Nil() {
-		return PathNil, PathNil
+		return Path{}, Path{}
 	}
 	if n == 0 {
-		return PathNil, p
+		return Path{}, p
 	}
 
 	var prev PathComponent
@@ -164,16 +149,16 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 
 		prefix = p
 		if !pc.name.Nil() {
-			prefix.raw[1] = prev.name
+			prefix.raw.End = prev.name
 		} else {
-			prefix.raw[1] = prev.separator
+			prefix.raw.End = prev.separator
 		}
 
 		suffix = p
 		if !pc.separator.Nil() {
-			suffix.raw[0] = pc.separator
+			suffix.raw.Start = pc.separator
 		} else {
-			suffix.raw[0] = pc.name
+			suffix.raw.Start = pc.name
 		}
 
 		return false
@@ -192,7 +177,7 @@ type TypePath struct {
 //
 // See [TypeAny] for more information.
 func (t TypePath) AsAny() TypeAny {
-	return rawType(t.raw).With(t.Context())
+	return newTypeAny(t.Context(), rawType(t.raw))
 }
 
 // TypePath is a simple path reference in expression position.
@@ -205,7 +190,7 @@ type ExprPath struct {
 //
 // See [TypeAny] for more information.
 func (e ExprPath) AsAny() ExprAny {
-	return rawExpr(e.raw).With(e.Context())
+	return newExprAny(e.Context(), rawExpr(e.raw))
 }
 
 // PathComponent is a piece of a path. This is either an identifier or a nested path
@@ -241,7 +226,7 @@ func (p PathComponent) IsEmpty() bool {
 // separator to . in paths.
 func (p PathComponent) AsExtension() Path {
 	if p.Name().Nil() || p.Name().IsLeaf() {
-		return PathNil
+		return Path{}
 	}
 
 	// If this is a synthetic token, its children are already precisely a path,
@@ -266,20 +251,87 @@ func (p PathComponent) AsExtension() Path {
 // AsIdent returns the single identifier that makes up this path component, if
 // it is not an extension path component.
 //
-// May be nil, in the case of e.g. the second component of foo..bar
+// May be nil, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
 	return p.name.In(p.Context())
 }
 
+// rawPath is the raw contents of a Path without its Context.
+//
+// This has one of the following configurations.
+//
+//  1. Two zero tokens. This is the nil path.
+//
+//  2. Two natural tokens. This means the path is all tokens between them including
+//     the end-point
+//
+//  3. A single synthetic token and a nil token. If this token has children, those are
+//     the path components. Otherwise, the token itself is the sole token.
+//
+// The case Start < 0 && End != 0 is reserved for use by pathLike below.
+type rawPath struct {
+	Start, End token.ID
+}
+
 // Wrap wraps this rawPath with a context to present to the user.
 func (p rawPath) With(c Context) Path {
-	if p[0].Nil() {
-		return PathNil
+	if p.Start.Nil() {
+		return Path{}
 	}
 
-	if p[1].Nil() {
+	if p.End.Nil() {
 		panic(fmt.Sprintf("protocompile/ast: invalid ast.Path representation %v; this is a bug in protocompile", p))
 	}
 
 	return Path{internal.NewWith(c), p}
+}
+
+// pathLike is the raw representation of a type or expression.
+//
+// The vast, vast majority of types and expressions are paths. To avoid needing
+// to waste space for such types, we use the following encoding for rawType.
+//
+// First, note that if the first half of a rawPath is negative, the other
+// must be zero. Thus, if the first "token" of the rawPath is negative and
+// the second is not, the first is ^typeKind and the second is an index
+// into a table in a Context. Otherwise, it's a path type. This logic is
+// implemented in With().
+type pathLike[Kind ~int8] rawPath
+
+// wrapInPathLike wraps a integer-like value in a rawPathOrPointer.
+//
+// If either of kind or value are zero, both must be.
+func wrapPathLike[Value ~int32 | ~uint32, Kind ~int8](kind Kind, value Value) pathLike[Kind] {
+	if kind != 0 && value == 0 {
+		panic(fmt.Sprintf("protocompile/ast: invalid rawPathOrPointer representation: %v, %v", kind, value))
+	}
+
+	return pathLike[Kind]{^token.ID(kind), token.ID(value)}
+}
+
+// unwrapPathLike unwraps a pointer previously wrapped with wrapPathLike.
+//
+// Returns zero if this pathLike contains the wrong kind.
+func unwrapPathLike[Value ~int32 | ~uint32, Kind ~int8](want Kind, p pathLike[Kind]) Value {
+	if got, ok := p.kind(); !ok || got != want {
+		return 0
+	}
+
+	return Value(p.End)
+}
+
+// kind returns the kind within this pathLike, if it is not a path.
+func (p pathLike[Kind]) kind() (Kind, bool) {
+	if p.Start < 0 && p.End != 0 {
+		return Kind(^p.Start), true
+	}
+	return 0, false
+}
+
+// path converts this pathLike into a Path if it is in fact a genuine path.
+func (p pathLike[Kind]) path(c Context) (Path, bool) {
+	if p.Start < 0 && p.End != 0 {
+		return Path{}, false
+	}
+	return rawPath(p).With(c), true
 }

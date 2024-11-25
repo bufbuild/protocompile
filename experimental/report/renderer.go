@@ -61,7 +61,7 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 		}
 
 		if _, err = fmt.Fprintln(out, r.diagnostic(report, diagnostic)); err != nil {
-			return
+			return errorCount, warningCount, err
 		}
 
 		if !r.Compact {

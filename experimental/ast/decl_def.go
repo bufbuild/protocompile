@@ -96,7 +96,7 @@ type DeclDefArgs struct {
 //
 // See [DeclDef.Keyword].
 func (d DeclDef) Type() TypeAny {
-	return d.raw.ty.With(d.Context())
+	return newTypeAny(d.Context(), d.raw.ty)
 }
 
 // SetType sets the "prefix" type of this definition.
@@ -166,7 +166,7 @@ func (d DeclDef) Equals() token.Token {
 // tag number, while for an option, this will be the complex expression
 // representing its value.
 func (d DeclDef) Value() ExprAny {
-	return d.raw.value.With(d.Context())
+	return newExprAny(d.Context(), d.raw.value)
 }
 
 // SetValue sets the value of this definition.

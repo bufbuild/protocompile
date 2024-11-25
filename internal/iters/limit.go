@@ -15,14 +15,24 @@
 // package iters contains helpers for working with iterators.
 package iters
 
-// SeqLike is a constraint for any type that matches the underlying type of
-// iter.Seq.
-type SeqLike[T any] interface {
-	~func(func(T) bool)
-}
+import "github.com/bufbuild/protocompile/internal/iter"
 
-// Seq2Like is a constraint for any type that matches the underlying type of
-// iter.Seq2.
-type Seq2Like[T, U any] interface {
-	~func(func(T, U) bool)
+// Limit limits a sequence to only yield at most limit times.
+//
+// Negative values are treated as infinite.
+func Limit[T any](limit int64, seq iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		seq(func(value T) bool {
+			if limit == 0 || !yield(value) {
+				return false
+			}
+
+			// No need to check for overflow. It is safe to assume that it is
+			// not possible to decrement a negative 64 bit value down to zero;
+			// having compute to do so is equivalent to being able to break AES
+			// encryption using a classical computer.
+			limit--
+			return true
+		})
+	}
 }

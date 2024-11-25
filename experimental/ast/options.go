@@ -137,6 +137,6 @@ func (o *rawOption) With(c Context) Option {
 	return Option{
 		Path:   o.path.With(c),
 		Equals: o.equals.In(c),
-		Value:  o.value.With(c),
+		Value:  newExprAny(c, o.value),
 	}
 }

@@ -17,6 +17,7 @@ package ast
 import (
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -26,24 +27,48 @@ import (
 // codec is the state needed for converting an AST node into a Protobuf message.
 type codec struct {
 	*ToProtoOptions
-	values map[report.Spanner]bool
+
+	stack    []report.Spanner
+	stackMap map[report.Spanner]bool
 }
 
-// check panics if v is visited cyclically.
+// checkCycle panics if v is visited cyclically.
 //
-// Should be called like this:
+// Should be called like this, so that on function exit the entry is popped:
 //
-//	defer c.check(v)()
-func (c *codec) check(v report.Spanner) func() {
-	if c.values == nil {
-		c.values = map[report.Spanner]bool{v: true}
-	} else {
-		if c.values[v] {
-			panic(fmt.Sprintf("protocompile/ast: called File.ToProto on a cyclic AST %v", v.Span()))
+//	defer c.checkCycle(v)()
+func (c *codec) checkCycle(v report.Spanner) func() {
+	// By default, we just perform a linear search, because inserting into
+	// a map is extremely slow. However, if the stack gets tall enough, we
+	// switch to using the map to avoid going quadratic.
+	if len(c.stack) > 32 {
+		c.stackMap = make(map[report.Spanner]bool)
+		for _, v := range c.stack {
+			c.stackMap[v] = true
 		}
-		c.values[v] = true
+		c.stack = nil
 	}
-	return func() { delete(c.values, v) }
+
+	var cycle bool
+	if c.stackMap != nil {
+		cycle = c.stackMap[v]
+		c.stackMap[v] = true
+	} else {
+		cycle = slices.Contains(c.stack, v)
+		c.stack = append(c.stack, v)
+	}
+
+	if cycle {
+		panic(fmt.Sprintf("protocompile/ast: called File.ToProto on a cyclic AST %v", v.Span()))
+	}
+
+	return func() {
+		if c.stackMap != nil {
+			delete(c.stackMap, v)
+		} else {
+			c.stack = c.stack[len(c.stack)-1:]
+		}
+	}
 }
 
 func (c *codec) file(file File) *compilerpb.File {
@@ -82,7 +107,7 @@ func (c *codec) path(path Path) *compilerpb.Path {
 	if path.Nil() {
 		return nil
 	}
-	defer c.check(path)()
+	defer c.checkCycle(path)()
 
 	proto := &compilerpb.Path{
 		Span: c.span(path),
@@ -116,7 +141,7 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 	if decl.Nil() {
 		return nil
 	}
-	defer c.check(decl)()
+	defer c.checkCycle(decl)()
 
 	switch k := decl.Kind(); k {
 	case DeclKindEmpty:
@@ -295,7 +320,7 @@ func (c *codec) options(options CompactOptions) *compilerpb.Options {
 	if options.Nil() {
 		return nil
 	}
-	defer c.check(options)()
+	defer c.checkCycle(options)()
 
 	proto := &compilerpb.Options{
 		Span: c.span(options),
@@ -317,7 +342,7 @@ func (c *codec) expr(expr ExprAny) *compilerpb.Expr {
 	if expr.Nil() {
 		return nil
 	}
-	defer c.check(expr)()
+	defer c.checkCycle(expr)()
 
 	switch k := expr.Kind(); k {
 	case ExprKindLiteral:
@@ -405,11 +430,12 @@ func (c *codec) exprField(expr ExprField) *compilerpb.Expr_Kv {
 	}
 }
 
+//nolint:revive // "method type_ should be type" is incorrect because type is a keyword.
 func (c *codec) type_(ty TypeAny) *compilerpb.Type {
 	if ty.Nil() {
 		return nil
 	}
-	defer c.check(ty)()
+	defer c.checkCycle(ty)()
 
 	switch k := ty.Kind(); k {
 	case TypeKindPath:

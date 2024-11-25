@@ -12,13 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
-
-var (
-	// Convenient nil values for various types.
-	DeclNil DeclAny
-	ExprNil ExprAny
-	TypeNil TypeAny
-
-	PathNil Path
-)
+// package iters contains helpers for working with iterators.
+package iters

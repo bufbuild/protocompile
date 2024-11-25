@@ -61,7 +61,7 @@ func (t TypeGeneric) Path() Path {
 // Returns nils if this is not a map, or it has the wrong number of generic arguments.
 func (t TypeGeneric) AsMap() (key, value TypeAny) {
 	if t.Path().AsPredeclared() != predeclared.Map || t.Args().Len() != 2 {
-		return TypeNil, TypeNil
+		return TypeAny{}, TypeAny{}
 	}
 
 	return t.Args().At(0), t.Args().At(1)
@@ -113,13 +113,13 @@ func (d TypeList) Len() int {
 
 // At implements [Slice].
 func (d TypeList) At(n int) TypeAny {
-	return d.raw.args[n].Value.With(d.Context())
+	return newTypeAny(d.Context(), d.raw.args[n].Value)
 }
 
 // At implements [Iter].
 func (d TypeList) Iter(yield func(int, TypeAny) bool) {
 	for i, arg := range d.raw.args {
-		if !yield(i, arg.Value.With(d.Context())) {
+		if !yield(i, newTypeAny(d.Context(), arg.Value)) {
 			break
 		}
 	}
@@ -165,7 +165,7 @@ func (d TypeList) Span() report.Span {
 
 	var span report.Span
 	for _, arg := range d.raw.args {
-		span = report.Join(span, arg.Value.With(d.Context()), arg.Comma.In(d.Context()))
+		span = report.Join(span, newTypeAny(d.Context(), arg.Value), arg.Comma.In(d.Context()))
 	}
 	return span
 }

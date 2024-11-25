@@ -18,8 +18,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/iters"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 func TestPartition(t *testing.T) {

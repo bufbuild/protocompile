@@ -69,13 +69,13 @@ func (d DeclRange) Len() int {
 
 // At implements [Slice].
 func (d DeclRange) At(n int) ExprAny {
-	return d.raw.args[n].Value.With(d.Context())
+	return newExprAny(d.Context(), d.raw.args[n].Value)
 }
 
 // Iter implements [Slice].
 func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
 	for i, arg := range d.raw.args {
-		if !yield(i, arg.Value.With(d.Context())) {
+		if !yield(i, newExprAny(d.Context(), arg.Value)) {
 			break
 		}
 	}
@@ -136,7 +136,7 @@ func (d DeclRange) Semicolon() token.Token {
 func (d DeclRange) Span() report.Span {
 	span := report.Join(d.Keyword(), d.Semicolon(), d.Options())
 	for _, arg := range d.raw.args {
-		span = report.Join(span, arg.Value.With(d.Context()), arg.Comma.In(d.Context()))
+		span = report.Join(span, newExprAny(d.Context(), arg.Value), arg.Comma.In(d.Context()))
 	}
 	return span
 }
