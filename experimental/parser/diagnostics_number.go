@@ -53,6 +53,11 @@ type ErrInvalidBase struct {
 	Base  int
 }
 
+// TODO: the above fields can have values that cause the diagnostic to misbehave.
+// Instead of exporting error types, we should add a way for diagnostics to identify
+// themselves via some string tag, so that diagnostics that we might want to be
+// identifiable can be identified without exporting their type.
+
 // Error implements [error].
 func (e ErrInvalidBase) Error() string {
 	switch {

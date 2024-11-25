@@ -32,7 +32,12 @@ func Lex(ctx token.Context, errs *report.Report) {
 		Report:  errs,
 	}
 
-	defer l.HandleICE()
+	defer l.CatchICE(false, func(d *report.Diagnostic) {
+		d.With(
+			report.Snippetf(l.Span(l.cursor, l.cursor), "cursor is here"),
+			report.Notef("cursor: %d, count: %d", l.cursor, l.count),
+		)
+	})
 
 	// Check that the file isn't too big. We give up immediately if that's
 	// the case.

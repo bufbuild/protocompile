@@ -127,7 +127,11 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 	var level string
 	switch d.Level {
 	case Error:
-		level = "error"
+		if d.isICE {
+			level = "internal compiler error"
+		} else {
+			level = "error"
+		}
 	case Warning:
 		if r.WarningsAreErrors {
 			level = "error"

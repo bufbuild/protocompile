@@ -59,7 +59,7 @@ func lexNumber(l *lexer) token.Token {
 	result, ok := parseInt(digits, base)
 	if !ok {
 		// This may be a floating-point number. Confirm this by hunting
-		// for a for a decimal point or an exponent.
+		// for a decimal point or an exponent.
 		if strings.ContainsAny(digits, ".Ee") {
 			if legacyOctal {
 				base = 10

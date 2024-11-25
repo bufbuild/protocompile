@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 
@@ -78,6 +79,8 @@ type Diagnostic struct {
 	// Notes and help messages to include at the end of the diagnostic, after the
 	// Annotations.
 	Notes, Help, Debug []string
+
+	isICE bool
 }
 
 // Annotation is an annotated source code snippet within a [Diagnostic].
@@ -273,6 +276,47 @@ func (r *Report) Warnf(format string, args ...any) *Diagnostic {
 // [fmt.Errorf].
 func (r *Report) Remarkf(format string, args ...any) *Diagnostic {
 	return r.push(1, fmt.Errorf(format, args...), Remark)
+}
+
+// CatchICE will recover a panic (an internal compiler error, or ICE) and log it
+// as an error diagnostic. This function should be called in a defer statement.
+//
+// When constructing the diagnostic, diagnose is called, to provide an
+// opportunity to annotate further.
+//
+// If resume is true, resumes the recovered panic.
+func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
+	panicked := recover()
+	if panicked == nil {
+		return
+	}
+
+	// Instead of using the built-in tracing function, which causes the stack
+	// trace to be hidden by default, use debug.Stack and convert it into notes
+	// so that it is always visible.
+	tracing := r.Tracing
+	r.Tracing = 0 // Temporarily disable built-in tracing.
+	diagnostic := r.push(1, fmt.Errorf("%v", panicked), Error)
+	r.Tracing = tracing
+	diagnostic.isICE = true
+
+	if diagnose != nil {
+		diagnose(diagnostic)
+	}
+
+	// Append a stack trace but only after any user-provided diagnostic
+	// information.
+	stack := strings.Split(strings.TrimSpace(string(debug.Stack())), "\n")
+	// Remove the goroutine number and the first two frames (debug.Stack and
+	// Report.CatchICE).
+	stack = stack[5:]
+
+	diagnostic.Notes = append(diagnostic.Notes, "", "stack trace:")
+	diagnostic.Notes = append(diagnostic.Notes, stack...)
+
+	if resume {
+		panic(panicked)
+	}
 }
 
 // Sort canonicalizes this report's diagnostic order according to an specific

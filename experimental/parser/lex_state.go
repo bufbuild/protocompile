@@ -15,7 +15,6 @@
 package parser
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -114,15 +113,6 @@ func (l *lexer) Span(start, end int) report.Span {
 
 func (l *lexer) SpanFrom(start int) report.Span {
 	return l.Span(start, l.cursor)
-}
-
-// HandleICE is a defer-able method that will handle an "internal compiler error"
-// during lexing. This annotates a panic with the lexer state for ease of
-// debugging.
-func (l *lexer) HandleICE() {
-	if panicked := recover(); panicked != nil {
-		panic(fmt.Sprintf("protocompile/parse: panic while lexing {cursor: %d, count: %d}: %v", l.cursor, l.count, panicked))
-	}
 }
 
 // mustProgress returns a progress checker for this lexer.
