@@ -17,6 +17,8 @@ package ast
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -28,17 +30,17 @@ import (
 type DeclRange struct{ declImpl[rawDeclRange] }
 
 type rawDeclRange struct {
-	keyword rawToken
+	keyword token.ID
 	args    []withComma[rawExpr]
 	options arena.Pointer[rawCompactOptions]
-	semi    rawToken
+	semi    token.ID
 }
 
 // DeclRangeArgs is arguments for [Context.NewDeclRange].
 type DeclRangeArgs struct {
-	Keyword   Token
+	Keyword   token.Token
 	Options   CompactOptions
-	Semicolon Token
+	Semicolon token.Token
 }
 
 var (
@@ -46,8 +48,8 @@ var (
 )
 
 // Keyword returns the keyword for this range.
-func (d DeclRange) Keyword() Token {
-	return d.raw.keyword.With(d)
+func (d DeclRange) Keyword() token.Token {
+	return d.raw.keyword.In(d.Context())
 }
 
 // IsExtensions checks whether this is an extension range.
@@ -67,13 +69,13 @@ func (d DeclRange) Len() int {
 
 // At implements [Slice].
 func (d DeclRange) At(n int) ExprAny {
-	return d.raw.args[n].Value.With(d)
+	return d.raw.args[n].Value.With(d.Context())
 }
 
 // Iter implements [Slice].
 func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
 	for i, arg := range d.raw.args {
-		if !yield(i, arg.Value.With(d)) {
+		if !yield(i, arg.Value.With(d.Context())) {
 			break
 		}
 	}
@@ -81,12 +83,12 @@ func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
 
 // Append implements [Inserter].
 func (d DeclRange) Append(expr ExprAny) {
-	d.InsertComma(d.Len(), expr, Token{})
+	d.InsertComma(d.Len(), expr, token.Nil)
 }
 
 // Insert implements [Inserter].
 func (d DeclRange) Insert(n int, expr ExprAny) {
-	d.InsertComma(n, expr, Token{})
+	d.InsertComma(n, expr, token.Nil)
 }
 
 // Delete implements [Inserter].
@@ -95,50 +97,50 @@ func (d DeclRange) Delete(n int) {
 }
 
 // Comma implements [Commas].
-func (d DeclRange) Comma(n int) Token {
-	return d.raw.args[n].Comma.With(d)
+func (d DeclRange) Comma(n int) token.Token {
+	return d.raw.args[n].Comma.In(d.Context())
 }
 
 // AppendComma implements [Commas].
-func (d DeclRange) AppendComma(expr ExprAny, comma Token) {
+func (d DeclRange) AppendComma(expr ExprAny, comma token.Token) {
 	d.InsertComma(d.Len(), expr, comma)
 }
 
 // InsertComma implements [Commas].
-func (d DeclRange) InsertComma(n int, expr ExprAny, comma Token) {
-	d.Context().panicIfNotOurs(expr, comma)
+func (d DeclRange) InsertComma(n int, expr ExprAny, comma token.Token) {
+	d.Context().Nodes().panicIfNotOurs(expr, comma)
 
-	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{expr.raw, comma.raw})
+	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{expr.raw, comma.ID()})
 }
 
 // Options returns the compact options list for this range.
 func (d DeclRange) Options() CompactOptions {
-	return wrapOptions(d, d.raw.options)
+	return wrapOptions(d.Context(), d.raw.options)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
 // Setting it to a nil Options clears it.
 func (d DeclRange) SetOptions(opts CompactOptions) {
-	d.raw.options = d.ctx.options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
 }
 
 // Semicolon returns this range's ending semicolon.
 //
 // May be nil, if not present.
-func (d DeclRange) Semicolon() Token {
-	return d.raw.semi.With(d)
+func (d DeclRange) Semicolon() token.Token {
+	return d.raw.semi.In(d.Context())
 }
 
-// Span implements [Spanner].
-func (d DeclRange) Span() Span {
-	span := JoinSpans(d.Keyword(), d.Semicolon(), d.Options())
+// Span implements [report.Spanner].
+func (d DeclRange) Span() report.Span {
+	span := report.Join(d.Keyword(), d.Semicolon(), d.Options())
 	for _, arg := range d.raw.args {
-		span = JoinSpans(span, arg.Value.With(d), arg.Comma.With(d))
+		span = report.Join(span, arg.Value.With(d.Context()), arg.Comma.In(d.Context()))
 	}
 	return span
 }
 
-func wrapDeclRange(c Contextual, ptr arena.Pointer[rawDeclRange]) DeclRange {
+func wrapDeclRange(c Context, ptr arena.Pointer[rawDeclRange]) DeclRange {
 	return DeclRange{wrapDecl(c, ptr)}
 }

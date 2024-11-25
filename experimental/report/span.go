@@ -15,22 +15,19 @@
 package report
 
 import (
+	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
 )
 
 // TabstopWidth is the size we render all tabstops as.
 const TabstopWidth int = 4
-
-// Span is any type that can be used to generate source code information for a diagnostic.
-type Span interface {
-	File() File
-	Start() Location
-	End() Location
-}
 
 // File is a source code file involved in a diagnostic.
 type File struct {
@@ -40,6 +37,78 @@ type File struct {
 
 	// The complete text of the file.
 	Text string
+}
+
+// Spanner is any type with a span.
+type Spanner interface {
+	Span() Span
+}
+
+// Span is a location within a [File].
+type Span struct {
+	// The file this span refers to. The file must be indexed, since we plan to
+	// convert Start/End into editor coordinates.
+	*IndexedFile
+
+	// The start and end byte offsets for this span.
+	Start, End int
+}
+
+// Text returns the text corresponding to this span.
+func (s Span) Text() string {
+	return s.File().Text[s.Start:s.End]
+}
+
+// StartLoc returns the start location for this span.
+func (s Span) StartLoc() Location {
+	return s.Search(s.Start)
+}
+
+// EndLoc returns the end location for this span.
+func (s Span) EndLoc() Location {
+	return s.Search(s.End)
+}
+
+// Span implements [Spanner].
+func (s Span) Span() Span {
+	return s
+}
+
+// String implements [string.Stringer].
+func (s Span) String() string {
+	start := s.StartLoc()
+	return fmt.Sprintf("%q:%d:%d[%d:%d]", s.Path(), start.Line, start.Column, s.Start, s.End)
+}
+
+// Join joins a collection of spans, returning the smallest span that
+// contains all of them.
+//
+// Nil spans among spans are ignored. If every span in spans is nil, returns
+// the nil span.
+//
+// If there are at least two distinct non-nil files among the spans,
+// this function panics.
+func Join(spans ...Spanner) Span {
+	joined := Span{Start: math.MaxInt}
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		span := span.Span()
+		if joined.IndexedFile == nil {
+			joined.IndexedFile = span.IndexedFile
+		} else if joined.IndexedFile != span.IndexedFile {
+			panic("protocompile/report: passed spans with distinct files to JoinSpans()")
+		}
+
+		joined.Start = min(joined.Start, span.Start)
+		joined.End = max(joined.End, span.End)
+	}
+
+	if joined.IndexedFile == nil {
+		return Span{}
+	}
+	return joined
 }
 
 // Location is a user-displayable location within a source code file.
@@ -85,22 +154,23 @@ func (i *IndexedFile) File() File {
 	return i.file
 }
 
-// NewSpan generates a span using the given start and end offsets.
-//
-// This is mostly intended for convenience; generally speaking, users of package report
-// will want to implement their own [Span] types that use a compressed representation,
-// and delay computation of line and column information as late as possible.
-func (i *IndexedFile) NewSpan(start, end int) Span {
-	return naiveSpan{
-		file:  i.File(),
-		start: i.Search(start),
-		end:   i.Search(end),
-	}
+// Path returns i.File().Path.
+func (i *IndexedFile) Path() string {
+	return i.File().Path
+}
+
+// Text returns i.File().Text.
+func (i *IndexedFile) Text() string {
+	return i.File().Text
 }
 
 // Search searches this index to build full Location information for the given byte
 // offset.
 func (i *IndexedFile) Search(offset int) Location {
+	return i.search(offset, true)
+}
+
+func (i *IndexedFile) search(offset int, allowNonPrint bool) Location {
 	// Compute the prefix sum on-demand.
 	i.once.Do(func() {
 		var next int
@@ -129,7 +199,7 @@ func (i *IndexedFile) Search(offset int) Location {
 		line--
 	}
 
-	column := stringWidth(0, i.file.Text[i.lines[line]:offset])
+	column := stringWidth(0, i.file.Text[i.lines[line]:offset], allowNonPrint, nil)
 	return Location{
 		Offset: offset,
 		Line:   line + 1,
@@ -139,28 +209,65 @@ func (i *IndexedFile) Search(offset int) Location {
 
 // stringWidth calculates the rendered width of text if placed at the given column,
 // accounting for tabstops.
-func stringWidth(column int, text string) int {
+func stringWidth(column int, text string, allowNonPrint bool, out *strings.Builder) int {
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.
-	for {
+	for text != "" {
 		nextTab := strings.IndexByte(text, '\t')
-		if nextTab == -1 {
-			column += uniseg.StringWidth(text)
-			break
+		haveTab := nextTab != -1
+		next := text
+		if haveTab {
+			next, text = text[:nextTab], text[nextTab+1:]
+		} else {
+			text = ""
 		}
-		column += uniseg.StringWidth(text[:nextTab])
-		column += TabstopWidth - (column % TabstopWidth)
-		text = text[nextTab+1:]
+
+		if !allowNonPrint {
+			// Handle unprintable characters. We render those as <U+NNNN>.
+			for next != "" {
+				nextNonPrint := strings.IndexFunc(next, NonPrint)
+				chunk := next
+				if nextNonPrint != -1 {
+					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
+					nonPrint, runeLen := utf8.DecodeRuneInString(next)
+					next = next[runeLen:]
+
+					escape := fmt.Sprintf("<U+%04X>", nonPrint)
+					if out != nil {
+						out.WriteString(chunk)
+						out.WriteString(escape)
+					}
+
+					column += uniseg.StringWidth(chunk) + len(escape)
+				} else {
+					if out != nil {
+						out.WriteString(chunk)
+					}
+					column += uniseg.StringWidth(chunk)
+					next = ""
+				}
+			}
+		} else {
+			column += uniseg.StringWidth(next)
+			if out != nil {
+				out.WriteString(next)
+			}
+		}
+
+		if haveTab {
+			tab := TabstopWidth - (column % TabstopWidth)
+			column += tab
+			if out != nil {
+				padBy(out, tab)
+			}
+		}
 	}
 	return column
 }
 
-type naiveSpan struct {
-	file       File
-	start, end Location
+// NonPrint defines whether or not a rune is considered "unprintable for the
+// purposes of diagnostics", that is, whether it is a rune that the diagnostics
+// engine will replace with <U+NNNN> when printing.
+func NonPrint(r rune) bool {
+	return !strings.ContainsRune(" \r\t\n", r) && !unicode.IsPrint(r)
 }
-
-func (s naiveSpan) File() File      { return s.file }
-func (s naiveSpan) Start() Location { return s.start }
-func (s naiveSpan) End() Location   { return s.end }
-func (s naiveSpan) Span() Span      { return s }

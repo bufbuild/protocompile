@@ -17,6 +17,9 @@ package ast
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -30,7 +33,7 @@ type CompactOptions struct {
 }
 
 type rawCompactOptions struct {
-	brackets rawToken
+	brackets token.ID
 	options  []withComma[rawOption]
 }
 
@@ -39,19 +42,19 @@ var _ Commas[Option] = CompactOptions{}
 // Option is a key-value pair inside of a [CompactOptions] or a [DefOption].
 type Option struct {
 	Path   Path
-	Equals Token
+	Equals token.Token
 	Value  ExprAny
 }
 
 type rawOption struct {
 	path   rawPath
-	equals rawToken
+	equals token.ID
 	value  rawExpr
 }
 
 // Brackets returns the token tree corresponding to the whole [...].
-func (o CompactOptions) Brackets() Token {
-	return o.raw.brackets.With(o)
+func (o CompactOptions) Brackets() token.Token {
+	return o.raw.brackets.In(o.Context())
 }
 
 // Len implements [Slice].
@@ -61,13 +64,13 @@ func (o CompactOptions) Len() int {
 
 // At implements [Slice].
 func (o CompactOptions) At(n int) Option {
-	return o.raw.options[n].Value.With(o)
+	return o.raw.options[n].Value.With(o.Context())
 }
 
 // Iter implements [Slice].
 func (o CompactOptions) Iter(yield func(int, Option) bool) {
 	for i, arg := range o.raw.options {
-		if !yield(i, arg.Value.With(o)) {
+		if !yield(i, arg.Value.With(o.Context())) {
 			break
 		}
 	}
@@ -75,12 +78,12 @@ func (o CompactOptions) Iter(yield func(int, Option) bool) {
 
 // Append implements [Inserter].
 func (o CompactOptions) Append(option Option) {
-	o.InsertComma(o.Len(), option, Token{})
+	o.InsertComma(o.Len(), option, token.Nil)
 }
 
 // Insert implements [Inserter].
 func (o CompactOptions) Insert(n int, option Option) {
-	o.InsertComma(n, option, Token{})
+	o.InsertComma(n, option, token.Nil)
 }
 
 // Delete implements [Inserter].
@@ -89,51 +92,51 @@ func (o CompactOptions) Delete(n int) {
 }
 
 // Comma implements [Commas].
-func (o CompactOptions) Comma(n int) Token {
-	return o.raw.options[n].Comma.With(o)
+func (o CompactOptions) Comma(n int) token.Token {
+	return o.raw.options[n].Comma.In(o.Context())
 }
 
 // AppendComma implements [Commas].
-func (o CompactOptions) AppendComma(option Option, comma Token) {
+func (o CompactOptions) AppendComma(option Option, comma token.Token) {
 	o.InsertComma(o.Len(), option, comma)
 }
 
 // InsertComma implements [Commas].
-func (o CompactOptions) InsertComma(n int, option Option, comma Token) {
-	o.Context().panicIfNotOurs(option.Path, option.Equals, option.Value, comma)
+func (o CompactOptions) InsertComma(n int, option Option, comma token.Token) {
+	o.Context().Nodes().panicIfNotOurs(option.Path, option.Equals, option.Value, comma)
 
 	o.raw.options = slices.Insert(o.raw.options, n, withComma[rawOption]{
 		rawOption{
 			path:   option.Path.raw,
-			equals: option.Equals.raw,
+			equals: option.Equals.ID(),
 			value:  option.Value.raw,
 		},
-		comma.raw,
+		comma.ID(),
 	})
 }
 
-// Span implements [Spanner].
-func (o CompactOptions) Span() Span {
-	return JoinSpans(o.Brackets())
+// Span implements [report.Spanner].
+func (o CompactOptions) Span() report.Span {
+	return report.Join(o.Brackets())
 }
 
-func wrapOptions(c Contextual, ptr arena.Pointer[rawCompactOptions]) CompactOptions {
+func wrapOptions(c Context, ptr arena.Pointer[rawCompactOptions]) CompactOptions {
 	if ptr.Nil() {
 		return CompactOptions{}
 	}
 	return CompactOptions{
-		withContext{c.Context()},
-		c.Context().options.Deref(ptr),
+		internal.NewWith(c),
+		c.Nodes().options.Deref(ptr),
 	}
 }
 
-func (o *rawOption) With(c Contextual) Option {
+func (o *rawOption) With(c Context) Option {
 	if o == nil {
 		return Option{}
 	}
 	return Option{
 		Path:   o.path.With(c),
-		Equals: o.equals.With(c),
+		Equals: o.equals.In(c),
 		Value:  o.value.With(c),
 	}
 }

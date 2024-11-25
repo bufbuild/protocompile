@@ -17,6 +17,9 @@ package ast
 import (
 	"reflect"
 
+	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -74,7 +77,7 @@ func (t TypeAny) AsPath() TypePath {
 		return TypePath{}
 	}
 
-	return TypePath{rawPath(t.raw).With(t)}
+	return TypePath{rawPath(t.raw).With(t.Context())}
 }
 
 // AsPrefixed converts a TypeAny into a TypePrefix, if that is the type
@@ -89,7 +92,7 @@ func (t TypeAny) AsPrefixed() TypePrefixed {
 	ptr := arena.Pointer[rawTypePrefixed](t.ptr())
 	return TypePrefixed{typeImpl[rawTypePrefixed]{
 		t.withContext,
-		t.Context().types.prefixes.Deref(ptr),
+		t.Context().Nodes().types.prefixes.Deref(ptr),
 	}}
 }
 
@@ -105,16 +108,16 @@ func (t TypeAny) AsGeneric() TypeGeneric {
 	ptr := arena.Pointer[rawTypeGeneric](t.ptr())
 	return TypeGeneric{typeImpl[rawTypeGeneric]{
 		t.withContext,
-		t.Context().types.generics.Deref(ptr),
+		t.Context().Nodes().types.generics.Deref(ptr),
 	}}
 }
 
-// Span implements [Spanner].
-func (t TypeAny) Span() Span {
+// report.Span implements [report.Spanner].
+func (t TypeAny) Span() report.Span {
 	// At most one of the below will produce a non-nil type, and that will be
-	// the span selected by JoinSpans. If all of them are nil, this produces
+	// the span selected by report.Join. If all of them are nil, this produces
 	// the nil span.
-	return JoinSpans(
+	return report.Join(
 		t.AsPath(),
 		t.AsPrefixed(),
 		t.AsGeneric(),
@@ -140,20 +143,19 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 		return TypeAny{}
 	}
 
-	kind, arena := typeArena[Raw](&t.ctx.types)
+	kind, arena := typeArena[Raw](&t.Context().Nodes().types)
 	return TypeAny{
 		t.withContext,
-		rawType{^rawToken(kind), rawToken(arena.Compress(t.raw))},
+		rawType{^token.ID(kind), token.ID(arena.Compress(t.raw))},
 	}
 }
 
-func (t rawType) With(c Contextual) TypeAny {
-	ctx := c.Context()
+func (t rawType) With(ctx Context) TypeAny {
 	if ctx == nil || (t == rawType{}) {
 		return TypeAny{}
 	}
 
-	return TypeAny{withContext{ctx}, t}
+	return TypeAny{internal.NewWith(ctx), t}
 }
 
 // types is storage for every kind of Type in a Context.raw.

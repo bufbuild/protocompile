@@ -15,5 +15,5 @@
 // package iter is a collection of polyfills for the standard iter package.
 package iter
 
-type Seq[T any] func(func(T) bool)
-type Seq2[T, U any] func(func(T, U) bool)
+type Seq[T any] func(yield func(T) bool) // The "yield" name here helps code completion.
+type Seq2[T, U any] func(yield func(T, U) bool)

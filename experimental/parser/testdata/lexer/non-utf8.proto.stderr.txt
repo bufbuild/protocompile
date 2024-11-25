@@ -1,0 +1,5 @@
+error: files must be encoded as valid UTF-8
+ --> testdata/lexer/non-utf8.proto
+   = note: unexpected 0xff byte at offset 616
+
+encountered 1 error

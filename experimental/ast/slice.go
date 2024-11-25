@@ -14,6 +14,8 @@
 
 package ast
 
+import "github.com/bufbuild/protocompile/experimental/token"
+
 // Slice is a type that offers a Go slice's interface, but read-only.
 //
 // This is used to provide a consistent interface to various AST nodes that
@@ -66,33 +68,16 @@ type Commas[T any] interface {
 	// May be nil, either because it's the last element (a common situation
 	// where there is no comma) or it was added with Insert() rather than
 	// InsertComma().
-	Comma(n int) Token
+	Comma(n int) token.Token
 
 	// InsertComma is like Append, but includes an explicit comma.
-	AppendComma(value T, comma Token)
+	AppendComma(value T, comma token.Token)
 
 	// InsertComma is like Insert, but includes an explicit comma.
-	InsertComma(n int, value T, comma Token)
+	InsertComma(n int, value T, comma token.Token)
 }
 
 type withComma[T any] struct {
 	Value T
-	Comma rawToken
-}
-
-// funcSlice implements Slice using an ordinary Go slice and a function to transform
-// elements.
-type funcSlice[T, U any] struct {
-	s []T
-	f func(int, *T) U
-}
-
-func (s funcSlice[T, U]) Len() int   { return len(s.s) }
-func (s funcSlice[T, U]) At(n int) U { return s.f(n, &s.s[n]) }
-func (s funcSlice[T, U]) Iter(yield func(int, U) bool) {
-	for i := range s.s {
-		if !yield(i, s.f(i, &s.s[i])) {
-			break
-		}
-	}
+	Comma token.ID
 }

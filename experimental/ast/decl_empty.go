@@ -14,27 +14,31 @@
 
 package ast
 
-import "github.com/bufbuild/protocompile/internal/arena"
+import (
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/arena"
+)
 
 // DeclEmpty is an empty declaration, a lone ;.
 type DeclEmpty struct{ declImpl[rawDeclEmpty] }
 
 type rawDeclEmpty struct {
-	semi rawToken
+	semi token.ID
 }
 
 // Semicolon returns this field's ending semicolon.
 //
 // May be nil, if not present.
-func (e DeclEmpty) Semicolon() Token {
-	return e.raw.semi.With(e)
+func (d DeclEmpty) Semicolon() token.Token {
+	return d.raw.semi.In(d.Context())
 }
 
-// Span implements [Spanner].
-func (e DeclEmpty) Span() Span {
-	return e.Semicolon().Span()
+// Span implements [report.Spanner].
+func (d DeclEmpty) Span() report.Span {
+	return d.Semicolon().Span()
 }
 
-func wrapDeclEmpty(c Contextual, ptr arena.Pointer[rawDeclEmpty]) DeclEmpty {
+func wrapDeclEmpty(c Context, ptr arena.Pointer[rawDeclEmpty]) DeclEmpty {
 	return DeclEmpty{wrapDecl(c, ptr)}
 }

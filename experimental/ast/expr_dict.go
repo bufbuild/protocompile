@@ -17,6 +17,8 @@ package ast
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -24,7 +26,7 @@ import (
 type ExprDict struct{ exprImpl[rawExprDict] }
 
 type rawExprDict struct {
-	braces rawToken
+	braces token.ID
 	fields []withComma[arena.Pointer[rawExprField]]
 }
 
@@ -33,8 +35,8 @@ var _ Commas[ExprField] = ExprDict{}
 // Braces returns the token tree corresponding to the whole {...}.
 //
 // May be missing for a synthetic expression.
-func (e ExprDict) Braces() Token {
-	return e.raw.braces.With(e)
+func (e ExprDict) Braces() token.Token {
+	return e.raw.braces.In(e.Context())
 }
 
 // Len implements [Slice].
@@ -47,7 +49,7 @@ func (e ExprDict) At(n int) ExprField {
 	ptr := e.raw.fields[n].Value
 	return ExprField{exprImpl[rawExprField]{
 		e.withContext,
-		e.Context().exprs.fields.Deref(ptr),
+		e.Context().Nodes().exprs.fields.Deref(ptr),
 	}}
 }
 
@@ -56,7 +58,7 @@ func (e ExprDict) Iter(yield func(int, ExprField) bool) {
 	for i, f := range e.raw.fields {
 		e := ExprField{exprImpl[rawExprField]{
 			e.withContext,
-			e.Context().exprs.fields.Deref(f.Value),
+			e.Context().Nodes().exprs.fields.Deref(f.Value),
 		}}
 		if !yield(i, e) {
 			break
@@ -66,12 +68,12 @@ func (e ExprDict) Iter(yield func(int, ExprField) bool) {
 
 // Append implements [Inserter].
 func (e ExprDict) Append(expr ExprField) {
-	e.InsertComma(e.Len(), expr, Token{})
+	e.InsertComma(e.Len(), expr, token.Nil)
 }
 
 // Insert implements [Inserter].
 func (e ExprDict) Insert(n int, expr ExprField) {
-	e.InsertComma(n, expr, Token{})
+	e.InsertComma(n, expr, token.Nil)
 }
 
 // Delete implements [Inserter].
@@ -80,24 +82,24 @@ func (e ExprDict) Delete(n int) {
 }
 
 // Comma implements [Commas].
-func (e ExprDict) Comma(n int) Token {
-	return e.raw.fields[n].Comma.With(e)
+func (e ExprDict) Comma(n int) token.Token {
+	return e.raw.fields[n].Comma.In(e.Context())
 }
 
 // AppendComma implements [Commas].
-func (e ExprDict) AppendComma(expr ExprField, comma Token) {
+func (e ExprDict) AppendComma(expr ExprField, comma token.Token) {
 	e.InsertComma(e.Len(), expr, comma)
 }
 
 // InsertComma implements [Commas].
-func (e ExprDict) InsertComma(n int, expr ExprField, comma Token) {
-	e.Context().panicIfNotOurs(expr, comma)
+func (e ExprDict) InsertComma(n int, expr ExprField, comma token.Token) {
+	e.Context().Nodes().panicIfNotOurs(expr, comma)
 	if expr.Nil() {
 		panic("protocompile/ast: cannot append nil ExprField to ExprMessage")
 	}
 
-	ptr := e.ctx.exprs.fields.Compress(expr.raw)
-	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{ptr, comma.raw})
+	ptr := e.Context().Nodes().exprs.fields.Compress(expr.raw)
+	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{ptr, comma.ID()})
 }
 
 // AsMessage implements [ExprAny].
@@ -105,8 +107,8 @@ func (e ExprDict) AsMessage() Commas[ExprField] {
 	return e
 }
 
-// Span implements [Spanner].
-func (e ExprDict) Span() Span {
+// Span implements [report.Spanner].
+func (e ExprDict) Span() report.Span {
 	return e.Braces().Span()
 }
 
@@ -117,13 +119,13 @@ type ExprField struct{ exprImpl[rawExprField] }
 
 type rawExprField struct {
 	key, value rawExpr
-	colon      rawToken
+	colon      token.ID
 }
 
 // ExprKVArgs is arguments for [Context.NewExprKV].
 type ExprKVArgs struct {
 	Key   ExprAny
-	Colon Token
+	Colon token.Token
 	Value ExprAny
 }
 
@@ -131,7 +133,7 @@ type ExprKVArgs struct {
 //
 // May be nil if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
 func (e ExprField) Key() ExprAny {
-	return e.raw.key.With(e)
+	return e.raw.key.With(e.Context())
 }
 
 // SetKey sets the key for this field.
@@ -145,13 +147,13 @@ func (e ExprField) SetKey(expr ExprAny) {
 //
 // May be nil: it is valid for a field name to be immediately followed by its value and be syntactically
 // valid (unlike most "optional" punctuation, this is permitted by Protobuf, not just our permissive AST).
-func (e ExprField) Colon() Token {
-	return e.raw.colon.With(e)
+func (e ExprField) Colon() token.Token {
+	return e.raw.colon.In(e.Context())
 }
 
 // Value returns the value for this field.
 func (e ExprField) Value() ExprAny {
-	return e.raw.value.With(e)
+	return e.raw.value.With(e.Context())
 }
 
 // SetValue sets the value for this field.
@@ -161,7 +163,7 @@ func (e ExprField) SetValue(expr ExprAny) {
 	e.raw.value = expr.raw
 }
 
-// Span implements [Spanner].
-func (e ExprField) Span() Span {
-	return JoinSpans(e.Key(), e.Colon(), e.Value())
+// Span implements [report.Spanner].
+func (e ExprField) Span() report.Span {
+	return report.Join(e.Key(), e.Colon(), e.Value())
 }

@@ -14,6 +14,11 @@
 
 package ast
 
+import (
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
+)
+
 // ExprRange represents a range of values, such as 1 to 4 or 5 to max.
 //
 // Note that max is not special syntax; it will appear as an [ExprPath] with the name "max".
@@ -21,19 +26,19 @@ type ExprRange struct{ exprImpl[rawExprRange] }
 
 type rawExprRange struct {
 	start, end rawExpr
-	to         rawToken
+	to         token.ID
 }
 
 // ExprRangeArgs is arguments for [Context.NewExprRange].
 type ExprRangeArgs struct {
 	Start ExprAny
-	To    Token
+	To    token.Token
 	End   ExprAny
 }
 
 // Bounds returns this range's bounds. These are inclusive bounds.
 func (e ExprRange) Bounds() (start, end ExprAny) {
-	return e.raw.start.With(e), e.raw.end.With(e)
+	return e.raw.start.With(e.Context()), e.raw.end.With(e.Context())
 }
 
 // SetBounds set the expressions for this range's bounds.
@@ -45,12 +50,12 @@ func (e ExprRange) SetBounds(start, end ExprAny) {
 }
 
 // Keyword returns the "to" keyword for this range.
-func (e ExprRange) Keyword() Token {
-	return e.raw.to.With(e)
+func (e ExprRange) Keyword() token.Token {
+	return e.raw.to.In(e.Context())
 }
 
-// Span implements [Spanner].
-func (e ExprRange) Span() Span {
+// Span implements [report.Spanner].
+func (e ExprRange) Span() report.Span {
 	lo, hi := e.Bounds()
-	return JoinSpans(lo, e.Keyword(), hi)
+	return report.Join(lo, e.Keyword(), hi)
 }

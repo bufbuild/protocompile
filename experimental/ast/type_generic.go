@@ -18,6 +18,8 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
 
 // TypeGeneric is a type with generic arguments.
@@ -43,13 +45,13 @@ type rawTypeGeneric struct {
 // Generic arguments should be added after construction with [TypeGeneric.AppendComma].
 type TypeGenericArgs struct {
 	Path          Path
-	AngleBrackets Token
+	AngleBrackets token.Token
 }
 
 // Path returns the path of the "type constructor". For example, for
 // my.Map<K, V>, this would return the path my.Map.
 func (t TypeGeneric) Path() Path {
-	return t.raw.path.With(t)
+	return t.raw.path.With(t.Context())
 }
 
 // AsMap extracts the key/value types out of this generic type, checking that it's actually a
@@ -73,9 +75,9 @@ func (t TypeGeneric) Args() TypeList {
 	}
 }
 
-// Span implements [Spanner].
-func (t TypeGeneric) Span() Span {
-	return JoinSpans(t.Path(), t.Args())
+// Span implements [report.Spanner].
+func (t TypeGeneric) Span() report.Span {
+	return report.Join(t.Path(), t.Args())
 }
 
 // TypeList is a [Commas] over a list of types surrounded by some kind of brackets.
@@ -89,19 +91,19 @@ type TypeList struct {
 
 var (
 	_ Commas[TypeAny] = TypeList{}
-	_ Spanner         = TypeList{}
+	_ report.Spanner  = TypeList{}
 )
 
 type rawTypeList struct {
-	brackets rawToken
+	brackets token.ID
 	args     []withComma[rawType]
 }
 
 // Brackets returns the token tree for the brackets wrapping the argument list.
 //
 // May be nil, if the user forgot to include brackets.
-func (d TypeList) Brackets() Token {
-	return d.raw.brackets.With(d)
+func (d TypeList) Brackets() token.Token {
+	return d.raw.brackets.In(d.Context())
 }
 
 // Len implements [Slice].
@@ -125,12 +127,12 @@ func (d TypeList) Iter(yield func(int, TypeAny) bool) {
 
 // Append implements [Inserter].
 func (d TypeList) Append(ty TypeAny) {
-	d.InsertComma(d.Len(), ty, Token{})
+	d.InsertComma(d.Len(), ty, token.Nil)
 }
 
 // Insert implements [Inserter].
 func (d TypeList) Insert(n int, ty TypeAny) {
-	d.InsertComma(n, ty, Token{})
+	d.InsertComma(n, ty, token.Nil)
 }
 
 // Delete implements [Inserter].
@@ -139,31 +141,31 @@ func (d TypeList) Delete(n int) {
 }
 
 // Comma implements [Commas].
-func (d TypeList) Comma(n int) Token {
-	return d.raw.args[n].Comma.With(d)
+func (d TypeList) Comma(n int) token.Token {
+	return d.raw.args[n].Comma.In(d.Context())
 }
 
 // AppendComma implements [Commas].
-func (d TypeList) AppendComma(ty TypeAny, comma Token) {
+func (d TypeList) AppendComma(ty TypeAny, comma token.Token) {
 	d.InsertComma(d.Len(), ty, comma)
 }
 
 // InsertComma implements [Commas].
-func (d TypeList) InsertComma(n int, ty TypeAny, comma Token) {
-	d.Context().panicIfNotOurs(ty, comma)
+func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
+	d.Context().Nodes().panicIfNotOurs(ty, comma)
 
-	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawType]{ty.raw, comma.raw})
+	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawType]{ty.raw, comma.ID()})
 }
 
-// Span implements [Spanner].
-func (d TypeList) Span() Span {
+// Span implements [report.Spanner].
+func (d TypeList) Span() report.Span {
 	if !d.Brackets().Nil() {
 		return d.Brackets().Span()
 	}
 
-	var span Span
+	var span report.Span
 	for _, arg := range d.raw.args {
-		span = JoinSpans(span, TypeAny{d.withContext, arg.Value}, arg.Comma.With(d))
+		span = report.Join(span, TypeAny{d.withContext, arg.Value}, arg.Comma.In(d.Context()))
 	}
 	return span
 }

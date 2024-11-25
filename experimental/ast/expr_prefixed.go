@@ -14,6 +14,11 @@
 
 package ast
 
+import (
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
+)
+
 const (
 	ExprPrefixUnknown ExprPrefix = iota
 	ExprPrefixMinus
@@ -38,13 +43,13 @@ func ExprPrefixByName(name string) ExprPrefix {
 type ExprPrefixed struct{ exprImpl[rawExprPrefixed] }
 
 type rawExprPrefixed struct {
-	prefix rawToken
+	prefix token.ID
 	expr   rawExpr
 }
 
 // ExprPrefixedArgs is arguments for [Context.NewExprPrefixed].
 type ExprPrefixedArgs struct {
-	Prefix Token
+	Prefix token.Token
 	Expr   ExprAny
 }
 
@@ -54,13 +59,13 @@ func (e ExprPrefixed) Prefix() ExprPrefix {
 }
 
 // Prefix returns the token representing this expression's prefix.
-func (e ExprPrefixed) PrefixToken() Token {
-	return e.raw.prefix.With(e)
+func (e ExprPrefixed) PrefixToken() token.Token {
+	return e.raw.prefix.In(e.Context())
 }
 
 // Expr returns the expression the prefix is applied to.
 func (e ExprPrefixed) Expr() ExprAny {
-	return e.raw.expr.With(e)
+	return e.raw.expr.With(e.Context())
 }
 
 // SetExpr sets the expression that the prefix is applied to.
@@ -70,7 +75,7 @@ func (e ExprPrefixed) SetExpr(expr ExprAny) {
 	e.raw.expr = expr.raw
 }
 
-// Span implements [Spanner].
-func (e ExprPrefixed) Span() Span {
-	return JoinSpans(e.PrefixToken(), e.Expr())
+// report.Span implements [report.Spanner].
+func (e ExprPrefixed) Span() report.Span {
+	return report.Join(e.PrefixToken(), e.Expr())
 }
