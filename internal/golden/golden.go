@@ -117,7 +117,9 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 		// is necessary to avoid breakages on Windows.
 		name, _ := filepath.Rel(testDir, path)
 		name = filepath.ToSlash(name)
-		t.Run(name, func(t *testing.T) {
+		testName, _ := filepath.Rel(root, path)
+		testName = filepath.ToSlash(testName)
+		t.Run(testName, func(t *testing.T) {
 			t.Parallel()
 
 			bytes, err := os.ReadFile(path)
