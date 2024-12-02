@@ -66,9 +66,9 @@ type Diagnostic struct {
 	Level Level
 	isICE bool // Replaces "error" with "internal compiler error" in the renderer.
 
-	// Stage is an opaque identifier for the "stage" that a diagnostic occurred in.
-	// See [Report.Sort].
-	Stage int
+	// SortOrder is used to force diagnostics to sort before or after each other
+	// in groups. See [Report.Sort].
+	SortOrder int
 
 	// The file this diagnostic occurs in, if it has no associated Annotations. This
 	// is used for errors like "file too big" that cannot be given a snippet.
@@ -321,15 +321,15 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 // Sort canonicalizes this report's diagnostic order according to an specific
 // ordering criteria. Diagnostics are sorted by, in order;
 //
-// File name of primary span, stage, start offset of primary snippet, end offset
-// of primary snippet, content of error message.
+// File name of primary span, SortOrder value, start offset of primary snippet,
+// end offset of primary snippet, content of error message.
 //
 // Where diagnostics have no primary span, the file is treated as empty and the
 // offsets are treated as zero.
 //
 // These criteria ensure that diagnostics for the same file go together,
-// diagnostics for the same stage (lex, parse, etc) go together, and they are
-// otherwise ordered by where they occur in the file.
+// diagnostics for the same sort order (lex, parse, etc) go together, and they
+// are otherwise ordered by where they occur in the file.
 func (r *Report) Sort() {
 	slices.SortFunc(r.Diagnostics, func(a, b Diagnostic) int {
 		aPrime := a.Primary()
@@ -339,7 +339,7 @@ func (r *Report) Sort() {
 			return diff
 		}
 
-		if diff := a.Stage - b.Stage; diff != 0 {
+		if diff := a.SortOrder - b.SortOrder; diff != 0 {
 			return diff
 		}
 
@@ -492,9 +492,9 @@ func (r *Report) push(skip int, err error, level Level) *Diagnostic {
 	// the same level of nesting right now.
 
 	r.Diagnostics = append(r.Diagnostics, Diagnostic{
-		Err:   err,
-		Level: level,
-		Stage: r.Stage,
+		Err:       err,
+		Level:     level,
+		SortOrder: r.Stage,
 	})
 	d := &(r.Diagnostics)[len(r.Diagnostics)-1]
 
@@ -521,4 +521,33 @@ func (r *Report) push(skip int, err error, level Level) *Diagnostic {
 	}
 
 	return d
+}
+
+// AsError wraps a [Report] as an [error].
+type AsError struct {
+	Report Report
+}
+
+// Error implements [error].
+func (e *AsError) Error() string {
+	text, _, _ := Renderer{Compact: true}.RenderString(&e.Report)
+	return text
+}
+
+// ErrInFile wraps an [error] into a diagnostic on the given file.
+type ErrInFile struct {
+	Err  error
+	Path string
+}
+
+var _ Diagnose = &ErrInFile{}
+
+// Error implements [error].
+func (e *ErrInFile) Error() string {
+	return e.Err.Error()
+}
+
+// Diagnose implements [Diagnose].
+func (e *ErrInFile) Diagnose(d *Diagnostic) {
+	d.InFile = e.Path
 }

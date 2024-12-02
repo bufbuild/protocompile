@@ -156,21 +156,28 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) (results 
 // This function cannot execute in parallel with calls to [Run], and will take
 // an exclusive lock (note that [Run] calls themselves can be run in parallel).
 func (e *Executor) Evict(keys ...any) {
+	e.EvictWithCleanup(keys, nil)
+}
+
+// EvictWithCleanup is like [Executor.Evict], but it executes the given cleanup
+// function atomically with the eviction action.
+//
+// This function can be used to clean up after a query, or modify the result of
+// the evicted query by writing to a variable, without risking concurrent calls
+// to [Run] seeing inconsistent or stale state across multiple queries.
+func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	var queue []*task
 	for _, key := range keys {
 		if t, ok := e.tasks.Load(key); ok {
 			queue = append(queue, t.(*task)) //nolint:errcheck
-		} else {
-			return
 		}
 	}
-	if len(queue) == 0 {
+	if len(queue) == 0 && cleanup == nil {
 		return
 	}
 
 	e.dirty.Lock()
 	defer e.dirty.Unlock()
-
 	for len(queue) > 0 {
 		next := queue[0]
 		queue = queue[1:]
@@ -183,6 +190,10 @@ func (e *Executor) Evict(keys ...any) {
 		// Clear everything. We don't need to synchronize here because we have
 		// unique ownership of the task.
 		*next = task{}
+	}
+
+	if cleanup != nil {
+		cleanup()
 	}
 }
 
