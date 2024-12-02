@@ -171,11 +171,7 @@ func (t Token) Span() report.Span {
 		a, b = t.offsets()
 	}
 
-	return report.Span{
-		IndexedFile: t.Context().Stream().IndexedFile,
-		Start:       a,
-		End:         b,
-	}
+	return t.Context().Stream().Span(a, b)
 }
 
 // StartEnd returns the open and close tokens for this token.

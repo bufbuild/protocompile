@@ -103,14 +103,6 @@ func (l *lexer) SeekEOF() string {
 	return rest
 }
 
-func (l *lexer) Span(start, end int) report.Span {
-	return report.Span{
-		IndexedFile: l.IndexedFile,
-		Start:       start,
-		End:         end,
-	}
-}
-
 func (l *lexer) SpanFrom(start int) report.Span {
 	return l.Span(start, l.cursor)
 }

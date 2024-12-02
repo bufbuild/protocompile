@@ -37,7 +37,7 @@ type Stream struct {
 	Context
 
 	// The file this stream is over.
-	*report.IndexedFile
+	*report.File
 
 	// Storage for tokens.
 	nats   []nat

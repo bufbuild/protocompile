@@ -45,7 +45,7 @@ func TestRender(t *testing.T) {
 		text = unescapeTestCase(text)
 
 		errs := &report.Report{Tracing: 10}
-		ctx := ast.NewContext(report.File{Path: path, Text: text})
+		ctx := ast.NewContext(report.NewFile(path, text))
 		parser.Lex(ctx, errs)
 
 		stderr, _, _ := report.Renderer{
@@ -62,7 +62,7 @@ func TestRender(t *testing.T) {
 			count++
 
 			sp := tok.Span()
-			start := ctx.Stream().IndexedFile.Search(sp.Start)
+			start := ctx.Stream().Location(sp.Start)
 			fmt.Fprintf(
 				&tsv, "%v\t\t%v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
 				int32(tok.ID())-1, tok.Kind(),

@@ -29,7 +29,7 @@ for how to render the result to the user.
 A Report can be converted into a Protobuf using [Report.ToProto]. This can
 be serialized to e.g. JSON as an alternative error output.
 
-The [IndexedFile] type is a generic utility for converting file offsets into
+The [File] type is a generic utility for converting file offsets into
 text editor coordinates. E.g., given a byte offset, what is the user-visible
 line and column number? package report expects the caller to construct this
 information themselves, to avoid recomputing it unnecessarily.

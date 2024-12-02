@@ -148,7 +148,7 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 	if r.Compact {
 		primary := d.Primary()
 
-		if primary.IndexedFile == nil {
+		if primary.File == nil {
 			path := d.InFile
 			if path == "" {
 				return fmt.Sprintf(
@@ -192,8 +192,8 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 
 	locations := make([][2]Location, len(d.Annotations))
 	for i, snip := range d.Annotations {
-		locations[i][0] = snip.search(snip.Start, false)
-		locations[i][1] = snip.search(snip.End, false)
+		locations[i][0] = snip.location(snip.Start, false)
+		locations[i][1] = snip.location(snip.End, false)
 	}
 
 	// Figure out how wide the line bar needs to be. This is given by
@@ -278,7 +278,7 @@ const maxMultilinesPerWindow = 8
 // window is an intermediate structure for rendering an annotated code snippet
 // consisting of multiple spans in the same file.
 type window struct {
-	file File
+	file *File
 	// The line number at which the text starts in the overall source file.
 	start int
 	// The byte offset range this window's text occupies in the containing
@@ -298,7 +298,7 @@ type window struct {
 // code (well, they could, but the resulting code would be far more complicated).
 func buildWindow(level Level, locations [][2]Location, annotations []Annotation) *window {
 	w := new(window)
-	w.file = annotations[0].File()
+	w.file = annotations[0].File
 
 	// Calculate the range of the file we will be printing. This is given
 	// by every line that has a piece of diagnostic in it. To find this, we
@@ -314,11 +314,11 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 	// Now, find the newlines before and after the given ranges, respectively.
 	// This snaps the range to start immediately after a newline (or SOF) and
 	// end immediately before a newline (or EOF).
-	w.offsets[0] = strings.LastIndexByte(w.file.Text[:w.offsets[0]], '\n') + 1 // +1 gives the byte *after* the newline.
-	if end := strings.IndexByte(w.file.Text[w.offsets[1]:], '\n'); end != -1 {
+	w.offsets[0] = strings.LastIndexByte(w.file.Text()[:w.offsets[0]], '\n') + 1 // +1 gives the byte *after* the newline.
+	if end := strings.IndexByte(w.file.Text()[w.offsets[1]:], '\n'); end != -1 {
 		w.offsets[1] += end
 	} else {
-		w.offsets[1] = len(w.file.Text)
+		w.offsets[1] = len(w.file.Text())
 	}
 
 	// Now, convert each span into an underline or multiline.
@@ -343,9 +343,9 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 			// Calculate whether this snippet starts on the first non-space rune of
 			// the line.
 			if snippet.Start != 0 {
-				firstLineStart := strings.LastIndexByte(w.file.Text[:snippet.Start], '\n')
+				firstLineStart := strings.LastIndexByte(w.file.Text()[:snippet.Start], '\n')
 				if !strings.ContainsFunc(
-					w.file.Text[firstLineStart+1:snippet.Start],
+					w.file.Text()[firstLineStart+1:snippet.Start],
 					func(r rune) bool { return !unicode.IsSpace(r) },
 				) {
 					ml.startWidth = 0
@@ -378,13 +378,13 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 			// This is an "overflow multiline" for diagnostics with too
 			// many multilines. In this case, we want to end the underline at
 			// the end of the first line.
-			lineEnd := strings.Index(w.file.Text[snippet.Start:], "\n")
+			lineEnd := strings.Index(w.file.Text()[snippet.Start:], "\n")
 			if lineEnd == -1 {
-				lineEnd = len(w.file.Text)
+				lineEnd = len(w.file.Text())
 			} else {
 				lineEnd += snippet.Start
 			}
-			ul.end = ul.start + stringWidth(ul.start, w.file.Text[snippet.Start:lineEnd], false, nil)
+			ul.end = ul.start + stringWidth(ul.start, w.file.Text()[snippet.Start:lineEnd], false, nil)
 		}
 
 		// Make sure no empty underlines exist.
@@ -416,7 +416,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 		shouldEmit bool
 	}
 
-	lines := strings.Split(w.file.Text[w.offsets[0]:w.offsets[1]], "\n")
+	lines := strings.Split(w.file.Text()[w.offsets[0]:w.offsets[1]], "\n")
 	// Populate ancillary info for each line.
 	info := make([]lineInfo, len(lines))
 
