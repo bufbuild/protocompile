@@ -32,6 +32,11 @@ import (
 // opaque.
 type ID int32
 
+// Nil returns whether or not this is the nil representation.
+func (t ID) Nil() bool {
+	return t == 0
+}
+
 // In associates this token ID with a context. This allows token metadata,
 // such as position, text, and kind, to be looked up.
 //
@@ -44,6 +49,7 @@ func (t ID) In(c Context) Token {
 	return Token{internal.NewWith(c), t}
 }
 
+// String implements [fmt.Stringer].
 func (t ID) String() string {
 	if t == 0 {
 		return "Token(<nil>)"

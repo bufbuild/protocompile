@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package report
+package iters_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 func TestPartition(t *testing.T) {
@@ -74,7 +76,7 @@ func TestPartition(t *testing.T) {
 				ss    [][]int
 				count int
 			)
-			it := partition(test.slice, func(a, b *int) bool { return *a != *b })
+			it := iters.Partition(test.slice, func(a, b *int) bool { return *a != *b })
 			it(func(i int, s []int) bool {
 				if test.breakAt == count {
 					return false

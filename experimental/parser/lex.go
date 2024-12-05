@@ -25,6 +25,12 @@ import (
 
 // Lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
+//
+// Lex will freeze the stream in ctx when it is done.
+//
+// You should almost never need to call this function; [Parse] calls it directly.
+// It is exported so that it is straight forward to build other parsers on top
+// of the Protobuf lexer.
 func Lex(ctx token.Context, errs *report.Report) {
 	l := &lexer{
 		Context: ctx,
@@ -38,6 +44,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 			report.Notef("cursor: %d, count: %d", l.cursor, l.count),
 		)
 	})
+	defer l.Freeze()
 
 	// Check that the file isn't too big. We give up immediately if that's
 	// the case.

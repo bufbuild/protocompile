@@ -109,7 +109,8 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 	if !args.Type.Nil() {
 		raw.ty = args.Type.raw
 	} else {
-		raw.ty = rawType(rawPath{args.Keyword.ID(), args.Keyword.ID()})
+		kw := rawPath{args.Keyword.ID(), args.Keyword.ID()}.With(n.Context)
+		raw.ty = wrapPath[TypeKind](kw.raw)
 	}
 	if !args.Returns.Nil() {
 		raw.signature = &rawSignature{
@@ -204,7 +205,7 @@ func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 }
 
 // NewExprPrefixed creates a new ExprPrefixed node.
-func (n *Nodes) NewExprKV(args ExprKVArgs) ExprField {
+func (n *Nodes) NewExprKV(args ExprFieldArgs) ExprField {
 	n.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
 	ptr := n.exprs.fields.NewCompressed(rawExprField{

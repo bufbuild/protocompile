@@ -47,13 +47,13 @@ func (e ExprArray) Len() int {
 
 // At implements [Slice].
 func (e ExprArray) At(n int) ExprAny {
-	return e.raw.args[n].Value.With(e.Context())
+	return newExprAny(e.Context(), e.raw.args[n].Value)
 }
 
 // Iter implements [Slice].
 func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
 	for i, arg := range e.raw.args {
-		if !yield(i, arg.Value.With(e.Context())) {
+		if !yield(i, newExprAny(e.Context(), arg.Value)) {
 			break
 		}
 	}

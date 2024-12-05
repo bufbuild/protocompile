@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+
+	"github.com/bufbuild/protocompile/experimental/internal"
 )
 
 // TabstopWidth is the size we render all tabstops as.
@@ -83,14 +85,23 @@ func (s Span) String() string {
 func Join(spans ...Spanner) Span {
 	joined := Span{Start: math.MaxInt}
 	for _, span := range spans {
-		if span == nil {
+		if internal.Nil(span) {
 			continue
 		}
+
 		span := span.Span()
+		if span.File == nil {
+			continue
+		}
+
 		if joined.File == nil {
 			joined.File = span.File
 		} else if joined.File != span.File {
-			panic("protocompile/report: passed spans with distinct files to JoinSpans()")
+			panic(fmt.Sprintf(
+				"protocompile/report: passed spans with distinct files to JoinSpans(): %q != %q",
+				joined.File.Path(),
+				span.File.Path(),
+			))
 		}
 
 		joined.Start = min(joined.Start, span.Start)
@@ -123,6 +134,8 @@ type Location struct {
 // File is a source code file involved in a diagnostic.
 //
 // It contains additional book-keeping information for resolving span locations.
+//
+// A nil *File behaves like an empty file with the path name "".
 type File struct {
 	path, text string
 
@@ -146,11 +159,19 @@ func NewFile(path, text string) *File {
 // It doesn't need to be a real path, but it will be used to deduplicate spans
 // according to their file.
 func (f *File) Path() string {
+	if f == nil {
+		return ""
+	}
+
 	return f.path
 }
 
 // Text returns this file's textual contents.
 func (f *File) Text() string {
+	if f == nil {
+		return ""
+	}
+
 	return f.text
 }
 
@@ -159,16 +180,28 @@ func (f *File) Text() string {
 //
 // This operation is O(log n).
 func (f *File) Location(offset int) Location {
+	if f == nil && offset == 0 {
+		return Location{Offset: 0, Line: 1, Column: 1}
+	}
+
 	return f.location(offset, true)
 }
 
 // Span is a shorthand for creating a new Span.
 func (f *File) Span(start, end int) Span {
+	if f == nil {
+		return Span{}
+	}
+
 	return Span{f, start, end}
 }
 
 // EOF returns a Span pointing to the end-of-file.
 func (f *File) EOF() Span {
+	if f == nil {
+		return Span{}
+	}
+
 	// Find the last non-space rune; we moor the span immediately after it.
 	eof := strings.LastIndexFunc(f.Text(), func(r rune) bool {
 		return !unicode.In(r, unicode.Pattern_White_Space)

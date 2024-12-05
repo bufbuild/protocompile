@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package report
+package iters
 
 import "github.com/bufbuild/protocompile/internal/iter"
 
-// partition returns an iterator of subslices of s such that each yielded
+// Partition returns an iterator of subslices of s such that each yielded
 // slice is delimited according to delimit. Also yields the starting index of
 // the subslice.
 //
@@ -26,7 +26,7 @@ import "github.com/bufbuild/protocompile/internal/iter"
 // Will never yield an empty slice.
 //
 //nolint:dupword
-func partition[T any](s []T, delimit func(a, b *T) bool) iter.Seq2[int, []T] {
+func Partition[T any](s []T, delimit func(a, b *T) bool) iter.Seq2[int, []T] {
 	return func(yield func(int, []T) bool) {
 		var start int
 		for i := 1; i < len(s); i++ {

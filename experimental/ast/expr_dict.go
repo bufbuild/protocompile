@@ -122,8 +122,8 @@ type rawExprField struct {
 	colon      token.ID
 }
 
-// ExprKVArgs is arguments for [Context.NewExprKV].
-type ExprKVArgs struct {
+// ExprFieldArgs is arguments for [Context.NewExprKV].
+type ExprFieldArgs struct {
 	Key   ExprAny
 	Colon token.Token
 	Value ExprAny
@@ -133,7 +133,7 @@ type ExprKVArgs struct {
 //
 // May be nil if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
 func (e ExprField) Key() ExprAny {
-	return e.raw.key.With(e.Context())
+	return newExprAny(e.Context(), e.raw.key)
 }
 
 // SetKey sets the key for this field.
@@ -153,7 +153,7 @@ func (e ExprField) Colon() token.Token {
 
 // Value returns the value for this field.
 func (e ExprField) Value() ExprAny {
-	return e.raw.value.With(e.Context())
+	return newExprAny(e.Context(), e.raw.value)
 }
 
 // SetValue sets the value for this field.

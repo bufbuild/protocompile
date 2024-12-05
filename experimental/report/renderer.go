@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -58,7 +60,7 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 			continue
 		}
 
-		if _, err = fmt.Fprintln(out, r.diagnostic(diagnostic)); err != nil {
+		if _, err = fmt.Fprintln(out, r.diagnostic(report, diagnostic)); err != nil {
 			return errorCount, warningCount, err
 		}
 
@@ -123,7 +125,19 @@ func (r Renderer) RenderString(report *Report) (text string, errorCount, warning
 }
 
 // diagnostic renders a single diagnostic to a string.
-func (r Renderer) diagnostic(d Diagnostic) string {
+func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
+	if report.Tracing > 0 {
+		// If we're debugging diagnostic traces, and we panic, show where this
+		// particular diagnostic was generated. This is useful for debugging
+		// renderer bugs.
+		defer func() {
+			if panicked := recover(); panicked != nil {
+				stack := strings.Join(d.Debug[:min(report.Tracing, len(d.Debug))], "\n")
+				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%s", panicked, stack))
+			}
+		}()
+	}
+
 	var level string
 	switch d.Level {
 	case Error:
@@ -206,7 +220,7 @@ func (r Renderer) diagnostic(d Diagnostic) string {
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := partition(d.Annotations, func(a, b *Annotation) bool { return a.Path() != b.Path() })
+	parts := iters.Partition(d.Annotations, func(a, b *Annotation) bool { return a.Path() != b.Path() })
 	parts(func(i int, annotations []Annotation) bool {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
@@ -469,7 +483,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
-	parts := partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
+	parts := iters.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
 	parts(func(_ int, part []underline) bool {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
@@ -504,7 +518,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		parts := partition(buf, func(a, b *byte) bool { return *a != *b })
+		parts := iters.Partition(buf, func(a, b *byte) bool { return *a != *b })
 		parts(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
@@ -787,7 +801,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 			// Generate a sidebar as before but this time we want to look at the
 			// last line that was actually emitted.
 			slashAt := -1
-			prevSidebar := info[lastEmit].sidebar
+			prevSidebar := info[lastEmit-w.start].sidebar
 			if len(prevSidebar) > 0 &&
 				prevSidebar[len(prevSidebar)-1].start == lastEmit &&
 				prevSidebar[len(prevSidebar)-1].startWidth > 0 {

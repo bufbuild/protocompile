@@ -96,7 +96,7 @@ type DeclDefArgs struct {
 //
 // See [DeclDef.Keyword].
 func (d DeclDef) Type() TypeAny {
-	return TypeAny{d.withContext, d.raw.ty}
+	return newTypeAny(d.Context(), d.raw.ty)
 }
 
 // SetType sets the "prefix" type of this definition.
@@ -166,7 +166,7 @@ func (d DeclDef) Equals() token.Token {
 // tag number, while for an option, this will be the complex expression
 // representing its value.
 func (d DeclDef) Value() ExprAny {
-	return d.raw.value.With(d.Context())
+	return newExprAny(d.Context(), d.raw.value)
 }
 
 // SetValue sets the value of this definition.
@@ -388,24 +388,33 @@ func (d DeclDef) AsOption() DefOption {
 func (d DeclDef) Classify() DefKind {
 	switch d.Keyword().Text() {
 	case "message":
-		return DefKindMessage
-	case "enum":
-		return DefKindEnum
-	case "service":
-		return DefKindService
-	case "extend":
-		return DefKindExtend
-	case "oneof":
-		return DefKindOneof
-	case "group":
-		return DefKindGroup
-	case "rpc":
-		if d.Signature().Nil() {
-			// rpc foo = 1; is a valid field definition. We only consider
-			// this a method if there is a type signature on it.
-			break
+		if !d.Body().Nil() {
+			return DefKindMessage
 		}
-		return DefKindMethod
+	case "enum":
+		if !d.Body().Nil() {
+			return DefKindEnum
+		}
+	case "service":
+		if !d.Body().Nil() {
+			return DefKindService
+		}
+	case "extend":
+		if !d.Body().Nil() {
+			return DefKindExtend
+		}
+	case "oneof":
+		if !d.Body().Nil() {
+			return DefKindOneof
+		}
+	case "group":
+		if !d.Body().Nil() {
+			return DefKindGroup
+		}
+	case "rpc":
+		if !d.Signature().Nil() {
+			return DefKindMethod
+		}
 	case "option":
 		return DefKindOption
 	}

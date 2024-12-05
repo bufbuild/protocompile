@@ -19,12 +19,12 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 const (
-	TypeKindPath TypeKind = iota + 1
+	TypeKindNil TypeKind = iota
+	TypeKindPath
 	TypeKindPrefixed
 	TypeKindGeneric
 )
@@ -43,27 +43,29 @@ type TypeKind int8
 // allocations in functions that would return one of many different Type*
 // types.
 type TypeAny struct {
-	withContext
+	withContext // Must be nil if raw is nil.
+
 	raw rawType
 }
 
-// rawType is the raw representation of a type.
-//
-// The vast, vast majority of types are paths. To avoid needing to waste
-// space for such types, we use the following encoding for rawType.
-//
-// First, note that if the first half of a rawPath is negative, the other
-// must be zero. Thus, if the first "token" of the rawPath is negative and
-// the second is not, the first is ^typeKind and the second is an index
-// into a table in a Context. Otherwise, it's a path type. This logic is
-// implemented in With().
-type rawType rawPath
+type rawType = pathLike[TypeKind]
+
+func newTypeAny(ctx Context, t rawType) TypeAny {
+	if ctx == nil || (t == rawType{}) {
+		return TypeAny{}
+	}
+	return TypeAny{internal.NewWith(ctx), t}
+}
 
 // Kind returns the kind of type this is. This is suitable for use
 // in a switch statement.
 func (t TypeAny) Kind() TypeKind {
-	if t.raw[0] < 0 && t.raw[1] != 0 {
-		return TypeKind(^t.raw[0])
+	if t.Nil() {
+		return TypeKindNil
+	}
+
+	if kind, ok := t.raw.kind(); ok {
+		return kind
 	}
 	return TypeKindPath
 }
@@ -73,11 +75,9 @@ func (t TypeAny) Kind() TypeKind {
 //
 // Otherwise, returns nil.
 func (t TypeAny) AsPath() TypePath {
-	if t.Kind() != TypeKindPath {
-		return TypePath{}
-	}
-
-	return TypePath{rawPath(t.raw).With(t.Context())}
+	path, _ := t.raw.path(t.Context())
+	// Don't need to check ok; path() returns nil on failure.
+	return TypePath{path}
 }
 
 // AsPrefixed converts a TypeAny into a TypePrefix, if that is the type
@@ -85,11 +85,11 @@ func (t TypeAny) AsPath() TypePath {
 //
 // Otherwise, returns nil.
 func (t TypeAny) AsPrefixed() TypePrefixed {
-	if t.Kind() != TypeKindPrefixed {
+	ptr := unwrapPathLike[arena.Pointer[rawTypePrefixed]](TypeKindPrefixed, t.raw)
+	if ptr.Nil() {
 		return TypePrefixed{}
 	}
 
-	ptr := arena.Pointer[rawTypePrefixed](t.ptr())
 	return TypePrefixed{typeImpl[rawTypePrefixed]{
 		t.withContext,
 		t.Context().Nodes().types.prefixes.Deref(ptr),
@@ -101,11 +101,11 @@ func (t TypeAny) AsPrefixed() TypePrefixed {
 //
 // Otherwise, returns nil.
 func (t TypeAny) AsGeneric() TypeGeneric {
-	if t.Kind() != TypeKindGeneric {
+	ptr := unwrapPathLike[arena.Pointer[rawTypeGeneric]](TypeKindGeneric, t.raw)
+	if ptr.Nil() {
 		return TypeGeneric{}
 	}
 
-	ptr := arena.Pointer[rawTypeGeneric](t.ptr())
 	return TypeGeneric{typeImpl[rawTypeGeneric]{
 		t.withContext,
 		t.Context().Nodes().types.generics.Deref(ptr),
@@ -124,10 +124,6 @@ func (t TypeAny) Span() report.Span {
 	)
 }
 
-func (t TypeAny) ptr() arena.Untyped {
-	return arena.Untyped(t.raw[1])
-}
-
 // typeImpl is the common implementation of pointer-like Type* types.
 type typeImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
@@ -144,18 +140,7 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 	}
 
 	kind, arena := typeArena[Raw](&t.Context().Nodes().types)
-	return TypeAny{
-		t.withContext,
-		rawType{^token.ID(kind), token.ID(arena.Compress(t.raw))},
-	}
-}
-
-func (t rawType) With(ctx Context) TypeAny {
-	if ctx == nil || (t == rawType{}) {
-		return TypeAny{}
-	}
-
-	return TypeAny{internal.NewWith(ctx), t}
+	return newTypeAny(t.Context(), wrapPathLike(kind, arena.Compress(t.raw)))
 }
 
 // types is storage for every kind of Type in a Context.raw.

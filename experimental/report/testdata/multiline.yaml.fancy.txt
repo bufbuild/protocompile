@@ -72,7 +72,7 @@ warning: nesting just the braces
  6 | /     required size_t x = 0;
  7 | |     message Bonk {
    | |  ________________-
-...  | | 
+...  | / 
 11 | | |   }
    | | \___- and this block
 12 | |   }

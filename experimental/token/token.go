@@ -174,6 +174,15 @@ func (t Token) Span() report.Span {
 	return t.Context().Stream().Span(a, b)
 }
 
+// LeafSpan returns the span that this token would have if it was a leaf token.
+func (t Token) LeafSpan() report.Span {
+	if t.Nil() || t.IsSynthetic() {
+		return report.Span{}
+	}
+
+	return t.Context().Stream().Span(t.offsets())
+}
+
 // StartEnd returns the open and close tokens for this token.
 //
 // If this is a leaf token, start and end will be the same token and will compare as equal.

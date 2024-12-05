@@ -116,7 +116,7 @@ func (d DeclSyntax) Equals() token.Token {
 // May be nil, if the user wrote something like syntax;. It can also be
 // a number or an identifier, for cases like edition = 2024; or syntax = proto2;.
 func (d DeclSyntax) Value() ExprAny {
-	return d.raw.value.With(d.Context())
+	return newExprAny(d.Context(), d.raw.value)
 }
 
 // SetValue sets the expression for this pragma's value.
@@ -260,7 +260,7 @@ func (d DeclImport) IsWeak() bool {
 //
 // May be nil, if the user forgot it.
 func (d DeclImport) ImportPath() ExprAny {
-	return d.raw.importPath.With(d.Context())
+	return newExprAny(d.Context(), d.raw.importPath)
 }
 
 // SetValue sets the expression for this import's file path.

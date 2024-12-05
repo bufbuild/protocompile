@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	ExprKindLiteral ExprKind = iota + 1
+	ExprKindNil ExprKind = iota
+	ExprKindLiteral
 	ExprKindPrefixed
 	ExprKindPath
 	ExprKindRange
@@ -47,7 +48,8 @@ type ExprKind int8
 // allocations in functions that would return one of many different ExprAny*
 // types.
 type ExprAny struct {
-	withContext
+	withContext // Must be nil if raw is nil.
+
 	raw rawExpr
 }
 
@@ -55,13 +57,25 @@ type ExprAny struct {
 //
 // Similar to rawType (see type.go), this makes use of the fact that for rawPath,
 // if the first element is negative, the other must be zero. See also rawType.With.
-type rawExpr rawPath
+type rawExpr = pathLike[ExprKind]
+
+func newExprAny(c Context, e rawExpr) ExprAny {
+	if c == nil || (e == rawExpr{}) {
+		return ExprAny{}
+	}
+
+	return ExprAny{internal.NewWith(c), e}
+}
 
 // Kind returns the kind of expression this is. This is suitable for use
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
-	if e.raw[0] < 0 && e.raw[1] != 0 {
-		return ExprKind(^e.raw[0])
+	if e.Nil() {
+		return ExprKindNil
+	}
+
+	if kind, ok := e.raw.kind(); ok {
+		return kind
 	}
 	return ExprKindPath
 }
@@ -71,32 +85,22 @@ func (e ExprAny) Kind() ExprKind {
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsLiteral() ExprLiteral {
-	if e.Kind() != ExprKindLiteral {
+	tok := unwrapPathLike[token.ID](ExprKindLiteral, e.raw)
+	if tok.Nil() {
 		return ExprLiteral{}
 	}
 
-	return ExprLiteral{
-		//nolint:unconvert // Conversion to token.ID included for clarity.
-		Token: token.ID(e.raw[1]).In(e.Context()),
-	}
+	return ExprLiteral{tok.In(e.Context())}
 }
 
 // AsPath converts a ExprAny into a ExprPath, if that is the type
-// it contains.
+// it contains.q
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsPath() ExprPath {
-	if e.Kind() != ExprKindPath {
-		return ExprPath{}
-	}
-
-	return ExprPath{
-		Path: rawPath(e.raw).With(e.Context()),
-	}
-}
-
-func (e ExprAny) ptr() arena.Untyped {
-	return arena.Untyped(e.raw[1])
+	path, _ := e.raw.path(e.Context())
+	// Don't need to check ok; path() returns nil on failure.
+	return ExprPath{path}
 }
 
 // AsPrefixed converts a ExprAny into a ExprPrefixed, if that is the type
@@ -104,11 +108,11 @@ func (e ExprAny) ptr() arena.Untyped {
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsPrefixed() ExprPrefixed {
-	if e.Kind() != ExprKindPrefixed {
+	ptr := unwrapPathLike[arena.Pointer[rawExprPrefixed]](ExprKindPrefixed, e.raw)
+	if ptr.Nil() {
 		return ExprPrefixed{}
 	}
 
-	ptr := arena.Pointer[rawExprPrefixed](e.ptr())
 	return ExprPrefixed{exprImpl[rawExprPrefixed]{
 		e.withContext,
 		e.Context().Nodes().exprs.prefixes.Deref(ptr),
@@ -120,11 +124,11 @@ func (e ExprAny) AsPrefixed() ExprPrefixed {
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsRange() ExprRange {
-	if e.Kind() != ExprKindRange {
+	ptr := unwrapPathLike[arena.Pointer[rawExprRange]](ExprKindRange, e.raw)
+	if ptr.Nil() {
 		return ExprRange{}
 	}
 
-	ptr := arena.Pointer[rawExprRange](e.ptr())
 	return ExprRange{exprImpl[rawExprRange]{
 		e.withContext,
 		e.Context().Nodes().exprs.ranges.Deref(ptr),
@@ -136,11 +140,11 @@ func (e ExprAny) AsRange() ExprRange {
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsArray() ExprArray {
-	if e.Kind() != ExprKindArray {
+	ptr := unwrapPathLike[arena.Pointer[rawExprArray]](ExprKindArray, e.raw)
+	if ptr.Nil() {
 		return ExprArray{}
 	}
 
-	ptr := arena.Pointer[rawExprArray](e.ptr())
 	return ExprArray{exprImpl[rawExprArray]{
 		e.withContext,
 		e.Context().Nodes().exprs.arrays.Deref(ptr),
@@ -152,27 +156,27 @@ func (e ExprAny) AsArray() ExprArray {
 //
 // Otherwise, returns nil.
 func (e ExprAny) AsDict() ExprDict {
-	if e.Kind() != ExprKindDict {
+	ptr := unwrapPathLike[arena.Pointer[rawExprDict]](ExprKindDict, e.raw)
+	if ptr.Nil() {
 		return ExprDict{}
 	}
 
-	ptr := arena.Pointer[rawExprDict](e.ptr())
 	return ExprDict{exprImpl[rawExprDict]{
 		e.withContext,
 		e.Context().Nodes().exprs.dicts.Deref(ptr),
 	}}
 }
 
-// AsKV converts a ExprAny into a ExprKV, if that is the type
+// AsField converts a ExprAny into a ExprKV, if that is the type
 // it contains.
 //
 // Otherwise, returns nil.
-func (e ExprAny) AsKV() ExprField {
-	if e.Kind() != ExprKindField {
+func (e ExprAny) AsField() ExprField {
+	ptr := unwrapPathLike[arena.Pointer[rawExprField]](ExprKindField, e.raw)
+	if ptr.Nil() {
 		return ExprField{}
 	}
 
-	ptr := arena.Pointer[rawExprField](e.ptr())
 	return ExprField{exprImpl[rawExprField]{
 		e.withContext,
 		e.Context().Nodes().exprs.fields.Deref(ptr),
@@ -191,7 +195,7 @@ func (e ExprAny) Span() report.Span {
 		e.AsRange(),
 		e.AsArray(),
 		e.AsDict(),
-		e.AsKV(),
+		e.AsField(),
 	)
 }
 
@@ -211,18 +215,10 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 	}
 
 	kind, arena := exprArena[Raw](&e.Context().Nodes().exprs)
-	return ExprAny{
-		e.withContext,
-		rawExpr{^token.ID(kind), token.ID(arena.Compress(e.raw))},
-	}
-}
-
-func (e rawExpr) With(ctx Context) ExprAny {
-	if ctx == nil || (e == rawExpr{}) {
-		return ExprAny{}
-	}
-
-	return ExprAny{internal.NewWith(ctx), e}
+	return newExprAny(
+		e.Context(),
+		wrapPathLike(kind, arena.Compress(e.raw)),
+	)
 }
 
 // exprs is storage for the various kinds of Exprs in a Context.
