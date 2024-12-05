@@ -16,8 +16,8 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -30,7 +30,7 @@ type ErrInvalidNumber struct {
 // Error implements [error].
 func (e ErrInvalidNumber) Error() string {
 	switch {
-	case isFloatLiteral(e.Token):
+	case taxa.IsFloat(e.Token):
 		return "unexpected characters in floating-point literal"
 	default:
 		return "unexpected characters in integer literal"
@@ -61,7 +61,7 @@ type ErrInvalidBase struct {
 // Error implements [error].
 func (e ErrInvalidBase) Error() string {
 	switch {
-	case isFloatLiteral(e.Token):
+	case taxa.IsFloat(e.Token):
 		return "unsupported base for floating-point literal"
 	default:
 		return "unsupported base for integer literal"
@@ -82,7 +82,7 @@ func (e ErrInvalidBase) Diagnose(d *report.Diagnostic) {
 		base = fmt.Sprintf("base-%d", e.Base)
 	}
 
-	isFloat := isFloatLiteral(e.Token)
+	isFloat := taxa.IsFloat(e.Token)
 	if !isFloat && e.Base == 8 {
 		d.With(
 			report.Snippetf(e.Token, "replace `0o` with `0`"),
@@ -114,7 +114,7 @@ type ErrThousandsSep struct {
 // Error implements [error].
 func (e ErrThousandsSep) Error() string {
 	switch {
-	case isFloatLiteral(e.Token):
+	case taxa.IsFloat(e.Token):
 		return "floating-point literal contains underscores"
 	default:
 		return "integer literal contains underscores"
@@ -127,12 +127,4 @@ func (e ErrThousandsSep) Diagnose(d *report.Diagnostic) {
 		report.Snippet(e.Token),
 		report.Note("Protobuf does not support Go/Java/Rust-style thousands separators"),
 	)
-}
-
-func isFloatLiteral(tok token.Token) bool {
-	digits := tok.Text()
-	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
-		return strings.ContainsRune(digits, '.')
-	}
-	return strings.ContainsAny(digits, ".eE")
 }

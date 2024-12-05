@@ -1,0 +1,129 @@
+// Copyright 2020-2024 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package parser
+
+import (
+	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/astx"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/token"
+)
+
+// parsePath parses the longest path at cursor. Returns a nil path if
+// the next token is neither an identifier, a dot, or a ().
+//
+// If an invalid token occurs after a dot, returns the longest path up until that dot.
+// The cursor is then placed after the dot.
+//
+// This function assumes that we have decided to definitely parse a path, and
+// will emit diagnostics to that effect. As such, the current token position on cursor
+// should not be nil.
+func parsePath(p *parser, c *token.Cursor) ast.Path {
+	start := c.Peek()
+	if !canStartPath(start) {
+		p.Error(errUnexpected{what: start, want: startsPath})
+		return ast.Path{}
+	}
+
+	var prevSeparator token.Token
+	if start.Text() == "." || start.Text() == "/" {
+		prevSeparator = c.Pop()
+	}
+
+	var done bool
+	end := start
+	for !done && !c.Done() {
+		next := c.Peek()
+		first := start == next
+
+		switch {
+		case next.Text() == "." || next.Text() == "/":
+			if !prevSeparator.Nil() {
+				// This is a double dot, so something like foo..bar, ..foo, or
+				// foo.. We diagnose it and move on -- Path.Components is robust
+				// against double dots.
+				p.Error(errUnexpected{
+					what:  next,
+					where: taxa.Classify(next).After(),
+					want:  taxa.NewSet(taxa.Ident, taxa.Parens),
+				})
+			}
+			prevSeparator = c.Pop()
+
+		case next.Kind() == token.Ident:
+			if !first && prevSeparator.Nil() {
+				// This means we found something like `foo bar`, which means we
+				// should stop consuming components.
+				done = true
+				continue
+			}
+
+			end = next
+			prevSeparator = token.Nil
+			c.Pop()
+
+		case next.Text() == "(":
+			if !first && prevSeparator.Nil() {
+				// This means we found something like `foo(bar)`, which means we
+				// should stop consuming components.
+				done = true
+				continue
+			}
+
+			// Recurse into this token and check it, too, contains a path. We throw
+			// the result away once we're done, because we don't need to store it;
+			// a Path simply stores its start and end tokens and knows how to
+			// recurse into extensions. We also need to check there are no
+			// extraneous tokens.
+			contents := next.Children()
+			parsePath(p, contents)
+			if tok := contents.Peek(); !tok.Nil() {
+				p.Error(errUnexpected{
+					what:  start,
+					where: taxa.ExtensionInPath.After(),
+				})
+			}
+
+			end = next
+			prevSeparator = token.Nil
+			c.Pop()
+
+		default:
+			if prevSeparator.Nil() {
+				// This means we found something like `foo =`, which means we
+				// should stop consuming components.
+				done = true
+				continue
+			}
+
+			// This means we found something like foo.1 or bar."xyz" or bar.[...].
+			// TODO: Do smarter recovery here. Generally speaking it's likely we should *not*
+			// consume this token.
+			p.Error(errUnexpected{
+				what:  next,
+				where: taxa.Path.In(),
+				want:  taxa.NewSet(taxa.Ident, taxa.Parens),
+			})
+
+			end = prevSeparator // Include the trailing separator.
+			done = true
+		}
+	}
+
+	// NOTE: We do not need to legalize against a single-dot path; that
+	// is already done for us by the if nextDot checks.
+
+	return astx.NewPath(p.Context, start, end)
+}
