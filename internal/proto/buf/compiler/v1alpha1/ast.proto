@@ -18,14 +18,11 @@ package buf.compiler.v1alpha1;
 
 import "buf/compiler/v1alpha1/report.proto";
 
-// NOTE: In this file, we number all Span-typed fields together, starting
-// at tag 10. They must also be suffixed with `_span`.
-
 // A parsed AST file. This is the root file for the whole Protocompile AST.
 message File {
   // The original filesystem file this file was parsed from.
   Report.File file = 1;
-  // Declararations in this file.
+  // Declarations in this file.
   repeated Decl decls = 2;
 }
 
@@ -38,12 +35,14 @@ message Span {
   uint32 end = 2;
 }
 
-// A path in a Protobuf file.
+// A path in a Protobuf file. This models all identifiers (simple, compound,
+// and fully-qualified). It also models option names, which contain nested
+// paths, and Any URLs, which contain a single slash.
 //
-// Protobuf paths are quite complex: they are not just dot-separated squences
-// of names: each component can itself be a Protobuf path, such as
-// `foo.(bar.(baz)).zing`. Although deep nesting is not currently used in
-// the language, this AST supports it.
+// To do so, it models the maximal union of these syntax constructs, permitting
+// arbitrary nesting and mixed . and / separators. Many paths representable with
+// this message do not correspond to valid Protobuf syntax, but they are
+// accepted by the parser.
 message Path {
   // A path component.
   message Component {
@@ -53,7 +52,7 @@ message Path {
       SEPARATOR_SLASH = 2;
     }
 
-    // May be missing altogehter, for invalid paths like `foo..bar`.
+    // May be missing altogether, for invalid paths like `foo..bar`.
     oneof component {
       // A single identifier.
       string ident = 1;
@@ -192,7 +191,7 @@ message Def {
   Kind kind = 1;
   Path name = 2;
 
-  // The type for a `KIND_FIELD` definiion.
+  // The type for a `KIND_FIELD` definition.
   Type type = 3;
 
   // A method signature. This appears on `KIND_METHOD`, for example.
@@ -212,8 +211,8 @@ message Def {
   Expr value = 5;
 
   // This is options appearing in `[...]`, such as on `KIND_FIELD`
-  // or `KIND_GROUP`. This will NOT inclde options on a oneof, since
-  // those are reprepresented as `KIND_OPTION` `Def` in `body`.
+  // or `KIND_GROUP`. This will NOT include options on a oneof, since
+  // those are represented as `KIND_OPTION` `Def` in `body`.
   Options options = 6;
 
   // This is a braced body at the end of the definition.
@@ -267,8 +266,8 @@ message Expr {
     Span prefix_span = 11;
   }
 
-  // A range expression, i.e. something like `1 to 10`. The `1 to max` is not
-  // speicial syntax; `max` is realized as a path expression.
+  // A range expression, i.e. something like `1 to 10`. `1 to max` is not
+  // special syntax; `max` is realized as a path expression.
   //
   // Ranges are inclusive.
   message Range {
@@ -284,18 +283,24 @@ message Expr {
     repeated Expr elements = 1;
 
     Span span = 10;
+    Span open_span = 11;
+    Span close_span = 12;
+    repeated Span comma_spans = 13;
   }
 
   // A dictionary literal, a sequence of key-value pairs bound by curly braces.
   message Dict {
-    repeated Expr.Kv entries = 1;
+    repeated Expr.Field entries = 1;
 
     Span span = 10;
+    Span open_span = 11;
+    Span close_span = 12;
+    repeated Span comma_spans = 13;
   }
 
   // A key-value pair expression, which usually will appear inside of an
   // `Expr.Dict`.
-  message Kv {
+  message Field {
     Expr key = 1;
     Expr value = 2;
 
@@ -310,7 +315,7 @@ message Expr {
     Range range = 4;
     Array array = 5;
     Dict dict = 6;
-    Kv kv = 7;
+    Field field = 7;
   }
 }
 
@@ -345,7 +350,9 @@ message Type {
     repeated Type args = 2;
 
     Span span = 10;
-    Span bracket_span = 11;
+    Span open_span = 11;
+    Span close_span = 12;
+    repeated Span comma_spans = 13;
   }
 
   oneof type {

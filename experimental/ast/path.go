@@ -177,7 +177,7 @@ type TypePath struct {
 //
 // See [TypeAny] for more information.
 func (t TypePath) AsAny() TypeAny {
-	return newTypeAny(t.Context(), rawType(t.raw))
+	return newTypeAny(t.Context(), wrapPath[TypeKind](t.Path))
 }
 
 // TypePath is a simple path reference in expression position.
@@ -190,7 +190,7 @@ type ExprPath struct {
 //
 // See [TypeAny] for more information.
 func (e ExprPath) AsAny() ExprAny {
-	return newExprAny(e.Context(), rawExpr(e.raw))
+	return newExprAny(e.Context(), wrapPath[ExprKind](e.Path))
 }
 
 // PathComponent is a piece of a path. This is either an identifier or a nested path
@@ -268,12 +268,12 @@ func (p PathComponent) AsIdent() token.Token {
 //  3. A single synthetic token and a nil token. If this token has children, those are
 //     the path components. Otherwise, the token itself is the sole token.
 //
-// The case Start < 0 && End != 0 is reserved for use by pathLike below.
+// The case Start < 0 && End != 0 is reserved for use by pathLike.
 type rawPath struct {
 	Start, End token.ID
 }
 
-// Wrap wraps this rawPath with a context to present to the user.
+// With wraps this rawPath with a context to present to the user.
 func (p rawPath) With(c Context) Path {
 	if p.Start.Nil() {
 		return Path{}
@@ -284,54 +284,4 @@ func (p rawPath) With(c Context) Path {
 	}
 
 	return Path{internal.NewWith(c), p}
-}
-
-// pathLike is the raw representation of a type or expression.
-//
-// The vast, vast majority of types and expressions are paths. To avoid needing
-// to waste space for such types, we use the following encoding for rawType.
-//
-// First, note that if the first half of a rawPath is negative, the other
-// must be zero. Thus, if the first "token" of the rawPath is negative and
-// the second is not, the first is ^typeKind and the second is an index
-// into a table in a Context. Otherwise, it's a path type. This logic is
-// implemented in With().
-type pathLike[Kind ~int8] rawPath
-
-// wrapInPathLike wraps a integer-like value in a rawPathOrPointer.
-//
-// If either of kind or value are zero, both must be.
-func wrapPathLike[Value ~int32 | ~uint32, Kind ~int8](kind Kind, value Value) pathLike[Kind] {
-	if kind != 0 && value == 0 {
-		panic(fmt.Sprintf("protocompile/ast: invalid rawPathOrPointer representation: %v, %v", kind, value))
-	}
-
-	return pathLike[Kind]{^token.ID(kind), token.ID(value)}
-}
-
-// unwrapPathLike unwraps a pointer previously wrapped with wrapPathLike.
-//
-// Returns zero if this pathLike contains the wrong kind.
-func unwrapPathLike[Value ~int32 | ~uint32, Kind ~int8](want Kind, p pathLike[Kind]) Value {
-	if got, ok := p.kind(); !ok || got != want {
-		return 0
-	}
-
-	return Value(p.End)
-}
-
-// kind returns the kind within this pathLike, if it is not a path.
-func (p pathLike[Kind]) kind() (Kind, bool) {
-	if p.Start < 0 && p.End != 0 {
-		return Kind(^p.Start), true
-	}
-	return 0, false
-}
-
-// path converts this pathLike into a Path if it is in fact a genuine path.
-func (p pathLike[Kind]) path(c Context) (Path, bool) {
-	if p.Start < 0 && p.End != 0 {
-		return Path{}, false
-	}
-	return rawPath(p).With(c), true
 }

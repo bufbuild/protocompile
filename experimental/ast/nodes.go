@@ -109,7 +109,8 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 	if !args.Type.Nil() {
 		raw.ty = args.Type.raw
 	} else {
-		raw.ty = rawType(rawPath{args.Keyword.ID(), args.Keyword.ID()})
+		kw := rawPath{args.Keyword.ID(), args.Keyword.ID()}.With(n.Context)
+		raw.ty = wrapPath[TypeKind](kw)
 	}
 	if !args.Returns.Nil() {
 		raw.signature = &rawSignature{

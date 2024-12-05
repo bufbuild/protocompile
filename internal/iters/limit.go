@@ -12,25 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iters contains helpers for working with iterators.
 package iters
 
 import "github.com/bufbuild/protocompile/internal/iter"
 
 // Limit limits a sequence to only yield at most limit times.
-//
-// Negative values are treated as infinite.
-func Limit[T any](limit int64, seq iter.Seq[T]) iter.Seq[T] {
+func Limit[T any](limit uint, seq iter.Seq[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		seq(func(value T) bool {
 			if limit == 0 || !yield(value) {
 				return false
 			}
-
-			// No need to check for overflow. It is safe to assume that it is
-			// not possible to decrement a negative 64 bit value down to zero;
-			// having compute to do so is equivalent to being able to break AES
-			// encryption using a classical computer.
 			limit--
 			return true
 		})

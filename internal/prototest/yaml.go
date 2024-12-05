@@ -25,22 +25,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-const license = `# Copyright 2020-2024 Buf Technologies, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-`
-
 // ToYAMLOptions contains configuration for [ToYAML].
 type ToYAMLOptions struct {
 	// If set, zero values of implicit presence fields are set.
@@ -54,30 +38,26 @@ type ToYAMLOptions struct {
 // manner. This is intended for generating YAML for golden outputs.
 //
 // The result will use a compressed representation where possible.
-func ToYAML(m proto.Message, opts *ToYAMLOptions) string {
-	if opts == nil {
-		opts = new(ToYAMLOptions)
-	}
+func ToYAML(m proto.Message, opts ToYAMLOptions) string {
 	y := &toYAML{
 		ToYAMLOptions: opts,
 	}
 	d := y.message(m.ProtoReflect())
-	d.compress()
-	y.out.WriteString(license)
+	d.prepare()
 	y.write(d)
 	return y.out.String()
 }
 
 // toYAML is state of an on-going YAML conversion.
 type toYAML struct {
-	*ToYAMLOptions
+	ToYAMLOptions
 
 	out     strings.Builder
 	nesting int
 }
 
 // message converts a Protobuf message into a [doc], which is used as an
-// intermediate processing stage to help compact make formatting decisions
+// intermediate processing stage to help make formatting decisions
 // (such as compressing nested messages).
 func (y *toYAML) message(m protoreflect.Message) *doc {
 	desc := m.Descriptor()
@@ -154,58 +134,13 @@ func (y *toYAML) write(v any) {
 	case string:
 		fmt.Fprintf(&y.out, "%q", v)
 	case *doc:
-		isOneLine := func(v any) bool {
-			maxWidth := y.MaxWidth
-			if maxWidth == 0 {
-				maxWidth = 80
-			}
-			maxWidth -= y.nesting * 2
-
-			doc, ok := v.(*doc)
-			return !ok || doc.width < maxWidth
-		}
-
-		if isOneLine(v) {
-			switch {
-			case v.isArray:
-				y.out.WriteString("[")
-				for i, pair := range v.pairs {
-					if i > 0 {
-						y.out.WriteString(", ")
-					}
-					y.write(pair[1])
-				}
-				y.out.WriteString("]")
-
-			case len(v.pairs) == 0:
-				y.out.WriteString("{}")
-
-			default:
-				// Special case: if we are a list element, and there is only
-				// one entry, print it directly.
-				if len(v.pairs) == 1 && strings.HasSuffix(y.out.String(), "- ") {
-					y.write(v.pairs[0][0])
-					y.out.WriteString(": ")
-					y.write(v.pairs[0][1])
-					return
-				}
-
-				y.out.WriteString("{ ")
-				for i, pair := range v.pairs {
-					if i > 0 {
-						y.out.WriteString(", ")
-					}
-					y.write(pair[0])
-					y.out.WriteString(": ")
-					y.write(pair[1])
-				}
-				y.out.WriteString(" }")
-			}
+		if y.isOneLine(v) {
+			y.writeOneLineDoc(v)
 			return
 		}
 
 		for _, pair := range v.pairs {
-			oneLine := isOneLine(pair[1])
+			oneLine := y.isOneLine(pair[1])
 			y.indent()
 
 			if pair[0] == nil {
@@ -231,6 +166,53 @@ func (y *toYAML) write(v any) {
 			}
 		}
 	}
+}
+
+func (y *toYAML) writeOneLineDoc(d *doc) {
+	switch {
+	case d.isArray:
+		y.out.WriteString("[")
+		for i, pair := range d.pairs {
+			if i > 0 {
+				y.out.WriteString(", ")
+			}
+			y.write(pair[1])
+		}
+		y.out.WriteString("]")
+
+	case len(d.pairs) == 0:
+		y.out.WriteString("{}")
+
+	case len(d.pairs) == 1 && strings.HasSuffix(y.out.String(), "- "):
+		// Special case: if we are a list element, and there is only
+		// one entry, print it directly.
+		y.write(d.pairs[0][0])
+		y.out.WriteString(": ")
+		y.write(d.pairs[0][1])
+
+	default:
+		y.out.WriteString("{ ")
+		for i, pair := range d.pairs {
+			if i > 0 {
+				y.out.WriteString(", ")
+			}
+			y.write(pair[0])
+			y.out.WriteString(": ")
+			y.write(pair[1])
+		}
+		y.out.WriteString(" }")
+	}
+}
+
+func (y *toYAML) isOneLine(v any) bool {
+	maxWidth := y.MaxWidth
+	if maxWidth == 0 {
+		maxWidth = 80
+	}
+	maxWidth -= y.nesting * 2
+
+	doc, ok := v.(*doc)
+	return !ok || doc.width < maxWidth
 }
 
 // indent appends indentation if necessary.
@@ -267,9 +249,9 @@ func (d *doc) push(k, v any) {
 	d.pairs = append(d.pairs, [2]any{k, v})
 }
 
-// compress prepares a document for printing by compressing elements as
+// prepare prepares a document for printing by compressing elements as
 // appropriate.
-func (d *doc) compress() {
+func (d *doc) prepare() {
 	if d.needsSort {
 		slices.SortFunc(d.pairs, cmpMapKeys)
 	}
@@ -295,7 +277,7 @@ func (d *doc) compress() {
 		case int32, int64, uint32, uint64, float32, float64, protoreflect.Name, string:
 			d.width += len(fmt.Sprint(v))
 		case *doc:
-			v.compress()
+			v.prepare()
 			d.width += v.width
 
 			if len(v.pairs) == 1 {

@@ -12,24 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package ast2
 
 import (
 	"fmt"
-	"reflect"
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
+	"google.golang.org/protobuf/proto"
 )
 
-// codec is the state needed for converting an AST node into a Protobuf message.
-type codec struct {
-	*ToProtoOptions
+// ToProtoOptions contains options for the [File.ToProto] function.
+type ToProtoOptions struct {
+	// If set, no spans will be serialized.
+	//
+	// This operation only destroys non-semantic information.
+	OmitSpans bool
+
+	// If set, the contents of the file the AST was parsed from will not
+	// be serialized.
+	OmitFile bool
+}
+
+// ToProto converts this AST into a Protobuf representation, which may be
+// serialized.
+//
+// Note that package ast does not support deserialization from this proto;
+// instead, you will need to re-parse the text file included in the message.
+// This is because the AST is much richer than what is stored in this message;
+// the message only provides enough information for further semantic analysis
+// and diagnostic generation, but not for pretty-printing.
+//
+// Panics if the AST contains a cycle (e.g. a message that contains itself as
+// a nested message). Parsed ASTs will never contain cycles, but users may
+// modify them into a cyclic state.
+func ToProto(f ast.File, options ToProtoOptions) proto.Message {
+	return (&protoEncoder{ToProtoOptions: options}).file(f) // See codec.go
+}
+
+// protoEncoder is the state needed for converting an AST node into a Protobuf message.
+type protoEncoder struct {
+	ToProtoOptions
 
 	stack    []report.Spanner
-	stackMap map[report.Spanner]bool
+	stackMap map[report.Spanner]struct{}
 }
 
 // checkCycle panics if v is visited cyclically.
@@ -37,22 +67,22 @@ type codec struct {
 // Should be called like this, so that on function exit the entry is popped:
 //
 //	defer c.checkCycle(v)()
-func (c *codec) checkCycle(v report.Spanner) func() {
+func (c *protoEncoder) checkCycle(v report.Spanner) func() {
 	// By default, we just perform a linear search, because inserting into
 	// a map is extremely slow. However, if the stack gets tall enough, we
 	// switch to using the map to avoid going quadratic.
 	if len(c.stack) > 32 {
-		c.stackMap = make(map[report.Spanner]bool)
+		c.stackMap = make(map[report.Spanner]struct{})
 		for _, v := range c.stack {
-			c.stackMap[v] = true
+			c.stackMap[v] = struct{}{}
 		}
 		c.stack = nil
 	}
 
 	var cycle bool
 	if c.stackMap != nil {
-		cycle = c.stackMap[v]
-		c.stackMap[v] = true
+		_, cycle = c.stackMap[v]
+		c.stackMap[v] = struct{}{}
 	} else {
 		cycle = slices.Contains(c.stack, v)
 		c.stack = append(c.stack, v)
@@ -71,24 +101,24 @@ func (c *codec) checkCycle(v report.Spanner) func() {
 	}
 }
 
-func (c *codec) file(file File) *compilerpb.File {
+func (c *protoEncoder) file(file ast.File) *compilerpb.File {
 	proto := new(compilerpb.File)
-	if !c.ElideFile {
+	if !c.OmitFile {
 		proto.File = &compilerpb.Report_File{
 			Path: file.Context().Stream().Path(),
 			Text: []byte(file.Context().Stream().Text()),
 		}
 	}
 
-	file.Iter(func(_ int, d DeclAny) bool {
+	file.Iter(func(_ int, d ast.DeclAny) bool {
 		proto.Decls = append(proto.Decls, c.decl(d))
 		return true
 	})
 	return proto
 }
 
-func (c *codec) span(s report.Spanner) *compilerpb.Span {
-	if c.ElideSpans || internal.Nil(s) {
+func (c *protoEncoder) span(s report.Spanner) *compilerpb.Span {
+	if c.OmitSpans || internal.Nil(s) {
 		return nil
 	}
 
@@ -103,7 +133,25 @@ func (c *codec) span(s report.Spanner) *compilerpb.Span {
 	}
 }
 
-func (c *codec) path(path Path) *compilerpb.Path {
+// commas is a non-generic subinterface of Commas[T].
+type commas interface {
+	Len() int
+	Comma(int) token.Token
+}
+
+func (c *protoEncoder) commas(cs commas) []*compilerpb.Span {
+	if c.OmitSpans || internal.Nil(cs) {
+		return nil
+	}
+
+	spans := make([]*compilerpb.Span, cs.Len())
+	for i := range spans {
+		spans[i] = c.span(cs.Comma(i))
+	}
+	return spans
+}
+
+func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
 	if path.Nil() {
 		return nil
 	}
@@ -112,7 +160,7 @@ func (c *codec) path(path Path) *compilerpb.Path {
 	proto := &compilerpb.Path{
 		Span: c.span(path),
 	}
-	path.Components(func(pc PathComponent) bool {
+	path.Components(func(pc ast.PathComponent) bool {
 		component := new(compilerpb.Path_Component)
 		switch pc.Separator().Text() {
 		case ".":
@@ -137,20 +185,20 @@ func (c *codec) path(path Path) *compilerpb.Path {
 	return proto
 }
 
-func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
+func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 	if decl.Nil() {
 		return nil
 	}
 	defer c.checkCycle(decl)()
 
 	switch k := decl.Kind(); k {
-	case DeclKindEmpty:
+	case ast.DeclKindEmpty:
 		decl := decl.AsEmpty()
 		return &compilerpb.Decl{Decl: &compilerpb.Decl_Empty_{Empty: &compilerpb.Decl_Empty{
 			Span: c.span(decl),
 		}}}
 
-	case DeclKindSyntax:
+	case ast.DeclKindSyntax:
 		decl := decl.AsSyntax()
 
 		var kind compilerpb.Decl_Syntax_Kind
@@ -170,7 +218,7 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}}}
 
-	case DeclKindPackage:
+	case ast.DeclKindPackage:
 		decl := decl.AsPackage()
 
 		return &compilerpb.Decl{Decl: &compilerpb.Decl_Package_{Package: &compilerpb.Decl_Package{
@@ -181,7 +229,7 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}}}
 
-	case DeclKindImport:
+	case ast.DeclKindImport:
 		decl := decl.AsImport()
 
 		var mod compilerpb.Decl_Import_Modifier
@@ -202,19 +250,19 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 			SemicolonSpan:  c.span(decl.Semicolon()),
 		}}}
 
-	case DeclKindBody:
+	case ast.DeclKindBody:
 		decl := decl.AsBody()
 
 		proto := &compilerpb.Decl_Body{
 			Span: c.span(decl),
 		}
-		decl.Iter(func(_ int, d DeclAny) bool {
+		decl.Iter(func(_ int, d ast.DeclAny) bool {
 			proto.Decls = append(proto.Decls, c.decl(d))
 			return true
 		})
 		return &compilerpb.Decl{Decl: &compilerpb.Decl_Body_{Body: proto}}
 
-	case DeclKindRange:
+	case ast.DeclKindRange:
 		decl := decl.AsRange()
 
 		var kind compilerpb.Decl_Range_Kind
@@ -232,37 +280,37 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}
 
-		decl.Iter(func(_ int, e ExprAny) bool {
+		decl.Iter(func(_ int, e ast.ExprAny) bool {
 			proto.Ranges = append(proto.Ranges, c.expr(e))
 			return true
 		})
 
 		return &compilerpb.Decl{Decl: &compilerpb.Decl_Range_{Range: proto}}
 
-	case DeclKindDef:
+	case ast.DeclKindDef:
 		decl := decl.AsDef()
 
 		var kind compilerpb.Def_Kind
 		switch decl.Classify() {
-		case DefKindMessage:
+		case ast.DefKindMessage:
 			kind = compilerpb.Def_KIND_MESSAGE
-		case DefKindEnum:
+		case ast.DefKindEnum:
 			kind = compilerpb.Def_KIND_ENUM
-		case DefKindService:
+		case ast.DefKindService:
 			kind = compilerpb.Def_KIND_SERVICE
-		case DefKindExtend:
+		case ast.DefKindExtend:
 			kind = compilerpb.Def_KIND_EXTEND
-		case DefKindField:
+		case ast.DefKindField:
 			kind = compilerpb.Def_KIND_FIELD
-		case DefKindEnumValue:
+		case ast.DefKindEnumValue:
 			kind = compilerpb.Def_KIND_ENUM_VALUE
-		case DefKindOneof:
+		case ast.DefKindOneof:
 			kind = compilerpb.Def_KIND_ONEOF
-		case DefKindGroup:
+		case ast.DefKindGroup:
 			kind = compilerpb.Def_KIND_GROUP
-		case DefKindMethod:
+		case ast.DefKindMethod:
 			kind = compilerpb.Def_KIND_METHOD
-		case DefKindOption:
+		case ast.DefKindOption:
 			kind = compilerpb.Def_KIND_OPTION
 		}
 
@@ -289,11 +337,11 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 				OutputSpan:  c.span(signature.Outputs()),
 			}
 
-			signature.Inputs().Iter(func(_ int, t TypeAny) bool {
+			signature.Inputs().Iter(func(_ int, t ast.TypeAny) bool {
 				proto.Signature.Inputs = append(proto.Signature.Inputs, c.type_(t))
 				return true
 			})
-			signature.Outputs().Iter(func(_ int, t TypeAny) bool {
+			signature.Outputs().Iter(func(_ int, t ast.TypeAny) bool {
 				proto.Signature.Outputs = append(proto.Signature.Outputs, c.type_(t))
 				return true
 			})
@@ -303,7 +351,7 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 			proto.Body = &compilerpb.Decl_Body{
 				Span: c.span(decl.Body()),
 			}
-			body.Iter(func(_ int, d DeclAny) bool {
+			body.Iter(func(_ int, d ast.DeclAny) bool {
 				proto.Body.Decls = append(proto.Body.Decls, c.decl(d))
 				return true
 			})
@@ -312,11 +360,11 @@ func (c *codec) decl(decl DeclAny) *compilerpb.Decl {
 		return &compilerpb.Decl{Decl: &compilerpb.Decl_Def{Def: proto}}
 
 	default:
-		panic(fmt.Sprintf("typeToProto: unknown DeclKind: %d", k))
+		panic(fmt.Sprintf("protocompile/ast: unknown DeclKind: %d", k))
 	}
 }
 
-func (c *codec) options(options CompactOptions) *compilerpb.Options {
+func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 	if options.Nil() {
 		return nil
 	}
@@ -326,7 +374,7 @@ func (c *codec) options(options CompactOptions) *compilerpb.Options {
 		Span: c.span(options),
 	}
 
-	options.Iter(func(_ int, o Option) bool {
+	options.Iter(func(_ int, o ast.Option) bool {
 		proto.Entries = append(proto.Entries, &compilerpb.Options_Entry{
 			Path:       c.path(o.Path),
 			Value:      c.expr(o.Value),
@@ -338,14 +386,14 @@ func (c *codec) options(options CompactOptions) *compilerpb.Options {
 	return proto
 }
 
-func (c *codec) expr(expr ExprAny) *compilerpb.Expr {
+func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 	if expr.Nil() {
 		return nil
 	}
 	defer c.checkCycle(expr)()
 
 	switch k := expr.Kind(); k {
-	case ExprKindLiteral:
+	case ast.ExprKindLiteral:
 		expr := expr.AsLiteral()
 
 		proto := &compilerpb.Expr_Literal{
@@ -357,14 +405,16 @@ func (c *codec) expr(expr ExprAny) *compilerpb.Expr {
 			proto.Value = &compilerpb.Expr_Literal_FloatValue{FloatValue: v}
 		} else if v, ok := expr.Token.AsString(); ok {
 			proto.Value = &compilerpb.Expr_Literal_StringValue{StringValue: v}
+		} else {
+			panic(fmt.Sprintf("protocompile/ast: ExprLiteral contains neither string nor int: %v", expr.Token))
 		}
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Literal_{Literal: proto}}
 
-	case ExprKindPath:
+	case ast.ExprKindPath:
 		expr := expr.AsPath()
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Path{Path: c.path(expr.Path)}}
 
-	case ExprKindPrefixed:
+	case ast.ExprKindPrefixed:
 		expr := expr.AsPrefixed()
 
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Prefixed_{Prefixed: &compilerpb.Expr_Prefixed{
@@ -374,7 +424,7 @@ func (c *codec) expr(expr ExprAny) *compilerpb.Expr {
 			PrefixSpan: c.span(expr.PrefixToken()),
 		}}}
 
-	case ExprKindRange:
+	case ast.ExprKindRange:
 		expr := expr.AsRange()
 
 		start, end := expr.Bounds()
@@ -385,44 +435,53 @@ func (c *codec) expr(expr ExprAny) *compilerpb.Expr {
 			ToSpan: c.span(expr.Keyword()),
 		}}}
 
-	case ExprKindArray:
+	case ast.ExprKindArray:
 		expr := expr.AsArray()
 
+		a, b := expr.Brackets().StartEnd()
 		proto := &compilerpb.Expr_Array{
-			Span: c.span(expr),
+			Span:       c.span(expr),
+			OpenSpan:   c.span(a.LeafSpan()),
+			CloseSpan:  c.span(b.LeafSpan()),
+			CommaSpans: c.commas(expr),
 		}
-		expr.Iter(func(_ int, e ExprAny) bool {
+		expr.Iter(func(_ int, e ast.ExprAny) bool {
 			proto.Elements = append(proto.Elements, c.expr(e))
 			return true
 		})
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Array_{Array: proto}}
 
-	case ExprKindDict:
+	case ast.ExprKindDict:
 		expr := expr.AsDict()
 
+		a, b := expr.Braces().StartEnd()
 		proto := &compilerpb.Expr_Dict{
-			Span: c.span(expr),
+			Span:       c.span(expr),
+			OpenSpan:   c.span(a.LeafSpan()),
+			CloseSpan:  c.span(b.LeafSpan()),
+			CommaSpans: c.commas(expr),
 		}
-		expr.Iter(func(_ int, e ExprField) bool {
+		expr.Iter(func(_ int, e ast.ExprField) bool {
 			proto.Entries = append(proto.Entries, c.exprField(e))
 			return true
 		})
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Dict_{Dict: proto}}
 
-	case ExprKindField:
+	case ast.ExprKindField:
 		expr := expr.AsField()
-		return &compilerpb.Expr{Expr: &compilerpb.Expr_Kv_{Kv: c.exprField(expr)}}
-	}
+		return &compilerpb.Expr{Expr: &compilerpb.Expr_Field_{Field: c.exprField(expr)}}
 
-	panic(fmt.Sprint("typeToProto: unknown Expr implementation:", reflect.TypeOf(expr)))
+	default:
+		panic(fmt.Sprintf("protocompile/ast: unknown ExprKind: %d", k))
+	}
 }
 
-func (c *codec) exprField(expr ExprField) *compilerpb.Expr_Kv {
+func (c *protoEncoder) exprField(expr ast.ExprField) *compilerpb.Expr_Field {
 	if expr.Nil() {
 		return nil
 	}
 
-	return &compilerpb.Expr_Kv{
+	return &compilerpb.Expr_Field{
 		Key:       c.expr(expr.Key()),
 		Value:     c.expr(expr.Value()),
 		Span:      c.span(expr),
@@ -431,18 +490,18 @@ func (c *codec) exprField(expr ExprField) *compilerpb.Expr_Kv {
 }
 
 //nolint:revive // "method type_ should be type" is incorrect because type is a keyword.
-func (c *codec) type_(ty TypeAny) *compilerpb.Type {
+func (c *protoEncoder) type_(ty ast.TypeAny) *compilerpb.Type {
 	if ty.Nil() {
 		return nil
 	}
 	defer c.checkCycle(ty)()
 
 	switch k := ty.Kind(); k {
-	case TypeKindPath:
+	case ast.TypeKindPath:
 		ty := ty.AsPath()
 		return &compilerpb.Type{Type: &compilerpb.Type_Path{Path: c.path(ty.Path)}}
 
-	case TypeKindPrefixed:
+	case ast.TypeKindPrefixed:
 		ty := ty.AsPrefixed()
 		return &compilerpb.Type{Type: &compilerpb.Type_Prefixed_{Prefixed: &compilerpb.Type_Prefixed{
 			Prefix:     compilerpb.Type_Prefixed_Prefix(ty.Prefix()),
@@ -451,19 +510,24 @@ func (c *codec) type_(ty TypeAny) *compilerpb.Type {
 			PrefixSpan: c.span(ty.PrefixToken()),
 		}}}
 
-	case TypeKindGeneric:
+	case ast.TypeKindGeneric:
 		ty := ty.AsGeneric()
+
+		a, b := ty.Args().Brackets().StartEnd()
 		generic := &compilerpb.Type_Generic{
-			Path:        c.path(ty.Path()),
-			Span:        c.span(ty),
-			BracketSpan: c.span(ty.Args()),
+			Path:       c.path(ty.Path()),
+			Span:       c.span(ty),
+			OpenSpan:   c.span(a.LeafSpan()),
+			CloseSpan:  c.span(b.LeafSpan()),
+			CommaSpans: c.commas(ty.Args()),
 		}
-		ty.Args().Iter(func(_ int, t TypeAny) bool {
+		ty.Args().Iter(func(_ int, t ast.TypeAny) bool {
 			generic.Args = append(generic.Args, c.type_(t))
 			return true
 		})
 		return &compilerpb.Type{Type: &compilerpb.Type_Generic_{Generic: generic}}
-	}
 
-	panic(fmt.Sprint("typeToProto: unknown Type implementation:", reflect.TypeOf(ty)))
+	default:
+		panic(fmt.Sprintf("protocompile/ast: unknown TypeKind: %d", k))
+	}
 }

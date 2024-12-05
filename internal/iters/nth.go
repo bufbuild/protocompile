@@ -23,5 +23,5 @@ func First[T any](seq iter.Seq[T]) (v T, ok bool) {
 		ok = true
 		return false
 	})
-	return
+	return v, ok
 }

@@ -15,17 +15,15 @@
 package ast2
 
 import (
+	"reflect"
+	"testing"
 	"unsafe"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/prototest"
 )
-
-type fakePath struct {
-	with internal.With[ast.Context]
-	raw  struct{ Start, End token.ID }
-}
 
 // NewPath creates a new parser-generated path.
 //
@@ -38,4 +36,13 @@ func NewPath(ctx ast.Context, start, end token.Token) ast.Path {
 	}
 
 	return *(*ast.Path)(unsafe.Pointer(&path))
+}
+
+type fakePath struct {
+	with internal.With[ast.Context]
+	raw  struct{ Start, End token.ID }
+}
+
+func TestFakePathLayout(t *testing.T) {
+	prototest.RequireSameLayout(t, reflect.TypeOf(ast.Path{}), reflect.TypeOf(fakePath{}))
 }
