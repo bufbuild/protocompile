@@ -1,0 +1,66 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "any", separator: SEPARATOR_DOT }]
+      value.literal.int_value: 1
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "any", separator: SEPARATOR_DOT }]
+      value.prefixed: { prefix: PREFIX_MINUS, expr.literal.int_value: 100 }
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "any", separator: SEPARATOR_DOT }]
+      value.range:
+        start.literal.int_value: 1
+        end.literal.int_value: 100
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "any", separator: SEPARATOR_DOT }]
+      value.array.elements:
+        - literal.int_value: 1
+        - literal.int_value: 2
+        - literal.int_value: 3
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "any", separator: SEPARATOR_DOT }]
+      value.literal.string_value: "some code here {  xyz}"
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "any", separator: SEPARATOR_DOT }]
+      value.dict.entries:
+        - key.path.components: [{ ident: "foo" }]
+          value.literal.string_value: "x"
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "bad", separator: SEPARATOR_DOT }]
+      value.array.elements:
+        - field:
+            key.literal.int_value: 1
+            value.literal.int_value: 2
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "bad", separator: SEPARATOR_DOT }]
+      value.dict.entries:
+        - value.literal.int_value: 1
+        - value.literal.int_value: 2
+        - value.literal.int_value: 3
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "bad", separator: SEPARATOR_DOT }]
+      value.prefixed.prefix: PREFIX_MINUS
+  - def:
+      kind: KIND_OPTION
+      name.components:
+        - extension.components: [{ ident: "test" }, { ident: "bad", separator: SEPARATOR_DOT }]
+      value.range.start.literal.int_value: 1

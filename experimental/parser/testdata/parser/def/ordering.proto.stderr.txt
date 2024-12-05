@@ -1,0 +1,167 @@
+error: encountered more than one method parameter list
+  --> testdata/parser/def/ordering.proto:20:13
+   | 
+20 |     M x (T) (T);
+   |         --- ^^^ help: consider removing this
+   |         |
+   |         first one is here
+
+error: unexpected method parameter list after method return type
+  --> testdata/parser/def/ordering.proto:21:21
+   | 
+21 |     M x returns (T) (T);
+   |         ----------- ^^^ 
+   |         |
+   |         previous method return type is here
+
+error: missing `(...)` around method return type
+  --> testdata/parser/def/ordering.proto:22:17
+   | 
+22 |     M x returns T (T);
+   |                 ^ help: replace this with `(T)`
+
+error: unexpected method parameter list after method return type
+  --> testdata/parser/def/ordering.proto:22:19
+   | 
+22 |     M x returns T (T);
+   |         --------- ^^^ 
+   |         |
+   |         previous method return type is here
+
+error: unexpected method parameter list after compact options
+  --> testdata/parser/def/ordering.proto:23:21
+   | 
+23 |     M x [foo = bar] (T);
+   |         ----------- ^^^ 
+   |         |
+   |         previous compact options is here
+
+error: unexpected method parameter list after definition body
+  --> testdata/parser/def/ordering.proto:24:23
+   | 
+24 |     M x { /* ... */ } (T);
+   |         ------------- ^^^ 
+   |         |
+   |         previous definition body is here
+
+error: encountered more than one method return type
+  --> testdata/parser/def/ordering.proto:26:21
+   | 
+26 |     M x returns (T) returns (T);
+   |         ----------- ^^^^^^^^^^^ help: consider removing this
+   |         |
+   |         first one is here
+
+error: unexpected method return type after compact options
+  --> testdata/parser/def/ordering.proto:27:21
+   | 
+27 |     M x [foo = bar] returns (T);
+   |         ----------- ^^^^^^^^^^^ 
+   |         |
+   |         previous compact options is here
+
+error: unexpected method return type after definition body
+  --> testdata/parser/def/ordering.proto:28:23
+   | 
+28 |     M x { /* ... */ } returns (T);
+   |         ------------- ^^^^^^^^^^^ 
+   |         |
+   |         previous definition body is here
+
+error: missing `(...)` around method return type
+  --> testdata/parser/def/ordering.proto:30:17
+   | 
+30 |     M x returns T returns T;
+   |                 ^ help: replace this with `(T)`
+
+error: encountered more than one method return type
+  --> testdata/parser/def/ordering.proto:30:19
+   | 
+30 |     M x returns T returns T;
+   |         --------- ^^^^^^^^^ help: consider removing this
+   |         |
+   |         first one is here
+
+error: missing `(...)` around method return type
+  --> testdata/parser/def/ordering.proto:31:17
+   | 
+31 |     M x returns T [] returns T;
+   |                 ^ help: replace this with `(T)`
+
+error: encountered more than one method return type
+  --> testdata/parser/def/ordering.proto:31:22
+   | 
+31 |     M x returns T [] returns T;
+   |         ---------    ^^^^^^^^^ help: consider removing this
+   |         |
+   |         first one is here
+
+error: unexpected method return type after compact options
+  --> testdata/parser/def/ordering.proto:32:21
+   | 
+32 |     M x [foo = bar] returns T;
+   |         ----------- ^^^^^^^^^ 
+   |         |
+   |         previous compact options is here
+
+error: missing `(...)` around method return type
+  --> testdata/parser/def/ordering.proto:32:29
+   | 
+32 |     M x [foo = bar] returns T;
+   |                             ^ help: replace this with `(T)`
+
+error: unexpected method return type after definition body
+  --> testdata/parser/def/ordering.proto:33:23
+   | 
+33 |     M x { /* ... */ } returns T;
+   |         ------------- ^^^^^^^^^ 
+   |         |
+   |         previous definition body is here
+
+error: missing `(...)` around method return type
+  --> testdata/parser/def/ordering.proto:33:31
+   | 
+33 |     M x { /* ... */ } returns T;
+   |                               ^ help: replace this with `(T)`
+
+error: encountered more than one message field tag
+  --> testdata/parser/def/ordering.proto:35:13
+   | 
+35 |     M x = 1 = 1;
+   |           - ^^^ help: consider removing this
+   |           |
+   |           first one is here
+
+error: unexpected message field tag after compact options
+  --> testdata/parser/def/ordering.proto:36:23
+   | 
+36 |     M x [foo = bar] = 1;
+   |         -----------   ^ 
+   |         |
+   |         previous compact options is here
+
+error: unexpected message field tag after definition body
+  --> testdata/parser/def/ordering.proto:37:25
+   | 
+37 |     M x { /* ... */ } = 1;
+   |         -------------   ^ 
+   |         |
+   |         previous definition body is here
+
+error: encountered more than one compact options
+  --> testdata/parser/def/ordering.proto:39:21
+   | 
+39 |     M x [foo = bar] [foo = bar];
+   |         ----------- ^^^^^^^^^^^ help: consider removing this
+   |         |
+   |         first one is here
+
+error: unexpected compact options after definition body
+  --> testdata/parser/def/ordering.proto:40:23
+   | 
+40 |     M x { /* ... */ } [foo = bar];
+   |         ------------- ^^^^^^^^^^^ 
+   |         |
+   |         previous definition body is here
+
+encountered 22 errors
