@@ -18,6 +18,7 @@ package intern_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,7 +54,28 @@ func TestIntern(t *testing.T) {
 
 				id := table.Intern(s)
 				assert.Equal(t, s, table.Value(id), "id: %v", id)
+				assert.Equal(t, shouldInline(s), id < 0)
 			})
 		}
 	}
+}
+
+func shouldInline(s string) bool {
+	if s == "" || len(s) > 5 || strings.HasSuffix(s, ".") {
+		return false
+	}
+
+	for _, r := range s {
+		switch {
+		case r >= '0' && r <= '9',
+			r >= 'a' && r <= 'z',
+			r >= 'A' && r <= 'Z',
+			r == '_', r == '.':
+
+		default:
+			return false
+		}
+	}
+
+	return true
 }
