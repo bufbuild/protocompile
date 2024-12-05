@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast2
+package astx
 
 import (
 	"fmt"
 	"slices"
+
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
-	"google.golang.org/protobuf/proto"
 )
 
 // ToProtoOptions contains options for the [File.ToProto] function.

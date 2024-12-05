@@ -66,10 +66,10 @@ func unwrapPathLike[Value ~int32 | ~uint32, Kind ~int8](want Kind, p pathLike[Ki
 }
 
 // wrapPath wraps a path in a pathLike.
-func wrapPath[Kind ~int8](path Path) pathLike[Kind] {
+func wrapPath[Kind ~int8](path rawPath) pathLike[Kind] {
 	return pathLike[Kind]{
-		StartOrKind: ^int32(path.raw.Start),
-		EndOrValue:  int32(path.raw.End),
+		StartOrKind: ^int32(path.Start),
+		EndOrValue:  int32(path.End),
 	}
 }
 

@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast2
+package astx
 
 import (
-	"reflect"
-	"testing"
 	"unsafe"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/prototest"
 )
 
 // NewPath creates a new parser-generated path.
@@ -41,9 +38,4 @@ func NewPath(ctx ast.Context, start, end token.Token) ast.Path {
 type fakePath struct {
 	with internal.With[ast.Context]
 	raw  struct{ Start, End token.ID }
-}
-
-func TestFakePathLayout(t *testing.T) {
-	t.Parallel()
-	prototest.RequireSameLayout(t, reflect.TypeOf(ast.Path{}), reflect.TypeOf(fakePath{}))
 }
