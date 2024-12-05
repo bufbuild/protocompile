@@ -24,6 +24,8 @@ package taxa
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Subject is a syntactic or semantic element within the grammar that can be
@@ -167,6 +169,17 @@ func (s Subject) String() string {
 		return names[0]
 	}
 	return names[s]
+}
+
+// All returns an iterator over all subjects.
+func All() iter.Seq[Subject] {
+	return func(yield func(Subject) bool) {
+		for i := 0; i < Total; i++ {
+			if !yield(Subject(i)) {
+				break
+			}
+		}
+	}
 }
 
 // GoString implements [fmt.GoStringer].

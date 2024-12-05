@@ -20,15 +20,18 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 func TestAllStringify(t *testing.T) {
 	t.Parallel()
 
-	for w := taxa.Subject(0); w < taxa.Subject(taxa.Total); w++ {
-		assert.NotEqual(t, "", w.String())
-		assert.NotEqual(t, "", w.GoString())
-	}
+	taxa.All()(func(s taxa.Subject) bool {
+		assert.NotEqual(t, "", s.String())
+		assert.NotEqual(t, "", s.GoString())
+
+		return true
+	})
 }
 
 func TestSet(t *testing.T) {
@@ -44,15 +47,9 @@ func TestSet(t *testing.T) {
 	assert.True(t, set.Has(taxa.Comment))
 	assert.True(t, set.Has(taxa.Message))
 
-	var elems []taxa.Subject
-	set.All()(func(s taxa.Subject) bool {
-		elems = append(elems, s)
-		return true
-	})
-
 	assert.Equal(t,
 		[]taxa.Subject{taxa.EOF, taxa.Decl, taxa.Message, taxa.Array, taxa.Comment},
-		elems,
+		iters.Collect(set.All()),
 	)
 }
 

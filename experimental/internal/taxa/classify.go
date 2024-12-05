@@ -153,7 +153,7 @@ func Classify(node report.Spanner) Subject {
 		case ast.ExprKindDict:
 			return Classify(node.AsDict())
 		case ast.ExprKindField:
-			return Classify(node.AsKV())
+			return Classify(node.AsField())
 		default:
 			return Expr
 		}

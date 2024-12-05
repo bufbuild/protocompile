@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/internal/iter"
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 // Set is a set of [Subject] values, implicitly ordered by the [Subject] values'
@@ -96,11 +97,7 @@ func (s Set) All() iter.Seq[Subject] {
 //
 // If the set is empty, returns the empty string.
 func (s Set) Join(conj string) string {
-	var elems []Subject
-	s.All()(func(s Subject) bool {
-		elems = append(elems, s)
-		return true
-	})
+	elems := iters.Collect(s.All())
 
 	var out strings.Builder
 	switch len(elems) {
