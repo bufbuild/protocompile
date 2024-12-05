@@ -12,7 +12,11 @@ COPYRIGHT_YEARS := 2020-2024
 LICENSE_IGNORE := -e /testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
+GO_CMD := GOTOOLCHAIN=local $(GO)
 TOOLS_MOD_DIR := ./internal/tools
+# We allow the internal/tools module use a newer version of Go, since some of the
+# tools we want to install and execute require later versions.
+GO_TOOL_CMD := GOTOOLCHAIN=auto $(GO)
 UNAME_OS := $(shell uname -s)
 UNAME_ARCH := $(shell uname -m)
 PATH_SEP ?= ":"
@@ -54,25 +58,25 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: build ## Run unit tests
-	$(GO) test -race -cover ./...
-	$(GO) test -tags protolegacy ./...
-	cd internal/benchmarks && SKIP_DOWNLOAD_GOOGLEAPIS=true $(GO) test -race -cover ./...
+	$(GO_CMD) test -race -cover ./...
+	$(GO_CMD) test -tags protolegacy ./...
+	cd internal/benchmarks && SKIP_DOWNLOAD_GOOGLEAPIS=true $(GO_CMD) test -race -cover ./...
 
 .PHONY: benchmarks
 benchmarks: build ## Run benchmarks
-	cd internal/benchmarks && $(GO) test -bench=. -benchmem -v ./...
+	cd internal/benchmarks && $(GO_CMD) test -bench=. -benchmem -v ./...
 
 .PHONY: build
 build: generate ## Build all packages
-	$(GO) build ./...
+	$(GO_CMD) build ./...
 
 .PHONY: install
 install: ## Install all binaries
-	$(GO) install ./...
+	$(GO_CMD) install ./...
 
 .PHONY: lint
 lint: $(BIN)/golangci-lint ## Lint Go
-	$(GO) vet ./... ./internal/benchmarks/...
+	$(GO_CMD) vet ./... ./internal/benchmarks/...
 	$(BIN)/golangci-lint run
 	cd internal/benchmarks && $(BIN)/golangci-lint run
 
@@ -83,7 +87,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 
 .PHONY: generate
 generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ext-features-descriptors ## Regenerate code and licenses
-	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO) generate ./...
+	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO_CMD) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
 	@# two files and prints the union, dropping lines common to both (-3) and
@@ -110,17 +114,17 @@ checkgenerate:
 $(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
+		GOWORK=off $(GO_TOOL_CMD) build -o $@ github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header
 
 $(BIN)/golangci-lint: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
+		GOWORK=off $(GO_TOOL_CMD) build -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
 $(BIN)/goyacc: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
 	cd $(TOOLS_MOD_DIR) && \
-		GOWORK=off $(GO) build -o $@ golang.org/x/tools/cmd/goyacc
+		GOWORK=off $(GO_TOOL_CMD) build -o $@ golang.org/x/tools/cmd/goyacc
 
 $(CACHE)/protoc-$(PROTOC_VERSION).zip:
 	@mkdir -p $(@D)
