@@ -1,0 +1,36 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+      body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "my_extension" }]
+            type.prefixed:
+              prefix: PREFIX_REPEATED
+              type.path.components: [{ ident: "int32" }]
+            value.literal.string_value: "string-key!"
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "int32" }]
+            value.array.elements:
+              - path.components: [{ ident: "a" }]
+              - path.components: [{ ident: "b" }]
+              - path.components: [{ ident: "c" }]
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "int32" }]
+            value.dict.entries:
+              - key.path.components: [{ ident: "a" }]
+                value.path.components: [{ ident: "b" }]
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "int32" }]
+            value.range:
+              start.literal.int_value: 10
+              end.path.components: [{ ident: "max" }]

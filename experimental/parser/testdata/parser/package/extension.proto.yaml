@@ -1,0 +1,7 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components:
+      - ident: "test"
+      - extension.components: [{ ident: "extension" }, { ident: "path", separator: SEPARATOR_DOT }]
+        separator: SEPARATOR_DOT
+      - { ident: "test", separator: SEPARATOR_DOT }

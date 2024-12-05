@@ -1,0 +1,45 @@
+// Copyright 2020-2024 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package test;
+
+message M {
+	map<string, string> x1 = 1;
+	map<M, M> x2 = 2;
+	map<test.M, .test.M> x3 = 3;
+    map<string, map<string, test.M>> x4 = 4;
+
+    list<string> x5 = 5;
+    void<> x6 = 6;
+
+    my.Map<A, B, C> x7 = 7;
+
+    optional map<string, string> x8 = 8;
+    repeated map<string, string> x9 = 9;
+    required map<string, string> x10 = 10;
+
+    map<string, repeated string> x11 = 11;
+    map<optional .test.M, required test.M> x12 = 12;
+
+    set<Foo bar> x13 = 13;
+    set<optional.Foo> x14 = 14;
+}
+
+service S {
+    rpc X1(map<string, string>) returns (map<string, stream M>) {}
+    rpc X2(list<test.M>) returns (stream .void<M>) {}
+    rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
+}

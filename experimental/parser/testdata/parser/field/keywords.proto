@@ -1,0 +1,54 @@
+// Copyright 2020-2024 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package test;
+
+message M {
+    // This is only a test for keywords that can start a production.
+    syntax syntax = 1;
+    edition edition = 2;
+    import import = 3;
+    package package = 4;
+    option option = 5;
+    message message = 6;
+    enum enum = 7;
+    service service = 8;
+    extend extend = 9;
+    group group = 10;
+    oneof oneof = 11;
+    map map = 12;
+    extensions extensions = 13;
+    reserved reserved = 14;
+    rpc rpc = 15;
+}
+
+message M2 {
+    syntax.X syntax = 1;
+    edition.X edition = 2;
+    import.X import = 3;
+    package.X package = 4;
+    option.X option = 5;
+    message.X message = 6;
+    enum.X enum = 7;
+    service.X service = 8;
+    extend.X extend = 9;
+    group.X group = 10;
+    oneof.X oneof = 11;
+    map.X map = 12;
+    extensions.X extensions = 13;
+    reserved.X reserved = 14;
+    rpc.X rpc = 15;
+}

@@ -12,20 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iters contains helpers for working with iterators.
-package iters
+syntax = "proto2";
 
-import "github.com/bufbuild/protocompile/internal/iter"
+package test;
 
-// Limit limits a sequence to only yield at most limit times.
-func Limit[T any](limit uint, seq iter.Seq[T]) iter.Seq[T] {
-	return func(yield func(T) bool) {
-		seq(func(value T) bool {
-			if limit == 0 || !yield(value) {
-				return false
-			}
-			limit--
-			return true
-		})
-	}
+enum E {
+    // This is only a test for keywords that can start a production.
+    syntax = 1;
+    edition = 2;
+    import = 3;
+    package = 4;
+    option = 5;
+    message = 6;
+    enum = 7;
+    service = 8;
+    extend = 9;
+    group = 10;
+    oneof = 11;
+    map = 12;
+    extensions = 13;
+    reserved = 14;
+    rpc = 15;
 }

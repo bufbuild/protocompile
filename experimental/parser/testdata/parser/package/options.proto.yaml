@@ -1,0 +1,8 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package:
+      path.components: [{ ident: "test" }]
+      options.entries:
+        - path.components:
+            - extension.components: [{ ident: "not" }, { ident: "allowed", separator: SEPARATOR_DOT }]
+          value.literal.string_value: "here"

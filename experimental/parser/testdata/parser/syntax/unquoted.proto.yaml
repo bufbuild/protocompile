@@ -1,0 +1,3 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.path.components: [{ ident: "proto2" }] }
+  - package.path.components: [{ ident: "test" }]

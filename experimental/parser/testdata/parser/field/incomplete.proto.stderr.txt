@@ -1,0 +1,19 @@
+error: unexpected identifier after definition
+  --> testdata/parser/field/incomplete.proto:24:5
+   | 
+24 |     foo.Bar name;
+   |     ^^^ expected `;`
+
+error: unexpected message field tag without `=`
+  --> testdata/parser/field/incomplete.proto:25:18
+   | 
+25 |     foo.Bar name 1;
+   |                  ^ 
+
+error: unexpected `}` after definition
+  --> testdata/parser/field/incomplete.proto:27:1
+   | 
+27 | }
+   | ^ expected `;`
+
+encountered 3 errors

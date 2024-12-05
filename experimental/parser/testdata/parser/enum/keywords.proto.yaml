@@ -1,0 +1,67 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_ENUM
+      name.components: [{ ident: "E" }]
+      body.decls:
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "syntax" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "edition" }]
+            value.literal.int_value: 2
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "import" }]
+            value.literal.int_value: 3
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "package" }]
+            value.literal.int_value: 4
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "option" }]
+            value.literal.int_value: 5
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "message" }]
+            value.literal.int_value: 6
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "enum" }]
+            value.literal.int_value: 7
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "service" }]
+            value.literal.int_value: 8
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "extend" }]
+            value.literal.int_value: 9
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "group" }]
+            value.literal.int_value: 10
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "oneof" }]
+            value.literal.int_value: 11
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "map" }]
+            value.literal.int_value: 12
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "extensions" }]
+            value.literal.int_value: 13
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "reserved" }]
+            value.literal.int_value: 14
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "rpc" }]
+            value.literal.int_value: 15

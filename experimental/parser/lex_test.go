@@ -28,7 +28,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
-func TestRender(t *testing.T) {
+func TestLexer(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
