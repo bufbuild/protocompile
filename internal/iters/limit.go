@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// package iters contains helpers for working with iterators.
 package iters
 
 import "github.com/bufbuild/protocompile/internal/iter"
