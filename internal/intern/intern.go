@@ -76,23 +76,38 @@ type Table struct {
 //
 // This function may be called by multiple goroutines concurrently.
 func (t *Table) Intern(s string) ID {
-	if char6, ok := encodeChar6(s); ok {
-		return char6
-	}
-
 	// Fast path for strings that have already been interned. In the common case
 	// all strings are interned, so we can take a read lock to avoid needing
 	// to trap to the scheduler on concurrent access (all calls to Intern() will
 	// still contend mu.readCount, because RLock atomically increments it).
-	t.mu.RLock()
-	id, ok := t.index[s]
-	t.mu.RUnlock()
-	if ok {
-		// We never delete from this map, so if we see ok here, that cannot be
-		// changed by another goroutine.
+	if id, ok := t.TryIntern(s); ok {
 		return id
 	}
 
+	// Outline the slow part, to promote inlining of Intern().
+	return t.internSlow(s)
+}
+
+// TryIntern will attempt to intern a string.
+//
+// If interning would result in a new entry being created in the table, returns
+// false. This is useful for e.g. querying an intern-keyed map using a string.
+// Failure to intern the string means that the string has never been seen
+// before, so searching the map will be futile.
+func (t *Table) TryIntern(s string) (ID, bool) {
+	if char6, ok := encodeChar6(s); ok {
+		// This also handles s == "".
+		return char6, true
+	}
+
+	t.mu.RLock()
+	id, ok := t.index[s]
+	t.mu.RUnlock()
+
+	return id, ok
+}
+
+func (t *Table) internSlow(s string) ID {
 	// Intern tables are expected to be long-lived. Avoid holding onto a larger
 	// buffer that s is an internal pointer to by cloning it.
 	s = strings.Clone(s)
@@ -116,7 +131,7 @@ func (t *Table) Intern(s string) ID {
 	t.table = append(t.table, s)
 
 	// The first ID will have value 1. ID 0 is reserved for "".
-	id = ID(len(t.table))
+	id := ID(len(t.table))
 	if id < 0 {
 		panic(fmt.Sprintf("internal/intern: %d interning IDs exhausted", len(t.table)))
 	}
