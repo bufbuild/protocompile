@@ -60,6 +60,8 @@ type Stream struct {
 	// All values in this map are string, uint64, or float64.
 	literals map[ID]any
 
+	comments map[ID]rawComments
+
 	// If true, no further mutations (except for synthetic tokens) are
 	// permitted.
 	frozen bool
@@ -108,13 +110,18 @@ func (s *Stream) Freeze() {
 	s.frozen = true
 }
 
+// mustNotBeFrozen panics if s is frozen.
+func (s *Stream) mustNotBeFrozen() {
+	if s.frozen {
+		panic("protocompile/token: attempted to mutate frozen stream")
+	}
+}
+
 // Push mints the next token referring to a piece of the input source.
 //
 // Panics if this stream is frozen.
 func (s *Stream) Push(length int, kind Kind) Token {
-	if s.frozen {
-		panic("protocompile/token: attempted to mutate frozen stream")
-	}
+	s.mustNotBeFrozen()
 
 	if length < 0 || length > math.MaxInt32 {
 		panic(fmt.Sprintf("protocompile/token: Push() called with invalid length: %d", length))

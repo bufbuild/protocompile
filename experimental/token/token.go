@@ -241,8 +241,8 @@ func SetValue[T Value](token Token, value T) {
 	}
 
 	stream := token.Context().Stream()
-	if token.nat() != nil && stream.frozen {
-		panic("protocompile/token: attempted to mutate frozen stream")
+	if !token.IsSynthetic() {
+		stream.mustNotBeFrozen()
 	}
 
 	if stream.literals == nil {
@@ -264,8 +264,8 @@ func ClearValue(token Token) {
 	}
 
 	stream := token.Context().Stream()
-	if token.nat() != nil && stream.frozen {
-		panic("protocompile/token: attempted to mutate frozen stream")
+	if !token.IsSynthetic() {
+		stream.mustNotBeFrozen()
 	}
 
 	delete(stream.literals, token.id)
@@ -279,9 +279,7 @@ func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
 	if open.Context().Stream() != close.Context().Stream() {
 		panic("protocompile/token: attempted to fuse tokens from different streams")
 	}
-	if open.Context().Stream().frozen {
-		panic("protocompile/token: attempted to mutate frozen stream")
-	}
+	open.Context().Stream().mustNotBeFrozen()
 
 	impl1 := open.nat()
 	if impl1 == nil {
@@ -327,6 +325,47 @@ func (t Token) Children() *Cursor {
 		withContext: t.withContext,
 		stream:      synth.children,
 	}
+}
+
+// Comments returns the attached comments for this token.
+//
+// This is a helper to aid in writing code like t.Comments().Leading().
+func (t Token) Comments() Comments {
+	return Comments{t}
+}
+
+// CommentLines returns the lines of a comment token with punctuation removed.
+// If quirks is set, this will match the quirky documented behavior of protoc.
+// Otherwise, it will use a more intelligent algorithm that avoids wrecking the
+// indentation of complex comments.
+//
+// Returns nil if t is not a comment.
+func (t Token) CommentLines(quirks bool) []string {
+	if t.Kind() != Comment {
+		return nil
+	}
+
+	cf := commentFormatter{quirks: quirks}
+
+	a, b := t.StartEnd()
+	if a == b {
+		cf.appendComment(a.Text())
+		return cf.lines
+	}
+
+	cf.appendComment(a.Text())
+	children := a.Children()
+	for { // Can't use Done(), that skips comments.
+		next := children.PopSkippable()
+		if next.Nil() {
+			break
+		}
+		if next.Kind() == Comment {
+			cf.appendComment(next.Text())
+		}
+	}
+	cf.appendComment(b.Text())
+	return cf.lines
 }
 
 // Name converts this token into its corresponding identifier name, potentially
