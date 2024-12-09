@@ -34,10 +34,11 @@ func MergeKey[T any, K cmp.Ordered](slices [][]T, key func(*T) K) []T {
 		// the second.
 	}
 
-	var heap Heap[K, []T] // Holds the slices according to key(slice[0]).
+	// Holds the slices according to key(slice[0]).
+	heap := NewHeap[K, []T](len(slices))
 
-	// Preload the heap with the first element of each slice. This is also
-	// an opportunity to learn the total number of elements so we can allocate
+	// Preload the heap with the first entry of each slice. This is also
+	// an opportunity to learn the total number of entries so we can allocate
 	// a slice of that size.
 	var total int
 	for _, slice := range slices {
@@ -47,9 +48,9 @@ func MergeKey[T any, K cmp.Ordered](slices [][]T, key func(*T) K) []T {
 		}
 	}
 
-	// As long as there are elements in the queue, pop the highest one, whose
-	// first element is the least among all of the slices. Pop the first element
-	// of that slice, write it the output, and the push the rest of the
+	// As long as there are entries in the queue, pop the first one, whose
+	// first entry is the least among all of the slices. Pop the first entry
+	// of that slice, write it to output, and the push the rest of the
 	// slice back onto the heap.
 	output := make([]T, 0, total)
 	for heap.Len() > 0 {

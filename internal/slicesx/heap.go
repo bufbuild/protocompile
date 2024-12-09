@@ -26,6 +26,14 @@ type Heap[K cmp.Ordered, V any] struct {
 	vals []V
 }
 
+// NewHeap returns a new heap with the given pre-allocated capacity.
+func NewHeap[K cmp.Ordered, V any](cap int) *Heap[K, V] {
+	return &Heap[K, V]{
+		keys: make([]K, 0, cap),
+		vals: make([]V, 0, cap),
+	}
+}
+
 // Len returns the number of elements in the heap.
 func (h *Heap[K, V]) Len() int {
 	return len(h.keys)
@@ -45,25 +53,6 @@ func (h *Heap[K, V]) Pop() (K, V) {
 	h.swap(0, n)
 	h.down(0, n)
 	return h.pop()
-}
-
-// Remove removes and returns the entry at index i from the heap.
-func (h *Heap[K, V]) Remove(i int) (K, V) {
-	n := h.Len() - 1
-	if n != i {
-		h.swap(i, n)
-		if !h.down(i, n) {
-			h.up(i)
-		}
-	}
-	return h.pop()
-}
-
-// Fix re-establishes the heap invariant after the key of the nth entry changes.
-func (h *Heap[K, V]) Fix(n int) {
-	if !h.down(n, h.Len()) {
-		h.up(n)
-	}
 }
 
 func (h *Heap[K, V]) up(j int) {
@@ -98,7 +87,7 @@ func (h *Heap[K, V]) down(i0, n int) bool {
 }
 
 func (h *Heap[K, V]) less(i, j int) bool {
-	return cmp.Compare(h.keys[i], h.keys[j]) < 0
+	return h.keys[i] < h.keys[j]
 }
 
 func (h *Heap[K, V]) swap(i, j int) {
