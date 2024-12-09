@@ -1,5 +1,5 @@
 #		kind		offsets		linecol		text
-0		Comment		000:046		001:001		"// Copyright 2020-2024 Buf Technologies, Inc.\n"
+0		Comment		000:605		001:001		"// Copyright 2020-2024 Buf Technologies, Inc.\n"		close:Token(12)
 1		Comment		046:049		002:001		"//\n"
 2		Comment		049:116		003:001		"// Licensed under the Apache License, Version 2.0 (the \"License\");\n"
 3		Comment		116:184		004:001		"// you may not use this file except in compliance with the License.\n"
@@ -11,9 +11,9 @@
 9		Comment		355:424		010:001		"// distributed under the License is distributed on an \"AS IS\" BASIS,\n"
 10		Comment		424:500		011:001		"// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n"
 11		Comment		500:571		012:001		"// See the License for the specific language governing permissions and\n"
-12		Comment		571:605		013:001		"// limitations under the License.\n"
+12		Comment		000:605		001:001		"// limitations under the License.\n"		open:Token(0)
 13		Space		605:606		014:001		"\n"
-14		Ident		606:612		015:001		"syntax"
+14		Ident		606:612		015:001		"syntax"		detached:Token(0)
 15		Space		612:613		015:007		" "
 16		Punct		613:614		015:008		"="
 17		Space		614:615		015:009		" "
@@ -28,7 +28,7 @@
 26		Punct		641:642		017:016		";"
 27		Space		642:644		017:017		"\n\n"
 28		Comment		644:670		019:001		"// This is a doc comment.\n"
-29		Ident		670:677		020:001		"message"
+29		Ident		670:677		020:001		"message"		leading:Token(28)
 30		Space		677:678		020:008		" "
 31		Ident		678:681		020:009		"Foo"
 32		Space		681:682		020:012		" "

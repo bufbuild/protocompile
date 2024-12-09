@@ -26,6 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/golden"
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 func TestRender(t *testing.T) {
@@ -85,6 +86,22 @@ func TestRender(t *testing.T) {
 				} else {
 					fmt.Fprintf(&tsv, "\t\topen:%v", a.ID())
 				}
+			}
+
+			comments := tok.Comments()
+			iters.Enumerate(comments.Detached())(func(i int, t token.Token) bool {
+				if i == 0 {
+					fmt.Fprintf(&tsv, "\t\tdetached:%v", t.ID())
+				} else {
+					fmt.Fprintf(&tsv, ",%v", t.ID())
+				}
+				return true
+			})
+			if leading := comments.Leading(); !leading.Nil() {
+				fmt.Fprintf(&tsv, "\t\tleading:%v", leading.ID())
+			}
+			if trailing := comments.Trailing(); !trailing.Nil() {
+				fmt.Fprintf(&tsv, "\t\ttrailing:%v", trailing.ID())
 			}
 
 			tsv.WriteByte('\n')
