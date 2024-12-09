@@ -14,7 +14,11 @@
 
 package iters
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import (
+	"strings"
+
+	"github.com/bufbuild/protocompile/internal/iter"
+)
 
 // Partition returns an iterator of subslices of s such that each yielded
 // slice is delimited according to delimit. Also yields the starting index of
@@ -40,6 +44,27 @@ func Partition[T any](s []T, delimit func(a, b *T) bool) iter.Seq2[int, []T] {
 		rest := s[start:]
 		if len(rest) > 0 {
 			yield(start, rest)
+		}
+	}
+}
+
+// SplitString returns an iterator over pieces of s separated by substr.
+//
+// This function is equivalent to slices.Values(strings.Split(s, substr)),
+// but it avoids an allocation.
+func SplitString(s string, substr string) iter.Seq[string] {
+	return func(yield func(s string) bool) {
+		if s == "" {
+			yield(s)
+			return
+		}
+
+		for {
+			before, after, ok := strings.Cut(s, substr)
+			if !yield(before) || !ok {
+				break
+			}
+			s = after
 		}
 	}
 }
