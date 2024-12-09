@@ -27,6 +27,8 @@ type Heap[K cmp.Ordered, V any] struct {
 }
 
 // NewHeap returns a new heap with the given pre-allocated capacity.
+//
+//nolint:revive,predeclared // cap used as a variable.
 func NewHeap[K cmp.Ordered, V any](cap int) *Heap[K, V] {
 	return &Heap[K, V]{
 		keys: make([]K, 0, cap),
