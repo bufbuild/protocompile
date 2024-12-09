@@ -19,9 +19,11 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/bufbuild/protocompile/internal/fuzztesting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
@@ -387,4 +389,33 @@ func TestDescriptorProtoPath(t *testing.T) {
 	// sanity check our constant
 	path := (*descriptorpb.FileDescriptorProto)(nil).ProtoReflect().Descriptor().ParentFile().Path()
 	require.Equal(t, descriptorProtoPath, path)
+}
+
+func TestPathological(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		path       string
+		canCompile bool
+	}{
+		{
+			path:       filepath.Join("parser", "testdata", "pathological4.proto"),
+			canCompile: false,
+		},
+	}
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.path, func(t *testing.T) {
+			fuzztesting.RunWithFuzzerTimeout(t, func(ctx context.Context) {
+				comp := &Compiler{
+					Resolver: &SourceResolver{},
+				}
+				_, err := comp.Compile(ctx, testCase.path)
+				if testCase.canCompile {
+					require.NoError(t, err)
+				} else {
+					require.Error(t, err)
+				}
+			})
+		})
+	}
 }
