@@ -80,21 +80,24 @@ func (t *Table) Intern(s string) ID {
 	// all strings are interned, so we can take a read lock to avoid needing
 	// to trap to the scheduler on concurrent access (all calls to Intern() will
 	// still contend mu.readCount, because RLock atomically increments it).
-	if id, ok := t.TryIntern(s); ok {
+	if id, ok := t.Query(s); ok {
 		return id
 	}
 
-	// Outline the slow part, to promote inlining of Intern().
+	// Outline the fallback for when we haven't interned, to promote inlining
+	// of Intern().
 	return t.internSlow(s)
 }
 
-// TryIntern will attempt to intern a string.
+// Query will query whether s has already been interned.
 //
-// If interning would result in a new entry being created in the table, returns
-// false. This is useful for e.g. querying an intern-keyed map using a string.
-// Failure to intern the string means that the string has never been seen
-// before, so searching the map will be futile.
-func (t *Table) TryIntern(s string) (ID, bool) {
+// If s has never been interned, returns false. This is useful for e.g. querying
+// an intern-keyed map using a string: a failed query indicates that the string
+// has never been seen before, so searching the map will be futile.
+//
+// If s is small enough to be inlined in an ID, it is treated as always being
+// interned.
+func (t *Table) Query(s string) (ID, bool) {
 	if char6, ok := encodeChar6(s); ok {
 		// This also handles s == "".
 		return char6, true
