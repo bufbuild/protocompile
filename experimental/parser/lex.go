@@ -96,7 +96,9 @@ func Lex(ctx token.Context, errs *report.Report) {
 			} else {
 				text = l.SeekEOF()
 			}
+
 			l.Push(len("//")+len(text), token.Comment)
+
 		case r == '/' && l.Peek() == '*':
 			l.cursor++ // Skip the *.
 
@@ -116,7 +118,9 @@ func Lex(ctx token.Context, errs *report.Report) {
 				l.Error(ErrUnmatched{Span: l.SpanFrom(l.cursor - 2)})
 				text = l.SeekEOF()
 			}
+
 			l.Push(len("/*")+len(text), token.Comment)
+
 		case r == '*' && l.Peek() == '/':
 			l.cursor++ // Skip the /.
 
