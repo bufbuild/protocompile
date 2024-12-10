@@ -26,7 +26,7 @@ func TestMerge(t *testing.T) {
 	t.Parallel()
 
 	type V [2]int
-	first := func(x *V) int { return (*x)[0] }
+	first := func(x V) int { return x[0] }
 	tests := []struct {
 		slices [][]V
 		want   []V
@@ -58,7 +58,7 @@ func TestMerge(t *testing.T) {
 				{1, 28}, {7, 32}, {12, 31}, {17, 79}, {32, 15},
 				{39, 64}, {40, 62}, {55, 98}, {59, 2}, {60, 37},
 				{66, 60}, {69, 54}, {72, 13}, {82, 97}, {83, 61},
-				{91, 27}, {95, 81}, {97, 54}, {98, 25}, {98, 1}},
+				{91, 27}, {95, 81}, {97, 54}, {98, 1}, {98, 25}},
 		},
 	}
 

@@ -19,11 +19,13 @@ import "cmp"
 // MergeKey an n-way merge of sorted slices, using a function to extract a
 // comparison key. This function will be called at most once per element.
 //
-// The resulting slice will be sorted, but not necessarily stably.
+// The resulting slice will be sorted, but not necessarily stably. In other
+// words, the result is as if by calling Sort(Concat(slices)), but with
+// better time complexity.
 //
 // Time complexity is O(m log n), where m is the total number of elements to
 // merge, and n is the number of slices to merge from.
-func MergeKey[T any, K cmp.Ordered](slices [][]T, key func(*T) K) []T {
+func MergeKey[T any, K cmp.Ordered](slices [][]T, key func(T) K) []T {
 	switch len(slices) {
 	case 0:
 		return nil
@@ -44,7 +46,7 @@ func MergeKey[T any, K cmp.Ordered](slices [][]T, key func(*T) K) []T {
 	for _, slice := range slices {
 		total += len(slice)
 		if len(slice) > 0 {
-			heap.Push(key(&slice[0]), slice)
+			heap.Insert(key(slice[0]), slice)
 		}
 	}
 
@@ -54,12 +56,14 @@ func MergeKey[T any, K cmp.Ordered](slices [][]T, key func(*T) K) []T {
 	// slice back onto the heap.
 	output := make([]T, 0, total)
 	for heap.Len() > 0 {
-		_, slice := heap.Pop()
+		_, slice := heap.Peek()
 		output = append(output, slice[0])
 
-		if len(slice) > 1 {
+		if len(slice) == 1 {
+			heap.Pop()
+		} else {
 			slice = slice[1:]
-			heap.Push(key(&slice[0]), slice)
+			heap.Update(key(slice[0]), slice)
 		}
 	}
 
