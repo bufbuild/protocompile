@@ -15,7 +15,6 @@
 package report
 
 import (
-	"errors"
 	"fmt"
 	"runtime"
 	"runtime/debug"
@@ -42,15 +41,18 @@ const (
 // Level represents the severity of a diagnostic message.
 type Level int8
 
-// Diagnose is an error that can be rendered as a diagnostic.
-type Diagnose interface {
-	error
+// Tag is a diagnostic tag: a machine-readable identification for a diagnostic.
+//
+// Tags should be lowercase identifiers separated by dashes, e.g. my-error-tag.
+// If a package generates diagnostics with tags, it should expose those tags as
+// constants.
+type Tag string
 
-	// Diagnose writes out this error to the given diagnostic.
-	//
-	// This function should not set Level nor Err; those are set by the
-	// diagnostics framework.
-	Diagnose(*Diagnostic)
+// Option returns a DiagnosticOption that sets a diagnostic's tag to this one.
+func (t Tag) Option() DiagnosticOption {
+	return func(d *Diagnostic) {
+		d.tag = t
+	}
 }
 
 // Diagnostic is a type of error that can be rendered as a rich diagnostic.
@@ -58,37 +60,30 @@ type Diagnose interface {
 // Not all Diagnostics are "errors", even though Diagnostic does embed error;
 // some represent warnings, or perhaps debugging remarks.
 type Diagnostic struct {
-	// The error that prompted this diagnostic. Its Error() return is used
-	// as the diagnostic message.
-	Err error
+	tag     Tag
+	message string
 
-	// The kind of diagnostic this is, which affects how and whether it is shown
-	// to users.
-	Level Level
+	level Level
 	isICE bool // Replaces "error" with "internal compiler error" in the renderer.
 
-	// SortOrder is used to force diagnostics to sort before or after each other
+	// sortOrder is used to force diagnostics to sort before or after each other
 	// in groups. See [Report.Sort].
-	SortOrder int
-
+	sortOrder int
 	// The file this diagnostic occurs in, if it has no associated Annotations. This
 	// is used for errors like "file too big" that cannot be given a snippet.
-	InFile string
+	inFile string
 
 	// A list of annotated source code spans in the diagnostic.
-	Annotations []Annotation
-
-	// Notes and help messages to include at the end of the diagnostic, after the
-	// Annotations.
-	Notes, Help, Debug []string
+	annotations        []annotation
+	notes, help, debug []string
 }
 
-// Annotation is an annotated source code snippet within a [Diagnostic].
+// annotation is an annotated source code snippet within a [Diagnostic].
 //
 // Snippets will render as annotated source code spans that show the context
 // around the annotated region. More literally, this is e.g. a red squiggly
 // line under some code.
-type Annotation struct {
+type annotation struct {
 	// The span for this annotation.
 	Span
 
@@ -109,13 +104,18 @@ type Annotation struct {
 //
 // If it doesn't have one, it returns the zero span.
 func (d *Diagnostic) Primary() Span {
-	for _, annotation := range d.Annotations {
+	for _, annotation := range d.annotations {
 		if annotation.Primary {
 			return annotation.Span
 		}
 	}
 
 	return Span{}
+}
+
+// Is checks whether this diagnostic has a particular tag.
+func (d *Diagnostic) Is(tag Tag) bool {
+	return d.tag == tag
 }
 
 // With applies the given options to this diagnostic.
@@ -130,36 +130,51 @@ func (d *Diagnostic) With(options ...DiagnosticOption) *Diagnostic {
 	return d
 }
 
+// Diagnose is a type that can be rendered as a diagnostic.
+type Diagnose interface {
+	Diagnose(*Diagnostic)
+}
+
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
 // Nil values passed to [Diagnostic.With] are ignored.
 type DiagnosticOption func(*Diagnostic)
 
+// Message returns a Diagnostic option that sets the main diagnostic message.
+func Message(format string, args ...any) DiagnosticOption {
+	return func(d *Diagnostic) {
+		if d.message != "" {
+			panic("protocompile/report: set diagnostic message more than once")
+		}
+
+		d.message = fmt.Sprintf(format, args...)
+	}
+}
+
 // InFile returns a DiagnosticOption that causes a diagnostic without a primary
 // span to mention the given file.
 func InFile(path string) DiagnosticOption {
-	return func(d *Diagnostic) { d.InFile = path }
+	return func(d *Diagnostic) {
+		if d.inFile != "" {
+			panic("protocompile/report: set diagnostic path more than once")
+		}
+
+		d.inFile = path
+	}
 }
 
-// Snippet returns a DiagnosticOption that adds a new snippet to a diagnostic.
+// Snippetf returns a DiagnosticOption that adds a new snippet to a diagnostic.
+//
+// Any additional arguments to this function are passed to [fmt.Sprintf] to
+// produce a message to go with the span. Snippet(span) is equivalent to
+// Snippet(span, "").
 //
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
 // If at is nil (be it a nil interface, or a value that has a Nil() function
 // that returns true), or returns a nil span, this function will return nil.
-func Snippet(at Spanner) DiagnosticOption {
-	return Snippetf(at, "")
-}
-
-// Snippetf returns a DiagnosticOption that adds a new snippet to a diagnostic with the given message.
-//
-// The first annotation added is the "primary" annotation, and will be rendered
-// differently from the others.
-//
-// If at is nil (be it a nil interface, or a value that has a Nil() function
-// that returns true), or returns a nil span, this function will return nil.
-func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
+func Snippet(at Spanner, args ...any) DiagnosticOption {
 	if internal.Nil(at) {
 		return nil
 	}
@@ -169,67 +184,46 @@ func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 		return nil
 	}
 
-	// This is hoisted out to improve stack traces when something goes awry in the
-	// argument to With(). By hoisting, it correctly blames the right invocation to Snippet().
-	annotation := Annotation{
-		Span:    span,
-		Message: fmt.Sprintf(format, args...),
+	// This is hoisted out to improve stack traces when something goes awry in
+	// the argument to With(). By hoisting, it correctly blames the right
+	// invocation to Snippet().
+	annotation := annotation{Span: span}
+	if len(args) > 0 {
+		format, ok := args[0].(string)
+		if !ok {
+			panic("protocompile/report: expected string as first Snippet argument")
+		}
+
+		annotation.Message = fmt.Sprintf(format, args[1:]...)
 	}
 
 	return func(d *Diagnostic) {
-		annotation.Primary = len(d.Annotations) == 0
-		d.Annotations = append(d.Annotations, annotation)
+		annotation.Primary = len(d.annotations) == 0
+		d.annotations = append(d.annotations, annotation)
 	}
 }
 
 // Note returns a DiagnosticOption that provides the user with context about the
 // diagnostic, after the annotations.
-//
-// The arguments are stringified with [fmt.Sprint].
-func Note(args ...any) DiagnosticOption {
+func Note(format string, args ...any) DiagnosticOption {
 	return func(d *Diagnostic) {
-		d.Notes = append(d.Notes, fmt.Sprint(args...))
-	}
-}
-
-// Notef is like [Note], but it calls [fmt.Sprintf] internally for you.
-func Notef(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.Notes = append(d.Notes, fmt.Sprintf(format, args...))
+		d.notes = append(d.notes, fmt.Sprintf(format, args...))
 	}
 }
 
 // Help returns a DiagnosticOption that provides the user with a helpful prose
 // suggestion for resolving the diagnostic.
-//
-// The arguments are stringified with [fmt.Sprint].
-func Help(args ...any) DiagnosticOption {
+func Help(format string, args ...any) DiagnosticOption {
 	return func(d *Diagnostic) {
-		d.Help = append(d.Help, fmt.Sprint(args...))
-	}
-}
-
-// Helpf is like [Help], but it calls [fmt.Sprintf] internally for you.
-func Helpf(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.Help = append(d.Help, fmt.Sprintf(format, args...))
+		d.help = append(d.help, fmt.Sprintf(format, args...))
 	}
 }
 
 // Debug returns a DiagnosticOption appends debugging information to a diagnostic that
 // is not intended to be shown to normal users.
-//
-// The arguments are stringified with [fmt.Sprint].
-func Debug(args ...any) DiagnosticOption {
+func Debug(format string, args ...any) DiagnosticOption {
 	return func(d *Diagnostic) {
-		d.Debug = append(d.Debug, fmt.Sprint(args...))
-	}
-}
-
-// Debugf is like [Debug], but it calls [fmt.Sprintf] internally for you.
-func Debugf(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.Debug = append(d.Debug, fmt.Sprintf(format, args...))
+		d.debug = append(d.debug, fmt.Sprintf(format, args...))
 	}
 }
 
@@ -260,41 +254,41 @@ type Report struct {
 
 // Error pushes an error diagnostic onto this report.
 func (r *Report) Error(err Diagnose) *Diagnostic {
-	d := r.push(1, err, Error)
+	d := r.push(1, Error)
 	err.Diagnose(d)
 	return d
 }
 
 // Warn pushes a warning diagnostic onto this report.
 func (r *Report) Warn(err Diagnose) *Diagnostic {
-	d := r.push(1, err, Warning)
+	d := r.push(1, Warning)
 	err.Diagnose(d)
 	return d
 }
 
 // Remark pushes a remark diagnostic onto this report.
 func (r *Report) Remark(err Diagnose) *Diagnostic {
-	d := r.push(1, err, Remark)
+	d := r.push(1, Remark)
 	err.Diagnose(d)
 	return d
 }
 
-// Errorf creates a new error diagnostic with an unspecified error type; analogous to
+// Errorf creates an ad-hoc error diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Errorf(format string, args ...any) *Diagnostic {
-	return r.push(1, fmt.Errorf(format, args...), Error)
+	return r.push(1, Error).With(Message(format, args...))
 }
 
-// Warnf creates a new warning diagnostic with an unspecified error type; analogous to
+// Warnf creates an ad-hoc warning diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Warnf(format string, args ...any) *Diagnostic {
-	return r.push(1, fmt.Errorf(format, args...), Warning)
+	return r.push(1, Warning).With(Message(format, args...))
 }
 
-// Remarkf creates a new remark diagnostic with an unspecified error type; analogous to
+// Remarkf creates an ad-hoc remark diagnostic with an the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Remarkf(format string, args ...any) *Diagnostic {
-	return r.push(1, fmt.Errorf(format, args...), Remark)
+	return r.push(1, Remark).With(Message(format, args...))
 }
 
 // CatchICE will recover a panic (an internal compiler error, or ICE) and log it
@@ -315,7 +309,7 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// so that it is always visible.
 	tracing := r.Tracing
 	r.Tracing = 0 // Temporarily disable built-in tracing.
-	diagnostic := r.push(1, fmt.Errorf("%v", panicked), Error)
+	diagnostic := r.push(1, Error).With(Message("%v", panicked))
 	r.Tracing = tracing
 	diagnostic.isICE = true
 
@@ -330,8 +324,8 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// Report.CatchICE).
 	stack = stack[5:]
 
-	diagnostic.Notes = append(diagnostic.Notes, "", "stack trace:")
-	diagnostic.Notes = append(diagnostic.Notes, stack...)
+	diagnostic.notes = append(diagnostic.notes, "", "stack trace:")
+	diagnostic.notes = append(diagnostic.notes, stack...)
 
 	if resume {
 		panic(panicked)
@@ -359,7 +353,7 @@ func (r *Report) Sort() {
 			return diff
 		}
 
-		if diff := a.SortOrder - b.SortOrder; diff != 0 {
+		if diff := a.sortOrder - b.sortOrder; diff != 0 {
 			return diff
 		}
 
@@ -371,7 +365,7 @@ func (r *Report) Sort() {
 			return diff
 		}
 
-		return strings.Compare(a.Err.Error(), b.Err.Error())
+		return strings.Compare(a.message, b.message)
 	})
 }
 
@@ -389,15 +383,16 @@ func (r *Report) ToProto() proto.Message {
 	fileToIndex := map[string]uint32{}
 	for _, d := range r.Diagnostics {
 		dProto := &compilerpb.Diagnostic{
-			Message: d.Err.Error(),
-			Level:   compilerpb.Diagnostic_Level(d.Level),
-			InFile:  d.InFile,
-			Notes:   d.Notes,
-			Help:    d.Help,
-			Debug:   d.Debug,
+			Message: d.message,
+			Tag:     string(d.tag),
+			Level:   compilerpb.Diagnostic_Level(d.level),
+			InFile:  d.inFile,
+			Notes:   d.notes,
+			Help:    d.help,
+			Debug:   d.debug,
 		}
 
-		for _, snip := range d.Annotations {
+		for _, snip := range d.annotations {
 			file, ok := fileToIndex[snip.Path()]
 			if !ok {
 				file = uint32(len(proto.Files))
@@ -452,12 +447,13 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 		}
 
 		d := Diagnostic{
-			Err:    errors.New(dProto.Message),
-			Level:  level,
-			InFile: dProto.InFile,
-			Notes:  dProto.Notes,
-			Help:   dProto.Help,
-			Debug:  dProto.Debug,
+			tag:     Tag(dProto.Tag),
+			message: dProto.Message,
+			level:   level,
+			inFile:  dProto.InFile,
+			notes:   dProto.Notes,
+			help:    dProto.Help,
+			debug:   dProto.Debug,
 		}
 
 		var havePrimary bool
@@ -479,7 +475,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 				)
 			}
 
-			d.Annotations = append(d.Annotations, Annotation{
+			d.annotations = append(d.annotations, annotation{
 				Span: Span{
 					File:  file,
 					Start: int(snip.Start),
@@ -491,8 +487,8 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 			havePrimary = havePrimary || snip.Primary
 		}
 
-		if !havePrimary && len(d.Annotations) > 0 {
-			d.Annotations[0].Primary = true
+		if !havePrimary && len(d.annotations) > 0 {
+			d.annotations[0].Primary = true
 		}
 
 		r.Diagnostics = append(r.Diagnostics, d)
@@ -504,7 +500,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 // push is the core "make me a diagnostic" function.
 //
 //nolint:unparam  // For skip, see the comment below.
-func (r *Report) push(skip int, err error, level Level) *Diagnostic {
+func (r *Report) push(skip int, level Level) *Diagnostic {
 	// The linter does not like that skip is statically a constant.
 	// We provide it as an argument for documentation purposes, so
 	// that callers of this function within this package can specify
@@ -512,9 +508,8 @@ func (r *Report) push(skip int, err error, level Level) *Diagnostic {
 	// the same level of nesting right now.
 
 	r.Diagnostics = append(r.Diagnostics, Diagnostic{
-		Err:       err,
-		Level:     level,
-		SortOrder: r.Stage,
+		level:     level,
+		sortOrder: r.Stage,
 	})
 	d := &(r.Diagnostics)[len(r.Diagnostics)-1]
 
@@ -569,5 +564,5 @@ func (e *ErrInFile) Error() string {
 
 // Diagnose implements [Diagnose].
 func (e *ErrInFile) Diagnose(d *Diagnostic) {
-	d.InFile = e.Path
+	d.inFile = e.Path
 }

@@ -56,7 +56,7 @@ type Renderer struct {
 // the writer.
 func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCount int, err error) {
 	for _, diagnostic := range report.Diagnostics {
-		if !r.ShowRemarks && diagnostic.Level == Remark {
+		if !r.ShowRemarks && diagnostic.level == Remark {
 			continue
 		}
 
@@ -70,10 +70,10 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 			}
 		}
 
-		if diagnostic.Level == Error {
+		if diagnostic.level == Error {
 			errorCount++
 		}
-		if diagnostic.Level == Warning {
+		if diagnostic.level == Warning {
 			if r.WarningsAreErrors {
 				errorCount++
 			} else {
@@ -132,14 +132,14 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		// renderer bugs.
 		defer func() {
 			if panicked := recover(); panicked != nil {
-				stack := strings.Join(d.Debug[:min(report.Tracing, len(d.Debug))], "\n")
+				stack := strings.Join(d.debug[:min(report.Tracing, len(d.debug))], "\n")
 				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%s", panicked, stack))
 			}
 		}()
 	}
 
 	var level string
-	switch d.Level {
+	switch d.level {
 	case Error:
 		if d.isICE {
 			level = "internal compiler error"
@@ -163,23 +163,23 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		primary := d.Primary()
 
 		if primary.File == nil {
-			path := d.InFile
+			path := d.inFile
 			if path == "" {
 				return fmt.Sprintf(
 					"%s%s: %s%s",
-					ss.ColorForLevel(d.Level),
+					ss.ColorForLevel(d.level),
 					level,
-					d.Err.Error(),
+					d.message,
 					ss.reset,
 				)
 			}
 
 			return fmt.Sprintf(
 				"%s%s: %s: %s%s",
-				ss.ColorForLevel(d.Level),
+				ss.ColorForLevel(d.level),
 				level,
 				path,
-				d.Err.Error(),
+				d.message,
 				ss.reset,
 			)
 		}
@@ -188,12 +188,12 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 
 		return fmt.Sprintf(
 			"%s%s: %s:%d:%d: %s%s",
-			ss.ColorForLevel(d.Level),
+			ss.ColorForLevel(d.level),
 			level,
 			primary.Path(),
 			start.Line,
 			start.Column,
-			d.Err.Error(),
+			d.message,
 			ss.reset,
 		)
 	}
@@ -202,10 +202,10 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	// https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 
 	var out strings.Builder
-	fmt.Fprint(&out, ss.BoldForLevel(d.Level), level, ": ", d.Err.Error(), ss.reset)
+	fmt.Fprint(&out, ss.BoldForLevel(d.level), level, ": ", d.message, ss.reset)
 
-	locations := make([][2]Location, len(d.Annotations))
-	for i, snip := range d.Annotations {
+	locations := make([][2]Location, len(d.annotations))
+	for i, snip := range d.annotations {
 		locations[i][0] = snip.location(snip.Start, false)
 		locations[i][1] = snip.location(snip.End, false)
 	}
@@ -220,8 +220,8 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := iters.Partition(d.Annotations, func(a, b *Annotation) bool { return a.Path() != b.Path() })
-	parts(func(i int, annotations []Annotation) bool {
+	parts := iters.Partition(d.annotations, func(a, b *annotation) bool { return a.Path() != b.Path() })
+	parts(func(i int, annotations []annotation) bool {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth)
@@ -240,30 +240,30 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		padBy(&out, lineBarWidth)
 		out.WriteString(" | ")
 
-		window := buildWindow(d.Level, locations[i:i+len(annotations)], annotations)
+		window := buildWindow(d.level, locations[i:i+len(annotations)], annotations)
 		window.Render(lineBarWidth, &ss, &out)
 		return true
 	})
 
 	// Render a remedial file name for spanless errors.
-	if len(d.Annotations) == 0 && d.InFile != "" {
+	if len(d.annotations) == 0 && d.inFile != "" {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth-1)
 
-		fmt.Fprintf(&out, "--> %s", d.InFile)
+		fmt.Fprintf(&out, "--> %s", d.inFile)
 	}
 
 	// Render the footers. For simplicity we collect them into an array first.
-	footers := make([][3]string, 0, len(d.Notes)+len(d.Help)+len(d.Debug))
-	for _, note := range d.Notes {
+	footers := make([][3]string, 0, len(d.notes)+len(d.help)+len(d.debug))
+	for _, note := range d.notes {
 		footers = append(footers, [3]string{ss.bRemark, "note", note})
 	}
-	for _, help := range d.Help {
+	for _, help := range d.help {
 		footers = append(footers, [3]string{ss.bRemark, "help", help})
 	}
 	if r.ShowDebug {
-		for _, debug := range d.Debug {
+		for _, debug := range d.debug {
 			footers = append(footers, [3]string{ss.bError, "debug", debug})
 		}
 	}
@@ -310,7 +310,7 @@ type window struct {
 // This is separate from [window.Render] because it performs certain layout
 // decisions that cannot happen in the middle of actually rendering the source
 // code (well, they could, but the resulting code would be far more complicated).
-func buildWindow(level Level, locations [][2]Location, annotations []Annotation) *window {
+func buildWindow(level Level, locations [][2]Location, annotations []annotation) *window {
 	w := new(window)
 	w.file = annotations[0].File
 

@@ -83,6 +83,9 @@ message Diagnostic {
   // Required. The message to show for this diagnostic. This should fit on one line.
   string message = 1;
 
+  // An optional machine-readable tag for the diagnostic.
+  string tag = 8;
+
   // Required. The level for this diagnostic.
   Level level = 2;
 

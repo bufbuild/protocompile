@@ -65,7 +65,7 @@ func lexString(l *lexer) token.Token {
 	}
 
 	if !terminated {
-		l.Error(ErrUnclosedString{Token: tok})
+		l.Error(errUnclosedString{Token: tok})
 	}
 
 	return tok
@@ -86,7 +86,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 	switch {
 	case r == 0:
 		l.Errorf("unescaped NUL bytes are not permitted in string literals").With(
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
+			report.Snippet(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
 		)
 	case r == '\n':
 		// TODO: This diagnostic is simply user-hostile. We should remove it.
@@ -101,7 +101,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		l.Errorf("unescaped newlines are not permitted in string literals").With(
 			// Not to mention, this diagnostic is not ideal: we should probably
 			// tell users to split the string into multiple quoted fragments.
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
+			report.Snippet(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't
@@ -117,7 +117,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		}
 
 		l.Warnf("non-printable character in string literal").With(
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "help: consider escaping this with e.g. `%s` instead", escape),
+			report.Snippet(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "help: consider escaping this with e.g. `%s` instead", escape),
 		)
 	}
 
@@ -198,17 +198,17 @@ func lexStringContent(l *lexer) (sc stringContent) {
 
 		escape := l.SpanFrom(start)
 		if consumed == 0 {
-			l.Error(ErrInvalidEscape{Span: escape})
+			l.Error(errInvalidEscape{Span: escape})
 		} else if !sc.isRawByte {
 			// \u and \U must have exact numbers of digits.
 			if consumed != digits || !utf8.ValidRune(sc.rune) {
-				l.Error(ErrInvalidEscape{Span: escape})
+				l.Error(errInvalidEscape{Span: escape})
 			}
 		}
 
 	default:
 		escape := l.SpanFrom(start)
-		l.Error(ErrInvalidEscape{Span: escape})
+		l.Error(errInvalidEscape{Span: escape})
 	}
 
 	return sc

@@ -21,42 +21,36 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// ErrUnrecognized diagnoses the presence of an unrecognized token.
-type ErrUnrecognized struct {
+// errUnrecognized diagnoses the presence of an unrecognized token.
+type errUnrecognized struct {
 	Token token.Token // The offending token.
 }
 
-// Error implements [error].
-func (e ErrUnrecognized) Error() string {
-	return "unrecognized token"
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrUnrecognized) Diagnose(d *report.Diagnostic) {
+func (e errUnrecognized) Diagnose(d *report.Diagnostic) {
 	d.With(
+		report.Message("unrecognized token"),
 		report.Snippet(e.Token),
-		report.Debugf("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
+		report.Debug("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
 	)
 }
 
-// ErrNonASCIIIdent diagnoses an identifier that contains non-ASCII runes.
-type ErrNonASCIIIdent struct {
+// errNonASCIIIdent diagnoses an identifier that contains non-ASCII runes.
+type errNonASCIIIdent struct {
 	Token token.Token // The offending identifier token.
 }
 
-// Error implements [error].
-func (e ErrNonASCIIIdent) Error() string {
-	return "non-ASCII identifiers are not allowed"
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrNonASCIIIdent) Diagnose(d *report.Diagnostic) {
-	d.With(report.Snippet(e.Token))
+func (e errNonASCIIIdent) Diagnose(d *report.Diagnostic) {
+	d.With(
+		report.Message("non-ASCII identifiers are not allowed"),
+		report.Snippet(e.Token),
+	)
 }
 
-// ErrUnmatched diagnoses a delimiter for which we found one half of a matched
+// errUnmatched diagnoses a delimiter for which we found one half of a matched
 // delimiter but not the other.
-type ErrUnmatched struct {
+type errUnmatched struct {
 	Span report.Span // The offending delimiter.
 
 	// If present, this indicates that we did match with another brace delimiter, but it
@@ -68,7 +62,7 @@ type ErrUnmatched struct {
 }
 
 // OpenClose returns the expected open/close delimiters for this matched pair.
-func (e ErrUnmatched) OpenClose() (string, string) {
+func (e errUnmatched) OpenClose() (string, string) {
 	a, b := bracePair(e.Span.Text())
 	if a == "" {
 		panic(fmt.Sprintf("protocompile/ast: invalid token in ErrUnterminated: %q (byte offset %d:%d)", e.Span.Text(), e.Span.Start, e.Span.End))
@@ -76,26 +70,23 @@ func (e ErrUnmatched) OpenClose() (string, string) {
 	return a, b
 }
 
-// Error implements [error].
-func (e ErrUnmatched) Error() string {
-	return fmt.Sprintf("encountered unmatched `%s` delimiter", e.Span.Text())
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrUnmatched) Diagnose(d *report.Diagnostic) {
+func (e errUnmatched) Diagnose(d *report.Diagnostic) {
+	d.With(report.Message("encountered unmatched `%s` delimiter", e.Span.Text()))
+
 	text := e.Span.Text()
 	openTok, closeTok := e.OpenClose()
 
 	if text == openTok {
-		d.With(report.Snippetf(e.Span, "expected a closing `%s`", closeTok))
+		d.With(report.Snippet(e.Span, "expected a closing `%s`", closeTok))
 		if !e.Mismatch.Nil() {
-			d.With(report.Snippetf(e.Mismatch, "closed by this instead"))
+			d.With(report.Snippet(e.Mismatch, "closed by this instead"))
 		}
 		if !e.ShouldMatch.Nil() {
-			d.With(report.Snippetf(e.ShouldMatch, "help: perhaps it was meant to match this?"))
+			d.With(report.Snippet(e.ShouldMatch, "help: perhaps it was meant to match this?"))
 		}
 	} else {
-		d.With(report.Snippetf(e.Span, "expected a closing `%s`", openTok))
+		d.With(report.Snippet(e.Span, "expected a closing `%s`", openTok))
 	}
 	if text == "*/" {
 		d.With(report.Note("Protobuf does not support nested block comments"))
