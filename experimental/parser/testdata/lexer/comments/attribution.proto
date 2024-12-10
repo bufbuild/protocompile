@@ -1,0 +1,35 @@
+// This, as expected, is a leading comment for Foo.
+message Foo {
+  // This is the TRAILING comment for Foo. (It is NOT
+  // a detached comment for baz.)
+
+  // leading comment for baz
+  string baz = 1;
+  // trailing comment for baz
+}
+// This is NOT a trailing comment. It's also not considered
+// a detached comment for Bar. It is discarded.
+
+// This IS a detached comment for Bar.
+
+// A leading comment for Bar.
+message Bar {
+}
+
+string name = 1; // trailing comment for name
+// leading comment for id
+uint64 id = 2;
+
+previousToken // this comment
+// won't get merged into a
+// group with these two lines
+/* block comments */ /* are always their own groups */ // line comments
+// can usually get joined into
+// groups with adjacent lines
+
+   // empty lines separate groups
+// indentation does not impact grouping
+/* a single block
+ * comment can span lines
+ */
+currentToken

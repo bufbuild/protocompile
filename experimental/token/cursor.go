@@ -55,7 +55,11 @@ func NewCursor(start, end Token) *Cursor {
 		panic(fmt.Sprintf("protocompile/token: passed nil token to NewCursor: %v, %v", start, end))
 	}
 	if start.Context() != end.Context() {
-		panic("protocompile/token: passed tokens from different context to NewCursor")
+		panic(fmt.Sprintf(
+			"protocompile/token: passed tokens from different context to NewCursor: %q, %q",
+			start.Context().Stream().Path(),
+			end.Context().Stream().Path(),
+		))
 	}
 	if start.IsSynthetic() || end.IsSynthetic() {
 		panic("protocompile/token: passed synthetic token to NewCursor")

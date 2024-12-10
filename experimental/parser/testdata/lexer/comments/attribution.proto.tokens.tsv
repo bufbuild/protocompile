@@ -1,0 +1,78 @@
+#		kind		offsets		linecol		text
+0		Comment		000:052		001:001		"// This, as expected, is a leading comment for Foo.\n"
+1		Ident		052:059		002:001		"message"		leading:Token(0)
+2		Space		059:060		002:008		" "
+3		Ident		060:063		002:009		"Foo"
+4		Space		063:064		002:012		" "
+5		Punct		064:233		002:013		"{"		close:Token(23)		trailing:Token(7)
+6		Space		065:068		002:014		"\n  "
+7		Comment		068:154		003:003		"// This is the TRAILING comment for Foo. (It is NOT\n"		close:Token(9)
+8		Space		120:122		004:001		"  "
+9		Comment		068:154		003:003		"// a detached comment for baz.)\n"		open:Token(7)
+10		Space		154:157		005:001		"\n  "
+11		Comment		157:184		006:003		"// leading comment for baz\n"
+12		Space		184:186		007:001		"  "
+13		Ident		186:192		007:003		"string"		leading:Token(11)
+14		Space		192:193		007:009		" "
+15		Ident		193:196		007:010		"baz"
+16		Space		196:197		007:013		" "
+17		Punct		197:198		007:014		"="
+18		Space		198:199		007:015		" "
+19		Number		199:200		007:016		"1"		int:1
+20		Punct		200:201		007:017		";"		trailing:Token(22)
+21		Space		201:204		007:018		"\n  "
+22		Comment		204:232		008:003		"// trailing comment for baz\n"
+23		Punct		064:233		002:013		"}"		open:Token(5)		trailing:Token(25)
+24		Space		233:234		009:002		"\n"
+25		Comment		234:342		010:001		"// This is NOT a trailing comment. It's also not considered\n"		close:Token(26)
+26		Comment		234:342		010:001		"// a detached comment for Bar. It is discarded.\n"		open:Token(25)
+27		Space		342:343		012:001		"\n"
+28		Comment		343:382		013:001		"// This IS a detached comment for Bar.\n"
+29		Space		382:383		014:001		"\n"
+30		Comment		383:413		015:001		"// A leading comment for Bar.\n"
+31		Ident		413:420		016:001		"message"		detached:Token(28)		leading:Token(30)
+32		Space		420:421		016:008		" "
+33		Ident		421:424		016:009		"Bar"
+34		Space		424:425		016:012		" "
+35		Punct		425:428		016:013		"{"		close:Token(37)
+36		Space		426:427		016:014		"\n"
+37		Punct		425:428		016:013		"}"		open:Token(35)
+38		Space		428:430		017:002		"\n\n"
+39		Ident		430:436		019:001		"string"
+40		Space		436:437		019:007		" "
+41		Ident		437:441		019:008		"name"
+42		Space		441:442		019:012		" "
+43		Punct		442:443		019:013		"="
+44		Space		443:444		019:014		" "
+45		Number		444:445		019:015		"1"		int:1
+46		Punct		445:446		019:016		";"		trailing:Token(48)
+47		Space		446:447		019:017		" "
+48		Comment		447:476		019:018		"// trailing comment for name\n"
+49		Comment		476:502		020:001		"// leading comment for id\n"
+50		Ident		502:508		021:001		"uint64"		leading:Token(49)
+51		Space		508:509		021:007		" "
+52		Ident		509:511		021:008		"id"
+53		Space		511:512		021:010		" "
+54		Punct		512:513		021:011		"="
+55		Space		513:514		021:012		" "
+56		Number		514:515		021:013		"2"		int:2
+57		Punct		515:516		021:014		";"
+58		Space		516:518		021:015		"\n\n"
+59		Ident		518:531		023:001		"previousToken"		trailing:Token(61)
+60		Space		531:532		023:014		" "
+61		Comment		532:548		023:015		"// this comment\n"
+62		Comment		548:605		024:001		"// won't get merged into a\n"		close:Token(63)
+63		Comment		548:605		024:001		"// group with these two lines\n"		open:Token(62)
+64		Comment		605:625		026:001		"/* block comments */"
+65		Space		625:626		026:021		" "
+66		Comment		626:659		026:022		"/* are always their own groups */"
+67		Space		659:660		026:055		" "
+68		Comment		660:738		026:056		"// line comments\n"		close:Token(70)
+69		Comment		677:708		027:001		"// can usually get joined into\n"
+70		Comment		660:738		026:056		"// groups with adjacent lines\n"		open:Token(68)
+71		Space		738:742		029:001		"\n   "
+72		Comment		742:813		030:004		"// empty lines separate groups\n"		close:Token(73)
+73		Comment		742:813		030:004		"// indentation does not impact grouping\n"		open:Token(72)
+74		Comment		813:860		032:001		"/* a single block\n * comment can span lines\n */"
+75		Space		860:861		034:004		"\n"
+76		Ident		861:873		035:001		"currentToken"		detached:Token(62),Token(64),Token(66),Token(68),Token(72)		leading:Token(74)
