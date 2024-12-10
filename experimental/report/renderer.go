@@ -70,10 +70,10 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 			}
 		}
 
-		if diagnostic.level == Error {
+		switch {
+		case diagnostic.level <= Error:
 			errorCount++
-		}
-		if diagnostic.level == Warning {
+		case diagnostic.level <= Warning:
 			if r.WarningsAreErrors {
 				errorCount++
 			} else {
@@ -140,12 +140,10 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 
 	var level string
 	switch d.level {
+	case ICE:
+		level = "internal compiler error"
 	case Error:
-		if d.isICE {
-			level = "internal compiler error"
-		} else {
-			level = "error"
-		}
+		level = "error"
 	case Warning:
 		if r.WarningsAreErrors {
 			level = "error"

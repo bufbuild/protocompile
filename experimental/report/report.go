@@ -28,8 +28,10 @@ import (
 )
 
 const (
+	// Internal compiler error. Indicates a panic within the compiler.
+	ICE Level = 1 + iota
 	// Red. Indicates a semantic constraint violation.
-	Error Level = 1 + iota
+	Error
 	// Yellow. Indicates something that probably should not be ignored.
 	Warning
 	// Cyan. This is the diagnostics version of "info".
@@ -64,7 +66,6 @@ type Diagnostic struct {
 	message string
 
 	level Level
-	isICE bool // Replaces "error" with "internal compiler error" in the renderer.
 
 	// sortOrder is used to force diagnostics to sort before or after each other
 	// in groups. See [Report.Sort].
@@ -111,6 +112,11 @@ func (d *Diagnostic) Primary() Span {
 	}
 
 	return Span{}
+}
+
+// Level returns this diagnostic's level.
+func (d *Diagnostic) Level() Level {
+	return d.level
 }
 
 // Is checks whether this diagnostic has a particular tag.
@@ -311,7 +317,7 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	r.Tracing = 0 // Temporarily disable built-in tracing.
 	diagnostic := r.push(1, Error).With(Message("%v", panicked))
 	r.Tracing = tracing
-	diagnostic.isICE = true
+	diagnostic.level = ICE
 
 	if diagnose != nil {
 		diagnose(diagnostic)
