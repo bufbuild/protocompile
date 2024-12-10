@@ -56,16 +56,18 @@ var (
 		FieldTag:    "message field tag",
 		OptionValue: "option setting value",
 
-		Path:            "path",
-		ExtensionInPath: "path in `(...)`",
+		QualifiedName:      "qualified name",
+		FullyQualifiedName: "fully qualified name",
+		ExtensionName:      "extension name",
 
 		Expr:      "expression",
 		Range:     "range expression",
 		Array:     "array expression",
-		Dict:      "dictionary expression",
-		DictField: "key-value pair",
+		Dict:      "message expression",
+		DictField: "message field value",
 
 		Type:       "type",
+		TypePath:   "type name",
 		TypeParams: "type parameters",
 
 		Whitespace: "whitespace",
@@ -125,7 +127,7 @@ var (
 		KeywordStream:   "`stream`",
 	}
 
-	// constNames is an array of the names of the constants, fo ruse in GoString().
+	// constNames is an array of the names of the constants, for use in GoString().
 	constNames = [...]string{
 		Unknown:      "Unknown",
 		Unrecognized: "Unrecognized",
@@ -165,8 +167,9 @@ var (
 		MethodIns:      "MethodIns",
 		MethodOuts:     "MethodOuts",
 
-		Path:            "Path",
-		ExtensionInPath: "ExtensionInPath",
+		QualifiedName:      "QualifiedName",
+		FullyQualifiedName: "FullyQualifiedName",
+		ExtensionName:      "ExtensionName",
 
 		Expr:      "Expr",
 		Range:     "Range",
@@ -175,6 +178,7 @@ var (
 		DictField: "DictField",
 
 		Type:       "Type",
+		TypePath:   "TypePath",
 		TypeParams: "TypeParams",
 
 		Whitespace: "Whitespace",

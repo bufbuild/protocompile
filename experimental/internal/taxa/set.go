@@ -16,40 +16,40 @@ package taxa
 
 import (
 	"fmt"
+	"math/bits"
 	"strings"
 
 	"github.com/bufbuild/protocompile/internal/iter"
 	"github.com/bufbuild/protocompile/internal/iters"
 )
 
-// Set is a set of [Subject] values, implicitly ordered by the [Subject] values'
+// Set is a set of [Noun] values, implicitly ordered by the [Noun] values'
 // intrinsic order.
 //
 // A zero Set is empty and ready to use.
 type Set struct {
-	bits [(Total + 63) / 64]uint64
+	bits [(total + 63) / 64]uint64
 }
 
 // NewSet returns a new [Set] with the given values set.
 //
 // Panics if any value is not one of the constants in this package.
-func NewSet(whats ...Subject) Set {
-	return Set{}.With(whats...)
+func NewSet(subjects ...Noun) Set {
+	return Set{}.With(subjects...)
 }
 
 // Len returns the number of values in the set.
 func (s Set) Len() int {
 	var n int
-	s.All()(func(_ Subject) bool {
-		n++
-		return true
-	})
+	for _, v := range s.bits {
+		n += bits.OnesCount64(v)
+	}
 	return n
 }
 
 // Has checks whether w is present in this set.
-func (s Set) Has(w Subject) bool {
-	if w >= Subject(Total) {
+func (s Set) Has(w Noun) bool {
+	if w >= Noun(total) {
 		return false
 	}
 
@@ -60,24 +60,24 @@ func (s Set) Has(w Subject) bool {
 // With returns a new Set with the given values inserted.
 //
 // Panics if any value is not one of the constants in this package.
-func (s Set) With(whats ...Subject) Set {
-	for _, w := range whats {
-		if w >= Subject(Total) {
-			panic(fmt.Sprintf("internal/what: inserted invalid value %d", w))
+func (s Set) With(subjects ...Noun) Set {
+	for _, v := range subjects {
+		if v >= Noun(total) {
+			panic(fmt.Sprintf("internal/what: inserted invalid value %d", v))
 		}
 
-		s.bits[int(w)/64] |= uint64(1) << (int(w) % 64)
+		s.bits[int(v)/64] |= uint64(1) << (int(v) % 64)
 	}
 	return s
 }
 
 // All returns an iterator over the elements in the set.
-func (s Set) All() iter.Seq[Subject] {
-	return func(yield func(Subject) bool) {
+func (s Set) All() iter.Seq[Noun] {
+	return func(yield func(Noun) bool) {
 		for i, word := range s.bits {
 			next := i * 64
 			for word != 0 {
-				if word&1 == 1 && !yield(Subject(next)) {
+				if word&1 == 1 && !yield(Noun(next)) {
 					return
 				}
 

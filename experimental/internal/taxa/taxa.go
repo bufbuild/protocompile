@@ -28,12 +28,12 @@ import (
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
-// Subject is a syntactic or semantic element within the grammar that can be
+// Noun is a syntactic or semantic element within the grammar that can be
 // referred to within a diagnostic.
-type Subject int
+type Noun int
 
 const (
-	Unknown Subject = iota
+	Unknown Noun = iota
 	Unrecognized
 	TopLevel
 	EOF
@@ -71,8 +71,9 @@ const (
 	MethodIns
 	MethodOuts
 
-	Path
-	ExtensionInPath
+	QualifiedName
+	FullyQualifiedName
+	ExtensionName
 
 	Expr
 	Range
@@ -81,6 +82,7 @@ const (
 	DictField
 
 	Type
+	TypePath
 	TypeParams
 
 	Whitespace
@@ -139,32 +141,32 @@ const (
 	KeywordGroup
 	KeywordStream
 
-	// Total is the total number of known [What] values.
-	Total int = iota
+	// total is the total number of known [What] values.
+	total int = iota
 )
 
 // In is a shorthand for the "in" preposition.
-func (s Subject) In() Place {
+func (s Noun) In() Place {
 	return Place{s, "in"}
 }
 
 // After is a shorthand for the "after" preposition.
-func (s Subject) After() Place {
+func (s Noun) After() Place {
 	return Place{s, "after"}
 }
 
 // Without is a shorthand for the "without" preposition.
-func (s Subject) Without() Place {
+func (s Noun) Without() Place {
 	return Place{s, "without"}
 }
 
 // AsSet returns a singleton set containing this What.
-func (s Subject) AsSet() Set {
+func (s Noun) AsSet() Set {
 	return NewSet(s)
 }
 
 // String implements [fmt.Stringer].
-func (s Subject) String() string {
+func (s Noun) String() string {
 	if int(s) >= len(names) {
 		return names[0]
 	}
@@ -172,10 +174,10 @@ func (s Subject) String() string {
 }
 
 // All returns an iterator over all subjects.
-func All() iter.Seq[Subject] {
-	return func(yield func(Subject) bool) {
-		for i := 0; i < Total; i++ {
-			if !yield(Subject(i)) {
+func All() iter.Seq[Noun] {
+	return func(yield func(Noun) bool) {
+		for i := 0; i < total; i++ {
+			if !yield(Noun(i)) {
 				break
 			}
 		}
@@ -185,7 +187,7 @@ func All() iter.Seq[Subject] {
 // GoString implements [fmt.GoStringer].
 //
 // This exists to get pretty output out of the assert package.
-func (s Subject) GoString() string {
+func (s Noun) GoString() string {
 	if int(s) >= len(constNames) {
 		return strconv.Itoa(int(s))
 	}
@@ -199,19 +201,23 @@ func (s Subject) GoString() string {
 // somewhat more general than a place, and more accurately describes a general
 // state of being.
 type Place struct {
-	Subject
+	subject     Noun
+	preposition string
+}
 
-	How string // The preposition, such as "in" or "after".
+// Subject returns this place's subject.
+func (p Place) Subject() Noun {
+	return p.subject
 }
 
 // String implements [fmt.Stringer].
 func (p Place) String() string {
-	return p.How + " " + p.Subject.String()
+	return p.preposition + " " + p.subject.String()
 }
 
 // GoString implements [fmt.GoStringer].
 //
 // This exists to get pretty output out of the assert package.
 func (p Place) GoString() string {
-	return fmt.Sprintf("{%#v, %#v}", p.Subject, p.How)
+	return fmt.Sprintf("{%#v, %#v}", p.subject, p.preposition)
 }

@@ -32,7 +32,7 @@ func IsFloat(tok token.Token) bool {
 }
 
 // Classify attempts to classify node for use in a diagnostic.
-func Classify(node report.Spanner) Subject {
+func Classify(node report.Spanner) Noun {
 	// This is a giant type switch on every AST and token type in the compiler.
 	switch node := node.(type) {
 	case token.Token:
@@ -40,8 +40,14 @@ func Classify(node report.Spanner) Subject {
 
 	case ast.File:
 		return TopLevel
-	case ast.Path, ast.ExprPath, ast.TypePath:
-		return Path
+	case ast.Path:
+		if id := node.AsIdent(); !id.Nil() {
+			return classifyToken(id)
+		}
+		if node.Absolute() {
+			return FullyQualifiedName
+		}
+		return QualifiedName
 
 	case ast.DeclAny:
 		switch node.Kind() {
@@ -146,6 +152,8 @@ func Classify(node report.Spanner) Subject {
 			return Classify(node.AsLiteral())
 		case ast.ExprKindPrefixed:
 			return Classify(node.AsPrefixed())
+		case ast.ExprKindPath:
+			return Classify(node.AsPath())
 		case ast.ExprKindRange:
 			return Classify(node.AsRange())
 		case ast.ExprKindArray:
@@ -163,6 +171,8 @@ func Classify(node report.Spanner) Subject {
 		// This ensures that e.g. -1 is described as a number rather than as
 		// an "expression".
 		return Classify(node.Expr())
+	case ast.ExprPath:
+		return Classify(node.Path)
 	case ast.ExprRange:
 		return Range
 	case ast.ExprArray:
@@ -174,12 +184,14 @@ func Classify(node report.Spanner) Subject {
 
 	case ast.TypeAny:
 		switch node.Kind() {
-		case ast.TypeKind(ast.ExprKindPath):
+		case ast.TypeKindPath:
 			return Classify(node.AsPath())
 		default:
 			return Type
 		}
 
+	case ast.TypePath:
+		return TypePath
 	case ast.TypePrefixed, ast.TypeGeneric:
 		return Type
 
@@ -190,7 +202,7 @@ func Classify(node report.Spanner) Subject {
 	return Unknown
 }
 
-func classifyToken(tok token.Token) Subject {
+func classifyToken(tok token.Token) Noun {
 	switch tok.Kind() {
 	case token.Space:
 		return Whitespace
@@ -212,11 +224,11 @@ func classifyToken(tok token.Token) Subject {
 	}
 }
 
-// Punct maps the text of a keyword to its What.
+// Keyword maps the text of a keyword to its [Noun].
 //
 // Returns Ident if this is not considered a keyword for the purposes of
 // diagnostics.
-func Keyword(text string) Subject {
+func Keyword(text string) Noun {
 	switch text {
 	case "syntax":
 		return KeywordSyntax
@@ -271,8 +283,8 @@ func Keyword(text string) Subject {
 	}
 }
 
-// Punct maps the text of a punctuator to its What.
-func Punct(text string, isTree bool) Subject {
+// Punct maps the text of a punctuator to its [Noun].
+func Punct(text string, isTree bool) Noun {
 	switch text {
 	case ";":
 		return Semicolon
