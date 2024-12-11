@@ -1,20 +1,20 @@
-error: unexpected integer literal in dictionary expression
+error: unexpected integer literal in message expression
   --> testdata/parser/expr.proto:45:22
    | 
 45 | option (test.bad) = {1, 2, 3};
-   |                      ^ expected key-value pair
+   |                      ^ expected message field value
 
-error: unexpected integer literal in dictionary expression
+error: unexpected integer literal in message expression
   --> testdata/parser/expr.proto:45:25
    | 
 45 | option (test.bad) = {1, 2, 3};
-   |                         ^ expected key-value pair
+   |                         ^ expected message field value
 
-error: unexpected integer literal in dictionary expression
+error: unexpected integer literal in message expression
   --> testdata/parser/expr.proto:45:28
    | 
 45 | option (test.bad) = {1, 2, 3};
-   |                            ^ expected key-value pair
+   |                            ^ expected message field value
 
 error: unexpected `;` after `-`
   --> testdata/parser/expr.proto:46:22

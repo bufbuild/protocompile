@@ -43,7 +43,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	next := peekTokenExpr(p, c)
 	switch prec {
 	case 0:
-		if where.Subject == taxa.Array || where.Subject == taxa.Dict {
+		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
 			switch next.Text() {
 			case "=": // Allow equals signs, which are usually a mistake.
 				p.Errorf("unexpected `=` where expression").With(

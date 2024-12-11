@@ -38,6 +38,38 @@ decls:
       value.dict.entries:
         - key.path.components: [{ ident: "foo" }]
           value.literal.string_value: "x"
+        - key.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
+          value.literal.string_value: "x"
+        - key.array.elements:
+            - path.components:
+                - ident: "foo"
+                - { ident: "bar", separator: SEPARATOR_DOT }
+                - { ident: "baz", separator: SEPARATOR_DOT }
+          value.literal.string_value: "x"
+        - key.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
+          value.dict: {}
+        - key.array.elements:
+            - path.components:
+                - ident: "foo"
+                - { ident: "bar", separator: SEPARATOR_DOT }
+                - { ident: "baz", separator: SEPARATOR_DOT }
+          value.dict.entries:
+            - key.literal.int_value: 1
+              value.literal.string_value: "x"
+            - key.literal.string_value: "foo"
+              value.literal.string_value: "x"
+            - key.literal.int_value: 1
+              value.dict.entries:
+                - key.literal.string_value: "foo"
+                  value.dict.entries:
+                    - key.path.components: [{ ident: "bar" }]
+                      value.literal.string_value: "x"
+        - key.array.elements:
+            - path.components:
+                - ident: "foo"
+                - { ident: "bar", separator: SEPARATOR_DOT }
+                - { ident: "MyType", separator: SEPARATOR_SLASH }
+          value.literal.string_value: "x"
   - def:
       kind: KIND_OPTION
       name.components:

@@ -92,7 +92,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			if tok := contents.Peek(); !tok.Nil() {
 				p.Error(errUnexpected{
 					what:  start,
-					where: taxa.ExtensionInPath.After(),
+					where: taxa.ExtensionName.After(),
 				})
 			}
 
@@ -113,7 +113,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			// consume this token.
 			p.Error(errUnexpected{
 				what:  next,
-				where: taxa.Path.In(),
+				where: taxa.QualifiedName.In(),
 				want:  taxa.NewSet(taxa.Ident, taxa.Parens),
 			})
 

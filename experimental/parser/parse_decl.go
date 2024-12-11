@@ -29,7 +29,7 @@ type exprComma struct {
 // parseDecl parses any Protobuf declaration.
 //
 // This function will always advance cursor if it is not empty.
-func parseDecl(p *parser, c *token.Cursor, in taxa.Subject) ast.DeclAny {
+func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	first := c.Peek()
 	if first.Nil() {
 		return ast.DeclAny{}
@@ -256,7 +256,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Subject) ast.DeclAny {
 }
 
 // parseBody parses a ({}-delimited) body of declarations.
-func parseBody(p *parser, braces token.Token, in taxa.Subject) ast.DeclBody {
+func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 	body := p.NewDeclBody(braces)
 
 	// Drain the contents of the body into it. Remember,
@@ -339,7 +339,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 }
 
 // parseTypeList parses a type list out of a bracket token.
-func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.Subject) {
+func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.Noun) {
 	tys := commas(p, parens.Children(), true, func(c *token.Cursor) (ast.TypeAny, bool) {
 		ty, _ := parseType(p, c, in.In(), false)
 		return ty, !ty.Nil()
@@ -352,7 +352,7 @@ func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.Su
 }
 
 // parseOptions parses a ([]-delimited) compact options list.
-func parseOptions(p *parser, brackets token.Token, _ taxa.Subject) ast.CompactOptions {
+func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptions {
 	options := p.NewCompactOptions(brackets)
 
 	elems := commas(p, brackets.Children(), true, func(c *token.Cursor) (ast.Option, bool) {

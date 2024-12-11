@@ -37,7 +37,7 @@ type errUnexpected struct {
 	// shown, but if it's not set, we call describe(what) to get a user-visible
 	// description.
 	want taxa.Set
-	got  taxa.Subject
+	got  taxa.Noun
 }
 
 func (e errUnexpected) Error() string {
@@ -46,7 +46,7 @@ func (e errUnexpected) Error() string {
 		got = taxa.Classify(e.what)
 	}
 
-	if e.where.Subject == taxa.Unknown {
+	if e.where.Subject() == taxa.Unknown {
 		return fmt.Sprintf("unexpected %v", got)
 	}
 
@@ -61,7 +61,7 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 
 	d.With(
 		snippet,
-		report.Snippetf(e.prev, "previous %v is here", e.where.Subject),
+		report.Snippetf(e.prev, "previous %v is here", e.where.Subject()),
 	)
 }
 
@@ -69,7 +69,7 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 // than one time, when it is expected to occur at most once.
 type errMoreThanOne struct {
 	first, second report.Spanner
-	what          taxa.Subject
+	what          taxa.Noun
 }
 
 func (e errMoreThanOne) Error() string {

@@ -37,7 +37,7 @@ type defParser struct {
 
 type defFollower interface {
 	// what returns the noun for this follower.
-	what(*defParser) taxa.Subject
+	what(*defParser) taxa.Noun
 
 	// canStart returns whether this follower can be parsed next.
 	canStart(*defParser) bool
@@ -56,6 +56,7 @@ var defFollowers = []defFollower{
 
 // parseDef parses a generic definition.
 func (p *defParser) parse() ast.DeclDef {
+
 	// Try to parse the various "followers". We try to parse as many as
 	// possible: if we have `foo = 5 = 6`, we want to parse the second = 6,
 	// diagnose it, and throw it away.
@@ -95,7 +96,7 @@ followers:
 				got:   defFollowers[idx].what(p),
 			})
 		case idx == lastFollower:
-			if idx == len(defFollowers)-1 {
+			if _, ok := defFollowers[idx].(defBody); ok {
 				// We *do not* pop or diagnose an extra {}; we want this to
 				// be parsed as a loose DeclBody, instead, so we stop
 				// parsing here.
@@ -149,7 +150,7 @@ followers:
 	}
 
 	if !p.braces.Nil() {
-		var in taxa.Subject
+		var in taxa.Noun
 		switch p.kw.Text() {
 		case "message":
 			in = taxa.Message
@@ -177,8 +178,8 @@ followers:
 
 type defInputs struct{}
 
-func (defInputs) what(*defParser) taxa.Subject { return taxa.MethodIns }
-func (defInputs) canStart(p *defParser) bool   { return p.c.Peek().Text() == "(" }
+func (defInputs) what(*defParser) taxa.Noun  { return taxa.MethodIns }
+func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "(" }
 
 func (defInputs) parse(p *defParser) report.Span {
 	next := p.c.Pop()
@@ -201,8 +202,8 @@ func (defInputs) prev(p *defParser) report.Span {
 
 type defOutputs struct{}
 
-func (defOutputs) what(*defParser) taxa.Subject { return taxa.MethodOuts }
-func (defOutputs) canStart(p *defParser) bool   { return p.c.Peek().Text() == "returns" }
+func (defOutputs) what(*defParser) taxa.Noun  { return taxa.MethodOuts }
+func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "returns" }
 
 func (defOutputs) parse(p *defParser) report.Span {
 	// Note that the inputs and outputs of a method are parsed
@@ -249,7 +250,7 @@ func (defOutputs) prev(p *defParser) report.Span {
 
 type defValue struct{}
 
-func (defValue) what(p *defParser) taxa.Subject {
+func (defValue) what(p *defParser) taxa.Noun {
 	switch {
 	case p.kw.Text() == "option":
 		return taxa.OptionValue
@@ -316,8 +317,8 @@ func (defValue) prev(p *defParser) report.Span {
 
 type defOptions struct{}
 
-func (defOptions) what(*defParser) taxa.Subject { return taxa.CompactOptions }
-func (defOptions) canStart(p *defParser) bool   { return p.c.Peek().Text() == "[" }
+func (defOptions) what(*defParser) taxa.Noun  { return taxa.CompactOptions }
+func (defOptions) canStart(p *defParser) bool { return p.c.Peek().Text() == "[" }
 
 func (defOptions) parse(p *defParser) report.Span {
 	next := p.c.Pop()
@@ -340,8 +341,8 @@ func (defOptions) prev(p *defParser) report.Span {
 
 type defBody struct{}
 
-func (defBody) what(*defParser) taxa.Subject { return taxa.Body }
-func (defBody) canStart(p *defParser) bool   { return p.c.Peek().Text() == "{" }
+func (defBody) what(*defParser) taxa.Noun  { return taxa.Body }
+func (defBody) canStart(p *defParser) bool { return p.c.Peek().Text() == "{" }
 
 func (defBody) parse(p *defParser) report.Span {
 	next := p.c.Pop()

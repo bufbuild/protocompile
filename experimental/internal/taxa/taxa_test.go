@@ -26,9 +26,19 @@ import (
 func TestAllStringify(t *testing.T) {
 	t.Parallel()
 
-	taxa.All()(func(s taxa.Subject) bool {
-		assert.NotEqual(t, "", s.String())
-		assert.NotEqual(t, "", s.GoString())
+	// We use only one map to test for duplicates, because no noun should have
+	// the same user-visible string as its Go constant name.
+	strings := make(map[string]struct{})
+	taxa.All()(func(s taxa.Noun) bool {
+		name := s.String()
+		assert.NotEqual(t, "", name)
+		assert.NotContains(t, strings, name)
+		strings[name] = struct{}{}
+
+		name = s.GoString()
+		assert.NotEqual(t, "", name)
+		assert.NotContains(t, strings, name)
+		strings[name] = struct{}{}
 
 		return true
 	})
@@ -48,7 +58,7 @@ func TestSet(t *testing.T) {
 	assert.True(t, set.Has(taxa.Message))
 
 	assert.Equal(t,
-		[]taxa.Subject{taxa.EOF, taxa.Decl, taxa.Message, taxa.Array, taxa.Comment},
+		[]taxa.Noun{taxa.EOF, taxa.Decl, taxa.Message, taxa.Array, taxa.Comment},
 		iters.Collect(set.All()),
 	)
 }
