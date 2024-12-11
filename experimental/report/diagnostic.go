@@ -129,7 +129,7 @@ func Message(format string, args ...any) DiagnosticOption {
 // span to mention the given file.
 type InFile string
 
-// Apply implements [DiagnosticOption]
+// Apply implements [DiagnosticOption].
 func (f InFile) Apply(d *Diagnostic) {
 	if d.inFile != "" {
 		panic("protocompile/report: set diagnostic path more than once")

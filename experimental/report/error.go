@@ -36,7 +36,7 @@ var _ Diagnose = &ErrInFile{}
 // Diagnose implements [Diagnose].
 func (e *ErrInFile) Diagnose(d *Diagnostic) {
 	d.With(
-		Message(e.Err.Error()),
+		Message("%v", e.Err),
 		InFile(e.Path),
 	)
 }
