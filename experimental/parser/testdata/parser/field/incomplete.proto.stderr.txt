@@ -4,11 +4,11 @@ error: unexpected identifier after definition
 24 |     foo.Bar name;
    |     ^^^ expected `;`
 
-error: unexpected message field tag without `=`
+error: unexpected integer literal in definition
   --> testdata/parser/field/incomplete.proto:25:18
    | 
 25 |     foo.Bar name 1;
-   |                  ^ 
+   |                  ^ expected `=`
 
 error: unexpected `}` after definition
   --> testdata/parser/field/incomplete.proto:27:1

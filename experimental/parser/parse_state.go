@@ -65,8 +65,13 @@ func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.To
 // This automatically handles various corner-cases around commas that occur throughout the
 // grammar.
 //
-// This will completely drain cursor, unless the parse function returns false, which signals
-// that the end of the list has been reached.
+// This will completely drain cursor, unless the parse function returns false or
+// no comma is encountered when commasRequired is true, which signals that the
+// end of the list has been reached.
+//
+// This function does not diagnose a missing comma; it is the responsibility
+// of the caller handling additional, potentially unexpected tokens in
+// c.
 func commas[T any](
 	_ *parser,
 	c *token.Cursor,

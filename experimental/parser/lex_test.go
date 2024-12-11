@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser_test
+package parser
 
 import (
 	"fmt"
@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/parser"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/golden"
@@ -46,7 +45,7 @@ func TestLexer(t *testing.T) {
 
 		errs := &report.Report{Tracing: 10}
 		ctx := ast.NewContext(report.NewFile(path, text))
-		parser.Lex(ctx, errs)
+		lex(ctx, errs)
 
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,

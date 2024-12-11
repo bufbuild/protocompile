@@ -36,7 +36,6 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	if lhs.Nil() {
 		lhs = parseExprPrefix(p, c, where)
 		if lhs.Nil() || c.Done() {
-			// Recursing will result where duplicate diagnostics.
 			return lhs
 		}
 	}
@@ -49,17 +48,17 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 			case "=": // Allow equals signs, which are usually a mistake.
 				p.Errorf("unexpected `=` where expression").With(
 					report.Snippetf(next, "help: replace this with `:`"),
-					report.Note("top-level `option` assignment uses `=`, not `:`"),
+					report.Notef("%ss use `=`, not `:`, for setting fields", taxa.Dict),
 				)
 				fallthrough
 			case ":":
-				return p.NewExprKV(ast.ExprFieldArgs{
+				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
 					Colon: c.Pop(),
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
-			case "{": // This is for colon-less, dict-valued fields.
+			case "{", "<", "[": // This is for colon-less, array or dict-valued fields.
 				if !next.IsLeaf() && lhs.Kind() != ast.ExprKindField {
 					// The previous expression cannot also be a key-value pair, since
 					// this messes with parsing of dicts, which are not comma-separated.
@@ -72,8 +71,16 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 					// We want to diagnose the { as unexpected here, and it is better
 					// for that to be done by whatever is calling parseExpr since it
 					// will have more context.
-					return p.NewExprKV(ast.ExprFieldArgs{
-						Key:   lhs,
+					return p.NewExprField(ast.ExprFieldArgs{
+						Key: lhs,
+						// Why not call parseExprSolo? Suppose the following
+						// (invalid) production:
+						//
+						// foo { ... } to { ... }
+						//
+						// Calling parseExprInfix will cause this to be parsed
+						// as a range expression, which will be diagnosed when
+						// we legalize.
 						Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 					}).AsAny()
 				}
@@ -100,7 +107,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	}
 }
 
-// parseExprInfix parses a prefix expression.
+// parseExprPrefix parses a prefix expression.
 //
 // This is separate from "solo" expressions because if we every gain suffix-type
 // expressions, such as f(), we need to parse -f() as -(f()), not (-f)().
@@ -123,8 +130,8 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	}
 }
 
-// ParseExpr attempts to parse an "solo" expression, which is an expression that
-// does not contain any infix operators.
+// parseExprSolo attempts to parse a "solo" expression, which is an expression that
+// does not contain any operators.
 //
 // May return nil if parsing completely fails.
 func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
@@ -139,14 +146,15 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()
 
-	case (next.Text() == "{" || next.Text() == "[") && !next.IsLeaf():
+	case (next.Text() == "{" || next.Text() == "<" || next.Text() == "[") && !next.IsLeaf():
 		body := c.Pop()
 		in := taxa.Dict
 		if next.Text() == "[" {
 			in = taxa.Array
 		}
 
-		elems := commas(p, body.Children(), true, func(c *token.Cursor) (ast.ExprAny, bool) {
+		// TODO: We need to also accept `;` as a separator inside of dicts.
+		elems := commas(p, body.Children(), in == taxa.Array, func(c *token.Cursor) (ast.ExprAny, bool) {
 			expr := parseExpr(p, c, in.In())
 			return expr, !expr.Nil()
 		})
@@ -170,7 +178,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 					want:  taxa.DictField.AsSet(),
 				})
 
-				field = p.NewExprKV(ast.ExprFieldArgs{Value: expr})
+				field = p.NewExprField(ast.ExprFieldArgs{Value: expr})
 			}
 
 			dict.AppendComma(field, comma)

@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser_test
+package parser
 
 import (
 	"strings"
 	"testing"
 
-	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
-	"github.com/bufbuild/protocompile/experimental/parser"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/bufbuild/protocompile/internal/prototest"
@@ -45,8 +43,7 @@ func TestParse(t *testing.T) {
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		errs := &report.Report{Tracing: 10}
-		ctx := ast.NewContext(report.NewFile(path, text))
-		file, _ := parser.Parse(ctx, errs)
+		file, _ := Parse(report.NewFile(path, text), errs)
 
 		errs.Sort()
 		stderr, _, _ := report.Renderer{

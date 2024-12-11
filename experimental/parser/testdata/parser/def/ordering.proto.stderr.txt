@@ -88,13 +88,13 @@ error: missing `(...)` around method return type
 31 |     M x returns T [] returns T;
    |                 ^ help: replace this with `(T)`
 
-error: encountered more than one method return type
+error: unexpected method return type after compact options
   --> testdata/parser/def/ordering.proto:31:22
    | 
 31 |     M x returns T [] returns T;
-   |         ---------    ^^^^^^^^^ help: consider removing this
-   |         |
-   |         first one is here
+   |                   -- ^^^^^^^^^ 
+   |                   |
+   |                   previous compact options is here
 
 error: unexpected method return type after compact options
   --> testdata/parser/def/ordering.proto:32:21
@@ -128,23 +128,23 @@ error: encountered more than one message field tag
   --> testdata/parser/def/ordering.proto:35:13
    | 
 35 |     M x = 1 = 1;
-   |           - ^^^ help: consider removing this
-   |           |
-   |           first one is here
+   |         --- ^^^ help: consider removing this
+   |         |
+   |         first one is here
 
 error: unexpected message field tag after compact options
-  --> testdata/parser/def/ordering.proto:36:23
+  --> testdata/parser/def/ordering.proto:36:21
    | 
 36 |     M x [foo = bar] = 1;
-   |         -----------   ^ 
+   |         ----------- ^^^ 
    |         |
    |         previous compact options is here
 
 error: unexpected message field tag after definition body
-  --> testdata/parser/def/ordering.proto:37:25
+  --> testdata/parser/def/ordering.proto:37:23
    | 
 37 |     M x { /* ... */ } = 1;
-   |         -------------   ^ 
+   |         ------------- ^^^ 
    |         |
    |         previous definition body is here
 

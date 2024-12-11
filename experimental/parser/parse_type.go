@@ -116,6 +116,12 @@ func parseType(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool) (as
 		_, rest := tyPath.Split(1)
 		switch ast.TypePrefixByName(ident.Name()) {
 		case ast.TypePrefixOptional, ast.TypePrefixRepeated, ast.TypePrefixRequired:
+			// NOTE: We do not need to look at isInMethod here, because it
+			// implies isList (sort of: in the case of writing something
+			// like `returns optional.Foo`, this will be parsed as
+			// `returns (optional .Foo)`. However, this production is already
+			// invalid, because of the missing parentheses, so we don't need to
+			// legalize it.
 			isMod = !isList || rest.Nil()
 		case ast.TypePrefixStream:
 			isMod = isInMethod || rest.Nil()

@@ -27,15 +27,19 @@ import (
 // parsing succeeded without errors.
 //
 // Parse will freeze the stream in ctx when it is done.
-func Parse(ctx ast.Context, errs *report.Report) (file ast.File, ok bool) {
+func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 	prior := len(errs.Diagnostics)
+	ctx := ast.NewContext(source)
 
-	Lex(ctx, errs)
+	lex(ctx, errs)
 	parse(ctx, errs)
 
 	ok = true
 	for _, d := range errs.Diagnostics[prior:] {
-		ok = ok && d.Level != report.Error
+		if d.Level >= report.Error {
+			ok = false
+			break
+		}
 	}
 
 	return ctx.Nodes().Root(), ok
