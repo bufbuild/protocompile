@@ -146,7 +146,7 @@ func (a *Arena[T]) Compress(ptr *T) Pointer[T] {
 	// the majority of the allocated values will be in either the last or
 	// second-to-last slice.
 	for i := len(a.table) - 1; i >= 0; i-- {
-		idx := slicesx.PointerIndex(ptr, a.table[i])
+		idx := slicesx.PointerIndex(a.table[i], ptr)
 		if idx != -1 {
 			return Pointer[T](a.lenOfFirstNSlices(i) + idx + 1)
 		}

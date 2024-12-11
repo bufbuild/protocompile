@@ -20,7 +20,7 @@ import "unsafe"
 // no such integer.
 //
 //go:nosplit
-func PointerIndex[T any](p *T, s []T) int {
+func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	a := unsafe.Pointer(p)
 	b := unsafe.Pointer(unsafe.SliceData(s))
 
