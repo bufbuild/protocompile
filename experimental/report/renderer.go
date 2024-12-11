@@ -343,8 +343,8 @@ func buildWindow(level Level, locations [][2]Location, annotations []annotation)
 				end:        locations[i][1].Line,
 				startWidth: locations[i][0].Column,
 				endWidth:   locations[i][1].Column,
-				level:      note,
-				message:    snippet.Message,
+				level:      noteLevel,
+				message:    snippet.message,
 			})
 			ml := &w.multilines[len(w.multilines)-1]
 
@@ -364,7 +364,7 @@ func buildWindow(level Level, locations [][2]Location, annotations []annotation)
 				}
 			}
 
-			if snippet.Primary {
+			if snippet.primary {
 				ml.level = level
 			}
 			continue
@@ -374,12 +374,12 @@ func buildWindow(level Level, locations [][2]Location, annotations []annotation)
 			line:    locations[i][0].Line,
 			start:   locations[i][0].Column,
 			end:     locations[i][1].Column,
-			level:   note,
-			message: snippet.Message,
+			level:   noteLevel,
+			message: snippet.message,
 		})
 
 		ul := &w.underlines[len(w.underlines)-1]
-		if snippet.Primary {
+		if snippet.primary {
 			ul.level = level
 		}
 		if ul.start == ul.end {
@@ -528,7 +528,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 				switch level {
 				case 0:
 					out.WriteByte(' ')
-				case note:
+				case noteLevel:
 					out.WriteByte('-')
 				default:
 					out.WriteByte('^')
@@ -709,7 +709,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 					padByRune(&line, ml.endWidth-1, '_')
 				}
 
-				if ml.level == note {
+				if ml.level == noteLevel {
 					line.WriteByte('-')
 				} else {
 					line.WriteByte('^')

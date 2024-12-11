@@ -17,7 +17,7 @@ package report
 import (
 	"fmt"
 	"runtime"
-	"runtime/debug"
+	runtimeDebug "runtime/debug"
 	"slices"
 	"strings"
 
@@ -37,7 +37,7 @@ const (
 	// Cyan. This is the diagnostics version of "info".
 	Remark
 
-	note // Used internally within the diagnostic renderer.
+	noteLevel // Used internally within the diagnostic renderer.
 )
 
 // Level represents the severity of a diagnostic message.
@@ -50,11 +50,13 @@ type Level int8
 // constants.
 type Tag string
 
-// Option returns a DiagnosticOption that sets a diagnostic's tag to this one.
-func (t Tag) Option() DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.tag = t
+// Apply implements [DiagnosticOption].
+func (t Tag) Apply(d *Diagnostic) {
+	if d.tag != "" {
+		panic("protocompile/report: set diagnostic tag more than once")
 	}
+
+	d.tag = t
 }
 
 // Diagnostic is a type of error that can be rendered as a rich diagnostic.
@@ -94,11 +96,16 @@ type annotation struct {
 	// squiggly line with no note attached to it. This is useful for cases where
 	// the overall error message already explains what the problem is and there
 	// is no additional context that would be useful to add to the error.
-	Message string
+	message string
 
 	// Whether this is a "primary" snippet, which is used for deciding whether or not
 	// to mark the snippet with the same color as the overall diagnostic.
-	Primary bool
+	primary bool
+}
+
+func (a annotation) Apply(d *Diagnostic) {
+	a.primary = len(d.annotations) == 0
+	d.annotations = append(d.annotations, a)
 }
 
 // Primary returns this diagnostic's primary span, if it has one.
@@ -106,7 +113,7 @@ type annotation struct {
 // If it doesn't have one, it returns the zero span.
 func (d *Diagnostic) Primary() Span {
 	for _, annotation := range d.annotations {
-		if annotation.Primary {
+		if annotation.primary {
 			return annotation.Span
 		}
 	}
@@ -130,7 +137,7 @@ func (d *Diagnostic) Is(tag Tag) bool {
 func (d *Diagnostic) With(options ...DiagnosticOption) *Diagnostic {
 	for _, option := range options {
 		if option != nil {
-			option(d)
+			option.Apply(d)
 		}
 	}
 	return d
@@ -144,29 +151,36 @@ type Diagnose interface {
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
 // Nil values passed to [Diagnostic.With] are ignored.
-type DiagnosticOption func(*Diagnostic)
+type DiagnosticOption interface {
+	Apply(*Diagnostic)
+}
 
 // Message returns a Diagnostic option that sets the main diagnostic message.
 func Message(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		if d.message != "" {
-			panic("protocompile/report: set diagnostic message more than once")
-		}
-
-		d.message = fmt.Sprintf(format, args...)
-	}
+	return message(fmt.Sprintf(format, args...))
 }
 
-// InFile returns a DiagnosticOption that causes a diagnostic without a primary
-// span to mention the given file.
-func InFile(path string) DiagnosticOption {
-	return func(d *Diagnostic) {
-		if d.inFile != "" {
-			panic("protocompile/report: set diagnostic path more than once")
-		}
+type message string
 
-		d.inFile = path
+func (m message) Apply(d *Diagnostic) {
+	if d.message != "" {
+		panic("protocompile/report: set diagnostic message more than once")
 	}
+
+	d.message = string(m)
+}
+
+// InFile is a DiagnosticOption that causes a diagnostic without a primary
+// span to mention the given file.
+type InFile string
+
+// Apply implements [DiagnosticOption]
+func (f InFile) Apply(d *Diagnostic) {
+	if d.inFile != "" {
+		panic("protocompile/report: set diagnostic path more than once")
+	}
+
+	d.inFile = string(f)
 }
 
 // Snippetf returns a DiagnosticOption that adds a new snippet to a diagnostic.
@@ -190,9 +204,6 @@ func Snippet(at Spanner, args ...any) DiagnosticOption {
 		return nil
 	}
 
-	// This is hoisted out to improve stack traces when something goes awry in
-	// the argument to With(). By hoisting, it correctly blames the right
-	// invocation to Snippet().
 	annotation := annotation{Span: span}
 	if len(args) > 0 {
 		format, ok := args[0].(string)
@@ -200,38 +211,37 @@ func Snippet(at Spanner, args ...any) DiagnosticOption {
 			panic("protocompile/report: expected string as first Snippet argument")
 		}
 
-		annotation.Message = fmt.Sprintf(format, args[1:]...)
+		annotation.message = fmt.Sprintf(format, args[1:]...)
 	}
 
-	return func(d *Diagnostic) {
-		annotation.Primary = len(d.annotations) == 0
-		d.annotations = append(d.annotations, annotation)
-	}
+	return annotation
 }
 
 // Note returns a DiagnosticOption that provides the user with context about the
 // diagnostic, after the annotations.
 func Note(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.notes = append(d.notes, fmt.Sprintf(format, args...))
-	}
+	return note(fmt.Sprintf(format, args...))
 }
 
 // Help returns a DiagnosticOption that provides the user with a helpful prose
 // suggestion for resolving the diagnostic.
 func Help(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.help = append(d.help, fmt.Sprintf(format, args...))
-	}
+	return help(fmt.Sprintf(format, args...))
 }
 
 // Debug returns a DiagnosticOption appends debugging information to a diagnostic that
 // is not intended to be shown to normal users.
 func Debug(format string, args ...any) DiagnosticOption {
-	return func(d *Diagnostic) {
-		d.debug = append(d.debug, fmt.Sprintf(format, args...))
-	}
+	return debug(fmt.Sprintf(format, args...))
 }
+
+type note string
+type help string
+type debug string
+
+func (n note) Apply(d *Diagnostic)  { d.notes = append(d.notes, string(n)) }
+func (n help) Apply(d *Diagnostic)  { d.help = append(d.help, string(n)) }
+func (n debug) Apply(d *Diagnostic) { d.debug = append(d.debug, string(n)) }
 
 // Report is a collection of diagnostics.
 //
@@ -325,7 +335,7 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 
 	// Append a stack trace but only after any user-provided diagnostic
 	// information.
-	stack := strings.Split(strings.TrimSpace(string(debug.Stack())), "\n")
+	stack := strings.Split(strings.TrimSpace(string(runtimeDebug.Stack())), "\n")
 	// Remove the goroutine number and the first two frames (debug.Stack and
 	// Report.CatchICE).
 	stack = stack[5:]
@@ -414,8 +424,8 @@ func (r *Report) ToProto() proto.Message {
 				File:    file,
 				Start:   uint32(snip.Start),
 				End:     uint32(snip.End),
-				Message: snip.Message,
-				Primary: snip.Primary,
+				Message: snip.message,
+				Primary: snip.primary,
 			})
 		}
 
@@ -487,14 +497,14 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 					Start: int(snip.Start),
 					End:   int(snip.End),
 				},
-				Message: snip.Message,
-				Primary: snip.Primary,
+				message: snip.Message,
+				primary: snip.Primary,
 			})
 			havePrimary = havePrimary || snip.Primary
 		}
 
 		if !havePrimary && len(d.annotations) > 0 {
-			d.annotations[0].Primary = true
+			d.annotations[0].primary = true
 		}
 
 		r.Diagnostics = append(r.Diagnostics, d)

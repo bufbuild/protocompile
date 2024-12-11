@@ -66,7 +66,7 @@ func (c styleSheet) ColorForLevel(l Level) string {
 		return c.nWarning
 	case Remark:
 		return c.nRemark
-	case note:
+	case noteLevel:
 		return c.nAccent
 	default:
 		return ""
@@ -86,7 +86,7 @@ func (c styleSheet) BoldForLevel(l Level) string {
 		return c.bWarning
 	case Remark:
 		return c.bRemark
-	case note:
+	case noteLevel:
 		return c.bAccent
 	default:
 		return ""
