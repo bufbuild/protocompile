@@ -538,7 +538,7 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 			}
 			fmt.Fprintf(&buf, "at %s\n  %s:%d\n", frame.Function, frame.File, frame.Line)
 		}
-		d.With(Debug(buf.String()))
+		d.With(Debug("%s", buf.String()))
 	}
 
 	return d
