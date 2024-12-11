@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package arena
+package slicesx
 
-import (
-	"unsafe"
-)
+import "unsafe"
 
-// pointerIndex returns an integer n such that p == &s[n], or -1 if there is
+// PointerIndex returns an integer n such that p == &s[n], or -1 if there is
 // no such integer.
 //
 //go:nosplit
-func pointerIndex[T any](p *T, s []T) int {
+func PointerIndex[T any](p *T, s []T) int {
 	a := unsafe.Pointer(p)
 	b := unsafe.Pointer(unsafe.SliceData(s))
 
