@@ -202,14 +202,14 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	var out strings.Builder
 	fmt.Fprint(&out, ss.BoldForLevel(d.level), level, ": ", d.message, ss.reset)
 
-	locations := make([][2]Location, len(d.annotations))
-	for i, snip := range d.annotations {
+	locations := make([][2]Location, len(d.snippets))
+	for i, snip := range d.snippets {
 		locations[i][0] = snip.location(snip.Start, false)
 		locations[i][1] = snip.location(snip.End, false)
 	}
 
 	// Figure out how wide the line bar needs to be. This is given by
-	// the width of the largest line value among the annotations.
+	// the width of the largest line value among the snippets.
 	var greatestLine int
 	for _, loc := range locations {
 		greatestLine = max(greatestLine, loc[1].Line)
@@ -218,13 +218,13 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := iters.Partition(d.annotations, func(a, b *annotation) bool { return a.Path() != b.Path() })
-	parts(func(i int, annotations []annotation) bool {
+	parts := iters.Partition(d.snippets, func(a, b *snippet) bool { return a.Path() != b.Path() })
+	parts(func(i int, snippets []snippet) bool {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth)
 
-		primary := annotations[0]
+		primary := snippets[0]
 		start := locations[i][0]
 		sep := ":::"
 		if i == 0 {
@@ -238,13 +238,13 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		padBy(&out, lineBarWidth)
 		out.WriteString(" | ")
 
-		window := buildWindow(d.level, locations[i:i+len(annotations)], annotations)
+		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
 		window.Render(lineBarWidth, &ss, &out)
 		return true
 	})
 
 	// Render a remedial file name for spanless errors.
-	if len(d.annotations) == 0 && d.inFile != "" {
+	if len(d.snippets) == 0 && d.inFile != "" {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth-1)
@@ -302,23 +302,23 @@ type window struct {
 	multilines []multiline
 }
 
-// buildWindow builds a diagnostic window for the given annotations, which must all have
+// buildWindow builds a diagnostic window for the given snippets, which must all have
 // the same file.
 //
 // This is separate from [window.Render] because it performs certain layout
 // decisions that cannot happen in the middle of actually rendering the source
 // code (well, they could, but the resulting code would be far more complicated).
-func buildWindow(level Level, locations [][2]Location, annotations []annotation) *window {
+func buildWindow(level Level, locations [][2]Location, snippets []snippet) *window {
 	w := new(window)
-	w.file = annotations[0].File
+	w.file = snippets[0].File
 
 	// Calculate the range of the file we will be printing. This is given
 	// by every line that has a piece of diagnostic in it. To find this, we
 	// calculate the join of all of the spans in the window, and find the
 	// nearest \n runes in the text.
 	w.start = locations[0][0].Line
-	w.offsets[0] = annotations[0].Start
-	for i, snip := range annotations {
+	w.offsets[0] = snippets[0].Start
+	for i, snip := range snippets {
 		w.start = min(w.start, locations[i][0].Line)
 		w.offsets[0] = min(w.offsets[0], snip.Start)
 		w.offsets[1] = max(w.offsets[1], snip.End)
@@ -334,7 +334,7 @@ func buildWindow(level Level, locations [][2]Location, annotations []annotation)
 	}
 
 	// Now, convert each span into an underline or multiline.
-	for i, snippet := range annotations {
+	for i, snippet := range snippets {
 		isMulti := locations[i][0].Line != locations[i][1].Line
 
 		if isMulti && len(w.multilines) < maxMultilinesPerWindow {

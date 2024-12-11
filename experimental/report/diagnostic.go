@@ -74,7 +74,7 @@ type Diagnostic struct {
 	inFile string
 
 	// A list of annotated source code spans in the diagnostic.
-	annotations        []annotation
+	snippets           []snippet
 	notes, help, debug []string
 }
 
@@ -89,7 +89,7 @@ type DiagnosticOption interface {
 //
 // If it doesn't have one, it returns the zero span.
 func (d *Diagnostic) Primary() Span {
-	for _, annotation := range d.annotations {
+	for _, annotation := range d.snippets {
 		if annotation.primary {
 			return annotation.Span
 		}
@@ -138,7 +138,7 @@ func (f InFile) Apply(d *Diagnostic) {
 	d.inFile = string(f)
 }
 
-// Snippetf returns a DiagnosticOption that adds a new snippet to a diagnostic.
+// Snippet returns a DiagnosticOption that adds a new snippet to a diagnostic.
 //
 // Any additional arguments to this function are passed to [fmt.Sprintf] to
 // produce a message to go with the span. Snippet(span) is equivalent to
@@ -159,17 +159,17 @@ func Snippet(at Spanner, args ...any) DiagnosticOption {
 		return nil
 	}
 
-	annotation := annotation{Span: span}
+	snippet := snippet{Span: span}
 	if len(args) > 0 {
 		format, ok := args[0].(string)
 		if !ok {
 			panic("protocompile/report: expected string as first Snippet argument")
 		}
 
-		annotation.message = fmt.Sprintf(format, args[1:]...)
+		snippet.message = fmt.Sprintf(format, args[1:]...)
 	}
 
-	return annotation
+	return snippet
 }
 
 // Note returns a DiagnosticOption that provides the user with context about the
@@ -190,12 +190,12 @@ func Debug(format string, args ...any) DiagnosticOption {
 	return debug(fmt.Sprintf(format, args...))
 }
 
-// annotation is an annotated source code snippet within a [Diagnostic].
+// snippet is an annotated source code snippet within a [Diagnostic].
 //
 // Snippets will render as annotated source code spans that show the context
 // around the annotated region. More literally, this is e.g. a red squiggly
 // line under some code.
-type annotation struct {
+type snippet struct {
 	// The span for this annotation.
 	Span
 
@@ -212,9 +212,9 @@ type annotation struct {
 	primary bool
 }
 
-func (a annotation) Apply(d *Diagnostic) {
-	a.primary = len(d.annotations) == 0
-	d.annotations = append(d.annotations, a)
+func (a snippet) Apply(d *Diagnostic) {
+	a.primary = len(d.snippets) == 0
+	d.snippets = append(d.snippets, a)
 }
 
 type message string

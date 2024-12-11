@@ -196,7 +196,7 @@ func (r *Report) ToProto() proto.Message {
 			Debug:   d.debug,
 		}
 
-		for _, snip := range d.annotations {
+		for _, snip := range d.snippets {
 			file, ok := fileToIndex[snip.Path()]
 			if !ok {
 				file = uint32(len(proto.Files))
@@ -279,7 +279,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 				)
 			}
 
-			d.annotations = append(d.annotations, annotation{
+			d.snippets = append(d.snippets, snippet{
 				Span: Span{
 					File:  file,
 					Start: int(snip.Start),
@@ -291,8 +291,8 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 			havePrimary = havePrimary || snip.Primary
 		}
 
-		if !havePrimary && len(d.annotations) > 0 {
-			d.annotations[0].primary = true
+		if !havePrimary && len(d.snippets) > 0 {
+			d.snippets[0].primary = true
 		}
 
 		r.Diagnostics = append(r.Diagnostics, d)
