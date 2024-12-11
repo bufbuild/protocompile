@@ -21,7 +21,9 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/iters"
+
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Path represents a multi-part identifier.
@@ -37,7 +39,7 @@ type Path struct {
 
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
-	first, ok := iters.First(p.Components)
+	first, ok := iterx.First(p.Components)
 	return ok && !first.Separator().Nil()
 }
 
@@ -63,7 +65,7 @@ func (p Path) ToRelative() Path {
 // the nil token.
 func (p Path) AsIdent() token.Token {
 	var buf [2]PathComponent
-	prefix := iters.AppendSeq(buf[:0], iters.Limit(2, p.Components))
+	prefix := slicesx.AppendSeq(buf[:0], iterx.Limit(2, p.Components))
 	if len(prefix) != 1 || !prefix[0].Separator().Nil() {
 		return token.Nil
 	}

@@ -13,20 +13,29 @@
 // limitations under the License.
 
 // package iters contains helpers for working with iterators.
-package iters
+package iterx
 
 import "github.com/bufbuild/protocompile/internal/iter"
 
-// Collect polyfills [slices.Collect].
-func Collect[E any](seq iter.Seq[E]) []E {
-	return AppendSeq[[]E](nil, seq)
+// Limit limits a sequence to only yield at most limit times.
+func Limit[T any](limit uint, seq iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		seq(func(value T) bool {
+			if limit == 0 || !yield(value) {
+				return false
+			}
+			limit--
+			return true
+		})
+	}
 }
 
-// AppendSeq polyfills [slices.AppendSeq].
-func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
-	seq(func(v E) bool {
-		s = append(s, v)
-		return true
+// First retrieves the first element of an iterator.
+func First[T any](seq iter.Seq[T]) (v T, ok bool) {
+	seq(func(x T) bool {
+		v = x
+		ok = true
+		return false
 	})
-	return s
+	return v, ok
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iters_test
+package slicesx_test
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bufbuild/protocompile/internal/iters"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestPartition(t *testing.T) {
@@ -76,7 +76,7 @@ func TestPartition(t *testing.T) {
 				ss    [][]int
 				count int
 			)
-			it := iters.Partition(test.slice, func(a, b *int) bool { return *a != *b })
+			it := slicesx.Partition(test.slice, func(a, b *int) bool { return *a != *b })
 			it(func(i int, s []int) bool {
 				if test.breakAt == count {
 					return false
