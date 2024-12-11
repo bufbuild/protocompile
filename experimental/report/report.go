@@ -341,32 +341,3 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 
 	return d
 }
-
-// AsError wraps a [Report] as an [error].
-type AsError struct {
-	Report Report
-}
-
-// Error implements [error].
-func (e *AsError) Error() string {
-	text, _, _ := Renderer{Compact: true}.RenderString(&e.Report)
-	return text
-}
-
-// ErrInFile wraps an [error] into a diagnostic on the given file.
-type ErrInFile struct {
-	Err  error
-	Path string
-}
-
-var _ Diagnose = &ErrInFile{}
-
-// Error implements [error].
-func (e *ErrInFile) Error() string {
-	return e.Err.Error()
-}
-
-// Diagnose implements [Diagnose].
-func (e *ErrInFile) Diagnose(d *Diagnostic) {
-	d.inFile = e.Path
-}
