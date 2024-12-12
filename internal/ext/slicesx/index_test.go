@@ -17,8 +17,9 @@ package slicesx_test
 import (
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestIndex(t *testing.T) {

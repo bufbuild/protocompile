@@ -33,7 +33,7 @@ func Size[T any]() int {
 // This function has the same safety caveats as [unsafe.Add].
 func Index[T any](p *T, idx int) *T {
 	raw := unsafe.Pointer(p)
-	raw = unsafe.Add(raw, Size[T]())
+	raw = unsafe.Add(raw, idx*Size[T]())
 	return (*T)(raw)
 }
 
