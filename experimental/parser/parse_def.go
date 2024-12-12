@@ -56,7 +56,6 @@ var defFollowers = []defFollower{
 
 // parseDef parses a generic definition.
 func (p *defParser) parse() ast.DeclDef {
-
 	// Try to parse the various "followers". We try to parse as many as
 	// possible: if we have `foo = 5 = 6`, we want to parse the second = 6,
 	// diagnose it, and throw it away.
