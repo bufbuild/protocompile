@@ -28,7 +28,7 @@ func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	a := unsafe.Pointer(p)
 	b := unsafe.Pointer(unsafe.SliceData(s))
 
-	diff := int(uintptr(a) - uintptr(b))
+	diff := uintptr(a) - uintptr(b)
 	size := unsafex.LayoutOf[E]().Size
 	byteLen := len(s) * size
 
@@ -52,7 +52,7 @@ func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	// Doing this as one branch is much faster than checking all four
 	// separately; this is a fairly involved strength reduction that not even
 	// LLVM can figure out in many cases, nor can Go tip as of 2024-10-28.
-	if diff >= byteLen {
+	if diff >= uintptr(byteLen) {
 		return -1
 	}
 
@@ -63,5 +63,5 @@ func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	// that such a pointee straddles two elements of the slice, which Go does
 	// not permit (such pointers can only be created by abusing the unsafe
 	// package).
-	return diff / size
+	return int(diff) / size
 }

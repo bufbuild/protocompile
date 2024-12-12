@@ -22,6 +22,13 @@ import (
 	"unsafe"
 )
 
+// Int is a constraint for any integer type.
+type Int interface {
+	~int8 | ~int16 | ~int32 | ~int64 | ~int |
+		~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint |
+		~uintptr
+}
+
 // Layout is the layout of a type.
 //
 // This is a more convenient abstraction that manipulating the size and
@@ -42,16 +49,16 @@ func LayoutOf[T any]() Layout {
 	}
 }
 
-// Index is like [unsafe.Add], but it operates on a typed pointer and scales the
+// Add is like [unsafe.Add], but it operates on a typed pointer and scales the
 // offset by that type's size, similar to pointer arithmetic in Rust or C.
 //
 // This function has the same safety caveats as [unsafe.Add].
 //
 //go:nosplit
-func Index[T any](p *T, idx int) *T {
+func Add[P ~*E, E any, I Int](p P, idx I) P {
 	raw := unsafe.Pointer(p)
-	raw = unsafe.Add(raw, idx*LayoutOf[T]().Size)
-	return (*T)(raw)
+	raw = unsafe.Add(raw, int(idx)*LayoutOf[E]().Size)
+	return P(raw)
 }
 
 // Bitcast bit-casts a value of type From to a value of type To.

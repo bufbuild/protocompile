@@ -16,17 +16,11 @@
 package slicesx
 
 import (
-	"unsafe"
-
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // SliceIndex is a type that can be used to index into a slice.
-type SliceIndex interface {
-	~int8 | ~int16 | ~int32 | ~int64 | ~int |
-		~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uint |
-		~uintptr
-}
+type SliceIndex = unsafex.Int
 
 // Get performs a bounds check and returns the value at idx.
 //
@@ -35,13 +29,13 @@ func Get[S ~[]E, E any, I SliceIndex](s S, idx I) (element E, ok bool) {
 	if idx < 0 {
 		return element, false
 	}
-	if uint64(idx) >= uint64(len(s)) {
+	if uint64(idx) >= uint64(cap(s)) {
 		return element, false
 	}
 
 	// Dodge the bounds check, since Go probably won't be able to
 	// eliminate it even after stenciling.
-	return *unsafex.Index(unsafe.SliceData(s), int(idx)), true
+	return *unsafex.Add(unsafex.SliceData(s), idx), true
 }
 
 // GetPointer is like [Get], but it returns a pointer to the selected element
@@ -50,13 +44,13 @@ func GetPointer[S ~[]E, E any, I SliceIndex](s S, idx I) *E {
 	if idx < 0 {
 		return nil
 	}
-	if uint64(idx) >= uint64(len(s)) {
+	if uint64(idx) >= uint64(cap(s)) {
 		return nil
 	}
 
 	// Dodge the bounds check, since Go probably won't be able to
 	// eliminate it even after stenciling.
-	return unsafex.Index(unsafe.SliceData(s), int(idx))
+	return unsafex.Add(unsafex.SliceData(s), idx)
 }
 
 // Last returns the last element of the slice, unless it is empty, in which
