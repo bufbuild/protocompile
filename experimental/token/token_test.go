@@ -21,6 +21,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 type Context struct {
@@ -74,7 +75,7 @@ func TestLeafTokens(t *testing.T) {
 		assert.True(tok.IsLeaf())
 		assert.Equal(text, tok.Text())
 		assert.Equal(token.Ident, abc.Kind())
-		tokensEq(t, collect(tok.Children().Rest()))
+		tokensEq(t, iters.Collect(tok.Children().Rest()))
 	}
 
 	assertIdent(abc, 0, 3, "abc")
@@ -86,7 +87,7 @@ func TestLeafTokens(t *testing.T) {
 	assert.True(jkl.IsLeaf())
 	assert.True(jkl.IsSynthetic())
 	assert.Equal("jkl", jkl.Text())
-	tokensEq(t, collect(jkl.Children().Rest()))
+	tokensEq(t, iters.Collect(jkl.Children().Rest()))
 }
 
 func TestTreeTokens(t *testing.T) {
@@ -133,11 +134,11 @@ func TestTreeTokens(t *testing.T) {
 	tokenEq(t, start, open)
 	tokenEq(t, end, close)
 
-	tokensEq(t, collect(open2.Children().Rest()), x)
-	tokensEq(t, collect(close2.Children().Rest()), x)
+	tokensEq(t, iters.Collect(open2.Children().Rest()), x)
+	tokensEq(t, iters.Collect(close2.Children().Rest()), x)
 
-	tokensEq(t, collect(open.Children().Rest()), def, open2, comma, ghi)
-	tokensEq(t, collect(close.Children().Rest()), def, open2, comma, ghi)
+	tokensEq(t, iters.Collect(open.Children().Rest()), def, open2, comma, ghi)
+	tokensEq(t, iters.Collect(close.Children().Rest()), def, open2, comma, ghi)
 
 	open3 := s.NewPunct("(")
 	close3 := s.NewPunct(")")
@@ -152,7 +153,56 @@ func TestTreeTokens(t *testing.T) {
 	tokenEq(t, start, open3)
 	tokenEq(t, end, close3)
 
-	tokensEq(t, collect(close3.Children().Rest()), def, open2)
+	tokensEq(t, iters.Collect(close3.Children().Rest()), def, open2)
+}
+
+func TestCommentText(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+
+	ctx := NewContext(`
+// Foo
+// Bar
+// Baz
+
+// abcd xyz
+
+/* Foo
+   Bar
+   Baz
+*/
+
+/** Foo
+  * Bar
+  * Baz */
+`)
+	s := ctx.Stream()
+
+	s.Push(1, token.Space)
+
+	c1 := s.Push(7, token.Comment)
+	_ = s.Push(7, token.Comment)
+	c2 := s.Push(7, token.Comment)
+	s.Push(1, token.Space)
+	token.Fuse(c1, c2)
+
+	c3 := s.Push(12, token.Comment)
+	s.Push(1, token.Space)
+
+	c4 := s.Push(23, token.Comment)
+	s.Push(2, token.Space)
+
+	c5 := s.Push(26, token.Comment)
+
+	assert.Equal([]string{" Foo", " Bar", " Baz"}, c1.CommentLines(true))
+	assert.Equal([]string{" abcd xyz"}, c3.CommentLines(true))
+	assert.Equal([]string{" Foo", "Bar", "Baz", ""}, c4.CommentLines(true))
+	assert.Equal([]string{"* Foo", " Bar", " Baz "}, c5.CommentLines(true))
+
+	assert.Equal([]string{"Foo", "Bar", "Baz"}, c1.CommentLines(false))
+	assert.Equal([]string{"abcd xyz"}, c3.CommentLines(false))
+	assert.Equal([]string{" Foo", "Bar", "Baz", ""}, c4.CommentLines(false))
+	assert.Equal([]string{"Foo", "Bar", "Baz "}, c5.CommentLines(false))
 }
 
 // tokenEq is the singular version of tokensEq.
@@ -171,13 +221,4 @@ func tokensEq(t *testing.T, tokens []token.Token, expected ...token.Token) {
 		b[i] = t.String()
 	}
 	assert.Equal(t, b, a)
-}
-
-// collect is a polyfill for [slices.Collect].
-func collect[T any](iter func(func(T) bool)) (s []T) {
-	iter(func(t T) bool {
-		s = append(s, t)
-		return true
-	})
-	return
 }
