@@ -28,7 +28,7 @@ type errUnrecognized struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errUnrecognized) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
 		report.Message("unrecognized token"),
 		report.Snippet(e.Token),
 		report.Debug("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
@@ -42,7 +42,7 @@ type errNonASCIIIdent struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errNonASCIIIdent) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
 		report.Message("non-ASCII identifiers are not allowed"),
 		report.Snippet(e.Token),
 	)
@@ -61,34 +61,37 @@ type errUnmatched struct {
 	ShouldMatch report.Span
 }
 
-// OpenClose returns the expected open/close delimiters for this matched pair.
-func (e errUnmatched) OpenClose() (string, string) {
+// openClose returns the expected open/close delimiters for this matched pair.
+func (e errUnmatched) openClose() (string, string) {
 	a, b := bracePair(e.Span.Text())
 	if a == "" {
-		panic(fmt.Sprintf("protocompile/ast: invalid token in ErrUnterminated: %q (byte offset %d:%d)", e.Span.Text(), e.Span.Start, e.Span.End))
+		panic(fmt.Sprintf(
+			"protocompile/ast: invalid token in %T: %q (byte offset %d:%d)",
+			e, e.Span.Text(), e.Span.Start, e.Span.End,
+		))
 	}
 	return a, b
 }
 
 // Diagnose implements [report.Diagnose].
 func (e errUnmatched) Diagnose(d *report.Diagnostic) {
-	d.With(report.Message("encountered unmatched `%s` delimiter", e.Span.Text()))
+	d.Apply(report.Message("encountered unmatched `%s` delimiter", e.Span.Text()))
 
 	text := e.Span.Text()
-	openTok, closeTok := e.OpenClose()
+	openTok, closeTok := e.openClose()
 
 	if text == openTok {
-		d.With(report.Snippet(e.Span, "expected a closing `%s`", closeTok))
+		d.Apply(report.Snippet(e.Span, "expected a closing `%s`", closeTok))
 		if !e.Mismatch.Nil() {
-			d.With(report.Snippet(e.Mismatch, "closed by this instead"))
+			d.Apply(report.Snippet(e.Mismatch, "closed by this instead"))
 		}
 		if !e.ShouldMatch.Nil() {
-			d.With(report.Snippet(e.ShouldMatch, "help: perhaps it was meant to match this?"))
+			d.Apply(report.Snippet(e.ShouldMatch, "help: perhaps it was meant to match this?"))
 		}
 	} else {
-		d.With(report.Snippet(e.Span, "expected a closing `%s`", openTok))
+		d.Apply(report.Snippet(e.Span, "expected a closing `%s`", openTok))
 	}
 	if text == "*/" {
-		d.With(report.Note("Protobuf does not support nested block comments"))
+		d.Apply(report.Note("Protobuf does not support nested block comments"))
 	}
 }

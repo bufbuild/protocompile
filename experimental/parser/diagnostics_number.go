@@ -29,7 +29,7 @@ type errInvalidNumber struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errInvalidNumber) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
 		report.Message("unexpected characters in %s literal", intOrFloat(e.Token)),
 		report.Snippet(e.Token),
 	)
@@ -48,7 +48,7 @@ type errInvalidBase struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
-	d.With(report.Message("unsupported base for %s literal", intOrFloat(e.Token)))
+	d.Apply(report.Message("unsupported base for %s literal", intOrFloat(e.Token)))
 
 	var base string
 	switch e.Base {
@@ -64,7 +64,7 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 
 	isFloat := isFloatLiteral(e.Token)
 	if !isFloat && e.Base == 8 {
-		d.With(
+		d.Apply(
 			report.Snippet(e.Token, "replace `0o` with `0`"),
 			report.Note("Protobuf does not support the `0o` prefix for octal literals"),
 		)
@@ -76,7 +76,7 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 		kind = "floating-point"
 	}
 
-	d.With(
+	d.Apply(
 		report.Snippet(e.Token),
 		report.Note("Protobuf does not support %s %s literals", base, kind),
 	)
@@ -93,7 +93,7 @@ type errThousandsSep struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
 		report.Message("%s literal contains underscores", intOrFloat(e.Token)),
 		report.Snippet(e.Token),
 		report.Note("Protobuf does not support Go/Java/Rust-style thousands separators"),

@@ -17,7 +17,7 @@ package report
 import (
 	"fmt"
 	"runtime"
-	runtimeDebug "runtime/debug"
+	runtimedebug "runtime/debug"
 	"slices"
 	"strings"
 
@@ -80,19 +80,19 @@ func (r *Report) Remark(err Diagnose) *Diagnostic {
 // Errorf creates an ad-hoc error diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Errorf(format string, args ...any) *Diagnostic {
-	return r.push(1, Error).With(Message(format, args...))
+	return r.push(1, Error).Apply(Message(format, args...))
 }
 
 // Warnf creates an ad-hoc warning diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Warnf(format string, args ...any) *Diagnostic {
-	return r.push(1, Warning).With(Message(format, args...))
+	return r.push(1, Warning).Apply(Message(format, args...))
 }
 
 // Remarkf creates an ad-hoc remark diagnostic with an the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Remarkf(format string, args ...any) *Diagnostic {
-	return r.push(1, Remark).With(Message(format, args...))
+	return r.push(1, Remark).Apply(Message(format, args...))
 }
 
 // CatchICE will recover a panic (an internal compiler error, or ICE) and log it
@@ -113,7 +113,7 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// so that it is always visible.
 	tracing := r.Tracing
 	r.Tracing = 0 // Temporarily disable built-in tracing.
-	diagnostic := r.push(1, Error).With(Message("%v", panicked))
+	diagnostic := r.push(1, Error).Apply(Message("%v", panicked))
 	r.Tracing = tracing
 	diagnostic.level = ICE
 
@@ -123,7 +123,7 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 
 	// Append a stack trace but only after any user-provided diagnostic
 	// information.
-	stack := strings.Split(strings.TrimSpace(string(runtimeDebug.Stack())), "\n")
+	stack := strings.Split(strings.TrimSpace(string(runtimedebug.Stack())), "\n")
 	// Remove the goroutine number and the first two frames (debug.Stack and
 	// Report.CatchICE).
 	stack = stack[5:]
@@ -336,7 +336,7 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 			}
 			fmt.Fprintf(&buf, "at %s\n  %s:%d\n", frame.Function, frame.File, frame.Line)
 		}
-		d.With(Debug("%s", buf.String()))
+		d.Apply(Debug("%s", buf.String()))
 	}
 
 	return d

@@ -30,7 +30,7 @@ type errFileTooBig struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errFileTooBig) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
 		report.Message("files larger than 2GB are not supported"),
 		report.InFile(e.Path),
 	)
@@ -45,7 +45,7 @@ type errNotUTF8 struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errNotUTF8) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
 		report.Message("files must be encoded as valid UTF-8"),
 		report.InFile(e.Path),
 		report.Note("unexpected 0x%02x byte at offset %d", e.Byte, e.At),

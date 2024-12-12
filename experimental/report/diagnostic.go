@@ -41,10 +41,11 @@ const (
 // Tags should be lowercase identifiers separated by dashes, e.g. my-error-tag.
 // If a package generates diagnostics with tags, it should expose those tags as
 // constants.
+//
+// Tag implements [DiagnosticOption].
 type Tag string
 
-// Apply implements [DiagnosticOption].
-func (t Tag) Apply(d *Diagnostic) {
+func (t Tag) apply(d *Diagnostic) {
 	if d.tag != "" {
 		panic("protocompile/report: set diagnostic tag more than once")
 	}
@@ -58,7 +59,7 @@ func (t Tag) Apply(d *Diagnostic) {
 // some represent warnings, or perhaps debugging remarks.
 //
 // To construct a diagnostic, create one using a function like [Report.Error].
-// Then, call [Diagnostic.With] to apply options to it. You should at minimum
+// Then, call [Diagnostic.Apply] to apply options to it. You should at minimum
 // apply [Message] and either [InFile] or at least one [Snippet].
 type Diagnostic struct {
 	tag     Tag
@@ -80,9 +81,9 @@ type Diagnostic struct {
 
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
-// Nil values passed to [Diagnostic.With] are ignored.
+// Nil values passed to [Diagnostic.Apply] are ignored.
 type DiagnosticOption interface {
-	Apply(*Diagnostic)
+	apply(*Diagnostic)
 }
 
 // Primary returns this diagnostic's primary span, if it has one.
@@ -108,34 +109,27 @@ func (d *Diagnostic) Is(tag Tag) bool {
 	return d.tag == tag
 }
 
-// With applies the given options to this diagnostic.
+// Apply applies the given options to this diagnostic.
 //
 // Nil values are ignored.
-func (d *Diagnostic) With(options ...DiagnosticOption) *Diagnostic {
+func (d *Diagnostic) Apply(options ...DiagnosticOption) *Diagnostic {
 	for _, option := range options {
 		if option != nil {
-			option.Apply(d)
+			option.apply(d)
 		}
 	}
 	return d
 }
 
-// Message returns a Diagnostic option that sets the main diagnostic message.
+// Message returns a DiagnosticOption that sets the main diagnostic message.
 func Message(format string, args ...any) DiagnosticOption {
 	return message(fmt.Sprintf(format, args...))
 }
 
-// InFile is a DiagnosticOption that causes a diagnostic without a primary
+// InFile returns a DiagnosticOption that causes a diagnostic without a primary
 // span to mention the given file.
-type InFile string
-
-// Apply implements [DiagnosticOption].
-func (f InFile) Apply(d *Diagnostic) {
-	if d.inFile != "" {
-		panic("protocompile/report: set diagnostic path more than once")
-	}
-
-	d.inFile = string(f)
+func InFile(path string) DiagnosticOption {
+	return inFile(path)
 }
 
 // Snippet returns a DiagnosticOption that adds a new snippet to a diagnostic.
@@ -212,17 +206,18 @@ type snippet struct {
 	primary bool
 }
 
-func (a snippet) Apply(d *Diagnostic) {
+func (a snippet) apply(d *Diagnostic) {
 	a.primary = len(d.snippets) == 0
 	d.snippets = append(d.snippets, a)
 }
 
 type message string
+type inFile string
 type note string
 type help string
 type debug string
 
-func (m message) Apply(d *Diagnostic) {
+func (m message) apply(d *Diagnostic) {
 	if d.message != "" {
 		panic("protocompile/report: set diagnostic message more than once")
 	}
@@ -230,6 +225,14 @@ func (m message) Apply(d *Diagnostic) {
 	d.message = string(m)
 }
 
-func (n note) Apply(d *Diagnostic)  { d.notes = append(d.notes, string(n)) }
-func (n help) Apply(d *Diagnostic)  { d.help = append(d.help, string(n)) }
-func (n debug) Apply(d *Diagnostic) { d.debug = append(d.debug, string(n)) }
+func (f inFile) apply(d *Diagnostic) {
+	if d.inFile != "" {
+		panic("protocompile/report: set diagnostic path more than once")
+	}
+
+	d.inFile = string(f)
+}
+
+func (n note) apply(d *Diagnostic)  { d.notes = append(d.notes, string(n)) }
+func (n help) apply(d *Diagnostic)  { d.help = append(d.help, string(n)) }
+func (n debug) apply(d *Diagnostic) { d.debug = append(d.debug, string(n)) }
