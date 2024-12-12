@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iters
+// package iters contains helpers for working with iterators.
+package slicesx
 
 import "github.com/bufbuild/protocompile/internal/iter"
 
-// First retrieves the first element of an iterator.
-func First[T any](seq iter.Seq[T]) (v T, ok bool) {
-	seq(func(x T) bool {
-		v = x
-		ok = true
-		return false
+// Collect polyfills [slices.Collect].
+func Collect[E any](seq iter.Seq[E]) []E {
+	return AppendSeq[[]E](nil, seq)
+}
+
+// AppendSeq polyfills [slices.AppendSeq].
+func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
+	seq(func(v E) bool {
+		s = append(s, v)
+		return true
 	})
-	return v, ok
+	return s
 }

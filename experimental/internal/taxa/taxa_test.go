@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
-	"github.com/bufbuild/protocompile/internal/iters"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestAllStringify(t *testing.T) {
@@ -59,7 +59,7 @@ func TestSet(t *testing.T) {
 
 	assert.Equal(t,
 		[]taxa.Noun{taxa.EOF, taxa.Decl, taxa.Message, taxa.Array, taxa.Comment},
-		iters.Collect(set.All()),
+		slicesx.Collect(set.All()),
 	)
 }
 
