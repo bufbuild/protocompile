@@ -208,13 +208,22 @@ func (r *Report) ToProto() proto.Message {
 				})
 			}
 
-			dProto.Annotations = append(dProto.Annotations, &compilerpb.Diagnostic_Annotation{
+			snippet := &compilerpb.Diagnostic_Annotation{
 				File:    file,
 				Start:   uint32(snip.Start),
 				End:     uint32(snip.End),
 				Message: snip.message,
 				Primary: snip.primary,
-			})
+			}
+			for _, edit := range snip.edits {
+				snippet.Edits = append(snippet.Edits, &compilerpb.Diagnostic_Edit{
+					Start:   int32(edit.Start),
+					End:     int32(edit.End),
+					Replace: edit.Replace,
+				})
+			}
+
+			dProto.Annotations = append(dProto.Annotations, snippet)
 		}
 
 		proto.Diagnostics = append(proto.Diagnostics, dProto)
@@ -279,7 +288,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 				)
 			}
 
-			d.snippets = append(d.snippets, snippet{
+			snippet := snippet{
 				Span: Span{
 					File:  file,
 					Start: int(snip.Start),
@@ -287,7 +296,16 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 				},
 				message: snip.Message,
 				primary: snip.Primary,
-			})
+			}
+			for _, edit := range snip.Edits {
+				snippet.edits = append(snippet.edits, Edit{
+					Start:   int(edit.Start),
+					End:     int(edit.End),
+					Replace: edit.Replace,
+				})
+			}
+
+			d.snippets = append(d.snippets, snippet)
 			havePrimary = havePrimary || snip.Primary
 		}
 

@@ -61,6 +61,24 @@ type Diagnostic struct {
 	notes, help, debug []string
 }
 
+// Edit is an edit to suggest on a snippet.
+//
+// See [SuggestEdits].
+type Edit struct {
+	// The start and end offsets of the edit, within the span of the snippet
+	// this edit is applied to.
+	//
+	// For example, 0, -1 represents replacing the whole span.
+	//
+	// An insertion without deletion is modeled by Start == End.
+	Start, End int
+
+	// Text to replace the content between Start and End with.
+	//
+	// A pure deletion is modeled by Replace == "".
+	Replace string
+}
+
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
 // Nil values passed to [Diagnostic.Apply] are ignored.
@@ -160,6 +178,29 @@ func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 	}
 }
 
+// SuggestEdits is like [Snippet], but generates a snippet that contains
+// machine-applicable suggestions.
+//
+// A snippet with suggestions will be displayed separately from other snippets.
+// The message associated with the snippet will be prefixed with "help:" when
+// rendered.
+func SuggestEdits(at Spanner, message string, edits ...Edit) DiagnosticOption {
+	if internal.Nil(at) {
+		return nil
+	}
+
+	span := at.Span()
+	if span.Nil() {
+		return nil
+	}
+
+	return snippet{
+		Span:    span,
+		message: message,
+		edits:   edits,
+	}
+}
+
 // Notef returns a DiagnosticOption that provides the user with context about the
 // diagnostic, after the annotations.
 func Notef(format string, args ...any) DiagnosticOption {
@@ -198,6 +239,8 @@ type snippet struct {
 	// Whether this is a "primary" snippet, which is used for deciding whether or not
 	// to mark the snippet with the same color as the overall diagnostic.
 	primary bool
+
+	edits []Edit
 }
 
 func (a snippet) apply(d *Diagnostic) {
