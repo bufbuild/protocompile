@@ -188,7 +188,7 @@ func (r *Report) ToProto() proto.Message {
 	for _, d := range r.Diagnostics {
 		dProto := &compilerpb.Diagnostic{
 			Message: d.message,
-			Tag:     string(d.tag),
+			Tag:     d.tag,
 			Level:   compilerpb.Diagnostic_Level(d.level),
 			InFile:  d.inFile,
 			Notes:   d.notes,
@@ -251,7 +251,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 		}
 
 		d := Diagnostic{
-			tag:     Tag(dProto.Tag),
+			tag:     dProto.Tag,
 			message: dProto.Message,
 			level:   level,
 			inFile:  dProto.InFile,

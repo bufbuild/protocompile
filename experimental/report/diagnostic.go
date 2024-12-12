@@ -36,23 +36,6 @@ const (
 	noteLevel // Used internally within the diagnostic renderer.
 )
 
-// Tag is a diagnostic tag: a machine-readable identification for a diagnostic.
-//
-// Tags should be lowercase identifiers separated by dashes, e.g. my-error-tag.
-// If a package generates diagnostics with tags, it should expose those tags as
-// constants.
-//
-// Tag implements [DiagnosticOption].
-type Tag string
-
-func (t Tag) apply(d *Diagnostic) {
-	if d.tag != "" {
-		panic("protocompile/report: set diagnostic tag more than once")
-	}
-
-	d.tag = t
-}
-
 // Diagnostic is a type of error that can be rendered as a rich diagnostic.
 //
 // Not all Diagnostics are "errors", even though Diagnostic does embed error;
@@ -62,8 +45,7 @@ func (t Tag) apply(d *Diagnostic) {
 // Then, call [Diagnostic.Apply] to apply options to it. You should at minimum
 // apply [Message] and either [InFile] or at least one [Snippet].
 type Diagnostic struct {
-	tag     Tag
-	message string
+	tag, message string
 
 	level Level
 
@@ -105,7 +87,7 @@ func (d *Diagnostic) Level() Level {
 }
 
 // Is checks whether this diagnostic has a particular tag.
-func (d *Diagnostic) Is(tag Tag) bool {
+func (d *Diagnostic) Is(tag string) bool {
 	return d.tag == tag
 }
 
@@ -119,6 +101,25 @@ func (d *Diagnostic) Apply(options ...DiagnosticOption) *Diagnostic {
 		}
 	}
 	return d
+}
+
+// Tag returns a DiagnosticOption that sets a diagnostic's tag.
+//
+// Tags are machine-readable identifiers for diagnostics. Tags should be
+// lowercase identifiers separated by dashes, e.g. my-error-tag. If a package
+// generates diagnostics with tags, it should expose those tags as constants.
+func Tag(t string) DiagnosticOption {
+	return tag(t)
+}
+
+type tag string
+
+func (t tag) apply(d *Diagnostic) {
+	if d.tag != "" {
+		panic("protocompile/report: set diagnostic tag more than once")
+	}
+
+	d.tag = string(t)
 }
 
 // Message returns a DiagnosticOption that sets the main diagnostic message.
