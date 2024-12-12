@@ -14,7 +14,11 @@
 
 package slicesx
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
+)
 
 // PointerIndex returns an integer n such that p == &s[n], or -1 if there is
 // no such integer.
@@ -24,9 +28,9 @@ func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	a := unsafe.Pointer(p)
 	b := unsafe.Pointer(unsafe.SliceData(s))
 
-	diff := uintptr(a) - uintptr(b)
-	size := unsafe.Sizeof(*p)
-	byteLen := uintptr(len(s)) * size
+	diff := int(uintptr(a) - uintptr(b))
+	size := unsafex.LayoutOf[E]().Size
+	byteLen := len(s) * size
 
 	// This comparison checks for the following things:
 	//
@@ -59,5 +63,5 @@ func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	// that such a pointee straddles two elements of the slice, which Go does
 	// not permit (such pointers can only be created by abusing the unsafe
 	// package).
-	return int(diff / size)
+	return diff / size
 }

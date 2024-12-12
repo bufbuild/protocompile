@@ -28,7 +28,7 @@ import (
 func NewPath(ctx ast.Context, start, end token.Token) ast.Path {
 	// fakePath has the same GC shape as ast.Path; there is a test for this in
 	// path_test.go
-	return unsafex.Transmute[ast.Path](fakePath{
+	return unsafex.Bitcast[ast.Path](fakePath{
 		with: internal.NewWith(ctx),
 		raw:  struct{ Start, End token.ID }{start.ID(), end.ID()},
 	})
