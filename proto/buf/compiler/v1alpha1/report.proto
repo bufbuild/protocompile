@@ -53,9 +53,10 @@ message Diagnostic {
   // A diagnostic level. This affects how (and whether) it is shown to users.
   enum Level {
     LEVEL_UNSPECIFIED = 0;
-    LEVEL_ERROR = 1;
-    LEVEL_WARNING = 2;
-    LEVEL_REMARK = 3;
+    LEVEL_ICE = 1;
+    LEVEL_ERROR = 2;
+    LEVEL_WARNING = 3;
+    LEVEL_REMARK = 4;
   }
 
   // A file annotation within a `Diagnostic`. This corresponds to a single
@@ -82,6 +83,9 @@ message Diagnostic {
 
   // Required. The message to show for this diagnostic. This should fit on one line.
   string message = 1;
+
+  // An optional machine-readable tag for the diagnostic.
+  string tag = 8;
 
   // Required. The level for this diagnostic.
   Level level = 2;

@@ -20,40 +20,34 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
-// MaxFileSize is the maximum file size Protocompile supports.
-const MaxFileSize int = math.MaxInt32 // 2GB
+// maxFileSize is the maximum file size Protocompile supports.
+const maxFileSize int = math.MaxInt32 // 2GB
 
-// ErrFileTooBig diagnoses a file that is beyond Protocompile's implementation limits.
-type ErrFileTooBig struct {
+// errFileTooBig diagnoses a file that is beyond Protocompile's implementation limits.
+type errFileTooBig struct {
 	Path string // The path of the offending file.
 }
 
-// Error implements [error].
-func (e ErrFileTooBig) Error() string {
-	return "files larger than 2GB are not supported"
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrFileTooBig) Diagnose(d *report.Diagnostic) {
-	d.With(report.InFile(e.Path))
+func (e errFileTooBig) Diagnose(d *report.Diagnostic) {
+	d.With(
+		report.Message("files larger than 2GB are not supported"),
+		report.InFile(e.Path),
+	)
 }
 
-// ErrNotUTF8 diagnoses a file that contains non-UTF-8 bytes.
-type ErrNotUTF8 struct {
+// errNotUTF8 diagnoses a file that contains non-UTF-8 bytes.
+type errNotUTF8 struct {
 	Path string // The path of the offending file.
 	At   int    // The byte offset at which non-UTF-8 bytes occur.
 	Byte byte   // The offending byte.
 }
 
-// Error implements [error].
-func (e ErrNotUTF8) Error() string {
-	return "files must be encoded as valid UTF-8"
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrNotUTF8) Diagnose(d *report.Diagnostic) {
+func (e errNotUTF8) Diagnose(d *report.Diagnostic) {
 	d.With(
+		report.Message("files must be encoded as valid UTF-8"),
 		report.InFile(e.Path),
-		report.Notef("unexpected 0x%02x byte at offset %d", e.Byte, e.At),
+		report.Note("unexpected 0x%02x byte at offset %d", e.Byte, e.At),
 	)
 }

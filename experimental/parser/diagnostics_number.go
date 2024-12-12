@@ -22,54 +22,34 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// ErrInvalidNumber diagnoses a numeric literal with invalid syntax.
-type ErrInvalidNumber struct {
+// errInvalidNumber diagnoses a numeric literal with invalid syntax.
+type errInvalidNumber struct {
 	Token token.Token // The offending number token.
 }
 
-// Error implements [error].
-func (e ErrInvalidNumber) Error() string {
-	switch {
-	case isFloatLiteral(e.Token):
-		return "unexpected characters in floating-point literal"
-	default:
-		return "unexpected characters in integer literal"
-	}
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrInvalidNumber) Diagnose(d *report.Diagnostic) {
-	d.With(report.Snippet(e.Token))
+func (e errInvalidNumber) Diagnose(d *report.Diagnostic) {
+	d.With(
+		report.Message("unexpected characters in %s literal", intOrFloat(e.Token)),
+		report.Snippet(e.Token),
+	)
 
 	// TODO: This is a pretty terrible diagnostic. We should at least add a note
 	// specifying the correct syntax. For example, there should be a way to tell
 	// that the invalid character is an out-of-range digit.
 }
 
-// ErrInvalidBase diagnoses a numeric literal that uses a popular base that
+// errInvalidBase diagnoses a numeric literal that uses a popular base that
 // Protobuf does not support.
-type ErrInvalidBase struct {
+type errInvalidBase struct {
 	Token token.Token
 	Base  int
 }
 
-// TODO: the above fields can have values that cause the diagnostic to misbehave.
-// Instead of exporting error types, we should add a way for diagnostics to identify
-// themselves via some string tag, so that diagnostics that we might want to be
-// identifiable can be identified without exporting their type.
-
-// Error implements [error].
-func (e ErrInvalidBase) Error() string {
-	switch {
-	case isFloatLiteral(e.Token):
-		return "unsupported base for floating-point literal"
-	default:
-		return "unsupported base for integer literal"
-	}
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrInvalidBase) Diagnose(d *report.Diagnostic) {
+func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
+	d.With(report.Message("unsupported base for %s literal", intOrFloat(e.Token)))
+
 	var base string
 	switch e.Base {
 	case 2:
@@ -85,7 +65,7 @@ func (e ErrInvalidBase) Diagnose(d *report.Diagnostic) {
 	isFloat := isFloatLiteral(e.Token)
 	if !isFloat && e.Base == 8 {
 		d.With(
-			report.Snippetf(e.Token, "replace `0o` with `0`"),
+			report.Snippet(e.Token, "replace `0o` with `0`"),
 			report.Note("Protobuf does not support the `0o` prefix for octal literals"),
 		)
 		return
@@ -98,35 +78,35 @@ func (e ErrInvalidBase) Diagnose(d *report.Diagnostic) {
 
 	d.With(
 		report.Snippet(e.Token),
-		report.Notef("Protobuf does not support %s %s literals", base, kind),
+		report.Note("Protobuf does not support %s %s literals", base, kind),
 	)
 }
 
-// ErrThousandsSep diagnoses a numeric literal that contains Go/Java/Rust-style
+// errThousandsSep diagnoses a numeric literal that contains Go/Java/Rust-style
 // thousands separators, e.g. 1_000.
 //
 // Protobuf does not support such separators, but we lex them anyways with a
 // diagnostic.
-type ErrThousandsSep struct {
+type errThousandsSep struct {
 	Token token.Token // The offending number token.
 }
 
-// Error implements [error].
-func (e ErrThousandsSep) Error() string {
-	switch {
-	case isFloatLiteral(e.Token):
-		return "floating-point literal contains underscores"
-	default:
-		return "integer literal contains underscores"
-	}
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrThousandsSep) Diagnose(d *report.Diagnostic) {
+func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
 	d.With(
+		report.Message("%s literal contains underscores", intOrFloat(e.Token)),
 		report.Snippet(e.Token),
 		report.Note("Protobuf does not support Go/Java/Rust-style thousands separators"),
 	)
+}
+
+func intOrFloat(tok token.Token) string {
+	switch {
+	case isFloatLiteral(tok):
+		return "floating-point"
+	default:
+		return "integer"
+	}
 }
 
 func isFloatLiteral(tok token.Token) bool {

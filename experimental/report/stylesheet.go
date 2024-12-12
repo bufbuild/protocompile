@@ -57,7 +57,7 @@ func newStyleSheet(r Renderer) styleSheet {
 // the given level.
 func (c styleSheet) ColorForLevel(l Level) string {
 	switch l {
-	case Error:
+	case Error, ICE:
 		return c.nError
 	case Warning:
 		if c.r.WarningsAreErrors {
@@ -66,7 +66,7 @@ func (c styleSheet) ColorForLevel(l Level) string {
 		return c.nWarning
 	case Remark:
 		return c.nRemark
-	case note:
+	case noteLevel:
 		return c.nAccent
 	default:
 		return ""
@@ -77,7 +77,7 @@ func (c styleSheet) ColorForLevel(l Level) string {
 // the given level.
 func (c styleSheet) BoldForLevel(l Level) string {
 	switch l {
-	case Error:
+	case Error, ICE:
 		return c.bError
 	case Warning:
 		if c.r.WarningsAreErrors {
@@ -86,7 +86,7 @@ func (c styleSheet) BoldForLevel(l Level) string {
 		return c.bWarning
 	case Remark:
 		return c.bRemark
-	case note:
+	case noteLevel:
 		return c.bAccent
 	default:
 		return ""
