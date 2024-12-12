@@ -23,15 +23,15 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// Lex performs lexical analysis on the file contained in ctx, and appends any
+// lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
 //
-// Lex will freeze the stream in ctx when it is done.
+// lex will freeze the stream in ctx when it is done.
 //
 // You should almost never need to call this function; [Parse] calls it directly.
 // It is exported so that it is straight forward to build other parsers on top
 // of the Protobuf lexer.
-func Lex(ctx token.Context, errs *report.Report) {
+func lex(ctx token.Context, errs *report.Report) {
 	l := &lexer{
 		Context: ctx,
 		Stream:  ctx.Stream(),

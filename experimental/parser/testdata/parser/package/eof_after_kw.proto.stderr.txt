@@ -1,0 +1,7 @@
+error: unexpected end-of-file after `package` declaration
+  --> testdata/parser/package/eof_after_kw.proto:17:8
+   | 
+17 | package
+   |        ^ expected `;`
+
+encountered 1 error

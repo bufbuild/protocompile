@@ -1,0 +1,34 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "M" }]
+      body.decls:
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "name" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_ENUM_VALUE
+            name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1

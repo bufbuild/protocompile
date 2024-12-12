@@ -1,0 +1,7 @@
+error: unexpected `}` after definition
+  --> testdata/parser/enum/incomplete.proto:22:1
+   | 
+22 | }
+   | ^ expected `;`
+
+encountered 1 error

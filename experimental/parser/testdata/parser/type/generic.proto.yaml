@@ -1,0 +1,210 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "M" }]
+      body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x1" }]
+            type.generic:
+              path.components: [{ ident: "map" }]
+              args:
+                - path.components: [{ ident: "string" }]
+                - path.components: [{ ident: "string" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x2" }]
+            type.generic:
+              path.components: [{ ident: "map" }]
+              args:
+                - path.components: [{ ident: "M" }]
+                - path.components: [{ ident: "M" }]
+            value.literal.int_value: 2
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x3" }]
+            type.generic:
+              path.components: [{ ident: "map" }]
+              args:
+                - path.components: [{ ident: "test" }, { ident: "M", separator: SEPARATOR_DOT }]
+                - path.components:
+                    - { ident: "test", separator: SEPARATOR_DOT }
+                    - { ident: "M", separator: SEPARATOR_DOT }
+            value.literal.int_value: 3
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x4" }]
+            type.generic:
+              path.components: [{ ident: "map" }]
+              args:
+                - path.components: [{ ident: "string" }]
+                - generic:
+                    path.components: [{ ident: "map" }]
+                    args:
+                      - path.components: [{ ident: "string" }]
+                      - path.components:
+                          - ident: "test"
+                          - { ident: "M", separator: SEPARATOR_DOT }
+            value.literal.int_value: 4
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x5" }]
+            type.generic:
+              path.components: [{ ident: "list" }]
+              args: [{ path.components: [{ ident: "string" }] }]
+            value.literal.int_value: 5
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x6" }]
+            type.generic.path.components: [{ ident: "void" }]
+            value.literal.int_value: 6
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x7" }]
+            type.generic:
+              path.components: [{ ident: "my" }, { ident: "Map", separator: SEPARATOR_DOT }]
+              args:
+                - path.components: [{ ident: "A" }]
+                - path.components: [{ ident: "B" }]
+                - path.components: [{ ident: "C" }]
+            value.literal.int_value: 7
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x8" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.generic:
+                path.components: [{ ident: "map" }]
+                args:
+                  - path.components: [{ ident: "string" }]
+                  - path.components: [{ ident: "string" }]
+            value.literal.int_value: 8
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x9" }]
+            type.prefixed:
+              prefix: PREFIX_REPEATED
+              type.generic:
+                path.components: [{ ident: "map" }]
+                args:
+                  - path.components: [{ ident: "string" }]
+                  - path.components: [{ ident: "string" }]
+            value.literal.int_value: 9
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x10" }]
+            type.prefixed:
+              prefix: PREFIX_REQUIRED
+              type.generic:
+                path.components: [{ ident: "map" }]
+                args:
+                  - path.components: [{ ident: "string" }]
+                  - path.components: [{ ident: "string" }]
+            value.literal.int_value: 10
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x11" }]
+            type.generic:
+              path.components: [{ ident: "map" }]
+              args:
+                - path.components: [{ ident: "string" }]
+                - prefixed:
+                    prefix: PREFIX_REPEATED
+                    type.path.components: [{ ident: "string" }]
+            value.literal.int_value: 11
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x12" }]
+            type.generic:
+              path.components: [{ ident: "map" }]
+              args:
+                - path.components:
+                    - ident: "optional"
+                    - { ident: "test", separator: SEPARATOR_DOT }
+                    - { ident: "M", separator: SEPARATOR_DOT }
+                - prefixed:
+                    prefix: PREFIX_REQUIRED
+                    type.path.components: [{ ident: "test" }, { ident: "M", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 12
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x13" }]
+            type.generic:
+              path.components: [{ ident: "set" }]
+              args: [{ path.components: [{ ident: "Foo" }] }]
+            value.literal.int_value: 13
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x14" }]
+            type.generic:
+              path.components: [{ ident: "set" }]
+              args:
+                - path.components:
+                    - ident: "optional"
+                    - { ident: "Foo", separator: SEPARATOR_DOT }
+            value.literal.int_value: 14
+  - def:
+      kind: KIND_SERVICE
+      name.components: [{ ident: "S" }]
+      body.decls:
+        - def:
+            kind: KIND_METHOD
+            name.components: [{ ident: "X1" }]
+            signature:
+              inputs:
+                - generic:
+                    path.components: [{ ident: "map" }]
+                    args:
+                      - path.components: [{ ident: "string" }]
+                      - path.components: [{ ident: "string" }]
+              outputs:
+                - generic:
+                    path.components: [{ ident: "map" }]
+                    args:
+                      - path.components: [{ ident: "string" }]
+                      - prefixed:
+                          prefix: PREFIX_STREAM
+                          type.path.components: [{ ident: "M" }]
+            body: {}
+        - def:
+            kind: KIND_METHOD
+            name.components: [{ ident: "X2" }]
+            signature:
+              inputs:
+                - generic:
+                    path.components: [{ ident: "list" }]
+                    args:
+                      - path.components:
+                          - ident: "test"
+                          - { ident: "M", separator: SEPARATOR_DOT }
+              outputs:
+                - prefixed:
+                    prefix: PREFIX_STREAM
+                    type.generic:
+                      path.components: [{ ident: "void", separator: SEPARATOR_DOT }]
+                      args: [{ path.components: [{ ident: "M" }] }]
+            body: {}
+        - def:
+            kind: KIND_METHOD
+            name.components: [{ ident: "X3" }]
+            signature:
+              inputs:
+                - generic:
+                    path.components: [{ ident: "map" }]
+                    args:
+                      - path.components: [{ ident: "string" }]
+                      - prefixed:
+                          prefix: PREFIX_REPEATED
+                          type.path.components: [{ ident: "string" }]
+              outputs:
+                - prefixed:
+                    prefix: PREFIX_STREAM
+                    type.generic:
+                      path.components: [{ ident: "map" }]
+                      args:
+                        - path.components: [{ ident: "string" }]
+                        - path.components: [{ ident: "string" }]
+            body: {}

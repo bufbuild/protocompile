@@ -1,0 +1,26 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "MyMessage" }]
+      body: {}
+  - def: { kind: KIND_ENUM, name.components: [{ ident: "MyEnum" }], body: {} }
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "MyMessage" }]
+      body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "test" }, { ident: "MyMessage", separator: SEPARATOR_DOT }]
+      body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components:
+        - { ident: "test", separator: SEPARATOR_DOT }
+        - { ident: "MyMessage", separator: SEPARATOR_DOT }
+      body: {}
+  - def:
+      kind: KIND_SERVICE
+      name.components: [{ ident: "MyService" }]
+      body: {}
