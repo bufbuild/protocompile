@@ -16,8 +16,8 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -30,7 +30,7 @@ type errInvalidNumber struct {
 // Diagnose implements [report.Diagnose].
 func (e errInvalidNumber) Diagnose(d *report.Diagnostic) {
 	d.Apply(
-		report.Message("unexpected characters in %s literal", intOrFloat(e.Token)),
+		report.Message("unexpected characters in %s", taxa.Classify(e.Token)),
 		report.Snippet(e.Token),
 	)
 
@@ -48,7 +48,7 @@ type errInvalidBase struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
-	d.Apply(report.Message("unsupported base for %s literal", intOrFloat(e.Token)))
+	d.Apply(report.Message("unsupported base for %s", taxa.Classify(e.Token)))
 
 	var base string
 	switch e.Base {
@@ -62,23 +62,32 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 		base = fmt.Sprintf("base-%d", e.Base)
 	}
 
-	isFloat := isFloatLiteral(e.Token)
-	if !isFloat && e.Base == 8 {
-		d.Apply(
-			report.Snippetf(e.Token, "replace `0o` with `0`"),
-			report.Notef("Protobuf does not support the `0o` prefix for octal literals"),
-		)
-		return
+	kind := taxa.Classify(e.Token)
+	if kind == taxa.Int {
+		switch e.Base {
+		case 2:
+			if value := e.Token.AsBigInt(); value != nil {
+				d.Apply(
+					report.SuggestEdits(e.Token, "use a hexadecimal literal instead", report.Edit{
+						Start:   0,
+						End:     -1,
+						Replace: fmt.Sprintf("%#x", value),
+					}),
+					report.Notef("Protobuf does not support binary literals"),
+				)
+				return
+			}
+		case 8:
+			d.Apply(
+				report.SuggestEdits(e.Token, "remove this character", report.Edit{Start: 1, End: 2}),
+				report.Notef("Protobuf does not support the `0o` prefix for octal literals"),
+			)
+			return
+		}
 	}
-
-	kind := "integer"
-	if isFloat {
-		kind = "floating-point"
-	}
-
 	d.Apply(
 		report.Snippet(e.Token),
-		report.Notef("Protobuf does not support %s %s literals", base, kind),
+		report.Notef("Protobuf does not support %s %s", base, kind),
 	)
 }
 
@@ -93,26 +102,16 @@ type errThousandsSep struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
+	var edits []report.Edit
+	for i, r := range e.Token.Text() {
+		if r == '_' {
+			edits = append(edits, report.Edit{Start: i, End: i + 1})
+		}
+	}
+
 	d.Apply(
-		report.Message("%s literal contains underscores", intOrFloat(e.Token)),
-		report.Snippet(e.Token),
+		report.Message("%s contains underscores", taxa.Classify(e.Token)),
+		report.SuggestEdits(e.Token, "remove these underscores", edits...),
 		report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
 	)
-}
-
-func intOrFloat(tok token.Token) string {
-	switch {
-	case isFloatLiteral(tok):
-		return "floating-point"
-	default:
-		return "integer"
-	}
-}
-
-func isFloatLiteral(tok token.Token) bool {
-	digits := tok.Text()
-	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
-		return strings.ContainsRune(digits, '.')
-	}
-	return strings.ContainsAny(digits, ".eE")
 }
