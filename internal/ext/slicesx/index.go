@@ -29,7 +29,7 @@ func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	b := unsafe.Pointer(unsafex.SliceData(s))
 
 	diff := uintptr(a) - uintptr(b)
-	size := unsafex.LayoutOf[E]().Size
+	size := unsafex.Size[E]()
 	byteLen := len(s) * size
 
 	// This comparison checks for the following things:

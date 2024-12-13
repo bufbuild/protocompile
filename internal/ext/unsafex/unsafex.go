@@ -29,24 +29,12 @@ type Int interface {
 		~uintptr
 }
 
-// Layout is the layout of a type.
-//
-// This is a more convenient abstraction that manipulating the size and
-// alignment separately.
-type Layout struct {
-	Size, Align int
-
-	// TODO: Add something like PointerFree? It's not clear if Go even exposes
-	// an easy way to compute this. There's certainly no intrinsic for it...
-}
-
-// LayoutOf returns the layout of some type.
-func LayoutOf[T any]() Layout {
+// Size is like [unsafe.Sizeof], but it is a generic function and it returns
+// an int instead of a uintptr (Go does not have types so large they would
+// overflow an int).
+func Size[T any]() int {
 	var v T
-	return Layout{
-		Size:  int(unsafe.Sizeof(v)),
-		Align: int(unsafe.Alignof(v)),
-	}
+	return int(unsafe.Sizeof(v))
 }
 
 // Add is like [unsafe.Add], but it operates on a typed pointer and scales the
@@ -57,7 +45,7 @@ func LayoutOf[T any]() Layout {
 //go:nosplit
 func Add[P ~*E, E any, I Int](p P, idx I) P {
 	raw := unsafe.Pointer(p)
-	raw = unsafe.Add(raw, int(idx)*LayoutOf[E]().Size)
+	raw = unsafe.Add(raw, int(idx)*Size[E]())
 	return P(raw)
 }
 
@@ -85,7 +73,12 @@ func Bitcast[To, From any](v From) To {
 	//   MOVQ    AX, X0
 	//   RET
 
-	if LayoutOf[To]().Size != LayoutOf[From]().Size {
+	// This check is necessary because casting a smaller type into a larger
+	// type will result in reading uninitialized memory, especially in the
+	// presence of inlining that causes &aligned below to point into the heap.
+	// The equivalent functions in Rust and C++ perform this check statically,
+	// because it is so important.
+	if Size[To]() != Size[From]() {
 		// This check will always be inlined away, because Bitcast is
 		// manifestly inline-able.
 		//
@@ -96,19 +89,20 @@ func Bitcast[To, From any](v From) To {
 		panic(badBitcast[To, From]{})
 	}
 
-	// To avoid an unaligned load below, we copy From into
-	// a struct aligned to To.
+	// To avoid an unaligned load below, we copy From into a struct aligned to
+	// To's alignment. Consider the following situation: we call
+	// Bitcast[int32, [4]byte]. There is no guarantee that &v will be aligned
+	// to the four byte boundary required for int32, and thus casting it to *To
+	// may result in an unaligned load.
 	//
 	// As seen in the Godbolt above, for cases where the alignment change
-	// is redundant, this gets SROA'd out of existence.
-	//
-	// (SROA = scalar replacement of aggregates)
+	// is redundant, this gets optimized away.
 	aligned := struct {
 		_ [0]To
 		v From
 	}{v: v}
 
-	return *(*To)(unsafe.Pointer(&aligned))
+	return *(*To)(unsafe.Pointer(&aligned.v))
 }
 
 type badBitcast[To, From any] struct{}
@@ -119,7 +113,7 @@ func (badBitcast[To, From]) Error() string {
 	return fmt.Sprintf(
 		"unsafex: %T and %T are of unequal size (%d != %d)",
 		to, from,
-		LayoutOf[To]().Size, LayoutOf[From]().Size,
+		Size[To](), Size[From](),
 	)
 }
 
@@ -151,6 +145,6 @@ func SliceData[S ~[]E, E any](data S) *E {
 func StringAlias[S ~[]E, E any](data S) string {
 	return unsafe.String(
 		Bitcast[*byte](SliceData(data)),
-		len(data)*LayoutOf[E]().Size,
+		len(data)*Size[E](),
 	)
 }
