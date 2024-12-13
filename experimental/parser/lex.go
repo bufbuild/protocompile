@@ -39,7 +39,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 	}
 
 	defer l.CatchICE(false, func(d *report.Diagnostic) {
-		d.With(
+		d.Apply(
 			report.Snippetf(l.Span(l.cursor, l.cursor), "cursor is here"),
 			report.Notef("cursor: %d, count: %d", l.cursor, l.count),
 		)
@@ -48,8 +48,8 @@ func Lex(ctx token.Context, errs *report.Report) {
 
 	// Check that the file isn't too big. We give up immediately if that's
 	// the case.
-	if len(l.Text()) > MaxFileSize {
-		l.Error(ErrFileTooBig{Path: l.Path()})
+	if len(l.Text()) > maxFileSize {
+		l.Error(errFileTooBig{Path: l.Path()})
 		return
 	}
 
@@ -58,7 +58,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 	for text := l.Text(); text != ""; {
 		r := decodeRune(text)
 		if r == -1 {
-			l.Error(ErrNotUTF8{
+			l.Error(errNotUTF8{
 				Path: l.Path(),
 				At:   len(l.Text()) - len(text),
 				Byte: text[0],
@@ -113,7 +113,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 				text = comment
 			} else {
 				// Create a span for the /*, that's what we're gonna highlight.
-				l.Error(ErrUnmatched{Span: l.SpanFrom(l.cursor - 2)})
+				l.Error(errUnmatched{Span: l.SpanFrom(l.cursor - 2)})
 				text = l.SeekEOF()
 			}
 			l.Push(len("/*")+len(text), token.Comment)
@@ -122,7 +122,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 
 			// The user definitely thought nested comments were allowed. :/
 			tok := l.Push(len("*/"), token.Unrecognized)
-			l.Error(ErrUnmatched{Span: tok.Span()})
+			l.Error(errUnmatched{Span: tok.Span()})
 
 		case strings.ContainsRune(";,/:=-", r): // . is handled elsewhere.
 			// Random punctuation that doesn't require special handling.
@@ -162,7 +162,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 				// This "identifier" appears to consist entirely of unprintable
 				// characters (e.g. combining marks).
 				tok := l.Push(len(rawIdent), token.Unrecognized)
-				l.Error(ErrUnrecognized{Token: tok})
+				l.Error(errUnrecognized{Token: tok})
 				continue
 			}
 
@@ -171,7 +171,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 
 			// Legalize non-ASCII runes.
 			if !isASCIIIdent(tok.Text()) {
-				l.Error(ErrNonASCIIIdent{Token: tok})
+				l.Error(errNonASCIIIdent{Token: tok})
 			}
 
 		default:
@@ -185,7 +185,7 @@ func Lex(ctx token.Context, errs *report.Report) {
 					!unicode.In(r, unicode.Pattern_White_Space)
 			})
 			tok := l.Push(len(unknown), token.Unrecognized)
-			l.Error(ErrUnrecognized{Token: tok})
+			l.Error(errUnrecognized{Token: tok})
 		}
 	}
 
@@ -215,7 +215,7 @@ func fuseBraces(l *lexer) {
 
 		// If no opens are present, this is an orphaned close brace.
 		if len(opens) == 0 {
-			l.Error(ErrUnmatched{Span: t2.Span()})
+			l.Error(errUnmatched{Span: t2.Span()})
 			continue
 		}
 
@@ -246,7 +246,7 @@ func fuseBraces(l *lexer) {
 
 		switch {
 		case leftMatch && rightMatch:
-			l.Error(ErrUnmatched{
+			l.Error(errUnmatched{
 				Span:        t1.Span(),
 				Mismatch:    t2.Span(),
 				ShouldMatch: t3.Span(),
@@ -259,13 +259,13 @@ func fuseBraces(l *lexer) {
 			opens = opens[:len(opens)-2]
 			i++
 		case leftMatch:
-			l.Error(ErrUnmatched{
+			l.Error(errUnmatched{
 				Span: t1.Span(),
 			})
 			token.Fuse(t0, t2) // t1 does not get fused in this case.
 			opens = opens[:len(opens)-2]
 		case rightMatch:
-			l.Error(ErrUnmatched{
+			l.Error(errUnmatched{
 				Span:        t1.Span(),
 				Mismatch:    t2.Span(),
 				ShouldMatch: t3.Span(),
@@ -275,7 +275,7 @@ func fuseBraces(l *lexer) {
 			opens = opens[:len(opens)-1]
 			i++
 		default:
-			l.Error(ErrUnmatched{
+			l.Error(errUnmatched{
 				Span: t2.Span(),
 			})
 			// No fusion happens here, we treat t2 as being orphaned.
@@ -285,7 +285,7 @@ func fuseBraces(l *lexer) {
 	// Legalize against unclosed delimiters.
 	for _, open := range opens {
 		open := open.In(l.Context)
-		l.Error(ErrUnmatched{Span: open.Span()})
+		l.Error(errUnmatched{Span: open.Span()})
 	}
 
 	// In backwards order, generate empty tokens to fuse with
