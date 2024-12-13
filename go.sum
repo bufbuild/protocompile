@@ -1,3 +1,5 @@
+github.com/akedrou/textdiff v0.1.0 h1:K7nbOVQju7/coCXnJRJ2fsltTwbSvC+M4hKBUJRBRGY=
+github.com/akedrou/textdiff v0.1.0/go.mod h1:a9CCC49AKtFTmVDNFHDlCg7V/M7C7QExDAhb2SkL6DQ=
 github.com/bmatcuk/doublestar/v4 v4.7.1 h1:fdDeAqgT47acgwd9bd9HxJRDmc9UAmPpc+2m0CXv75Q=
 github.com/bmatcuk/doublestar/v4 v4.7.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
