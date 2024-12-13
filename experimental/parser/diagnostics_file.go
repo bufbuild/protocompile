@@ -48,6 +48,6 @@ func (e errNotUTF8) Diagnose(d *report.Diagnostic) {
 	d.Apply(
 		report.Message("files must be encoded as valid UTF-8"),
 		report.InFile(e.Path),
-		report.Note("unexpected 0x%02x byte at offset %d", e.Byte, e.At),
+		report.Notef("unexpected 0x%02x byte at offset %d", e.Byte, e.At),
 	)
 }

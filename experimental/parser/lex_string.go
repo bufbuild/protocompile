@@ -86,7 +86,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 	switch {
 	case r == 0:
 		l.Errorf("unescaped NUL bytes are not permitted in string literals").Apply(
-			report.Snippet(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
+			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
 		)
 	case r == '\n':
 		// TODO: This diagnostic is simply user-hostile. We should remove it.
@@ -101,7 +101,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		l.Errorf("unescaped newlines are not permitted in string literals").Apply(
 			// Not to mention, this diagnostic is not ideal: we should probably
 			// tell users to split the string into multiple quoted fragments.
-			report.Snippet(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
+			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't
@@ -117,7 +117,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		}
 
 		l.Warnf("non-printable character in string literal").Apply(
-			report.Snippet(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "help: consider escaping this with e.g. `%s` instead", escape),
+			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "help: consider escaping this with e.g. `%s` instead", escape),
 		)
 	}
 

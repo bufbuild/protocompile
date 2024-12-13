@@ -65,8 +65,8 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 	isFloat := isFloatLiteral(e.Token)
 	if !isFloat && e.Base == 8 {
 		d.Apply(
-			report.Snippet(e.Token, "replace `0o` with `0`"),
-			report.Note("Protobuf does not support the `0o` prefix for octal literals"),
+			report.Snippetf(e.Token, "replace `0o` with `0`"),
+			report.Notef("Protobuf does not support the `0o` prefix for octal literals"),
 		)
 		return
 	}
@@ -78,7 +78,7 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 
 	d.Apply(
 		report.Snippet(e.Token),
-		report.Note("Protobuf does not support %s %s literals", base, kind),
+		report.Notef("Protobuf does not support %s %s literals", base, kind),
 	)
 }
 
@@ -96,7 +96,7 @@ func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
 	d.Apply(
 		report.Message("%s literal contains underscores", intOrFloat(e.Token)),
 		report.Snippet(e.Token),
-		report.Note("Protobuf does not support Go/Java/Rust-style thousands separators"),
+		report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
 	)
 }
 

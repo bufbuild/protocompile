@@ -40,8 +40,8 @@ func Lex(ctx token.Context, errs *report.Report) {
 
 	defer l.CatchICE(false, func(d *report.Diagnostic) {
 		d.Apply(
-			report.Snippet(l.Span(l.cursor, l.cursor), "cursor is here"),
-			report.Note("cursor: %d, count: %d", l.cursor, l.count),
+			report.Snippetf(l.Span(l.cursor, l.cursor), "cursor is here"),
+			report.Notef("cursor: %d, count: %d", l.cursor, l.count),
 		)
 	})
 	defer l.Freeze()

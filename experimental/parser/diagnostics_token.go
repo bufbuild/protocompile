@@ -31,7 +31,7 @@ func (e errUnrecognized) Diagnose(d *report.Diagnostic) {
 	d.Apply(
 		report.Message("unrecognized token"),
 		report.Snippet(e.Token),
-		report.Debug("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
+		report.Debugf("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
 	)
 }
 
@@ -81,17 +81,17 @@ func (e errUnmatched) Diagnose(d *report.Diagnostic) {
 	openTok, closeTok := e.openClose()
 
 	if text == openTok {
-		d.Apply(report.Snippet(e.Span, "expected a closing `%s`", closeTok))
+		d.Apply(report.Snippetf(e.Span, "expected a closing `%s`", closeTok))
 		if !e.Mismatch.Nil() {
-			d.Apply(report.Snippet(e.Mismatch, "closed by this instead"))
+			d.Apply(report.Snippetf(e.Mismatch, "closed by this instead"))
 		}
 		if !e.ShouldMatch.Nil() {
-			d.Apply(report.Snippet(e.ShouldMatch, "help: perhaps it was meant to match this?"))
+			d.Apply(report.Snippetf(e.ShouldMatch, "help: perhaps it was meant to match this?"))
 		}
 	} else {
-		d.Apply(report.Snippet(e.Span, "expected a closing `%s`", openTok))
+		d.Apply(report.Snippetf(e.Span, "expected a closing `%s`", openTok))
 	}
 	if text == "*/" {
-		d.Apply(report.Note("Protobuf does not support nested block comments"))
+		d.Apply(report.Notef("Protobuf does not support nested block comments"))
 	}
 }

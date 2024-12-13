@@ -33,15 +33,15 @@ func (e errUnclosedString) Diagnose(d *report.Diagnostic) {
 	open := e.Token.Text()[:1]
 	d.Apply(
 		report.Message("unterminated string literal"),
-		report.Snippet(e.Token, "expected to be terminated by `%s`", open),
+		report.Snippetf(e.Token, "expected to be terminated by `%s`", open),
 	)
 
 	quoted := e.Token.Text()
 	quote := quoted[:1]
 	if len(quoted) == 1 {
-		d.Apply(report.Note("this string consists of a single orphaned quote"))
+		d.Apply(report.Notef("this string consists of a single orphaned quote"))
 	} else if strings.HasSuffix(quoted, quote) {
-		d.Apply(report.Note("this string appears to end in an escaped quote; replace `\\%s` with `\\\\%[1]s%[1]s`", quote))
+		d.Apply(report.Notef("this string appears to end in an escaped quote; replace `\\%s` with `\\\\%[1]s%[1]s`", quote))
 	}
 
 	// TODO: check to see if a " or ' escape exists in the string?
@@ -66,7 +66,7 @@ func (e errInvalidEscape) Diagnose(d *report.Diagnostic) {
 	switch c := text[1]; c {
 	case 'x', 'X':
 		if len(text) < 3 {
-			d.Apply(report.Snippet(e.Span, "`\\%c` must be followed by at least one hex digit", c))
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by at least one hex digit", c))
 			return
 		}
 		return
@@ -77,13 +77,13 @@ func (e errInvalidEscape) Diagnose(d *report.Diagnostic) {
 		}
 
 		if len(text[2:]) != expected {
-			d.Apply(report.Snippet(e.Span, "`\\%c` must be followed by exactly %d hex digits", c, expected))
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by exactly %d hex digits", c, expected))
 			return
 		}
 
 		value, _ := strconv.ParseUint(text[2:], 16, 32)
 		if !utf8.ValidRune(rune(value)) {
-			d.Apply(report.Snippet(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
+			d.Apply(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
 			return
 		}
 		return

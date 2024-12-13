@@ -43,7 +43,7 @@ const (
 //
 // To construct a diagnostic, create one using a function like [Report.Error].
 // Then, call [Diagnostic.Apply] to apply options to it. You should at minimum
-// apply [Message] and either [InFile] or at least one [Snippet].
+// apply [Message] and either [InFile] or at least one [Snippetf].
 type Diagnostic struct {
 	tag, message string
 
@@ -112,16 +112,6 @@ func Tag(t string) DiagnosticOption {
 	return tag(t)
 }
 
-type tag string
-
-func (t tag) apply(d *Diagnostic) {
-	if d.tag != "" {
-		panic("protocompile/report: set diagnostic tag more than once")
-	}
-
-	d.tag = string(t)
-}
-
 // Message returns a DiagnosticOption that sets the main diagnostic message.
 func Message(format string, args ...any) DiagnosticOption {
 	return message(fmt.Sprintf(format, args...))
@@ -133,18 +123,28 @@ func InFile(path string) DiagnosticOption {
 	return inFile(path)
 }
 
-// Snippet returns a DiagnosticOption that adds a new snippet to a diagnostic.
-//
-// Any additional arguments to this function are passed to [fmt.Sprintf] to
-// produce a message to go with the span. Snippet(span) is equivalent to
-// Snippet(span, "").
+// Snippet is like [Snippetf], but it attaches no message to the snippet.
 //
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
 // If at is nil (be it a nil interface, or a value that has a Nil() function
 // that returns true), or returns a nil span, this function will return nil.
-func Snippet(at Spanner, args ...any) DiagnosticOption {
+func Snippet(at Spanner) DiagnosticOption {
+	return Snippetf(at, "")
+}
+
+// Snippetf returns a DiagnosticOption that adds a new snippet to a diagnostic.
+//
+// Any additional arguments to this function are passed to [fmt.Sprintf] to
+// produce a message to go with the span.
+//
+// The first annotation added is the "primary" annotation, and will be rendered
+// differently from the others.
+//
+// If at is nil (be it a nil interface, or a value that has a Nil() function
+// that returns true), or returns a nil span, this function will return nil.
+func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 	if internal.Nil(at) {
 		return nil
 	}
@@ -154,34 +154,27 @@ func Snippet(at Spanner, args ...any) DiagnosticOption {
 		return nil
 	}
 
-	snippet := snippet{Span: span}
-	if len(args) > 0 {
-		format, ok := args[0].(string)
-		if !ok {
-			panic("protocompile/report: expected string as first Snippet argument")
-		}
-
-		snippet.message = fmt.Sprintf(format, args[1:]...)
+	return snippet{
+		Span:    span,
+		message: fmt.Sprintf(format, args...),
 	}
-
-	return snippet
 }
 
-// Note returns a DiagnosticOption that provides the user with context about the
+// Notef returns a DiagnosticOption that provides the user with context about the
 // diagnostic, after the annotations.
-func Note(format string, args ...any) DiagnosticOption {
+func Notef(format string, args ...any) DiagnosticOption {
 	return note(fmt.Sprintf(format, args...))
 }
 
-// Help returns a DiagnosticOption that provides the user with a helpful prose
+// Helpf returns a DiagnosticOption that provides the user with a helpful prose
 // suggestion for resolving the diagnostic.
-func Help(format string, args ...any) DiagnosticOption {
+func Helpf(format string, args ...any) DiagnosticOption {
 	return help(fmt.Sprintf(format, args...))
 }
 
-// Debug returns a DiagnosticOption appends debugging information to a diagnostic that
+// Debugf returns a DiagnosticOption appends debugging information to a diagnostic that
 // is not intended to be shown to normal users.
-func Debug(format string, args ...any) DiagnosticOption {
+func Debugf(format string, args ...any) DiagnosticOption {
 	return debug(fmt.Sprintf(format, args...))
 }
 
@@ -212,12 +205,20 @@ func (a snippet) apply(d *Diagnostic) {
 	d.snippets = append(d.snippets, a)
 }
 
+type tag string
 type message string
 type inFile string
 type note string
 type help string
 type debug string
 
+func (t tag) apply(d *Diagnostic) {
+	if d.tag != "" {
+		panic("protocompile/report: set diagnostic tag more than once")
+	}
+
+	d.tag = string(t)
+}
 func (m message) apply(d *Diagnostic) {
 	if d.message != "" {
 		panic("protocompile/report: set diagnostic message more than once")
