@@ -217,8 +217,8 @@ func (r *Report) ToProto() proto.Message {
 			}
 			for _, edit := range snip.edits {
 				snippet.Edits = append(snippet.Edits, &compilerpb.Diagnostic_Edit{
-					Start:   int32(edit.Start),
-					End:     int32(edit.End),
+					Start:   uint32(edit.Start),
+					End:     uint32(edit.End),
 					Replace: edit.Replace,
 				})
 			}

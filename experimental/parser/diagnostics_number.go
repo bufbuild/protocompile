@@ -70,7 +70,7 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 				d.Apply(
 					report.SuggestEdits(e.Token, "use a hexadecimal literal instead", report.Edit{
 						Start:   0,
-						End:     -1,
+						End:     len(e.Token.Text()),
 						Replace: fmt.Sprintf("%#x", value),
 					}),
 					report.Notef("Protobuf does not support binary literals"),

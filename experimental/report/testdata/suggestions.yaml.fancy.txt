@@ -1,18 +1,12 @@
 remark: let protocompile pick a syntax for you
   --> foo.proto:1:1
-   | 
- 1 | syntax = "proto3";
-   | ^^^^^^^^^^^^^^^^^^ 
   help: delete this
    | 
  1 | syntax = "proto3";
    | ------------------
 
 remark: let protocompile pick a syntax for you
-  --> foo.proto:1:1
-   | 
- 1 | syntax = "proto3";
-   | ^^^^^^^^^^^^^^^^^^ 
+  --> foo.proto:1:10
   help: delete this
    | 
  1 | syntax = "proto3";

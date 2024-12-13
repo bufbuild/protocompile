@@ -141,18 +141,9 @@ func offsetsForDiffing(span Span, edits []Edit) (string, [][2]int) {
 	start, end := adjustLineOffsets(span.File.Text(), span.Start, span.End)
 	delta := span.Start - start
 
-	spanLen := len(span.Text())
 	offsets := make([][2]int, len(edits))
 	for i, edit := range edits {
-		span := [2]int{edit.Start, edit.End}
-		for j := range span {
-			if span[j] < 0 {
-				span[j] += spanLen + 1
-			}
-			span[j] += delta
-		}
-
-		offsets[i] = span
+		offsets[i] = [2]int{edit.Start + delta, edit.End + delta}
 	}
 
 	return span.File.Text()[start:end], offsets

@@ -85,16 +85,13 @@ message Diagnostic {
 
   // Edit is an edit to suggest on an `Annotation`.
   //
-  // Negative offsets are interpreted as relative to the end of the snippet.
-  // For example, `0, -1` represents replacing the whole span.
-  // An insertion without deletion is modeled by `start == end`.
-  //
+  // A pure insertion is modeled by `start == end`.
   // A pure deletion is modeled by empty `replace`.
   message Edit {
     // The start offset of the edit, relative to the containing snippet.
-    int32 start = 1;
+    uint32 start = 1;
     // The end offset of the edit, relative to the containing snippet.
-    int32 end = 2;
+    uint32 end = 2;
 
     // The text to insert in place of the selected region.
     string replace = 3;

@@ -65,10 +65,9 @@ type Diagnostic struct {
 //
 // See [SuggestEdits].
 type Edit struct {
-	// The start and end offsets of the edit, within the span of the snippet
-	// this edit is applied to.
-	//
-	// For example, 0, -1 represents replacing the whole span.
+	// The start and end offsets of the edit, relative the span of the snippet
+	// this edit is applied to (so, Start == 0 means the edit starts at the
+	// start of the span).
 	//
 	// An insertion without deletion is modeled by Start == End.
 	Start, End int

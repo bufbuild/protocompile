@@ -1,18 +1,12 @@
 ⟨b.cyn⟩remark: let protocompile pick a syntax for you⟨reset⟩
 ⟨blu⟩  --> foo.proto:1:1
-   | 
-⟨blu⟩ 1 | ⟨reset⟩syntax = "proto3";
-⟨blu⟩   | ⟨reset⟩⟨b.cyn⟩^^^^^^^^^^^^^^^^^^⟨reset⟩ ⟨b.cyn⟩
 ⟨blu⟩  help: delete this
    | 
 ⟨blu⟩ 1 | ⟨red⟩syntax = "proto3";
 ⟨blu⟩   | ⟨b.red⟩------------------⟨reset⟩
 
 ⟨b.cyn⟩remark: let protocompile pick a syntax for you⟨reset⟩
-⟨blu⟩  --> foo.proto:1:1
-   | 
-⟨blu⟩ 1 | ⟨reset⟩syntax = "proto3";
-⟨blu⟩   | ⟨reset⟩⟨b.cyn⟩^^^^^^^^^^^^^^^^^^⟨reset⟩ ⟨b.cyn⟩
+⟨blu⟩  --> foo.proto:1:10
 ⟨blu⟩  help: delete this
    | 
 ⟨blu⟩ 1 | ⟨reset⟩syntax = ⟨red⟩"proto3"⟨reset⟩;
