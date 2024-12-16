@@ -20,7 +20,17 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
+
+// parseType attempts to parse a type, optionally followed by a non-absolute
+// path (depending on what pathAfter says).
+//
+// May return nil if parsing completely fails.
+func parseType(p *parser, c *token.Cursor, where taxa.Place) ast.TypeAny {
+	ty, _ := parseTypeImpl(p, c, where, false)
+	return ty
+}
 
 // parseType attempts to parse a type, optionally followed by a non-absolute
 // path (depending on what pathAfter says).
@@ -37,7 +47,12 @@ import (
 // c should not be nil.
 //
 // May return nil if parsing completely fails.
-func parseType(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool) (ast.TypeAny, ast.Path) {
+// TODO: return something like ast.TypeError instead.
+func parseTypeAndPath(p *parser, c *token.Cursor, where taxa.Place) (ast.TypeAny, ast.Path) {
+	return parseTypeImpl(p, c, where, true)
+}
+
+func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool) (ast.TypeAny, ast.Path) {
 	var isList, isInMethod bool
 	switch where.Subject() {
 	case taxa.MethodIns, taxa.MethodOuts,
@@ -96,9 +111,11 @@ func parseType(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool) (as
 		// type lists *only* contain types, and not productions started by
 		// keywords.
 		//
-		// This case applies to many other keywords. See cannotStartType.
+		// This case applies to the keywords:
+		// 	- package
+		// 	- extend
 		if !isList && len(mods) == 0 &&
-			cannotStartType(ident.Text()) &&
+			slicesx.Among(ident.Text(), "package", "extend") &&
 			!canStartPath(c.Peek()) {
 			kw, path := tyPath.Split(1)
 			if !path.Nil() {
@@ -156,15 +173,19 @@ func parseType(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool) (as
 			AngleBrackets: angles,
 		})
 
-		commas := commas(p, angles.Children(), true, func(c *token.Cursor) (ast.TypeAny, bool) {
-			ty, _ := parseType(p, c, taxa.TypeParams.In(), false)
-			return ty, !ty.Nil()
-		})
+		delimited[ast.TypeAny]{
+			p:    p,
+			c:    angles.Children(),
+			what: taxa.Type,
+			in:   taxa.TypeParams,
 
-		commas(func(ty ast.TypeAny, comma token.Token) bool {
-			generic.Args().AppendComma(ty, comma)
-			return true
-		})
+			required: true,
+			exhaust:  true,
+			parse: func(c *token.Cursor) (ast.TypeAny, bool) {
+				ty := parseType(p, c, taxa.TypeParams.In())
+				return ty, !ty.Nil()
+			},
+		}.appendTo(generic.Args())
 
 		ty = generic.AsAny()
 	}

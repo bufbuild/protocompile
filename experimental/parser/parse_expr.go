@@ -24,6 +24,7 @@ import (
 // parseExpr attempts to parse a full expression.
 //
 // May return nil if parsing completely fails.
+// TODO: return something like ast.ExprError instead.
 func parseExpr(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	return parseExprInfix(p, c, where, ast.ExprAny{}, 0)
 }
@@ -153,23 +154,30 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			in = taxa.Array
 		}
 
-		// TODO: We need to also accept `;` as a separator inside of dicts.
-		elems := commas(p, body.Children(), in == taxa.Array, func(c *token.Cursor) (ast.ExprAny, bool) {
-			expr := parseExpr(p, c, in.In())
-			return expr, !expr.Nil()
-		})
+		elems := delimited[ast.ExprAny]{
+			p:    p,
+			c:    body.Children(),
+			what: taxa.Expr,
+			in:   in,
+
+			delims:   []string{",", ";"},
+			required: false,
+			exhaust:  true,
+			trailing: true,
+			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
+				expr := parseExpr(p, c, in.In())
+				return expr, !expr.Nil()
+			},
+		}
 
 		if next.Text() == "[" {
 			array := p.NewExprArray(body)
-			elems(func(expr ast.ExprAny, comma token.Token) bool {
-				array.AppendComma(expr, comma)
-				return true
-			})
+			elems.appendTo(array)
 			return array.AsAny()
 		}
 
 		dict := p.NewExprDict(body)
-		elems(func(expr ast.ExprAny, comma token.Token) bool {
+		elems.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			field := expr.AsField()
 			if field.Nil() {
 				p.Error(errUnexpected{

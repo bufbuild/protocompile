@@ -60,15 +60,20 @@ func parse(ctx ast.Context, errs *report.Report) {
 
 	var mark token.CursorMark
 	for !c.Done() {
-		next := c.Mark()
-		if mark == next {
-			panic("protocompile/parser: parser failed to make progress; this is a bug in protocompile")
-		}
-		mark = next
-
+		ensureProgress(c, &mark)
 		node := parseDecl(p, c, taxa.TopLevel)
 		if !node.Nil() {
 			root.Append(node)
 		}
 	}
+}
+
+// ensureProgress is used to make sure that the parser makes progress on each
+// loop iteration. See mustProgress in lex_state.go for the lexer equivalent.
+func ensureProgress(c *token.Cursor, m *token.CursorMark) {
+	next := c.Mark()
+	if *m == next {
+		panic("protocompile/parser: parser failed to make progress; this is a bug in protocompile")
+	}
+	*m = next
 }

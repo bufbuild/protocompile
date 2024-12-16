@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 type exprComma struct {
@@ -35,6 +36,28 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		return ast.DeclAny{}
 	}
 
+	var unexpected []token.Token
+	for !c.Done() && !canStartDecl(first) {
+		unexpected = append(unexpected, c.Pop())
+		first = c.Peek()
+	}
+	switch len(unexpected) {
+	case 0:
+	case 1:
+		p.Error(errUnexpected{
+			what:  unexpected[0],
+			where: in.In(),
+			want:  startsDecl,
+		})
+	case 2:
+		p.Error(errUnexpected{
+			what:  report.JoinSeq(slicesx.Values(unexpected)),
+			where: in.In(),
+			want:  startsDecl,
+			got:   "tokens",
+		})
+	}
+
 	if first.Text() == ";" {
 		c.Pop()
 
@@ -43,35 +66,13 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	}
 
 	// This is a bare declaration body.
-	if first.Text() == "{" && !first.IsLeaf() {
-		c.Pop()
-		return parseBody(p, first, in).AsAny()
+	if canStartBody(first) {
+		return parseBody(p, c.Pop(), in).AsAny()
 	}
 
 	// We need to parse a path here. At this point, we need to generate a
 	// diagnostic if there is anything else in our way before hitting parsePath.
 	if !canStartPath(first) {
-		// Consume the token, emit a diagnostic, and throw it away.
-		//
-		// TODO: This recovery is not ideal. For example, there may be a long
-		// sequence of bad tokens starting here, and each one would emit one
-		// diagnostic. Ideally, we should have some way of synchronizing to
-		// something like ; after we see this.
-		//
-		// See: https://github.com/bufbuild/protocompile/pull/370#discussion_r1880480673
-		c.Pop()
-
-		p.Error(errUnexpected{
-			what:  first,
-			where: in.In(),
-			want: taxa.NewSet(
-				taxa.Ident,
-				taxa.Period,
-				taxa.Semicolon,
-				taxa.Parens,
-				taxa.Braces,
-			),
-		})
 		return ast.DeclAny{}
 	}
 
@@ -80,7 +81,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	// a keyword, we try to parse the appropriate thing (with one token of lookahead),
 	// and otherwise parse a field.
 	mark := c.Mark()
-	ty, path := parseType(p, c, in.In(), true)
+	ty, path := parseTypeAndPath(p, c, in.In())
 
 	// Extract a putative leading keyword from this. Note that a field's type,
 	// if relative, cannot start with any of the following identifiers:
@@ -127,25 +128,20 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			args.Value = parseExpr(p, c, in.In())
 		}
 
-		if args.Semicolon.Nil() {
-			// Before we grab the ;, parse custom options.
-			if next := c.Peek(); next.Text() == "[" && !next.IsLeaf() {
-				args.Options = parseOptions(p, c.Pop(), in)
-			}
+		args.Options = tryParseOptions(p, c, in)
 
-			args.Semicolon, err = p.Punct(c, ";", in.After())
-			// Only diagnose a missing semicolon if we successfully parsed some
-			// kind of partially-valid expression. Otherwise, we might diagnose
-			// the same extraneous/missing ; twice.
-			//
-			// For example, consider `syntax = ;`. WHen we enter parseExpr, it
-			// will complain about the unexpected ;.
-			//
-			// TODO: Add something like ExprError and check if args.Value
-			// contains one.
-			if err != nil && !args.Value.Nil() {
-				p.Error(err)
-			}
+		args.Semicolon, err = p.Punct(c, ";", in.After())
+		// Only diagnose a missing semicolon if we successfully parsed some
+		// kind of partially-valid expression. Otherwise, we might diagnose
+		// the same extraneous/missing ; twice.
+		//
+		// For example, consider `syntax = ;`. WHen we enter parseExpr, it
+		// will complain about the unexpected ;.
+		//
+		// TODO: Add something like ExprError and check if args.Value
+		// contains one.
+		if err != nil && !args.Value.Nil() {
+			p.Error(err)
 		}
 
 		return p.NewDeclSyntax(args).AsAny()
@@ -167,9 +163,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			Path:    path,
 		}
 
-		if next := c.Peek(); next.Text() == "[" && !next.IsLeaf() {
-			args.Options = parseOptions(p, c.Pop(), in)
-		}
+		args.Options = tryParseOptions(p, c, in)
 
 		semi, err := p.Punct(c, ";", taxa.Package.After())
 		args.Semicolon = semi
@@ -217,9 +211,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			args.ImportPath = parseExpr(p, c, in.In())
 		}
 
-		if next := c.Peek(); next.Text() == "[" && !next.IsLeaf() {
-			args.Options = parseOptions(p, c.Pop(), in)
-		}
+		args.Options = tryParseOptions(p, c, in)
 
 		semi, err := p.Punct(c, ";", in.After())
 		args.Semicolon = semi
@@ -250,6 +242,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		parser: p,
 		c:      c,
 		kw:     kw,
+		in:     in,
 		args:   ast.DeclDefArgs{Type: ty, Name: path},
 	}
 	return def.parse().AsAny()
@@ -282,14 +275,6 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 		in = taxa.Reserved
 	}
 
-	// Consume expressions until we hit a semicolon or the [ of a compact
-	// options. Note that this means that we do not parse `reserved [1, 2, 3];`
-	// "correctly": that is, as a reserved range whose first expression is an
-	// array. Instead, we parse it as an invalid compact options.
-	//
-	// TODO: This could be mitigated with backtracking: if the compact options
-	// is empty, or if the first comma occurs without seeing an =, we can choose
-	// to parse this as an array, instead.
 	var (
 		// badExpr keeps track of whether we exited the loop due to a parse
 		// error or because we hit ; or [ or EOF.
@@ -297,32 +282,38 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 		exprs   []exprComma
 	)
 
-	// Parse expressions until we hit a semicolon or the [ of compact options.
-	elems := commas(p, c, true, func(c *token.Cursor) (ast.ExprAny, bool) {
-		next := c.Peek()
-		if next.Text() == ";" || (next.Text() == "[" && !next.IsLeaf()) {
-			badExpr = false
-			return ast.ExprAny{}, false
-		}
+	// Note that this means that we do not parse `reserved [1, 2, 3];`
+	// "correctly": that is, as a reserved range whose first expression is an
+	// array. Instead, we parse it as an invalid compact options.
+	//
+	// TODO: This could be mitigated with backtracking: if the compact options
+	// is empty, or if the first comma occurs without seeing an =, we can choose
+	// to parse this as an array, instead.
+	if !canStartOptions(c.Peek()) {
+		delimited[ast.ExprAny]{
+			p: p, c: c,
+			what: taxa.Expr,
+			in:   in,
 
-		expr := parseExpr(p, c, in.In())
-		badExpr = badExpr || expr.Nil()
+			required: true,
+			exhaust:  false,
+			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
+				expr := parseExpr(p, c, in.In())
+				badExpr = expr.Nil()
 
-		return expr, !expr.Nil()
-	})
-	elems(func(expr ast.ExprAny, comma token.Token) bool {
-		exprs = append(exprs, exprComma{expr, comma})
-		return true
-	})
-
-	var options ast.CompactOptions
-	if next := c.Peek(); next.Text() == "[" && !next.IsLeaf() {
-		options = parseOptions(p, c.Pop(), in)
+				return expr, !expr.Nil()
+			},
+		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
+			exprs = append(exprs, exprComma{expr, comma})
+			return true
+		})
 	}
+
+	options := tryParseOptions(p, c, in)
 
 	// Parse a semicolon, if possible.
 	semi, err := p.Punct(c, ";", in.After())
-	if err != nil && !badExpr {
+	if err != nil && (!options.Nil() || !badExpr) {
 		p.Error(err)
 	}
 
@@ -340,58 +331,73 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 
 // parseTypeList parses a type list out of a bracket token.
 func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.Noun) {
-	tys := commas(p, parens.Children(), true, func(c *token.Cursor) (ast.TypeAny, bool) {
-		ty, _ := parseType(p, c, in.In(), false)
-		return ty, !ty.Nil()
-	})
+	delimited[ast.TypeAny]{
+		p:    p,
+		c:    parens.Children(),
+		what: taxa.Type,
+		in:   in,
 
-	tys(func(ty ast.TypeAny, comma token.Token) bool {
-		types.AppendComma(ty, comma)
-		return true
-	})
+		required: true,
+		exhaust:  true,
+		parse: func(c *token.Cursor) (ast.TypeAny, bool) {
+			ty := parseType(p, c, in.In())
+			return ty, !ty.Nil()
+		},
+	}.appendTo(types)
+}
+
+func tryParseOptions(p *parser, c *token.Cursor, in taxa.Noun) ast.CompactOptions {
+	if !canStartOptions(c.Peek()) {
+		return ast.CompactOptions{}
+	}
+	return parseOptions(p, c.Pop(), in)
 }
 
 // parseOptions parses a ([]-delimited) compact options list.
 func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptions {
 	options := p.NewCompactOptions(brackets)
 
-	elems := commas(p, brackets.Children(), true, func(c *token.Cursor) (ast.Option, bool) {
-		path := parsePath(p, c)
-		if path.Nil() {
-			return ast.Option{}, false
-		}
+	delimited[ast.Option]{
+		p:    p,
+		c:    brackets.Children(),
+		what: taxa.Option,
+		in:   taxa.CompactOptions,
 
-		eq := c.Peek()
-		switch eq.Text() {
-		case ":": // Allow colons, which is usually a mistake.
-			p.Errorf("unexpected `:` in compact option").Apply(
-				report.Snippetf(eq, "help: replace this with `=`"),
-				report.Notef("top-level `option` assignment uses `=`, not `:`"),
-			)
-			fallthrough
-		case "=":
-			c.Pop()
-		default:
-			p.Error(errUnexpected{
-				what:  eq,
-				want:  taxa.Equals.AsSet(),
-				where: taxa.CompactOptions.In(),
-			})
-			eq = token.Nil
-		}
+		required: true,
+		exhaust:  true,
+		parse: func(c *token.Cursor) (ast.Option, bool) {
+			path := parsePath(p, c)
+			if path.Nil() {
+				return ast.Option{}, false
+			}
 
-		option := ast.Option{
-			Path:   path,
-			Equals: eq,
-			Value:  parseExpr(p, c, taxa.CompactOptions.In()),
-		}
-		return option, !option.Value.Nil()
-	})
+			eq := c.Peek()
+			switch eq.Text() {
+			case ":": // Allow colons, which is usually a mistake.
+				p.Errorf("unexpected `:` in compact option").Apply(
+					report.Snippetf(eq, "help: replace this with `=`"),
+					report.Notef("top-level `option` assignment uses `=`, not `:`"),
+				)
+				fallthrough
+			case "=":
+				c.Pop()
+			default:
+				p.Error(errUnexpected{
+					what:  eq,
+					want:  taxa.Equals.AsSet(),
+					where: taxa.CompactOptions.In(),
+				})
+				eq = token.Nil
+			}
 
-	elems(func(opt ast.Option, comma token.Token) bool {
-		options.AppendComma(opt, comma)
-		return true
-	})
+			option := ast.Option{
+				Path:   path,
+				Equals: eq,
+				Value:  parseExpr(p, c, taxa.CompactOptions.In()),
+			}
+			return option, !option.Value.Nil()
+		},
+	}.appendTo(options)
 
 	return options
 }

@@ -26,6 +26,7 @@ type defParser struct {
 	c *token.Cursor
 
 	kw token.Token
+	in taxa.Noun
 
 	args ast.DeclDefArgs
 
@@ -60,8 +61,8 @@ func (p *defParser) parse() ast.DeclDef {
 	// possible: if we have `foo = 5 = 6`, we want to parse the second = 6,
 	// diagnose it, and throw it away.
 	var mark token.CursorMark
+	var skipSemi bool
 	lastFollower := -1
-followers:
 	for !p.c.Done() {
 		ensureProgress(p.c, &mark)
 
@@ -95,13 +96,6 @@ followers:
 				got:   defFollowers[idx].what(p),
 			})
 		case idx == lastFollower:
-			if _, ok := defFollowers[idx].(defBody); ok {
-				// We *do not* pop or diagnose an extra {}; we want this to
-				// be parsed as a loose DeclBody, instead, so we stop
-				// parsing here.
-				break followers
-			}
-
 			f := defFollowers[lastFollower]
 			p.Error(errMoreThanOne{
 				first:  f.prev(p),
@@ -111,10 +105,16 @@ followers:
 		default:
 			lastFollower = idx
 		}
+
+		if lastFollower == len(defFollowers)-1 {
+			// Once we parse a body, we're done.
+			skipSemi = true
+			break
+		}
 	}
 
 	// If we didn't see any braces, this def needs to be ended by a semicolon.
-	if p.braces.Nil() {
+	if !skipSemi {
 		semi, err := p.Punct(p.c, ";", taxa.Def.After())
 		p.args.Semicolon = semi
 		if err != nil {
@@ -122,16 +122,18 @@ followers:
 		}
 	}
 
-	// Convert something that looks like an enum value into one.
-	if tyPath := p.args.Type.AsPath(); !tyPath.Nil() && p.args.Name.Nil() &&
-		// The reason for this is because if the user writes `message {}`, we want
-		// to *not* turn it into an enum value with a body.
-		//
-		// TODO: Add a case for making sure that `rpc(foo)` is properly
-		// diagnosed as an anonymous method.
-		p.braces.Nil() {
-		p.args.Name = tyPath.Path
-		p.args.Type = ast.TypeAny{}
+	if p.in == taxa.Enum {
+		// Convert something that looks like an enum value into one.
+		if tyPath := p.args.Type.AsPath(); !tyPath.Nil() && p.args.Name.Nil() &&
+			// The reason for this is because if the user writes `message {}`, we want
+			// to *not* turn it into an enum value with a body.
+			//
+			// TODO: Add a case for making sure that `rpc(foo)` is properly
+			// diagnosed as an anonymous method.
+			p.braces.Nil() {
+			p.args.Name = tyPath.Path
+			p.args.Type = ast.TypeAny{}
+		}
 	}
 
 	def := p.NewDeclDef(p.args)
@@ -215,7 +217,7 @@ func (defOutputs) parse(p *defParser) report.Span {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
 		// we parse a single type w/o parens and diagnose it later.
-		ty, _ = parseType(p.parser, p.c, taxa.KeywordReturns.After(), false)
+		ty = parseType(p.parser, p.c, taxa.KeywordReturns.After())
 	} else if err != nil {
 		p.Error(err)
 		return report.Span{}
@@ -317,7 +319,7 @@ func (defValue) prev(p *defParser) report.Span {
 type defOptions struct{}
 
 func (defOptions) what(*defParser) taxa.Noun  { return taxa.CompactOptions }
-func (defOptions) canStart(p *defParser) bool { return p.c.Peek().Text() == "[" }
+func (defOptions) canStart(p *defParser) bool { return canStartOptions(p.c.Peek()) }
 
 func (defOptions) parse(p *defParser) report.Span {
 	next := p.c.Pop()
@@ -341,7 +343,7 @@ func (defOptions) prev(p *defParser) report.Span {
 type defBody struct{}
 
 func (defBody) what(*defParser) taxa.Noun  { return taxa.Body }
-func (defBody) canStart(p *defParser) bool { return p.c.Peek().Text() == "{" }
+func (defBody) canStart(p *defParser) bool { return canStartBody(p.c.Peek()) }
 
 func (defBody) parse(p *defParser) report.Span {
 	next := p.c.Pop()

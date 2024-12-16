@@ -23,6 +23,8 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // TabstopWidth is the size we render all tabstops as.
@@ -83,18 +85,23 @@ func (s Span) String() string {
 // If there are at least two distinct non-nil files among the spans,
 // this function panics.
 func Join(spans ...Spanner) Span {
+	return JoinSeq[Spanner](slicesx.Values(spans))
+}
+
+// JoinSeq is like [Join], but takes a sequence of any spannable type.
+func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	joined := Span{Start: math.MaxInt}
-	for _, span := range spans {
-		if internal.Nil(span) {
-			continue
+	seq(func(spanner S) bool {
+		if internal.Nil(spanner) {
+			return true
 		}
 
-		span := span.Span()
-		if span.File == nil {
-			continue
+		span := spanner.Span()
+		if span.Nil() {
+			return true
 		}
 
-		if joined.File == nil {
+		if joined.Nil() {
 			joined.File = span.File
 		} else if joined.File != span.File {
 			panic(fmt.Sprintf(
@@ -106,7 +113,8 @@ func Join(spans ...Spanner) Span {
 
 		joined.Start = min(joined.Start, span.Start)
 		joined.End = max(joined.End, span.End)
-	}
+		return true
+	})
 
 	if joined.File == nil {
 		return Span{}

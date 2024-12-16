@@ -21,7 +21,14 @@ import (
 
 var (
 	startsPath = taxa.NewSet(taxa.Ident, taxa.Parens, taxa.Period)
+	startsDecl = startsPath.With(taxa.Braces, taxa.Semicolon)
 )
+
+func canStartDecl(tok token.Token) bool {
+	return canStartPath(tok) ||
+		tok.Text() == ";" ||
+		(tok.Text() == "{" && !tok.IsLeaf())
+}
 
 // canStartPath returns whether or not tok can start a path.
 func canStartPath(tok token.Token) bool {
@@ -39,13 +46,10 @@ func canStartExpr(tok token.Token) bool {
 		((tok.Text() == "{" || tok.Text() == "[") && !tok.IsLeaf())
 }
 
-// cannotStartType returns whether an identifier cannot be the first token in
-// a multi-component type name, under most contexts.
-func cannotStartType(ident string) bool {
-	switch ident {
-	case "package", "extend":
-		return true
-	default:
-		return false
-	}
+func canStartOptions(tok token.Token) bool {
+	return !tok.IsLeaf() && tok.Text() == "["
+}
+
+func canStartBody(tok token.Token) bool {
+	return !tok.IsLeaf() && tok.Text() == "{"
 }

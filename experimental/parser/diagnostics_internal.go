@@ -35,13 +35,12 @@ type errUnexpected struct {
 	// shown, but if it's not set, we call describe(what) to get a user-visible
 	// description.
 	want taxa.Set
-	got  taxa.Noun
+	got  any
 }
 
 func (e errUnexpected) Diagnose(d *report.Diagnostic) {
-
 	got := e.got
-	if got == taxa.Unknown {
+	if got == nil {
 		got = taxa.Classify(e.what)
 	}
 
