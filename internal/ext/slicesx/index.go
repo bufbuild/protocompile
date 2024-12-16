@@ -12,23 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package arena
+package slicesx
 
 import (
 	"unsafe"
+
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
-// pointerIndex returns an integer n such that p == &s[n], or -1 if there is
+// PointerIndex returns an integer n such that p == &s[n], or -1 if there is
 // no such integer.
 //
 //go:nosplit
-func pointerIndex[T any](p *T, s []T) int {
+func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	a := unsafe.Pointer(p)
-	b := unsafe.Pointer(unsafe.SliceData(s))
+	b := unsafe.Pointer(unsafex.SliceData(s))
 
 	diff := uintptr(a) - uintptr(b)
-	size := unsafe.Sizeof(*p)
-	byteLen := uintptr(len(s)) * size
+	size := unsafex.Size[E]()
+	byteLen := len(s) * size
 
 	// This comparison checks for the following things:
 	//
@@ -50,7 +52,7 @@ func pointerIndex[T any](p *T, s []T) int {
 	// Doing this as one branch is much faster than checking all four
 	// separately; this is a fairly involved strength reduction that not even
 	// LLVM can figure out in many cases, nor can Go tip as of 2024-10-28.
-	if diff >= byteLen {
+	if diff >= uintptr(byteLen) {
 		return -1
 	}
 
@@ -61,5 +63,5 @@ func pointerIndex[T any](p *T, s []T) int {
 	// that such a pointee straddles two elements of the slice, which Go does
 	// not permit (such pointers can only be created by abusing the unsafe
 	// package).
-	return int(diff / size)
+	return int(diff) / size
 }

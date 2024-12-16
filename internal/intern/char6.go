@@ -18,7 +18,8 @@ package intern
 
 import (
 	"strings"
-	"unsafe"
+
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 const (
@@ -85,7 +86,7 @@ func decodeChar6(id ID) string {
 	// The main decoding loop is outlined to promote inlining of decodeChar6,
 	// and thus heap-promotion of the returned string.
 	data, len := decodeOutlined(id) //nolint:predeclared,revive // For `len`.
-	return unsafe.String(&data[0], len)
+	return unsafex.StringAlias(data[:len])
 }
 
 //nolint:predeclared,revive // For `len`.

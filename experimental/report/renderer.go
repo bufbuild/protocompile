@@ -24,7 +24,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/internal/iters"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -218,7 +218,7 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := iters.Partition(d.snippets, func(a, b *snippet) bool { return a.Path() != b.Path() })
+	parts := slicesx.Partition(d.snippets, func(a, b *snippet) bool { return a.Path() != b.Path() })
 	parts(func(i int, snippets []snippet) bool {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
@@ -481,7 +481,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
-	parts := iters.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
+	parts := slicesx.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
 	parts(func(_ int, part []underline) bool {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
@@ -516,7 +516,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		parts := iters.Partition(buf, func(a, b *byte) bool { return *a != *b })
+		parts := slicesx.Partition(buf, func(a, b *byte) bool { return *a != *b })
 		parts(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
