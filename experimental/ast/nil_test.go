@@ -26,6 +26,8 @@ import (
 )
 
 func TestNilSpans(t *testing.T) {
+	t.Parallel()
+
 	testNil[ast.DeclAny](t)
 	testNil[ast.DeclBody](t)
 	testNil[ast.DeclDef](t)
