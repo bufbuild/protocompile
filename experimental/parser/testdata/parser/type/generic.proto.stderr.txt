@@ -1,7 +1,7 @@
-error: unexpected tokens after type
+error: unexpected tokens in type parameters
   --> testdata/parser/type/generic.proto:37:13
    | 
 37 |     set<Foo bar> x13 = 13;
-   |             ^^^ 
+   |             ^^^ expected type
 
 encountered 1 error

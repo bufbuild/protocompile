@@ -36,9 +36,10 @@ decls:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
             type.path.components: [{ ident: "M" }]
-            signature.inputs: [{ path.components: [{ ident: "T" }] }]
             body: {}
-        - empty: {}
+        - def:
+            kind: KIND_FIELD
+            type.path.components: [{ extension.components: [{ ident: "T" }] }]
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
@@ -56,9 +57,11 @@ decls:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
             type.path.components: [{ ident: "M" }]
-            signature.outputs: [{ path.components: [{ ident: "T" }] }]
             body: {}
-        - empty: {}
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ extension.components: [{ ident: "T" }] }]
+            type.path.components: [{ ident: "returns" }]
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
@@ -82,19 +85,34 @@ decls:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
             type.path.components: [{ ident: "M" }]
-            signature.outputs: [{ path.components: [{ ident: "T" }] }]
+            body: {}
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "T" }]
+            type.path.components: [{ ident: "returns" }]
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "M" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "M" }]
+            value.literal.int_value: 1
+            options.entries:
+              - path.components: [{ ident: "foo" }]
+                value.path.components: [{ ident: "bar" }]
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "M" }]
             body: {}
         - empty: {}
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
             type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 1
             options.entries:
               - path.components: [{ ident: "foo" }]
                 value.path.components: [{ ident: "bar" }]
@@ -102,22 +120,5 @@ decls:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
             type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 1
-            body: {}
-        - empty: {}
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.path.components: [{ ident: "M" }]
-            options.entries:
-              - path.components: [{ ident: "foo" }]
-                value.path.components: [{ ident: "bar" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.path.components: [{ ident: "M" }]
-            options.entries:
-              - path.components: [{ ident: "foo" }]
-                value.path.components: [{ ident: "bar" }]
             body: {}
         - empty: {}

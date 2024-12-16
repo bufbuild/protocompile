@@ -36,14 +36,6 @@ error: unexpected method parameter list after compact options
    |         |
    |         previous compact options is here
 
-error: unexpected method parameter list after definition body
-  --> testdata/parser/def/ordering.proto:24:23
-   | 
-24 |     M x { /* ... */ } (T);
-   |         ------------- ^^^ 
-   |         |
-   |         previous definition body is here
-
 error: encountered more than one method return type
   --> testdata/parser/def/ordering.proto:26:21
    | 
@@ -59,14 +51,6 @@ error: unexpected method return type after compact options
    |         ----------- ^^^^^^^^^^^ 
    |         |
    |         previous compact options is here
-
-error: unexpected method return type after definition body
-  --> testdata/parser/def/ordering.proto:28:23
-   | 
-28 |     M x { /* ... */ } returns (T);
-   |         ------------- ^^^^^^^^^^^ 
-   |         |
-   |         previous definition body is here
 
 error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:30:17
@@ -110,20 +94,6 @@ error: missing `(...)` around method return type
 32 |     M x [foo = bar] returns T;
    |                             ^ help: replace this with `(T)`
 
-error: unexpected method return type after definition body
-  --> testdata/parser/def/ordering.proto:33:23
-   | 
-33 |     M x { /* ... */ } returns T;
-   |         ------------- ^^^^^^^^^ 
-   |         |
-   |         previous definition body is here
-
-error: missing `(...)` around method return type
-  --> testdata/parser/def/ordering.proto:33:31
-   | 
-33 |     M x { /* ... */ } returns T;
-   |                               ^ help: replace this with `(T)`
-
 error: encountered more than one message field tag
   --> testdata/parser/def/ordering.proto:35:13
    | 
@@ -140,13 +110,11 @@ error: unexpected message field tag after compact options
    |         |
    |         previous compact options is here
 
-error: unexpected message field tag after definition body
+error: unexpected tokens in message definition
   --> testdata/parser/def/ordering.proto:37:23
    | 
 37 |     M x { /* ... */ } = 1;
-   |         ------------- ^^^ 
-   |         |
-   |         previous definition body is here
+   |                       ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: encountered more than one compact options
   --> testdata/parser/def/ordering.proto:39:21
@@ -156,12 +124,10 @@ error: encountered more than one compact options
    |         |
    |         first one is here
 
-error: unexpected compact options after definition body
+error: unexpected `[...]` in message definition
   --> testdata/parser/def/ordering.proto:40:23
    | 
 40 |     M x { /* ... */ } [foo = bar];
-   |         ------------- ^^^^^^^^^^^ 
-   |         |
-   |         previous definition body is here
+   |                       ^^^^^^^^^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
-encountered 22 errors
+encountered 18 errors

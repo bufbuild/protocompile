@@ -6,12 +6,12 @@ decls:
       name.components: [{ ident: "M" }]
       body.decls:
         - def:
-            kind: KIND_ENUM_VALUE
-            name.components: [{ ident: "name" }]
+            kind: KIND_FIELD
+            type.path.components: [{ ident: "name" }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_ENUM_VALUE
-            name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+            kind: KIND_FIELD
+            type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
             kind: KIND_FIELD
