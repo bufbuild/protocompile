@@ -149,6 +149,10 @@ func (d DeclSyntax) Semicolon() token.Token {
 
 // report.Span implements [report.Spanner].
 func (d DeclSyntax) Span() report.Span {
+	if d.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
 }
 
@@ -209,6 +213,10 @@ func (d DeclPackage) Semicolon() token.Token {
 
 // report.Span implements [report.Spanner].
 func (d DeclPackage) Span() report.Span {
+	if d.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(d.Keyword(), d.Path(), d.Semicolon())
 }
 
@@ -293,6 +301,10 @@ func (d DeclImport) Semicolon() token.Token {
 
 // report.Span implements [report.Spanner].
 func (d DeclImport) Span() report.Span {
+	if d.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
 }
 

@@ -77,5 +77,9 @@ func (e ExprPrefixed) SetExpr(expr ExprAny) {
 
 // report.Span implements [report.Spanner].
 func (e ExprPrefixed) Span() report.Span {
+	if e.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(e.PrefixToken(), e.Expr())
 }

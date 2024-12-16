@@ -93,5 +93,9 @@ func (e ExprArray) InsertComma(n int, expr ExprAny, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (e ExprArray) Span() report.Span {
+	if e.Nil() {
+		return report.Span{}
+	}
+
 	return e.Brackets().Span()
 }

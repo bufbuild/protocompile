@@ -80,6 +80,8 @@ func (p Path) AsPredeclared() predeclared.Name {
 
 // report.Span implements [report.Spanner].
 func (p Path) Span() report.Span {
+	// No need to check for nil here, if p is nil both start and end will be
+	// nil tokens.
 	return report.Join(p.raw.Start.In(p.Context()), p.raw.End.In(p.Context()))
 }
 
