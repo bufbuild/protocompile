@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bufbuild/protocompile/internal/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestMerge(t *testing.T) {

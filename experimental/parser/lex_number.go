@@ -69,7 +69,7 @@ func lexNumber(l *lexer) token.Token {
 				// TODO: We should return ErrInvalidBase here but that requires
 				// validating the syntax of the float to distinguish it from
 				// cases where we want tor return ErrInvalidNumber instead.
-				l.Error(ErrInvalidNumber{Token: tok})
+				l.Error(errInvalidNumber{Token: tok})
 				token.SetValue(tok, math.NaN())
 				return tok
 			}
@@ -89,7 +89,7 @@ func lexNumber(l *lexer) token.Token {
 
 			//nolint:errcheck // The strconv package guarantees this assertion.
 			if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
-				l.Error(ErrInvalidNumber{Token: tok})
+				l.Error(errInvalidNumber{Token: tok})
 				token.SetValue(tok, math.NaN())
 			} else {
 				token.SetValue(tok, value)
@@ -97,11 +97,11 @@ func lexNumber(l *lexer) token.Token {
 				if hasThousands {
 					// Diagnose any thousands separators. We parse it as an
 					// extension currently.
-					l.Error(ErrThousandsSep{Token: tok})
+					l.Error(errThousandsSep{Token: tok})
 				}
 			}
 		} else {
-			l.Error(ErrInvalidNumber{Token: tok})
+			l.Error(errInvalidNumber{Token: tok})
 			// Need to set a value to avoid parse errors in Token.AsInt.
 			token.SetValue(tok, uint64(0))
 		}
@@ -121,12 +121,12 @@ func lexNumber(l *lexer) token.Token {
 	// Diagnose against number literals we currently accept but which are not
 	// part of Protobuf.
 	if base == 2 || (base == 8 && !legacyOctal) {
-		l.Error(ErrInvalidBase{
+		l.Error(errInvalidBase{
 			Token: tok,
 			Base:  int(base),
 		})
 	} else if result.hasThousands {
-		l.Error(ErrThousandsSep{Token: tok})
+		l.Error(errThousandsSep{Token: tok})
 	}
 
 	return tok

@@ -12,5 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iters contains helpers for working with iterators.
-package iters
+package report
+
+// AsError wraps a [Report] as an [error].
+type AsError struct {
+	Report Report
+}
+
+// Error implements [error].
+func (e *AsError) Error() string {
+	text, _, _ := Renderer{Compact: true}.RenderString(&e.Report)
+	return text
+}
+
+// ErrInFile wraps an [error] into a diagnostic on the given file.
+type ErrInFile struct {
+	Err  error
+	Path string
+}
+
+var _ Diagnose = &ErrInFile{}
+
+// Diagnose implements [Diagnose].
+func (e *ErrInFile) Diagnose(d *Diagnostic) {
+	d.Apply(
+		Message("%v", e.Err),
+		InFile(e.Path),
+	)
+}

@@ -15,8 +15,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 )
@@ -40,26 +38,27 @@ type errUnexpected struct {
 	got  taxa.Noun
 }
 
-func (e errUnexpected) Error() string {
+func (e errUnexpected) Diagnose(d *report.Diagnostic) {
+
 	got := e.got
 	if got == taxa.Unknown {
 		got = taxa.Classify(e.what)
 	}
 
+	var message report.DiagnosticOption
 	if e.where.Subject() == taxa.Unknown {
-		return fmt.Sprintf("unexpected %v", got)
+		message = report.Message("unexpected %v", got)
+	} else {
+		message = report.Message("unexpected %v %v", got, e.where)
 	}
 
-	return fmt.Sprintf("unexpected %v %v", got, e.where)
-}
-
-func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 	snippet := report.Snippet(e.what)
 	if e.want.Len() > 0 {
 		snippet = report.Snippetf(e.what, "expected %v", e.want.Join("or"))
 	}
 
-	d.With(
+	d.Apply(
+		message,
 		snippet,
 		report.Snippetf(e.prev, "previous %v is here", e.where.Subject()),
 	)
@@ -72,17 +71,14 @@ type errMoreThanOne struct {
 	what          taxa.Noun
 }
 
-func (e errMoreThanOne) Error() string {
+func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
 	what := e.what
 	if what == taxa.Unknown {
 		what = taxa.Classify(e.first)
 	}
 
-	return "encountered more than one " + what.String()
-}
-
-func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
-	d.With(
+	d.Apply(
+		report.Message("encountered more than one %v", what),
 		report.Snippetf(e.second, "help: consider removing this"),
 		report.Snippetf(e.first, "first one is here"),
 	)

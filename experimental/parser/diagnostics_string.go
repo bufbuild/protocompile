@@ -23,55 +23,50 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// ErrUnclosedString diagnoses a string literal that continues to EOF.
-type ErrUnclosedString struct {
+// errUnclosedString diagnoses a string literal that continues to EOF.
+type errUnclosedString struct {
 	Token token.Token // The offending string literal token.
 }
 
-// Error implements [error].
-func (e ErrUnclosedString) Error() string {
-	return "unterminated string literal"
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrUnclosedString) Diagnose(d *report.Diagnostic) {
+func (e errUnclosedString) Diagnose(d *report.Diagnostic) {
 	open := e.Token.Text()[:1]
-	d.With(report.Snippetf(e.Token, "expected to be terminated by `%s`", open))
+	d.Apply(
+		report.Message("unterminated string literal"),
+		report.Snippetf(e.Token, "expected to be terminated by `%s`", open),
+	)
 
 	quoted := e.Token.Text()
 	quote := quoted[:1]
 	if len(quoted) == 1 {
-		d.With(report.Note("this string consists of a single orphaned quote"))
+		d.Apply(report.Notef("this string consists of a single orphaned quote"))
 	} else if strings.HasSuffix(quoted, quote) {
-		d.With(report.Notef("this string appears to end in an escaped quote; replace `\\%s` with `\\\\%[1]s%[1]s`", quote))
+		d.Apply(report.Notef("this string appears to end in an escaped quote; replace `\\%s` with `\\\\%[1]s%[1]s`", quote))
 	}
 
 	// TODO: check to see if a " or ' escape exists in the string?
 }
 
-// ErrInvalidEscape diagnoses an invalid escape sequence within a string
+// errInvalidEscape diagnoses an invalid escape sequence within a string
 // literal.
-type ErrInvalidEscape struct {
+type errInvalidEscape struct {
 	Span report.Span // The span of the offending escape within a literal.
 }
 
-// Error implements [error].
-func (e ErrInvalidEscape) Error() string {
-	return "invalid escape sequence"
-}
-
 // Diagnose implements [report.Diagnose].
-func (e ErrInvalidEscape) Diagnose(d *report.Diagnostic) {
+func (e errInvalidEscape) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("invalid escape sequence"))
+
 	text := e.Span.Text()
 
 	if len(text) < 2 {
-		d.With(report.Snippet(e.Span))
+		d.Apply(report.Snippet(e.Span))
 	}
 
 	switch c := text[1]; c {
 	case 'x', 'X':
 		if len(text) < 3 {
-			d.With(report.Snippetf(e.Span, "`\\%c` must be followed by at least one hex digit", c))
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by at least one hex digit", c))
 			return
 		}
 		return
@@ -82,17 +77,17 @@ func (e ErrInvalidEscape) Diagnose(d *report.Diagnostic) {
 		}
 
 		if len(text[2:]) != expected {
-			d.With(report.Snippetf(e.Span, "`\\%c` must be followed by exactly %d hex digits", c, expected))
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by exactly %d hex digits", c, expected))
 			return
 		}
 
 		value, _ := strconv.ParseUint(text[2:], 16, 32)
 		if !utf8.ValidRune(rune(value)) {
-			d.With(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
+			d.Apply(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
 			return
 		}
 		return
 	}
 
-	d.With(report.Snippet(e.Span))
+	d.Apply(report.Snippet(e.Span))
 }

@@ -36,7 +36,7 @@ func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 
 	ok = true
 	for _, d := range errs.Diagnostics[prior:] {
-		if d.Level >= report.Error {
+		if d.Level() >= report.Error {
 			ok = false
 			break
 		}

@@ -24,7 +24,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/internal/iters"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -56,7 +56,7 @@ type Renderer struct {
 // the writer.
 func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCount int, err error) {
 	for _, diagnostic := range report.Diagnostics {
-		if !r.ShowRemarks && diagnostic.Level == Remark {
+		if !r.ShowRemarks && diagnostic.level == Remark {
 			continue
 		}
 
@@ -70,10 +70,10 @@ func (r Renderer) Render(report *Report, out io.Writer) (errorCount, warningCoun
 			}
 		}
 
-		if diagnostic.Level == Error {
+		switch {
+		case diagnostic.level <= Error:
 			errorCount++
-		}
-		if diagnostic.Level == Warning {
+		case diagnostic.level <= Warning:
 			if r.WarningsAreErrors {
 				errorCount++
 			} else {
@@ -132,20 +132,18 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		// renderer bugs.
 		defer func() {
 			if panicked := recover(); panicked != nil {
-				stack := strings.Join(d.Debug[:min(report.Tracing, len(d.Debug))], "\n")
+				stack := strings.Join(d.debug[:min(report.Tracing, len(d.debug))], "\n")
 				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%s", panicked, stack))
 			}
 		}()
 	}
 
 	var level string
-	switch d.Level {
+	switch d.level {
+	case ICE:
+		level = "internal compiler error"
 	case Error:
-		if d.isICE {
-			level = "internal compiler error"
-		} else {
-			level = "error"
-		}
+		level = "error"
 	case Warning:
 		if r.WarningsAreErrors {
 			level = "error"
@@ -163,23 +161,23 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		primary := d.Primary()
 
 		if primary.File == nil {
-			path := d.InFile
+			path := d.inFile
 			if path == "" {
 				return fmt.Sprintf(
 					"%s%s: %s%s",
-					ss.ColorForLevel(d.Level),
+					ss.ColorForLevel(d.level),
 					level,
-					d.Err.Error(),
+					d.message,
 					ss.reset,
 				)
 			}
 
 			return fmt.Sprintf(
 				"%s%s: %s: %s%s",
-				ss.ColorForLevel(d.Level),
+				ss.ColorForLevel(d.level),
 				level,
 				path,
-				d.Err.Error(),
+				d.message,
 				ss.reset,
 			)
 		}
@@ -188,12 +186,12 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 
 		return fmt.Sprintf(
 			"%s%s: %s:%d:%d: %s%s",
-			ss.ColorForLevel(d.Level),
+			ss.ColorForLevel(d.level),
 			level,
 			primary.Path(),
 			start.Line,
 			start.Column,
-			d.Err.Error(),
+			d.message,
 			ss.reset,
 		)
 	}
@@ -202,16 +200,16 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	// https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 
 	var out strings.Builder
-	fmt.Fprint(&out, ss.BoldForLevel(d.Level), level, ": ", d.Err.Error(), ss.reset)
+	fmt.Fprint(&out, ss.BoldForLevel(d.level), level, ": ", d.message, ss.reset)
 
-	locations := make([][2]Location, len(d.Annotations))
-	for i, snip := range d.Annotations {
+	locations := make([][2]Location, len(d.snippets))
+	for i, snip := range d.snippets {
 		locations[i][0] = snip.location(snip.Start, false)
 		locations[i][1] = snip.location(snip.End, false)
 	}
 
 	// Figure out how wide the line bar needs to be. This is given by
-	// the width of the largest line value among the annotations.
+	// the width of the largest line value among the snippets.
 	var greatestLine int
 	for _, loc := range locations {
 		greatestLine = max(greatestLine, loc[1].Line)
@@ -220,13 +218,13 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := iters.Partition(d.Annotations, func(a, b *Annotation) bool { return a.Path() != b.Path() })
-	parts(func(i int, annotations []Annotation) bool {
+	parts := slicesx.Partition(d.snippets, func(a, b *snippet) bool { return a.Path() != b.Path() })
+	parts(func(i int, snippets []snippet) bool {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth)
 
-		primary := annotations[0]
+		primary := snippets[0]
 		start := locations[i][0]
 		sep := ":::"
 		if i == 0 {
@@ -240,30 +238,30 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 		padBy(&out, lineBarWidth)
 		out.WriteString(" | ")
 
-		window := buildWindow(d.Level, locations[i:i+len(annotations)], annotations)
+		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
 		window.Render(lineBarWidth, &ss, &out)
 		return true
 	})
 
 	// Render a remedial file name for spanless errors.
-	if len(d.Annotations) == 0 && d.InFile != "" {
+	if len(d.snippets) == 0 && d.inFile != "" {
 		out.WriteByte('\n')
 		out.WriteString(ss.nAccent)
 		padBy(&out, lineBarWidth-1)
 
-		fmt.Fprintf(&out, "--> %s", d.InFile)
+		fmt.Fprintf(&out, "--> %s", d.inFile)
 	}
 
 	// Render the footers. For simplicity we collect them into an array first.
-	footers := make([][3]string, 0, len(d.Notes)+len(d.Help)+len(d.Debug))
-	for _, note := range d.Notes {
+	footers := make([][3]string, 0, len(d.notes)+len(d.help)+len(d.debug))
+	for _, note := range d.notes {
 		footers = append(footers, [3]string{ss.bRemark, "note", note})
 	}
-	for _, help := range d.Help {
+	for _, help := range d.help {
 		footers = append(footers, [3]string{ss.bRemark, "help", help})
 	}
 	if r.ShowDebug {
-		for _, debug := range d.Debug {
+		for _, debug := range d.debug {
 			footers = append(footers, [3]string{ss.bError, "debug", debug})
 		}
 	}
@@ -304,23 +302,23 @@ type window struct {
 	multilines []multiline
 }
 
-// buildWindow builds a diagnostic window for the given annotations, which must all have
+// buildWindow builds a diagnostic window for the given snippets, which must all have
 // the same file.
 //
 // This is separate from [window.Render] because it performs certain layout
 // decisions that cannot happen in the middle of actually rendering the source
 // code (well, they could, but the resulting code would be far more complicated).
-func buildWindow(level Level, locations [][2]Location, annotations []Annotation) *window {
+func buildWindow(level Level, locations [][2]Location, snippets []snippet) *window {
 	w := new(window)
-	w.file = annotations[0].File
+	w.file = snippets[0].File
 
 	// Calculate the range of the file we will be printing. This is given
 	// by every line that has a piece of diagnostic in it. To find this, we
 	// calculate the join of all of the spans in the window, and find the
 	// nearest \n runes in the text.
 	w.start = locations[0][0].Line
-	w.offsets[0] = annotations[0].Start
-	for i, snip := range annotations {
+	w.offsets[0] = snippets[0].Start
+	for i, snip := range snippets {
 		w.start = min(w.start, locations[i][0].Line)
 		w.offsets[0] = min(w.offsets[0], snip.Start)
 		w.offsets[1] = max(w.offsets[1], snip.End)
@@ -336,7 +334,7 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 	}
 
 	// Now, convert each span into an underline or multiline.
-	for i, snippet := range annotations {
+	for i, snippet := range snippets {
 		isMulti := locations[i][0].Line != locations[i][1].Line
 
 		if isMulti && len(w.multilines) < maxMultilinesPerWindow {
@@ -345,8 +343,8 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 				end:        locations[i][1].Line,
 				startWidth: locations[i][0].Column,
 				endWidth:   locations[i][1].Column,
-				level:      note,
-				message:    snippet.Message,
+				level:      noteLevel,
+				message:    snippet.message,
 			})
 			ml := &w.multilines[len(w.multilines)-1]
 
@@ -366,7 +364,7 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 				}
 			}
 
-			if snippet.Primary {
+			if snippet.primary {
 				ml.level = level
 			}
 			continue
@@ -376,12 +374,12 @@ func buildWindow(level Level, locations [][2]Location, annotations []Annotation)
 			line:    locations[i][0].Line,
 			start:   locations[i][0].Column,
 			end:     locations[i][1].Column,
-			level:   note,
-			message: snippet.Message,
+			level:   noteLevel,
+			message: snippet.message,
 		})
 
 		ul := &w.underlines[len(w.underlines)-1]
-		if snippet.Primary {
+		if snippet.primary {
 			ul.level = level
 		}
 		if ul.start == ul.end {
@@ -483,7 +481,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
-	parts := iters.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
+	parts := slicesx.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
 	parts(func(_ int, part []underline) bool {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
@@ -518,7 +516,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		parts := iters.Partition(buf, func(a, b *byte) bool { return *a != *b })
+		parts := slicesx.Partition(buf, func(a, b *byte) bool { return *a != *b })
 		parts(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
@@ -530,7 +528,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 				switch level {
 				case 0:
 					out.WriteByte(' ')
-				case note:
+				case noteLevel:
 					out.WriteByte('-')
 				default:
 					out.WriteByte('^')
@@ -711,7 +709,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 					padByRune(&line, ml.endWidth-1, '_')
 				}
 
-				if ml.level == note {
+				if ml.level == noteLevel {
 					line.WriteByte('-')
 				} else {
 					line.WriteByte('^')

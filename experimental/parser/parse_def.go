@@ -142,7 +142,7 @@ followers:
 	if !p.outputs.Nil() {
 		parseTypeList(p.parser, p.outputs, def.WithSignature().Outputs(), taxa.MethodOuts)
 	} else if !p.outputTy.Nil() {
-		p.Errorf("missing `(...)` around method return type").With(
+		p.Errorf("missing `(...)` around method return type").Apply(
 			report.Snippetf(p.outputTy, "help: replace this with `(%s)`", p.outputTy.Span().Text()),
 		)
 		def.WithSignature().Outputs().Append(p.outputTy)

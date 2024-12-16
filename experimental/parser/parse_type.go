@@ -19,7 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/iters"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // parseType attempts to parse a type, optionally followed by a non-absolute
@@ -68,7 +68,7 @@ func parseType(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool) (as
 			break // Absolute paths cannot start with a modifier, so we are done.
 		}
 
-		first, _ := iters.First(tyPath.Components)
+		first, _ := iterx.First(tyPath.Components)
 		ident := first.AsIdent()
 		if ident.Nil() {
 			break // If this starts with an extension, we're done.
