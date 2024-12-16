@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupword // Disable for whole file, because the error is in a comment.
 package ast
 
 import (
