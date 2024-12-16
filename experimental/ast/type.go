@@ -42,6 +42,23 @@ type TypeKind int8
 // This type is used in lieu of a putative Type interface type to avoid heap
 // allocations in functions that would return one of many different Type*
 // types.
+//
+// # Grammar
+//
+//	Type := TypePath | TypePrefixed | TypeGeneric
+//
+// Note that there is an ambiguity when parsing a Type followed by a Path:
+// "optional optional foo" could be parsed as:
+//
+//	TypePrefix{Optional, TypePrefix{Optional, TypePath("foo")}}
+//
+// However, this should be parsed as follows:
+//
+//	TypePrefix{Optional, TypePath("optional")}, TypePath("foo")
+//
+// This means that when parsing a type followed by a path, we must reserve the
+// last path we see as the path to return, and only construct TypePrefixes
+// using all but this last path.
 type TypeAny struct {
 	withContext // Must be nil if raw is nil.
 

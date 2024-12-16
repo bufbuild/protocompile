@@ -29,6 +29,13 @@ import (
 // so on.
 //
 // DeclBody implements [Slice], providing access to its declarations.
+//
+// # Grammar
+//
+//	DeclBody := `{` DeclAny* `}`
+//
+// Note that a [File] is simply a DeclBody that is delimited by the bounds of
+// the source file, rather than braces.
 type DeclBody struct{ declImpl[rawDeclBody] }
 
 type rawDeclBody struct {

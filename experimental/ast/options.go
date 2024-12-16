@@ -23,10 +23,15 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-// CompactOptions represents the collection of options attached to a field-like declaration,
+// CompactOptions represents the collection of options attached to a [DeclAny],
 // contained within square brackets.
 //
 // CompactOptions implements [Commas] over its options.
+//
+// # Grammar
+//
+//	CompactOptions := `[` (option `,`)* option? `]`
+//	option         := Path [:=]? Expr?
 type CompactOptions struct {
 	withContext
 	raw *rawCompactOptions

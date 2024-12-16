@@ -33,6 +33,10 @@ import (
 // that all generic types understood by your code are maps.
 //
 // TypeGeneric implements [Commas[TypeAny]] for accessing its arguments.
+//
+// # Grammar
+//
+//	TypeGeneric := TypePath `<` (Type, )* Type? `>`
 type TypeGeneric struct{ typeImpl[rawTypeGeneric] }
 
 type rawTypeGeneric struct {

@@ -49,6 +49,19 @@ type DefKind int8
 //
 // Generally, you should not need to work with DeclDef directly; instead, use the As* methods
 // to access the correct concrete syntax production a DeclDef represents.
+//
+// # Grammar
+//
+//	DeclDef := (Type Path | Type | Ident) followers*`;`?
+//
+//	followers := inputs | outputs | value | CompactOptions | DeclBody
+//	inputs    := `(` (Type `,`)* Type? `)`
+//	outputs   := `returns` (Type | inputs)
+//	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
+//
+// Note that this type will only record the first appearance of any follower,
+// and will stop parsing a def if it sees (but does not consume) a second
+// DeclBody follower.
 type DeclDef struct{ declImpl[rawDeclDef] }
 
 type rawDeclDef struct {

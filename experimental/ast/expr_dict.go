@@ -23,6 +23,16 @@ import (
 )
 
 // ExprDict represents a an array of message fields between curly braces.
+//
+// ExprArray implements [Commas].
+//
+// # Grammar
+//
+//	ExprDict := `{` fields `}` | `<` fields `>`
+//	fields := (Expr [,;]?)* Expr
+//
+// Note that if a non-[ExprField] occurs as a field of a dict, the parser will
+// rewrite it into an [ExprField] with a missing key.
 type ExprDict struct{ exprImpl[rawExprDict] }
 
 type rawExprDict struct {
@@ -114,7 +124,12 @@ func (e ExprDict) Span() report.Span {
 
 // ExprField is a key-value pair within an [ExprDict].
 //
-// It implements [ExprAny], since it can appear inside of e.g. an array if the user incorrectly writes [foo: bar].
+// It implements [ExprAny], since it can appear inside of e.g. an array if the
+// user incorrectly writes [foo: bar].
+//
+// # Grammar
+//
+//	ExprField := Expr [:=]
 type ExprField struct{ exprImpl[rawExprField] }
 
 type rawExprField struct {

@@ -46,6 +46,13 @@ type DeclKind int8
 // This type is used in lieu of a putative Decl interface type to avoid heap
 // allocations in functions that would return one of many different Decl*
 // types.
+//
+// # Grammar
+//
+//	DeclAny := DeclEmpty | DeclSyntax | DeclPackage | DeclImport | DeclDef | DeclBody | DeclRange
+//
+// Note that this grammar is highly ambiguous. TODO: document the rules under
+// which parse DeclSyntax, DeclPackage, DeclImport, and DeclRange.
 type DeclAny struct {
 	// NOTE: These fields are sorted by alignment.
 	withContext // Must be nil if raw is nil.

@@ -24,7 +24,7 @@ const (
 	ExprPrefixMinus
 )
 
-// TypePrefix is a prefix for an expression, such as a minus sign.
+// ExprPrefix is a prefix for an expression, such as a minus sign.
 type ExprPrefix int8
 
 // ExprPrefixByName looks up a prefix kind by name.
@@ -40,6 +40,10 @@ func ExprPrefixByName(name string) ExprPrefix {
 }
 
 // ExprPrefixed is an expression prefixed with an operator.
+//
+// # Grammar
+//
+//	ExprPrefix := `-` ExprSolo
 type ExprPrefixed struct{ exprImpl[rawExprPrefixed] }
 
 type rawExprPrefixed struct {

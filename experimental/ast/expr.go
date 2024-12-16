@@ -47,6 +47,15 @@ type ExprKind int8
 // This type is used in lieu of a putative ExprAny interface type to avoid heap
 // allocations in functions that would return one of many different ExprAny*
 // types.
+//
+// # Grammar
+//
+// In addition to the Expr type, we define some exported productions for
+// handling operator precedence.
+//
+//	Expr     := ExprField | ExprOp1
+//	ExprOp   := ExprRange | ExprPrefix | ExprSolo
+//	ExprSolo := ExprLiteral | ExprPath | ExprArray | ExprDict
 type ExprAny struct {
 	withContext // Must be nil if raw is nil.
 
