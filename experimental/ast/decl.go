@@ -160,6 +160,31 @@ func (d DeclAny) Span() report.Span {
 	)
 }
 
+// Trace returns a stack trace for the site at which d was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (d DeclAny) Trace() string {
+	switch d.Kind() {
+	case DeclKindBody:
+		return d.AsBody().Trace()
+	case DeclKindDef:
+		return d.AsDef().Trace()
+	case DeclKindEmpty:
+		return d.AsEmpty().Trace()
+	case DeclKindImport:
+		return d.AsImport().Trace()
+	case DeclKindPackage:
+		return d.AsPackage().Trace()
+	case DeclKindRange:
+		return d.AsRange().Trace()
+	case DeclKindSyntax:
+		return d.AsSyntax().Trace()
+	default:
+		return ""
+	}
+}
+
 // rawDecl is the actual data of a DeclAny.
 type rawDecl struct {
 	ptr  arena.Untyped

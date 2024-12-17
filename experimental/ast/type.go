@@ -125,6 +125,24 @@ func (t TypeAny) Span() report.Span {
 	)
 }
 
+// Trace returns a stack trace for the site at which t was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (t TypeAny) Trace() string {
+	switch t.Kind() {
+	case TypeKindGeneric:
+		return t.AsGeneric().Trace()
+	case TypeKindPrefixed:
+		return t.AsPrefixed().Trace()
+	case TypeKindPath:
+		// TypeKindPath does not currently record traces.
+		fallthrough
+	default:
+		return ""
+	}
+}
+
 // typeImpl is the common implementation of pointer-like Type* types.
 type typeImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.

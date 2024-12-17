@@ -35,6 +35,9 @@ type Nodes struct {
 	// the stack trace of the caller. Those stack traces can later be recalled
 	// by calling the Trace method on an AST node.
 	//
+	// Tracing is best effort: some node types are currently unable to record
+	// a creation site.
+	//
 	// Enabling this feature will result in significant parser slowdown; it is
 	// intended for debugging only.
 	EnableTracing bool

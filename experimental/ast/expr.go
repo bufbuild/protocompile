@@ -200,6 +200,31 @@ func (e ExprAny) Span() report.Span {
 	)
 }
 
+// Trace returns a stack trace for the site at which e was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (e ExprAny) Trace() string {
+	switch e.Kind() {
+	case ExprKindArray:
+		return e.AsArray().Trace()
+	case ExprKindDict:
+		return e.AsDict().Trace()
+	case ExprKindField:
+		return e.AsField().Trace()
+	case ExprKindPrefixed:
+		return e.AsPrefixed().Trace()
+	case ExprKindRange:
+		return e.AsRange().Trace()
+
+	case ExprKindLiteral, ExprKindPath:
+		// ExprLiteral and ExprPath do not currently record traces.
+		fallthrough
+	default:
+		return ""
+	}
+}
+
 // typeImpl is the common implementation of pointer-like Expr* types.
 type exprImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
