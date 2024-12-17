@@ -25,6 +25,7 @@ import (
 
 const (
 	ExprKindNil ExprKind = iota
+	ExprKindError
 	ExprKindLiteral
 	ExprKindPrefixed
 	ExprKindPath
@@ -78,6 +79,22 @@ func (e ExprAny) Kind() ExprKind {
 		return kind
 	}
 	return ExprKindPath
+}
+
+// AsError converts a ExprAny into a ExprError, if that is the type
+// it contains.
+//
+// Otherwise, returns nil.
+func (e ExprAny) AsError() ExprError {
+	ptr := unwrapPathLike[arena.Pointer[rawExprError]](ExprKindError, e.raw)
+	if ptr.Nil() {
+		return ExprError{}
+	}
+
+	return ExprError{exprImpl[rawExprError]{
+		e.withContext,
+		e.Context().Nodes().exprs.errors.Deref(ptr),
+	}}
 }
 
 // AsLiteral converts a ExprAny into a ExprLiteral, if that is the type
@@ -199,6 +216,20 @@ func (e ExprAny) Span() report.Span {
 	)
 }
 
+// ExprError represents an unrecoverable parsing error in an expression context.
+type ExprError struct{ exprImpl[rawExprError] }
+
+// Span implements [report.Spanner].
+func (e ExprError) Span() report.Span {
+	if e.Nil() {
+		return report.Span{}
+	}
+
+	return report.Span(*e.raw)
+}
+
+type rawExprError report.Span
+
 // typeImpl is the common implementation of pointer-like Expr* types.
 type exprImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
@@ -223,6 +254,7 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 
 // exprs is storage for the various kinds of Exprs in a Context.
 type exprs struct {
+	errors   arena.Arena[rawExprError]
 	prefixes arena.Arena[rawExprPrefixed]
 	ranges   arena.Arena[rawExprRange]
 	arrays   arena.Arena[rawExprArray]
@@ -256,6 +288,9 @@ func exprArena[Raw any](exprs *exprs) (ExprKind, *arena.Arena[Raw]) {
 	case rawExprField:
 		kind = ExprKindField
 		arena_ = &exprs.fields
+	case rawExprError:
+		kind = ExprKindError
+		arena_ = &exprs.errors
 	default:
 		panic("unknown expr type " + reflect.TypeOf(raw).Name())
 	}

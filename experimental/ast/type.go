@@ -24,6 +24,7 @@ import (
 
 const (
 	TypeKindNil TypeKind = iota
+	TypeKindError
 	TypeKindPath
 	TypeKindPrefixed
 	TypeKindGeneric
@@ -68,6 +69,22 @@ func (t TypeAny) Kind() TypeKind {
 		return kind
 	}
 	return TypeKindPath
+}
+
+// AsError converts a TypeAny into a TypeError, if that is the type
+// it contains.
+//
+// Otherwise, returns nil.
+func (t TypeAny) AsError() TypeError {
+	ptr := unwrapPathLike[arena.Pointer[rawTypeError]](TypeKindError, t.raw)
+	if ptr.Nil() {
+		return TypeError{}
+	}
+
+	return TypeError{typeImpl[rawTypeError]{
+		t.withContext,
+		t.Context().Nodes().types.errors.Deref(ptr),
+	}}
 }
 
 // AsPath converts a TypeAny into a TypePath, if that is the type
@@ -124,6 +141,23 @@ func (t TypeAny) Span() report.Span {
 	)
 }
 
+// TypeError represents an unrecoverable parsing error in a type context.
+//
+// This type is so named to adhere to package ast's naming convention. It does
+// not represent a "type error" as in "type-checking failure".
+type TypeError struct{ typeImpl[rawTypeError] }
+
+// Span implements [report.Spanner].
+func (t TypeError) Span() report.Span {
+	if t.Nil() {
+		return report.Span{}
+	}
+
+	return report.Span(*t.raw)
+}
+
+type rawTypeError report.Span
+
 // typeImpl is the common implementation of pointer-like Type* types.
 type typeImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
@@ -147,6 +181,7 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 type types struct {
 	prefixes arena.Arena[rawTypePrefixed]
 	generics arena.Arena[rawTypeGeneric]
+	errors   arena.Arena[rawTypeError]
 }
 
 func typeArena[Raw any](types *types) (TypeKind, *arena.Arena[Raw]) {
@@ -166,6 +201,9 @@ func typeArena[Raw any](types *types) (TypeKind, *arena.Arena[Raw]) {
 	case rawTypeGeneric:
 		kind = TypeKindGeneric
 		arena_ = &types.generics
+	case rawTypeError:
+		kind = TypeKindError
+		arena_ = &types.errors
 	default:
 		panic("unknown type type " + reflect.TypeOf(raw).Name())
 	}
