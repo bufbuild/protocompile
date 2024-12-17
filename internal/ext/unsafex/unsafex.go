@@ -37,6 +37,14 @@ func Size[T any]() int {
 	return int(unsafe.Sizeof(v))
 }
 
+// Addr converts any pointer type into an address.
+//
+// This function is primarily intended for cases where the address will never
+// be turned back into a pointer.
+func Addr[P ~*E, E any](p P) uintptr {
+	return uintptr(unsafe.Pointer(p))
+}
+
 // Add is like [unsafe.Add], but it operates on a typed pointer and scales the
 // offset by that type's size, similar to pointer arithmetic in Rust or C.
 //

@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // CompactOptions represents the collection of options attached to a field-like declaration,
@@ -118,6 +119,14 @@ func (o CompactOptions) InsertComma(n int, option Option, comma token.Token) {
 // Span implements [report.Spanner].
 func (o CompactOptions) Span() report.Span {
 	return report.Join(o.Brackets())
+}
+
+// Trace returns a stack trace for the site at which o was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (o CompactOptions) Trace() string {
+	return o.Context().Nodes().traces[unsafex.Addr(o.raw)]
 }
 
 func wrapOptions(c Context, ptr arena.Pointer[rawCompactOptions]) CompactOptions {
