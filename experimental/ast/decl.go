@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 const (
@@ -185,6 +186,14 @@ type declImpl[Raw any] struct {
 func (d declImpl[Raw]) AsAny() DeclAny {
 	kind, arena := declArena[Raw](&d.Context().Nodes().decls)
 	return rawDecl{arena.Compress(d.raw).Untyped(), kind}.With(d.Context())
+}
+
+// Trace returns a stack trace for the site at which d was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (d declImpl[Raw]) Trace() string {
+	return d.Context().Nodes().traces[unsafex.Addr(d.raw)]
 }
 
 func wrapDecl[Raw any](ctx Context, ptr arena.Pointer[Raw]) declImpl[Raw] {

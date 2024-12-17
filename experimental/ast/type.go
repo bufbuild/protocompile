@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 const (
@@ -141,6 +142,14 @@ func (t typeImpl[Raw]) AsAny() TypeAny {
 
 	kind, arena := typeArena[Raw](&t.Context().Nodes().types)
 	return newTypeAny(t.Context(), wrapPathLike(kind, arena.Compress(t.raw)))
+}
+
+// Trace returns a stack trace for the site at which t was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (t typeImpl[Raw]) Trace() string {
+	return t.Context().Nodes().traces[unsafex.Addr(t.raw)]
 }
 
 // types is storage for every kind of Type in a Context.raw.
