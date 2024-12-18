@@ -38,10 +38,10 @@ func (v {{$ty}}) {{$name}}() string {
 
 var _{{$ty}}Strings = [...]string {
 {{range .Values}}{{if .Skip}}{{continue}}{{end}}	{{(index .Value.Names 0).Name}}: {{"" -}}
-    {{- if ne $e.Methods.StringFunc "" -}}
-        {{$e.Methods.StringFunc}}("{{(index .Value.Names 0).Name}}")
-    {{- else if ne .String "" -}}
+    {{- if ne .String "" -}}
         {{.String}}
+    {{- else if ne $e.Methods.StringFunc "" -}}
+        {{$e.Methods.StringFunc}}("{{(index .Value.Names 0).Name}}")
     {{- else -}}
         "{{(index .Value.Names 0).Name}}"
     {{- end }},
@@ -80,10 +80,10 @@ func {{$name}}(s string) {{$ty}} {
 
 var _{{$ty}}FromString = map[string]{{$ty}} {
 {{range .Values}}{{if .Skip}}{{continue}}{{end}}	{{"" -}}
-    {{- if ne $e.Methods.StringFunc "" -}}
-        {{$e.Methods.StringFunc}}("{{(index .Value.Names 0).Name}}")
-    {{- else if ne .String "" -}}
+    {{- if ne .String "" -}}
         {{.String}}
+    {{- else if ne $e.Methods.StringFunc "" -}}
+        {{$e.Methods.StringFunc}}("{{(index .Value.Names 0).Name}}")
     {{- else -}}
         "{{(index .Value.Names 0).Name}}"
     {{- end}}: {{(index .Value.Names 0).Name}},
