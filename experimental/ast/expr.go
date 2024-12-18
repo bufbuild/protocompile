@@ -23,6 +23,15 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
+
+// ExprKind is a kind of expression. There is one value of ExprKind for each
+// Expr* type in this package.
+//
+//enum:string
+//enum:gostring
+type ExprKind int8
+
 const (
 	ExprKindNil ExprKind = iota
 	ExprKindLiteral
@@ -33,10 +42,6 @@ const (
 	ExprKindDict
 	ExprKindField
 )
-
-// ExprKind is a kind of expression. There is one value of ExprKind for each
-// Expr* type in this package.
-type ExprKind int8
 
 // ExprAny is any ExprAny* type in this package.
 //

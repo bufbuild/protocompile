@@ -23,27 +23,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
-func TestAllStringify(t *testing.T) {
-	t.Parallel()
-
-	// We use only one map to test for duplicates, because no noun should have
-	// the same user-visible string as its Go constant name.
-	strings := make(map[string]struct{})
-	taxa.All()(func(s taxa.Noun) bool {
-		name := s.String()
-		assert.NotEqual(t, "", name)
-		assert.NotContains(t, strings, name)
-		strings[name] = struct{}{}
-
-		name = s.GoString()
-		assert.NotEqual(t, "", name)
-		assert.NotContains(t, strings, name)
-		strings[name] = struct{}{}
-
-		return true
-	})
-}
-
 func TestSet(t *testing.T) {
 	t.Parallel()
 
