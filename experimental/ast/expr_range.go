@@ -56,6 +56,10 @@ func (e ExprRange) Keyword() token.Token {
 
 // Span implements [report.Spanner].
 func (e ExprRange) Span() report.Span {
+	if e.Nil() {
+		return report.Span{}
+	}
+
 	lo, hi := e.Bounds()
 	return report.Join(lo, e.Keyword(), hi)
 }
