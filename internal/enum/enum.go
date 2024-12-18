@@ -74,7 +74,7 @@ func ParseDirectives(fs *token.FileSet, comments []*ast.CommentGroup) ([]Directi
 			var err error
 			var args []string
 			sc := scanner.Scanner{
-				Error: func(s *scanner.Scanner, msg string) {
+				Error: func(_ *scanner.Scanner, msg string) {
 					err = fmt.Errorf("%s", msg)
 				},
 				Mode: scanner.ScanIdents | scanner.ScanStrings | scanner.ScanRawStrings,
@@ -166,7 +166,7 @@ func Main() error {
 		case token.CONST:
 			var ty string
 			for _, spec := range decl.Specs {
-				v := spec.(*ast.ValueSpec)
+				v := spec.(*ast.ValueSpec) //nolint:errcheck
 				if v.Type == nil {
 					constsByType[ty] = append(constsByType[ty], v)
 				}
@@ -179,9 +179,9 @@ func Main() error {
 	}
 
 	imports := map[string]struct{}{"fmt": {}}
-	var enums []Enum
+	enums := make([]Enum, 0, len(types))
 	for _, ty := range types {
-		enum := Enum{Type: ty.Specs[0].(*ast.TypeSpec)}
+		enum := Enum{Type: ty.Specs[0].(*ast.TypeSpec)} //nolint:errcheck
 		dirs, err := ParseDirectives(fs, comments[ty])
 		if err != nil {
 			return err
