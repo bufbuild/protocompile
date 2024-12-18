@@ -23,11 +23,11 @@ import (
 
 // ExprArray represents an array of expressions between square brackets.
 //
-// ExprArray implements [Commas][ExprAny].
+// ExprArray implements [Commas].
 //
 // # Grammar
 //
-//	ExprArray := `[` (Expr ,)* Expr? `]`
+//	ExprArray := `[` (ExprJuxta `,`?)*`]`
 type ExprArray struct{ exprImpl[rawExprArray] }
 
 type rawExprArray struct {

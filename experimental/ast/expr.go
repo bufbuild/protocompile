@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//nolint:dupword
+//nolint:dupword // Disable for whole file, because the error is in a comment.
 package ast
 
 import (
@@ -54,9 +54,15 @@ type ExprKind int8
 // In addition to the Expr type, we define some exported productions for
 // handling operator precedence.
 //
-//	Expr     := ExprField | ExprOp1
-//	ExprOp   := ExprRange | ExprPrefix | ExprSolo
-//	ExprSolo := ExprLiteral | ExprPath | ExprArray | ExprDict
+//	Expr      := ExprField | ExprOp
+//	ExprJuxta := ExprFieldWithColon | ExprOp
+//	ExprOp    := ExprRange | ExprPrefix | ExprSolo
+//	ExprSolo  := ExprLiteral | ExprPath | ExprArray | ExprDict
+//
+// Note: ExprJuxta is the expression production that is unambiguous when
+// expressions are juxtaposed with each other; i.e., ExprJuxta* does not make
+// e.g. "foo {}" ambiguous between an [ExprField] or an [ExprPath] followed by
+// an [ExprDict].
 type ExprAny struct {
 	withContext // Must be nil if raw is nil.
 

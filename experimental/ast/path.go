@@ -34,7 +34,7 @@ import (
 //
 //	Path      := `.`? component (sep component)*
 //
-//	component := Ident | `(` Path `)`
+//	component := token.Ident | `(` Path `)`
 //	sep       := `.` | `/`
 type Path struct {
 	// The layout of this type is depended on in ast2/path.go

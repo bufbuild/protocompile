@@ -52,16 +52,14 @@ type DefKind int8
 //
 // # Grammar
 //
-//	DeclDef := (Type Path | Type | Ident) followers*`;`?
+//	DeclDef := (Type Path | Type | Ident) followers* (`;` | DeclBody)?
 //
-//	followers := inputs | outputs | value | CompactOptions | DeclBody
-//	inputs    := `(` (Type `,`)* Type? `)`
-//	outputs   := `returns` (Type | inputs)
+//	followers := inputs | outputs | value | CompactOptions
+//	inputs    := `(` (Type `,`?)* `)`
+//	outputs   := `returns` (Type | inputs)?
 //	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
 //
-// Note that this type will only record the first appearance of any follower,
-// and will stop parsing a def if it sees (but does not consume) a second
-// DeclBody follower.
+// Note that this type will only record the first appearance of any follower.
 type DeclDef struct{ declImpl[rawDeclDef] }
 
 type rawDeclDef struct {

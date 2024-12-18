@@ -30,7 +30,7 @@ import (
 //
 // # Grammar
 //
-//	CompactOptions := `[` (option `,`)* option? `]`
+//	CompactOptions := `[` (option `,`?)? `]`
 //	option         := Path [:=]? Expr?
 type CompactOptions struct {
 	withContext

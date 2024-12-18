@@ -52,6 +52,11 @@
 // The parser (and other parts of the compiler) will diagnose invalid Protobuf
 // syntax, but this AST is able to represent the extended syntax it documents.
 //
+// These grammars are provided for illustration only: the complete grammar is
+// ambiguous in the absence of greediness decisions, which, except where
+// otherwise noted, neither affect the parsing of correct Protobuf files, nor
+// are they specified and are subject to change.
+//
 // # AST Context
 //
 // Virtually all operations in this package involve a [Context] (no, not a

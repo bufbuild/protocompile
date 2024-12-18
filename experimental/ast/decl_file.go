@@ -81,6 +81,9 @@ func (f File) Imports() iter.Seq2[int, DeclImport] {
 // # Grammar
 //
 //	DeclSyntax := (`syntax` | `edition`) (`=`? Expr)? CompactOptions? `;`?
+//
+// Note: options are not permitted on syntax declarations in Protobuf, but we
+// parse them for diagnosis.
 type DeclSyntax struct{ declImpl[rawDeclSyntax] }
 
 type rawDeclSyntax struct {
@@ -171,6 +174,9 @@ func wrapDeclSyntax(c Context, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
 // # Grammar
 //
 //	DeclPackage := `package` Path? CompactOptions? `;`?
+//
+// Note: options are not permitted on package declarations in Protobuf, but we
+// parse them for diagnosis.
 type DeclPackage struct{ declImpl[rawDeclPackage] }
 
 type rawDeclPackage struct {
@@ -235,6 +241,9 @@ func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 // # Grammar
 //
 //	DeclImport := `import` (`weak` | `public`)? Expr? CompactOptions? `;`?
+//
+// Note: options are not permitted on import declarations in Protobuf, but we
+// parse them for diagnosis.
 type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {

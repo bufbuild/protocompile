@@ -29,7 +29,7 @@ import (
 // # Grammar
 //
 //	ExprDict := `{` fields `}` | `<` fields `>`
-//	fields := (Expr [,;]?)* Expr
+//	fields := (Expr (`,` | `;`)?)*
 //
 // Note that if a non-[ExprField] occurs as a field of a dict, the parser will
 // rewrite it into an [ExprField] with a missing key.
@@ -129,7 +129,11 @@ func (e ExprDict) Span() report.Span {
 //
 // # Grammar
 //
-//	ExprField := Expr [:=]
+//	ExprField := ExprFieldWithColon | Expr (ExprDict | ExprArray)
+//	ExprFieldWithColon := Expr (`:` | `=`) Expr
+//
+// Note: ExprFieldWithColon appears in ExprJuxta, the expression production that
+// is unambiguous when expressions are juxtaposed with each other.
 type ExprField struct{ exprImpl[rawExprField] }
 
 type rawExprField struct {

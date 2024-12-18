@@ -36,7 +36,7 @@ import (
 //
 // # Grammar
 //
-//	TypeGeneric := TypePath `<` (Type, )* Type? `>`
+//	TypeGeneric := TypePath `<` (Type `,`?`)* `>`
 type TypeGeneric struct{ typeImpl[rawTypeGeneric] }
 
 type rawTypeGeneric struct {

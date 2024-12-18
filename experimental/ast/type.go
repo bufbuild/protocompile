@@ -48,18 +48,19 @@ type TypeKind int8
 //
 //	Type := TypePath | TypePrefixed | TypeGeneric
 //
-// Note that there is an ambiguity when parsing a Type followed by a Path:
-// "optional optional foo" could be parsed as:
+// Note that parsing a type cannot always be greedy. Consider that, if parsed
+// as a type, "optional optional foo" could be parsed as:
 //
 //	TypePrefix{Optional, TypePrefix{Optional, TypePath("foo")}}
 //
-// However, this should be parsed as follows:
+// However, if we want to parse a type followed by a [Path], it needs to parse
+// as follows:
 //
-//	TypePrefix{Optional, TypePath("optional")}, TypePath("foo")
+//	TypePrefix{Optional, TypePath("optional")}, Path("foo")
 //
-// This means that when parsing a type followed by a path, we must reserve the
-// last path we see as the path to return, and only construct TypePrefixes
-// using all but this last path.
+// Thus, parsing a type is greedy except when the containing production contains
+// "Type Path?" or similar, in which case parsing must be greedy up to the last
+// [Path] it would otherwise consume.
 type TypeAny struct {
 	withContext // Must be nil if raw is nil.
 
