@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupword // Disable for whole file, because the error is in a comment.
 package ast
 
 import (
@@ -42,6 +43,24 @@ type TypeKind int8
 // This type is used in lieu of a putative Type interface type to avoid heap
 // allocations in functions that would return one of many different Type*
 // types.
+//
+// # Grammar
+//
+//	Type := TypePath | TypePrefixed | TypeGeneric
+//
+// Note that parsing a type cannot always be greedy. Consider that, if parsed
+// as a type, "optional optional foo" could be parsed as:
+//
+//	TypePrefix{Optional, TypePrefix{Optional, TypePath("foo")}}
+//
+// However, if we want to parse a type followed by a [Path], it needs to parse
+// as follows:
+//
+//	TypePrefix{Optional, TypePath("optional")}, Path("foo")
+//
+// Thus, parsing a type is greedy except when the containing production contains
+// "Type Path?" or similar, in which case parsing must be greedy up to the last
+// [Path] it would otherwise consume.
 type TypeAny struct {
 	withContext // Must be nil if raw is nil.
 
