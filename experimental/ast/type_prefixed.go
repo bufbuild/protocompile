@@ -15,8 +15,6 @@
 package ast
 
 import (
-	"fmt"
-
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -94,19 +92,27 @@ func (t TypePrefixed) Span() report.Span {
 	return report.Join(t.PrefixToken(), t.Type())
 }
 
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
+
+// TypeKind is a kind of type. There is one value of TypeKind for each
+// Type* type in this package.
+//
+// TypePrefix is a prefix for a type, such as required, optional, or repeated.
+//
+//enum:string
+//enum:gostring
+type TypePrefix int8
+
 const (
-	TypePrefixUnknown TypePrefix = iota
-	TypePrefixOptional
-	TypePrefixRepeated
-	TypePrefixRequired
+	TypePrefixUnknown  TypePrefix = iota //enum:string unknown
+	TypePrefixOptional                   //enum:string optional
+	TypePrefixRepeated                   //enum:string repeated
+	TypePrefixRequired                   //enum:string required
 
 	// This is the "stream Foo.bar" syntax of RPC methods. It is also treated as
 	// a prefix.
-	TypePrefixStream
+	TypePrefixStream //enum:string stream
 )
-
-// TypePrefix is a prefix for a type, such as required, optional, or repeated.
-type TypePrefix int8
 
 // TypePrefixByName looks up a prefix kind by name.
 //
@@ -123,23 +129,5 @@ func TypePrefixByName(name string) TypePrefix {
 		return TypePrefixStream
 	default:
 		return TypePrefixUnknown
-	}
-}
-
-// String implements [strings.Stringer].
-func (m TypePrefix) String() string {
-	switch m {
-	case TypePrefixUnknown:
-		return "unknown"
-	case TypePrefixOptional:
-		return "optional"
-	case TypePrefixRepeated:
-		return "repeated"
-	case TypePrefixRequired:
-		return "required"
-	case TypePrefixStream:
-		return "stream"
-	default:
-		return fmt.Sprintf("modifier%d", int(m))
 	}
 }

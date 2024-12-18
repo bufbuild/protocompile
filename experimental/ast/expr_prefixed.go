@@ -19,13 +19,15 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-const (
-	ExprPrefixUnknown ExprPrefix = iota
-	ExprPrefixMinus
-)
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
 
 // ExprPrefix is a prefix for an expression, such as a minus sign.
 type ExprPrefix int8
+
+const (
+	ExprPrefixUnknown ExprPrefix = iota //enum:string unknown
+	ExprPrefixMinus                     //enum:string "-"
+)
 
 // ExprPrefixByName looks up a prefix kind by name.
 //

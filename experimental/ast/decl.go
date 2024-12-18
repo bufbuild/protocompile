@@ -22,6 +22,15 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
+
+// DeclKind is a kind of declaration. There is one value of DeclKind for each
+// Decl* type in this package.
+//
+//enum:string
+//enum:gostring
+type DeclKind int8
+
 const (
 	DeclKindInvalid DeclKind = iota
 	DeclKindEmpty
@@ -32,10 +41,6 @@ const (
 	DeclKindBody
 	DeclKindRange
 )
-
-// DeclKind is a kind of declaration. There is one value of DeclKind for each
-// Decl* type in this package.
-type DeclKind int8
 
 // DeclAny is any Decl* type in this package.
 //
