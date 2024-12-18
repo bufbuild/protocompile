@@ -36,6 +36,10 @@ func (d DeclEmpty) Semicolon() token.Token {
 
 // Span implements [report.Spanner].
 func (d DeclEmpty) Span() report.Span {
+	if d.Nil() {
+		return report.Span{}
+	}
+
 	return d.Semicolon().Span()
 }
 

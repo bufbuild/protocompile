@@ -52,15 +52,16 @@ func (d DeclBody) Braces() token.Token {
 
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
-	if !d.Braces().Nil() {
-		return d.Braces().Span()
-	}
-
-	if d.Len() == 0 {
+	switch {
+	case d.Nil():
 		return report.Span{}
+	case !d.Braces().Nil():
+		return d.Braces().Span()
+	case d.Len() == 0:
+		return report.Span{}
+	default:
+		return report.Join(d.At(0), d.At(d.Len()-1))
 	}
-
-	return report.Join(d.At(0), d.At(d.Len()-1))
 }
 
 // Len returns the number of declarations inside of this body.

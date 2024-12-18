@@ -117,7 +117,11 @@ func (o CompactOptions) InsertComma(n int, option Option, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (o CompactOptions) Span() report.Span {
-	return report.Join(o.Brackets())
+	if o.Nil() {
+		return report.Span{}
+	}
+
+	return o.Brackets().Span()
 }
 
 func wrapOptions(c Context, ptr arena.Pointer[rawCompactOptions]) CompactOptions {

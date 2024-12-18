@@ -65,6 +65,10 @@ func (t TypePrefixed) SetType(ty TypeAny) {
 
 // Span implements [report.Spanner].
 func (t TypePrefixed) Span() report.Span {
+	if t.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(t.PrefixToken(), t.Type())
 }
 

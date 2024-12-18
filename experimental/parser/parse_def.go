@@ -194,12 +194,7 @@ func (defInputs) parse(p *defParser) report.Span {
 	return next.Span()
 }
 
-func (defInputs) prev(p *defParser) report.Span {
-	if p.inputs.Nil() {
-		return report.Span{}
-	}
-	return p.inputs.Span()
-}
+func (defInputs) prev(p *defParser) report.Span { return p.inputs.Span() }
 
 type defOutputs struct{}
 
@@ -239,14 +234,10 @@ func (defOutputs) parse(p *defParser) report.Span {
 }
 
 func (defOutputs) prev(p *defParser) report.Span {
-	switch {
-	case !p.outputs.Nil():
-		return report.Join(p.args.Returns, p.outputs)
-	case !p.outputTy.Nil():
+	if !p.outputTy.Nil() {
 		return report.Join(p.args.Returns, p.outputTy)
-	default:
-		return report.Span{}
 	}
+	return report.Join(p.args.Returns, p.outputs)
 }
 
 type defValue struct{}
@@ -333,12 +324,7 @@ func (defOptions) parse(p *defParser) report.Span {
 	return next.Span()
 }
 
-func (defOptions) prev(p *defParser) report.Span {
-	if p.args.Options.Nil() {
-		return report.Span{}
-	}
-	return p.args.Options.Span()
-}
+func (defOptions) prev(p *defParser) report.Span { return p.args.Options.Span() }
 
 type defBody struct{}
 
@@ -357,9 +343,4 @@ func (defBody) parse(p *defParser) report.Span {
 	return next.Span()
 }
 
-func (defBody) prev(p *defParser) report.Span {
-	if p.braces.Nil() {
-		return report.Span{}
-	}
-	return p.braces.Span()
-}
+func (defBody) prev(p *defParser) report.Span { return p.braces.Span() }

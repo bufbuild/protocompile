@@ -16,8 +16,6 @@ package report
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/experimental/internal"
 )
 
 // Level represents the severity of a diagnostic message.
@@ -128,8 +126,7 @@ func InFile(path string) DiagnosticOption {
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
-// If at is nil (be it a nil interface, or a value that has a Nil() function
-// that returns true), or returns a nil span, this function will return nil.
+// If at is nil or returns the nil span, the returned DiagnosticOption is a no-op.
 func Snippet(at Spanner) DiagnosticOption {
 	return Snippetf(at, "")
 }
@@ -142,20 +139,10 @@ func Snippet(at Spanner) DiagnosticOption {
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
-// If at is nil (be it a nil interface, or a value that has a Nil() function
-// that returns true), or returns a nil span, this function will return nil.
+// If at is nil or returns the nil span, the returned DiagnosticOption is a no-op.
 func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
-	if internal.Nil(at) {
-		return nil
-	}
-
-	span := at.Span()
-	if span.Nil() {
-		return nil
-	}
-
 	return snippet{
-		Span:    span,
+		Span:    getSpan(at),
 		message: fmt.Sprintf(format, args...),
 	}
 }
@@ -201,6 +188,10 @@ type snippet struct {
 }
 
 func (a snippet) apply(d *Diagnostic) {
+	if a.Span.Nil() {
+		return
+	}
+
 	a.primary = len(d.snippets) == 0
 	d.snippets = append(d.snippets, a)
 }

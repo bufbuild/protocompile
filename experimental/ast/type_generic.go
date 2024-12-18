@@ -77,6 +77,10 @@ func (t TypeGeneric) Args() TypeList {
 
 // Span implements [report.Spanner].
 func (t TypeGeneric) Span() report.Span {
+	if t.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(t.Path(), t.Args())
 }
 
@@ -159,13 +163,14 @@ func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (d TypeList) Span() report.Span {
-	if !d.Brackets().Nil() {
+	switch {
+	case d.Nil():
+		return report.Span{}
+	case !d.Brackets().Nil():
 		return d.Brackets().Span()
+	case d.Len() == 0:
+		return report.Span{}
+	default:
+		return report.Join(d.At(0), d.At(d.Len()-1))
 	}
-
-	var span report.Span
-	for _, arg := range d.raw.args {
-		span = report.Join(span, newTypeAny(d.Context(), arg.Value), arg.Comma.In(d.Context()))
-	}
-	return span
 }

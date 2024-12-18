@@ -431,6 +431,7 @@ func (d DeclDef) Span() report.Span {
 	if d.Nil() {
 		return report.Span{}
 	}
+
 	return report.Join(
 		d.Type(),
 		d.Name(),
@@ -485,6 +486,10 @@ func (s Signature) Outputs() TypeList {
 
 // Span implemented [report.Spanner].
 func (s Signature) Span() report.Span {
+	if s.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(s.Inputs(), s.Returns(), s.Outputs())
 }
 

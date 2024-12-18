@@ -109,6 +109,10 @@ func (e ExprDict) AsMessage() Commas[ExprField] {
 
 // Span implements [report.Spanner].
 func (e ExprDict) Span() report.Span {
+	if e.Nil() {
+		return report.Span{}
+	}
+
 	return e.Braces().Span()
 }
 
@@ -165,5 +169,9 @@ func (e ExprField) SetValue(expr ExprAny) {
 
 // Span implements [report.Spanner].
 func (e ExprField) Span() report.Span {
+	if e.Nil() {
+		return report.Span{}
+	}
+
 	return report.Join(e.Key(), e.Colon(), e.Value())
 }

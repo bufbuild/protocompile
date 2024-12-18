@@ -134,11 +134,18 @@ func (d DeclRange) Semicolon() token.Token {
 
 // Span implements [report.Spanner].
 func (d DeclRange) Span() report.Span {
-	span := report.Join(d.Keyword(), d.Semicolon(), d.Options())
-	for _, arg := range d.raw.args {
-		span = report.Join(span, newExprAny(d.Context(), arg.Value), arg.Comma.In(d.Context()))
+	switch {
+	case d.Nil():
+		return report.Span{}
+	case d.Len() == 0:
+		return report.Join(d.Keyword(), d.Semicolon(), d.Options())
+	default:
+		return report.Join(
+			d.Keyword(), d.Semicolon(), d.Options(),
+			d.At(0),
+			d.At(d.Len()-1),
+		)
 	}
-	return span
 }
 
 func wrapDeclRange(c Context, ptr arena.Pointer[rawDeclRange]) DeclRange {

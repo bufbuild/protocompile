@@ -22,7 +22,6 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
@@ -30,9 +29,20 @@ import (
 // TabstopWidth is the size we render all tabstops as.
 const TabstopWidth int = 4
 
-// Spanner is any type with a span.
+// Spanner is any type with a [Span].
 type Spanner interface {
+	// Should return the zero [Span] to indicate that it does not contribute
+	// span information.
 	Span() Span
+}
+
+// getSpan extracts a span from a Spanner, but returns the nil span when
+// s is nil, which would otherwise panic.
+func getSpan(s Spanner) Span {
+	if s == nil {
+		return Span{}
+	}
+	return s.Span()
 }
 
 // Span is a location within a [File].
@@ -92,11 +102,7 @@ func Join(spans ...Spanner) Span {
 func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	joined := Span{Start: math.MaxInt}
 	seq(func(spanner S) bool {
-		if internal.Nil(spanner) {
-			return true
-		}
-
-		span := spanner.Span()
+		span := getSpan(spanner)
 		if span.Nil() {
 			return true
 		}
