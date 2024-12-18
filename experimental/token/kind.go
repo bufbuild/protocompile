@@ -14,7 +14,13 @@
 
 package token
 
-import "fmt"
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
+
+// Kind identifies what kind of token a particular [Token] is.
+//
+//enum:string
+//enum:gostring
+type Kind byte
 
 const (
 	Unrecognized Kind = iota // Unrecognized garbage in the input file.
@@ -26,38 +32,14 @@ const (
 	Number      // A run of digits that is some kind of number.
 	Punct       // Some punctuation. May be a non-leaf for delimiters like {}.
 	_KindUnused // Reserved for future use.
+	//enum:skip
 
 	// DO NOT ADD MORE TOKEN KINDS: ONLY THREE BITS ARE AVAILABLE
 	// TO STORE THEM.
 )
 
-// Kind identifies what kind of token a particular [Token] is.
-type Kind byte
-
 // IsSkippable returns whether this is a token that should be examined during
 // syntactic analysis.
 func (t Kind) IsSkippable() bool {
 	return t == Space || t == Comment || t == Unrecognized
-}
-
-// String implements [strings.Stringer].
-func (t Kind) String() string {
-	switch t {
-	case Unrecognized:
-		return "Unrecognized"
-	case Space:
-		return "Space"
-	case Comment:
-		return "Comment"
-	case Ident:
-		return "Ident"
-	case String:
-		return "String"
-	case Number:
-		return "Number"
-	case Punct:
-		return "Punct"
-	default:
-		return fmt.Sprintf("token.Kind(%d)", int(t))
-	}
 }

@@ -23,123 +23,125 @@ package taxa
 
 import (
 	"fmt"
-	"strconv"
-
-	"github.com/bufbuild/protocompile/internal/iter"
 )
+
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
 
 // Noun is a syntactic or semantic element within the grammar that can be
 // referred to within a diagnostic.
+//
+//enum:string
+//enum:gostring
 type Noun int
 
 const (
-	Unknown Noun = iota
-	Unrecognized
-	TopLevel
-	EOF
+	Unknown      Noun = iota //enum:string "<unknown>"
+	Unrecognized             //enum:string "unrecognized token"
+	TopLevel                 //enum:string "file scope"
+	EOF                      //enum:string "end-of-file"
 
-	Decl
-	Empty
-	Syntax
-	Edition
-	Package
-	Import
-	WeakImport
-	PublicImport
-	Extensions
-	Reserved
-	Body
+	Decl         //enum:string "declaration"
+	Empty        //enum:string "empty declaration"
+	Syntax       //enum:string "`syntax` declaration"
+	Edition      //enum:string "`edition` declaration"
+	Package      //enum:string "`package` declaration"
+	Import       //enum:string "import"
+	WeakImport   //enum:string "weak import"
+	PublicImport //enum:string "public import"
+	Extensions   //enum:string "extension range"
+	Reserved     //enum:string "reserved range"
+	Body         //enum:string "definition body"
 
-	Def
-	Message
-	Enum
-	Service
-	Extend
-	Oneof
+	Def     //enum:string "definition"
+	Message //enum:string "message definition"
+	Enum    //enum:string "enum definition"
+	Service //enum:string "service definition"
+	Extend  //enum:string "message extension block"
+	Oneof   //enum:string "oneof definition"
 
-	Option
-	CustomOption
+	Option       //enum:string "option setting"
+	CustomOption //enum:string "custom option setting"
 
-	Field
-	EnumValue
-	Method
+	Field     //enum:string "message field"
+	EnumValue //enum:string "enum value"
+	Method    //enum:string "service method"
 
-	FieldTag
-	OptionValue
+	CompactOptions //enum:string "compact options"
+	MethodIns      //enum:string "method parameter list"
+	MethodOuts     //enum:string "method return type"
 
-	CompactOptions
-	MethodIns
-	MethodOuts
+	FieldTag    //enum:string "message field tag"
+	OptionValue //enum:string "option setting value"
 
-	QualifiedName
-	FullyQualifiedName
-	ExtensionName
+	QualifiedName      //enum:string "qualified name"
+	FullyQualifiedName //enum:string "fully qualified name"
+	ExtensionName      //enum:string "extension name"
 
-	Expr
-	Range
-	Array
-	Dict
-	DictField
+	Expr      //enum:string "expression"
+	Range     //enum:string "range expression"
+	Array     //enum:string "array expression"
+	Dict      //enum:string "message expression"
+	DictField //enum:string "message field value"
 
-	Type
-	TypePath
-	TypeParams
+	Type       //enum:string "type"
+	TypePath   //enum:string "type name"
+	TypeParams //enum:string "type parameters"
 
-	Whitespace
-	Comment
-	Ident
-	String
-	Float
-	Int
+	Whitespace //enum:string "whitespace"
+	Comment    //enum:string "comment"
+	Ident      //enum:string "identifier"
+	String     //enum:string "string literal"
+	Float      //enum:string "floating-point literal"
+	Int        //enum:string "integer literal"
 
-	Semicolon
-	Comma
-	Slash
-	Colon
-	Equals
-	Minus
-	Period
+	Semicolon //enum:string "`;`"
+	Comma     //enum:string "`,`"
+	Slash     //enum:string "`/`"
+	Colon     //enum:string "`:`"
+	Equals    //enum:string "`=`"
+	Minus     //enum:string "`-`"
+	Period    //enum:string "`.`"
 
-	LParen
-	LBracket
-	LBrace
-	LAngle
+	LParen   //enum:string "`(`"
+	LBracket //enum:string "`[`"
+	LBrace   //enum:string "`{`"
+	LAngle   //enum:string "`<`"
 
-	RParen
-	RBracket
-	RBrace
-	RAngle
+	RParen   //enum:string "`)`"
+	RBracket //enum:string "`]`"
+	RBrace   //enum:string "`}`"
+	RAngle   //enum:string "`>`"
 
-	Parens
-	Brackets
-	Braces
-	Angles
+	Parens   //enum:string "`(...)`"
+	Brackets //enum:string "`[...]`"
+	Braces   //enum:string "`{...}`"
+	Angles   //enum:string "`<...>`"
 
-	KeywordSyntax
-	KeywordEdition
-	KeywordImport
-	KeywordWeak
-	KeywordPublic
-	KeywordPackage
+	KeywordSyntax  //enum:string "`syntax`"
+	KeywordEdition //enum:string "`edition`"
+	KeywordImport  //enum:string "`import`"
+	KeywordWeak    //enum:string "`weak`"
+	KeywordPublic  //enum:string "`public`"
+	KeywordPackage //enum:string "`package`"
 
-	KeywordOption
-	KeywordMessage
-	KeywordEnum
-	KeywordService
-	KeywordExtend
-	KeywordOneof
+	KeywordOption  //enum:string "`option`"
+	KeywordMessage //enum:string "`message`"
+	KeywordEnum    //enum:string "`enum`"
+	KeywordService //enum:string "`service`"
+	KeywordExtend  //enum:string "`extend`"
+	KeywordOneof   //enum:string "`oneof`"
 
-	KeywordExtensions
-	KeywordReserved
-	KeywordTo
-	KeywordRPC
-	KeywordReturns
+	KeywordExtensions //enum:string "`extensions`"
+	KeywordReserved   //enum:string "`reserved`"
+	KeywordTo         //enum:string "`to`"
+	KeywordRPC        //enum:string "`rpc`"
+	KeywordReturns    //enum:string "`returns`"
 
-	KeywordOptional
-	KeywordRepeated
-	KeywordRequired
-	KeywordGroup
-	KeywordStream
+	KeywordOptional //enum:string "`optional`"
+	KeywordRepeated //enum:string "`repeated`"
+	KeywordRequired //enum:string "`required`"
+	KeywordGroup    //enum:string "`group`"
+	KeywordStream   //enum:string "`stream`"
 
 	// total is the total number of known [What] values.
 	total int = iota
@@ -163,35 +165,6 @@ func (s Noun) Without() Place {
 // AsSet returns a singleton set containing this What.
 func (s Noun) AsSet() Set {
 	return NewSet(s)
-}
-
-// String implements [fmt.Stringer].
-func (s Noun) String() string {
-	if int(s) >= len(names) {
-		return names[0]
-	}
-	return names[s]
-}
-
-// All returns an iterator over all subjects.
-func All() iter.Seq[Noun] {
-	return func(yield func(Noun) bool) {
-		for i := 0; i < total; i++ {
-			if !yield(Noun(i)) {
-				break
-			}
-		}
-	}
-}
-
-// GoString implements [fmt.GoStringer].
-//
-// This exists to get pretty output out of the assert package.
-func (s Noun) GoString() string {
-	if int(s) >= len(constNames) {
-		return strconv.Itoa(int(s))
-	}
-	return "what." + constNames[s]
 }
 
 // Place is a location within the grammar that can be referred to within a
