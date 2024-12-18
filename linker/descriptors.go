@@ -30,6 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/ast"
 	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/internal/editions"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/protoutil"
 )
@@ -280,8 +281,8 @@ func (r *result) SourceLocations() protoreflect.SourceLocations {
 	return &r.srcLocations
 }
 
-func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[any]int {
-	index := map[any]int{}
+func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[sourcePathKey]int {
+	index := map[sourcePathKey]int{}
 	for i, loc := range locs {
 		if loc.Next == 0 {
 			index[pathKey(loc.Path)] = i
@@ -292,7 +293,7 @@ func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[any]int {
 
 func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []protoreflect.SourceLocation {
 	locs := make([]protoreflect.SourceLocation, len(srcInfoProtos))
-	prev := map[any]*protoreflect.SourceLocation{}
+	prev := map[sourcePathKey]*protoreflect.SourceLocation{}
 	for i, loc := range srcInfoProtos {
 		var stLin, stCol, enLin, enCol int
 		if len(loc.Span) == 3 {
@@ -368,7 +369,7 @@ type srcLocs struct {
 	protoreflect.SourceLocations
 	file  *result
 	locs  []protoreflect.SourceLocation
-	index map[any]int
+	index map[sourcePathKey]int
 }
 
 func (s *srcLocs) Len() int {
@@ -1881,4 +1882,10 @@ func resolveFeature(element protoreflect.Descriptor, feature protoreflect.FieldD
 func isJSONCompliant(d protoreflect.Descriptor) bool {
 	jsonFormat := resolveFeature(d, jsonFormatField)
 	return descriptorpb.FeatureSet_JsonFormat(jsonFormat.Enum()) == descriptorpb.FeatureSet_ALLOW
+}
+
+type sourcePathKey string
+
+func pathKey(p protoreflect.SourcePath) sourcePathKey {
+	return sourcePathKey(unsafex.StringAlias(p))
 }
