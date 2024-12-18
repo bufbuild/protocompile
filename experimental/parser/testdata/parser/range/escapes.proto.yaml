@@ -1,0 +1,15 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      body.decls:
+        - range:
+            kind: KIND_RESERVED
+            ranges: [{ literal.string_value: "foobar" }]
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.string_value: "foo\n"
+              - literal.string_value: "bar"

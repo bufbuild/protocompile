@@ -16,8 +16,8 @@ package parser
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -30,7 +30,7 @@ type errInvalidNumber struct {
 // Diagnose implements [report.Diagnose].
 func (e errInvalidNumber) Diagnose(d *report.Diagnostic) {
 	d.Apply(
-		report.Message("unexpected characters in %s literal", intOrFloat(e.Token)),
+		report.Message("unexpected characters in %s", taxa.Classify(e.Token)),
 		report.Snippet(e.Token),
 	)
 
@@ -48,7 +48,7 @@ type errInvalidBase struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
-	d.Apply(report.Message("unsupported base for %s literal", intOrFloat(e.Token)))
+	d.Apply(report.Message("unsupported base for %s", taxa.Classify(e.Token)))
 
 	var base string
 	switch e.Base {
@@ -62,7 +62,7 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 		base = fmt.Sprintf("base-%d", e.Base)
 	}
 
-	isFloat := isFloatLiteral(e.Token)
+	isFloat := taxa.IsFloat(e.Token)
 	if !isFloat && e.Base == 8 {
 		d.Apply(
 			report.Snippetf(e.Token, "replace `0o` with `0`"),
@@ -94,25 +94,8 @@ type errThousandsSep struct {
 // Diagnose implements [report.Diagnose].
 func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
 	d.Apply(
-		report.Message("%s literal contains underscores", intOrFloat(e.Token)),
+		report.Message("%s contains underscores", taxa.Classify(e.Token)),
 		report.Snippet(e.Token),
 		report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
 	)
-}
-
-func intOrFloat(tok token.Token) string {
-	switch {
-	case isFloatLiteral(tok):
-		return "floating-point"
-	default:
-		return "integer"
-	}
-}
-
-func isFloatLiteral(tok token.Token) bool {
-	digits := tok.Text()
-	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
-		return strings.ContainsRune(digits, '.')
-	}
-	return strings.ContainsAny(digits, ".eE")
 }

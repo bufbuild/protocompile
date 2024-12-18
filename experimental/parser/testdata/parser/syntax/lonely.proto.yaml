@@ -1,0 +1,4 @@
+decls:
+  - syntax.kind: KIND_EDITION
+  - syntax.kind: KIND_SYNTAX
+  - package.path.components: [{ ident: "test" }]
