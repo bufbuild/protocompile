@@ -26,7 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-func TestNilSpans(t *testing.T) {
+func TestZero(t *testing.T) {
 	t.Parallel()
 
 	testZero[ast.DeclAny](t)
