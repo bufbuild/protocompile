@@ -38,12 +38,16 @@ type ExprRangeArgs struct {
 
 // Bounds returns this range's bounds. These are inclusive bounds.
 func (e ExprRange) Bounds() (start, end ExprAny) {
+	if e.IsZero() {
+		return ExprAny{}, ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.start), newExprAny(e.Context(), e.raw.end)
 }
 
 // SetBounds set the expressions for this range's bounds.
 //
-// Clears the respective expressions when passed a nil expression.
+// Clears the respective expressions when passed a zero expression.
 func (e ExprRange) SetBounds(start, end ExprAny) {
 	e.raw.start = start.raw
 	e.raw.end = end.raw
@@ -51,12 +55,16 @@ func (e ExprRange) SetBounds(start, end ExprAny) {
 
 // Keyword returns the "to" keyword for this range.
 func (e ExprRange) Keyword() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.to.In(e.Context())
 }
 
 // Span implements [report.Spanner].
 func (e ExprRange) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

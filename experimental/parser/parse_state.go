@@ -39,7 +39,7 @@ func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.To
 	}
 
 	wanted := taxa.NewSet(taxa.Punct(want, false))
-	if next.Nil() {
+	if next.IsZero() {
 		tok, span := c.JustAfter()
 		err := errUnexpected{
 			what:  span,
@@ -47,14 +47,14 @@ func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.To
 			want:  wanted,
 			got:   taxa.EOF,
 		}
-		if !tok.Nil() {
+		if !tok.IsZero() {
 			err.got = taxa.Classify(tok)
 		}
 
-		return token.Nil, err
+		return token.Zero, err
 	}
 
-	return token.Nil, errUnexpected{
+	return token.Zero, errUnexpected{
 		what:  next,
 		where: where,
 		want:  wanted,

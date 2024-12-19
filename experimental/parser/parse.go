@@ -62,7 +62,7 @@ func parse(ctx ast.Context, errs *report.Report) {
 	for !c.Done() {
 		ensureProgress(c, &mark)
 		node := parseDecl(p, c, taxa.TopLevel)
-		if !node.Nil() {
+		if !node.IsZero() {
 			root.Append(node)
 		}
 	}

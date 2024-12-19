@@ -47,15 +47,19 @@ var (
 
 // Braces returns this body's surrounding braces, if it has any.
 func (d DeclBody) Braces() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.braces.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
 	switch {
-	case d.Nil():
+	case d.IsZero():
 		return report.Span{}
-	case !d.Braces().Nil():
+	case !d.Braces().IsZero():
 		return d.Braces().Span()
 	case d.Len() == 0:
 		return report.Span{}
@@ -66,6 +70,10 @@ func (d DeclBody) Span() report.Span {
 
 // Len returns the number of declarations inside of this body.
 func (d DeclBody) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.ptrs)
 }
 
@@ -76,6 +84,10 @@ func (d DeclBody) At(n int) DeclAny {
 
 // Iter is an iterator over the nodes inside this body.
 func (d DeclBody) Iter(yield func(int, DeclAny) bool) {
+	if d.IsZero() {
+		return
+	}
+
 	for i := range d.raw.kinds {
 		if !yield(i, d.At(i)) {
 			break

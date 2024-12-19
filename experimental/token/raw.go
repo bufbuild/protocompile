@@ -32,8 +32,8 @@ import (
 // opaque.
 type ID int32
 
-// Nil returns whether or not this is the nil representation.
-func (t ID) Nil() bool {
+// IsZero returns whether or not this is the nil representation.
+func (t ID) IsZero() bool {
 	return t == 0
 }
 
@@ -44,7 +44,7 @@ func (t ID) Nil() bool {
 // caller is responsible for ensuring that themselves.
 func (t ID) In(c Context) Token {
 	if t == 0 {
-		return Nil
+		return Zero
 	}
 	return Token{internal.NewWith(c), t}
 }
