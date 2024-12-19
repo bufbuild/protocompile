@@ -112,6 +112,10 @@ func (d TypeList) Brackets() token.Token {
 
 // Len implements [Slice].
 func (d TypeList) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.args)
 }
 

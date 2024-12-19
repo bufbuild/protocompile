@@ -59,6 +59,10 @@ func (o CompactOptions) Brackets() token.Token {
 
 // Len implements [Slice].
 func (o CompactOptions) Len() int {
+	if o.IsZero() {
+		return 0
+	}
+
 	return len(o.raw.options)
 }
 

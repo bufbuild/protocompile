@@ -64,6 +64,10 @@ func (d DeclRange) IsReserved() bool {
 
 // Len implements [Slice].
 func (d DeclRange) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.args)
 }
 

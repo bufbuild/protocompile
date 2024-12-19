@@ -42,6 +42,10 @@ func (e ExprArray) Brackets() token.Token {
 
 // Len implements [Slice].
 func (e ExprArray) Len() int {
+	if e.IsZero() {
+		return 0
+	}
+
 	return len(e.raw.args)
 }
 

@@ -41,6 +41,10 @@ func (e ExprDict) Braces() token.Token {
 
 // Len implements [Slice].
 func (e ExprDict) Len() int {
+	if e.IsZero() {
+		return 0
+	}
+
 	return len(e.raw.fields)
 }
 

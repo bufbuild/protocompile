@@ -21,7 +21,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
@@ -119,7 +118,7 @@ func (c *protoEncoder) file(file ast.File) *compilerpb.File {
 }
 
 func (c *protoEncoder) span(s report.Spanner) *compilerpb.Span {
-	if c.OmitSpans || internal.IsZero(s) {
+	if c.OmitSpans || s == nil {
 		return nil
 	}
 
@@ -141,7 +140,7 @@ type commas interface {
 }
 
 func (c *protoEncoder) commas(cs commas) []*compilerpb.Span {
-	if c.OmitSpans || internal.IsZero(cs) {
+	if c.OmitSpans {
 		return nil
 	}
 
