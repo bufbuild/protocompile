@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	DeclKindZero DeclKind = iota
+	DeclKindInvalid DeclKind = iota
 	DeclKindEmpty
 	DeclKindSyntax
 	DeclKindPackage
@@ -166,7 +166,7 @@ type rawDecl struct {
 }
 
 func (d rawDecl) With(c Context) DeclAny {
-	if c == nil || d.ptr.Nil() || d.kind == DeclKindZero {
+	if c == nil || d.ptr.Nil() || d.kind == DeclKindInvalid {
 		return DeclAny{}
 	}
 
