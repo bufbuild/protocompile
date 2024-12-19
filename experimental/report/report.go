@@ -32,10 +32,15 @@ import (
 // all write to Report at the same time). Instead, the recommendation is to create
 // multiple reports and then merge them, using [Report.Sort] to canonicalize the result.
 type Report struct {
+	Options
+
 	// The actual diagnostics on this report. Generally, you'll want to use one of
 	// the helpers like [Report.Error] instead of appending directly.
 	Diagnostics []Diagnostic
+}
 
+// Options for how a report should be constructed.
+type Options struct {
 	// The stage to apply to any new diagnostics created with this report.
 	//
 	// Diagnostics with the same stage will sort together. See [Report.Sort].

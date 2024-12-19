@@ -21,6 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
@@ -50,14 +51,10 @@ func (t *Task) Context() context.Context {
 	return t.ctx
 }
 
-// Error adds errors to the current query, which will be propagated to all
-// queries which depend on it.
-//
-// This will not cause the query to fail; instead, [Query].Execute should
-// return false for the ok value to signal failure.
-func (t *Task) NonFatal(errs ...error) {
+// Report returns the diagnostic report for this task.
+func (t *Task) Report() *report.Report {
 	t.checkDone()
-	t.result.NonFatal = append(t.result.NonFatal, errs...)
+	return &t.task.report
 }
 
 // Resolve executes a set of queries in parallel. Each query is run on its own
@@ -111,7 +108,6 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 					results[i].Value = r.Value.(T) //nolint:errcheck
 				}
 
-				results[i].NonFatal = r.NonFatal
 				results[i].Fatal = r.Fatal
 				results[i].Changed = r.runID == caller.runID
 			}
@@ -182,6 +178,7 @@ type task struct {
 	// If this task has not been started yet, this is nil.
 	// Otherwise, if it is complete, result.done will be closed.
 	result atomic.Pointer[result]
+	report report.Report
 }
 
 // Result is the Result of executing a query on an [Executor], either via
@@ -189,8 +186,7 @@ type task struct {
 type Result[T any] struct {
 	Value T // Value is unspecified if Fatal is non-nil.
 
-	NonFatal []error
-	Fatal    error
+	Fatal error
 
 	// Set if this result has possibly changed since the last time [Run] call in
 	// which this query was computed.

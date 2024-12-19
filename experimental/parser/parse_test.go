@@ -42,7 +42,7 @@ func TestParse(t *testing.T) {
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
-		errs := &report.Report{Tracing: 10}
+		errs := &report.Report{Options: report.Options{Tracing: 10}}
 		file, _ := Parse(report.NewFile(path, text), errs)
 
 		errs.Sort()
