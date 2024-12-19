@@ -46,6 +46,11 @@ type Option struct {
 	Value  ExprAny
 }
 
+// Span implements [report.Spanner].
+func (o Option) Span() report.Span {
+	return report.Join(o.Path, o.Equals, o.Value)
+}
+
 type rawOption struct {
 	path   rawPath
 	equals token.ID

@@ -60,31 +60,40 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 				}).AsAny()
 
 			case "{", "<", "[": // This is for colon-less, array or dict-valued fields.
-				if !next.IsLeaf() && lhs.Kind() != ast.ExprKindField {
-					// The previous expression cannot also be a key-value pair, since
-					// this messes with parsing of dicts, which are not comma-separated.
-					//
-					// In other words, consider the following, inside of an expression
-					// context:
-					//
-					// foo: bar { ... }
-					//
-					// We want to diagnose the { as unexpected here, and it is better
-					// for that to be done by whatever is calling parseExpr since it
-					// will have more context.
-					return p.NewExprField(ast.ExprFieldArgs{
-						Key: lhs,
-						// Why not call parseExprSolo? Suppose the following
-						// (invalid) production:
-						//
-						// foo { ... } to { ... }
-						//
-						// Calling parseExprInfix will cause this to be parsed
-						// as a range expression, which will be diagnosed when
-						// we legalize.
-						Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
-					}).AsAny()
+				if next.IsLeaf() {
+					break
 				}
+
+				// The previous expression cannot also be a key-value pair, since
+				// this messes with parsing of dicts, which are not comma-separated.
+				//
+				// In other words, consider the following, inside of an expression
+				// context:
+				//
+				// foo: bar { ... }
+				//
+				// We want to diagnose the { as unexpected here, and it is better
+				// for that to be done by whatever is calling parseExpr since it
+				// will have more context.
+				//
+				// We also do not allow this inside of arrays, because we want
+				// [a {}] to parse as [a, {}] not [a: {}].
+				if lhs.Kind() == ast.ExprKindField || where.Subject() == taxa.Array {
+					break
+				}
+
+				return p.NewExprField(ast.ExprFieldArgs{
+					Key: lhs,
+					// Why not call parseExprSolo? Suppose the following
+					// (invalid) production:
+					//
+					// foo { ... } to { ... }
+					//
+					// Calling parseExprInfix will cause this to be parsed
+					// as a range expression, which will be diagnosed when
+					// we legalize.
+					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
+				}).AsAny()
 			}
 		}
 
@@ -157,7 +166,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		elems := delimited[ast.ExprAny]{
 			p:    p,
 			c:    body.Children(),
-			what: taxa.Expr,
+			what: taxa.DictField,
 			in:   in,
 
 			delims:   []string{",", ";"},
@@ -168,9 +177,15 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 				expr := parseExpr(p, c, in.In())
 				return expr, !expr.Nil()
 			},
+			canStart: canStartExpr,
 		}
 
 		if next.Text() == "[" {
+			elems.what = taxa.Expr
+			elems.delims = []string{","}
+			elems.required = true
+			elems.trailing = false
+
 			array := p.NewExprArray(body)
 			elems.appendTo(array)
 			return array.AsAny()

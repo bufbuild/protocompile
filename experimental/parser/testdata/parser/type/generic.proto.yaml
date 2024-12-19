@@ -134,7 +134,9 @@ decls:
             name.components: [{ ident: "x13" }]
             type.generic:
               path.components: [{ ident: "set" }]
-              args: [{ path.components: [{ ident: "Foo" }] }]
+              args:
+                - path.components: [{ ident: "Foo" }]
+                - path.components: [{ ident: "bar" }]
             value.literal.int_value: 13
         - def:
             kind: KIND_FIELD

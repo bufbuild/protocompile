@@ -42,6 +42,9 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 	got := e.got
 	if got == nil {
 		got = taxa.Classify(e.what)
+		if got == taxa.Unknown {
+			got = "tokens"
+		}
 	}
 
 	var message report.DiagnosticOption

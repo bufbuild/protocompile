@@ -27,6 +27,10 @@ type exprComma struct {
 	comma token.Token
 }
 
+func (e exprComma) Span() report.Span {
+	return e.expr.Span()
+}
+
 // parseDecl parses any Protobuf declaration.
 //
 // This function will always advance cursor if it is not empty.
@@ -303,6 +307,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 
 				return expr, !expr.Nil()
 			},
+			canStart: canStartExpr,
 		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			exprs = append(exprs, exprComma{expr, comma})
 			return true
@@ -343,6 +348,7 @@ func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.No
 			ty := parseType(p, c, in.In())
 			return ty, !ty.Nil()
 		},
+		canStart: canStartPath,
 	}.appendTo(types)
 }
 
@@ -397,6 +403,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			}
 			return option, !option.Value.Nil()
 		},
+		canStart: canStartPath,
 	}.appendTo(options)
 
 	return options
