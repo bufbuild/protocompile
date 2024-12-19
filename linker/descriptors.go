@@ -16,6 +16,7 @@ package linker
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -272,8 +273,7 @@ func (r *result) Services() protoreflect.ServiceDescriptors {
 }
 
 func (r *result) PopulateSourceCodeInfo() {
-	srcLocProtos := asSourceLocations(r.FileDescriptorProto().GetSourceCodeInfo().GetLocation())
-	srcLocIndex := computeSourceLocIndex(srcLocProtos)
+	srcLocProtos, srcLocIndex := asSourceLocations(r.FileDescriptorProto().GetSourceCodeInfo().GetLocation())
 	r.srcLocations = srcLocs{file: r, locs: srcLocProtos, index: srcLocIndex}
 }
 
@@ -281,19 +281,10 @@ func (r *result) SourceLocations() protoreflect.SourceLocations {
 	return &r.srcLocations
 }
 
-func computeSourceLocIndex(locs []protoreflect.SourceLocation) map[sourcePathKey]int {
-	index := map[sourcePathKey]int{}
-	for i, loc := range locs {
-		if loc.Next == 0 {
-			index[pathKey(loc.Path)] = i
-		}
-	}
-	return index
-}
-
-func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []protoreflect.SourceLocation {
+func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) ([]protoreflect.SourceLocation, map[sourcePathKey]int) {
 	locs := make([]protoreflect.SourceLocation, len(srcInfoProtos))
-	prev := map[sourcePathKey]*protoreflect.SourceLocation{}
+	index := make(map[sourcePathKey]int, len(srcInfoProtos))
+	prev := make(map[sourcePathKey]*protoreflect.SourceLocation, len(srcInfoProtos))
 	for i, loc := range srcInfoProtos {
 		var stLin, stCol, enLin, enCol int
 		if len(loc.Span) == 3 {
@@ -314,12 +305,14 @@ func asSourceLocations(srcInfoProtos []*descriptorpb.SourceCodeInfo_Location) []
 		}
 		str := pathKey(loc.Path)
 		pr := prev[str]
-		if pr != nil {
+		if pr == nil {
+			index[str] = i
+		} else {
 			pr.Next = i
 		}
 		prev[str] = &locs[i]
 	}
-	return locs
+	return locs, index
 }
 
 type fileImports struct {
@@ -381,7 +374,7 @@ func (s *srcLocs) Get(i int) protoreflect.SourceLocation {
 }
 
 func (s *srcLocs) ByPath(p protoreflect.SourcePath) protoreflect.SourceLocation {
-	index, ok := s.index[pathKey(p)]
+	index, ok := s.index[pathKeyNoCopy(p)]
 	if !ok {
 		return protoreflect.SourceLocation{}
 	}
@@ -1887,5 +1880,9 @@ func isJSONCompliant(d protoreflect.Descriptor) bool {
 type sourcePathKey string
 
 func pathKey(p protoreflect.SourcePath) sourcePathKey {
+	return pathKeyNoCopy(slices.Clone(p))
+}
+
+func pathKeyNoCopy(p protoreflect.SourcePath) sourcePathKey {
 	return sourcePathKey(unsafex.StringAlias(p))
 }
