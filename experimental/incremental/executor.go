@@ -22,8 +22,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/bufbuild/protocompile/experimental/report"
 	"golang.org/x/sync/semaphore"
+
+	"github.com/bufbuild/protocompile/experimental/report"
 )
 
 // Executor is a caching executor for incremental queries.
