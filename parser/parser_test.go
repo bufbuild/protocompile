@@ -22,13 +22,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/bufbuild/protocompile/internal/fuzztesting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/bufbuild/protocompile/internal"
 	"github.com/bufbuild/protocompile/reporter"
 )
 
@@ -985,48 +984,53 @@ func TestPathological(t *testing.T) {
 	//   https://oss-fuzz.com/testcase-detail/4766256800858112
 	//   https://oss-fuzz.com/testcase-detail/4952577018298368
 	//   https://oss-fuzz.com/testcase-detail/5539164995518464
-	testCases := map[string]bool{
-		"pathological.proto":  true,
-		"pathological2.proto": false,
-		"pathological3.proto": false,
+	//   https://oss-fuzz.com/testcase-detail/5390258662866944
+	testCases := []struct {
+		name                string
+		canParse            bool
+		canCreateDescriptor bool
+	}{
+		{
+			name:                "pathological1.proto",
+			canParse:            true,
+			canCreateDescriptor: false,
+		},
+		{
+			name:                "pathological2.proto",
+			canParse:            false,
+			canCreateDescriptor: false,
+		},
+		{
+			name:                "pathological3.proto",
+			canParse:            false,
+			canCreateDescriptor: false,
+		},
+		{
+			name:                "pathological4.proto",
+			canParse:            true,
+			canCreateDescriptor: true,
+		},
 	}
-	for fileName := range testCases {
-		fileName, canParse := fileName, testCases[fileName] // don't want test func below to capture loop var
-		t.Run(fileName, func(t *testing.T) {
+	for _, testCase := range testCases {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			// Fuzz testing complains if this loop, with 100 iterations, takes longer
-			// than 60 seconds. We're only running 3 iterations, so this test isn't
-			// too slow. So we can use a much tighter deadline.
-			allowedDuration := 2 * time.Second
-			if internal.IsRace {
-				// We increase that threshold to 20 seconds when the race detector is enabled.
-				// The race detector has been observed to make it take ~8x as long. If coverage
-				// is *also* enabled, the test can take 19x as long(!!). Unfortunately, there
-				// doesn't appear to be a way to easily detect if coverage is enabled, so we
-				// always increase the timeout when race detector is enabled.
-				allowedDuration = 20 * time.Second
-				t.Logf("allowing %v since race detector is enabled", allowedDuration)
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), allowedDuration)
-			defer func() {
-				if ctx.Err() != nil {
-					t.Errorf("test took too long to execute (> %v)", allowedDuration)
-				}
-				cancel()
-			}()
-			for i := 0; i < 3; i++ {
-				if ctx.Err() != nil {
-					break
-				}
-				r := readerForTestdata(t, fileName)
+			fuzztesting.RunWithFuzzerTimeout(t, func(_ context.Context) {
+				r := readerForTestdata(t, testCase.name)
 				handler := reporter.NewHandler(nil)
-				fileNode, err := Parse(fileName, r, handler)
-				if canParse {
-					require.NoError(t, err)
-					_, err = ResultFromAST(fileNode, true, handler)
+				fileNode, err := Parse(testCase.name, r, handler)
+				if !testCase.canParse {
+					require.Error(t, err)
+					return
 				}
-				require.Error(t, err)
-			}
+				require.NoError(t, err)
+				_, err = ResultFromAST(fileNode, true, handler)
+				if !testCase.canCreateDescriptor {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+			})
 		})
 	}
 }
