@@ -300,7 +300,7 @@ func fuseBraces(l *lexer) {
 // implements implicit concatenation by juxtaposition.
 func fuseStrings(l *lexer) {
 	concat := func(start, end token.Token) {
-		if start.Nil() || start == end {
+		if start.IsZero() || start == end {
 			return
 		}
 
@@ -324,15 +324,15 @@ func fuseStrings(l *lexer) {
 			break
 
 		case token.String:
-			if start.Nil() {
+			if start.IsZero() {
 				start = tok
 			}
 			end = tok
 
 		default:
 			concat(start, end)
-			start = token.Nil
-			end = token.Nil
+			start = token.Zero
+			end = token.Zero
 		}
 
 		return true

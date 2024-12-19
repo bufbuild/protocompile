@@ -36,8 +36,8 @@ type Spanner interface {
 	Span() Span
 }
 
-// getSpan extracts a span from a Spanner, but returns the nil span when
-// s is nil, which would otherwise panic.
+// getSpan extracts a span from a Spanner, but returns the zero span when
+// s is zero, which would otherwise panic.
 func getSpan(s Spanner) Span {
 	if s == nil {
 		return Span{}
@@ -55,8 +55,8 @@ type Span struct {
 	Start, End int
 }
 
-// Nil returns whether or not this is the "nil" span.
-func (s Span) Nil() bool {
+// IsZero returns whether or not this is the zero span.
+func (s Span) IsZero() bool {
 	return s.File == nil
 }
 
@@ -89,10 +89,10 @@ func (s Span) String() string {
 // Join joins a collection of spans, returning the smallest span that
 // contains all of them.
 //
-// Nil spans among spans are ignored. If every span in spans is nil, returns
-// the nil span.
+// IsZero spans among spans are ignored. If every span in spans is zero, returns
+// the zero span.
 //
-// If there are at least two distinct non-nil files among the spans,
+// If there are at least two distinct files among the non-zero spans,
 // this function panics.
 func Join(spans ...Spanner) Span {
 	return JoinSeq[Spanner](slicesx.Values(spans))
@@ -103,11 +103,11 @@ func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	joined := Span{Start: math.MaxInt}
 	seq(func(spanner S) bool {
 		span := getSpan(spanner)
-		if span.Nil() {
+		if span.IsZero() {
 			return true
 		}
 
-		if joined.Nil() {
+		if joined.IsZero() {
 			joined.File = span.File
 		} else if joined.File != span.File {
 			panic(fmt.Sprintf(
