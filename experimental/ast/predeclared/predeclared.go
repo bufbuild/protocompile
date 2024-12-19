@@ -22,7 +22,22 @@
 // such counts as a predeclared identifier.
 package predeclared
 
-import "fmt"
+//go:generate go run github.com/bufbuild/protocompile/internal/enum
+
+//enum:import "strings"
+//enum:stringfunc strings.ToLower
+//enum:string
+//enum:gostring
+
+//enum:fromstring Lookup
+//enum:doc fromstring "Lookup looks up a builtin type by name."
+//enum:doc fromstring
+//enum:doc fromstring "If name does not name a builtin, returns [Unknown]."
+
+// Name is one of the built-in Protobuf names. These represent particular
+// paths whose meaning the language overrides to mean something other than
+// a relative path with that name.
+type Name byte
 
 const (
 	Unknown Name = iota
@@ -60,94 +75,7 @@ const (
 	Inf
 	Nan
 
-	count // Total number of valid Name values, used in the names constant below.
-
 	// Aliases for the floating-point types with explicit bit-sizes.
-	Float32 = Float
-	Float64 = Double
-)
-
-// Name is one of the built-in Protobuf names. These represent particular
-// paths whose meaning the language overrides to mean something other than
-// a relative path with that name.
-type Name byte
-
-// Lookup looks up a builtin type by name.
-//
-// If name does not name a builtin, returns [Unknown].
-func Lookup(name string) Name {
-	// The zero value is Unknown, which map indexing will helpfully
-	// return for us here.
-	return byName[name]
-}
-
-// String implements [strings.Stringer].
-func (n Name) String() string {
-	if int(n) < len(names) {
-		return names[int(n)]
-	}
-	return fmt.Sprintf("builtin%d", int(n))
-}
-
-// IsScalarType returns if this builtin name refers to one of the built-in
-// scalar types (an integer or float, or one of bool, string, or bytes).
-func (n Name) IsScalarType() bool {
-	switch n {
-	case
-		Int32, Int64,
-		UInt32, UInt64,
-		SInt32, SInt64,
-
-		Fixed32, Fixed64,
-		SFixed32, SFixed64,
-
-		Float, Double,
-
-		Bool, String, Bytes:
-		return true
-
-	default:
-		return false
-	}
-}
-
-var (
-	byName = map[string]Name{
-		"int32":  Int32,
-		"int64":  Int64,
-		"uint32": UInt32,
-		"uint64": UInt64,
-		"sint32": SInt32,
-		"sint64": SInt64,
-
-		"fixed32":  Fixed32,
-		"fixed64":  Fixed64,
-		"sfixed32": SFixed32,
-		"sfixed64": SFixed64,
-
-		"float":  Float,
-		"double": Double,
-
-		"bool":   Bool,
-		"string": String,
-		"bytes":  Bytes,
-
-		"map": Map,
-		"max": Max,
-
-		"true":  True,
-		"false": False,
-		"inf":   Inf,
-		"nan":   Nan,
-	}
-
-	names = func() []string {
-		names := make([]string, count)
-		names[0] = "unknown"
-
-		for name, idx := range byName {
-			names[idx] = name
-		}
-		return names
-	}()
+	Float32 = Float  //enum:skip
+	Float64 = Double //enum:skip
 )
