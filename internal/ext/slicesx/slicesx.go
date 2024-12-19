@@ -17,6 +17,7 @@ package slicesx
 
 import (
 	"slices"
+	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 	"github.com/bufbuild/protocompile/internal/iter"
@@ -24,6 +25,17 @@ import (
 
 // SliceIndex is a type that can be used to index into a slice.
 type SliceIndex = unsafex.Int
+
+// One returns a slice with a single element pointing to p.
+//
+// If p is nil, returns an empty slice.
+func One[E any](p *E) []E {
+	if p == nil {
+		return nil
+	}
+
+	return unsafe.Slice(p, 1)
+}
 
 // Get performs a bounds check and returns the value at idx.
 //

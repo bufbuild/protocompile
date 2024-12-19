@@ -3,7 +3,12 @@
 package {{.Package}}
 
 {{with .YAML -}}
-import "fmt"
+import (
+	"fmt"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+var _ iter.Seq[int] // Mark iter as used.
 {{range $_, $e := .}}
 {{makeDocs $e.Docs "" -}}
 type {{$e.Name}} {{$e.Type}}
@@ -40,27 +45,47 @@ func (v {{$e.Name}}) {{$m.Name}}() string {
 func {{$m.Name}}(s string) {{$e.Name}} {
 	return _table_{{$e.Name}}_{{$m.Name}}[s]
 }
+{{else if eq $m.Kind "all"}}
+{{makeDocs $m.Docs "" -}}
+func {{$m.Name}}() iter.Seq[{{$e.Name}}] {
+	return func(yield func({{$e.Name}}) bool) {
+		for _, v := range _table_{{$e.Name}}_{{$m.Name}} {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
 {{end -}}{{- end -}}
+{{- end -}}
+{{- range $_, $e := . -}}
 {{range $_, $m := $e.Methods -}}
 {{- if eq $m.Kind "string"}}
-var _table_{{$e.Name}}_{{$m.Name}} = [...]string {
+var _table_{{$e.Name}}_{{$m.Name}} = [...]string{
 {{range $e.Values -}}
 {{- with .Alias}}{{continue}}{{end -}}
 {{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}}: {{printf "%q" .String}},
 {{end -}}
 }
 {{else if eq $m.Kind "go-string"}}
-var _table_{{$e.Name}}_{{$m.Name}} = [...]string {
+var _table_{{$e.Name}}_{{$m.Name}} = [...]string{
 {{range $e.Values -}}
 {{- with .Alias}}{{continue}}{{end -}}
 {{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}}: {{printf "%q" .Name}},
 {{end -}}
 }
 {{else if eq $m.Kind "from-string"}}
-var _table_{{$e.Name}}_{{$m.Name}} = map[string]{{$e.Name}} {
+var _table_{{$e.Name}}_{{$m.Name}} = map[string]{{$e.Name}}{
 {{range $e.Values -}}
 {{- with .Alias}}{{continue}}{{end -}}
 {{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{printf "%q" .String}}: {{.Name}},
+{{end -}}
+}
+{{else if eq $m.Kind "all"}}
+var _table_{{$e.Name}}_{{$m.Name}} = [...]{{$e.Name}}{
+{{range $e.Values -}}
+{{- with .Alias}}{{continue}}{{end -}}
+{{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}},
 {{end -}}
 }
 {{end -}}{{- end -}}

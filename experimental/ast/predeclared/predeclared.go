@@ -16,7 +16,12 @@
 
 package predeclared
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+var _ iter.Seq[int] // Mark iter as used.
 
 // Name is one of the built-in Protobuf names. These represent particular
 // paths whose meaning the language overrides to mean something other than
@@ -95,7 +100,18 @@ func Lookup(s string) Name {
 	return _table_Name_Lookup[s]
 }
 
-var _table_Name_String = [...]string {
+// All returns an iterator over all distinct [Name] values.
+func All() iter.Seq[Name] {
+	return func(yield func(Name) bool) {
+		for _, v := range _table_Name_All {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+var _table_Name_String = [...]string{
 	Unknown: "unknown",
 	Int32: "int32",
 	Int64: "int64",
@@ -120,7 +136,7 @@ var _table_Name_String = [...]string {
 	NAN: "nan",
 }
 
-var _table_Name_GoString = [...]string {
+var _table_Name_GoString = [...]string{
 	Unknown: "Unknown",
 	Int32: "Int32",
 	Int64: "Int64",
@@ -145,7 +161,7 @@ var _table_Name_GoString = [...]string {
 	NAN: "NAN",
 }
 
-var _table_Name_Lookup = map[string]Name {
+var _table_Name_Lookup = map[string]Name{
 	"unknown": Unknown,
 	"int32": Int32,
 	"int64": Int64,
@@ -168,4 +184,29 @@ var _table_Name_Lookup = map[string]Name {
 	"false": False,
 	"inf": Inf,
 	"nan": NAN,
+}
+
+var _table_Name_All = [...]Name{
+	Unknown,
+	Int32,
+	Int64,
+	UInt32,
+	UInt64,
+	SInt32,
+	SInt64,
+	Fixed32,
+	Fixed64,
+	SFixed32,
+	SFixed64,
+	Float,
+	Double,
+	Bool,
+	String,
+	Bytes,
+	Map,
+	Max,
+	True,
+	False,
+	Inf,
+	NAN,
 }
