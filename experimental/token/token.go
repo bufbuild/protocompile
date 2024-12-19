@@ -189,6 +189,10 @@ func (t Token) LeafSpan() report.Span {
 //
 // Panics if this is a zero token.
 func (t Token) StartEnd() (start, end Token) {
+	if t.IsZero() {
+		return Zero, Zero
+	}
+
 	switch impl := t.nat(); {
 	case impl == nil:
 		switch synth := t.synth(); {

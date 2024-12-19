@@ -43,11 +43,19 @@ type TypePrefixedArgs struct {
 // Returns [TypePrefixUnknown] if [TypePrefixed.PrefixToken] does not contain
 // a known modifier.
 func (t TypePrefixed) Prefix() TypePrefix {
+	if t.IsZero() {
+		return 0
+	}
+
 	return TypePrefixByName(t.PrefixToken().Text())
 }
 
 // PrefixToken returns the token representing this type's prefix.
 func (t TypePrefixed) PrefixToken() token.Token {
+	if t.IsZero() {
+		return token.Zero
+	}
+
 	return t.raw.prefix.In(t.Context())
 }
 

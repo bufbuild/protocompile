@@ -37,6 +37,10 @@ var _ Commas[ExprAny] = ExprArray{}
 //
 // May be missing for a synthetic expression.
 func (e ExprArray) Brackets() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.brackets.In(e.Context())
 }
 
@@ -56,6 +60,10 @@ func (e ExprArray) At(n int) ExprAny {
 
 // Iter implements [Slice].
 func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
+	if e.IsZero() {
+		return
+	}
+
 	for i, arg := range e.raw.args {
 		if !yield(i, newExprAny(e.Context(), arg.Value)) {
 			break

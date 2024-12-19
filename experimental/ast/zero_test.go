@@ -16,6 +16,7 @@ package ast_test
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,52 +29,77 @@ import (
 func TestNilSpans(t *testing.T) {
 	t.Parallel()
 
-	testzero[ast.DeclAny](t)
-	testzero[ast.DeclBody](t)
-	testzero[ast.DeclDef](t)
-	testzero[ast.DeclEmpty](t)
-	testzero[ast.DeclImport](t)
-	testzero[ast.DeclPackage](t)
-	testzero[ast.DeclRange](t)
-	testzero[ast.DefEnum](t)
+	testZero[ast.DeclAny](t)
+	testZero[ast.DeclBody](t)
+	testZero[ast.DeclDef](t)
+	testZero[ast.DeclEmpty](t)
+	testZero[ast.DeclImport](t)
+	testZero[ast.DeclPackage](t)
+	testZero[ast.DeclRange](t)
+	testZero[ast.DefEnum](t)
 
-	testzero[ast.DefEnumValue](t)
-	testzero[ast.DefExtend](t)
-	testzero[ast.DefField](t)
-	testzero[ast.DefGroup](t)
-	testzero[ast.DefMessage](t)
-	testzero[ast.DefMethod](t)
-	testzero[ast.DefOneof](t)
-	testzero[ast.DefOption](t)
-	testzero[ast.DefService](t)
+	testZero[ast.DefEnumValue](t)
+	testZero[ast.DefExtend](t)
+	testZero[ast.DefField](t)
+	testZero[ast.DefGroup](t)
+	testZero[ast.DefMessage](t)
+	testZero[ast.DefMethod](t)
+	testZero[ast.DefOneof](t)
+	testZero[ast.DefOption](t)
+	testZero[ast.DefService](t)
 
-	testzero[ast.ExprAny](t)
-	testzero[ast.ExprArray](t)
-	testzero[ast.ExprDict](t)
-	testzero[ast.ExprField](t)
-	testzero[ast.ExprLiteral](t)
-	testzero[ast.ExprPath](t)
-	testzero[ast.ExprPrefixed](t)
+	testZero[ast.ExprAny](t)
+	testZero[ast.ExprArray](t)
+	testZero[ast.ExprDict](t)
+	testZero[ast.ExprField](t)
+	testZero[ast.ExprLiteral](t)
+	testZero[ast.ExprPath](t)
+	testZero[ast.ExprPrefixed](t)
 
-	testzero[ast.TypeAny](t)
-	testzero[ast.TypeGeneric](t)
-	testzero[ast.TypeList](t)
-	testzero[ast.TypePath](t)
-	testzero[ast.TypePrefixed](t)
+	testZero[ast.TypeAny](t)
+	testZero[ast.TypeGeneric](t)
+	testZero[ast.TypeList](t)
+	testZero[ast.TypePath](t)
+	testZero[ast.TypePrefixed](t)
 
-	testzero[ast.CompactOptions](t)
-	testzero[ast.File](t)
-	testzero[ast.Signature](t)
-	testzero[ast.Path](t)
-	testzero[token.Token](t)
+	testZero[ast.CompactOptions](t)
+	testZero[ast.File](t)
+	testZero[ast.Signature](t)
+	testZero[ast.Path](t)
+	testZero[token.Token](t)
 }
 
-// testzero validates that the zero value of some Spanner produces the zero span.
-func testzero[Node report.Spanner](t *testing.T) {
+// testZero validates that the zero value of some Spanner produces the
+// zero span.
+func testZero[Node report.Spanner](t *testing.T) {
 	t.Helper()
 	var z Node
 
 	t.Run(fmt.Sprintf("%T", z), func(t *testing.T) {
 		assert.Zero(t, z.Span())
+
+		// Ensure that every nilary method (used as a rough query for "accessors")
+		// on the zero value:
+		// 1. Does not panic.
+		// 2. Returns zero values.
+		v := reflect.ValueOf(z)
+		ty := v.Type()
+		for i := 0; i < ty.NumMethod(); i++ {
+			m := ty.Method(i)
+			if m.Func.Type().NumIn() != 1 {
+				continue // NumIn includes the receiver.
+			}
+			switch m.Name {
+			case "IsZero", "String":
+				continue
+			}
+			for i, r := range m.Func.Call([]reflect.Value{v}) {
+				if r.Type().Kind() == reflect.Func {
+					continue
+				}
+
+				assert.Zero(t, r.Interface(), "non-zero return #%d %#v of %T.%s", i, r, z, m.Name)
+			}
+		}
 	})
 }

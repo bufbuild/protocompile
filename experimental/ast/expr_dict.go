@@ -36,6 +36,10 @@ var _ Commas[ExprField] = ExprDict{}
 //
 // May be missing for a synthetic expression.
 func (e ExprDict) Braces() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.braces.In(e.Context())
 }
 
@@ -59,6 +63,10 @@ func (e ExprDict) At(n int) ExprField {
 
 // Iter implements [Slice].
 func (e ExprDict) Iter(yield func(int, ExprField) bool) {
+	if e.IsZero() {
+		return
+	}
+
 	for i, f := range e.raw.fields {
 		e := ExprField{exprImpl[rawExprField]{
 			e.withContext,
@@ -106,11 +114,6 @@ func (e ExprDict) InsertComma(n int, expr ExprField, comma token.Token) {
 	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{ptr, comma.ID()})
 }
 
-// AsMessage implements [ExprAny].
-func (e ExprDict) AsMessage() Commas[ExprField] {
-	return e
-}
-
 // Span implements [report.Spanner].
 func (e ExprDict) Span() report.Span {
 	if e.IsZero() {
@@ -141,6 +144,10 @@ type ExprFieldArgs struct {
 //
 // May be zero if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
 func (e ExprField) Key() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.key)
 }
 
@@ -156,11 +163,19 @@ func (e ExprField) SetKey(expr ExprAny) {
 // May be zero: it is valid for a field name to be immediately followed by its value and be syntactically
 // valid (unlike most "optional" punctuation, this is permitted by Protobuf, not just our permissive AST).
 func (e ExprField) Colon() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.colon.In(e.Context())
 }
 
 // Value returns the value for this field.
 func (e ExprField) Value() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.value)
 }
 

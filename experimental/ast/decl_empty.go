@@ -31,6 +31,10 @@ type rawDeclEmpty struct {
 //
 // May be [token.Zero], if not present.
 func (d DeclEmpty) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 

@@ -32,6 +32,10 @@ type ExprLiteral struct {
 //
 // See [TypeAny] for more information.
 func (e ExprLiteral) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(
 		//nolint:errcheck // This assertion is required in the comment on e.Token.
 		e.Context().(Context),

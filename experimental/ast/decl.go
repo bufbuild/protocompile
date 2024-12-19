@@ -183,6 +183,10 @@ type declImpl[Raw any] struct {
 //
 // See [DeclAny] for more information.
 func (d declImpl[Raw]) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+
 	kind, arena := declArena[Raw](&d.Context().Nodes().decls)
 	return rawDecl{arena.Compress(d.raw).Untyped(), kind}.With(d.Context())
 }

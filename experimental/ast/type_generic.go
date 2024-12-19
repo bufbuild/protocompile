@@ -51,6 +51,10 @@ type TypeGenericArgs struct {
 // Path returns the path of the "type constructor". For example, for
 // my.Map<K, V>, this would return the path my.Map.
 func (t TypeGeneric) Path() Path {
+	if t.IsZero() {
+		return Path{}
+	}
+
 	return t.raw.path.With(t.Context())
 }
 
@@ -69,6 +73,10 @@ func (t TypeGeneric) AsMap() (key, value TypeAny) {
 
 // Args returns the argument list for this generic type.
 func (t TypeGeneric) Args() TypeList {
+	if t.IsZero() {
+		return TypeList{}
+	}
+
 	return TypeList{
 		t.withContext,
 		&t.raw.args,
@@ -107,6 +115,10 @@ type rawTypeList struct {
 //
 // May be zero, if the user forgot to include brackets.
 func (d TypeList) Brackets() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.brackets.In(d.Context())
 }
 

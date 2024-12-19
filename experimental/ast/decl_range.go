@@ -49,6 +49,10 @@ var (
 
 // Keyword returns the keyword for this range.
 func (d DeclRange) Keyword() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.keyword.In(d.Context())
 }
 
@@ -78,6 +82,9 @@ func (d DeclRange) At(n int) ExprAny {
 
 // Iter implements [Slice].
 func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
+	if d.IsZero() {
+		return
+	}
 	for i, arg := range d.raw.args {
 		if !yield(i, newExprAny(d.Context(), arg.Value)) {
 			break
@@ -119,6 +126,10 @@ func (d DeclRange) InsertComma(n int, expr ExprAny, comma token.Token) {
 
 // Options returns the compact options list for this range.
 func (d DeclRange) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -133,6 +144,10 @@ func (d DeclRange) SetOptions(opts CompactOptions) {
 //
 // May be nil, if not present.
 func (d DeclRange) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 

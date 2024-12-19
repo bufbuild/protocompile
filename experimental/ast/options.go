@@ -54,6 +54,10 @@ type rawOption struct {
 
 // Brackets returns the token tree corresponding to the whole [...].
 func (o CompactOptions) Brackets() token.Token {
+	if o.IsZero() {
+		return token.Zero
+	}
+
 	return o.raw.brackets.In(o.Context())
 }
 

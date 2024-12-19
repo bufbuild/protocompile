@@ -91,6 +91,10 @@ type DeclSyntaxArgs struct {
 
 // Keyword returns the keyword for this pragma.
 func (d DeclSyntax) Keyword() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.keyword.In(d.Context())
 }
 
@@ -108,6 +112,10 @@ func (d DeclSyntax) IsEdition() bool {
 //
 // May be zero, if the user wrote something like syntax "proto2";.
 func (d DeclSyntax) Equals() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.equals.In(d.Context())
 }
 
@@ -116,6 +124,10 @@ func (d DeclSyntax) Equals() token.Token {
 // May be zero, if the user wrote something like syntax;. It can also be
 // a number or an identifier, for cases like edition = 2024; or syntax = proto2;.
 func (d DeclSyntax) Value() ExprAny {
+	if d.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(d.Context(), d.raw.value)
 }
 
@@ -130,6 +142,10 @@ func (d DeclSyntax) SetValue(expr ExprAny) {
 //
 // Syntax declarations cannot have options, but we parse them anyways.
 func (d DeclSyntax) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -144,6 +160,10 @@ func (d DeclSyntax) SetOptions(opts CompactOptions) {
 //
 // May be zero, if the user forgot it.
 func (d DeclSyntax) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
@@ -180,6 +200,10 @@ type DeclPackageArgs struct {
 
 // Keyword returns the "package" keyword for this declaration.
 func (d DeclPackage) Keyword() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.keyword.In(d.Context())
 }
 
@@ -187,6 +211,10 @@ func (d DeclPackage) Keyword() token.Token {
 //
 // May be zero, if the user wrote something like package;.
 func (d DeclPackage) Path() Path {
+	if d.IsZero() {
+		return Path{}
+	}
+
 	return d.raw.path.With(d.Context())
 }
 
@@ -194,6 +222,10 @@ func (d DeclPackage) Path() Path {
 //
 // Package declarations cannot have options, but we parse them anyways.
 func (d DeclPackage) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -208,6 +240,10 @@ func (d DeclPackage) SetOptions(opts CompactOptions) {
 //
 // May be zero, if the user forgot it.
 func (d DeclPackage) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
@@ -244,6 +280,10 @@ type DeclImportArgs struct {
 
 // Keyword returns the "import" keyword for this pragma.
 func (d DeclImport) Keyword() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.keyword.In(d.Context())
 }
 
@@ -251,6 +291,10 @@ func (d DeclImport) Keyword() token.Token {
 //
 // May be zero if there is no modifier.
 func (d DeclImport) Modifier() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.modifier.In(d.Context())
 }
 
@@ -268,6 +312,10 @@ func (d DeclImport) IsWeak() bool {
 //
 // May be zero, if the user forgot it.
 func (d DeclImport) ImportPath() ExprAny {
+	if d.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(d.Context(), d.raw.importPath)
 }
 
@@ -282,6 +330,10 @@ func (d DeclImport) SetImportPath(expr ExprAny) {
 //
 // Imports cannot have options, but we parse them anyways.
 func (d DeclImport) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -296,6 +348,10 @@ func (d DeclImport) SetOptions(opts CompactOptions) {
 //
 // May be zero, if the user forgot it.
 func (d DeclImport) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 

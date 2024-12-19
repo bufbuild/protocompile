@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	DefKindMessage DefKind = iota + 1
+	DefKindZero DefKind = iota
+	DefKindMessage
 	DefKindEnum
 	DefKindService
 	DefKindExtend
@@ -96,6 +97,10 @@ type DeclDefArgs struct {
 //
 // See [DeclDef.Keyword].
 func (d DeclDef) Type() TypeAny {
+	if d.IsZero() {
+		return TypeAny{}
+	}
+
 	return newTypeAny(d.Context(), d.raw.ty)
 }
 
@@ -125,6 +130,10 @@ func (d DeclDef) Keyword() token.Token {
 
 // Name returns this definition's declared name.
 func (d DeclDef) Name() Path {
+	if d.IsZero() {
+		return Path{}
+	}
+
 	return d.raw.name.With(d.Context())
 }
 
@@ -134,10 +143,10 @@ func (d DeclDef) Name() Path {
 // is the "prefix" type for the definition (such as for a field). This is a
 // signature for e.g. a method.
 //
-// Not all defs have a signature, so this function may return a zero Signature.
+// Not all defs have a signature, so this function may return a zero Signature.q
 // If you want to add one, use [DeclDef.WithSignature].
 func (d DeclDef) Signature() Signature {
-	if d.raw.signature == nil {
+	if d.IsZero() || d.raw.signature == nil {
 		return Signature{}
 	}
 
@@ -150,7 +159,7 @@ func (d DeclDef) Signature() Signature {
 // WithSignature is like Signature, but it adds an empty signature if it would
 // return zero.
 func (d DeclDef) WithSignature() Signature {
-	if d.Signature().IsZero() {
+	if !d.IsZero() && d.Signature().IsZero() {
 		d.raw.signature = new(rawSignature)
 	}
 	return d.Signature()
@@ -159,6 +168,10 @@ func (d DeclDef) WithSignature() Signature {
 // Equals returns this definitions = token, before the value.
 // May be zero.
 func (d DeclDef) Equals() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.equals.In(d.Context())
 }
 
@@ -166,6 +179,10 @@ func (d DeclDef) Equals() token.Token {
 // tag number, while for an option, this will be the complex expression
 // representing its value.
 func (d DeclDef) Value() ExprAny {
+	if d.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(d.Context(), d.raw.value)
 }
 
@@ -178,6 +195,10 @@ func (d DeclDef) SetValue(expr ExprAny) {
 
 // Options returns the compact options list for this definition.
 func (d DeclDef) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -190,6 +211,10 @@ func (d DeclDef) SetOptions(opts CompactOptions) {
 
 // Body returns this definition's body, if it has one.
 func (d DeclDef) Body() DeclBody {
+	if d.IsZero() {
+		return DeclBody{}
+	}
+
 	return wrapDeclBody(d.Context(), d.raw.body)
 }
 
@@ -201,6 +226,10 @@ func (d DeclDef) SetBody(b DeclBody) {
 // Semicolon returns the ending semicolon token for this definition.
 // May be zero.
 func (d DeclDef) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
@@ -386,6 +415,10 @@ func (d DeclDef) AsOption() DefOption {
 // cases of the switch should then use the As* methods, such as
 // [DeclDef.AsMessage], to extract the relevant fields.
 func (d DeclDef) Classify() DefKind {
+	if d.IsZero() {
+		return DefKindZero
+	}
+
 	switch d.Keyword().Text() {
 	case "message":
 		if !d.Body().IsZero() {
@@ -465,11 +498,19 @@ type rawSignature struct {
 // Returns returns (lol) the "returns" token that separates the input and output
 // type lists.
 func (s Signature) Returns() token.Token {
+	if s.IsZero() {
+		return token.Zero
+	}
+
 	return s.raw.returns.In(s.Context())
 }
 
 // Inputs returns the input argument list for this signature.
 func (s Signature) Inputs() TypeList {
+	if s.IsZero() {
+		return TypeList{}
+	}
+
 	return TypeList{
 		s.withContext,
 		&s.raw.input,
@@ -478,6 +519,10 @@ func (s Signature) Inputs() TypeList {
 
 // Outputs returns the output argument list for this signature.
 func (s Signature) Outputs() TypeList {
+	if s.IsZero() {
+		return TypeList{}
+	}
+
 	return TypeList{
 		s.withContext,
 		&s.raw.output,
