@@ -78,7 +78,7 @@ func (p *defParser) parse() ast.DeclDef {
 		}
 
 		next := defFollowers[idx].parse(p)
-		if next.Nil() {
+		if next.IsZero() {
 			continue
 		}
 
@@ -124,13 +124,13 @@ func (p *defParser) parse() ast.DeclDef {
 
 	if p.in == taxa.Enum {
 		// Convert something that looks like an enum value into one.
-		if tyPath := p.args.Type.AsPath(); !tyPath.Nil() && p.args.Name.Nil() &&
+		if tyPath := p.args.Type.AsPath(); !tyPath.IsZero() && p.args.Name.IsZero() &&
 			// The reason for this is because if the user writes `message {}`, we want
 			// to *not* turn it into an enum value with a body.
 			//
 			// TODO: Add a case for making sure that `rpc(foo)` is properly
 			// diagnosed as an anonymous method.
-			p.braces.Nil() {
+			p.braces.IsZero() {
 			p.args.Name = tyPath.Path
 			p.args.Type = ast.TypeAny{}
 		}
@@ -138,19 +138,19 @@ func (p *defParser) parse() ast.DeclDef {
 
 	def := p.NewDeclDef(p.args)
 
-	if !p.inputs.Nil() {
+	if !p.inputs.IsZero() {
 		parseTypeList(p.parser, p.inputs, def.WithSignature().Inputs(), taxa.MethodIns)
 	}
-	if !p.outputs.Nil() {
+	if !p.outputs.IsZero() {
 		parseTypeList(p.parser, p.outputs, def.WithSignature().Outputs(), taxa.MethodOuts)
-	} else if !p.outputTy.Nil() {
+	} else if !p.outputTy.IsZero() {
 		p.Errorf("missing `(...)` around method return type").Apply(
 			report.Snippetf(p.outputTy, "help: replace this with `(%s)`", p.outputTy.Span().Text()),
 		)
 		def.WithSignature().Outputs().Append(p.outputTy)
 	}
 
-	if !p.braces.Nil() {
+	if !p.braces.IsZero() {
 		var in taxa.Noun
 		switch p.kw.Text() {
 		case "message":
@@ -188,7 +188,7 @@ func (defInputs) parse(p *defParser) report.Span {
 		return report.Span{} // Diagnosed by the lexer.
 	}
 
-	if p.inputs.Nil() {
+	if p.inputs.IsZero() {
 		p.inputs = next
 	}
 	return next.Span()
@@ -208,7 +208,7 @@ func (defOutputs) parse(p *defParser) report.Span {
 
 	var ty ast.TypeAny
 	list, err := p.Punct(p.c, "(", taxa.KeywordReturns.After())
-	if list.Nil() && canStartPath(p.c.Peek()) {
+	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
 		// we parse a single type w/o parens and diagnose it later.
@@ -218,23 +218,23 @@ func (defOutputs) parse(p *defParser) report.Span {
 		return report.Span{}
 	}
 
-	if p.outputs.Nil() && p.outputTy.Nil() {
+	if p.outputs.IsZero() && p.outputTy.IsZero() {
 		p.args.Returns = returns
-		if !list.Nil() {
+		if !list.IsZero() {
 			p.outputs = list
 		} else {
 			p.outputTy = ty
 		}
 	}
 
-	if !list.Nil() {
+	if !list.IsZero() {
 		return report.Join(returns, list)
 	}
 	return report.Join(returns, ty)
 }
 
 func (defOutputs) prev(p *defParser) report.Span {
-	if !p.outputTy.Nil() {
+	if !p.outputTy.IsZero() {
 		return report.Join(p.args.Returns, p.outputTy)
 	}
 	return report.Join(p.args.Returns, p.outputs)
@@ -246,7 +246,7 @@ func (defValue) what(p *defParser) taxa.Noun {
 	switch {
 	case p.kw.Text() == "option":
 		return taxa.OptionValue
-	case p.args.Type.Nil():
+	case p.args.Type.IsZero():
 		return taxa.EnumValue
 	default:
 		return taxa.FieldTag
@@ -276,7 +276,7 @@ func (defValue) canStart(p *defParser) bool {
 	case canStartExpr(next):
 		// Don't try to parse an expression if we've already parsed
 		// an expression, options, or another expression.
-		return p.args.Value.Nil() && p.args.Options.Nil() && p.braces.Nil()
+		return p.args.Value.IsZero() && p.args.Options.IsZero() && p.braces.IsZero()
 	default:
 		return false
 	}
@@ -289,11 +289,11 @@ func (defValue) parse(p *defParser) report.Span {
 	}
 
 	expr := parseExpr(p.parser, p.c, taxa.Def.In())
-	if expr.Nil() {
+	if expr.IsZero() {
 		return report.Span{} // parseExpr already generated diagnostics.
 	}
 
-	if p.args.Value.Nil() {
+	if p.args.Value.IsZero() {
 		p.args.Equals = eq
 		p.args.Value = expr
 	}
@@ -301,7 +301,7 @@ func (defValue) parse(p *defParser) report.Span {
 }
 
 func (defValue) prev(p *defParser) report.Span {
-	if p.args.Value.Nil() {
+	if p.args.Value.IsZero() {
 		return report.Span{}
 	}
 	return report.Join(p.args.Equals, p.args.Value)
@@ -318,7 +318,7 @@ func (defOptions) parse(p *defParser) report.Span {
 		return report.Span{} // Diagnosed by the lexer.
 	}
 
-	if p.args.Options.Nil() {
+	if p.args.Options.IsZero() {
 		p.args.Options = parseOptions(p.parser, next, taxa.Def)
 	}
 	return next.Span()
@@ -337,7 +337,7 @@ func (defBody) parse(p *defParser) report.Span {
 		return report.Span{} // Diagnosed by the lexer.
 	}
 
-	if p.braces.Nil() {
+	if p.braces.IsZero() {
 		p.braces = next
 	}
 	return next.Span()
