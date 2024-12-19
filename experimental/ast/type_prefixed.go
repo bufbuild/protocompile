@@ -58,14 +58,14 @@ func (t TypePrefixed) Type() TypeAny {
 
 // SetType sets the expression that is being prefixed.
 //
-// If passed nil, this clears the type.
+// If passed zero, this clears the type.
 func (t TypePrefixed) SetType(ty TypeAny) {
 	t.raw.ty = ty.raw
 }
 
 // Span implements [report.Spanner].
 func (t TypePrefixed) Span() report.Span {
-	if t.Nil() {
+	if t.IsZero() {
 		return report.Span{}
 	}
 

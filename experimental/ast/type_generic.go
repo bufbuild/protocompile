@@ -58,7 +58,7 @@ func (t TypeGeneric) Path() Path {
 // map<K, V>. This is intended for asserting the extremely common case of "the only generic
 // type is map".
 //
-// Returns nils if this is not a map, or it has the wrong number of generic arguments.
+// Returns zeros if this is not a map, or it has the wrong number of generic arguments.
 func (t TypeGeneric) AsMap() (key, value TypeAny) {
 	if t.Path().AsPredeclared() != predeclared.Map || t.Args().Len() != 2 {
 		return TypeAny{}, TypeAny{}
@@ -77,7 +77,7 @@ func (t TypeGeneric) Args() TypeList {
 
 // Span implements [report.Spanner].
 func (t TypeGeneric) Span() report.Span {
-	if t.Nil() {
+	if t.IsZero() {
 		return report.Span{}
 	}
 
@@ -105,7 +105,7 @@ type rawTypeList struct {
 
 // Brackets returns the token tree for the brackets wrapping the argument list.
 //
-// May be nil, if the user forgot to include brackets.
+// May be zero, if the user forgot to include brackets.
 func (d TypeList) Brackets() token.Token {
 	return d.raw.brackets.In(d.Context())
 }
@@ -131,12 +131,12 @@ func (d TypeList) Iter(yield func(int, TypeAny) bool) {
 
 // Append implements [Inserter].
 func (d TypeList) Append(ty TypeAny) {
-	d.InsertComma(d.Len(), ty, token.Nil)
+	d.InsertComma(d.Len(), ty, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (d TypeList) Insert(n int, ty TypeAny) {
-	d.InsertComma(n, ty, token.Nil)
+	d.InsertComma(n, ty, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -164,9 +164,9 @@ func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
 // Span implements [report.Spanner].
 func (d TypeList) Span() report.Span {
 	switch {
-	case d.Nil():
+	case d.IsZero():
 		return report.Span{}
-	case !d.Brackets().Nil():
+	case !d.Brackets().IsZero():
 		return d.Brackets().Span()
 	case d.Len() == 0:
 		return report.Span{}

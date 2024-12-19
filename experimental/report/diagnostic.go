@@ -61,7 +61,7 @@ type Diagnostic struct {
 
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
-// Nil values passed to [Diagnostic.Apply] are ignored.
+// IsZero values passed to [Diagnostic.Apply] are ignored.
 type DiagnosticOption interface {
 	apply(*Diagnostic)
 }
@@ -91,7 +91,7 @@ func (d *Diagnostic) Is(tag string) bool {
 
 // Apply applies the given options to this diagnostic.
 //
-// Nil values are ignored.
+// IsZero values are ignored.
 func (d *Diagnostic) Apply(options ...DiagnosticOption) *Diagnostic {
 	for _, option := range options {
 		if option != nil {
@@ -126,7 +126,7 @@ func InFile(path string) DiagnosticOption {
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
-// If at is nil or returns the nil span, the returned DiagnosticOption is a no-op.
+// If at is nil or returns the zero span, the returned DiagnosticOption is a no-op.
 func Snippet(at Spanner) DiagnosticOption {
 	return Snippetf(at, "")
 }
@@ -139,7 +139,7 @@ func Snippet(at Spanner) DiagnosticOption {
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
-// If at is nil or returns the nil span, the returned DiagnosticOption is a no-op.
+// If at is nil or returns the zero span, the returned DiagnosticOption is a no-op.
 func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 	return snippet{
 		Span:    getSpan(at),
@@ -188,7 +188,7 @@ type snippet struct {
 }
 
 func (a snippet) apply(d *Diagnostic) {
-	if a.Span.Nil() {
+	if a.Span.IsZero() {
 		return
 	}
 

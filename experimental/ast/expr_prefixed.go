@@ -70,14 +70,14 @@ func (e ExprPrefixed) Expr() ExprAny {
 
 // SetExpr sets the expression that the prefix is applied to.
 //
-// If passed nil, this clears the expression.
+// If passed zero, this clears the expression.
 func (e ExprPrefixed) SetExpr(expr ExprAny) {
 	e.raw.expr = expr.raw
 }
 
 // report.Span implements [report.Spanner].
 func (e ExprPrefixed) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

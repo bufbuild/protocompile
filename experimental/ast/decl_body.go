@@ -53,9 +53,9 @@ func (d DeclBody) Braces() token.Token {
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
 	switch {
-	case d.Nil():
+	case d.IsZero():
 		return report.Span{}
-	case !d.Braces().Nil():
+	case !d.Braces().IsZero():
 		return d.Braces().Span()
 	case d.Len() == 0:
 		return report.Span{}

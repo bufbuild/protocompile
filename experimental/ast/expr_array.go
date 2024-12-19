@@ -61,12 +61,12 @@ func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
 
 // Append implements [Inserter].
 func (e ExprArray) Append(expr ExprAny) {
-	e.InsertComma(e.Len(), expr, token.Nil)
+	e.InsertComma(e.Len(), expr, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (e ExprArray) Insert(n int, expr ExprAny) {
-	e.InsertComma(n, expr, token.Nil)
+	e.InsertComma(n, expr, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -93,7 +93,7 @@ func (e ExprArray) InsertComma(n int, expr ExprAny, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (e ExprArray) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

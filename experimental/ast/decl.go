@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	DeclKindNil DeclKind = iota
+	DeclKindZero DeclKind = iota
 	DeclKindEmpty
 	DeclKindSyntax
 	DeclKindPackage
@@ -62,7 +62,7 @@ func (d DeclAny) Kind() DeclKind {
 // AsEmpty converts a DeclAny into a DeclEmpty, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsEmpty() DeclEmpty {
 	if d.Kind() != DeclKindEmpty {
 		return DeclEmpty{}
@@ -74,7 +74,7 @@ func (d DeclAny) AsEmpty() DeclEmpty {
 // AsSyntax converts a DeclAny into a DeclSyntax, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsSyntax() DeclSyntax {
 	if d.Kind() != DeclKindSyntax {
 		return DeclSyntax{}
@@ -86,7 +86,7 @@ func (d DeclAny) AsSyntax() DeclSyntax {
 // AsPackage converts a DeclAny into a DeclPackage, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsPackage() DeclPackage {
 	if d.Kind() != DeclKindPackage {
 		return DeclPackage{}
@@ -98,7 +98,7 @@ func (d DeclAny) AsPackage() DeclPackage {
 // AsImport converts a DeclAny into a DeclImport, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsImport() DeclImport {
 	if d.Kind() != DeclKindImport {
 		return DeclImport{}
@@ -110,7 +110,7 @@ func (d DeclAny) AsImport() DeclImport {
 // AsDef converts a DeclAny into a DeclDef, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsDef() DeclDef {
 	if d.Kind() != DeclKindDef {
 		return DeclDef{}
@@ -122,7 +122,7 @@ func (d DeclAny) AsDef() DeclDef {
 // AsBody converts a DeclAny into a DeclBody, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsBody() DeclBody {
 	if d.Kind() != DeclKindBody {
 		return DeclBody{}
@@ -134,7 +134,7 @@ func (d DeclAny) AsBody() DeclBody {
 // AsRange converts a DeclAny into a DeclRange, if that is the declaration
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (d DeclAny) AsRange() DeclRange {
 	if d.Kind() != DeclKindRange {
 		return DeclRange{}
@@ -145,9 +145,9 @@ func (d DeclAny) AsRange() DeclRange {
 
 // Span implements [report.Spanner].
 func (d DeclAny) Span() report.Span {
-	// At most one of the below will produce a non-nil decl, and that will be
-	// the span selected by report.Join. If all of them are nil, this produces
-	// the nil span.
+	// At most one of the below will produce a non-zero decl, and that will be
+	// the span selected by report.Join. If all of them are zero, this produces
+	// the zero span.
 	return report.Join(
 		d.AsEmpty(),
 		d.AsSyntax(),
@@ -166,7 +166,7 @@ type rawDecl struct {
 }
 
 func (d rawDecl) With(c Context) DeclAny {
-	if c == nil || d.ptr.Nil() || d.kind == DeclKindNil {
+	if c == nil || d.ptr.Nil() || d.kind == DeclKindZero {
 		return DeclAny{}
 	}
 

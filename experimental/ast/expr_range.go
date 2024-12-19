@@ -43,7 +43,7 @@ func (e ExprRange) Bounds() (start, end ExprAny) {
 
 // SetBounds set the expressions for this range's bounds.
 //
-// Clears the respective expressions when passed a nil expression.
+// Clears the respective expressions when passed a zero expression.
 func (e ExprRange) SetBounds(start, end ExprAny) {
 	e.raw.start = start.raw
 	e.raw.end = end.raw
@@ -56,7 +56,7 @@ func (e ExprRange) Keyword() token.Token {
 
 // Span implements [report.Spanner].
 func (e ExprRange) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

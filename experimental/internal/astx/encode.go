@@ -119,12 +119,12 @@ func (c *protoEncoder) file(file ast.File) *compilerpb.File {
 }
 
 func (c *protoEncoder) span(s report.Spanner) *compilerpb.Span {
-	if c.OmitSpans || internal.Nil(s) {
+	if c.OmitSpans || internal.IsZero(s) {
 		return nil
 	}
 
 	span := s.Span()
-	if span.Nil() {
+	if span.IsZero() {
 		return nil
 	}
 
@@ -141,7 +141,7 @@ type commas interface {
 }
 
 func (c *protoEncoder) commas(cs commas) []*compilerpb.Span {
-	if c.OmitSpans || internal.Nil(cs) {
+	if c.OmitSpans || internal.IsZero(cs) {
 		return nil
 	}
 
@@ -153,7 +153,7 @@ func (c *protoEncoder) commas(cs commas) []*compilerpb.Span {
 }
 
 func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
-	if path.Nil() {
+	if path.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(path)()
@@ -171,11 +171,11 @@ func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
 		}
 		component.SeparatorSpan = c.span(pc.Separator())
 
-		if extn := pc.AsExtension(); !extn.Nil() {
+		if extn := pc.AsExtension(); !extn.IsZero() {
 			extn := pc.AsExtension()
 			component.Component = &compilerpb.Path_Component_Extension{Extension: c.path(extn)}
 			component.ComponentSpan = c.span(extn)
-		} else if ident := pc.AsIdent(); !ident.Nil() {
+		} else if ident := pc.AsIdent(); !ident.IsZero() {
 			component.Component = &compilerpb.Path_Component_Ident{Ident: ident.Name()}
 			component.ComponentSpan = c.span(ident)
 		}
@@ -187,7 +187,7 @@ func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
 }
 
 func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
-	if decl.Nil() {
+	if decl.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(decl)()
@@ -330,7 +330,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			proto.Type = c.type_(decl.Type())
 		}
 
-		if signature := decl.Signature(); !signature.Nil() {
+		if signature := decl.Signature(); !signature.IsZero() {
 			proto.Signature = &compilerpb.Def_Signature{
 				Span:        c.span(signature),
 				InputSpan:   c.span(signature.Inputs()),
@@ -348,7 +348,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			})
 		}
 
-		if body := decl.Body(); !body.Nil() {
+		if body := decl.Body(); !body.IsZero() {
 			proto.Body = &compilerpb.Decl_Body{
 				Span: c.span(decl.Body()),
 			}
@@ -366,7 +366,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 }
 
 func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
-	if options.Nil() {
+	if options.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(options)()
@@ -388,7 +388,7 @@ func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 }
 
 func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
-	if expr.Nil() {
+	if expr.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(expr)()
@@ -478,7 +478,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 }
 
 func (c *protoEncoder) exprField(expr ast.ExprField) *compilerpb.Expr_Field {
-	if expr.Nil() {
+	if expr.IsZero() {
 		return nil
 	}
 
@@ -492,7 +492,7 @@ func (c *protoEncoder) exprField(expr ast.ExprField) *compilerpb.Expr_Field {
 
 //nolint:revive // "method type_ should be type" is incorrect because type is a keyword.
 func (c *protoEncoder) type_(ty ast.TypeAny) *compilerpb.Type {
-	if ty.Nil() {
+	if ty.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(ty)()

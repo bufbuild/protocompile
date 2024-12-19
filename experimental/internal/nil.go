@@ -15,12 +15,12 @@
 package internal
 
 // Checks if v is nil: first by doing == nil, then by calling a method Nil.
-func Nil(v any) bool {
+func IsZero(v any) bool {
 	switch v := v.(type) {
 	case nil:
 		return true
-	case interface{ Nil() bool }:
-		return v.Nil()
+	case interface{ IsZero() bool }:
+		return v.IsZero()
 	default:
 		return false
 	}

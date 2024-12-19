@@ -44,7 +44,7 @@
 // represent AST nodes, such as [DeclMessage], are thin wrappers over a pointer
 // to a [Context] and index into one of its tables. They are intended to be
 // passed by value, because they are essentially pointers (and, in fact,
-// expose a Nil function for checking if they refer to a nil Context pointer).
+// expose a IsZero function for checking if they refer to a nil Context pointer).
 //
 // # Pointer-like types
 //
@@ -56,10 +56,12 @@
 // node-at-rest, and to minimize GC churn by avoiding pointer cycles in the
 // in-memory representation of the AST.
 //
-// All pointer-like types satisfy interface { Nil() bool }. The Nil() method
-// checks for the zero value, just like comparing a Go pointer to nil would.
-// Pointer-like types should generally be passed by value, not by pointer; all
-// of them have value receivers.
+// All pointer-like types have a bool-returning IsZero method, which checks for
+// the zero value. Pointer-like types should generally be passed by value, not
+// by pointer; all of them have value receivers.
+//
+// In some places, the zero value of a pointer-like type is (incorrectly)
+// referred to as nil. This is a documentation bug; instead, it should say zero.
 //
 // # Coming Soon
 //

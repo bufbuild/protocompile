@@ -29,14 +29,14 @@ type rawDeclEmpty struct {
 
 // Semicolon returns this field's ending semicolon.
 //
-// May be nil, if not present.
+// May be [token.Zero], if not present.
 func (d DeclEmpty) Semicolon() token.Token {
 	return d.raw.semi.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclEmpty) Span() report.Span {
-	if d.Nil() {
+	if d.IsZero() {
 		return report.Span{}
 	}
 

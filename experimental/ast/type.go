@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	TypeKindNil TypeKind = iota
+	TypeKindZero TypeKind = iota
 	TypeKindPath
 	TypeKindPrefixed
 	TypeKindGeneric
@@ -60,8 +60,8 @@ func newTypeAny(ctx Context, t rawType) TypeAny {
 // Kind returns the kind of type this is. This is suitable for use
 // in a switch statement.
 func (t TypeAny) Kind() TypeKind {
-	if t.Nil() {
-		return TypeKindNil
+	if t.IsZero() {
+		return TypeKindZero
 	}
 
 	if kind, ok := t.raw.kind(); ok {
@@ -73,17 +73,17 @@ func (t TypeAny) Kind() TypeKind {
 // AsPath converts a TypeAny into a TypePath, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (t TypeAny) AsPath() TypePath {
 	path, _ := t.raw.path(t.Context())
-	// Don't need to check ok; path() returns nil on failure.
+	// Don't need to check ok; path() returns zero on failure.
 	return TypePath{path}
 }
 
 // AsPrefixed converts a TypeAny into a TypePrefix, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (t TypeAny) AsPrefixed() TypePrefixed {
 	ptr := unwrapPathLike[arena.Pointer[rawTypePrefixed]](TypeKindPrefixed, t.raw)
 	if ptr.Nil() {
@@ -99,7 +99,7 @@ func (t TypeAny) AsPrefixed() TypePrefixed {
 // AsGeneric converts a TypeAny into a TypePrefix, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (t TypeAny) AsGeneric() TypeGeneric {
 	ptr := unwrapPathLike[arena.Pointer[rawTypeGeneric]](TypeKindGeneric, t.raw)
 	if ptr.Nil() {
@@ -114,9 +114,9 @@ func (t TypeAny) AsGeneric() TypeGeneric {
 
 // report.Span implements [report.Spanner].
 func (t TypeAny) Span() report.Span {
-	// At most one of the below will produce a non-nil type, and that will be
-	// the span selected by report.Join. If all of them are nil, this produces
-	// the nil span.
+	// At most one of the below will produce a non-zero type, and that will be
+	// the span selected by report.Join. If all of them are zero, this produces
+	// the zero span.
 	return report.Join(
 		t.AsPath(),
 		t.AsPrefixed(),
@@ -135,7 +135,7 @@ type typeImpl[Raw any] struct {
 //
 // See [TypeAny] for more information.
 func (t typeImpl[Raw]) AsAny() TypeAny {
-	if t.Nil() {
+	if t.IsZero() {
 		return TypeAny{}
 	}
 

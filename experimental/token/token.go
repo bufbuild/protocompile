@@ -24,8 +24,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
-// Nil is the nil [Token], i.e., the zero value.
-var Nil Token
+// Zero is the zero [Token], i.e., the zero value.
+var Zero Token
 
 // Value is a constraint that represents a literal scalar value in source.
 //
@@ -45,7 +45,7 @@ type Value interface {
 // between the braces are contained inside it. This moves certain complexity into
 // the lexer in a way that allows us to handle matching delimiters generically.
 //
-// The zero value of Token is the so-called "nil token", which is used to denote the
+// The zero value of Token is the so-called "zero token", which is used to denote the
 // absence of a token.
 type Token struct {
 	withContext
@@ -61,9 +61,9 @@ func (t Token) ID() ID {
 	return t.id
 }
 
-// IsPaired returns whether this is a non-nil leaf token.
+// IsPaired returns whether this is a non-zero leaf token.
 func (t Token) IsLeaf() bool {
-	if t.Nil() {
+	if t.IsZero() {
 		return false
 	}
 
@@ -73,7 +73,7 @@ func (t Token) IsLeaf() bool {
 	return t.synth().IsLeaf()
 }
 
-// IsSynthetic returns whether this is a non-nil synthetic token (i.e., a token that didn't
+// IsSynthetic returns whether this is a non-zero synthetic token (i.e., a token that didn't
 // come from a parsing operation.)
 func (t Token) IsSynthetic() bool {
 	return t.id < 0
@@ -81,9 +81,9 @@ func (t Token) IsSynthetic() bool {
 
 // Kind returns what kind of token this is.
 //
-// Returns [Unrecognized] if this token is nil.
+// Returns [Unrecognized] if this token is zero.
 func (t Token) Kind() Kind {
-	if t.Nil() {
+	if t.IsZero() {
 		return Unrecognized
 	}
 
@@ -100,9 +100,9 @@ func (t Token) Kind() Kind {
 // For example, for a matched pair of braces, this will only return the text of
 // the open brace, "{".
 //
-// Returns empty string for the nil token.
+// Returns empty string for the zero token.
 func (t Token) Text() string {
-	if t.Nil() {
+	if t.IsZero() {
 		return ""
 	}
 
@@ -158,7 +158,7 @@ func (t Token) Text() string {
 
 // Span implements [Spanner].
 func (t Token) Span() report.Span {
-	if t.Nil() || t.IsSynthetic() {
+	if t.IsZero() || t.IsSynthetic() {
 		return report.Span{}
 	}
 
@@ -176,7 +176,7 @@ func (t Token) Span() report.Span {
 
 // LeafSpan returns the span that this token would have if it was a leaf token.
 func (t Token) LeafSpan() report.Span {
-	if t.Nil() || t.IsSynthetic() {
+	if t.IsZero() || t.IsSynthetic() {
 		return report.Span{}
 	}
 
@@ -187,7 +187,7 @@ func (t Token) LeafSpan() report.Span {
 //
 // If this is a leaf token, start and end will be the same token and will compare as equal.
 //
-// Panics if this is a nil token.
+// Panics if this is a zero token.
 func (t Token) StartEnd() (start, end Token) {
 	switch impl := t.nat(); {
 	case impl == nil:
@@ -218,14 +218,14 @@ func (t Token) StartEnd() (start, end Token) {
 // SetValue sets the associated literal value with a token. The token must be
 // of the appropriate kind ([Number] or [String]) for the literal.
 //
-// Panics if the given token is nil, or if the token is natural and the stream
+// Panics if the given token is zero, or if the token is natural and the stream
 // is frozen.
 //
 // Note: this function wants to be a method of [Token], but cannot because it
 // is generic.
 func SetValue[T Value](token Token, value T) {
-	if token.Nil() {
-		panic(fmt.Sprintf("protocompile/token: passed nil token to SetValue: %s", token))
+	if token.IsZero() {
+		panic(fmt.Sprintf("protocompile/token: passed zero token to SetValue: %s", token))
 	}
 
 	var wantKind Kind
@@ -253,14 +253,14 @@ func SetValue[T Value](token Token, value T) {
 
 // ClearValue clears the associated literal value of a token.
 //
-// Panics if the given token is nil, or if the token is natural and the stream
+// Panics if the given token is zero, or if the token is natural and the stream
 // is frozen.
 //
 // Note: this function wants to be a method of [Token], but is not for symmetry
 // with [SetValue].
 func ClearValue(token Token) {
-	if token.Nil() {
-		panic(fmt.Sprintf("protocompile/token: passed nil token to ClearValue: %s", token))
+	if token.IsZero() {
+		panic(fmt.Sprintf("protocompile/token: passed zero token to ClearValue: %s", token))
 	}
 
 	stream := token.Context().Stream()
@@ -304,9 +304,9 @@ func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
 
 // Children returns a Cursor over the children of this token.
 //
-// If the token is nil or is a leaf token, returns nil.
+// If the token is zero or is a leaf token, returns nil.
 func (t Token) Children() *Cursor {
-	if t.Nil() || t.IsLeaf() {
+	if t.IsZero() || t.IsLeaf() {
 		return nil
 	}
 

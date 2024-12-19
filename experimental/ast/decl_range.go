@@ -83,12 +83,12 @@ func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
 
 // Append implements [Inserter].
 func (d DeclRange) Append(expr ExprAny) {
-	d.InsertComma(d.Len(), expr, token.Nil)
+	d.InsertComma(d.Len(), expr, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (d DeclRange) Insert(n int, expr ExprAny) {
-	d.InsertComma(n, expr, token.Nil)
+	d.InsertComma(n, expr, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -135,7 +135,7 @@ func (d DeclRange) Semicolon() token.Token {
 // Span implements [report.Spanner].
 func (d DeclRange) Span() report.Span {
 	switch {
-	case d.Nil():
+	case d.IsZero():
 		return report.Span{}
 	case d.Len() == 0:
 		return report.Join(d.Keyword(), d.Semicolon(), d.Options())

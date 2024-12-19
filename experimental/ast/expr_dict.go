@@ -68,12 +68,12 @@ func (e ExprDict) Iter(yield func(int, ExprField) bool) {
 
 // Append implements [Inserter].
 func (e ExprDict) Append(expr ExprField) {
-	e.InsertComma(e.Len(), expr, token.Nil)
+	e.InsertComma(e.Len(), expr, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (e ExprDict) Insert(n int, expr ExprField) {
-	e.InsertComma(n, expr, token.Nil)
+	e.InsertComma(n, expr, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -94,8 +94,8 @@ func (e ExprDict) AppendComma(expr ExprField, comma token.Token) {
 // InsertComma implements [Commas].
 func (e ExprDict) InsertComma(n int, expr ExprField, comma token.Token) {
 	e.Context().Nodes().panicIfNotOurs(expr, comma)
-	if expr.Nil() {
-		panic("protocompile/ast: cannot append nil ExprField to ExprMessage")
+	if expr.IsZero() {
+		panic("protocompile/ast: cannot append zero ExprField to ExprMessage")
 	}
 
 	ptr := e.Context().Nodes().exprs.fields.Compress(expr.raw)
@@ -109,7 +109,7 @@ func (e ExprDict) AsMessage() Commas[ExprField] {
 
 // Span implements [report.Spanner].
 func (e ExprDict) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 
@@ -135,21 +135,21 @@ type ExprFieldArgs struct {
 
 // Key returns the key for this field.
 //
-// May be nil if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
+// May be zero if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
 func (e ExprField) Key() ExprAny {
 	return newExprAny(e.Context(), e.raw.key)
 }
 
 // SetKey sets the key for this field.
 //
-// If passed nil, this clears the key.
+// If passed zero, this clears the key.
 func (e ExprField) SetKey(expr ExprAny) {
 	e.raw.key = expr.raw
 }
 
 // Colon returns the colon between Key() and Value().
 //
-// May be nil: it is valid for a field name to be immediately followed by its value and be syntactically
+// May be zero: it is valid for a field name to be immediately followed by its value and be syntactically
 // valid (unlike most "optional" punctuation, this is permitted by Protobuf, not just our permissive AST).
 func (e ExprField) Colon() token.Token {
 	return e.raw.colon.In(e.Context())
@@ -162,14 +162,14 @@ func (e ExprField) Value() ExprAny {
 
 // SetValue sets the value for this field.
 //
-// If passed nil, this clears the expression.
+// If passed zero, this clears the expression.
 func (e ExprField) SetValue(expr ExprAny) {
 	e.raw.value = expr.raw
 }
 
 // Span implements [report.Spanner].
 func (e ExprField) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

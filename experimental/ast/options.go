@@ -78,12 +78,12 @@ func (o CompactOptions) Iter(yield func(int, Option) bool) {
 
 // Append implements [Inserter].
 func (o CompactOptions) Append(option Option) {
-	o.InsertComma(o.Len(), option, token.Nil)
+	o.InsertComma(o.Len(), option, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (o CompactOptions) Insert(n int, option Option) {
-	o.InsertComma(n, option, token.Nil)
+	o.InsertComma(n, option, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -117,7 +117,7 @@ func (o CompactOptions) InsertComma(n int, option Option, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (o CompactOptions) Span() report.Span {
-	if o.Nil() {
+	if o.IsZero() {
 		return report.Span{}
 	}
 
