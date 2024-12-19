@@ -185,6 +185,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 				ty := parseType(p, c, taxa.TypeParams.In())
 				return ty, !ty.Nil()
 			},
+			canStart: canStartPath,
 		}.appendTo(generic.Args())
 
 		ty = generic.AsAny()
