@@ -27,6 +27,10 @@ import (
 //
 // In the Protocompile AST, ranges can contain arbitrary expressions. Thus, DeclRange
 // implements [Comma[ExprAny]].
+//
+// # Grammar
+//
+//	DeclRange := (`extensions` | `reserved`) (Expr `,`)* Expr? CompactOptions? `;`?
 type DeclRange struct{ declImpl[rawDeclRange] }
 
 type rawDeclRange struct {

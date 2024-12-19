@@ -22,6 +22,10 @@ import (
 // ExprRange represents a range of values, such as 1 to 4 or 5 to max.
 //
 // Note that max is not special syntax; it will appear as an [ExprPath] with the name "max".
+//
+// # Grammar
+//
+//	ExprRange := ExprPrefixed `to` ExprOp
 type ExprRange struct{ exprImpl[rawExprRange] }
 
 type rawExprRange struct {

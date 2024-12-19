@@ -25,6 +25,16 @@ import (
 //
 // Unlike in ordinary Protobuf, the Protocompile AST permits arbitrary nesting
 // of modifiers.
+//
+// # Grammar
+//
+//	TypePrefixed := (`optional` | `repeated` | `required` | `stream`) Type
+//
+// Note that there are ambiguities when Type is an absolute [TypePath].
+// The source "optional .foo" names the type "optional.foo" only when inside
+// of a [TypeGeneric]'s brackets or a [Signature]'s method parameters.
+//
+// Also, the `stream` prefix may only occur inside of a [Signature].
 type TypePrefixed struct{ typeImpl[rawTypePrefixed] }
 
 type rawTypePrefixed struct {
