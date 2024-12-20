@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	TypeKindZero TypeKind = iota
+	TypeKindInvalid TypeKind = iota
 	TypeKindPath
 	TypeKindPrefixed
 	TypeKindGeneric
@@ -61,7 +61,7 @@ func newTypeAny(ctx Context, t rawType) TypeAny {
 // in a switch statement.
 func (t TypeAny) Kind() TypeKind {
 	if t.IsZero() {
-		return TypeKindZero
+		return TypeKindInvalid
 	}
 
 	if kind, ok := t.raw.kind(); ok {
