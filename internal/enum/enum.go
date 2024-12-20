@@ -60,289 +60,142 @@ import (
 	"debug/buildinfo"
 	_ "embed"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
-	"text/scanner"
 	"text/template"
-	"unicode"
 
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"gopkg.in/yaml.v3"
 )
-
-var (
-	//go:embed generated.go.tmpl
-	tmplText string
-	tmpl     = template.Must(template.New("generated.go.tmpl").Parse(tmplText))
-)
-
-type Directive struct {
-	Pos  token.Pos
-	Name string
-	Args []string
-}
-
-func HasDirectives(comments []*ast.CommentGroup) bool {
-	for _, g := range comments {
-		for _, c := range g.List {
-			rest, ok := strings.CutPrefix(c.Text, "//enum:")
-			if ok && rest != "" {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func ParseDirectives(fs *token.FileSet, comments []*ast.CommentGroup) ([]Directive, error) {
-	var d []Directive
-	for _, g := range comments {
-		for _, c := range g.List {
-			rest, ok := strings.CutPrefix(c.Text, "//enum:")
-			rest = strings.TrimSpace(rest)
-			if !ok || rest == "" {
-				continue
-			}
-
-			var err error
-			var args []string
-			sc := scanner.Scanner{
-				Error: func(_ *scanner.Scanner, msg string) {
-					err = fmt.Errorf("%s", msg)
-				},
-				Mode: scanner.ScanIdents | scanner.ScanStrings | scanner.ScanRawStrings,
-				IsIdentRune: func(r rune, _ int) bool {
-					return !unicode.IsSpace(r) && r != '"' && r != '`'
-				},
-			}
-			sc.Init(strings.NewReader(rest))
-		scan:
-			for {
-				next := sc.Scan()
-				if err != nil {
-					return nil, fmt.Errorf("%v: invalid directive: %v", fs.Position(c.Pos()), err)
-				}
-
-				switch next {
-				case scanner.EOF:
-					break scan
-				case scanner.Ident:
-					args = append(args, sc.TokenText())
-				case scanner.String:
-					str, _ := strconv.Unquote(sc.TokenText())
-					args = append(args, str)
-				}
-			}
-
-			d = append(d, Directive{
-				Pos:  c.Pos(),
-				Name: args[0],
-				Args: args[1:],
-			})
-		}
-	}
-	return d, nil
-}
 
 type Enum struct {
-	Type    *ast.TypeSpec
-	Methods struct {
-		String, GoString, FromString string
-
-		StringFunc string
-	}
-	Docs struct {
-		String, GoString, FromString []string
-	}
-
-	Values []Value
+	Name    string   `yaml:"name"`
+	Type    string   `yaml:"type"`
+	Docs    string   `yaml:"docs"`
+	Methods []Method `yaml:"methods"`
+	Values  []Value  `yaml:"values"`
 }
 
 type Value struct {
-	Value  *ast.ValueSpec
-	String string
-	Skip   bool
+	Name    string `yaml:"name"`
+	Alias   string `yaml:"alias"`
+	String_ string `yaml:"string"`
+	Docs    string `yaml:"docs"`
+}
+
+func (v Value) String() string {
+	if v.String_ == "" {
+		return v.Name
+	}
+	return v.String_
+}
+
+type Method struct {
+	Kind  MethodKind `yaml:"kind"`
+	Name_ string     `yaml:"name"`
+	Docs_ string     `yaml:"docs"`
+	Skip  []string   `yaml:"skip"`
+}
+
+func (m Method) Name() (string, error) {
+	if m.Name_ != "" {
+		return m.Name_, nil
+	}
+
+	switch m.Kind {
+	case MethodFromString:
+		return "", fmt.Errorf("missing name for kind: %#v", MethodFromString)
+	case MethodGoString:
+		return "GoString", nil
+	case MethodString:
+		return "String", nil
+	default:
+		return "", fmt.Errorf("unexpected kind: %#v", m.Kind)
+	}
+}
+
+func (m Method) Docs() string {
+	if m.Docs_ != "" {
+		return m.Docs_
+	}
+
+	switch m.Kind {
+	case MethodGoString:
+		return "GoString implements [fmt.GoStringer]."
+	case MethodString:
+		return "String implements [fmt.Stringer]."
+	default:
+		return ""
+	}
+}
+
+type MethodKind string
+
+const (
+	MethodString     MethodKind = "string"
+	MethodGoString   MethodKind = "go-string"
+	MethodFromString MethodKind = "from-string"
+)
+
+//go:embed generated.go.tmpl
+var tmplText string
+
+// makeDocs converts a data into doc comments.
+func makeDocs(data, indent string) string {
+	if data == "" {
+		return ""
+	}
+
+	var out strings.Builder
+	for _, line := range strings.Split(strings.TrimSpace(data), "\n") {
+		out.WriteString(indent)
+		if line == "" {
+			out.WriteString("//\n")
+			continue
+		}
+		out.WriteString("// ")
+		out.WriteString(line)
+		out.WriteString("\n")
+	}
+	return out.String()
 }
 
 func Main() error {
-	input := os.Getenv("GOFILE")
-	output := strings.TrimSuffix(input, ".go") + "_enum.go"
+	var input struct {
+		Binary, Package, Path string
+		YAML                  []Enum
+	}
+	input.Package = os.Getenv("GOPACKAGE")
+	input.Path = os.Getenv("GOFILE")
 
-	fs := new(token.FileSet)
-	f, err := parser.ParseFile(fs, input, nil, parser.ParseComments)
+	buildinfo, err := buildinfo.ReadFile(os.Args[0])
+	if err != nil {
+		return err
+	}
+	input.Binary = buildinfo.Path
+
+	text, err := os.ReadFile(input.Path + ".yaml")
+	if err != nil {
+		return err
+	}
+	if err := yaml.Unmarshal(text, &input.YAML); err != nil {
+		return err
+	}
+
+	tmpl, err := template.New("generated.go.tmpl").Funcs(template.FuncMap{
+		"makeDocs": makeDocs,
+		"contains": slices.Contains[[]string],
+	}).Parse(tmplText)
 	if err != nil {
 		return err
 	}
 
-	comments := ast.NewCommentMap(fs, f, f.Comments)
-
-	constsByType := make(map[string][]*ast.ValueSpec)
-	var types []*ast.GenDecl
-
-	for _, decl := range f.Decls {
-		decl, ok := decl.(*ast.GenDecl)
-		if !ok {
-			continue
-		}
-
-		switch decl.Tok {
-		case token.TYPE:
-			if !HasDirectives(comments[decl]) {
-				continue
-			}
-
-			if decl.Lparen.IsValid() {
-				return fmt.Errorf("%v: //enum: directive on type group", fs.Position(decl.TokPos))
-			}
-
-			types = append(types, decl)
-		case token.CONST:
-			var ty string
-			for _, spec := range decl.Specs {
-				v := spec.(*ast.ValueSpec) //nolint:errcheck
-				if v.Type == nil {
-					constsByType[ty] = append(constsByType[ty], v)
-				}
-				if ident, ok := v.Type.(*ast.Ident); ok {
-					ty = ident.Name
-					constsByType[ty] = append(constsByType[ty], v)
-				}
-			}
-		}
-	}
-
-	imports := map[string]struct{}{"fmt": {}}
-	enums := make([]Enum, 0, len(types))
-	for _, ty := range types {
-		enum := Enum{Type: ty.Specs[0].(*ast.TypeSpec)} //nolint:errcheck
-		dirs, err := ParseDirectives(fs, comments[ty])
-		if err != nil {
-			return err
-		}
-		for _, d := range dirs {
-			var ok bool
-			switch d.Name {
-			case "import":
-				path, ok := slicesx.Get(d.Args, 0)
-				if !ok {
-					return fmt.Errorf("%v: //enum:import requires an argument", fs.Position(d.Pos))
-				}
-				imports[path] = struct{}{}
-
-			case "string":
-				enum.Methods.String, ok = slicesx.Get(d.Args, 0)
-				if !ok {
-					enum.Methods.String = "String"
-					break
-				}
-				enum.Docs.String = d.Args[1:]
-
-			case "gostring":
-				enum.Methods.GoString, ok = slicesx.Get(d.Args, 0)
-				if !ok {
-					enum.Methods.GoString = "GoString"
-					break
-				}
-				enum.Docs.GoString = d.Args[1:]
-
-			case "fromstring":
-				enum.Methods.FromString, ok = slicesx.Get(d.Args, 0)
-				if !ok {
-					return fmt.Errorf("%v: //enum:fromstring requires an argument", fs.Position(d.Pos))
-				}
-				enum.Docs.FromString = d.Args[1:]
-
-			case "stringfunc":
-				enum.Methods.StringFunc, ok = slicesx.Get(d.Args, 0)
-				if !ok {
-					return fmt.Errorf("%v: //enum:stringfunc requires an argument", fs.Position(d.Pos))
-				}
-
-			case "doc":
-				arg, _ := slicesx.Get(d.Args, 0)
-				text, _ := slicesx.Get(d.Args, 1)
-				switch arg {
-				case "string":
-					enum.Docs.String = append(enum.Docs.String, text)
-				case "gostring":
-					enum.Docs.GoString = append(enum.Docs.GoString, text)
-				case "fromstring":
-					enum.Docs.FromString = append(enum.Docs.FromString, text)
-				default:
-					return fmt.Errorf("%v: invalid method for //enum:doc: %q", fs.Position(d.Pos), arg)
-				}
-
-			default:
-				return fmt.Errorf("%v: unknown type directive %q", fs.Position(d.Pos), d.Name)
-			}
-		}
-
-		if enum.Methods.String != "" && enum.Docs.String == nil {
-			enum.Docs.String = []string{"String implements [fmt.Stringer]."}
-		}
-		if enum.Methods.GoString != "" && enum.Docs.GoString == nil {
-			enum.Docs.GoString = []string{"GoString implements [fmt.GoStringer]."}
-		}
-
-		for _, v := range constsByType[enum.Type.Name.Name] {
-			value := Value{Value: v}
-			dirs, err := ParseDirectives(fs, comments[v])
-			if err != nil {
-				return err
-			}
-			for _, d := range dirs {
-				switch d.Name {
-				case "string":
-					name, ok := slicesx.Get(d.Args, 0)
-					if !ok {
-						return fmt.Errorf("%v: //enum:string requires an argument", fs.Position(d.Pos))
-					}
-					value.String = strconv.Quote(name)
-				case "skip":
-					value.Skip = true
-
-				default:
-					return fmt.Errorf("%v: unknown const directive %q", fs.Position(d.Pos), d.Name)
-				}
-			}
-
-			enum.Values = append(enum.Values, value)
-		}
-
-		enums = append(enums, enum)
-	}
-
-	importList := make([]string, 0, len(imports))
-	for imp := range imports {
-		importList = append(importList, strconv.Quote(imp))
-	}
-	slices.Sort(importList)
-
-	out, err := os.Create(output)
+	out, err := os.Create(input.Path)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
-
-	info, err := buildinfo.ReadFile(os.Args[0])
-	if err != nil {
-		return err
-	}
-
-	return tmpl.ExecuteTemplate(out, "generated.go.tmpl", struct {
-		Binary, Package string
-		Imports         []string
-		Enums           []Enum
-	}{
-		Binary:  info.Path,
-		Package: f.Name.Name,
-		Imports: importList,
-		Enums:   enums,
-	})
+	return tmpl.ExecuteTemplate(out, "generated.go.tmpl", input)
 }
 
 func main() {
