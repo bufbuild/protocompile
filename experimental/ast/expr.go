@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 const (
@@ -215,6 +216,31 @@ func (e ExprAny) Span() report.Span {
 	)
 }
 
+// Trace returns a stack trace for the site at which e was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (e ExprAny) Trace() string {
+	switch e.Kind() {
+	case ExprKindArray:
+		return e.AsArray().Trace()
+	case ExprKindDict:
+		return e.AsDict().Trace()
+	case ExprKindField:
+		return e.AsField().Trace()
+	case ExprKindPrefixed:
+		return e.AsPrefixed().Trace()
+	case ExprKindRange:
+		return e.AsRange().Trace()
+
+	case ExprKindLiteral, ExprKindPath:
+		// ExprLiteral and ExprPath do not currently record traces.
+		fallthrough
+	default:
+		return ""
+	}
+}
+
 // typeImpl is the common implementation of pointer-like Expr* types.
 type exprImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
@@ -235,6 +261,14 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 		e.Context(),
 		wrapPathLike(kind, arena.Compress(e.raw)),
 	)
+}
+
+// Trace returns a stack trace for the site at which e was constructed using
+// a [Nodes].
+//
+// Returns "" if a trace was not recorded. See Nodes.EnableTracing.
+func (e exprImpl[Raw]) Trace() string {
+	return e.Context().Nodes().traces[unsafex.Addr(e.raw)]
 }
 
 // exprs is storage for the various kinds of Exprs in a Context.

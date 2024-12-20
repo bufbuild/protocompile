@@ -16,10 +16,13 @@ package ast
 
 import (
 	"fmt"
+	"runtime"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // Nodes provides storage for the various AST node types, and can be used
@@ -28,10 +31,28 @@ type Nodes struct {
 	// The context for these nodes.
 	Context Context
 
+	// If set, this will cause any call that constructs a new AST node to log
+	// the stack trace of the caller. Those stack traces can later be recalled
+	// by calling the Trace method on an AST node.
+	//
+	// Tracing is best effort: some node types are currently unable to record
+	// a creation site.
+	//
+	// Enabling this feature will result in significant parser slowdown; it is
+	// intended for debugging only.
+	EnableTracing bool
+
 	decls   decls
 	types   types
 	exprs   exprs
 	options arena.Arena[rawCompactOptions]
+
+	// Map of arena pointer addresses to recorded stack traces. We use a
+	// uintptr because all of the nodes associated with this context live
+	// have the same lifetime as this map: they are not freed (allowing their
+	// address to be reused) until traces is also freed.
+	traces  map[uintptr]string
+	scratch []uintptr // Reusable scratch space for traceNode.
 }
 
 // Root returns the root AST node for this context.
@@ -47,7 +68,7 @@ func (n *Nodes) Root() File {
 func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 	n.panicIfNotOurs(semicolon)
 
-	decl := wrapDeclEmpty(n.Context, n.decls.empties.NewCompressed(rawDeclEmpty{
+	decl := wrapDeclEmpty(n.Context, newNode(n, &n.decls.empties, rawDeclEmpty{
 		semi: semicolon.ID(),
 	}))
 
@@ -58,7 +79,7 @@ func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	n.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Options, args.Semicolon)
 
-	return wrapDeclSyntax(n.Context, n.decls.syntaxes.NewCompressed(rawDeclSyntax{
+	return wrapDeclSyntax(n.Context, newNode(n, &n.decls.syntaxes, rawDeclSyntax{
 		keyword: args.Keyword.ID(),
 		equals:  args.Equals.ID(),
 		value:   args.Value.raw,
@@ -71,7 +92,7 @@ func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	n.panicIfNotOurs(args.Keyword, args.Path, args.Options, args.Semicolon)
 
-	return wrapDeclPackage(n.Context, n.decls.packages.NewCompressed(rawDeclPackage{
+	return wrapDeclPackage(n.Context, newNode(n, &n.decls.packages, rawDeclPackage{
 		keyword: args.Keyword.ID(),
 		path:    args.Path.raw,
 		options: n.options.Compress(args.Options.raw),
@@ -83,7 +104,7 @@ func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 func (n *Nodes) NewDeclImport(args DeclImportArgs) DeclImport {
 	n.panicIfNotOurs(args.Keyword, args.Modifier, args.ImportPath, args.Options, args.Semicolon)
 
-	return wrapDeclImport(n.Context, n.decls.imports.NewCompressed(rawDeclImport{
+	return wrapDeclImport(n.Context, newNode(n, &n.decls.imports, rawDeclImport{
 		keyword:    args.Keyword.ID(),
 		modifier:   args.Modifier.ID(),
 		importPath: args.ImportPath.raw,
@@ -118,7 +139,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 		}
 	}
 
-	return wrapDeclDef(n.Context, n.decls.defs.NewCompressed(raw))
+	return wrapDeclDef(n.Context, newNode(n, &n.decls.defs, raw))
 }
 
 // NewDeclBody creates a new DeclBody node.
@@ -127,7 +148,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 func (n *Nodes) NewDeclBody(braces token.Token) DeclBody {
 	n.panicIfNotOurs(braces)
 
-	return wrapDeclBody(n.Context, n.decls.bodies.NewCompressed(rawDeclBody{
+	return wrapDeclBody(n.Context, newNode(n, &n.decls.bodies, rawDeclBody{
 		braces: braces.ID(),
 	}))
 }
@@ -138,7 +159,7 @@ func (n *Nodes) NewDeclBody(braces token.Token) DeclBody {
 func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 	n.panicIfNotOurs(args.Keyword, args.Options, args.Semicolon)
 
-	return wrapDeclRange(n.Context, n.decls.ranges.NewCompressed(rawDeclRange{
+	return wrapDeclRange(n.Context, newNode(n, &n.decls.ranges, rawDeclRange{
 		keyword: args.Keyword.ID(),
 		options: n.options.Compress(args.Options.raw),
 		semi:    args.Semicolon.ID(),
@@ -149,7 +170,7 @@ func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 func (n *Nodes) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 	n.panicIfNotOurs(args.Prefix, args.Expr)
 
-	ptr := n.exprs.prefixes.NewCompressed(rawExprPrefixed{
+	ptr := newNode(n, &n.exprs.prefixes, rawExprPrefixed{
 		prefix: args.Prefix.ID(),
 		expr:   args.Expr.raw,
 	})
@@ -163,7 +184,7 @@ func (n *Nodes) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 func (n *Nodes) NewExprRange(args ExprRangeArgs) ExprRange {
 	n.panicIfNotOurs(args.Start, args.To, args.End)
 
-	ptr := n.exprs.ranges.NewCompressed(rawExprRange{
+	ptr := newNode(n, &n.exprs.ranges, rawExprRange{
 		to:    args.To.ID(),
 		start: args.Start.raw,
 		end:   args.End.raw,
@@ -180,7 +201,7 @@ func (n *Nodes) NewExprRange(args ExprRangeArgs) ExprRange {
 func (n *Nodes) NewExprArray(brackets token.Token) ExprArray {
 	n.panicIfNotOurs(brackets)
 
-	ptr := n.exprs.arrays.NewCompressed(rawExprArray{
+	ptr := newNode(n, &n.exprs.arrays, rawExprArray{
 		brackets: brackets.ID(),
 	})
 	return ExprArray{exprImpl[rawExprArray]{
@@ -195,7 +216,7 @@ func (n *Nodes) NewExprArray(brackets token.Token) ExprArray {
 func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 	n.panicIfNotOurs(braces)
 
-	ptr := n.exprs.dicts.NewCompressed(rawExprDict{
+	ptr := newNode(n, &n.exprs.dicts, rawExprDict{
 		braces: braces.ID(),
 	})
 	return ExprDict{exprImpl[rawExprDict]{
@@ -208,7 +229,7 @@ func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 	n.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
-	ptr := n.exprs.fields.NewCompressed(rawExprField{
+	ptr := newNode(n, &n.exprs.fields, rawExprField{
 		key:   args.Key.raw,
 		colon: args.Colon.ID(),
 		value: args.Value.raw,
@@ -223,7 +244,7 @@ func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 func (n *Nodes) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 	n.panicIfNotOurs(args.Prefix, args.Type)
 
-	ptr := n.types.prefixes.NewCompressed(rawTypePrefixed{
+	ptr := newNode(n, &n.types.prefixes, rawTypePrefixed{
 		prefix: args.Prefix.ID(),
 		ty:     args.Type.raw,
 	})
@@ -239,7 +260,7 @@ func (n *Nodes) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	n.panicIfNotOurs(args.Path, args.AngleBrackets)
 
-	ptr := n.types.generics.NewCompressed(rawTypeGeneric{
+	ptr := newNode(n, &n.types.generics, rawTypeGeneric{
 		path: args.Path.raw,
 		args: rawTypeList{brackets: args.AngleBrackets.ID()},
 	})
@@ -253,7 +274,7 @@ func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 	n.panicIfNotOurs(brackets)
 
-	return wrapOptions(n.Context, n.options.NewCompressed(rawCompactOptions{
+	return wrapOptions(n.Context, newNode(n, &n.options, rawCompactOptions{
 		brackets: brackets.ID(),
 	}))
 }
@@ -289,4 +310,46 @@ func (n *Nodes) panicIfNotOurs(that ...any) {
 			thatCtx.Stream().Path(),
 		))
 	}
+}
+
+// newNode creates a new node in the given arena, recording debugging information
+// on n as it does so.
+//
+// This function wants to be a method of Nodes, but can't because it's generic.
+func newNode[T any](n *Nodes, arena *arena.Arena[T], value T) arena.Pointer[T] {
+	p := arena.NewCompressed(value)
+	if n.EnableTracing {
+		traceNode(n, arena, p) // Outlined to promote inlining of newNode.
+	}
+	return p
+}
+
+// traceNode inserts a backtrace to the caller of newNode as the backtrace for
+// the node at p.
+func traceNode[T any](n *Nodes, arena *arena.Arena[T], p arena.Pointer[T]) {
+	if n.scratch == nil {
+		// NOTE: If spending four words on traces + scratch turns out to be
+		// wasteful, we can instead store this slice in traces itself, behind
+		// the uintptr value 1, which no pointer uses as its address.
+		n.scratch = make([]uintptr, 256)
+	}
+
+	var buf strings.Builder
+	// 0 means runtime.Callers, 1 means traceNode, and 2 means newNode. Thus,
+	// we want 3 for the caller of newNode.
+	trace := n.scratch[:runtime.Callers(3, n.scratch)]
+	frames := runtime.CallersFrames(trace)
+	for {
+		frame, more := frames.Next()
+		fmt.Fprintf(&buf, "at %s\n  %s:%d\n", frame.Function, frame.File, frame.Line)
+		if !more {
+			break
+		}
+	}
+
+	if n.traces == nil {
+		n.traces = make(map[uintptr]string)
+	}
+
+	n.traces[unsafex.Addr(arena.Deref(p))] = buf.String()
 }
