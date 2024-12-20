@@ -49,6 +49,7 @@ func TestZero(t *testing.T) {
 	testZero[ast.DefService](t)
 
 	testZero[ast.ExprAny](t)
+	testZero[ast.ExprError](t)
 	testZero[ast.ExprArray](t)
 	testZero[ast.ExprDict](t)
 	testZero[ast.ExprField](t)
@@ -57,6 +58,7 @@ func TestZero(t *testing.T) {
 	testZero[ast.ExprPrefixed](t)
 
 	testZero[ast.TypeAny](t)
+	testZero[ast.TypeError](t)
 	testZero[ast.TypeGeneric](t)
 	testZero[ast.TypeList](t)
 	testZero[ast.TypePath](t)
