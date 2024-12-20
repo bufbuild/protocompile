@@ -23,23 +23,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum
-
-// TypeKind is a kind of type. There is one value of TypeKind for each
-// Type* type in this package.
-//
-//enum:string
-//enum:gostring
-type TypeKind int8
-
-const (
-	TypeKindInvalid TypeKind = iota
-	TypeKindError
-	TypeKindPath
-	TypeKindPrefixed
-	TypeKindGeneric
-)
-
 // TypeAny is any Type* type in this package.
 //
 // Values of this type can be obtained by calling an AsAny method on a Type*

@@ -26,13 +26,14 @@ import "fmt"
 type {{$e.Name}} {{$e.Type}}
 
 const (
-{{range $i, $v := $e.Values -}}{{if ne $v.Docs ""}}
-{{end}}{{makeDocs $v.Docs "\t" -}}
+{{range $i, $v := $e.Values -}}{{if and (not $v.HasSuffixDocs) (ne $v.Docs "")}}
+{{makeDocs $v.Docs "\t"}}{{end -}}
 {{if eq $i 0}}	{{$v.Name}} {{$e.Name}} = iota
-{{else if ne $v.Alias ""}}	{{$v.Name}} = {{$v.Alias}}
-{{else}}	{{$v.Name}}
+{{- else if ne $v.Alias ""}}	{{$v.Name}} = {{$v.Alias}}
+{{- else}}	{{$v.Name}}
+{{- end}}{{if $v.HasSuffixDocs}} // {{$v.Docs}}{{end}}
 {{end -}}
-{{end -}}
+{{with $e.Total}}	{{.}} int = iota{{end -}}
 )
 {{range $_, $m := $e.Methods -}}
 {{- if eq $m.Kind "string"}}

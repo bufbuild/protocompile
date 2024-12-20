@@ -19,28 +19,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum
-
-// ExprPrefix is a prefix for an expression, such as a minus sign.
-type ExprPrefix int8
-
-const (
-	ExprPrefixUnknown ExprPrefix = iota //enum:string unknown
-	ExprPrefixMinus                     //enum:string "-"
-)
-
-// ExprPrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [ExprPrefixUnknown].
-func ExprPrefixByName(name string) ExprPrefix {
-	switch name {
-	case "-":
-		return ExprPrefixMinus
-	default:
-		return ExprPrefixUnknown
-	}
-}
-
 // ExprPrefixed is an expression prefixed with an operator.
 //
 // # Grammar

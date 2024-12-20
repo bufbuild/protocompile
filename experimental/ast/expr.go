@@ -24,27 +24,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum
-
-// ExprKind is a kind of expression. There is one value of ExprKind for each
-// Expr* type in this package.
-//
-//enum:string
-//enum:gostring
-type ExprKind int8
-
-const (
-	ExprKindInvalid ExprKind = iota
-	ExprKindError
-	ExprKindLiteral
-	ExprKindPrefixed
-	ExprKindPath
-	ExprKindRange
-	ExprKindArray
-	ExprKindDict
-	ExprKindField
-)
-
 // ExprAny is any ExprAny* type in this package.
 //
 // Values of this type can be obtained by calling an AsAny method on a ExprAny*
@@ -92,7 +71,11 @@ func newExprAny(c Context, e rawExpr) ExprAny {
 // Kind returns the kind of expression this is. This is suitable for use
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
+<<<<<<< HEAD
 	if e.IsZero() {
+=======
+	if e.Nil() {
+>>>>>>> 34c5f60 (switch using yaml files)
 		return ExprKindInvalid
 	}
 
