@@ -145,7 +145,7 @@ func TestSum(t *testing.T) {
 	result, report, err = incremental.Run(ctx, exec, Sum{"1,2,2,oops,4"})
 	require.NoError(t, err)
 	assert.Equal(9, result[0].Value)
-	assert.Empty(report.Diagnostics, 1)
+	assert.Len(report.Diagnostics, 1)
 	assert.Equal([]string{
 		`incremental_test.ParseInt{Input:"1"}`,
 		`incremental_test.ParseInt{Input:"2"}`,
