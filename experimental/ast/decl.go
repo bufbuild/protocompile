@@ -22,26 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum
-
-// DeclKind is a kind of declaration. There is one value of DeclKind for each
-// Decl* type in this package.
-//
-//enum:string
-//enum:gostring
-type DeclKind int8
-
-const (
-	DeclKindNil DeclKind = iota
-	DeclKindEmpty
-	DeclKindSyntax
-	DeclKindPackage
-	DeclKindImport
-	DeclKindDef
-	DeclKindBody
-	DeclKindRange
-)
-
 // DeclAny is any Decl* type in this package.
 //
 // Values of this type can be obtained by calling an AsAny method on a Decl*
@@ -171,7 +151,7 @@ type rawDecl struct {
 }
 
 func (d rawDecl) With(c Context) DeclAny {
-	if c == nil || d.ptr.Nil() || d.kind == DeclKindNil {
+	if c == nil || d.ptr.Nil() || d.kind == DeclKindInvalid {
 		return DeclAny{}
 	}
 

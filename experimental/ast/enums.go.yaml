@@ -1,0 +1,133 @@
+# Copyright 2020-2024 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: DeclKind
+  type: int8
+  docs: |
+    DeclKind is a kind of declaration. There is one value of DeclKind for each
+    Decl* type in this package.
+  methods:
+  - kind: string
+  - kind: go-string
+  values:
+  - name: DeclKindInvalid
+  - name: DeclKindEmpty
+  - name: DeclKindSyntax
+  - name: DeclKindPackage
+  - name: DeclKindImport
+  - name: DeclKindDef
+  - name: DeclKindBody
+  - name: DeclKindRange
+
+- name: DefKind
+  type: int8
+  docs: |
+    DefKind is the kind of definition a [DeclDef] contains.
+
+    See [DeclDef.Classify].
+  methods:
+  - kind: string
+  - kind: go-string
+  values:
+  - name: DefKindInvalid
+  - name: DefKindMessage
+  - name: DefKindEnum
+  - name: DefKindService
+  - name: DefKindExtend
+  - name: DefKindField
+  - name: DefKindOneof
+  - name: DefKindGroup
+  - name: DefKindEnumValue
+  - name: DefKindMethod
+  - name: DefKindOption
+
+- name: ExprKind
+  type: int8
+  docs: |
+    ExprKind is a kind of expression. There is one value of ExprKind for each
+    Expr* type in this package.
+  methods:
+  - kind: string
+  - kind: go-string
+  values:
+  - name: ExprKindInvalid
+  - name: ExprKindError
+  - name: ExprKindLiteral
+  - name: ExprKindPrefixed
+  - name: ExprKindPath
+  - name: ExprKindRange
+  - name: ExprKindArray
+  - name: ExprKindDict
+  - name: ExprKindField
+
+- name: TypeKind
+  type: int8
+  docs: |
+    TypeKind is a kind of type. There is one value of TypeKind for each
+    Type* type in this package.
+  methods:
+  - kind: string
+  - kind: go-string
+  values:
+  - name: TypeKindNil
+  - name: TypeKindError
+  - name: TypeKindPath
+  - name: TypeKindPrefixed
+  - name: TypeKindGeneric
+  
+- name: ExprPrefix
+  type: int8
+  docs: |
+    TypePrefix is a prefix for an expression, such as a minus sign.
+  methods:
+  - kind: string
+  - kind: go-string
+  - kind: from-string
+    name: ExprPrefixByName
+    docs: |
+      ExprPrefixByName looks up a prefix kind by name.
+      
+      If name is not a known prefix, returns [ExprPrefixUnknown].
+    skip: [ExprPrefixUnknown]
+  values:
+  - {name: ExprPrefixUnknown, string: unknown}
+  - {name: ExprPrefixMinus, string: "-"}
+
+- name: TypePrefix
+  type: int8
+  docs: |
+    TypeKind is a kind of type. There is one value of TypeKind for each
+    Type* type in this package.
+    
+    TypePrefix is a prefix for a type, such as required, optional, or repeated.
+  methods:
+  - kind: string
+  - kind: go-string
+  - kind: from-string
+    name: TypePrefixByName
+    docs: |
+      TypePrefixByName looks up a prefix kind by name.
+      
+      If name is not a known prefix, returns [TypePrefixUnknown].
+    skip: [TypePrefixUnknown]
+  values:
+  - {name: TypePrefixUnknown, string: unknown}
+  - {name: TypePrefixOptional, string: optional}
+  - {name: TypePrefixRepeated, string: required}
+  - {name: TypePrefixRequired, string: repeated}
+  - name: TypePrefixStream
+    string: stream
+    docs: |
+      This is the "stream Foo.bar" syntax of RPC methods. It is also treated as
+      a prefix.

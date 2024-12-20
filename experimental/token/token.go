@@ -24,6 +24,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
+// IsSkippable returns whether this is a token that should be examined during
+// syntactic analysis.
+func (t Kind) IsSkippable() bool {
+	// Note: kind.go is a generated file.
+	return t == Space || t == Comment || t == Unrecognized
+}
+
 // Nil is the nil [Token], i.e., the zero value.
 var Nil Token
 
