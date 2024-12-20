@@ -699,8 +699,6 @@ func TestBasicValidation(t *testing.T) {
 					   option (foo) = -inf;
 					   option (foo) = nan;
 					   option (foo) = -nan;`,
-			// Bug in protoc, see https://github.com/protocolbuffers/protobuf/issues/15010
-			expectedDiffWithProtoc: true,
 		},
 		"failure_inf_upper_in_option_value": {
 			contents: `syntax = "proto2";

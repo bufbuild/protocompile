@@ -12,23 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package linker
+syntax = "proto2";
 
-import (
-	"reflect"
-	"unsafe"
+package test;
 
-	"google.golang.org/protobuf/reflect/protoreflect"
-)
-
-var pathElementType = reflect.TypeOf(protoreflect.SourcePath{}).Elem()
-
-func pathKey(p protoreflect.SourcePath) any {
-	if p == nil {
-		// Reflection code below doesn't work with nil slices
-		return [0]int32{}
-	}
-	data := unsafe.Pointer(unsafe.SliceData(p))
-	array := reflect.NewAt(reflect.ArrayOf(len(p), pathElementType), data)
-	return array.Elem().Interface()
+enum E {
+    NO_TAG;
+    NO_TAG2
 }

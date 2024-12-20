@@ -16,7 +16,10 @@
 package slicesx
 
 import (
+	"slices"
+
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
+	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // SliceIndex is a type that can be used to index into a slice.
@@ -63,4 +66,23 @@ func Last[S ~[]E, E any](s S) (element E, ok bool) {
 // instead, returning nil if s is empty.
 func LastPointer[S ~[]E, E any](s S) *E {
 	return GetPointer(s, len(s)-1)
+}
+
+// Among is like [slices.Contains], but the haystack is passed variadically.
+//
+// This makes the common case of using Contains as a variadic (x == y || ...)
+// more compact.
+func Among[E comparable](needle E, haystack ...E) bool {
+	return slices.Contains(haystack, needle)
+}
+
+// Values is a polyfill for [slices.Values].
+func Values[S ~[]E, E any](s S) iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for _, v := range s {
+			if !yield(v) {
+				return
+			}
+		}
+	}
 }

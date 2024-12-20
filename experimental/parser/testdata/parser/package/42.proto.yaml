@@ -1,0 +1,4 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package: {}
+  - empty: {}

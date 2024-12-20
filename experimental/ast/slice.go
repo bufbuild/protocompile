@@ -65,9 +65,9 @@ type Commas[T any] interface {
 	// Comma is like [Slice.At] but returns the comma that follows the nth
 	// element.
 	//
-	// May be nil, either because it's the last element (a common situation
-	// where there is no comma) or it was added with Insert() rather than
-	// InsertComma().
+	// May be [token.Zero], either because it's the last element
+	// (a common situation where there is no comma) or it was added with
+	// Insert() rather than InsertComma().
 	Comma(n int) token.Token
 
 	// InsertComma is like Append, but includes an explicit comma.

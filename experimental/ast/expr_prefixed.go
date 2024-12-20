@@ -20,6 +20,10 @@ import (
 )
 
 // ExprPrefixed is an expression prefixed with an operator.
+//
+// # Grammar
+//
+//	ExprPrefix := `-` ExprSolo
 type ExprPrefixed struct{ exprImpl[rawExprPrefixed] }
 
 type rawExprPrefixed struct {
@@ -35,29 +39,41 @@ type ExprPrefixedArgs struct {
 
 // Prefix returns this expression's prefix.
 func (e ExprPrefixed) Prefix() ExprPrefix {
+	if e.IsZero() {
+		return 0
+	}
+
 	return ExprPrefixByName(e.PrefixToken().Text())
 }
 
 // Prefix returns the token representing this expression's prefix.
 func (e ExprPrefixed) PrefixToken() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.prefix.In(e.Context())
 }
 
 // Expr returns the expression the prefix is applied to.
 func (e ExprPrefixed) Expr() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.expr)
 }
 
 // SetExpr sets the expression that the prefix is applied to.
 //
-// If passed nil, this clears the expression.
+// If passed zero, this clears the expression.
 func (e ExprPrefixed) SetExpr(expr ExprAny) {
 	e.raw.expr = expr.raw
 }
 
 // report.Span implements [report.Spanner].
 func (e ExprPrefixed) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

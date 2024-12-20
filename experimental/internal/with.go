@@ -31,22 +31,22 @@ func NewWith[Context comparable](c Context) With[Context] {
 
 // Context returns this type's associated context.
 //
-// Returns nil if this is this type's zero value.
+// Returns zero if this is this type's zero value.
 func (w With[Context]) Context() Context {
 	return w.ctx
 }
 
-// Nil checks whether this is this type's zero value.
-func (w With[Context]) Nil() bool {
+// IsZero checks whether this is this type's zero value.
+func (w With[Context]) IsZero() bool {
 	var zero Context
 	return w.ctx == zero
 }
 
-// PanicIfNil panics if a context is nil.
+// PanicIfZero panics if a context is zero.
 //
 // This is helpful for immediately panicking on function entry.
-func PanicIfNil[Context comparable](with *With[Context]) {
-	if with.Nil() {
+func PanicIfZero[Context comparable](with *With[Context]) {
+	if with.IsZero() {
 		var zero Context
 		panic(fmt.Errorf("value has nil context %T", zero))
 	}

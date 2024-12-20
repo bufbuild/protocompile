@@ -198,7 +198,7 @@ var _table_ExprKind_GoString = [...]string {
 type TypeKind int8
 
 const (
-	TypeKindNil TypeKind = iota
+	TypeKindInvalid TypeKind = iota
 	TypeKindError
 	TypeKindPath
 	TypeKindPrefixed
@@ -222,7 +222,7 @@ func (v TypeKind) GoString() string {
 }
 
 var _table_TypeKind_String = [...]string {
-	TypeKindNil: "TypeKindNil",
+	TypeKindInvalid: "TypeKindInvalid",
 	TypeKindError: "TypeKindError",
 	TypeKindPath: "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",
@@ -230,7 +230,7 @@ var _table_TypeKind_String = [...]string {
 }
 
 var _table_TypeKind_GoString = [...]string {
-	TypeKindNil: "TypeKindNil",
+	TypeKindInvalid: "TypeKindInvalid",
 	TypeKindError: "TypeKindError",
 	TypeKindPath: "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",

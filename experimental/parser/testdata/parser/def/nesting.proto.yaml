@@ -1,0 +1,78 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "M" }]
+      body.decls:
+        - def:
+            kind: KIND_MESSAGE
+            name.components: [{ ident: "M" }]
+            body: {}
+        - def: { kind: KIND_ENUM, name.components: [{ ident: "E" }], body: {} }
+        - def:
+            kind: KIND_SERVICE
+            name.components: [{ ident: "S" }]
+            body: {}
+        - def: { kind: KIND_EXTEND, name.components: [{ ident: "E" }], body: {} }
+        - def: { kind: KIND_ONEOF, name.components: [{ ident: "O" }], body: {} }
+  - def:
+      kind: KIND_ENUM
+      name.components: [{ ident: "E" }]
+      body.decls:
+        - def:
+            kind: KIND_MESSAGE
+            name.components: [{ ident: "M" }]
+            body: {}
+        - def: { kind: KIND_ENUM, name.components: [{ ident: "E" }], body: {} }
+        - def:
+            kind: KIND_SERVICE
+            name.components: [{ ident: "S" }]
+            body: {}
+        - def: { kind: KIND_EXTEND, name.components: [{ ident: "E" }], body: {} }
+        - def: { kind: KIND_ONEOF, name.components: [{ ident: "O" }], body: {} }
+  - def:
+      kind: KIND_SERVICE
+      name.components: [{ ident: "S" }]
+      body.decls:
+        - def:
+            kind: KIND_MESSAGE
+            name.components: [{ ident: "M" }]
+            body: {}
+        - def: { kind: KIND_ENUM, name.components: [{ ident: "E" }], body: {} }
+        - def:
+            kind: KIND_SERVICE
+            name.components: [{ ident: "S" }]
+            body: {}
+        - def: { kind: KIND_EXTEND, name.components: [{ ident: "E" }], body: {} }
+        - def: { kind: KIND_ONEOF, name.components: [{ ident: "O" }], body: {} }
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "E" }]
+      body.decls:
+        - def:
+            kind: KIND_MESSAGE
+            name.components: [{ ident: "M" }]
+            body: {}
+        - def: { kind: KIND_ENUM, name.components: [{ ident: "E" }], body: {} }
+        - def:
+            kind: KIND_SERVICE
+            name.components: [{ ident: "S" }]
+            body: {}
+        - def: { kind: KIND_EXTEND, name.components: [{ ident: "E" }], body: {} }
+        - def: { kind: KIND_ONEOF, name.components: [{ ident: "O" }], body: {} }
+  - def:
+      kind: KIND_ONEOF
+      name.components: [{ ident: "O" }]
+      body.decls:
+        - def:
+            kind: KIND_MESSAGE
+            name.components: [{ ident: "M" }]
+            body: {}
+        - def: { kind: KIND_ENUM, name.components: [{ ident: "E" }], body: {} }
+        - def:
+            kind: KIND_SERVICE
+            name.components: [{ ident: "S" }]
+            body: {}
+        - def: { kind: KIND_EXTEND, name.components: [{ ident: "E" }], body: {} }
+        - def: { kind: KIND_ONEOF, name.components: [{ ident: "O" }], body: {} }

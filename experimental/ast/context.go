@@ -44,7 +44,7 @@ func NewContext(file *report.File) Context {
 		Context: c,
 	}
 
-	c.Nodes().NewDeclBody(token.Nil) // This is the rawBody for the whole file.
+	c.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.
 	return c
 }
 
