@@ -45,9 +45,9 @@
 //     strings.
 //  3. Unquoted names refer to other productions.
 //
-// Productions that represent a type from this package, or a [token.Kind]
-// (without the token. prefix), are in PascalCase; all other productions are in
-// camelCase and are scoped to that type.
+// Productions that represent a type from this package, a [token.Kind], or
+// a production used by a different type, are in PascalCase; all other
+// productions are in camelCase and are scoped to that type.
 //
 // The parser (and other parts of the compiler) will diagnose invalid Protobuf
 // syntax, but this AST is able to represent the extended syntax it documents.
