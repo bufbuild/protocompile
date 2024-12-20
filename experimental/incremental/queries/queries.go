@@ -16,3 +16,10 @@
 // of Protocompile. It is separate from package incremental itself because it is
 // Protocompile-specific.
 package queries
+
+// Values for [report.Report].SortOrder, which determine how diagnostics
+// generated across parts of the compiler are sorted.
+const (
+	stageFile int = iota * 10
+	stageAST
+)

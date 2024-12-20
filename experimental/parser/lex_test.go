@@ -43,7 +43,7 @@ func TestLexer(t *testing.T) {
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		text = unescapeTestCase(text)
 
-		errs := &report.Report{Tracing: 10}
+		errs := &report.Report{Options: report.Options{Tracing: 10}}
 		ctx := ast.NewContext(report.NewFile(path, text))
 		lex(ctx, errs)
 
