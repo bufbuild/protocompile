@@ -19,26 +19,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-const (
-	ExprPrefixUnknown ExprPrefix = iota
-	ExprPrefixMinus
-)
-
-// ExprPrefix is a prefix for an expression, such as a minus sign.
-type ExprPrefix int8
-
-// ExprPrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [ExprPrefixUnknown].
-func ExprPrefixByName(name string) ExprPrefix {
-	switch name {
-	case "-":
-		return ExprPrefixMinus
-	default:
-		return ExprPrefixUnknown
-	}
-}
-
 // ExprPrefixed is an expression prefixed with an operator.
 //
 // # Grammar

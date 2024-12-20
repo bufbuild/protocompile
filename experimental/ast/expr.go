@@ -24,22 +24,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-const (
-	ExprKindInvalid ExprKind = iota
-	ExprKindError
-	ExprKindLiteral
-	ExprKindPrefixed
-	ExprKindPath
-	ExprKindRange
-	ExprKindArray
-	ExprKindDict
-	ExprKindField
-)
-
-// ExprKind is a kind of expression. There is one value of ExprKind for each
-// Expr* type in this package.
-type ExprKind int8
-
 // ExprAny is any ExprAny* type in this package.
 //
 // Values of this type can be obtained by calling an AsAny method on a ExprAny*

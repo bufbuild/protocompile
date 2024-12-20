@@ -20,25 +20,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-const (
-	DefKindInvalid DefKind = iota
-	DefKindMessage
-	DefKindEnum
-	DefKindService
-	DefKindExtend
-	DefKindField
-	DefKindOneof
-	DefKindGroup
-	DefKindEnumValue
-	DefKindMethod
-	DefKindOption
-)
-
-// DefKind is the kind of definition a [DeclDef] contains.
-//
-// See [DeclDef.Classify].
-type DefKind int8
-
 // DeclDef is a general Protobuf definition.
 //
 // This [Decl] represents the union of several similar AST nodes, to aid in permissive

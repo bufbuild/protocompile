@@ -23,18 +23,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-const (
-	TypeKindInvalid TypeKind = iota
-	TypeKindError
-	TypeKindPath
-	TypeKindPrefixed
-	TypeKindGeneric
-)
-
-// TypeKind is a kind of type. There is one value of TypeKind for each
-// Type* type in this package.
-type TypeKind int8
-
 // TypeAny is any Type* type in this package.
 //
 // Values of this type can be obtained by calling an AsAny method on a Type*
