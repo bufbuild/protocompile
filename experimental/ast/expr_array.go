@@ -23,7 +23,11 @@ import (
 
 // ExprArray represents an array of expressions between square brackets.
 //
-// ExprArray implements [Commas[ExprAny]].
+// ExprArray implements [Commas].
+//
+// # Grammar
+//
+//	ExprArray := `[` (ExprJuxta `,`?)*`]`
 type ExprArray struct{ exprImpl[rawExprArray] }
 
 type rawExprArray struct {
@@ -37,11 +41,19 @@ var _ Commas[ExprAny] = ExprArray{}
 //
 // May be missing for a synthetic expression.
 func (e ExprArray) Brackets() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.brackets.In(e.Context())
 }
 
 // Len implements [Slice].
 func (e ExprArray) Len() int {
+	if e.IsZero() {
+		return 0
+	}
+
 	return len(e.raw.args)
 }
 
@@ -52,6 +64,10 @@ func (e ExprArray) At(n int) ExprAny {
 
 // Iter implements [Slice].
 func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
+	if e.IsZero() {
+		return
+	}
+
 	for i, arg := range e.raw.args {
 		if !yield(i, newExprAny(e.Context(), arg.Value)) {
 			break
@@ -61,12 +77,12 @@ func (e ExprArray) Iter(yield func(int, ExprAny) bool) {
 
 // Append implements [Inserter].
 func (e ExprArray) Append(expr ExprAny) {
-	e.InsertComma(e.Len(), expr, token.Nil)
+	e.InsertComma(e.Len(), expr, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (e ExprArray) Insert(n int, expr ExprAny) {
-	e.InsertComma(n, expr, token.Nil)
+	e.InsertComma(n, expr, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -93,5 +109,9 @@ func (e ExprArray) InsertComma(n int, expr ExprAny, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (e ExprArray) Span() report.Span {
+	if e.IsZero() {
+		return report.Span{}
+	}
+
 	return e.Brackets().Span()
 }

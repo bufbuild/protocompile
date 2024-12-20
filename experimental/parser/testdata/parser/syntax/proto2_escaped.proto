@@ -12,16 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+syntax = "proto\x32";
 
-// Checks if v is nil: first by doing == nil, then by calling a method Nil.
-func Nil(v any) bool {
-	switch v := v.(type) {
-	case nil:
-		return true
-	case interface{ Nil() bool }:
-		return v.Nil()
-	default:
-		return false
-	}
-}
+package test;

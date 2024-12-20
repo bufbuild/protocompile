@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupword // Disable for whole file, because the error is in a comment.
 package ast
 
 import (
@@ -24,7 +25,7 @@ import (
 )
 
 const (
-	ExprKindNil ExprKind = iota
+	ExprKindInvalid ExprKind = iota
 	ExprKindError
 	ExprKindLiteral
 	ExprKindPrefixed
@@ -48,6 +49,21 @@ type ExprKind int8
 // This type is used in lieu of a putative ExprAny interface type to avoid heap
 // allocations in functions that would return one of many different ExprAny*
 // types.
+//
+// # Grammar
+//
+// In addition to the Expr type, we define some exported productions for
+// handling operator precedence.
+//
+//	Expr      := ExprField | ExprOp
+//	ExprJuxta := ExprFieldWithColon | ExprOp
+//	ExprOp    := ExprRange | ExprPrefix | ExprSolo
+//	ExprSolo  := ExprLiteral | ExprPath | ExprArray | ExprDict
+//
+// Note: ExprJuxta is the expression production that is unambiguous when
+// expressions are juxtaposed with each other; i.e., ExprJuxta* does not make
+// e.g. "foo {}" ambiguous between an [ExprField] or an [ExprPath] followed by
+// an [ExprDict].
 type ExprAny struct {
 	withContext // Must be nil if raw is nil.
 
@@ -71,8 +87,8 @@ func newExprAny(c Context, e rawExpr) ExprAny {
 // Kind returns the kind of expression this is. This is suitable for use
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
-	if e.Nil() {
-		return ExprKindNil
+	if e.IsZero() {
+		return ExprKindInvalid
 	}
 
 	if kind, ok := e.raw.kind(); ok {
@@ -100,10 +116,10 @@ func (e ExprAny) AsError() ExprError {
 // AsLiteral converts a ExprAny into a ExprLiteral, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsLiteral() ExprLiteral {
 	tok := unwrapPathLike[token.ID](ExprKindLiteral, e.raw)
-	if tok.Nil() {
+	if tok.IsZero() {
 		return ExprLiteral{}
 	}
 
@@ -113,17 +129,17 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 // AsPath converts a ExprAny into a ExprPath, if that is the type
 // it contains.q
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsPath() ExprPath {
 	path, _ := e.raw.path(e.Context())
-	// Don't need to check ok; path() returns nil on failure.
+	// Don't need to check ok; path() returns zero on failure.
 	return ExprPath{path}
 }
 
 // AsPrefixed converts a ExprAny into a ExprPrefixed, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsPrefixed() ExprPrefixed {
 	ptr := unwrapPathLike[arena.Pointer[rawExprPrefixed]](ExprKindPrefixed, e.raw)
 	if ptr.Nil() {
@@ -139,7 +155,7 @@ func (e ExprAny) AsPrefixed() ExprPrefixed {
 // AsRange converts a ExprAny into a ExprRange, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsRange() ExprRange {
 	ptr := unwrapPathLike[arena.Pointer[rawExprRange]](ExprKindRange, e.raw)
 	if ptr.Nil() {
@@ -155,7 +171,7 @@ func (e ExprAny) AsRange() ExprRange {
 // AsArray converts a ExprAny into a ExprArray, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsArray() ExprArray {
 	ptr := unwrapPathLike[arena.Pointer[rawExprArray]](ExprKindArray, e.raw)
 	if ptr.Nil() {
@@ -171,7 +187,7 @@ func (e ExprAny) AsArray() ExprArray {
 // AsDict converts a ExprAny into a ExprDict, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsDict() ExprDict {
 	ptr := unwrapPathLike[arena.Pointer[rawExprDict]](ExprKindDict, e.raw)
 	if ptr.Nil() {
@@ -187,7 +203,7 @@ func (e ExprAny) AsDict() ExprDict {
 // AsField converts a ExprAny into a ExprKV, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsField() ExprField {
 	ptr := unwrapPathLike[arena.Pointer[rawExprField]](ExprKindField, e.raw)
 	if ptr.Nil() {
@@ -221,7 +237,7 @@ type ExprError struct{ exprImpl[rawExprError] }
 
 // Span implements [report.Spanner].
 func (e ExprError) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 
@@ -241,7 +257,7 @@ type exprImpl[Raw any] struct {
 //
 // See [ExprAny] for more information.
 func (e exprImpl[Raw]) AsAny() ExprAny {
-	if e.Nil() {
+	if e.IsZero() {
 		return ExprAny{}
 	}
 

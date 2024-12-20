@@ -1,0 +1,5 @@
+decls:
+  - syntax:
+      kind: KIND_SYNTAX
+      value.path.components: [{ ident: "invalid" }]
+  - package.path.components: [{ ident: "test" }]

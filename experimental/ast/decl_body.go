@@ -29,6 +29,13 @@ import (
 // so on.
 //
 // DeclBody implements [Slice], providing access to its declarations.
+//
+// # Grammar
+//
+//	DeclBody := `{` DeclAny* `}`
+//
+// Note that a [File] is simply a DeclBody that is delimited by the bounds of
+// the source file, rather than braces.
 type DeclBody struct{ declImpl[rawDeclBody] }
 
 type rawDeclBody struct {
@@ -47,24 +54,33 @@ var (
 
 // Braces returns this body's surrounding braces, if it has any.
 func (d DeclBody) Braces() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.braces.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
-	if !d.Braces().Nil() {
-		return d.Braces().Span()
-	}
-
-	if d.Len() == 0 {
+	switch {
+	case d.IsZero():
 		return report.Span{}
+	case !d.Braces().IsZero():
+		return d.Braces().Span()
+	case d.Len() == 0:
+		return report.Span{}
+	default:
+		return report.Join(d.At(0), d.At(d.Len()-1))
 	}
-
-	return report.Join(d.At(0), d.At(d.Len()-1))
 }
 
 // Len returns the number of declarations inside of this body.
 func (d DeclBody) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.ptrs)
 }
 
@@ -75,6 +91,10 @@ func (d DeclBody) At(n int) DeclAny {
 
 // Iter is an iterator over the nodes inside this body.
 func (d DeclBody) Iter(yield func(int, DeclAny) bool) {
+	if d.IsZero() {
+		return
+	}
+
 	for i := range d.raw.kinds {
 		if !yield(i, d.At(i)) {
 			break

@@ -33,6 +33,6 @@
 //
 // Synthetic tokens have a few important differences from ordinary tokens, the
 // most important of which is that they do not appear in the token stream (so
-// [Stream.Cursor] won't find them) and they do not have [Span]s, so they
-// cannot be used in diagnostics (Span() will return the nil [Span]).
+// [Stream.Cursor] won't find them) and they do not have [report.Span]s, so they
+// cannot be used in diagnostics (Span() will return the zero [report.Span]).
 package token

@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	DefKindMessage DefKind = iota + 1
+	DefKindInvalid DefKind = iota
+	DefKindMessage
 	DefKindEnum
 	DefKindService
 	DefKindExtend
@@ -49,6 +50,17 @@ type DefKind int8
 //
 // Generally, you should not need to work with DeclDef directly; instead, use the As* methods
 // to access the correct concrete syntax production a DeclDef represents.
+//
+// # Grammar
+//
+//	DeclDef := (Type Path | Type | Ident) followers* (`;` | DeclBody)?
+//
+//	followers := inputs | outputs | value | CompactOptions
+//	inputs    := `(` (Type `,`?)* `)`
+//	outputs   := `returns` (Type | inputs)?
+//	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
+//
+// Note that this type will only record the first appearance of any follower.
 type DeclDef struct{ declImpl[rawDeclDef] }
 
 type rawDeclDef struct {
@@ -90,12 +102,16 @@ type DeclDefArgs struct {
 //
 // This type may coexist with a [Signature] in this definition.
 //
-// May be nil, such as for enum values. For messages and other productions
+// May be zero, such as for enum values. For messages and other productions
 // introduced by a special keyword, this will be a [TypePath] whose single
 // identifier is that keyword.
 //
 // See [DeclDef.Keyword].
 func (d DeclDef) Type() TypeAny {
+	if d.IsZero() {
+		return TypeAny{}
+	}
+
 	return newTypeAny(d.Context(), d.raw.ty)
 }
 
@@ -110,8 +126,8 @@ func (d DeclDef) SetType(ty TypeAny) {
 // See [DeclDef.Type] for details on where this keyword comes from.
 func (d DeclDef) Keyword() token.Token {
 	path := d.Type().AsPath()
-	if path.Nil() {
-		return token.Nil
+	if path.IsZero() {
+		return token.Zero
 	}
 
 	ident := path.Path.AsIdent()
@@ -119,12 +135,16 @@ func (d DeclDef) Keyword() token.Token {
 	case "message", "enum", "service", "extend", "oneof", "group", "rpc", "option":
 		return ident
 	default:
-		return token.Nil
+		return token.Zero
 	}
 }
 
 // Name returns this definition's declared name.
 func (d DeclDef) Name() Path {
+	if d.IsZero() {
+		return Path{}
+	}
+
 	return d.raw.name.With(d.Context())
 }
 
@@ -134,10 +154,10 @@ func (d DeclDef) Name() Path {
 // is the "prefix" type for the definition (such as for a field). This is a
 // signature for e.g. a method.
 //
-// Not all defs have a signature, so this function may return a nil Signature.
+// Not all defs have a signature, so this function may return a zero Signature.q
 // If you want to add one, use [DeclDef.WithSignature].
 func (d DeclDef) Signature() Signature {
-	if d.raw.signature == nil {
+	if d.IsZero() || d.raw.signature == nil {
 		return Signature{}
 	}
 
@@ -148,17 +168,21 @@ func (d DeclDef) Signature() Signature {
 }
 
 // WithSignature is like Signature, but it adds an empty signature if it would
-// return nil.
+// return zero.
 func (d DeclDef) WithSignature() Signature {
-	if d.Signature().Nil() {
+	if !d.IsZero() && d.Signature().IsZero() {
 		d.raw.signature = new(rawSignature)
 	}
 	return d.Signature()
 }
 
 // Equals returns this definitions = token, before the value.
-// May be nil.
+// May be zero.
 func (d DeclDef) Equals() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.equals.In(d.Context())
 }
 
@@ -166,6 +190,10 @@ func (d DeclDef) Equals() token.Token {
 // tag number, while for an option, this will be the complex expression
 // representing its value.
 func (d DeclDef) Value() ExprAny {
+	if d.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(d.Context(), d.raw.value)
 }
 
@@ -178,18 +206,26 @@ func (d DeclDef) SetValue(expr ExprAny) {
 
 // Options returns the compact options list for this definition.
 func (d DeclDef) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
-// Setting it to a nil Options clears it.
+// Setting it to a zero Options clears it.
 func (d DeclDef) SetOptions(opts CompactOptions) {
 	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
 }
 
 // Body returns this definition's body, if it has one.
 func (d DeclDef) Body() DeclBody {
+	if d.IsZero() {
+		return DeclBody{}
+	}
+
 	return wrapDeclBody(d.Context(), d.raw.body)
 }
 
@@ -199,16 +235,20 @@ func (d DeclDef) SetBody(b DeclBody) {
 }
 
 // Semicolon returns the ending semicolon token for this definition.
-// May be nil.
+// May be zero.
 func (d DeclDef) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
 // AsMessage extracts the fields from this definition relevant to interpreting
 // it as a message.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsMessage() DefMessage {
@@ -223,8 +263,8 @@ func (d DeclDef) AsMessage() DefMessage {
 // AsEnum extracts the fields from this definition relevant to interpreting
 // it as an enum.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsEnum() DefEnum {
@@ -239,8 +279,8 @@ func (d DeclDef) AsEnum() DefEnum {
 // AsService extracts the fields from this definition relevant to interpreting
 // it as a service.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsService() DefService {
@@ -255,7 +295,7 @@ func (d DeclDef) AsService() DefService {
 // AsExtend extracts the fields from this definition relevant to interpreting
 // it as a service.
 //
-// The return value's fields may be nil if they are not present.
+// The return value's fields may be zero if they are not present.
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsExtend() DefExtend {
@@ -270,8 +310,8 @@ func (d DeclDef) AsExtend() DefExtend {
 // AsField extracts the fields from this definition relevant to interpreting
 // it as a message field.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsField() DefField {
@@ -289,8 +329,8 @@ func (d DeclDef) AsField() DefField {
 // AsOneof extracts the fields from this definition relevant to interpreting
 // it as a oneof.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsOneof() DefOneof {
@@ -305,8 +345,8 @@ func (d DeclDef) AsOneof() DefOneof {
 // AsGroup extracts the fields from this definition relevant to interpreting
 // it as a group.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsGroup() DefGroup {
@@ -323,8 +363,8 @@ func (d DeclDef) AsGroup() DefGroup {
 // AsEnumValue extracts the fields from this definition relevant to interpreting
 // it as an enum value.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsEnumValue() DefEnumValue {
@@ -341,8 +381,8 @@ func (d DeclDef) AsEnumValue() DefEnumValue {
 // AsMethod extracts the fields from this definition relevant to interpreting
 // it as a service method.
 //
-// The return value's fields may be nil if they are not present (in particular,
-// Name will be nil if d.Name() is not an identifier).
+// The return value's fields may be zero if they are not present (in particular,
+// Name will be zero if d.Name() is not an identifier).
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsMethod() DefMethod {
@@ -358,7 +398,7 @@ func (d DeclDef) AsMethod() DefMethod {
 // AsMethod extracts the fields from this definition relevant to interpreting
 // it as an option.
 //
-// The return value's fields may be nil if they are not present.
+// The return value's fields may be zero if they are not present.
 //
 // See [DeclDef.Classify].
 func (d DeclDef) AsOption() DefOption {
@@ -386,40 +426,44 @@ func (d DeclDef) AsOption() DefOption {
 // cases of the switch should then use the As* methods, such as
 // [DeclDef.AsMessage], to extract the relevant fields.
 func (d DeclDef) Classify() DefKind {
+	if d.IsZero() {
+		return DefKindInvalid
+	}
+
 	switch d.Keyword().Text() {
 	case "message":
-		if !d.Body().Nil() {
+		if !d.Body().IsZero() {
 			return DefKindMessage
 		}
 	case "enum":
-		if !d.Body().Nil() {
+		if !d.Body().IsZero() {
 			return DefKindEnum
 		}
 	case "service":
-		if !d.Body().Nil() {
+		if !d.Body().IsZero() {
 			return DefKindService
 		}
 	case "extend":
-		if !d.Body().Nil() {
+		if !d.Body().IsZero() {
 			return DefKindExtend
 		}
 	case "oneof":
-		if !d.Body().Nil() {
+		if !d.Body().IsZero() {
 			return DefKindOneof
 		}
 	case "group":
-		if !d.Body().Nil() {
+		if !d.Body().IsZero() {
 			return DefKindGroup
 		}
 	case "rpc":
-		if !d.Signature().Nil() {
+		if !d.Signature().IsZero() {
 			return DefKindMethod
 		}
 	case "option":
 		return DefKindOption
 	}
 
-	if d.Type().Nil() {
+	if d.Type().IsZero() {
 		return DefKindEnumValue
 	}
 
@@ -428,9 +472,10 @@ func (d DeclDef) Classify() DefKind {
 
 // Span implements [report.Spanner].
 func (d DeclDef) Span() report.Span {
-	if d.Nil() {
+	if d.IsZero() {
 		return report.Span{}
 	}
+
 	return report.Join(
 		d.Type(),
 		d.Name(),
@@ -464,11 +509,19 @@ type rawSignature struct {
 // Returns returns (lol) the "returns" token that separates the input and output
 // type lists.
 func (s Signature) Returns() token.Token {
+	if s.IsZero() {
+		return token.Zero
+	}
+
 	return s.raw.returns.In(s.Context())
 }
 
 // Inputs returns the input argument list for this signature.
 func (s Signature) Inputs() TypeList {
+	if s.IsZero() {
+		return TypeList{}
+	}
+
 	return TypeList{
 		s.withContext,
 		&s.raw.input,
@@ -477,6 +530,10 @@ func (s Signature) Inputs() TypeList {
 
 // Outputs returns the output argument list for this signature.
 func (s Signature) Outputs() TypeList {
+	if s.IsZero() {
+		return TypeList{}
+	}
+
 	return TypeList{
 		s.withContext,
 		&s.raw.output,
@@ -485,6 +542,10 @@ func (s Signature) Outputs() TypeList {
 
 // Span implemented [report.Spanner].
 func (s Signature) Span() report.Span {
+	if s.IsZero() {
+		return report.Span{}
+	}
+
 	return report.Join(s.Inputs(), s.Returns(), s.Outputs())
 }
 

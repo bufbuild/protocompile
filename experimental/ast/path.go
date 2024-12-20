@@ -29,6 +29,13 @@ import (
 //
 // This includes single identifiers like foo, references like foo.bar,
 // and fully-qualified names like .foo.bar.
+//
+// # Grammar
+//
+//	Path      := `.`? component (sep component)*
+//
+//	component := token.Ident | `(` Path `)`
+//	sep       := `.` | `/`
 type Path struct {
 	// The layout of this type is depended on in ast2/path.go
 	withContext
@@ -39,14 +46,14 @@ type Path struct {
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
 	first, ok := iterx.First(p.Components)
-	return ok && !first.Separator().Nil()
+	return ok && !first.Separator().IsZero()
 }
 
 // ToRelative converts this path into a relative path, by deleting all leading
 // separators. In particular, the path "..foo", which contains empty components,
 // will be converted into "foo".
 //
-// If called on nil or a relative path, returns p.
+// If called on zero or a relative path, returns p.
 func (p Path) ToRelative() Path {
 	p.Components(func(pc PathComponent) bool {
 		if pc.IsEmpty() {
@@ -61,12 +68,12 @@ func (p Path) ToRelative() Path {
 }
 
 // AsIdent returns the single identifier that comprises this path, or
-// the nil token.
+// the zero token.
 func (p Path) AsIdent() token.Token {
 	var buf [2]PathComponent
 	prefix := slicesx.AppendSeq(buf[:0], iterx.Limit(2, p.Components))
-	if len(prefix) != 1 || !prefix[0].Separator().Nil() {
-		return token.Nil
+	if len(prefix) != 1 || !prefix[0].Separator().IsZero() {
+		return token.Zero
 	}
 	return prefix[0].AsIdent()
 }
@@ -80,13 +87,16 @@ func (p Path) AsPredeclared() predeclared.Name {
 
 // report.Span implements [report.Spanner].
 func (p Path) Span() report.Span {
+	// No need to check for zero here, if p is zero both start and end will be
+	// zero tokens.
 	return report.Join(p.raw.Start.In(p.Context()), p.raw.End.In(p.Context()))
 }
 
-// Components is an [iter.Seq] that ranges over each component in this path. Specifically,
-// it yields the (nilable) dot that precedes the component, and the identifier token.
+// Components is an [iter.Seq] that ranges over each component in this path.
+// Specifically, it yields the (possibly zero) dot that precedes the component,
+// and the identifier token.
 func (p Path) Components(yield func(PathComponent) bool) {
-	if p.Nil() {
+	if p.IsZero() {
 		return
 	}
 
@@ -99,7 +109,7 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	var broken bool
 	token.NewCursor(first, p.raw.End.In(p.Context())).Rest()(func(tok token.Token) bool {
 		if tok.Text() == "." || tok.Text() == "/" {
-			if !sep.Nil() {
+			if !sep.IsZero() {
 				// Uh-oh, empty path component!
 				if !yield(PathComponent{p.withContext, sep.ID(), 0}) {
 					broken = true
@@ -114,10 +124,10 @@ func (p Path) Components(yield func(PathComponent) bool) {
 			broken = true
 			return false
 		}
-		sep = token.Nil
+		sep = token.Zero
 		return true
 	})
-	if !broken && !sep.Nil() {
+	if !broken && !sep.IsZero() {
 		yield(PathComponent{p.withContext, sep.ID(), 0})
 	}
 }
@@ -125,15 +135,15 @@ func (p Path) Components(yield func(PathComponent) bool) {
 // Split splits a path at the given path component index, producing two
 // new paths where the first contains the first n components and the second
 // contains the rest. If n is negative or greater than the number of components
-// in p, both returned paths will be nil.
+// in p, both returned paths will be zero.
 //
 // The suffix will be absolute, except in the following cases:
-// 1. n == 0 and p is not absolute (prefix will be nil and suffix will be p).
-// 2. n is equal to the length of p (suffix will be nil and prefix will be p).
+// 1. n == 0 and p is not absolute (prefix will be zero and suffix will be p).
+// 2. n is equal to the length of p (suffix will be zero and prefix will be p).
 //
 // This operation runs in O(n) time.
 func (p Path) Split(n int) (prefix, suffix Path) {
-	if n < 0 || p.Nil() {
+	if n < 0 || p.IsZero() {
 		return Path{}, Path{}
 	}
 	if n == 0 {
@@ -149,14 +159,14 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		}
 
 		prefix = p
-		if !pc.name.Nil() {
+		if !pc.name.IsZero() {
 			prefix.raw.End = prev.name
 		} else {
 			prefix.raw.End = prev.separator
 		}
 
 		suffix = p
-		if !pc.separator.Nil() {
+		if !pc.separator.IsZero() {
 			suffix.raw.Start = pc.separator
 		} else {
 			suffix.raw.Start = pc.name
@@ -169,6 +179,10 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 }
 
 // TypePath is a simple path reference as a type.
+//
+// # Grammar
+//
+//	TypePath := Path
 type TypePath struct {
 	// The path that refers to this type.
 	Path
@@ -181,7 +195,11 @@ func (t TypePath) AsAny() TypeAny {
 	return newTypeAny(t.Context(), wrapPath[TypeKind](t.raw))
 }
 
-// TypePath is a simple path reference in expression position.
+// ExprPath is a simple path reference in expression position.
+//
+// # Grammar
+//
+//	ExprPath := Path
 type ExprPath struct {
 	// The path backing this expression.
 	Path
@@ -216,7 +234,7 @@ func (p PathComponent) Name() token.Token {
 // Returns whether this is an empty path component. Such components are not allowed
 // in the grammar but may occur in invalid inputs nonetheless.
 func (p PathComponent) IsEmpty() bool {
-	return p.Name().Nil()
+	return p.Name().IsZero()
 }
 
 // AsExtension returns the Path inside of this path component, if it is an extension
@@ -226,7 +244,7 @@ func (p PathComponent) IsEmpty() bool {
 // some expressions. Those are represented by allowing / as an alternative
 // separator to . in paths.
 func (p PathComponent) AsExtension() Path {
-	if p.Name().Nil() || p.Name().IsLeaf() {
+	if p.Name().IsZero() || p.Name().IsLeaf() {
 		return Path{}
 	}
 
@@ -239,7 +257,7 @@ func (p PathComponent) AsExtension() Path {
 	// Find the first and last non-skippable tokens to be the bounds.
 	var first, last token.Token
 	p.Name().Children().Rest()(func(token token.Token) bool {
-		if first.Nil() {
+		if first.IsZero() {
 			first = token
 		}
 		last = token
@@ -252,7 +270,7 @@ func (p PathComponent) AsExtension() Path {
 // AsIdent returns the single identifier that makes up this path component, if
 // it is not an extension path component.
 //
-// May be nil, in the case of e.g. the second component of foo..bar.
+// May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
 	return p.name.In(p.Context())
 }
@@ -261,12 +279,12 @@ func (p PathComponent) AsIdent() token.Token {
 //
 // This has one of the following configurations.
 //
-//  1. Two zero tokens. This is the nil path.
+//  1. Two zero tokens. This is the zero path.
 //
 //  2. Two natural tokens. This means the path is all tokens between them including
 //     the end-point
 //
-//  3. A single synthetic token and a nil token. If this token has children, those are
+//  3. A single synthetic token and a zero token. If this token has children, those are
 //     the path components. Otherwise, the token itself is the sole token.
 //
 // The case Start < 0 && End != 0 is reserved for use by pathLike.
@@ -276,11 +294,11 @@ type rawPath struct {
 
 // With wraps this rawPath with a context to present to the user.
 func (p rawPath) With(c Context) Path {
-	if p.Start.Nil() {
+	if p.Start.IsZero() {
 		return Path{}
 	}
 
-	if p.End.Nil() {
+	if p.End.IsZero() {
 		panic(fmt.Sprintf("protocompile/ast: invalid ast.Path representation %v; this is a bug in protocompile", p))
 	}
 

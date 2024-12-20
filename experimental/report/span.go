@@ -22,15 +22,27 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // TabstopWidth is the size we render all tabstops as.
 const TabstopWidth int = 4
 
-// Spanner is any type with a span.
+// Spanner is any type with a [Span].
 type Spanner interface {
+	// Should return the zero [Span] to indicate that it does not contribute
+	// span information.
 	Span() Span
+}
+
+// getSpan extracts a span from a Spanner, but returns the zero span when
+// s is zero, which would otherwise panic.
+func getSpan(s Spanner) Span {
+	if s == nil {
+		return Span{}
+	}
+	return s.Span()
 }
 
 // Span is a location within a [File].
@@ -43,8 +55,8 @@ type Span struct {
 	Start, End int
 }
 
-// Nil returns whether or not this is the "nil" span.
-func (s Span) Nil() bool {
+// IsZero returns whether or not this is the zero span.
+func (s Span) IsZero() bool {
 	return s.File == nil
 }
 
@@ -77,24 +89,25 @@ func (s Span) String() string {
 // Join joins a collection of spans, returning the smallest span that
 // contains all of them.
 //
-// Nil spans among spans are ignored. If every span in spans is nil, returns
-// the nil span.
+// IsZero spans among spans are ignored. If every span in spans is zero, returns
+// the zero span.
 //
-// If there are at least two distinct non-nil files among the spans,
+// If there are at least two distinct files among the non-zero spans,
 // this function panics.
 func Join(spans ...Spanner) Span {
+	return JoinSeq[Spanner](slicesx.Values(spans))
+}
+
+// JoinSeq is like [Join], but takes a sequence of any spannable type.
+func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	joined := Span{Start: math.MaxInt}
-	for _, span := range spans {
-		if internal.Nil(span) {
-			continue
+	seq(func(spanner S) bool {
+		span := getSpan(spanner)
+		if span.IsZero() {
+			return true
 		}
 
-		span := span.Span()
-		if span.File == nil {
-			continue
-		}
-
-		if joined.File == nil {
+		if joined.IsZero() {
 			joined.File = span.File
 		} else if joined.File != span.File {
 			panic(fmt.Sprintf(
@@ -106,7 +119,8 @@ func Join(spans ...Spanner) Span {
 
 		joined.Start = min(joined.Start, span.Start)
 		joined.End = max(joined.End, span.End)
-	}
+		return true
+	})
 
 	if joined.File == nil {
 		return Span{}
