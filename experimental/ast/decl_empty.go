@@ -21,6 +21,10 @@ import (
 )
 
 // DeclEmpty is an empty declaration, a lone ;.
+//
+// # Grammar
+//
+//	DeclEmpty := `;`
 type DeclEmpty struct{ declImpl[rawDeclEmpty] }
 
 type rawDeclEmpty struct {

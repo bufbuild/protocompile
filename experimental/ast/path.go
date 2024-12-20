@@ -29,6 +29,13 @@ import (
 //
 // This includes single identifiers like foo, references like foo.bar,
 // and fully-qualified names like .foo.bar.
+//
+// # Grammar
+//
+//	Path      := `.`? component (sep component)*
+//
+//	component := token.Ident | `(` Path `)`
+//	sep       := `.` | `/`
 type Path struct {
 	// The layout of this type is depended on in ast2/path.go
 	withContext
@@ -172,6 +179,10 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 }
 
 // TypePath is a simple path reference as a type.
+//
+// # Grammar
+//
+//	TypePath := Path
 type TypePath struct {
 	// The path that refers to this type.
 	Path
@@ -184,7 +195,11 @@ func (t TypePath) AsAny() TypeAny {
 	return newTypeAny(t.Context(), wrapPath[TypeKind](t.raw))
 }
 
-// TypePath is a simple path reference in expression position.
+// ExprPath is a simple path reference in expression position.
+//
+// # Grammar
+//
+//	ExprPath := Path
 type ExprPath struct {
 	// The path backing this expression.
 	Path

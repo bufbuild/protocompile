@@ -23,8 +23,13 @@ import (
 
 // File is the top-level AST node for a Protobuf file.
 //
-// A file is a list of declarations (in other words, it is a [DeclBody]). The File type provides
-// convenience functions for extracting salient elements, such as the [DeclSyntax] and the [DeclPackage].
+// A file is a list of declarations (in other words, it is a [DeclBody]). The
+// File type provides convenience functions for extracting salient elements,
+// such as the [DeclSyntax] and the [DeclPackage].
+//
+// # Grammar
+//
+//	File := DeclAny*
 type File struct {
 	DeclBody
 }
@@ -70,7 +75,15 @@ func (f File) Imports() iter.Seq2[int, DeclImport] {
 	}
 }
 
-// DeclSyntax represents a language pragma, such as the syntax or edition keywords.
+// DeclSyntax represents a language pragma, such as the syntax or edition
+// keywords.
+//
+// # Grammar
+//
+//	DeclSyntax := (`syntax` | `edition`) (`=`? Expr)? CompactOptions? `;`?
+//
+// Note: options are not permitted on syntax declarations in Protobuf, but we
+// parse them for diagnosis.
 type DeclSyntax struct{ declImpl[rawDeclSyntax] }
 
 type rawDeclSyntax struct {
@@ -181,6 +194,13 @@ func wrapDeclSyntax(c Context, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
 }
 
 // DeclPackage is the package declaration for a file.
+//
+// # Grammar
+//
+//	DeclPackage := `package` Path? CompactOptions? `;`?
+//
+// Note: options are not permitted on package declarations in Protobuf, but we
+// parse them for diagnosis.
 type DeclPackage struct{ declImpl[rawDeclPackage] }
 
 type rawDeclPackage struct {
@@ -261,6 +281,13 @@ func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 }
 
 // DeclImport is an import declaration within a file.
+//
+// # Grammar
+//
+//	DeclImport := `import` (`weak` | `public`)? Expr? CompactOptions? `;`?
+//
+// Note: options are not permitted on import declarations in Protobuf, but we
+// parse them for diagnosis.
 type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {

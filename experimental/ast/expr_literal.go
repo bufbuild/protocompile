@@ -19,6 +19,10 @@ import (
 )
 
 // ExprLiteral is an expression corresponding to a string or number literal.
+//
+// # Grammar
+//
+//	ExprLiteral := token.Number | token.String
 type ExprLiteral struct {
 	// The token backing this expression. Must be [token.String] or [token.Number],
 	// and its Context() must be an ast.Context.
