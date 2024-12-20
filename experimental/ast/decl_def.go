@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	DefKindZero DefKind = iota
+	DefKindInvalid DefKind = iota
 	DefKindMessage
 	DefKindEnum
 	DefKindService
@@ -416,7 +416,7 @@ func (d DeclDef) AsOption() DefOption {
 // [DeclDef.AsMessage], to extract the relevant fields.
 func (d DeclDef) Classify() DefKind {
 	if d.IsZero() {
-		return DefKindZero
+		return DefKindInvalid
 	}
 
 	switch d.Keyword().Text() {

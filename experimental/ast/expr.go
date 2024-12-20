@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	ExprKindZero ExprKind = iota
+	ExprKindInvalid ExprKind = iota
 	ExprKindLiteral
 	ExprKindPrefixed
 	ExprKindPath
@@ -71,7 +71,7 @@ func newExprAny(c Context, e rawExpr) ExprAny {
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
 	if e.IsZero() {
-		return ExprKindZero
+		return ExprKindInvalid
 	}
 
 	if kind, ok := e.raw.kind(); ok {
