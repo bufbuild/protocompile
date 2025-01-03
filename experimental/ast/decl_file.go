@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"fmt"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -295,6 +297,11 @@ type rawDeclImport struct {
 	keyword, modifier, semi token.ID
 	importPath              rawExpr
 	options                 arena.Pointer[rawCompactOptions]
+}
+
+func (d DeclImport) What() string {
+	r := d.raw
+	return fmt.Sprintf("%T %+v", r.importPath, r.importPath)
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].

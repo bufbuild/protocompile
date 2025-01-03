@@ -43,6 +43,11 @@ type Path struct {
 	raw rawPath
 }
 
+// NewPath creates a new path. TODO: experimental.
+func NewPath(ctx Context, start, end token.Token) Path {
+	return Path{internal.NewWith(ctx), rawPath{start.ID(), end.ID()}}
+}
+
 // Absolute returns whether this path starts with a dot.
 func (p Path) Absolute() bool {
 	first, ok := iterx.First(p.Components)

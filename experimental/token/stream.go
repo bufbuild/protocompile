@@ -91,6 +91,32 @@ func (s *Stream) Cursor() *Cursor {
 	}
 }
 
+func (s *Stream) Naturals() iter.Seq[Token] {
+	return func(yield func(Token) bool) {
+		for i := range s.nats {
+			if !yield(ID(i + 1).In(s.Context)) {
+				return
+			}
+		}
+	}
+}
+
+//func (s *Stream) CursorBetween(start, end Token) *Cursor {
+//	return &Cursor{
+//		withContext: internal.NewWith(s.Context),
+//		start:       start.ID() + 1,
+//		end:         end.ID(),
+//	}
+//}
+//
+//func (s *Stream) CursorAfter(start Token) *Cursor {
+//	return &Cursor{
+//		withContext: internal.NewWith(s.Context),
+//		start:       start.ID() + 1,
+//		end:         ID(len(s.nats) + 1),
+//	}
+//}
+
 // AssertEmpty asserts that no natural tokens have been created in this stream
 // yet. It panics if they already have.
 func (s *Stream) AssertEmpty() {
@@ -146,7 +172,7 @@ func (s *Stream) NewIdent(name string) Token {
 	})
 }
 
-// NewIdent mints a new synthetic punctuation token with the given text.
+// NewPunct mints a new synthetic punctuation token with the given text.
 func (s *Stream) NewPunct(text string) Token {
 	return s.newSynth(synth{
 		text: text,

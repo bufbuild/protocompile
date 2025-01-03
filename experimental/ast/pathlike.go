@@ -86,6 +86,5 @@ func (p pathLike[Kind]) path(c Context) (Path, bool) {
 	if _, notPath := p.kind(); notPath {
 		return Path{}, false
 	}
-
 	return rawPath{Start: token.ID(p.StartOrKind), End: token.ID(p.EndOrValue)}.With(c), true
 }
