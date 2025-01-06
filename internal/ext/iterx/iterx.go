@@ -39,3 +39,12 @@ func First[T any](seq iter.Seq[T]) (v T, ok bool) {
 	})
 	return v, ok
 }
+
+// Map returns a new iterator applying f to each element of seq.
+func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
+	return func(yield func(U) bool) {
+		seq(func(value T) bool {
+			return yield(f(value))
+		})
+	}
+}

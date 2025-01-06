@@ -68,6 +68,15 @@ func NewCursor(start, end Token) *Cursor {
 	}
 }
 
+// NewSliceCursor returns a new cursor over a slice of token IDs in the given
+// context.
+func NewSliceCursor(ctx Context, slice []ID) *Cursor {
+	return &Cursor{
+		withContext: internal.NewWith(ctx),
+		stream:      slice,
+	}
+}
+
 // Done returns whether or not there are still tokens left to yield.
 func (c *Cursor) Done() bool {
 	return c.Peek().IsZero()

@@ -43,7 +43,7 @@ type pathLike[Kind ~int8] struct {
 //
 // If either of kind or value are zero, both must be.
 func wrapPathLike[Value ~int32 | ~uint32, Kind ~int8](kind Kind, value Value) pathLike[Kind] {
-	if kind != 0 && value == 0 {
+	if kind != 0 && int32(value) <= 0 {
 		panic(fmt.Sprintf("protocompile/ast: invalid pathLike representation: %v, %v", kind, value))
 	}
 
@@ -75,7 +75,7 @@ func wrapPath[Kind ~int8](path rawPath) pathLike[Kind] {
 
 // kind returns the kind within this pathLike, if it is not a path.
 func (p pathLike[Kind]) kind() (Kind, bool) {
-	if p.StartOrKind < 0 && p.EndOrValue != 0 {
+	if p.StartOrKind < 0 && p.EndOrValue > 0 {
 		return Kind(^p.StartOrKind), true
 	}
 	return 0, false
