@@ -325,8 +325,8 @@ func TypePrefixByName(s string) TypePrefix {
 var _table_TypePrefix_String = [...]string {
 	TypePrefixUnknown: "unknown",
 	TypePrefixOptional: "optional",
-	TypePrefixRepeated: "required",
-	TypePrefixRequired: "repeated",
+	TypePrefixRepeated: "repeated",
+	TypePrefixRequired: "required",
 	TypePrefixStream: "stream",
 }
 
@@ -340,7 +340,7 @@ var _table_TypePrefix_GoString = [...]string {
 
 var _table_TypePrefix_TypePrefixByName = map[string]TypePrefix {
 	"optional": TypePrefixOptional,
-	"required": TypePrefixRepeated,
-	"repeated": TypePrefixRequired,
+	"repeated": TypePrefixRepeated,
+	"required": TypePrefixRequired,
 	"stream": TypePrefixStream,
 }

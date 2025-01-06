@@ -124,8 +124,8 @@
   values:
   - {name: TypePrefixUnknown, string: unknown}
   - {name: TypePrefixOptional, string: optional}
-  - {name: TypePrefixRepeated, string: required}
-  - {name: TypePrefixRequired, string: repeated}
+  - {name: TypePrefixRepeated, string: repeated}
+  - {name: TypePrefixRequired, string: required}
   - name: TypePrefixStream
     string: stream
     docs: |
