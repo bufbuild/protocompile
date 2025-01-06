@@ -119,7 +119,6 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	var sep token.Token
 	var broken bool
 	cursor.Rest()(func(tok token.Token) bool {
-		fmt.Println(tok)
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.IsZero() {
 				// Uh-oh, empty path component!
@@ -164,7 +163,9 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 
 	var i int
 	var prev PathComponent
+	var found bool
 	p.Components(func(pc PathComponent) bool {
+		fmt.Println(pc)
 		if n > 0 {
 			prev = pc
 			n--
@@ -178,6 +179,7 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		}
 
 		prefix, suffix = p, p
+		found = true
 
 		if p.IsSynthetic() {
 			a, _ := prefix.raw.synthRange()
@@ -190,7 +192,7 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 			return true
 		}
 
-		if !pc.name.IsZero() {
+		if !prev.name.IsZero() {
 			prefix.raw.End = prev.name
 		} else {
 			prefix.raw.End = prev.separator
@@ -205,11 +207,8 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		return false
 	})
 
-	if prefix.raw.Start == prefix.raw.End {
-		prefix = Path{}
-	}
-	if suffix.raw.Start == suffix.raw.End {
-		suffix = Path{}
+	if !found {
+		return p, Path{}
 	}
 
 	return prefix, suffix

@@ -70,6 +70,10 @@ func TestNaturalSplit(t *testing.T) {
 	pathEq(t, start, [][2]token.Token{})
 	pathEq(t, end, components)
 
+	start, end = path.Split(1)
+	pathEq(t, start, components[:1])
+	pathEq(t, end, components[1:])
+
 	start, end = path.Split(2)
 	pathEq(t, start, components[:2])
 	pathEq(t, end, components[2:])
