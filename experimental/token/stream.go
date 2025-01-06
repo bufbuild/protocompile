@@ -185,5 +185,5 @@ func (s *Stream) NewFused(openTok, closeTok Token, children ...Token) {
 func (s *Stream) newSynth(tok synth) Token {
 	raw := ID(^len(s.synths))
 	s.synths = append(s.synths, tok)
-	return raw.In(s)
+	return raw.In(s.Context)
 }
