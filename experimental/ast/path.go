@@ -170,7 +170,9 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 
 	var i int
 	var prev PathComponent
+	var found bool
 	for pc := range p.Components {
+		fmt.Println(pc)
 		if n > 0 {
 			prev = pc
 			n--
@@ -184,6 +186,7 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		}
 
 		prefix, suffix = p, p
+		found = true
 
 		if p.IsSynthetic() {
 			a, _ := prefix.raw.synthRange()
@@ -196,7 +199,7 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 			continue
 		}
 
-		if !pc.name.IsZero() {
+		if !prev.name.IsZero() {
 			prefix.raw.End = prev.name
 		} else {
 			prefix.raw.End = prev.separator
@@ -211,11 +214,8 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		break
 	}
 
-	if prefix.raw.Start == prefix.raw.End {
-		prefix = Path{}
-	}
-	if suffix.raw.Start == suffix.raw.End {
-		suffix = Path{}
+	if !found {
+		return p, Path{}
 	}
 
 	return prefix, suffix
