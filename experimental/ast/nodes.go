@@ -142,8 +142,7 @@ func (n *Nodes) NewPath(components ...PathComponent) Path {
 	}
 	stream.NewFused(start, end, children...)
 
-	path := rawPath{Start: start.ID()}
-	path.setSynthRange(0, len(children))
+	path := rawPath{Start: start.ID()}.withSynthRange(0, len(children))
 
 	if n.extnPathCache == nil {
 		n.extnPathCache = make(map[rawPath]token.ID)
