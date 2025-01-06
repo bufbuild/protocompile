@@ -187,11 +187,11 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 
 		if p.IsSynthetic() {
 			a, _ := prefix.raw.synthRange()
-			prefix.raw.setSynthRange(a, a+i)
+			prefix.raw = prefix.raw.withSynthRange(a, a+i)
 
 			a, b := suffix.raw.synthRange()
 			a += i
-			suffix.raw.setSynthRange(a, b)
+			suffix.raw = suffix.raw.withSynthRange(a, b)
 
 			continue
 		}
@@ -427,8 +427,9 @@ func (p rawPath) synthRange() (start, end int) {
 	return int(^uint16(p.End)), int(^uint16(p.End >> 16))
 }
 
-func (p *rawPath) setSynthRange(start, end int) {
+func (p rawPath) withSynthRange(start, end int) rawPath {
 	p.End = token.ID(^uint16(start)) | (token.ID(^uint16(end)) << 16)
+	return p
 }
 
 // With wraps this rawPath with a context to present to the user.
