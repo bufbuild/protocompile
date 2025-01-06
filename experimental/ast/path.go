@@ -50,6 +50,11 @@ func (p Path) Absolute() bool {
 	return ok && !first.Separator().IsZero()
 }
 
+// IsSynthetic returns whether this path was created with [Nodes.NewPath].
+func (p Path) IsSynthetic() bool {
+	return p.raw.Start < 0
+}
+
 // ToRelative converts this path into a relative path, by deleting all leading
 // separators. In particular, the path "..foo", which contains empty components,
 // will be converted into "foo".
@@ -104,15 +109,20 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		return
 	}
 
+	var cursor *token.Cursor
 	first := p.raw.Start.In(p.Context())
-	if first.IsSynthetic() {
-		panic("synthetic paths are not implemented yet")
+	if p.IsSynthetic() {
+		i := int(^int16(p.raw.End))
+		j := int(^int16(p.raw.End >> 16))
+		cursor = first.SyntheticChildren(i, j)
+	} else {
+		cursor = token.NewCursorAt(first)
 	}
 
 	var sep token.Token
 	var broken bool
-	for tok := range token.NewCursorAt(first).Rest() {
-		if tok.ID() > p.raw.End {
+	for tok := range cursor.Rest() {
+		if !p.IsSynthetic() && tok.ID() > p.raw.End {
 			// We've reached the end of the path.
 			break
 		}
@@ -158,22 +168,40 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		return Path{}, p
 	}
 
+	var i int
 	var prev PathComponent
 	for pc := range p.Components {
 		if n > 0 {
 			prev = pc
 			n--
+			if !pc.Separator().IsZero() {
+				i++
+			}
+			if !pc.Name().IsZero() {
+				i++
+			}
 			continue
 		}
 
-		prefix = p
+		prefix, suffix = p, p
+
+		if p.IsSynthetic() {
+			a, _ := prefix.raw.synthRange()
+			prefix.raw.setSynthRange(a, a+i)
+
+			a, b := suffix.raw.synthRange()
+			a += i
+			suffix.raw.setSynthRange(a, b)
+
+			continue
+		}
+
 		if !pc.name.IsZero() {
 			prefix.raw.End = prev.name
 		} else {
 			prefix.raw.End = prev.separator
 		}
 
-		suffix = p
 		if !pc.separator.IsZero() {
 			suffix.raw.Start = pc.separator
 		} else {
@@ -181,6 +209,13 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		}
 
 		break
+	}
+
+	if prefix.raw.Start == prefix.raw.End {
+		prefix = Path{}
+	}
+	if suffix.raw.Start == suffix.raw.End {
+		suffix = Path{}
 	}
 
 	return prefix, suffix
@@ -374,15 +409,26 @@ func (p PathComponent) AsIdent() token.Token {
 //
 //  1. Two zero tokens. This is the zero path.
 //
-//  2. Two natural tokens. This means the path is all tokens between them including
-//     the end-point
+//  2. Two natural tokens. This means the path is all tokens between them,
+//     including the end-point.
 //
-//  3. A single synthetic token and a zero token. If this token has children, those are
-//     the path components. Otherwise, the token itself is the sole token.
+//  3. Two synthetic tokens. The former is a an actual token, whose children
+//     are the path tokens. The latter is a packed pair of uint16s representing
+//     the subslice of Start.children that the path uses. This is necessary to
+//     implement Split() for synthetic paths.
 //
-// The case Start < 0 && End != 0 is reserved for use by pathLike.
+// The case Start < 0 && End > 0 is reserved for use by pathLike. The case
+// Start < 0 && End == 0 is currently unused.
 type rawPath struct {
 	Start, End token.ID
+}
+
+func (p rawPath) synthRange() (start, end int) {
+	return int(^uint16(p.End)), int(^uint16(p.End >> 16))
+}
+
+func (p *rawPath) setSynthRange(start, end int) {
+	p.End = token.ID(^uint16(start)) | (token.ID(^uint16(end)) << 16)
 }
 
 // With wraps this rawPath with a context to present to the user.
