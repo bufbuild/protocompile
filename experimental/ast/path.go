@@ -172,7 +172,6 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 	var prev PathComponent
 	var found bool
 	for pc := range p.Components {
-		fmt.Println(pc)
 		if n > 0 {
 			prev = pc
 			n--
