@@ -21,129 +21,9 @@
 // represents "everything" the parser stack pushes around.
 package taxa
 
-import (
-	"fmt"
-	"strconv"
+import "fmt"
 
-	"github.com/bufbuild/protocompile/internal/iter"
-)
-
-// Noun is a syntactic or semantic element within the grammar that can be
-// referred to within a diagnostic.
-type Noun int
-
-const (
-	Unknown Noun = iota
-	Unrecognized
-	TopLevel
-	EOF
-
-	Decl
-	Empty
-	Syntax
-	Edition
-	Package
-	Import
-	WeakImport
-	PublicImport
-	Extensions
-	Reserved
-	Body
-
-	Def
-	Message
-	Enum
-	Service
-	Extend
-	Oneof
-
-	Option
-	CustomOption
-
-	Field
-	EnumValue
-	Method
-
-	FieldTag
-	OptionValue
-
-	CompactOptions
-	MethodIns
-	MethodOuts
-
-	QualifiedName
-	FullyQualifiedName
-	ExtensionName
-
-	Expr
-	Range
-	Array
-	Dict
-	DictField
-
-	Type
-	TypePath
-	TypeParams
-
-	Whitespace
-	Comment
-	Ident
-	String
-	Float
-	Int
-
-	Semicolon
-	Comma
-	Slash
-	Colon
-	Equals
-	Minus
-	Period
-
-	LParen
-	LBracket
-	LBrace
-	LAngle
-
-	RParen
-	RBracket
-	RBrace
-	RAngle
-
-	Parens
-	Brackets
-	Braces
-	Angles
-
-	KeywordSyntax
-	KeywordEdition
-	KeywordImport
-	KeywordWeak
-	KeywordPublic
-	KeywordPackage
-
-	KeywordOption
-	KeywordMessage
-	KeywordEnum
-	KeywordService
-	KeywordExtend
-	KeywordOneof
-
-	KeywordExtensions
-	KeywordReserved
-	KeywordTo
-	KeywordRPC
-	KeywordReturns
-
-	KeywordOptional
-	KeywordRepeated
-	KeywordRequired
-	KeywordGroup
-	KeywordStream
-
-	// total is the total number of known [What] values.
-	total int = iota
-)
+//go:generate go run github.com/bufbuild/protocompile/internal/enum noun.yaml
 
 // In is a shorthand for the "in" preposition.
 func (s Noun) In() Place {
@@ -163,35 +43,6 @@ func (s Noun) Without() Place {
 // AsSet returns a singleton set containing this What.
 func (s Noun) AsSet() Set {
 	return NewSet(s)
-}
-
-// String implements [fmt.Stringer].
-func (s Noun) String() string {
-	if int(s) >= len(names) {
-		return names[0]
-	}
-	return names[s]
-}
-
-// All returns an iterator over all subjects.
-func All() iter.Seq[Noun] {
-	return func(yield func(Noun) bool) {
-		for i := 0; i < total; i++ {
-			if !yield(Noun(i)) {
-				break
-			}
-		}
-	}
-}
-
-// GoString implements [fmt.GoStringer].
-//
-// This exists to get pretty output out of the assert package.
-func (s Noun) GoString() string {
-	if int(s) >= len(constNames) {
-		return strconv.Itoa(int(s))
-	}
-	return "what." + constNames[s]
 }
 
 // Place is a location within the grammar that can be referred to within a

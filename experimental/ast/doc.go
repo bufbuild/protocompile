@@ -92,3 +92,5 @@
 // library. Outside of this file, documentation is written assuming this has
 // already happened.
 package ast
+
+//go:generate go run github.com/bufbuild/protocompile/internal/enum enums.yaml
