@@ -218,3 +218,33 @@ decls:
               args:
                 - path.components: [{ ident: "int" }]
                 - path.components: [{ ident: "int" }]
+        - range.kind: KIND_RESERVED
+        - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 1 }] }
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.int_value: 1
+              - literal.int_value: 2
+              - literal.int_value: 3
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.int_value: 1
+              - literal.int_value: 2
+              - literal.int_value: 3
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.int_value: 1
+              - literal.int_value: 2
+              - literal.int_value: 3
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.int_value: 1
+              - literal.int_value: 2
+              - literal.int_value: 3
+        - range:
+            kind: KIND_RESERVED
+            ranges: [{ path.components: [{ ident: "a" }] }, { dict: {} }]
+        - range.kind: KIND_RESERVED

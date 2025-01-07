@@ -177,7 +177,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 				expr := parseExpr(p, c, in.In())
 				return expr, !expr.IsZero()
 			},
-			canStart: canStartExpr,
+			start: canStartExpr,
 		}
 
 		if next.Text() == "[" {

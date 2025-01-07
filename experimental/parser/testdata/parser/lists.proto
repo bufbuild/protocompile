@@ -62,4 +62,13 @@ message M {
         int,
         int,
     > x;
+
+    reserved;
+    reserved 1;
+    reserved 1, 2 3;
+    reserved 1, 2,, 3;
+    reserved 1, 2,, 3,;
+    reserved ,1 2,, 3,;
+    reserved a {};
+    reserved ,;
 }

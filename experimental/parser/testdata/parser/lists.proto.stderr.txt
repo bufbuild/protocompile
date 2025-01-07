@@ -224,4 +224,76 @@ error: unexpected trailing `,` in type parameters
 63 |         int,
    |            ^ 
 
-encountered 33 errors
+error: unexpected integer literal in reserved range
+  --> testdata/parser/lists.proto:68:19
+   | 
+68 |     reserved 1, 2 3;
+   |                   ^ expected `,`
+   |                   |
+   |                   note: assuming a missing `,` here
+
+error: unexpected extra `,` in reserved range
+  --> testdata/parser/lists.proto:69:19
+   | 
+69 |     reserved 1, 2,, 3;
+   |                  -^ expected expression
+   |                  |
+   |                  first delimiter is here
+
+error: unexpected extra `,` in reserved range
+  --> testdata/parser/lists.proto:70:19
+   | 
+70 |     reserved 1, 2,, 3,;
+   |                  -^ expected expression
+   |                  |
+   |                  first delimiter is here
+
+error: unexpected trailing `,` in reserved range
+  --> testdata/parser/lists.proto:70:22
+   | 
+70 |     reserved 1, 2,, 3,;
+   |                      ^ 
+
+error: unexpected leading `,` in reserved range
+  --> testdata/parser/lists.proto:71:14
+   | 
+71 |     reserved ,1 2,, 3,;
+   |              ^ expected expression
+
+error: unexpected integer literal in reserved range
+  --> testdata/parser/lists.proto:71:17
+   | 
+71 |     reserved ,1 2,, 3,;
+   |                 ^ expected `,`
+   |                 |
+   |                 note: assuming a missing `,` here
+
+error: unexpected extra `,` in reserved range
+  --> testdata/parser/lists.proto:71:19
+   | 
+71 |     reserved ,1 2,, 3,;
+   |                  -^ expected expression
+   |                  |
+   |                  first delimiter is here
+
+error: unexpected trailing `,` in reserved range
+  --> testdata/parser/lists.proto:71:22
+   | 
+71 |     reserved ,1 2,, 3,;
+   |                      ^ 
+
+error: unexpected message expression in reserved range
+  --> testdata/parser/lists.proto:72:16
+   | 
+72 |     reserved a {};
+   |                ^^ expected `,`
+   |                |
+   |                note: assuming a missing `,` here
+
+error: unexpected leading `,` in reserved range
+  --> testdata/parser/lists.proto:73:14
+   | 
+73 |     reserved ,;
+   |              ^ expected expression
+
+encountered 43 errors

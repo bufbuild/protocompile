@@ -48,7 +48,10 @@ type delimited[T report.Spanner] struct {
 	parse func(*token.Cursor) (T, bool)
 
 	// Used for skipping tokens until we can begin parsing.
-	canStart func(token.Token) bool
+	//
+	// start is called until we see a token that returns true for it. However,
+	// if stop is not nil and it returns true for that token, parsing stops.
+	start, stop func(token.Token) bool
 }
 
 func (d delimited[T]) appendTo(commas ast.Commas[T]) {
@@ -90,20 +93,27 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		// Set if we should not diagnose a missing comma, because there was
 		// garbage in front of the call to parse().
 		var badPrefix bool
-		if !d.canStart(d.c.Peek()) {
+		if !d.start(d.c.Peek()) {
+			if d.stop != nil && d.stop(d.c.Peek()) {
+				break
+			}
+
 			first := d.c.Pop()
 			var last token.Token
-			for !d.c.Done() && !d.canStart(d.c.Peek()) {
+			for !d.c.Done() && !d.start(d.c.Peek()) {
+				if d.stop != nil && d.stop(d.c.Peek()) {
+					break
+				}
 				last = d.c.Pop()
 			}
 
 			want := d.what.AsSet()
-			if needDelim && delim.Nil() {
+			if needDelim && delim.IsZero() {
 				want = d.delimNouns()
 			}
 
 			what := report.Spanner(first)
-			if !last.Nil() {
+			if !last.IsZero() {
 				what = report.Join(first, last)
 			}
 
@@ -120,7 +130,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			break
 		}
 
-		if !badPrefix && needDelim && delim.Nil() {
+		if !badPrefix && needDelim && delim.IsZero() {
 			d.p.Error(errUnexpected{
 				what:  v,
 				where: d.in.In(),
@@ -133,7 +143,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		needDelim = d.required
 
 		// Pop as many delimiters as we can.
-		delim = token.Nil
+		delim = token.Zero
 		for {
 			which := slices.Index(d.delims, d.c.Peek().Text())
 			if which < 0 {
@@ -160,10 +170,13 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			break
 		}
 
-		if delim.Nil() && d.required && !d.exhaust {
-			// In non-exhaust mode, if we miss a required comma just bail.
-			// Otherwise, go again to parse another thing.
-			break
+		// In non-exhaust mode, if we miss a required comma, bail if we have
+		// reached a stop token, or if we don't have a stop predicate.
+		// Otherwise, go again to parse another thing.
+		if delim.IsZero() && d.required && !d.exhaust {
+			if d.stop == nil || d.stop(d.c.Peek()) {
+				break
+			}
 		}
 	}
 

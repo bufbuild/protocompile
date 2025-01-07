@@ -294,6 +294,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// is empty, or if the first comma occurs without seeing an =, we can choose
 	// to parse this as an array, instead.
 	if !canStartOptions(c.Peek()) {
+		first := true
 		delimited[ast.ExprAny]{
 			p: p, c: c,
 			what: taxa.Expr,
@@ -302,12 +303,28 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 			required: true,
 			exhaust:  false,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
+				first = false
 				expr := parseExpr(p, c, in.In())
 				badExpr = expr.IsZero()
 
 				return expr, !expr.IsZero()
 			},
-			canStart: canStartExpr,
+			start: canStartExpr,
+			stop: func(t token.Token) bool {
+				if t.Text() == ";" || t.Text() == "[" {
+					return true
+				}
+
+				// After the first element, stop if we see an identifier
+				// coming up. This is for a case like this:
+				//
+				// reserved 1, 2
+				// message Foo {}
+				//
+				// If we don't do this, message will be interpreted as an
+				// expression.
+				return !first && t.Kind() == token.Ident
+			},
 		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			exprs = append(exprs, exprComma{expr, comma})
 			return true
@@ -348,7 +365,7 @@ func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.No
 			ty := parseType(p, c, in.In())
 			return ty, !ty.IsZero()
 		},
-		canStart: canStartPath,
+		start: canStartPath,
 	}.appendTo(types)
 }
 
@@ -403,7 +420,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			}
 			return option, !option.Value.IsZero()
 		},
-		canStart: canStartPath,
+		start: canStartPath,
 	}.appendTo(options)
 
 	return options
