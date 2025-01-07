@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -300,7 +300,7 @@ func fuseBraces(l *lexer) {
 // implements implicit concatenation by juxtaposition.
 func fuseStrings(l *lexer) {
 	concat := func(start, end token.Token) {
-		if start.Nil() || start == end {
+		if start.IsZero() || start == end {
 			return
 		}
 
@@ -324,15 +324,15 @@ func fuseStrings(l *lexer) {
 			break
 
 		case token.String:
-			if start.Nil() {
+			if start.IsZero() {
 				start = tok
 			}
 			end = tok
 
 		default:
 			concat(start, end)
-			start = token.Nil
-			end = token.Nil
+			start = token.Zero
+			end = token.Zero
 		}
 
 		return true

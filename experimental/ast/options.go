@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,10 +23,15 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-// CompactOptions represents the collection of options attached to a field-like declaration,
+// CompactOptions represents the collection of options attached to a [DeclAny],
 // contained within square brackets.
 //
 // CompactOptions implements [Commas] over its options.
+//
+// # Grammar
+//
+//	CompactOptions := `[` (option `,`?)? `]`
+//	option         := Path [:=]? Expr?
 type CompactOptions struct {
 	withContext
 	raw *rawCompactOptions
@@ -59,11 +64,19 @@ type rawOption struct {
 
 // Brackets returns the token tree corresponding to the whole [...].
 func (o CompactOptions) Brackets() token.Token {
+	if o.IsZero() {
+		return token.Zero
+	}
+
 	return o.raw.brackets.In(o.Context())
 }
 
 // Len implements [Slice].
 func (o CompactOptions) Len() int {
+	if o.IsZero() {
+		return 0
+	}
+
 	return len(o.raw.options)
 }
 
@@ -83,12 +96,12 @@ func (o CompactOptions) Iter(yield func(int, Option) bool) {
 
 // Append implements [Inserter].
 func (o CompactOptions) Append(option Option) {
-	o.InsertComma(o.Len(), option, token.Nil)
+	o.InsertComma(o.Len(), option, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (o CompactOptions) Insert(n int, option Option) {
-	o.InsertComma(n, option, token.Nil)
+	o.InsertComma(n, option, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -122,7 +135,7 @@ func (o CompactOptions) InsertComma(n int, option Option, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (o CompactOptions) Span() report.Span {
-	if o.Nil() {
+	if o.IsZero() {
 		return report.Span{}
 	}
 

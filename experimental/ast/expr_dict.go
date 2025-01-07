@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,16 @@ import (
 )
 
 // ExprDict represents a an array of message fields between curly braces.
+//
+// ExprArray implements [Commas].
+//
+// # Grammar
+//
+//	ExprDict := `{` fields `}` | `<` fields `>`
+//	fields := (Expr (`,` | `;`)?)*
+//
+// Note that if a non-[ExprField] occurs as a field of a dict, the parser will
+// rewrite it into an [ExprField] with a missing key.
 type ExprDict struct{ exprImpl[rawExprDict] }
 
 type rawExprDict struct {
@@ -36,11 +46,19 @@ var _ Commas[ExprField] = ExprDict{}
 //
 // May be missing for a synthetic expression.
 func (e ExprDict) Braces() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.braces.In(e.Context())
 }
 
 // Len implements [Slice].
 func (e ExprDict) Len() int {
+	if e.IsZero() {
+		return 0
+	}
+
 	return len(e.raw.fields)
 }
 
@@ -55,6 +73,10 @@ func (e ExprDict) At(n int) ExprField {
 
 // Iter implements [Slice].
 func (e ExprDict) Iter(yield func(int, ExprField) bool) {
+	if e.IsZero() {
+		return
+	}
+
 	for i, f := range e.raw.fields {
 		e := ExprField{exprImpl[rawExprField]{
 			e.withContext,
@@ -68,12 +90,12 @@ func (e ExprDict) Iter(yield func(int, ExprField) bool) {
 
 // Append implements [Inserter].
 func (e ExprDict) Append(expr ExprField) {
-	e.InsertComma(e.Len(), expr, token.Nil)
+	e.InsertComma(e.Len(), expr, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (e ExprDict) Insert(n int, expr ExprField) {
-	e.InsertComma(n, expr, token.Nil)
+	e.InsertComma(n, expr, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -94,22 +116,17 @@ func (e ExprDict) AppendComma(expr ExprField, comma token.Token) {
 // InsertComma implements [Commas].
 func (e ExprDict) InsertComma(n int, expr ExprField, comma token.Token) {
 	e.Context().Nodes().panicIfNotOurs(expr, comma)
-	if expr.Nil() {
-		panic("protocompile/ast: cannot append nil ExprField to ExprMessage")
+	if expr.IsZero() {
+		panic("protocompile/ast: cannot append zero ExprField to ExprMessage")
 	}
 
 	ptr := e.Context().Nodes().exprs.fields.Compress(expr.raw)
 	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{ptr, comma.ID()})
 }
 
-// AsMessage implements [ExprAny].
-func (e ExprDict) AsMessage() Commas[ExprField] {
-	return e
-}
-
 // Span implements [report.Spanner].
 func (e ExprDict) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 
@@ -118,7 +135,16 @@ func (e ExprDict) Span() report.Span {
 
 // ExprField is a key-value pair within an [ExprDict].
 //
-// It implements [ExprAny], since it can appear inside of e.g. an array if the user incorrectly writes [foo: bar].
+// It implements [ExprAny], since it can appear inside of e.g. an array if the
+// user incorrectly writes [foo: bar].
+//
+// # Grammar
+//
+//	ExprField := ExprFieldWithColon | Expr (ExprDict | ExprArray)
+//	ExprFieldWithColon := Expr (`:` | `=`) Expr
+//
+// Note: ExprFieldWithColon appears in ExprJuxta, the expression production that
+// is unambiguous when expressions are juxtaposed with each other.
 type ExprField struct{ exprImpl[rawExprField] }
 
 type rawExprField struct {
@@ -135,41 +161,53 @@ type ExprFieldArgs struct {
 
 // Key returns the key for this field.
 //
-// May be nil if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
+// May be zero if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
 func (e ExprField) Key() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.key)
 }
 
 // SetKey sets the key for this field.
 //
-// If passed nil, this clears the key.
+// If passed zero, this clears the key.
 func (e ExprField) SetKey(expr ExprAny) {
 	e.raw.key = expr.raw
 }
 
 // Colon returns the colon between Key() and Value().
 //
-// May be nil: it is valid for a field name to be immediately followed by its value and be syntactically
+// May be zero: it is valid for a field name to be immediately followed by its value and be syntactically
 // valid (unlike most "optional" punctuation, this is permitted by Protobuf, not just our permissive AST).
 func (e ExprField) Colon() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.colon.In(e.Context())
 }
 
 // Value returns the value for this field.
 func (e ExprField) Value() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.value)
 }
 
 // SetValue sets the value for this field.
 //
-// If passed nil, this clears the expression.
+// If passed zero, this clears the expression.
 func (e ExprField) SetValue(expr ExprAny) {
 	e.raw.value = expr.raw
 }
 
 // Span implements [report.Spanner].
 func (e ExprField) Span() report.Span {
-	if e.Nil() {
+	if e.IsZero() {
 		return report.Span{}
 	}
 

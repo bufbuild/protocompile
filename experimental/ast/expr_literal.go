@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,10 @@ import (
 )
 
 // ExprLiteral is an expression corresponding to a string or number literal.
+//
+// # Grammar
+//
+//	ExprLiteral := token.Number | token.String
 type ExprLiteral struct {
 	// The token backing this expression. Must be [token.String] or [token.Number],
 	// and its Context() must be an ast.Context.
@@ -32,6 +36,10 @@ type ExprLiteral struct {
 //
 // See [TypeAny] for more information.
 func (e ExprLiteral) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
 	return newExprAny(
 		//nolint:errcheck // This assertion is required in the comment on e.Token.
 		e.Context().(Context),

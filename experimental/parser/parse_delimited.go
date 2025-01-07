@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			latest = which
 
 			next := d.c.Pop()
-			if delim.Nil() {
+			if delim.IsZero() {
 				delim = next
 				continue
 			}
@@ -175,7 +175,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			want:  d.what.AsSet(),
 			got:   "tokens",
 		})
-	case !d.trailing && !delim.Nil():
+	case !d.trailing && !delim.IsZero():
 		d.p.Error(errUnexpected{
 			what:  delim,
 			where: d.in.In(),

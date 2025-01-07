@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,13 @@ import (
 // so on.
 //
 // DeclBody implements [Slice], providing access to its declarations.
+//
+// # Grammar
+//
+//	DeclBody := `{` DeclAny* `}`
+//
+// Note that a [File] is simply a DeclBody that is delimited by the bounds of
+// the source file, rather than braces.
 type DeclBody struct{ declImpl[rawDeclBody] }
 
 type rawDeclBody struct {
@@ -47,15 +54,19 @@ var (
 
 // Braces returns this body's surrounding braces, if it has any.
 func (d DeclBody) Braces() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.braces.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
 	switch {
-	case d.Nil():
+	case d.IsZero():
 		return report.Span{}
-	case !d.Braces().Nil():
+	case !d.Braces().IsZero():
 		return d.Braces().Span()
 	case d.Len() == 0:
 		return report.Span{}
@@ -66,6 +77,10 @@ func (d DeclBody) Span() report.Span {
 
 // Len returns the number of declarations inside of this body.
 func (d DeclBody) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.ptrs)
 }
 
@@ -76,6 +91,10 @@ func (d DeclBody) At(n int) DeclAny {
 
 // Iter is an iterator over the nodes inside this body.
 func (d DeclBody) Iter(yield func(int, DeclAny) bool) {
+	if d.IsZero() {
+		return
+	}
+
 	for i := range d.raw.kinds {
 		if !yield(i, d.At(i)) {
 			break

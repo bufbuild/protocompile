@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		mods   []token.Token
 		tyPath ast.Path
 	)
-	for !c.Done() && tyPath.Nil() {
+	for !c.Done() && tyPath.IsZero() {
 		next := c.Peek()
 		if !canStartPath(next) {
 			break
@@ -85,7 +85,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 
 		first, _ := iterx.First(tyPath.Components)
 		ident := first.AsIdent()
-		if ident.Nil() {
+		if ident.IsZero() {
 			break // If this starts with an extension, we're done.
 		}
 
@@ -118,7 +118,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			slicesx.Among(ident.Text(), "package", "extend") &&
 			!canStartPath(c.Peek()) {
 			kw, path := tyPath.Split(1)
-			if !path.Nil() {
+			if !path.IsZero() {
 				return ast.TypePath{Path: kw}.AsAny(), path
 			}
 		}
@@ -139,9 +139,9 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			// `returns (optional .Foo)`. However, this production is already
 			// invalid, because of the missing parentheses, so we don't need to
 			// legalize it.
-			isMod = !isList || rest.Nil()
+			isMod = !isList || rest.IsZero()
 		case ast.TypePrefixStream:
-			isMod = isInMethod || rest.Nil()
+			isMod = isInMethod || rest.IsZero()
 		}
 
 		if isMod {
@@ -150,7 +150,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		}
 	}
 
-	if tyPath.Nil() {
+	if tyPath.IsZero() {
 		if len(mods) == 0 {
 			return ast.TypeAny{}, ast.Path{}
 		}
@@ -183,7 +183,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			exhaust:  true,
 			parse: func(c *token.Cursor) (ast.TypeAny, bool) {
 				ty := parseType(p, c, taxa.TypeParams.In())
-				return ty, !ty.Nil()
+				return ty, !ty.IsZero()
 			},
 			canStart: canStartPath,
 		}.appendTo(generic.Args())

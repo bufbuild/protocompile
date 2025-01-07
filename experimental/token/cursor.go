@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,11 +48,11 @@ type CursorMark struct {
 
 // NewCursor returns a new cursor over the given tokens.
 //
-// Panics if either token is nil, the tokens come from different contexts, or
+// Panics if either token is zero, the tokens come from different contexts, or
 // either token is synthetic.
 func NewCursor(start, end Token) *Cursor {
-	if start.Nil() || end.Nil() {
-		panic(fmt.Sprintf("protocompile/token: passed nil token to NewCursor: %v, %v", start, end))
+	if start.IsZero() || end.IsZero() {
+		panic(fmt.Sprintf("protocompile/token: passed zero token to NewCursor: %v, %v", start, end))
 	}
 	if start.Context() != end.Context() {
 		panic("protocompile/token: passed tokens from different context to NewCursor")
@@ -70,7 +70,7 @@ func NewCursor(start, end Token) *Cursor {
 
 // Done returns whether or not there are still tokens left to yield.
 func (c *Cursor) Done() bool {
-	return c.Peek().Nil()
+	return c.Peek().IsZero()
 }
 
 // IsSynthetic returns whether this is a cursor over synthetic tokens.
@@ -102,20 +102,20 @@ func (c *Cursor) Rewind(mark CursorMark) {
 // Peek returns the next token in the sequence, if there is one.
 // This may return a skippable token.
 //
-// Returns the nil token if this cursor is at the end of the stream.
+// Returns the zero token if this cursor is at the end of the stream.
 func (c *Cursor) PeekSkippable() Token {
 	if c == nil {
-		return Nil
+		return Zero
 	}
 
 	if c.IsSynthetic() {
 		if c.idx == len(c.stream) {
-			return Nil
+			return Zero
 		}
 		return c.stream[c.idx].In(c.Context())
 	}
 	if c.start >= c.end {
-		return Nil
+		return Zero
 	}
 	return c.start.In(c.Context())
 }
@@ -123,7 +123,7 @@ func (c *Cursor) PeekSkippable() Token {
 // Pop returns the next skippable token in the sequence, and advances the cursor.
 func (c *Cursor) PopSkippable() Token {
 	tok := c.PeekSkippable()
-	if tok.Nil() {
+	if tok.IsZero() {
 		return tok
 	}
 
@@ -142,11 +142,11 @@ func (c *Cursor) PopSkippable() Token {
 // Peek returns the next token in the sequence, if there is one.
 // This automatically skips past skippable tokens.
 //
-// Returns the nil token if this cursor is at the end of the stream.
+// Returns the zero token if this cursor is at the end of the stream.
 func (c *Cursor) Peek() Token {
 	for {
 		next := c.PeekSkippable()
-		if next.Nil() || !next.Kind().IsSkippable() {
+		if next.IsZero() || !next.Kind().IsSkippable() {
 			return next
 		}
 		c.PopSkippable()
@@ -156,7 +156,7 @@ func (c *Cursor) Peek() Token {
 // Pop returns the next token in the sequence, and advances the cursor.
 func (c *Cursor) Pop() Token {
 	tok := c.Peek()
-	if tok.Nil() {
+	if tok.IsZero() {
 		return tok
 	}
 
@@ -173,7 +173,7 @@ func (c *Cursor) Rest() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for {
 			tok := c.Peek()
-			if tok.Nil() || !yield(tok) {
+			if tok.IsZero() || !yield(tok) {
 				break
 			}
 			_ = c.Pop()
@@ -191,7 +191,7 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for {
 			tok := c.PeekSkippable()
-			if tok.Nil() || !yield(tok) {
+			if tok.IsZero() || !yield(tok) {
 				break
 			}
 			_ = c.PopSkippable()
@@ -203,17 +203,17 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 // this cursor (be that a token or the EOF). If it is a token, this will return
 // that token, too.
 //
-// Returns [Nil] for a synthetic cursor.
+// Returns [Zero] for a synthetic cursor.
 func (c *Cursor) JustAfter() (Token, report.Span) {
 	if c.stream != nil {
-		return Nil, report.Span{}
+		return Zero, report.Span{}
 	}
 
 	stream := c.Context().Stream()
 	if int(c.end) > len(stream.nats) {
 		// This is the case where this cursor is a Stream.Cursor(). Thus, the
 		// just-after span should be the EOF.
-		return Nil, stream.EOF()
+		return Zero, stream.EOF()
 	}
 
 	// Otherwise, return end.
