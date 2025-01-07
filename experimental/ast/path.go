@@ -111,7 +111,6 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		i := int(^int16(p.raw.End))
 		j := int(^int16(p.raw.End >> 16))
 		cursor = first.SyntheticChildren(i, j)
-		fmt.Sprintln(cursor)
 	} else {
 		cursor = token.NewCursor(first, p.raw.End.In(p.Context()))
 	}
