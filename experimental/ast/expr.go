@@ -71,11 +71,7 @@ func newExprAny(c Context, e rawExpr) ExprAny {
 // Kind returns the kind of expression this is. This is suitable for use
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
-<<<<<<< HEAD
 	if e.IsZero() {
-=======
-	if e.Nil() {
->>>>>>> 34c5f60 (switch using yaml files)
 		return ExprKindInvalid
 	}
 

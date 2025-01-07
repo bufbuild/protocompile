@@ -80,7 +80,7 @@
   - kind: string
   - kind: go-string
   values:
-  - name: TypeKindNil
+  - name: TypeKindInvalid
   - name: TypeKindError
   - name: TypeKindPath
   - name: TypeKindPrefixed

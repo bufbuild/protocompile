@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"text/template"
@@ -126,7 +127,7 @@ const (
 	MethodFromString MethodKind = "from-string"
 )
 
-//go:embed generated.go.tmpl
+//go:embed enum.go.tmpl
 var tmplText string
 
 // makeDocs converts a data into doc comments.
@@ -149,13 +150,18 @@ func makeDocs(data, indent string) string {
 	return out.String()
 }
 
-func Main() error {
+func Main(config string) error {
+	if filepath.Ext(config) != ".yaml" {
+		return fmt.Errorf("file argument must end in .yaml")
+	}
+
 	var input struct {
-		Binary, Package, Path string
-		YAML                  []Enum
+		Binary, Package, Path, Config string
+		YAML                          []Enum
 	}
 	input.Package = os.Getenv("GOPACKAGE")
-	input.Path = os.Getenv("GOFILE")
+	input.Config = config
+	input.Path = strings.TrimSuffix(config, ".yaml") + ".go"
 
 	buildinfo, err := buildinfo.ReadFile(os.Args[0])
 	if err != nil {
@@ -163,7 +169,7 @@ func Main() error {
 	}
 	input.Binary = buildinfo.Path
 
-	text, err := os.ReadFile(input.Path + ".yaml")
+	text, err := os.ReadFile(config)
 	if err != nil {
 		return err
 	}
@@ -171,7 +177,7 @@ func Main() error {
 		return err
 	}
 
-	tmpl, err := template.New("generated.go.tmpl").Funcs(template.FuncMap{
+	tmpl, err := template.New("enum.go.tmpl").Funcs(template.FuncMap{
 		"makeDocs": makeDocs,
 		"contains": slices.Contains[[]string],
 	}).Parse(tmplText)
@@ -184,12 +190,19 @@ func Main() error {
 		return err
 	}
 	defer out.Close()
-	return tmpl.ExecuteTemplate(out, "generated.go.tmpl", input)
+	return tmpl.ExecuteTemplate(out, "enum.go.tmpl", input)
 }
 
 func main() {
-	if err := Main(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	var failed bool
+	for _, config := range os.Args[1:] {
+		if err := Main(config); err != nil {
+			fmt.Fprintf(os.Stderr, "%s: %s", config, err)
+			failed = true
+		}
+	}
+
+	if failed {
 		os.Exit(1)
 	}
 }

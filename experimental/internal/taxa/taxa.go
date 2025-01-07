@@ -23,6 +23,8 @@ package taxa
 
 import "fmt"
 
+//go:generate go run github.com/bufbuild/protocompile/internal/enum noun.yaml
+
 // In is a shorthand for the "in" preposition.
 func (s Noun) In() Place {
 	return Place{s, "in"}
