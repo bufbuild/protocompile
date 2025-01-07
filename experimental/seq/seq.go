@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ type Inserter[T any] interface {
 
 	// Delete deletes the element at the given index.
 	//
-	// Should panic if idx < 0 or idx > Len().
+	// Should panic if idx < 0 or idx => Len().
 	Delete(idx int)
 }
 
