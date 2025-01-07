@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ func Classify(node report.Spanner) Noun {
 	case ast.File:
 		return TopLevel
 	case ast.Path:
-		if id := node.AsIdent(); !id.Nil() {
+		if id := node.AsIdent(); !id.IsZero() {
 			return classifyToken(id)
 		}
 		if node.Absolute() {
@@ -132,7 +132,7 @@ func Classify(node report.Spanner) Noun {
 			return false
 		})
 
-		if !first.AsExtension().Nil() {
+		if !first.AsExtension().IsZero() {
 			return CustomOption
 		} else {
 			return Option

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ type exprComma struct {
 // This function will always advance cursor if it is not empty.
 func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	first := c.Peek()
-	if first.Nil() {
+	if first.IsZero() {
 		return ast.DeclAny{}
 	}
 
@@ -93,7 +93,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	// This is used here to disambiguated between a generic DeclDef and one of
 	// the other decl nodes.
 	var kw token.Token
-	if path := ty.AsPath(); !path.Nil() {
+	if path := ty.AsPath(); !path.IsZero() {
 		kw = path.AsIdent()
 	}
 
@@ -124,7 +124,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		// Regardless of if we see an = sign, try to parse an expression if we
 		// can.
-		if !args.Equals.Nil() || canStartExpr(c.Peek()) {
+		if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
 			args.Value = parseExpr(p, c, in.In())
 		}
 
@@ -140,7 +140,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		//
 		// TODO: Add something like ExprError and check if args.Value
 		// contains one.
-		if err != nil && !args.Value.Nil() {
+		if err != nil && !args.Value.IsZero() {
 			p.Error(err)
 		}
 
@@ -181,7 +181,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		//
 		// TODO: this treats import public inside of a message as a field, which
 		// may result in worse diagnostics.
-		if in != taxa.TopLevel && !path.AsIdent().Nil() {
+		if in != taxa.TopLevel && !path.AsIdent().IsZero() {
 			break
 		}
 		// This is definitely a field.
@@ -202,12 +202,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		case modifier == "weak":
 			in = taxa.WeakImport
 			args.Modifier = path.AsIdent()
-		case !path.Nil():
+		case !path.IsZero():
 			// This will catch someone writing `import foo.bar;` when we legalize.
 			args.ImportPath = ast.ExprPath{Path: path}.AsAny()
 		}
 
-		if args.ImportPath.Nil() && canStartExpr(next) {
+		if args.ImportPath.IsZero() && canStartExpr(next) {
 			args.ImportPath = parseExpr(p, c, in.In())
 		}
 
@@ -215,7 +215,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		semi, err := p.Punct(c, ";", in.After())
 		args.Semicolon = semi
-		if err != nil && args.ImportPath.Nil() {
+		if err != nil && args.ImportPath.IsZero() {
 			p.Error(err)
 		}
 
@@ -257,7 +257,7 @@ func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 	// parse.
 	c := braces.Children()
 	for !c.Done() {
-		if next := parseDecl(p, c, in); !next.Nil() {
+		if next := parseDecl(p, c, in); !next.IsZero() {
 			body.Append(next)
 		}
 	}
@@ -299,9 +299,9 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 			exhaust:  false,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
 				expr := parseExpr(p, c, in.In())
-				badExpr = expr.Nil()
+				badExpr = expr.IsZero()
 
-				return expr, !expr.Nil()
+				return expr, !expr.IsZero()
 			},
 		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			exprs = append(exprs, exprComma{expr, comma})
@@ -313,7 +313,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 
 	// Parse a semicolon, if possible.
 	semi, err := p.Punct(c, ";", in.After())
-	if err != nil && (!options.Nil() || !badExpr) {
+	if err != nil && (!options.IsZero() || !badExpr) {
 		p.Error(err)
 	}
 
@@ -341,7 +341,7 @@ func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.No
 		exhaust:  true,
 		parse: func(c *token.Cursor) (ast.TypeAny, bool) {
 			ty := parseType(p, c, in.In())
-			return ty, !ty.Nil()
+			return ty, !ty.IsZero()
 		},
 	}.appendTo(types)
 }
@@ -367,7 +367,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 		exhaust:  true,
 		parse: func(c *token.Cursor) (ast.Option, bool) {
 			path := parsePath(p, c)
-			if path.Nil() {
+			if path.IsZero() {
 				return ast.Option{}, false
 			}
 
@@ -387,7 +387,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 					want:  taxa.Equals.AsSet(),
 					where: taxa.CompactOptions.In(),
 				})
-				eq = token.Nil
+				eq = token.Zero
 			}
 
 			option := ast.Option{
@@ -395,7 +395,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 				Equals: eq,
 				Value:  parseExpr(p, c, taxa.CompactOptions.In()),
 			}
-			return option, !option.Value.Nil()
+			return option, !option.Value.IsZero()
 		},
 	}.appendTo(options)
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,9 +34,9 @@ func parseExpr(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 // prec is the precedence; higher values mean tighter binding. This function calls itself
 // with higher (or equal) precedence values.
 func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAny, prec int) ast.ExprAny {
-	if lhs.Nil() {
+	if lhs.IsZero() {
 		lhs = parseExprPrefix(p, c, where)
-		if lhs.Nil() || c.Done() {
+		if lhs.IsZero() || c.Done() {
 			return lhs
 		}
 	}
@@ -115,7 +115,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	next := peekTokenExpr(p, c)
 	switch {
-	case next.Nil():
+	case next.IsZero():
 		return ast.ExprAny{}
 
 	case next.Text() == "-":
@@ -138,7 +138,7 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	next := peekTokenExpr(p, c)
 	switch {
-	case next.Nil():
+	case next.IsZero():
 		return ast.ExprAny{}
 
 	case next.Kind() == token.String, next.Kind() == token.Number:
@@ -166,7 +166,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			trailing: true,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
 				expr := parseExpr(p, c, in.In())
-				return expr, !expr.Nil()
+				return expr, !expr.IsZero()
 			},
 		}
 
@@ -179,7 +179,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		dict := p.NewExprDict(body)
 		elems.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			field := expr.AsField()
-			if field.Nil() {
+			if field.IsZero() {
 				p.Error(errUnexpected{
 					what:  expr,
 					where: in.In(),
@@ -209,7 +209,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 // if the cursor is exhausted.
 func peekTokenExpr(p *parser, c *token.Cursor) token.Token {
 	next := c.Peek()
-	if next.Nil() {
+	if next.IsZero() {
 		token, span := c.JustAfter()
 		err := errUnexpected{
 			what:  span,
@@ -217,7 +217,7 @@ func peekTokenExpr(p *parser, c *token.Cursor) token.Token {
 			want:  taxa.Expr.AsSet(),
 			got:   taxa.EOF,
 		}
-		if !token.Nil() {
+		if !token.IsZero() {
 			err.got = taxa.Classify(token)
 		}
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,6 +27,10 @@ import (
 //
 // In the Protocompile AST, ranges can contain arbitrary expressions. Thus, DeclRange
 // implements [Comma[ExprAny]].
+//
+// # Grammar
+//
+//	DeclRange := (`extensions` | `reserved`) (Expr `,`)* Expr? CompactOptions? `;`?
 type DeclRange struct{ declImpl[rawDeclRange] }
 
 type rawDeclRange struct {
@@ -49,6 +53,10 @@ var (
 
 // Keyword returns the keyword for this range.
 func (d DeclRange) Keyword() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.keyword.In(d.Context())
 }
 
@@ -64,6 +72,10 @@ func (d DeclRange) IsReserved() bool {
 
 // Len implements [Slice].
 func (d DeclRange) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.args)
 }
 
@@ -74,6 +86,9 @@ func (d DeclRange) At(n int) ExprAny {
 
 // Iter implements [Slice].
 func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
+	if d.IsZero() {
+		return
+	}
 	for i, arg := range d.raw.args {
 		if !yield(i, newExprAny(d.Context(), arg.Value)) {
 			break
@@ -83,12 +98,12 @@ func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
 
 // Append implements [Inserter].
 func (d DeclRange) Append(expr ExprAny) {
-	d.InsertComma(d.Len(), expr, token.Nil)
+	d.InsertComma(d.Len(), expr, token.Zero)
 }
 
 // Insert implements [Inserter].
 func (d DeclRange) Insert(n int, expr ExprAny) {
-	d.InsertComma(n, expr, token.Nil)
+	d.InsertComma(n, expr, token.Zero)
 }
 
 // Delete implements [Inserter].
@@ -115,6 +130,10 @@ func (d DeclRange) InsertComma(n int, expr ExprAny, comma token.Token) {
 
 // Options returns the compact options list for this range.
 func (d DeclRange) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -129,13 +148,17 @@ func (d DeclRange) SetOptions(opts CompactOptions) {
 //
 // May be nil, if not present.
 func (d DeclRange) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclRange) Span() report.Span {
 	switch {
-	case d.Nil():
+	case d.IsZero():
 		return report.Span{}
 	case d.Len() == 0:
 		return report.Join(d.Keyword(), d.Semicolon(), d.Options())

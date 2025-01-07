@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ func (n *Nodes) Root() File {
 	// NewContext() sticks the root at the beginning of decls.body for us, so
 	// there is always a DeclBody at index 0, which corresponds to the whole
 	// file. We use a 1 here, not a 0, because arena.Arena's indices are
-	// off-by-one to accommodate the nil representation.
+	// off-by-one to accommodate the zero representation.
 	return File{wrapDeclBody(n.Context, 1)}
 }
 
@@ -106,13 +106,13 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 		body:    n.decls.bodies.Compress(args.Body.raw),
 		semi:    args.Semicolon.ID(),
 	}
-	if !args.Type.Nil() {
+	if !args.Type.IsZero() {
 		raw.ty = args.Type.raw
 	} else {
 		kw := rawPath{args.Keyword.ID(), args.Keyword.ID()}.With(n.Context)
 		raw.ty = wrapPath[TypeKind](kw.raw)
 	}
-	if !args.Returns.Nil() {
+	if !args.Returns.IsZero() {
 		raw.signature = &rawSignature{
 			returns: args.Returns.ID(),
 		}
@@ -260,7 +260,7 @@ func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 
 // panicIfNotOurs checks that a contextual value is owned by this context, and panics if not.
 //
-// Does not panic if that is nil or has a nil context. Panics if n is nil.
+// Does not panic if that is zero or has a zero context. Panics if n is zero.
 func (n *Nodes) panicIfNotOurs(that ...any) {
 	for _, that := range that {
 		if that == nil {

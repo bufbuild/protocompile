@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -65,9 +65,9 @@ type Commas[T any] interface {
 	// Comma is like [Slice.At] but returns the comma that follows the nth
 	// element.
 	//
-	// May be nil, either because it's the last element (a common situation
-	// where there is no comma) or it was added with Insert() rather than
-	// InsertComma().
+	// May be [token.Zero], either because it's the last element
+	// (a common situation where there is no comma) or it was added with
+	// Insert() rather than InsertComma().
 	Comma(n int) token.Token
 
 	// InsertComma is like Append, but includes an explicit comma.

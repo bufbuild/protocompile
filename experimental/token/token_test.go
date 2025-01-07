@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ func TestNilToken(t *testing.T) {
 	assert := assert.New(t)
 
 	var n token.Token
-	assert.True(n.Nil())
+	assert.True(n.IsZero())
 	assert.False(n.IsLeaf())
 	assert.False(n.IsSynthetic())
 	assert.Equal(token.Unrecognized, n.Kind())
@@ -69,7 +69,7 @@ func TestLeafTokens(t *testing.T) {
 		assert.Equal(a, s.Start)
 		assert.Equal(b, s.End)
 
-		assert.False(tok.Nil())
+		assert.False(tok.IsZero())
 		assert.False(tok.IsSynthetic())
 		assert.True(tok.IsLeaf())
 		assert.Equal(text, tok.Text())
@@ -82,7 +82,7 @@ func TestLeafTokens(t *testing.T) {
 	assertIdent(ghi, 8, 11, "ghi")
 
 	jkl := s.NewIdent("jkl")
-	assert.False(jkl.Nil())
+	assert.False(jkl.IsZero())
 	assert.True(jkl.IsLeaf())
 	assert.True(jkl.IsSynthetic())
 	assert.Equal("jkl", jkl.Text())

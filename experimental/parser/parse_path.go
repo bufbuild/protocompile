@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 		switch {
 		case next.Text() == "." || next.Text() == "/":
-			if !prevSeparator.Nil() {
+			if !prevSeparator.IsZero() {
 				// This is a double dot, so something like foo..bar, ..foo, or
 				// foo.. We diagnose it and move on -- Path.Components is robust
 				// against double dots.
@@ -63,7 +63,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			prevSeparator = c.Pop()
 
 		case next.Kind() == token.Ident:
-			if !first && prevSeparator.Nil() {
+			if !first && prevSeparator.IsZero() {
 				// This means we found something like `foo bar`, which means we
 				// should stop consuming components.
 				done = true
@@ -71,11 +71,11 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			}
 
 			end = next
-			prevSeparator = token.Nil
+			prevSeparator = token.Zero
 			c.Pop()
 
 		case next.Text() == "(":
-			if !first && prevSeparator.Nil() {
+			if !first && prevSeparator.IsZero() {
 				// This means we found something like `foo(bar)`, which means we
 				// should stop consuming components.
 				done = true
@@ -89,7 +89,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			// extraneous tokens.
 			contents := next.Children()
 			parsePath(p, contents)
-			if tok := contents.Peek(); !tok.Nil() {
+			if tok := contents.Peek(); !tok.IsZero() {
 				p.Error(errUnexpected{
 					what:  start,
 					where: taxa.ExtensionName.After(),
@@ -97,11 +97,11 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			}
 
 			end = next
-			prevSeparator = token.Nil
+			prevSeparator = token.Zero
 			c.Pop()
 
 		default:
-			if prevSeparator.Nil() {
+			if prevSeparator.IsZero() {
 				// This means we found something like `foo =`, which means we
 				// should stop consuming components.
 				done = true
