@@ -142,6 +142,10 @@ func (a *Arena[T]) NewCompressed(value T) Pointer[T] {
 // Compress returns a compressed pointer into this arena if ptr belongs to it;
 // otherwise, returns nil.
 func (a *Arena[T]) Compress(ptr *T) Pointer[T] {
+	if ptr == nil {
+		return 0
+	}
+
 	// Check the slices in reverse order: no matter the state of the arena,
 	// the majority of the allocated values will be in either the last or
 	// second-to-last slice.

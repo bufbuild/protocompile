@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -147,7 +148,7 @@ func (p *defParser) parse() ast.DeclDef {
 		p.Errorf("missing `(...)` around method return type").Apply(
 			report.Snippetf(p.outputTy, "help: replace this with `(%s)`", p.outputTy.Span().Text()),
 		)
-		def.WithSignature().Outputs().Append(p.outputTy)
+		seq.Append(def.WithSignature().Outputs(), p.outputTy)
 	}
 
 	if !p.braces.IsZero() {

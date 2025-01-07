@@ -18,13 +18,12 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // ExprDict represents a an array of message fields between curly braces.
-//
-// ExprArray implements [Commas].
 //
 // # Grammar
 //
@@ -40,8 +39,6 @@ type rawExprDict struct {
 	fields []withComma[arena.Pointer[rawExprField]]
 }
 
-var _ Commas[ExprField] = ExprDict{}
-
 // Braces returns the token tree corresponding to the whole {...}.
 //
 // May be missing for a synthetic expression.
@@ -51,6 +48,31 @@ func (e ExprDict) Braces() token.Token {
 	}
 
 	return e.raw.braces.In(e.Context())
+}
+
+// Elements returns the sequence of expressions in this array.
+func (e ExprDict) Elements() Commas[ExprField] {
+	type slice = commas[ExprField, arena.Pointer[rawExprField]]
+	if e.IsZero() {
+		return slice{}
+	}
+	return slice{
+		ctx: e.Context(),
+		SliceInserter: seq.SliceInserter[ExprField, withComma[arena.Pointer[rawExprField]]]{
+			Slice: &e.raw.fields,
+			Wrap: func(c withComma[arena.Pointer[rawExprField]]) ExprField {
+				return ExprField{exprImpl[rawExprField]{
+					e.withContext,
+					e.Context().Nodes().exprs.fields.Deref(c.Value),
+				}}
+			},
+			Unwrap: func(e ExprField) withComma[arena.Pointer[rawExprField]] {
+				e.Context().Nodes().panicIfNotOurs(e)
+				ptr := e.Context().Nodes().exprs.fields.Compress(e.raw)
+				return withComma[arena.Pointer[rawExprField]]{ptr, 0}
+			},
+		},
+	}
 }
 
 // Len implements [Slice].

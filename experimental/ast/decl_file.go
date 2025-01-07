@@ -16,6 +16,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/iter"
@@ -36,7 +37,7 @@ type File struct {
 
 // Syntax returns this file's pragma, if it has one.
 func (f File) Syntax() (syntax DeclSyntax) {
-	f.Iter(func(_ int, d DeclAny) bool {
+	seq.Values(f.Decls())(func(d DeclAny) bool {
 		if s := d.AsSyntax(); !s.IsZero() {
 			syntax = s
 			return false
@@ -48,7 +49,7 @@ func (f File) Syntax() (syntax DeclSyntax) {
 
 // Package returns this file's package declaration, if it has one.
 func (f File) Package() (pkg DeclPackage) {
-	f.Iter(func(_ int, d DeclAny) bool {
+	seq.Values(f.Decls())(func(d DeclAny) bool {
 		if p := d.AsPackage(); !p.IsZero() {
 			pkg = p
 			return false
@@ -62,7 +63,7 @@ func (f File) Package() (pkg DeclPackage) {
 func (f File) Imports() iter.Seq2[int, DeclImport] {
 	return func(yield func(int, DeclImport) bool) {
 		var i int
-		f.Iter(func(_ int, d DeclAny) bool {
+		seq.Values(f.Decls())(func(d DeclAny) bool {
 			if imp := d.AsImport(); !imp.IsZero() {
 				if !yield(i, imp) {
 					return false
