@@ -29,6 +29,7 @@ package main
 import (
 	"debug/buildinfo"
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -152,7 +153,7 @@ func makeDocs(data, indent string) string {
 
 func Main(config string) error {
 	if filepath.Ext(config) != ".yaml" {
-		return fmt.Errorf("file argument must end in .yaml")
+		return errors.New("file argument must end in .yaml")
 	}
 
 	var input struct {
