@@ -16,7 +16,12 @@
 
 package token
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+var _ iter.Seq[int] // Mark iter as used.
 
 // Kind identifies what kind of token a particular [Token] is.
 type Kind byte
@@ -47,7 +52,7 @@ func (v Kind) GoString() string {
 	return _table_Kind_GoString[int(v)]
 }
 
-var _table_Kind_String = [...]string {
+var _table_Kind_String = [...]string{
 	Unrecognized: "Unrecognized",
 	Space: "Space",
 	Comment: "Comment",
@@ -57,7 +62,7 @@ var _table_Kind_String = [...]string {
 	Punct: "Punct",
 }
 
-var _table_Kind_GoString = [...]string {
+var _table_Kind_GoString = [...]string{
 	Unrecognized: "Unrecognized",
 	Space: "Space",
 	Comment: "Comment",

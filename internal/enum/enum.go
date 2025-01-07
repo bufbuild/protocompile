@@ -94,8 +94,8 @@ func (m Method) Name() (string, error) {
 	}
 
 	switch m.Kind {
-	case MethodFromString:
-		return "", fmt.Errorf("missing name for kind: %#v", MethodFromString)
+	case MethodFromString, MethodAll:
+		return "", fmt.Errorf("missing name for kind: %#v", m.Kind)
 	case MethodGoString:
 		return "GoString", nil
 	case MethodString:
@@ -126,6 +126,7 @@ const (
 	MethodString     MethodKind = "string"
 	MethodGoString   MethodKind = "go-string"
 	MethodFromString MethodKind = "from-string"
+	MethodAll        MethodKind = "all"
 )
 
 //go:embed enum.go.tmpl

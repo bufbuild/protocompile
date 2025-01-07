@@ -16,7 +16,12 @@
 
 package taxa
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+var _ iter.Seq[int] // Mark iter as used.
 
 // Noun is a syntactic or semantic element within the grammar that can be
 // referred to within a diagnostic.
@@ -130,7 +135,7 @@ func (v Noun) GoString() string {
 	return _table_Noun_GoString[int(v)]
 }
 
-var _table_Noun_String = [...]string {
+var _table_Noun_String = [...]string{
 	Unknown: "<unknown>",
 	Unrecognized: "unrecognized token",
 	TopLevel: "file scope",
@@ -222,7 +227,7 @@ var _table_Noun_String = [...]string {
 	KeywordStream: "`stream`",
 }
 
-var _table_Noun_GoString = [...]string {
+var _table_Noun_GoString = [...]string{
 	Unknown: "Unknown",
 	Unrecognized: "Unrecognized",
 	TopLevel: "TopLevel",
