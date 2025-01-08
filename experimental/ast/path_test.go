@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package ast_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,7 +26,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestNaturalSplit(t *testing.T) {
@@ -125,7 +125,7 @@ func TestSyntheticSplit(t *testing.T) {
 func pathEq(t *testing.T, path ast.Path, want [][2]token.Token) {
 	t.Helper()
 
-	components := slicesx.Collect(iterx.Map(path.Components, func(pc ast.PathComponent) [2]token.Token {
+	components := slices.Collect(iterx.Map(path.Components, func(pc ast.PathComponent) [2]token.Token {
 		return [2]token.Token{pc.Separator(), pc.Name()}
 	}))
 	stringEq(t, components, want)
