@@ -31,12 +31,35 @@ import (
 // interpreted depending on kind, such as an arena pointer.
 //
 // This logic is implemented in the functions below.
-type pathLike[Kind ~int8] struct {
+type pathLike[Kind ~int8] uint64 /*struct {
+	// This is implemented as a uint64 so that it conforms to unsafex.Int.
+	// The below is the intended layout, which is implemented by
+	// packPathLike/unpack
+
 	// Can't use Kind for the type because this must be wide
 	// enough to accommodate token.ID in the event this
 	// pathLike actually represents a path.
 	StartOrKind int32
 	EndOrValue  int32
+}*/
+
+func packPathLike[Kind ~int8](startOrKind, endOrValue int32) pathLike[Kind] {
+	return pathLike[Kind](
+		// Cast to uint32 first to avoid sign extension.
+		uint64(uint32(startOrKind)) |
+			uint64(endOrValue)<<32, // Sign extension is ok here.
+	)
+}
+
+// isZero exists to make callsites a bit more obvious than "ty == 0", for
+// consistency with other IsZero() functions that actually don't just compare
+// to a literal zero.
+func (p pathLike[Kind]) isZero() bool {
+	return p == 0
+}
+
+func (p pathLike[Kind]) unpack() (startOrKind, endOrValue int32) {
+	return int32(p), int32(p >> 32)
 }
 
 // wrapInPathLike wraps a integer-like value in a pathLike.
@@ -47,10 +70,7 @@ func wrapPathLike[Value ~int32 | ~uint32, Kind ~int8](kind Kind, value Value) pa
 		panic(fmt.Sprintf("protocompile/ast: invalid pathLike representation: %v, %v", kind, value))
 	}
 
-	return pathLike[Kind]{
-		StartOrKind: ^int32(kind),
-		EndOrValue:  int32(value),
-	}
+	return packPathLike[Kind](^int32(kind), int32(value))
 }
 
 // unwrapPathLike unwraps a pointer previously wrapped with wrapPathLike.
@@ -62,21 +82,20 @@ func unwrapPathLike[Value ~int32 | ~uint32, Kind ~int8](want Kind, p pathLike[Ki
 		return 0
 	}
 
-	return Value(p.EndOrValue)
+	_, value := p.unpack()
+	return Value(value)
 }
 
 // wrapPath wraps a path in a pathLike.
 func wrapPath[Kind ~int8](path rawPath) pathLike[Kind] {
-	return pathLike[Kind]{
-		StartOrKind: int32(path.Start),
-		EndOrValue:  int32(path.End),
-	}
+	return packPathLike[Kind](int32(path.Start), int32(path.End))
 }
 
 // kind returns the kind within this pathLike, if it is not a path.
 func (p pathLike[Kind]) kind() (Kind, bool) {
-	if p.StartOrKind < 0 && p.EndOrValue != 0 {
-		return Kind(^p.StartOrKind), true
+	kind, value := p.unpack()
+	if kind < 0 && value != 0 {
+		return Kind(^kind), true
 	}
 	return 0, false
 }
@@ -87,5 +106,9 @@ func (p pathLike[Kind]) path(c Context) (Path, bool) {
 		return Path{}, false
 	}
 
-	return rawPath{Start: token.ID(p.StartOrKind), End: token.ID(p.EndOrValue)}.With(c), true
+	start, end := p.unpack()
+	return rawPath{
+		Start: token.ID(start),
+		End:   token.ID(end),
+	}.With(c), true
 }

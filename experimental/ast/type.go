@@ -59,7 +59,7 @@ type TypeAny struct {
 type rawType = pathLike[TypeKind]
 
 func newTypeAny(ctx Context, t rawType) TypeAny {
-	if ctx == nil || (t == rawType{}) {
+	if ctx == nil || t.isZero() {
 		return TypeAny{}
 	}
 	return TypeAny{internal.NewWith(ctx), t}
