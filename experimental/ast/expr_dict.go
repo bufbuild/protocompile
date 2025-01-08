@@ -60,7 +60,7 @@ func (e ExprDict) Elements() Commas[ExprField] {
 		ctx: e.Context(),
 		SliceInserter: seq.SliceInserter[ExprField, withComma[arena.Pointer[rawExprField]]]{
 			Slice: &e.raw.fields,
-			Wrap: func(c withComma[arena.Pointer[rawExprField]]) ExprField {
+			Wrap: func(c *withComma[arena.Pointer[rawExprField]]) ExprField {
 				return ExprField{exprImpl[rawExprField]{
 					e.withContext,
 					e.Context().Nodes().exprs.fields.Deref(c.Value),

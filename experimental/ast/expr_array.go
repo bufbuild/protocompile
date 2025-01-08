@@ -53,7 +53,7 @@ func (e ExprArray) Elements() Commas[ExprAny] {
 		ctx: e.Context(),
 		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
 			Slice: &e.raw.args,
-			Wrap: func(c withComma[rawExpr]) ExprAny {
+			Wrap: func(c *withComma[rawExpr]) ExprAny {
 				return newExprAny(e.Context(), c.Value)
 			},
 			Unwrap: func(e ExprAny) withComma[rawExpr] {

@@ -73,7 +73,7 @@ func (d DeclRange) Ranges() Commas[ExprAny] {
 		ctx: d.Context(),
 		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
 			Slice: &d.raw.args,
-			Wrap: func(c withComma[rawExpr]) ExprAny {
+			Wrap: func(c *withComma[rawExpr]) ExprAny {
 				return newExprAny(d.Context(), c.Value)
 			},
 			Unwrap: func(e ExprAny) withComma[rawExpr] {
