@@ -22,6 +22,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
@@ -110,7 +111,7 @@ func (c *protoEncoder) file(file ast.File) *compilerpb.File {
 		}
 	}
 
-	file.Iter(func(_ int, d ast.DeclAny) bool {
+	seq.Values(file.Decls())(func(d ast.DeclAny) bool {
 		proto.Decls = append(proto.Decls, c.decl(d))
 		return true
 	})
@@ -256,7 +257,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 		proto := &compilerpb.Decl_Body{
 			Span: c.span(decl),
 		}
-		decl.Iter(func(_ int, d ast.DeclAny) bool {
+		seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
 			proto.Decls = append(proto.Decls, c.decl(d))
 			return true
 		})
@@ -280,7 +281,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}
 
-		decl.Iter(func(_ int, e ast.ExprAny) bool {
+		seq.Values(decl.Ranges())(func(e ast.ExprAny) bool {
 			proto.Ranges = append(proto.Ranges, c.expr(e))
 			return true
 		})
@@ -337,11 +338,11 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 				OutputSpan:  c.span(signature.Outputs()),
 			}
 
-			signature.Inputs().Iter(func(_ int, t ast.TypeAny) bool {
+			seq.Values(signature.Inputs())(func(t ast.TypeAny) bool {
 				proto.Signature.Inputs = append(proto.Signature.Inputs, c.type_(t))
 				return true
 			})
-			signature.Outputs().Iter(func(_ int, t ast.TypeAny) bool {
+			seq.Values(signature.Outputs())(func(t ast.TypeAny) bool {
 				proto.Signature.Outputs = append(proto.Signature.Outputs, c.type_(t))
 				return true
 			})
@@ -351,7 +352,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			proto.Body = &compilerpb.Decl_Body{
 				Span: c.span(decl.Body()),
 			}
-			body.Iter(func(_ int, d ast.DeclAny) bool {
+			seq.Values(body.Decls())(func(d ast.DeclAny) bool {
 				proto.Body.Decls = append(proto.Body.Decls, c.decl(d))
 				return true
 			})
@@ -374,7 +375,7 @@ func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 		Span: c.span(options),
 	}
 
-	options.Iter(func(_ int, o ast.Option) bool {
+	seq.Values(options.Entries())(func(o ast.Option) bool {
 		proto.Entries = append(proto.Entries, &compilerpb.Options_Entry{
 			Path:       c.path(o.Path),
 			Value:      c.expr(o.Value),
@@ -443,9 +444,9 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 			Span:       c.span(expr),
 			OpenSpan:   c.span(a.LeafSpan()),
 			CloseSpan:  c.span(b.LeafSpan()),
-			CommaSpans: c.commas(expr),
+			CommaSpans: c.commas(expr.Elements()),
 		}
-		expr.Iter(func(_ int, e ast.ExprAny) bool {
+		seq.Values(expr.Elements())(func(e ast.ExprAny) bool {
 			proto.Elements = append(proto.Elements, c.expr(e))
 			return true
 		})
@@ -461,7 +462,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 			CloseSpan:  c.span(b.LeafSpan()),
 			CommaSpans: c.commas(expr),
 		}
-		expr.Iter(func(_ int, e ast.ExprField) bool {
+		seq.Values(expr.Elements())(func(e ast.ExprField) bool {
 			proto.Entries = append(proto.Entries, c.exprField(e))
 			return true
 		})
@@ -521,7 +522,7 @@ func (c *protoEncoder) type_(ty ast.TypeAny) *compilerpb.Type {
 			CloseSpan:  c.span(b.LeafSpan()),
 			CommaSpans: c.commas(ty.Args()),
 		}
-		ty.Args().Iter(func(_ int, t ast.TypeAny) bool {
+		seq.Values(ty.Args())(func(t ast.TypeAny) bool {
 			generic.Args = append(generic.Args, c.type_(t))
 			return true
 		})

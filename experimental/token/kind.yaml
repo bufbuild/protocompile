@@ -1,0 +1,39 @@
+# Copyright 2020-2024 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Kind
+  type: byte
+  docs: |
+     Kind identifies what kind of token a particular [Token] is.
+  methods:
+  - kind: string
+  - kind: go-string
+  values:
+  - name: Unrecognized
+    docs: "Unrecognized garbage in the input file."
+  - name: Space
+    docs: "Non-comment contiguous whitespace."
+  - name: Comment
+    docs: "A single comment."
+  - name: Ident
+    docs: "An identifier."
+  - name: String
+    docs: "A string token. May be a non-leaf for non-contiguous quoted strings."
+  - name: Number
+    docs: "A run of digits that is some kind of number."
+  - name: Punct
+    docs: "Some punctuation. May be a non-leaf for delimiters like {}."
+  # - name: Reserved
+  # DO NOT ADD MORE TOKEN KINDS: ONLY THREE BITS ARE AVAILABLE
+  # TO STORE THEM.
