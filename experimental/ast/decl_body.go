@@ -79,8 +79,8 @@ func (d DeclBody) Decls() seq.Inserter[DeclAny] {
 	return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{
 		Slice1: &d.raw.kinds,
 		Slice2: &d.raw.ptrs,
-		Wrap: func(k DeclKind, p arena.Untyped) DeclAny {
-			return rawDecl{p, k}.With(d.Context())
+		Wrap: func(k *DeclKind, p *arena.Untyped) DeclAny {
+			return rawDecl{*p, *k}.With(d.Context())
 		},
 		Unwrap: func(d DeclAny) (DeclKind, arena.Untyped) {
 			d.Context().Nodes().panicIfNotOurs(d)

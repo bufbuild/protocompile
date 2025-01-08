@@ -26,7 +26,7 @@ import "slices"
 // underlying raw values.
 type Slice[T, E any] struct {
 	Slice  []E
-	Wrap   func(E) T
+	Wrap   func(*E) T
 	Unwrap func(T) E
 }
 
@@ -37,7 +37,7 @@ func (s Slice[T, _]) Len() int {
 
 // At implements [Indexer].
 func (s Slice[T, _]) At(idx int) T {
-	return s.Wrap(s.Slice[idx])
+	return s.Wrap(&s.Slice[idx])
 }
 
 // SetAt implements [Setter].
@@ -48,7 +48,7 @@ func (s Slice[T, _]) SetAt(idx int, value T) {
 // SliceInserter is like [Slice], but also implements [Inserter][T].
 type SliceInserter[T, E any] struct {
 	Slice  *[]E
-	Wrap   func(E) T
+	Wrap   func(*E) T
 	Unwrap func(T) E
 }
 
@@ -62,7 +62,7 @@ func (s SliceInserter[T, _]) Len() int {
 
 // At implements [Indexer].
 func (s SliceInserter[T, _]) At(idx int) T {
-	return s.Wrap((*s.Slice)[idx])
+	return s.Wrap(&(*s.Slice)[idx])
 }
 
 // SetAt implements [Setter].
@@ -90,7 +90,7 @@ type Slice2[T, E1, E2 any] struct {
 	Slice1 []E1
 	Slice2 []E2
 
-	Wrap   func(E1, E2) T
+	Wrap   func(*E1, *E2) T
 	Unwrap func(T) (E1, E2)
 }
 
@@ -101,7 +101,7 @@ func (s Slice2[T, _, _]) Len() int {
 
 // At implements [Indexer].
 func (s Slice2[T, _, _]) At(idx int) T {
-	return s.Wrap(s.Slice1[idx], s.Slice2[idx])
+	return s.Wrap(&s.Slice1[idx], &s.Slice2[idx])
 }
 
 // SetAt implements [Setter].
@@ -116,7 +116,7 @@ type SliceInserter2[T, E1, E2 any] struct {
 	Slice1 *[]E1
 	Slice2 *[]E2
 
-	Wrap   func(E1, E2) T
+	Wrap   func(*E1, *E2) T
 	Unwrap func(T) (E1, E2)
 }
 
@@ -130,7 +130,7 @@ func (s SliceInserter2[T, _, _]) Len() int {
 
 // At implements [Indexer].
 func (s SliceInserter2[T, _, _]) At(idx int) T {
-	return s.Wrap((*s.Slice1)[idx], (*s.Slice2)[idx])
+	return s.Wrap(&(*s.Slice1)[idx], &(*s.Slice2)[idx])
 }
 
 // SetAt implements [Setter].
