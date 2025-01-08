@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,26 +18,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
-
-const (
-	ExprPrefixUnknown ExprPrefix = iota
-	ExprPrefixMinus
-)
-
-// ExprPrefix is a prefix for an expression, such as a minus sign.
-type ExprPrefix int8
-
-// ExprPrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [ExprPrefixUnknown].
-func ExprPrefixByName(name string) ExprPrefix {
-	switch name {
-	case "-":
-		return ExprPrefixMinus
-	default:
-		return ExprPrefixUnknown
-	}
-}
 
 // ExprPrefixed is an expression prefixed with an operator.
 //

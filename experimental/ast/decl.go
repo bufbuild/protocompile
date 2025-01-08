@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,21 +21,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
-
-const (
-	DeclKindInvalid DeclKind = iota
-	DeclKindEmpty
-	DeclKindSyntax
-	DeclKindPackage
-	DeclKindImport
-	DeclKindDef
-	DeclKindBody
-	DeclKindRange
-)
-
-// DeclKind is a kind of declaration. There is one value of DeclKind for each
-// Decl* type in this package.
-type DeclKind int8
 
 // DeclAny is any Decl* type in this package.
 //

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,3 +36,5 @@
 // [Stream.Cursor] won't find them) and they do not have [report.Span]s, so they
 // cannot be used in diagnostics (Span() will return the zero [report.Span]).
 package token
+
+//go:generate go run github.com/bufbuild/protocompile/internal/enum kind.yaml

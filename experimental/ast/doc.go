@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -92,3 +92,5 @@
 // library. Outside of this file, documentation is written assuming this has
 // already happened.
 package ast
+
+//go:generate go run github.com/bufbuild/protocompile/internal/enum enums.yaml

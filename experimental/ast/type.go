@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,18 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
-
-const (
-	TypeKindInvalid TypeKind = iota
-	TypeKindError
-	TypeKindPath
-	TypeKindPrefixed
-	TypeKindGeneric
-)
-
-// TypeKind is a kind of type. There is one value of TypeKind for each
-// Type* type in this package.
-type TypeKind int8
 
 // TypeAny is any Type* type in this package.
 //

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -63,7 +64,7 @@ func parse(ctx ast.Context, errs *report.Report) {
 		ensureProgress(c, &mark)
 		node := parseDecl(p, c, taxa.TopLevel)
 		if !node.IsZero() {
-			root.Append(node)
+			seq.Append(root.Decls(), node)
 		}
 	}
 }

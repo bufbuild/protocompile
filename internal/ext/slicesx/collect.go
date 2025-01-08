@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,4 +29,13 @@ func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
 		return true
 	})
 	return s
+}
+
+// Map constructs a new slice by applying f to each element.
+func Map[S ~[]E, E, R any](s S, f func(E) R) []R {
+	out := make([]R, len(s))
+	for i, e := range s {
+		out[i] = f(e)
+	}
+	return out
 }

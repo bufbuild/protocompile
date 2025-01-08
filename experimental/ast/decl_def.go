@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,25 +19,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
-
-const (
-	DefKindInvalid DefKind = iota
-	DefKindMessage
-	DefKindEnum
-	DefKindService
-	DefKindExtend
-	DefKindField
-	DefKindOneof
-	DefKindGroup
-	DefKindEnumValue
-	DefKindMethod
-	DefKindOption
-)
-
-// DefKind is the kind of definition a [DeclDef] contains.
-//
-// See [DeclDef.Classify].
-type DefKind int8
 
 // DeclDef is a general Protobuf definition.
 //

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -142,6 +142,10 @@ func (a *Arena[T]) NewCompressed(value T) Pointer[T] {
 // Compress returns a compressed pointer into this arena if ptr belongs to it;
 // otherwise, returns nil.
 func (a *Arena[T]) Compress(ptr *T) Pointer[T] {
+	if ptr == nil {
+		return 0
+	}
+
 	// Check the slices in reverse order: no matter the state of the arena,
 	// the majority of the allocated values will be in either the last or
 	// second-to-last slice.

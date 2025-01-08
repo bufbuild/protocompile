@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,22 +23,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
-
-const (
-	ExprKindInvalid ExprKind = iota
-	ExprKindError
-	ExprKindLiteral
-	ExprKindPrefixed
-	ExprKindPath
-	ExprKindRange
-	ExprKindArray
-	ExprKindDict
-	ExprKindField
-)
-
-// ExprKind is a kind of expression. There is one value of ExprKind for each
-// Expr* type in this package.
-type ExprKind int8
 
 // ExprAny is any ExprAny* type in this package.
 //
