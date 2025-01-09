@@ -182,8 +182,16 @@ func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 // The message associated with the snippet will be prefixed with "help:" when
 // rendered.
 func SuggestEdits(at Spanner, message string, edits ...Edit) DiagnosticOption {
+	span := getSpan(at)
+	text := span.Text()
+	for _, edit := range edits {
+		// Force a bounds check here to make it easier to debug, instead of
+		// panicking in the renderer (or emitting an invalid report proto).
+		_ = text[edit.Start:edit.End]
+	}
+
 	return snippet{
-		Span:    getSpan(at),
+		Span:    span,
 		message: message,
 		edits:   edits,
 	}

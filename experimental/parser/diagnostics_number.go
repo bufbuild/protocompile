@@ -107,8 +107,8 @@ func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
 	d.Apply(
 		report.Message("%s contains underscores", taxa.Classify(e.Token)),
 		report.SuggestEdits(e.Token, "remove these underscores", report.Edit{
-			Start:   span.Start,
-			End:     span.End,
+			Start:   0,
+			End:     len(span.Text()),
 			Replace: strings.ReplaceAll(span.Text(), "_", ""),
 		}),
 		report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),

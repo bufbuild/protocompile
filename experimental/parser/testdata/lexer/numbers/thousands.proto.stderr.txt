@@ -2,48 +2,54 @@ error: integer literal contains underscores
   --> testdata/lexer/numbers/thousands.proto:1:1
   help: remove these underscores
    | 
- 1 | 1_000_000
-   |  -   -   
+ 1 | - 1_000_000
+ 1 | + 1000000
+   | 
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 error: unsupported base for integer literal
   --> testdata/lexer/numbers/thousands.proto:2:1
   help: use a hexadecimal literal instead
    | 
- 2 | 0b1_000_0000x40
-   | -----------++++
+ 2 | - 0b1_000_000
+ 2 | + 0x40
+   | 
    = note: Protobuf does not support binary literals
 
 error: unsupported base for integer literal
   --> testdata/lexer/numbers/thousands.proto:3:1
-  help: remove this character
+  help: remove the `o`
    | 
- 3 | 0o1_000_000
-   |  -         
-   = note: Protobuf does not support the `0o` prefix for octal literals
+ 3 | - 0o1_000_000
+ 3 | + 01_000_000
+   | 
+   = note: octal literals are prefixed with `0`, not `0o`
 
 error: integer literal contains underscores
   --> testdata/lexer/numbers/thousands.proto:4:1
   help: remove these underscores
    | 
- 4 | 0x1_000_000
-   |    -   -   
+ 4 | - 0x1_000_000
+ 4 | + 0x1000000
+   | 
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 error: integer literal contains underscores
   --> testdata/lexer/numbers/thousands.proto:5:1
   help: remove these underscores
    | 
- 5 | 01_000_000
-   |   -   -   
+ 5 | - 01_000_000
+ 5 | + 01000000
+   | 
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 error: floating-point literal contains underscores
   --> testdata/lexer/numbers/thousands.proto:6:1
   help: remove these underscores
    | 
- 6 | 1_000_000.00
-   |  -   -      
+ 6 | - 1_000_000.00
+ 6 | + 1000000.00
+   | 
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 encountered 6 errors
