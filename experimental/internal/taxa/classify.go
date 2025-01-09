@@ -127,7 +127,7 @@ func Classify(node report.Spanner) Noun {
 		return Extend
 	case ast.DefOption:
 		var first ast.PathComponent
-		node.Path.Components(func(pc ast.PathComponent) bool {
+		node.Path().Components(func(pc ast.PathComponent) bool {
 			first = pc
 			return false
 		})

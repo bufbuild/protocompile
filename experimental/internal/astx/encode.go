@@ -377,9 +377,9 @@ func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 
 	seq.Values(options.Entries())(func(o ast.Option) bool {
 		proto.Entries = append(proto.Entries, &compilerpb.Options_Entry{
-			Path:       c.path(o.Path),
-			Value:      c.expr(o.Value),
-			EqualsSpan: c.span(o.Equals),
+			Path:       c.path(o.Path()),
+			Value:      c.expr(o.Value()),
+			EqualsSpan: c.span(o.Equals()),
 		})
 		return true
 	})

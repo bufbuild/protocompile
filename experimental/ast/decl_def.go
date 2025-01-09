@@ -386,9 +386,12 @@ func (d DeclDef) AsOption() DefOption {
 	return DefOption{
 		Keyword: d.Keyword(),
 		Option: Option{
-			Path:   d.Name(),
-			Equals: d.Equals(),
-			Value:  d.Value(),
+			d.withContext,
+			&rawOption{
+				path:   d.Name().raw,
+				equals: d.Equals().ID(),
+				value:  d.Value().raw,
+			},
 		},
 		Semicolon: d.Semicolon(),
 		Decl:      d,

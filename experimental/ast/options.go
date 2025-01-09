@@ -43,11 +43,39 @@ type rawCompactOptions struct {
 
 // Option is a key-value pair inside of a [CompactOptions] or a [DefOption].
 type Option struct {
+	withContext
+	raw *rawOption
+}
+
+// OptionArgs is arguments for [Node.NewOption].
+type OptionArgs struct {
 	Path   Path
 	Equals token.Token
 	Value  ExprAny
+}
 
-	raw arena.Pointer[rawOption]
+// Path returns the path (i.e., the key) for this option.
+func (o Option) Path() Path {
+	if o.IsZero() {
+		return Path{}
+	}
+	return o.raw.path.With(o.Context())
+}
+
+// Equals returns the equals sign for this option, if present.
+func (o Option) Equals() token.Token {
+	if o.IsZero() {
+		return token.Zero
+	}
+	return o.raw.equals.In(o.Context())
+}
+
+// Value returns the expression for the value this option is set to, if present.
+func (o Option) Value() ExprAny {
+	if o.IsZero() {
+		return ExprAny{}
+	}
+	return newExprAny(o.Context(), o.raw.value)
 }
 
 type rawOption struct {
@@ -84,15 +112,14 @@ func (o CompactOptions) Entries() Commas[Option] {
 				return wrapOption(o.Context(), r)
 			},
 			func(v Option) (arena.Pointer[rawOption], token.ID) {
-				o.Context().Nodes().panicIfNotOurs(v.Path, v.Equals, v.Value)
-				if v.raw.Nil() {
-					v.raw = o.Context().Nodes().options.NewCompressed(rawOption{
-						path:   v.Path.raw,
-						equals: v.Equals.ID(),
-						value:  v.Value.raw,
-					})
+				o.Context().Nodes().panicIfNotOurs(v)
+
+				ptr := v.Context().Nodes().options.Compress(v.raw)
+				if ptr.Nil() {
+					ptr = o.Context().Nodes().options.NewCompressed(*v.raw)
 				}
-				return v.raw, 0
+
+				return ptr, 0
 			},
 		),
 	}
@@ -121,13 +148,8 @@ func wrapOption(c Context, ptr arena.Pointer[rawOption]) Option {
 	if ptr.Nil() {
 		return Option{}
 	}
-
-	raw := c.Nodes().options.Deref(ptr)
 	return Option{
-		Path:   raw.path.With(c),
-		Equals: raw.equals.In(c),
-		Value:  newExprAny(c, raw.value),
-
-		raw: ptr,
+		internal.NewWith(c),
+		c.Nodes().options.Deref(ptr),
 	}
 }

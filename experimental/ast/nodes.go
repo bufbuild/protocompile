@@ -251,6 +251,17 @@ func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	}}
 }
 
+// NewOption creates a new Option node.
+func (n *Nodes) NewOption(args OptionArgs) Option {
+	n.panicIfNotOurs(args.Path, args.Equals, args.Value)
+
+	return wrapOption(n.Context, n.options.NewCompressed(rawOption{
+		path:   args.Path.raw,
+		equals: args.Equals.ID(),
+		value:  args.Value.raw,
+	}))
+}
+
 // NewCompactOptions creates a new CompactOptions node.
 func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 	n.panicIfNotOurs(brackets)
