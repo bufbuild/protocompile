@@ -17,9 +17,10 @@ package slicesx_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestInline8(t *testing.T) {

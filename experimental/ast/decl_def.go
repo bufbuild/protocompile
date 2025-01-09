@@ -45,17 +45,14 @@ import (
 type DeclDef struct{ declImpl[rawDeclDef] }
 
 type rawDeclDef struct {
-	ty   rawType // Not present for enum fields.
-	name rawPath
-
 	signature *rawSignature
-
-	equals token.ID
-	value  rawExpr
-
-	options arena.Pointer[rawCompactOptions]
-	body    arena.Pointer[rawDeclBody]
-	semi    token.ID
+	ty        rawType
+	value     rawExpr
+	name      rawPath
+	equals    token.ID
+	options   arena.Pointer[rawCompactOptions]
+	body      arena.Pointer[rawDeclBody]
+	semi      token.ID
 }
 
 // DeclDefArgs is arguments for creating a [DeclDef] with [Context.NewDeclDef].

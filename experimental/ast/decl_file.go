@@ -88,9 +88,11 @@ func (f File) Imports() iter.Seq2[int, DeclImport] {
 type DeclSyntax struct{ declImpl[rawDeclSyntax] }
 
 type rawDeclSyntax struct {
-	keyword, equals, semi token.ID
-	value                 rawExpr
-	options               arena.Pointer[rawCompactOptions]
+	value   rawExpr
+	keyword token.ID
+	equals  token.ID
+	semi    token.ID
+	options arena.Pointer[rawCompactOptions]
 }
 
 // DeclSyntaxArgs is arguments for [Context.NewDeclSyntax].
@@ -292,9 +294,11 @@ func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {
-	keyword, modifier, semi token.ID
-	importPath              rawExpr
-	options                 arena.Pointer[rawCompactOptions]
+	importPath rawExpr
+	keyword    token.ID
+	modifier   token.ID
+	semi       token.ID
+	options    arena.Pointer[rawCompactOptions]
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
