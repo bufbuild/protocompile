@@ -460,7 +460,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 			Span:       c.span(expr),
 			OpenSpan:   c.span(a.LeafSpan()),
 			CloseSpan:  c.span(b.LeafSpan()),
-			CommaSpans: c.commas(expr),
+			CommaSpans: c.commas(expr.Elements()),
 		}
 		seq.Values(expr.Elements())(func(e ast.ExprField) bool {
 			proto.Entries = append(proto.Entries, c.exprField(e))
