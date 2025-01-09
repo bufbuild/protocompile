@@ -296,4 +296,26 @@ error: unexpected leading `,` in reserved range
 73 |     reserved ,;
    |              ^ expected expression
 
-encountered 43 errors
+error: unexpected identifier in reserved range
+  --> testdata/parser/lists.proto:75:19
+   | 
+75 |     reserved a, b c;
+   |                   ^ expected `,`
+   |                   |
+   |                   note: assuming a missing `,` here
+
+error: unexpected identifier in reserved range
+  --> testdata/parser/lists.proto:76:19
+   | 
+76 |     reserved a, b c
+   |                   ^ expected `,`
+   |                   |
+   |                   note: assuming a missing `,` here
+
+error: unexpected `message` after reserved range
+  --> testdata/parser/lists.proto:77:5
+   | 
+77 |     message Foo {}
+   |     ^^^^^^^ expected `;`
+
+encountered 46 errors

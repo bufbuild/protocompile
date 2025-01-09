@@ -294,7 +294,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// is empty, or if the first comma occurs without seeing an =, we can choose
 	// to parse this as an array, instead.
 	if !canStartOptions(c.Peek()) {
-		first := true
+		var last token.Token
 		delimited[ast.ExprAny]{
 			p: p, c: c,
 			what: taxa.Expr,
@@ -303,7 +303,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 			required: true,
 			exhaust:  false,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
-				first = false
+				last = c.Peek()
 				expr := parseExpr(p, c, in.In())
 				badExpr = expr.IsZero()
 
@@ -323,7 +323,24 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 				//
 				// If we don't do this, message will be interpreted as an
 				// expression.
-				return !first && t.Kind() == token.Ident
+				if !last.IsZero() && t.Kind() == token.Ident {
+					// However, this will cause
+					//
+					// reserved foo, bar baz;
+					//
+					// to treat baz as a new declaration, rather than assume a
+					// missing comma. Distinguishing this case is tricky: the
+					// cheapest option is to check whether a newline exists between
+					// this token and the last position passed to parse.
+					//
+					// This case will not be hit for valid syntax, so it's ok
+					// to do 2*O(log n) line lookups.
+					prev := last.Span().EndLoc()
+					next := t.Span().StartLoc()
+					return prev.Line != next.Line
+				}
+
+				return false
 			},
 		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			exprs = append(exprs, exprComma{expr, comma})

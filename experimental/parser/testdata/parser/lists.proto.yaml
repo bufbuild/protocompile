@@ -248,3 +248,19 @@ decls:
             kind: KIND_RESERVED
             ranges: [{ path.components: [{ ident: "a" }] }, { dict: {} }]
         - range.kind: KIND_RESERVED
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - path.components: [{ ident: "a" }]
+              - path.components: [{ ident: "b" }]
+              - path.components: [{ ident: "c" }]
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - path.components: [{ ident: "a" }]
+              - path.components: [{ ident: "b" }]
+              - path.components: [{ ident: "c" }]
+        - def:
+            kind: KIND_MESSAGE
+            name.components: [{ ident: "Foo" }]
+            body: {}

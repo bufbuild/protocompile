@@ -71,4 +71,8 @@ message M {
     reserved ,1 2,, 3,;
     reserved a {};
     reserved ,;
+
+    reserved a, b c;
+    reserved a, b c
+    message Foo {}
 }
