@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // ExprDict represents a an array of message fields between curly braces.
@@ -34,7 +35,8 @@ type ExprDict struct{ exprImpl[rawExprDict] }
 
 type rawExprDict struct {
 	braces token.ID
-	fields []withComma[arena.Pointer[rawExprField]]
+	fields slicesx.Inline[arena.Pointer[rawExprField]]
+	commas slicesx.Inline[token.ID]
 }
 
 // Braces returns the token tree corresponding to the whole {...}.
@@ -50,26 +52,32 @@ func (e ExprDict) Braces() token.Token {
 
 // Elements returns the sequence of expressions in this array.
 func (e ExprDict) Elements() Commas[ExprField] {
-	type slice = commas[ExprField, arena.Pointer[rawExprField]]
-	if e.IsZero() {
-		return slice{}
+	var (
+		args *slicesx.Inline[arena.Pointer[rawExprField]]
+		toks *slicesx.Inline[token.ID]
+	)
+	if !e.IsZero() {
+		args = &e.raw.fields
+		toks = &e.raw.commas
 	}
-	return slice{
+
+	// A single return here promotes devirtualization of both the interface
+	// and the funcvals within.
+	return commas[ExprField, arena.Pointer[rawExprField]]{
 		ctx: e.Context(),
-		SliceInserter: seq.SliceInserter[ExprField, withComma[arena.Pointer[rawExprField]]]{
-			Slice: &e.raw.fields,
-			Wrap: func(c withComma[arena.Pointer[rawExprField]]) ExprField {
+		InserterWrapper2: seq.WrapInserter2(
+			args, toks,
+			func(r arena.Pointer[rawExprField], _ token.ID) ExprField {
 				return ExprField{exprImpl[rawExprField]{
 					e.withContext,
-					e.Context().Nodes().exprs.fields.Deref(c.Value),
+					e.Context().Nodes().exprs.fields.Deref(r),
 				}}
 			},
-			Unwrap: func(e ExprField) withComma[arena.Pointer[rawExprField]] {
+			func(r ExprField) (arena.Pointer[rawExprField], token.ID) {
 				e.Context().Nodes().panicIfNotOurs(e)
-				ptr := e.Context().Nodes().exprs.fields.Compress(e.raw)
-				return withComma[arena.Pointer[rawExprField]]{ptr, 0}
+				return e.Context().Nodes().exprs.fields.Compress(r.raw), 0
 			},
-		},
+		),
 	}
 }
 

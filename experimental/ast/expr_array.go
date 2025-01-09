@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // ExprArray represents an array of expressions between square brackets.
@@ -29,7 +30,8 @@ type ExprArray struct{ exprImpl[rawExprArray] }
 
 type rawExprArray struct {
 	brackets token.ID
-	args     []withComma[rawExpr]
+	args     slicesx.Inline[rawExpr]
+	commas   slicesx.Inline[token.ID]
 }
 
 // Brackets returns the token tree corresponding to the whole [...].
@@ -45,22 +47,29 @@ func (e ExprArray) Brackets() token.Token {
 
 // Elements returns the sequence of expressions in this array.
 func (e ExprArray) Elements() Commas[ExprAny] {
-	type slice = commas[ExprAny, rawExpr]
-	if e.IsZero() {
-		return slice{}
+	var (
+		args *slicesx.Inline[rawExpr]
+		toks *slicesx.Inline[token.ID]
+	)
+	if !e.IsZero() {
+		args = &e.raw.args
+		toks = &e.raw.commas
 	}
-	return slice{
+
+	// A single return here promotes devirtualization of both the interface
+	// and the funcvals within.
+	return commas[ExprAny, rawExpr]{
 		ctx: e.Context(),
-		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
-			Slice: &e.raw.args,
-			Wrap: func(c withComma[rawExpr]) ExprAny {
-				return newExprAny(e.Context(), c.Value)
+		InserterWrapper2: seq.WrapInserter2(
+			args, toks,
+			func(r rawExpr, _ token.ID) ExprAny {
+				return newExprAny(e.Context(), r)
 			},
-			Unwrap: func(e ExprAny) withComma[rawExpr] {
-				e.Context().Nodes().panicIfNotOurs(e)
-				return withComma[rawExpr]{Value: e.raw}
+			func(r ExprAny) (rawExpr, token.ID) {
+				e.Context().Nodes().panicIfNotOurs(r)
+				return r.raw, 0
 			},
-		},
+		),
 	}
 }
 

@@ -198,7 +198,7 @@ func (d DeclDef) Options() CompactOptions {
 //
 // Setting it to a zero Options clears it.
 func (d DeclDef) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().compactOptions.Compress(opts.raw)
 }
 
 // Body returns this definition's body, if it has one.

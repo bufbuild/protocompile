@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // DeclRange represents an extension or reserved range declaration. They are almost identical
@@ -31,7 +32,8 @@ type DeclRange struct{ declImpl[rawDeclRange] }
 
 type rawDeclRange struct {
 	keyword token.ID
-	args    []withComma[rawExpr]
+	args    slicesx.Inline[rawExpr]
+	commas  slicesx.Inline[token.ID]
 	options arena.Pointer[rawCompactOptions]
 	semi    token.ID
 }
@@ -65,22 +67,29 @@ func (d DeclRange) IsReserved() bool {
 // Ranges returns the sequence of expressions denoting the ranges in this
 // range declaration.
 func (d DeclRange) Ranges() Commas[ExprAny] {
-	type slice = commas[ExprAny, rawExpr]
-	if d.IsZero() {
-		return slice{}
+	var (
+		args *slicesx.Inline[rawExpr]
+		toks *slicesx.Inline[token.ID]
+	)
+	if !d.IsZero() {
+		args = &d.raw.args
+		toks = &d.raw.commas
 	}
-	return slice{
+
+	// A single return here promotes devirtualization of both the interface
+	// and the funcvals within.
+	return commas[ExprAny, rawExpr]{
 		ctx: d.Context(),
-		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
-			Slice: &d.raw.args,
-			Wrap: func(c withComma[rawExpr]) ExprAny {
-				return newExprAny(d.Context(), c.Value)
+		InserterWrapper2: seq.WrapInserter2(
+			args, toks,
+			func(e rawExpr, _ token.ID) ExprAny {
+				return newExprAny(d.Context(), e)
 			},
-			Unwrap: func(e ExprAny) withComma[rawExpr] {
+			func(e ExprAny) (rawExpr, token.ID) {
 				d.Context().Nodes().panicIfNotOurs(e)
-				return withComma[rawExpr]{Value: e.raw}
+				return e.raw, 0
 			},
-		},
+		),
 	}
 }
 
@@ -97,7 +106,7 @@ func (d DeclRange) Options() CompactOptions {
 //
 // Setting it to a nil Options clears it.
 func (d DeclRange) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().compactOptions.Compress(opts.raw)
 }
 
 // Semicolon returns this range's ending semicolon.

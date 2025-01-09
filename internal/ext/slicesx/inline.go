@@ -56,6 +56,9 @@ func NewInline[T unsafex.Int](s []T) Inline[T] {
 
 // Len returns the length of the slice.
 func (s *Inline[T]) Len() int {
+	if s == nil {
+		return 0
+	}
 	return len(s.unsafeSlice())
 }
 
@@ -63,6 +66,9 @@ func (s *Inline[T]) Len() int {
 //
 // Inlined slices always have a capacity equal to 16 / Sizeof(T).
 func (s *Inline[T]) Cap() int {
+	if s == nil {
+		return 0
+	}
 	return cap(s.unsafeSlice())
 }
 
@@ -99,6 +105,10 @@ func (s *Inline[T]) Delete(n int) {
 // If the slice inlined, this will return a copy, which cannot be mutated
 // through.
 func (s *Inline[T]) Slice() []T {
+	if s == nil {
+		return nil
+	}
+
 	if !s.IsInlined() {
 		// We can safely return this slice, because it is not inlined.
 		return s.unsafeSlice()
@@ -113,6 +123,10 @@ func (s *Inline[T]) Slice() []T {
 
 // IsInlined returns whether this slice is currently in inlined mode.
 func (s *Inline[T]) IsInlined() bool {
+	if s == nil {
+		return true
+	}
+
 	_, ok := inlineLen(s.data)
 	return ok
 }

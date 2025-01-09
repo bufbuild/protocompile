@@ -20,7 +20,11 @@
 // and thus must use proxy types that implement the interfaces in this package.
 package seq
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import (
+	"slices"
+
+	"github.com/bufbuild/protocompile/internal/iter"
+)
 
 // Indexer is a type that can be indexed like a slice.
 type Indexer[T any] interface {
@@ -88,4 +92,32 @@ func Append[T any](seq Inserter[T], values ...T) {
 	for _, v := range values {
 		seq.Insert(seq.Len(), v)
 	}
+}
+
+// Slice makes a Go slice into a [Setter][T].
+type Slice[T any] []T
+
+// Len implements [Indexer].
+func (s Slice[T]) Len() int {
+	return len(s)
+}
+
+// At implements [Indexer].
+func (s Slice[T]) At(n int) T {
+	return s[n]
+}
+
+// SetAt implements [Setter].
+func (s Slice[T]) SetAt(n int, v T) {
+	s[n] = v
+}
+
+// Insert implements [Inserter].
+func (s *Slice[T]) Insert(n int, v T) {
+	*s = slices.Insert(*s, n, v)
+}
+
+// Delete implements [Inserter].
+func (s *Slice[T]) Delete(n int) {
+	*s = slices.Insert(*s, n)
 }

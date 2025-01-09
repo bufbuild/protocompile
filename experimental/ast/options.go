@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // CompactOptions represents the collection of options attached to a [DeclAny],
@@ -36,7 +37,8 @@ type CompactOptions struct {
 
 type rawCompactOptions struct {
 	brackets token.ID
-	options  []withComma[rawOption]
+	options  slicesx.Inline[arena.Pointer[rawOption]]
+	commas   slicesx.Inline[token.ID]
 }
 
 // Option is a key-value pair inside of a [CompactOptions] or a [DefOption].
@@ -44,6 +46,8 @@ type Option struct {
 	Path   Path
 	Equals token.Token
 	Value  ExprAny
+
+	raw arena.Pointer[rawOption]
 }
 
 type rawOption struct {
@@ -63,27 +67,34 @@ func (o CompactOptions) Brackets() token.Token {
 
 // Entries returns the sequence of options in this CompactOptions.
 func (o CompactOptions) Entries() Commas[Option] {
-	type slice = commas[Option, rawOption]
-	if o.IsZero() {
-		return slice{}
+	var (
+		opts *slicesx.Inline[arena.Pointer[rawOption]]
+		toks *slicesx.Inline[token.ID]
+	)
+	if !o.IsZero() {
+		opts = &o.raw.options
+		toks = &o.raw.commas
 	}
 
-	return slice{
+	return commas[Option, arena.Pointer[rawOption]]{
 		ctx: o.Context(),
-		SliceInserter: seq.SliceInserter[Option, withComma[rawOption]]{
-			Slice: &o.raw.options,
-			Wrap: func(c withComma[rawOption]) Option {
-				return c.Value.With(o.Context())
+		InserterWrapper2: seq.WrapInserter2(
+			opts, toks,
+			func(r arena.Pointer[rawOption], _ token.ID) Option {
+				return wrapOption(o.Context(), r)
 			},
-			Unwrap: func(v Option) withComma[rawOption] {
+			func(v Option) (arena.Pointer[rawOption], token.ID) {
 				o.Context().Nodes().panicIfNotOurs(v.Path, v.Equals, v.Value)
-				return withComma[rawOption]{Value: rawOption{
-					path:   v.Path.raw,
-					equals: v.Equals.ID(),
-					value:  v.Value.raw,
-				}}
+				if v.raw.Nil() {
+					v.raw = o.Context().Nodes().options.NewCompressed(rawOption{
+						path:   v.Path.raw,
+						equals: v.Equals.ID(),
+						value:  v.Value.raw,
+					})
+				}
+				return v.raw, 0
 			},
-		},
+		),
 	}
 }
 
@@ -102,17 +113,21 @@ func wrapOptions(c Context, ptr arena.Pointer[rawCompactOptions]) CompactOptions
 	}
 	return CompactOptions{
 		internal.NewWith(c),
-		c.Nodes().options.Deref(ptr),
+		c.Nodes().compactOptions.Deref(ptr),
 	}
 }
 
-func (o *rawOption) With(c Context) Option {
-	if o == nil {
+func wrapOption(c Context, ptr arena.Pointer[rawOption]) Option {
+	if ptr.Nil() {
 		return Option{}
 	}
+
+	raw := c.Nodes().options.Deref(ptr)
 	return Option{
-		Path:   o.path.With(c),
-		Equals: o.equals.In(c),
-		Value:  newExprAny(c, o.value),
+		Path:   raw.path.With(c),
+		Equals: raw.equals.In(c),
+		Value:  newExprAny(c, raw.value),
+
+		raw: ptr,
 	}
 }

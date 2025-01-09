@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // DeclBody is the body of a [DeclBody], or the whole contents of a [File]. The
@@ -41,8 +42,8 @@ type rawDeclBody struct {
 	// These slices are co-indexed; they are parallelizes to save
 	// three bytes per decl (declKind is 1 byte, but decl is 4; if
 	// they're stored in AOS format, we waste 3 bytes of padding).
-	kinds []DeclKind
-	ptrs  []arena.Untyped
+	kinds slicesx.Inline[DeclKind]
+	ptrs  slicesx.Inline[arena.Untyped]
 }
 
 // Braces returns this body's surrounding braces, if it has any.
@@ -71,22 +72,27 @@ func (d DeclBody) Span() report.Span {
 
 // Decls returns a [seq.Inserter] over the declarations in this body.
 func (d DeclBody) Decls() seq.Inserter[DeclAny] {
-	type slice = seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]
-	if d.IsZero() {
-		return slice{}
+	var (
+		kinds *slicesx.Inline[DeclKind]
+		ptrs  *slicesx.Inline[arena.Untyped]
+	)
+	if !d.IsZero() {
+		kinds = &d.raw.kinds
+		ptrs = &d.raw.ptrs
 	}
 
-	return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{
-		Slice1: &d.raw.kinds,
-		Slice2: &d.raw.ptrs,
-		Wrap: func(k DeclKind, p arena.Untyped) DeclAny {
+	// A single return here promotes devirtualization of both the interface
+	// and the funcvals within.
+	return seq.WrapInserter2(
+		kinds, ptrs,
+		func(k DeclKind, p arena.Untyped) DeclAny {
 			return rawDecl{p, k}.With(d.Context())
 		},
-		Unwrap: func(d DeclAny) (DeclKind, arena.Untyped) {
+		func(d DeclAny) (DeclKind, arena.Untyped) {
 			d.Context().Nodes().panicIfNotOurs(d)
 			return d.raw.kind, d.raw.ptr
 		},
-	}
+	)
 }
 
 func wrapDeclBody(c Context, ptr arena.Pointer[rawDeclBody]) DeclBody {
