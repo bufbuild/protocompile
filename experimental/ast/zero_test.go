@@ -100,7 +100,17 @@ func testZero[Node report.Spanner](t *testing.T) {
 					continue
 				}
 
-				assert.Zero(t, r.Interface(), "non-zero return #%d %#v of %T.%s", i, r, z, m.Name)
+				got := r.Interface()
+				if r.Type().Kind() != reflect.Pointer {
+					switch v := got.(type) {
+					case interface{ IsZero() bool }:
+						got = !v.IsZero()
+					case interface{ Len() int }:
+						got = v.Len()
+					}
+				}
+
+				assert.Zero(t, got, "non-zero return #%d %#v of %T.%s", i, r, z, m.Name)
 			}
 		}
 	})
