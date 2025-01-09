@@ -391,12 +391,12 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 				eq = token.Zero
 			}
 
-			option := ast.Option{
+			option := p.NewOption(ast.OptionArgs{
 				Path:   path,
 				Equals: eq,
 				Value:  parseExpr(p, c, taxa.CompactOptions.In()),
-			}
-			return option, !option.Value.IsZero()
+			})
+			return option, !option.Value().IsZero()
 		},
 	}.appendTo(options.Entries())
 

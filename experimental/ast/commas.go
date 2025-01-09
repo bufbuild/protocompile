@@ -15,10 +15,10 @@
 package ast
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // Commas is like [Slice], but it's for a comma-delimited list of some kind.
@@ -48,13 +48,13 @@ type withComma[T any] struct {
 	Comma token.ID
 }
 
-type commas[T, E any] struct {
-	seq.SliceInserter[T, withComma[E]]
+type commas[T any, Raw unsafex.Int] struct {
+	seq.InserterWrapper2[T, Raw, token.ID, *slicesx.Inline[Raw], *slicesx.Inline[token.ID]]
 	ctx Context
 }
 
 func (c commas[T, _]) Comma(n int) token.Token {
-	return (*c.SliceInserter.Slice)[n].Comma.In(c.ctx)
+	return c.InserterWrapper2.Slice2.At(n).In(c.ctx)
 }
 
 func (c commas[T, _]) AppendComma(value T, comma token.Token) {
@@ -63,8 +63,7 @@ func (c commas[T, _]) AppendComma(value T, comma token.Token) {
 
 func (c commas[T, _]) InsertComma(n int, value T, comma token.Token) {
 	c.ctx.Nodes().panicIfNotOurs(comma)
-	v := c.SliceInserter.Unwrap(value)
-	v.Comma = comma.ID()
-
-	*c.Slice = slices.Insert(*c.Slice, n, v)
+	e1, _ := c.InserterWrapper2.Unwrap(value)
+	c.InserterWrapper2.Slice1.Insert(n, e1)
+	c.InserterWrapper2.Slice2.Insert(n, comma.ID())
 }

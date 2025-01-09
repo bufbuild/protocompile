@@ -45,17 +45,14 @@ import (
 type DeclDef struct{ declImpl[rawDeclDef] }
 
 type rawDeclDef struct {
-	ty   rawType // Not present for enum fields.
-	name rawPath
-
 	signature *rawSignature
-
-	equals token.ID
-	value  rawExpr
-
-	options arena.Pointer[rawCompactOptions]
-	body    arena.Pointer[rawDeclBody]
-	semi    token.ID
+	ty        rawType
+	value     rawExpr
+	name      rawPath
+	equals    token.ID
+	options   arena.Pointer[rawCompactOptions]
+	body      arena.Pointer[rawDeclBody]
+	semi      token.ID
 }
 
 // DeclDefArgs is arguments for creating a [DeclDef] with [Context.NewDeclDef].
@@ -198,7 +195,7 @@ func (d DeclDef) Options() CompactOptions {
 //
 // Setting it to a zero Options clears it.
 func (d DeclDef) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().compactOptions.Compress(opts.raw)
 }
 
 // Body returns this definition's body, if it has one.
@@ -386,9 +383,12 @@ func (d DeclDef) AsOption() DefOption {
 	return DefOption{
 		Keyword: d.Keyword(),
 		Option: Option{
-			Path:   d.Name(),
-			Equals: d.Equals(),
-			Value:  d.Value(),
+			d.withContext,
+			&rawOption{
+				path:   d.Name().raw,
+				equals: d.Equals().ID(),
+				value:  d.Value().raw,
+			},
 		},
 		Semicolon: d.Semicolon(),
 		Decl:      d,

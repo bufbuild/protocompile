@@ -61,7 +61,7 @@ type ExprAny struct {
 type rawExpr = pathLike[ExprKind]
 
 func newExprAny(c Context, e rawExpr) ExprAny {
-	if c == nil || (e == rawExpr{}) {
+	if c == nil || e.isZero() {
 		return ExprAny{}
 	}
 

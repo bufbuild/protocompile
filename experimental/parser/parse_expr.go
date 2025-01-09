@@ -189,7 +189,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 				field = p.NewExprField(ast.ExprFieldArgs{Value: expr})
 			}
 
-			dict.AppendComma(field, comma)
+			dict.Elements().AppendComma(field, comma)
 			return true
 		})
 		return dict.AsAny()

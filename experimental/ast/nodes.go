@@ -28,10 +28,12 @@ type Nodes struct {
 	// The context for these nodes.
 	Context Context
 
-	decls   decls
-	types   types
-	exprs   exprs
-	options arena.Arena[rawCompactOptions]
+	decls decls
+	types types
+	exprs exprs
+
+	compactOptions arena.Arena[rawCompactOptions]
+	options        arena.Arena[rawOption]
 }
 
 // Root returns the root AST node for this context.
@@ -62,7 +64,7 @@ func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 		keyword: args.Keyword.ID(),
 		equals:  args.Equals.ID(),
 		value:   args.Value.raw,
-		options: n.options.Compress(args.Options.raw),
+		options: n.compactOptions.Compress(args.Options.raw),
 		semi:    args.Semicolon.ID(),
 	}))
 }
@@ -74,7 +76,7 @@ func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	return wrapDeclPackage(n.Context, n.decls.packages.NewCompressed(rawDeclPackage{
 		keyword: args.Keyword.ID(),
 		path:    args.Path.raw,
-		options: n.options.Compress(args.Options.raw),
+		options: n.compactOptions.Compress(args.Options.raw),
 		semi:    args.Semicolon.ID(),
 	}))
 }
@@ -87,7 +89,7 @@ func (n *Nodes) NewDeclImport(args DeclImportArgs) DeclImport {
 		keyword:    args.Keyword.ID(),
 		modifier:   args.Modifier.ID(),
 		importPath: args.ImportPath.raw,
-		options:    n.options.Compress(args.Options.raw),
+		options:    n.compactOptions.Compress(args.Options.raw),
 		semi:       args.Semicolon.ID(),
 	}))
 }
@@ -102,7 +104,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 		name:    args.Name.raw,
 		equals:  args.Equals.ID(),
 		value:   args.Value.raw,
-		options: n.options.Compress(args.Options.raw),
+		options: n.compactOptions.Compress(args.Options.raw),
 		body:    n.decls.bodies.Compress(args.Body.raw),
 		semi:    args.Semicolon.ID(),
 	}
@@ -140,7 +142,7 @@ func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 
 	return wrapDeclRange(n.Context, n.decls.ranges.NewCompressed(rawDeclRange{
 		keyword: args.Keyword.ID(),
-		options: n.options.Compress(args.Options.raw),
+		options: n.compactOptions.Compress(args.Options.raw),
 		semi:    args.Semicolon.ID(),
 	}))
 }
@@ -249,11 +251,22 @@ func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	}}
 }
 
+// NewOption creates a new Option node.
+func (n *Nodes) NewOption(args OptionArgs) Option {
+	n.panicIfNotOurs(args.Path, args.Equals, args.Value)
+
+	return wrapOption(n.Context, n.options.NewCompressed(rawOption{
+		path:   args.Path.raw,
+		equals: args.Equals.ID(),
+		value:  args.Value.raw,
+	}))
+}
+
 // NewCompactOptions creates a new CompactOptions node.
 func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 	n.panicIfNotOurs(brackets)
 
-	return wrapOptions(n.Context, n.options.NewCompressed(rawCompactOptions{
+	return wrapOptions(n.Context, n.compactOptions.NewCompressed(rawCompactOptions{
 		brackets: brackets.ID(),
 	}))
 }

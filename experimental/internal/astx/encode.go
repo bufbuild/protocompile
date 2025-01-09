@@ -377,9 +377,9 @@ func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 
 	seq.Values(options.Entries())(func(o ast.Option) bool {
 		proto.Entries = append(proto.Entries, &compilerpb.Options_Entry{
-			Path:       c.path(o.Path),
-			Value:      c.expr(o.Value),
-			EqualsSpan: c.span(o.Equals),
+			Path:       c.path(o.Path()),
+			Value:      c.expr(o.Value()),
+			EqualsSpan: c.span(o.Equals()),
 		})
 		return true
 	})
@@ -460,7 +460,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 			Span:       c.span(expr),
 			OpenSpan:   c.span(a.LeafSpan()),
 			CloseSpan:  c.span(b.LeafSpan()),
-			CommaSpans: c.commas(expr),
+			CommaSpans: c.commas(expr.Elements()),
 		}
 		seq.Values(expr.Elements())(func(e ast.ExprField) bool {
 			proto.Entries = append(proto.Entries, c.exprField(e))

@@ -88,9 +88,11 @@ func (f File) Imports() iter.Seq2[int, DeclImport] {
 type DeclSyntax struct{ declImpl[rawDeclSyntax] }
 
 type rawDeclSyntax struct {
-	keyword, equals, semi token.ID
-	value                 rawExpr
-	options               arena.Pointer[rawCompactOptions]
+	value   rawExpr
+	keyword token.ID
+	equals  token.ID
+	semi    token.ID
+	options arena.Pointer[rawCompactOptions]
 }
 
 // DeclSyntaxArgs is arguments for [Context.NewDeclSyntax].
@@ -167,7 +169,7 @@ func (d DeclSyntax) Options() CompactOptions {
 //
 // Setting it to a zero Options clears it.
 func (d DeclSyntax) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().compactOptions.Compress(opts.raw)
 }
 
 // Semicolon returns this pragma's ending semicolon.
@@ -254,7 +256,7 @@ func (d DeclPackage) Options() CompactOptions {
 //
 // Setting it to a zero Options clears it.
 func (d DeclPackage) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().compactOptions.Compress(opts.raw)
 }
 
 // Semicolon returns this package's ending semicolon.
@@ -292,9 +294,11 @@ func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {
-	keyword, modifier, semi token.ID
-	importPath              rawExpr
-	options                 arena.Pointer[rawCompactOptions]
+	importPath rawExpr
+	keyword    token.ID
+	modifier   token.ID
+	semi       token.ID
+	options    arena.Pointer[rawCompactOptions]
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
@@ -369,7 +373,7 @@ func (d DeclImport) Options() CompactOptions {
 //
 // Setting it to a zero Options clears it.
 func (d DeclImport) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.raw.options = d.Context().Nodes().compactOptions.Compress(opts.raw)
 }
 
 // Semicolon returns this import's ending semicolon.

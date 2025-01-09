@@ -15,12 +15,11 @@
 package ast
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // ExprDict represents a an array of message fields between curly braces.
@@ -36,7 +35,8 @@ type ExprDict struct{ exprImpl[rawExprDict] }
 
 type rawExprDict struct {
 	braces token.ID
-	fields []withComma[arena.Pointer[rawExprField]]
+	fields slicesx.Inline[arena.Pointer[rawExprField]]
+	commas slicesx.Inline[token.ID]
 }
 
 // Braces returns the token tree corresponding to the whole {...}.
@@ -52,98 +52,33 @@ func (e ExprDict) Braces() token.Token {
 
 // Elements returns the sequence of expressions in this array.
 func (e ExprDict) Elements() Commas[ExprField] {
-	type slice = commas[ExprField, arena.Pointer[rawExprField]]
-	if e.IsZero() {
-		return slice{}
+	var (
+		args *slicesx.Inline[arena.Pointer[rawExprField]]
+		toks *slicesx.Inline[token.ID]
+	)
+	if !e.IsZero() {
+		args = &e.raw.fields
+		toks = &e.raw.commas
 	}
-	return slice{
+
+	// A single return here promotes devirtualization of both the interface
+	// and the funcvals within.
+	return commas[ExprField, arena.Pointer[rawExprField]]{
 		ctx: e.Context(),
-		SliceInserter: seq.SliceInserter[ExprField, withComma[arena.Pointer[rawExprField]]]{
-			Slice: &e.raw.fields,
-			Wrap: func(c withComma[arena.Pointer[rawExprField]]) ExprField {
+		InserterWrapper2: seq.WrapInserter2(
+			args, toks,
+			func(r arena.Pointer[rawExprField], _ token.ID) ExprField {
 				return ExprField{exprImpl[rawExprField]{
 					e.withContext,
-					e.Context().Nodes().exprs.fields.Deref(c.Value),
+					e.Context().Nodes().exprs.fields.Deref(r),
 				}}
 			},
-			Unwrap: func(e ExprField) withComma[arena.Pointer[rawExprField]] {
+			func(r ExprField) (arena.Pointer[rawExprField], token.ID) {
 				e.Context().Nodes().panicIfNotOurs(e)
-				ptr := e.Context().Nodes().exprs.fields.Compress(e.raw)
-				return withComma[arena.Pointer[rawExprField]]{ptr, 0}
+				return e.Context().Nodes().exprs.fields.Compress(r.raw), 0
 			},
-		},
+		),
 	}
-}
-
-// Len implements [Slice].
-func (e ExprDict) Len() int {
-	if e.IsZero() {
-		return 0
-	}
-
-	return len(e.raw.fields)
-}
-
-// At implements [Slice].
-func (e ExprDict) At(n int) ExprField {
-	ptr := e.raw.fields[n].Value
-	return ExprField{exprImpl[rawExprField]{
-		e.withContext,
-		e.Context().Nodes().exprs.fields.Deref(ptr),
-	}}
-}
-
-// Iter implements [Slice].
-func (e ExprDict) Iter(yield func(int, ExprField) bool) {
-	if e.IsZero() {
-		return
-	}
-
-	for i, f := range e.raw.fields {
-		e := ExprField{exprImpl[rawExprField]{
-			e.withContext,
-			e.Context().Nodes().exprs.fields.Deref(f.Value),
-		}}
-		if !yield(i, e) {
-			break
-		}
-	}
-}
-
-// Append implements [Inserter].
-func (e ExprDict) Append(expr ExprField) {
-	e.InsertComma(e.Len(), expr, token.Zero)
-}
-
-// Insert implements [Inserter].
-func (e ExprDict) Insert(n int, expr ExprField) {
-	e.InsertComma(n, expr, token.Zero)
-}
-
-// Delete implements [Inserter].
-func (e ExprDict) Delete(n int) {
-	e.raw.fields = slices.Delete(e.raw.fields, n, n+1)
-}
-
-// Comma implements [Commas].
-func (e ExprDict) Comma(n int) token.Token {
-	return e.raw.fields[n].Comma.In(e.Context())
-}
-
-// AppendComma implements [Commas].
-func (e ExprDict) AppendComma(expr ExprField, comma token.Token) {
-	e.InsertComma(e.Len(), expr, comma)
-}
-
-// InsertComma implements [Commas].
-func (e ExprDict) InsertComma(n int, expr ExprField, comma token.Token) {
-	e.Context().Nodes().panicIfNotOurs(expr, comma)
-	if expr.IsZero() {
-		panic("protocompile/ast: cannot append zero ExprField to ExprMessage")
-	}
-
-	ptr := e.Context().Nodes().exprs.fields.Compress(expr.raw)
-	e.raw.fields = slices.Insert(e.raw.fields, n, withComma[arena.Pointer[rawExprField]]{ptr, comma.ID()})
 }
 
 // Span implements [report.Spanner].
