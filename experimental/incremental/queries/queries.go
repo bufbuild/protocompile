@@ -12,31 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package report
+// package queries provides specific [incremental.Query] types for various parts
+// of Protocompile. It is separate from package incremental itself because it is
+// Protocompile-specific.
+package queries
 
-// AsError wraps a [Report] as an [error].
-type AsError struct {
-	Report Report
-}
-
-// Error implements [error].
-func (e *AsError) Error() string {
-	text, _, _ := Renderer{Compact: true}.RenderString(&e.Report)
-	return text
-}
-
-// ErrInFile wraps an [error] into a diagnostic on the given file.
-type ErrInFile struct {
-	Err  error
-	Path string
-}
-
-var _ Diagnose = &ErrInFile{}
-
-// Diagnose implements [Diagnose].
-func (e *ErrInFile) Diagnose(d *Diagnostic) {
-	d.Apply(
-		Message("%v", e.Err),
-		InFile(e.Path),
-	)
-}
+// Values for [report.Report].SortOrder, which determine how diagnostics
+// generated across parts of the compiler are sorted.
+const (
+	stageFile int = iota * 10
+	stageAST
+)

@@ -15,18 +15,14 @@
 package ast
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // DeclRange represents an extension or reserved range declaration. They are almost identical
 // syntactically so they use the same AST node.
-//
-// In the Protocompile AST, ranges can contain arbitrary expressions. Thus, DeclRange
-// implements [Comma[ExprAny]].
 //
 // # Grammar
 //
@@ -47,10 +43,6 @@ type DeclRangeArgs struct {
 	Semicolon token.Token
 }
 
-var (
-	_ Commas[ExprAny] = DeclRange{}
-)
-
 // Keyword returns the keyword for this range.
 func (d DeclRange) Keyword() token.Token {
 	if d.IsZero() {
@@ -70,62 +62,26 @@ func (d DeclRange) IsReserved() bool {
 	return d.Keyword().Text() == "reserved"
 }
 
-// Len implements [Slice].
-func (d DeclRange) Len() int {
+// Ranges returns the sequence of expressions denoting the ranges in this
+// range declaration.
+func (d DeclRange) Ranges() Commas[ExprAny] {
+	type slice = commas[ExprAny, rawExpr]
 	if d.IsZero() {
-		return 0
+		return slice{}
 	}
-
-	return len(d.raw.args)
-}
-
-// At implements [Slice].
-func (d DeclRange) At(n int) ExprAny {
-	return newExprAny(d.Context(), d.raw.args[n].Value)
-}
-
-// Iter implements [Slice].
-func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
-	if d.IsZero() {
-		return
+	return slice{
+		ctx: d.Context(),
+		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
+			Slice: &d.raw.args,
+			Wrap: func(c withComma[rawExpr]) ExprAny {
+				return newExprAny(d.Context(), c.Value)
+			},
+			Unwrap: func(e ExprAny) withComma[rawExpr] {
+				d.Context().Nodes().panicIfNotOurs(e)
+				return withComma[rawExpr]{Value: e.raw}
+			},
+		},
 	}
-	for i, arg := range d.raw.args {
-		if !yield(i, newExprAny(d.Context(), arg.Value)) {
-			break
-		}
-	}
-}
-
-// Append implements [Inserter].
-func (d DeclRange) Append(expr ExprAny) {
-	d.InsertComma(d.Len(), expr, token.Zero)
-}
-
-// Insert implements [Inserter].
-func (d DeclRange) Insert(n int, expr ExprAny) {
-	d.InsertComma(n, expr, token.Zero)
-}
-
-// Delete implements [Inserter].
-func (d DeclRange) Delete(n int) {
-	d.raw.args = slices.Delete(d.raw.args, n, n+1)
-}
-
-// Comma implements [Commas].
-func (d DeclRange) Comma(n int) token.Token {
-	return d.raw.args[n].Comma.In(d.Context())
-}
-
-// AppendComma implements [Commas].
-func (d DeclRange) AppendComma(expr ExprAny, comma token.Token) {
-	d.InsertComma(d.Len(), expr, comma)
-}
-
-// InsertComma implements [Commas].
-func (d DeclRange) InsertComma(n int, expr ExprAny, comma token.Token) {
-	d.Context().Nodes().panicIfNotOurs(expr, comma)
-
-	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{expr.raw, comma.ID()})
 }
 
 // Options returns the compact options list for this range.
@@ -157,16 +113,17 @@ func (d DeclRange) Semicolon() token.Token {
 
 // Span implements [report.Spanner].
 func (d DeclRange) Span() report.Span {
+	r := d.Ranges()
 	switch {
 	case d.IsZero():
 		return report.Span{}
-	case d.Len() == 0:
+	case r.Len() == 0:
 		return report.Join(d.Keyword(), d.Semicolon(), d.Options())
 	default:
 		return report.Join(
 			d.Keyword(), d.Semicolon(), d.Options(),
-			d.At(0),
-			d.At(d.Len()-1),
+			r.At(0),
+			r.At(r.Len()-1),
 		)
 	}
 }

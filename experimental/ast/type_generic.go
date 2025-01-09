@@ -126,7 +126,7 @@ func (d TypeList) Brackets() token.Token {
 	return d.raw.brackets.In(d.Context())
 }
 
-// Len implements [Slice].
+// Len implements [seq.Indexer].
 func (d TypeList) Len() int {
 	if d.IsZero() {
 		return 0
@@ -135,31 +135,23 @@ func (d TypeList) Len() int {
 	return len(d.raw.args)
 }
 
-// At implements [Slice].
+// At implements [seq.Indexer].
 func (d TypeList) At(n int) TypeAny {
 	return newTypeAny(d.Context(), d.raw.args[n].Value)
 }
 
-// At implements [Iter].
-func (d TypeList) Iter(yield func(int, TypeAny) bool) {
-	for i, arg := range d.raw.args {
-		if !yield(i, newTypeAny(d.Context(), arg.Value)) {
-			break
-		}
-	}
+// At implements [seq.Setter].
+func (d TypeList) SetAt(n int, ty TypeAny) {
+	d.Context().Nodes().panicIfNotOurs(ty)
+	d.raw.args[n].Value = ty.raw
 }
 
-// Append implements [Inserter].
-func (d TypeList) Append(ty TypeAny) {
-	d.InsertComma(d.Len(), ty, token.Zero)
-}
-
-// Insert implements [Inserter].
+// Insert implements [seq.Inserter].
 func (d TypeList) Insert(n int, ty TypeAny) {
 	d.InsertComma(n, ty, token.Zero)
 }
 
-// Delete implements [Inserter].
+// Delete implements [seq.Inserter].
 func (d TypeList) Delete(n int) {
 	d.raw.args = slices.Delete(d.raw.args, n, n+1)
 }
@@ -170,8 +162,8 @@ func (d TypeList) Comma(n int) token.Token {
 }
 
 // AppendComma implements [Commas].
-func (d TypeList) AppendComma(ty TypeAny, comma token.Token) {
-	d.InsertComma(d.Len(), ty, comma)
+func (d TypeList) AppendComma(value TypeAny, comma token.Token) {
+	d.InsertComma(d.Len(), value, comma)
 }
 
 // InsertComma implements [Commas].

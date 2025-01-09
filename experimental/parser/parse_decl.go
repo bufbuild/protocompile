@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -262,7 +263,7 @@ func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 	c := braces.Children()
 	for !c.Done() {
 		if next := parseDecl(p, c, in); !next.IsZero() {
-			body.Append(next)
+			seq.Append(body.Decls(), next)
 		}
 	}
 
@@ -362,7 +363,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 		Semicolon: semi,
 	})
 	for _, e := range exprs {
-		r.AppendComma(e.expr, e.comma)
+		r.Ranges().AppendComma(e.expr, e.comma)
 	}
 
 	return r
@@ -438,7 +439,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			return option, !option.Value.IsZero()
 		},
 		start: canStartPath,
-	}.appendTo(options)
+	}.appendTo(options.Entries())
 
 	return options
 }

@@ -187,7 +187,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			elems.trailing = false
 
 			array := p.NewExprArray(body)
-			elems.appendTo(array)
+			elems.appendTo(array.Elements())
 			return array.AsAny()
 		}
 

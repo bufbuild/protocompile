@@ -15,9 +15,8 @@
 package ast
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
@@ -27,8 +26,6 @@ import (
 // benefit of rich diagnostics and refactorings. For example, it is possible to represent an
 // "orphaned" field or oneof outside of a message, or an RPC method inside of an enum, and
 // so on.
-//
-// DeclBody implements [Slice], providing access to its declarations.
 //
 // # Grammar
 //
@@ -48,10 +45,6 @@ type rawDeclBody struct {
 	ptrs  []arena.Untyped
 }
 
-var (
-	_ Inserter[DeclAny] = DeclBody{}
-)
-
 // Braces returns this body's surrounding braces, if it has any.
 func (d DeclBody) Braces() token.Token {
 	if d.IsZero() {
@@ -63,62 +56,37 @@ func (d DeclBody) Braces() token.Token {
 
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
+	decls := d.Decls()
 	switch {
 	case d.IsZero():
 		return report.Span{}
 	case !d.Braces().IsZero():
 		return d.Braces().Span()
-	case d.Len() == 0:
+	case decls.Len() == 0:
 		return report.Span{}
 	default:
-		return report.Join(d.At(0), d.At(d.Len()-1))
+		return report.Join(decls.At(0), decls.At(decls.Len()-1))
 	}
 }
 
-// Len returns the number of declarations inside of this body.
-func (d DeclBody) Len() int {
+// Decls returns a [seq.Inserter] over the declarations in this body.
+func (d DeclBody) Decls() seq.Inserter[DeclAny] {
+	type slice = seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]
 	if d.IsZero() {
-		return 0
+		return slice{}
 	}
 
-	return len(d.raw.ptrs)
-}
-
-// At returns the nth element of this body.
-func (d DeclBody) At(n int) DeclAny {
-	return rawDecl{d.raw.ptrs[n], d.raw.kinds[n]}.With(d.Context())
-}
-
-// Iter is an iterator over the nodes inside this body.
-func (d DeclBody) Iter(yield func(int, DeclAny) bool) {
-	if d.IsZero() {
-		return
+	return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{
+		Slice1: &d.raw.kinds,
+		Slice2: &d.raw.ptrs,
+		Wrap: func(k DeclKind, p arena.Untyped) DeclAny {
+			return rawDecl{p, k}.With(d.Context())
+		},
+		Unwrap: func(d DeclAny) (DeclKind, arena.Untyped) {
+			d.Context().Nodes().panicIfNotOurs(d)
+			return d.raw.kind, d.raw.ptr
+		},
 	}
-
-	for i := range d.raw.kinds {
-		if !yield(i, d.At(i)) {
-			break
-		}
-	}
-}
-
-// Append appends a new declaration to this body.
-func (d DeclBody) Append(value DeclAny) {
-	d.Insert(d.Len(), value)
-}
-
-// Insert inserts a new declaration at the given index.
-func (d DeclBody) Insert(n int, value DeclAny) {
-	d.Context().Nodes().panicIfNotOurs(value)
-
-	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.Kind())
-	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.raw.ptr)
-}
-
-// Delete deletes the declaration at the given index.
-func (d DeclBody) Delete(n int) {
-	d.raw.kinds = slices.Delete(d.raw.kinds, n, n+1)
-	d.raw.ptrs = slices.Delete(d.raw.ptrs, n, n+1)
 }
 
 func wrapDeclBody(c Context, ptr arena.Pointer[rawDeclBody]) DeclBody {

@@ -24,7 +24,14 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
-// Zero is the zero [Token], i.e., the zero value.
+// IsSkippable returns whether this is a token that should be examined during
+// syntactic analysis.
+func (t Kind) IsSkippable() bool {
+	// Note: kind.go is a generated file.
+	return t == Space || t == Comment || t == Unrecognized
+}
+
+// Zero is the zero [Token].
 var Zero Token
 
 // Value is a constraint that represents a literal scalar value in source.
