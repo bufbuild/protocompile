@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
 package ast
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
@@ -25,8 +24,9 @@ import (
 // DeclRange represents an extension or reserved range declaration. They are almost identical
 // syntactically so they use the same AST node.
 //
-// In the Protocompile AST, ranges can contain arbitrary expressions. Thus, DeclRange
-// implements [Comma[ExprAny]].
+// # Grammar
+//
+//	DeclRange := (`extensions` | `reserved`) (Expr `,`)* Expr? CompactOptions? `;`?
 type DeclRange struct{ declImpl[rawDeclRange] }
 
 type rawDeclRange struct {
@@ -43,12 +43,12 @@ type DeclRangeArgs struct {
 	Semicolon token.Token
 }
 
-var (
-	_ Commas[ExprAny] = DeclRange{}
-)
-
 // Keyword returns the keyword for this range.
 func (d DeclRange) Keyword() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.keyword.In(d.Context())
 }
 
@@ -62,59 +62,34 @@ func (d DeclRange) IsReserved() bool {
 	return d.Keyword().Text() == "reserved"
 }
 
-// Len implements [Slice].
-func (d DeclRange) Len() int {
-	return len(d.raw.args)
-}
-
-// At implements [Slice].
-func (d DeclRange) At(n int) ExprAny {
-	return newExprAny(d.Context(), d.raw.args[n].Value)
-}
-
-// Iter implements [Slice].
-func (d DeclRange) Iter(yield func(int, ExprAny) bool) {
-	for i, arg := range d.raw.args {
-		if !yield(i, newExprAny(d.Context(), arg.Value)) {
-			break
-		}
+// Ranges returns the sequence of expressions denoting the ranges in this
+// range declaration.
+func (d DeclRange) Ranges() Commas[ExprAny] {
+	type slice = commas[ExprAny, rawExpr]
+	if d.IsZero() {
+		return slice{}
 	}
-}
-
-// Append implements [Inserter].
-func (d DeclRange) Append(expr ExprAny) {
-	d.InsertComma(d.Len(), expr, token.Nil)
-}
-
-// Insert implements [Inserter].
-func (d DeclRange) Insert(n int, expr ExprAny) {
-	d.InsertComma(n, expr, token.Nil)
-}
-
-// Delete implements [Inserter].
-func (d DeclRange) Delete(n int) {
-	d.raw.args = slices.Delete(d.raw.args, n, n+1)
-}
-
-// Comma implements [Commas].
-func (d DeclRange) Comma(n int) token.Token {
-	return d.raw.args[n].Comma.In(d.Context())
-}
-
-// AppendComma implements [Commas].
-func (d DeclRange) AppendComma(expr ExprAny, comma token.Token) {
-	d.InsertComma(d.Len(), expr, comma)
-}
-
-// InsertComma implements [Commas].
-func (d DeclRange) InsertComma(n int, expr ExprAny, comma token.Token) {
-	d.Context().Nodes().panicIfNotOurs(expr, comma)
-
-	d.raw.args = slices.Insert(d.raw.args, n, withComma[rawExpr]{expr.raw, comma.ID()})
+	return slice{
+		ctx: d.Context(),
+		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
+			Slice: &d.raw.args,
+			Wrap: func(c withComma[rawExpr]) ExprAny {
+				return newExprAny(d.Context(), c.Value)
+			},
+			Unwrap: func(e ExprAny) withComma[rawExpr] {
+				d.Context().Nodes().panicIfNotOurs(e)
+				return withComma[rawExpr]{Value: e.raw}
+			},
+		},
+	}
 }
 
 // Options returns the compact options list for this range.
 func (d DeclRange) Options() CompactOptions {
+	if d.IsZero() {
+		return CompactOptions{}
+	}
+
 	return wrapOptions(d.Context(), d.raw.options)
 }
 
@@ -129,16 +104,28 @@ func (d DeclRange) SetOptions(opts CompactOptions) {
 //
 // May be nil, if not present.
 func (d DeclRange) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclRange) Span() report.Span {
-	span := report.Join(d.Keyword(), d.Semicolon(), d.Options())
-	for _, arg := range d.raw.args {
-		span = report.Join(span, newExprAny(d.Context(), arg.Value), arg.Comma.In(d.Context()))
+	r := d.Ranges()
+	switch {
+	case d.IsZero():
+		return report.Span{}
+	case r.Len() == 0:
+		return report.Join(d.Keyword(), d.Semicolon(), d.Options())
+	default:
+		return report.Join(
+			d.Keyword(), d.Semicolon(), d.Options(),
+			r.At(0),
+			r.At(r.Len()-1),
+		)
 	}
-	return span
 }
 
 func wrapDeclRange(c Context, ptr arena.Pointer[rawDeclRange]) DeclRange {

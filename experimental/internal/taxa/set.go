@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ import (
 	"math/bits"
 	"strings"
 
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/iter"
-	"github.com/bufbuild/protocompile/internal/iters"
 )
 
 // Set is a set of [Noun] values, implicitly ordered by the [Noun] values'
@@ -97,7 +97,7 @@ func (s Set) All() iter.Seq[Noun] {
 //
 // If the set is empty, returns the empty string.
 func (s Set) Join(conj string) string {
-	elems := iters.Collect(s.All())
+	elems := slicesx.Collect(s.All())
 
 	var out strings.Builder
 	switch len(elems) {

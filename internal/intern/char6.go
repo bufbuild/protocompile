@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package intern
 
 import (
 	"strings"
-	"unsafe"
+
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 const (
@@ -85,7 +86,7 @@ func decodeChar6(id ID) string {
 	// The main decoding loop is outlined to promote inlining of decodeChar6,
 	// and thus heap-promotion of the returned string.
 	data, len := decodeOutlined(id) //nolint:predeclared,revive // For `len`.
-	return unsafe.String(&data[0], len)
+	return unsafex.StringAlias(data[:len])
 }
 
 //nolint:predeclared,revive // For `len`.

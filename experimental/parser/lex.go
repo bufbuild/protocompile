@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// Lex performs lexical analysis on the file contained in ctx, and appends any
+// lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
 //
-// Lex will freeze the stream in ctx when it is done.
+// lex will freeze the stream in ctx when it is done.
 //
 // You should almost never need to call this function; [Parse] calls it directly.
 // It is exported so that it is straight forward to build other parsers on top
 // of the Protobuf lexer.
-func Lex(ctx token.Context, errs *report.Report) {
+func lex(ctx token.Context, errs *report.Report) {
 	l := &lexer{
 		Context: ctx,
 		Stream:  ctx.Stream(),
@@ -300,7 +300,7 @@ func fuseBraces(l *lexer) {
 // implements implicit concatenation by juxtaposition.
 func fuseStrings(l *lexer) {
 	concat := func(start, end token.Token) {
-		if start.Nil() || start == end {
+		if start.IsZero() || start == end {
 			return
 		}
 
@@ -324,15 +324,15 @@ func fuseStrings(l *lexer) {
 			break
 
 		case token.String:
-			if start.Nil() {
+			if start.IsZero() {
 				start = tok
 			}
 			end = tok
 
 		default:
 			concat(start, end)
-			start = token.Nil
-			end = token.Nil
+			start = token.Zero
+			end = token.Zero
 		}
 
 		return true

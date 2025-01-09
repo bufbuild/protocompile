@@ -18,7 +18,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bufbuild/protocompile/internal/iters"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 const (
@@ -88,7 +88,7 @@ func unifiedDiff(span Span, edits []Edit) []hunk {
 	// Partition offsets into overlapping lines. That is, this connects together
 	// all edit spans whose end and start are not separated by a newline.
 	prev := &offsets[0]
-	parts := iters.Partition(offsets, func(_, next *[2]int) bool {
+	parts := slicesx.Partition(offsets, func(_, next *[2]int) bool {
 		if next == prev || !strings.Contains(src[prev[1]:next[0]], "\n") {
 			return false
 		}

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,10 @@ import (
 // that all generic types understood by your code are maps.
 //
 // TypeGeneric implements [Commas[TypeAny]] for accessing its arguments.
+//
+// # Grammar
+//
+//	TypeGeneric := TypePath `<` (Type `,`?`)* `>`
 type TypeGeneric struct{ typeImpl[rawTypeGeneric] }
 
 type rawTypeGeneric struct {
@@ -51,6 +55,10 @@ type TypeGenericArgs struct {
 // Path returns the path of the "type constructor". For example, for
 // my.Map<K, V>, this would return the path my.Map.
 func (t TypeGeneric) Path() Path {
+	if t.IsZero() {
+		return Path{}
+	}
+
 	return t.raw.path.With(t.Context())
 }
 
@@ -58,7 +66,7 @@ func (t TypeGeneric) Path() Path {
 // map<K, V>. This is intended for asserting the extremely common case of "the only generic
 // type is map".
 //
-// Returns nils if this is not a map, or it has the wrong number of generic arguments.
+// Returns zeros if this is not a map, or it has the wrong number of generic arguments.
 func (t TypeGeneric) AsMap() (key, value TypeAny) {
 	if t.Path().AsPredeclared() != predeclared.Map || t.Args().Len() != 2 {
 		return TypeAny{}, TypeAny{}
@@ -69,6 +77,10 @@ func (t TypeGeneric) AsMap() (key, value TypeAny) {
 
 // Args returns the argument list for this generic type.
 func (t TypeGeneric) Args() TypeList {
+	if t.IsZero() {
+		return TypeList{}
+	}
+
 	return TypeList{
 		t.withContext,
 		&t.raw.args,
@@ -77,6 +89,10 @@ func (t TypeGeneric) Args() TypeList {
 
 // Span implements [report.Spanner].
 func (t TypeGeneric) Span() report.Span {
+	if t.IsZero() {
+		return report.Span{}
+	}
+
 	return report.Join(t.Path(), t.Args())
 }
 
@@ -101,41 +117,41 @@ type rawTypeList struct {
 
 // Brackets returns the token tree for the brackets wrapping the argument list.
 //
-// May be nil, if the user forgot to include brackets.
+// May be zero, if the user forgot to include brackets.
 func (d TypeList) Brackets() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.brackets.In(d.Context())
 }
 
-// Len implements [Slice].
+// Len implements [seq.Indexer].
 func (d TypeList) Len() int {
+	if d.IsZero() {
+		return 0
+	}
+
 	return len(d.raw.args)
 }
 
-// At implements [Slice].
+// At implements [seq.Indexer].
 func (d TypeList) At(n int) TypeAny {
 	return newTypeAny(d.Context(), d.raw.args[n].Value)
 }
 
-// At implements [Iter].
-func (d TypeList) Iter(yield func(int, TypeAny) bool) {
-	for i, arg := range d.raw.args {
-		if !yield(i, newTypeAny(d.Context(), arg.Value)) {
-			break
-		}
-	}
+// At implements [seq.Setter].
+func (d TypeList) SetAt(n int, ty TypeAny) {
+	d.Context().Nodes().panicIfNotOurs(ty)
+	d.raw.args[n].Value = ty.raw
 }
 
-// Append implements [Inserter].
-func (d TypeList) Append(ty TypeAny) {
-	d.InsertComma(d.Len(), ty, token.Nil)
-}
-
-// Insert implements [Inserter].
+// Insert implements [seq.Inserter].
 func (d TypeList) Insert(n int, ty TypeAny) {
-	d.InsertComma(n, ty, token.Nil)
+	d.InsertComma(n, ty, token.Zero)
 }
 
-// Delete implements [Inserter].
+// Delete implements [seq.Inserter].
 func (d TypeList) Delete(n int) {
 	d.raw.args = slices.Delete(d.raw.args, n, n+1)
 }
@@ -146,8 +162,8 @@ func (d TypeList) Comma(n int) token.Token {
 }
 
 // AppendComma implements [Commas].
-func (d TypeList) AppendComma(ty TypeAny, comma token.Token) {
-	d.InsertComma(d.Len(), ty, comma)
+func (d TypeList) AppendComma(value TypeAny, comma token.Token) {
+	d.InsertComma(d.Len(), value, comma)
 }
 
 // InsertComma implements [Commas].
@@ -159,13 +175,14 @@ func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
 
 // Span implements [report.Spanner].
 func (d TypeList) Span() report.Span {
-	if !d.Brackets().Nil() {
+	switch {
+	case d.IsZero():
+		return report.Span{}
+	case !d.Brackets().IsZero():
 		return d.Brackets().Span()
+	case d.Len() == 0:
+		return report.Span{}
+	default:
+		return report.Join(d.At(0), d.At(d.Len()-1))
 	}
-
-	var span report.Span
-	for _, arg := range d.raw.args {
-		span = report.Join(span, newTypeAny(d.Context(), arg.Value), arg.Comma.In(d.Context()))
-	}
-	return span
 }

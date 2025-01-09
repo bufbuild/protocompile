@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,10 @@
 package astx
 
 import (
-	"unsafe"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // NewPath creates a new parser-generated path.
@@ -27,12 +26,12 @@ import (
 // This function should not be used outside of the parser, so it is implemented
 // using unsafe to avoid needing to export it.
 func NewPath(ctx ast.Context, start, end token.Token) ast.Path {
-	path := fakePath{
+	// fakePath has the same GC shape as ast.Path; there is a test for this in
+	// path_test.go
+	return unsafex.Bitcast[ast.Path](fakePath{
 		with: internal.NewWith(ctx),
 		raw:  struct{ Start, End token.ID }{start.ID(), end.ID()},
-	}
-
-	return *(*ast.Path)(unsafe.Pointer(&path))
+	})
 }
 
 type fakePath struct {

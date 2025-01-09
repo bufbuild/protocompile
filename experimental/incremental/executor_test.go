@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ func (i ParseInt) Execute(t incremental.Task) (int, error) {
 
 	v, err := strconv.Atoi(i.Input)
 	if err != nil {
-		t.NonFatal(err)
+		t.Report().Errorf("%s", err)
 	}
 	if v < 0 {
 		return 0, fmt.Errorf("negative value: %v", v)
@@ -129,10 +129,10 @@ func TestSum(t *testing.T) {
 		incremental.WithParallelism(4),
 	)
 
-	result, err := incremental.Run(ctx, exec, Sum{"1,2,2,3,4"})
+	result, report, err := incremental.Run(ctx, exec, Sum{"1,2,2,3,4"})
 	require.NoError(t, err)
 	assert.Equal(12, result[0].Value)
-	assert.Empty(result[0].NonFatal)
+	assert.Empty(report.Diagnostics)
 	assert.Equal([]string{
 		`incremental_test.ParseInt{Input:"1"}`,
 		`incremental_test.ParseInt{Input:"2"}`,
@@ -142,10 +142,10 @@ func TestSum(t *testing.T) {
 		`incremental_test.Sum{Input:"1,2,2,3,4"}`,
 	}, exec.Keys())
 
-	result, err = incremental.Run(ctx, exec, Sum{"1,2,2,oops,4"})
+	result, report, err = incremental.Run(ctx, exec, Sum{"1,2,2,oops,4"})
 	require.NoError(t, err)
 	assert.Equal(9, result[0].Value)
-	assert.Len(result[0].NonFatal, 1)
+	assert.Len(report.Diagnostics, 1)
 	assert.Equal([]string{
 		`incremental_test.ParseInt{Input:"1"}`,
 		`incremental_test.ParseInt{Input:"2"}`,
@@ -166,10 +166,10 @@ func TestSum(t *testing.T) {
 		`incremental_test.Root{}`,
 	}, exec.Keys())
 
-	result, err = incremental.Run(ctx, exec, Sum{"1,2,2,3,4"})
+	result, report, err = incremental.Run(ctx, exec, Sum{"1,2,2,3,4"})
 	require.NoError(t, err)
 	assert.Equal(12, result[0].Value)
-	assert.Empty(result[0].NonFatal)
+	assert.Empty(report.Diagnostics)
 	assert.Equal([]string{
 		`incremental_test.ParseInt{Input:"1"}`,
 		`incremental_test.ParseInt{Input:"2"}`,
@@ -190,7 +190,7 @@ func TestFatal(t *testing.T) {
 		incremental.WithParallelism(4),
 	)
 
-	result, err := incremental.Run(ctx, exec, Sum{"1,2,-3,-4"})
+	result, _, err := incremental.Run(ctx, exec, Sum{"1,2,-3,-4"})
 	require.NoError(t, err)
 	// NOTE: This error is deterministic, because it's chosen by Sum.Execute.
 	assert.Equal("negative value: -3", result[0].Fatal.Error())
@@ -213,7 +213,7 @@ func TestCyclic(t *testing.T) {
 		incremental.WithParallelism(4),
 	)
 
-	result, err := incremental.Run(ctx, exec, Cyclic{Mod: 5, Step: 3})
+	result, _, err := incremental.Run(ctx, exec, Cyclic{Mod: 5, Step: 3})
 	require.NoError(t, err)
 	assert.Equal(
 		`cycle detected: `+
@@ -250,7 +250,7 @@ func TestUnchanged(t *testing.T) {
 
 	for i := 0; i < runs; i++ {
 		exec.Evict(ParseInt{"42"})
-		results, _ := incremental.Run(ctx, exec, queries...)
+		results, _, _ := incremental.Run(ctx, exec, queries...)
 		for j, r := range results[1:] {
 			// All calls after an eviction should return true for Changed.
 			assert.True(r.Changed, "%d", j)
@@ -270,7 +270,7 @@ func TestUnchanged(t *testing.T) {
 				barrier.Wait() // Ensure all goroutines start together.
 				defer wg.Done()
 
-				results, _ := incremental.Run(ctx, exec, queries...)
+				results, _, _ := incremental.Run(ctx, exec, queries...)
 				for j, r := range results {
 					// We don't know who the winning g that gets to do the
 					// computation will be be, so just require that all of the
@@ -289,7 +289,7 @@ func TestUnchanged(t *testing.T) {
 		// Exactly one of the gs should have seen a change.
 		assert.Equal(int32(1), changed.Load())
 
-		results, _ = incremental.Run(ctx, exec, queries...)
+		results, _, _ = incremental.Run(ctx, exec, queries...)
 		for j, r := range results[1:] {
 			// All calls after computation should return false for Changed.
 			assert.False(r.Changed, "%d", j)

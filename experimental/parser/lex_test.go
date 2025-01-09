@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser_test
+package parser
 
 import (
 	"fmt"
@@ -22,13 +22,12 @@ import (
 	"testing"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/parser"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
-func TestRender(t *testing.T) {
+func TestLexer(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
@@ -44,9 +43,9 @@ func TestRender(t *testing.T) {
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		text = unescapeTestCase(text)
 
-		errs := &report.Report{Tracing: 10}
+		errs := &report.Report{Options: report.Options{Tracing: 10}}
 		ctx := ast.NewContext(report.NewFile(path, text))
-		parser.Lex(ctx, errs)
+		lex(ctx, errs)
 
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,

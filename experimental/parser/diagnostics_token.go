@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -82,10 +82,10 @@ func (e errUnmatched) Diagnose(d *report.Diagnostic) {
 
 	if text == openTok {
 		d.Apply(report.Snippetf(e.Span, "expected a closing `%s`", closeTok))
-		if !e.Mismatch.Nil() {
+		if !e.Mismatch.IsZero() {
 			d.Apply(report.Snippetf(e.Mismatch, "closed by this instead"))
 		}
-		if !e.ShouldMatch.Nil() {
+		if !e.ShouldMatch.IsZero() {
 			d.Apply(report.Snippetf(e.ShouldMatch, "help: perhaps it was meant to match this?"))
 		}
 	} else {

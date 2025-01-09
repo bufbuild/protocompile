@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,18 +38,21 @@ var _ incremental.Query[*report.File] = File{}
 // also means that the Openers must all be comparable. As the [Opener]
 // documentation states, implementations should take a pointer receiver so that
 // comparison uses object identity.
-func (t File) Key() any {
-	return t
+func (f File) Key() any {
+	return f
 }
 
 // Execute implements [incremental.Query].
-func (t File) Execute(incremental.Task) (*report.File, error) {
-	text, err := t.Open(t.Path)
+func (f File) Execute(t incremental.Task) (*report.File, error) {
+	t.Report().Options.Stage += stageFile
+
+	text, err := f.Open(f.Path)
 	if err != nil {
-		r := newReport(stageFile)
-		r.Report.Error(&report.ErrInFile{Err: err, Path: t.Path})
-		return nil, r
+		t.Report().Errorf("%v", err).Apply(
+			report.InFile(f.Path),
+		)
+		return nil, err
 	}
 
-	return report.NewFile(t.Path, text), nil
+	return report.NewFile(f.Path, text), nil
 }

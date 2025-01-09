@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ func unwrapPathLike[Value ~int32 | ~uint32, Kind ~int8](want Kind, p pathLike[Ki
 // wrapPath wraps a path in a pathLike.
 func wrapPath[Kind ~int8](path rawPath) pathLike[Kind] {
 	return pathLike[Kind]{
-		StartOrKind: ^int32(path.Start),
+		StartOrKind: int32(path.Start),
 		EndOrValue:  int32(path.End),
 	}
 }

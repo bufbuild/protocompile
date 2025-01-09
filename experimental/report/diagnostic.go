@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@ package report
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/experimental/internal"
 )
 
 // Level represents the severity of a diagnostic message.
@@ -80,7 +78,7 @@ type Edit struct {
 
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
-// Nil values passed to [Diagnostic.Apply] are ignored.
+// IsZero values passed to [Diagnostic.Apply] are ignored.
 type DiagnosticOption interface {
 	apply(*Diagnostic)
 }
@@ -110,7 +108,7 @@ func (d *Diagnostic) Is(tag string) bool {
 
 // Apply applies the given options to this diagnostic.
 //
-// Nil values are ignored.
+// IsZero values are ignored.
 func (d *Diagnostic) Apply(options ...DiagnosticOption) *Diagnostic {
 	for _, option := range options {
 		if option != nil {
@@ -145,8 +143,7 @@ func InFile(path string) DiagnosticOption {
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
-// If at is nil (be it a nil interface, or a value that has a Nil() function
-// that returns true), or returns a nil span, this function will return nil.
+// If at is nil or returns the zero span, the returned DiagnosticOption is a no-op.
 func Snippet(at Spanner) DiagnosticOption {
 	return Snippetf(at, "")
 }
@@ -159,20 +156,10 @@ func Snippet(at Spanner) DiagnosticOption {
 // The first annotation added is the "primary" annotation, and will be rendered
 // differently from the others.
 //
-// If at is nil (be it a nil interface, or a value that has a Nil() function
-// that returns true), or returns a nil span, this function will return nil.
+// If at is nil or returns the zero span, the returned DiagnosticOption is a no-op.
 func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
-	if internal.Nil(at) {
-		return nil
-	}
-
-	span := at.Span()
-	if span.Nil() {
-		return nil
-	}
-
 	return snippet{
-		Span:    span,
+		Span:    getSpan(at),
 		message: fmt.Sprintf(format, args...),
 	}
 }
@@ -184,17 +171,8 @@ func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 // The message associated with the snippet will be prefixed with "help:" when
 // rendered.
 func SuggestEdits(at Spanner, message string, edits ...Edit) DiagnosticOption {
-	if internal.Nil(at) {
-		return nil
-	}
-
-	span := at.Span()
-	if span.Nil() {
-		return nil
-	}
-
 	return snippet{
-		Span:    span,
+		Span:    getSpan(at),
 		message: message,
 		edits:   edits,
 	}
@@ -243,6 +221,10 @@ type snippet struct {
 }
 
 func (a snippet) apply(d *Diagnostic) {
+	if a.Span.IsZero() {
+		return
+	}
+
 	a.primary = len(d.snippets) == 0
 	d.snippets = append(d.snippets, a)
 }

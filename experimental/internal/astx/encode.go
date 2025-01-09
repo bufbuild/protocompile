@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
@@ -111,7 +111,7 @@ func (c *protoEncoder) file(file ast.File) *compilerpb.File {
 		}
 	}
 
-	file.Iter(func(_ int, d ast.DeclAny) bool {
+	seq.Values(file.Decls())(func(d ast.DeclAny) bool {
 		proto.Decls = append(proto.Decls, c.decl(d))
 		return true
 	})
@@ -119,12 +119,12 @@ func (c *protoEncoder) file(file ast.File) *compilerpb.File {
 }
 
 func (c *protoEncoder) span(s report.Spanner) *compilerpb.Span {
-	if c.OmitSpans || internal.Nil(s) {
+	if c.OmitSpans || s == nil {
 		return nil
 	}
 
 	span := s.Span()
-	if span.Nil() {
+	if span.IsZero() {
 		return nil
 	}
 
@@ -141,7 +141,7 @@ type commas interface {
 }
 
 func (c *protoEncoder) commas(cs commas) []*compilerpb.Span {
-	if c.OmitSpans || internal.Nil(cs) {
+	if c.OmitSpans {
 		return nil
 	}
 
@@ -153,7 +153,7 @@ func (c *protoEncoder) commas(cs commas) []*compilerpb.Span {
 }
 
 func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
-	if path.Nil() {
+	if path.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(path)()
@@ -171,11 +171,11 @@ func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
 		}
 		component.SeparatorSpan = c.span(pc.Separator())
 
-		if extn := pc.AsExtension(); !extn.Nil() {
+		if extn := pc.AsExtension(); !extn.IsZero() {
 			extn := pc.AsExtension()
 			component.Component = &compilerpb.Path_Component_Extension{Extension: c.path(extn)}
 			component.ComponentSpan = c.span(extn)
-		} else if ident := pc.AsIdent(); !ident.Nil() {
+		} else if ident := pc.AsIdent(); !ident.IsZero() {
 			component.Component = &compilerpb.Path_Component_Ident{Ident: ident.Name()}
 			component.ComponentSpan = c.span(ident)
 		}
@@ -187,7 +187,7 @@ func (c *protoEncoder) path(path ast.Path) *compilerpb.Path {
 }
 
 func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
-	if decl.Nil() {
+	if decl.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(decl)()
@@ -257,7 +257,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 		proto := &compilerpb.Decl_Body{
 			Span: c.span(decl),
 		}
-		decl.Iter(func(_ int, d ast.DeclAny) bool {
+		seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
 			proto.Decls = append(proto.Decls, c.decl(d))
 			return true
 		})
@@ -281,7 +281,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}
 
-		decl.Iter(func(_ int, e ast.ExprAny) bool {
+		seq.Values(decl.Ranges())(func(e ast.ExprAny) bool {
 			proto.Ranges = append(proto.Ranges, c.expr(e))
 			return true
 		})
@@ -330,7 +330,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			proto.Type = c.type_(decl.Type())
 		}
 
-		if signature := decl.Signature(); !signature.Nil() {
+		if signature := decl.Signature(); !signature.IsZero() {
 			proto.Signature = &compilerpb.Def_Signature{
 				Span:        c.span(signature),
 				InputSpan:   c.span(signature.Inputs()),
@@ -338,21 +338,21 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 				OutputSpan:  c.span(signature.Outputs()),
 			}
 
-			signature.Inputs().Iter(func(_ int, t ast.TypeAny) bool {
+			seq.Values(signature.Inputs())(func(t ast.TypeAny) bool {
 				proto.Signature.Inputs = append(proto.Signature.Inputs, c.type_(t))
 				return true
 			})
-			signature.Outputs().Iter(func(_ int, t ast.TypeAny) bool {
+			seq.Values(signature.Outputs())(func(t ast.TypeAny) bool {
 				proto.Signature.Outputs = append(proto.Signature.Outputs, c.type_(t))
 				return true
 			})
 		}
 
-		if body := decl.Body(); !body.Nil() {
+		if body := decl.Body(); !body.IsZero() {
 			proto.Body = &compilerpb.Decl_Body{
 				Span: c.span(decl.Body()),
 			}
-			body.Iter(func(_ int, d ast.DeclAny) bool {
+			seq.Values(body.Decls())(func(d ast.DeclAny) bool {
 				proto.Body.Decls = append(proto.Body.Decls, c.decl(d))
 				return true
 			})
@@ -366,7 +366,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 }
 
 func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
-	if options.Nil() {
+	if options.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(options)()
@@ -375,7 +375,7 @@ func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 		Span: c.span(options),
 	}
 
-	options.Iter(func(_ int, o ast.Option) bool {
+	seq.Values(options.Entries())(func(o ast.Option) bool {
 		proto.Entries = append(proto.Entries, &compilerpb.Options_Entry{
 			Path:       c.path(o.Path),
 			Value:      c.expr(o.Value),
@@ -388,7 +388,7 @@ func (c *protoEncoder) options(options ast.CompactOptions) *compilerpb.Options {
 }
 
 func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
-	if expr.Nil() {
+	if expr.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(expr)()
@@ -444,9 +444,9 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 			Span:       c.span(expr),
 			OpenSpan:   c.span(a.LeafSpan()),
 			CloseSpan:  c.span(b.LeafSpan()),
-			CommaSpans: c.commas(expr),
+			CommaSpans: c.commas(expr.Elements()),
 		}
-		expr.Iter(func(_ int, e ast.ExprAny) bool {
+		seq.Values(expr.Elements())(func(e ast.ExprAny) bool {
 			proto.Elements = append(proto.Elements, c.expr(e))
 			return true
 		})
@@ -462,7 +462,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 			CloseSpan:  c.span(b.LeafSpan()),
 			CommaSpans: c.commas(expr),
 		}
-		expr.Iter(func(_ int, e ast.ExprField) bool {
+		seq.Values(expr.Elements())(func(e ast.ExprField) bool {
 			proto.Entries = append(proto.Entries, c.exprField(e))
 			return true
 		})
@@ -478,7 +478,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 }
 
 func (c *protoEncoder) exprField(expr ast.ExprField) *compilerpb.Expr_Field {
-	if expr.Nil() {
+	if expr.IsZero() {
 		return nil
 	}
 
@@ -492,7 +492,7 @@ func (c *protoEncoder) exprField(expr ast.ExprField) *compilerpb.Expr_Field {
 
 //nolint:revive // "method type_ should be type" is incorrect because type is a keyword.
 func (c *protoEncoder) type_(ty ast.TypeAny) *compilerpb.Type {
-	if ty.Nil() {
+	if ty.IsZero() {
 		return nil
 	}
 	defer c.checkCycle(ty)()
@@ -522,7 +522,7 @@ func (c *protoEncoder) type_(ty ast.TypeAny) *compilerpb.Type {
 			CloseSpan:  c.span(b.LeafSpan()),
 			CommaSpans: c.commas(ty.Args()),
 		}
-		ty.Args().Iter(func(_ int, t ast.TypeAny) bool {
+		seq.Values(ty.Args())(func(t ast.TypeAny) bool {
 			generic.Args = append(generic.Args, c.type_(t))
 			return true
 		})

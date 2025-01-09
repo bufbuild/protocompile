@@ -1,0 +1,119 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "M" }]
+      body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "Type" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REPEATED
+              type.path.components: [{ ident: "Type" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REQUIRED
+              type.path.components: [{ ident: "Type" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "Type" }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REPEATED
+              type.path.components: [{ ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REQUIRED
+              type.path.components: [{ ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REPEATED
+              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REQUIRED
+              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components:
+                - { ident: "package", separator: SEPARATOR_DOT }
+                - { ident: "Type", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REPEATED
+              type.path.components:
+                - { ident: "package", separator: SEPARATOR_DOT }
+                - { ident: "Type", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.prefixed:
+              prefix: PREFIX_REQUIRED
+              type.path.components:
+                - { ident: "package", separator: SEPARATOR_DOT }
+                - { ident: "Type", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components:
+              - { ident: "package", separator: SEPARATOR_DOT }
+              - { ident: "Type", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1

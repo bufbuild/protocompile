@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ func NewContext(file *report.File) Context {
 		Context: c,
 	}
 
-	c.Nodes().NewDeclBody(token.Nil) // This is the rawBody for the whole file.
+	c.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.
 	return c
 }
 

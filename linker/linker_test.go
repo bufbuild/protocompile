@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -3459,33 +3459,6 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-		},
-		"failure_editions_ctype_not_string_or_bytes": {
-			input: map[string]string{
-				"test.proto": `
-					edition = "2023";
-					package foo;
-					message A {
-						uint32 s = 1 [ctype=STRING_PIECE];
-					}
-				`,
-			},
-			expectedErr: `test.proto:4:23: ctype option can only be used on string and bytes fields`,
-		},
-		"failure_editions_ctype_ext_cannot_be_cord": {
-			input: map[string]string{
-				"test.proto": `
-					edition = "2023";
-					package foo;
-					message A {
-						extensions 10 to 100;
-					}
-					extend A {
-						string ext = 10 [ctype=CORD];
-					}
-				`,
-			},
-			expectedErr: `test.proto:7:26: ctype option cannot be CORD for extension fields`,
 		},
 		"success_feature_within_lifetime": {
 			input: map[string]string{

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ import (
 // ExprRange represents a range of values, such as 1 to 4 or 5 to max.
 //
 // Note that max is not special syntax; it will appear as an [ExprPath] with the name "max".
+//
+// # Grammar
+//
+//	ExprRange := ExprPrefixed `to` ExprOp
 type ExprRange struct{ exprImpl[rawExprRange] }
 
 type rawExprRange struct {
@@ -38,12 +42,16 @@ type ExprRangeArgs struct {
 
 // Bounds returns this range's bounds. These are inclusive bounds.
 func (e ExprRange) Bounds() (start, end ExprAny) {
+	if e.IsZero() {
+		return ExprAny{}, ExprAny{}
+	}
+
 	return newExprAny(e.Context(), e.raw.start), newExprAny(e.Context(), e.raw.end)
 }
 
 // SetBounds set the expressions for this range's bounds.
 //
-// Clears the respective expressions when passed a nil expression.
+// Clears the respective expressions when passed a zero expression.
 func (e ExprRange) SetBounds(start, end ExprAny) {
 	e.raw.start = start.raw
 	e.raw.end = end.raw
@@ -51,11 +59,19 @@ func (e ExprRange) SetBounds(start, end ExprAny) {
 
 // Keyword returns the "to" keyword for this range.
 func (e ExprRange) Keyword() token.Token {
+	if e.IsZero() {
+		return token.Zero
+	}
+
 	return e.raw.to.In(e.Context())
 }
 
 // Span implements [report.Spanner].
 func (e ExprRange) Span() report.Span {
+	if e.IsZero() {
+		return report.Span{}
+	}
+
 	lo, hi := e.Bounds()
 	return report.Join(lo, e.Keyword(), hi)
 }

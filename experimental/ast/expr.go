@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:dupword // Disable for whole file, because the error is in a comment.
 package ast
 
 import (
@@ -23,21 +24,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
-const (
-	ExprKindNil ExprKind = iota
-	ExprKindLiteral
-	ExprKindPrefixed
-	ExprKindPath
-	ExprKindRange
-	ExprKindArray
-	ExprKindDict
-	ExprKindField
-)
-
-// ExprKind is a kind of expression. There is one value of ExprKind for each
-// Expr* type in this package.
-type ExprKind int8
-
 // ExprAny is any ExprAny* type in this package.
 //
 // Values of this type can be obtained by calling an AsAny method on a ExprAny*
@@ -47,6 +33,21 @@ type ExprKind int8
 // This type is used in lieu of a putative ExprAny interface type to avoid heap
 // allocations in functions that would return one of many different ExprAny*
 // types.
+//
+// # Grammar
+//
+// In addition to the Expr type, we define some exported productions for
+// handling operator precedence.
+//
+//	Expr      := ExprField | ExprOp
+//	ExprJuxta := ExprFieldWithColon | ExprOp
+//	ExprOp    := ExprRange | ExprPrefix | ExprSolo
+//	ExprSolo  := ExprLiteral | ExprPath | ExprArray | ExprDict
+//
+// Note: ExprJuxta is the expression production that is unambiguous when
+// expressions are juxtaposed with each other; i.e., ExprJuxta* does not make
+// e.g. "foo {}" ambiguous between an [ExprField] or an [ExprPath] followed by
+// an [ExprDict].
 type ExprAny struct {
 	withContext // Must be nil if raw is nil.
 
@@ -70,8 +71,8 @@ func newExprAny(c Context, e rawExpr) ExprAny {
 // Kind returns the kind of expression this is. This is suitable for use
 // in a switch statement.
 func (e ExprAny) Kind() ExprKind {
-	if e.Nil() {
-		return ExprKindNil
+	if e.IsZero() {
+		return ExprKindInvalid
 	}
 
 	if kind, ok := e.raw.kind(); ok {
@@ -80,13 +81,29 @@ func (e ExprAny) Kind() ExprKind {
 	return ExprKindPath
 }
 
-// AsLiteral converts a ExprAny into a ExprLiteral, if that is the type
+// AsError converts a ExprAny into a ExprError, if that is the type
 // it contains.
 //
 // Otherwise, returns nil.
+func (e ExprAny) AsError() ExprError {
+	ptr := unwrapPathLike[arena.Pointer[rawExprError]](ExprKindError, e.raw)
+	if ptr.Nil() {
+		return ExprError{}
+	}
+
+	return ExprError{exprImpl[rawExprError]{
+		e.withContext,
+		e.Context().Nodes().exprs.errors.Deref(ptr),
+	}}
+}
+
+// AsLiteral converts a ExprAny into a ExprLiteral, if that is the type
+// it contains.
+//
+// Otherwise, returns zero.
 func (e ExprAny) AsLiteral() ExprLiteral {
 	tok := unwrapPathLike[token.ID](ExprKindLiteral, e.raw)
-	if tok.Nil() {
+	if tok.IsZero() {
 		return ExprLiteral{}
 	}
 
@@ -96,17 +113,17 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 // AsPath converts a ExprAny into a ExprPath, if that is the type
 // it contains.q
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsPath() ExprPath {
 	path, _ := e.raw.path(e.Context())
-	// Don't need to check ok; path() returns nil on failure.
+	// Don't need to check ok; path() returns zero on failure.
 	return ExprPath{path}
 }
 
 // AsPrefixed converts a ExprAny into a ExprPrefixed, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsPrefixed() ExprPrefixed {
 	ptr := unwrapPathLike[arena.Pointer[rawExprPrefixed]](ExprKindPrefixed, e.raw)
 	if ptr.Nil() {
@@ -122,7 +139,7 @@ func (e ExprAny) AsPrefixed() ExprPrefixed {
 // AsRange converts a ExprAny into a ExprRange, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsRange() ExprRange {
 	ptr := unwrapPathLike[arena.Pointer[rawExprRange]](ExprKindRange, e.raw)
 	if ptr.Nil() {
@@ -138,7 +155,7 @@ func (e ExprAny) AsRange() ExprRange {
 // AsArray converts a ExprAny into a ExprArray, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsArray() ExprArray {
 	ptr := unwrapPathLike[arena.Pointer[rawExprArray]](ExprKindArray, e.raw)
 	if ptr.Nil() {
@@ -154,7 +171,7 @@ func (e ExprAny) AsArray() ExprArray {
 // AsDict converts a ExprAny into a ExprDict, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsDict() ExprDict {
 	ptr := unwrapPathLike[arena.Pointer[rawExprDict]](ExprKindDict, e.raw)
 	if ptr.Nil() {
@@ -170,7 +187,7 @@ func (e ExprAny) AsDict() ExprDict {
 // AsField converts a ExprAny into a ExprKV, if that is the type
 // it contains.
 //
-// Otherwise, returns nil.
+// Otherwise, returns zero.
 func (e ExprAny) AsField() ExprField {
 	ptr := unwrapPathLike[arena.Pointer[rawExprField]](ExprKindField, e.raw)
 	if ptr.Nil() {
@@ -199,6 +216,20 @@ func (e ExprAny) Span() report.Span {
 	)
 }
 
+// ExprError represents an unrecoverable parsing error in an expression context.
+type ExprError struct{ exprImpl[rawExprError] }
+
+// Span implements [report.Spanner].
+func (e ExprError) Span() report.Span {
+	if e.IsZero() {
+		return report.Span{}
+	}
+
+	return report.Span(*e.raw)
+}
+
+type rawExprError report.Span
+
 // typeImpl is the common implementation of pointer-like Expr* types.
 type exprImpl[Raw any] struct {
 	// NOTE: These fields are sorted by alignment.
@@ -210,7 +241,7 @@ type exprImpl[Raw any] struct {
 //
 // See [ExprAny] for more information.
 func (e exprImpl[Raw]) AsAny() ExprAny {
-	if e.Nil() {
+	if e.IsZero() {
 		return ExprAny{}
 	}
 
@@ -223,6 +254,7 @@ func (e exprImpl[Raw]) AsAny() ExprAny {
 
 // exprs is storage for the various kinds of Exprs in a Context.
 type exprs struct {
+	errors   arena.Arena[rawExprError]
 	prefixes arena.Arena[rawExprPrefixed]
 	ranges   arena.Arena[rawExprRange]
 	arrays   arena.Arena[rawExprArray]
@@ -256,6 +288,9 @@ func exprArena[Raw any](exprs *exprs) (ExprKind, *arena.Arena[Raw]) {
 	case rawExprField:
 		kind = ExprKindField
 		arena_ = &exprs.fields
+	case rawExprError:
+		kind = ExprKindError
+		arena_ = &exprs.errors
 	default:
 		panic("unknown expr type " + reflect.TypeOf(raw).Name())
 	}

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ import (
 )
 
 // DeclEmpty is an empty declaration, a lone ;.
+//
+// # Grammar
+//
+//	DeclEmpty := `;`
 type DeclEmpty struct{ declImpl[rawDeclEmpty] }
 
 type rawDeclEmpty struct {
@@ -29,13 +33,21 @@ type rawDeclEmpty struct {
 
 // Semicolon returns this field's ending semicolon.
 //
-// May be nil, if not present.
+// May be [token.Zero], if not present.
 func (d DeclEmpty) Semicolon() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.semi.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclEmpty) Span() report.Span {
+	if d.IsZero() {
+		return report.Span{}
+	}
+
 	return d.Semicolon().Span()
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
 package ast
 
 import (
-	"slices"
-
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
@@ -28,7 +27,12 @@ import (
 // "orphaned" field or oneof outside of a message, or an RPC method inside of an enum, and
 // so on.
 //
-// DeclBody implements [Slice], providing access to its declarations.
+// # Grammar
+//
+//	DeclBody := `{` DeclAny* `}`
+//
+// Note that a [File] is simply a DeclBody that is delimited by the bounds of
+// the source file, rather than braces.
 type DeclBody struct{ declImpl[rawDeclBody] }
 
 type rawDeclBody struct {
@@ -41,64 +45,48 @@ type rawDeclBody struct {
 	ptrs  []arena.Untyped
 }
 
-var (
-	_ Inserter[DeclAny] = DeclBody{}
-)
-
 // Braces returns this body's surrounding braces, if it has any.
 func (d DeclBody) Braces() token.Token {
+	if d.IsZero() {
+		return token.Zero
+	}
+
 	return d.raw.braces.In(d.Context())
 }
 
 // Span implements [report.Spanner].
 func (d DeclBody) Span() report.Span {
-	if !d.Braces().Nil() {
-		return d.Braces().Span()
-	}
-
-	if d.Len() == 0 {
+	decls := d.Decls()
+	switch {
+	case d.IsZero():
 		return report.Span{}
-	}
-
-	return report.Join(d.At(0), d.At(d.Len()-1))
-}
-
-// Len returns the number of declarations inside of this body.
-func (d DeclBody) Len() int {
-	return len(d.raw.ptrs)
-}
-
-// At returns the nth element of this body.
-func (d DeclBody) At(n int) DeclAny {
-	return rawDecl{d.raw.ptrs[n], d.raw.kinds[n]}.With(d.Context())
-}
-
-// Iter is an iterator over the nodes inside this body.
-func (d DeclBody) Iter(yield func(int, DeclAny) bool) {
-	for i := range d.raw.kinds {
-		if !yield(i, d.At(i)) {
-			break
-		}
+	case !d.Braces().IsZero():
+		return d.Braces().Span()
+	case decls.Len() == 0:
+		return report.Span{}
+	default:
+		return report.Join(decls.At(0), decls.At(decls.Len()-1))
 	}
 }
 
-// Append appends a new declaration to this body.
-func (d DeclBody) Append(value DeclAny) {
-	d.Insert(d.Len(), value)
-}
+// Decls returns a [seq.Inserter] over the declarations in this body.
+func (d DeclBody) Decls() seq.Inserter[DeclAny] {
+	type slice = seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]
+	if d.IsZero() {
+		return slice{}
+	}
 
-// Insert inserts a new declaration at the given index.
-func (d DeclBody) Insert(n int, value DeclAny) {
-	d.Context().Nodes().panicIfNotOurs(value)
-
-	d.raw.kinds = slices.Insert(d.raw.kinds, n, value.Kind())
-	d.raw.ptrs = slices.Insert(d.raw.ptrs, n, value.raw.ptr)
-}
-
-// Delete deletes the declaration at the given index.
-func (d DeclBody) Delete(n int) {
-	d.raw.kinds = slices.Delete(d.raw.kinds, n, n+1)
-	d.raw.ptrs = slices.Delete(d.raw.ptrs, n, n+1)
+	return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{
+		Slice1: &d.raw.kinds,
+		Slice2: &d.raw.ptrs,
+		Wrap: func(k DeclKind, p arena.Untyped) DeclAny {
+			return rawDecl{p, k}.With(d.Context())
+		},
+		Unwrap: func(d DeclAny) (DeclKind, arena.Untyped) {
+			d.Context().Nodes().panicIfNotOurs(d)
+			return d.raw.kind, d.raw.ptr
+		},
+	}
 }
 
 func wrapDeclBody(c Context, ptr arena.Pointer[rawDeclBody]) DeclBody {

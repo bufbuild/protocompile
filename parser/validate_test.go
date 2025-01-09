@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -699,8 +699,6 @@ func TestBasicValidation(t *testing.T) {
 					   option (foo) = -inf;
 					   option (foo) = nan;
 					   option (foo) = -nan;`,
-			// Bug in protoc, see https://github.com/protocolbuffers/protobuf/issues/15010
-			expectedDiffWithProtoc: true,
 		},
 		"failure_inf_upper_in_option_value": {
 			contents: `syntax = "proto2";

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -141,19 +141,6 @@ func (r *result) validateField(fld protoreflect.FieldDescriptor, handler *report
 			span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
 			if err := handler.HandleErrorf(span, "ctype option cannot be used as of edition 2024; use features.string_type instead"); err != nil {
 				return err
-			}
-		} else if descriptorpb.Edition(r.Edition()) == descriptorpb.Edition_EDITION_2023 {
-			if fld.Kind() != protoreflect.StringKind && fld.Kind() != protoreflect.BytesKind {
-				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
-				if err := handler.HandleErrorf(span, "ctype option can only be used on string and bytes fields"); err != nil {
-					return err
-				}
-			}
-			if fd.proto.Options.GetCtype() == descriptorpb.FieldOptions_CORD && fd.IsExtension() {
-				span := r.findOptionSpan(fd, internal.FieldOptionsCTypeTag)
-				if err := handler.HandleErrorf(span, "ctype option cannot be CORD for extension fields"); err != nil {
-					return err
-				}
 			}
 		}
 	}
