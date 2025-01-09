@@ -26,6 +26,9 @@ files:
         rpc Put(PutRequest) returns (PutResponse) [foo = bar];
       }
 
+# NOTE: These are not real suggestions, and are simply examples for what
+# suggestions could look like.
+
 diagnostics:
   - message: 'let protocompile pick a syntax for you'
     level: LEVEL_REMARK
@@ -51,7 +54,7 @@ diagnostics:
             end: 8
             replace: ''
 
-  - message: 'services should have a `Service` prefix'
+  - message: 'services should have a `Service` suffix'
     level: LEVEL_WARNING
     annotations:
       - file: 0

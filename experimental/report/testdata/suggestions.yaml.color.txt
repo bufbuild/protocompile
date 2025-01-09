@@ -2,17 +2,18 @@
 ⟨blu⟩  --> foo.proto:1:1
 ⟨blu⟩  help: delete this
    | 
-⟨blu⟩ 1 | ⟨red⟩syntax = "proto3";
-⟨blu⟩   | ⟨b.red⟩------------------⟨reset⟩
+⟨blu⟩ 1 | ⟨b.red⟩-⟨red⟩ syntax = "proto3";
+⟨blu⟩   | ⟨reset⟩
 
 ⟨b.cyn⟩remark: let protocompile pick a syntax for you⟨reset⟩
 ⟨blu⟩  --> foo.proto:1:10
 ⟨blu⟩  help: delete this
    | 
-⟨blu⟩ 1 | ⟨reset⟩syntax = ⟨red⟩"proto3"⟨reset⟩;
-⟨blu⟩   | ⟨reset⟩         ⟨b.red⟩--------⟨reset⟩ ⟨reset⟩
+⟨blu⟩ 1 | ⟨b.red⟩-⟨red⟩ syntax = "proto3";
+⟨blu⟩ 1 | ⟨b.grn⟩+⟨grn⟩ syntax = ;
+⟨blu⟩   | ⟨reset⟩
 
-⟨b.ylw⟩warning: services should have a `Service` prefix⟨reset⟩
+⟨b.ylw⟩warning: services should have a `Service` suffix⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:9
    | 
 ⟨blu⟩ 5 | ⟨reset⟩service Foo {

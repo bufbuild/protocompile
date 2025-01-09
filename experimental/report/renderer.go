@@ -925,14 +925,12 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 
 	// When the suggestion spans multiple lines, we don't bother doing a by-the-rune
 	// diff, because the result can be hard for users to understand how to apply
-	// to their code.
-	multiline := strings.Contains(snip.Span.Text(), "\n")
-	for _, edit := range snip.edits {
-		if strings.Contains(edit.Replace, "\n") {
-			multiline = true
-			break
-		}
-	}
+	// to their code. Also, if the suggestion contains deletions, use
+	multiline := slices.ContainsFunc(snip.edits, func(e Edit) bool {
+		// Prefer multiline suggestions in the case of deletions.
+		return e.IsDeletion() || strings.Contains(e.Replace, "\n")
+	}) ||
+		strings.Contains(snip.Span.Text(), "\n")
 
 	if multiline {
 		aLine := startLine
@@ -948,7 +946,7 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 				}
 
 				// Draw the line as we would for an ordinary window, but prefix
-				// each line with a the hunk kind and the hunk's color.
+				// each line with a the hunk's kind and color.
 				fmt.Fprintf(out, "\n%s%*d | %s%c%s %s",
 					ss.nAccent, lineBarWidth, lineno,
 					hunk.bold(ss), hunk.kind, hunk.color(ss),

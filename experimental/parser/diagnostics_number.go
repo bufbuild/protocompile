@@ -16,6 +16,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -79,8 +80,8 @@ func (e errInvalidBase) Diagnose(d *report.Diagnostic) {
 			}
 		case 8:
 			d.Apply(
-				report.SuggestEdits(e.Token, "remove this character", report.Edit{Start: 1, End: 2}),
-				report.Notef("Protobuf does not support the `0o` prefix for octal literals"),
+				report.SuggestEdits(e.Token, "remove the `o`", report.Edit{Start: 1, End: 2}),
+				report.Notef("octal literals are prefixed with `0`, not `0o`"),
 			)
 			return
 		}
@@ -102,16 +103,14 @@ type errThousandsSep struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errThousandsSep) Diagnose(d *report.Diagnostic) {
-	var edits []report.Edit
-	for i, r := range e.Token.Text() {
-		if r == '_' {
-			edits = append(edits, report.Edit{Start: i, End: i + 1})
-		}
-	}
-
+	span := e.Token.Span()
 	d.Apply(
 		report.Message("%s contains underscores", taxa.Classify(e.Token)),
-		report.SuggestEdits(e.Token, "remove these underscores", edits...),
+		report.SuggestEdits(e.Token, "remove these underscores", report.Edit{
+			Start:   span.Start,
+			End:     span.End,
+			Replace: strings.ReplaceAll(span.Text(), "_", ""),
+		}),
 		report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
 	)
 }

@@ -76,6 +76,17 @@ type Edit struct {
 	Replace string
 }
 
+// IsDeletion returns whether this edit involves deleting part of the source
+// text.
+func (e Edit) IsDeletion() bool {
+	return e.Start < e.End
+}
+
+// IsInsertion returns whether this edit involves inserting new text.
+func (e Edit) IsInsertion() bool {
+	return e.Replace != ""
+}
+
 // DiagnosticOption is an option that can be applied to a [Diagnostic].
 //
 // IsZero values passed to [Diagnostic.Apply] are ignored.
@@ -217,6 +228,10 @@ type snippet struct {
 	// to mark the snippet with the same color as the overall diagnostic.
 	primary bool
 
+	// Edits to include in this snippet. This causes this snippet to be rendered
+	// in its own window when it is non-empty, and no underline will appear for
+	// the overall span of the snippet. The message will still be used, as the
+	// title of the window.
 	edits []Edit
 }
 

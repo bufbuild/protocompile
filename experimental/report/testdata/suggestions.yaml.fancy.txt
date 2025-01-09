@@ -2,17 +2,18 @@ remark: let protocompile pick a syntax for you
   --> foo.proto:1:1
   help: delete this
    | 
- 1 | syntax = "proto3";
-   | ------------------
+ 1 | - syntax = "proto3";
+   | 
 
 remark: let protocompile pick a syntax for you
   --> foo.proto:1:10
   help: delete this
    | 
- 1 | syntax = "proto3";
-   |          -------- 
+ 1 | - syntax = "proto3";
+ 1 | + syntax = ;
+   | 
 
-warning: services should have a `Service` prefix
+warning: services should have a `Service` suffix
   --> foo.proto:5:9
    | 
  5 | service Foo {
