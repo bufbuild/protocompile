@@ -41,6 +41,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/bufbuild/protocompile/internal/ext/osx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -130,7 +131,7 @@ type Range struct{ Start, End int }
 
 // Returns the ranges (exclusive) of values not skipped by this method.
 func (m Method) Ranges() []Range {
-	var out []Range
+	var out []Range //nolint:prealloc // This lint is completely wrong here.
 	var aliases int
 	for i, v := range m.Parent.Values {
 		if v.Alias != "" {
@@ -234,7 +235,7 @@ func Main(config string) error {
 		return err
 	}
 
-	return os.WriteFile(input.Path, formatted, 0666)
+	return os.WriteFile(input.Path, formatted, osx.PermAR|osx.PermGW)
 }
 
 func main() {
