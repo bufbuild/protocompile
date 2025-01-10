@@ -18,10 +18,9 @@ package predeclared
 
 import (
 	"fmt"
+
 	"github.com/bufbuild/protocompile/internal/iter"
 )
-
-var _ iter.Seq[int] // Mark iter as used.
 
 // Name is one of the built-in Protobuf names. These represent particular
 // paths whose meaning the language overrides to mean something other than
@@ -103,8 +102,8 @@ func Lookup(s string) Name {
 // All returns an iterator over all distinct [Name] values.
 func All() iter.Seq[Name] {
 	return func(yield func(Name) bool) {
-		for _, v := range _table_Name_All {
-			if !yield(v) {
+		for i := 0; i < 22; i++ {
+			if !yield(Name(i)) {
 				return
 			}
 		}
@@ -112,101 +111,77 @@ func All() iter.Seq[Name] {
 }
 
 var _table_Name_String = [...]string{
-	Unknown: "unknown",
-	Int32: "int32",
-	Int64: "int64",
-	UInt32: "uint32",
-	UInt64: "uint64",
-	SInt32: "sint32",
-	SInt64: "sint64",
-	Fixed32: "fixed32",
-	Fixed64: "fixed64",
+	Unknown:  "unknown",
+	Int32:    "int32",
+	Int64:    "int64",
+	UInt32:   "uint32",
+	UInt64:   "uint64",
+	SInt32:   "sint32",
+	SInt64:   "sint64",
+	Fixed32:  "fixed32",
+	Fixed64:  "fixed64",
 	SFixed32: "sfixed32",
 	SFixed64: "sfixed64",
-	Float: "float",
-	Double: "double",
-	Bool: "bool",
-	String: "string",
-	Bytes: "bytes",
-	Map: "map",
-	Max: "max",
-	True: "true",
-	False: "false",
-	Inf: "inf",
-	NAN: "nan",
+	Float:    "float",
+	Double:   "double",
+	Bool:     "bool",
+	String:   "string",
+	Bytes:    "bytes",
+	Map:      "map",
+	Max:      "max",
+	True:     "true",
+	False:    "false",
+	Inf:      "inf",
+	NAN:      "nan",
 }
 
 var _table_Name_GoString = [...]string{
-	Unknown: "Unknown",
-	Int32: "Int32",
-	Int64: "Int64",
-	UInt32: "UInt32",
-	UInt64: "UInt64",
-	SInt32: "SInt32",
-	SInt64: "SInt64",
-	Fixed32: "Fixed32",
-	Fixed64: "Fixed64",
+	Unknown:  "Unknown",
+	Int32:    "Int32",
+	Int64:    "Int64",
+	UInt32:   "UInt32",
+	UInt64:   "UInt64",
+	SInt32:   "SInt32",
+	SInt64:   "SInt64",
+	Fixed32:  "Fixed32",
+	Fixed64:  "Fixed64",
 	SFixed32: "SFixed32",
 	SFixed64: "SFixed64",
-	Float: "Float",
-	Double: "Double",
-	Bool: "Bool",
-	String: "String",
-	Bytes: "Bytes",
-	Map: "Map",
-	Max: "Max",
-	True: "True",
-	False: "False",
-	Inf: "Inf",
-	NAN: "NAN",
+	Float:    "Float",
+	Double:   "Double",
+	Bool:     "Bool",
+	String:   "String",
+	Bytes:    "Bytes",
+	Map:      "Map",
+	Max:      "Max",
+	True:     "True",
+	False:    "False",
+	Inf:      "Inf",
+	NAN:      "NAN",
 }
 
 var _table_Name_Lookup = map[string]Name{
-	"unknown": Unknown,
-	"int32": Int32,
-	"int64": Int64,
-	"uint32": UInt32,
-	"uint64": UInt64,
-	"sint32": SInt32,
-	"sint64": SInt64,
-	"fixed32": Fixed32,
-	"fixed64": Fixed64,
+	"unknown":  Unknown,
+	"int32":    Int32,
+	"int64":    Int64,
+	"uint32":   UInt32,
+	"uint64":   UInt64,
+	"sint32":   SInt32,
+	"sint64":   SInt64,
+	"fixed32":  Fixed32,
+	"fixed64":  Fixed64,
 	"sfixed32": SFixed32,
 	"sfixed64": SFixed64,
-	"float": Float,
-	"double": Double,
-	"bool": Bool,
-	"string": String,
-	"bytes": Bytes,
-	"map": Map,
-	"max": Max,
-	"true": True,
-	"false": False,
-	"inf": Inf,
-	"nan": NAN,
+	"float":    Float,
+	"double":   Double,
+	"bool":     Bool,
+	"string":   String,
+	"bytes":    Bytes,
+	"map":      Map,
+	"max":      Max,
+	"true":     True,
+	"false":    False,
+	"inf":      Inf,
+	"nan":      NAN,
 }
-
-var _table_Name_All = [...]Name{
-	Unknown,
-	Int32,
-	Int64,
-	UInt32,
-	UInt64,
-	SInt32,
-	SInt64,
-	Fixed32,
-	Fixed64,
-	SFixed32,
-	SFixed64,
-	Float,
-	Double,
-	Bool,
-	String,
-	Bytes,
-	Map,
-	Max,
-	True,
-	False,
-	Inf,
-	NAN,
-}
+var _ iter.Seq[int] // Mark iter as used.

@@ -5,10 +5,10 @@ package {{.Package}}
 {{with .YAML -}}
 import (
 	"fmt"
+
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
-var _ iter.Seq[int] // Mark iter as used.
 {{range $_, $e := .}}
 {{makeDocs $e.Docs "" -}}
 type {{$e.Name}} {{$e.Type}}
@@ -49,11 +49,11 @@ func {{$m.Name}}(s string) {{$e.Name}} {
 {{makeDocs $m.Docs "" -}}
 func {{$m.Name}}() iter.Seq[{{$e.Name}}] {
 	return func(yield func({{$e.Name}}) bool) {
-		for _, v := range _table_{{$e.Name}}_{{$m.Name}} {
-			if !yield(v) {
-				return
-			}
+		{{range $m.Ranges -}}
+		for i := {{.Start}}; i < {{.End}}; i++ {
+			if !yield({{$e.Name}}(i)) { return }
 		}
+		{{- end}}
 	}
 }
 {{end -}}{{- end -}}
@@ -81,12 +81,7 @@ var _table_{{$e.Name}}_{{$m.Name}} = map[string]{{$e.Name}}{
 {{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{printf "%q" .String}}: {{.Name}},
 {{end -}}
 }
-{{else if eq $m.Kind "all"}}
-var _table_{{$e.Name}}_{{$m.Name}} = [...]{{$e.Name}}{
-{{range $e.Values -}}
-{{- with .Alias}}{{continue}}{{end -}}
-{{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}},
-{{end -}}
-}
 {{end -}}{{- end -}}
 {{- end -}}{{- end -}}
+
+var _ iter.Seq[int] // Mark iter as used.

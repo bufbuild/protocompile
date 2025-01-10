@@ -18,22 +18,21 @@ package token
 
 import (
 	"fmt"
+
 	"github.com/bufbuild/protocompile/internal/iter"
 )
-
-var _ iter.Seq[int] // Mark iter as used.
 
 // Kind identifies what kind of token a particular [Token] is.
 type Kind byte
 
 const (
 	Unrecognized Kind = iota // Unrecognized garbage in the input file.
-	Space // Non-comment contiguous whitespace.
-	Comment // A single comment.
-	Ident // An identifier.
-	String // A string token. May be a non-leaf for non-contiguous quoted strings.
-	Number // A run of digits that is some kind of number.
-	Punct // Some punctuation. May be a non-leaf for delimiters like {}.
+	Space                    // Non-comment contiguous whitespace.
+	Comment                  // A single comment.
+	Ident                    // An identifier.
+	String                   // A string token. May be a non-leaf for non-contiguous quoted strings.
+	Number                   // A run of digits that is some kind of number.
+	Punct                    // Some punctuation. May be a non-leaf for delimiters like {}.
 )
 
 // String implements [fmt.Stringer].
@@ -54,20 +53,21 @@ func (v Kind) GoString() string {
 
 var _table_Kind_String = [...]string{
 	Unrecognized: "Unrecognized",
-	Space: "Space",
-	Comment: "Comment",
-	Ident: "Ident",
-	String: "String",
-	Number: "Number",
-	Punct: "Punct",
+	Space:        "Space",
+	Comment:      "Comment",
+	Ident:        "Ident",
+	String:       "String",
+	Number:       "Number",
+	Punct:        "Punct",
 }
 
 var _table_Kind_GoString = [...]string{
 	Unrecognized: "Unrecognized",
-	Space: "Space",
-	Comment: "Comment",
-	Ident: "Ident",
-	String: "String",
-	Number: "Number",
-	Punct: "Punct",
+	Space:        "Space",
+	Comment:      "Comment",
+	Ident:        "Ident",
+	String:       "String",
+	Number:       "Number",
+	Punct:        "Punct",
 }
+var _ iter.Seq[int] // Mark iter as used.
