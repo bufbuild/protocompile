@@ -29,7 +29,6 @@ import (
 type Type struct {
 	withContext
 
-	// This is either a pointer into an arena, *or* into ir.primitives.
 	raw *rawType
 }
 
@@ -47,6 +46,8 @@ type rawType struct {
 	isEnum          bool
 }
 
+// primitiveCtx represents a special file that defines all of the primitive
+// types.
 var primitiveCtx = func() *Context {
 	ctx := new(Context)
 	ctx.intern = new(intern.Table)

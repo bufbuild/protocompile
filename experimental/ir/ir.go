@@ -54,9 +54,8 @@ type Context struct {
 		fields   arena.Arena[rawField]
 		oneofs   arena.Arena[rawOneof]
 		options  arena.Arena[rawOption]
-		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
-		arrays   arena.Arena[[]rawValueBits]
+		arrays   arena.Arena[[]rawValue]
 	}
 }
 

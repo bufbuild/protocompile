@@ -31,12 +31,12 @@ const (
 	Unknown Kind = iota
 
 	// The field is singular and presence is a distinct state; corresponds to
-	// fields marked as "optional".
+	// fields marked as "optional", for example.
 	Explicit
 
 	// The field is singular and presence is equivalent to the field having its
 	// zero value. This corresponds to a non-message field not marked "optional"
-	// in proto3.
+	// in proto3, for example.
 	Implicit
 
 	// The field is not optional; it is always serialized, and an error is raised
