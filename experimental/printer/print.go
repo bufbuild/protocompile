@@ -70,6 +70,10 @@ type printer struct {
 	depth int
 }
 
+// TODO
+func (p *printer) print() {
+}
+
 func (p *printer) File(file ast.File) {
 	stream := file.Context().Stream()
 	stream.Naturals()(func(tok token.Token) bool {

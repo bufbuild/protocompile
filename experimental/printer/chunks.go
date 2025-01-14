@@ -16,6 +16,8 @@ type chunk struct {
 	blockIndex   uint32
 	block        *block
 	hardSplit    bool //new line
+	double       bool // if hardSplit == false, then this can't be true
+	softSplit    bool
 }
 
 // TODO: rule is...
@@ -65,32 +67,65 @@ func blockForDecl(decl ast.DeclAny) block {
 }
 
 func syntaxBlock(decl ast.DeclSyntax) block {
-	var syntaxChunk chunk
-	// Get the cursor for the entire syntax block stream
-	syntaxChunk.tokens = getTokens(decl.Context().Stream().Cursor(), decl.Keyword(), decl.Semicolon())
+	var chunks []chunk
+	// Get all the tokens from the last skippable to the start of the decl
+	// Create chunks for these with rules
+	cursor := decl.Context().Stream().Cursor()
+	preTokens := getTokensFromLastSkippable(cursor, decl.Keyword())
+	for _, pre := range preTokens {
+		// TODO create chunks
+		chunks = append(chunks, chunk{
+			tokens:    []token.Token{pre},
+			softSplit: true,
+		})
+	}
+	// Create a chunk for the declaration itself
+	declTokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
+	chunks = append(chunks, chunk{
+		tokens:    declTokens,
+		hardSplit: true,
+		double:    true,
+	})
 
-	// We want a new line after the syntax declaration.
-	syntaxChunk.hardSplit = true
+	// TODO: rules
 
 	// There is only a single chunk in the syntax block, since we expect the syntax declaration
 	// to only be in a single line.
-	return block{chunks: []chunk{syntaxChunk}}
+	return block{chunks: chunks}
+	// chunks for comments,
+	// chunk for decl (keyword, space, equal, space, value, semicolon)
 }
 
-// TODO: getTokens takes a cursor and returns all tokens up to and including the provided end.
-func getTokens(cursor *token.Cursor, start, end token.Token) []token.Token {
+func getTokensFromLastSkippable(cursor *token.Cursor, start token.Token) []token.Token {
 	cursor.Seek(start.ID())
 	tok := cursor.UnpopSkippable()
 	for tok.Kind().IsSkippable() {
 		tok = cursor.UnpopSkippable()
 	}
 	var tokens []token.Token
-	pop := cursor.PopSkippable()
-	for pop.ID() != end.ID() {
-		pop = cursor.PopSkippable()
-		tokens = append(tokens, pop)
+	// This is the token we hit
+	tok = cursor.PopSkippable()
+	for {
+		tok = cursor.PopSkippable()
+		if tok.ID() == start.ID() {
+			break
+		}
+		tokens = append(tokens, tok)
 	}
 	return tokens
+}
+
+func getTokensFromStartToEndInclusive(cursor *token.Cursor, start, end token.Token) []token.Token {
+	var tokens []token.Token
+	tok := cursor.Seek(start.ID())
+	for {
+		tok = cursor.PopSkippable()
+		if tok.ID() == end.ID() {
+			break
+		}
+		tokens = append(tokens, tok)
+	}
+	return append(tokens, end)
 }
 
 func getLastTokenForExpr(exprAny ast.ExprAny) token.Token {
@@ -123,12 +158,14 @@ func blocksToString(blocks []block) string {
 	var output string
 	for _, block := range blocks {
 		for _, chunk := range block.chunks {
+			fmt.Println("@@@@@@@@@")
 			for _, token := range chunk.tokens {
 				fmt.Println("!!!!!!!!!!!!!")
 				fmt.Println(token.Text(), token.ID(), token.Kind().IsSkippable())
 				fmt.Println("!!!!!!!!!!!!!")
 				output += token.Text()
 			}
+			fmt.Println("@@@@@@@@@")
 		}
 	}
 	return output

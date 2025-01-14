@@ -1,9 +1,10 @@
-/* lksjdflkjsdf
-lskdjflkjsldjfksldjfsdf
-lsdjfklklksdjf
-*/
 message Foo {};
 
 
+/*
+lksjdflkjsdf
+lskdjflkjsldjfksldjfsdf
+lsdjfklklksdjf
+*/
            syntax=           "proto3";
 
