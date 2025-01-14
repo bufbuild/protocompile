@@ -29,6 +29,19 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
+// TODO: make this better later.
+func TestChunksParsingRoundTrip(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile("testdata/foo.proto")
+	require.NoError(t, err)
+	text := string(data)
+
+	file, ok := parser.Parse(report.NewFile("testdata/foo.proto", text), &report.Report{Tracing: 10})
+	require.True(t, ok)
+	blocks := fileToBlocks(file)
+	assert.Equal(t, text, blocksToString(blocks))
+}
+
 func TestASTRoundTrips(t *testing.T) {
 	t.Parallel()
 	err := filepath.Walk("../../internal/testdata", func(path string, _ os.FileInfo, err error) error {

@@ -139,6 +139,31 @@ func (c *Cursor) PopSkippable() Token {
 	return tok
 }
 
+// UnpopSkippable returns the last skippable token in the sequence, and decrements the cursor.
+func (c *Cursor) UnpopSkippable() Token {
+	if c == nil {
+		return Zero
+	}
+	if c.IsSynthetic() {
+		c.idx--
+		if c.idx < 0 {
+			return Zero
+		}
+		// TODO: look into the synthetic stream to find the token with the provided id
+		// Set that to c.idx
+		return c.stream[c.idx].In(c.Context())
+	}
+	impl := c.start.In(c.Context()).nat()
+	if impl.IsClose() && impl.Offset() > 0 {
+		c.start -= ID(impl.Offset())
+	}
+	c.start--
+	if c.start <= 0 {
+		return Zero
+	}
+	return c.start.In(c.Context())
+}
+
 // Peek returns the next token in the sequence, if there is one.
 // This automatically skips past skippable tokens.
 //
@@ -161,6 +186,37 @@ func (c *Cursor) Pop() Token {
 	}
 
 	return c.PopSkippable()
+}
+
+// Unpop returns the previous non-skippable token in the sequence, and decrements the cursor.
+func (c *Cursor) Unpop() Token {
+	for {
+		next := c.UnpopSkippable()
+		if next.IsZero() || !next.Kind().IsSkippable() {
+			return next
+		}
+	}
+}
+
+// TODO: Seek ...
+func (c *Cursor) Seek(id ID) Token {
+	if c == nil {
+		return Zero
+	}
+	if c.IsSynthetic() {
+		if c.idx == len(c.stream) {
+			return Zero
+		}
+		// TODO: look into the synthetic stream to find the token with the provided id
+		// Set that to c.idx
+		panic("TODO")
+		// return c.stream[c.idx].In(c.Context())
+	}
+	c.start = id
+	if c.start >= c.end {
+		return Zero
+	}
+	return c.start.In(c.Context())
 }
 
 // Iter returns an iterator over the remaining tokens in the cursor.
