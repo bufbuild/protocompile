@@ -26,9 +26,11 @@ type splitKind int8
 
 const (
 	splitKindUnknown = iota
-	// splitKindSoft represents a soft split, which means that if the tokens of the chunk do
-	// not fit within the bounds of a single line, it may be split, with a newline to follow.
-	// If a chunk with a soft split is set, but not split, then a space may follow, ... TODO
+	// splitKindSoft represents a soft split, which means that when the block containing the
+	// chunk is evaluated, this chunk may be split to a hard split.
+	//
+	// If the chunk remains a soft split, spaceWhenUnsplit will add a space after the chunk if
+	// true and will add nothing if false. spaceWhenUnsplit is ignored for all other split kinds.
 	splitKindSoft
 	// splitKindHard represents a hard split, which means the chunk must be followed by a newline.
 	splitKindHard
@@ -42,10 +44,11 @@ const (
 //
 // A chunk is preformatted.
 type chunk struct {
-	text         string
-	ident        uint32
-	nestingLevel uint32
-	splitKind    splitKind
+	text             string
+	ident            uint32
+	nestingLevel     uint32
+	splitKind        splitKind
+	spaceWhenUnsplit bool
 }
 
 // block is an ordered slice of chunks. A block represents
@@ -94,7 +97,6 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 	var text string
 	if applyFormatting {
 		// Create a formatted text for a syntax declaration
-		// TODO: make a nicer thing to parse the Value
 		text = decl.Keyword().Text() + " " + decl.Equals().Text() + " " + textForExprAny(decl.Value()) + decl.Semicolon().Text()
 	} else {
 		// Grab all tokens between the start and end of the syntax declaration
@@ -172,8 +174,9 @@ func parsePrefixChunks(
 			}
 		case token.Comment:
 			chunks = append(chunks, chunk{
-				text:      t.Text(),
-				splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+				text:             t.Text(),
+				splitKind:        splitKindBasedOnNextToken(cursor.PeekSkippable()),
+				spaceWhenUnsplit: true,
 			})
 		case token.Unrecognized:
 			// TODO: figure out what to do with unrecognized tokens.
@@ -191,25 +194,6 @@ func splitKindBasedOnNextToken(peekNext token.Token) splitKind {
 		return splitKindHard
 	}
 	return splitKindSoft
-}
-
-func getTokensFromLastSkippable(cursor *token.Cursor, start token.Token) []token.Token {
-	cursor.Seek(start.ID())
-	tok := cursor.UnpopSkippable()
-	for tok.Kind().IsSkippable() {
-		tok = cursor.UnpopSkippable()
-	}
-	var tokens []token.Token
-	// This is the token we hit
-	tok = cursor.PopSkippable()
-	for {
-		tok = cursor.PopSkippable()
-		if tok.ID() == start.ID() {
-			break
-		}
-		tokens = append(tokens, tok)
-	}
-	return tokens
 }
 
 func getTokensFromStartToEndInclusive(cursor *token.Cursor, start, end token.Token) []token.Token {

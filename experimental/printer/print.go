@@ -91,8 +91,9 @@ func (p *printer) printChunk(c chunk) {
 	case splitKindDouble:
 		p.WriteString("\n\n")
 	case splitKindSoft:
-		// TODO: figure out how to deal with this -- does this need to be processed from
-		// based on the block? Probably.
+		if c.spaceWhenUnsplit {
+			p.WriteString(" ")
+		}
 	}
 }
 
