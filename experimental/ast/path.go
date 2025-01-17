@@ -230,7 +230,7 @@ func (p PathComponent) Separator() token.Token {
 	return p.separator.In(p.Context())
 }
 
-// Name is the token that represents this component's name. THis is either an
+// Name is the token that represents this component's name. This is either an
 // identifier or a (...) token containing a path.
 func (p PathComponent) Name() token.Token {
 	return p.name.In(p.Context())

@@ -95,7 +95,7 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 	if applyFormatting {
 		// Create a formatted text for a syntax declaration
 		// TODO: make a nicer thing to parse the Value
-		text = decl.Keyword().Text() + " " + decl.Equals().Text() + " " + decl.Value().AsLiteral().Text() + decl.Semicolon().Text()
+		text = decl.Keyword().Text() + " " + decl.Equals().Text() + " " + textForExprAny(decl.Value()) + decl.Semicolon().Text()
 	} else {
 		// Grab all tokens between the start and end of the syntax declaration
 		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
@@ -112,6 +112,36 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 	})
 	// TODO: how do we deal with trailing comments, e.g. syntax="proto3"; // blahblahblah
 	return block{chunks: chunks}
+}
+
+func textForExprAny(exprAny ast.ExprAny) string {
+	switch exprAny.Kind() {
+	case ast.ExprKindInvalid:
+		// TODO: figure out how to handle invalid expressions
+		return ""
+	case ast.ExprKindError:
+		// TODO: figure out how to handle error expressions
+		return ""
+	case ast.ExprKindLiteral:
+		return exprAny.AsLiteral().Text()
+	case ast.ExprKindPrefixed:
+		prefixed := exprAny.AsPrefixed()
+		// TODO: figure out if we need to space the prefix
+		return prefixed.Prefix().String() + textForExprAny(prefixed.Expr())
+	case ast.ExprKindPath:
+		return exprAny.AsPath().AsIdent().Text()
+	case ast.ExprKindRange:
+		return "" // TODO: implement
+	case ast.ExprKindArray:
+		return "" // TODO: implement
+	case ast.ExprKindDict:
+		return "" // TODO: implement
+	case ast.ExprKindField:
+		return "" // TODO: implement
+	default:
+		// This should never happen
+		panic("ah")
+	}
 }
 
 func parsePrefixChunks(
