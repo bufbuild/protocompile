@@ -16,6 +16,7 @@ package token
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -149,8 +150,6 @@ func (c *Cursor) UnpopSkippable() Token {
 		if c.idx < 0 {
 			return Zero
 		}
-		// TODO: look into the synthetic stream to find the token with the provided id
-		// Set that to c.idx
 		return c.stream[c.idx].In(c.Context())
 	}
 	impl := c.start.In(c.Context()).nat()
@@ -207,10 +206,8 @@ func (c *Cursor) Seek(id ID) Token {
 		if c.idx == len(c.stream) {
 			return Zero
 		}
-		// TODO: look into the synthetic stream to find the token with the provided id
-		// Set that to c.idx
-		panic("TODO")
-		// return c.stream[c.idx].In(c.Context())
+		c.idx = slices.IndexFunc(c.stream, func(element ID) bool { return element == id })
+		return c.stream[c.idx].In(c.Context())
 	}
 	c.start = id
 	if c.start >= c.end {

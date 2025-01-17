@@ -38,8 +38,10 @@ func TestChunksParsingRoundTrip(t *testing.T) {
 
 	file, ok := parser.Parse(report.NewFile("testdata/foo.proto", text), &report.Report{Tracing: 10})
 	require.True(t, ok)
-	blocks := fileToBlocks(file)
-	assert.Equal(t, text, blocksToString(blocks))
+
+	p := printer{}
+	p.printFile(file)
+	assert.Equal(t, text, p.String())
 }
 
 func TestASTRoundTrips(t *testing.T) {

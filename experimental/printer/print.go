@@ -70,8 +70,30 @@ type printer struct {
 	depth int
 }
 
-// TODO
-func (p *printer) print() {
+// TODO: this sucks.
+func (p *printer) printFile(file ast.File) {
+	// TODO: applyFormatting = true; we need to make this configurable
+	for _, block := range fileToBlocks(file, true) {
+		// TODO: calculate your splits
+		// Format each block by applying all rules on the chunks, then writing the token text
+		// to the buffer.
+		for _, chunk := range block.chunks {
+			p.printChunk(chunk)
+		}
+	}
+}
+
+func (p *printer) printChunk(c chunk) {
+	p.WriteString(c.text)
+	switch c.splitKind {
+	case splitKindHard:
+		p.WriteString("\n")
+	case splitKindDouble:
+		p.WriteString("\n\n")
+	case splitKindSoft:
+		// TODO: figure out how to deal with this -- does this need to be processed from
+		// based on the block? Probably.
+	}
 }
 
 func (p *printer) File(file ast.File) {

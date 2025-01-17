@@ -1,10 +1,10 @@
-message Foo {};
+message Foo {}
+
 
 
 /*
-lksjdflkjsdf
-lskdjflkjsldjfksldjfsdf
-lsdjfklklksdjf
+multi line comment
+with new line after
 */
-           syntax=           "proto3";
 
+syntax = "proto3"; // delete

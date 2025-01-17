@@ -1,60 +1,82 @@
 package printer
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// TODO: chunk is...
+// TODO: I am very bad at writing/explaining things. Here are some notes to convert into
+// proper docs later.
+//
+// There is actually no reason not to pre-apply the rules for the chunks before inserting
+// to the blocks. This makes sense because from the block's perspective, we only care about
+// manipulating the chunks -- the chunks should already be pre-formatted.
+//
+// We can basically make this application process configurable for the AST printer.
+//
+// # Glossary
+//
+// prefix chunks: these are the chunks from the last non-skippable token to the starting token
+// of this current declaration. This is basically all the whitspace and/or comments between
+// the start of this current declaration and the end of the last declaration.
+
+type splitKind int8
+
+const (
+	splitKindUnknown = iota
+	// splitKindSoft represents a soft split, which means that if the tokens of the chunk do
+	// not fit within the bounds of a single line, it may be split, with a newline to follow.
+	// If a chunk with a soft split is set, but not split, then a space may follow, ... TODO
+	splitKindSoft
+	// splitKindHard represents a hard split, which means the chunk must be followed by a newline.
+	splitKindHard
+	// splitKindDouble represents a double hard split, which means the chunk must be followed by
+	// two newlines.
+	splitKindDouble
+)
+
+// chunk represents a line of text with some configurations around indentation and splitting
+// (what whitespace should follow, if any).
+//
+// A chunk is preformatted.
 type chunk struct {
-	tokens       []token.Token
-	rule         rule
+	text         string
 	ident        uint32
 	nestingLevel uint32
-	blockIndex   uint32
-	block        *block
-	hardSplit    bool //new line
-	double       bool // if hardSplit == false, then this can't be true
-	softSplit    bool
+	splitKind    splitKind
 }
 
-// TODO: rule is...
-type rule struct {
-	// The token IDs to keep, ordered
-	keep       []token.ID
-	whitespace []insertWhitespace
-}
-
-// TODO: insertWhitespace is...
-type insertWhitespace struct {
-	// The ID of the token to insert the whitepsace after.
-	after token.ID
-	// The kind of whitespace to insert.
-	token token.Token
-}
-
-// TODO: block is...
+// block is an ordered slice of chunks. A block represents
 type block struct {
 	chunks []chunk
+	// All chunks here have splitKind = soft
+	// If I am splitting chunk indx = key, then i must also split chunk indx = value
+	// map[int]int:
+	// {
+	//    0: 3,
+	//    1: 2,
+	// }
+	softSplitDeps map[int]int
 }
 
-func fileToBlocks(file ast.File) []block {
+func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	decls := file.Decls()
 	var blocks []block
 	for i := 0; i < decls.Len(); i++ {
 		decl := decls.At(i)
-		blocks = append(blocks, blockForDecl(decl))
+		blocks = append(blocks, blockForDecl(decl, applyFormatting))
 	}
 	return blocks
 }
 
-func blockForDecl(decl ast.DeclAny) block {
+// TODO: take ident/nesting levels
+func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 	case ast.DeclKindSyntax:
-		return syntaxBlock(decl.AsSyntax())
+		return syntaxBlock(decl.AsSyntax(), applyFormatting)
 	case ast.DeclKindPackage:
 	case ast.DeclKindImport:
 	case ast.DeclKindDef:
@@ -66,34 +88,79 @@ func blockForDecl(decl ast.DeclAny) block {
 	return block{}
 }
 
-func syntaxBlock(decl ast.DeclSyntax) block {
-	var chunks []chunk
-	// Get all the tokens from the last skippable to the start of the decl
-	// Create chunks for these with rules
+func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 	cursor := decl.Context().Stream().Cursor()
-	preTokens := getTokensFromLastSkippable(cursor, decl.Keyword())
-	for _, pre := range preTokens {
-		// TODO create chunks
-		chunks = append(chunks, chunk{
-			tokens:    []token.Token{pre},
-			softSplit: true,
-		})
+	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+	var text string
+	if applyFormatting {
+		// Create a formatted text for a syntax declaration
+		// TODO: make a nicer thing to parse the Value
+		text = decl.Keyword().Text() + " " + decl.Equals().Text() + " " + decl.Value().AsLiteral().Text() + decl.Semicolon().Text()
+	} else {
+		// Grab all tokens between the start and end of the syntax declaration
+		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
+			text += t.Text()
+		}
 	}
-	// Create a chunk for the declaration itself
-	declTokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
+	cursor.Seek(decl.Semicolon().ID())
+	// Seek sets the cursor to the given ID, so the first thing we pop is the thing we set.
+	// TODO: we need to rethink some of the seek/unpop behaviours.
+	cursor.PopSkippable()
 	chunks = append(chunks, chunk{
-		tokens:    declTokens,
-		hardSplit: true,
-		double:    true,
+		text:      text,
+		splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
 	})
-
-	// TODO: rules
-
-	// There is only a single chunk in the syntax block, since we expect the syntax declaration
-	// to only be in a single line.
+	// TODO: how do we deal with trailing comments, e.g. syntax="proto3"; // blahblahblah
 	return block{chunks: chunks}
-	// chunks for comments,
-	// chunk for decl (keyword, space, equal, space, value, semicolon)
+}
+
+func parsePrefixChunks(
+	cursor *token.Cursor,
+	until token.Token,
+	applyFormatting bool,
+) []chunk {
+	// Set the cursor to until. This is where we want to end.
+	cursor.Seek(until.ID())
+	// Walk backwards until we hit the last skippable token
+	tok := cursor.UnpopSkippable()
+	for tok.Kind().IsSkippable() {
+		tok = cursor.UnpopSkippable()
+	}
+	var chunks []chunk
+	t := cursor.PopSkippable()
+	for t.ID() != until.ID() {
+		switch t.Kind() {
+		case token.Space:
+			// Only create a chunk for spaces if formatting is not applied.
+			// Otherwise, extraneous whitespace is dropped when formatting, so
+			// no chunk is added.
+			if !applyFormatting {
+				chunks = append(chunks, chunk{
+					text:      t.Text(),
+					splitKind: splitKindSoft,
+				})
+			}
+		case token.Comment:
+			chunks = append(chunks, chunk{
+				text:      t.Text(),
+				splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+			})
+		case token.Unrecognized:
+			// TODO: figure out what to do with unrecognized tokens.
+		}
+		t = cursor.PopSkippable()
+	}
+	return chunks
+}
+
+// To determine the split kind for a chunk, we check the next token. If the
+// next token starts with a newline, then we must preserve that and set to a hardsplit.
+// Otherwise it's a soft split.
+func splitKindBasedOnNextToken(peekNext token.Token) splitKind {
+	if strings.HasPrefix(peekNext.Text(), "\n") {
+		return splitKindHard
+	}
+	return splitKindSoft
 }
 
 func getTokensFromLastSkippable(cursor *token.Cursor, start token.Token) []token.Token {
@@ -126,47 +193,4 @@ func getTokensFromStartToEndInclusive(cursor *token.Cursor, start, end token.Tok
 		tokens = append(tokens, tok)
 	}
 	return append(tokens, end)
-}
-
-func getLastTokenForExpr(exprAny ast.ExprAny) token.Token {
-	switch exprAny.Kind() {
-	case ast.ExprKindInvalid:
-		panic("ah!")
-	case ast.ExprKindError:
-		panic("unimplemented")
-	case ast.ExprKindLiteral:
-		return exprAny.AsLiteral().Token
-	case ast.ExprKindPrefixed:
-		panic("unimplemented")
-	case ast.ExprKindPath:
-		panic("unimplemented")
-	case ast.ExprKindRange:
-		panic("unimplemented")
-	case ast.ExprKindArray:
-		panic("unimplemented")
-	case ast.ExprKindDict:
-		panic("unimplemented")
-	case ast.ExprKindField:
-		panic("unimplemented")
-	default:
-		panic("ah!")
-	}
-}
-
-// TODO: for testing only, get rid of this later
-func blocksToString(blocks []block) string {
-	var output string
-	for _, block := range blocks {
-		for _, chunk := range block.chunks {
-			fmt.Println("@@@@@@@@@")
-			for _, token := range chunk.tokens {
-				fmt.Println("!!!!!!!!!!!!!")
-				fmt.Println(token.Text(), token.ID(), token.Kind().IsSkippable())
-				fmt.Println("!!!!!!!!!!!!!")
-				output += token.Text()
-			}
-			fmt.Println("@@@@@@@@@")
-		}
-	}
-	return output
 }
