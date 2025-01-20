@@ -24,6 +24,11 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
+const (
+	defaultLineLimit = 120
+	defaultIndent    = "  " // 2 spaces
+)
+
 // Print prints the file to the given writer.
 //
 // TODO: this is a placeholder, we need to implement this.
@@ -70,20 +75,21 @@ type printer struct {
 	depth int
 }
 
-// TODO: this sucks.
 func (p *printer) printFile(file ast.File) {
 	// TODO: applyFormatting = true; we need to make this configurable
 	for _, block := range fileToBlocks(file, true) {
-		// TODO: calculate your splits
-		// Format each block by applying all rules on the chunks, then writing the token text
-		// to the buffer.
+		block.calculateSplits(defaultLineLimit)
 		for _, chunk := range block.chunks {
 			p.printChunk(chunk)
 		}
 	}
 }
 
+// TODO: make indentSize configurable
 func (p *printer) printChunk(c chunk) {
+	for i := uint32(0); i < c.nestingLevel; i++ {
+		p.WriteString(defaultIndent)
+	}
 	p.WriteString(c.text)
 	switch c.splitKind {
 	case splitKindHard:

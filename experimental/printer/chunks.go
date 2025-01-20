@@ -45,7 +45,6 @@ const (
 // A chunk is preformatted.
 type chunk struct {
 	text             string
-	ident            uint32
 	nestingLevel     uint32
 	splitKind        splitKind
 	spaceWhenUnsplit bool
@@ -54,6 +53,8 @@ type chunk struct {
 // block is an ordered slice of chunks. A block represents
 type block struct {
 	chunks []chunk
+	// TODO: improve this explanation
+	//
 	// All chunks here have splitKind = soft
 	// If I am splitting chunk indx = key, then i must also split chunk indx = value
 	// map[int]int:
@@ -74,7 +75,7 @@ func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	return blocks
 }
 
-// TODO: take ident/nesting levels
+// TODO: take indent nesting levels
 func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
@@ -207,4 +208,45 @@ func getTokensFromStartToEndInclusive(cursor *token.Cursor, start, end token.Tok
 		tokens = append(tokens, tok)
 	}
 	return append(tokens, end)
+}
+
+// TODO: improve this explanation, lol.
+// Calculates the splits for the chunks in the block. If the chunks in the block exceed the
+// line limit, then chunks that are softSplits are split.
+func (b block) calculateSplits(lineLimit int) {
+	var cost int
+	var outermostSplittableChunk int
+	var outermostSplittableChunkSet bool
+	for i, c := range b.chunks {
+		if chunkCost := len(c.text) - lineLimit; chunkCost > 0 {
+			cost += chunkCost
+		}
+		if c.splitKind == splitKindSoft && !outermostSplittableChunkSet {
+			outermostSplittableChunk = i
+			outermostSplittableChunkSet = true
+		}
+	}
+	if cost > 0 {
+		// No more splits are available, return as is.
+		if !outermostSplittableChunkSet {
+			return
+		}
+		b.chunks[outermostSplittableChunk].splitKind = splitKindHard
+		if end, ok := b.softSplitDeps[outermostSplittableChunk]; ok {
+			// If there is an end for this split, then we need to set the end to a hard split.
+			// And we need to set the first indent.
+			b.chunks[end].splitKind = splitKindHard
+			var lastSeen chunk
+			for _, c := range b.chunks[outermostSplittableChunk+1 : end] {
+				if c.splitKind == splitKindSoft && lastSeen.splitKind != splitKindSoft {
+					c.nestingLevel += 1
+				}
+				if c.splitKind == splitKindHard {
+					c.nestingLevel += 1
+				}
+				lastSeen = c
+			}
+		}
+		b.calculateSplits(lineLimit)
+	}
 }
