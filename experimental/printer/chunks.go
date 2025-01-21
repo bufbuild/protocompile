@@ -16,8 +16,6 @@ import (
 //
 // We can basically make this application process configurable for the AST printer.
 //
-// # Glossary
-//
 // prefix chunks: these are the chunks from the last non-skippable token to the starting token
 // of this current declaration. This is basically all the whitspace and/or comments between
 // the start of this current declaration and the end of the last declaration.
@@ -37,6 +35,10 @@ const (
 	// splitKindDouble represents a double hard split, which means the chunk must be followed by
 	// two newlines.
 	splitKindDouble
+	// TODO: implement
+	// splitKindNever represents a chunk that must never be split. This is treated similar to
+	// a soft split, in that it will respect spaceWhenUnsplit.
+	splitKindNever
 )
 
 // chunk represents a line of text with some configurations around indentation and splitting
@@ -79,12 +81,17 @@ func fileToBlocks(file ast.File, applyFormatting bool) []block {
 func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
+		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
 		return syntaxBlock(decl.AsSyntax(), applyFormatting)
 	case ast.DeclKindPackage:
+		return packageBlock(decl.AsPackage(), applyFormatting)
 	case ast.DeclKindImport:
+		return importBlock(decl.AsImport(), applyFormatting)
 	case ast.DeclKindDef:
+		// return defBlock(decl.AsDef(), applyFormatting)
 	case ast.DeclKindBody:
+		// TODO: figure out how to handle this
 	case ast.DeclKindRange:
 	default:
 		panic("ah")
@@ -93,6 +100,7 @@ func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 }
 
 func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
+	// TODO: should we just pass a top-level cursor for the file?
 	cursor := decl.Context().Stream().Cursor()
 	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
 	var text string
@@ -117,6 +125,90 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 	return block{chunks: chunks}
 }
 
+func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
+	// TODO: should we just pass a top-level cursor for the file?
+	cursor := decl.Context().Stream().Cursor()
+	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+	var text string
+	if applyFormatting {
+		text = decl.Keyword().Text() + " " + textForPath(decl.Path()) + decl.Semicolon().Text()
+	} else {
+		// Grab all tokens between the start and the end of the syntax declaration
+		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
+			text += t.Text()
+		}
+	}
+	cursor.Seek(decl.Semicolon().ID())
+	cursor.PopSkippable()
+	chunks = append(chunks, chunk{
+		text:      text,
+		splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+	})
+	return block{chunks: chunks}
+}
+
+func importBlock(decl ast.DeclImport, applyFormatting bool) block {
+	// TODO: should we just pass a top-level cursor for the file?
+	cursor := decl.Context().Stream().Cursor()
+	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+	var text string
+	if applyFormatting {
+		// TODO: handle empty modifier
+		text = decl.Keyword().Text() + " " + decl.Modifier().Text() + " " + textForExprAny(decl.ImportPath()) + " " + decl.Semicolon().Text()
+	} else {
+		// Grab all tokens between the start and the end of the syntax declaration
+		// TODO: we should actually grab all the tokens for the formatting version also, in case there are
+		// comments in between. We only want to drop the whitespace.
+		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
+			text += t.Text()
+		}
+	}
+	cursor.Seek(decl.Semicolon().ID())
+	cursor.PopSkippable()
+	chunks = append(chunks, chunk{
+		text:      text,
+		splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+	})
+	return block{chunks: chunks}
+}
+
+func defBlock(decl ast.DeclDef, applyFormatting bool) block {
+	// TODO: should we just pass a top-level cursor for the file?
+	cursor := decl.Context().Stream().Cursor()
+	// TODO: figure out if this works for all definitions
+	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+	// var text string
+	// Classify the definition type
+	switch decl.Classify() {
+	case ast.DefKindInvalid:
+		// TODO: figure out what to do with invalid definitions
+	case ast.DefKindMessage:
+
+		return block{} // TODO: implement
+	case ast.DefKindEnum:
+		return block{} // TODO: implement
+	case ast.DefKindService:
+		return block{} // TODO: implement
+	case ast.DefKindExtend:
+		return block{} // TODO: implement
+	case ast.DefKindField:
+		return block{} // TODO: implement
+	case ast.DefKindOneof:
+		return block{} // TODO: implement
+	case ast.DefKindGroup:
+		return block{} // TODO: implement
+	case ast.DefKindEnumValue:
+		return block{} // TODO: implement
+	case ast.DefKindMethod:
+		return block{} // TODO: implement
+	default:
+		// This should never happen.
+		panic("ah")
+	}
+	// TODO: add splitDefs
+	return block{chunks: chunks}
+}
+
 func textForExprAny(exprAny ast.ExprAny) string {
 	switch exprAny.Kind() {
 	case ast.ExprKindInvalid:
@@ -132,7 +224,7 @@ func textForExprAny(exprAny ast.ExprAny) string {
 		// TODO: figure out if we need to space the prefix
 		return prefixed.Prefix().String() + textForExprAny(prefixed.Expr())
 	case ast.ExprKindPath:
-		return exprAny.AsPath().AsIdent().Text()
+		return textForPath(exprAny.AsPath().Path)
 	case ast.ExprKindRange:
 		return "" // TODO: implement
 	case ast.ExprKindArray:
@@ -145,6 +237,15 @@ func textForExprAny(exprAny ast.ExprAny) string {
 		// This should never happen
 		panic("ah")
 	}
+}
+
+func textForPath(p ast.Path) string {
+	var text string
+	p.Components(func(pc ast.PathComponent) bool {
+		text += pc.Separator().Text() + pc.Name().Text()
+		return true
+	})
+	return text
 }
 
 func parsePrefixChunks(
@@ -190,6 +291,8 @@ func parsePrefixChunks(
 // To determine the split kind for a chunk, we check the next token. If the
 // next token starts with a newline, then we must preserve that and set to a hardsplit.
 // Otherwise it's a soft split.
+//
+// TODO: we should also inform spaceWhenUnsplit for this
 func splitKindBasedOnNextToken(peekNext token.Token) splitKind {
 	if strings.HasPrefix(peekNext.Text(), "\n") {
 		return splitKindHard

@@ -1,10 +1,13 @@
-message Foo {}
-
-
-
 /*
 multi line comment
 with new line after
 */
 
-syntax = "proto3"; // delete
+syntax = /* comment explaining this */ "proto3";               // trailing comment
+
+package foo.bar ;
+
+message Foo {
+  string id = 1;
+  string foo = 2;
+}

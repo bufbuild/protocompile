@@ -77,28 +77,34 @@ type printer struct {
 
 func (p *printer) printFile(file ast.File) {
 	// TODO: applyFormatting = true; we need to make this configurable
-	for _, block := range fileToBlocks(file, true) {
+	applyFormatting := true
+
+	for _, block := range fileToBlocks(file, applyFormatting) {
 		block.calculateSplits(defaultLineLimit)
 		for _, chunk := range block.chunks {
-			p.printChunk(chunk)
+			p.printChunk(chunk, applyFormatting)
 		}
 	}
 }
 
 // TODO: make indentSize configurable
-func (p *printer) printChunk(c chunk) {
+func (p *printer) printChunk(c chunk, applyFormatting bool) {
 	for i := uint32(0); i < c.nestingLevel; i++ {
 		p.WriteString(defaultIndent)
 	}
 	p.WriteString(c.text)
-	switch c.splitKind {
-	case splitKindHard:
-		p.WriteString("\n")
-	case splitKindDouble:
-		p.WriteString("\n\n")
-	case splitKindSoft:
-		if c.spaceWhenUnsplit {
-			p.WriteString(" ")
+	// In the case where formatting is not applied, we do not want to add whitespace,
+	// we want to use/preserve the user-defined whitespace instead.
+	if applyFormatting {
+		switch c.splitKind {
+		case splitKindHard:
+			p.WriteString("\n")
+		case splitKindDouble:
+			p.WriteString("\n\n")
+		case splitKindSoft, splitKindNever:
+			if c.spaceWhenUnsplit {
+				p.WriteString(" ")
+			}
 		}
 	}
 }
