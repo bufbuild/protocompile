@@ -235,7 +235,7 @@ func Main(config string) error {
 		return err
 	}
 
-	return os.WriteFile(input.Path, formatted, osx.PermAR|osx.PermGW)
+	return os.WriteFile(input.Path, formatted, osx.PermAR|osx.PermAW)
 }
 
 func main() {
