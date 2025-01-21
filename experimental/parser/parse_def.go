@@ -150,8 +150,15 @@ func (p *defParser) parse() ast.DeclDef {
 	if !p.outputs.IsZero() {
 		parseTypeList(p.parser, p.outputs, def.WithSignature().Outputs(), taxa.MethodOuts)
 	} else if !p.outputTy.IsZero() {
+		span := p.outputTy.Span()
 		p.Errorf("missing `(...)` around method return type").Apply(
-			report.Snippetf(p.outputTy, "help: replace this with `(%s)`", p.outputTy.Span().Text()),
+			report.Snippet(span),
+			report.SuggestEdits(
+				span,
+				"insert (...) around the return type",
+				report.Edit{Start: 0, End: 0, Replace: "("},
+				report.Edit{Start: span.Len(), End: span.Len(), Replace: ")"},
+			),
 		)
 		seq.Append(def.WithSignature().Outputs(), p.outputTy)
 	}
