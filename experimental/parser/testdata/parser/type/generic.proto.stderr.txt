@@ -5,5 +5,9 @@ error: unexpected type name in type parameters
    |             ^^^ expected `,`
    |             |
    |             note: assuming a missing `,` here
+  help: add a `,` here
+   | 
+37 |     set<Foo, bar> x13 = 13;
+   |            +               
 
 encountered 1 error
