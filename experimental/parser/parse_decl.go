@@ -121,7 +121,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			in = taxa.Edition
 		}
 
-		eq, err := p.Punct(c, "=", in.In())
+		eq, err := punctParser{
+			parser: p, c: c,
+			want:   "=",
+			where:  in.In(),
+			insert: report.JustifyBetween,
+		}.parse()
 		args.Equals = eq
 		if err != nil {
 			p.Error(err)
@@ -135,7 +140,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		args.Options = tryParseOptions(p, c, in)
 
-		args.Semicolon, err = p.Punct(c, ";", in.After())
+		args.Semicolon, err = punctParser{
+			parser: p, c: c,
+			want:   ";",
+			where:  in.After(),
+			insert: report.JustifyLeft,
+		}.parse()
 		// Only diagnose a missing semicolon if we successfully parsed some
 		// kind of partially-valid expression. Otherwise, we might diagnose
 		// the same extraneous/missing ; twice.
@@ -169,8 +179,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		}
 
 		args.Options = tryParseOptions(p, c, in)
-
-		semi, err := p.Punct(c, ";", taxa.Package.After())
+		semi, err := punctParser{
+			parser: p, c: c,
+			want:   ";",
+			where:  taxa.Package.After(),
+			insert: report.JustifyLeft,
+		}.parse()
 		args.Semicolon = semi
 		if err != nil {
 			p.Error(err)
@@ -218,7 +232,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		args.Options = tryParseOptions(p, c, in)
 
-		semi, err := p.Punct(c, ";", in.After())
+		semi, err := punctParser{
+			parser: p, c: c,
+			want:   ";",
+			where:  in.After(),
+			insert: report.JustifyLeft,
+		}.parse()
 		args.Semicolon = semi
 		if err != nil && args.ImportPath.IsZero() {
 			p.Error(err)
@@ -352,7 +371,12 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	options := tryParseOptions(p, c, in)
 
 	// Parse a semicolon, if possible.
-	semi, err := p.Punct(c, ";", in.After())
+	semi, err := punctParser{
+		parser: p, c: c,
+		want:   ";",
+		where:  in.After(),
+		insert: report.JustifyLeft,
+	}.parse()
 	if err != nil && (!options.IsZero() || !badExpr) {
 		p.Error(err)
 	}

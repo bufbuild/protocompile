@@ -116,7 +116,12 @@ func (p *defParser) parse() ast.DeclDef {
 
 	// If we didn't see any braces, this def needs to be ended by a semicolon.
 	if !skipSemi {
-		semi, err := p.Punct(p.c, ";", taxa.Def.After())
+		semi, err := punctParser{
+			parser: p.parser, c: p.c,
+			want:   ";",
+			where:  taxa.Def.After(),
+			insert: report.JustifyLeft,
+		}.parse()
 		p.args.Semicolon = semi
 		if err != nil {
 			p.Error(err)
@@ -208,7 +213,11 @@ func (defOutputs) parse(p *defParser) report.Span {
 	returns := p.c.Pop()
 
 	var ty ast.TypeAny
-	list, err := p.Punct(p.c, "(", taxa.KeywordReturns.After())
+	list, err := punctParser{
+		parser: p.parser, c: p.c,
+		want:  "(",
+		where: taxa.KeywordReturns.After(),
+	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
@@ -284,7 +293,12 @@ func (defValue) canStart(p *defParser) bool {
 }
 
 func (defValue) parse(p *defParser) report.Span {
-	eq, err := p.Punct(p.c, "=", taxa.Def.In())
+	eq, err := punctParser{
+		parser: p.parser, c: p.c,
+		want:   "=",
+		where:  taxa.Def.In(),
+		insert: report.JustifyBetween,
+	}.parse()
 	if err != nil {
 		p.Error(err)
 	}

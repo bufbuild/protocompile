@@ -3,12 +3,20 @@ error: unexpected identifier after definition
    | 
 24 |     foo.Bar name;
    |     ^^^ expected `;`
+  help: consider inserting a `;`
+   | 
+23 |     foo.bar name = 1;
+   |                     +
 
 error: unexpected integer literal in definition
   --> testdata/parser/field/incomplete.proto:25:18
    | 
 25 |     foo.Bar name 1;
    |                  ^ expected `=`
+  help: consider inserting a `=`
+   | 
+25 |     foo.Bar name = 1;
+   |                  ++  
 
 error: unexpected `}` after definition
   --> testdata/parser/field/incomplete.proto:27:1

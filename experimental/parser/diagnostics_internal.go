@@ -15,8 +15,11 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // errUnexpected is a low-level parser error for when we hit a token we don't
@@ -36,6 +39,11 @@ type errUnexpected struct {
 	// description.
 	want taxa.Set
 	got  any
+
+	// If nonempty, inserting this text will be suggested at the given offset.
+	insert        string
+	insertAt      int
+	insertJustify report.Justify
 }
 
 func (e errUnexpected) Diagnose(d *report.Diagnostic) {
@@ -54,9 +62,10 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 		message = report.Message("unexpected %v %v", got, e.where)
 	}
 
-	snippet := report.Snippet(e.what)
+	what := e.what.Span()
+	snippet := report.Snippet(what)
 	if e.want.Len() > 0 {
-		snippet = report.Snippetf(e.what, "expected %v", e.want.Join("or"))
+		snippet = report.Snippetf(what, "expected %v", e.want.Join("or"))
 	}
 
 	d.Apply(
@@ -64,6 +73,18 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 		snippet,
 		report.Snippetf(e.prev, "previous %v is here", e.where.Subject()),
 	)
+
+	if e.insert != "" {
+		want, _ := iterx.First(e.want.All())
+		d.Apply(report.SuggestEdits(
+			what,
+			fmt.Sprintf("consider inserting a %v", want),
+			report.Edit{
+				Replace: e.insert,
+				Justify: e.insertJustify,
+			},
+		))
+	}
 }
 
 // errMoreThanOne is used to diagnose the occurrence of some construct more

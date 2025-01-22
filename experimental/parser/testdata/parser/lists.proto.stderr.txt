@@ -317,5 +317,9 @@ error: unexpected `message` after reserved range
    | 
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
+  help: consider inserting a `;`
+   | 
+76 |     reserved a, b c;
+   |                    +
 
 encountered 46 errors

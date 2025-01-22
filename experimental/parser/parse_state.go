@@ -28,35 +28,49 @@ type parser struct {
 	*report.Report
 }
 
-// parsePunct attempts to unconditionally parse some punctuation.
+type punctParser struct {
+	*parser
+	c      *token.Cursor
+	want   string
+	where  taxa.Place
+	insert report.Justify
+}
+
+// parse attempts to unconditionally parse some punctuation.
 //
 // If the wrong token is encountered, it DOES NOT consume the token, returning a nil
 // token instead. Returns a diagnostic on failure.
-func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.Token, report.Diagnose) {
-	next := c.Peek()
-	if next.Text() == want {
-		return c.Pop(), nil
+func (p punctParser) parse() (token.Token, report.Diagnose) {
+	start := p.c.PeekSkippable().Span()
+	start = start.File.Span(start.Start, start.Start)
+
+	next := p.c.Peek()
+	if next.Text() == p.want {
+		return p.c.Pop(), nil
 	}
 
-	wanted := taxa.NewSet(taxa.Punct(want, false))
+	err := errUnexpected{
+		where: p.where,
+		want:  taxa.NewSet(taxa.Punct(p.want, false)),
+	}
 	if next.IsZero() {
-		tok, span := c.JustAfter()
-		err := errUnexpected{
-			what:  span,
-			where: where,
-			want:  wanted,
-			got:   taxa.EOF,
-		}
+		tok, span := p.c.JustAfter()
+		err.what = span
+		err.got = taxa.EOF
 		if !tok.IsZero() {
 			err.got = taxa.Classify(tok)
 		}
 
 		return token.Zero, err
+	} else {
+		err.what = next
 	}
 
-	return token.Zero, errUnexpected{
-		what:  next,
-		where: where,
-		want:  wanted,
+	if p.insert != 0 {
+		err.insert = p.want
+		err.insertAt = err.what.Span().Start
+		err.insertJustify = p.insert
 	}
+
+	return token.Zero, err
 }

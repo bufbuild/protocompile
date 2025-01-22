@@ -1,0 +1,29 @@
+add justification to edits
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Wed Jan 22 13:37:26 2025 -0800
+#
+# interactive rebase in progress; onto bdba7cb
+# Last commands done (2 commands done):
+#    pick dad65b0 Add an `all` method to `internal/enum` for generating an iterator over all elements of the enum (#417)
+#    edit 0728860 add justification to edits
+# Next commands to do (3 remaining commands):
+#    pick c2875cd add suggestions for string lexing
+#    pick a2ed0df add diagnostic suggestion for return type w/o parens
+# You are currently editing a commit while rebasing branch 'mcy/more-suggestions' on 'bdba7cb'.
+#
+# Changes to be committed:
+#	modified:   experimental/report/diagnostic.go
+#	modified:   experimental/report/diff.go
+#	modified:   experimental/report/renderer.go
+#	modified:   experimental/report/report.go
+#	modified:   experimental/report/testdata/suggestions.yaml
+#	modified:   experimental/report/testdata/suggestions.yaml.color.txt
+#	modified:   experimental/report/testdata/suggestions.yaml.fancy.txt
+#	modified:   experimental/report/testdata/suggestions.yaml.simple.txt
+#	modified:   internal/gen/buf/compiler/v1alpha1/ast.pb.go
+#	modified:   internal/gen/buf/compiler/v1alpha1/report.pb.go
+#	modified:   proto/buf/compiler/v1alpha1/report.proto
+#
