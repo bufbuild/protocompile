@@ -36,26 +36,24 @@ func (w *writer) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func (w *writer) WriteByte(b byte) error {
+func (w *writer) WriteByte(b byte) {
 	w.WriteString(string(b))
-	return nil
 }
 
-func (w *writer) WriteBytes(b byte, n int) error {
+func (w *writer) WriteBytes(b byte, n int) {
 	for i := 0; i < n; i++ {
 		w.buf = append(w.buf, b)
 	}
-	return nil
 }
 
-func (w *writer) WriteString(data string) error {
+func (w *writer) WriteString(data string) {
 	// Break the input along newlines; each time we're about to append a
 	// newline, discard all trailing whitespace that isn't a newline.
 	for {
 		nl := strings.IndexByte(data, '\n')
 		if nl < 0 {
 			w.buf = append(w.buf, data...)
-			return nil
+			return
 		}
 
 		line := data[:nl]
