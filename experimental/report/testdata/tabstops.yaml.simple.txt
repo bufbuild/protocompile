@@ -1,2 +1,16 @@
-warning: foo.proto:6:9: tabstop
-warning: foo.proto:7:2: partial tabstop
+warning: foo.proto:6:9: tabstopwarning: tabstop
+  --> foo.proto:6:9
+   |
+ 6 |         field
+   | --------^^^^^ this is in front of some tabstops
+   | |
+   | specifically these
+
+warning: foo.proto:7:2: partial tabstopwarning: partial tabstop
+  --> foo.proto:7:2
+   |
+ 7 |     field
+   | -^^^ tabstop
+   | |
+   | spaces
+

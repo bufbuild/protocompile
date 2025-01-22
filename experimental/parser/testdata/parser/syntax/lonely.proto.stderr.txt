@@ -1,12 +1,12 @@
 error: unexpected `;` in `edition` declaration
   --> testdata/parser/syntax/lonely.proto:15:8
-   | 
+   |
 15 | edition;
    |        ^ expected `=`
 
 error: unexpected `;` in `syntax` declaration
   --> testdata/parser/syntax/lonely.proto:17:10
-   | 
+   |
 17 | syntax = ;
    |          ^ expected expression
 

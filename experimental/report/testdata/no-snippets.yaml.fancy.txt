@@ -9,4 +9,4 @@ warning: file consists only of the byte `0xaa`
    = help: you should delete it to put it out of its misery
    = debug: 0xaaaaaaaaaaaaaaaa
 
-encountered 2 errors and 1 warning
+encountered 2 errors and 1 warnings

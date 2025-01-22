@@ -1,2 +1,18 @@
-error: foo.proto:5:9: emoji, CJK, bidi
-error: foo.proto:7:10: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
+error: foo.proto:5:9: emoji, CJK, bidierror: emoji, CJK, bidi
+  --> foo.proto:5:9
+   |
+ 5 | message 🐈<U+200D>⬛ {
+   |         ^^^^^^^^^^^^
+ 6 |   string 黑猫 = 1;
+   |          ---- note: some surfaces render CJK as sub-two-column
+  ::: bar.proto:1:9
+   |
+ 1 | import "חתול שחור.proto";
+   |         --------------- bidi works if it's quoted, at least
+
+error: foo.proto:7:10: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contextserror: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
+  --> foo.proto:7:10
+   |
+ 7 |   string القطة السوداء = 2;
+   |          ^^^^^^^^
+

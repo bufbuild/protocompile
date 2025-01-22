@@ -1,5 +1,48 @@
-remark: foo.proto:1:1: let protocompile pick a syntax for you
-remark: foo.proto:1:10: let protocompile pick a syntax for you
-warning: foo.proto:5:9: services should have a `Service` suffix
-error: foo.proto:6:31: missing (...) around return type
-error: foo.proto:7:45: method options must go in a block
+remark: foo.proto:1:1: let protocompile pick a syntax for youremark: let protocompile pick a syntax for you
+  --> foo.proto:1:1
+  help: delete this
+   |
+ 1 | - syntax = "proto3";
+   |
+
+remark: foo.proto:1:10: let protocompile pick a syntax for youremark: let protocompile pick a syntax for you
+  --> foo.proto:1:10
+  help: delete this
+   |
+ 1 | - syntax = "proto3";
+ 1 | + syntax = ;
+   |
+
+warning: foo.proto:5:9: services should have a `Service` suffixwarning: services should have a `Service` suffix
+  --> foo.proto:5:9
+   |
+ 5 | service Foo {
+   |         ^^^
+  help: change the name to `FooService`
+   |
+ 5 | service FooService {
+   |            +++++++
+
+error: foo.proto:6:31: missing (...) around return typeerror: missing (...) around return type
+  --> foo.proto:6:31
+   |
+ 6 |   rpc Get(GetRequest) returns GetResponse;
+   |                               ^^^^^^^^^^^
+  help: add `(...)` around the type
+   |
+ 6 |   rpc Get(GetRequest) returns (GetResponse);
+   |                               +           +
+
+error: foo.proto:7:45: method options must go in a blockerror: method options must go in a block
+  --> foo.proto:7:45
+   |
+ 7 |   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+   |                                             ^^^^^^^^^^^ compact options not allowed here
+  help: use `option` settings inside of the method body
+   |
+ 7 | -   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+ 7 | +   rpc Put(PutRequest) returns (PutResponse) {
+ 8 | +     option foo = bar;
+ 9 | +   }
+   |
+

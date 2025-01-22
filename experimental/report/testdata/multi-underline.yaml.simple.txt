@@ -1,2 +1,19 @@
-error: foo.proto:6:12: `size_t` is not a built-in Protobuf type
-warning: foo.proto:3:9: these are pretty bad names
+error: foo.proto:6:12: `size_t` is not a built-in Protobuf typeerror: `size_t` is not a built-in Protobuf type
+  --> foo.proto:6:12
+   |
+ 1 | syntax = "proto4"
+   |          -------- syntax version specified here
+ 2 |
+...
+ 6 |   required size_t x = 0;
+   |            ^^^^^
+
+warning: foo.proto:3:9: these are pretty bad nameswarning: these are pretty bad names
+  --> foo.proto:3:9
+   |
+ 3 | package abc.xyz;
+   |         ^^^^^^^ could be better
+ 4 |
+ 5 | message Blah {
+   |         ---- blah to you too!!
+

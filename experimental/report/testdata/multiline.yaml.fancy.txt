@@ -1,18 +1,18 @@
 warning: whole block
   --> foo.proto:5:1
-   | 
+   |
  5 | / message Blah {
-...  | 
+...  |
 12 | | }
    | \_^ this block
 
 warning: nested blocks
   --> foo.proto:5:1
-   | 
+   |
  5 | /   message Blah {
  6 | |     required size_t x = 0;
  7 | | /   message Bonk {
-...  | | 
+...  | |
 11 | | |   }
    | | \___- and this block
 12 | |   }
@@ -20,12 +20,12 @@ warning: nested blocks
 
 warning: parallel blocks
   --> foo.proto:5:1
-   | 
+   |
  5 | / message Blah {
  6 | |   required size_t x = 0;
  7 | |   message Bonk {
    | \__^ this block
-...    
+...
 11 |     }
    |  ___-
 12 | / }
@@ -33,9 +33,9 @@ warning: parallel blocks
 
 warning: nested blocks same start
   --> foo.proto:5:1
-   | 
+   |
  5 | / / message Blah {
-...  | | 
+...  | |
 11 | | |   }
    | | \___- and this block
 12 | |   }
@@ -43,22 +43,22 @@ warning: nested blocks same start
 
 warning: nested blocks same end
   --> foo.proto:5:1
-   | 
+   |
  5 | /   message Blah {
  6 | |     required size_t x = 0;
  7 | | /   message Bonk {
-...  | | 
+...  | |
 12 | | | }
    | \___^ this block
    |   \_- and this block
 
 warning: nested overlap
   --> foo.proto:5:1
-   | 
+   |
  5 | /   message Blah {
  6 | |     required size_t x = 0;
  7 | | /   message Bonk {
-...  | | 
+...  | |
 11 | | |   }
    | \_____^ this block
 12 |   | }
@@ -66,13 +66,13 @@ warning: nested overlap
 
 warning: nesting just the braces
   --> foo.proto:5:15
-   | 
+   |
  5 |     message Blah {
    |  ________________^
  6 | /     required size_t x = 0;
  7 | |     message Bonk {
    | |  ________________-
-...  | / 
+...  | /
 11 | | |   }
    | | \___- and this block
 12 | |   }
@@ -80,11 +80,11 @@ warning: nesting just the braces
 
 warning: nesting just the braces same start
   --> foo.proto:5:15
-   | 
+   |
  5 |     message Blah {
    |  ________________^
    | /  ______________-
-...  | / 
+...  | /
 11 | | |   }
    | | \___- and this block
 12 | |   }
@@ -92,11 +92,11 @@ warning: nesting just the braces same start
 
 warning: nesting just the braces same start (2)
   --> foo.proto:5:15
-   | 
+   |
  5 |     message Blah {
    |  ________________-
    | /  ______________^
-...  | / 
+...  | /
 11 | | |   }
    | | \___^ and this block
 12 | |   }
@@ -104,13 +104,13 @@ warning: nesting just the braces same start (2)
 
 warning: braces nesting overlap
   --> foo.proto:5:15
-   | 
+   |
  5 |     message Blah {
    |  ________________^
  6 | /     required size_t x = 0;
  7 | |     message Bonk {
    | |  ________________-
-...  | / 
+...  | /
 11 | | |   }
    | \_____^ this block
 12 |   | }
@@ -118,16 +118,16 @@ warning: braces nesting overlap
 
 warning: braces nesting overlap (2)
   --> foo.proto:7:17
-   | 
+   |
  5 |     message Blah {
    |  ________________-
  6 | /     required size_t x = 0;
  7 | |     message Bonk {
    | |  ________________^
-...  | / 
+...  | /
 11 | | |   }
    | \_____- this block
 12 |   | }
    |   \_^ and this block
 
- encountered  11 warnings
+encountered 11 warningss

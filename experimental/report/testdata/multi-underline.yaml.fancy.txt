@@ -1,20 +1,20 @@
 error: `size_t` is not a built-in Protobuf type
   --> foo.proto:6:12
-   | 
+   |
  1 | syntax = "proto4"
    |          -------- syntax version specified here
- 2 | 
-...  
+ 2 |
+...
  6 |   required size_t x = 0;
-   |            ^^^^^ 
+   |            ^^^^^
 
 warning: these are pretty bad names
   --> foo.proto:3:9
-   | 
+   |
  3 | package abc.xyz;
    |         ^^^^^^^ could be better
- 4 | 
+ 4 |
  5 | message Blah {
    |         ---- blah to you too!!
 
-encountered 1 error and 1 warning
+encountered 1 error and 1 warnings

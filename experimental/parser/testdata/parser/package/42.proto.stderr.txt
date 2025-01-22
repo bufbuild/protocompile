@@ -1,12 +1,12 @@
 error: unexpected integer literal after `package` declaration
   --> testdata/parser/package/42.proto:17:9
-   | 
+   |
 17 | package 42;
    |         ^^ expected `;`
 
 error: unexpected integer literal in file scope
   --> testdata/parser/package/42.proto:17:9
-   | 
+   |
 17 | package 42;
    |         ^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 

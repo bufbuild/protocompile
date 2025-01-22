@@ -1,31 +1,31 @@
 error: unexpected characters in integer literal
   --> testdata/lexer/numbers/bad-digit.proto:1:1
-   | 
+   |
  1 | 0f
-   | ^^ 
+   | ^^
 
 error: unexpected characters in integer literal
   --> testdata/lexer/numbers/bad-digit.proto:2:1
-   | 
+   |
  2 | 0b02
-   | ^^^^ 
+   | ^^^^
 
 error: unexpected characters in integer literal
   --> testdata/lexer/numbers/bad-digit.proto:3:1
-   | 
+   |
  3 | 0o08
-   | ^^^^ 
+   | ^^^^
 
 error: unexpected characters in integer literal
   --> testdata/lexer/numbers/bad-digit.proto:4:1
-   | 
+   |
  4 | 08
-   | ^^ 
+   | ^^
 
 error: unexpected characters in integer literal
   --> testdata/lexer/numbers/bad-digit.proto:5:1
-   | 
+   |
  5 | 0x0G
-   | ^^^^ 
+   | ^^^^
 
 encountered 5 errors
