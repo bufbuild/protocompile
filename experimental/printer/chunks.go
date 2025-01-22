@@ -1,6 +1,7 @@
 package printer
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -68,26 +69,27 @@ type block struct {
 }
 
 func fileToBlocks(file ast.File, applyFormatting bool) []block {
+	cursor := file.Context().Stream().Cursor()
 	decls := file.Decls()
 	var blocks []block
 	for i := 0; i < decls.Len(); i++ {
 		decl := decls.At(i)
-		blocks = append(blocks, blockForDecl(decl, applyFormatting))
+		blocks = append(blocks, blockForDecl(cursor, decl, applyFormatting))
 	}
 	return blocks
 }
 
 // TODO: take indent nesting levels
-func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
+func blockForDecl(cursor *token.Cursor, decl ast.DeclAny, applyFormatting bool) block {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
-		return syntaxBlock(decl.AsSyntax(), applyFormatting)
+		return syntaxBlock(cursor, decl.AsSyntax(), applyFormatting)
 	case ast.DeclKindPackage:
-		return packageBlock(decl.AsPackage(), applyFormatting)
+		return packageBlock(cursor, decl.AsPackage(), applyFormatting)
 	case ast.DeclKindImport:
-		return importBlock(decl.AsImport(), applyFormatting)
+		return importBlock(cursor, decl.AsImport(), applyFormatting)
 	case ast.DeclKindDef:
 		// return defBlock(decl.AsDef(), applyFormatting)
 	case ast.DeclKindBody:
@@ -99,57 +101,93 @@ func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 	return block{}
 }
 
-func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
-	// TODO: should we just pass a top-level cursor for the file?
-	cursor := decl.Context().Stream().Cursor()
+func syntaxBlock(cursor *token.Cursor, decl ast.DeclSyntax, applyFormatting bool) block {
 	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
 	var text string
-	if applyFormatting {
-		// Create a formatted text for a syntax declaration
-		text = decl.Keyword().Text() + " " + decl.Equals().Text() + " " + textForExprAny(decl.Value()) + decl.Semicolon().Text()
-	} else {
-		// Grab all tokens between the start and end of the syntax declaration
-		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
+	tokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
+	for i, t := range tokens {
+		if !applyFormatting {
+			// If we are not applying formatting, just print all the tokens
 			text += t.Text()
+			continue
+		}
+		// If we are applying formatting, we skip user-defined whitespace and format our own
+		if t.Kind() == token.Space {
+			continue
+		}
+		text += t.Text()
+		// If this is not the last token, and the next token is not the semicolon, then add a space
+		// TODO: this should account for the next non-whitespace token
+		if i < len(tokens)-1 && tokens[i+1].ID() != decl.Semicolon().ID() {
+			text += " "
 		}
 	}
 	cursor.Seek(decl.Semicolon().ID())
 	// Seek sets the cursor to the given ID, so the first thing we pop is the thing we set.
 	// TODO: we need to rethink some of the seek/unpop behaviours.
 	cursor.PopSkippable()
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
+	if splitKind == splitKindSoft {
+		splitKind = splitKindNever
+	}
 	chunks = append(chunks, chunk{
-		text:      text,
-		splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+		text:             text,
+		splitKind:        splitKind,
+		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
-	// TODO: how do we deal with trailing comments, e.g. syntax="proto3"; // blahblahblah
 	return block{chunks: chunks}
 }
 
-func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
-	// TODO: should we just pass a top-level cursor for the file?
-	cursor := decl.Context().Stream().Cursor()
+func packageBlock(cursor *token.Cursor, decl ast.DeclPackage, applyFormatting bool) block {
 	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
 	var text string
+	tokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
 	if applyFormatting {
-		text = decl.Keyword().Text() + " " + textForPath(decl.Path()) + decl.Semicolon().Text()
+		// Figure out the path range of tokens
+		var pathTokens []token.ID
+		decl.Path().Components(func(pc ast.PathComponent) bool {
+			if !pc.Separator().IsZero() {
+				pathTokens = append(pathTokens, pc.Separator().ID())
+			}
+			pathTokens = append(pathTokens, pc.Name().ID())
+			return true
+		})
+		for i, t := range tokens {
+			if t.Kind() == token.Space {
+				continue
+			}
+			text += t.Text()
+			// We want to add a space after the last path token (if it is not immediately followed
+			// by the semicolon), so we don't check for it
+			if slices.Contains(pathTokens[:len(pathTokens)-1], t.ID()) {
+				continue
+			}
+			// TODO: this should account for the next non-whitespace token
+			if i < len(tokens)-1 && tokens[i+1].ID() != decl.Semicolon().ID() {
+				text += " "
+			}
+		}
 	} else {
-		// Grab all tokens between the start and the end of the syntax declaration
-		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
+		// If formatting is not applied then we just simply take all the tokens and write them
+		for _, t := range tokens {
 			text += t.Text()
 		}
 	}
 	cursor.Seek(decl.Semicolon().ID())
 	cursor.PopSkippable()
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
+	if splitKind == splitKindSoft {
+		splitKind = splitKindNever
+	}
 	chunks = append(chunks, chunk{
-		text:      text,
-		splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+		text:             text,
+		splitKind:        splitKind,
+		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
 	return block{chunks: chunks}
 }
 
-func importBlock(decl ast.DeclImport, applyFormatting bool) block {
-	// TODO: should we just pass a top-level cursor for the file?
-	cursor := decl.Context().Stream().Cursor()
+func importBlock(cursor *token.Cursor, decl ast.DeclImport, applyFormatting bool) block {
 	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
 	var text string
 	if applyFormatting {
@@ -165,9 +203,14 @@ func importBlock(decl ast.DeclImport, applyFormatting bool) block {
 	}
 	cursor.Seek(decl.Semicolon().ID())
 	cursor.PopSkippable()
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
+	if splitKind == splitKindSoft {
+		splitKind = splitKindNever
+	}
 	chunks = append(chunks, chunk{
-		text:      text,
-		splitKind: splitKindBasedOnNextToken(cursor.PeekSkippable()),
+		text:             text,
+		splitKind:        splitKind,
+		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
 	return block{chunks: chunks}
 }
@@ -278,10 +321,11 @@ func parsePrefixChunks(
 				})
 			}
 		case token.Comment:
+			splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
 			chunks = append(chunks, chunk{
 				text:             t.Text(),
-				splitKind:        splitKindBasedOnNextToken(cursor.PeekSkippable()),
-				spaceWhenUnsplit: true,
+				splitKind:        splitKind,
+				spaceWhenUnsplit: spaceWhenUnsplit,
 			})
 		case token.Unrecognized:
 			// TODO: figure out what to do with unrecognized tokens.
@@ -294,13 +338,15 @@ func parsePrefixChunks(
 // To determine the split kind for a chunk, we check the next token. If the
 // next token starts with a newline, then we must preserve that and set to a hardsplit.
 // Otherwise it's a soft split.
-//
-// TODO: we should also inform spaceWhenUnsplit for this
-func splitKindBasedOnNextToken(peekNext token.Token) splitKind {
+func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
 	if strings.HasPrefix(peekNext.Text(), "\n") {
-		return splitKindHard
+		return splitKindHard, false
 	}
-	return splitKindSoft
+	var spaceWhenUnsplit bool
+	if strings.HasPrefix(peekNext.Text(), " ") {
+		spaceWhenUnsplit = true
+	}
+	return splitKindSoft, spaceWhenUnsplit
 }
 
 func getTokensFromStartToEndInclusive(cursor *token.Cursor, start, end token.Token) []token.Token {
