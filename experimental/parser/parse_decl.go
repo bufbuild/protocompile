@@ -440,7 +440,12 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			switch eq.Text() {
 			case ":": // Allow colons, which is usually a mistake.
 				p.Errorf("unexpected `:` in compact option").Apply(
-					report.Snippetf(eq, "help: replace this with `=`"),
+					report.Snippet(eq),
+					report.SuggestEdits(eq, "replace this with an `=`", report.Edit{
+						Start: 0, End: 1,
+						Replace: "=",
+						Justify: report.JustifyBetween,
+					}),
 					report.Notef("top-level `option` assignment uses `=`, not `:`"),
 				)
 				fallthrough
