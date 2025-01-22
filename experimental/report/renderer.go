@@ -246,7 +246,7 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 			if i > 0 {
 				out.WriteByte('\n')
 			}
-			suggestion(snippets[0], locations[i][0].Line, lineBarWidth, &ss, &out)
+			suggestion(snippets[0], lineBarWidth, &ss, &out)
 			return true
 		}
 
@@ -911,7 +911,7 @@ func renderSidebar(bars, lineno, slashAt int, ss *styleSheet, multis []*multilin
 }
 
 // suggestion renders a single suggestion window.
-func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, out *strings.Builder) {
+func suggestion(snip snippet, lineBarWidth int, ss *styleSheet, out *strings.Builder) {
 	out.WriteString(ss.nAccent)
 	padBy(out, lineBarWidth)
 	out.WriteString("help: ")
@@ -933,9 +933,12 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 		strings.Contains(snip.Span.Text(), "\n")
 
 	if multiline {
+		span, hunks := unifiedDiff(snip.Span, snip.edits)
+		startLine := span.StartLoc().Line
+
 		aLine := startLine
 		bLine := startLine
-		for _, hunk := range unifiedDiff(snip.Span, snip.edits) {
+		for _, hunk := range hunks {
 			if hunk.content == "" {
 				continue
 			}
@@ -947,11 +950,11 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 
 				// Draw the line as we would for an ordinary window, but prefix
 				// each line with a the hunk's kind and color.
-				fmt.Fprintf(out, "\n%s%*d | %s%c%s %s",
+				fmt.Fprintf(out, "\n%s%*d | %s%c%s ",
 					ss.nAccent, lineBarWidth, lineno,
 					hunk.bold(ss), hunk.kind, hunk.color(ss),
-					line,
 				)
+				stringWidth(0, line, false, out)
 
 				switch hunk.kind {
 				case ' ':
@@ -972,8 +975,10 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 		return
 	}
 
+	span, hunks := hunkDiff(snip.Span, snip.edits)
+	startLine := span.StartLoc().Line
+
 	fmt.Fprintf(out, "\n%s%*d | ", ss.nAccent, lineBarWidth, startLine)
-	hunks := hunkDiff(snip.Span, snip.edits)
 	var column int
 	for _, hunk := range hunks {
 		if hunk.content == "" {

@@ -15,6 +15,7 @@
 package report
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -56,40 +57,39 @@ func (h hunk) bold(ss *styleSheet) string {
 }
 
 // hunkDiff computes edit hunks for a diff.
-func hunkDiff(span Span, edits []Edit) []hunk {
+func hunkDiff(span Span, edits []Edit) (Span, []hunk) {
 	out := make([]hunk, 0, len(edits)*3+1)
 	var prev int
-	src, offsets := offsetsForDiffing(span, edits)
-	for i, edit := range edits {
-		start := offsets[i][0]
-		end := offsets[i][1]
-
+	span, edits = offsetsForDiffing(span, edits)
+	src := span.Text()
+	for _, edit := range edits {
 		out = append(out,
-			hunk{hunkUnchanged, src[prev:start]},
-			hunk{hunkDelete, src[start:end]},
+			hunk{hunkUnchanged, src[prev:edit.Start]},
+			hunk{hunkDelete, src[edit.Start:edit.End]},
 			hunk{hunkAdd, edit.Replace},
 		)
-		prev = end
+		prev = edit.End
 	}
-	return append(out, hunk{hunkUnchanged, src[prev:]})
+	return span, append(out, hunk{hunkUnchanged, src[prev:]})
 }
 
 // unifiedDiff computes whole-line hunks for this diff, for producing a unified
 // edit.
 //
 // Each slice will contain one or more lines that should be displayed together.
-func unifiedDiff(span Span, edits []Edit) []hunk {
+func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 	// Sort the edits such that they are ordered by starting offset.
-	src, offsets := offsetsForDiffing(span, edits)
+	span, edits = offsetsForDiffing(span, edits)
+	src := span.Text()
 	sort.Slice(edits, func(i, j int) bool {
-		return offsets[i][0] < offsets[j][0]
+		return edits[i].Start < edits[j].End
 	})
 
 	// Partition offsets into overlapping lines. That is, this connects together
 	// all edit spans whose end and start are not separated by a newline.
-	prev := &offsets[0]
-	parts := slicesx.Partition(offsets, func(_, next *[2]int) bool {
-		if next == prev || !strings.Contains(src[prev[1]:next[0]], "\n") {
+	prev := &edits[0]
+	parts := slicesx.Partition(edits, func(_, next *Edit) bool {
+		if next == prev || !strings.Contains(src[prev.End:next.Start], "\n") {
 			return false
 		}
 
@@ -99,12 +99,12 @@ func unifiedDiff(span Span, edits []Edit) []hunk {
 
 	var out []hunk
 	var prevHunk int
-	parts(func(i int, offsets [][2]int) bool {
+	parts(func(i int, edits []Edit) bool {
 		// First, figure out the start and end of the modified region.
-		start, end := offsets[0][0], offsets[0][1]
-		for _, offset := range offsets[1:] {
-			start = min(start, offset[0])
-			end = max(end, offset[1])
+		start, end := edits[0].Start, edits[0].End
+		for _, edit := range edits[1:] {
+			start = min(start, edit.Start)
+			end = max(end, edit.End)
 		}
 		// Then, snap the region to be newline delimited. This is the unedited
 		// lines.
@@ -114,10 +114,10 @@ func unifiedDiff(span Span, edits []Edit) []hunk {
 		// Now, apply the edits to original to produce the modified result.
 		var buf strings.Builder
 		prev := 0
-		for j, offset := range offsets {
-			buf.WriteString(original[prev:offset[0]])
-			buf.WriteString(edits[i+j].Replace)
-			prev = offset[1]
+		for _, edit := range edits {
+			buf.WriteString(original[prev:edit.Start])
+			buf.WriteString(edit.Replace)
+			prev = edit.End
 		}
 		buf.WriteString(original[prev:])
 
@@ -131,20 +131,34 @@ func unifiedDiff(span Span, edits []Edit) []hunk {
 		prevHunk = end
 		return true
 	})
-	return append(out, hunk{hunkUnchanged, src[prevHunk:]})
+	return span, append(out, hunk{hunkUnchanged, src[prevHunk:]})
 }
 
 // offsetsForDiffing pre-calculates information needed for diffing:
 // the line-snapped span, and the offsetsForDiffing of each edit as indices into
 // that span.
-func offsetsForDiffing(span Span, edits []Edit) (string, [][2]int) {
-	start, end := adjustLineOffsets(span.File.Text(), span.Start, span.End)
-	delta := span.Start - start
-
-	offsets := make([][2]int, len(edits))
-	for i, edit := range edits {
-		offsets[i] = [2]int{edit.Start + delta, edit.End + delta}
+func offsetsForDiffing(span Span, edits []Edit) (Span, []Edit) {
+	edits = slices.Clone(edits)
+	var start, end int
+	for i, e := range edits {
+		a, b, r := e.Justified(span)
+		edits[i] = Edit{
+			Start:   a,
+			End:     b,
+			Replace: r,
+		}
+		if i == 0 {
+			start, end = a, b
+		} else {
+			start, end = min(a, start), max(b, end)
+		}
 	}
 
-	return span.File.Text()[start:end], offsets
+	start, end = adjustLineOffsets(span.File.Text(), start, end)
+	for i := range edits {
+		edits[i].Start -= start
+		edits[i].End -= start
+	}
+
+	return span.File.Span(start, end), edits
 }

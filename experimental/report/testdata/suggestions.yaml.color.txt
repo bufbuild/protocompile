@@ -26,12 +26,22 @@
 ⟨b.red⟩error: missing (...) around return type⟨reset⟩
 ⟨blu⟩  --> foo.proto:6:31
    | 
-⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse;
+⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩                              ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
 ⟨blu⟩  help: add `(...)` around the type
    | 
-⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)⟨reset⟩;
-⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+⟨reset⟩ ⟨reset⟩
+⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)
+⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+⟨reset⟩
+
+⟨b.red⟩error: missing semicolon⟨reset⟩
+⟨blu⟩  --> foo.proto:7:3
+   | 
+⟨blu⟩ 7 | ⟨reset⟩  rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+⟨blu⟩   | ⟨reset⟩⟨reset⟩  ⟨b.red⟩^^^⟨reset⟩ ⟨b.red⟩expected semicolon
+⟨blu⟩  help: insert a semicolon
+   | 
+⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse⟨grn⟩;
+⟨blu⟩   | ⟨reset⟩                                         ⟨b.grn⟩+⟨reset⟩
 
 ⟨b.red⟩error: method options must go in a block⟨reset⟩
 ⟨blu⟩  --> foo.proto:7:45
@@ -46,5 +56,5 @@
 ⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩   }
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.red⟩encountered 2 errors and 1 warning⟨reset⟩
+⟨b.red⟩encountered 3 errors and 1 warning⟨reset⟩
 ⟨reset⟩
