@@ -35,7 +35,7 @@ type parser struct {
 func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.Token, report.Diagnose) {
 	next := c.Peek()
 	if next.Text() == want {
-		return c.Pop(), nil
+		return c.Next(), nil
 	}
 
 	wanted := taxa.NewSet(taxa.Punct(want, false))

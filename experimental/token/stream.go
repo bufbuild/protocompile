@@ -88,6 +88,7 @@ func (s *Stream) Cursor() *Cursor {
 		withContext: internal.NewWith(s.Context),
 		start:       1,
 		end:         ID(len(s.nats) + 1),
+		idx:         1,
 	}
 }
 

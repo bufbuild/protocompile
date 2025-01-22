@@ -327,6 +327,7 @@ func (t Token) Children() *Cursor {
 			withContext: t.withContext,
 			start:       start.id + 1, // Skip the start!
 			end:         end.id,
+			idx:         int(start.id + 1),
 		}
 	}
 

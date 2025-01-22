@@ -184,7 +184,7 @@ func (defInputs) what(*defParser) taxa.Noun  { return taxa.MethodIns }
 func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "(" }
 
 func (defInputs) parse(p *defParser) report.Span {
-	next := p.c.Pop()
+	next := p.c.Next()
 	if next.IsLeaf() {
 		return report.Span{} // Diagnosed by the lexer.
 	}
@@ -205,7 +205,7 @@ func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "ret
 func (defOutputs) parse(p *defParser) report.Span {
 	// Note that the inputs and outputs of a method are parsed
 	// separately, so foo(bar) and foo returns (bar) are both possible.
-	returns := p.c.Pop()
+	returns := p.c.Next()
 
 	var ty ast.TypeAny
 	list, err := p.Punct(p.c, "(", taxa.KeywordReturns.After())
@@ -314,7 +314,7 @@ func (defOptions) what(*defParser) taxa.Noun  { return taxa.CompactOptions }
 func (defOptions) canStart(p *defParser) bool { return canStartOptions(p.c.Peek()) }
 
 func (defOptions) parse(p *defParser) report.Span {
-	next := p.c.Pop()
+	next := p.c.Next()
 	if next.IsLeaf() {
 		return report.Span{} // Diagnosed by the lexer.
 	}
@@ -333,7 +333,7 @@ func (defBody) what(*defParser) taxa.Noun  { return taxa.Body }
 func (defBody) canStart(p *defParser) bool { return canStartBody(p.c.Peek()) }
 
 func (defBody) parse(p *defParser) report.Span {
-	next := p.c.Pop()
+	next := p.c.Next()
 	if next.IsLeaf() {
 		return report.Span{} // Diagnosed by the lexer.
 	}

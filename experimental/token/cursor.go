@@ -34,7 +34,9 @@ type Cursor struct {
 	// This is used if this is a cursor over the children of a synthetic token.
 	// If stream is nil, we know we're in the natural case.
 	stream []ID
-	idx    int
+	// idx is the current token ID if this is a cursor over natural tokens,
+	// or the index into stream if this is a cursor over synthetic tokens.
+	idx int
 }
 
 // CursorMark is the return value of [Cursor.Mark], which marks a position on
@@ -42,7 +44,6 @@ type Cursor struct {
 type CursorMark struct {
 	// This contains exactly the values needed to rewind the cursor.
 	owner *Cursor
-	start ID
 	idx   int
 }
 
@@ -65,6 +66,7 @@ func NewCursor(start, end Token) *Cursor {
 		withContext: internal.NewWith(start.Context()),
 		start:       start.ID(),
 		end:         end.ID() + 1, // Remember, Cursor.end is exclusive!
+		idx:         int(start.ID()),
 	}
 }
 
@@ -83,7 +85,6 @@ func (c *Cursor) IsSynthetic() bool {
 func (c *Cursor) Mark() CursorMark {
 	return CursorMark{
 		owner: c,
-		start: c.start,
 		idx:   c.idx,
 	}
 }
@@ -95,11 +96,33 @@ func (c *Cursor) Rewind(mark CursorMark) {
 	if c != mark.owner {
 		panic("protocompile/ast: rewound cursor using the wrong cursor's mark")
 	}
-	c.start = mark.start
 	c.idx = mark.idx
 }
 
-// Peek returns the next token in the sequence, if there is one.
+// Seek moves the cursor to the given token [ID].
+//
+// Returns false if the id is out of bounds.
+func (c *Cursor) Seek(id ID) bool {
+	if c == nil {
+		return false
+	}
+	if c.IsSynthetic() {
+		for i, tokID := range c.stream {
+			if tokID == id {
+				c.idx = i
+				return true
+			}
+		}
+		return false
+	}
+	if id < c.start || id >= c.end {
+		return false
+	}
+	c.idx = int(id)
+	return true
+}
+
+// PeekSkippable returns the current token in the sequence, if there is one.
 // This may return a skippable token.
 //
 // Returns the zero token if this cursor is at the end of the stream.
@@ -107,21 +130,49 @@ func (c *Cursor) PeekSkippable() Token {
 	if c == nil {
 		return Zero
 	}
-
 	if c.IsSynthetic() {
-		if c.idx == len(c.stream) {
+		if c.idx < 0 || c.idx >= len(c.stream) {
 			return Zero
 		}
 		return c.stream[c.idx].In(c.Context())
 	}
-	if c.start >= c.end {
+	tokenID := ID(c.idx)
+	if tokenID < c.start || tokenID >= c.end {
 		return Zero
 	}
-	return c.start.In(c.Context())
+	return tokenID.In(c.Context())
 }
 
-// Pop returns the next skippable token in the sequence, and advances the cursor.
-func (c *Cursor) PopSkippable() Token {
+// BeforeSkippable returns the token before the current token in the sequence, if there is one.
+// This may return a skippable token.
+//
+// Returns the zero token if this cursor is at the beginning of the stream.
+func (c *Cursor) BeforeSkippable() Token {
+	if c == nil {
+		return Zero
+	}
+	if c.IsSynthetic() {
+		if c.idx-1 < 0 || c.idx-1 >= len(c.stream) {
+			return Zero
+		}
+		return c.stream[c.idx-1].In(c.Context())
+	}
+	tokenID := ID(c.idx - 1)
+	current := c.PeekSkippable()
+	if !current.IsZero() {
+		impl := current.nat()
+		if offset := impl.Offset(); offset < 0 && impl.IsClose() {
+			tokenID += ID(offset)
+		}
+	}
+	if tokenID < c.start || tokenID >= c.end {
+		return Zero
+	}
+	return tokenID.In(c.Context())
+}
+
+// NextSkippable returns the next skippable token in the sequence, and advances the cursor.
+func (c *Cursor) NextSkippable() Token {
 	tok := c.PeekSkippable()
 	if tok.IsZero() {
 		return tok
@@ -130,11 +181,26 @@ func (c *Cursor) PopSkippable() Token {
 	if c.IsSynthetic() {
 		c.idx++
 	} else {
-		impl := c.start.In(c.Context()).nat()
-		if impl.Offset() > 0 {
-			c.start += ID(impl.Offset())
+		impl := ID(c.idx).In(c.Context()).nat()
+		if offset := impl.Offset(); offset > 0 && impl.IsOpen() {
+			c.idx += offset
 		}
-		c.start++
+		c.idx++
+	}
+	return tok
+}
+
+// PrevSkippable returns the previous skippable token in the sequence, and decrements the cursor.
+func (c *Cursor) PrevSkippable() Token {
+	tok := c.BeforeSkippable()
+	if tok.IsZero() {
+		return tok
+	}
+
+	if c.IsSynthetic() {
+		c.idx--
+	} else {
+		c.idx = int(tok.ID())
 	}
 	return tok
 }
@@ -144,26 +210,36 @@ func (c *Cursor) PopSkippable() Token {
 //
 // Returns the zero token if this cursor is at the end of the stream.
 func (c *Cursor) Peek() Token {
+	if c == nil {
+		return Zero
+	}
+	idx := c.idx
+	tok := c.Next()
+	c.idx = idx
+	return tok
+}
+
+// Next returns the next token in the sequence, and advances the cursor.
+func (c *Cursor) Next() Token {
 	for {
-		next := c.PeekSkippable()
+		next := c.NextSkippable()
 		if next.IsZero() || !next.Kind().IsSkippable() {
 			return next
 		}
-		c.PopSkippable()
 	}
 }
 
-// Pop returns the next token in the sequence, and advances the cursor.
-func (c *Cursor) Pop() Token {
-	tok := c.Peek()
-	if tok.IsZero() {
-		return tok
+// Prev returns the previous token in the sequence, and decrements the cursor.
+func (c *Cursor) Prev() Token {
+	for {
+		prev := c.PrevSkippable()
+		if prev.IsZero() || !prev.Kind().IsSkippable() {
+			return prev
+		}
 	}
-
-	return c.PopSkippable()
 }
 
-// Iter returns an iterator over the remaining tokens in the cursor.
+// Rest returns an iterator over the remaining tokens in the cursor.
 //
 // Note that breaking out of a loop over this iterator, and starting
 // a new loop, will resume at the iteration that was broken at. E.g., if
@@ -176,12 +252,12 @@ func (c *Cursor) Rest() iter.Seq[Token] {
 			if tok.IsZero() || !yield(tok) {
 				break
 			}
-			_ = c.Pop()
+			_ = c.Next()
 		}
 	}
 }
 
-// IterSkippable is like [Cursor.Iter]. but it yields skippable tokens, too.
+// RestSkippable is like [Cursor.Rest]. but it yields skippable tokens, too.
 //
 // Note that breaking out of a loop over this iterator, and starting
 // a new loop, will resume at the iteration that was broken at. E.g., if
@@ -194,7 +270,7 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 			if tok.IsZero() || !yield(tok) {
 				break
 			}
-			_ = c.PopSkippable()
+			_ = c.NextSkippable()
 		}
 	}
 }

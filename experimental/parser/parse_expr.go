@@ -55,7 +55,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 			case ":":
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
-					Colon: c.Pop(),
+					Colon: c.Next(),
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
@@ -105,7 +105,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 		case "to":
 			return p.NewExprRange(ast.ExprRangeArgs{
 				Start: lhs,
-				To:    c.Pop(),
+				To:    c.Next(),
 				End:   parseExprInfix(p, c, taxa.KeywordTo.After(), ast.ExprAny{}, prec),
 			}).AsAny()
 		}
@@ -128,7 +128,7 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		return ast.ExprAny{}
 
 	case next.Text() == "-":
-		c.Pop()
+		c.Next()
 		inner := parseExprPrefix(p, c, taxa.Minus.After())
 		return p.NewExprPrefixed(ast.ExprPrefixedArgs{
 			Prefix: next,
@@ -151,13 +151,13 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		return ast.ExprAny{}
 
 	case next.Kind() == token.String, next.Kind() == token.Number:
-		return ast.ExprLiteral{Token: c.Pop()}.AsAny()
+		return ast.ExprLiteral{Token: c.Next()}.AsAny()
 
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()
 
 	case (next.Text() == "{" || next.Text() == "<" || next.Text() == "[") && !next.IsLeaf():
-		body := c.Pop()
+		body := c.Next()
 		in := taxa.Dict
 		if next.Text() == "[" {
 			in = taxa.Array
