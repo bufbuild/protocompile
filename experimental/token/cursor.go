@@ -140,6 +140,28 @@ func (c *Cursor) PopSkippable() Token {
 	return tok
 }
 
+func (c *Cursor) UnpeekSkippable() Token {
+	if c == nil {
+		return Zero
+	}
+	if c.IsSynthetic() {
+		if c.idx-1 < 0 {
+			return Zero
+		}
+		return c.stream[c.idx-1].In(c.Context())
+	}
+	id := c.start
+	impl := id.In(c.Context()).nat()
+	if impl.IsClose() && impl.Offset() > 0 {
+		id -= ID(impl.Offset())
+	}
+	id--
+	if id <= 0 {
+		return Zero
+	}
+	return id.In(c.Context())
+}
+
 // UnpopSkippable returns the last skippable token in the sequence, and decrements the cursor.
 func (c *Cursor) UnpopSkippable() Token {
 	if c == nil {

@@ -258,6 +258,9 @@ func parsePrefixChunks(
 	// Walk backwards until we hit the last skippable token
 	tok := cursor.UnpopSkippable()
 	for tok.Kind().IsSkippable() {
+		if cursor.UnpeekSkippable().IsZero() {
+			break
+		}
 		tok = cursor.UnpopSkippable()
 	}
 	var chunks []chunk
