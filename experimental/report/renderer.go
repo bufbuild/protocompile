@@ -88,7 +88,6 @@ func (r *renderer) render(report *Report) (errorCount, warningCount int, err err
 		}
 
 		r.diagnostic(report, diagnostic)
-		r.WriteByte('\n')
 		if err := r.Flush(); err != nil {
 			return errorCount, warningCount, err
 		}
@@ -279,6 +278,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	}
 
 	r.WriteString(r.ss.reset)
+	r.WriteString("\n\n")
 }
 
 const maxMultilinesPerWindow = 8
