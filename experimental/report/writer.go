@@ -36,10 +36,6 @@ func (w *writer) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func (w *writer) WriteByte(b byte) {
-	w.WriteString(string(b))
-}
-
 func (w *writer) WriteBytes(b byte, n int) {
 	for i := 0; i < n; i++ {
 		w.buf = append(w.buf, b)

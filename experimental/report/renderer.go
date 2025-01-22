@@ -208,7 +208,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 	parts(func(i int, snippets []snippet) bool {
 		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
-			r.WriteByte('\n')
+			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
 			r.WriteBytes(' ', r.margin)
 
@@ -223,7 +223,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 		if len(snippets[0].edits) > 0 {
 			if i > 0 {
-				r.WriteByte('\n')
+				r.WriteString("\n")
 			}
 			r.suggestion(snippets[0], locations[i][0].Line)
 			return true
@@ -241,7 +241,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 	// Render a remedial file name for spanless errors.
 	if len(d.snippets) == 0 && d.inFile != "" {
-		r.WriteByte('\n')
+		r.WriteString("\n")
 		r.WriteString(r.ss.nAccent)
 		r.WriteBytes(' ', r.margin-1)
 
@@ -262,14 +262,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		}
 	}
 	for _, footer := range footers {
-		r.WriteByte('\n')
+		r.WriteString("\n")
 		r.WriteString(r.ss.nAccent)
 		r.WriteBytes(' ', r.margin)
 		r.WriteString(" = ")
 		fmt.Fprint(r, footer[0], footer[1], ": ", r.ss.reset)
 		for i, line := range strings.Split(footer[2], "\n") {
 			if i > 0 {
-				r.WriteByte('\n')
+				r.WriteString("\n")
 				margin := r.margin + 3 + len(footer[1]) + 2
 				r.WriteBytes(' ', margin)
 			}
@@ -779,7 +779,7 @@ func (r *renderer) window(w *window) {
 
 		if i > 0 && !info[i-1].shouldEmit {
 			// Generate a visual break if this is right after a real line.
-			r.WriteByte('\n')
+			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
 			r.WriteBytes(' ', r.margin-2)
 			r.WriteString("...  ")
@@ -809,7 +809,7 @@ func (r *renderer) window(w *window) {
 
 		// If this happens to be an annotated line, this is when it gets annotated.
 		for _, line := range cur.underlines {
-			r.WriteByte('\n')
+			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
 			r.WriteBytes(' ', r.margin)
 			r.WriteString(" | ")
@@ -898,7 +898,7 @@ func (r *renderer) suggestion(snip snippet, startLine int) {
 
 	// Add a blank line after the file. This gives the diagnostic window some
 	// visual breathing room.
-	r.WriteByte('\n')
+	r.WriteString("\n")
 	r.WriteBytes(' ', r.margin)
 	r.WriteString(" | ")
 
@@ -944,7 +944,7 @@ func (r *renderer) suggestion(snip snippet, startLine int) {
 			}
 		}
 
-		r.WriteByte('\n')
+		r.WriteString("\n")
 		r.WriteString(r.ss.nAccent)
 		r.WriteBytes(' ', r.margin)
 		r.WriteString(" | ")
@@ -967,7 +967,7 @@ func (r *renderer) suggestion(snip snippet, startLine int) {
 
 	// Draw underlines for each modified segment, using + and - as the
 	// underline characters.
-	r.WriteByte('\n')
+	r.WriteString("\n")
 	r.WriteString(r.ss.nAccent)
 	r.WriteBytes(' ', r.margin)
 	r.WriteString(" | ")
@@ -981,7 +981,7 @@ func (r *renderer) suggestion(snip snippet, startLine int) {
 		column = stringWidth(column, hunk.content, false, nil)
 		r.WriteString(hunk.bold(&r.ss))
 		for i := 0; i < column-prev; i++ {
-			r.WriteByte(byte(hunk.kind))
+			r.WriteString(string(hunk.kind))
 		}
 	}
 }
