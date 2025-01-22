@@ -18,10 +18,36 @@ error: unexpected integer literal in definition
 25 |     foo.Bar name = 1;
    |                  ++  
 
-error: unexpected `}` after definition
-  --> testdata/parser/field/incomplete.proto:27:1
+error: unexpected identifier after definition
+  --> testdata/parser/field/incomplete.proto:28:5
    | 
-27 | }
-   | ^ expected `;`
+28 |     foo..bar name = 1;
+   |     ^^^ expected `;`
+  help: consider inserting a `;`
+   | 
+26 |     foo.bar name = 1;
+   |                     +
 
-encountered 3 errors
+error: unexpected `.` after `.`
+  --> testdata/parser/field/incomplete.proto:28:9
+   | 
+28 |     foo..bar name = 1;
+   |         ^ expected identifier or `(...)`
+  help: delete the extra `.`
+   | 
+28 | -     foo..bar name = 1;
+28 | +     foo.bar name = 1;
+   | 
+
+error: unexpected `=` after qualified name
+  --> testdata/parser/field/incomplete.proto:29:19
+   | 
+29 |     foo.bar name. = 1;
+   |                   ^ expected identifier or `(...)`
+  help: delete the extra `.`
+   | 
+29 | -     foo.bar name. = 1;
+29 | +     foo.bar name = 1;
+   | 
+
+encountered 5 errors

@@ -15,9 +15,12 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -58,7 +61,11 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 					what:  next,
 					where: taxa.Classify(next).After(),
 					want:  taxa.NewSet(taxa.Ident, taxa.Parens),
-				})
+				}).Apply(report.SuggestEdits(
+					next,
+					fmt.Sprintf("delete the extra `%s`", next.Text()),
+					report.Edit{Start: 0, End: 1},
+				))
 			}
 			prevSeparator = c.Pop()
 
@@ -113,9 +120,13 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			// consume this token.
 			p.Error(errUnexpected{
 				what:  next,
-				where: taxa.QualifiedName.In(),
+				where: taxa.QualifiedName.After(),
 				want:  taxa.NewSet(taxa.Ident, taxa.Parens),
-			})
+			}).Apply(report.SuggestEdits(
+				prevSeparator,
+				fmt.Sprintf("delete the extra `%s`", prevSeparator.Text()),
+				report.Edit{Start: 0, End: 1},
+			))
 
 			end = prevSeparator // Include the trailing separator.
 			done = true

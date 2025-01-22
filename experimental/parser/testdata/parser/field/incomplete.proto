@@ -24,4 +24,7 @@ message M {
     foo.Bar name;
     foo.Bar name 1;
     foo.bar name = 1
+
+    foo..bar name = 1;
+    foo.bar name. = 1;
 }

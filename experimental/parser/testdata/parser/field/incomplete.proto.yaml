@@ -32,3 +32,16 @@ decls:
             name.components: [{ ident: "name" }]
             type.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components:
+              - ident: "foo"
+              - separator: SEPARATOR_DOT
+              - { ident: "bar", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }, { separator: SEPARATOR_DOT }]
+            type.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
