@@ -86,8 +86,6 @@ func (s *Stream) All() iter.Seq[Token] {
 func (s *Stream) Cursor() *Cursor {
 	return &Cursor{
 		withContext: internal.NewWith(s.Context),
-		start:       1,
-		end:         ID(len(s.nats) + 1),
 		idx:         1,
 	}
 }

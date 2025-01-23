@@ -17,7 +17,6 @@ package token
 import (
 	"fmt"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
@@ -27,46 +26,40 @@ import (
 type Cursor struct {
 	withContext
 
-	// This is used if this is a cursor over natural tokens.
-	// start is inclusive, end is exclusive. start == end means the stream
-	// is empty.
-	start, end ID
 	// This is used if this is a cursor over the children of a synthetic token.
 	// If stream is nil, we know we're in the natural case.
 	stream []ID
-	// idx is the current token ID if this is a cursor over natural tokens,
+	// The idx is the current token ID if this is a cursor over natural tokens,
 	// or the index into stream if this is a cursor over synthetic tokens.
 	idx int
+	// This is used to know if we moved forwards or backwards when calculating
+	// the offset jump on a change of directions.
+	isBackwards bool
 }
 
 // CursorMark is the return value of [Cursor.Mark], which marks a position on
 // a Cursor for rewinding to.
 type CursorMark struct {
 	// This contains exactly the values needed to rewind the cursor.
-	owner *Cursor
-	idx   int
+	owner       *Cursor
+	idx         int
+	isBackwards bool
 }
 
-// NewCursor returns a new cursor over the given tokens.
+// NewCursorAt returns a new cursor at the given token.
 //
-// Panics if either token is zero, the tokens come from different contexts, or
-// either token is synthetic.
-func NewCursor(start, end Token) *Cursor {
-	if start.IsZero() || end.IsZero() {
-		panic(fmt.Sprintf("protocompile/token: passed zero token to NewCursor: %v, %v", start, end))
+// Panics if the token is zero or synthetic.
+func NewCursorAt(tok Token) *Cursor {
+	if tok.IsZero() {
+		panic(fmt.Sprintf("protocompile/token: passed zero token to NewCursorAt: %v", tok))
 	}
-	if start.Context() != end.Context() {
-		panic("protocompile/token: passed tokens from different context to NewCursor")
-	}
-	if start.IsSynthetic() || end.IsSynthetic() {
-		panic("protocompile/token: passed synthetic token to NewCursor")
+	if tok.IsSynthetic() {
+		panic("protocompile/token: passed synthetic token to NewCursorAt")
 	}
 
 	return &Cursor{
-		withContext: internal.NewWith(start.Context()),
-		start:       start.ID(),
-		end:         end.ID() + 1, // Remember, Cursor.end is exclusive!
-		idx:         int(start.ID()),
+		withContext: tok.withContext,
+		idx:         int(tok.ID()),
 	}
 }
 
@@ -84,8 +77,9 @@ func (c *Cursor) IsSynthetic() bool {
 // to.
 func (c *Cursor) Mark() CursorMark {
 	return CursorMark{
-		owner: c,
-		idx:   c.idx,
+		owner:       c,
+		idx:         c.idx,
+		isBackwards: c.isBackwards,
 	}
 }
 
@@ -97,29 +91,7 @@ func (c *Cursor) Rewind(mark CursorMark) {
 		panic("protocompile/ast: rewound cursor using the wrong cursor's mark")
 	}
 	c.idx = mark.idx
-}
-
-// Seek moves the cursor to the given token [ID].
-//
-// Returns false if the id is out of bounds.
-func (c *Cursor) Seek(id ID) bool {
-	if c == nil {
-		return false
-	}
-	if c.IsSynthetic() {
-		for i, tokID := range c.stream {
-			if tokID == id {
-				c.idx = i
-				return true
-			}
-		}
-		return false
-	}
-	if id < c.start || id >= c.end {
-		return false
-	}
-	c.idx = int(id)
-	return true
+	c.isBackwards = mark.isBackwards
 }
 
 // PeekSkippable returns the current token in the sequence, if there is one.
@@ -136,11 +108,14 @@ func (c *Cursor) PeekSkippable() Token {
 		}
 		return c.stream[c.idx].In(c.Context())
 	}
-	tokenID := ID(c.idx)
-	if tokenID < c.start || tokenID >= c.end {
+	if c.idx < 1 || c.idx > len(c.Context().Stream().nats) {
 		return Zero
 	}
-	return tokenID.In(c.Context())
+	tok := ID(c.idx).In(c.Context())
+	if !c.isBackwards && tok.nat().IsClose() {
+		return Zero // Reached the end.
+	}
+	return tok
 }
 
 // BeforeSkippable returns the token before the current token in the sequence, if there is one.
@@ -157,18 +132,22 @@ func (c *Cursor) BeforeSkippable() Token {
 		}
 		return c.stream[c.idx-1].In(c.Context())
 	}
-	tokenID := ID(c.idx - 1)
-	current := c.PeekSkippable()
-	if !current.IsZero() {
+	idx := c.idx - 1
+	if c.isBackwards && c.idx >= 1 && c.idx <= len(c.Context().Stream().nats) {
+		current := ID(c.idx).In(c.Context())
 		impl := current.nat()
-		if offset := impl.Offset(); offset < 0 && impl.IsClose() {
-			tokenID += ID(offset)
+		if offset := impl.Offset(); offset < 0 {
+			idx += offset
 		}
 	}
-	if tokenID < c.start || tokenID >= c.end {
+	if idx < 1 || idx > len(c.Context().Stream().nats) {
 		return Zero
 	}
-	return tokenID.In(c.Context())
+	tok := ID(idx).In(c.Context())
+	if tok.nat().IsOpen() {
+		return Zero // Reached the start.
+	}
+	return tok
 }
 
 // NextSkippable returns the next skippable token in the sequence, and advances the cursor.
@@ -178,11 +157,12 @@ func (c *Cursor) NextSkippable() Token {
 		return tok
 	}
 
+	c.isBackwards = false
 	if c.IsSynthetic() {
 		c.idx++
 	} else {
 		impl := ID(c.idx).In(c.Context()).nat()
-		if offset := impl.Offset(); offset > 0 && impl.IsOpen() {
+		if offset := impl.Offset(); offset > 0 {
 			c.idx += offset
 		}
 		c.idx++
@@ -197,6 +177,7 @@ func (c *Cursor) PrevSkippable() Token {
 		return tok
 	}
 
+	c.isBackwards = true
 	if c.IsSynthetic() {
 		c.idx--
 	} else {
@@ -213,9 +194,9 @@ func (c *Cursor) Peek() Token {
 	if c == nil {
 		return Zero
 	}
-	idx := c.idx
+	mark := c.Mark()
 	tok := c.Next()
-	c.idx = idx
+	c.Rewind(mark)
 	return tok
 }
 
@@ -281,18 +262,29 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 //
 // Returns [Zero] for a synthetic cursor.
 func (c *Cursor) JustAfter() (Token, report.Span) {
-	if c.stream != nil {
+	if c == nil || c.stream != nil {
 		return Zero, report.Span{}
 	}
 
+	// Seek to the end.
+	mark := c.Mark()
+	end := c.NextSkippable()
+	for !end.IsZero() {
+		end = c.NextSkippable()
+	}
+	end = c.PrevSkippable()
+	c.Rewind(mark)
+
+	// The token ID we want is just after the end of the closing token.
+	tokenID := end.ID() + 1
+
 	stream := c.Context().Stream()
-	if int(c.end) > len(stream.nats) {
+	if int(tokenID) > len(stream.nats) {
 		// This is the case where this cursor is a Stream.Cursor(). Thus, the
 		// just-after span should be the EOF.
 		return Zero, stream.EOF()
 	}
-
 	// Otherwise, return end.
-	tok := c.end.In(c.Context())
+	tok := tokenID.In(c.Context())
 	return tok, stream.Span(tok.offsets())
 }

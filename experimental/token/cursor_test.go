@@ -24,16 +24,17 @@ import (
 
 func TestCursor(t *testing.T) {
 	t.Parallel()
-	assert := assert.New(t)
 
-	ctx := NewContext("abc(def(x), ghi)")
+	// Create a token tree.
+	text := "abc(def(x), ghi)"
+	ctx := NewContext(text)
 	s := ctx.Stream()
 
 	abc := s.Push(3, token.Ident)
 	open := s.Push(1, token.Punct)
 	def := s.Push(3, token.Ident)
 	open2 := s.Push(1, token.Punct)
-	s.Push(1, token.Ident)
+	x := s.Push(1, token.Ident)
 	close2 := s.Push(1, token.Punct)
 	token.Fuse(open2, close2)
 	comma := s.Push(1, token.Punct)
@@ -41,39 +42,82 @@ func TestCursor(t *testing.T) {
 	ghi := s.Push(3, token.Ident)
 	close := s.Push(1, token.Punct) //nolint:revive,predeclared
 	token.Fuse(open, close)
+	_ = def
+	_ = comma
+	_ = space
+	_ = ghi
 
-	cursor := s.Cursor()
-	tokenEq(t, abc, cursor.PeekSkippable())
-	tokenEq(t, abc, cursor.Next())
-	tokenEq(t, abc, cursor.BeforeSkippable())
-	tokenEq(t, abc, cursor.Prev())
-	_ = cursor.Next()
-	tokenEq(t, open, cursor.Next())
-	tokenEq(t, token.Zero, cursor.Next())
-	tokenEq(t, close, cursor.Prev()) // Returns the close, not the open.
-	tokenEq(t, abc, cursor.Prev())
-	tokenEq(t, token.Zero, cursor.Prev())
-	tokenEq(t, abc, cursor.Next())
+	// Cursor at root.
+	t.Run("root", func(t *testing.T) {
+		t.Parallel()
+		cursor := s.Cursor()
+		tokenEq(t, abc, cursor.PeekSkippable())
+		tokenEq(t, abc, cursor.Next())
+		tokenEq(t, abc, cursor.BeforeSkippable())
+		tokenEq(t, abc, cursor.Prev())
+		_ = cursor.Next()
+		tokenEq(t, open, cursor.Next())
+		tokenEq(t, token.Zero, cursor.Next())
+		tokenEq(t, close, cursor.Prev()) // Returns the close, not the open.
+		tokenEq(t, abc, cursor.Prev())
+		tokenEq(t, token.Zero, cursor.Prev())
+		tokenEq(t, abc, cursor.Next())
+	})
 
-	// Seek to close.
-	assert.True(cursor.Seek(close.ID()))
-	tokenEq(t, abc, cursor.Prev())
-	tokenEq(t, abc, cursor.Next())
-	tokenEq(t, open, cursor.Next())
-	tokenEq(t, token.Zero, cursor.Next())
+	// Cursor at inner definition.
+	t.Run("inner", func(t *testing.T) {
+		t.Parallel()
+		cursor := token.NewCursorAt(def)
+		tokenEq(t, def, cursor.Next())
+		tokenEq(t, def, cursor.Prev())
+		tokenEq(t, token.Zero, cursor.Prev())
+		tokenEq(t, def, cursor.Next())
+		tokenEq(t, open2, cursor.Next())
+		tokenEq(t, comma, cursor.Next())
+		tokenEq(t, space, cursor.PeekSkippable())
+		tokenEq(t, ghi, cursor.Next())
+		tokenEq(t, token.Zero, cursor.Next()) // At the closing ), close.
+		tokenEq(t, ghi, cursor.Prev())
+		tokenEq(t, space, cursor.BeforeSkippable())
+		tokenEq(t, space, cursor.PrevSkippable())
+		tokenEq(t, comma, cursor.PrevSkippable())
+		tokenEq(t, close2, cursor.PrevSkippable())
+		tokenEq(t, def, cursor.PrevSkippable())
+		tokenEq(t, token.Zero, cursor.PrevSkippable()) // At the open (, open.
+	})
 
-	// Seek to an internal token.
-	assert.True(cursor.Seek(open2.ID()))
-	tokenEq(t, def, cursor.Prev())
-	tokenEq(t, def, cursor.Next())
-	tokenEq(t, open2, cursor.Next())
-	tokenEq(t, comma, cursor.Next())
-	tokenEq(t, space, cursor.PeekSkippable())
-	tokenEq(t, ghi, cursor.Next()) // Cursor at ).
-	tokenEq(t, abc, cursor.BeforeSkippable())
-	tokenEq(t, close, cursor.Next())
-	tokenEq(t, token.Zero, cursor.Next()) // At end.
-	tokenEq(t, close, cursor.Prev())
-	tokenEq(t, abc, cursor.Prev())
-	tokenEq(t, token.Zero, cursor.Prev()) // At start.
+	// Cursor escape.
+	t.Run("escape", func(t *testing.T) {
+		t.Parallel()
+		cursor := token.NewCursorAt(x)
+		tokenEq(t, x, cursor.Next())
+		tokenEq(t, token.Zero, cursor.Next())
+		tokenEq(t, token.Zero, cursor.Next())
+		tokenEq(t, x, cursor.Prev())
+		tokenEq(t, token.Zero, cursor.Prev())
+		tokenEq(t, token.Zero, cursor.Prev())
+		tokenEq(t, x, cursor.Next())
+		tokenEq(t, x, cursor.Prev())
+		tokenEq(t, token.Zero, cursor.Prev())
+		tokenEq(t, token.Zero, cursor.Prev())
+		tokenEq(t, x, cursor.NextSkippable())
+		tokenEq(t, token.Zero, cursor.NextSkippable())
+		tokenEq(t, x, cursor.PrevSkippable())
+	})
+
+	// Test JustAfter EOF.
+	t.Run("eof", func(t *testing.T) {
+		t.Parallel()
+		cursor := token.NewCursorAt(abc)
+		tokenEq(t, abc, cursor.NextSkippable())
+		tokenEq(t, open, cursor.NextSkippable())
+		tokenEq(t, token.Zero, cursor.Next())
+		tokenEq(t, close, cursor.Prev())
+
+		tok, span := cursor.JustAfter()
+		t.Log(tok.Text())
+		tokenEq(t, token.Zero, tok)
+		assert.Len(t, text, span.Start)
+		assert.Len(t, text, span.End)
+	})
 }
