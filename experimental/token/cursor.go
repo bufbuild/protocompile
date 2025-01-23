@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
@@ -29,8 +30,7 @@ type Cursor struct {
 	// This is used if this is a cursor over the children of a synthetic token.
 	// If stream is nil, we know we're in the natural case.
 	stream []ID
-	// The idx is the current token ID if this is a cursor over natural tokens,
-	// or the index into stream if this is a cursor over synthetic tokens.
+	// This is the index into the stream or natural tokens.
 	idx int
 	// This is used to know if we moved forwards or backwards when calculating
 	// the offset jump on a change of directions.
@@ -54,12 +54,12 @@ func NewCursorAt(tok Token) *Cursor {
 		panic(fmt.Sprintf("protocompile/token: passed zero token to NewCursorAt: %v", tok))
 	}
 	if tok.IsSynthetic() {
-		panic("protocompile/token: passed synthetic token to NewCursorAt")
+		panic(fmt.Sprintf("protocompile/token: passed synthetic token to NewCursorAt: %v", tok))
 	}
 
 	return &Cursor{
 		withContext: tok.withContext,
-		idx:         int(tok.ID()),
+		idx:         int(tok.ID() - 1), // Convert to 0-based index.
 	}
 }
 
@@ -103,51 +103,48 @@ func (c *Cursor) PeekSkippable() Token {
 		return Zero
 	}
 	if c.IsSynthetic() {
-		if c.idx < 0 || c.idx >= len(c.stream) {
+		tokenID, ok := slicesx.Get(c.stream, c.idx)
+		if !ok {
 			return Zero
 		}
-		return c.stream[c.idx].In(c.Context())
+		return tokenID.In(c.Context())
 	}
-	if c.idx < 1 || c.idx > len(c.Context().Stream().nats) {
-		return Zero
-	}
-	tok := ID(c.idx).In(c.Context())
-	if !c.isBackwards && tok.nat().IsClose() {
+	stream := c.Context().Stream()
+	impl, ok := slicesx.Get(stream.nats, c.idx)
+	if !ok || (!c.isBackwards && impl.IsClose()) {
 		return Zero // Reached the end.
 	}
-	return tok
+	return ID(c.idx + 1).In(c.Context())
 }
 
-// BeforeSkippable returns the token before the current token in the sequence, if there is one.
+// PeekPrevSkippable returns the token before the current token in the sequence, if there is one.
 // This may return a skippable token.
 //
 // Returns the zero token if this cursor is at the beginning of the stream.
-func (c *Cursor) BeforeSkippable() Token {
+func (c *Cursor) PeekPrevSkippable() Token {
 	if c == nil {
 		return Zero
 	}
 	if c.IsSynthetic() {
-		if c.idx-1 < 0 || c.idx-1 >= len(c.stream) {
+		tokenID, ok := slicesx.Get(c.stream, c.idx-1)
+		if !ok {
 			return Zero
 		}
-		return c.stream[c.idx-1].In(c.Context())
+		return tokenID.In(c.Context())
 	}
+	stream := c.Context().Stream()
 	idx := c.idx - 1
-	if c.isBackwards && c.idx >= 1 && c.idx <= len(c.Context().Stream().nats) {
-		current := ID(c.idx).In(c.Context())
-		impl := current.nat()
-		if offset := impl.Offset(); offset < 0 {
-			idx += offset
+	if c.isBackwards {
+		impl, ok := slicesx.Get(stream.nats, c.idx)
+		if ok && impl.IsClose() {
+			idx += impl.Offset()
 		}
 	}
-	if idx < 1 || idx > len(c.Context().Stream().nats) {
-		return Zero
-	}
-	tok := ID(idx).In(c.Context())
-	if tok.nat().IsOpen() {
+	impl, ok := slicesx.Get(stream.nats, idx)
+	if !ok || impl.IsOpen() {
 		return Zero // Reached the start.
 	}
-	return tok
+	return ID(idx + 1).In(c.Context())
 }
 
 // NextSkippable returns the next skippable token in the sequence, and advances the cursor.
@@ -161,9 +158,9 @@ func (c *Cursor) NextSkippable() Token {
 	if c.IsSynthetic() {
 		c.idx++
 	} else {
-		impl := ID(c.idx).In(c.Context()).nat()
-		if offset := impl.Offset(); offset > 0 {
-			c.idx += offset
+		impl := tok.nat()
+		if impl.IsOpen() {
+			c.idx += impl.Offset()
 		}
 		c.idx++
 	}
@@ -172,7 +169,7 @@ func (c *Cursor) NextSkippable() Token {
 
 // PrevSkippable returns the previous skippable token in the sequence, and decrements the cursor.
 func (c *Cursor) PrevSkippable() Token {
-	tok := c.BeforeSkippable()
+	tok := c.PeekPrevSkippable()
 	if tok.IsZero() {
 		return tok
 	}
@@ -181,7 +178,7 @@ func (c *Cursor) PrevSkippable() Token {
 	if c.IsSynthetic() {
 		c.idx--
 	} else {
-		c.idx = int(tok.ID())
+		c.idx = int(tok.ID() - 1)
 	}
 	return tok
 }
@@ -256,35 +253,29 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 	}
 }
 
-// JustAfter returns a span for whatever comes immediately after the end of
-// this cursor (be that a token or the EOF). If it is a token, this will return
-// that token, too.
+// SeekToEnd returns a span for whatever comes immediately after the end of this
+// cursor (be that a token or the EOF), and advances the cursor to the end.
+// If it is a token, this will return that token, too.
 //
 // Returns [Zero] for a synthetic cursor.
-func (c *Cursor) JustAfter() (Token, report.Span) {
+func (c *Cursor) SeekToEnd() (Token, report.Span) {
 	if c == nil || c.stream != nil {
 		return Zero, report.Span{}
 	}
 
 	// Seek to the end.
-	mark := c.Mark()
 	end := c.NextSkippable()
 	for !end.IsZero() {
 		end = c.NextSkippable()
 	}
-	end = c.PrevSkippable()
-	c.Rewind(mark)
-
-	// The token ID we want is just after the end of the closing token.
-	tokenID := end.ID() + 1
 
 	stream := c.Context().Stream()
-	if int(tokenID) > len(stream.nats) {
+	if c.idx >= len(stream.nats) {
 		// This is the case where this cursor is a Stream.Cursor(). Thus, the
 		// just-after span should be the EOF.
 		return Zero, stream.EOF()
 	}
 	// Otherwise, return end.
-	tok := tokenID.In(c.Context())
+	tok := ID(c.idx + 1).In(c.Context())
 	return tok, stream.Span(tok.offsets())
 }

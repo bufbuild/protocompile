@@ -225,7 +225,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 func peekTokenExpr(p *parser, c *token.Cursor) token.Token {
 	next := c.Peek()
 	if next.IsZero() {
-		token, span := c.JustAfter()
+		token, span := c.SeekToEnd()
 		err := errUnexpected{
 			what:  span,
 			where: taxa.Expr.In(),

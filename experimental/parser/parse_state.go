@@ -40,7 +40,7 @@ func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.To
 
 	wanted := taxa.NewSet(taxa.Punct(want, false))
 	if next.IsZero() {
-		tok, span := c.JustAfter()
+		tok, span := c.SeekToEnd()
 		err := errUnexpected{
 			what:  span,
 			where: where,

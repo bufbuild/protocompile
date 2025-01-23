@@ -49,7 +49,7 @@ func TestCursor(t *testing.T) {
 		cursor := s.Cursor()
 		tokenEq(t, abc, cursor.PeekSkippable())
 		tokenEq(t, abc, cursor.Next())
-		tokenEq(t, abc, cursor.BeforeSkippable())
+		tokenEq(t, abc, cursor.PeekPrevSkippable())
 		tokenEq(t, abc, cursor.Prev())
 		_ = cursor.Next()
 		tokenEq(t, open, cursor.Next())
@@ -74,7 +74,7 @@ func TestCursor(t *testing.T) {
 		tokenEq(t, ghi, cursor.Next())
 		tokenEq(t, token.Zero, cursor.Next()) // At the closing ), close.
 		tokenEq(t, ghi, cursor.Prev())
-		tokenEq(t, space, cursor.BeforeSkippable())
+		tokenEq(t, space, cursor.PeekPrevSkippable())
 		tokenEq(t, space, cursor.PrevSkippable())
 		tokenEq(t, comma, cursor.PrevSkippable())
 		tokenEq(t, close2, cursor.PrevSkippable())
@@ -110,7 +110,7 @@ func TestCursor(t *testing.T) {
 		tokenEq(t, token.Zero, cursor.Next())
 		tokenEq(t, close, cursor.Prev())
 
-		tok, span := cursor.JustAfter()
+		tok, span := cursor.SeekToEnd()
 		t.Log(tok.Text())
 		tokenEq(t, token.Zero, tok)
 		assert.Len(t, text, span.Start)
