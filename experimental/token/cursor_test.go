@@ -42,10 +42,6 @@ func TestCursor(t *testing.T) {
 	ghi := s.Push(3, token.Ident)
 	close := s.Push(1, token.Punct) //nolint:revive,predeclared
 	token.Fuse(open, close)
-	_ = def
-	_ = comma
-	_ = space
-	_ = ghi
 
 	// Cursor at root.
 	t.Run("root", func(t *testing.T) {

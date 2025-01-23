@@ -107,7 +107,6 @@ func (p Path) Components(yield func(PathComponent) bool) {
 
 	var sep token.Token
 	var broken bool
-
 	token.NewCursorAt(first).Rest()(func(tok token.Token) bool {
 		if tok.ID() > p.raw.End {
 			// We've reached the end of the path.
