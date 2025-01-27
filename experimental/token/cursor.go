@@ -30,7 +30,7 @@ type Cursor struct {
 	// This is used if this is a cursor over the children of a synthetic token.
 	// If stream is nil, we know we're in the natural case.
 	stream []ID
-	// This is the index into the stream or natural tokens.
+	// This is the index into either Context().Stream().nats or the stream.
 	idx int
 	// This is used to know if we moved forwards or backwards when calculating
 	// the offset jump on a change of directions.
@@ -191,10 +191,8 @@ func (c *Cursor) Peek() Token {
 	if c == nil {
 		return Zero
 	}
-	mark := c.Mark()
-	tok := c.Next()
-	c.Rewind(mark)
-	return tok
+	copy := *c
+	return copy.Next()
 }
 
 // Next returns the next token in the sequence, and advances the cursor.
