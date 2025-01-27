@@ -191,8 +191,8 @@ func (c *Cursor) Peek() Token {
 	if c == nil {
 		return Zero
 	}
-	copy := *c
-	return copy.Next()
+	cursor := *c
+	return cursor.Next()
 }
 
 // Next returns the next token in the sequence, and advances the cursor.
