@@ -77,7 +77,6 @@ func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	return blocks
 }
 
-// TODO: take indent nesting levels
 func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
@@ -101,16 +100,12 @@ func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 
 func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
+	// TODO: should this actually be based on the span start and end? o_o
+	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
 	var text string
-	// TODO: can this be cleaner/more performant?
-	if !applyFormatting {
-		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
-			// If we are not applying formatting, just print all the tokens
-			text += t.Text()
-		}
-	} else {
+	if applyFormatting {
 		valueToken := tokenForExprAny(decl.Value())
-		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
+		for _, t := range tokens {
 			// If we are applying formatting, we skip user-defined whitespace and format our own
 			if t.Kind() == token.Space {
 				continue
@@ -121,13 +116,11 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 			}
 			text += " "
 		}
+	} else {
+		for _, t := range tokens {
+			text += t.Text()
+		}
 	}
-	// TODO: improve performance? (only seek the cursor once)
-	cursor := token.NewCursorAt(decl.Semicolon())
-	// TODO: this is because when we set cursorAt, it gives us the cursor at the semicolon,
-	// so the frist element returned is the semicolon. when we improve the performance, we'll
-	// make this better.
-	cursor.NextSkippable()
 	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
 	if splitKind == splitKindSoft {
 		splitKind = splitKindNever
@@ -142,32 +135,26 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 
 func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
+	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
 	var text string
-	if !applyFormatting {
-		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
-			text += t.Text()
-		}
-	} else {
-		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
+	if applyFormatting {
+		for _, t := range tokens {
 			if t.Kind() == token.Space {
 				continue
 			}
 			text += t.Text()
 			// If the token span falls within the span of the path or if the token is the semicolon,
 			// we do not add a space.
-			decl.Path()
 			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(t.Span(), decl.Path().Span()) {
 				continue
 			}
 			text += " "
 		}
+	} else {
+		for _, t := range tokens {
+			text += t.Text()
+		}
 	}
-	// TODO: improve performance? (only seek the cursor once)
-	cursor := token.NewCursorAt(decl.Semicolon())
-	// TODO: this is because when we set cursorAt, it gives us the cursor at the semicolon,
-	// so the frist element returned is the semicolon. when we improve the performance, we'll
-	// make this better.
-	cursor.NextSkippable()
 	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
 	if splitKind == splitKindSoft {
 		splitKind = splitKindNever
@@ -182,20 +169,24 @@ func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
 
 func importBlock(decl ast.DeclImport, applyFormatting bool) block {
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
+	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
 	var text string
-	if !applyFormatting {
-		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
+	if applyFormatting {
+		for _, t := range tokens {
+			if t.Kind() == token.Space {
+				continue
+			}
 			text += t.Text()
+			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(t.Span(), decl.ImportPath().Span()) {
+				continue
+			}
+			text += " "
 		}
 	} else {
-		// TODO: implement
+		for _, t := range tokens {
+			text += t.Text()
+		}
 	}
-	// TODO: improve performance (only seek the cursor once)
-	cursor := token.NewCursorAt(decl.Semicolon())
-	// TODO: this is because when we set cursorAt, it gives us the cursor at the semicolon,
-	// so the frist element returned is the semicolon. when we improve the performance, we'll
-	// make this better.
-	cursor.NextSkippable()
 	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
 	if splitKind == splitKindSoft {
 		splitKind = splitKindNever
@@ -365,8 +356,7 @@ func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
 }
 
 // TODO: rename/clean-up
-// TODO: improve performance (create an iterator here?)
-func getTokensFromStartToEndInclusive(start, end token.Token) []token.Token {
+func getTokensFromStartToEndInclusiveAndCursor(start, end token.Token) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	cursor := token.NewCursorAt(start)
 	t := cursor.NextSkippable()
@@ -374,10 +364,11 @@ func getTokensFromStartToEndInclusive(start, end token.Token) []token.Token {
 		tokens = append(tokens, t)
 		t = cursor.NextSkippable()
 	}
-	return append(tokens, end)
+	return append(tokens, end), cursor
 }
 
 // TODO: rename/clean-up
+// TODO: is just checking the starts enough?
 func checkSpanWithin(have, want report.Span) bool {
 	return want.Start >= have.Start && want.Start <= have.End
 }

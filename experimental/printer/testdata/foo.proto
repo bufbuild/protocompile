@@ -7,6 +7,8 @@ syntax = /* comment explaining this */ "proto3";               // trailing comme
 
 package foo.bar ;
 
+import "google/protobuf/empty.proto";
+
 message Foo {
   string id = 1;
   string foo = 2;
