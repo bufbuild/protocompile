@@ -54,11 +54,22 @@ func (t ID) String() string {
 	if t == 0 {
 		return "Token(<nil>)"
 	}
-	if t < 0 {
-		return fmt.Sprintf("Token(^%d)", ^int(t))
-	}
+	return fmt.Sprintf("Token(%d)", t.index())
+}
 
-	return fmt.Sprintf("Token(%d)", int(t)-1)
+// index returns the index of this token in the stream.
+func (t ID) index() int {
+	if t.IsZero() {
+		panic("protocompile/token: called index on zero token")
+	}
+	if t < 0 {
+		// Need to invert the bits, because synthetic tokens are
+		// stored as negative numbers.
+		return ^int(t)
+	}
+	// Need to subtract off one, because the zeroth
+	// ID is used as a "missing" sentinel.
+	return int(t) - 1
 }
 
 // Constants for extracting the parts of tokenImpl.kindAndOffset.
