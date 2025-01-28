@@ -3,7 +3,7 @@ module github.com/bufbuild/protocompile
 go 1.21
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.8.0
+	github.com/bmatcuk/doublestar/v4 v4.8.1
 	github.com/google/go-cmp v0.6.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/rivo/uniseg v0.4.7
