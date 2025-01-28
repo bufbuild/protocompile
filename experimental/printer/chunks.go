@@ -104,8 +104,9 @@ func blockForDecl(cursor *token.Cursor, decl ast.DeclAny, applyFormatting bool) 
 func syntaxBlock(cursor *token.Cursor, decl ast.DeclSyntax, applyFormatting bool) block {
 	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
 	var text string
+	valueToken := tokenForExprAny(decl.Value())
 	tokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
-	for i, t := range tokens {
+	for _, t := range tokens {
 		if !applyFormatting {
 			// If we are not applying formatting, just print all the tokens
 			text += t.Text()
@@ -116,11 +117,10 @@ func syntaxBlock(cursor *token.Cursor, decl ast.DeclSyntax, applyFormatting bool
 			continue
 		}
 		text += t.Text()
-		// If this is not the last token, and the next token is not the semicolon, then add a space
-		// TODO: this should account for the next non-whitespace token
-		if i < len(tokens)-1 && tokens[i+1].ID() != decl.Semicolon().ID() {
-			text += " "
+		if t.ID() == valueToken.ID() || t.ID() == decl.Semicolon().ID() {
+			continue
 		}
+		text += " "
 	}
 	cursor.Seek(decl.Semicolon().ID())
 	// Seek sets the cursor to the given ID, so the first thing we pop is the thing we set.
@@ -152,20 +152,16 @@ func packageBlock(cursor *token.Cursor, decl ast.DeclPackage, applyFormatting bo
 			pathTokens = append(pathTokens, pc.Name().ID())
 			return true
 		})
-		for i, t := range tokens {
+		for _, t := range tokens {
 			if t.Kind() == token.Space {
 				continue
 			}
 			text += t.Text()
-			// We want to add a space after the last path token (if it is not immediately followed
-			// by the semicolon), so we don't check for it
-			if slices.Contains(pathTokens[:len(pathTokens)-1], t.ID()) {
+			// We don't add a space after path tokens or semicolon
+			if slices.Contains(pathTokens, t.ID()) || t.ID() == decl.Semicolon().ID() {
 				continue
 			}
-			// TODO: this should account for the next non-whitespace token
-			if i < len(tokens)-1 && tokens[i+1].ID() != decl.Semicolon().ID() {
-				text += " "
-			}
+			text += " "
 		}
 	} else {
 		// If formatting is not applied then we just simply take all the tokens and write them
@@ -250,6 +246,35 @@ func defBlock(decl ast.DeclDef, applyFormatting bool) block {
 	}
 	// TODO: add splitDefs
 	return block{chunks: chunks}
+}
+
+func tokenForExprAny(exprAny ast.ExprAny) token.Token {
+	switch exprAny.Kind() {
+	case ast.ExprKindInvalid:
+		// TODO: figure out how to handle invalid expressions
+		return token.Zero
+	case ast.ExprKindError:
+		// TODO: figure out how to handle error expressions
+		return token.Zero
+	case ast.ExprKindLiteral:
+		return exprAny.AsLiteral().Token
+	case ast.ExprKindPrefixed:
+		return token.Zero // TODO: implement
+	case ast.ExprKindPath:
+		return token.Zero // TODO: implement
+	case ast.ExprKindRange:
+		return token.Zero // TODO: implement
+	case ast.ExprKindArray:
+		return token.Zero // TODO: implement
+	case ast.ExprKindDict:
+		return token.Zero // TODO: implement
+	case ast.ExprKindField:
+		return token.Zero // TODO: implement
+	default:
+		// This should never happen
+		panic("ah")
+	}
+
 }
 
 func textForExprAny(exprAny ast.ExprAny) string {
