@@ -25,7 +25,7 @@ import (
 )
 
 // delimited is a mechanism for parsing a punctuation-delimited list.
-type delimited[T any] struct {
+type delimited[T report.Spanner] struct {
 	p *parser
 	c *token.Cursor
 
@@ -46,6 +46,12 @@ type delimited[T any] struct {
 	//
 	// This function is expected to exhaust
 	parse func(*token.Cursor) (T, bool)
+
+	// Used for skipping tokens until we can begin parsing.
+	//
+	// start is called until we see a token that returns true for it. However,
+	// if stop is not nil and it returns true for that token, parsing stops.
+	start, stop func(token.Token) bool
 }
 
 func (d delimited[T]) appendTo(commas ast.Commas[T]) {
@@ -65,9 +71,11 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 	}
 
 	var delim token.Token
+	var latest int // The index of the most recently seen delimiter.
 
 	if next := d.c.Peek(); slices.Contains(d.delims, next.Text()) {
-		_ = d.c.Pop()
+		_ = d.c.Next()
+		latest = slices.Index(d.delims, next.Text())
 
 		d.p.Error(errUnexpected{
 			what:  next,
@@ -77,21 +85,79 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		})
 	}
 
+	var needDelim bool
+	var mark token.CursorMark
 	for !d.c.Done() {
+		ensureProgress(d.c, &mark)
+
+		// Set if we should not diagnose a missing comma, because there was
+		// garbage in front of the call to parse().
+		var badPrefix bool
+		if !d.start(d.c.Peek()) {
+			if d.stop != nil && d.stop(d.c.Peek()) {
+				break
+			}
+
+			first := d.c.Next()
+			var last token.Token
+			for !d.c.Done() && !d.start(d.c.Peek()) {
+				if d.stop != nil && d.stop(d.c.Peek()) {
+					break
+				}
+				last = d.c.Next()
+			}
+
+			want := d.what.AsSet()
+			if needDelim && delim.IsZero() {
+				want = d.delimNouns()
+			}
+
+			what := report.Spanner(first)
+			if !last.IsZero() {
+				what = report.Join(first, last)
+			}
+
+			badPrefix = true
+			d.p.Error(errUnexpected{
+				what:  what,
+				where: d.in.In(),
+				want:  want,
+			})
+		}
+
 		v, ok := d.parse(d.c)
 		if !ok {
 			break
 		}
 
+		if !badPrefix && needDelim && delim.IsZero() {
+			d.p.Error(errUnexpected{
+				what:  v,
+				where: d.in.In(),
+				want:  d.delimNouns(),
+			}).Apply(
+				// TODO: this should be a suggestion.
+				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
+			)
+		}
+		needDelim = d.required
+
 		// Pop as many delimiters as we can.
 		delim = token.Zero
-		for slices.Contains(d.delims, d.c.Peek().Text()) {
-			next := d.c.Pop()
+		for {
+			which := slices.Index(d.delims, d.c.Peek().Text())
+			if which < 0 {
+				break
+			}
+			latest = which
+
+			next := d.c.Next()
 			if delim.IsZero() {
 				delim = next
 				continue
 			}
 
+			// Diagnose all extra delimiters after the first.
 			d.p.Error(errUnexpected{
 				what:  next,
 				where: d.in.In(),
@@ -100,8 +166,17 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			}).Apply(report.Snippetf(delim, "first delimiter is here"))
 		}
 
-		if !yield(v, delim) || (d.required && delim.IsZero()) {
+		if !yield(v, delim) {
 			break
+		}
+
+		// In non-exhaust mode, if we miss a required comma, bail if we have
+		// reached a stop token, or if we don't have a stop predicate.
+		// Otherwise, go again to parse another thing.
+		if delim.IsZero() && d.required && !d.exhaust {
+			if d.stop == nil || d.stop(d.c.Peek()) {
+				break
+			}
 		}
 	}
 
@@ -120,4 +195,12 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			got:   fmt.Sprintf("trailing `%s`", delim.Text()),
 		})
 	}
+}
+
+func (d delimited[T]) delimNouns() taxa.Set {
+	var set taxa.Set
+	for _, delim := range d.delims {
+		set = set.With(taxa.Punct(delim, false))
+	}
+	return set
 }

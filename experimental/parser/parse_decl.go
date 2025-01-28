@@ -28,6 +28,10 @@ type exprComma struct {
 	comma token.Token
 }
 
+func (e exprComma) Span() report.Span {
+	return e.expr.Span()
+}
+
 // parseDecl parses any Protobuf declaration.
 //
 // This function will always advance cursor if it is not empty.
@@ -39,7 +43,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	var unexpected []token.Token
 	for !c.Done() && !canStartDecl(first) {
-		unexpected = append(unexpected, c.Pop())
+		unexpected = append(unexpected, c.Next())
 		first = c.Peek()
 	}
 	switch len(unexpected) {
@@ -60,7 +64,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	}
 
 	if first.Text() == ";" {
-		c.Pop()
+		c.Next()
 
 		// This is an empty decl.
 		return p.NewDeclEmpty(first).AsAny()
@@ -68,7 +72,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	// This is a bare declaration body.
 	if canStartBody(first) {
-		return parseBody(p, c.Pop(), in).AsAny()
+		return parseBody(p, c.Next(), in).AsAny()
 	}
 
 	// We need to parse a path here. At this point, we need to generate a
@@ -269,7 +273,7 @@ func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 // parseRange parses a reserved/extensions range.
 func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// Consume the keyword token.
-	kw := c.Pop()
+	kw := c.Next()
 
 	in := taxa.Extensions
 	if kw.Text() == "reserved" {
@@ -291,6 +295,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// is empty, or if the first comma occurs without seeing an =, we can choose
 	// to parse this as an array, instead.
 	if !canStartOptions(c.Peek()) {
+		var last token.Token
 		delimited[ast.ExprAny]{
 			p: p, c: c,
 			what: taxa.Expr,
@@ -299,10 +304,44 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 			required: true,
 			exhaust:  false,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
+				last = c.Peek()
 				expr := parseExpr(p, c, in.In())
 				badExpr = expr.IsZero()
 
 				return expr, !expr.IsZero()
+			},
+			start: canStartExpr,
+			stop: func(t token.Token) bool {
+				if t.Text() == ";" || t.Text() == "[" {
+					return true
+				}
+
+				// After the first element, stop if we see an identifier
+				// coming up. This is for a case like this:
+				//
+				// reserved 1, 2
+				// message Foo {}
+				//
+				// If we don't do this, message will be interpreted as an
+				// expression.
+				if !last.IsZero() && t.Kind() == token.Ident {
+					// However, this will cause
+					//
+					// reserved foo, bar baz;
+					//
+					// to treat baz as a new declaration, rather than assume a
+					// missing comma. Distinguishing this case is tricky: the
+					// cheapest option is to check whether a newline exists between
+					// this token and the last position passed to parse.
+					//
+					// This case will not be hit for valid syntax, so it's ok
+					// to do 2*O(log n) line lookups.
+					prev := last.Span().EndLoc()
+					next := t.Span().StartLoc()
+					return prev.Line != next.Line
+				}
+
+				return false
 			},
 		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			exprs = append(exprs, exprComma{expr, comma})
@@ -344,6 +383,7 @@ func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.No
 			ty := parseType(p, c, in.In())
 			return ty, !ty.IsZero()
 		},
+		start: canStartPath,
 	}.appendTo(types)
 }
 
@@ -351,7 +391,7 @@ func tryParseOptions(p *parser, c *token.Cursor, in taxa.Noun) ast.CompactOption
 	if !canStartOptions(c.Peek()) {
 		return ast.CompactOptions{}
 	}
-	return parseOptions(p, c.Pop(), in)
+	return parseOptions(p, c.Next(), in)
 }
 
 // parseOptions parses a ([]-delimited) compact options list.
@@ -381,7 +421,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 				)
 				fallthrough
 			case "=":
-				c.Pop()
+				c.Next()
 			default:
 				p.Error(errUnexpected{
 					what:  eq,
@@ -398,6 +438,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			}
 			return option, !option.Value.IsZero()
 		},
+		start: canStartPath,
 	}.appendTo(options.Entries())
 
 	return options

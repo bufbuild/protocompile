@@ -32,10 +32,15 @@ import (
 // all write to Report at the same time). Instead, the recommendation is to create
 // multiple reports and then merge them, using [Report.Sort] to canonicalize the result.
 type Report struct {
+	Options
+
 	// The actual diagnostics on this report. Generally, you'll want to use one of
 	// the helpers like [Report.Error] instead of appending directly.
 	Diagnostics []Diagnostic
+}
 
+// Options for how a report should be constructed.
+type Options struct {
 	// The stage to apply to any new diagnostics created with this report.
 	//
 	// Diagnostics with the same stage will sort together. See [Report.Sort].
@@ -208,13 +213,22 @@ func (r *Report) ToProto() proto.Message {
 				})
 			}
 
-			dProto.Annotations = append(dProto.Annotations, &compilerpb.Diagnostic_Annotation{
+			snippet := &compilerpb.Diagnostic_Annotation{
 				File:    file,
 				Start:   uint32(snip.Start),
 				End:     uint32(snip.End),
 				Message: snip.message,
 				Primary: snip.primary,
-			})
+			}
+			for _, edit := range snip.edits {
+				snippet.Edits = append(snippet.Edits, &compilerpb.Diagnostic_Edit{
+					Start:   uint32(edit.Start),
+					End:     uint32(edit.End),
+					Replace: edit.Replace,
+				})
+			}
+
+			dProto.Annotations = append(dProto.Annotations, snippet)
 		}
 
 		proto.Diagnostics = append(proto.Diagnostics, dProto)
@@ -279,7 +293,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 				)
 			}
 
-			d.snippets = append(d.snippets, snippet{
+			snippet := snippet{
 				Span: Span{
 					File:  file,
 					Start: int(snip.Start),
@@ -287,7 +301,16 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 				},
 				message: snip.Message,
 				primary: snip.Primary,
-			})
+			}
+			for _, edit := range snip.Edits {
+				snippet.edits = append(snippet.edits, Edit{
+					Start:   int(edit.Start),
+					End:     int(edit.End),
+					Replace: edit.Replace,
+				})
+			}
+
+			d.snippets = append(d.snippets, snippet)
 			havePrimary = havePrimary || snip.Primary
 		}
 

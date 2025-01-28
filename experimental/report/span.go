@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/iter"
@@ -78,6 +79,59 @@ func (s Span) EndLoc() Location {
 // Span implements [Spanner].
 func (s Span) Span() Span {
 	return s
+}
+
+// RuneRange slices this span along the given rune indices.
+//
+// For example, s.RuneRange(0, 2) returns at most the first two runes of the
+// span.
+//
+// Unlike slicing into a string, out-of-bounds indices are snapped to the
+// boundaries of the string, and negative indices are taken from the back of
+// the span. For example, s.RuneRange(-2, -1) is the final rune of the span
+// (or an empty span, if s is empty).
+func (s Span) RuneRange(i, j int) Span {
+	i = runeIdxToByteOffset(s.Text(), i)
+	j = runeIdxToByteOffset(s.Text(), j)
+	if i > j {
+		i, j = j, i
+	}
+	return s.File.Span(i+s.Start, j+s.Start)
+}
+
+// Rune is a shorthand for RuneRange(i, i+1) or RuneRange(i-1, i), depending
+// on the sign of i.
+func (s Span) Rune(i int) Span {
+	if i < 0 {
+		return s.RuneRange(i-1, i)
+	}
+	return s.RuneRange(i, i+1)
+}
+
+// runeIdxToByteOffset converts a rune index into s into a byte offset.
+//
+// If i is negative, this produces the index of the -ith rune from the end of
+// the string.
+//
+// If i > len(s) or i < -len(s), returns len(s) or 0, respectively; i is always
+// valid to index into s with.
+func runeIdxToByteOffset(s string, i int) int {
+	for i < 0 {
+		i++
+		if i == 0 || s == "" {
+			return len(s)
+		}
+		_, j := utf8.DecodeLastRuneInString(s)
+		s = s[:len(s)-j]
+	}
+
+	for j := range s {
+		if i == 0 {
+			return j
+		}
+		i--
+	}
+	return len(s)
 }
 
 // String implements [string.Stringer].

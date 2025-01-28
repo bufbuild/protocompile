@@ -39,7 +39,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 	var prevSeparator token.Token
 	if start.Text() == "." || start.Text() == "/" {
-		prevSeparator = c.Pop()
+		prevSeparator = c.Next()
 	}
 
 	var done bool
@@ -60,7 +60,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 					want:  taxa.NewSet(taxa.Ident, taxa.Parens),
 				})
 			}
-			prevSeparator = c.Pop()
+			prevSeparator = c.Next()
 
 		case next.Kind() == token.Ident:
 			if !first && prevSeparator.IsZero() {
@@ -72,7 +72,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 			end = next
 			prevSeparator = token.Zero
-			c.Pop()
+			c.Next()
 
 		case next.Text() == "(":
 			if !first && prevSeparator.IsZero() {
@@ -98,7 +98,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 			end = next
 			prevSeparator = token.Zero
-			c.Pop()
+			c.Next()
 
 		default:
 			if prevSeparator.IsZero() {

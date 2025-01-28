@@ -218,23 +218,40 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 	lineBarWidth = max(2, lineBarWidth)
 
 	// Render all the diagnostic windows.
-	parts := slicesx.Partition(d.snippets, func(a, b *snippet) bool { return a.Path() != b.Path() })
-	parts(func(i int, snippets []snippet) bool {
-		out.WriteByte('\n')
-		out.WriteString(ss.nAccent)
-		padBy(&out, lineBarWidth)
-
-		primary := snippets[0]
-		start := locations[i][0]
-		sep := ":::"
-		if i == 0 {
-			sep = "-->"
+	parts := slicesx.Partition(d.snippets, func(a, b *snippet) bool {
+		if len(a.edits) > 0 || len(b.edits) > 0 {
+			// Suggestions are always rendered in their own windows.
+			return true
 		}
-		fmt.Fprintf(&out, "%s %s:%d:%d", sep, primary.Path(), start.Line, start.Column)
+
+		return a.Path() != b.Path()
+	})
+
+	parts(func(i int, snippets []snippet) bool {
+		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
+			out.WriteByte('\n')
+			out.WriteString(ss.nAccent)
+			padBy(&out, lineBarWidth)
+
+			primary := snippets[0]
+			start := locations[i][0]
+			sep := ":::"
+			if i == 0 {
+				sep = "-->"
+			}
+			fmt.Fprintf(&out, "%s %s:%d:%d\n", sep, primary.Path(), start.Line, start.Column)
+		}
+
+		if len(snippets[0].edits) > 0 {
+			if i > 0 {
+				out.WriteByte('\n')
+			}
+			suggestion(snippets[0], locations[i][0].Line, lineBarWidth, &ss, &out)
+			return true
+		}
 
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.
-		out.WriteByte('\n')
 		padBy(&out, lineBarWidth)
 		out.WriteString(" | ")
 
@@ -323,15 +340,7 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 		w.offsets[0] = min(w.offsets[0], snip.Start)
 		w.offsets[1] = max(w.offsets[1], snip.End)
 	}
-	// Now, find the newlines before and after the given ranges, respectively.
-	// This snaps the range to start immediately after a newline (or SOF) and
-	// end immediately before a newline (or EOF).
-	w.offsets[0] = strings.LastIndexByte(w.file.Text()[:w.offsets[0]], '\n') + 1 // +1 gives the byte *after* the newline.
-	if end := strings.IndexByte(w.file.Text()[w.offsets[1]:], '\n'); end != -1 {
-		w.offsets[1] += end
-	} else {
-		w.offsets[1] = len(w.file.Text())
-	}
+	w.offsets[0], w.offsets[1] = adjustLineOffsets(w.file.Text(), w.offsets[0], w.offsets[1])
 
 	// Now, convert each span into an underline or multiline.
 	for i, snippet := range snippets {
@@ -899,6 +908,116 @@ func renderSidebar(bars, lineno, slashAt int, ss *styleSheet, multis []*multilin
 	}
 	sidebar.WriteString(ss.reset)
 	return sidebar.String()
+}
+
+// suggestion renders a single suggestion window.
+func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, out *strings.Builder) {
+	out.WriteString(ss.nAccent)
+	padBy(out, lineBarWidth)
+	out.WriteString("help: ")
+	out.WriteString(snip.message)
+
+	// Add a blank line after the file. This gives the diagnostic window some
+	// visual breathing room.
+	out.WriteByte('\n')
+	padBy(out, lineBarWidth)
+	out.WriteString(" | ")
+
+	// When the suggestion spans multiple lines, we don't bother doing a by-the-rune
+	// diff, because the result can be hard for users to understand how to apply
+	// to their code. Also, if the suggestion contains deletions, use
+	multiline := slices.ContainsFunc(snip.edits, func(e Edit) bool {
+		// Prefer multiline suggestions in the case of deletions.
+		return e.IsDeletion() || strings.Contains(e.Replace, "\n")
+	}) ||
+		strings.Contains(snip.Span.Text(), "\n")
+
+	if multiline {
+		aLine := startLine
+		bLine := startLine
+		for _, hunk := range unifiedDiff(snip.Span, snip.edits) {
+			if hunk.content == "" {
+				continue
+			}
+			for _, line := range strings.Split(hunk.content, "\n") {
+				lineno := aLine
+				if hunk.kind == '+' {
+					lineno = bLine
+				}
+
+				// Draw the line as we would for an ordinary window, but prefix
+				// each line with a the hunk's kind and color.
+				fmt.Fprintf(out, "\n%s%*d | %s%c%s %s",
+					ss.nAccent, lineBarWidth, lineno,
+					hunk.bold(ss), hunk.kind, hunk.color(ss),
+					line,
+				)
+
+				switch hunk.kind {
+				case ' ':
+					aLine++
+					bLine++
+				case '-':
+					aLine++
+				case '+':
+					bLine++
+				}
+			}
+		}
+
+		out.WriteByte('\n')
+		out.WriteString(ss.nAccent)
+		padBy(out, lineBarWidth)
+		out.WriteString(" | ")
+		return
+	}
+
+	fmt.Fprintf(out, "\n%s%*d | ", ss.nAccent, lineBarWidth, startLine)
+	hunks := hunkDiff(snip.Span, snip.edits)
+	var column int
+	for _, hunk := range hunks {
+		if hunk.content == "" {
+			continue
+		}
+
+		out.WriteString(hunk.color(ss))
+		// Re-use the logic from width calculation to correctly format a line for
+		// showing in a terminal.
+		column = stringWidth(column, hunk.content, false, out)
+	}
+
+	// Draw underlines for each modified segment, using + and - as the
+	// underline characters.
+	out.WriteByte('\n')
+	out.WriteString(ss.nAccent)
+	padBy(out, lineBarWidth)
+	out.WriteString(" | ")
+	column = 0
+	for _, hunk := range hunks {
+		if hunk.content == "" {
+			continue
+		}
+
+		prev := column
+		column = stringWidth(column, hunk.content, false, nil)
+		out.WriteString(hunk.bold(ss))
+		for i := 0; i < column-prev; i++ {
+			out.WriteRune(hunk.kind)
+		}
+	}
+}
+
+func adjustLineOffsets(text string, start, end int) (int, int) {
+	// Find the newlines before and after the given ranges, respectively.
+	// This snaps the range to start immediately after a newline (or SOF) and
+	// end immediately before a newline (or EOF).
+	start = strings.LastIndexByte(text[:start], '\n') + 1 // +1 gives the byte *after* the newline.
+	if offset := strings.IndexByte(text[end:], '\n'); offset != -1 {
+		end += offset
+	} else {
+		end = len(text)
+	}
+	return start, end
 }
 
 func padBy(out *strings.Builder, spaces int) {

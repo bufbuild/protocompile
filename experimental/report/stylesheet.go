@@ -20,9 +20,9 @@ type styleSheet struct {
 
 	reset string
 	// Normal colors.
-	nError, nWarning, nRemark, nAccent string
+	nError, nWarning, nRemark, nAccent, nAdd, nDelete string
 	// Bold colors.
-	bError, bWarning, bRemark, bAccent string
+	bError, bWarning, bRemark, bAccent, bAdd, bDelete string
 }
 
 func newStyleSheet(r Renderer) styleSheet {
@@ -50,6 +50,13 @@ func newStyleSheet(r Renderer) styleSheet {
 		// the source code (which appears in white).
 		nAccent: "\033[0;34m",
 		bAccent: "\033[1;34m",
+
+		// Green.
+		nAdd: "\033[0;32m",
+		bAdd: "\033[1;32m",
+		// Red.
+		nDelete: "\033[0;31m",
+		bDelete: "\033[1;31m",
 	}
 }
 

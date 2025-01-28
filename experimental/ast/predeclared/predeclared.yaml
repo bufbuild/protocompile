@@ -27,6 +27,10 @@
       Lookup looks up a predefined identifier by name.
 
       If name does not name a predefined identifier, returns [Unknown].
+  - kind: all
+    name: All
+    docs: |
+      All returns an iterator over all distinct [Name] values.
   values:
   - name: Unknown
     string: unknown

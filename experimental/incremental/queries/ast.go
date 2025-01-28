@@ -15,21 +15,22 @@
 package queries
 
 import (
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/incremental"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/parser"
 	"github.com/bufbuild/protocompile/experimental/source"
 )
 
-// File is an [incremental.Query] for the contents of a file as provided
+// AST is an [incremental.Query] for the contents of a file as provided
 // by a [source.Opener].
 //
-// File queries with different Openers are considered distinct.
-type File struct {
+// AST queries with different Openers are considered distinct.
+type AST struct {
 	source.Opener // Must be comparable.
 	Path          string
 }
 
-var _ incremental.Query[*report.File] = File{}
+var _ incremental.Query[ast.File] = AST{}
 
 // Key implements [incremental.Query].
 //
@@ -38,21 +39,22 @@ var _ incremental.Query[*report.File] = File{}
 // also means that the Openers must all be comparable. As the [Opener]
 // documentation states, implementations should take a pointer receiver so that
 // comparison uses object identity.
-func (f File) Key() any {
-	return f
+func (a AST) Key() any {
+	return a
 }
 
 // Execute implements [incremental.Query].
-func (f File) Execute(t incremental.Task) (*report.File, error) {
-	t.Report().Options.Stage += stageFile
+func (a AST) Execute(t incremental.Task) (ast.File, error) {
+	t.Report().Options.Stage += stageAST
 
-	text, err := f.Open(f.Path)
+	r, err := incremental.Resolve(t, File(a))
 	if err != nil {
-		t.Report().Errorf("%v", err).Apply(
-			report.InFile(f.Path),
-		)
-		return nil, err
+		return ast.File{}, err
+	}
+	if r[0].Fatal != nil {
+		return ast.File{}, r[0].Fatal
 	}
 
-	return report.NewFile(f.Path, text), nil
+	file, _ := parser.Parse(r[0].Value, t.Report())
+	return file, nil
 }
