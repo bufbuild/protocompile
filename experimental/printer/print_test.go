@@ -36,7 +36,7 @@ func TestChunksParsingRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	text := string(data)
 
-	file, ok := parser.Parse(report.NewFile("testdata/foo.proto", text), &report.Report{Tracing: 10})
+	file, ok := parser.Parse(report.NewFile("testdata/foo.proto", text), &report.Report{Options: report.Options{Tracing: 10}})
 	require.True(t, ok)
 
 	p := printer{}
@@ -74,7 +74,7 @@ func TestASTRoundTrips(t *testing.T) {
 }
 
 func testASTRoundTrip(t *testing.T, path string, text string) {
-	errs := &report.Report{Tracing: 10}
+	errs := &report.Report{Options: report.Options{Tracing: 10}}
 	file, ok := parser.Parse(report.NewFile(path, text), errs)
 	require.True(t, ok)
 
@@ -99,7 +99,7 @@ message Bar {
 import "synth/foo.proto";` + text[injectPos:]
 	t.Log("expect:", expect)
 
-	errs := &report.Report{Tracing: 10}
+	errs := &report.Report{Options: report.Options{Tracing: 10}}
 	file, ok := parser.Parse(report.NewFile("test.proto", text), errs)
 	require.True(t, ok)
 	// Modify the AST
@@ -142,7 +142,7 @@ message Bar {
    string baz = 1;
 }`
 
-	errs := &report.Report{Tracing: 10}
+	errs := &report.Report{Options: report.Options{Tracing: 10}}
 	file, ok := parser.Parse(report.NewFile("test.proto", text), errs)
 	require.True(t, ok)
 	// Modify the AST.

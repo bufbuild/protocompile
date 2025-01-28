@@ -1,10 +1,10 @@
 package printer
 
 import (
-	"slices"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -36,7 +36,6 @@ const (
 	// splitKindDouble represents a double hard split, which means the chunk must be followed by
 	// two newlines.
 	splitKindDouble
-	// TODO: implement
 	// splitKindNever represents a chunk that must never be split. This is treated similar to
 	// a soft split, in that it will respect spaceWhenUnsplit.
 	splitKindNever
@@ -69,27 +68,26 @@ type block struct {
 }
 
 func fileToBlocks(file ast.File, applyFormatting bool) []block {
-	cursor := file.Context().Stream().Cursor()
 	decls := file.Decls()
 	var blocks []block
 	for i := 0; i < decls.Len(); i++ {
 		decl := decls.At(i)
-		blocks = append(blocks, blockForDecl(cursor, decl, applyFormatting))
+		blocks = append(blocks, blockForDecl(decl, applyFormatting))
 	}
 	return blocks
 }
 
 // TODO: take indent nesting levels
-func blockForDecl(cursor *token.Cursor, decl ast.DeclAny, applyFormatting bool) block {
+func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
-		return syntaxBlock(cursor, decl.AsSyntax(), applyFormatting)
+		return syntaxBlock(decl.AsSyntax(), applyFormatting)
 	case ast.DeclKindPackage:
-		return packageBlock(cursor, decl.AsPackage(), applyFormatting)
+		return packageBlock(decl.AsPackage(), applyFormatting)
 	case ast.DeclKindImport:
-		return importBlock(cursor, decl.AsImport(), applyFormatting)
+		return importBlock(decl.AsImport(), applyFormatting)
 	case ast.DeclKindDef:
 		// return defBlock(decl.AsDef(), applyFormatting)
 	case ast.DeclKindBody:
@@ -101,77 +99,36 @@ func blockForDecl(cursor *token.Cursor, decl ast.DeclAny, applyFormatting bool) 
 	return block{}
 }
 
-func syntaxBlock(cursor *token.Cursor, decl ast.DeclSyntax, applyFormatting bool) block {
-	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
+	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
 	var text string
-	valueToken := tokenForExprAny(decl.Value())
-	tokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
-	for _, t := range tokens {
-		if !applyFormatting {
+	// TODO: can this be cleaner/more performant?
+	if !applyFormatting {
+		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
 			// If we are not applying formatting, just print all the tokens
 			text += t.Text()
-			continue
 		}
-		// If we are applying formatting, we skip user-defined whitespace and format our own
-		if t.Kind() == token.Space {
-			continue
-		}
-		text += t.Text()
-		if t.ID() == valueToken.ID() || t.ID() == decl.Semicolon().ID() {
-			continue
-		}
-		text += " "
-	}
-	cursor.Seek(decl.Semicolon().ID())
-	// Seek sets the cursor to the given ID, so the first thing we pop is the thing we set.
-	// TODO: we need to rethink some of the seek/unpop behaviours.
-	cursor.PopSkippable()
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
-	if splitKind == splitKindSoft {
-		splitKind = splitKindNever
-	}
-	chunks = append(chunks, chunk{
-		text:             text,
-		splitKind:        splitKind,
-		spaceWhenUnsplit: spaceWhenUnsplit,
-	})
-	return block{chunks: chunks}
-}
-
-func packageBlock(cursor *token.Cursor, decl ast.DeclPackage, applyFormatting bool) block {
-	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
-	var text string
-	tokens := getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon())
-	if applyFormatting {
-		// Figure out the path range of tokens
-		var pathTokens []token.ID
-		decl.Path().Components(func(pc ast.PathComponent) bool {
-			if !pc.Separator().IsZero() {
-				pathTokens = append(pathTokens, pc.Separator().ID())
-			}
-			pathTokens = append(pathTokens, pc.Name().ID())
-			return true
-		})
-		for _, t := range tokens {
+	} else {
+		valueToken := tokenForExprAny(decl.Value())
+		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
+			// If we are applying formatting, we skip user-defined whitespace and format our own
 			if t.Kind() == token.Space {
 				continue
 			}
 			text += t.Text()
-			// We don't add a space after path tokens or semicolon
-			if slices.Contains(pathTokens, t.ID()) || t.ID() == decl.Semicolon().ID() {
+			if t.ID() == valueToken.ID() || t.ID() == decl.Semicolon().ID() {
 				continue
 			}
 			text += " "
 		}
-	} else {
-		// If formatting is not applied then we just simply take all the tokens and write them
-		for _, t := range tokens {
-			text += t.Text()
-		}
 	}
-	cursor.Seek(decl.Semicolon().ID())
-	cursor.PopSkippable()
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
+	// TODO: improve performance? (only seek the cursor once)
+	cursor := token.NewCursorAt(decl.Semicolon())
+	// TODO: this is because when we set cursorAt, it gives us the cursor at the semicolon,
+	// so the frist element returned is the semicolon. when we improve the performance, we'll
+	// make this better.
+	cursor.NextSkippable()
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
 	if splitKind == splitKindSoft {
 		splitKind = splitKindNever
 	}
@@ -183,23 +140,63 @@ func packageBlock(cursor *token.Cursor, decl ast.DeclPackage, applyFormatting bo
 	return block{chunks: chunks}
 }
 
-func importBlock(cursor *token.Cursor, decl ast.DeclImport, applyFormatting bool) block {
-	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
+	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
 	var text string
-	if applyFormatting {
-		// TODO: handle empty modifier
-		text = decl.Keyword().Text() + " " + decl.Modifier().Text() + " " + textForExprAny(decl.ImportPath()) + " " + decl.Semicolon().Text()
-	} else {
-		// Grab all tokens between the start and the end of the syntax declaration
-		// TODO: we should actually grab all the tokens for the formatting version also, in case there are
-		// comments in between. We only want to drop the whitespace.
-		for _, t := range getTokensFromStartToEndInclusive(cursor, decl.Keyword(), decl.Semicolon()) {
+	if !applyFormatting {
+		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
 			text += t.Text()
 		}
+	} else {
+		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
+			if t.Kind() == token.Space {
+				continue
+			}
+			text += t.Text()
+			// If the token span falls within the span of the path or if the token is the semicolon,
+			// we do not add a space.
+			decl.Path()
+			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(t.Span(), decl.Path().Span()) {
+				continue
+			}
+			text += " "
+		}
 	}
-	cursor.Seek(decl.Semicolon().ID())
-	cursor.PopSkippable()
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
+	// TODO: improve performance? (only seek the cursor once)
+	cursor := token.NewCursorAt(decl.Semicolon())
+	// TODO: this is because when we set cursorAt, it gives us the cursor at the semicolon,
+	// so the frist element returned is the semicolon. when we improve the performance, we'll
+	// make this better.
+	cursor.NextSkippable()
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
+	if splitKind == splitKindSoft {
+		splitKind = splitKindNever
+	}
+	chunks = append(chunks, chunk{
+		text:             text,
+		splitKind:        splitKind,
+		spaceWhenUnsplit: spaceWhenUnsplit,
+	})
+	return block{chunks: chunks}
+}
+
+func importBlock(decl ast.DeclImport, applyFormatting bool) block {
+	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
+	var text string
+	if !applyFormatting {
+		for _, t := range getTokensFromStartToEndInclusive(decl.Keyword(), decl.Semicolon()) {
+			text += t.Text()
+		}
+	} else {
+		// TODO: implement
+	}
+	// TODO: improve performance (only seek the cursor once)
+	cursor := token.NewCursorAt(decl.Semicolon())
+	// TODO: this is because when we set cursorAt, it gives us the cursor at the semicolon,
+	// so the frist element returned is the semicolon. when we improve the performance, we'll
+	// make this better.
+	cursor.NextSkippable()
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
 	if splitKind == splitKindSoft {
 		splitKind = splitKindNever
 	}
@@ -212,10 +209,7 @@ func importBlock(cursor *token.Cursor, decl ast.DeclImport, applyFormatting bool
 }
 
 func defBlock(decl ast.DeclDef, applyFormatting bool) block {
-	// TODO: should we just pass a top-level cursor for the file?
-	cursor := decl.Context().Stream().Cursor()
-	// TODO: figure out if this works for all definitions
-	chunks := parsePrefixChunks(cursor, decl.Keyword(), applyFormatting)
+	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
 	// var text string
 	// Classify the definition type
 	switch decl.Classify() {
@@ -316,23 +310,19 @@ func textForPath(p ast.Path) string {
 	return text
 }
 
-func parsePrefixChunks(
-	cursor *token.Cursor,
-	until token.Token,
-	applyFormatting bool,
-) []chunk {
-	// Set the cursor to until. This is where we want to end.
-	cursor.Seek(until.ID())
-	// Walk backwards until we hit the last skippable token
-	tok := cursor.UnpopSkippable()
-	for tok.Kind().IsSkippable() {
-		if cursor.UnpeekSkippable().IsZero() {
+// TODO: improve performance (keep track of tokens as we are going backwards, so we don't need
+// to iterate twice?
+func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
+	cursor := token.NewCursorAt(until)
+	t := cursor.PrevSkippable()
+	for t.Kind().IsSkippable() {
+		if cursor.PeekPrevSkippable().IsZero() {
 			break
 		}
-		tok = cursor.UnpopSkippable()
+		t = cursor.PrevSkippable()
 	}
 	var chunks []chunk
-	t := cursor.PopSkippable()
+	t = cursor.NextSkippable()
 	for t.ID() != until.ID() {
 		switch t.Kind() {
 		case token.Space:
@@ -355,7 +345,7 @@ func parsePrefixChunks(
 		case token.Unrecognized:
 			// TODO: figure out what to do with unrecognized tokens.
 		}
-		t = cursor.PopSkippable()
+		t = cursor.NextSkippable()
 	}
 	return chunks
 }
@@ -374,17 +364,22 @@ func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
 	return splitKindSoft, spaceWhenUnsplit
 }
 
-func getTokensFromStartToEndInclusive(cursor *token.Cursor, start, end token.Token) []token.Token {
+// TODO: rename/clean-up
+// TODO: improve performance (create an iterator here?)
+func getTokensFromStartToEndInclusive(start, end token.Token) []token.Token {
 	var tokens []token.Token
-	tok := cursor.Seek(start.ID())
-	for {
-		tok = cursor.PopSkippable()
-		if tok.ID() == end.ID() {
-			break
-		}
-		tokens = append(tokens, tok)
+	cursor := token.NewCursorAt(start)
+	t := cursor.NextSkippable()
+	for t.ID() != end.ID() {
+		tokens = append(tokens, t)
+		t = cursor.NextSkippable()
 	}
 	return append(tokens, end)
+}
+
+// TODO: rename/clean-up
+func checkSpanWithin(have, want report.Span) bool {
+	return want.Start >= have.Start && want.Start <= have.End
 }
 
 // TODO: improve this explanation, lol.
