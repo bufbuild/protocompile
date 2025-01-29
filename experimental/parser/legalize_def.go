@@ -186,4 +186,67 @@ func legalizeOption(p *parser, def ast.DeclDef) {
 }
 
 func legalizeMethod(p *parser, def ast.DeclDef) {
+	if def.Name().IsZero() {
+		def.MarkCorrupt()
+		p.Errorf("missing name %v", taxa.Method.In()).Apply(
+			report.Snippet(def),
+		)
+	} else if def.Name().AsIdent().IsZero() {
+		def.MarkCorrupt()
+		p.Error(errUnexpected{
+			what:  def.Name(),
+			where: taxa.Method.In(),
+			want:  taxa.Ident.AsSet(),
+		})
+	}
+
+	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
+	if hasValue {
+		p.Error(errUnexpected{
+			what:  report.Join(def.Equals(), def.Value()),
+			where: taxa.Method.In(),
+			got:   taxa.Classify(def.Value()),
+		})
+	}
+
+	sig := def.Signature()
+	if sig.IsZero() {
+		def.MarkCorrupt()
+		p.Errorf("missing %v in %v", taxa.Signature, taxa.Method).Apply(
+			report.Snippet(def),
+		)
+	} else {
+		// There are cases where part of the signature is present, but the
+		// span for one or the other half is zero because there were no brackets
+		// or type.
+		if sig.Inputs().Span().IsZero() {
+			def.MarkCorrupt()
+			p.Errorf("missing %v in %v", taxa.MethodIns, taxa.Method).Apply(
+				report.Snippet(def),
+			)
+		} else {
+			legalizeMethodParams(p, sig.Inputs(), taxa.MethodIns)
+		}
+
+		if sig.Outputs().Span().IsZero() {
+			def.MarkCorrupt()
+			p.Errorf("missing %v in %v", taxa.MethodOuts, taxa.Method).Apply(
+				report.Snippet(def),
+			)
+		} else {
+			legalizeMethodParams(p, sig.Outputs(), taxa.MethodOuts)
+		}
+	}
+
+	// Methods are unique in that they can be either end in a ; or a {}.
+	// The parser already checks for defs to end with either one of these,
+	// so we don't need to do anything here.
+
+	if options := def.Options(); !options.IsZero() {
+		p.Error(errHasOptions{def}).Apply(
+			report.Notef("service method options are applied using %v", taxa.KeywordOption),
+			report.Notef("declarations in the %v following the method definition", taxa.Braces),
+			// TODO: Generate a suggestion for this.
+		)
+	}
 }

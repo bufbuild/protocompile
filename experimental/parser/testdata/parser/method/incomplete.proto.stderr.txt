@@ -4,6 +4,24 @@ error: missing `(...)` around method return type
 20 |     rpc Bar1(foo.Bar) returns foo.Bar;
    |                               ^^^^^^^ help: replace this with `(foo.Bar)`
 
+error: missing method return type in service method
+  --> testdata/parser/method/incomplete.proto:21:5
+   | 
+21 |     rpc Bar2(foo.Bar);
+   |     ^^^^^^^^^^^^^^^^^^ 
+
+error: missing method parameter list in service method
+  --> testdata/parser/method/incomplete.proto:22:5
+   | 
+22 |     rpc Bar3 returns (foo.Bar);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+error: missing method return type in service method
+  --> testdata/parser/method/incomplete.proto:25:5
+   | 
+25 |     rpc Bar6() returns;
+   |     ^^^^^^^^^^^^^^^^^^^ 
+
 error: unexpected `;` after `returns`
   --> testdata/parser/method/incomplete.proto:25:23
    | 
@@ -16,4 +34,4 @@ error: missing `(...)` around method return type
 26 |     rpc Bar7() returns stream foo.Bar;
    |                        ^^^^^^^^^^^^^^ help: replace this with `(stream foo.Bar)`
 
-encountered 3 errors
+encountered 6 errors
