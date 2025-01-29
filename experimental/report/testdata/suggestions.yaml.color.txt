@@ -46,5 +46,22 @@
 ⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩   }
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.red⟩encountered 2 errors and 1 warning⟨reset⟩
+⟨b.red⟩error: delete some stuff⟨reset⟩
+⟨blu⟩  --> foo.proto:5:1
+⟨blu⟩  help: 
+   | 
+⟨blu⟩ 5 | ⟨b.red⟩-⟨red⟩ service Foo {
+⟨blu⟩ 6 | ⟨reset⟩ ⟨reset⟩   rpc Get(GetRequest) returns GetResponse;
+⟨blu⟩ 7 | ⟨reset⟩ ⟨reset⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
+⟨blu⟩   | ⟨reset⟩
+
+⟨b.red⟩error: delete this method⟨reset⟩
+⟨blu⟩  --> foo.proto:5:1
+⟨blu⟩  help: 
+   | 
+⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+⟨blu⟩   | ⟨reset⟩
+
+⟨b.red⟩encountered 4 errors and 1 warning⟨reset⟩
 ⟨reset⟩

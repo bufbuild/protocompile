@@ -25,6 +25,7 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -246,7 +247,7 @@ func (r Renderer) diagnostic(report *Report, d Diagnostic) string {
 			if i > 0 {
 				out.WriteByte('\n')
 			}
-			suggestion(snippets[0], locations[i][0].Line, lineBarWidth, &ss, &out)
+			suggestion(snippets[0], lineBarWidth, &ss, &out)
 			return true
 		}
 
@@ -911,7 +912,7 @@ func renderSidebar(bars, lineno, slashAt int, ss *styleSheet, multis []*multilin
 }
 
 // suggestion renders a single suggestion window.
-func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, out *strings.Builder) {
+func suggestion(snip snippet, lineBarWidth int, ss *styleSheet, out *strings.Builder) {
 	out.WriteString(ss.nAccent)
 	padBy(out, lineBarWidth)
 	out.WriteString("help: ")
@@ -933,12 +934,29 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 		strings.Contains(snip.Span.Text(), "\n")
 
 	if multiline {
-		aLine := startLine
-		bLine := startLine
-		for _, hunk := range unifiedDiff(snip.Span, snip.edits) {
+		span, hunks := unifiedDiff(snip.Span, snip.edits)
+		aLine := span.StartLoc().Line
+		bLine := aLine
+		for i, hunk := range hunks {
+			// Trim a single newline before and after hunk. This helps deal with
+			// cases where a newline gets duplicated across hunks of different
+			// type.
+			hunk.content, _ = strings.CutPrefix(hunk.content, "\n")
+			hunk.content, _ = strings.CutSuffix(hunk.content, "\n")
+
 			if hunk.content == "" {
 				continue
 			}
+
+			// Skip addition lines that only contain whitespace, if the previous
+			// hunk was a deletion. This helps avoid cases where a whole line
+			// was deleted and some indentation was left over.
+			if prev, _ := slicesx.Get(hunks, i-1); prev.kind == hunkDelete &&
+				hunk.kind == hunkAdd &&
+				stringsx.EveryFunc(hunk.content, unicode.IsSpace) {
+				continue
+			}
+
 			for _, line := range strings.Split(hunk.content, "\n") {
 				lineno := aLine
 				if hunk.kind == '+' {
@@ -954,12 +972,12 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 				)
 
 				switch hunk.kind {
-				case ' ':
+				case hunkUnchanged:
 					aLine++
 					bLine++
-				case '-':
+				case hunkDelete:
 					aLine++
-				case '+':
+				case hunkAdd:
 					bLine++
 				}
 			}
@@ -972,8 +990,8 @@ func suggestion(snip snippet, startLine int, lineBarWidth int, ss *styleSheet, o
 		return
 	}
 
-	fmt.Fprintf(out, "\n%s%*d | ", ss.nAccent, lineBarWidth, startLine)
-	hunks := hunkDiff(snip.Span, snip.edits)
+	span, hunks := hunkDiff(snip.Span, snip.edits)
+	fmt.Fprintf(out, "\n%s%*d | ", ss.nAccent, lineBarWidth, span.StartLoc().Line)
 	var column int
 	for _, hunk := range hunks {
 		if hunk.content == "" {
