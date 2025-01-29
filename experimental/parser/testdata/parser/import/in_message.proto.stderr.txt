@@ -1,0 +1,45 @@
+error: unexpected import within message definition
+  --> testdata/parser/import/in_message.proto:20:5
+   | 
+19 | / message M {
+20 | |     import "foo.proto";
+   | |     ^^^^^^^^^^^^^^^^^^^ this import...
+...  | 
+25 | | }
+   | \_- ...cannot be declared within this message definition
+
+error: unexpected public import within message definition
+  --> testdata/parser/import/in_message.proto:21:5
+   | 
+19 | / message M {
+20 | |     import "foo.proto";
+21 | |     import public "foo.proto";
+   | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ this public import...
+...  | 
+25 | | }
+   | \_- ...cannot be declared within this message definition
+
+error: unexpected weak import within message definition
+  --> testdata/parser/import/in_message.proto:22:5
+   | 
+19 | / message M {
+...  | 
+22 | |     import weak "foo.proto";
+   | |     ^^^^^^^^^^^^^^^^^^^^^^^^ this weak import...
+23 | | 
+...  | 
+25 | | }
+   | \_- ...cannot be declared within this message definition
+
+error: unexpected import within message definition
+  --> testdata/parser/import/in_message.proto:24:5
+   | 
+19 | / message M {
+...  | 
+23 | | 
+24 | |     import foo.proto;
+   | |     ^^^^^^^^^^^^^^^^^ this import...
+25 | | }
+   | \_- ...cannot be declared within this message definition
+
+encountered 4 errors

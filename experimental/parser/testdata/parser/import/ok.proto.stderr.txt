@@ -1,0 +1,8 @@
+warning: use of `import weak`
+  --> testdata/parser/import/ok.proto:20:1
+   | 
+20 | import weak "weak.proto";
+   | ^^^^^^^^^^^ 
+   = note: `import weak` is deprecated and not supported correctly in most Protobuf implementations
+
+ encountered  1 warning

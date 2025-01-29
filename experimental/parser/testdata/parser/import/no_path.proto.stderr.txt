@@ -1,0 +1,19 @@
+error: missing import path in import
+  --> testdata/parser/import/no_path.proto:19:1
+   | 
+19 | import;
+   | ^^^^^^^ 
+
+error: missing import path in weak import
+  --> testdata/parser/import/no_path.proto:20:1
+   | 
+20 | import weak;
+   | ^^^^^^^^^^^^ 
+
+error: missing import path in public import
+  --> testdata/parser/import/no_path.proto:21:1
+   | 
+21 | import public;
+   | ^^^^^^^^^^^^^^ 
+
+encountered 3 errors

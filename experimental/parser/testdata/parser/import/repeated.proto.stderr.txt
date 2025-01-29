@@ -1,0 +1,9 @@
+error: file "foo.proto" imported multiple times
+  --> testdata/parser/import/repeated.proto:20:1
+   | 
+19 | import "foo.proto";
+   | ------------------- first imported here
+20 | import "foo\x2eproto";
+   | ^^^^^^^^^^^^^^^^^^^^^^ 
+
+encountered 1 error

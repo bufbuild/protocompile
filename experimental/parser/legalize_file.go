@@ -227,4 +227,96 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 // imports is a map that classifies DeclImports by the contents of their import string.
 // This populates it and uses it to detect duplicates.
 func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports map[string][]ast.DeclImport) {
+	in := taxa.Import
+	if decl.IsPublic() {
+		in = taxa.PublicImport
+	} else if decl.IsWeak() {
+		in = taxa.WeakImport
+	}
+
+	if parent.what != taxa.TopLevel {
+		p.Error(errBadNest{parent: parent, child: decl})
+		return
+	}
+
+	if !decl.Options().IsZero() {
+		p.Error(errHasOptions{decl})
+	}
+
+	expr := decl.ImportPath()
+	switch expr.Kind() {
+	case ast.ExprKindLiteral:
+		lit := expr.AsLiteral()
+		if file, ok := lit.AsString(); ok {
+			if imports != nil {
+				prev := imports[file]
+				imports[file] = append(prev, decl)
+				if len(prev) == 1 { // Do not bother diagnosing a more than once.
+					p.Errorf("file %q imported multiple times", file).Apply(
+						report.Snippet(decl),
+						report.Snippetf(prev[0], "first imported here"),
+					)
+				}
+				if prev != nil {
+					return
+				}
+			}
+
+			if !expr.AsLiteral().IsPureString() {
+				// Only warn for cases where the import is alphanumeric.
+				if isOrdinaryFilePath.MatchString(file) {
+					p.Warn(errImpureString{lit.Token, in.In()})
+				}
+			}
+			break
+		}
+
+		p.Error(errUnexpected{
+			what:  expr,
+			where: in.In(),
+			want:  taxa.String.AsSet(),
+		})
+		return
+
+	case ast.ExprKindPath:
+		p.Error(errUnexpected{
+			what:  expr,
+			where: in.In(),
+			want:  taxa.String.AsSet(),
+		}).Apply(
+			// TODO: potentially defer this diagnostic to later, when we can
+			// perform symbol lookup and figure out what the correct file to
+			// import is.
+			report.Notef("Protobuf does not support importing symbols by name"),
+			report.Notef("instead, try importing a file, e.g. `import \"google/protobuf/descriptor.proto\";`"),
+		)
+		return
+
+	case ast.ExprKindInvalid:
+		if decl.Semicolon().IsZero() {
+			// If there is a missing semicolon, this is some other kind of syntax error
+			// so we should avoid diagnosing it twice.
+			return
+		}
+
+		p.Errorf("missing import path in %s", in).Apply(
+			report.Snippet(decl),
+		)
+		return
+
+	default:
+		p.Error(errUnexpected{
+			what:  expr,
+			where: in.In(),
+			want:  taxa.String.AsSet(),
+		})
+		return
+	}
+
+	if in == taxa.WeakImport {
+		p.Warnf("use of `import weak`").Apply(
+			report.Snippet(report.Join(decl.Keyword(), decl.Modifier())),
+			report.Notef("`import weak` is deprecated and not supported correctly in most Protobuf implementations"),
+		)
+	}
 }
