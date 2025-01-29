@@ -371,6 +371,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 
 // parseTypeList parses a type list out of a bracket token.
 func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.Noun) {
+	types.SetBrackets(parens)
 	delimited[ast.TypeAny]{
 		p:    p,
 		c:    parens.Children(),
