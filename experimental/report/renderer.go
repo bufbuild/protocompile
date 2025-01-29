@@ -25,6 +25,7 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -936,7 +937,7 @@ func suggestion(snip snippet, lineBarWidth int, ss *styleSheet, out *strings.Bui
 		span, hunks := unifiedDiff(snip.Span, snip.edits)
 		aLine := span.StartLoc().Line
 		bLine := aLine
-		for _, hunk := range hunks {
+		for i, hunk := range hunks {
 			// Trim a single newline before and after hunk. This helps deal with
 			// cases where a newline gets duplicated across hunks of different
 			// type.
@@ -946,6 +947,16 @@ func suggestion(snip snippet, lineBarWidth int, ss *styleSheet, out *strings.Bui
 			if hunk.content == "" {
 				continue
 			}
+
+			// Skip addition lines that only contain whitespace, if the previous
+			// hunk was a deletion. This helps avoid cases where a whole line
+			// was deleted and some indentation was left over.
+			if prev, _ := slicesx.Get(hunks, i-1); prev.kind == hunkDelete &&
+				hunk.kind == hunkAdd &&
+				stringsx.EveryFunc(hunk.content, unicode.IsSpace) {
+				continue
+			}
+
 			for _, line := range strings.Split(hunk.content, "\n") {
 				lineno := aLine
 				if hunk.kind == '+' {
@@ -961,12 +972,12 @@ func suggestion(snip snippet, lineBarWidth int, ss *styleSheet, out *strings.Bui
 				)
 
 				switch hunk.kind {
-				case ' ':
+				case hunkUnchanged:
 					aLine++
 					bLine++
-				case '-':
+				case hunkDelete:
 					aLine++
-				case '+':
+				case hunkAdd:
 					bLine++
 				}
 			}

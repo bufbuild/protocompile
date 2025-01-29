@@ -56,5 +56,12 @@
 ⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.red⟩encountered 3 errors and 1 warning⟨reset⟩
+⟨b.red⟩error: delete this method⟨reset⟩
+⟨blu⟩  --> foo.proto:5:1
+⟨blu⟩  help: 
+   | 
+⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+⟨blu⟩   | ⟨reset⟩
+
+⟨b.red⟩encountered 4 errors and 1 warning⟨reset⟩
 ⟨reset⟩

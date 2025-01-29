@@ -117,3 +117,13 @@ diagnostics:
             end: 13
           - start: 114
             end: 115
+
+  - message: 'delete this method'
+    level: LEVEL_ERROR
+    annotations:
+      - file: 0
+        start: 38
+        end: 153
+        edits:
+          - start: 59
+            end: 113

@@ -56,4 +56,11 @@ error: delete some stuff
  8 | - }
    | 
 
-encountered 3 errors and 1 warning
+error: delete this method
+  --> foo.proto:5:1
+  help: 
+   | 
+ 7 | -   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+   | 
+
+encountered 4 errors and 1 warning
