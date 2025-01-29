@@ -66,6 +66,11 @@ func (s Span) Text() string {
 	return s.File.Text()[s.Start:s.End]
 }
 
+// Len returns the length of this span, in bytes.
+func (s Span) Len() int {
+	return s.End - s.Start
+}
+
 // StartLoc returns the start location for this span.
 func (s Span) StartLoc() Location {
 	return s.Location(s.Start)
