@@ -144,6 +144,12 @@ error: missing `(...)` around method return type
 31 |     M x returns T [] returns T;
    |                 ^ help: replace this with `(T)`
 
+error: compact options cannot be empty
+  --> testdata/parser/def/ordering.proto:31:19
+   | 
+31 |     M x returns T [] returns T;
+   |                   ^^ help: remove this
+
 error: unexpected method return type after compact options
   --> testdata/parser/def/ordering.proto:31:22
    | 
@@ -226,4 +232,4 @@ error: unexpected `[...]` in message definition
 40 |     M x { /* ... */ } [foo = bar];
    |                       ^^^^^^^^^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
-encountered 34 errors
+encountered 35 errors

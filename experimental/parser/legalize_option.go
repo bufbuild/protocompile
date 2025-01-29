@@ -16,12 +16,20 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
 func legalizeCompactOptions(p *parser, opt ast.CompactOptions) {
 	opts := opt.Entries()
+	if opts.Len() == 0 {
+		p.Errorf("%s cannot be empty", taxa.CompactOptions).Apply(
+			report.Snippetf(opt, "help: remove this"),
+		)
+		return
+	}
+
 	seq.Values(opts)(func(opt ast.Option) bool {
 		legalizeOptionEntry(p, opt, opt.Span())
 		return true
@@ -29,4 +37,25 @@ func legalizeCompactOptions(p *parser, opt ast.CompactOptions) {
 }
 
 func legalizeOptionEntry(p *parser, opt ast.Option, span report.Span) {
+	// We can't perform type-checking yet, so all we can really do here
+	// is check that the path is ok for an option. Legalizing the value cannot
+	// happen until type-checking in IR construction.
+
+	if opt.Path.IsZero() {
+		p.Errorf("missing %v path", taxa.Option).Apply(
+			report.Snippet(span),
+		)
+		return
+	} else {
+		legalizePath(p, taxa.Option.In(), opt.Path, pathOptions{
+			Relative:  true,
+			AllowExts: true,
+		})
+	}
+
+	if opt.Value.IsZero() {
+		p.Errorf("missing %v", taxa.OptionValue).Apply(
+			report.Snippet(span),
+		)
+	}
 }

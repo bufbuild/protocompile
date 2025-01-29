@@ -167,6 +167,21 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 }
 
 func legalizeOption(p *parser, def ast.DeclDef) {
+	if sig := def.Signature(); !sig.IsZero() {
+		p.Error(errHasSignature{def})
+	}
+
+	if body := def.Body(); !body.IsZero() {
+		p.Error(errUnexpected{
+			what:  body,
+			where: taxa.Option.In(),
+		})
+	}
+
+	if options := def.Options(); !options.IsZero() {
+		p.Error(errHasOptions{def})
+	}
+
 	legalizeOptionEntry(p, def.AsOption().Option, def.Span())
 }
 
