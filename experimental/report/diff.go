@@ -104,7 +104,7 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 
 	var out []hunk
 	var prevHunk int
-	parts(func(i int, edits []Edit) bool {
+	parts(func(_ int, edits []Edit) bool {
 		// First, figure out the start and end of the modified region.
 		start, end := edits[0].Start, edits[0].End
 		for _, edit := range edits[1:] {
