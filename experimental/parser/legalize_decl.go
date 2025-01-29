@@ -17,6 +17,7 @@ package parser
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
@@ -34,6 +35,17 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 
 	case ast.DeclKindBody:
 		body := decl.AsBody()
+		braces := body.Braces().Span()
+		p.Errorf("unexpected definition body in %v", parent.what).Apply(
+			report.Snippet(decl),
+			report.SuggestEdits(
+				braces,
+				"remove these braces",
+				report.Edit{Start: 0, End: 1},
+				report.Edit{Start: braces.Len() - 1, End: braces.Len()},
+			),
+		)
+
 		seq.Values(body.Decls())(func(decl ast.DeclAny) bool {
 			// Treat bodies as being immediately inlined, hence we pass
 			// parent here and not body as the parent.
