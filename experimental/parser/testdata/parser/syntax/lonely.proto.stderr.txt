@@ -4,10 +4,20 @@ error: unexpected `;` in `edition` declaration
 15 | edition;
    |        ^ expected `=`
 
+error: unexpected `syntax` declaration
+  --> testdata/parser/syntax/lonely.proto:17:1
+   | 
+15 | edition;
+   | -------- previous declaration is here
+16 | 
+17 | syntax = ;
+   | ^^^^^^^^^^ help: remove this
+   = note: a file may only contain at most one `syntax` or `edition` declaration
+
 error: unexpected `;` in `syntax` declaration
   --> testdata/parser/syntax/lonely.proto:17:10
    | 
 17 | syntax = ;
    |          ^ expected expression
 
-encountered 2 errors
+encountered 3 errors

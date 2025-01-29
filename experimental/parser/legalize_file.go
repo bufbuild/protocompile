@@ -15,11 +15,17 @@
 package parser
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
+
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 var isOrdinaryFilePath = regexp.MustCompile("[0-9a-zA-Z./_-]*")
@@ -53,10 +59,110 @@ func legalizeFile(p *parser, file ast.File) {
 // a slot where we can store the first DeclSyntax seen, so we can legalize
 // against duplicates.
 func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax, decl ast.DeclSyntax) {
+	in := taxa.Syntax
+	if decl.IsEdition() {
+		in = taxa.Edition
+	}
+
 	if parent.what == taxa.TopLevel && first != nil {
-		if !first.IsZero() {
+		file := parent.Spanner.(ast.File)
+		switch {
+		case !first.IsZero():
+			p.Errorf("unexpected %s", in).Apply(
+				report.Snippetf(decl, "help: remove this"),
+				report.Snippetf(*first, "previous declaration is here"),
+				report.Notef("a file may only contain at most one `syntax` or `edition` declaration"),
+			)
+			return
+		case idx > 0:
+			p.Errorf("unexpected %s", in).Apply(
+				report.Snippet(decl),
+				report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
+				report.Notef("a %s must be the first declaration in a file", in),
+			)
+			*first = decl
+			return
+		default:
 			*first = decl
 		}
+	} else {
+		p.Error(errBadNest{parent: parent, child: decl})
+		return
+	}
+
+	if !decl.Options().IsZero() {
+		p.Error(errHasOptions{decl})
+	}
+
+	expr := decl.Value()
+	var name string
+	switch expr.Kind() {
+	case ast.ExprKindLiteral:
+		if text, ok := expr.AsLiteral().AsString(); ok {
+			name = text
+			break
+		}
+
+		fallthrough
+	case ast.ExprKindPath:
+		name = expr.Span().Text()
+
+	case ast.ExprKindInvalid:
+		return
+	default:
+		p.Error(errUnexpected{
+			what:  expr,
+			where: in.In(),
+			want:  taxa.String.AsSet(),
+		})
+		return
+	}
+
+	permitted := func() report.DiagnosticOption {
+		values := iterx.Join(iterx.FilterMap(syntax.All(), func(s syntax.Syntax) (string, bool) {
+			if s.IsEdition() != (in == taxa.Edition) {
+				return "", false
+			}
+
+			return fmt.Sprintf(`"%v"`, s), true
+		}), ", ")
+
+		return report.Notef("permitted values: [%s]", values)
+	}
+
+	value := syntax.Lookup(name)
+	lit := expr.AsLiteral()
+	switch {
+	case value == syntax.Unknown:
+		p.Errorf("unrecognized %s value", in).Apply(
+			report.Snippet(expr),
+			permitted(),
+		)
+	case value.IsEdition() && in == taxa.Syntax:
+		p.Errorf("unexpected edition in %s", in).Apply(
+			report.Snippet(expr),
+			permitted(),
+		)
+	case !value.IsEdition() && in == taxa.Edition:
+		p.Errorf("unexpected syntax in %s", in).Apply(
+			report.Snippet(expr),
+			permitted(),
+		)
+
+	case lit.Kind() != token.String:
+		span := expr.Span()
+		p.Errorf("the value of a %s must be a string literal", in).Apply(
+			report.Snippet(span),
+			report.SuggestEdits(
+				span,
+				"add quotes to make this a string literal",
+				report.Edit{Start: 0, End: 0, Replace: `"`},
+				report.Edit{Start: span.Len(), End: span.Len(), Replace: `"`},
+			),
+		)
+
+	case !lit.IsZero() && !lit.IsPureString():
+		p.Warn(errImpureString{lit.Token, in.In()})
 	}
 }
 

@@ -1,0 +1,8 @@
+error: unexpected syntax in `edition` declaration
+  --> testdata/parser/syntax/edition_proto2.proto:15:11
+   | 
+15 | edition = "proto2";
+   |           ^^^^^^^^ 
+   = note: permitted values: ["2023"]
+
+encountered 1 error
