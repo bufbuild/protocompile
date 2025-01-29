@@ -67,4 +67,83 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 }
 
 func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
+	in := taxa.Extensions
+	if decl.IsReserved() {
+		in = taxa.Reserved
+	}
+
+	var validParent bool
+	var isEnum bool
+	switch parent.what {
+	case taxa.Message:
+		validParent = true
+	case taxa.Enum:
+		isEnum = true
+		validParent = in == taxa.Reserved
+	}
+	if !validParent {
+		p.Error(errBadNest{parent: parent, child: decl})
+		return
+	}
+
+	if options := decl.Options(); !options.IsZero() {
+		if in == taxa.Reserved {
+			p.Error(errHasOptions{decl})
+		} else {
+			legalizeCompactOptions(p, options)
+		}
+	}
+
+	field := taxa.Field
+	if isEnum {
+		field = taxa.EnumValue
+	}
+
+	// We only legalize reserved name productions here, because that depends on
+	// the syntax/edition keyword. All other expressions are legalized when we
+	// do constant evaluation.
+
+	if in != taxa.Reserved {
+		return
+	}
+
+	seq.Values(decl.Ranges())(func(expr ast.ExprAny) bool {
+		switch expr.Kind() {
+		case ast.ExprKindPath:
+			path := expr.AsPath()
+			if in == taxa.Reserved && !path.AsIdent().IsZero() {
+				if m := p.Mode(); m == taxa.SyntaxMode {
+					p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, m).Apply(
+						report.Snippet(expr),
+						report.Snippetf(p.syntax, "%v is specified here", m),
+					)
+				}
+			}
+
+		case ast.ExprKindLiteral:
+			lit := expr.AsLiteral()
+			if name, ok := lit.AsString(); ok {
+				if m := p.Mode(); m == taxa.EditionMode {
+					p.Errorf("cannot use %vs in %v in %v", taxa.String, in, m).Apply(
+						report.Snippet(expr),
+						report.Snippetf(p.syntax, "%v is specified here", m),
+					)
+					return true
+				}
+
+				if !isASCIIIdent(name) {
+					p.Errorf("reserved %v name is not a valid identifier", field).Apply(
+						report.Snippet(expr),
+					)
+					return true
+				}
+
+				if !lit.IsPureString() {
+					p.Warn(errImpureString{lit.Token, in.In()})
+				}
+			}
+		}
+
+		return true
+	})
 }

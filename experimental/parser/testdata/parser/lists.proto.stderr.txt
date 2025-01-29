@@ -287,6 +287,12 @@ error: unexpected trailing `,` in reserved range
 71 |     reserved ,1 2,, 3,;
    |                      ^ 
 
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:72:14
+   | 
+72 |     reserved a {};
+   |              ^ 
+
 error: unexpected message expression in reserved range
   --> testdata/parser/lists.proto:72:16
    | 
@@ -301,6 +307,24 @@ error: unexpected leading `,` in reserved range
 73 |     reserved ,;
    |              ^ expected expression
 
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:75:14
+   | 
+75 |     reserved a, b c;
+   |              ^ 
+
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:75:17
+   | 
+75 |     reserved a, b c;
+   |                 ^ 
+
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:75:19
+   | 
+75 |     reserved a, b c;
+   |                   ^ 
+
 error: unexpected identifier in reserved range
   --> testdata/parser/lists.proto:75:19
    | 
@@ -308,6 +332,24 @@ error: unexpected identifier in reserved range
    |                   ^ expected `,`
    |                   |
    |                   note: assuming a missing `,` here
+
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:76:14
+   | 
+76 |     reserved a, b c
+   |              ^ 
+
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:76:17
+   | 
+76 |     reserved a, b c
+   |                 ^ 
+
+error: cannot use identifiers in reserved range in syntax mode
+  --> testdata/parser/lists.proto:76:19
+   | 
+76 |     reserved a, b c
+   |                   ^ 
 
 error: unexpected identifier in reserved range
   --> testdata/parser/lists.proto:76:19
@@ -323,4 +365,4 @@ error: unexpected `message` after reserved range
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
 
-encountered 46 errors and 1 warning
+encountered 53 errors and 1 warning
