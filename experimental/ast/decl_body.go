@@ -35,6 +35,15 @@ import (
 // the source file, rather than braces.
 type DeclBody struct{ declImpl[rawDeclBody] }
 
+// HasBody is an AST node that contains a [Body].
+//
+// [File], [DeclBody], and [DeclDef] all implement this interface.
+type HasBody interface {
+	report.Spanner
+
+	Body() DeclBody
+}
+
 type rawDeclBody struct {
 	braces token.ID
 
@@ -67,6 +76,11 @@ func (d DeclBody) Span() report.Span {
 	default:
 		return report.Join(decls.At(0), decls.At(decls.Len()-1))
 	}
+}
+
+// Body implements [HasBody]
+func (d DeclBody) Body() DeclBody {
+	return d
 }
 
 // Decls returns a [seq.Inserter] over the declarations in this body.

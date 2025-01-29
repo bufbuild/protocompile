@@ -20,11 +20,8 @@ decls:
                   type.path.components: [{ ident: "Foo" }]
                   value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
+            kind: KIND_GROUP
             name.components: [{ ident: "bar" }]
-            type.prefixed:
-              prefix: PREFIX_OPTIONAL
-              type.path.components: [{ ident: "group" }]
             value.literal.int_value: 2
             body.decls:
               - def:

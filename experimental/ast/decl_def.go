@@ -56,6 +56,8 @@ type rawDeclDef struct {
 	options arena.Pointer[rawCompactOptions]
 	body    arena.Pointer[rawDeclBody]
 	semi    token.ID
+
+	corrupt bool
 }
 
 // DeclDefArgs is arguments for creating a [DeclDef] with [Context.NewDeclDef].
@@ -106,6 +108,11 @@ func (d DeclDef) SetType(ty TypeAny) {
 //
 // See [DeclDef.Type] for details on where this keyword comes from.
 func (d DeclDef) Keyword() token.Token {
+	// There is also the special case of `optional group` and similar.
+	if g := d.Type().AsPrefixed().Type().AsPath().AsIdent(); g.Text() == "group" {
+		return g
+	}
+
 	path := d.Type().AsPath()
 	if path.IsZero() {
 		return token.Zero
@@ -223,6 +230,18 @@ func (d DeclDef) Semicolon() token.Token {
 	}
 
 	return d.raw.semi.In(d.Context())
+}
+
+// IsCorrupt reports whether or not some part of the parser decided that this
+// definition is not interpretable as any specific kind of definition.
+func (d DeclDef) IsCorrupt() bool {
+	return !d.IsZero() && d.raw.corrupt
+}
+
+// MarkCorrupt marks a definition as corrupt, which causes all other parts of
+// the compiler to ignore it. See [DeclDef.IsCorrupt]
+func (d DeclDef) MarkCorrupt() {
+	d.raw.corrupt = true
 }
 
 // AsMessage extracts the fields from this definition relevant to interpreting
@@ -407,7 +426,7 @@ func (d DeclDef) AsOption() DefOption {
 // cases of the switch should then use the As* methods, such as
 // [DeclDef.AsMessage], to extract the relevant fields.
 func (d DeclDef) Classify() DefKind {
-	if d.IsZero() {
+	if d.IsZero() || d.IsCorrupt() {
 		return DefKindInvalid
 	}
 
