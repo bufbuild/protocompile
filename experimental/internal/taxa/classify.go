@@ -114,6 +114,8 @@ func Classify(node report.Spanner) Noun {
 			return Classify(node.AsMethod())
 		case ast.DefKindOneof:
 			return Classify(node.AsOneof())
+		case ast.DefKindGroup:
+			return Classify(node.AsGroup())
 		default:
 			return Def
 		}
@@ -137,12 +139,14 @@ func Classify(node report.Spanner) Noun {
 		} else {
 			return Option
 		}
-	case ast.DefField, ast.DefGroup:
+	case ast.DefField:
 		return Field
+	case ast.DefGroup:
+		return Group
 	case ast.DefEnumValue:
 		return EnumValue
 	case ast.DefMethod:
-		return Service
+		return Method
 	case ast.DefOneof:
 		return Oneof
 
@@ -197,6 +201,16 @@ func Classify(node report.Spanner) Noun {
 
 	case ast.CompactOptions:
 		return CompactOptions
+
+	case ast.Signature:
+		switch {
+		case node.Inputs().IsZero() == node.Outputs().IsZero():
+			return Signature
+		case !node.Inputs().IsZero():
+			return MethodIns
+		default:
+			return MethodOuts
+		}
 	}
 
 	return Unknown

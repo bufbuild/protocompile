@@ -31,6 +31,8 @@ const (
 	Unrecognized
 	TopLevel
 	EOF
+	SyntaxMode
+	EditionMode
 	Decl
 	Empty
 	Syntax
@@ -48,6 +50,7 @@ const (
 	Service
 	Extend
 	Oneof
+	Group
 	Option
 	CustomOption
 	Field
@@ -56,6 +59,7 @@ const (
 	CompactOptions
 	MethodIns
 	MethodOuts
+	Signature
 	FieldTag
 	OptionValue
 	QualifiedName
@@ -69,6 +73,9 @@ const (
 	Type
 	TypePath
 	TypeParams
+	TypePrefix
+	MapKey
+	MapValue
 	Whitespace
 	Comment
 	Ident
@@ -140,6 +147,8 @@ var _table_Noun_String = [...]string{
 	Unrecognized:       "unrecognized token",
 	TopLevel:           "file scope",
 	EOF:                "end-of-file",
+	SyntaxMode:         "syntax mode",
+	EditionMode:        "editions mode",
 	Decl:               "declaration",
 	Empty:              "empty declaration",
 	Syntax:             "`syntax` declaration",
@@ -157,6 +166,7 @@ var _table_Noun_String = [...]string{
 	Service:            "service definition",
 	Extend:             "message extension block",
 	Oneof:              "oneof definition",
+	Group:              "group definition",
 	Option:             "option setting",
 	CustomOption:       "custom option setting",
 	Field:              "message field",
@@ -165,6 +175,7 @@ var _table_Noun_String = [...]string{
 	CompactOptions:     "compact options",
 	MethodIns:          "method parameter list",
 	MethodOuts:         "method return type",
+	Signature:          "method signature",
 	FieldTag:           "message field tag",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
@@ -178,6 +189,9 @@ var _table_Noun_String = [...]string{
 	Type:               "type",
 	TypePath:           "type name",
 	TypeParams:         "type parameters",
+	TypePrefix:         "type modifier",
+	MapKey:             "map key",
+	MapValue:           "map value",
 	Whitespace:         "whitespace",
 	Comment:            "comment",
 	Ident:              "identifier",
@@ -232,6 +246,8 @@ var _table_Noun_GoString = [...]string{
 	Unrecognized:       "Unrecognized",
 	TopLevel:           "TopLevel",
 	EOF:                "EOF",
+	SyntaxMode:         "SyntaxMode",
+	EditionMode:        "EditionMode",
 	Decl:               "Decl",
 	Empty:              "Empty",
 	Syntax:             "Syntax",
@@ -249,6 +265,7 @@ var _table_Noun_GoString = [...]string{
 	Service:            "Service",
 	Extend:             "Extend",
 	Oneof:              "Oneof",
+	Group:              "Group",
 	Option:             "Option",
 	CustomOption:       "CustomOption",
 	Field:              "Field",
@@ -257,6 +274,7 @@ var _table_Noun_GoString = [...]string{
 	CompactOptions:     "CompactOptions",
 	MethodIns:          "MethodIns",
 	MethodOuts:         "MethodOuts",
+	Signature:          "Signature",
 	FieldTag:           "FieldTag",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",
@@ -270,6 +288,9 @@ var _table_Noun_GoString = [...]string{
 	Type:               "Type",
 	TypePath:           "TypePath",
 	TypeParams:         "TypeParams",
+	TypePrefix:         "TypePrefix",
+	MapKey:             "MapKey",
+	MapValue:           "MapValue",
 	Whitespace:         "Whitespace",
 	Comment:            "Comment",
 	Ident:              "Ident",
