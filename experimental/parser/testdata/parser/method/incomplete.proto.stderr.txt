@@ -1,0 +1,19 @@
+error: missing `(...)` around method return type
+  --> testdata/parser/method/incomplete.proto:20:31
+   | 
+20 |     rpc Bar1(foo.Bar) returns foo.Bar;
+   |                               ^^^^^^^ help: replace this with `(foo.Bar)`
+
+error: unexpected `;` after `returns`
+  --> testdata/parser/method/incomplete.proto:25:23
+   | 
+25 |     rpc Bar6() returns;
+   |                       ^ expected `(`
+
+error: missing `(...)` around method return type
+  --> testdata/parser/method/incomplete.proto:26:24
+   | 
+26 |     rpc Bar7() returns stream foo.Bar;
+   |                        ^^^^^^^^^^^^^^ help: replace this with `(stream foo.Bar)`
+
+encountered 3 errors

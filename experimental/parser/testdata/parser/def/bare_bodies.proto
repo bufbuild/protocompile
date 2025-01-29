@@ -16,20 +16,15 @@ syntax = "proto2";
 
 package test;
 
-message Foo {
-    extensions 1;
-    extensions 1 to 2;
-    extensions -5 to 0x20;
-    extensions 0 to max;
-    extensions 1, 2, 3, 4 to 5, 6;
-    
-    reserved 1;
-    reserved 2, 3, 5 to 7;
-    reserved 10 to max;
+message M {
+    int32 x = 1;
+    {
+        int32 y = 2;
+    }
 }
 
-enum Foo {
-    reserved 1;
-    reserved 2, 3, 5 to 7;
-    reserved 10 to max;
+{
+    message N {
+        int32 y = 2;
+    }
 }

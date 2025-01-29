@@ -1,0 +1,7 @@
+error: missing `(...)` around method return type
+  --> testdata/parser/method/bad_type.proto:22:31
+   | 
+22 |     rpc Bar2(foo.Bar) returns repeated foo.Bar;
+   |                               ^^^^^^^^^^^^^^^^ help: replace this with `(repeated foo.Bar)`
+
+encountered 1 error

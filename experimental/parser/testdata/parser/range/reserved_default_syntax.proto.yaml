@@ -1,0 +1,11 @@
+decls:
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      body.decls:
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - path.components: [{ ident: "foo" }]
+              - literal.string_value: "foo"
