@@ -15,10 +15,12 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -90,4 +92,32 @@ func (e errInvalidEscape) Diagnose(d *report.Diagnostic) {
 	}
 
 	d.Apply(report.Snippet(e.Span))
+}
+
+// errImpureString diagnoses a string literal that probably should not contain
+// escapes or concatenation.
+type errImpureString struct {
+	lit   token.Token
+	where taxa.Place
+}
+
+// Diagnose implements [report.Diagnose].
+func (e errImpureString) Diagnose(d *report.Diagnostic) {
+	text, _ := e.lit.AsString()
+	quote := e.lit.Text()[0]
+	d.Apply(
+		report.Message("non-canonical string literal %s", e.where.String()),
+		report.Snippet(e.lit),
+		report.SuggestEdits(e.lit, "replace it with a canonical string", report.Edit{
+			Start: 0, End: e.lit.Span().Len(),
+			Replace: fmt.Sprintf("%c%v%c", quote, text, quote),
+		}),
+	)
+
+	if !e.lit.IsLeaf() {
+		d.Apply(
+			report.Notef("Protobuf implicitly concatenates adjacent %ss,", taxa.String),
+			report.Notef("like C or Python, which can lead to surprising behavior"),
+		)
+	}
 }

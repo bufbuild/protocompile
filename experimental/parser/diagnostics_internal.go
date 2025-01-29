@@ -16,6 +16,8 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
@@ -83,5 +85,47 @@ func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
 		report.Message("encountered more than one %v", what),
 		report.Snippetf(e.second, "help: consider removing this"),
 		report.Snippetf(e.first, "first one is here"),
+	)
+}
+
+// errHasOptions diagnoses the presence of compact options on a construct that
+// does not permit them.
+type errHasOptions struct {
+	what interface {
+		report.Spanner
+		Options() ast.CompactOptions
+	}
+}
+
+func (e errHasOptions) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("%s cannot specify %s", taxa.Classify(e.what), taxa.CompactOptions),
+		report.Snippetf(e.what.Options(), "help: remove this"),
+	)
+}
+
+// errHasSignature diagnoses the presence of a method signature on a non-method.
+type errHasSignature struct {
+	what ast.DeclDef
+}
+
+func (e errHasSignature) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("%s appears to have %s", taxa.Classify(e.what), taxa.Signature),
+		report.Snippetf(e.what.Signature(), "help: remove this"),
+	)
+}
+
+// errBadNest diagnoses bad nesting: parent should not contain child.
+type errBadNest struct {
+	parent classified
+	child  report.Spanner
+}
+
+func (e errBadNest) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("unexpected %s within %s", taxa.Classify(e.child), e.parent.what),
+		report.Snippetf(e.child, "this %s...", taxa.Classify(e.child)),
+		report.Snippetf(e.parent, "...cannot be declared within this %s", e.parent.what),
 	)
 }

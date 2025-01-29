@@ -70,6 +70,12 @@ func (p *parser) Mode() taxa.Noun {
 	return p.cachedMode
 }
 
+// classified is a spanner that has been classified by taxa.
+type classified struct {
+	report.Spanner
+	what taxa.Noun
+}
+
 // parsePunct attempts to unconditionally parse some punctuation.
 //
 // If the wrong token is encountered, it DOES NOT consume the token, returning a nil
