@@ -19,11 +19,10 @@ import (
 	"regexp"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/internal/taxa"
-	"github.com/bufbuild/protocompile/experimental/seq"
-
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
@@ -51,6 +50,14 @@ func legalizeFile(p *parser, file ast.File) {
 
 		return true
 	})
+
+	if pkg.IsZero() {
+		p.Warnf("missing %s", taxa.Package).Apply(
+			report.InFile(p.Stream().Path()),
+			report.Notef("failing to specify a package places the file in the empty package"),
+			report.Notef("using the empty package is discouraged"),
+		)
+	}
 }
 
 // legalizeSyntax legalizes a DeclSyntax.
@@ -172,6 +179,47 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 // a slot where we can store the first DeclPackage seen, so we can legalize
 // against duplicates.
 func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPackage, decl ast.DeclPackage) {
+	if parent.what == taxa.TopLevel && first != nil {
+		file := parent.Spanner.(ast.File)
+		switch {
+		case !first.IsZero():
+			p.Errorf("unexpected %s", taxa.Package).Apply(
+				report.Snippetf(decl, "help: remove this"),
+				report.Snippetf(*first, "previous declaration is here"),
+				report.Notef("a file must contain exactly one %s", taxa.Package),
+			)
+			return
+		case idx > 0:
+			if idx > 1 || file.Decls().At(0).Kind() != ast.DeclKindSyntax {
+				p.Errorf("unexpected %s", taxa.Package).Apply(
+					report.Snippet(decl),
+					report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
+					report.Notef("a %s must be the first declaration in a file, or follow the `syntax` or `edition` declaration", taxa.Package),
+				)
+				return
+			}
+			*first = decl
+		default:
+			*first = decl
+		}
+	} else {
+		p.Error(errBadNest{parent: parent, child: decl})
+		return
+	}
+
+	if !decl.Options().IsZero() {
+		p.Error(errHasOptions{decl})
+	}
+
+	if decl.Path().IsZero() {
+		p.Errorf("missing path in %s", taxa.Package).Apply(
+			report.Snippet(decl),
+			report.Helpf("to place a file in the empty package, remove the %s", taxa.Package),
+			report.Helpf("however, using the empty package is discouraged"),
+		)
+	}
+
+	legalizePath(p, taxa.Package.In(), decl.Path(), pathOptions{Relative: true})
 }
 
 // legalizeImport legalizes a DeclImport.

@@ -1,3 +1,8 @@
+warning: missing `package` declaration
+ --> testdata/parser/syntax/lonely.proto
+   = note: failing to specify a package places the file in the empty package
+   = note: using the empty package is discouraged
+
 error: unexpected `;` in `edition` declaration
   --> testdata/parser/syntax/lonely.proto:15:8
    | 
@@ -20,4 +25,14 @@ error: unexpected `;` in `syntax` declaration
 17 | syntax = ;
    |          ^ expected expression
 
-encountered 3 errors
+error: unexpected `package` declaration
+  --> testdata/parser/syntax/lonely.proto:19:1
+   | 
+17 | syntax = ;
+   | ---------- previous declaration is here
+18 | 
+19 | package test;
+   | ^^^^^^^^^^^^^ 
+   = note: a `package` declaration must be the first declaration in a file, or follow the `syntax` or `edition` declaration
+
+encountered 4 errors and 1 warning

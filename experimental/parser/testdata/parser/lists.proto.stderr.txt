@@ -1,3 +1,8 @@
+warning: missing `package` declaration
+ --> testdata/parser/lists.proto
+   = note: failing to specify a package places the file in the empty package
+   = note: using the empty package is discouraged
+
 error: unexpected integer literal in array expression
   --> testdata/parser/lists.proto:20:20
    | 
@@ -318,4 +323,4 @@ error: unexpected `message` after reserved range
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
 
-encountered 46 errors
+encountered 46 errors and 1 warning

@@ -1,0 +1,6 @@
+warning: missing `package` declaration
+ --> testdata/parser/package/empty.proto
+   = note: failing to specify a package places the file in the empty package
+   = note: using the empty package is discouraged
+
+ encountered  1 warning
