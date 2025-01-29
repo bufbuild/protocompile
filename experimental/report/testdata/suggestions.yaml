@@ -105,3 +105,15 @@ diagnostics:
           - start: 10
             end: 12
             replace: ";\n  }"
+
+  - message: 'delete some stuff'
+    level: LEVEL_ERROR
+    annotations:
+      - file: 0
+        start: 38
+        end: 153
+        edits:
+          - start: 0
+            end: 13
+          - start: 114
+            end: 115
