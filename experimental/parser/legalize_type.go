@@ -16,11 +16,118 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
+	if list.Len() != 1 {
+		p.Errorf("expected exactly one type in %s, got %d", what, list.Len()).Apply(
+			report.Snippet(list),
+		)
+		return
+	}
+
+	ty := list.At(0)
+	switch ty.Kind() {
+	case ast.TypeKindPath:
+		// Allow all path types. We don't know if this is a message or not yet;
+		// figuring that out is a problem for IR construction.
+	case ast.TypeKindPrefixed:
+		prefixed := ty.AsPrefixed()
+		if prefixed.Prefix() != ast.TypePrefixStream {
+			p.Errorf("only the %s modifier may appear in %s", taxa.KeywordStream, what).Apply(
+				report.Snippet(prefixed.PrefixToken()),
+			)
+		}
+
+		if prefixed.Type().Kind() == ast.TypeKindPath {
+			break
+		}
+
+		ty = prefixed.Type()
+		fallthrough
+	default:
+		p.Errorf("only message types may appear in %s", what).Apply(
+			report.Snippet(ty),
+		)
+	}
 }
 
 func legalizeFieldType(p *parser, ty ast.TypeAny) {
+	switch ty.Kind() {
+	case ast.TypeKindPath:
+		break
+
+	case ast.TypeKindPrefixed:
+		ty := ty.AsPrefixed()
+		if ty.Prefix() == ast.TypePrefixStream {
+			p.Errorf("the %s modifier may only appear in a %s", taxa.KeywordStream, taxa.Signature).Apply(
+				report.Snippet(ty.PrefixToken()),
+			)
+		}
+		inner := ty.Type()
+		switch inner.Kind() {
+		case ast.TypeKindPath:
+			break
+		case ast.TypeKindPrefixed:
+			p.Error(errMoreThanOne{
+				first:  ty.PrefixToken(),
+				second: inner.AsPrefixed().PrefixToken(),
+				what:   taxa.TypePrefix,
+			})
+		default:
+			p.Error(errUnexpected{
+				what:  inner,
+				where: taxa.Classify(ty.PrefixToken()).After(),
+				want:  taxa.TypePath.AsSet(),
+			})
+		}
+
+	case ast.TypeKindGeneric:
+		ty := ty.AsGeneric()
+		switch {
+		case ty.Path().AsPredeclared() != predeclared.Map:
+			p.Errorf("generic types other than `map` are not supported").Apply(
+				report.Snippet(ty.Path()),
+			)
+		case ty.Args().Len() != 2:
+			p.Errorf("expected exactly two type arguments, got %d", ty.Args().Len()).Apply(
+				report.Snippet(ty.Args()),
+			)
+		default:
+			k, v := ty.AsMap()
+			if !k.AsPath().AsPredeclared().IsMapKey() {
+				p.Error(errUnexpected{
+					what:  k,
+					where: taxa.MapKey.In(),
+					got:   "non-comparable type",
+				}).Apply(
+					report.Helpf("map keys may be of any of the following types:"),
+					report.Helpf("%s", iterx.Join(iterx.Filter(
+						predeclared.All(),
+						func(p predeclared.Name) bool { return p.IsMapKey() },
+					), ", ")),
+				)
+			}
+
+			switch v.Kind() {
+			case ast.TypeKindPath:
+				break
+			case ast.TypeKindPrefixed:
+				p.Error(errUnexpected{
+					what:  v.AsPrefixed().PrefixToken(),
+					where: taxa.MapValue.In(),
+				})
+			default:
+				p.Error(errUnexpected{
+					what:  v,
+					where: taxa.MapValue.In(),
+					want:  taxa.TypePath.AsSet(),
+				})
+			}
+		}
+	}
 }

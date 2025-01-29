@@ -1,8 +1,152 @@
+error: encountered more than one type modifier
+  --> testdata/parser/type/repeated.proto:20:14
+   | 
+20 |     optional optional M x1 = 1;
+   |     -------- ^^^^^^^^ help: consider removing this
+   |     |
+   |     first one is here
+
+error: encountered more than one type modifier
+  --> testdata/parser/type/repeated.proto:21:14
+   | 
+21 |     repeated optional M x2 = 2;
+   |     -------- ^^^^^^^^ help: consider removing this
+   |     |
+   |     first one is here
+
+error: encountered more than one type modifier
+  --> testdata/parser/type/repeated.proto:22:14
+   | 
+22 |     required optional M x3 = 3;
+   |     -------- ^^^^^^^^ help: consider removing this
+   |     |
+   |     first one is here
+
+error: encountered more than one type modifier
+  --> testdata/parser/type/repeated.proto:23:14
+   | 
+23 |     repeated repeated M x4 = 4;
+   |     -------- ^^^^^^^^ help: consider removing this
+   |     |
+   |     first one is here
+
+error: encountered more than one type modifier
+  --> testdata/parser/type/repeated.proto:24:14
+   | 
+24 |     repeated stream M x5 = 5;
+   |     -------- ^^^^^^ help: consider removing this
+   |     |
+   |     first one is here
+
+error: the `stream` modifier may only appear in a method signature
+  --> testdata/parser/type/repeated.proto:25:5
+   | 
+25 |     stream stream M x6 = 6;
+   |     ^^^^^^ 
+
+error: encountered more than one type modifier
+  --> testdata/parser/type/repeated.proto:25:12
+   | 
+25 |     stream stream M x6 = 6;
+   |     ------ ^^^^^^ help: consider removing this
+   |     |
+   |     first one is here
+
+error: only the `stream` modifier may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:29:12
+   | 
+29 |     rpc X1(required optional M) returns (stream optional M) {}
+   |            ^^^^^^^^ 
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:29:21
+   | 
+29 |     rpc X1(required optional M) returns (stream optional M) {}
+   |                     ^^^^^^^^^^ 
+
+error: only message types may appear in method return type
+  --> testdata/parser/type/repeated.proto:29:49
+   | 
+29 |     rpc X1(required optional M) returns (stream optional M) {}
+   |                                                 ^^^^^^^^^^ 
+
+error: only the `stream` modifier may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:30:12
+   | 
+30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+   |            ^^^^^^^^ 
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:30:21
+   | 
+30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+   |                     ^^^^^^^^^^^^^^^ 
+
+error: only the `stream` modifier may appear in method return type
+  --> testdata/parser/type/repeated.proto:30:47
+   | 
+30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+   |                                               ^^^^^^^^ 
+
+error: only message types may appear in method return type
+  --> testdata/parser/type/repeated.proto:30:56
+   | 
+30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+   |                                                        ^^^^^^^^^^^^^^ 
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:31:19
+   | 
+31 |     rpc X3(stream stream .test.M) returns (stream repeated M) {}
+   |                   ^^^^^^^^^^^^^^ 
+
+error: only message types may appear in method return type
+  --> testdata/parser/type/repeated.proto:31:51
+   | 
+31 |     rpc X3(stream stream .test.M) returns (stream repeated M) {}
+   |                                                   ^^^^^^^^^^ 
+
+error: only the `stream` modifier may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:33:12
+   | 
+33 |     rpc X4(required optional M) returns stream optional M {}
+   |            ^^^^^^^^ 
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:33:21
+   | 
+33 |     rpc X4(required optional M) returns stream optional M {}
+   |                     ^^^^^^^^^^ 
+
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:33:41
    | 
 33 |     rpc X4(required optional M) returns stream optional M {}
    |                                         ^^^^^^^^^^^^^^^^^ help: replace this with `(stream optional M)`
+
+error: only message types may appear in method return type
+  --> testdata/parser/type/repeated.proto:33:48
+   | 
+33 |     rpc X4(required optional M) returns stream optional M {}
+   |                                                ^^^^^^^^^^ 
+
+error: only the `stream` modifier may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:34:12
+   | 
+34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+   |            ^^^^^^^^ 
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:34:21
+   | 
+34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+   |                     ^^^^^^^^^^^^^^^ 
+
+error: only the `stream` modifier may appear in method return type
+  --> testdata/parser/type/repeated.proto:34:46
+   | 
+34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+   |                                              ^^^^^^^^ 
 
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:34:46
@@ -10,10 +154,28 @@ error: missing `(...)` around method return type
 34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
    |                                              ^^^^^^^^^^^^^^^^^^^^^^^ help: replace this with `(repeated stream .test.M)`
 
+error: only message types may appear in method return type
+  --> testdata/parser/type/repeated.proto:34:55
+   | 
+34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+   |                                                       ^^^^^^^^^^^^^^ 
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/type/repeated.proto:35:19
+   | 
+35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
+   |                   ^^^^^^^^^^^^^^ 
+
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:35:43
    | 
 35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
    |                                           ^^^^^^^^^^^^^^^^^ help: replace this with `(stream repeated M)`
 
-encountered 3 errors
+error: only message types may appear in method return type
+  --> testdata/parser/type/repeated.proto:35:50
+   | 
+35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
+   |                                                  ^^^^^^^^^^ 
+
+encountered 28 errors

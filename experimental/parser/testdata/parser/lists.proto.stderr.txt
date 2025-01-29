@@ -129,6 +129,24 @@ error: unexpected leading `,` in message expression
 39 |     bar {,}
    |          ^ expected message field value
 
+error: expected exactly one type in method parameter list, got 2
+  --> testdata/parser/lists.proto:44:12
+   | 
+44 |     rpc Foo(int, int) returns (int, int);
+   |            ^^^^^^^^^^ 
+
+error: expected exactly one type in method return type, got 2
+  --> testdata/parser/lists.proto:44:31
+   | 
+44 |     rpc Foo(int, int) returns (int, int);
+   |                               ^^^^^^^^^^ 
+
+error: expected exactly one type in method parameter list, got 2
+  --> testdata/parser/lists.proto:45:12
+   | 
+45 |     rpc Foo(int int) returns (int int);
+   |            ^^^^^^^^^ 
+
 error: unexpected type name in method parameter list
   --> testdata/parser/lists.proto:45:17
    | 
@@ -136,6 +154,12 @@ error: unexpected type name in method parameter list
    |                 ^^^ expected `,`
    |                 |
    |                 note: assuming a missing `,` here
+
+error: expected exactly one type in method return type, got 2
+  --> testdata/parser/lists.proto:45:30
+   | 
+45 |     rpc Foo(int int) returns (int int);
+   |                              ^^^^^^^^^ 
 
 error: unexpected type name in method return type
   --> testdata/parser/lists.proto:45:35
@@ -145,11 +169,23 @@ error: unexpected type name in method return type
    |                                   |
    |                                   note: assuming a missing `,` here
 
+error: expected exactly one type in method parameter list, got 2
+  --> testdata/parser/lists.proto:46:12
+   | 
+46 |     rpc Foo(int; int) returns (int, int,);
+   |            ^^^^^^^^^^ 
+
 error: unexpected `;` in method parameter list
   --> testdata/parser/lists.proto:46:16
    | 
 46 |     rpc Foo(int; int) returns (int, int,);
    |                ^ expected `,`
+
+error: expected exactly one type in method return type, got 2
+  --> testdata/parser/lists.proto:46:31
+   | 
+46 |     rpc Foo(int; int) returns (int, int,);
+   |                               ^^^^^^^^^^^ 
 
 error: unexpected trailing `,` in method return type
   --> testdata/parser/lists.proto:46:40
@@ -157,11 +193,23 @@ error: unexpected trailing `,` in method return type
 46 |     rpc Foo(int; int) returns (int, int,);
    |                                        ^ 
 
+error: expected exactly one type in method parameter list, got 2
+  --> testdata/parser/lists.proto:47:12
+   | 
+47 |     rpc Foo(, int, int) returns (int,, int,);
+   |            ^^^^^^^^^^^^ 
+
 error: unexpected leading `,` in method parameter list
   --> testdata/parser/lists.proto:47:13
    | 
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |             ^ expected type
+
+error: expected exactly one type in method return type, got 2
+  --> testdata/parser/lists.proto:47:33
+   | 
+47 |     rpc Foo(, int, int) returns (int,, int,);
+   |                                 ^^^^^^^^^^^^ 
 
 error: unexpected extra `,` in method return type
   --> testdata/parser/lists.proto:47:38
@@ -177,17 +225,63 @@ error: unexpected trailing `,` in method return type
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |                                           ^ 
 
+error: expected exactly one type in method parameter list, got 0
+  --> testdata/parser/lists.proto:48:12
+   | 
+48 |     rpc Foo(;) returns (,);
+   |            ^^^ 
+
 error: unexpected `;` in method parameter list
   --> testdata/parser/lists.proto:48:13
    | 
 48 |     rpc Foo(;) returns (,);
    |             ^ expected type
 
+error: expected exactly one type in method return type, got 0
+  --> testdata/parser/lists.proto:48:24
+   | 
+48 |     rpc Foo(;) returns (,);
+   |                        ^^^ 
+
 error: unexpected leading `,` in method return type
   --> testdata/parser/lists.proto:48:25
    | 
 48 |     rpc Foo(;) returns (,);
    |                         ^ expected type
+
+error: expected exactly one type in method parameter list, got 0
+  --> testdata/parser/lists.proto:49:12
+   | 
+49 |     rpc Foo() returns ();
+   |            ^^ 
+
+error: expected exactly one type in method return type, got 0
+  --> testdata/parser/lists.proto:49:23
+   | 
+49 |     rpc Foo() returns ();
+   |                       ^^ 
+
+error: expected exactly two type arguments, got 1
+  --> testdata/parser/lists.proto:53:8
+   | 
+53 |     map<int> x;
+   |        ^^^^^ 
+
+error: unexpected non-comparable type in map key
+  --> testdata/parser/lists.proto:54:9
+   | 
+54 |     map<int, int> x;
+   |         ^^^ 
+   = help: map keys may be of any of the following types:
+   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+
+error: unexpected non-comparable type in map key
+  --> testdata/parser/lists.proto:55:9
+   | 
+55 |     map<int int> x;
+   |         ^^^ 
+   = help: map keys may be of any of the following types:
+   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected type name in type parameters
   --> testdata/parser/lists.proto:55:13
@@ -197,6 +291,14 @@ error: unexpected type name in type parameters
    |             |
    |             note: assuming a missing `,` here
 
+error: unexpected non-comparable type in map key
+  --> testdata/parser/lists.proto:56:9
+   | 
+56 |     map<int,, int> x;
+   |         ^^^ 
+   = help: map keys may be of any of the following types:
+   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+
 error: unexpected extra `,` in type parameters
   --> testdata/parser/lists.proto:56:13
    | 
@@ -205,11 +307,23 @@ error: unexpected extra `,` in type parameters
    |            |
    |            first delimiter is here
 
+error: expected exactly two type arguments, got 0
+  --> testdata/parser/lists.proto:57:8
+   | 
+57 |     map<,> x;
+   |        ^^^ 
+
 error: unexpected leading `,` in type parameters
   --> testdata/parser/lists.proto:57:9
    | 
 57 |     map<,> x;
    |         ^ expected type
+
+error: expected exactly two type arguments, got 0
+  --> testdata/parser/lists.proto:58:8
+   | 
+58 |     map<> x;
+   |        ^^ 
 
 error: unexpected leading `,` in type parameters
   --> testdata/parser/lists.proto:59:9
@@ -217,11 +331,35 @@ error: unexpected leading `,` in type parameters
 59 |     map<,int, int> x;
    |         ^ expected type
 
+error: unexpected non-comparable type in map key
+  --> testdata/parser/lists.proto:59:10
+   | 
+59 |     map<,int, int> x;
+   |          ^^^ 
+   = help: map keys may be of any of the following types:
+   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+
+error: unexpected non-comparable type in map key
+  --> testdata/parser/lists.proto:60:9
+   | 
+60 |     map<int; int> x;
+   |         ^^^ 
+   = help: map keys may be of any of the following types:
+   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+
 error: unexpected `;` in type parameters
   --> testdata/parser/lists.proto:60:12
    | 
 60 |     map<int; int> x;
    |            ^ expected `,`
+
+error: unexpected non-comparable type in map key
+  --> testdata/parser/lists.proto:62:9
+   | 
+62 |         int,
+   |         ^^^ 
+   = help: map keys may be of any of the following types:
+   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected trailing `,` in type parameters
   --> testdata/parser/lists.proto:63:12
@@ -365,4 +503,4 @@ error: unexpected `message` after reserved range
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
 
-encountered 53 errors and 1 warning
+encountered 74 errors and 1 warning
