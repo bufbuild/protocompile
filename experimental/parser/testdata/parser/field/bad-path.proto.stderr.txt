@@ -1,0 +1,73 @@
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:20:19
+   | 
+20 |     optional Type path.name = 1;
+   |                   ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:21:19
+   | 
+21 |     repeated Type path.name = 1;
+   |                   ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:22:19
+   | 
+22 |     required Type path.name = 1;
+   |                   ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:23:10
+   | 
+23 |     Type path.name = 1;
+   |          ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:25:27
+   | 
+25 |     optional package.Type path.name = 1;
+   |                           ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:26:27
+   | 
+26 |     repeated package.Type path.name = 1;
+   |                           ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:27:27
+   | 
+27 |     required package.Type path.name = 1;
+   |                           ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:35:27
+   | 
+35 |     optional package.Type (foo.bar).name = 1;
+   |                           ^^^^^^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:36:27
+   | 
+36 |     repeated package.Type (foo.bar).name = 1;
+   |                           ^^^^^^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:37:27
+   | 
+37 |     required package.Type (foo.bar).name = 1;
+   |                           ^^^^^^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:38:18
+   | 
+38 |     package.Type (foo.bar).name = 1;
+   |                  ^^^^^^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:40:11
+   | 
+40 |     (foo) (bar) = 1;
+   |           ^^^^^ expected identifier
+
+encountered 12 errors

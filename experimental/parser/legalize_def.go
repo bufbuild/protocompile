@@ -118,6 +118,45 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 // legalizeMessageLike legalizes something that resembles a field definition:
 // namely, fields, groups, and enum values.
 func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
+	if def.Name().IsZero() {
+		def.MarkCorrupt()
+		p.Errorf("missing name %v", what.In()).Apply(
+			report.Snippet(def),
+		)
+	} else if def.Name().AsIdent().IsZero() {
+		def.MarkCorrupt()
+		p.Error(errUnexpected{
+			what:  def.Name(),
+			where: what.In(),
+			want:  taxa.Ident.AsSet(),
+		})
+	}
+
+	// NOTE: We do not legalize a missing value for fields and enum values
+	// here; instead, that happens during IR lowering. This is because we want
+	// to be able to include a suggested field number, but we cannot do that
+	// until much later, when we have evaluated expressions.
+
+	if sig := def.Signature(); !sig.IsZero() {
+		p.Error(errHasSignature{def})
+	}
+
+	switch what {
+	case taxa.Group:
+		if def.Body().IsZero() {
+			p.Errorf("missing body for %v", what).Apply(
+				report.Snippet(def),
+			)
+		}
+	case taxa.Field, taxa.EnumValue:
+		if body := def.Body(); !body.IsZero() {
+			p.Error(errUnexpected{
+				what:  body,
+				where: what.In(),
+			})
+		}
+	}
+
 	if options := def.Options(); !options.IsZero() {
 		legalizeCompactOptions(p, options)
 	}

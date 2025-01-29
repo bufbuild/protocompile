@@ -6,47 +6,40 @@ decls:
       name.components: [{ ident: "M" }]
       body.decls:
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.prefixed:
               prefix: PREFIX_OPTIONAL
               type.path.components: [{ ident: "Type" }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.prefixed:
               prefix: PREFIX_REPEATED
               type.path.components: [{ ident: "Type" }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.prefixed:
               prefix: PREFIX_REQUIRED
               type.path.components: [{ ident: "Type" }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.path.components: [{ ident: "Type" }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.prefixed:
               prefix: PREFIX_OPTIONAL
               type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.prefixed:
               prefix: PREFIX_REPEATED
               type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
             type.prefixed:
               prefix: PREFIX_REQUIRED
@@ -92,7 +85,6 @@ decls:
               - { ident: "Type", separator: SEPARATOR_DOT }
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components:
               - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
               - { ident: "name", separator: SEPARATOR_DOT }
@@ -101,7 +93,6 @@ decls:
               type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components:
               - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
               - { ident: "name", separator: SEPARATOR_DOT }
@@ -110,7 +101,6 @@ decls:
               type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components:
               - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
               - { ident: "name", separator: SEPARATOR_DOT }
@@ -119,14 +109,12 @@ decls:
               type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components:
               - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
               - { ident: "name", separator: SEPARATOR_DOT }
             type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             name.components: [{ extension.components: [{ ident: "bar" }] }]
             type.path.components: [{ extension.components: [{ ident: "foo" }] }]
             value.literal.int_value: 1

@@ -1,3 +1,9 @@
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:20:9
+   | 
+20 |     M x (T) (T);
+   |         ^^^ help: remove this
+
 error: encountered more than one method parameter list
   --> testdata/parser/def/ordering.proto:20:13
    | 
@@ -6,6 +12,12 @@ error: encountered more than one method parameter list
    |         |
    |         first one is here
 
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:21:9
+   | 
+21 |     M x returns (T) (T);
+   |         ^^^^^^^^^^^^^^^ help: remove this
+
 error: unexpected method parameter list after method return type
   --> testdata/parser/def/ordering.proto:21:21
    | 
@@ -13,6 +25,12 @@ error: unexpected method parameter list after method return type
    |         ----------- ^^^ 
    |         |
    |         previous method return type is here
+
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:22:9
+   | 
+22 |     M x returns T (T);
+   |         ^^^^^^^^^^^^^ help: remove this
 
 error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:22:17
@@ -28,6 +46,12 @@ error: unexpected method parameter list after method return type
    |         |
    |         previous method return type is here
 
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:23:21
+   | 
+23 |     M x [foo = bar] (T);
+   |                     ^^^ help: remove this
+
 error: unexpected method parameter list after compact options
   --> testdata/parser/def/ordering.proto:23:21
    | 
@@ -35,6 +59,24 @@ error: unexpected method parameter list after compact options
    |         ----------- ^^^ 
    |         |
    |         previous compact options is here
+
+error: unexpected definition body in message field
+  --> testdata/parser/def/ordering.proto:24:9
+   | 
+24 |     M x { /* ... */ } (T);
+   |         ^^^^^^^^^^^^^ 
+
+error: missing name in message field
+  --> testdata/parser/def/ordering.proto:24:23
+   | 
+24 |     M x { /* ... */ } (T);
+   |                       ^^^^ 
+
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:26:9
+   | 
+26 |     M x returns (T) returns (T);
+   |         ^^^^^^^^^^^ help: remove this
 
 error: encountered more than one method return type
   --> testdata/parser/def/ordering.proto:26:21
@@ -44,6 +86,12 @@ error: encountered more than one method return type
    |         |
    |         first one is here
 
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:27:21
+   | 
+27 |     M x [foo = bar] returns (T);
+   |                     ^^^^^^^^^^^ help: remove this
+
 error: unexpected method return type after compact options
   --> testdata/parser/def/ordering.proto:27:21
    | 
@@ -51,6 +99,24 @@ error: unexpected method return type after compact options
    |         ----------- ^^^^^^^^^^^ 
    |         |
    |         previous compact options is here
+
+error: unexpected definition body in message field
+  --> testdata/parser/def/ordering.proto:28:9
+   | 
+28 |     M x { /* ... */ } returns (T);
+   |         ^^^^^^^^^^^^^ 
+
+error: unexpected qualified name in message field
+  --> testdata/parser/def/ordering.proto:28:31
+   | 
+28 |     M x { /* ... */ } returns (T);
+   |                               ^^^ expected identifier
+
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:30:9
+   | 
+30 |     M x returns T returns T;
+   |         ^^^^^^^^^ help: remove this
 
 error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:30:17
@@ -66,6 +132,12 @@ error: encountered more than one method return type
    |         |
    |         first one is here
 
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:31:9
+   | 
+31 |     M x returns T [] returns T;
+   |         ^^^^^^^^^ help: remove this
+
 error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:31:17
    | 
@@ -80,6 +152,12 @@ error: unexpected method return type after compact options
    |                   |
    |                   previous compact options is here
 
+error: message field appears to have method signature
+  --> testdata/parser/def/ordering.proto:32:21
+   | 
+32 |     M x [foo = bar] returns T;
+   |                     ^^^^^^^^^ help: remove this
+
 error: unexpected method return type after compact options
   --> testdata/parser/def/ordering.proto:32:21
    | 
@@ -93,6 +171,12 @@ error: missing `(...)` around method return type
    | 
 32 |     M x [foo = bar] returns T;
    |                             ^ help: replace this with `(T)`
+
+error: unexpected definition body in message field
+  --> testdata/parser/def/ordering.proto:33:9
+   | 
+33 |     M x { /* ... */ } returns T;
+   |         ^^^^^^^^^^^^^ 
 
 error: encountered more than one message field tag
   --> testdata/parser/def/ordering.proto:35:13
@@ -110,6 +194,12 @@ error: unexpected message field tag after compact options
    |         |
    |         previous compact options is here
 
+error: unexpected definition body in message field
+  --> testdata/parser/def/ordering.proto:37:9
+   | 
+37 |     M x { /* ... */ } = 1;
+   |         ^^^^^^^^^^^^^ 
+
 error: unexpected tokens in message definition
   --> testdata/parser/def/ordering.proto:37:23
    | 
@@ -124,10 +214,16 @@ error: encountered more than one compact options
    |         |
    |         first one is here
 
+error: unexpected definition body in message field
+  --> testdata/parser/def/ordering.proto:40:9
+   | 
+40 |     M x { /* ... */ } [foo = bar];
+   |         ^^^^^^^^^^^^^ 
+
 error: unexpected `[...]` in message definition
   --> testdata/parser/def/ordering.proto:40:23
    | 
 40 |     M x { /* ... */ } [foo = bar];
    |                       ^^^^^^^^^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
-encountered 18 errors
+encountered 34 errors

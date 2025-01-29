@@ -276,7 +276,11 @@ func (p PathComponent) AsExtension() Path {
 //
 // May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
-	return p.name.In(p.Context())
+	tok := p.name.In(p.Context())
+	if tok.Kind() == token.Ident {
+		return tok
+	}
+	return token.Zero
 }
 
 // rawPath is the raw contents of a Path without its Context.
