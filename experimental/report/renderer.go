@@ -934,7 +934,6 @@ func suggestion(snip snippet, lineBarWidth int, ss *styleSheet, out *strings.Bui
 
 	if multiline {
 		span, hunks := unifiedDiff(snip.Span, snip.edits)
-		fmt.Printf("%v, %#v\n", span, hunks)
 		aLine := span.StartLoc().Line
 		bLine := aLine
 		for _, hunk := range hunks {
