@@ -5,6 +5,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -20,6 +21,9 @@ import (
 // prefix chunks: these are the chunks from the last non-skippable token to the starting token
 // of this current declaration. This is basically all the whitspace and/or comments between
 // the start of this current declaration and the end of the last declaration.
+//
+// Something to think about: should we be using the declaration's spans instead of assuming
+// the keyword is the starting token. We basically must do this for a field and enum values.
 
 type splitKind int8
 
@@ -72,33 +76,37 @@ func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	var blocks []block
 	for i := 0; i < decls.Len(); i++ {
 		decl := decls.At(i)
-		blocks = append(blocks, blockForDecl(decl, applyFormatting))
+		blocks = append(blocks, declBlock(decl, applyFormatting))
 	}
 	return blocks
 }
 
-func blockForDecl(decl ast.DeclAny, applyFormatting bool) block {
+func declBlock(decl ast.DeclAny, applyFormatting bool) block {
+	return block{chunks: declChunks(decl, applyFormatting)}
+}
+
+func declChunks(decl ast.DeclAny, applyFormatting bool) []chunk {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
-		return syntaxBlock(decl.AsSyntax(), applyFormatting)
+		return syntaxChunks(decl.AsSyntax(), applyFormatting)
 	case ast.DeclKindPackage:
-		return packageBlock(decl.AsPackage(), applyFormatting)
+		return packageChunks(decl.AsPackage(), applyFormatting)
 	case ast.DeclKindImport:
-		return importBlock(decl.AsImport(), applyFormatting)
+		return importChunks(decl.AsImport(), applyFormatting)
 	case ast.DeclKindDef:
-		// return defBlock(decl.AsDef(), applyFormatting)
+		return defChunks(decl.AsDef(), applyFormatting)
 	case ast.DeclKindBody:
 		// TODO: figure out how to handle this
 	case ast.DeclKindRange:
 	default:
 		panic("ah")
 	}
-	return block{}
+	return []chunk{}
 }
 
-func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
+func syntaxChunks(decl ast.DeclSyntax, applyFormatting bool) []chunk {
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
 	// TODO: should this actually be based on the span start and end? o_o
 	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
@@ -122,18 +130,23 @@ func syntaxBlock(decl ast.DeclSyntax, applyFormatting bool) block {
 		}
 	}
 	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-	if splitKind == splitKindSoft {
+	// For syntax blocks, we never want to split for soft splits, and for hard splits, we want
+	// to double split.
+	switch splitKind {
+	case splitKindSoft:
 		splitKind = splitKindNever
+	case splitKindHard:
+		splitKind = splitKindDouble
 	}
 	chunks = append(chunks, chunk{
 		text:             text,
 		splitKind:        splitKind,
 		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
-	return block{chunks: chunks}
+	return chunks
 }
 
-func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
+func packageChunks(decl ast.DeclPackage, applyFormatting bool) []chunk {
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
 	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
 	var text string
@@ -145,7 +158,7 @@ func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
 			text += t.Text()
 			// If the token span falls within the span of the path or if the token is the semicolon,
 			// we do not add a space.
-			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(t.Span(), decl.Path().Span()) {
+			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(decl.Path().Span(), t.Span()) {
 				continue
 			}
 			text += " "
@@ -156,18 +169,23 @@ func packageBlock(decl ast.DeclPackage, applyFormatting bool) block {
 		}
 	}
 	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-	if splitKind == splitKindSoft {
+	// For package blocks, we never want to split for soft splits, and for hard splits, we want
+	// to double split.
+	switch splitKind {
+	case splitKindSoft:
 		splitKind = splitKindNever
+	case splitKindHard:
+		splitKind = splitKindDouble
 	}
 	chunks = append(chunks, chunk{
 		text:             text,
 		splitKind:        splitKind,
 		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
-	return block{chunks: chunks}
+	return chunks
 }
 
-func importBlock(decl ast.DeclImport, applyFormatting bool) block {
+func importChunks(decl ast.DeclImport, applyFormatting bool) []chunk {
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
 	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
 	var text string
@@ -177,7 +195,7 @@ func importBlock(decl ast.DeclImport, applyFormatting bool) block {
 				continue
 			}
 			text += t.Text()
-			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(t.Span(), decl.ImportPath().Span()) {
+			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(decl.ImportPath().Span(), t.Span()) {
 				continue
 			}
 			text += " "
@@ -196,41 +214,77 @@ func importBlock(decl ast.DeclImport, applyFormatting bool) block {
 		splitKind:        splitKind,
 		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
-	return block{chunks: chunks}
+	// TODO: for the last import block, we want to do a double split
+	return chunks
 }
 
-func defBlock(decl ast.DeclDef, applyFormatting bool) block {
+func defChunks(decl ast.DeclDef, applyFormatting bool) []chunk {
+	// TODO: use the start of the decl span
 	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
-	// var text string
-	// Classify the definition type
 	switch decl.Classify() {
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
 	case ast.DefKindMessage:
-
-		return block{} // TODO: implement
+		var msgDefText string
+		message := decl.AsMessage()
+		// TODO: change this to use the spans to denote start and end
+		tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(message.Keyword, message.Body.Braces())
+		if applyFormatting {
+			for _, t := range tokens {
+				if t.Kind() == token.Space {
+					continue
+				}
+				msgDefText += t.Text()
+				// We do not want to add a space after the brace
+				if t.Kind() == token.Punct {
+					continue
+				}
+				msgDefText += " "
+			}
+		} else {
+			for _, t := range tokens {
+				msgDefText += t.Text()
+			}
+		}
+		splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
+		// Message definition chunk
+		chunks = append(chunks, chunk{
+			text:             msgDefText,
+			splitKind:        splitKind,
+			spaceWhenUnsplit: spaceWhenUnsplit,
+		})
+		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
+			// chunks = append(chunks, declChunks(d, applyFormatting)...)
+			return true
+		})
+		return chunks
 	case ast.DefKindEnum:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindService:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindExtend:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindField:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindOneof:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindGroup:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindEnumValue:
-		return block{} // TODO: implement
+		// TODO: implement
 	case ast.DefKindMethod:
-		return block{} // TODO: implement
+		// TODO: implement
 	default:
 		// This should never happen.
 		panic("ah")
 	}
-	// TODO: add splitDefs
-	return block{chunks: chunks}
+	return chunks
+}
+
+// TODO: rename/clean-up
+// TODO: is just checking the starts enough?
+func checkSpanWithin(have, want report.Span) bool {
+	return want.Start >= have.Start && want.Start <= have.End
 }
 
 func tokenForExprAny(exprAny ast.ExprAny) token.Token {
@@ -259,7 +313,6 @@ func tokenForExprAny(exprAny ast.ExprAny) token.Token {
 		// This should never happen
 		panic("ah")
 	}
-
 }
 
 func textForExprAny(exprAny ast.ExprAny) string {
@@ -356,6 +409,7 @@ func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
 }
 
 // TODO: rename/clean-up
+// TODO: improve performance (should return an iterator)
 func getTokensFromStartToEndInclusiveAndCursor(start, end token.Token) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	cursor := token.NewCursorAt(start)
@@ -367,10 +421,21 @@ func getTokensFromStartToEndInclusiveAndCursor(start, end token.Token) ([]token.
 	return append(tokens, end), cursor
 }
 
-// TODO: rename/clean-up
-// TODO: is just checking the starts enough?
-func checkSpanWithin(have, want report.Span) bool {
-	return want.Start >= have.Start && want.Start <= have.End
+// TODO: helper function, remove later/combine with above
+func getTokensAndCursorForDecl(decl ast.DeclDef) ([]token.Token, *token.Cursor) {
+	var tokens []token.Token
+	decl.Context().Stream().All()(func(t token.Token) bool {
+		// If the token is within the declartion range, then add it to tokens, otherwise skip
+		if checkSpanWithin(decl.Span(), t.Span()) {
+			tokens = append(tokens, t)
+		}
+		return true
+	})
+	if tokens == nil {
+		return nil, nil
+	}
+	// TODO: clarify why we are shaving off the last token
+	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
 }
 
 // TODO: improve this explanation, lol.
