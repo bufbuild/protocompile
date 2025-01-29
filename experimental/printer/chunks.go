@@ -9,21 +9,12 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// TODO: I am very bad at writing/explaining things. Here are some notes to convert into
-// proper docs later.
+// TODO list
 //
-// There is actually no reason not to pre-apply the rules for the chunks before inserting
-// to the blocks. This makes sense because from the block's perspective, we only care about
-// manipulating the chunks -- the chunks should already be pre-formatted.
-//
-// We can basically make this application process configurable for the AST printer.
-//
-// prefix chunks: these are the chunks from the last non-skippable token to the starting token
-// of this current declaration. This is basically all the whitspace and/or comments between
-// the start of this current declaration and the end of the last declaration.
-//
-// Something to think about: should we be using the declaration's spans instead of assuming
-// the keyword is the starting token. We basically must do this for a field and enum values.
+// - add indent handling
+// - implement less naive split logic
+// - what does it mean to have no tokens for a decl...
+// - clean-up parsePrefixChunks, getTokensAndCursorForDecl
 
 type splitKind int8
 
@@ -56,7 +47,7 @@ type chunk struct {
 	spaceWhenUnsplit bool
 }
 
-// block is an ordered slice of chunks. A block represents
+// TODO: block is an ordered slice of chunks. A block represents...
 type block struct {
 	chunks []chunk
 	// TODO: improve this explanation
@@ -71,32 +62,70 @@ type block struct {
 	softSplitDeps map[int]int
 }
 
+// addSpace is a function that returns true if a space should be added after the given token.
+type addSpace func(t token.Token) bool
+
 func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	decls := file.Decls()
 	var blocks []block
 	for i := 0; i < decls.Len(); i++ {
 		decl := decls.At(i)
-		blocks = append(blocks, declBlock(decl, applyFormatting))
+		blocks = append(blocks, declBlock(decl.Context().Stream(), decl, applyFormatting))
 	}
 	return blocks
 }
 
-func declBlock(decl ast.DeclAny, applyFormatting bool) block {
-	return block{chunks: declChunks(decl, applyFormatting)}
+// TODO: block-level split logic
+func declBlock(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) block {
+	return block{chunks: declChunks(stream, decl, applyFormatting)}
 }
 
-func declChunks(decl ast.DeclAny, applyFormatting bool) []chunk {
+// TODO: account for indents
+func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []chunk {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
-		return syntaxChunks(decl.AsSyntax(), applyFormatting)
+		syntax := decl.AsSyntax()
+		return oneLiner(
+			stream,
+			syntax.Span(),
+			func(t token.Token) bool {
+				if t.ID() == syntax.Semicolon().ID() || checkSpanWithin(syntax.Value().Span(), t.Span()) {
+					return false
+				}
+				return true
+			},
+			applyFormatting,
+		)
 	case ast.DeclKindPackage:
-		return packageChunks(decl.AsPackage(), applyFormatting)
+		pkg := decl.AsPackage()
+		return oneLiner(
+			stream,
+			pkg.Span(),
+			func(t token.Token) bool {
+				if t.ID() == pkg.Semicolon().ID() || checkSpanWithin(pkg.Path().Span(), t.Span()) {
+					return false
+				}
+				return true
+			},
+			applyFormatting,
+		)
 	case ast.DeclKindImport:
-		return importChunks(decl.AsImport(), applyFormatting)
+		imprt := decl.AsImport()
+		return oneLiner(
+			stream,
+			imprt.Span(),
+			func(t token.Token) bool {
+				if t.ID() == imprt.Semicolon().ID() || checkSpanWithin(imprt.ImportPath().Span(), t.Span()) {
+					return false
+				}
+				return true
+			},
+			applyFormatting,
+		)
 	case ast.DeclKindDef:
-		return defChunks(decl.AsDef(), applyFormatting)
+		return defChunks(stream, decl.AsDef(), applyFormatting)
 	case ast.DeclKindBody:
 		// TODO: figure out how to handle this
 	case ast.DeclKindRange:
@@ -106,136 +135,26 @@ func declChunks(decl ast.DeclAny, applyFormatting bool) []chunk {
 	return []chunk{}
 }
 
-func syntaxChunks(decl ast.DeclSyntax, applyFormatting bool) []chunk {
-	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
-	// TODO: should this actually be based on the span start and end? o_o
-	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
-	var text string
-	if applyFormatting {
-		valueToken := tokenForExprAny(decl.Value())
-		for _, t := range tokens {
-			// If we are applying formatting, we skip user-defined whitespace and format our own
-			if t.Kind() == token.Space {
-				continue
-			}
-			text += t.Text()
-			if t.ID() == valueToken.ID() || t.ID() == decl.Semicolon().ID() {
-				continue
-			}
-			text += " "
-		}
-	} else {
-		for _, t := range tokens {
-			text += t.Text()
-		}
-	}
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-	// For syntax blocks, we never want to split for soft splits, and for hard splits, we want
-	// to double split.
-	switch splitKind {
-	case splitKindSoft:
-		splitKind = splitKindNever
-	case splitKindHard:
-		splitKind = splitKindDouble
-	}
-	chunks = append(chunks, chunk{
-		text:             text,
-		splitKind:        splitKind,
-		spaceWhenUnsplit: spaceWhenUnsplit,
-	})
-	return chunks
-}
-
-func packageChunks(decl ast.DeclPackage, applyFormatting bool) []chunk {
-	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
-	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
-	var text string
-	if applyFormatting {
-		for _, t := range tokens {
-			if t.Kind() == token.Space {
-				continue
-			}
-			text += t.Text()
-			// If the token span falls within the span of the path or if the token is the semicolon,
-			// we do not add a space.
-			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(decl.Path().Span(), t.Span()) {
-				continue
-			}
-			text += " "
-		}
-	} else {
-		for _, t := range tokens {
-			text += t.Text()
-		}
-	}
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-	// For package blocks, we never want to split for soft splits, and for hard splits, we want
-	// to double split.
-	switch splitKind {
-	case splitKindSoft:
-		splitKind = splitKindNever
-	case splitKindHard:
-		splitKind = splitKindDouble
-	}
-	chunks = append(chunks, chunk{
-		text:             text,
-		splitKind:        splitKind,
-		spaceWhenUnsplit: spaceWhenUnsplit,
-	})
-	return chunks
-}
-
-func importChunks(decl ast.DeclImport, applyFormatting bool) []chunk {
-	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
-	tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(decl.Keyword(), decl.Semicolon())
-	var text string
-	if applyFormatting {
-		for _, t := range tokens {
-			if t.Kind() == token.Space {
-				continue
-			}
-			text += t.Text()
-			if t.ID() == decl.Semicolon().ID() || checkSpanWithin(decl.ImportPath().Span(), t.Span()) {
-				continue
-			}
-			text += " "
-		}
-	} else {
-		for _, t := range tokens {
-			text += t.Text()
-		}
-	}
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-	if splitKind == splitKindSoft {
-		splitKind = splitKindNever
-	}
-	chunks = append(chunks, chunk{
-		text:             text,
-		splitKind:        splitKind,
-		spaceWhenUnsplit: spaceWhenUnsplit,
-	})
-	// TODO: for the last import block, we want to do a double split
-	return chunks
-}
-
-func defChunks(decl ast.DeclDef, applyFormatting bool) []chunk {
-	// TODO: use the start of the decl span
-	chunks := parsePrefixChunks(decl.Keyword(), applyFormatting)
+func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []chunk {
 	switch decl.Classify() {
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
 	case ast.DefKindMessage:
-		var msgDefText string
 		message := decl.AsMessage()
-		// TODO: change this to use the spans to denote start and end
-		tokens, cursor := getTokensFromStartToEndInclusiveAndCursor(message.Keyword, message.Body.Braces())
+		// First handle everything up to the message body
+		// TODO: We should figure out what to do if there are no braces
+		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Braces().Span())
+		// TODO: figure out what to do in this case/what even does this case mean?
+		if len(tokens) == 0 {
+		}
+		chunks := parsePrefixChunks(tokens[0], applyFormatting)
+		var msgDefText string
 		if applyFormatting {
 			for _, t := range tokens {
 				if t.Kind() == token.Space {
 					continue
 				}
 				msgDefText += t.Text()
-				// We do not want to add a space after the brace
 				if t.Kind() == token.Punct {
 					continue
 				}
@@ -247,14 +166,14 @@ func defChunks(decl ast.DeclDef, applyFormatting bool) []chunk {
 			}
 		}
 		splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-		// Message definition chunk
 		chunks = append(chunks, chunk{
 			text:             msgDefText,
 			splitKind:        splitKind,
 			spaceWhenUnsplit: spaceWhenUnsplit,
 		})
+		// Then process the message body
 		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
-			// chunks = append(chunks, declChunks(d, applyFormatting)...)
+			chunks = append(chunks, declChunks(stream, d, applyFormatting)...)
 			return true
 		})
 		return chunks
@@ -265,7 +184,23 @@ func defChunks(decl ast.DeclDef, applyFormatting bool) []chunk {
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
-		// TODO: implement
+		field := decl.AsField()
+		// No options to handle, so we just process all the tokens like a single one liner
+		if field.Options.IsZero() {
+			return oneLiner(
+				stream,
+				field.Span(),
+				func(t token.Token) bool {
+					if t.ID() == field.Semicolon.ID() {
+						return false
+					}
+					return true
+				},
+				applyFormatting,
+			)
+		}
+		// TODO figure out how to handle options
+		return nil
 	case ast.DefKindOneof:
 		// TODO: implement
 	case ast.DefKindGroup:
@@ -278,6 +213,57 @@ func defChunks(decl ast.DeclDef, applyFormatting bool) []chunk {
 		// This should never happen.
 		panic("ah")
 	}
+	return nil
+}
+
+// TODO: docs
+func oneLiner(
+	stream *token.Stream,
+	span report.Span,
+	spacer addSpace,
+	applyFormatting bool,
+) []chunk {
+	tokens, cursor := getTokensAndCursorForDecl(stream, span)
+	// TODO: figure out what to do in this case/what even does this case mean?
+	if len(tokens) == 0 {
+		return nil
+	}
+	chunks := parsePrefixChunks(tokens[0], applyFormatting)
+	var text string
+	if applyFormatting {
+		for _, t := range tokens {
+			// If we are applying formatting, we skip user-defined whitespace and format our own
+			if t.Kind() == token.Space {
+				continue
+			}
+			// Add the text
+			text += t.Text()
+			if spacer(t) {
+				text += " "
+			}
+		}
+	} else {
+		for _, t := range tokens {
+			text += t.Text()
+		}
+	}
+	// TODO: docs, the split logic needs to be more clear. plus we are not handling the case
+	// for imports.
+	// TODO: Refactor splitter logic so oneliner is usable
+	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
+	switch splitKind {
+	case splitKindSoft:
+		splitKind = splitKindNever
+	case splitKindHard:
+		splitKind = splitKindDouble
+		// TODO: For import statements, we only want to do a double split if this is the last import
+		// in a block of imports.
+	}
+	chunks = append(chunks, chunk{
+		text:             text,
+		splitKind:        splitKind,
+		spaceWhenUnsplit: spaceWhenUnsplit,
+	})
 	return chunks
 }
 
@@ -285,73 +271,6 @@ func defChunks(decl ast.DeclDef, applyFormatting bool) []chunk {
 // TODO: is just checking the starts enough?
 func checkSpanWithin(have, want report.Span) bool {
 	return want.Start >= have.Start && want.Start <= have.End
-}
-
-func tokenForExprAny(exprAny ast.ExprAny) token.Token {
-	switch exprAny.Kind() {
-	case ast.ExprKindInvalid:
-		// TODO: figure out how to handle invalid expressions
-		return token.Zero
-	case ast.ExprKindError:
-		// TODO: figure out how to handle error expressions
-		return token.Zero
-	case ast.ExprKindLiteral:
-		return exprAny.AsLiteral().Token
-	case ast.ExprKindPrefixed:
-		return token.Zero // TODO: implement
-	case ast.ExprKindPath:
-		return token.Zero // TODO: implement
-	case ast.ExprKindRange:
-		return token.Zero // TODO: implement
-	case ast.ExprKindArray:
-		return token.Zero // TODO: implement
-	case ast.ExprKindDict:
-		return token.Zero // TODO: implement
-	case ast.ExprKindField:
-		return token.Zero // TODO: implement
-	default:
-		// This should never happen
-		panic("ah")
-	}
-}
-
-func textForExprAny(exprAny ast.ExprAny) string {
-	switch exprAny.Kind() {
-	case ast.ExprKindInvalid:
-		// TODO: figure out how to handle invalid expressions
-		return ""
-	case ast.ExprKindError:
-		// TODO: figure out how to handle error expressions
-		return ""
-	case ast.ExprKindLiteral:
-		return exprAny.AsLiteral().Text()
-	case ast.ExprKindPrefixed:
-		prefixed := exprAny.AsPrefixed()
-		// TODO: figure out if we need to space the prefix
-		return prefixed.Prefix().String() + textForExprAny(prefixed.Expr())
-	case ast.ExprKindPath:
-		return textForPath(exprAny.AsPath().Path)
-	case ast.ExprKindRange:
-		return "" // TODO: implement
-	case ast.ExprKindArray:
-		return "" // TODO: implement
-	case ast.ExprKindDict:
-		return "" // TODO: implement
-	case ast.ExprKindField:
-		return "" // TODO: implement
-	default:
-		// This should never happen
-		panic("ah")
-	}
-}
-
-func textForPath(p ast.Path) string {
-	var text string
-	p.Components(func(pc ast.PathComponent) bool {
-		text += pc.Separator().Text() + pc.Name().Text()
-		return true
-	})
-	return text
 }
 
 // TODO: improve performance (keep track of tokens as we are going backwards, so we don't need
@@ -398,6 +317,9 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 // next token starts with a newline, then we must preserve that and set to a hardsplit.
 // Otherwise it's a soft split.
 func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
+	// TODO: this might be a bit naive, since what if a space was accidentally added before the
+	// next newline.
+	// Perhaps this is something that we need to address through the prefix chunks...
 	if strings.HasPrefix(peekNext.Text(), "\n") {
 		return splitKindHard, false
 	}
@@ -408,26 +330,16 @@ func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
 	return splitKindSoft, spaceWhenUnsplit
 }
 
-// TODO: rename/clean-up
-// TODO: improve performance (should return an iterator)
-func getTokensFromStartToEndInclusiveAndCursor(start, end token.Token) ([]token.Token, *token.Cursor) {
+func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
-	cursor := token.NewCursorAt(start)
-	t := cursor.NextSkippable()
-	for t.ID() != end.ID() {
-		tokens = append(tokens, t)
-		t = cursor.NextSkippable()
-	}
-	return append(tokens, end), cursor
-}
-
-// TODO: helper function, remove later/combine with above
-func getTokensAndCursorForDecl(decl ast.DeclDef) ([]token.Token, *token.Cursor) {
-	var tokens []token.Token
-	decl.Context().Stream().All()(func(t token.Token) bool {
+	stream.All()(func(t token.Token) bool {
 		// If the token is within the declartion range, then add it to tokens, otherwise skip
-		if checkSpanWithin(decl.Span(), t.Span()) {
+		if checkSpanWithin(span, t.Span()) {
 			tokens = append(tokens, t)
+		}
+		// We are past the end, so no need to continue
+		if t.Span().Start > span.End {
+			return false
 		}
 		return true
 	})
@@ -435,6 +347,24 @@ func getTokensAndCursorForDecl(decl ast.DeclDef) ([]token.Token, *token.Cursor) 
 		return nil, nil
 	}
 	// TODO: clarify why we are shaving off the last token
+	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
+}
+
+// get all the tokens from the start to the end (inclusive) and the cursort starting at the end.
+func getTokensAndCursorFromStartToEnd(stream *token.Stream, start, end report.Span) ([]token.Token, *token.Cursor) {
+	var tokens []token.Token
+	stream.All()(func(t token.Token) bool {
+		if checkSpanWithin(start, t.Span()) || checkSpanWithin(end, t.Span()) {
+			tokens = append(tokens, t)
+		}
+		if t.Span().Start > end.Start {
+			return false
+		}
+		return true
+	})
+	if tokens == nil {
+		return nil, nil
+	}
 	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
 }
 
