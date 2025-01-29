@@ -1,0 +1,63 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+      type.path.components: [{ ident: "message" }]
+      body.decls:
+        - def:
+            name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+            type.path.components: [{ ident: "oneof" }]
+            body: {}
+        - def:
+            name.components:
+              - ident: "foo"
+              - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
+                separator: SEPARATOR_DOT
+              - { ident: "Bar", separator: SEPARATOR_DOT }
+            type.path.components: [{ ident: "oneof" }]
+            body: {}
+  - def:
+      name.components:
+        - ident: "foo"
+        - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
+          separator: SEPARATOR_DOT
+        - { ident: "Bar", separator: SEPARATOR_DOT }
+      type.path.components: [{ ident: "message" }]
+      body: {}
+  - def:
+      name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+      type.path.components: [{ ident: "enum" }]
+      body: {}
+  - def:
+      name.components:
+        - ident: "foo"
+        - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
+          separator: SEPARATOR_DOT
+        - { ident: "Bar", separator: SEPARATOR_DOT }
+      type.path.components: [{ ident: "enum" }]
+      body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+      body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components:
+        - ident: "foo"
+        - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
+          separator: SEPARATOR_DOT
+        - { ident: "Bar", separator: SEPARATOR_DOT }
+      body: {}
+  - def:
+      name.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+      type.path.components: [{ ident: "service" }]
+      body: {}
+  - def:
+      name.components:
+        - ident: "foo"
+        - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
+          separator: SEPARATOR_DOT
+        - { ident: "Bar", separator: SEPARATOR_DOT }
+      type.path.components: [{ ident: "service" }]
+      body: {}

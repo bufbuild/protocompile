@@ -55,10 +55,10 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 
 	case ast.DeclKindDef:
 		def := decl.AsDef()
-		legalizeDef(p, parent, def)
-
 		body := def.Body()
 		what := classified{def, taxa.Classify(def)}
+
+		legalizeDef(p, parent, def)
 		seq.Values(body.Decls())(func(decl ast.DeclAny) bool {
 			legalizeDecl(p, what, decl)
 			return true

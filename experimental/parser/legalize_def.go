@@ -17,6 +17,7 @@ package parser
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/report"
 )
 
 // Map of a def kind to the valid parents it can have.
@@ -63,6 +64,55 @@ func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
 // legalizeMessageLike legalizes something that resembles a type definition:
 // namely, messages, enums, oneofs, services, and extension blocks.
 func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
+	switch {
+	case def.Name().IsZero():
+		def.MarkCorrupt()
+		kw := taxa.Keyword(def.Keyword().Text())
+		p.Errorf("missing name %v", kw.After()).Apply(
+			report.Snippet(def),
+		)
+
+	case what == taxa.Extend:
+		legalizePath(p, what.In(), def.Name(), pathOptions{})
+
+	case what != taxa.Extend && def.Name().AsIdent().IsZero():
+		def.MarkCorrupt()
+		kw := taxa.Keyword(def.Keyword().Text())
+		p.Error(errUnexpected{
+			what:  def.Name(),
+			where: kw.After(),
+			want:  taxa.Ident.AsSet(),
+		}).Apply(
+			report.Notef("the name of a %s must be a single identifier", what),
+			// TODO: Include a help that says to stick this into a file with
+			// the right package.
+		)
+	}
+
+	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
+	if hasValue {
+		p.Error(errUnexpected{
+			what:  report.Join(def.Equals(), def.Value()),
+			where: what.In(),
+			got:   taxa.Classify(def.Value()),
+		})
+	}
+
+	if sig := def.Signature(); !sig.IsZero() {
+		p.Error(errHasSignature{def})
+	}
+
+	if def.Body().IsZero() {
+		// NOTE: There is currently no way to trip this diagnostic, because
+		// a message with no body is interpreted as a field.
+		p.Errorf("missing body for %v", what).Apply(
+			report.Snippet(def),
+		)
+	}
+
+	if options := def.Options(); !options.IsZero() {
+		p.Error(errHasOptions{def})
+	}
 }
 
 // legalizeMessageLike legalizes something that resembles a field definition:

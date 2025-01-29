@@ -1,0 +1,98 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.path.components: [{ ident: "bar" }]
+      body.decls:
+        - def:
+            kind: KIND_ENUM
+            name.components: [{ ident: "Foo" }]
+            options.entries:
+              - path.components: [{ ident: "foo" }]
+                value.path.components: [{ ident: "bar" }]
+            body: {}
+        - def:
+            kind: KIND_ONEOF
+            name.components: [{ ident: "Foo" }]
+            options.entries:
+              - path.components: [{ ident: "foo" }]
+                value.path.components: [{ ident: "bar" }]
+            body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "bar" }, { ident: "Foo", separator: SEPARATOR_DOT }]
+      options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.path.components: [{ ident: "bar" }]
+      body: {}
+  - def:
+      kind: KIND_SERVICE
+      name.components: [{ ident: "FooService" }]
+      options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.path.components: [{ ident: "bar" }]
+      body: {}
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      value.literal.int_value: 1
+      body.decls:
+        - def:
+            kind: KIND_ENUM
+            name.components: [{ ident: "Foo" }]
+            value.literal.int_value: 1
+            body: {}
+        - def:
+            kind: KIND_ONEOF
+            name.components: [{ ident: "Foo" }]
+            value.literal.int_value: 1
+            body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "bar" }, { ident: "Foo", separator: SEPARATOR_DOT }]
+      value.literal.int_value: 1
+      body: {}
+  - def:
+      kind: KIND_SERVICE
+      name.components: [{ ident: "FooService" }]
+      value.literal.int_value: 1
+      body: {}
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      signature:
+        inputs: [{ path.components: [{ ident: "X" }] }]
+        outputs: [{ path.components: [{ ident: "X" }] }]
+      body.decls:
+        - def:
+            kind: KIND_ENUM
+            name.components: [{ ident: "Foo" }]
+            signature:
+              inputs: [{ path.components: [{ ident: "X" }] }]
+              outputs: [{ path.components: [{ ident: "X" }] }]
+            body: {}
+        - def:
+            kind: KIND_ONEOF
+            name.components: [{ ident: "Foo" }]
+            signature:
+              inputs: [{ path.components: [{ ident: "X" }] }]
+              outputs: [{ path.components: [{ ident: "X" }] }]
+            body: {}
+  - def:
+      kind: KIND_EXTEND
+      name.components: [{ ident: "bar" }, { ident: "Foo", separator: SEPARATOR_DOT }]
+      signature:
+        inputs: [{ path.components: [{ ident: "X" }] }]
+        outputs: [{ path.components: [{ ident: "X" }] }]
+      body: {}
+  - def:
+      kind: KIND_SERVICE
+      name.components: [{ ident: "FooService" }]
+      signature:
+        inputs: [{ path.components: [{ ident: "X" }] }]
+        outputs: [{ path.components: [{ ident: "X" }] }]
+      body: {}

@@ -1,0 +1,63 @@
+error: unexpected qualified name after `message`
+  --> testdata/parser/def/bad_path.proto:19:9
+   | 
+19 | message foo.Bar {
+   |         ^^^^^^^ expected identifier
+   = note: the name of a message definition must be a single identifier
+
+error: unexpected qualified name after `oneof`
+  --> testdata/parser/def/bad_path.proto:20:11
+   | 
+20 |     oneof foo.Bar {}
+   |           ^^^^^^^ expected identifier
+   = note: the name of a oneof definition must be a single identifier
+
+error: unexpected qualified name after `oneof`
+  --> testdata/parser/def/bad_path.proto:21:11
+   | 
+21 |     oneof foo.(bar.baz).Bar {}
+   |           ^^^^^^^^^^^^^^^^^ expected identifier
+   = note: the name of a oneof definition must be a single identifier
+
+error: unexpected qualified name after `message`
+  --> testdata/parser/def/bad_path.proto:23:9
+   | 
+23 | message foo.(bar.baz).Bar {}
+   |         ^^^^^^^^^^^^^^^^^ expected identifier
+   = note: the name of a message definition must be a single identifier
+
+error: unexpected qualified name after `enum`
+  --> testdata/parser/def/bad_path.proto:25:6
+   | 
+25 | enum foo.Bar {}
+   |      ^^^^^^^ expected identifier
+   = note: the name of a enum definition must be a single identifier
+
+error: unexpected qualified name after `enum`
+  --> testdata/parser/def/bad_path.proto:26:6
+   | 
+26 | enum foo.(bar.baz).Bar {}
+   |      ^^^^^^^^^^^^^^^^^ expected identifier
+   = note: the name of a enum definition must be a single identifier
+
+error: unexpected nested extension path in message extension block
+  --> testdata/parser/def/bad_path.proto:29:12
+   | 
+29 | extend foo.(bar.baz).Bar {}
+   |            ^^^^^^^^^ 
+
+error: unexpected qualified name after `service`
+  --> testdata/parser/def/bad_path.proto:31:9
+   | 
+31 | service foo.Bar {}
+   |         ^^^^^^^ expected identifier
+   = note: the name of a service definition must be a single identifier
+
+error: unexpected qualified name after `service`
+  --> testdata/parser/def/bad_path.proto:32:9
+   | 
+32 | service foo.(bar.baz).Bar {}
+   |         ^^^^^^^^^^^^^^^^^ expected identifier
+   = note: the name of a service definition must be a single identifier
+
+encountered 9 errors
