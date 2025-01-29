@@ -1,0 +1,42 @@
+# Copyright 2020-2024 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Syntax
+  type: int
+  docs: |
+    Syntax is a known syntax pragma.
+
+    Not only does this include "proto2" and "proto3", but also all of the
+    editions.
+  methods:
+  - kind: string
+  - kind: go-string
+  - kind: from-string
+    name: Lookup
+    docs: |
+      Lookup looks up a syntax pragma by name.
+
+      If name does not name a known pragma, returns [Unknown].
+    skip: [Unknown]
+  - kind: all
+    name: All
+    docs: |
+      All returns an iterator over all known [Syntax] values.
+    skip: [Unknown]
+  values:
+    - {name: Unknown, string: "<unknown>"}
+    - {name: Proto2, string: proto2}
+    - {name: Proto3, string: proto3}
+    - {name: Edition2023, string: "2023"}
+  
