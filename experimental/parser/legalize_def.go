@@ -19,11 +19,33 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 )
 
-func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
-	kind := def.Classify()
+// Map of a def kind to the valid parents it can have.
+//
+// We use taxa.Set here because it already exists and is pretty cheap.
+var validDefParents = [...]taxa.Set{
+	ast.DefKindMessage:   taxa.NewSet(taxa.TopLevel, taxa.Message, taxa.Group),
+	ast.DefKindEnum:      taxa.NewSet(taxa.TopLevel, taxa.Message, taxa.Group),
+	ast.DefKindService:   taxa.NewSet(taxa.TopLevel),
+	ast.DefKindExtend:    taxa.NewSet(taxa.TopLevel, taxa.Message, taxa.Group),
+	ast.DefKindField:     taxa.NewSet(taxa.Message, taxa.Group, taxa.Extend, taxa.Oneof),
+	ast.DefKindOneof:     taxa.NewSet(taxa.Message, taxa.Group),
+	ast.DefKindGroup:     taxa.NewSet(taxa.Message, taxa.Group, taxa.Extend),
+	ast.DefKindEnumValue: taxa.NewSet(taxa.Enum),
+	ast.DefKindMethod:    taxa.NewSet(taxa.Service),
+	ast.DefKindOption: taxa.NewSet(
+		taxa.TopLevel, taxa.Message, taxa.Enum, taxa.Service,
+		taxa.Oneof, taxa.Group, taxa.Method,
+	),
+}
 
+func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
 	if def.IsCorrupt() {
 		return
+	}
+
+	kind := def.Classify()
+	if !validDefParents[kind].Has(parent.what) {
+		p.Error(errBadNest{parent: parent, child: def})
 	}
 
 	switch kind {
