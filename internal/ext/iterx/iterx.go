@@ -15,7 +15,12 @@
 // package iterx contains extensions to Go's package iter.
 package iterx
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/bufbuild/protocompile/internal/iter"
+)
 
 // Limit limits a sequence to only yield at most limit times.
 func Limit[T any](limit uint, seq iter.Seq[T]) iter.Seq[T] {
@@ -53,9 +58,37 @@ func All[T any](seq iter.Seq[T], p func(T) bool) bool {
 
 // Map returns a new iterator applying f to each element of seq.
 func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
+	return FilterMap(seq, func(v T) (U, bool) { return f(v), true })
+}
+
+// Filter returns a new iterator that only includes values satisfying p.
+func Filter[T any](seq iter.Seq[T], p func(T) bool) iter.Seq[T] {
+	return FilterMap(seq, func(v T) (T, bool) { return v, p(v) })
+}
+
+// FilterMap combines the operations of [Map] and [Filter].
+func FilterMap[T, U any](seq iter.Seq[T], f func(T) (U, bool)) iter.Seq[U] {
 	return func(yield func(U) bool) {
-		seq(func(value T) bool {
-			return yield(f(value))
+		seq(func(v T) bool {
+			v2, ok := f(v)
+			return !ok || yield(v2)
 		})
 	}
+}
+
+// Join is like [strings.Join], but works on an iterator. Elements are
+// stringified as if by [fmt.Print].
+func Join[T any](seq iter.Seq[T], sep string) string {
+	var out strings.Builder
+	first := true
+	seq(func(v T) bool {
+		if !first {
+			out.WriteString(sep)
+		}
+		first = false
+
+		fmt.Fprint(&out, v)
+		return true
+	})
+	return out.String()
 }
