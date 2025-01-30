@@ -12,10 +12,13 @@ import (
 // TODO list
 //
 // - add indent handling
-// - implement less naive split logic
+// - block level split logic (split deps)
 // - what does it mean to have no tokens for a decl...
 // - clean-up parsePrefixChunks, getTokensAndCursorForDecl
+// - a bunch of docs
+// - do a naming sanity check with Ed/Miguel
 
+// TODO: docs
 type splitKind int8
 
 const (
@@ -35,6 +38,10 @@ const (
 	// a soft split, in that it will respect spaceWhenUnsplit.
 	splitKindNever
 )
+
+// TODO: rethink the splitter input
+// TODO: docs
+type splitChunk func(*token.Cursor) (splitKind, bool)
 
 // chunk represents a line of text with some configurations around indentation and splitting
 // (what whitespace should follow, if any).
@@ -96,6 +103,14 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 				}
 				return true
 			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindSoft, true
+				}
+				// Otherwise, by default we always want a double split after a syntax declaration
+				return splitKindDouble, false
+			},
 			applyFormatting,
 		)
 	case ast.DeclKindPackage:
@@ -109,6 +124,16 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 				}
 				return true
 			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					// If a comment was found before a new line or the next skippable token was found,
+					// we set this to a soft split with a space following.
+					return splitKindSoft, true
+				}
+				// Otherwise, by default we always want a double split after a syntax declaration
+				return splitKindDouble, false
+			},
 			applyFormatting,
 		)
 	case ast.DeclKindImport:
@@ -121,6 +146,18 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 					return false
 				}
 				return true
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, _, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindSoft, true
+				}
+				// TODO: there is some consideration for the last import in an import block should
+				// always be a double. Something to look at after we have a working prototype.
+				if double {
+					return splitKindDouble, false
+				}
+				return splitKindHard, false
 			},
 			applyFormatting,
 		)
@@ -143,7 +180,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 		message := decl.AsMessage()
 		// First handle everything up to the message body
 		// TODO: We should figure out what to do if there are no braces
-		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Braces().Span())
+		tokens, _ := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Braces().Span())
 		// TODO: figure out what to do in this case/what even does this case mean?
 		if len(tokens) == 0 {
 		}
@@ -165,11 +202,11 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 				msgDefText += t.Text()
 			}
 		}
-		splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
+		// TODO: implement splitting logic
 		chunks = append(chunks, chunk{
 			text:             msgDefText,
-			splitKind:        splitKind,
-			spaceWhenUnsplit: spaceWhenUnsplit,
+			splitKind:        splitKindHard,
+			spaceWhenUnsplit: false,
 		})
 		// Then process the message body
 		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
@@ -196,6 +233,10 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 					}
 					return true
 				},
+				func(_ *token.Cursor) (splitKind, bool) {
+					// TODO: implement
+					return splitKindHard, false
+				},
 				applyFormatting,
 			)
 		}
@@ -217,10 +258,12 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 }
 
 // TODO: docs
+// maybe rename to single?
 func oneLiner(
 	stream *token.Stream,
 	span report.Span,
 	spacer addSpace,
+	splitter splitChunk,
 	applyFormatting bool,
 ) []chunk {
 	tokens, cursor := getTokensAndCursorForDecl(stream, span)
@@ -247,30 +290,13 @@ func oneLiner(
 			text += t.Text()
 		}
 	}
-	// TODO: docs, the split logic needs to be more clear. plus we are not handling the case
-	// for imports.
-	// TODO: Refactor splitter logic so oneliner is usable
-	splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.NextSkippable())
-	switch splitKind {
-	case splitKindSoft:
-		splitKind = splitKindNever
-	case splitKindHard:
-		splitKind = splitKindDouble
-		// TODO: For import statements, we only want to do a double split if this is the last import
-		// in a block of imports.
-	}
+	splitKind, spaceWhenUnsplit := splitter(cursor)
 	chunks = append(chunks, chunk{
 		text:             text,
 		splitKind:        splitKind,
 		spaceWhenUnsplit: spaceWhenUnsplit,
 	})
 	return chunks
-}
-
-// TODO: rename/clean-up
-// TODO: is just checking the starts enough?
-func checkSpanWithin(have, want report.Span) bool {
-	return want.Start >= have.Start && want.Start <= have.End
 }
 
 // TODO: improve performance (keep track of tokens as we are going backwards, so we don't need
@@ -299,11 +325,17 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 				})
 			}
 		case token.Comment:
-			splitKind, spaceWhenUnsplit := splitKindBasedOnNextToken(cursor.PeekSkippable())
+			var splitKind splitKind
+			_, single, _ := trailingCommentSingleDoubleFound(cursor)
+			if single {
+				splitKind = splitKindHard
+			} else {
+				splitKind = splitKindSoft
+			}
 			chunks = append(chunks, chunk{
 				text:             t.Text(),
 				splitKind:        splitKind,
-				spaceWhenUnsplit: spaceWhenUnsplit,
+				spaceWhenUnsplit: true, // Always want to provide a space after an unsplit comment
 			})
 		case token.Unrecognized:
 			// TODO: figure out what to do with unrecognized tokens.
@@ -311,23 +343,6 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 		t = cursor.NextSkippable()
 	}
 	return chunks
-}
-
-// To determine the split kind for a chunk, we check the next token. If the
-// next token starts with a newline, then we must preserve that and set to a hardsplit.
-// Otherwise it's a soft split.
-func splitKindBasedOnNextToken(peekNext token.Token) (splitKind, bool) {
-	// TODO: this might be a bit naive, since what if a space was accidentally added before the
-	// next newline.
-	// Perhaps this is something that we need to address through the prefix chunks...
-	if strings.HasPrefix(peekNext.Text(), "\n") {
-		return splitKindHard, false
-	}
-	var spaceWhenUnsplit bool
-	if strings.HasPrefix(peekNext.Text(), " ") {
-		spaceWhenUnsplit = true
-	}
-	return splitKindSoft, spaceWhenUnsplit
 }
 
 func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
@@ -366,6 +381,40 @@ func getTokensAndCursorFromStartToEnd(stream *token.Stream, start, end report.Sp
 		return nil, nil
 	}
 	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
+}
+
+// TODO: rename/clean-up
+// TODO: is just checking the starts enough?
+func checkSpanWithin(have, want report.Span) bool {
+	return want.Start >= have.Start && want.Start <= have.End
+}
+
+// TODO: docs
+func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
+	// Look ahead until the next unskippable token.
+	// If there are comments without a new line in between among the unskippable tokens,
+	// then we return a soft split.
+	t := cursor.NextSkippable()
+	var commentFound bool
+	var singleFound bool
+	var doubleFound bool
+	for !cursor.Done() || t.Kind().IsSkippable() {
+		switch t.Kind() {
+		case token.Space:
+			if strings.Contains(t.Text(), "\n\n") {
+				doubleFound = true
+			}
+			// If the whitepsace contains a string anywhere, we can break out and return early.
+			if strings.Contains(t.Text(), "\n") {
+				singleFound = true
+				return commentFound, singleFound, doubleFound
+			}
+		case token.Comment:
+			commentFound = true
+		}
+		t = cursor.NextSkippable()
+	}
+	return commentFound, singleFound, doubleFound
 }
 
 // TODO: improve this explanation, lol.
