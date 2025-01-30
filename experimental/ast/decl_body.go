@@ -78,7 +78,7 @@ func (d DeclBody) Span() report.Span {
 	}
 }
 
-// Body implements [HasBody]
+// Body implements [HasBody].
 func (d DeclBody) Body() DeclBody {
 	return d
 }

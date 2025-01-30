@@ -29,7 +29,7 @@ import (
 
 var isOrdinaryFilePath = regexp.MustCompile("[0-9a-zA-Z./_-]*")
 
-// legalizeFile is the entry-point for legalizing a parsed Protobuf file
+// legalizeFile is the entry-point for legalizing a parsed Protobuf file.
 func legalizeFile(p *parser, file ast.File) {
 	var (
 		pkg     ast.DeclPackage
@@ -72,7 +72,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	}
 
 	if parent.what == taxa.TopLevel && first != nil {
-		file := parent.Spanner.(ast.File)
+		file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
 		switch {
 		case !first.IsZero():
 			p.Errorf("unexpected %s", in).Apply(
@@ -180,7 +180,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 // against duplicates.
 func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPackage, decl ast.DeclPackage) {
 	if parent.what == taxa.TopLevel && first != nil {
-		file := parent.Spanner.(ast.File)
+		file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
 		switch {
 		case !first.IsZero():
 			p.Errorf("unexpected %s", taxa.Package).Apply(

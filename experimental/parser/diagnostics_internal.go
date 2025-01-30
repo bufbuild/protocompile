@@ -15,9 +15,8 @@
 package parser
 
 import (
-	"github.com/bufbuild/protocompile/experimental/internal/taxa"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 

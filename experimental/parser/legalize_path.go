@@ -33,7 +33,7 @@ type pathOptions struct {
 	AllowExts bool
 }
 
-// legalizePath legalizes a path to satisfy the configuration in opts
+// legalizePath legalizes a path to satisfy the configuration in opts.
 func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) (ok bool) {
 	ok = true
 

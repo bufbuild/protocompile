@@ -46,12 +46,11 @@ func legalizeOptionEntry(p *parser, opt ast.Option, span report.Span) {
 			report.Snippet(span),
 		)
 		return
-	} else {
-		legalizePath(p, taxa.Option.In(), opt.Path, pathOptions{
-			Relative:  true,
-			AllowExts: true,
-		})
 	}
+	legalizePath(p, taxa.Option.In(), opt.Path, pathOptions{
+		Relative:  true,
+		AllowExts: true,
+	})
 
 	if opt.Value.IsZero() {
 		p.Errorf("missing %v", taxa.OptionValue).Apply(

@@ -238,8 +238,7 @@ func (d DeclDef) IsCorrupt() bool {
 	return !d.IsZero() && d.raw.corrupt
 }
 
-// MarkCorrupt marks a definition as corrupt, which causes all other parts of
-// the compiler to ignore it. See [DeclDef.IsCorrupt]
+// the compiler to ignore it. See [DeclDef.IsCorrupt].
 func (d DeclDef) MarkCorrupt() {
 	d.raw.corrupt = true
 }
