@@ -88,7 +88,7 @@ func testZero[Node report.Spanner](t *testing.T) {
 		ty := v.Type()
 		for i := 0; i < ty.NumMethod(); i++ {
 			m := ty.Method(i)
-			if m.Func.Type().NumIn() != 1 {
+			if m.Func.Type().NumIn() != 1 || m.Func.Type().NumOut() == 0 {
 				continue // NumIn includes the receiver.
 			}
 			switch m.Name {
