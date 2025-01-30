@@ -325,7 +325,7 @@ func (t Token) Children() *Cursor {
 		start, _ := t.StartEnd()
 		return &Cursor{
 			withContext: t.withContext,
-			idx:         start.id.index() + 1, // Skip the start!
+			idx:         start.id.naturalIndex() + 1, // Skip the start!
 		}
 	}
 
@@ -497,12 +497,12 @@ func (t Token) nat() *nat {
 	if t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().nats[t.id.index()]
+	return &t.Context().Stream().nats[t.id.naturalIndex()]
 }
 
 func (t Token) synth() *synth {
 	if !t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().synths[t.id.index()]
+	return &t.Context().Stream().synths[t.id.syntheticIndex()]
 }
