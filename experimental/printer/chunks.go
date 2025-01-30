@@ -11,6 +11,7 @@ import (
 
 // TODO list
 //
+// - finish all decl types
 // - add indent handling
 // - block level split logic (split deps)
 // - what does it mean to have no tokens for a decl...
@@ -39,7 +40,6 @@ const (
 	splitKindNever
 )
 
-// TODO: rethink the splitter input
 // TODO: docs
 type splitChunk func(*token.Cursor) (splitKind, bool)
 
@@ -299,8 +299,6 @@ func oneLiner(
 	return chunks
 }
 
-// TODO: improve performance (keep track of tokens as we are going backwards, so we don't need
-// to iterate twice?
 func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 	cursor := token.NewCursorAt(until)
 	t := cursor.PrevSkippable()
