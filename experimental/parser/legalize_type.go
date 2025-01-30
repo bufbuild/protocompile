@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
+// legalizeMethodParams legalizes part of the signature of a method.
 func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 	if list.Len() != 1 {
 		p.Errorf("expected exactly one type in %s, got %d", what, list.Len()).Apply(
@@ -56,6 +57,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 	}
 }
 
+// legalizeFieldType legalizes the type of a message field.
 func legalizeFieldType(p *parser, ty ast.TypeAny) {
 	switch ty.Kind() {
 	case ast.TypeKindPath:

@@ -21,6 +21,10 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
+// legalizeDecl legalizes a declaration.
+//
+// The parent definition is used for determining if a declaration nesting is
+// permitted.
 func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 	switch decl.Kind() {
 	case ast.DeclKindSyntax:
@@ -66,6 +70,7 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 	}
 }
 
+// legalizeDecl legalizes an extension or reserved range.
 func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 	in := taxa.Extensions
 	if decl.IsReserved() {
@@ -73,12 +78,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 	}
 
 	var validParent bool
-	var isEnum bool
 	switch parent.what {
 	case taxa.Message:
 		validParent = true
 	case taxa.Enum:
-		isEnum = true
 		validParent = in == taxa.Reserved
 	}
 	if !validParent {
@@ -92,11 +95,6 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		} else {
 			legalizeCompactOptions(p, options)
 		}
-	}
-
-	field := taxa.Field
-	if isEnum {
-		field = taxa.EnumValue
 	}
 
 	// We only legalize reserved name productions here, because that depends on
@@ -132,6 +130,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 				}
 
 				if !isASCIIIdent(name) {
+					field := taxa.Field
+					if parent.what == taxa.Enum {
+						field = taxa.EnumValue
+					}
 					p.Errorf("reserved %v name is not a valid identifier", field).Apply(
 						report.Snippet(expr),
 					)

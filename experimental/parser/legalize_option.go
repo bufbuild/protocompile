@@ -21,32 +21,43 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
-func legalizeCompactOptions(p *parser, opt ast.CompactOptions) {
-	opts := opt.Entries()
-	if opts.Len() == 0 {
+// legalizeCompactOptions legalizes a [...] of options.
+//
+// All this really does is check that opt is non-empty and then forwards each
+// entry to [legalizeOptionEntry].
+func legalizeCompactOptions(p *parser, opts ast.CompactOptions) {
+	entries := opts.Entries()
+	if entries.Len() == 0 {
 		p.Errorf("%s cannot be empty", taxa.CompactOptions).Apply(
-			report.Snippetf(opt, "help: remove this"),
+			report.Snippetf(opts, "help: remove this"),
 		)
 		return
 	}
 
-	seq.Values(opts)(func(opt ast.Option) bool {
+	seq.Values(entries)(func(opt ast.Option) bool {
 		legalizeOptionEntry(p, opt, opt.Span())
 		return true
 	})
 }
 
+// legalizeCompactOptions is the common path for legalizing options, either
+// from an option def or from compact options.
+//
+// We can't perform type-checking yet, so all we can really do here
+// is check that the path is ok for an option. Legalizing the value cannot
+// happen until type-checking in IR construction.
 func legalizeOptionEntry(p *parser, opt ast.Option, span report.Span) {
-	// We can't perform type-checking yet, so all we can really do here
-	// is check that the path is ok for an option. Legalizing the value cannot
-	// happen until type-checking in IR construction.
-
 	if opt.Path.IsZero() {
 		p.Errorf("missing %v path", taxa.Option).Apply(
 			report.Snippet(span),
 		)
+
+		// Don't bother legalizing if the value is zero. That can only happen
+		// when the user writes just option;, which will produce two very
+		// similar diagnostics.
 		return
 	}
+
 	legalizePath(p, taxa.Option.In(), opt.Path, pathOptions{
 		Relative:  true,
 		AllowExts: true,

@@ -39,6 +39,10 @@ var validDefParents = [...]taxa.Set{
 	),
 }
 
+// legalizeDef legalizes a definition.
+//
+// It will mark the definition as corrupt if it encounters any particularly
+// egregious problems.
 func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
 	if def.IsCorrupt() {
 		return
@@ -166,6 +170,7 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	}
 }
 
+// legalizeOption legalizes an option definition (see legalize_option.go).
 func legalizeOption(p *parser, def ast.DeclDef) {
 	if sig := def.Signature(); !sig.IsZero() {
 		p.Error(errHasSignature{def})
@@ -185,6 +190,7 @@ func legalizeOption(p *parser, def ast.DeclDef) {
 	legalizeOptionEntry(p, def.AsOption().Option, def.Span())
 }
 
+// legalizeMethod legalizes a service method.
 func legalizeMethod(p *parser, def ast.DeclDef) {
 	if def.Name().IsZero() {
 		def.MarkCorrupt()
