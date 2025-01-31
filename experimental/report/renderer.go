@@ -109,19 +109,19 @@ func (r *renderer) render(report *Report) (errorCount, warningCount int, err err
 
 	switch {
 	case errorCount > 0 && warningCount > 0:
-		fmt.Fprintf(r, "encountered %d error%v and %d warnings%v",
+		fmt.Fprintf(r, "encountered %d error%v and %d warnings%v\n%s",
 			errorCount, plural(errorCount), warningCount, plural(warningCount),
+			r.ss.reset,
 		)
 	case errorCount > 0:
-		fmt.Fprintf(r, "encountered %d error%v ",
-			errorCount, plural(errorCount),
+		fmt.Fprintf(r, "encountered %d error%v\n%s",
+			errorCount, plural(errorCount), r.ss.reset,
 		)
 	case warningCount > 0:
-		fmt.Fprintf(r, "encountered %d warnings%v",
-			warningCount, plural(warningCount),
+		fmt.Fprintf(r, "encountered %d warnings%v\n%s",
+			warningCount, plural(warningCount), r.ss.reset,
 		)
 	}
-	r.WriteString(r.ss.reset)
 	return errorCount, warningCount, r.Flush()
 }
 
