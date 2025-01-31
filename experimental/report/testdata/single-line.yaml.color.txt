@@ -2,7 +2,19 @@
 ⟨blu⟩  --> foo.proto:1:10
    | 
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
-⟨blu⟩   | ⟨reset⟩         ⟨b.cyn⟩^^^^^^^^⟨reset⟩ ⟨b.cyn⟩help: change this to "proto5"⟨reset⟩
+⟨blu⟩   | ⟨reset⟩         ⟨b.cyn⟩^^^^^^^^^⟨reset⟩ ⟨b.cyn⟩help: change this to "proto5"⟨reset⟩
+
+⟨b.red⟩error: missing `;`⟨reset⟩
+⟨blu⟩  --> foo.proto:1:18
+   | 
+⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
+⟨blu⟩   | ⟨reset⟩                 ⟨b.red⟩^⟨reset⟩ ⟨b.red⟩here⟨reset⟩
+
+⟨b.cyn⟩remark: EOF⟨reset⟩
+⟨blu⟩  --> foo.proto:7:2
+   | 
+⟨blu⟩ 7 | ⟨reset⟩}
+⟨blu⟩   | ⟨reset⟩ ⟨b.cyn⟩^⟨reset⟩ ⟨b.cyn⟩here⟨reset⟩
 
 ⟨b.red⟩error: package⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:1
@@ -50,5 +62,5 @@
 ⟨blu⟩   |   ⟨b.blu⟩|
 ⟨blu⟩   |   ⟨b.blu⟩k⟨reset⟩
 
-⟨b.red⟩encountered 5 errors⟨reset⟩
+⟨b.red⟩encountered 6 errors⟨reset⟩
 ⟨reset⟩
