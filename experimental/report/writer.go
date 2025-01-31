@@ -20,7 +20,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
@@ -28,7 +27,7 @@ import (
 // routine to avoid printing trailing whitespace to the output.
 type writer struct {
 	out io.Writer
-	buf []byte // NOTE: Must never contain a '\n'.
+	buf []byte
 	err error
 }
 
@@ -60,14 +59,13 @@ func (w *writer) WriteString(data string) {
 		line := data[:nl]
 		data = data[nl+1:]
 		w.buf = bytes.TrimRightFunc(append(w.buf, line...), unicode.IsSpace)
-		w.buf = append(w.buf, '\n')
-		w.flush()
+		w.flush(true)
 	}
 }
 
 // Flush flushes the buffer to the writer's output.
 func (w *writer) Flush() error {
-	w.flush()
+	w.flush(false)
 	err := w.err
 	w.err = nil
 	return err
@@ -76,10 +74,11 @@ func (w *writer) Flush() error {
 // flush is like [writer.Flush], but instead retains the error to be returned
 // out of Flush later. This allows e.g. WriteString to call flush() without
 // needing to return an error and complicating the rendering code.
-func (w *writer) flush() {
+func (w *writer) flush(withNewline bool) {
 	if w.err == nil {
-		if b, _ := slicesx.Last(w.buf); b != '\n' {
-			w.buf = bytes.TrimRightFunc(w.buf, unicode.IsSpace)
+		w.buf = bytes.TrimRightFunc(w.buf, unicode.IsSpace)
+		if withNewline {
+			w.buf = append(w.buf, '\n')
 		}
 
 		// NOTE: The contract for Write requires that it return len(buf) when
