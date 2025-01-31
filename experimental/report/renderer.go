@@ -821,7 +821,7 @@ func (w *window) Render(lineBarWidth int, ss *styleSheet, out *strings.Builder) 
 		// Ok, we are definitely printing this line out.
 		//
 		// Note that sidebar already includes a trailing ss.reset for us.
-		fmt.Fprintf(out, "\n%s%*d | %s", ss.nAccent, lineBarWidth, lineno, sidebar)
+		fmt.Fprintf(out, "\n%s%*d | %s%s", ss.nAccent, lineBarWidth, lineno, sidebar, ss.reset)
 		lastEmit = lineno
 
 		// Re-use the logic from width calculation to correctly format a line for
@@ -906,7 +906,6 @@ func renderSidebar(bars, lineno, slashAt int, ss *styleSheet, multis []*multilin
 	for sidebar.Len() < bars*2 {
 		sidebar.WriteByte(' ')
 	}
-	sidebar.WriteString(ss.reset)
 	return sidebar.String()
 }
 
