@@ -28,59 +28,74 @@ error: unescaped newlines are not permitted in string literals
  4 | + ""
    | 
 
-error: unescaped NUL bytes are not permitted in string literals
-  --> testdata/lexer/strings/bad-contents.proto:6:30
+error: unescaped newlines are not permitted in string literals
+  --> testdata/lexer/strings/bad-contents.proto:6:32
    | 
- 6 | "this string contains a nul: <U+0000>"
+ 6 |       "this is an indented string
+   |  _______________________________^
+ 7 | /     that contains a newline"
+   | \^
+  help: replace this with an explicit `\n`
+   | 
+ 6 | -     "this is an indented string
+ 7 | -     that contains a newline"
+ 6 | +     "this is an indented string\n"
+ 7 | +     "that contains a newline"
+   | 
+
+error: unescaped NUL bytes are not permitted in string literals
+  --> testdata/lexer/strings/bad-contents.proto:9:30
+   | 
+ 9 | "this string contains a nul: <U+0000>"
    |                              ^^^^^^^^ 
   help: replace it with `\0` or `\x00`
    | 
- 6 | - "this string contains a nul: <U+0000>"
- 6 | + "this string contains a nul: \0"
+ 9 | - "this string contains a nul: <U+0000>"
+ 9 | + "this string contains a nul: \0"
    | 
 
 error: unescaped NUL bytes are not permitted in string literals
-  --> testdata/lexer/strings/bad-contents.proto:7:29
+  --> testdata/lexer/strings/bad-contents.proto:10:29
    | 
- 7 | "this string contains a nul <U+0000> in the middle"
+10 | "this string contains a nul <U+0000> in the middle"
    |                             ^^^^^^^^ 
   help: replace it with `\0` or `\x00`
    | 
- 7 | - "this string contains a nul <U+0000> in the middle"
- 7 | + "this string contains a nul \0 in the middle"
+10 | - "this string contains a nul <U+0000> in the middle"
+10 | + "this string contains a nul \0 in the middle"
    | 
 
 error: unescaped NUL bytes are not permitted in string literals
-  --> testdata/lexer/strings/bad-contents.proto:8:2
+  --> testdata/lexer/strings/bad-contents.proto:11:2
    | 
- 8 | "<U+0000>"
+11 | "<U+0000>"
    |  ^^^^^^^^ 
   help: replace it with `\0` or `\x00`
    | 
- 8 | - "<U+0000>"
- 8 | + "\0"
+11 | - "<U+0000>"
+11 | + "\0"
    | 
 
 warning: non-printable character in string literal
-  --> testdata/lexer/strings/bad-contents.proto:10:57
+  --> testdata/lexer/strings/bad-contents.proto:13:57
    | 
-10 | "this string contains some other non-graphic character: <U+0001>"
+13 | "this string contains some other non-graphic character: <U+0001>"
    |                                                         ^^^^^^^^ 
   help: consider escaping it
    | 
-10 | - "this string contains some other non-graphic character: <U+0001>"
-10 | + "this string contains some other non-graphic character: \x01"
+13 | - "this string contains some other non-graphic character: <U+0001>"
+13 | + "this string contains some other non-graphic character: \x01"
    | 
 
 warning: non-printable character in string literal
-  --> testdata/lexer/strings/bad-contents.proto:11:39
+  --> testdata/lexer/strings/bad-contents.proto:14:39
    | 
-11 | "this is graphic but non-ASCII space: <U+00A0>"
+14 | "this is graphic but non-ASCII space: <U+00A0>"
    |                                       ^^^^^^^^ 
   help: consider escaping it
    | 
-11 | - "this is graphic but non-ASCII space: <U+00A0>"
-11 | + "this is graphic but non-ASCII space: \u00a0"
+14 | - "this is graphic but non-ASCII space: <U+00A0>"
+14 | + "this is graphic but non-ASCII space: \u00a0"
    | 
 
-encountered 5 errors and 2 warnings
+encountered 6 errors and 2 warnings

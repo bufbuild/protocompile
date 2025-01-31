@@ -10,7 +10,7 @@ error: unexpected `:` in compact option
    | 
    = note: top-level `option` assignment uses `=`, not `:`
 
-error: unexpected `=` where expression
+error: unexpected `=` in expression
   --> testdata/parser/field/options.proto:28:28
    | 
 28 |     M bad2 = 5 [foo = {bar = baz}];

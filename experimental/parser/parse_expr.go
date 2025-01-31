@@ -47,7 +47,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
 			switch next.Text() {
 			case "=": // Allow equals signs, which are usually a mistake.
-				p.Errorf("unexpected `=` where expression").Apply(
+				p.Errorf("unexpected `=` in expression").Apply(
 					report.Snippet(next),
 					report.SuggestEdits(next, "replace this with an `:`", report.Edit{
 						Start: 0, End: 1,

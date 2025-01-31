@@ -26,5 +26,6 @@ message M {
     foo.bar name = 1
 
     foo..bar name = 1;
+    foo...bar name = 1;
     foo.bar name. = 1;
 }

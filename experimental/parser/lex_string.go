@@ -106,14 +106,20 @@ func lexStringContent(q rune, l *lexer) (sc stringContent) {
 		// exactly C's).
 		nl := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped newlines are not permitted in string literals").Apply(
-			// Not to mention, this diagnostic is not ideal: we should probably
-			// tell users to split the string into multiple quoted fragments.
 			report.Snippet(nl),
-			report.SuggestEdits(nl, "replace this with an explicit `\\n`", report.Edit{
-				Start:   0,
-				End:     len(nl.Text()),
-				Replace: fmt.Sprintf("\\n%c\n%c", q, q),
-			}),
+			report.SuggestEdits(nl, "replace this with an explicit `\\n`",
+				report.Edit{
+					Start:   0,
+					End:     1,
+					Replace: fmt.Sprintf("\\n%c\n", q),
+				},
+				report.Edit{
+					Start:   1,
+					End:     1,
+					Replace: string(q),
+					Justify: report.JustifyRight,
+				},
+			),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't

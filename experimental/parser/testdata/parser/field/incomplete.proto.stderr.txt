@@ -28,7 +28,7 @@ error: unexpected identifier after definition
 26 |     foo.bar name = 1;
    |                     +
 
-error: unexpected `.` after `.`
+error: unexpected tokens after `.`
   --> testdata/parser/field/incomplete.proto:28:9
    | 
 28 |     foo..bar name = 1;
@@ -39,15 +39,26 @@ error: unexpected `.` after `.`
 28 | +     foo.bar name = 1;
    | 
 
-error: unexpected `=` after qualified name
-  --> testdata/parser/field/incomplete.proto:29:19
+error: unexpected tokens after `.`
+  --> testdata/parser/field/incomplete.proto:29:9
    | 
-29 |     foo.bar name. = 1;
-   |                   ^ expected identifier or `(...)`
-  help: delete the extra `.`
+29 |     foo...bar name = 1;
+   |         ^^ expected identifier or `(...)`
+  help: delete the extra `..`
    | 
-29 | -     foo.bar name. = 1;
+29 | -     foo...bar name = 1;
 29 | +     foo.bar name = 1;
    | 
 
-encountered 5 errors
+error: unexpected `=` after qualified name
+  --> testdata/parser/field/incomplete.proto:30:19
+   | 
+30 |     foo.bar name. = 1;
+   |                   ^ expected identifier or `(...)`
+  help: delete the extra `.`
+   | 
+30 | -     foo.bar name. = 1;
+30 | +     foo.bar name = 1;
+   | 
+
+encountered 6 errors

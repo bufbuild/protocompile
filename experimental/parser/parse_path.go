@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // parsePath parses the longest path at cursor. Returns a nil path if
@@ -57,17 +58,27 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 				// This is a double dot, so something like foo..bar, ..foo, or
 				// foo.. We diagnose it and move on -- Path.Components is robust
 				// against double dots.
+
+				// We consume additional separators here so that we can diagnose
+				// them all in one shot.
+				for {
+					prevSeparator = c.Pop()
+					next := c.Peek()
+					if !slicesx.Among(next.Text(), ".", "/") {
+						break
+					}
+				}
+
+				tokens := report.Join(next, prevSeparator)
 				p.Error(errUnexpected{
-					what:  next,
+					what:  tokens,
 					where: taxa.Classify(next).After(),
 					want:  taxa.NewSet(taxa.Ident, taxa.Parens),
-				}).Apply(report.SuggestEdits(
-					next,
-					fmt.Sprintf("delete the extra `%s`", next.Text()),
-					report.Edit{Start: 0, End: 1},
-				))
+					got:   "tokens",
+				})
+			} else {
+				prevSeparator = c.Pop()
 			}
-			prevSeparator = c.Pop()
 
 		case next.Kind() == token.Ident:
 			if !first && prevSeparator.IsZero() {
