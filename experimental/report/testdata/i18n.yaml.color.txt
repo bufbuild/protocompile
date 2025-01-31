@@ -16,4 +16,5 @@
 ⟨blu⟩ 7 | ⟨reset⟩  string القطة السوداء = 2;
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩         ⟨b.red⟩^^^^^^^^⟨reset⟩ ⟨b.red⟩⟨reset⟩
 
-encountered 2 errors ⟨reset⟩
+encountered 2 errors
+⟨reset⟩

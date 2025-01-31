@@ -50,4 +50,5 @@
 ⟨blu⟩   | ⟨reset⟩  ⟨b.blu⟩|
 ⟨blu⟩   | ⟨reset⟩  ⟨b.blu⟩k⟨reset⟩
 
-encountered 5 errors ⟨reset⟩
+encountered 5 errors
+⟨reset⟩
