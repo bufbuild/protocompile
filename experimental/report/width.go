@@ -81,7 +81,7 @@ func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 			tab := TabstopWidth - (column % TabstopWidth)
 			column += tab
 			if out != nil {
-				out.WriteBytes(' ', tab)
+				out.WriteSpaces(tab)
 			}
 		}
 	}

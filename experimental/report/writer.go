@@ -20,6 +20,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
@@ -27,7 +28,8 @@ import (
 // routine to avoid printing trailing whitespace to the output.
 type writer struct {
 	out io.Writer
-	buf []byte
+	buf []byte // NOTE: Must never contain a '\n'.
+	err error
 }
 
 // Write implements [io.Writer].
@@ -36,10 +38,13 @@ func (w *writer) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func (w *writer) WriteBytes(b byte, n int) {
-	for i := 0; i < n; i++ {
-		w.buf = append(w.buf, b)
+func (w *writer) WriteSpaces(n int) {
+	const spaces = "                                        "
+	for n > len(spaces) {
+		w.buf = append(w.buf, spaces...)
+		n -= len(spaces)
 	}
+	w.buf = append(w.buf, spaces[:n]...)
 }
 
 func (w *writer) WriteString(data string) {
@@ -54,23 +59,35 @@ func (w *writer) WriteString(data string) {
 
 		line := data[:nl]
 		data = data[nl+1:]
-		w.buf = append(w.buf, line...)
-		w.buf = bytes.TrimRightFunc(w.buf, func(r rune) bool {
-			return r != '\n' && unicode.IsSpace(r)
-		})
+		w.buf = bytes.TrimRightFunc(append(w.buf, line...), unicode.IsSpace)
 		w.buf = append(w.buf, '\n')
+		w.flush()
 	}
 }
 
 // Flush flushes the buffer to the writer's output.
 func (w *writer) Flush() error {
-	rest := bytes.TrimRight(w.buf, " ")
-	n, err := w.out.Write(rest)
-
-	copy(w.buf, w.buf[n:])
-	w.buf = w.buf[:len(w.buf)-n]
-
+	w.flush()
+	err := w.err
+	w.err = nil
 	return err
+}
+
+// flush is like [writer.Flush], but instead retains the error to be returned
+// out of Flush later. This allows e.g. WriteString to call flush() without
+// needing to return an error and complicating the rendering code.
+func (w *writer) flush() {
+	if w.err == nil {
+		if b, _ := slicesx.Last(w.buf); b != '\n' {
+			w.buf = bytes.TrimRightFunc(w.buf, unicode.IsSpace)
+		}
+
+		// NOTE: The contract for Write requires that it return len(buf) when
+		// the error is nil. This means that the length return only matters if
+		// we hit an error condition, which we treat as fatal anyways.
+		_, w.err = w.out.Write(w.buf)
+	}
+	w.buf = w.buf[:0]
 }
 
 // plural is a helper for printing out plurals of numbers.

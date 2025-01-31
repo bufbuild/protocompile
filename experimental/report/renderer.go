@@ -210,7 +210,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
-			r.WriteBytes(' ', r.margin)
+			r.WriteSpaces(r.margin)
 
 			primary := snippets[0]
 			start := locations[i][0]
@@ -231,7 +231,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.
-		r.WriteBytes(' ', r.margin)
+		r.WriteSpaces(r.margin)
 		r.WriteString(" | ")
 
 		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
@@ -243,7 +243,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	if len(d.snippets) == 0 && d.inFile != "" {
 		r.WriteString("\n")
 		r.WriteString(r.ss.nAccent)
-		r.WriteBytes(' ', r.margin-1)
+		r.WriteSpaces(r.margin - 1)
 
 		fmt.Fprintf(r, "--> %s", d.inFile)
 	}
@@ -264,14 +264,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	for _, footer := range footers {
 		r.WriteString("\n")
 		r.WriteString(r.ss.nAccent)
-		r.WriteBytes(' ', r.margin)
+		r.WriteSpaces(r.margin)
 		r.WriteString(" = ")
 		fmt.Fprint(r, footer[0], footer[1], ": ", r.ss.reset)
 		for i, line := range strings.Split(footer[2], "\n") {
 			if i > 0 {
 				r.WriteString("\n")
 				margin := r.margin + 3 + len(footer[1]) + 2
-				r.WriteBytes(' ', margin)
+				r.WriteSpaces(margin)
 			}
 			r.WriteString(line)
 		}
@@ -781,7 +781,7 @@ func (r *renderer) window(w *window) {
 			// Generate a visual break if this is right after a real line.
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
-			r.WriteBytes(' ', r.margin-2)
+			r.WriteSpaces(r.margin - 2)
 			r.WriteString("...  ")
 
 			// Generate a sidebar as before but this time we want to look at the
@@ -811,7 +811,7 @@ func (r *renderer) window(w *window) {
 		for _, line := range cur.underlines {
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
-			r.WriteBytes(' ', r.margin)
+			r.WriteSpaces(r.margin)
 			r.WriteString(" | ")
 			r.WriteString(line)
 		}
@@ -892,14 +892,14 @@ func (r *renderer) sidebar(bars, lineno, slashAt int, multis []*multiline) strin
 // suggestion renders a single suggestion window.
 func (r *renderer) suggestion(snip snippet, startLine int) {
 	r.WriteString(r.ss.nAccent)
-	r.WriteBytes(' ', r.margin)
+	r.WriteSpaces(r.margin)
 	r.WriteString("help: ")
 	r.WriteString(snip.message)
 
 	// Add a blank line after the file. This gives the diagnostic window some
 	// visual breathing room.
 	r.WriteString("\n")
-	r.WriteBytes(' ', r.margin)
+	r.WriteSpaces(r.margin)
 	r.WriteString(" | ")
 
 	// When the suggestion spans multiple lines, we don't bother doing a by-the-rune
@@ -946,7 +946,7 @@ func (r *renderer) suggestion(snip snippet, startLine int) {
 
 		r.WriteString("\n")
 		r.WriteString(r.ss.nAccent)
-		r.WriteBytes(' ', r.margin)
+		r.WriteSpaces(r.margin)
 		r.WriteString(" | ")
 		return
 	}
@@ -969,7 +969,7 @@ func (r *renderer) suggestion(snip snippet, startLine int) {
 	// underline characters.
 	r.WriteString("\n")
 	r.WriteString(r.ss.nAccent)
-	r.WriteBytes(' ', r.margin)
+	r.WriteSpaces(r.margin)
 	r.WriteString(" | ")
 	column = 0
 	for _, hunk := range hunks {
