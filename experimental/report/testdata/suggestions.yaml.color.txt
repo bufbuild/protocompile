@@ -17,7 +17,7 @@
 ⟨blu⟩  --> foo.proto:5:9
    | 
 ⟨blu⟩ 5 | ⟨reset⟩service Foo {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩        ⟨b.ylw⟩^^^⟨reset⟩ ⟨b.ylw⟩
+⟨blu⟩   | ⟨reset⟩        ⟨b.ylw⟩^^^⟨reset⟩ ⟨b.ylw⟩
 ⟨blu⟩  help: change the name to `FooService`
    | 
 ⟨blu⟩ 5 | ⟨reset⟩service Foo⟨grn⟩Service⟨reset⟩ {
@@ -27,7 +27,7 @@
 ⟨blu⟩  --> foo.proto:6:31
    | 
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩                              ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
+⟨blu⟩   | ⟨reset⟩                              ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
 ⟨blu⟩  help: add `(...)` around the type
    | 
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)⟨reset⟩;
@@ -37,7 +37,7 @@
 ⟨blu⟩  --> foo.proto:7:45
    | 
 ⟨blu⟩ 7 | ⟨reset⟩  rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-⟨blu⟩   | ⟨reset⟩⟨reset⟩                                            ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩compact options not allowed here
+⟨blu⟩   | ⟨reset⟩                                            ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩compact options not allowed here
 ⟨blu⟩  help: use `option` settings inside of the method body
    | 
 ⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
