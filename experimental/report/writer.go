@@ -58,7 +58,7 @@ func (w *writer) WriteString(data string) {
 
 		line := data[:nl]
 		data = data[nl+1:]
-		w.buf = bytes.TrimRightFunc(append(w.buf, line...), unicode.IsSpace)
+		w.buf = append(w.buf, line...)
 		w.flush(true)
 	}
 }
