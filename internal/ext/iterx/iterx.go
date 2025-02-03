@@ -40,6 +40,17 @@ func First[T any](seq iter.Seq[T]) (v T, ok bool) {
 	return v, ok
 }
 
+// All returns whether every element of an iterator satisfies the given
+// predicate. Returns true if seq yields no values.
+func All[T any](seq iter.Seq[T], p func(T) bool) bool {
+	all := true
+	seq(func(v T) bool {
+		all = p(v)
+		return all
+	})
+	return all
+}
+
 // Map returns a new iterator applying f to each element of seq.
 func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
 	return func(yield func(U) bool) {
