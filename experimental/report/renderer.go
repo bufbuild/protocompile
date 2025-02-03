@@ -185,7 +185,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	locations := make([][2]Location, len(d.snippets))
 	for i, snip := range d.snippets {
 		locations[i][0] = snip.location(snip.Start, false)
-		locations[i][1] = snip.location(snip.End, false)
+		if strings.HasSuffix(snip.Text(), "\n") {
+			// If the snippet ends in a newline, don't include the newline in the
+			// printed span.
+			locations[i][1] = snip.location(snip.End-1, false)
+			locations[i][1].Column++
+		} else {
+			locations[i][1] = snip.location(snip.End, false)
+		}
 	}
 
 	// Figure out how wide the line bar needs to be. This is given by
@@ -314,10 +321,10 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 	// nearest \n runes in the text.
 	w.start = locations[0][0].Line
 	w.offsets[0] = snippets[0].Start
-	for i, snip := range snippets {
+	for i := range snippets {
 		w.start = min(w.start, locations[i][0].Line)
-		w.offsets[0] = min(w.offsets[0], snip.Start)
-		w.offsets[1] = max(w.offsets[1], snip.End)
+		w.offsets[0] = min(w.offsets[0], locations[i][0].Offset)
+		w.offsets[1] = max(w.offsets[1], locations[i][1].Offset)
 	}
 	w.offsets[0], w.offsets[1] = adjustLineOffsets(w.file.Text(), w.offsets[0], w.offsets[1])
 
@@ -800,7 +807,7 @@ func (r *renderer) window(w *window) {
 		// Ok, we are definitely printing this line out.
 		//
 		// Note that sidebar already includes a trailing ss.reset for us.
-		fmt.Fprintf(r, "\n%s%*d | %s", r.ss.nAccent, r.margin, lineno, sidebar)
+		fmt.Fprintf(r, "\n%s%*d | %s%s", r.ss.nAccent, r.margin, lineno, sidebar, r.ss.reset)
 		lastEmit = lineno
 
 		// Re-use the logic from width calculation to correctly format a line for
@@ -885,7 +892,6 @@ func (r *renderer) sidebar(bars, lineno, slashAt int, multis []*multiline) strin
 	for sidebar.Len() < bars*2 {
 		sidebar.WriteByte(' ')
 	}
-	sidebar.WriteString(r.ss.reset)
 	return sidebar.String()
 }
 

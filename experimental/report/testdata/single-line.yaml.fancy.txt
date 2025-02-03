@@ -2,7 +2,19 @@ remark: "proto4" isn't real, it can't hurt you
   --> foo.proto:1:10
    |
  1 | syntax = "proto4"
-   |          ^^^^^^^^ help: change this to "proto5"
+   |          ^^^^^^^^^ help: change this to "proto5"
+
+error: missing `;`
+  --> foo.proto:1:18
+   | 
+ 1 | syntax = "proto4"
+   |                  ^ here
+
+remark: EOF
+  --> foo.proto:7:2
+   | 
+ 7 | }
+   |  ^ here
 
 error: package
   --> foo.proto:3:1
@@ -50,4 +62,4 @@ error: P A C K A G E (single letters)
    |   |
    |   k
 
-encountered 5 errors
+encountered 6 errors

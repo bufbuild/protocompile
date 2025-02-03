@@ -2,20 +2,20 @@
 ⟨blu⟩  --> foo.proto:6:12
    |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
-⟨blu⟩   | ⟨reset⟩⟨reset⟩         ⟨b.blu⟩--------⟨reset⟩ ⟨b.blu⟩syntax version specified here
+⟨blu⟩   | ⟨reset⟩         ⟨b.blu⟩--------⟨reset⟩ ⟨b.blu⟩syntax version specified here
 ⟨blu⟩ 2 | ⟨reset⟩
-⟨blu⟩...  ⟨reset⟩
+⟨blu⟩...  
 ⟨blu⟩ 6 | ⟨reset⟩  required size_t x = 0;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩           ⟨b.red⟩^^^^^⟨reset⟩ ⟨b.red⟩⟨reset⟩
+⟨blu⟩   | ⟨reset⟩           ⟨b.red⟩^^^^^⟨reset⟩ ⟨b.red⟩⟨reset⟩
 
 ⟨b.ylw⟩warning: these are pretty bad names⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:9
    |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩        ⟨b.ylw⟩^^^^^^^⟨reset⟩ ⟨b.ylw⟩could be better
+⟨blu⟩   | ⟨reset⟩        ⟨b.ylw⟩^^^^^^^⟨reset⟩ ⟨b.ylw⟩could be better
 ⟨blu⟩ 4 | ⟨reset⟩
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩blah to you too!!⟨reset⟩
+⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩blah to you too!!⟨reset⟩
 
 encountered 1 error and 1 warning
 ⟨reset⟩
