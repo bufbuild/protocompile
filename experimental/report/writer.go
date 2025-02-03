@@ -94,7 +94,7 @@ func (w *writer) flush(withNewline bool) {
 	}
 
 	// This trick is used in slices.Delete.
-	w.buf = append(orig[:0], orig[len(w.buf):]...)
+	w.buf = append(orig[:0], orig[len(w.buf):]...) //nolint:gocritic // Assigning to a different slice is on purpose!
 }
 
 // plural is a helper for printing out plurals of numbers.
