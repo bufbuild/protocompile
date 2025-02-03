@@ -32,7 +32,24 @@ diagnostics:
       - message: 'help: change this to "proto5"'
         file: 0
         start: 9
-        end: 17
+        end: 18   # Includes the newline.
+  
+  - message: 'missing `;`'
+    level: LEVEL_ERROR
+    annotations:
+      - message: 'here'
+        file: 0
+        start: 17
+        end: 18
+
+  # Make sure the EOF renders as if the file ends in a newline.
+  - message: EOF
+    level: LEVEL_REMARK
+    annotations:
+      - message: 'here'
+        file: 0
+        start: 78
+        end: 78
 
   - message: package
     level: LEVEL_ERROR
