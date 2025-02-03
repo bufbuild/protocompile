@@ -94,9 +94,10 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
 		syntax := decl.AsSyntax()
+		tokens, cursor := getTokensAndCursorForDecl(stream, syntax.Span())
 		return oneLiner(
-			stream,
-			syntax.Span(),
+			tokens,
+			cursor,
 			func(t token.Token) bool {
 				if t.ID() == syntax.Semicolon().ID() || checkSpanWithin(syntax.Value().Span(), t.Span()) {
 					return false
@@ -115,9 +116,10 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 		)
 	case ast.DeclKindPackage:
 		pkg := decl.AsPackage()
+		tokens, cursor := getTokensAndCursorForDecl(stream, pkg.Span())
 		return oneLiner(
-			stream,
-			pkg.Span(),
+			tokens,
+			cursor,
 			func(t token.Token) bool {
 				if t.ID() == pkg.Semicolon().ID() || checkSpanWithin(pkg.Path().Span(), t.Span()) {
 					return false
@@ -138,9 +140,10 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 		)
 	case ast.DeclKindImport:
 		imprt := decl.AsImport()
+		tokens, cursor := getTokensAndCursorForDecl(stream, imprt.Span())
 		return oneLiner(
-			stream,
-			imprt.Span(),
+			tokens,
+			cursor,
 			func(t token.Token) bool {
 				if t.ID() == imprt.Semicolon().ID() || checkSpanWithin(imprt.ImportPath().Span(), t.Span()) {
 					return false
@@ -180,34 +183,21 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 		message := decl.AsMessage()
 		// First handle everything up to the message body
 		// TODO: We should figure out what to do if there are no braces
-		tokens, _ := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Braces().Span())
-		// TODO: figure out what to do in this case/what even does this case mean?
-		if len(tokens) == 0 {
-		}
-		chunks := parsePrefixChunks(tokens[0], applyFormatting)
-		var msgDefText string
-		if applyFormatting {
-			for _, t := range tokens {
-				if t.Kind() == token.Space {
-					continue
-				}
-				msgDefText += t.Text()
-				if t.Kind() == token.Punct {
-					continue
-				}
-				msgDefText += " "
-			}
-		} else {
-			for _, t := range tokens {
-				msgDefText += t.Text()
-			}
-		}
-		// TODO: implement splitting logic
-		chunks = append(chunks, chunk{
-			text:             msgDefText,
-			splitKind:        splitKindHard,
-			spaceWhenUnsplit: false,
-		})
+		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Braces().Span())
+		chunks := oneLiner(
+			tokens,
+			cursor,
+			func(t token.Token) bool {
+				// TODO: implement
+
+				return true
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				// TODO: implement
+				return splitKindSoft, false
+			},
+			applyFormatting,
+		)
 		// Then process the message body
 		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
 			chunks = append(chunks, declChunks(stream, d, applyFormatting)...)
@@ -222,11 +212,12 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 		// TODO: implement
 	case ast.DefKindField:
 		field := decl.AsField()
+		tokens, cursor := getTokensAndCursorForDecl(stream, field.Span())
 		// No options to handle, so we just process all the tokens like a single one liner
 		if field.Options.IsZero() {
 			return oneLiner(
-				stream,
-				field.Span(),
+				tokens,
+				cursor,
 				func(t token.Token) bool {
 					if t.ID() == field.Semicolon.ID() {
 						return false
@@ -260,13 +251,12 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 // TODO: docs
 // maybe rename to single?
 func oneLiner(
-	stream *token.Stream,
-	span report.Span,
+	tokens []token.Token,
+	cursor *token.Cursor,
 	spacer addSpace,
 	splitter splitChunk,
 	applyFormatting bool,
 ) []chunk {
-	tokens, cursor := getTokensAndCursorForDecl(stream, span)
 	// TODO: figure out what to do in this case/what even does this case mean?
 	if len(tokens) == 0 {
 		return nil
