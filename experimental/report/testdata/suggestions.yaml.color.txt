@@ -46,5 +46,5 @@
 ⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩   }
 ⟨blu⟩   | ⟨reset⟩
 
-encountered 2 errors and 1 warning
+⟨b.red⟩encountered 2 errors and 1 warning
 ⟨reset⟩

@@ -1,27 +1,2 @@
-error: foo.proto:3:9: two fileserror: two files
-  --> foo.proto:3:9
-   |
- 3 | package abc.xyz;
-   |         ^^^^^^^ foo
- 4 |
- 5 | message Blah {
-   |         ---- bar
-  ::: bar.proto:3:9
-   |
- 3 | package abc.xyz2;
-   |         ------- baz
-
-error: foo.proto:3:9: three fileserror: three files
-  --> foo.proto:3:9
-   |
- 3 | package abc.xyz;
-   |         ^^^^^^^ foo
-  ::: bar.proto:3:9
-   |
- 3 | package abc.xyz2;
-   |         ------- baz
-  ::: foo.proto:5:9
-   |
- 5 | message Blah {
-   |         ---- bar
-
+error: foo.proto:3:9: two files
+error: foo.proto:3:9: three files

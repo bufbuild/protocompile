@@ -109,16 +109,19 @@ func (r *renderer) render(report *Report) (errorCount, warningCount int, err err
 
 	switch {
 	case errorCount > 0 && warningCount > 0:
-		fmt.Fprintf(r, "encountered %d error%v and %d warning%v\n%s",
+		fmt.Fprintf(r, "%sencountered %d error%v and %d warning%v\n%s",
+			r.ss.bError,
 			errorCount, plural(errorCount), warningCount, plural(warningCount),
 			r.ss.reset,
 		)
 	case errorCount > 0:
-		fmt.Fprintf(r, "encountered %d error%v\n%s",
+		fmt.Fprintf(r, "%sencountered %d error%v\n%s",
+			r.ss.bError,
 			errorCount, plural(errorCount), r.ss.reset,
 		)
 	case warningCount > 0:
-		fmt.Fprintf(r, "encountered %d warnings%v\n%s",
+		fmt.Fprintf(r, "%sencountered %d warnings%v\n%s",
+			r.ss.bWarning,
 			warningCount, plural(warningCount), r.ss.reset,
 		)
 	}
@@ -175,6 +178,8 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 			fmt.Fprintf(r, "%s: %s", level, d.message)
 		}
 		r.WriteString(r.ss.reset)
+		r.WriteString("\n")
+		return
 	}
 
 	// For the other styles, we imitate the Rust compiler. See

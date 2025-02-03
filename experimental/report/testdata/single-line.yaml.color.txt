@@ -6,13 +6,13 @@
 
 ⟨b.red⟩error: missing `;`⟨reset⟩
 ⟨blu⟩  --> foo.proto:1:18
-   | 
+   |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
 ⟨blu⟩   | ⟨reset⟩                 ⟨b.red⟩^⟨reset⟩ ⟨b.red⟩here⟨reset⟩
 
 ⟨b.cyn⟩remark: EOF⟨reset⟩
 ⟨blu⟩  --> foo.proto:7:2
-   | 
+   |
 ⟨blu⟩ 7 | ⟨reset⟩}
 ⟨blu⟩   | ⟨reset⟩ ⟨b.cyn⟩^⟨reset⟩ ⟨b.cyn⟩here⟨reset⟩
 
@@ -62,9 +62,5 @@
 ⟨blu⟩   |   ⟨b.blu⟩|
 ⟨blu⟩   |   ⟨b.blu⟩k⟨reset⟩
 
-<<<<<<< HEAD
-encountered 5 errors
-=======
-⟨b.red⟩encountered 6 errors⟨reset⟩
->>>>>>> origin/main
+⟨b.red⟩encountered 6 errors
 ⟨reset⟩

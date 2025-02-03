@@ -1,11 +1,3 @@
-error: system not supportederror: system not supported
-
-error: foo.proto: could not open file "foo.proto": os error 2: no such file or directoryerror: could not open file "foo.proto": os error 2: no such file or directory
- --> foo.proto
-
-warning: foo.proto: file consists only of the byte `0xaa`warning: file consists only of the byte `0xaa`
- --> foo.proto
-   = note: that means that the file is screaming
-   = help: you should delete it to put it out of its misery
-   = debug: 0xaaaaaaaaaaaaaaaa
-
+error: system not supported
+error: foo.proto: could not open file "foo.proto": os error 2: no such file or directory
+warning: foo.proto: file consists only of the byte `0xaa`

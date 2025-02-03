@@ -4,7 +4,7 @@
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
 ⟨blu⟩   | ⟨reset⟩         ⟨b.blu⟩--------⟨reset⟩ ⟨b.blu⟩syntax version specified here
 ⟨blu⟩ 2 | ⟨reset⟩
-⟨blu⟩...  
+⟨blu⟩...
 ⟨blu⟩ 6 | ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩   | ⟨reset⟩           ⟨b.red⟩^^^^^⟨reset⟩ ⟨b.red⟩⟨reset⟩
 
@@ -17,5 +17,5 @@
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩blah to you too!!⟨reset⟩
 
-encountered 1 error and 1 warning
+⟨b.red⟩encountered 1 error and 1 warning
 ⟨reset⟩

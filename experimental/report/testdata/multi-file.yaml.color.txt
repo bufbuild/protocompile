@@ -25,5 +25,5 @@
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩bar⟨reset⟩
 
-encountered 2 errors
+⟨b.red⟩encountered 2 errors
 ⟨reset⟩
