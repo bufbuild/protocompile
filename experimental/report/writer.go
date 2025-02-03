@@ -75,6 +75,7 @@ func (w *writer) Flush() error {
 // out of Flush later. This allows e.g. WriteString to call flush() without
 // needing to return an error and complicating the rendering code.
 func (w *writer) flush(withNewline bool) {
+	orig := w.buf
 	if w.err == nil {
 		w.buf = bytes.TrimRightFunc(w.buf, unicode.IsSpace)
 		if withNewline {
@@ -86,7 +87,14 @@ func (w *writer) flush(withNewline bool) {
 		// we hit an error condition, which we treat as fatal anyways.
 		_, w.err = w.out.Write(w.buf)
 	}
-	w.buf = w.buf[:0]
+
+	if withNewline {
+		w.buf = w.buf[:0]
+		return
+	}
+
+	// This trick is used in slices.Delete.
+	w.buf = append(orig[:0], orig[len(w.buf):]...)
 }
 
 // plural is a helper for printing out plurals of numbers.
