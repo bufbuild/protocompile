@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	defaultLineLimit = 120
+	defaultLineLimit = 80
 	defaultIndent    = "  " // 2 spaces
 )
 
