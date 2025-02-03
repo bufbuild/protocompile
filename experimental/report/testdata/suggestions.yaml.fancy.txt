@@ -46,4 +46,4 @@ error: method options must go in a block
  9 | +   }
    |
 
-encountered 2 errors and 1 warnings
+encountered 2 errors and 1 warning

@@ -9,5 +9,5 @@
 ⟨blu⟩   = ⟨b.cyn⟩help: ⟨reset⟩you should delete it to put it out of its misery
 ⟨blu⟩   = ⟨b.red⟩debug: ⟨reset⟩0xaaaaaaaaaaaaaaaa⟨reset⟩
 
-encountered 2 errors and 1 warnings
+encountered 2 errors and 1 warning
 ⟨reset⟩

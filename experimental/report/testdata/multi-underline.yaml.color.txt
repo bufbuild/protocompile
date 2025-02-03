@@ -17,5 +17,5 @@
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩blah to you too!!⟨reset⟩
 
-encountered 1 error and 1 warnings
+encountered 1 error and 1 warning
 ⟨reset⟩

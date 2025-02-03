@@ -109,7 +109,7 @@ func (r *renderer) render(report *Report) (errorCount, warningCount int, err err
 
 	switch {
 	case errorCount > 0 && warningCount > 0:
-		fmt.Fprintf(r, "encountered %d error%v and %d warnings%v\n%s",
+		fmt.Fprintf(r, "encountered %d error%v and %d warning%v\n%s",
 			errorCount, plural(errorCount), warningCount, plural(warningCount),
 			r.ss.reset,
 		)

@@ -44,4 +44,4 @@ warning: non-printable character in string literal
 11 | "this is graphic but non-ASCII space: <U+00A0>"
    |                                       ^^^^^^^^ help: consider escaping this with e.g. `\u00a0` instead
 
-encountered 5 errors and 2 warningss
+encountered 5 errors and 2 warnings

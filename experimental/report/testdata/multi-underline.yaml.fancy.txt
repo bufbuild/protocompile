@@ -17,4 +17,4 @@ warning: these are pretty bad names
  5 | message Blah {
    |         ---- blah to you too!!
 
-encountered 1 error and 1 warnings
+encountered 1 error and 1 warning
