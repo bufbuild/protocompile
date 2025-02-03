@@ -74,7 +74,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 	var latest int // The index of the most recently seen delimiter.
 
 	if next := d.c.Peek(); slices.Contains(d.delims, next.Text()) {
-		_ = d.c.Pop()
+		_ = d.c.Next()
 		latest = slices.Index(d.delims, next.Text())
 
 		d.p.Error(errUnexpected{
@@ -98,13 +98,13 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				break
 			}
 
-			first := d.c.Pop()
+			first := d.c.Next()
 			var last token.Token
 			for !d.c.Done() && !d.start(d.c.Peek()) {
 				if d.stop != nil && d.stop(d.c.Peek()) {
 					break
 				}
-				last = d.c.Pop()
+				last = d.c.Next()
 			}
 
 			want := d.what.AsSet()
@@ -151,7 +151,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			}
 			latest = which
 
-			next := d.c.Pop()
+			next := d.c.Next()
 			if delim.IsZero() {
 				delim = next
 				continue

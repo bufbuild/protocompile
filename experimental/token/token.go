@@ -322,11 +322,10 @@ func (t Token) Children() *Cursor {
 	}
 
 	if impl := t.nat(); impl != nil {
-		start, end := t.StartEnd()
+		start, _ := t.StartEnd()
 		return &Cursor{
 			withContext: t.withContext,
-			start:       start.id + 1, // Skip the start!
-			end:         end.id,
+			idx:         int(start.id), // Skip the start!
 		}
 	}
 
