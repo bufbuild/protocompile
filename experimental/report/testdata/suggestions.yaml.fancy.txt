@@ -46,4 +46,21 @@ error: method options must go in a block
  9 | +   }
    |
 
-encountered 2 errors and 1 warning
+error: delete some stuff
+  --> foo.proto:5:1
+  help:
+   |
+ 5 | - service Foo {
+ 6 |     rpc Get(GetRequest) returns GetResponse;
+ 7 |     rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+ 8 | - }
+   |
+
+error: delete this method
+  --> foo.proto:5:1
+  help:
+   |
+ 7 | -   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+   |
+
+encountered 4 errors and 1 warning
