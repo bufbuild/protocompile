@@ -32,7 +32,7 @@ func Get[S ~[]E, E any, I SliceIndex](s S, idx I) (element E, ok bool) {
 	if idx < 0 {
 		return element, false
 	}
-	if uint64(idx) >= uint64(cap(s)) {
+	if uint64(idx) >= uint64(len(s)) {
 		return element, false
 	}
 
@@ -47,7 +47,7 @@ func GetPointer[S ~[]E, E any, I SliceIndex](s S, idx I) *E {
 	if idx < 0 {
 		return nil
 	}
-	if uint64(idx) >= uint64(cap(s)) {
+	if uint64(idx) >= uint64(len(s)) {
 		return nil
 	}
 

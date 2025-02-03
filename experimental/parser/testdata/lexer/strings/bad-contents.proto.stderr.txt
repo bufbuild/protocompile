@@ -1,18 +1,14 @@
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:1:13
    | 
- 1 |   "this string
-   |  ____________^
- 2 | / contains a newline"
-   | \^ replace this with `\n`
+ 1 | "this string
+   |             ^ replace this with `\n`
 
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:3:2
    | 
- 3 |   "
-   |  _^
- 4 | / "
-   | \^ replace this with `\n`
+ 3 | "
+   |  ^ replace this with `\n`
 
 error: unescaped NUL bytes are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:6:30
