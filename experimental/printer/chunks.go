@@ -12,9 +12,9 @@ import (
 // TODO list
 //
 // - finish all decl types
-// - add indent handling
 // - block level split logic (split deps)
 // - what does it mean to have no tokens for a decl...
+// - improve performance with cursors
 // - clean-up parsePrefixChunks, getTokensAndCursorForDecl
 // - a bunch of docs
 // - do a naming sanity check with Ed/Miguel
@@ -49,7 +49,7 @@ type splitChunk func(*token.Cursor) (splitKind, bool)
 // A chunk is preformatted.
 type chunk struct {
 	text             string
-	nestingLevel     uint32
+	indentLevel      uint32
 	splitKind        splitKind
 	spaceWhenUnsplit bool
 }
@@ -84,11 +84,11 @@ func fileToBlocks(file ast.File, applyFormatting bool) []block {
 
 // TODO: block-level split logic
 func declBlock(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) block {
-	return block{chunks: declChunks(stream, decl, applyFormatting)}
+	return block{chunks: declChunks(stream, decl, applyFormatting, 0)} // Start indent level at 0, TODO: may change this
 }
 
 // TODO: account for indents
-func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []chunk {
+func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, indentLevel uint32) []chunk {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration
@@ -113,6 +113,7 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 				return splitKindDouble, false
 			},
 			applyFormatting,
+			indentLevel,
 		)
 	case ast.DeclKindPackage:
 		pkg := decl.AsPackage()
@@ -137,6 +138,7 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 				return splitKindDouble, false
 			},
 			applyFormatting,
+			indentLevel,
 		)
 	case ast.DeclKindImport:
 		imprt := decl.AsImport()
@@ -163,9 +165,10 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 				return splitKindHard, false
 			},
 			applyFormatting,
+			indentLevel,
 		)
 	case ast.DeclKindDef:
-		return defChunks(stream, decl.AsDef(), applyFormatting)
+		return defChunks(stream, decl.AsDef(), applyFormatting, indentLevel)
 	case ast.DeclKindBody:
 		// TODO: figure out how to handle this
 	case ast.DeclKindRange:
@@ -175,11 +178,12 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) []
 	return []chunk{}
 }
 
-func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []chunk {
+func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, indentLevel uint32) []chunk {
 	switch decl.Classify() {
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
 	case ast.DefKindMessage:
+		var split splitKind
 		message := decl.AsMessage()
 		// First handle everything up to the message body
 		// TODO: We should figure out what to do if there are no braces
@@ -188,21 +192,70 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				// TODO: implement
-
-				return true
+				// We don't want to add a space after the brace.
+				return t.ID() != message.Body.Braces().ID()
 			},
 			func(cursor *token.Cursor) (splitKind, bool) {
-				// TODO: implement
-				return splitKindSoft, false
+				// TODO: hopefully this makes sense... need to test
+				// We default to splitKindSoft without a space at the end.
+				split = splitKindSoft
+				var spaceWhenUnsplit bool
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					spaceWhenUnsplit = true
+				}
+				if single {
+					split = splitKindHard
+				}
+				if double {
+					split = splitKindDouble
+				}
+				return split, spaceWhenUnsplit
 			},
 			applyFormatting,
+			indentLevel,
 		)
 		// Then process the message body
+		// If we are doing any kind of splitting, we want to increment the indent.
+		if split != splitKindSoft {
+			indentLevel++
+		}
 		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
-			chunks = append(chunks, declChunks(stream, d, applyFormatting)...)
+			chunks = append(chunks, declChunks(stream, d, applyFormatting, indentLevel)...)
 			return true
 		})
+		// TODO: need to pair this the declaration chunk
+		if !message.Body.Braces().IsZero() {
+			_, end := message.Body.Braces().StartEnd()
+			// Adjust indentLevel back if we adjusted earlier
+			if split != splitKindSoft {
+				indentLevel--
+			}
+			chunks = append(chunks, oneLiner(
+				[]token.Token{end},
+				token.NewCursorAt(end),
+				func(t token.Token) bool {
+					// No spaces
+					return false
+				},
+				func(cursor *token.Cursor) (splitKind, bool) {
+					trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+					if trailingComment {
+						return splitKindSoft, true
+					}
+					if double {
+						return splitKindDouble, false
+					}
+					if single {
+						return splitKindHard, false
+					}
+					// Default, seems dubious, should check
+					return splitKindSoft, false
+				},
+				applyFormatting,
+				indentLevel,
+			)...)
+		}
 		return chunks
 	case ast.DefKindEnum:
 		// TODO: implement
@@ -219,7 +272,9 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 				tokens,
 				cursor,
 				func(t token.Token) bool {
-					if t.ID() == field.Semicolon.ID() {
+					// We don't want to add a space after the semicolon
+					// We also don't want to add a space after the tag
+					if t.ID() == field.Semicolon.ID() || checkSpanWithin(field.Tag.Span(), t.Span()) {
 						return false
 					}
 					return true
@@ -229,6 +284,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool) []c
 					return splitKindHard, false
 				},
 				applyFormatting,
+				indentLevel,
 			)
 		}
 		// TODO figure out how to handle options
@@ -256,6 +312,7 @@ func oneLiner(
 	spacer addSpace,
 	splitter splitChunk,
 	applyFormatting bool,
+	indentLevel uint32,
 ) []chunk {
 	// TODO: figure out what to do in this case/what even does this case mean?
 	if len(tokens) == 0 {
@@ -285,6 +342,7 @@ func oneLiner(
 		text:             text,
 		splitKind:        splitKind,
 		spaceWhenUnsplit: spaceWhenUnsplit,
+		indentLevel:      indentLevel,
 	})
 	return chunks
 }
@@ -301,6 +359,9 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 	var chunks []chunk
 	t = cursor.NextSkippable()
 	for t.ID() != until.ID() {
+		if cursor.PeekSkippable().IsZero() {
+			break
+		}
 		switch t.Kind() {
 		case token.Space:
 			// Only create a chunk for spaces if formatting is not applied.
@@ -387,6 +448,9 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 	var singleFound bool
 	var doubleFound bool
 	for !cursor.Done() || t.Kind().IsSkippable() {
+		if cursor.PeekSkippable().IsZero() {
+			break
+		}
 		switch t.Kind() {
 		case token.Space:
 			if strings.Contains(t.Text(), "\n\n") {
@@ -434,10 +498,10 @@ func (b block) calculateSplits(lineLimit int) {
 			var lastSeen chunk
 			for _, c := range b.chunks[outermostSplittableChunk+1 : end] {
 				if c.splitKind == splitKindSoft && lastSeen.splitKind != splitKindSoft {
-					c.nestingLevel += 1
+					c.indentLevel += 1
 				}
 				if c.splitKind == splitKindHard {
-					c.nestingLevel += 1
+					c.indentLevel += 1
 				}
 				lastSeen = c
 			}

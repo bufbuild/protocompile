@@ -89,7 +89,8 @@ func (p *printer) printFile(file ast.File) {
 
 // TODO: make indentSize configurable
 func (p *printer) printChunk(c chunk, applyFormatting bool) {
-	for i := uint32(0); i < c.nestingLevel; i++ {
+	// TODO: make this a little nicer
+	for i := uint32(0); i < c.indentLevel; i++ {
 		p.WriteString(defaultIndent)
 	}
 	p.WriteString(c.text)
