@@ -121,7 +121,7 @@ func (r *renderer) render(report *Report) (errorCount, warningCount int, err err
 			errorCount, plural(errorCount), r.ss.reset,
 		)
 	case warningCount > 0:
-		fmt.Fprintf(r, "%sencountered %d warnings%v\n%s",
+		fmt.Fprintf(r, "%sencountered %d warning%v\n%s",
 			r.ss.bWarning,
 			warningCount, plural(warningCount), r.ss.reset,
 		)
