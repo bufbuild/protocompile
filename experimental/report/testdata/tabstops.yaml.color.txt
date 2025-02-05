@@ -1,18 +1,18 @@
 ⟨b.ylw⟩warning: tabstop⟨reset⟩
 ⟨blu⟩  --> foo.proto:6:9
-   | 
+   |
 ⟨blu⟩ 6 | ⟨reset⟩        field
-⟨blu⟩   | ⟨reset⟩⟨b.blu⟩--------⟨b.ylw⟩^^^^^⟨reset⟩ ⟨b.ylw⟩this is in front of some tabstops
-⟨blu⟩   | ⟨reset⟩⟨b.blu⟩|
-⟨blu⟩   | ⟨reset⟩⟨b.blu⟩specifically these⟨reset⟩
+⟨blu⟩   | ⟨b.blu⟩--------⟨b.ylw⟩^^^^^⟨reset⟩ ⟨b.ylw⟩this is in front of some tabstops
+⟨blu⟩   | ⟨b.blu⟩|
+⟨blu⟩   | ⟨b.blu⟩specifically these⟨reset⟩
 
 ⟨b.ylw⟩warning: partial tabstop⟨reset⟩
 ⟨blu⟩  --> foo.proto:7:2
-   | 
+   |
 ⟨blu⟩ 7 | ⟨reset⟩    field
-⟨blu⟩   | ⟨reset⟩⟨b.blu⟩-⟨b.ylw⟩^^^⟨reset⟩ ⟨b.ylw⟩tabstop
-⟨blu⟩   | ⟨reset⟩⟨b.blu⟩|
-⟨blu⟩   | ⟨reset⟩⟨b.blu⟩spaces⟨reset⟩
+⟨blu⟩   | ⟨b.blu⟩-⟨b.ylw⟩^^^⟨reset⟩ ⟨b.ylw⟩tabstop
+⟨blu⟩   | ⟨b.blu⟩|
+⟨blu⟩   | ⟨b.blu⟩spaces⟨reset⟩
 
-⟨b.ylw⟩ encountered  2 warnings
+⟨b.ylw⟩encountered 2 warnings
 ⟨reset⟩

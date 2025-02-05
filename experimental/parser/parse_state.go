@@ -46,7 +46,7 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 
 	next := p.c.Peek()
 	if next.Text() == p.want {
-		return p.c.Pop(), nil
+		return p.c.Next(), nil
 	}
 
 	err := errUnexpected{
@@ -54,7 +54,7 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 		want:  taxa.NewSet(taxa.Punct(p.want, false)),
 	}
 	if next.IsZero() {
-		tok, span := p.c.JustAfter()
+		tok, span := p.c.SeekToEnd()
 		err.what = span
 		err.got = taxa.EOF
 		if !tok.IsZero() {

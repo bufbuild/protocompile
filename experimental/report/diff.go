@@ -89,7 +89,12 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 	// all edit spans whose end and start are not separated by a newline.
 	prev := &edits[0]
 	parts := slicesx.Partition(edits, func(_, next *Edit) bool {
-		if next == prev || !strings.Contains(src[prev.End:next.Start], "\n") {
+		if next == prev {
+			return false
+		}
+
+		chunk := src[prev.End:next.Start]
+		if !strings.Contains(chunk, "\n") {
 			return false
 		}
 
@@ -99,7 +104,7 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 
 	var out []hunk
 	var prevHunk int
-	parts(func(i int, edits []Edit) bool {
+	parts(func(_ int, edits []Edit) bool {
 		// First, figure out the start and end of the modified region.
 		start, end := edits[0].Start, edits[0].End
 		for _, edit := range edits[1:] {
@@ -115,9 +120,9 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 		var buf strings.Builder
 		prev := 0
 		for _, edit := range edits {
-			buf.WriteString(original[prev:edit.Start])
+			buf.WriteString(original[prev : edit.Start-start])
 			buf.WriteString(edit.Replace)
-			prev = edit.End
+			prev = edit.End - start
 		}
 		buf.WriteString(original[prev:])
 
@@ -135,22 +140,19 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 }
 
 // offsetsForDiffing pre-calculates information needed for diffing:
-// the line-snapped span, and the offsetsForDiffing of each edit as indices into
-// that span.
+// the line-snapped span, and edits which are adjusted to conform to that
+// span.
 func offsetsForDiffing(span Span, edits []Edit) (Span, []Edit) {
 	edits = slices.Clone(edits)
 	var start, end int
-	for i, e := range edits {
-		a, b, r := e.Justified(span)
-		edits[i] = Edit{
-			Start:   a,
-			End:     b,
-			Replace: r,
-		}
+	for i := range edits {
+		e := &edits[i]
+		e.Start += span.Start
+		e.End += span.Start
 		if i == 0 {
-			start, end = a, b
+			start, end = e.Start, e.End
 		} else {
-			start, end = min(a, start), max(b, end)
+			start, end = min(e.Start, start), max(e.End, end)
 		}
 	}
 

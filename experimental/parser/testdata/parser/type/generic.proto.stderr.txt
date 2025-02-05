@@ -1,13 +1,13 @@
 error: unexpected type name in type parameters
   --> testdata/parser/type/generic.proto:37:13
-   | 
+   |
 37 |     set<Foo bar> x13 = 13;
    |             ^^^ expected `,`
    |             |
    |             note: assuming a missing `,` here
   help: add a `,` here
-   | 
-37 |     set<Foo, bar> x13 = 13;
-   |            +               
+   |
+37 |     set<Foo ,bar> x13 = 13;
+   |             +
 
 encountered 1 error

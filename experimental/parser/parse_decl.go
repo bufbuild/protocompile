@@ -43,7 +43,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	var unexpected []token.Token
 	for !c.Done() && !canStartDecl(first) {
-		unexpected = append(unexpected, c.Pop())
+		unexpected = append(unexpected, c.Next())
 		first = c.Peek()
 	}
 	switch len(unexpected) {
@@ -64,7 +64,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	}
 
 	if first.Text() == ";" {
-		c.Pop()
+		c.Next()
 
 		// This is an empty decl.
 		return p.NewDeclEmpty(first).AsAny()
@@ -72,7 +72,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	// This is a bare declaration body.
 	if canStartBody(first) {
-		return parseBody(p, c.Pop(), in).AsAny()
+		return parseBody(p, c.Next(), in).AsAny()
 	}
 
 	// We need to parse a path here. At this point, we need to generate a
@@ -292,7 +292,7 @@ func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 // parseRange parses a reserved/extensions range.
 func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// Consume the keyword token.
-	kw := c.Pop()
+	kw := c.Next()
 
 	in := taxa.Extensions
 	if kw.Text() == "reserved" {
@@ -415,7 +415,7 @@ func tryParseOptions(p *parser, c *token.Cursor, in taxa.Noun) ast.CompactOption
 	if !canStartOptions(c.Peek()) {
 		return ast.CompactOptions{}
 	}
-	return parseOptions(p, c.Pop(), in)
+	return parseOptions(p, c.Next(), in)
 }
 
 // parseOptions parses a ([]-delimited) compact options list.
@@ -450,7 +450,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 				)
 				fallthrough
 			case "=":
-				c.Pop()
+				c.Next()
 			default:
 				p.Error(errUnexpected{
 					what:  eq,

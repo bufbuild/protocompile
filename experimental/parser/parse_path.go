@@ -43,7 +43,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 	var prevSeparator token.Token
 	if start.Text() == "." || start.Text() == "/" {
-		prevSeparator = c.Pop()
+		prevSeparator = c.Next()
 	}
 
 	var done bool
@@ -62,7 +62,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 				// We consume additional separators here so that we can diagnose
 				// them all in one shot.
 				for {
-					prevSeparator = c.Pop()
+					prevSeparator = c.Next()
 					next := c.Peek()
 					if !slicesx.Among(next.Text(), ".", "/") {
 						break
@@ -77,7 +77,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 					got:   "tokens",
 				})
 			} else {
-				prevSeparator = c.Pop()
+				prevSeparator = c.Next()
 			}
 
 		case next.Kind() == token.Ident:
@@ -90,7 +90,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 			end = next
 			prevSeparator = token.Zero
-			c.Pop()
+			c.Next()
 
 		case next.Text() == "(":
 			if !first && prevSeparator.IsZero() {
@@ -116,7 +116,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 
 			end = next
 			prevSeparator = token.Zero
-			c.Pop()
+			c.Next()
 
 		default:
 			if prevSeparator.IsZero() {
