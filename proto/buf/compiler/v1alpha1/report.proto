@@ -95,17 +95,6 @@ message Diagnostic {
 
     // The text to insert in place of the selected region.
     string replace = 3;
-
-    enum Justify {
-      JUSTIFY_UNSPECIFIED = 0;
-      JUSTIFY_BETWEEN = 1;
-      JUSTIFY_LEFT = 2;
-      JUSTIFY_RIGHT = 3;
-    }
-
-    // The justification setting for this edit, which affects how it should be
-	  // modified based on local whitespace. 
-    Justify justify = 4;
   }
 
   // Required. The message to show for this diagnostic. This should fit on one line.
