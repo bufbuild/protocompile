@@ -66,6 +66,8 @@ func LastPointer[S ~[]E, E any](s S) *E {
 //
 // This function assumes that len is the length of a slice, i.e, it is
 // non-negative.
+//
+//nolint:revive,predeclared // len is the right variable name ugh.
 func BoundsCheck[I SliceIndex](idx I, len int) bool {
 	// An unsigned comparison is sufficient. If idx is non-negative, it checks
 	// that it is less than len. If idx is negative, converting it to uint64

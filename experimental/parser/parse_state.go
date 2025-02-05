@@ -60,8 +60,6 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 		if !tok.IsZero() {
 			err.got = taxa.Classify(tok)
 		}
-
-		return token.Zero, err
 	} else {
 		err.what = next
 	}
