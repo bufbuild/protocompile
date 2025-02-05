@@ -120,7 +120,7 @@ func (p *defParser) parse() ast.DeclDef {
 			parser: p.parser, c: p.c,
 			want:   ";",
 			where:  taxa.Def.After(),
-			insert: report.JustifyLeft,
+			insert: justifyLeft,
 		}.parse()
 		p.args.Semicolon = semi
 		if err != nil {
@@ -304,7 +304,7 @@ func (defValue) parse(p *defParser) report.Span {
 		parser: p.parser, c: p.c,
 		want:   "=",
 		where:  taxa.Def.In(),
-		insert: report.JustifyBetween,
+		insert: justifyBetween,
 	}.parse()
 	if err != nil {
 		p.Error(err)

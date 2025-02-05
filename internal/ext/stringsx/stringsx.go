@@ -17,11 +17,36 @@ package stringsx
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
+
+// Rune returns the rune at the given index.
+//
+// Returns 0, false if out of bounds. Returns U+FFFD, false if rune decoding fails.
+func Rune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
+	if !slicesx.BoundsCheck(idx, len(s)) {
+		return 0, false
+	}
+	r, _ := utf8.DecodeRuneInString(s[idx:])
+	return r, r != utf8.RuneError
+}
+
+// Rune returns the previous rune at the given index.
+//
+// Returns 0, false if out of bounds. Returns U+FFFD, false if rune decoding fails.
+func PrevRune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
+	if !slicesx.BoundsCheck(idx-1, len(s)) {
+		return 0, false
+	}
+
+	r, _ := utf8.DecodeLastRuneInString(s[:idx])
+	return r, r != utf8.RuneError
+}
 
 // EveryFunc verifies that all runes in the string satisfy the given predicate.
 func EveryFunc(s string, p func(rune) bool) bool {

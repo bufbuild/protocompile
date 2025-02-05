@@ -16,10 +16,15 @@ package parser
 
 import (
 	"fmt"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
 // errUnexpected is a low-level parser error for when we hit a token we don't
@@ -43,7 +48,8 @@ type errUnexpected struct {
 	// If nonempty, inserting this text will be suggested at the given offset.
 	insert        string
 	insertAt      int
-	insertJustify report.Justify
+	insertJustify int
+	stream        *token.Stream
 }
 
 func (e errUnexpected) Diagnose(d *report.Diagnostic) {
@@ -76,12 +82,13 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 
 	if e.insert != "" {
 		want, _ := iterx.First(e.want.All())
-		d.Apply(report.SuggestEdits(
+		d.Apply(justify(
+			e.stream,
 			what,
 			fmt.Sprintf("consider inserting a %v", want),
-			report.Edit{
-				Replace: e.insert,
-				Justify: e.insertJustify,
+			justified{
+				report.Edit{Replace: e.insert},
+				e.insertJustify,
 			},
 		))
 	}
@@ -104,5 +111,105 @@ func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
 		report.Message("encountered more than one %v", what),
 		report.Snippetf(e.second, "help: consider removing this"),
 		report.Snippetf(e.first, "first one is here"),
+	)
+}
+
+const (
+	justifyNone int = iota
+	justifyBetween
+	justifyRight
+	justifyLeft
+)
+
+type justified struct {
+	report.Edit
+	justify int
+}
+
+func justify(stream *token.Stream, span report.Span, message string, edits ...justified) report.DiagnosticOption {
+	text := span.File.Text()
+	for i := range edits {
+		e := &edits[i]
+		// Convert the edits to absolute offsets.
+		e.Start += span.Start
+		e.End += span.Start
+		empty := e.Start == e.End
+
+		spaceAfter := func(text string, idx int) int {
+			r, ok := stringsx.Rune(text, idx)
+			if !ok || !unicode.IsSpace(r) {
+				return 0
+			}
+			return utf8.RuneLen(r)
+		}
+		spaceBefore := func(text string, idx int) int {
+			r, ok := stringsx.PrevRune(text, idx)
+			if !ok || !unicode.IsSpace(r) {
+				return 0
+			}
+			return utf8.RuneLen(r)
+		}
+
+		switch edits[i].justify {
+		case justifyBetween:
+			// If possible, shift the offset such that it is surrounded by
+			// whitespace. However, this is not always possible, in which case we
+			// must add whitespace to text.
+			prev := spaceBefore(text, e.Start)
+			next := spaceAfter(text, e.End)
+			switch {
+			case prev > 0 && next > 0:
+				// Nothing to do here.
+
+			case empty && prev > 0 && spaceBefore(text, e.Start-prev) > 0:
+				e.Start -= prev
+				e.End -= prev
+			case prev > 0:
+				e.Replace += " "
+
+			case empty && next > 0 && spaceAfter(text, e.End+next) > 0:
+				e.Start += next
+				e.End += next
+			case next > 0:
+				e.Replace = " " + e.Replace
+
+			default:
+				// We're crammed between non-whitespace.
+				e.Replace = " " + e.Replace + " "
+			}
+
+		case justifyLeft:
+			// Get the token at the start of the span.
+			start, _ := stream.Around(e.Start)
+			c := token.NewCursorAt(start)
+			// Seek to the previous unskippable token, and use its end as
+			// the start of the justification.
+			e.Start = c.Prev().Span().End
+			if empty {
+				e.End = e.Start
+			}
+
+		case justifyRight:
+			// Identical to the above, but reversed.
+			_, end := stream.Around(e.Start)
+			c := token.NewCursorAt(end)
+			e.End = c.Next().Span().Start
+			if empty {
+				e.Start = e.End
+			}
+		}
+	}
+
+	span = report.JoinSeq(iterx.Map(slicesx.Values(edits), func(j justified) report.Span {
+		return span.File.Span(j.Start, j.End)
+	}))
+	return report.SuggestEdits(
+		span, message,
+		slicesx.Collect(iterx.Map(slicesx.Values(edits),
+			func(j justified) report.Edit {
+				j.Start -= span.Start
+				j.End -= span.Start
+				return j.Edit
+			}))...,
 	)
 }

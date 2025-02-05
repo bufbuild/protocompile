@@ -79,7 +79,7 @@ type stringContent struct {
 
 // lexStringContent lexes a single logical rune's worth of content for a quoted
 // string.
-func lexStringContent(q rune, l *lexer) (sc stringContent) {
+func lexStringContent(_ rune, l *lexer) (sc stringContent) {
 	start := l.cursor
 	r := l.Pop()
 
@@ -107,19 +107,7 @@ func lexStringContent(q rune, l *lexer) (sc stringContent) {
 		nl := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped newlines are not permitted in string literals").Apply(
 			report.Snippet(nl),
-			report.SuggestEdits(nl, "replace this with an explicit `\\n`",
-				report.Edit{
-					Start:   0,
-					End:     1,
-					Replace: fmt.Sprintf("\\n%c\n", q),
-				},
-				report.Edit{
-					Start:   1,
-					End:     1,
-					Replace: string(q),
-					Justify: report.JustifyRight,
-				},
-			),
+			report.Helpf("consider splitting this into two adjacent string literals"),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't

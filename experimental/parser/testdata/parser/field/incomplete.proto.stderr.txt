@@ -5,8 +5,8 @@ error: unexpected identifier after definition
    |     ^^^ expected `;`
   help: consider inserting a `;`
    |
-24 |     ;foo.Bar name;
-   |     +
+23 |     foo.bar name = 1;
+   |                     +
 
 error: unexpected integer literal in definition
   --> testdata/parser/field/incomplete.proto:25:18
@@ -15,8 +15,8 @@ error: unexpected integer literal in definition
    |                  ^ expected `=`
   help: consider inserting a `=`
    |
-25 |     foo.Bar name =1;
-   |                  +
+25 |     foo.Bar name = 1;
+   |                  ++
 
 error: unexpected identifier after definition
   --> testdata/parser/field/incomplete.proto:28:5
@@ -25,8 +25,8 @@ error: unexpected identifier after definition
    |     ^^^ expected `;`
   help: consider inserting a `;`
    |
-28 |     ;foo..bar name = 1;
-   |     +
+26 |     foo.bar name = 1;  // Comment
+   |                     +
 
 error: unexpected tokens after `.`
   --> testdata/parser/field/incomplete.proto:28:9

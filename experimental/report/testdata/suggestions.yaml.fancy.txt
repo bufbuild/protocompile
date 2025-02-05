@@ -33,16 +33,6 @@ error: missing (...) around return type
  6 |   rpc Get(GetRequest) returns (GetResponse)
    |                               +           +
 
-error: missing semicolon
-  --> foo.proto:7:3
-   |
- 7 |   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-   |   ^^^ expected semicolon
-  help: insert a semicolon
-   |
- 7 |   ;rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-   |   +
-
 error: method options must go in a block
   --> foo.proto:7:45
    |
@@ -79,4 +69,4 @@ error: delete this method
  7 | +   r}
    |
 
-encountered 5 errors and 1 warning
+encountered 4 errors and 1 warning

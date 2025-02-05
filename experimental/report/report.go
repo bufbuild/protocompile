@@ -225,7 +225,6 @@ func (r *Report) ToProto() proto.Message {
 					Start:   uint32(edit.Start),
 					End:     uint32(edit.End),
 					Replace: edit.Replace,
-					Justify: compilerpb.Diagnostic_Edit_Justify(edit.Justify),
 				})
 			}
 
@@ -308,7 +307,6 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 					Start:   int(edit.Start),
 					End:     int(edit.End),
 					Replace: edit.Replace,
-					Justify: Justify(edit.Justify),
 				})
 			}
 

@@ -141,12 +141,13 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				want:  d.delimNouns(),
 			}).Apply(
 				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
-				report.SuggestEdits(
+				justify(
+					d.p.Stream(),
 					v.Span(),
 					fmt.Sprintf("add a `%s` here", d.delims[latest]),
-					report.Edit{
-						Replace: d.delims[latest],
-						Justify: report.JustifyLeft,
+					justified{
+						report.Edit{Replace: d.delims[latest]},
+						justifyLeft,
 					},
 				),
 			)

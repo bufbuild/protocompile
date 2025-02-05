@@ -87,23 +87,6 @@ diagnostics:
             end: 11
             replace: ')'
 
-  - message: 'missing semicolon'
-    level: LEVEL_ERROR
-    annotations:
-      - message: expected semicolon
-        file: 0
-        start: 96
-        end: 99
-      - message: insert a semicolon
-        file: 0
-        start: 96
-        end: 99
-        edits:
-          - start: 0
-            end: 0
-            replace: ";"
-            justify: JUSTIFY_LEFT
-
   - message: 'method options must go in a block'
     level: LEVEL_ERROR
     annotations:

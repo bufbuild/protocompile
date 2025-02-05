@@ -16,8 +16,6 @@ package report
 
 import (
 	"fmt"
-	"unicode"
-	"unicode/utf8"
 )
 
 // Level represents the severity of a diagnostic message.
@@ -61,27 +59,6 @@ type Diagnostic struct {
 	notes, help, debug []string
 }
 
-// Justify is a justification setting for an [Edit].
-type Justify int
-
-const (
-	// No justification.
-	JustifyNone Justify = iota
-
-	// Ensure that the inserted portion is surrounded by whitespace, either
-	// by shifting it or by inserting extra whitespace.
-	JustifyBetween
-
-	// Ensure that there is no whitespace to the left of the inserted portion,
-	// either by enlarging the replacement range, or, if it is empty, moving it
-	// past any whitespace to the left.
-	JustifyLeft
-
-	// Like [JustifyLeft], but for whitespace to the right of the inserted
-	// portion.
-	JustifyRight
-)
-
 // Edit is an edit to suggest on a snippet.
 //
 // See [SuggestEdits].
@@ -97,10 +74,6 @@ type Edit struct {
 	//
 	// A pure deletion is modeled by Replace == "".
 	Replace string
-
-	// The justification setting for this edit, which affects how it should be
-	// modified based on local whitespace.
-	Justify Justify
 }
 
 // IsDeletion returns whether this edit involves deleting part of the source
@@ -112,93 +85,6 @@ func (e Edit) IsDeletion() bool {
 // IsInsertion returns whether this edit involves inserting new text.
 func (e Edit) IsInsertion() bool {
 	return e.Replace != ""
-}
-
-// Justified returns the start and end of this edit, as well as the updated
-// replacement string, after applying justification.
-//
-// The start and end are relative to the whole file that contains s.
-func (e Edit) Justified(s Span) (start, end int, replace string) {
-	start = s.Start + e.Start
-	end = s.Start + e.End
-	replace = e.Replace
-	empty := start == end
-
-	spaceAfter := func(text string, offset int) int {
-		if offset >= len(text) {
-			return 0
-		}
-		r, sz := utf8.DecodeRuneInString(text[offset:])
-		if unicode.IsSpace(r) {
-			return sz
-		}
-		return 0
-	}
-
-	spaceBefore := func(text string, offset int) int {
-		if offset == 0 || offset > len(text) {
-			return 0
-		}
-		r, sz := utf8.DecodeLastRuneInString(text[:offset])
-		if unicode.IsSpace(r) {
-			return sz
-		}
-		return 0
-	}
-
-	text := s.File.Text()
-	switch e.Justify {
-	case JustifyBetween:
-		// If possible, shift the offset such that it is surrounded by
-		// whitespace. However, this is not always possible, in which case we
-		// must add whitespace to text.
-		prev := spaceBefore(text, start)
-		next := spaceAfter(text, end)
-		switch {
-		case prev > 0 && next > 0:
-			// Nothing to do here.
-
-		case empty && prev > 0 && spaceBefore(text, start-prev) > 0:
-			start -= prev
-			end -= prev
-		case prev > 0:
-			replace += " "
-
-		case empty && next > 0 && spaceAfter(text, end+next) > 0:
-			start += next
-			end += next
-		case next > 0:
-			replace = " " + replace
-
-		default:
-			// We're crammed between non-whitespace.
-			replace = " " + replace + " "
-		}
-	case JustifyLeft:
-		for {
-			prev := spaceBefore(text, start)
-			if prev == 0 {
-				break
-			}
-			start -= prev
-			if empty {
-				end -= prev
-			}
-		}
-	case JustifyRight:
-		for {
-			next := spaceAfter(text, end)
-			if next == 0 {
-				break
-			}
-			end += next
-			if empty {
-				start += next
-			}
-		}
-	}
-
-	return start, end, replace
 }
 
 // DiagnosticOption is an option that can be applied to a [Diagnostic].

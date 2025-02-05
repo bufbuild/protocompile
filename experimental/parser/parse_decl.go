@@ -125,7 +125,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			parser: p, c: c,
 			want:   "=",
 			where:  in.In(),
-			insert: report.JustifyBetween,
+			insert: justifyBetween,
 		}.parse()
 		args.Equals = eq
 		if err != nil {
@@ -144,7 +144,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			parser: p, c: c,
 			want:   ";",
 			where:  in.After(),
-			insert: report.JustifyLeft,
+			insert: justifyLeft,
 		}.parse()
 		// Only diagnose a missing semicolon if we successfully parsed some
 		// kind of partially-valid expression. Otherwise, we might diagnose
@@ -183,7 +183,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			parser: p, c: c,
 			want:   ";",
 			where:  taxa.Package.After(),
-			insert: report.JustifyLeft,
+			insert: justifyLeft,
 		}.parse()
 		args.Semicolon = semi
 		if err != nil {
@@ -236,7 +236,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			parser: p, c: c,
 			want:   ";",
 			where:  in.After(),
-			insert: report.JustifyLeft,
+			insert: justifyLeft,
 		}.parse()
 		args.Semicolon = semi
 		if err != nil && args.ImportPath.IsZero() {
@@ -375,7 +375,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 		parser: p, c: c,
 		want:   ";",
 		where:  in.After(),
-		insert: report.JustifyLeft,
+		insert: justifyLeft,
 	}.parse()
 	if err != nil && (!options.IsZero() || !badExpr) {
 		p.Error(err)
@@ -441,10 +441,9 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			case ":": // Allow colons, which is usually a mistake.
 				p.Errorf("unexpected `:` in compact option").Apply(
 					report.Snippet(eq),
-					report.SuggestEdits(eq, "replace this with an `=`", report.Edit{
-						Start: 0, End: 1,
-						Replace: "=",
-						Justify: report.JustifyBetween,
+					justify(p.Stream(), eq.Span(), "replace this with an `=`", justified{
+						report.Edit{Start: 0, End: 1, Replace: "="},
+						justifyBetween,
 					}),
 					report.Notef("top-level `option` assignment uses `=`, not `:`"),
 				)

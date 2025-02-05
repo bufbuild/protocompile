@@ -3,39 +3,21 @@ error: unescaped newlines are not permitted in string literals
    |
  1 | "this string
    |             ^
-  help: replace this with an explicit `\n`
-   |
- 1 | - "this string
- 2 | - contains a newline"
- 1 | + "this string\n"
- 2 | + "contains a newline"
-   |
+   = help: consider splitting this into two adjacent string literals
 
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:3:2
    |
  3 | "
    |  ^
-  help: replace this with an explicit `\n`
-   |
- 3 | - "
- 4 | - "
- 3 | + "\n"
- 4 | + ""
-   |
+   = help: consider splitting this into two adjacent string literals
 
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:6:32
    |
  6 |     "this is an indented string
    |                                ^
-  help: replace this with an explicit `\n`
-   |
- 6 | -     "this is an indented string
- 7 | -     that contains a newline"
- 6 | +     "this is an indented string\n"
- 7 | + "    that contains a newline"
-   |
+   = help: consider splitting this into two adjacent string literals
 
 error: unescaped NUL bytes are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:9:30

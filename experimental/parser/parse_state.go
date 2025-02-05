@@ -33,7 +33,7 @@ type punctParser struct {
 	c      *token.Cursor
 	want   string
 	where  taxa.Place
-	insert report.Justify
+	insert int // One of the justify* values.
 }
 
 // parse attempts to unconditionally parse some punctuation.
@@ -67,6 +67,7 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 	}
 
 	if p.insert != 0 {
+		err.stream = p.Stream()
 		err.insert = p.want
 		err.insertAt = err.what.Span().Start
 		err.insertJustify = p.insert

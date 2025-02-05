@@ -6,7 +6,7 @@ error: unexpected `:` in compact option
   help: replace this with an `=`
    |
 27 | -     M bad = 4 [foo: {bar: baz}];
-27 | +     M bad = 4 [foo= {bar: baz}];
+27 | +     M bad = 4 [foo = {bar: baz}];
    |
    = note: top-level `option` assignment uses `=`, not `:`
 
@@ -18,7 +18,7 @@ error: unexpected `=` in expression
   help: replace this with an `:`
    |
 28 | -     M bad2 = 5 [foo = {bar = baz}];
-28 | +     M bad2 = 5 [foo = {bar : baz}];
+28 | +     M bad2 = 5 [foo = {bar: baz}];
    |
    = note: a message expression use `=`, not `:`, for setting fields
 

@@ -5,8 +5,8 @@ error: unexpected `;` in `edition` declaration
    |        ^ expected `=`
   help: consider inserting a `=`
    |
-15 | edition=;
-   |        +
+15 | edition = ;
+   |        +++
 
 error: unexpected `;` in `syntax` declaration
   --> testdata/parser/syntax/lonely.proto:17:10

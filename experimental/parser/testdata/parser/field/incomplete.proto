@@ -23,7 +23,7 @@ message M {
     foo.bar name = 1
     foo.Bar name;
     foo.Bar name 1;
-    foo.bar name = 1
+    foo.bar name = 1  // Comment
 
     foo..bar name = 1;
     foo...bar name = 1;
