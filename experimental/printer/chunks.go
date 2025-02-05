@@ -13,6 +13,7 @@ import (
 //
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
+// - a bunch of performance optimizations
 // - improve performance with cursors
 // - clean-up parsePrefixChunks, getTokensAndCursorForDecl
 // - a bunch of docs
@@ -158,7 +159,8 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 	case ast.DeclKindDef:
 		return defChunks(stream, decl.AsDef(), applyFormatting, indentLevel)
 	case ast.DeclKindBody:
-		// TODO: figure out how to handle this
+		// TODO: Figure what to do with indentLevel here
+		return bodyChunks(stream, decl.AsBody(), applyFormatting, indentLevel, indentLevel)
 	case ast.DeclKindRange:
 	default:
 		panic("ah")
@@ -176,7 +178,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		message := decl.AsMessage()
 		// First handle everything up to the message body
 		// TODO: We should figure out what to do if there are no braces
-		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Braces().Span())
+		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Span())
 		chunks := oneLiner(
 			tokens,
 			cursor,
@@ -204,19 +206,23 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 			applyFormatting,
 			indentLevel,
 		)
+		bodyDeclIndentLevel := indentLevel
 		// Then process the message body
 		// If we are doing any kind of splitting, we want to increment the indent.
 		if split != splitKindSoft {
-			indentLevel++
+			bodyDeclIndentLevel++
+		} else {
 			// We also need to create a soft split dep
 			defChunksIndex = len(chunks) - 1
 		}
-		// TODO: clean up this whole section, it looks like shit
-		var bodyChunks []chunk
-		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
-			bodyChunks = append(bodyChunks, declChunks(stream, d, applyFormatting, indentLevel)...)
-			return true
-		})
+		bodyChunks := bodyChunks(stream, message.Body, applyFormatting, bodyDeclIndentLevel, indentLevel)
+		// If there is a closing brace, split it off
+		var closingBraceChunk chunk
+		if !message.Body.Braces().IsZero() {
+			closingBraceChunk = bodyChunks[len(bodyChunks)-1]
+			bodyChunks = bodyChunks[:len(bodyChunks)-1]
+		}
+		// For each body chunk, we must create adjusted softSplitDeps on the other chunks
 		if len(bodyChunks) > 1 {
 			for i := range bodyChunks {
 				softSplitDeps := make([]int, len(bodyChunks))
@@ -229,42 +235,10 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 				bodyChunks[i].softSplitDeps = softSplitDeps
 			}
 		}
+		// TODO: probably should document this in a coherent way
 		chunks = append(chunks, bodyChunks...)
-		// TODO: this looks like shit
-		if !message.Body.Braces().IsZero() {
-			_, end := message.Body.Braces().StartEnd()
-			// Adjust indentLevel back if we adjusted earlier
-			if split != splitKindSoft {
-				indentLevel--
-			} else {
-				// In this case, the original chunk needs to have a softSplitDep for this chunk
-				chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
-			}
-			chunks = append(chunks, oneLiner(
-				[]token.Token{end},
-				token.NewCursorAt(end),
-				func(t token.Token) bool {
-					// No spaces
-					return false
-				},
-				func(cursor *token.Cursor) (splitKind, bool) {
-					trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-					if trailingComment {
-						return splitKindSoft, true
-					}
-					if double {
-						return splitKindDouble, false
-					}
-					if single {
-						return splitKindHard, false
-					}
-					// Default, seems dubious, should check
-					return splitKindSoft, false
-				},
-				applyFormatting,
-				indentLevel,
-			)...)
-		}
+		chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
+		chunks = append(chunks, closingBraceChunk)
 		return chunks
 	case ast.DefKindEnum:
 		// TODO: implement
@@ -322,8 +296,51 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 	return nil
 }
 
+func bodyChunks(
+	stream *token.Stream,
+	decl ast.DeclBody,
+	applyFormatting bool,
+	bodyDeclIndentLevel uint32,
+	closingBraceIndentLevel uint32,
+) []chunk {
+	var chunks []chunk
+	seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
+		chunks = append(chunks, declChunks(stream, d, applyFormatting, bodyDeclIndentLevel)...)
+		return true
+	})
+	// TODO: figure out what are the edges of this
+	// We are already handling the opening brace, so we just want to handle the closing brace here
+	if !decl.Braces().IsZero() {
+		_, end := decl.Braces().StartEnd()
+		chunks = append(chunks, oneLiner(
+			[]token.Token{end},
+			token.NewCursorAt(end),
+			func(t token.Token) bool {
+				// No spaces
+				return false
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindNever, true
+				}
+				if double {
+					return splitKindDouble, false
+				}
+				if single {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			},
+			applyFormatting,
+			closingBraceIndentLevel,
+		)...)
+	}
+	return chunks
+}
+
 // TODO: docs
-// maybe rename to single?
+// maybe rename to single? it also includes prefix tokens though... so i don't know
 func oneLiner(
 	tokens []token.Token,
 	cursor *token.Cursor,

@@ -99,22 +99,6 @@ func (s *Stream) Naturals() iter.Seq[Token] {
 	}
 }
 
-//func (s *Stream) CursorBetween(start, end Token) *Cursor {
-//	return &Cursor{
-//		withContext: internal.NewWith(s.Context),
-//		start:       start.ID() + 1,
-//		end:         end.ID(),
-//	}
-//}
-//
-//func (s *Stream) CursorAfter(start Token) *Cursor {
-//	return &Cursor{
-//		withContext: internal.NewWith(s.Context),
-//		start:       start.ID() + 1,
-//		end:         ID(len(s.nats) + 1),
-//	}
-//}
-
 // AssertEmpty asserts that no natural tokens have been created in this stream
 // yet. It panics if they already have.
 func (s *Stream) AssertEmpty() {
