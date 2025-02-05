@@ -1,42 +1,42 @@
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:1:13
-   | 
+   |
  1 | "this string
    |             ^ replace this with `\n`
 
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:3:2
-   | 
+   |
  3 | "
    |  ^ replace this with `\n`
 
 error: unescaped NUL bytes are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:6:30
-   | 
+   |
  6 | "this string contains a nul: <U+0000>"
    |                              ^^^^^^^^ replace this with `\0` or `\x00`
 
 error: unescaped NUL bytes are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:7:29
-   | 
+   |
  7 | "this string contains a nul <U+0000> in the middle"
    |                             ^^^^^^^^ replace this with `\0` or `\x00`
 
 error: unescaped NUL bytes are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:8:2
-   | 
+   |
  8 | "<U+0000>"
    |  ^^^^^^^^ replace this with `\0` or `\x00`
 
 warning: non-printable character in string literal
   --> testdata/lexer/strings/bad-contents.proto:10:57
-   | 
+   |
 10 | "this string contains some other non-graphic character: <U+0001>"
    |                                                         ^^^^^^^^ help: consider escaping this with e.g. `\x01` instead
 
 warning: non-printable character in string literal
   --> testdata/lexer/strings/bad-contents.proto:11:39
-   | 
+   |
 11 | "this is graphic but non-ASCII space: <U+00A0>"
    |                                       ^^^^^^^^ help: consider escaping this with e.g. `\u00a0` instead
 

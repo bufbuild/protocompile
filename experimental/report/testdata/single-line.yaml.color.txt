@@ -1,24 +1,24 @@
 ⟨b.cyn⟩remark: "proto4" isn't real, it can't hurt you⟨reset⟩
 ⟨blu⟩  --> foo.proto:1:10
-   | 
+   |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
 ⟨blu⟩   | ⟨reset⟩         ⟨b.cyn⟩^^^^^^^^^⟨reset⟩ ⟨b.cyn⟩help: change this to "proto5"⟨reset⟩
 
 ⟨b.red⟩error: missing `;`⟨reset⟩
 ⟨blu⟩  --> foo.proto:1:18
-   | 
+   |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
 ⟨blu⟩   | ⟨reset⟩                 ⟨b.red⟩^⟨reset⟩ ⟨b.red⟩here⟨reset⟩
 
 ⟨b.cyn⟩remark: EOF⟨reset⟩
 ⟨blu⟩  --> foo.proto:7:2
-   | 
+   |
 ⟨blu⟩ 7 | ⟨reset⟩}
 ⟨blu⟩   | ⟨reset⟩ ⟨b.cyn⟩^⟨reset⟩ ⟨b.cyn⟩here⟨reset⟩
 
 ⟨b.red⟩error: package⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:1
-   | 
+   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨b.red⟩^^^^^^^⟨reset⟩        ⟨b.blu⟩-⟨reset⟩ ⟨b.blu⟩semicolon
 ⟨blu⟩   | ⟨b.red⟩|
@@ -26,7 +26,7 @@
 
 ⟨b.red⟩error: this is an overlapping error⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:1
-   | 
+   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨b.red⟩^^^^^^^⟨b.blu⟩---------⟨reset⟩ ⟨b.blu⟩package decl
 ⟨blu⟩   | ⟨b.red⟩|
@@ -34,7 +34,7 @@
 
 ⟨b.red⟩error: P A C K A G E⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:1
-   | 
+   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨b.red⟩^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩help: ge
 ⟨blu⟩   | ⟨b.red⟩| ⟨b.blu⟩|
@@ -44,7 +44,7 @@
 
 ⟨b.red⟩error: P A C K A G E (different order)⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:3
-   | 
+   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨b.blu⟩-⟨reset⟩ ⟨b.red⟩^^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩help: ge
 ⟨blu⟩   | ⟨b.blu⟩| ⟨b.red⟩|
@@ -54,7 +54,7 @@
 
 ⟨b.red⟩error: P A C K A G E (single letters)⟨reset⟩
 ⟨blu⟩  --> foo.proto:3:1
-   | 
+   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨b.red⟩^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩g
 ⟨blu⟩   | ⟨b.red⟩| ⟨b.blu⟩|
@@ -62,5 +62,5 @@
 ⟨blu⟩   |   ⟨b.blu⟩|
 ⟨blu⟩   |   ⟨b.blu⟩k⟨reset⟩
 
-⟨b.red⟩encountered 6 errors⟨reset⟩
+⟨b.red⟩encountered 6 errors
 ⟨reset⟩

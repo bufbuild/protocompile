@@ -32,7 +32,7 @@ func NonPrint(r rune) bool {
 
 // stringWidth calculates the rendered width of text if placed at the given column,
 // accounting for tabstops.
-func stringWidth(column int, text string, allowNonPrint bool, out *strings.Builder) int {
+func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.
 	for text != "" {
@@ -81,7 +81,7 @@ func stringWidth(column int, text string, allowNonPrint bool, out *strings.Build
 			tab := TabstopWidth - (column % TabstopWidth)
 			column += tab
 			if out != nil {
-				padBy(out, tab)
+				out.WriteSpaces(tab)
 			}
 		}
 	}
