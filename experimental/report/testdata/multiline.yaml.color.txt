@@ -1,18 +1,18 @@
 ⟨b.ylw⟩warning: whole block⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:1
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
-⟨blu⟩...  ⟨b.ylw⟩| 
+⟨blu⟩...  ⟨b.ylw⟩|
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\_^ this block⟨reset⟩
 
 ⟨b.ylw⟩warning: nested blocks⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:1
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
 ⟨blu⟩ 6 | ⟨b.ylw⟩| ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨b.blu⟩/ ⟨reset⟩  message Bonk {
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩| 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩|
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩\___- and this block
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
@@ -20,12 +20,12 @@
 
 ⟨b.ylw⟩warning: parallel blocks⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:1
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
 ⟨blu⟩ 6 | ⟨b.ylw⟩| ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨reset⟩  message Bonk {
 ⟨blu⟩   | ⟨b.ylw⟩\__^ this block
-⟨blu⟩...  ⟨b.blu⟩  
+⟨blu⟩...  ⟨b.blu⟩
 ⟨blu⟩11 | ⟨b.blu⟩  ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.blu⟩ ___-
 ⟨blu⟩12 | ⟨b.blu⟩/ ⟨reset⟩}
@@ -33,9 +33,9 @@
 
 ⟨b.ylw⟩warning: nested blocks same start⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:1
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨b.blu⟩/ ⟨reset⟩message Blah {
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩| 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩|
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩\___- and this block
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
@@ -43,22 +43,22 @@
 
 ⟨b.ylw⟩warning: nested blocks same end⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:1
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
 ⟨blu⟩ 6 | ⟨b.ylw⟩| ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨b.blu⟩/ ⟨reset⟩  message Bonk {
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩| 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩|
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\___^ this block
 ⟨blu⟩   | ⟨b.ylw⟩  ⟨b.blu⟩\_- and this block⟨reset⟩
 
 ⟨b.ylw⟩warning: nested overlap⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:1
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
 ⟨blu⟩ 6 | ⟨b.ylw⟩| ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨b.blu⟩/ ⟨reset⟩  message Bonk {
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩| 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩|
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩\_____^ this block
 ⟨blu⟩12 |   ⟨b.blu⟩| ⟨reset⟩}
@@ -66,13 +66,13 @@
 
 ⟨b.ylw⟩warning: nesting just the braces⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:15
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩  ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨b.ylw⟩ ________________^
 ⟨blu⟩ 6 | ⟨b.ylw⟩/ ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨b.blu⟩  ⟨reset⟩  message Bonk {
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩ ________________-
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/ 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩\___- and this block
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
@@ -80,11 +80,11 @@
 
 ⟨b.ylw⟩warning: nesting just the braces same start⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:15
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩  ⟨b.blu⟩  ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨b.ylw⟩ ________________^
 ⟨blu⟩   | ⟨b.ylw⟩/ ⟨b.blu⟩ ______________-
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/ 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩\___- and this block
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
@@ -92,11 +92,11 @@
 
 ⟨b.ylw⟩warning: nesting just the braces same start (2)⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:15
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.blu⟩  ⟨b.ylw⟩  ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨b.blu⟩ ________________-
 ⟨blu⟩   | ⟨b.blu⟩/ ⟨b.ylw⟩ ______________^
-⟨blu⟩...  ⟨b.blu⟩| ⟨b.ylw⟩/ 
+⟨blu⟩...  ⟨b.blu⟩| ⟨b.ylw⟩/
 ⟨blu⟩11 | ⟨b.blu⟩| ⟨b.ylw⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.blu⟩| ⟨b.ylw⟩\___^ and this block
 ⟨blu⟩12 | ⟨b.blu⟩| ⟨reset⟩}
@@ -104,13 +104,13 @@
 
 ⟨b.ylw⟩warning: braces nesting overlap⟨reset⟩
 ⟨blu⟩  --> foo.proto:5:15
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.ylw⟩  ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨b.ylw⟩ ________________^
 ⟨blu⟩ 6 | ⟨b.ylw⟩/ ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨b.blu⟩  ⟨reset⟩  message Bonk {
 ⟨blu⟩   | ⟨b.ylw⟩| ⟨b.blu⟩ ________________-
-⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/ 
+⟨blu⟩...  ⟨b.ylw⟩| ⟨b.blu⟩/
 ⟨blu⟩11 | ⟨b.ylw⟩| ⟨b.blu⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.ylw⟩\_____^ this block
 ⟨blu⟩12 |   ⟨b.blu⟩| ⟨reset⟩}
@@ -118,17 +118,17 @@
 
 ⟨b.ylw⟩warning: braces nesting overlap (2)⟨reset⟩
 ⟨blu⟩  --> foo.proto:7:17
-   | 
+   |
 ⟨blu⟩ 5 | ⟨b.blu⟩  ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨b.blu⟩ ________________-
 ⟨blu⟩ 6 | ⟨b.blu⟩/ ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.blu⟩| ⟨b.ylw⟩  ⟨reset⟩  message Bonk {
 ⟨blu⟩   | ⟨b.blu⟩| ⟨b.ylw⟩ ________________^
-⟨blu⟩...  ⟨b.blu⟩| ⟨b.ylw⟩/ 
+⟨blu⟩...  ⟨b.blu⟩| ⟨b.ylw⟩/
 ⟨blu⟩11 | ⟨b.blu⟩| ⟨b.ylw⟩| ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.blu⟩\_____- this block
 ⟨blu⟩12 |   ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   |   ⟨b.ylw⟩\_^ and this block⟨reset⟩
 
-⟨b.ylw⟩ encountered  11 warnings
+⟨b.ylw⟩encountered 11 warnings
 ⟨reset⟩

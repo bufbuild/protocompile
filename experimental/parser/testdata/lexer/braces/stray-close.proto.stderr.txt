@@ -1,6 +1,6 @@
 error: encountered unmatched `{` delimiter
   --> testdata/lexer/braces/stray-close.proto:1:1
-   | 
+   |
  1 | {
    | ^ expected a closing `}`
  2 |     ]
