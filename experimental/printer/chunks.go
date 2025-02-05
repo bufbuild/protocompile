@@ -11,8 +11,6 @@ import (
 
 // TODO list
 //
-// - block level split logic (split deps) -- this is currently not the nicest API, need to think through something usable but also performant
-// - clean up any nil map access for softSplitDeps
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
 // - improve performance with cursors
@@ -44,6 +42,9 @@ const (
 // TODO: docs
 type splitChunk func(*token.Cursor) (splitKind, bool)
 
+// addSpace is a function that returns true if a space should be added after the given token.
+type addSpace func(t token.Token) bool
+
 // chunk represents a line of text with some configurations around indentation and splitting
 // (what whitespace should follow, if any).
 //
@@ -53,25 +54,15 @@ type chunk struct {
 	indentLevel      uint32
 	splitKind        splitKind
 	spaceWhenUnsplit bool
+	// If this chunk is split, then these other chunks are also split.
+	// These are the indices in the block.
+	softSplitDeps []int
 }
 
 // TODO: block is an ordered slice of chunks. A block represents...
 type block struct {
 	chunks []chunk
-	// TODO: improve this explanation
-	//
-	// All chunks here have splitKind = soft
-	// If I am splitting chunk indx = key, then i must also split chunk indx = value
-	// map[int]int:
-	// {
-	//    0: 3,
-	//    1: 2,
-	// }
-	softSplitDeps map[int]int
 }
-
-// addSpace is a function that returns true if a space should be added after the given token.
-type addSpace func(t token.Token) bool
 
 func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	decls := file.Decls()
@@ -83,15 +74,11 @@ func fileToBlocks(file ast.File, applyFormatting bool) []block {
 	return blocks
 }
 
-// TODO: block-level split logic
 func declBlock(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) block {
-	chunks, softSplitDeps := declChunksAndSoftSplitDeps(stream, decl, applyFormatting, 0)
-	return block{chunks: chunks, softSplitDeps: softSplitDeps}
+	return block{chunks: declChunks(stream, decl, applyFormatting, 0)}
 }
 
-// TODO: account for indents
-func declChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, indentLevel uint32) ([]chunk, map[int]int) {
-	softSplitDeps := map[int]int{}
+func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, indentLevel uint32) []chunk {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration
@@ -110,14 +97,14 @@ func declChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclAny, applyFor
 			func(cursor *token.Cursor) (splitKind, bool) {
 				trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
 				if trailingComment {
-					return splitKindSoft, true
+					return splitKindNever, true
 				}
 				// Otherwise, by default we always want a double split after a syntax declaration
 				return splitKindDouble, false
 			},
 			applyFormatting,
 			indentLevel,
-		), softSplitDeps
+		)
 	case ast.DeclKindPackage:
 		pkg := decl.AsPackage()
 		tokens, cursor := getTokensAndCursorForDecl(stream, pkg.Span())
@@ -133,16 +120,14 @@ func declChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclAny, applyFor
 			func(cursor *token.Cursor) (splitKind, bool) {
 				trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
 				if trailingComment {
-					// If a comment was found before a new line or the next skippable token was found,
-					// we set this to a soft split with a space following.
-					return splitKindSoft, true
+					return splitKindNever, true
 				}
 				// Otherwise, by default we always want a double split after a syntax declaration
 				return splitKindDouble, false
 			},
 			applyFormatting,
 			indentLevel,
-		), softSplitDeps
+		)
 	case ast.DeclKindImport:
 		imprt := decl.AsImport()
 		tokens, cursor := getTokensAndCursorForDecl(stream, imprt.Span())
@@ -158,7 +143,7 @@ func declChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclAny, applyFor
 			func(cursor *token.Cursor) (splitKind, bool) {
 				trailingComment, _, double := trailingCommentSingleDoubleFound(cursor)
 				if trailingComment {
-					return splitKindSoft, true
+					return splitKindNever, true
 				}
 				// TODO: there is some consideration for the last import in an import block should
 				// always be a double. Something to look at after we have a working prototype.
@@ -169,20 +154,19 @@ func declChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclAny, applyFor
 			},
 			applyFormatting,
 			indentLevel,
-		), softSplitDeps
+		)
 	case ast.DeclKindDef:
-		return defChunksAndSoftSplitDeps(stream, decl.AsDef(), applyFormatting, indentLevel)
+		return defChunks(stream, decl.AsDef(), applyFormatting, indentLevel)
 	case ast.DeclKindBody:
 		// TODO: figure out how to handle this
 	case ast.DeclKindRange:
 	default:
 		panic("ah")
 	}
-	return []chunk{}, nil
+	return []chunk{}
 }
 
-func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, indentLevel uint32) ([]chunk, map[int]int) {
-	softSplitDeps := map[int]int{}
+func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, indentLevel uint32) []chunk {
 	switch decl.Classify() {
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
@@ -201,12 +185,12 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 				return t.ID() != message.Body.Braces().ID()
 			},
 			func(cursor *token.Cursor) (splitKind, bool) {
-				// TODO: hopefully this makes sense... need to test
-				// We default to splitKindSoft without a space at the end.
+				// TODO: many test cases needed for this
 				split = splitKindSoft
 				var spaceWhenUnsplit bool
 				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
 				if trailingComment {
+					split = splitKindNever
 					spaceWhenUnsplit = true
 				}
 				if single {
@@ -227,20 +211,34 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 			// We also need to create a soft split dep
 			defChunksIndex = len(chunks) - 1
 		}
+		// TODO: clean up this whole section, it looks like shit
+		var bodyChunks []chunk
 		seq.Values(message.Body.Decls())(func(d ast.DeclAny) bool {
-			// TODO: soft split deps returned here would need to be adjusted for the top-level block
-			declChunks, _ := declChunksAndSoftSplitDeps(stream, d, applyFormatting, indentLevel)
-			chunks = append(chunks, declChunks...)
+			bodyChunks = append(bodyChunks, declChunks(stream, d, applyFormatting, indentLevel)...)
 			return true
 		})
-		// TODO: need to pair this the declaration chunk
+		if len(bodyChunks) > 1 {
+			for i := range bodyChunks {
+				softSplitDeps := make([]int, len(bodyChunks))
+				for j := range bodyChunks {
+					if i == j {
+						continue
+					}
+					softSplitDeps[j] = j + len(chunks)
+				}
+				bodyChunks[i].softSplitDeps = softSplitDeps
+			}
+		}
+		chunks = append(chunks, bodyChunks...)
+		// TODO: this looks like shit
 		if !message.Body.Braces().IsZero() {
 			_, end := message.Body.Braces().StartEnd()
 			// Adjust indentLevel back if we adjusted earlier
 			if split != splitKindSoft {
 				indentLevel--
 			} else {
-				softSplitDeps[defChunksIndex] = len(chunks) - 1
+				// In this case, the original chunk needs to have a softSplitDep for this chunk
+				chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
 			}
 			chunks = append(chunks, oneLiner(
 				[]token.Token{end},
@@ -267,7 +265,7 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 				indentLevel,
 			)...)
 		}
-		return chunks, softSplitDeps
+		return chunks
 	case ast.DefKindEnum:
 		// TODO: implement
 	case ast.DefKindService:
@@ -275,11 +273,12 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
+		var chunks []chunk
 		field := decl.AsField()
 		tokens, cursor := getTokensAndCursorForDecl(stream, field.Span())
 		// No options to handle, so we just process all the tokens like a single one liner
 		if field.Options.IsZero() {
-			return oneLiner(
+			chunks = oneLiner(
 				tokens,
 				cursor,
 				func(t token.Token) bool {
@@ -293,7 +292,7 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 				func(_ *token.Cursor) (splitKind, bool) {
 					trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
 					if trailingComment {
-						return splitKindSoft, true
+						return splitKindNever, true
 					}
 					if double {
 						return splitKindDouble, false
@@ -305,10 +304,9 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 				},
 				applyFormatting,
 				indentLevel,
-			), nil
+			)
 		}
-		// TODO figure out how to handle options
-		return nil, nil
+		return chunks
 	case ast.DefKindOneof:
 		// TODO: implement
 	case ast.DefKindGroup:
@@ -321,7 +319,7 @@ func defChunksAndSoftSplitDeps(stream *token.Stream, decl ast.DeclDef, applyForm
 		// This should never happen.
 		panic("ah")
 	}
-	return nil, nil
+	return nil
 }
 
 // TODO: docs
@@ -497,7 +495,6 @@ func (b block) calculateSplits(lineLimit int) {
 	var outermostSplittableChunk int
 	var outermostSplittableChunkSet bool
 	// The cost is actually the cost of a single contiguous line of text, not just from the chunk.
-
 	for i, c := range b.chunks {
 		// Add the length to the cost
 		if c.splitKind == splitKindSoft && !outermostSplittableChunkSet {
@@ -519,24 +516,20 @@ func (b block) calculateSplits(lineLimit int) {
 		if !outermostSplittableChunkSet {
 			return
 		}
-		b.chunks[outermostSplittableChunk].splitKind = splitKindHard
-		lastSeen := b.chunks[outermostSplittableChunk]
-		// TODO: we need to check if this has any deps
-		if end, ok := b.softSplitDeps[outermostSplittableChunk]; ok {
-			// If there is an end for this split, then we need to set the end to a hard split.
-			// And we need to set the first indent.
-			b.chunks[end].splitKind = splitKindHard
-			// TODO: this is ugly, clean this up
-			for i, c := range b.chunks[outermostSplittableChunk+1 : end] {
-				if c.splitKind == splitKindSoft && lastSeen.splitKind != splitKindSoft {
-					b.chunks[i+outermostSplittableChunk+1].indentLevel += 1
-				}
-				if c.splitKind == splitKindHard {
-					b.chunks[i+outermostSplittableChunk+1].indentLevel += 1
-				}
-				lastSeen = c
-			}
-		}
+		b.hardSplitChunk(outermostSplittableChunk)
 		b.calculateSplits(lineLimit)
+	}
+}
+
+func (b block) hardSplitChunk(chunkIndex int) {
+	b.chunks[chunkIndex].splitKind = splitKindHard
+	for _, dep := range b.chunks[chunkIndex].softSplitDeps {
+		// Already split this chunk, we can return
+		if b.chunks[dep].splitKind == splitKindHard {
+			continue
+		}
+		b.chunks[dep].splitKind = splitKindHard
+		b.chunks[dep].indentLevel++
+		b.hardSplitChunk(dep)
 	}
 }
