@@ -130,4 +130,4 @@ warning: braces nesting overlap (2)
 12 |   | }
    |   \_^ and this block
 
-encountered 11 warningss
+encountered 11 warnings

@@ -14,5 +14,5 @@
 ⟨blu⟩   | ⟨b.blu⟩|
 ⟨blu⟩   | ⟨b.blu⟩spaces⟨reset⟩
 
-⟨b.ylw⟩encountered 2 warningss
+⟨b.ylw⟩encountered 2 warnings
 ⟨reset⟩

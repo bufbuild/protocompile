@@ -14,4 +14,4 @@ warning: partial tabstop
    | |
    | spaces
 
-encountered 2 warningss
+encountered 2 warnings

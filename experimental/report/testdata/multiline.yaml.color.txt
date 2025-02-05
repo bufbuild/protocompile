@@ -130,5 +130,5 @@
 ⟨blu⟩12 |   ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   |   ⟨b.ylw⟩\_^ and this block⟨reset⟩
 
-⟨b.ylw⟩encountered 11 warningss
+⟨b.ylw⟩encountered 11 warnings
 ⟨reset⟩
