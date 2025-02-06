@@ -13,7 +13,9 @@ import (
 //
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
+// - a bunch of refactors to consolidate logic
 // - a bunch of performance optimizations
+// - refactor splitChunk behaviour/callback?
 // - improve performance with cursors
 // - clean-up parsePrefixChunks, getTokensAndCursorForDecl
 // - a bunch of docs
@@ -173,53 +175,47 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
 	case ast.DefKindMessage:
-		var split splitKind
 		var defChunksIndex int
 		message := decl.AsMessage()
-		// First handle everything up to the message body
-		// TODO: We should figure out what to do if there are no braces
 		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Span())
 		chunks := oneLiner(
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				// We don't want to add a space after the brace.
+				// We don't want to add a space after the brace, if there is one.
 				return t.ID() != message.Body.Braces().ID()
 			},
 			func(cursor *token.Cursor) (splitKind, bool) {
-				// TODO: many test cases needed for this
-				split = splitKindSoft
-				var spaceWhenUnsplit bool
 				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
 				if trailingComment {
-					split = splitKindNever
-					spaceWhenUnsplit = true
+					return splitKindNever, true
 				}
 				if single {
-					split = splitKindHard
+					return splitKindHard, false
 				}
 				if double {
-					split = splitKindDouble
+					return splitKindDouble, false
 				}
-				return split, spaceWhenUnsplit
+				return splitKindSoft, false
 			},
 			applyFormatting,
 			indentLevel,
 		)
 		bodyDeclIndentLevel := indentLevel
-		// Then process the message body
-		// If we are doing any kind of splitting, we want to increment the indent.
-		if split != splitKindSoft {
+		if chunks[len(chunks)-1].splitKind != splitKindSoft {
+			// If we are doing any kind of splitting, we want to increment the indent.
 			bodyDeclIndentLevel++
-		} else {
-			// We also need to create a soft split dep
-			defChunksIndex = len(chunks) - 1
 		}
+		// We also need to create a soft split dep
+		// This is technically not a thing if it was not a soft split? TODO: make this more clear
+		defChunksIndex = len(chunks) - 1
 		bodyChunks := bodyChunks(stream, message.Body, applyFormatting, bodyDeclIndentLevel, indentLevel)
-		// If there is a closing brace, split it off
+		// If there is a closing brace, we don't need to adjust it.
 		var closingBraceChunk chunk
+		var closingBrace bool
 		if !message.Body.Braces().IsZero() {
 			closingBraceChunk = bodyChunks[len(bodyChunks)-1]
+			closingBrace = true
 			bodyChunks = bodyChunks[:len(bodyChunks)-1]
 		}
 		// For each body chunk, we must create adjusted softSplitDeps on the other chunks
@@ -238,7 +234,9 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		// TODO: probably should document this in a coherent way
 		chunks = append(chunks, bodyChunks...)
 		chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
-		chunks = append(chunks, closingBraceChunk)
+		if closingBrace {
+			chunks = append(chunks, closingBraceChunk)
+		}
 		return chunks
 	case ast.DefKindEnum:
 		// TODO: implement
@@ -247,12 +245,11 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
-		var chunks []chunk
 		field := decl.AsField()
-		tokens, cursor := getTokensAndCursorForDecl(stream, field.Span())
 		// No options to handle, so we just process all the tokens like a single one liner
 		if field.Options.IsZero() {
-			chunks = oneLiner(
+			tokens, cursor := getTokensAndCursorForDecl(stream, field.Span())
+			return oneLiner(
 				tokens,
 				cursor,
 				func(t token.Token) bool {
@@ -263,7 +260,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 					}
 					return true
 				},
-				func(_ *token.Cursor) (splitKind, bool) {
+				func(cursor *token.Cursor) (splitKind, bool) {
 					trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
 					if trailingComment {
 						return splitKindNever, true
@@ -280,6 +277,93 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 				indentLevel,
 			)
 		}
+		// TODO: this looks just like the message body logic, perhaps there is something we can
+		// consolidate here.
+		//
+		// In the case where there are options, we treat everything up to the options declaration
+		// as one line.
+		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, field.Span(), field.Options.Span())
+		chunks := oneLiner(
+			tokens,
+			cursor,
+			func(t token.Token) bool {
+				// We don't want to add a space after the bracket, if there is one.
+				return t.ID() != field.Options.Brackets().ID()
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindNever, true
+				}
+				if double {
+					return splitKindDouble, false
+				}
+				if single {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			},
+			applyFormatting,
+			indentLevel,
+		)
+		var entriesIndentLevel uint32
+		if chunks[len(chunks)-1].splitKind != splitKindSoft {
+			entriesIndentLevel = indentLevel + 1
+		}
+		defChunksIndex := len(chunks) - 1
+		optionChunks := optionChunks(stream, field.Options, applyFormatting, entriesIndentLevel)
+		// If there is a closing brace, we don't need to adjust it
+		var closingBracketChunk chunk
+		var closingBracket bool
+		if !field.Options.Brackets().IsZero() {
+			closingBracketChunk = optionChunks[len(optionChunks)-1]
+			closingBracket = true
+			optionChunks = optionChunks[:len(optionChunks)-1]
+		}
+		// For each option chunk, we must create adjusted softSplitDeps on the other chunks
+		if len(optionChunks) > 1 {
+			for i := range optionChunks {
+				softSplitDeps := make([]int, len(optionChunks))
+				for j := range optionChunks {
+					if i == j {
+						continue
+					}
+					softSplitDeps[j] = j + len(chunks)
+				}
+				optionChunks[i].softSplitDeps = softSplitDeps
+			}
+		}
+		chunks = append(chunks, optionChunks...)
+		chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
+		if closingBracket {
+			chunks = append(chunks, closingBracketChunk)
+		}
+		// Handle the semicolon
+		// TODO: there must be a better way
+		_, cursor = getTokensAndCursorForDecl(stream, field.Span())
+		chunks = append(chunks, oneLiner(
+			[]token.Token{field.Semicolon},
+			cursor,
+			func(t token.Token) bool {
+				// No spaces
+				return false
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindNever, true
+				}
+				if double {
+					return splitKindDouble, false
+				}
+				if single {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			},
+			applyFormatting,
+			0, // No indents for the semicolon
+		)...)
 		return chunks
 	case ast.DefKindOneof:
 		// TODO: implement
@@ -314,7 +398,9 @@ func bodyChunks(
 		_, end := decl.Braces().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
-			token.NewCursorAt(end),
+			// TODO: We use `decl.Braces()` instead of end because the closing brace Token is not in the token
+			// stream...
+			token.NewCursorAt(decl.Braces()),
 			func(t token.Token) bool {
 				// No spaces
 				return false
@@ -334,6 +420,83 @@ func bodyChunks(
 			},
 			applyFormatting,
 			closingBraceIndentLevel,
+		)...)
+	}
+	return chunks
+}
+
+func optionChunks(
+	stream *token.Stream,
+	options ast.CompactOptions,
+	applyFormatting bool,
+	entriesIndentLevel uint32,
+) []chunk {
+	var chunks []chunk
+	seq.Values(options.Entries())(func(o ast.Option) bool {
+		tokens, cursor := getTokensAndCursorForOption(stream, o.Span())
+		chunks = append(chunks, oneLiner(
+			tokens,
+			cursor,
+			func(t token.Token) bool {
+				// No spaces within path
+				// TODO: we want a space after the last path element
+				if checkSpanWithin(o.Path.Span(), t.Span()) {
+					return false
+				}
+				if checkSpanWithin(o.Value.Span(), t.Span()) {
+					return false
+				}
+				return true
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindNever, true
+				}
+				if double {
+					return splitKindDouble, false
+				}
+				if single {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			},
+			applyFormatting,
+			entriesIndentLevel,
+		)...)
+		return true
+	})
+	if !options.Brackets().IsZero() {
+		var closingBracketIndentLevel uint32
+		if chunks[len(chunks)-1].splitKind != splitKindSoft {
+			// TODO: check out of bounds
+			closingBracketIndentLevel = entriesIndentLevel - 1
+		}
+		_, end := options.Brackets().StartEnd()
+		chunks = append(chunks, oneLiner(
+			[]token.Token{end},
+			// TODO: We use options.Brackets() instead of end because the closing bracket Token is
+			// not in the token stream...
+			token.NewCursorAt(options.Brackets()),
+			func(t token.Token) bool {
+				// No spaces
+				return false
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindNever, true
+				}
+				if double {
+					return splitKindDouble, false
+				}
+				if single {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			},
+			applyFormatting,
+			closingBracketIndentLevel,
 		)...)
 	}
 	return chunks
@@ -394,9 +557,6 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 	var chunks []chunk
 	t = cursor.NextSkippable()
 	for t.ID() != until.ID() {
-		if cursor.PeekSkippable().IsZero() {
-			break
-		}
 		switch t.Kind() {
 		case token.Space:
 			// Only create a chunk for spaces if formatting is not applied.
@@ -424,12 +584,21 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 		case token.Unrecognized:
 			// TODO: figure out what to do with unrecognized tokens.
 		}
+		if cursor.PeekSkippable().IsZero() {
+			break
+		}
 		t = cursor.NextSkippable()
 	}
 	return chunks
 }
 
 func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
+	tokens, cursor := getTokensAndCursorForOption(stream, span)
+	// TODO: docs. For everything else we do.
+	return tokens[:len(tokens)-1], cursor
+}
+
+func getTokensAndCursorForOption(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	stream.All()(func(t token.Token) bool {
 		// If the token is within the declartion range, then add it to tokens, otherwise skip
@@ -445,8 +614,8 @@ func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.
 	if tokens == nil {
 		return nil, nil
 	}
-	// TODO: clarify why we are shaving off the last token
-	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
+	// TODO: docs. For options, we don't cut off the last one
+	return tokens, token.NewCursorAt(tokens[len(tokens)-1])
 }
 
 // get all the tokens from the start to the end (inclusive) and the cursort starting at the end.
@@ -464,6 +633,7 @@ func getTokensAndCursorFromStartToEnd(stream *token.Stream, start, end report.Sp
 	if tokens == nil {
 		return nil, nil
 	}
+	// TODO: docs
 	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
 }
 
@@ -483,9 +653,6 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 	var singleFound bool
 	var doubleFound bool
 	for !cursor.Done() || t.Kind().IsSkippable() {
-		if cursor.PeekSkippable().IsZero() {
-			break
-		}
 		switch t.Kind() {
 		case token.Space:
 			if strings.Contains(t.Text(), "\n\n") {
@@ -498,6 +665,9 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 			}
 		case token.Comment:
 			commentFound = true
+		}
+		if cursor.PeekSkippable().IsZero() {
+			break
 		}
 		t = cursor.NextSkippable()
 	}

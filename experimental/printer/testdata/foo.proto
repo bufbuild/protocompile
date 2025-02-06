@@ -12,3 +12,10 @@ import "google/protobuf/empty.proto"  ;
 import "google/protobuf/empty.proto" ;
 
 message FooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFoo { string id = 1; string foo = 2; }
+
+
+
+message Bar {
+  string id = 1 [fake.option="cool"];
+}
+
