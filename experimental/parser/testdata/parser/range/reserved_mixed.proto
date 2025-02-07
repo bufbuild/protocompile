@@ -14,8 +14,12 @@
 
 syntax = "proto2";
 
-// TODO: This produces a less-than-ideal diagnostic, but it's not an
-// especially reasonable-to-expect case.
-//
-// See https://github.com/bufbuild/protocompile/pull/438#discussion_r1947046609
-package 42;
+package test;
+
+message Foo {
+    reserved 5, "foo";
+    reserved "foo", 5;
+    reserved 5, "foo", 5;
+    reserved "foo", 5, "foo";
+    reserved 5, "foo", 5, "foo", 5, 5;
+}

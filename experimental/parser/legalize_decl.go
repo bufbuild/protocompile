@@ -15,10 +15,16 @@
 package parser
 
 import (
+	"fmt"
+	"unicode"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
 // legalizeDecl legalizes a declaration.
@@ -105,11 +111,14 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		return
 	}
 
+	var names, tags []ast.ExprAny
 	seq.Values(decl.Ranges())(func(expr ast.ExprAny) bool {
+		var isName bool
 		switch expr.Kind() {
 		case ast.ExprKindPath:
+			isName = true
 			path := expr.AsPath()
-			if in == taxa.Reserved && !path.AsIdent().IsZero() {
+			if !path.AsIdent().IsZero() {
 				if m := p.Mode(); m == taxa.SyntaxMode {
 					p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, m).Apply(
 						report.Snippet(expr),
@@ -121,6 +130,8 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		case ast.ExprKindLiteral:
 			lit := expr.AsLiteral()
 			if name, ok := lit.AsString(); ok {
+				isName = true
+
 				if m := p.Mode(); m == taxa.EditionMode {
 					p.Errorf("cannot use %vs in %v in %v", taxa.String, in, m).Apply(
 						report.Snippet(expr),
@@ -146,6 +157,80 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			}
 		}
 
+		if isName {
+			names = append(names, expr)
+		} else {
+			tags = append(tags, expr)
+		}
+
 		return true
 	})
+
+	if len(names) > 0 && len(tags) > 0 {
+		parentWhat := "field"
+		if parent.what == taxa.Enum {
+			parentWhat = "value"
+		}
+
+		// We want to diagnose whichever element is least common in the range.
+		least := names
+		most := tags
+		leastWhat := "name"
+		mostWhat := "tag"
+		if len(names) > len(tags) ||
+			// When tied, use whichever comes last lexicographically.
+			(len(names) == len(tags) && names[0].Span().Start < tags[0].Span().Start) {
+			least, most = most, least
+			leastWhat, mostWhat = mostWhat, leastWhat
+		}
+
+		err := p.Errorf("cannot mix tags and names in %s", parentWhat, taxa.Reserved).Apply(
+			report.Snippetf(least[0], "this %s %s must go in its own %s", parentWhat, leastWhat, taxa.Reserved),
+			report.Snippetf(most[0], "but expected a %s %s because of this", parentWhat, mostWhat),
+		)
+
+		span := decl.Span()
+		var edits []report.Edit
+		for _, expr := range least {
+			// Delete leading whitespace and trailing whitespace (and a comma, too).
+			delete := expr.Span().GrowLeft(unicode.IsSpace).GrowRight(unicode.IsSpace)
+			if r, _ := stringsx.Rune(delete.After(), 0); r == ',' {
+				delete.End++
+			}
+
+			edits = append(edits, report.Edit{
+				Start: delete.Start - span.Start,
+				End:   delete.End - span.Start,
+			})
+		}
+
+		// If we're moving the last element out of the range, we need to obliterate
+		// the trailing comma.
+		comma := slicesx.LastPointer(most).Span()
+		if comma.End < slicesx.LastPointer(least).Span().End {
+			comma.Start = comma.End
+			comma = comma.GrowRight(unicode.IsSpace)
+			if r, _ := stringsx.Rune(comma.After(), 0); r == ',' {
+				comma.End++
+				edits = append(edits, report.Edit{
+					Start: comma.Start - span.Start,
+					End:   comma.End - span.Start,
+				})
+			}
+		}
+
+		edits = append(edits, report.Edit{
+			Start: span.Len(), End: span.Len(),
+			Replace: fmt.Sprintf("\n%sreserved %s;", span.Indentation(), iterx.Join(
+				iterx.Map(slicesx.Values(least), func(e ast.ExprAny) string { return e.Span().Text() }),
+				", ",
+			)),
+		})
+
+		err.Apply(report.SuggestEdits(
+			span,
+			fmt.Sprintf("split the %s", taxa.Reserved),
+			edits...,
+		))
+	}
 }

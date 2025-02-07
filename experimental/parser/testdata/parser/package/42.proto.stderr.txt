@@ -1,21 +1,21 @@
 error: missing path in `package` declaration
-  --> testdata/parser/package/42.proto:19:1
+  --> testdata/parser/package/42.proto:21:1
    | 
-19 | package 42;
+21 | package 42;
    | ^^^^^^^ 
    = help: to place a file in the empty package, remove the `package` declaration
    = help: however, using the empty package is discouraged
 
 error: unexpected integer literal after `package` declaration
-  --> testdata/parser/package/42.proto:19:9
+  --> testdata/parser/package/42.proto:21:9
    | 
-19 | package 42;
+21 | package 42;
    |         ^^ expected `;`
 
 error: unexpected integer literal in file scope
-  --> testdata/parser/package/42.proto:19:9
+  --> testdata/parser/package/42.proto:21:9
    | 
-19 | package 42;
+21 | package 42;
    |         ^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 encountered 3 errors

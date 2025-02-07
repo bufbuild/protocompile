@@ -1,0 +1,34 @@
+decls:
+  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+  - package.path.components: [{ ident: "test" }]
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      body.decls:
+        - range:
+            kind: KIND_RESERVED
+            ranges: [{ literal.int_value: 5 }, { literal.string_value: "foo" }]
+        - range:
+            kind: KIND_RESERVED
+            ranges: [{ literal.string_value: "foo" }, { literal.int_value: 5 }]
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.int_value: 5
+              - literal.string_value: "foo"
+              - literal.int_value: 5
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.string_value: "foo"
+              - literal.int_value: 5
+              - literal.string_value: "foo"
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - literal.int_value: 5
+              - literal.string_value: "foo"
+              - literal.int_value: 5
+              - literal.string_value: "foo"
+              - literal.int_value: 5
+              - literal.int_value: 5
