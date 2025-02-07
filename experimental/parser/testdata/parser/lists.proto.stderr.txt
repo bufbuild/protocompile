@@ -431,7 +431,7 @@ error: cannot use identifiers in reserved range in syntax mode
 72 |     reserved a {};
    |              ^
 
-error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
+error: cannot mix tags and names in reserved range
   --> testdata/parser/lists.proto:72:16
    |
 72 |     reserved a {};

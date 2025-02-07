@@ -7,6 +7,6 @@ error: path in `package` declaration is too large
 26 | |     .a.a.a.a.a.a.a.a.a.a
 27 | |     .a.a.a.a.a.a.a.a.a.a.x;
    | \__________________________^
-   = note: Protobuf imposes a limit of 101 components here%!(EXTRA taxa.Place=in `package` declaration)
+   = note: Protobuf imposes a limit of 101 components here
 
 encountered 1 error

@@ -92,7 +92,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		p.Errorf("unexpected %s", in).Apply(
 			report.Snippet(decl),
 			report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
-			// TOOD: Add a suggestion to move this up.
+			// TODO: Add a suggestion to move this up.
 			report.Notef("a %s must be the first declaration in a file", in),
 		)
 		*first = decl
@@ -207,7 +207,7 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 			p.Warnf("the %s should be placed at the top of the file", taxa.Package).Apply(
 				report.Snippet(decl),
 				report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
-				// TOOD: Add a suggestion to move this up.
+				// TODO: Add a suggestion to move this up.
 				report.Helpf("a file's %s should immediately follow the `syntax` or `edition` declaration", taxa.Package),
 			)
 			return

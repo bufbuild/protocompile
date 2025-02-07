@@ -17,12 +17,13 @@ package syntax_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEditions(t *testing.T) {

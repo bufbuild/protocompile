@@ -184,7 +184,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			leastWhat, mostWhat = mostWhat, leastWhat
 		}
 
-		err := p.Errorf("cannot mix tags and names in %s", parentWhat, taxa.Reserved).Apply(
+		err := p.Errorf("cannot mix tags and names in %s", taxa.Reserved).Apply(
 			report.Snippetf(least[0], "this %s %s must go in its own %s", parentWhat, leastWhat, taxa.Reserved),
 			report.Snippetf(most[0], "but expected a %s %s because of this", parentWhat, mostWhat),
 		)
@@ -193,14 +193,14 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		var edits []report.Edit
 		for _, expr := range least {
 			// Delete leading whitespace and trailing whitespace (and a comma, too).
-			delete := expr.Span().GrowLeft(unicode.IsSpace).GrowRight(unicode.IsSpace)
-			if r, _ := stringsx.Rune(delete.After(), 0); r == ',' {
-				delete.End++
+			toDelete := expr.Span().GrowLeft(unicode.IsSpace).GrowRight(unicode.IsSpace)
+			if r, _ := stringsx.Rune(toDelete.After(), 0); r == ',' {
+				toDelete.End++
 			}
 
 			edits = append(edits, report.Edit{
-				Start: delete.Start - span.Start,
-				End:   delete.End - span.Start,
+				Start: toDelete.Start - span.Start,
+				End:   toDelete.End - span.Start,
 			})
 		}
 

@@ -68,7 +68,7 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 				ok = false
 				return true
 			} else if !slash.IsZero() {
-				p.Errorf("type URL can only contain a single `/`", where).Apply(
+				p.Errorf("type URL can only contain a single `/`").Apply(
 					report.Snippet(pc.Separator()),
 					report.Snippetf(slash, "first one is here"),
 				)
@@ -105,12 +105,12 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 		if opts.MaxBytes > 0 && bytes > opts.MaxBytes {
 			p.Errorf("path %s is too large", where).Apply(
 				report.Snippet(path),
-				report.Notef("Protobuf imposes a limit of %v bytes here", opts.MaxBytes, where),
+				report.Notef("Protobuf imposes a limit of %v bytes here", opts.MaxBytes),
 			)
 		} else if opts.MaxComponents > 0 && components > opts.MaxComponents {
 			p.Errorf("path %s is too large", where).Apply(
 				report.Snippet(path),
-				report.Notef("Protobuf imposes a limit of %v components here", opts.MaxComponents, where),
+				report.Notef("Protobuf imposes a limit of %v components here", opts.MaxComponents),
 			)
 		}
 	}

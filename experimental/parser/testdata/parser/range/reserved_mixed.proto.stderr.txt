@@ -1,4 +1,4 @@
-error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
+error: cannot mix tags and names in reserved range
   --> testdata/parser/range/reserved_mixed.proto:20:17
    |
 20 |     reserved 5, "foo";
@@ -12,7 +12,7 @@ error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
 21 | +     reserved "foo";
    |
 
-error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
+error: cannot mix tags and names in reserved range
   --> testdata/parser/range/reserved_mixed.proto:21:21
    |
 21 |     reserved "foo", 5;
@@ -26,7 +26,7 @@ error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
 22 | +     reserved 5;
    |
 
-error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
+error: cannot mix tags and names in reserved range
   --> testdata/parser/range/reserved_mixed.proto:22:17
    |
 22 |     reserved 5, "foo", 5;
@@ -40,7 +40,7 @@ error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
 23 | +     reserved "foo";
    |
 
-error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
+error: cannot mix tags and names in reserved range
   --> testdata/parser/range/reserved_mixed.proto:23:21
    |
 23 |     reserved "foo", 5, "foo";
@@ -54,7 +54,7 @@ error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
 24 | +     reserved 5;
    |
 
-error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
+error: cannot mix tags and names in reserved range
   --> testdata/parser/range/reserved_mixed.proto:24:17
    |
 24 |     reserved 5, "foo", 5, "foo", 5, 5;
