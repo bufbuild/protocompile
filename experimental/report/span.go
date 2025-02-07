@@ -66,6 +66,54 @@ func (s Span) Text() string {
 	return s.File.Text()[s.Start:s.End]
 }
 
+// Indentation calculates the indentation at this span.
+//
+// Indentation is defined as the substring between the last newline in
+// [Span.Before] and the first non-Pattern_White_Space after that newline.
+func (s Span) Indentation() string {
+	nl := strings.LastIndexByte(s.Before(), '\n') + 1
+	margin := strings.IndexFunc(s.File.Text()[nl:], func(r rune) bool {
+		return !unicode.In(r, unicode.Pattern_White_Space)
+	})
+	return s.File.Text()[nl : nl+margin]
+}
+
+// Before returns all text before this span.
+func (s Span) Before() string {
+	return s.File.Text()[:s.Start]
+}
+
+// Before returns all text after this span.
+func (s Span) After() string {
+	return s.File.Text()[s.End:]
+}
+
+// GrowLeft returns a new span which contains the largest suffix of [Span.Before]
+// which match p.
+func (s Span) GrowLeft(p func(r rune) bool) Span {
+	for {
+		r, sz := utf8.DecodeLastRuneInString(s.Before())
+		if r == utf8.RuneError || !p(r) {
+			break
+		}
+		s.Start -= sz
+	}
+	return s
+}
+
+// GrowLeft returns a new span which contains the largest prefix of [Span.After]
+// which match p.
+func (s Span) GrowRight(p func(r rune) bool) Span {
+	for {
+		r, sz := utf8.DecodeRuneInString(s.After())
+		if r == utf8.RuneError || !p(r) {
+			break
+		}
+		s.End += sz
+	}
+	return s
+}
+
 // Len returns the length of this span, in bytes.
 func (s Span) Len() int {
 	return s.End - s.Start
