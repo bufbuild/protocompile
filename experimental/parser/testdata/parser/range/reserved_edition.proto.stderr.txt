@@ -3,7 +3,6 @@ error: cannot use string literals in reserved range in editions mode
    | 
 15 | edition = "2023";
    | ----------------- editions mode is specified here
-16 | 
 ...  
 20 |     reserved foo, "foo";
    |                   ^^^^^ 

@@ -2,10 +2,12 @@ error: unexpected service definition within message definition
   --> testdata/parser/def/nesting.proto:22:5
    | 
 19 | / message M {
-...  | 
+20 | |     message M {}
+21 | |     enum E {}
 22 | |     service S {}
    | |     ^^^^^^^^^^^^ this service definition...
-...  | 
+23 | |     extend E {}
+24 | |     oneof O {}
 25 | | }
    | \_- ...cannot be declared within this message definition
 
@@ -15,6 +17,7 @@ error: unexpected message definition within enum definition
 27 | / enum E {
 28 | |     message M {}
    | |     ^^^^^^^^^^^^ this message definition...
+29 | |     enum E {}
 ...  | 
 33 | | }
    | \_- ...cannot be declared within this enum definition
@@ -26,6 +29,7 @@ error: unexpected enum definition within enum definition
 28 | |     message M {}
 29 | |     enum E {}
    | |     ^^^^^^^^^ this enum definition...
+30 | |     service S {}
 ...  | 
 33 | | }
    | \_- ...cannot be declared within this enum definition
@@ -34,10 +38,12 @@ error: unexpected service definition within enum definition
   --> testdata/parser/def/nesting.proto:30:5
    | 
 27 | / enum E {
-...  | 
+28 | |     message M {}
+29 | |     enum E {}
 30 | |     service S {}
    | |     ^^^^^^^^^^^^ this service definition...
-...  | 
+31 | |     extend E {}
+32 | |     oneof O {}
 33 | | }
    | \_- ...cannot be declared within this enum definition
 
@@ -46,6 +52,7 @@ error: unexpected message extension block within enum definition
    | 
 27 | / enum E {
 ...  | 
+30 | |     service S {}
 31 | |     extend E {}
    | |     ^^^^^^^^^^^ this message extension block...
 32 | |     oneof O {}
@@ -57,6 +64,7 @@ error: unexpected oneof definition within enum definition
    | 
 27 | / enum E {
 ...  | 
+31 | |     extend E {}
 32 | |     oneof O {}
    | |     ^^^^^^^^^^ this oneof definition...
 33 | | }
@@ -68,6 +76,7 @@ error: unexpected message definition within service definition
 35 | / service S {
 36 | |     message M {}
    | |     ^^^^^^^^^^^^ this message definition...
+37 | |     enum E {}
 ...  | 
 41 | | }
    | \_- ...cannot be declared within this service definition
@@ -79,6 +88,7 @@ error: unexpected enum definition within service definition
 36 | |     message M {}
 37 | |     enum E {}
    | |     ^^^^^^^^^ this enum definition...
+38 | |     service S {}
 ...  | 
 41 | | }
    | \_- ...cannot be declared within this service definition
@@ -87,10 +97,12 @@ error: unexpected service definition within service definition
   --> testdata/parser/def/nesting.proto:38:5
    | 
 35 | / service S {
-...  | 
+36 | |     message M {}
+37 | |     enum E {}
 38 | |     service S {}
    | |     ^^^^^^^^^^^^ this service definition...
-...  | 
+39 | |     extend E {}
+40 | |     oneof O {}
 41 | | }
    | \_- ...cannot be declared within this service definition
 
@@ -99,6 +111,7 @@ error: unexpected message extension block within service definition
    | 
 35 | / service S {
 ...  | 
+38 | |     service S {}
 39 | |     extend E {}
    | |     ^^^^^^^^^^^ this message extension block...
 40 | |     oneof O {}
@@ -110,6 +123,7 @@ error: unexpected oneof definition within service definition
    | 
 35 | / service S {
 ...  | 
+39 | |     extend E {}
 40 | |     oneof O {}
    | |     ^^^^^^^^^^ this oneof definition...
 41 | | }
@@ -121,6 +135,7 @@ error: unexpected message definition within message extension block
 43 | / extend E {
 44 | |     message M {}
    | |     ^^^^^^^^^^^^ this message definition...
+45 | |     enum E {}
 ...  | 
 49 | | }
    | \_- ...cannot be declared within this message extension block
@@ -132,6 +147,7 @@ error: unexpected enum definition within message extension block
 44 | |     message M {}
 45 | |     enum E {}
    | |     ^^^^^^^^^ this enum definition...
+46 | |     service S {}
 ...  | 
 49 | | }
    | \_- ...cannot be declared within this message extension block
@@ -140,10 +156,12 @@ error: unexpected service definition within message extension block
   --> testdata/parser/def/nesting.proto:46:5
    | 
 43 | / extend E {
-...  | 
+44 | |     message M {}
+45 | |     enum E {}
 46 | |     service S {}
    | |     ^^^^^^^^^^^^ this service definition...
-...  | 
+47 | |     extend E {}
+48 | |     oneof O {}
 49 | | }
    | \_- ...cannot be declared within this message extension block
 
@@ -152,6 +170,7 @@ error: unexpected message extension block within message extension block
    | 
 43 | / extend E {
 ...  | 
+46 | |     service S {}
 47 | |     extend E {}
    | |     ^^^^^^^^^^^ this message extension block...
 48 | |     oneof O {}
@@ -163,6 +182,7 @@ error: unexpected oneof definition within message extension block
    | 
 43 | / extend E {
 ...  | 
+47 | |     extend E {}
 48 | |     oneof O {}
    | |     ^^^^^^^^^^ this oneof definition...
 49 | | }
@@ -172,9 +192,7 @@ error: unexpected oneof definition within file scope
   --> testdata/parser/def/nesting.proto:51:1
    | 
 15 | /   syntax = "proto2";
-16 | |   
 ...  |   
-50 | |   
 51 | | / oneof O {
 ...  | | 
 57 | | | }
@@ -187,6 +205,7 @@ error: unexpected message definition within oneof definition
 51 | / oneof O {
 52 | |     message M {}
    | |     ^^^^^^^^^^^^ this message definition...
+53 | |     enum E {}
 ...  | 
 57 | | }
    | \_- ...cannot be declared within this oneof definition
@@ -198,6 +217,7 @@ error: unexpected enum definition within oneof definition
 52 | |     message M {}
 53 | |     enum E {}
    | |     ^^^^^^^^^ this enum definition...
+54 | |     service S {}
 ...  | 
 57 | | }
    | \_- ...cannot be declared within this oneof definition
@@ -206,10 +226,12 @@ error: unexpected service definition within oneof definition
   --> testdata/parser/def/nesting.proto:54:5
    | 
 51 | / oneof O {
-...  | 
+52 | |     message M {}
+53 | |     enum E {}
 54 | |     service S {}
    | |     ^^^^^^^^^^^^ this service definition...
-...  | 
+55 | |     extend E {}
+56 | |     oneof O {}
 57 | | }
    | \_- ...cannot be declared within this oneof definition
 
@@ -218,6 +240,7 @@ error: unexpected message extension block within oneof definition
    | 
 51 | / oneof O {
 ...  | 
+54 | |     service S {}
 55 | |     extend E {}
    | |     ^^^^^^^^^^^ this message extension block...
 56 | |     oneof O {}
@@ -229,6 +252,7 @@ error: unexpected oneof definition within oneof definition
    | 
 51 | / oneof O {
 ...  | 
+55 | |     extend E {}
 56 | |     oneof O {}
    | |     ^^^^^^^^^^ this oneof definition...
 57 | | }

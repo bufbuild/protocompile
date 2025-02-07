@@ -3,7 +3,6 @@ error: cannot use identifiers in reserved range in syntax mode
    | 
 15 | syntax = "proto2";
    | ------------------ syntax mode is specified here
-16 | 
 ...  
 20 |     reserved foo, "foo";
    |              ^^^ 
