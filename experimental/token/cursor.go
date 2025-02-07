@@ -73,6 +73,13 @@ func (c *Cursor) IsSynthetic() bool {
 	return c.stream != nil
 }
 
+// Clone returns a copy of this cursor, which allows performing operations on
+// it without mutating the original cursor.
+func (c *Cursor) Clone() *Cursor {
+	copy := *c
+	return &copy
+}
+
 // Mark makes a mark on this cursor to indicate a place that can be rewound
 // to.
 func (c *Cursor) Mark() CursorMark {

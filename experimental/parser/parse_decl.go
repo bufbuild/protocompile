@@ -121,42 +121,49 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			in = taxa.Edition
 		}
 
-		eq, err := punctParser{
-			parser: p, c: c,
-			want:   "=",
-			where:  in.In(),
-			insert: justifyBetween,
-		}.parse()
-		args.Equals = eq
-		if err != nil {
-			p.Error(err)
-		}
+		if c.Done() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
 
-		// Regardless of if we see an = sign, try to parse an expression if we
-		// can.
-		if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
-			args.Value = parseExpr(p, c, in.In())
-		}
+			eq, err := punctParser{
+				parser: p, c: c,
+				want:   "=",
+				where:  in.In(),
+				insert: justifyBetween,
+			}.parse()
+			args.Equals = eq
+			if err != nil {
+				p.Error(err)
+			}
 
-		args.Options = tryParseOptions(p, c, in)
+			// Regardless of if we see an = sign, try to parse an expression if we
+			// can.
+			if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
+				args.Value = parseExpr(p, c, in.In())
+			}
 
-		args.Semicolon, err = punctParser{
-			parser: p, c: c,
-			want:   ";",
-			where:  in.After(),
-			insert: justifyLeft,
-		}.parse()
-		// Only diagnose a missing semicolon if we successfully parsed some
-		// kind of partially-valid expression. Otherwise, we might diagnose
-		// the same extraneous/missing ; twice.
-		//
-		// For example, consider `syntax = ;`. WHen we enter parseExpr, it
-		// will complain about the unexpected ;.
-		//
-		// TODO: Add something like ExprError and check if args.Value
-		// contains one.
-		if err != nil && !args.Value.IsZero() {
-			p.Error(err)
+			args.Options = tryParseOptions(p, c, in)
+
+			args.Semicolon, err = punctParser{
+				parser: p, c: c,
+				want:   ";",
+				where:  in.After(),
+				insert: justifyLeft,
+			}.parse()
+			// Only diagnose a missing semicolon if we successfully parsed some
+			// kind of partially-valid expression. Otherwise, we might diagnose
+			// the same extraneous/missing ; twice.
+			//
+			// For example, consider `syntax = ;`. WHen we enter parseExpr, it
+			// will complain about the unexpected ;.
+			//
+			// TODO: Add something like ExprError and check if args.Value
+			// contains one.
+			if err != nil && !args.Value.IsZero() {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclSyntax(args).AsAny()
@@ -178,16 +185,23 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			Path:    path,
 		}
 
-		args.Options = tryParseOptions(p, c, in)
-		semi, err := punctParser{
-			parser: p, c: c,
-			want:   ";",
-			where:  taxa.Package.After(),
-			insert: justifyLeft,
-		}.parse()
-		args.Semicolon = semi
-		if err != nil {
-			p.Error(err)
+		if c.Done() && path.IsZero() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, taxa.Package.In()))
+		} else {
+			args.Options = tryParseOptions(p, c, in)
+
+			semi, err := punctParser{
+				parser: p, c: c,
+				want:   ";",
+				where:  taxa.Package.After(),
+				insert: justifyLeft,
+			}.parse()
+			args.Semicolon = semi
+			if err != nil {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclPackage(args).AsAny()
@@ -232,15 +246,21 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		args.Options = tryParseOptions(p, c, in)
 
-		semi, err := punctParser{
-			parser: p, c: c,
-			want:   ";",
-			where:  in.After(),
-			insert: justifyLeft,
-		}.parse()
-		args.Semicolon = semi
-		if err != nil && args.ImportPath.IsZero() {
-			p.Error(err)
+		if args.ImportPath.IsZero() && c.Done() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			semi, err := punctParser{
+				parser: p, c: c,
+				want:   ";",
+				where:  in.After(),
+				insert: justifyLeft,
+			}.parse()
+			args.Semicolon = semi
+			if err != nil && args.ImportPath.IsZero() {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclImport(args).AsAny()

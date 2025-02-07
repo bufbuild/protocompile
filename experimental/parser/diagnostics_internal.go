@@ -52,6 +52,21 @@ type errUnexpected struct {
 	stream        *token.Stream
 }
 
+// errUnexpectedEOF is a helper for constructing EOF diagnostics that need to
+// provide *no* suggestions. This is used in places where any suggestion we
+// could provide would be nonsensical.
+func errUnexpectedEOF(c *token.Cursor, where taxa.Place) errUnexpected {
+	tok, span := c.Clone().SeekToEnd()
+	if tok.IsZero() {
+		return errUnexpected{
+			what:  span,
+			where: where,
+			got:   taxa.EOF,
+		}
+	}
+	return errUnexpected{what: tok, where: where}
+}
+
 func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 	got := e.got
 	if got == nil {
@@ -180,7 +195,11 @@ func justify(stream *token.Stream, span report.Span, message string, edits ...ju
 
 		case justifyLeft:
 			// Get the token at the start of the span.
-			start, _ := stream.Around(e.Start)
+			start, end := stream.Around(e.Start)
+			if end.IsZero() {
+				break
+			}
+
 			c := token.NewCursorAt(start)
 			// Seek to the previous unskippable token, and use its end as
 			// the start of the justification.
@@ -191,7 +210,11 @@ func justify(stream *token.Stream, span report.Span, message string, edits ...ju
 
 		case justifyRight:
 			// Identical to the above, but reversed.
-			_, end := stream.Around(e.Start)
+			start, end := stream.Around(e.Start)
+			if start.IsZero() {
+				break
+			}
+
 			c := token.NewCursorAt(end)
 			e.End = c.Next().Span().Start
 			if empty {

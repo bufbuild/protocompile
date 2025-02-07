@@ -2,6 +2,6 @@ error: unexpected end-of-file in `syntax` declaration
   --> testdata/parser/syntax/eof_after_kw.proto:15:7
    |
 15 | syntax
-   |       ^ expected `=`
+   |       ^
 
 encountered 1 error
