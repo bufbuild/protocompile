@@ -76,8 +76,8 @@ func (c *Cursor) IsSynthetic() bool {
 // Clone returns a copy of this cursor, which allows performing operations on
 // it without mutating the original cursor.
 func (c *Cursor) Clone() *Cursor {
-	copy := *c
-	return &copy
+	c2 := *c
+	return &c2
 }
 
 // Mark makes a mark on this cursor to indicate a place that can be rewound

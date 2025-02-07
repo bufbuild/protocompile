@@ -126,7 +126,6 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			// few stanzas will be garbage.
 			p.Error(errUnexpectedEOF(c, in.In()))
 		} else {
-
 			eq, err := punctParser{
 				parser: p, c: c,
 				want:   "=",
