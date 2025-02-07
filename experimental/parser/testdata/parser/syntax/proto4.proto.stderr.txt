@@ -1,8 +1,8 @@
 error: unrecognized `syntax` declaration value
   --> testdata/parser/syntax/proto4.proto:15:10
-   | 
+   |
 15 | syntax = "proto4";
-   |          ^^^^^^^^ 
+   |          ^^^^^^^^
    = note: permitted values: ["proto2", "proto3"]
 
 encountered 1 error

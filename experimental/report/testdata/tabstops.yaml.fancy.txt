@@ -1,6 +1,6 @@
 warning: tabstop
   --> foo.proto:6:9
-   | 
+   |
  6 |         field
    | --------^^^^^ this is in front of some tabstops
    | |
@@ -8,10 +8,10 @@ warning: tabstop
 
 warning: partial tabstop
   --> foo.proto:7:2
-   | 
+   |
  7 |     field
    | -^^^ tabstop
    | |
    | spaces
 
- encountered  2 warnings
+encountered 2 warnings

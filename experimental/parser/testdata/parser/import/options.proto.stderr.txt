@@ -1,25 +1,25 @@
 error: import cannot specify compact options
   --> testdata/parser/import/options.proto:19:20
-   | 
+   |
 19 | import "foo.proto" [(not.allowed) = "here"];
    |                    ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 warning: use of `import weak`
   --> testdata/parser/import/options.proto:20:1
-   | 
+   |
 20 | import weak "weak.proto" [(not.allowed) = "here"];
-   | ^^^^^^^^^^^ 
+   | ^^^^^^^^^^^
    = note: `import weak` is deprecated and not supported correctly in most Protobuf implementations
 
 error: weak import cannot specify compact options
   --> testdata/parser/import/options.proto:20:26
-   | 
+   |
 20 | import weak "weak.proto" [(not.allowed) = "here"];
    |                          ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
 error: public import cannot specify compact options
   --> testdata/parser/import/options.proto:21:30
-   | 
+   |
 21 | import public "public.proto" [(not.allowed) = "here"];
    |                              ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 

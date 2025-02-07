@@ -1,6 +1,6 @@
 error: unexpected extension range within service definition
   --> testdata/parser/range/invalid_parent.proto:20:5
-   | 
+   |
 19 | / service Foo {
 20 | |     extensions 1;
    | |     ^^^^^^^^^^^^^ this extension range...
@@ -10,7 +10,7 @@ error: unexpected extension range within service definition
 
 error: unexpected reserved range within service definition
   --> testdata/parser/range/invalid_parent.proto:21:5
-   | 
+   |
 19 | / service Foo {
 20 | |     extensions 1;
 21 | |     reserved 1;
@@ -20,7 +20,7 @@ error: unexpected reserved range within service definition
 
 error: unexpected extension range within message extension block
   --> testdata/parser/range/invalid_parent.proto:25:5
-   | 
+   |
 24 | / extend Foo {
 25 | |     extensions 1;
    | |     ^^^^^^^^^^^^^ this extension range...
@@ -30,7 +30,7 @@ error: unexpected extension range within message extension block
 
 error: unexpected reserved range within message extension block
   --> testdata/parser/range/invalid_parent.proto:26:5
-   | 
+   |
 24 | / extend Foo {
 25 | |     extensions 1;
 26 | |     reserved 1;
@@ -40,7 +40,7 @@ error: unexpected reserved range within message extension block
 
 error: unexpected extension range within enum definition
   --> testdata/parser/range/invalid_parent.proto:30:5
-   | 
+   |
 29 | / enum Foo {
 30 | |     extensions 1;
    | |     ^^^^^^^^^^^^^ this extension range...

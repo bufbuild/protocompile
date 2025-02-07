@@ -1,8 +1,8 @@
 error: unexpected edition in `syntax` declaration
   --> testdata/parser/syntax/syntax_2023.proto:15:10
-   | 
+   |
 15 | syntax = "2023";
-   |          ^^^^^^ 
+   |          ^^^^^^
    = note: permitted values: ["proto2", "proto3"]
 
 encountered 1 error

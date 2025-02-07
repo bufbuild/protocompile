@@ -1,60 +1,60 @@
 error: missing `(...)` around method return type
   --> testdata/parser/method/incomplete.proto:20:31
-   | 
+   |
 20 |     rpc Bar1(foo.Bar) returns foo.Bar;
    |                               ^^^^^^^ help: replace this with `(foo.Bar)`
 
 error: missing method return type in service method
   --> testdata/parser/method/incomplete.proto:21:5
-   | 
+   |
 21 |     rpc Bar2(foo.Bar);
-   |     ^^^^^^^^^^^^^^^^^^ 
+   |     ^^^^^^^^^^^^^^^^^^
 
 error: missing method parameter list in service method
   --> testdata/parser/method/incomplete.proto:22:5
-   | 
+   |
 22 |     rpc Bar3 returns (foo.Bar);
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: expected exactly one type in method return type, got 0
   --> testdata/parser/method/incomplete.proto:23:31
-   | 
+   |
 23 |     rpc Bar4(foo.Bar) returns () {}
-   |                               ^^ 
+   |                               ^^
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/method/incomplete.proto:24:13
-   | 
+   |
 24 |     rpc Bar5() returns (stream foo.Bar);
-   |             ^^ 
+   |             ^^
 
 error: missing method return type in service method
   --> testdata/parser/method/incomplete.proto:25:5
-   | 
+   |
 25 |     rpc Bar6() returns;
-   |     ^^^^^^^^^^^^^^^^^^^ 
+   |     ^^^^^^^^^^^^^^^^^^^
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/method/incomplete.proto:25:13
-   | 
+   |
 25 |     rpc Bar6() returns;
-   |             ^^ 
+   |             ^^
 
 error: unexpected `;` after `returns`
   --> testdata/parser/method/incomplete.proto:25:23
-   | 
+   |
 25 |     rpc Bar6() returns;
    |                       ^ expected `(`
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/method/incomplete.proto:26:13
-   | 
+   |
 26 |     rpc Bar7() returns stream foo.Bar;
-   |             ^^ 
+   |             ^^
 
 error: missing `(...)` around method return type
   --> testdata/parser/method/incomplete.proto:26:24
-   | 
+   |
 26 |     rpc Bar7() returns stream foo.Bar;
    |                        ^^^^^^^^^^^^^^ help: replace this with `(stream foo.Bar)`
 

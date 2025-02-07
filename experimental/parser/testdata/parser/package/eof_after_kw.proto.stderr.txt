@@ -1,14 +1,14 @@
 error: missing path in `package` declaration
   --> testdata/parser/package/eof_after_kw.proto:17:1
-   | 
+   |
 17 | package
-   | ^^^^^^^ 
+   | ^^^^^^^
    = help: to place a file in the unnamed package, remove the `package` declaration
    = help: however, using the unnamed package is discouraged
 
 error: unexpected end-of-file after `package` declaration
   --> testdata/parser/package/eof_after_kw.proto:17:8
-   | 
+   |
 17 | package
    |        ^ expected `;`
 

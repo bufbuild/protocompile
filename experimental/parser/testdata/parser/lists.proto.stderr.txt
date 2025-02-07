@@ -5,7 +5,7 @@ warning: missing `package` declaration
 
 error: unexpected integer literal in array expression
   --> testdata/parser/lists.proto:20:20
-   | 
+   |
 20 | option foo = [1, 2 3];
    |                    ^ expected `,`
    |                    |
@@ -13,7 +13,7 @@ error: unexpected integer literal in array expression
 
 error: unexpected extra `,` in array expression
   --> testdata/parser/lists.proto:21:20
-   | 
+   |
 21 | option foo = [1, 2,, 3];
    |                   -^ expected expression
    |                   |
@@ -21,7 +21,7 @@ error: unexpected extra `,` in array expression
 
 error: unexpected extra `,` in array expression
   --> testdata/parser/lists.proto:22:20
-   | 
+   |
 22 | option foo = [1, 2,, 3,];
    |                   -^ expected expression
    |                   |
@@ -29,19 +29,19 @@ error: unexpected extra `,` in array expression
 
 error: unexpected trailing `,` in array expression
   --> testdata/parser/lists.proto:22:23
-   | 
+   |
 22 | option foo = [1, 2,, 3,];
-   |                       ^ 
+   |                       ^
 
 error: unexpected leading `,` in array expression
   --> testdata/parser/lists.proto:23:15
-   | 
+   |
 23 | option foo = [,1 2,, 3,];
    |               ^ expected expression
 
 error: unexpected integer literal in array expression
   --> testdata/parser/lists.proto:23:18
-   | 
+   |
 23 | option foo = [,1 2,, 3,];
    |                  ^ expected `,`
    |                  |
@@ -49,7 +49,7 @@ error: unexpected integer literal in array expression
 
 error: unexpected extra `,` in array expression
   --> testdata/parser/lists.proto:23:20
-   | 
+   |
 23 | option foo = [,1 2,, 3,];
    |                   -^ expected expression
    |                   |
@@ -57,25 +57,25 @@ error: unexpected extra `,` in array expression
 
 error: unexpected trailing `,` in array expression
   --> testdata/parser/lists.proto:23:23
-   | 
+   |
 23 | option foo = [,1 2,, 3,];
-   |                       ^ 
+   |                       ^
 
 error: unexpected `;` in array expression
   --> testdata/parser/lists.proto:24:16
-   | 
+   |
 24 | option foo = [1; 2; 3];
    |                ^ expected `,`
 
 error: unexpected `;` in array expression
   --> testdata/parser/lists.proto:24:19
-   | 
+   |
 24 | option foo = [1; 2; 3];
    |                   ^ expected `,`
 
 error: unexpected message expression in array expression
   --> testdata/parser/lists.proto:25:17
-   | 
+   |
 25 | option foo = [a {}];
    |                 ^^ expected `,`
    |                 |
@@ -83,13 +83,13 @@ error: unexpected message expression in array expression
 
 error: unexpected leading `,` in array expression
   --> testdata/parser/lists.proto:26:15
-   | 
+   |
 26 | option foo = [,];
    |               ^ expected expression
 
 error: unexpected extra `;` in message expression
   --> testdata/parser/lists.proto:31:16
-   | 
+   |
 31 |         bar: 2;;
    |               -^ expected message field value
    |               |
@@ -97,13 +97,13 @@ error: unexpected extra `;` in message expression
 
 error: unexpected leading `;` in message expression
   --> testdata/parser/lists.proto:34:15
-   | 
+   |
 34 | option foo = {;bar: 1};
    |               ^ expected message field value
 
 error: unexpected extra `;` in message expression
   --> testdata/parser/lists.proto:35:22
-   | 
+   |
 35 | option foo = {baz: 1;; baz: 1};
    |                     -^ expected message field value
    |                     |
@@ -111,7 +111,7 @@ error: unexpected extra `;` in message expression
 
 error: unexpected extra `;` in message expression
   --> testdata/parser/lists.proto:36:22
-   | 
+   |
 36 | option foo = {baz: 1,; baz: 1;};
    |                     -^ expected message field value
    |                     |
@@ -119,37 +119,37 @@ error: unexpected extra `;` in message expression
 
 error: unexpected leading `;` in message expression
   --> testdata/parser/lists.proto:38:10
-   | 
+   |
 38 |     bar {;}
    |          ^ expected message field value
 
 error: unexpected leading `,` in message expression
   --> testdata/parser/lists.proto:39:10
-   | 
+   |
 39 |     bar {,}
    |          ^ expected message field value
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:44:12
-   | 
+   |
 44 |     rpc Foo(int, int) returns (int, int);
-   |            ^^^^^^^^^^ 
+   |            ^^^^^^^^^^
 
 error: expected exactly one type in method return type, got 2
   --> testdata/parser/lists.proto:44:31
-   | 
+   |
 44 |     rpc Foo(int, int) returns (int, int);
-   |                               ^^^^^^^^^^ 
+   |                               ^^^^^^^^^^
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:45:12
-   | 
+   |
 45 |     rpc Foo(int int) returns (int int);
-   |            ^^^^^^^^^ 
+   |            ^^^^^^^^^
 
 error: unexpected type name in method parameter list
   --> testdata/parser/lists.proto:45:17
-   | 
+   |
 45 |     rpc Foo(int int) returns (int int);
    |                 ^^^ expected `,`
    |                 |
@@ -157,13 +157,13 @@ error: unexpected type name in method parameter list
 
 error: expected exactly one type in method return type, got 2
   --> testdata/parser/lists.proto:45:30
-   | 
+   |
 45 |     rpc Foo(int int) returns (int int);
-   |                              ^^^^^^^^^ 
+   |                              ^^^^^^^^^
 
 error: unexpected type name in method return type
   --> testdata/parser/lists.proto:45:35
-   | 
+   |
 45 |     rpc Foo(int int) returns (int int);
    |                                   ^^^ expected `,`
    |                                   |
@@ -171,49 +171,49 @@ error: unexpected type name in method return type
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:46:12
-   | 
+   |
 46 |     rpc Foo(int; int) returns (int, int,);
-   |            ^^^^^^^^^^ 
+   |            ^^^^^^^^^^
 
 error: unexpected `;` in method parameter list
   --> testdata/parser/lists.proto:46:16
-   | 
+   |
 46 |     rpc Foo(int; int) returns (int, int,);
    |                ^ expected `,`
 
 error: expected exactly one type in method return type, got 2
   --> testdata/parser/lists.proto:46:31
-   | 
+   |
 46 |     rpc Foo(int; int) returns (int, int,);
-   |                               ^^^^^^^^^^^ 
+   |                               ^^^^^^^^^^^
 
 error: unexpected trailing `,` in method return type
   --> testdata/parser/lists.proto:46:40
-   | 
+   |
 46 |     rpc Foo(int; int) returns (int, int,);
-   |                                        ^ 
+   |                                        ^
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:47:12
-   | 
+   |
 47 |     rpc Foo(, int, int) returns (int,, int,);
-   |            ^^^^^^^^^^^^ 
+   |            ^^^^^^^^^^^^
 
 error: unexpected leading `,` in method parameter list
   --> testdata/parser/lists.proto:47:13
-   | 
+   |
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |             ^ expected type
 
 error: expected exactly one type in method return type, got 2
   --> testdata/parser/lists.proto:47:33
-   | 
+   |
 47 |     rpc Foo(, int, int) returns (int,, int,);
-   |                                 ^^^^^^^^^^^^ 
+   |                                 ^^^^^^^^^^^^
 
 error: unexpected extra `,` in method return type
   --> testdata/parser/lists.proto:47:38
-   | 
+   |
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |                                     -^ expected type
    |                                     |
@@ -221,71 +221,71 @@ error: unexpected extra `,` in method return type
 
 error: unexpected trailing `,` in method return type
   --> testdata/parser/lists.proto:47:43
-   | 
+   |
 47 |     rpc Foo(, int, int) returns (int,, int,);
-   |                                           ^ 
+   |                                           ^
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/lists.proto:48:12
-   | 
+   |
 48 |     rpc Foo(;) returns (,);
-   |            ^^^ 
+   |            ^^^
 
 error: unexpected `;` in method parameter list
   --> testdata/parser/lists.proto:48:13
-   | 
+   |
 48 |     rpc Foo(;) returns (,);
    |             ^ expected type
 
 error: expected exactly one type in method return type, got 0
   --> testdata/parser/lists.proto:48:24
-   | 
+   |
 48 |     rpc Foo(;) returns (,);
-   |                        ^^^ 
+   |                        ^^^
 
 error: unexpected leading `,` in method return type
   --> testdata/parser/lists.proto:48:25
-   | 
+   |
 48 |     rpc Foo(;) returns (,);
    |                         ^ expected type
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/lists.proto:49:12
-   | 
+   |
 49 |     rpc Foo() returns ();
-   |            ^^ 
+   |            ^^
 
 error: expected exactly one type in method return type, got 0
   --> testdata/parser/lists.proto:49:23
-   | 
+   |
 49 |     rpc Foo() returns ();
-   |                       ^^ 
+   |                       ^^
 
 error: expected exactly two type arguments, got 1
   --> testdata/parser/lists.proto:53:8
-   | 
+   |
 53 |     map<int> x;
-   |        ^^^^^ 
+   |        ^^^^^
 
 error: unexpected non-comparable type in map key
   --> testdata/parser/lists.proto:54:9
-   | 
+   |
 54 |     map<int, int> x;
-   |         ^^^ 
+   |         ^^^
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected non-comparable type in map key
   --> testdata/parser/lists.proto:55:9
-   | 
+   |
 55 |     map<int int> x;
-   |         ^^^ 
+   |         ^^^
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected type name in type parameters
   --> testdata/parser/lists.proto:55:13
-   | 
+   |
 55 |     map<int int> x;
    |             ^^^ expected `,`
    |             |
@@ -293,15 +293,15 @@ error: unexpected type name in type parameters
 
 error: unexpected non-comparable type in map key
   --> testdata/parser/lists.proto:56:9
-   | 
+   |
 56 |     map<int,, int> x;
-   |         ^^^ 
+   |         ^^^
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected extra `,` in type parameters
   --> testdata/parser/lists.proto:56:13
-   | 
+   |
 56 |     map<int,, int> x;
    |            -^ expected type
    |            |
@@ -309,67 +309,67 @@ error: unexpected extra `,` in type parameters
 
 error: expected exactly two type arguments, got 0
   --> testdata/parser/lists.proto:57:8
-   | 
+   |
 57 |     map<,> x;
-   |        ^^^ 
+   |        ^^^
 
 error: unexpected leading `,` in type parameters
   --> testdata/parser/lists.proto:57:9
-   | 
+   |
 57 |     map<,> x;
    |         ^ expected type
 
 error: expected exactly two type arguments, got 0
   --> testdata/parser/lists.proto:58:8
-   | 
+   |
 58 |     map<> x;
-   |        ^^ 
+   |        ^^
 
 error: unexpected leading `,` in type parameters
   --> testdata/parser/lists.proto:59:9
-   | 
+   |
 59 |     map<,int, int> x;
    |         ^ expected type
 
 error: unexpected non-comparable type in map key
   --> testdata/parser/lists.proto:59:10
-   | 
+   |
 59 |     map<,int, int> x;
-   |          ^^^ 
+   |          ^^^
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected non-comparable type in map key
   --> testdata/parser/lists.proto:60:9
-   | 
+   |
 60 |     map<int; int> x;
-   |         ^^^ 
+   |         ^^^
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected `;` in type parameters
   --> testdata/parser/lists.proto:60:12
-   | 
+   |
 60 |     map<int; int> x;
    |            ^ expected `,`
 
 error: unexpected non-comparable type in map key
   --> testdata/parser/lists.proto:62:9
-   | 
+   |
 62 |         int,
-   |         ^^^ 
+   |         ^^^
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
 error: unexpected trailing `,` in type parameters
   --> testdata/parser/lists.proto:63:12
-   | 
+   |
 63 |         int,
-   |            ^ 
+   |            ^
 
 error: unexpected integer literal in reserved range
   --> testdata/parser/lists.proto:68:19
-   | 
+   |
 68 |     reserved 1, 2 3;
    |                   ^ expected `,`
    |                   |
@@ -377,7 +377,7 @@ error: unexpected integer literal in reserved range
 
 error: unexpected extra `,` in reserved range
   --> testdata/parser/lists.proto:69:19
-   | 
+   |
 69 |     reserved 1, 2,, 3;
    |                  -^ expected expression
    |                  |
@@ -385,7 +385,7 @@ error: unexpected extra `,` in reserved range
 
 error: unexpected extra `,` in reserved range
   --> testdata/parser/lists.proto:70:19
-   | 
+   |
 70 |     reserved 1, 2,, 3,;
    |                  -^ expected expression
    |                  |
@@ -393,19 +393,19 @@ error: unexpected extra `,` in reserved range
 
 error: unexpected trailing `,` in reserved range
   --> testdata/parser/lists.proto:70:22
-   | 
+   |
 70 |     reserved 1, 2,, 3,;
-   |                      ^ 
+   |                      ^
 
 error: unexpected leading `,` in reserved range
   --> testdata/parser/lists.proto:71:14
-   | 
+   |
 71 |     reserved ,1 2,, 3,;
    |              ^ expected expression
 
 error: unexpected integer literal in reserved range
   --> testdata/parser/lists.proto:71:17
-   | 
+   |
 71 |     reserved ,1 2,, 3,;
    |                 ^ expected `,`
    |                 |
@@ -413,7 +413,7 @@ error: unexpected integer literal in reserved range
 
 error: unexpected extra `,` in reserved range
   --> testdata/parser/lists.proto:71:19
-   | 
+   |
 71 |     reserved ,1 2,, 3,;
    |                  -^ expected expression
    |                  |
@@ -421,33 +421,33 @@ error: unexpected extra `,` in reserved range
 
 error: unexpected trailing `,` in reserved range
   --> testdata/parser/lists.proto:71:22
-   | 
+   |
 71 |     reserved ,1 2,, 3,;
-   |                      ^ 
+   |                      ^
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:72:14
-   | 
+   |
 72 |     reserved a {};
-   |              ^ 
+   |              ^
 
 error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
   --> testdata/parser/lists.proto:72:16
-   | 
+   |
 72 |     reserved a {};
    |              - ^^ this field tag must go in its own reserved range
    |              |
    |              but expected a field name because of this
   help: split the reserved range
-   | 
+   |
 72 | -     reserved a {};
 72 | +     reserved a;
 73 | +     reserved {};
-   | 
+   |
 
 error: unexpected message expression in reserved range
   --> testdata/parser/lists.proto:72:16
-   | 
+   |
 72 |     reserved a {};
    |                ^^ expected `,`
    |                |
@@ -455,31 +455,31 @@ error: unexpected message expression in reserved range
 
 error: unexpected leading `,` in reserved range
   --> testdata/parser/lists.proto:73:14
-   | 
+   |
 73 |     reserved ,;
    |              ^ expected expression
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:75:14
-   | 
+   |
 75 |     reserved a, b c;
-   |              ^ 
+   |              ^
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:75:17
-   | 
+   |
 75 |     reserved a, b c;
-   |                 ^ 
+   |                 ^
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:75:19
-   | 
+   |
 75 |     reserved a, b c;
-   |                   ^ 
+   |                   ^
 
 error: unexpected identifier in reserved range
   --> testdata/parser/lists.proto:75:19
-   | 
+   |
 75 |     reserved a, b c;
    |                   ^ expected `,`
    |                   |
@@ -487,25 +487,25 @@ error: unexpected identifier in reserved range
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:76:14
-   | 
+   |
 76 |     reserved a, b c
-   |              ^ 
+   |              ^
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:76:17
-   | 
+   |
 76 |     reserved a, b c
-   |                 ^ 
+   |                 ^
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:76:19
-   | 
+   |
 76 |     reserved a, b c
-   |                   ^ 
+   |                   ^
 
 error: unexpected identifier in reserved range
   --> testdata/parser/lists.proto:76:19
-   | 
+   |
 76 |     reserved a, b c
    |                   ^ expected `,`
    |                   |
@@ -513,7 +513,7 @@ error: unexpected identifier in reserved range
 
 error: unexpected `message` after reserved range
   --> testdata/parser/lists.proto:77:5
-   | 
+   |
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
 

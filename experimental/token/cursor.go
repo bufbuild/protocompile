@@ -59,7 +59,7 @@ func NewCursorAt(tok Token) *Cursor {
 
 	return &Cursor{
 		withContext: tok.withContext,
-		idx:         int(tok.ID() - 1), // Convert to 0-based index.
+		idx:         tok.ID().naturalIndex(), // Convert to 0-based index.
 	}
 }
 
@@ -178,7 +178,7 @@ func (c *Cursor) PrevSkippable() Token {
 	if c.IsSynthetic() {
 		c.idx--
 	} else {
-		c.idx = int(tok.ID() - 1)
+		c.idx = tok.ID().naturalIndex()
 	}
 	return tok
 }

@@ -1,6 +1,6 @@
 error: unexpected integer literal in import
   --> testdata/parser/import/42.proto:19:8
-   | 
+   |
 19 | import 42;
    |        ^^ expected string literal
 

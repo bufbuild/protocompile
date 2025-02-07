@@ -1,71 +1,71 @@
 error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
   --> testdata/parser/range/reserved_mixed.proto:20:17
-   | 
+   |
 20 |     reserved 5, "foo";
    |              -  ^^^^^ this field name must go in its own reserved range
    |              |
    |              but expected a field tag because of this
   help: split the reserved range
-   | 
+   |
 20 | -     reserved 5, "foo";
 20 | +     reserved 5;
 21 | +     reserved "foo";
-   | 
+   |
 
 error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
   --> testdata/parser/range/reserved_mixed.proto:21:21
-   | 
+   |
 21 |     reserved "foo", 5;
    |              -----  ^ this field tag must go in its own reserved range
    |              |
    |              but expected a field name because of this
   help: split the reserved range
-   | 
+   |
 21 | -     reserved "foo", 5;
 21 | +     reserved "foo";
 22 | +     reserved 5;
-   | 
+   |
 
 error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
   --> testdata/parser/range/reserved_mixed.proto:22:17
-   | 
+   |
 22 |     reserved 5, "foo", 5;
    |              -  ^^^^^ this field name must go in its own reserved range
    |              |
    |              but expected a field tag because of this
   help: split the reserved range
-   | 
+   |
 22 | -     reserved 5, "foo", 5;
 22 | +     reserved 5, 5;
 23 | +     reserved "foo";
-   | 
+   |
 
 error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
   --> testdata/parser/range/reserved_mixed.proto:23:21
-   | 
+   |
 23 |     reserved "foo", 5, "foo";
    |              -----  ^ this field tag must go in its own reserved range
    |              |
    |              but expected a field name because of this
   help: split the reserved range
-   | 
+   |
 23 | -     reserved "foo", 5, "foo";
 23 | +     reserved "foo", "foo";
 24 | +     reserved 5;
-   | 
+   |
 
 error: cannot mix tags and names in field%!(EXTRA taxa.Noun=reserved range)
   --> testdata/parser/range/reserved_mixed.proto:24:17
-   | 
+   |
 24 |     reserved 5, "foo", 5, "foo", 5, 5;
    |              -  ^^^^^ this field name must go in its own reserved range
    |              |
    |              but expected a field tag because of this
   help: split the reserved range
-   | 
+   |
 24 | -     reserved 5, "foo", 5, "foo", 5, 5;
 24 | +     reserved 5, 5, 5, 5;
 25 | +     reserved "foo", "foo";
-   | 
+   |
 
 encountered 5 errors

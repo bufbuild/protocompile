@@ -1,7 +1,7 @@
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/range/reserved_default_syntax.proto:18:14
-   | 
+   |
 18 |     reserved foo, "foo";
-   |              ^^^ 
+   |              ^^^
 
 encountered 1 error

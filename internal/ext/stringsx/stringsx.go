@@ -16,6 +16,7 @@
 package stringsx
 
 import (
+	"strings"
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -76,4 +77,25 @@ func Bytes(s string) iter.Seq[byte] {
 			}
 		}
 	}
+}
+
+// Split is like [strings.Split], but returning an iterator instead of a slice.
+func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
+	r := string(sep)
+	return func(yield func(string) bool) {
+		for {
+			chunk, rest, found := strings.Cut(s, r)
+			s = rest
+			if !yield(chunk) || !found {
+				return
+			}
+		}
+	}
+}
+
+// Lines returns an iterator over the lines in the given string.
+//
+// It is equivalent to Split(s, '\n').
+func Lines(s string) iter.Seq[string] {
+	return Split(s, '\n')
 }

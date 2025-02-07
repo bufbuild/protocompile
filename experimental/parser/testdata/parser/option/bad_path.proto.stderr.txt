@@ -1,60 +1,60 @@
 error: missing option setting path
   --> testdata/parser/option/bad_path.proto:19:1
-   | 
+   |
 19 | option;
-   | ^^^^^^^ 
+   | ^^^^^^^
 
 error: missing option setting value
   --> testdata/parser/option/bad_path.proto:20:1
-   | 
+   |
 20 | option foo.bar;
-   | ^^^^^^^^^^^^^^^ 
+   | ^^^^^^^^^^^^^^^
 
 error: missing option setting path
   --> testdata/parser/option/bad_path.proto:21:1
-   | 
+   |
 21 | option = 2;
-   | ^^^^^^^^^^^ 
+   | ^^^^^^^^^^^
 
 error: unexpected absolute path in option setting
   --> testdata/parser/option/bad_path.proto:22:8
-   | 
+   |
 22 | option .(foo.bar).baz = 3;
    |        ^^^^^^^^^^^^^^ expected a path without a leading `.`
 
 error: unexpected absolute path in option setting
   --> testdata/parser/option/bad_path.proto:22:8
-   | 
+   |
 22 | option .(foo.bar).baz = 3;
    |        ^^^^^^^^^^^^^^ expected a path without a leading `.`
 
 error: unexpected `/` in path in option setting
   --> testdata/parser/option/bad_path.proto:23:11
-   | 
+   |
 23 | option foo/(bar.baz).foo = 4;
    |           ^ help: replace this with a `.`
 
 error: unexpected absolute path in option setting
   --> testdata/parser/option/bad_path.proto:27:9
-   | 
+   |
 27 |         .(foo.bar).baz = 3,
    |         ^^^^^^^^^^^^^^ expected a path without a leading `.`
 
 error: unexpected absolute path in option setting
   --> testdata/parser/option/bad_path.proto:27:9
-   | 
+   |
 27 |         .(foo.bar).baz = 3,
    |         ^^^^^^^^^^^^^^ expected a path without a leading `.`
 
 error: unexpected `/` in path in option setting
   --> testdata/parser/option/bad_path.proto:28:12
-   | 
+   |
 28 |         foo/(bar.baz).foo = 4
    |            ^ help: replace this with a `.`
 
 error: compact options cannot be empty
   --> testdata/parser/option/bad_path.proto:30:17
-   | 
+   |
 30 |     int32 y = 2 [];
    |                 ^^ help: remove this
 

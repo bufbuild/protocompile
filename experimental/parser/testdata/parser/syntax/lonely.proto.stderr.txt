@@ -5,38 +5,38 @@ warning: missing `package` declaration
 
 error: unexpected `;` in `edition` declaration
   --> testdata/parser/syntax/lonely.proto:15:8
-   | 
+   |
 15 | edition;
    |        ^ expected `=`
 
 error: unexpected `syntax` declaration
   --> testdata/parser/syntax/lonely.proto:17:1
-   | 
+   |
 15 | edition;
    | -------- previous declaration is here
-16 | 
+16 |
 17 | syntax = ;
-   | ^^^^^^^^^^ 
+   | ^^^^^^^^^^
   help: remove this
-   | 
+   |
 17 | - syntax = ;
-   | 
+   |
    = note: a file may contain at most one `syntax` or `edition` declaration
 
 error: unexpected `;` in `syntax` declaration
   --> testdata/parser/syntax/lonely.proto:17:10
-   | 
+   |
 17 | syntax = ;
    |          ^ expected expression
 
 warning: the `package` declaration should be placed at the top of the file
   --> testdata/parser/syntax/lonely.proto:19:1
-   | 
+   |
 17 | syntax = ;
    | ---------- previous declaration is here
-18 | 
+18 |
 19 | package test;
-   | ^^^^^^^^^^^^^ 
+   | ^^^^^^^^^^^^^
    = help: a file's `package` declaration should immediately follow the `syntax` or `edition` declaration
 
 encountered 3 errors and 2 warnings
