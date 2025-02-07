@@ -56,6 +56,30 @@ func All[T any](seq iter.Seq[T], p func(T) bool) bool {
 	return all
 }
 
+// Count counts the number of elements in seq that match the given predicate.
+//
+// If p is nil, it is treated as func(_ T) bool { return true }.
+func Count[T any](seq iter.Seq[T], p func(T) bool) int {
+	var total int
+	seq(func(v T) bool {
+		if p == nil || p(v) {
+			total++
+		}
+		return true
+	})
+	return total
+}
+
+// Strings maps an iterator with [fmt.Sprint], yielding an iterator of strings.
+func Strings[T any](seq iter.Seq[T]) iter.Seq[string] {
+	return Map(seq, func(v T) string {
+		if s, ok := any(v).(string); ok {
+			return s // Avoid dumb copies.
+		}
+		return fmt.Sprint(v)
+	})
+}
+
 // Map returns a new iterator applying f to each element of seq.
 func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
 	return FilterMap(seq, func(v T) (U, bool) { return f(v), true })

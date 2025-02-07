@@ -12,26 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package syntax specifies all of the syntax pragmas (including editions)
-// that Protocompile understands.
-package syntax
+package syntax_test
 
 import (
+	"testing"
+
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/iter"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/stretchr/testify/assert"
 )
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum syntax.yaml
+func TestEditions(t *testing.T) {
+	t.Parallel()
 
-// Editions returns an iterator over all the editions in this package.
-func Editions() iter.Seq[Syntax] {
-	return func(yield func(Syntax) bool) {
-		for i := 0; i < totalEditions; i++ {
-			if !yield(Syntax(i + int(Edition2023))) {
-				break
-			}
-		}
-	}
+	assert.Equal(t, []syntax.Syntax{syntax.Edition2023}, slicesx.Collect(syntax.Editions()))
+	assert.Equal(t,
+		mapsx.KeySet(editions.SupportedEditions),
+		mapsx.CollectSet(iterx.Strings(syntax.Editions())),
+	)
 }
-
-var totalEditions = iterx.Count(All(), func(s Syntax) bool { return s.IsEdition() })
