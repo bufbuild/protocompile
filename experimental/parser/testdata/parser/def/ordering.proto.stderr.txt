@@ -66,6 +66,12 @@ error: unexpected definition body in message field
 24 |     M x { /* ... */ } (T);
    |         ^^^^^^^^^^^^^ 
 
+error: unexpected nested extension path in message field
+  --> testdata/parser/def/ordering.proto:24:23
+   | 
+24 |     M x { /* ... */ } (T);
+   |                       ^^^ 
+
 error: missing name in message field
   --> testdata/parser/def/ordering.proto:24:23
    | 
@@ -232,4 +238,4 @@ error: unexpected `[...]` in message definition
 40 |     M x { /* ... */ } [foo = bar];
    |                       ^^^^^^^^^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
-encountered 35 errors
+encountered 36 errors

@@ -3,7 +3,7 @@ error: missing path in `package` declaration
    | 
 17 | package;
    | ^^^^^^^^ 
-   = help: to place a file in the empty package, remove the `package` declaration
-   = help: however, using the empty package is discouraged
+   = help: to place a file in the unnamed package, remove the `package` declaration
+   = help: however, using the unnamed package is discouraged
 
 encountered 1 error

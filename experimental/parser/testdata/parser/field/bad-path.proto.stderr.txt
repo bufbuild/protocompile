@@ -40,6 +40,12 @@ error: unexpected qualified name in message field
 27 |     required package.Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
+error: unexpected nested extension path in message field
+  --> testdata/parser/field/bad-path.proto:33:5
+   | 
+33 |     (foo.bar).Type name = 1;
+   |     ^^^^^^^^^ 
+
 error: unexpected qualified name in message field
   --> testdata/parser/field/bad-path.proto:35:27
    | 
@@ -64,10 +70,16 @@ error: unexpected qualified name in message field
 38 |     package.Type (foo.bar).name = 1;
    |                  ^^^^^^^^^^^^^^ expected identifier
 
+error: unexpected nested extension path in message field
+  --> testdata/parser/field/bad-path.proto:40:5
+   | 
+40 |     (foo) (bar) = 1;
+   |     ^^^^^ 
+
 error: unexpected qualified name in message field
   --> testdata/parser/field/bad-path.proto:40:11
    | 
 40 |     (foo) (bar) = 1;
    |           ^^^^^ expected identifier
 
-encountered 12 errors
+encountered 14 errors

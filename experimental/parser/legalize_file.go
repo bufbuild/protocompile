@@ -52,8 +52,8 @@ func legalizeFile(p *parser, file ast.File) {
 	if pkg.IsZero() {
 		p.Warnf("missing %s", taxa.Package).Apply(
 			report.InFile(p.Stream().Path()),
-			report.Notef("failing to specify a package places the file in the empty package"),
-			report.Notef("using the empty package is discouraged"),
+			report.Notef("not explicitly specifying a package places the file"),
+			report.Notef("in the unnamed package; using it strongly is discouraged"),
 		)
 	}
 }
@@ -69,30 +69,36 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		in = taxa.Edition
 	}
 
-	if parent.what == taxa.TopLevel && first != nil {
-		file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
-		switch {
-		case !first.IsZero():
-			p.Errorf("unexpected %s", in).Apply(
-				report.Snippetf(decl, "help: remove this"),
-				report.Snippetf(*first, "previous declaration is here"),
-				report.Notef("a file may only contain at most one `syntax` or `edition` declaration"),
-			)
-			return
-		case idx > 0:
-			p.Errorf("unexpected %s", in).Apply(
-				report.Snippet(decl),
-				report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
-				report.Notef("a %s must be the first declaration in a file", in),
-			)
-			*first = decl
-			return
-		default:
-			*first = decl
-		}
-	} else {
+	if parent.what != taxa.TopLevel || first == nil {
 		p.Error(errBadNest{parent: parent, child: decl})
 		return
+	}
+
+	file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
+	switch {
+	case !first.IsZero():
+		p.Errorf("unexpected %s", in).Apply(
+			report.Snippet(decl),
+			report.Snippetf(*first, "previous declaration is here"),
+			report.SuggestEdits(
+				decl,
+				"remove this",
+				report.Edit{Start: 0, End: decl.Span().Len()},
+			),
+			report.Notef("a file may contain at most one `syntax` or `edition` declaration"),
+		)
+		return
+	case idx > 0:
+		p.Errorf("unexpected %s", in).Apply(
+			report.Snippet(decl),
+			report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
+			// TOOD: Add a suggestion to move this up.
+			report.Notef("a %s must be the first declaration in a file", in),
+		)
+		*first = decl
+		return
+	default:
+		*first = decl
 	}
 
 	if !decl.Options().IsZero() {
@@ -129,7 +135,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 				return "", false
 			}
 
-			return fmt.Sprintf(`"%v"`, s), true
+			return fmt.Sprintf("%q", s), true
 		}), ", ")
 
 		return report.Notef("permitted values: [%s]", values)
@@ -177,32 +183,38 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 // a slot where we can store the first DeclPackage seen, so we can legalize
 // against duplicates.
 func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPackage, decl ast.DeclPackage) {
-	if parent.what == taxa.TopLevel && first != nil {
-		file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
-		switch {
-		case !first.IsZero():
-			p.Errorf("unexpected %s", taxa.Package).Apply(
-				report.Snippetf(decl, "help: remove this"),
-				report.Snippetf(*first, "previous declaration is here"),
-				report.Notef("a file must contain exactly one %s", taxa.Package),
-			)
-			return
-		case idx > 0:
-			if idx > 1 || file.Decls().At(0).Kind() != ast.DeclKindSyntax {
-				p.Errorf("unexpected %s", taxa.Package).Apply(
-					report.Snippet(decl),
-					report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
-					report.Notef("a %s must be the first declaration in a file, or follow the `syntax` or `edition` declaration", taxa.Package),
-				)
-				return
-			}
-			*first = decl
-		default:
-			*first = decl
-		}
-	} else {
+	if parent.what != taxa.TopLevel || first == nil {
 		p.Error(errBadNest{parent: parent, child: decl})
 		return
+	}
+
+	file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
+	switch {
+	case !first.IsZero():
+		p.Errorf("unexpected %s", taxa.Package).Apply(
+			report.Snippet(decl),
+			report.Snippetf(*first, "previous declaration is here"),
+			report.SuggestEdits(
+				decl,
+				"remove this",
+				report.Edit{Start: 0, End: decl.Span().Len()},
+			),
+			report.Notef("a file must contain exactly one %s", taxa.Package),
+		)
+		return
+	case idx > 0:
+		if idx > 1 || file.Decls().At(0).Kind() != ast.DeclKindSyntax {
+			p.Warnf("the %s should be placed at the top of the file", taxa.Package).Apply(
+				report.Snippet(decl),
+				report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
+				// TOOD: Add a suggestion to move this up.
+				report.Helpf("a file's %s should immediately follow the `syntax` or `edition` declaration", taxa.Package),
+			)
+			return
+		}
+		fallthrough
+	default:
+		*first = decl
 	}
 
 	if !decl.Options().IsZero() {
@@ -212,12 +224,15 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 	if decl.Path().IsZero() {
 		p.Errorf("missing path in %s", taxa.Package).Apply(
 			report.Snippet(decl),
-			report.Helpf("to place a file in the empty package, remove the %s", taxa.Package),
-			report.Helpf("however, using the empty package is discouraged"),
+			report.Helpf("to place a file in the unnamed package, remove the %s", taxa.Package),
+			report.Helpf("however, using the unnamed package is discouraged"),
 		)
 	}
 
-	legalizePath(p, taxa.Package.In(), decl.Path(), pathOptions{Relative: true})
+	legalizePath(p, taxa.Package.In(), decl.Path(), pathOptions{
+		MaxBytes:      512,
+		MaxComponents: 101,
+	})
 }
 
 var isOrdinaryFilePath = regexp.MustCompile("[0-9a-zA-Z./_-]*")
@@ -251,7 +266,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 			if imports != nil {
 				prev := imports[file]
 				imports[file] = append(prev, decl)
-				if len(prev) == 1 { // Do not bother diagnosing a more than once.
+				if len(prev) == 1 { // Do not bother diagnosing this more than once.
 					p.Errorf("file %q imported multiple times", file).Apply(
 						report.Snippet(decl),
 						report.Snippetf(prev[0], "first imported here"),

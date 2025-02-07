@@ -61,6 +61,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 func legalizeFieldType(p *parser, ty ast.TypeAny) {
 	switch ty.Kind() {
 	case ast.TypeKindPath:
+		legalizePath(p, taxa.Field.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 		break
 
 	case ast.TypeKindPrefixed:

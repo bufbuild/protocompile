@@ -65,7 +65,7 @@ func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
 	}
 }
 
-// legalizeMessageLike legalizes something that resembles a type definition:
+// legalizeTypeDefLike legalizes something that resembles a type definition:
 // namely, messages, enums, oneofs, services, and extension blocks.
 func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	switch {
@@ -77,7 +77,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 		)
 
 	case what == taxa.Extend:
-		legalizePath(p, what.In(), def.Name(), pathOptions{})
+		legalizePath(p, what.In(), def.Name(), pathOptions{AllowAbsolute: true})
 
 	case what != taxa.Extend && def.Name().AsIdent().IsZero():
 		def.MarkCorrupt()
@@ -119,7 +119,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	}
 }
 
-// legalizeMessageLike legalizes something that resembles a field definition:
+// legalizeFieldLike legalizes something that resembles a field definition:
 // namely, fields, groups, and enum values.
 func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	if def.Name().IsZero() {

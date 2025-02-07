@@ -24,30 +24,40 @@ import (
 // pathOptions is configuration for [legalizePath].
 type pathOptions struct {
 	// If set, the path must be relative.
-	Relative bool
+	AllowAbsolute bool
 
 	// If set, the path may contain precisely one `/` separator.
 	AllowSlash bool
 
 	// If set, the path may contain extension components.
 	AllowExts bool
+
+	// If nonzero, the maximum number of bytes in the path.
+	MaxBytes int
+
+	// If nonzero, the maximum number of components in the path.
+	MaxComponents int
 }
 
 // legalizePath legalizes a path to satisfy the configuration in opts.
 func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) (ok bool) {
 	ok = true
 
-	var i int
+	var i, bytes, components int
 	var slash token.Token
 	path.Components(func(pc ast.PathComponent) bool {
-		if i == 0 && opts.Relative {
-			if !pc.Separator().IsZero() {
-				p.Errorf("unexpected absolute path %s", where).Apply(
-					report.Snippetf(path, "expected a path without a leading `%s`", pc.Separator().Text()),
-				)
-				ok = false
-				return false
-			}
+		bytes += pc.Separator().Span().Len()
+		// Just Len() here is technically incorrect, because it could be an
+		// extension, but MaxBytes is never used with AllowExts.
+		bytes += pc.Name().Span().Len()
+		components++
+
+		if i == 0 && !opts.AllowAbsolute && !pc.Separator().IsZero() {
+			p.Errorf("unexpected absolute path %s", where).Apply(
+				report.Snippetf(path, "expected a path without a leading `%s`", pc.Separator().Text()),
+			)
+			ok = false
+			return true
 		}
 
 		if pc.Separator().Text() == "/" {
@@ -56,14 +66,14 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 					report.Snippetf(pc.Separator(), "help: replace this with a `.`"),
 				)
 				ok = false
-				return false
+				return true
 			} else if !slash.IsZero() {
-				p.Errorf("unexpected `/` in path %s", where).Apply(
+				p.Errorf("type URL can only contain a single `/`", where).Apply(
 					report.Snippet(pc.Separator()),
-					report.Snippetf(slash, "previous one is here"),
+					report.Snippetf(slash, "first one is here"),
 				)
 				ok = false
-				return false
+				return true
 			}
 			slash = pc.Separator()
 		}
@@ -71,11 +81,11 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 		if ext := pc.AsExtension(); !ext.IsZero() {
 			if opts.AllowExts {
 				ok = legalizePath(p, where, ext, pathOptions{
-					Relative:  false,
-					AllowExts: false,
+					AllowAbsolute: true,
+					AllowExts:     false,
 				})
 				if !ok {
-					return false
+					return true
 				}
 			} else {
 				p.Errorf("unexpected nested extension path %s", where).Apply(
@@ -83,13 +93,27 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 					report.Snippet(pc.Name()),
 				)
 				ok = false
-				return false
+				return true
 			}
 		}
 
 		i++
 		return true
 	})
+
+	if ok {
+		if opts.MaxBytes > 0 && bytes > opts.MaxBytes {
+			p.Errorf("path %s is too large", where).Apply(
+				report.Snippet(path),
+				report.Notef("Protobuf imposes a limit of %v bytes here", opts.MaxBytes, where),
+			)
+		} else if opts.MaxComponents > 0 && components > opts.MaxComponents {
+			p.Errorf("path %s is too large", where).Apply(
+				report.Snippet(path),
+				report.Notef("Protobuf imposes a limit of %v components here", opts.MaxComponents, where),
+			)
+		}
+	}
 
 	return ok
 }

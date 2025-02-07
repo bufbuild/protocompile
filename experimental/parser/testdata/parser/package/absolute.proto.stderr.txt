@@ -4,4 +4,10 @@ error: unexpected absolute path in `package` declaration
 17 | package .test.test2;
    |         ^^^^^^^^^^^ expected a path without a leading `.`
 
-encountered 1 error
+error: unexpected absolute path in `package` declaration
+  --> testdata/parser/package/absolute.proto:17:9
+   | 
+17 | package .test.test2;
+   |         ^^^^^^^^^^^ expected a path without a leading `.`
+
+encountered 2 errors

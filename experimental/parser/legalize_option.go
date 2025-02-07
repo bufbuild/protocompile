@@ -59,7 +59,6 @@ func legalizeOptionEntry(p *parser, opt ast.Option, span report.Span) {
 	}
 
 	legalizePath(p, taxa.Option.In(), opt.Path, pathOptions{
-		Relative:  true,
 		AllowExts: true,
 	})
 
