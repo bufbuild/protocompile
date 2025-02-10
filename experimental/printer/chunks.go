@@ -11,7 +11,6 @@ import (
 
 // TODO list
 //
-// - figure out how to fix indent level of compound body chunks
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
 // - a bunch of performance optimizations
@@ -161,7 +160,8 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 	case ast.DeclKindDef:
 		return defChunks(stream, decl.AsDef(), applyFormatting, indentLevel)
 	case ast.DeclKindBody:
-		return bodyChunks(stream, decl.AsBody(), applyFormatting, indentLevel, indentLevel)
+		// Figure out what to do with indent level here
+		return bodyChunks(stream, decl.AsBody(), applyFormatting)
 	case ast.DeclKindRange:
 	default:
 		panic("ah")
@@ -180,7 +180,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 			message.Span(),
 			message.Body.Span(),
 			message.Body.Braces(),
-			bodyChunks(stream, message.Body, applyFormatting, indentLevel, indentLevel),
+			bodyChunks(stream, message.Body, applyFormatting),
 			applyFormatting,
 			indentLevel,
 		)
@@ -191,7 +191,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 			enum.Span(),
 			enum.Body.Span(),
 			enum.Body.Braces(),
-			bodyChunks(stream, enum.Body, applyFormatting, indentLevel, indentLevel),
+			bodyChunks(stream, enum.Body, applyFormatting),
 			applyFormatting,
 			indentLevel,
 		)
@@ -280,7 +280,7 @@ func fieldChunks(
 		fieldSpan,
 		options.Span(),
 		options.Brackets(),
-		optionChunks(stream, options, applyFormatting, indentLevel),
+		optionChunks(stream, options, applyFormatting),
 		applyFormatting,
 		indentLevel,
 	)
@@ -316,12 +316,11 @@ func bodyChunks(
 	stream *token.Stream,
 	decl ast.DeclBody,
 	applyFormatting bool,
-	bodyDeclIndentLevel uint32,
-	closingBraceIndentLevel uint32,
 ) []chunk {
 	var chunks []chunk
 	seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
-		chunks = append(chunks, declChunks(stream, d, applyFormatting, bodyDeclIndentLevel)...)
+		// TODO: docs
+		chunks = append(chunks, declChunks(stream, d, applyFormatting, 0)...)
 		return true
 	})
 	// TODO: figure out what are the edges of this
@@ -351,7 +350,7 @@ func bodyChunks(
 				return splitKindSoft, false
 			},
 			applyFormatting,
-			closingBraceIndentLevel,
+			0, // This is set by compoundBody, TODO: better docs
 		)...)
 	}
 	return chunks
@@ -361,7 +360,6 @@ func optionChunks(
 	stream *token.Stream,
 	options ast.CompactOptions,
 	applyFormatting bool,
-	entriesIndentLevel uint32,
 ) []chunk {
 	var chunks []chunk
 	seq.Values(options.Entries())(func(o ast.Option) bool {
@@ -394,16 +392,11 @@ func optionChunks(
 				return splitKindSoft, false
 			},
 			applyFormatting,
-			entriesIndentLevel,
+			0, // This is set by compoundBody, TODO: better explanation
 		)...)
 		return true
 	})
 	if !options.Brackets().IsZero() {
-		var closingBracketIndentLevel uint32
-		if chunks[len(chunks)-1].splitKind != splitKindSoft {
-			// TODO: check out of bounds
-			closingBracketIndentLevel = entriesIndentLevel - 1
-		}
 		_, end := options.Brackets().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
@@ -428,7 +421,7 @@ func optionChunks(
 				return splitKindSoft, false
 			},
 			applyFormatting,
-			closingBracketIndentLevel,
+			0, // This is set by compoundBody, TODO: better explanation
 		)...)
 	}
 	return chunks
@@ -468,10 +461,6 @@ func compoundBody(
 		applyFormatting,
 		indentLevel,
 	)
-	var bodyIndentLevel uint32
-	if chunks[len(chunks)-1].splitKind != splitKindSoft {
-		bodyIndentLevel++
-	}
 	defChunksIndex := len(chunks) - 1
 	var closingBraceChunk chunk
 	var closingBrace bool
@@ -481,9 +470,11 @@ func compoundBody(
 		bodyChunks = bodyChunks[:len(bodyChunks)-1]
 	}
 	// TODO: figure out if we want to consolidate with softSplitDeps logic later, keep separate for now
-	if chunks[len(chunks)-1].splitKind != splitKindSoft {
-		for i := range bodyChunks {
-			bodyChunks[i].indentLevel++
+	for i := range bodyChunks {
+		if chunks[len(chunks)-1].splitKind != splitKindSoft {
+			bodyChunks[i].indentLevel = indentLevel + 1
+		} else {
+			bodyChunks[i].indentLevel = indentLevel
 		}
 	}
 	if len(bodyChunks) > 1 {
@@ -501,6 +492,7 @@ func compoundBody(
 	chunks = append(chunks, bodyChunks...)
 	chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
 	if closingBrace {
+		closingBraceChunk.indentLevel = indentLevel
 		chunks = append(chunks, closingBraceChunk)
 	}
 	return chunks
