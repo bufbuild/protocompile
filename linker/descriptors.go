@@ -331,6 +331,7 @@ func (r *result) createImports() fileImports {
 		imps[int(publicIndex)].IsPublic = true
 	}
 	for _, weakIndex := range fd.WeakDependency {
+		//nolint:staticcheck // yes, is_weak is deprecated; but we still have to set it to compile the file
 		imps[int(weakIndex)].IsWeak = true
 	}
 	return fileImports{files: imps}
