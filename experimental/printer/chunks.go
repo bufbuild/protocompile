@@ -11,8 +11,10 @@ import (
 
 // TODO list
 //
+// - add tests
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
+// - debug various decls/defs
 // - a bunch of performance optimizations
 // - refactor splitChunk behaviour/callback?
 // - improve performance with cursors
@@ -163,6 +165,7 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 		// Figure out what to do with indent level here
 		return bodyChunks(stream, decl.AsBody(), applyFormatting)
 	case ast.DeclKindRange:
+		// TODO: implement
 	default:
 		panic("ah")
 	}
@@ -196,7 +199,16 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 			indentLevel,
 		)
 	case ast.DefKindService:
-		// TODO: implement
+		service := decl.AsService()
+		return compoundBody(
+			stream,
+			service.Span(),
+			service.Body.Span(),
+			service.Body.Braces(),
+			bodyChunks(stream, service.Body, applyFormatting),
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
@@ -211,7 +223,16 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 			indentLevel,
 		)
 	case ast.DefKindOneof:
-		// TODO: implement
+		oneof := decl.AsOneof()
+		return compoundBody(
+			stream,
+			oneof.Span(),
+			oneof.Body.Span(),
+			oneof.Body.Braces(),
+			bodyChunks(stream, oneof.Body, applyFormatting),
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindGroup:
 		// TODO: implement
 	case ast.DefKindEnumValue:
@@ -226,7 +247,19 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 			indentLevel,
 		)
 	case ast.DefKindMethod:
-		// TODO: implement
+		method := decl.AsMethod()
+		return compoundBody(
+			stream,
+			method.Span(),
+			method.Body.Span(),
+			method.Body.Braces(),
+			bodyChunks(stream, method.Body, applyFormatting),
+			applyFormatting,
+			indentLevel,
+		)
+	case ast.DefKindOption:
+		option := decl.AsOption()
+		return optionChunks(stream, option.Span(), option.Option, applyFormatting)
 	default:
 		// This should never happen.
 		panic("ah")
@@ -280,7 +313,7 @@ func fieldChunks(
 		fieldSpan,
 		options.Span(),
 		options.Brackets(),
-		optionChunks(stream, options, applyFormatting),
+		optionsChunks(stream, options, applyFormatting),
 		applyFormatting,
 		indentLevel,
 	)
@@ -356,44 +389,14 @@ func bodyChunks(
 	return chunks
 }
 
-func optionChunks(
+func optionsChunks(
 	stream *token.Stream,
 	options ast.CompactOptions,
 	applyFormatting bool,
 ) []chunk {
 	var chunks []chunk
 	seq.Values(options.Entries())(func(o ast.Option) bool {
-		tokens, cursor := getTokensAndCursorForOption(stream, o.Span())
-		chunks = append(chunks, oneLiner(
-			tokens,
-			cursor,
-			func(t token.Token) bool {
-				// No spaces within path
-				// TODO: we want a space after the last path element
-				if checkSpanWithin(o.Path.Span(), t.Span()) {
-					return false
-				}
-				if checkSpanWithin(o.Value.Span(), t.Span()) {
-					return false
-				}
-				return true
-			},
-			func(cursor *token.Cursor) (splitKind, bool) {
-				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return splitKindNever, true
-				}
-				if double {
-					return splitKindDouble, false
-				}
-				if single {
-					return splitKindHard, false
-				}
-				return splitKindSoft, false
-			},
-			applyFormatting,
-			0, // This is set by compoundBody, TODO: better explanation
-		)...)
+		chunks = append(chunks, optionChunks(stream, o.Span(), o, applyFormatting)...)
 		return true
 	})
 	if !options.Brackets().IsZero() {
@@ -427,12 +430,45 @@ func optionChunks(
 	return chunks
 }
 
+func optionChunks(
+	stream *token.Stream,
+	optionSpan report.Span,
+	option ast.Option,
+	applyFormatting bool,
+) []chunk {
+	tokens, cursor := getTokensAndCursorForDecl(stream, optionSpan)
+	return oneLiner(
+		tokens,
+		cursor,
+		func(t token.Token) bool {
+			if checkSpanWithin(option.Path.Span(), t.Span()) || checkSpanWithin(option.Value.Span(), t.Span()) {
+				return false
+			}
+			return true
+		},
+		func(cursor *token.Cursor) (splitKind, bool) {
+			trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+			if trailingComment {
+				return splitKindNever, true
+			}
+			if double {
+				return splitKindDouble, false
+			}
+			if single {
+				return splitKindHard, false
+			}
+			return splitKindSoft, false
+		},
+		applyFormatting,
+		0, // This is set by compoundBody, TODO: better explanation
+	)
+}
+
 func compoundBody(
 	stream *token.Stream,
 	topLineStartSpan report.Span,
 	bodySpan report.Span,
 	braces token.Token,
-	// TODO: solve how to inject indent levels correctly
 	bodyChunks []chunk,
 	applyFormatting bool,
 	indentLevel uint32,
@@ -442,7 +478,7 @@ func compoundBody(
 		tokens,
 		cursor,
 		func(t token.Token) bool {
-			// TODO: figure out what to do here
+			// TODO: This is not true for all compound bodies
 			return t.ID() != braces.ID()
 		},
 		func(cursor *token.Cursor) (splitKind, bool) {
@@ -589,12 +625,6 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 }
 
 func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
-	tokens, cursor := getTokensAndCursorForOption(stream, span)
-	// TODO: docs. For everything else we do.
-	return tokens[:len(tokens)-1], cursor
-}
-
-func getTokensAndCursorForOption(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	stream.All()(func(t token.Token) bool {
 		// If the token is within the declartion range, then add it to tokens, otherwise skip
@@ -610,8 +640,7 @@ func getTokensAndCursorForOption(stream *token.Stream, span report.Span) ([]toke
 	if tokens == nil {
 		return nil, nil
 	}
-	// TODO: docs. For options, we don't cut off the last one
-	return tokens, token.NewCursorAt(tokens[len(tokens)-1])
+	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
 }
 
 // get all the tokens from the start to the end (inclusive) and the cursort starting at the end.
