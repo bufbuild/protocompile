@@ -79,19 +79,14 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 // legalizeDecl legalizes an extension or reserved range.
 func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 	in := taxa.Extensions
+	validParents := taxa.Message.AsSet()
 	if decl.IsReserved() {
 		in = taxa.Reserved
+		validParents = validParents.With(taxa.Enum)
 	}
 
-	var validParent bool
-	switch parent.what {
-	case taxa.Message:
-		validParent = true
-	case taxa.Enum:
-		validParent = in == taxa.Reserved
-	}
-	if !validParent {
-		p.Error(errBadNest{parent: parent, child: decl})
+	if !validParents.Has(parent.what) {
+		p.Error(errBadNest{parent: parent, child: decl, validParents: validParents})
 		return
 	}
 

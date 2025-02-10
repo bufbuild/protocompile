@@ -7,6 +7,7 @@ error: unexpected extension range within service definition
 21 | |     reserved 1;
 22 | | }
    | \_- ...cannot be declared within this service definition
+   = help: a extension range can only appear within a message definition
 
 error: unexpected reserved range within service definition
   --> testdata/parser/range/invalid_parent.proto:21:5
@@ -17,6 +18,7 @@ error: unexpected reserved range within service definition
    | |     ^^^^^^^^^^^ this reserved range...
 22 | | }
    | \_- ...cannot be declared within this service definition
+   = help: a reserved range can only appear within one of message definition or enum definition
 
 error: unexpected extension range within message extension block
   --> testdata/parser/range/invalid_parent.proto:25:5
@@ -27,6 +29,7 @@ error: unexpected extension range within message extension block
 26 | |     reserved 1;
 27 | | }
    | \_- ...cannot be declared within this message extension block
+   = help: a extension range can only appear within a message definition
 
 error: unexpected reserved range within message extension block
   --> testdata/parser/range/invalid_parent.proto:26:5
@@ -37,6 +40,7 @@ error: unexpected reserved range within message extension block
    | |     ^^^^^^^^^^^ this reserved range...
 27 | | }
    | \_- ...cannot be declared within this message extension block
+   = help: a reserved range can only appear within one of message definition or enum definition
 
 error: unexpected extension range within enum definition
   --> testdata/parser/range/invalid_parent.proto:30:5
@@ -46,5 +50,6 @@ error: unexpected extension range within enum definition
    | |     ^^^^^^^^^^^^^ this extension range...
 31 | | }
    | \_- ...cannot be declared within this enum definition
+   = help: a extension range can only appear within a message definition
 
 encountered 5 errors

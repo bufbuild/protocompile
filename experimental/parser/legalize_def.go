@@ -50,7 +50,7 @@ func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
 
 	kind := def.Classify()
 	if !validDefParents[kind].Has(parent.what) {
-		p.Error(errBadNest{parent: parent, child: def})
+		p.Error(errBadNest{parent: parent, child: def, validParents: validDefParents[kind]})
 	}
 
 	switch kind {

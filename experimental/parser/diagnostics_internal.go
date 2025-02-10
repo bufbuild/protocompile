@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // errUnexpected is a low-level parser error for when we hit a token we don't
@@ -117,14 +118,39 @@ func (e errHasSignature) Diagnose(d *report.Diagnostic) {
 
 // errBadNest diagnoses bad nesting: parent should not contain child.
 type errBadNest struct {
-	parent classified
-	child  report.Spanner
+	parent       classified
+	child        report.Spanner
+	validParents taxa.Set
 }
 
 func (e errBadNest) Diagnose(d *report.Diagnostic) {
-	d.Apply(
-		report.Message("unexpected %s within %s", taxa.Classify(e.child), e.parent.what),
-		report.Snippetf(e.child, "this %s...", taxa.Classify(e.child)),
-		report.Snippetf(e.parent, "...cannot be declared within this %s", e.parent.what),
-	)
+	what := taxa.Classify(e.child)
+	if e.parent.what == taxa.TopLevel {
+		d.Apply(
+			report.Message("unexpected %s at %s", what, e.parent.what),
+			report.Snippetf(e.child, "this %s cannot be declared here", what),
+		)
+	} else {
+		d.Apply(
+			report.Message("unexpected %s within %s", what, e.parent.what),
+			report.Snippetf(e.child, "this %s...", what),
+			report.Snippetf(e.parent, "...cannot be declared within this %s", e.parent.what),
+		)
+	}
+
+	if e.validParents.Len() == 1 {
+		v, _ := iterx.First(e.validParents.All())
+		if v == taxa.TopLevel {
+			// This case is just to avoid printing "within a top-level scope",
+			// which looks wrong.
+			d.Apply(report.Helpf("a %s can only appear at %s", what, v))
+		} else {
+			d.Apply(report.Helpf("a %s can only appear within a %s", what, v))
+		}
+	} else {
+		d.Apply(report.Helpf(
+			"a %s can only appear within one of %s",
+			what, e.validParents.Join("or"),
+		))
+	}
 }

@@ -70,7 +70,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	}
 
 	if parent.what != taxa.TopLevel || first == nil {
-		p.Error(errBadNest{parent: parent, child: decl})
+		p.Error(errBadNest{parent: parent, child: decl, validParents: taxa.TopLevel.AsSet()})
 		return
 	}
 
@@ -184,7 +184,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 // against duplicates.
 func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPackage, decl ast.DeclPackage) {
 	if parent.what != taxa.TopLevel || first == nil {
-		p.Error(errBadNest{parent: parent, child: decl})
+		p.Error(errBadNest{parent: parent, child: decl, validParents: taxa.TopLevel.AsSet()})
 		return
 	}
 
@@ -250,7 +250,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 	}
 
 	if parent.what != taxa.TopLevel {
-		p.Error(errBadNest{parent: parent, child: decl})
+		p.Error(errBadNest{parent: parent, child: decl, validParents: taxa.TopLevel.AsSet()})
 		return
 	}
 
