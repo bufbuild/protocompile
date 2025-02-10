@@ -66,6 +66,9 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 	case ast.DeclKindDef:
 		def := decl.AsDef()
 		body := def.Body()
+		// legalizeDef also calls Classify(def).
+		// TODO: try to pass around a classified when possible. Generalize
+		// classified toe a generic type?
 		what := classified{def, taxa.Classify(def)}
 
 		legalizeDef(p, parent, def)

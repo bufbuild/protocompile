@@ -44,10 +44,6 @@ var validDefParents = [...]taxa.Set{
 // It will mark the definition as corrupt if it encounters any particularly
 // egregious problems.
 func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
-	if def.IsCorrupt() {
-		return
-	}
-
 	kind := def.Classify()
 	if !validDefParents[kind].Has(parent.what) {
 		p.Error(errBadNest{parent: parent, child: def, validParents: validDefParents[kind]})
@@ -79,14 +75,32 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	case what == taxa.Extend:
 		legalizePath(p, what.In(), def.Name(), pathOptions{AllowAbsolute: true})
 
-	case what != taxa.Extend && def.Name().AsIdent().IsZero():
+	case def.Name().AsIdent().IsZero():
 		def.MarkCorrupt()
 		kw := taxa.Keyword(def.Keyword().Text())
-		p.Error(errUnexpected{
+
+		err := errUnexpected{
 			what:  def.Name(),
 			where: kw.After(),
 			want:  taxa.Ident.AsSet(),
-		}).Apply(
+		}
+		// Look for a separator, and use that instead. We can't "just" pick out
+		// the first separator, because def.Name might be a one-component
+		// extension path, e.g. (a.b.c).
+		def.Name().Components(func(pc ast.PathComponent) bool {
+			if pc.Separator().IsZero() {
+				return true
+			}
+
+			err = errUnexpected{
+				what:  pc.Separator(),
+				where: taxa.Ident.In(),
+				want:  taxa.Ident.AsSet(),
+			}
+			return false
+		})
+
+		p.Error(err).Apply(
 			report.Notef("the name of a %s must be a single identifier", what),
 			// TODO: Include a help that says to stick this into a file with
 			// the right package.
