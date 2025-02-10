@@ -11,9 +11,9 @@ import (
 
 // TODO list
 //
+// - figure out how to fix indent level of compound body chunks
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
-// - a bunch of refactors to consolidate logic
 // - a bunch of performance optimizations
 // - refactor splitChunk behaviour/callback?
 // - improve performance with cursors
@@ -161,7 +161,6 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 	case ast.DeclKindDef:
 		return defChunks(stream, decl.AsDef(), applyFormatting, indentLevel)
 	case ast.DeclKindBody:
-		// TODO: Figure what to do with indentLevel here
 		return bodyChunks(stream, decl.AsBody(), applyFormatting, indentLevel, indentLevel)
 	case ast.DeclKindRange:
 	default:
@@ -175,202 +174,57 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
 	case ast.DefKindMessage:
-		var defChunksIndex int
 		message := decl.AsMessage()
-		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, message.Span(), message.Body.Span())
-		chunks := oneLiner(
-			tokens,
-			cursor,
-			func(t token.Token) bool {
-				// We don't want to add a space after the brace, if there is one.
-				return t.ID() != message.Body.Braces().ID()
-			},
-			func(cursor *token.Cursor) (splitKind, bool) {
-				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return splitKindNever, true
-				}
-				if single {
-					return splitKindHard, false
-				}
-				if double {
-					return splitKindDouble, false
-				}
-				return splitKindSoft, false
-			},
+		return compoundBody(
+			stream,
+			message.Span(),
+			message.Body.Span(),
+			message.Body.Braces(),
+			bodyChunks(stream, message.Body, applyFormatting, indentLevel, indentLevel),
 			applyFormatting,
 			indentLevel,
 		)
-		bodyDeclIndentLevel := indentLevel
-		if chunks[len(chunks)-1].splitKind != splitKindSoft {
-			// If we are doing any kind of splitting, we want to increment the indent.
-			bodyDeclIndentLevel++
-		}
-		// We also need to create a soft split dep
-		// This is technically not a thing if it was not a soft split? TODO: make this more clear
-		defChunksIndex = len(chunks) - 1
-		bodyChunks := bodyChunks(stream, message.Body, applyFormatting, bodyDeclIndentLevel, indentLevel)
-		// If there is a closing brace, we don't need to adjust it.
-		var closingBraceChunk chunk
-		var closingBrace bool
-		if !message.Body.Braces().IsZero() {
-			closingBraceChunk = bodyChunks[len(bodyChunks)-1]
-			closingBrace = true
-			bodyChunks = bodyChunks[:len(bodyChunks)-1]
-		}
-		// For each body chunk, we must create adjusted softSplitDeps on the other chunks
-		if len(bodyChunks) > 1 {
-			for i := range bodyChunks {
-				softSplitDeps := make([]int, len(bodyChunks))
-				for j := range bodyChunks {
-					if i == j {
-						continue
-					}
-					softSplitDeps[j] = j + len(chunks)
-				}
-				bodyChunks[i].softSplitDeps = softSplitDeps
-			}
-		}
-		// TODO: probably should document this in a coherent way
-		chunks = append(chunks, bodyChunks...)
-		chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
-		if closingBrace {
-			chunks = append(chunks, closingBraceChunk)
-		}
-		return chunks
 	case ast.DefKindEnum:
-		// TODO: implement
+		enum := decl.AsEnum()
+		return compoundBody(
+			stream,
+			enum.Span(),
+			enum.Body.Span(),
+			enum.Body.Braces(),
+			bodyChunks(stream, enum.Body, applyFormatting, indentLevel, indentLevel),
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindService:
 		// TODO: implement
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
 		field := decl.AsField()
-		// No options to handle, so we just process all the tokens like a single one liner
-		if field.Options.IsZero() {
-			tokens, cursor := getTokensAndCursorForDecl(stream, field.Span())
-			return oneLiner(
-				tokens,
-				cursor,
-				func(t token.Token) bool {
-					// We don't want to add a space after the semicolon
-					// We also don't want to add a space after the tag
-					if t.ID() == field.Semicolon.ID() || checkSpanWithin(field.Tag.Span(), t.Span()) {
-						return false
-					}
-					return true
-				},
-				func(cursor *token.Cursor) (splitKind, bool) {
-					trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-					if trailingComment {
-						return splitKindNever, true
-					}
-					if double {
-						return splitKindDouble, false
-					}
-					if single {
-						return splitKindHard, false
-					}
-					return splitKindSoft, false
-				},
-				applyFormatting,
-				indentLevel,
-			)
-		}
-		// TODO: this looks just like the message body logic, perhaps there is something we can
-		// consolidate here.
-		//
-		// In the case where there are options, we treat everything up to the options declaration
-		// as one line.
-		tokens, cursor := getTokensAndCursorFromStartToEnd(stream, field.Span(), field.Options.Span())
-		chunks := oneLiner(
-			tokens,
-			cursor,
-			func(t token.Token) bool {
-				// We don't want to add a space after the bracket, if there is one.
-				return t.ID() != field.Options.Brackets().ID()
-			},
-			func(cursor *token.Cursor) (splitKind, bool) {
-				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return splitKindNever, true
-				}
-				if double {
-					return splitKindDouble, false
-				}
-				if single {
-					return splitKindHard, false
-				}
-				return splitKindSoft, false
-			},
+		return fieldChunks(
+			stream,
+			field.Span(),
+			field.Tag.Span(),
+			field.Semicolon,
+			field.Options,
 			applyFormatting,
 			indentLevel,
 		)
-		var entriesIndentLevel uint32
-		if chunks[len(chunks)-1].splitKind != splitKindSoft {
-			entriesIndentLevel = indentLevel + 1
-		}
-		defChunksIndex := len(chunks) - 1
-		optionChunks := optionChunks(stream, field.Options, applyFormatting, entriesIndentLevel)
-		// If there is a closing brace, we don't need to adjust it
-		var closingBracketChunk chunk
-		var closingBracket bool
-		if !field.Options.Brackets().IsZero() {
-			closingBracketChunk = optionChunks[len(optionChunks)-1]
-			closingBracket = true
-			optionChunks = optionChunks[:len(optionChunks)-1]
-		}
-		// For each option chunk, we must create adjusted softSplitDeps on the other chunks
-		if len(optionChunks) > 1 {
-			for i := range optionChunks {
-				softSplitDeps := make([]int, len(optionChunks))
-				for j := range optionChunks {
-					if i == j {
-						continue
-					}
-					softSplitDeps[j] = j + len(chunks)
-				}
-				optionChunks[i].softSplitDeps = softSplitDeps
-			}
-		}
-		chunks = append(chunks, optionChunks...)
-		chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
-		if closingBracket {
-			chunks = append(chunks, closingBracketChunk)
-		}
-		// Handle the semicolon
-		// TODO: there must be a better way
-		_, cursor = getTokensAndCursorForDecl(stream, field.Span())
-		chunks = append(chunks, oneLiner(
-			[]token.Token{field.Semicolon},
-			cursor,
-			func(t token.Token) bool {
-				// No spaces
-				return false
-			},
-			func(cursor *token.Cursor) (splitKind, bool) {
-				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return splitKindNever, true
-				}
-				if double {
-					return splitKindDouble, false
-				}
-				if single {
-					return splitKindHard, false
-				}
-				return splitKindSoft, false
-			},
-			applyFormatting,
-			0, // No indents for the semicolon
-		)...)
-		return chunks
 	case ast.DefKindOneof:
 		// TODO: implement
 	case ast.DefKindGroup:
 		// TODO: implement
 	case ast.DefKindEnumValue:
-		// TODO: implement
+		enumValue := decl.AsEnumValue()
+		return fieldChunks(
+			stream,
+			enumValue.Span(),
+			enumValue.Tag.Span(),
+			enumValue.Semicolon,
+			enumValue.Options,
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindMethod:
 		// TODO: implement
 	default:
@@ -378,6 +232,84 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		panic("ah")
 	}
 	return nil
+}
+
+func fieldChunks(
+	stream *token.Stream,
+	fieldSpan report.Span,
+	fieldTagSpan report.Span,
+	semicolon token.Token,
+	options ast.CompactOptions,
+	applyFormatting bool,
+	indentLevel uint32,
+) []chunk {
+	// No options to handle, so we just process all the tokens like a single one liner
+	if options.IsZero() {
+		tokens, cursor := getTokensAndCursorForDecl(stream, fieldSpan)
+		return oneLiner(
+			tokens,
+			cursor,
+			func(t token.Token) bool {
+				// We don't want to add a space after the semicolon
+				// We also don't want to add a space after the tag
+				// TODO
+				if t.ID() == semicolon.ID() || checkSpanWithin(fieldTagSpan, t.Span()) {
+					return false
+				}
+				return true
+			},
+			func(cursor *token.Cursor) (splitKind, bool) {
+				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+				if trailingComment {
+					return splitKindNever, true
+				}
+				if double {
+					return splitKindDouble, false
+				}
+				if single {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			},
+			applyFormatting,
+			indentLevel,
+		)
+	}
+	chunks := compoundBody(
+		stream,
+		fieldSpan,
+		options.Span(),
+		options.Brackets(),
+		optionChunks(stream, options, applyFormatting, indentLevel),
+		applyFormatting,
+		indentLevel,
+	)
+	// TODO: there might be a better way to handle the semicolon
+	_, cursor := getTokensAndCursorForDecl(stream, fieldSpan)
+	chunks = append(chunks, oneLiner(
+		[]token.Token{semicolon},
+		cursor,
+		func(t token.Token) bool {
+			// No spaces
+			return false
+		},
+		func(cursor *token.Cursor) (splitKind, bool) {
+			trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+			if trailingComment {
+				return splitKindNever, true
+			}
+			if double {
+				return splitKindDouble, false
+			}
+			if single {
+				return splitKindHard, false
+			}
+			return splitKindSoft, false
+		},
+		applyFormatting,
+		0, // No indents for the semicolon
+	)...)
+	return chunks
 }
 
 func bodyChunks(
@@ -498,6 +430,78 @@ func optionChunks(
 			applyFormatting,
 			closingBracketIndentLevel,
 		)...)
+	}
+	return chunks
+}
+
+func compoundBody(
+	stream *token.Stream,
+	topLineStartSpan report.Span,
+	bodySpan report.Span,
+	braces token.Token,
+	// TODO: solve how to inject indent levels correctly
+	bodyChunks []chunk,
+	applyFormatting bool,
+	indentLevel uint32,
+) []chunk {
+	tokens, cursor := getTokensAndCursorFromStartToEnd(stream, topLineStartSpan, bodySpan)
+	chunks := oneLiner(
+		tokens,
+		cursor,
+		func(t token.Token) bool {
+			// TODO: figure out what to do here
+			return t.ID() != braces.ID()
+		},
+		func(cursor *token.Cursor) (splitKind, bool) {
+			trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+			if trailingComment {
+				return splitKindNever, true
+			}
+			if double {
+				return splitKindDouble, false
+			}
+			if single {
+				return splitKindHard, false
+			}
+			return splitKindSoft, false
+		},
+		applyFormatting,
+		indentLevel,
+	)
+	var bodyIndentLevel uint32
+	if chunks[len(chunks)-1].splitKind != splitKindSoft {
+		bodyIndentLevel++
+	}
+	defChunksIndex := len(chunks) - 1
+	var closingBraceChunk chunk
+	var closingBrace bool
+	if !braces.IsZero() {
+		closingBraceChunk = bodyChunks[len(bodyChunks)-1]
+		closingBrace = true
+		bodyChunks = bodyChunks[:len(bodyChunks)-1]
+	}
+	// TODO: figure out if we want to consolidate with softSplitDeps logic later, keep separate for now
+	if chunks[len(chunks)-1].splitKind != splitKindSoft {
+		for i := range bodyChunks {
+			bodyChunks[i].indentLevel++
+		}
+	}
+	if len(bodyChunks) > 1 {
+		for i := range bodyChunks {
+			softSplitDeps := make([]int, len(bodyChunks))
+			for j := range bodyChunks {
+				if i == j {
+					continue
+				}
+				softSplitDeps[j] = j + len(chunks)
+			}
+			bodyChunks[i].softSplitDeps = softSplitDeps
+		}
+	}
+	chunks = append(chunks, bodyChunks...)
+	chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
+	if closingBrace {
+		chunks = append(chunks, closingBraceChunk)
 	}
 	return chunks
 }
