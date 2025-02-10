@@ -123,6 +123,17 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 					p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, m).Apply(
 						report.Snippet(expr),
 						report.Snippetf(p.syntax, "%v is specified here", m),
+						report.SuggestEdits(
+							expr,
+							fmt.Sprintf("quote it to make it into a %v", taxa.String),
+							report.Edit{
+								Start: 0, End: 0, Replace: `"`,
+							},
+							report.Edit{
+								Start: expr.Span().Len(), End: expr.Span().Len(),
+								Replace: `"`,
+							},
+						),
 					)
 				}
 			}
@@ -133,10 +144,22 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 				isName = true
 
 				if m := p.Mode(); m == taxa.EditionMode {
-					p.Errorf("cannot use %vs in %v in %v", taxa.String, in, m).Apply(
+					err := p.Errorf("cannot use %vs in %v in %v", taxa.String, in, m).Apply(
 						report.Snippet(expr),
 						report.Snippetf(p.syntax, "%v is specified here", m),
 					)
+
+					// Only suggest unquoting if it's already an identifier.
+					if isASCIIIdent(name) {
+						err.Apply(report.SuggestEdits(
+							lit, "replace this with an identifier",
+							report.Edit{
+								Start: 0, End: lit.Span().Len(),
+								Replace: name,
+							},
+						))
+					}
+
 					return true
 				}
 

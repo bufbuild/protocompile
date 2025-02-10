@@ -6,5 +6,10 @@ error: cannot use string literals in reserved range in editions mode
 ...
 20 |     reserved foo, "foo";
    |                   ^^^^^
+  help: replace this with an identifier
+   |
+20 | -     reserved foo, "foo";
+20 | +     reserved foo, foo;
+   |
 
 encountered 1 error

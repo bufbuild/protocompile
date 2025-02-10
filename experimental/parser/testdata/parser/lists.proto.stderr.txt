@@ -430,6 +430,10 @@ error: cannot use identifiers in reserved range in syntax mode
    |
 72 |     reserved a {};
    |              ^
+  help: quote it to make it into a string literal
+   |
+72 |     reserved "a" {};
+   |              + +
 
 error: cannot mix tags and names in reserved range
   --> testdata/parser/lists.proto:72:16
@@ -464,18 +468,30 @@ error: cannot use identifiers in reserved range in syntax mode
    |
 75 |     reserved a, b c;
    |              ^
+  help: quote it to make it into a string literal
+   |
+75 |     reserved "a", b c;
+   |              + +
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:75:17
    |
 75 |     reserved a, b c;
    |                 ^
+  help: quote it to make it into a string literal
+   |
+75 |     reserved a, "b" c;
+   |                 + +
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:75:19
    |
 75 |     reserved a, b c;
    |                   ^
+  help: quote it to make it into a string literal
+   |
+75 |     reserved a, b "c";
+   |                   + +
 
 error: unexpected identifier in reserved range
   --> testdata/parser/lists.proto:75:19
@@ -490,18 +506,30 @@ error: cannot use identifiers in reserved range in syntax mode
    |
 76 |     reserved a, b c
    |              ^
+  help: quote it to make it into a string literal
+   |
+76 |     reserved "a", b c
+   |              + +
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:76:17
    |
 76 |     reserved a, b c
    |                 ^
+  help: quote it to make it into a string literal
+   |
+76 |     reserved a, "b" c
+   |                 + +
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:76:19
    |
 76 |     reserved a, b c
    |                   ^
+  help: quote it to make it into a string literal
+   |
+76 |     reserved a, b "c"
+   |                   + +
 
 error: unexpected identifier in reserved range
   --> testdata/parser/lists.proto:76:19

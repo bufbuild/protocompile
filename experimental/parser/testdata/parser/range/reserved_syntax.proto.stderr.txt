@@ -6,5 +6,9 @@ error: cannot use identifiers in reserved range in syntax mode
 ...
 20 |     reserved foo, "foo";
    |              ^^^
+  help: quote it to make it into a string literal
+   |
+20 |     reserved "foo", "foo";
+   |              +   +
 
 encountered 1 error
