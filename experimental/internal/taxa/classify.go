@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
@@ -41,12 +42,19 @@ func Classify(node report.Spanner) Noun {
 	case ast.File:
 		return TopLevel
 	case ast.Path:
-		if id := node.AsIdent(); !id.IsZero() {
-			return classifyToken(id)
+		if first, ok := iterx.OnlyOne(node.Components); ok && first.Separator().IsZero() {
+			if id := first.AsIdent(); !id.IsZero() {
+				return classifyToken(id)
+			}
+			if !first.AsExtension().IsZero() {
+				return ExtensionName
+			}
 		}
+
 		if node.Absolute() {
 			return FullyQualifiedName
 		}
+
 		return QualifiedName
 
 	case ast.DeclAny:

@@ -45,6 +45,18 @@ func First[T any](seq iter.Seq[T]) (v T, ok bool) {
 	return v, ok
 }
 
+// OnlyOne retrieved the only element of an iterator.
+func OnlyOne[T any](seq iter.Seq[T]) (v T, ok bool) {
+	seq(func(x T) bool {
+		if !ok {
+			v = x
+		}
+		ok = !ok
+		return ok
+	})
+	return v, ok
+}
+
 // All returns whether every element of an iterator satisfies the given
 // predicate. Returns true if seq yields no values.
 func All[T any](seq iter.Seq[T], p func(T) bool) bool {

@@ -112,7 +112,7 @@ error: unexpected definition body in message field
 28 |     M x { /* ... */ } returns (T);
    |         ^^^^^^^^^^^^^
 
-error: unexpected qualified name in message field
+error: unexpected extension name in message field
   --> testdata/parser/def/ordering.proto:28:31
    |
 28 |     M x { /* ... */ } returns (T);

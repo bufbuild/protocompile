@@ -76,7 +76,7 @@ error: unexpected nested extension path in message field
 40 |     (foo) (bar) = 1;
    |     ^^^^^
 
-error: unexpected qualified name in message field
+error: unexpected extension name in message field
   --> testdata/parser/field/bad-path.proto:40:11
    |
 40 |     (foo) (bar) = 1;

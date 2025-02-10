@@ -22,7 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Path represents a multi-part identifier.
@@ -70,12 +69,11 @@ func (p Path) ToRelative() Path {
 // AsIdent returns the single identifier that comprises this path, or
 // the zero token.
 func (p Path) AsIdent() token.Token {
-	var buf [2]PathComponent
-	prefix := slicesx.AppendSeq(buf[:0], iterx.Limit(2, p.Components))
-	if len(prefix) != 1 || !prefix[0].Separator().IsZero() {
+	first, ok := iterx.OnlyOne(p.Components)
+	if !ok || !first.Separator().IsZero() {
 		return token.Zero
 	}
-	return prefix[0].AsIdent()
+	return first.AsIdent()
 }
 
 // AsPredeclared returns the [predeclared.Name] that this path represents.
