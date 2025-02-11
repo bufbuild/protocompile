@@ -27,6 +27,10 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
+// isOrdinaryFilePath matches a "normal looking" file path, for the purposes
+// of emitting warnings.
+var isOrdinaryFilePath = regexp.MustCompile("[0-9a-zA-Z./_-]*")
+
 // legalizeFile is the entry-point for legalizing a parsed Protobuf file.
 func legalizeFile(p *parser, file ast.File) {
 	var (
@@ -234,8 +238,6 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 		MaxComponents: 101,
 	})
 }
-
-var isOrdinaryFilePath = regexp.MustCompile("[0-9a-zA-Z./_-]*")
 
 // legalizeImport legalizes a DeclImport.
 //
