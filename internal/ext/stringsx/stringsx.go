@@ -17,6 +17,7 @@ package stringsx
 
 import (
 	"strings"
+	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
@@ -46,7 +47,7 @@ func Bytes(s string) iter.Seq[byte] {
 	return func(yield func(byte) bool) {
 		for i := range len(s) {
 			// Avoid performing a bounds check each loop step.
-			b := *unsafex.Add(unsafex.StringData(s), i)
+			b := *unsafex.Add(unsafe.StringData(s), i)
 			if !yield(b) {
 				return
 			}
