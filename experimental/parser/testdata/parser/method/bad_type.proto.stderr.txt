@@ -52,4 +52,16 @@ error: only message types may appear in method parameter list
 27 |     rpc Bar7(stream map<string, foo.Bar>) returns (foo.Bar);
    |                     ^^^^^^^^^^^^^^^^^^^^
 
-encountered 9 errors
+error: unexpected nested extension path in method parameter list
+  --> testdata/parser/method/bad_type.proto:29:18
+   |
+29 |     rpc Bar8(foo.(bar.baz)) returns (buf.build/x.y);
+   |                  ^^^^^^^^^
+
+error: unexpected `/` in path in method return type
+  --> testdata/parser/method/bad_type.proto:29:47
+   |
+29 |     rpc Bar8(foo.(bar.baz)) returns (buf.build/x.y);
+   |                                               ^ help: replace this with a `.`
+
+encountered 11 errors

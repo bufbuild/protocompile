@@ -34,8 +34,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 	ty := list.At(0)
 	switch ty.Kind() {
 	case ast.TypeKindPath:
-		// Allow all path types. We don't know if this is a message or not yet;
-		// figuring that out is a problem for IR construction.
+		legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 	case ast.TypeKindPrefixed:
 		prefixed := ty.AsPrefixed()
 		if prefixed.Prefix() != ast.TypePrefixStream {
@@ -45,6 +44,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		}
 
 		if prefixed.Type().Kind() == ast.TypeKindPath {
+			legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 			break
 		}
 
@@ -73,7 +73,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny) {
 		inner := ty.Type()
 		switch inner.Kind() {
 		case ast.TypeKindPath:
-			break
+			legalizeFieldType(p, inner)
 		case ast.TypeKindPrefixed:
 			p.Error(errMoreThanOne{
 				first:  ty.PrefixToken(),
@@ -117,7 +117,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny) {
 
 			switch v.Kind() {
 			case ast.TypeKindPath:
-				break
+				legalizeFieldType(p, v)
 			case ast.TypeKindPrefixed:
 				p.Error(errUnexpected{
 					what:  v.AsPrefixed().PrefixToken(),

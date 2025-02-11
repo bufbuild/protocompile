@@ -99,3 +99,20 @@ decls:
                             - { ident: "Bar", separator: SEPARATOR_DOT }
               outputs:
                 - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+        - def:
+            kind: KIND_METHOD
+            name.components: [{ ident: "Bar8" }]
+            signature:
+              inputs:
+                - path.components:
+                    - ident: "foo"
+                    - extension.components:
+                        - ident: "bar"
+                        - { ident: "baz", separator: SEPARATOR_DOT }
+                      separator: SEPARATOR_DOT
+              outputs:
+                - path.components:
+                    - ident: "buf"
+                    - { ident: "build", separator: SEPARATOR_DOT }
+                    - { ident: "x", separator: SEPARATOR_SLASH }
+                    - { ident: "y", separator: SEPARATOR_DOT }

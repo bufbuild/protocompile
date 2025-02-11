@@ -25,4 +25,6 @@ service Foo {
     rpc Bar5(foo.Bar) returns (foo.Bar, stream string);
     rpc Bar6(stream repeated foo.Bar) returns (foo.Bar);
     rpc Bar7(stream map<string, foo.Bar>) returns (foo.Bar);
+
+    rpc Bar8(foo.(bar.baz)) returns (buf.build/x.y);
 }

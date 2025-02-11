@@ -23,63 +23,117 @@ error: unexpected qualified name in message field
    |          ^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:25:27
+  --> testdata/parser/field/bad-path.proto:24:10
    |
-25 |     optional package.Type path.name = 1;
-   |                           ^^^^^^^^^ expected identifier
+24 |     Type path/name = 1;
+   |          ^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
   --> testdata/parser/field/bad-path.proto:26:27
    |
-26 |     repeated package.Type path.name = 1;
+26 |     optional package.Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
   --> testdata/parser/field/bad-path.proto:27:27
    |
-27 |     required package.Type path.name = 1;
+27 |     repeated package.Type path.name = 1;
+   |                           ^^^^^^^^^ expected identifier
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:28:27
+   |
+28 |     required package.Type path.name = 1;
+   |                           ^^^^^^^^^ expected identifier
+
+error: unexpected `/` in path in message field
+  --> testdata/parser/field/bad-path.proto:30:12
+   |
+30 |     package/Type name = 1;
+   |            ^ help: replace this with a `.`
+
+error: unexpected `/` in path in message field
+  --> testdata/parser/field/bad-path.proto:31:21
+   |
+31 |     optional package/Type path.name = 1;
+   |                     ^ help: replace this with a `.`
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/bad-path.proto:31:27
+   |
+31 |     optional package/Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:33:5
+  --> testdata/parser/field/bad-path.proto:33:14
    |
-33 |     (foo.bar).Type name = 1;
+33 |     optional (foo.bar).Type name = 1;
+   |              ^^^^^^^^^
+
+error: unexpected nested extension path in message field
+  --> testdata/parser/field/bad-path.proto:34:14
+   |
+34 |     repeated (foo.bar).Type name = 1;
+   |              ^^^^^^^^^
+
+error: unexpected nested extension path in message field
+  --> testdata/parser/field/bad-path.proto:35:14
+   |
+35 |     required (foo.bar).Type name = 1;
+   |              ^^^^^^^^^
+
+error: unexpected nested extension path in message field
+  --> testdata/parser/field/bad-path.proto:36:5
+   |
+36 |     (foo.bar).Type name = 1;
    |     ^^^^^^^^^
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:35:27
+  --> testdata/parser/field/bad-path.proto:38:27
    |
-35 |     optional package.Type (foo.bar).name = 1;
+38 |     optional package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:36:27
+  --> testdata/parser/field/bad-path.proto:39:27
    |
-36 |     repeated package.Type (foo.bar).name = 1;
+39 |     repeated package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:37:27
+  --> testdata/parser/field/bad-path.proto:40:27
    |
-37 |     required package.Type (foo.bar).name = 1;
+40 |     required package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected qualified name in message field
-  --> testdata/parser/field/bad-path.proto:38:18
+  --> testdata/parser/field/bad-path.proto:41:18
    |
-38 |     package.Type (foo.bar).name = 1;
+41 |     package.Type (foo.bar).name = 1;
    |                  ^^^^^^^^^^^^^^ expected identifier
 
 error: unexpected nested extension path in message field
-  --> testdata/parser/field/bad-path.proto:40:5
+  --> testdata/parser/field/bad-path.proto:43:5
    |
-40 |     (foo) (bar) = 1;
+43 |     (foo) (bar) = 1;
    |     ^^^^^
 
 error: unexpected extension name in message field
-  --> testdata/parser/field/bad-path.proto:40:11
+  --> testdata/parser/field/bad-path.proto:43:11
    |
-40 |     (foo) (bar) = 1;
+43 |     (foo) (bar) = 1;
    |           ^^^^^ expected identifier
 
-encountered 14 errors
+error: unexpected nested extension path in message field
+  --> testdata/parser/field/bad-path.proto:45:21
+   |
+45 |     map<string, foo.(bar)> foo = 1;
+   |                     ^^^^^
+
+error: unexpected `/` in path in message field
+  --> testdata/parser/field/bad-path.proto:46:20
+   |
+46 |     map<string, foo/bar> foo = 1;
+   |                    ^ help: replace this with a `.`
+
+encountered 23 errors

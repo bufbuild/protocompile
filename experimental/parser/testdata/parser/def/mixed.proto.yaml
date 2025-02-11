@@ -96,3 +96,8 @@ decls:
         inputs: [{ path.components: [{ ident: "X" }] }]
         outputs: [{ path.components: [{ ident: "X" }] }]
       body: {}
+  - def:
+      kind: KIND_MESSAGE
+      name.components: [{ ident: "Foo" }]
+      value.literal.string_value: "bar"
+      body: {}

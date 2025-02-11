@@ -88,4 +88,10 @@ error: service definition appears to have method signature
 41 | service FooService(X) returns (X) {}
    |                   ^^^^^^^^^^^^^^^ help: remove this
 
-encountered 15 errors
+error: unexpected string literal in message definition
+  --> testdata/parser/def/mixed.proto:43:13
+   |
+43 | message Foo = "bar" {}
+   |             ^^^^^^^
+
+encountered 16 errors

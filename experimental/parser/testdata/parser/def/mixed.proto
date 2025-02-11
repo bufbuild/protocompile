@@ -39,3 +39,5 @@ message Foo(X) returns (X) {
 extend bar.Foo(X) returns (X) {}
 
 service FooService(X) returns (X) {}
+
+message Foo = "bar" {}
