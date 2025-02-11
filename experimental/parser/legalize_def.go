@@ -253,7 +253,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		if sig.Inputs().Span().IsZero() {
 			def.MarkCorrupt()
 			p.Errorf("missing %v in %v", taxa.MethodIns, taxa.Method).Apply(
-				report.Snippet(def),
+				report.Snippetf(def.Name(), "expected type in %s after this", taxa.Parens),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Inputs(), taxa.MethodIns)
@@ -261,15 +261,25 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 
 		if sig.Outputs().Span().IsZero() {
 			def.MarkCorrupt()
+			var after report.Spanner
+			switch {
+			case !sig.Returns().IsZero():
+				after = sig.Returns()
+			case !sig.Inputs().IsZero():
+				after = sig.Inputs()
+			default:
+				after = def.Name()
+			}
+
 			p.Errorf("missing %v in %v", taxa.MethodOuts, taxa.Method).Apply(
-				report.Snippet(def),
+				report.Snippetf(after, "expected type in %s after this", taxa.Parens),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Outputs(), taxa.MethodOuts)
 		}
 	}
 
-	// Methods are unique in that they can be either end in a ; or a {}.
+	// Methods are unique in that they can end in either a ; or a {}.
 	// The parser already checks for defs to end with either one of these,
 	// so we don't need to do anything here.
 

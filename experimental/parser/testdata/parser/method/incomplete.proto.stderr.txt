@@ -5,16 +5,16 @@ error: missing `(...)` around method return type
    |                               ^^^^^^^ help: replace this with `(foo.Bar)`
 
 error: missing method return type in service method
-  --> testdata/parser/method/incomplete.proto:21:5
+  --> testdata/parser/method/incomplete.proto:21:13
    |
 21 |     rpc Bar2(foo.Bar);
-   |     ^^^^^^^^^^^^^^^^^^
+   |             ^^^^^^^^^ expected type in `(...)` after this
 
 error: missing method parameter list in service method
-  --> testdata/parser/method/incomplete.proto:22:5
+  --> testdata/parser/method/incomplete.proto:22:9
    |
 22 |     rpc Bar3 returns (foo.Bar);
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |         ^^^^ expected type in `(...)` after this
 
 error: expected exactly one type in method return type, got 0
   --> testdata/parser/method/incomplete.proto:23:31
@@ -28,17 +28,17 @@ error: expected exactly one type in method parameter list, got 0
 24 |     rpc Bar5() returns (stream foo.Bar);
    |             ^^
 
-error: missing method return type in service method
-  --> testdata/parser/method/incomplete.proto:25:5
-   |
-25 |     rpc Bar6() returns;
-   |     ^^^^^^^^^^^^^^^^^^^
-
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/method/incomplete.proto:25:13
    |
 25 |     rpc Bar6() returns;
    |             ^^
+
+error: missing method return type in service method
+  --> testdata/parser/method/incomplete.proto:25:13
+   |
+25 |     rpc Bar6() returns;
+   |             ^^ expected type in `(...)` after this
 
 error: unexpected `;` after `returns`
   --> testdata/parser/method/incomplete.proto:25:23
