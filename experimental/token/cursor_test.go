@@ -116,4 +116,20 @@ func TestCursor(t *testing.T) {
 		assert.Len(t, text, span.Start)
 		assert.Len(t, text, span.End)
 	})
+
+	// Test setting the cursor at the open brace
+	t.Run("open", func(t *testing.T) {
+		t.Parallel()
+		cursor := token.NewCursorAt(open)
+		tokenEq(t, open, cursor.NextSkippable())
+		tokenEq(t, token.Zero, cursor.NextSkippable())
+	})
+
+	// Test setting the cursor at the close brace
+	t.Run("close", func(t *testing.T) {
+		t.Parallel()
+		cursor := token.NewCursorAt(close)
+		tokenEq(t, close, cursor.NextSkippable())
+		tokenEq(t, token.Zero, cursor.NextSkippable())
+	})
 }
