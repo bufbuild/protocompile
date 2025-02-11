@@ -44,7 +44,7 @@ func Runes(s string) iter.Seq[rune] {
 // Bytes returns an iterator over the bytes in a string.
 func Bytes(s string) iter.Seq[byte] {
 	return func(yield func(byte) bool) {
-		for i := 0; i < len(s); i++ {
+		for i := range len(s) {
 			// Avoid performing a bounds check each loop step.
 			b := *unsafex.Add(unsafex.StringData(s), i)
 			if !yield(b) {

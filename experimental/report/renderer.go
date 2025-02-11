@@ -625,7 +625,7 @@ func (r *renderer) window(w *window) {
 					// If we got here, it means we're going to crop an escape if
 					// we don't do something about it.
 					spaceNeeded := len(writeTo) - lastEsc
-					for i := 0; i < spaceNeeded; i++ {
+					for range spaceNeeded {
 						buf = append(buf, 0)
 					}
 					copy(buf[actualStart+lastEsc+spaceNeeded:], buf[actualStart+lastEsc:])
@@ -1009,7 +1009,7 @@ func (r *renderer) suggestion(snip snippet) {
 		prev := column
 		column = stringWidth(column, hunk.content, false, nil)
 		r.WriteString(hunk.bold(&r.ss))
-		for i := 0; i < column-prev; i++ {
+		for range column - prev {
 			r.WriteString(string(hunk.kind))
 		}
 	}
@@ -1029,7 +1029,7 @@ func adjustLineOffsets(text string, start, end int) (int, int) {
 }
 
 func padByRune(out *strings.Builder, spaces int, r rune) {
-	for i := 0; i < spaces; i++ {
+	for range spaces {
 		out.WriteRune(r)
 	}
 }

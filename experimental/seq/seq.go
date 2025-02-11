@@ -63,7 +63,7 @@ type Inserter[T any] interface {
 func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 	return func(yield func(int, T) bool) {
 		n := seq.Len()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !yield(i, seq.At(i)) {
 				return
 			}
@@ -75,7 +75,7 @@ func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 func Values[T any](seq Indexer[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		n := seq.Len()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !yield(seq.At(i)) {
 				return
 			}
