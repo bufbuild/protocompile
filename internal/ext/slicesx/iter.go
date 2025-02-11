@@ -39,6 +39,76 @@ func Map[S ~[]E, E, U any](s S, f func(E) U) iter.Seq[U] {
 	return iterx.Map(Values(s), f)
 }
 
+// PartitionFunc returns an iterator of the largest substrings of s of equal
+// elements.
+//
+// In other words, suppose key is the identity function. Then, the slice
+// [a a a b c c] is yielded as the subslices [a a a], [b], and [c c c].
+//
+// The iterator also yields the index at which each subslice begins.
+//
+// Will never yield an empty slice.
+//
+//nolint:dupword
+func Partition[S ~[]E, E comparable](s S) iter.Seq2[int, S] {
+	return PartitionKey(s, func(e E) E { return e })
+}
+
+// PartitionKey is like [Partition], but instead the subslices are all such
+// that ever element has the same value for key(e).
+//
+// [Partition] is equivalent to PartitionKey with the identity function.
+func PartitionKey[S ~[]E, E any, K comparable](s S, key func(E) K) iter.Seq2[int, S] {
+	return func(yield func(int, S) bool) {
+		var start int
+		var prev K
+		for i, r := range s {
+			next := key(r)
+			if i == 0 {
+				prev = next
+				continue
+			}
+
+			if prev == next {
+				continue
+			}
+
+			if !yield(start, s[start:i]) {
+				return
+			}
+
+			start = i
+			prev = next
+		}
+
+		if start < len(s) {
+			yield(start, s[start:])
+		}
+	}
+}
+
+// SplitFunc splits a slice according to the given predicate.
+//
+// Whenever p returns true, this function will yield all prior elements not
+// yet yielded.
+func SplitFunc[S ~[]E, E any](s S, p func(int, E) bool) iter.Seq[S] {
+	return func(yield func(S) bool) {
+		var start int
+		for i, r := range s {
+			if !p(i, r) {
+				continue
+			}
+			if !yield(s[start:i]) {
+				return
+			}
+			start = i
+		}
+		if start < len(s) {
+			yield(s[start:])
+		}
+	}
+}
+
 // Values is a polyfill for [slices.Values].
 func Values[S ~[]E, E any](s S) iter.Seq[E] {
 	return func(yield func(E) bool) {

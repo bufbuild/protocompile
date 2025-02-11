@@ -51,7 +51,7 @@ func wordWrap(text string, width int) iter.Seq[string] {
 			var nextIsSpace bool
 			var column, cursor int
 
-			stringsx.Partition(line, unicode.IsSpace)(func(start int, chunk string) bool {
+			stringsx.PartitionKey(line, unicode.IsSpace)(func(start int, chunk string) bool {
 				isSpace := nextIsSpace
 				nextIsSpace = !nextIsSpace
 

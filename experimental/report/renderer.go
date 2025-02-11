@@ -213,13 +213,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	r.margin = max(2, len(strconv.Itoa(greatestLine))) // Easier than messing with math.Log10()
 
 	// Render all the diagnostic windows.
-	parts := slicesx.Partition(d.snippets, func(a, b *snippet) bool {
-		if len(a.edits) > 0 || len(b.edits) > 0 {
+	parts := slicesx.PartitionKey(d.snippets, func(snip snippet) any {
+		if len(snip.edits) > 0 {
 			// Suggestions are always rendered in their own windows.
-			return true
+			// Return a fresh pointer, since that will always compare as
+			// distinct.
+			return new(int)
 		}
-
-		return a.Path() != b.Path()
+		return snip.Path()
 	})
 
 	parts(func(i int, snippets []snippet) bool {
@@ -484,7 +485,7 @@ func (r *renderer) window(w *window) {
 
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
-	parts := slicesx.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
+	parts := slicesx.PartitionKey(w.underlines, func(u underline) int { return u.line })
 	parts(func(_ int, part []underline) bool {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
@@ -519,8 +520,7 @@ func (r *renderer) window(w *window) {
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		parts := slicesx.Partition(buf, func(a, b *byte) bool { return *a != *b })
-		parts(func(_ int, line []byte) bool {
+		slicesx.Partition(buf)(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
 				out.WriteString(r.ss.reset)
