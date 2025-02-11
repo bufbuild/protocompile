@@ -61,7 +61,7 @@ func NewCursorAt(tok Token) *Cursor {
 	// Since open/close tokens are fused, for closed tokens, we must create the cursor at the
 	// open token.
 	if tok.nat().IsClose() {
-		idx = idx + tok.nat().Offset()
+		idx += tok.nat().Offset()
 	}
 
 	return &Cursor{
