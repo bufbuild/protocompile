@@ -129,7 +129,7 @@ func TestCursor(t *testing.T) {
 	t.Run("close", func(t *testing.T) {
 		t.Parallel()
 		cursor := token.NewCursorAt(close)
-		tokenEq(t, open, cursor.NextSkippable())
+		tokenEq(t, close, cursor.NextSkippable())
 		tokenEq(t, token.Zero, cursor.NextSkippable())
 	})
 }

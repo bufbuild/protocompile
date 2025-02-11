@@ -57,16 +57,10 @@ func NewCursorAt(tok Token) *Cursor {
 		panic(fmt.Sprintf("protocompile/token: passed synthetic token to NewCursorAt: %v", tok))
 	}
 
-	idx := tok.ID().naturalIndex() // Convert to 0-based index.
-	// Since open/close tokens are fused, for closed tokens, we must create the cursor at the
-	// open token.
-	if tok.nat().IsClose() {
-		idx += tok.nat().Offset()
-	}
-
 	return &Cursor{
 		withContext: tok.withContext,
-		idx:         idx,
+		idx:         tok.ID().naturalIndex(), // Convert to 0-based index.
+		isBackwards: tok.nat().IsClose(),     // TODO: docs
 	}
 }
 
