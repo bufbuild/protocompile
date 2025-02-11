@@ -82,7 +82,7 @@ func (w *writer) WriteWrapped(data string, width int) {
 	}
 
 	first := true
-	wordWrap(data, MaxMessageWidth-margin)(func(line string) bool {
+	wordWrap(data, width-margin)(func(line string) bool {
 		if !first {
 			w.WriteString("\n")
 			w.WriteSpaces(margin)
