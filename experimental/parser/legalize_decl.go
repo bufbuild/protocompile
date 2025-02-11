@@ -127,6 +127,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			}
 		case ast.ExprKindPrefixed:
 			expr := expr.AsPrefixed()
+			//nolint:gocritic // Intentional single-case switch.
 			switch expr.Prefix() {
 			case ast.ExprPrefixMinus:
 				lit := expr.Expr().AsLiteral()

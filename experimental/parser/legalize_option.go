@@ -104,6 +104,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 			return
 		}
 
+		//nolint:gocritic // Intentional single-case switch.
 		switch value.Prefix() {
 		case ast.ExprPrefixMinus:
 			ok := value.Expr().AsLiteral().Kind() == token.Number
