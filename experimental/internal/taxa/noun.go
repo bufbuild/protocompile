@@ -125,6 +125,8 @@ const (
 	KeywordRequired
 	KeywordGroup
 	KeywordStream
+	PredeclaredMap
+	PredeclaredMax
 	total int = iota
 )
 
@@ -243,6 +245,8 @@ var _table_Noun_String = [...]string{
 	KeywordRequired:    "`required`",
 	KeywordGroup:       "`group`",
 	KeywordStream:      "`stream`",
+	PredeclaredMap:     "`map`",
+	PredeclaredMax:     "`max`",
 }
 
 var _table_Noun_GoString = [...]string{
@@ -344,5 +348,7 @@ var _table_Noun_GoString = [...]string{
 	KeywordRequired:    "KeywordRequired",
 	KeywordGroup:       "KeywordGroup",
 	KeywordStream:      "KeywordStream",
+	PredeclaredMap:     "PredeclaredMap",
+	PredeclaredMax:     "PredeclaredMax",
 }
 var _ iter.Seq[int] // Mark iter as used.

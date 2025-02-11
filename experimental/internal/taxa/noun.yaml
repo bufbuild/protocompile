@@ -140,3 +140,6 @@
   - {name: KeywordRequired, string: "`required`"}
   - {name: KeywordGroup, string: "`group`"}
   - {name: KeywordStream, string: "`stream`"}
+
+  - {name: PredeclaredMap, string: "`map`"}
+  - {name: PredeclaredMax, string: "`max`"}

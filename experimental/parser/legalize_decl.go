@@ -16,12 +16,15 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -101,46 +104,104 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		}
 	}
 
-	// We only legalize reserved name productions here, because that depends on
-	// the syntax/edition keyword. All other expressions are legalized when we
-	// do constant evaluation.
-
-	if in != taxa.Reserved {
-		return
+	want := taxa.NewSet(taxa.Int, taxa.Range)
+	if in == taxa.Reserved {
+		if p.Mode() == taxa.EditionMode {
+			want = want.With(taxa.Ident)
+		} else {
+			want = want.With(taxa.String)
+		}
 	}
 
-	var names, tags []ast.ExprAny
-	seq.Values(decl.Ranges())(func(expr ast.ExprAny) bool {
-		var isName bool
+	legalizeNumber := func(in taxa.Noun, expr ast.ExprAny, allowMax bool) {
 		switch expr.Kind() {
 		case ast.ExprKindPath:
-			isName = true
-			path := expr.AsPath()
-			if !path.AsIdent().IsZero() {
-				if m := p.Mode(); m == taxa.SyntaxMode {
-					p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, m).Apply(
-						report.Snippet(expr),
-						report.Snippetf(p.syntax, "%v is specified here", m),
-						report.SuggestEdits(
-							expr,
-							fmt.Sprintf("quote it to make it into a %v", taxa.String),
-							report.Edit{
-								Start: 0, End: 0, Replace: `"`,
-							},
-							report.Edit{
-								Start: expr.Span().Len(), End: expr.Span().Len(),
-								Replace: `"`,
-							},
-						),
-					)
-				}
+			if allowMax && expr.AsPath().AsPredeclared() == predeclared.Max {
+				return
 			}
 
 		case ast.ExprKindLiteral:
 			lit := expr.AsLiteral()
-			if name, ok := lit.AsString(); ok {
-				isName = true
+			if lit.Kind() == token.Number && !strings.Contains(lit.Text(), ".") {
+				return
+			}
+		case ast.ExprKindPrefixed:
+			expr := expr.AsPrefixed()
+			switch expr.Prefix() {
+			case ast.ExprPrefixMinus:
+				lit := expr.Expr().AsLiteral()
+				if lit.Kind() != token.Number || strings.Contains(lit.Text(), ".") {
+					p.Error(errUnexpected{
+						what:  expr.Expr(),
+						where: taxa.Minus.After(),
+						want:  taxa.Int.AsSet(),
+					})
+				}
+				return
+			}
+		}
 
+		want := taxa.Int.AsSet()
+		if allowMax {
+			want = want.With(taxa.PredeclaredMax)
+		}
+
+		p.Error(errUnexpected{
+			what:  expr,
+			where: in.In(),
+			want:  want,
+		})
+	}
+
+	var names, tags []ast.ExprAny
+	seq.Values(decl.Ranges())(func(expr ast.ExprAny) bool {
+		switch expr.Kind() {
+		case ast.ExprKindPath:
+			path := expr.AsPath()
+			if path.AsIdent().IsZero() || in == taxa.Extensions {
+				p.Error(errUnexpected{
+					what:  expr,
+					where: in.In(),
+					want:  want,
+				})
+				break
+			}
+
+			names = append(names, expr)
+
+			m := p.Mode()
+			if m == taxa.EditionMode {
+				break
+			}
+			p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, m).Apply(
+				report.Snippet(expr),
+				report.Snippetf(p.syntax, "%v is specified here", m),
+				report.SuggestEdits(
+					expr,
+					fmt.Sprintf("quote it to make it into a %v", taxa.String),
+					report.Edit{
+						Start: 0, End: 0, Replace: `"`,
+					},
+					report.Edit{
+						Start: expr.Span().Len(), End: expr.Span().Len(),
+						Replace: `"`,
+					},
+				),
+			)
+
+		case ast.ExprKindLiteral:
+			lit := expr.AsLiteral()
+			if name, ok := lit.AsString(); ok {
+				if in == taxa.Extensions {
+					p.Error(errUnexpected{
+						what:  expr,
+						where: in.In(),
+						want:  want,
+					})
+					break
+				}
+
+				names = append(names, expr)
 				if m := p.Mode(); m == taxa.EditionMode {
 					err := p.Errorf("cannot use %vs in %v in %v", taxa.String, in, m).Apply(
 						report.Snippet(expr),
@@ -158,7 +219,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 						))
 					}
 
-					return true
+					break
 				}
 
 				if !isASCIIIdent(name) {
@@ -169,19 +230,34 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 					p.Errorf("reserved %v name is not a valid identifier", field).Apply(
 						report.Snippet(expr),
 					)
-					return true
+					break
 				}
 
 				if !lit.IsPureString() {
 					p.Warn(errImpureString{lit.Token, in.In()})
 				}
-			}
-		}
 
-		if isName {
-			names = append(names, expr)
-		} else {
+				break
+			}
+
+			fallthrough
+
+		case ast.ExprKindPrefixed:
+			legalizeNumber(in, expr, false)
 			tags = append(tags, expr)
+
+		case ast.ExprKindRange:
+			lo, hi := expr.AsRange().Bounds()
+			legalizeNumber(in, lo, false)
+			legalizeNumber(in, hi, true)
+			tags = append(tags, expr)
+
+		default:
+			p.Error(errUnexpected{
+				what:  expr,
+				where: in.In(),
+				want:  want,
+			})
 		}
 
 		return true

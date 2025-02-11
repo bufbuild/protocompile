@@ -300,6 +300,11 @@ func Keyword(text string) Noun {
 	case "stream":
 		return KeywordStream
 
+	case "map":
+		return PredeclaredMap
+	case "max":
+		return PredeclaredMax
+
 	default:
 		return Ident
 	}

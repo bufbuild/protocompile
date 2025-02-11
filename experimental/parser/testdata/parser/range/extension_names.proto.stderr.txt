@@ -1,0 +1,13 @@
+error: unexpected identifier in extension range
+  --> testdata/parser/range/extension_names.proto:20:16
+   |
+20 |     extensions foo, "bar";
+   |                ^^^ expected range expression or integer literal
+
+error: unexpected string literal in extension range
+  --> testdata/parser/range/extension_names.proto:20:21
+   |
+20 |     extensions foo, "bar";
+   |                     ^^^^^ expected range expression or integer literal
+
+encountered 2 errors

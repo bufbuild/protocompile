@@ -581,19 +581,11 @@ error: cannot use identifiers in reserved range in syntax mode
 72 |     reserved "a" {};
    |              + +
 
-error: cannot mix tags and names in reserved range
+error: unexpected message expression in reserved range
   --> testdata/parser/lists.proto:72:16
    |
 72 |     reserved a {};
-   |              - ^^ this field tag must go in its own reserved range
-   |              |
-   |              but expected a field name because of this
-  help: split the reserved range
-   |
-72 | -     reserved a {};
-72 | +     reserved a;
-73 | +     reserved {};
-   |
+   |                ^^ expected range expression, string literal, or integer literal
 
 error: unexpected message expression in reserved range
   --> testdata/parser/lists.proto:72:16
