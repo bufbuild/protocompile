@@ -27,9 +27,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
-// TabstopWidth is the size we render all tabstops as.
-const TabstopWidth int = 4
-
 // Spanner is any type with a [Span].
 type Spanner interface {
 	// Should return the zero [Span] to indicate that it does not contribute

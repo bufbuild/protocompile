@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iters contains helpers for working with iterators.
 package slicesx
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import (
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
 
 // Collect polyfills [slices.Collect].
 func Collect[E any](seq iter.Seq[E]) []E {
@@ -31,11 +33,19 @@ func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
 	return s
 }
 
-// Map constructs a new slice by applying f to each element.
-func Map[S ~[]E, E, R any](s S, f func(E) R) []R {
-	out := make([]R, len(s))
-	for i, e := range s {
-		out[i] = f(e)
+// Map is a helper for generating a mapped iterator over a slice, to avoid
+// a noisy call to [Values].
+func Map[S ~[]E, E, U any](s S, f func(E) U) iter.Seq[U] {
+	return iterx.Map(Values(s), f)
+}
+
+// Values is a polyfill for [slices.Values].
+func Values[S ~[]E, E any](s S) iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for _, v := range s {
+			if !yield(v) {
+				return
+			}
+		}
 	}
-	return out
 }

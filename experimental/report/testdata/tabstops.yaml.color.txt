@@ -1,4 +1,4 @@
-⟨b.ylw⟩warning: tabstop⟨reset⟩
+⟨b.ylw⟩warning: tabstop
 ⟨blu⟩  --> foo.proto:6:9
    |
 ⟨blu⟩ 6 | ⟨reset⟩        field
@@ -6,7 +6,7 @@
 ⟨blu⟩   | ⟨b.blu⟩|
 ⟨blu⟩   | ⟨b.blu⟩specifically these⟨reset⟩
 
-⟨b.ylw⟩warning: partial tabstop⟨reset⟩
+⟨b.ylw⟩warning: partial tabstop
 ⟨blu⟩  --> foo.proto:7:2
    |
 ⟨blu⟩ 7 | ⟨reset⟩    field

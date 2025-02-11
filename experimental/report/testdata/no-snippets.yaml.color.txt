@@ -1,13 +1,30 @@
-⟨b.red⟩error: system not supported⟨reset⟩⟨reset⟩
+⟨b.red⟩error: system not supported⟨reset⟩
 
-⟨b.red⟩error: could not open file "foo.proto": os error 2: no such file or directory⟨reset⟩
+⟨b.red⟩error: this diagnostic message is comically long to illustrate message wrapping;
+       real diagnostics should probably avoid doing this⟨reset⟩
+
+⟨b.red⟩error: could not open file "foo.proto": os error 2: no such file or directory
 ⟨blu⟩ --> foo.proto⟨reset⟩
 
-⟨b.ylw⟩warning: file consists only of the byte `0xaa`⟨reset⟩
+⟨b.ylw⟩warning: file consists only of the byte `0xaa`
 ⟨blu⟩ --> foo.proto
-⟨blu⟩   = ⟨b.cyn⟩note: ⟨reset⟩that means that the file is screaming
-⟨blu⟩   = ⟨b.cyn⟩help: ⟨reset⟩you should delete it to put it out of its misery
-⟨blu⟩   = ⟨b.red⟩debug: ⟨reset⟩0xaaaaaaaaaaaaaaaa⟨reset⟩
+  ⟨blu⟩ = ⟨b.cyn⟩note: ⟨reset⟩that means that the file is screaming
+  ⟨blu⟩ = ⟨b.cyn⟩help: ⟨reset⟩you should delete it to put it out of its misery
+  ⟨blu⟩ = ⟨b.red⟩debug: ⟨reset⟩0xaaaaaaaaaaaaaaaa⟨reset⟩
 
-⟨b.red⟩encountered 2 errors and 1 warning
+⟨b.cyn⟩remark: very long footers
+⟨blu⟩ --> foo.proto
+  ⟨blu⟩ = ⟨b.cyn⟩note: ⟨reset⟩this footer is very very very very very very very very very very very
+           very very very very very very very long
+  ⟨blu⟩ = ⟨b.cyn⟩note: ⟨reset⟩this one is also long, and it's also
+           supercalifragilistcexpialidocious, leading to a very early break
+  ⟨blu⟩ = ⟨b.cyn⟩help: ⟨reset⟩this help is very long (and triggers the same word-wrapping code
+           path)
+  ⟨blu⟩ = ⟨b.cyn⟩help: ⟨reset⟩this one contains a newline
+           which overrides the default word wrap behavior (but this line is
+           wrapped naturally)
+  ⟨blu⟩ = ⟨b.red⟩debug: ⟨reset⟩debug lines are never wrapped, no matter how crazy long they are,
+            since they can contain stack traces⟨reset⟩
+
+⟨b.red⟩encountered 3 errors and 1 warning
 ⟨reset⟩
