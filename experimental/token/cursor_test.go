@@ -128,7 +128,7 @@ func TestCursor(t *testing.T) {
 	// Test setting the cursor at the close brace
 	t.Run("close", func(t *testing.T) {
 		t.Parallel()
-		cursor := token.NewCursorAt(close) //nolint:revive,predeclared
+		cursor := token.NewCursorAt(close)
 		tokenEq(t, open, cursor.NextSkippable())
 		tokenEq(t, token.Zero, cursor.NextSkippable())
 	})
