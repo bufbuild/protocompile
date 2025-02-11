@@ -61,10 +61,12 @@ const (
 	MethodOuts
 	Signature
 	FieldTag
+	FieldName
 	OptionValue
 	QualifiedName
 	FullyQualifiedName
 	ExtensionName
+	TypeURL
 	Expr
 	Range
 	Array
@@ -177,10 +179,12 @@ var _table_Noun_String = [...]string{
 	MethodOuts:         "method return type",
 	Signature:          "method signature",
 	FieldTag:           "message field tag",
+	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
 	FullyQualifiedName: "fully qualified name",
 	ExtensionName:      "extension name",
+	TypeURL:            "`Any` type URL",
 	Expr:               "expression",
 	Range:              "range expression",
 	Array:              "array expression",
@@ -190,8 +194,8 @@ var _table_Noun_String = [...]string{
 	TypePath:           "type name",
 	TypeParams:         "type parameters",
 	TypePrefix:         "type modifier",
-	MapKey:             "map key",
-	MapValue:           "map value",
+	MapKey:             "map key type",
+	MapValue:           "map value type",
 	Whitespace:         "whitespace",
 	Comment:            "comment",
 	Ident:              "identifier",
@@ -276,10 +280,12 @@ var _table_Noun_GoString = [...]string{
 	MethodOuts:         "MethodOuts",
 	Signature:          "Signature",
 	FieldTag:           "FieldTag",
+	FieldName:          "FieldName",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",
 	FullyQualifiedName: "FullyQualifiedName",
 	ExtensionName:      "ExtensionName",
+	TypeURL:            "TypeURL",
 	Expr:               "Expr",
 	Range:              "Range",
 	Array:              "Array",

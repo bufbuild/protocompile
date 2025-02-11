@@ -1,7 +1,19 @@
+error: missing enum value in declaration
+  --> testdata/parser/enum/incomplete.proto:20:5
+   |
+20 |     NO_TAG;
+   |     ^^^^^^^
+
+error: missing enum value in declaration
+  --> testdata/parser/enum/incomplete.proto:21:5
+   |
+21 |     NO_TAG2
+   |     ^^^^^^^
+
 error: unexpected `}` after definition
   --> testdata/parser/enum/incomplete.proto:22:1
    |
 22 | }
    | ^ expected `;`
 
-encountered 1 error
+encountered 3 errors

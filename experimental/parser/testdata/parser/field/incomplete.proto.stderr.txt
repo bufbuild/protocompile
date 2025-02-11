@@ -16,6 +16,12 @@ error: unexpected identifier after definition
 24 |     foo.Bar name;
    |     ^^^ expected `;`
 
+error: missing message field tag in declaration
+  --> testdata/parser/field/incomplete.proto:24:5
+   |
+24 |     foo.Bar name;
+   |     ^^^^^^^^^^^^^
+
 error: unexpected integer literal in definition
   --> testdata/parser/field/incomplete.proto:25:18
    |
@@ -28,4 +34,4 @@ error: unexpected `}` after definition
 27 | }
    | ^ expected `;`
 
-encountered 5 errors
+encountered 6 errors

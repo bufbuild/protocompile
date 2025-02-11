@@ -43,7 +43,7 @@ func canStartExpr(tok token.Token) bool {
 	return canStartPath(tok) ||
 		tok.Kind() == token.Number || tok.Kind() == token.String ||
 		tok.Text() == "-" ||
-		((tok.Text() == "{" || tok.Text() == "[") && !tok.IsLeaf())
+		((tok.Text() == "{" || tok.Text() == "<" || tok.Text() == "[") && !tok.IsLeaf())
 }
 
 func canStartOptions(tok token.Token) bool {

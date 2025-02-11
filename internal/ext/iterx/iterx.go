@@ -57,6 +57,18 @@ func OnlyOne[T any](seq iter.Seq[T]) (v T, ok bool) {
 	return v, ok
 }
 
+// Find returns the first element that matches a predicate.
+func Find[T any](seq iter.Seq[T], p func(T) bool) (v T, ok bool) {
+	seq(func(x T) bool {
+		if p(x) {
+			v, ok = x, true
+			return false
+		}
+		return true
+	})
+	return v, ok
+}
+
 // All returns whether every element of an iterator satisfies the given
 // predicate. Returns true if seq yields no values.
 func All[T any](seq iter.Seq[T], p func(T) bool) bool {
@@ -110,6 +122,36 @@ func FilterMap[T, U any](seq iter.Seq[T], f func(T) (U, bool)) iter.Seq[U] {
 			return !ok || yield(v2)
 		})
 	}
+}
+
+// FilterMap1To2 is like [FilterMap], but it also acts a Y pipe for converting a one-element
+// iterator into a two-element iterator.
+func Map1To2[T, U, V any](seq iter.Seq[T], f func(T) (U, V)) iter.Seq2[U, V] {
+	return FilterMap1To2(seq, func(v T) (U, V, bool) {
+		x1, x2 := f(v)
+		return x1, x2, true
+	})
+}
+
+// FilterMap1To2 is like [FilterMap], but it also acts a Y pipe for converting a one-element
+// iterator into a two-element iterator.
+func FilterMap1To2[T, U, V any](seq iter.Seq[T], f func(T) (U, V, bool)) iter.Seq2[U, V] {
+	return func(yield func(U, V) bool) {
+		seq(func(v T) bool {
+			x1, x2, ok := f(v)
+			return !ok || yield(x1, x2)
+		})
+	}
+}
+
+// Enumerate adapts an iterator to yield an incrementing index each iteration
+// step.
+func Enumerate[T any](seq iter.Seq[T]) iter.Seq2[int, T] {
+	var i int
+	return Map1To2(seq, func(v T) (int, T) {
+		i++
+		return i - 1, v
+	})
 }
 
 // Join is like [strings.Join], but works on an iterator. Elements are

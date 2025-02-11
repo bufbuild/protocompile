@@ -1,3 +1,9 @@
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:20:5
+   |
+20 |     M x (T) (T);
+   |     ^^^^^^^^^^^^
+
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:20:9
    |
@@ -12,6 +18,12 @@ error: encountered more than one method parameter list
    |         |
    |         first one is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:21:5
+   |
+21 |     M x returns (T) (T);
+   |     ^^^^^^^^^^^^^^^^^^^^
+
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:21:9
    |
@@ -25,6 +37,12 @@ error: unexpected method parameter list after method return type
    |         ----------- ^^^
    |         |
    |         previous method return type is here
+
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:22:5
+   |
+22 |     M x returns T (T);
+   |     ^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:22:9
@@ -46,6 +64,12 @@ error: unexpected method parameter list after method return type
    |         |
    |         previous method return type is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:23:5
+   |
+23 |     M x [foo = bar] (T);
+   |     ^^^^^^^^^^^^^^^^^^^^
+
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:23:21
    |
@@ -60,6 +84,12 @@ error: unexpected method parameter list after compact options
    |         |
    |         previous compact options is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:24:5
+   |
+24 |     M x { /* ... */ } (T);
+   |     ^^^^^^^^^^^^^^^^^
+
 error: unexpected definition body in message field
   --> testdata/parser/def/ordering.proto:24:9
    |
@@ -72,11 +102,23 @@ error: unexpected nested extension path in message field
 24 |     M x { /* ... */ } (T);
    |                       ^^^
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:24:23
+   |
+24 |     M x { /* ... */ } (T);
+   |                       ^^^^
+
 error: missing name in message field
   --> testdata/parser/def/ordering.proto:24:23
    |
 24 |     M x { /* ... */ } (T);
    |                       ^^^^
+
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:26:5
+   |
+26 |     M x returns (T) returns (T);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:26:9
@@ -92,6 +134,12 @@ error: encountered more than one method return type
    |         |
    |         first one is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:27:5
+   |
+27 |     M x [foo = bar] returns (T);
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:27:21
    |
@@ -106,17 +154,35 @@ error: unexpected method return type after compact options
    |         |
    |         previous compact options is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:28:5
+   |
+28 |     M x { /* ... */ } returns (T);
+   |     ^^^^^^^^^^^^^^^^^
+
 error: unexpected definition body in message field
   --> testdata/parser/def/ordering.proto:28:9
    |
 28 |     M x { /* ... */ } returns (T);
    |         ^^^^^^^^^^^^^
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:28:23
+   |
+28 |     M x { /* ... */ } returns (T);
+   |                       ^^^^^^^^^^^^
+
 error: unexpected extension name in message field
   --> testdata/parser/def/ordering.proto:28:31
    |
 28 |     M x { /* ... */ } returns (T);
    |                               ^^^ expected identifier
+
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:30:5
+   |
+30 |     M x returns T returns T;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:30:9
@@ -137,6 +203,12 @@ error: encountered more than one method return type
    |         --------- ^^^^^^^^^ help: consider removing this
    |         |
    |         first one is here
+
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:31:5
+   |
+31 |     M x returns T [] returns T;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:31:9
@@ -164,6 +236,12 @@ error: unexpected method return type after compact options
    |                   |
    |                   previous compact options is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:32:5
+   |
+32 |     M x [foo = bar] returns T;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 error: message field appears to have method signature
   --> testdata/parser/def/ordering.proto:32:21
    |
@@ -184,11 +262,23 @@ error: missing `(...)` around method return type
 32 |     M x [foo = bar] returns T;
    |                             ^ help: replace this with `(T)`
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:33:5
+   |
+33 |     M x { /* ... */ } returns T;
+   |     ^^^^^^^^^^^^^^^^^
+
 error: unexpected definition body in message field
   --> testdata/parser/def/ordering.proto:33:9
    |
 33 |     M x { /* ... */ } returns T;
    |         ^^^^^^^^^^^^^
+
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:33:23
+   |
+33 |     M x { /* ... */ } returns T;
+   |                       ^^^^^^^^^^
 
 error: encountered more than one message field tag
   --> testdata/parser/def/ordering.proto:35:13
@@ -206,6 +296,12 @@ error: unexpected message field tag after compact options
    |         |
    |         previous compact options is here
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:37:5
+   |
+37 |     M x { /* ... */ } = 1;
+   |     ^^^^^^^^^^^^^^^^^
+
 error: unexpected definition body in message field
   --> testdata/parser/def/ordering.proto:37:9
    |
@@ -218,6 +314,12 @@ error: unexpected tokens in message definition
 37 |     M x { /* ... */ } = 1;
    |                       ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:39:5
+   |
+39 |     M x [foo = bar] [foo = bar];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 error: encountered more than one compact options
   --> testdata/parser/def/ordering.proto:39:21
    |
@@ -225,6 +327,12 @@ error: encountered more than one compact options
    |         ----------- ^^^^^^^^^^^ help: consider removing this
    |         |
    |         first one is here
+
+error: missing message field tag in declaration
+  --> testdata/parser/def/ordering.proto:40:5
+   |
+40 |     M x { /* ... */ } [foo = bar];
+   |     ^^^^^^^^^^^^^^^^^
 
 error: unexpected definition body in message field
   --> testdata/parser/def/ordering.proto:40:9
@@ -238,4 +346,4 @@ error: unexpected `[...]` in message definition
 40 |     M x { /* ... */ } [foo = bar];
    |                       ^^^^^^^^^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
 
-encountered 36 errors
+encountered 54 errors

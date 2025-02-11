@@ -1,4 +1,4 @@
-error: unexpected non-comparable type in map key
+error: unexpected non-comparable type in map key type
   --> testdata/parser/type/generic.proto:21:9
    |
 21 |     map<M, M> x2 = 2;
@@ -6,7 +6,7 @@ error: unexpected non-comparable type in map key
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
-error: unexpected non-comparable type in map key
+error: unexpected non-comparable type in map key type
   --> testdata/parser/type/generic.proto:22:9
    |
 22 |     map<test.M, .test.M> x3 = 3;
@@ -14,7 +14,7 @@ error: unexpected non-comparable type in map key
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
-error: unexpected type in map value
+error: unexpected type in map value type
   --> testdata/parser/type/generic.proto:23:17
    |
 23 |     map<string, map<string, test.M>> x4 = 4;
@@ -56,13 +56,13 @@ error: unexpected type after `required`
 32 |     required map<string, string> x10 = 10;
    |              ^^^^^^^^^^^^^^^^^^^ expected type name
 
-error: unexpected `repeated` in map value
+error: unexpected `repeated` in map value type
   --> testdata/parser/type/generic.proto:34:17
    |
 34 |     map<string, repeated string> x11 = 11;
    |                 ^^^^^^^^
 
-error: unexpected non-comparable type in map key
+error: unexpected non-comparable type in map key type
   --> testdata/parser/type/generic.proto:35:9
    |
 35 |     map<optional .test.M, required test.M> x12 = 12;
@@ -70,7 +70,7 @@ error: unexpected non-comparable type in map key
    = help: map keys may be of any of the following types:
    = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
 
-error: unexpected `required` in map value
+error: unexpected `required` in map value type
   --> testdata/parser/type/generic.proto:35:27
    |
 35 |     map<optional .test.M, required test.M> x12 = 12;

@@ -149,11 +149,22 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 			want:  taxa.Ident.AsSet(),
 		})
 	}
-
-	// NOTE: We do not legalize a missing value for fields and enum values
-	// here; instead, that happens during IR lowering. This is because we want
-	// to be able to include a suggested field number, but we cannot do that
-	// until much later, when we have evaluated expressions.
+	if def.Value().IsZero() {
+		what := taxa.FieldTag
+		if def.Classify() == ast.DefKindEnumValue {
+			what = taxa.EnumValue
+		}
+		p.Errorf("missing %v in declaration", what).Apply(
+			report.Snippet(def),
+			// TODO: We do not currently provide a suggested field number for
+			// cases where that is permitted, such as for non-extension-fields.
+			//
+			// However, that cannot happen until after IR lowering. Once that's
+			// implemented, we must come back here and set it up so that this
+			// diagnostic can be overridden by a later one, probably using
+			// diagnostic tags.
+		)
+	}
 
 	if sig := def.Signature(); !sig.IsZero() {
 		p.Error(errHasSignature{def})

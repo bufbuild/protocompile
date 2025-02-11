@@ -22,23 +22,11 @@ error: unexpected absolute path in option setting
 22 | option .(foo.bar).baz = 3;
    |        ^^^^^^^^^^^^^^ expected a path without a leading `.`
 
-error: unexpected absolute path in option setting
-  --> testdata/parser/option/bad_path.proto:22:8
-   |
-22 | option .(foo.bar).baz = 3;
-   |        ^^^^^^^^^^^^^^ expected a path without a leading `.`
-
 error: unexpected `/` in path in option setting
   --> testdata/parser/option/bad_path.proto:23:11
    |
 23 | option foo/(bar.baz).foo = 4;
    |           ^ help: replace this with a `.`
-
-error: unexpected absolute path in option setting
-  --> testdata/parser/option/bad_path.proto:27:9
-   |
-27 |         .(foo.bar).baz = 3,
-   |         ^^^^^^^^^^^^^^ expected a path without a leading `.`
 
 error: unexpected absolute path in option setting
   --> testdata/parser/option/bad_path.proto:27:9
@@ -58,4 +46,4 @@ error: compact options cannot be empty
 30 |     int32 y = 2 [];
    |                 ^^ help: remove this
 
-encountered 10 errors
+encountered 8 errors

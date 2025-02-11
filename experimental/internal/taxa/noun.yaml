@@ -63,11 +63,13 @@
   - {name: Signature, string: "method signature"}
 
   - {name: FieldTag, string: "message field tag"}
+  - {name: FieldName, string: "message field name"}
   - {name: OptionValue, string: "option setting value"}
 
   - {name: QualifiedName, string: "qualified name"}
   - {name: FullyQualifiedName, string: "fully qualified name"}
   - {name: ExtensionName, string: "extension name"}
+  - {name: TypeURL, string: "`Any` type URL"}
 
   - {name: Expr, string: "expression"}
   - {name: Range, string: "range expression"}
@@ -80,8 +82,8 @@
   - {name: TypeParams, string: "type parameters"}
   - {name: TypePrefix, string: "type modifier"}
 
-  - {name: MapKey, string: "map key"}
-  - {name: MapValue, string: "map value"}
+  - {name: MapKey, string: "map key type"}
+  - {name: MapValue, string: "map value type"}
 
   - {name: Whitespace, string: "whitespace"}
   - {name: Comment, string: "comment"}

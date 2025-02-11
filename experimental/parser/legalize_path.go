@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // pathOptions is configuration for [legalizePath].
@@ -43,9 +44,9 @@ type pathOptions struct {
 func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) (ok bool) {
 	ok = true
 
-	var i, bytes, components int
+	var bytes, components int
 	var slash token.Token
-	path.Components(func(pc ast.PathComponent) bool {
+	iterx.Enumerate(path.Components)(func(i int, pc ast.PathComponent) bool {
 		bytes += pc.Separator().Span().Len()
 		// Just Len() here is technically incorrect, because it could be an
 		// extension, but MaxBytes is never used with AllowExts.
@@ -97,7 +98,6 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 			}
 		}
 
-		i++
 		return true
 	})
 
