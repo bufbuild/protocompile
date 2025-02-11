@@ -20,9 +20,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/rivo/uniseg"
+
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/iter"
-	"github.com/rivo/uniseg"
 )
 
 const (
