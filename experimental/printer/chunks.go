@@ -1,7 +1,6 @@
 package printer
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -12,6 +11,7 @@ import (
 
 // TODO list
 //
+// - fix bug in CursorAt
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
 // - debug various decls/defs
@@ -199,9 +199,7 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		)
 	case ast.DefKindOneof:
 		oneof := decl.AsOneof()
-		fmt.Println("AAAAAAAAAAAAAAAAAA")
 		chunks := compoundBody(stream, oneof.Span(), oneof.Body, applyFormatting, indentLevel)
-		fmt.Println("DONE ONEOF")
 		return chunks
 	case ast.DefKindGroup:
 		// TODO: implement
@@ -359,9 +357,8 @@ func optionsChunks(
 		_, end := options.Brackets().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
-			// TODO: We use options.Brackets() instead of end because the closing bracket Token is
-			// not in the token stream...
-			token.NewCursorAt(options.Brackets()),
+			// TODO: pending fix to NewCursorAt
+			token.NewCursorAt(end),
 			func(t token.Token) bool {
 				// No spaces
 				return false
@@ -439,9 +436,8 @@ func bodyChunks(
 		_, end := decl.Braces().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
-			// TODO: We use `decl.Braces()` instead of end because the closing brace Token is not in the token
-			// stream...
-			token.NewCursorAt(decl.Braces()),
+			// TODO: pending fix to NewCursorAt
+			token.NewCursorAt(end),
 			func(t token.Token) bool {
 				// No spaces
 				return false
@@ -526,9 +522,6 @@ func compoundBody(
 	chunks = append(chunks, bodyChunks...)
 	chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
 	if closingBrace {
-		fmt.Println("!!!!!!!!!!")
-		fmt.Println(closingBraceChunk.text, closingBraceChunk.splitKind)
-		fmt.Println("!!!!!!!!!!")
 		closingBraceChunk.indentLevel = indentLevel
 		chunks = append(chunks, closingBraceChunk)
 	}
@@ -679,9 +672,6 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 	var singleFound bool
 	var doubleFound bool
 	for !cursor.Done() || t.Kind().IsSkippable() {
-		fmt.Println("$$$$$$$$$$$")
-		fmt.Println(t.Text(), t.ID())
-		fmt.Println("$$$$$$$$$$$")
 		switch t.Kind() {
 		case token.Space:
 			if strings.Contains(t.Text(), "\n\n") {
