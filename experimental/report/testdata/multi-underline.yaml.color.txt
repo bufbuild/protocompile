@@ -1,4 +1,4 @@
-⟨b.red⟩error: `size_t` is not a built-in Protobuf type⟨reset⟩
+⟨b.red⟩error: `size_t` is not a built-in Protobuf type
 ⟨blu⟩  --> foo.proto:6:12
    |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
@@ -7,7 +7,7 @@
 ⟨blu⟩ 6 | ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩   | ⟨reset⟩           ⟨b.red⟩^^^^^⟨reset⟩ ⟨b.red⟩⟨reset⟩
 
-⟨b.ylw⟩warning: these are pretty bad names⟨reset⟩
+⟨b.ylw⟩warning: these are pretty bad names
 ⟨blu⟩  --> foo.proto:3:9
    |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;

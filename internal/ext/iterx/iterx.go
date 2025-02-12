@@ -170,3 +170,19 @@ func Join[T any](seq iter.Seq[T], sep string) string {
 	})
 	return out.String()
 }
+
+// Chain returns an iterator that calls a sequence of iterators in sequence.
+func Chain[T any](seqs ...iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		var done bool
+		for _, seq := range seqs {
+			if done {
+				return
+			}
+			seq(func(v T) bool {
+				done = !yield(v)
+				return !done
+			})
+		}
+	}
+}

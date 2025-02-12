@@ -21,6 +21,17 @@ import (
 	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
+
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+const (
+	// TabstopWidth is the size we render all tabstops as.
+	TabstopWidth int = 4
+	// MaxMessageWidth is the maximum width of a diagnostic message before it is
+	// word-wrapped, to try to keep everything within the bounds of a terminal.
+	MaxMessageWidth int = 80
 )
 
 // NonPrint defines whether or not a rune is considered "unprintable for the
@@ -28,6 +39,44 @@ import (
 // engine will replace with <U+NNNN> when printing.
 func NonPrint(r rune) bool {
 	return !strings.ContainsRune(" \r\t\n", r) && !unicode.IsPrint(r)
+}
+
+// wordWrap returns an iterator over chunks of s that are no wider than width,
+// which can be printed as their own lines.
+func wordWrap(text string, width int) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		// Split along lines first, since those are hard breaks we don't plan
+		// to change.
+		stringsx.Lines(text)(func(line string) bool {
+			line = strings.TrimSpace(line)
+			var nextIsSpace bool
+			var column, cursor int
+
+			stringsx.PartitionKey(line, unicode.IsSpace)(func(start int, chunk string) bool {
+				isSpace := nextIsSpace
+				nextIsSpace = !nextIsSpace
+
+				column = stringWidth(column, chunk, true, nil)
+				if column <= width {
+					return true
+				}
+
+				line := line[cursor:start]
+				if !yield(strings.TrimSpace(line)) {
+					return false
+				}
+				cursor = start
+				if isSpace {
+					cursor += len(chunk)
+				}
+				column = 0
+				return true
+			})
+
+			rest := line[cursor:]
+			return rest == "" || yield(rest)
+		})
+	}
 }
 
 // stringWidth calculates the rendered width of text if placed at the given column,

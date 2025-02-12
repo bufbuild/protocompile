@@ -1,5 +1,8 @@
 error: system not supported
 
+error: this diagnostic message is comically long to illustrate message wrapping;
+       real diagnostics should probably avoid doing this
+
 error: could not open file "foo.proto": os error 2: no such file or directory
  --> foo.proto
 
@@ -9,4 +12,17 @@ warning: file consists only of the byte `0xaa`
    = help: you should delete it to put it out of its misery
    = debug: 0xaaaaaaaaaaaaaaaa
 
-encountered 2 errors and 1 warning
+remark: very long footers
+ --> foo.proto
+   = note: this footer is very very very very very very very very very very very
+           very very very very very very very long
+   = note: this one is also long, and it's also
+           supercalifragilistcexpialidocious, leading to a very early break
+   = help: this help is very long (and triggers the same word-wrapping code
+           path)
+   = help: this one contains a newline
+           which overrides the default word wrap behavior (but this line is
+           wrapped naturally)
+   = debug: debug lines are never wrapped, no matter how crazy long they are, since they can contain stack traces
+
+encountered 3 errors and 1 warning

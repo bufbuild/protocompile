@@ -19,7 +19,6 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // SliceIndex is a type that can be used to index into a slice.
@@ -82,15 +81,4 @@ func BoundsCheck[I SliceIndex](idx I, len int) bool {
 // more compact.
 func Among[E comparable](needle E, haystack ...E) bool {
 	return slices.Contains(haystack, needle)
-}
-
-// Values is a polyfill for [slices.Values].
-func Values[S ~[]E, E any](s S) iter.Seq[E] {
-	return func(yield func(E) bool) {
-		for _, v := range s {
-			if !yield(v) {
-				return
-			}
-		}
-	}
 }
