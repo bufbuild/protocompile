@@ -14,8 +14,9 @@ warning: file consists only of the byte `0xaa`
 
 remark: very long footers
  --> foo.proto
-   = note: this footer is very very very very very very very very very very very
-           very very very very very very very long
+   = note: this footer is a very very very very very very very very very very
+           very very very very very very very very very very very very long
+           footer
    = note: this one is also long, and it's also
            supercalifragilistcexpialidocious, leading to a very early break
    = help: this help is very long (and triggers the same word-wrapping code
