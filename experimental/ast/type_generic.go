@@ -146,10 +146,6 @@ func (d TypeList) SetAt(n int, ty TypeAny) {
 	d.raw.args[n].Value = ty.raw
 }
 
-func (d TypeList) SetBrackets(brackets token.ID) {
-	d.raw.brackets = brackets
-}
-
 // Insert implements [seq.Inserter].
 func (d TypeList) Insert(n int, ty TypeAny) {
 	d.InsertComma(n, ty, token.Zero)
