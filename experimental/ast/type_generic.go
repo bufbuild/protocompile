@@ -126,6 +126,12 @@ func (d TypeList) Brackets() token.Token {
 	return d.raw.brackets.In(d.Context())
 }
 
+// SetBrackets sets the token tree for the brackets wrapping the argument list.
+func (d TypeList) SetBrackets(brackets token.Token) {
+	d.Context().Nodes().panicIfNotOurs(brackets)
+	d.raw.brackets = brackets.ID()
+}
+
 // Len implements [seq.Indexer].
 func (d TypeList) Len() int {
 	if d.IsZero() {
