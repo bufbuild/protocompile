@@ -18,12 +18,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"math/bits"
 	"slices"
 	"strconv"
 	"strings"
 	"unicode"
 
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
@@ -186,7 +188,8 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	// For the other styles, we imitate the Rust compiler. See
 	// https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 
-	fmt.Fprint(r, r.ss.BoldForLevel(d.level), level, ": ", d.message, r.ss.reset)
+	fmt.Fprint(r, r.ss.BoldForLevel(d.level), level, ": ")
+	r.WriteWrapped(d.message, MaxMessageWidth)
 
 	locations := make([][2]Location, len(d.snippets))
 	for i, snip := range d.snippets {
@@ -210,13 +213,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	r.margin = max(2, len(strconv.Itoa(greatestLine))) // Easier than messing with math.Log10()
 
 	// Render all the diagnostic windows.
-	parts := slicesx.Partition(d.snippets, func(a, b *snippet) bool {
-		if len(a.edits) > 0 || len(b.edits) > 0 {
+	parts := slicesx.PartitionKey(d.snippets, func(snip snippet) any {
+		if len(snip.edits) > 0 {
 			// Suggestions are always rendered in their own windows.
-			return true
+			// Return a fresh pointer, since that will always compare as
+			// distinct.
+			return new(int)
 		}
-
-		return a.Path() != b.Path()
+		return snip.Path()
 	})
 
 	parts(func(i int, snippets []snippet) bool {
@@ -261,34 +265,33 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		fmt.Fprintf(r, "--> %s", d.inFile)
 	}
 
-	// Render the footers. For simplicity we collect them into an array first.
-	footers := make([][3]string, 0, len(d.notes)+len(d.help)+len(d.debug))
-	for _, note := range d.notes {
-		footers = append(footers, [3]string{r.ss.bRemark, "note", note})
+	type footer struct {
+		color, label, text string
 	}
-	for _, help := range d.help {
-		footers = append(footers, [3]string{r.ss.bRemark, "help", help})
-	}
-	if r.ShowDebug {
-		for _, debug := range d.debug {
-			footers = append(footers, [3]string{r.ss.bError, "debug", debug})
+	footers := iterx.Chain(
+		slicesx.Map(d.notes, func(s string) footer { return footer{r.ss.bRemark, "note", s} }),
+		slicesx.Map(d.help, func(s string) footer { return footer{r.ss.bRemark, "help", s} }),
+		slicesx.Map(d.debug, func(s string) footer { return footer{r.ss.bError, "debug", s} }),
+	)
+
+	footers(func(f footer) bool {
+		isDebug := f.label == "debug"
+		if isDebug && !r.ShowDebug {
+			return true
 		}
-	}
-	for _, footer := range footers {
+
 		r.WriteString("\n")
-		r.WriteString(r.ss.nAccent)
 		r.WriteSpaces(r.margin)
-		r.WriteString(" = ")
-		fmt.Fprint(r, footer[0], footer[1], ": ", r.ss.reset)
-		for i, line := range strings.Split(footer[2], "\n") {
-			if i > 0 {
-				r.WriteString("\n")
-				margin := r.margin + 3 + len(footer[1]) + 2
-				r.WriteSpaces(margin)
-			}
-			r.WriteString(line)
+		fmt.Fprintf(r, "%s = %s%s: %s", r.ss.nAccent, f.color, f.label, r.ss.reset)
+
+		if isDebug {
+			r.WriteWrapped(f.text, math.MaxInt)
+		} else {
+			r.WriteWrapped(f.text, MaxMessageWidth)
 		}
-	}
+
+		return true
+	})
 
 	r.WriteString(r.ss.reset)
 	r.WriteString("\n\n")
@@ -482,7 +485,7 @@ func (r *renderer) window(w *window) {
 
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
-	parts := slicesx.Partition(w.underlines, func(a, b *underline) bool { return a.line != b.line })
+	parts := slicesx.PartitionKey(w.underlines, func(u underline) int { return u.line })
 	parts(func(_ int, part []underline) bool {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
@@ -517,8 +520,7 @@ func (r *renderer) window(w *window) {
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		parts := slicesx.Partition(buf, func(a, b *byte) bool { return *a != *b })
-		parts(func(_ int, line []byte) bool {
+		slicesx.Partition(buf)(func(_ int, line []byte) bool {
 			level := Level(line[0])
 			if line[0] == 0 {
 				out.WriteString(r.ss.reset)
@@ -906,7 +908,7 @@ func (r *renderer) suggestion(snip snippet) {
 	r.WriteString(r.ss.nAccent)
 	r.WriteSpaces(r.margin)
 	r.WriteString("help: ")
-	r.WriteString(snip.message)
+	r.WriteWrapped(snip.message, MaxMessageWidth)
 
 	// Add a blank line after the file. This gives the diagnostic window some
 	// visual breathing room.

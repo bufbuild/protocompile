@@ -87,24 +87,24 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 
 	// Partition offsets into overlapping lines. That is, this connects together
 	// all edit spans whose end and start are not separated by a newline.
-	prev := &edits[0]
-	parts := slicesx.Partition(edits, func(_, next *Edit) bool {
-		if next == prev {
+	prev := 0
+	parts := slicesx.SplitFunc(edits, func(i int, next Edit) bool {
+		if i == prev {
 			return false
 		}
 
-		chunk := src[prev.End:next.Start]
+		chunk := src[edits[i-1].End:next.Start]
 		if !strings.Contains(chunk, "\n") {
 			return false
 		}
 
-		prev = next
+		prev = i
 		return true
 	})
 
 	var out []hunk
 	var prevHunk int
-	parts(func(_ int, edits []Edit) bool {
+	parts(func(edits []Edit) bool {
 		// First, figure out the start and end of the modified region.
 		start, end := edits[0].Start, edits[0].End
 		for _, edit := range edits[1:] {
