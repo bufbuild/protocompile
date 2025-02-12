@@ -260,11 +260,13 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 				if t.ID() == method.Body.Braces().ID() {
 					return false
 				}
-				if spanWithinSpan(t.Span(), method.Signature.Inputs().Span()) {
-					return false
+				if spanOverlappingSpan(t.Span(), method.Signature.Inputs().Span()) {
+					_, end := method.Signature.Inputs().Brackets().StartEnd()
+					return t.ID() == end.ID()
 				}
-				if spanWithinSpan(t.Span(), method.Signature.Outputs().Span()) {
-					return false
+				if spanOverlappingSpan(t.Span(), method.Signature.Outputs().Span()) {
+					_, end := method.Signature.Outputs().Brackets().StartEnd()
+					return t.ID() == end.ID()
 				}
 				return true
 			},

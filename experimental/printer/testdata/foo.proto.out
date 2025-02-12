@@ -34,6 +34,6 @@ enum AH {
 }
 
 service FooService {
-  rpc GetFoo ( GetFooRequest ) returns ( GetBarResponse ) {
+  rpc GetFoo (GetFooRequest) returns (GetBarResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;    }
 }
