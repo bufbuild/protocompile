@@ -11,7 +11,7 @@ import (
 
 // TODO list
 //
-// - fix bug in CursorAt
+// - clean up new compound body logic
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
 // - debug various decls/defs
@@ -93,7 +93,7 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				if t.ID() == syntax.Semicolon().ID() || checkSpanWithin(syntax.Value().Span(), t.Span()) {
+				if t.ID() == syntax.Semicolon().ID() || spanWithinSpan(t.Span(), syntax.Value().Span()) {
 					return false
 				}
 				return true
@@ -116,7 +116,7 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				if t.ID() == pkg.Semicolon().ID() || checkSpanWithin(pkg.Path().Span(), t.Span()) {
+				if t.ID() == pkg.Semicolon().ID() || spanWithinSpan(t.Span(), pkg.Path().Span()) {
 					return false
 				}
 				return true
@@ -139,7 +139,7 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				if t.ID() == imprt.Semicolon().ID() || checkSpanWithin(imprt.ImportPath().Span(), t.Span()) {
+				if t.ID() == imprt.Semicolon().ID() || spanWithinSpan(t.Span(), imprt.ImportPath().Span()) {
 					return false
 				}
 				return true
@@ -246,7 +246,7 @@ func fieldChunks(
 				// We don't want to add a space after the semicolon
 				// We also don't want to add a space after the tag
 				// TODO
-				if t.ID() == semicolon.ID() || checkSpanWithin(fieldTagSpan, t.Span()) {
+				if t.ID() == semicolon.ID() || spanWithinSpan(t.Span(), fieldTagSpan) {
 					return false
 				}
 				return true
@@ -307,18 +307,26 @@ func fieldChunks(
 		optionChunks = optionChunks[:len(optionChunks)-1]
 	}
 	if len(optionChunks) > 1 {
+		for i := range optionChunks {
+			var softSplitDeps []int
+			for j := range optionChunks {
+				if i == j {
+					continue
+				}
+				softSplitDeps = append(softSplitDeps, j+len(chunks))
+			}
+			optionChunks[i].softSplitDeps = softSplitDeps
+		}
 	}
 	chunks = append(chunks, optionChunks...)
 	chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
 	if closingBracket {
-		closingBracketChunk.indentLevel = indentLevel
 		chunks = append(chunks, closingBracketChunk)
 	}
 	// TODO: there might be a better way to handle the semicolon
-	_, cursor = getTokensAndCursorForDecl(stream, fieldSpan)
 	chunks = append(chunks, oneLiner(
 		[]token.Token{semicolon},
-		cursor,
+		token.NewCursorAt(semicolon),
 		func(t token.Token) bool {
 			// No spaces
 			return false
@@ -354,6 +362,9 @@ func optionsChunks(
 		return true
 	})
 	if !options.Brackets().IsZero() {
+		if indentLevel > 0 {
+			indentLevel--
+		}
 		_, end := options.Brackets().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
@@ -395,7 +406,7 @@ func optionChunks(
 		tokens,
 		cursor,
 		func(t token.Token) bool {
-			if checkSpanWithin(option.Path.Span(), t.Span()) || checkSpanWithin(option.Value.Span(), t.Span()) {
+			if spanWithinSpan(t.Span(), option.Path.Span()) || spanWithinSpan(t.Span(), option.Value.Span()) {
 				return false
 			}
 			return true
@@ -414,7 +425,7 @@ func optionChunks(
 			return splitKindSoft, false
 		},
 		applyFormatting,
-		indentLevel, // This is set by compoundBody, TODO: better explanation
+		indentLevel,
 	)
 }
 
@@ -433,6 +444,9 @@ func bodyChunks(
 	// TODO: figure out what are the edges of this
 	// We are already handling the opening brace, so we just want to handle the closing brace here
 	if !decl.Braces().IsZero() {
+		if indentLevel > 0 {
+			indentLevel--
+		}
 		_, end := decl.Braces().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
@@ -469,23 +483,68 @@ func compoundBody(
 	applyFormatting bool,
 	indentLevel uint32,
 ) []chunk {
-	tokens, cursor := getTokensAndCursorFromStartToEnd(stream, span, body.Span())
+	tokens, _ := getTokensAndCursorFromStartToEnd(stream, span, body.Span())
 	chunks := oneLiner(
 		tokens,
-		cursor,
+		nil,
 		func(t token.Token) bool {
 			// TODO: This is not true for all compound bodies
 			return t.ID() != body.Braces().ID()
 		},
-		func(cursor *token.Cursor) (splitKind, bool) {
-			trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-			if trailingComment {
+		func(_ *token.Cursor) (splitKind, bool) {
+			// For compound bodies, we figure out whether to split the first line
+			// based on the whitespace between the open brace and then first body decl.
+			// So we set the cursor to the first body decl, walk backwards until the open brace
+			// and then go from there.
+			var first report.Span
+			var firstToken token.Token
+			seq.Values(body.Decls())(func(d ast.DeclAny) bool {
+				first = d.Span()
+				return false
+			})
+			stream.All()(func(t token.Token) bool {
+				if spanWithinSpan(t.Span(), first) {
+					firstToken = t
+					return false
+				}
+				return true
+			})
+			if firstToken.IsZero() {
+				panic("AAAAAAAAA")
+			}
+			cursor := token.NewCursorAt(firstToken)
+			// Walk back until the open brace
+			t := cursor.PrevSkippable()
+			var commentFound bool
+			var singleFound bool
+			var doubleFound bool
+			for t.ID() != tokens[len(tokens)-1].ID() {
+				switch t.Kind() {
+				case token.Space:
+					if strings.Contains(t.Text(), "\n\n") {
+						doubleFound = true
+					}
+					if strings.Contains(t.Text(), "\n") {
+						singleFound = true
+					}
+				case token.Comment:
+					commentFound = true
+				}
+				if singleFound {
+					break
+				}
+				if cursor.PeekPrevSkippable().IsZero() {
+					break
+				}
+				t = cursor.PrevSkippable()
+			}
+			if commentFound {
 				return splitKindNever, true
 			}
-			if double {
+			if doubleFound {
 				return splitKindDouble, false
 			}
-			if single {
+			if singleFound {
 				return splitKindHard, false
 			}
 			return splitKindSoft, false
@@ -494,11 +553,7 @@ func compoundBody(
 		indentLevel,
 	)
 	defChunksIndex := len(chunks) - 1
-	bodyIndentLevel := indentLevel
-	if chunks[len(chunks)-1].splitKind != splitKindSoft {
-		bodyIndentLevel++
-	}
-	bodyChunks := bodyChunks(stream, body, applyFormatting, bodyIndentLevel)
+	bodyChunks := bodyChunks(stream, body, applyFormatting, indentLevel+1)
 
 	var closingBraceChunk chunk
 	var closingBrace bool
@@ -509,12 +564,12 @@ func compoundBody(
 	}
 	if len(bodyChunks) > 1 {
 		for i := range bodyChunks {
-			softSplitDeps := make([]int, len(bodyChunks))
+			var softSplitDeps []int
 			for j := range bodyChunks {
 				if i == j {
 					continue
 				}
-				softSplitDeps[j] = j + len(chunks)
+				softSplitDeps = append(softSplitDeps, j+len(chunks))
 			}
 			bodyChunks[i].softSplitDeps = softSplitDeps
 		}
@@ -522,7 +577,6 @@ func compoundBody(
 	chunks = append(chunks, bodyChunks...)
 	chunks[defChunksIndex].softSplitDeps = append(chunks[defChunksIndex].softSplitDeps, len(chunks)-1)
 	if closingBrace {
-		closingBraceChunk.indentLevel = indentLevel
 		chunks = append(chunks, closingBraceChunk)
 	}
 	return chunks
@@ -621,8 +675,7 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	stream.All()(func(t token.Token) bool {
-		// If the token is within the declartion range, then add it to tokens, otherwise skip
-		if checkSpanWithin(span, t.Span()) {
+		if spanWithinSpan(t.Span(), span) {
 			tokens = append(tokens, t)
 		}
 		// We are past the end, so no need to continue
@@ -631,35 +684,41 @@ func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.
 		}
 		return true
 	})
+	// TODO: what does it mean to have no tokens?
 	if tokens == nil {
 		return nil, nil
 	}
-	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
+	return tokens, token.NewCursorAt(tokens[len(tokens)-1])
 }
 
-// get all the tokens from the start to the end (inclusive) and the cursort starting at the end.
+// get all the tokens from the start to the end (inclusive) and the cursor starting at the end.
 func getTokensAndCursorFromStartToEnd(stream *token.Stream, start, end report.Span) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	stream.All()(func(t token.Token) bool {
-		if checkSpanWithin(start, t.Span()) || checkSpanWithin(end, t.Span()) {
+		if spanWithinRange(t.Span(), start, end) {
 			tokens = append(tokens, t)
 		}
+		// No need to continue if we've moved past the end span
 		if t.Span().Start > end.Start {
 			return false
 		}
 		return true
 	})
+	// TODO: what does it mean to have no tokens?
 	if tokens == nil {
 		return nil, nil
 	}
-	// TODO: docs
-	return tokens[:len(tokens)-1], token.NewCursorAt(tokens[len(tokens)-1])
+	return tokens, token.NewCursorAt(tokens[len(tokens)-1])
 }
 
-// TODO: rename/clean-up
-// TODO: is just checking the starts enough?
-func checkSpanWithin(have, want report.Span) bool {
-	return want.Start >= have.Start && want.Start <= have.End
+// Check that the given span is within the bounds of the start and end spans.
+func spanWithinRange(span, start, end report.Span) bool {
+	return span.Start >= start.Start && span.Start <= end.Start
+}
+
+// Check that the given span is within the bounds of another span, inclusive.
+func spanWithinSpan(span, base report.Span) bool {
+	return span.Start >= base.Start && span.End <= base.End
 }
 
 // TODO: docs
@@ -671,13 +730,13 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 	var commentFound bool
 	var singleFound bool
 	var doubleFound bool
-	for !cursor.Done() || t.Kind().IsSkippable() {
+	for {
 		switch t.Kind() {
 		case token.Space:
 			if strings.Contains(t.Text(), "\n\n") {
 				doubleFound = true
 			}
-			// If the whitepsace contains a string anywhere, we can break out and return early.
+			// If the whitespace contains a string anywhere, we can break out and return early.
 			if strings.Contains(t.Text(), "\n") {
 				singleFound = true
 				return commentFound, singleFound, doubleFound
@@ -689,6 +748,10 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 			break
 		}
 		t = cursor.NextSkippable()
+		// No longer a skippable token
+		if !t.Kind().IsSkippable() {
+			break
+		}
 	}
 	return commentFound, singleFound, doubleFound
 }
@@ -735,7 +798,6 @@ func (b block) hardSplitChunk(chunkIndex int) {
 			continue
 		}
 		b.chunks[dep].splitKind = splitKindHard
-		b.chunks[dep].indentLevel++
 		b.hardSplitChunk(dep)
 	}
 }
