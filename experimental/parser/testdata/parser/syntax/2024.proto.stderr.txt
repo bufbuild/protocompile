@@ -3,6 +3,6 @@ error: unrecognized `edition` declaration value
    |
 15 | edition = "2024";
    |           ^^^^^^
-   = note: permitted values: ["2023"]
+   = note: permitted values: "2023"
 
 encountered 1 error

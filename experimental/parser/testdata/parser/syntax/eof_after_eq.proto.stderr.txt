@@ -1,7 +1,7 @@
 warning: missing `package` declaration
  --> testdata/parser/syntax/eof_after_eq.proto
-   = note: not explicitly specifying a package places the file
-   = note: in the unnamed package; using it strongly is discouraged
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
 
 error: unexpected end-of-file in expression
   --> testdata/parser/syntax/eof_after_eq.proto:15:9

@@ -1,7 +1,7 @@
 warning: missing `package` declaration
  --> testdata/parser/lists.proto
-   = note: not explicitly specifying a package places the file
-   = note: in the unnamed package; using it strongly is discouraged
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:17:14
@@ -374,8 +374,9 @@ error: unexpected non-comparable type in map key type
    |
 54 |     map<int, int> x;
    |         ^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:55:5
@@ -388,8 +389,9 @@ error: unexpected non-comparable type in map key type
    |
 55 |     map<int int> x;
    |         ^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected type name in type parameters
   --> testdata/parser/lists.proto:55:13
@@ -410,8 +412,9 @@ error: unexpected non-comparable type in map key type
    |
 56 |     map<int,, int> x;
    |         ^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected extra `,` in type parameters
   --> testdata/parser/lists.proto:56:13
@@ -468,8 +471,9 @@ error: unexpected non-comparable type in map key type
    |
 59 |     map<,int, int> x;
    |          ^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:60:5
@@ -482,8 +486,9 @@ error: unexpected non-comparable type in map key type
    |
 60 |     map<int; int> x;
    |         ^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected `;` in type parameters
   --> testdata/parser/lists.proto:60:12
@@ -504,8 +509,9 @@ error: unexpected non-comparable type in map key type
    |
 62 |         int,
    |         ^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected trailing `,` in type parameters
   --> testdata/parser/lists.proto:63:12

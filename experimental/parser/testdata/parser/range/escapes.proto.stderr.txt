@@ -8,8 +8,8 @@ warning: non-canonical string literal in reserved range
 20 | -     reserved "foo" "bar";
 20 | +     reserved "foobar";
    |
-   = note: Protobuf implicitly concatenates adjacent string literals,
-   = note: like C or Python, which can lead to surprising behavior
+   = note: Protobuf implicitly concatenates adjacent string literals, like C or
+           Python; this can lead to surprising behavior
 
 error: reserved message field name is not a valid identifier
   --> testdata/parser/range/escapes.proto:21:14

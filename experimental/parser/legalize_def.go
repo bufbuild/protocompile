@@ -285,8 +285,10 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 
 	if options := def.Options(); !options.IsZero() {
 		p.Error(errHasOptions{def}).Apply(
-			report.Notef("service method options are applied using %v", taxa.KeywordOption),
-			report.Notef("declarations in the %v following the method definition", taxa.Braces),
+			report.Notef(
+				"service method options are applied using %v; declarations in the %v following the method definition",
+				taxa.KeywordOption, taxa.Braces,
+			),
 			// TODO: Generate a suggestion for this.
 		)
 	}

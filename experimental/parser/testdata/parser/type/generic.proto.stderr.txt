@@ -3,16 +3,18 @@ error: unexpected non-comparable type in map key type
    |
 21 |     map<M, M> x2 = 2;
    |         ^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected non-comparable type in map key type
   --> testdata/parser/type/generic.proto:22:9
    |
 22 |     map<test.M, .test.M> x3 = 3;
    |         ^^^^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected type in map value type
   --> testdata/parser/type/generic.proto:23:17
@@ -67,8 +69,9 @@ error: unexpected non-comparable type in map key type
    |
 35 |     map<optional .test.M, required test.M> x12 = 12;
    |         ^^^^^^^^^^^^^^^^
-   = help: map keys may be of any of the following types:
-   = help: int32, int64, uint32, uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool, string
+   = help: a map key must be one of the following types: int32, int64, uint32,
+           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
+           string
 
 error: unexpected `required` in map value type
   --> testdata/parser/type/generic.proto:35:27

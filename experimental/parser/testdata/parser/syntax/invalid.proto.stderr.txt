@@ -3,6 +3,6 @@ error: unrecognized `syntax` declaration value
    |
 15 | syntax = invalid;
    |          ^^^^^^^
-   = note: permitted values: ["proto2", "proto3"]
+   = note: permitted values: "proto2", "proto3"
 
 encountered 1 error

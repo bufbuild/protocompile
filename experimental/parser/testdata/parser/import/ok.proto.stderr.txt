@@ -3,6 +3,7 @@ warning: use of `import weak`
    |
 20 | import weak "weak.proto";
    | ^^^^^^^^^^^
-   = note: `import weak` is deprecated and not supported correctly in most Protobuf implementations
+   = note: `import weak` is deprecated and not supported correctly in most
+           Protobuf implementations
 
 encountered 1 warning

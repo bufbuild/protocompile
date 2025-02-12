@@ -69,9 +69,10 @@ error: cannot use `<...>` for message expression here
 38 | - option x = <>:
 38 | + option x = {}:
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
 error: unexpected `:` after definition
   --> testdata/parser/option/values.proto:38:14
@@ -95,9 +96,10 @@ error: cannot use `<...>` for message expression here
 39 | - option x = <a: 42>;
 39 | + option x = {a: 42};
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
 error: unexpected qualified name in option setting value
   --> testdata/parser/option/values.proto:53:8
@@ -164,7 +166,7 @@ error: unexpected trailing `,` in array expression
 66 |         [1],
    |            ^
 
-warning: using `{...}` for message expression is not recommended
+warning: using `<...>` for message expression is not recommended
   --> testdata/parser/option/values.proto:69:8
    |
 69 |     x: <>
@@ -174,11 +176,12 @@ warning: using `{...}` for message expression is not recommended
 69 | -     x: <>
 69 | +     x: {}
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
-warning: using `{...}` for message expression is not recommended
+warning: using `<...>` for message expression is not recommended
   --> testdata/parser/option/values.proto:70:8
    |
 70 |     x: <a: 42>
@@ -188,11 +191,12 @@ warning: using `{...}` for message expression is not recommended
 70 | -     x: <a: 42>
 70 | +     x: {a: 42}
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
-warning: using `{...}` for message expression is not recommended
+warning: using `<...>` for message expression is not recommended
   --> testdata/parser/option/values.proto:71:8
    |
 71 |     x: <a: <a: 42>>
@@ -202,11 +206,12 @@ warning: using `{...}` for message expression is not recommended
 71 | -     x: <a: <a: 42>>
 71 | +     x: {a: <a: 42>}
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
-warning: using `{...}` for message expression is not recommended
+warning: using `<...>` for message expression is not recommended
   --> testdata/parser/option/values.proto:71:12
    |
 71 |     x: <a: <a: 42>>
@@ -216,9 +221,10 @@ warning: using `{...}` for message expression is not recommended
 71 | -     x: <a: <a: 42>>
 71 | +     x: <a: {a: 42}>
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
 error: unexpected string literal in message field value
   --> testdata/parser/option/values.proto:73:5
@@ -299,10 +305,10 @@ error: unexpected integer literal in array expression
    |     -          ^ expected message expression
    |     |
    |     because this message field value is missing a `:`
-   = note: the `:` can be omitted in a message field value, but only if the value
-   = note: is a message expression or a array expression of the same
+   = note: the `:` can be omitted in a message field value, but only if the
+           value is a message expression or a array expression of them
 
-warning: using `{...}` for message expression is not recommended
+warning: using `<...>` for message expression is not recommended
   --> testdata/parser/option/values.proto:88:19
    |
 88 |     x [{x: 5}, 1, <x: 5>, 2, 3],
@@ -312,8 +318,9 @@ warning: using `{...}` for message expression is not recommended
 88 | -     x [{x: 5}, 1, <x: 5>, 2, 3],
 88 | +     x [{x: 5}, 1, {x: 5}, 2, 3],
    |
-   = note: `<...>` are only permitted for sub-messages within a message expression,
-   = note: but as top-level option values
-   = help: `<...>` message expressions are an obscure feature and not recommended
+   = note: `<...>` are only permitted for sub-messages within a message
+           expression, but as top-level option values
+   = help: `<...>` message expressions are an obscure feature and not
+           recommended
 
 encountered 31 errors and 6 warnings

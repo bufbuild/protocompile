@@ -43,10 +43,15 @@ func (e errUnclosedString) Diagnose(d *report.Diagnostic) {
 	if len(quoted) == 1 {
 		d.Apply(report.Notef("this string consists of a single orphaned quote"))
 	} else if strings.HasSuffix(quoted, quote) {
-		d.Apply(report.Notef("this string appears to end in an escaped quote; replace `\\%s` with `\\\\%[1]s%[1]s`", quote))
+		d.Apply(report.SuggestEdits(
+			e.Token,
+			"this string appears to end in an escaped quote",
+			report.Edit{
+				Start: e.Token.Span().Len() - 2, End: e.Token.Span().Len(),
+				Replace: fmt.Sprintf(`\\%v%v`, quote, quote),
+			},
+		))
 	}
-
-	// TODO: check to see if a " or ' escape exists in the string?
 }
 
 // errInvalidEscape diagnoses an invalid escape sequence within a string
@@ -116,8 +121,10 @@ func (e errImpureString) Diagnose(d *report.Diagnostic) {
 
 	if !e.lit.IsLeaf() {
 		d.Apply(
-			report.Notef("Protobuf implicitly concatenates adjacent %ss,", taxa.String),
-			report.Notef("like C or Python, which can lead to surprising behavior"),
+			report.Notef(
+				"Protobuf implicitly concatenates adjacent %ss, like C or Python; this can lead to surprising behavior",
+				taxa.String,
+			),
 		)
 	}
 }

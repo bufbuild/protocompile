@@ -3,7 +3,7 @@ error: service method cannot specify compact options
    |
 20 |     rpc Bar1(foo.Bar) returns (foo.Bar) [not.(allowed).here = 42];
    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
-   = note: service method options are applied using `option`
-   = note: declarations in the `{...}` following the method definition
+   = note: service method options are applied using `option`; declarations in
+           the `{...}` following the method definition
 
 encountered 1 error

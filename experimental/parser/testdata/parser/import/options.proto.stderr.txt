@@ -9,7 +9,8 @@ warning: use of `import weak`
    |
 20 | import weak "weak.proto" [(not.allowed) = "here"];
    | ^^^^^^^^^^^
-   = note: `import weak` is deprecated and not supported correctly in most Protobuf implementations
+   = note: `import weak` is deprecated and not supported correctly in most
+           Protobuf implementations
 
 error: weak import cannot specify compact options
   --> testdata/parser/import/options.proto:20:26

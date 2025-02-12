@@ -107,11 +107,13 @@ func legalizeFieldType(p *parser, ty ast.TypeAny) {
 					where: taxa.MapKey.In(),
 					got:   "non-comparable type",
 				}).Apply(
-					report.Helpf("map keys may be of any of the following types:"),
-					report.Helpf("%s", iterx.Join(iterx.Filter(
-						predeclared.All(),
-						func(p predeclared.Name) bool { return p.IsMapKey() },
-					), ", ")),
+					report.Helpf(
+						"a map key must be one of the following types: %s",
+						iterx.Join(iterx.Filter(
+							predeclared.All(),
+							func(p predeclared.Name) bool { return p.IsMapKey() },
+						), ", "),
+					),
 				)
 			}
 

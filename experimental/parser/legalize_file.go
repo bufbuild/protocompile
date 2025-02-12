@@ -56,8 +56,9 @@ func legalizeFile(p *parser, file ast.File) {
 	if pkg.IsZero() {
 		p.Warnf("missing %s", taxa.Package).Apply(
 			report.InFile(p.Stream().Path()),
-			report.Notef("not explicitly specifying a package places the file"),
-			report.Notef("in the unnamed package; using it strongly is discouraged"),
+			report.Notef(
+				"not explicitly specifying a package places the file in the "+
+					"unnamed package; using it strongly is discouraged"),
 		)
 	}
 }
@@ -142,7 +143,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 			return fmt.Sprintf("%q", s), true
 		}), ", ")
 
-		return report.Notef("permitted values: [%s]", values)
+		return report.Notef("permitted values: %s", values)
 	}
 
 	value := syntax.Lookup(name)
@@ -212,7 +213,10 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 				report.Snippet(decl),
 				report.Snippetf(file.Decls().At(idx-1), "previous declaration is here"),
 				// TODO: Add a suggestion to move this up.
-				report.Helpf("a file's %s should immediately follow the `syntax` or `edition` declaration", taxa.Package),
+				report.Helpf(
+					"a file's %s should immediately follow the `syntax` or `edition` declaration",
+					taxa.Package,
+				),
 			)
 			return
 		}
@@ -228,8 +232,11 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 	if decl.Path().IsZero() {
 		p.Errorf("missing path in %s", taxa.Package).Apply(
 			report.Snippet(decl),
-			report.Helpf("to place a file in the unnamed package, remove the %s", taxa.Package),
-			report.Helpf("however, using the unnamed package is discouraged"),
+			report.Helpf(
+				"to place a file in the unnamed package, omit the %s; however, "+
+					"using the unnamed package is discouraged",
+				taxa.Package,
+			),
 		)
 	}
 
@@ -304,8 +311,8 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 			// TODO: potentially defer this diagnostic to later, when we can
 			// perform symbol lookup and figure out what the correct file to
 			// import is.
-			report.Notef("Protobuf does not support importing symbols by name"),
-			report.Notef("instead, try importing a file, e.g. `import \"google/protobuf/descriptor.proto\";`"),
+			report.Notef("Protobuf does not support importing symbols by name, instead, " +
+				"try importing a file, e.g. `import \"google/protobuf/descriptor.proto\";`"),
 		)
 		return
 
@@ -333,7 +340,8 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 	if in == taxa.WeakImport {
 		p.Warnf("use of `import weak`").Apply(
 			report.Snippet(report.Join(decl.Keyword(), decl.Modifier())),
-			report.Notef("`import weak` is deprecated and not supported correctly in most Protobuf implementations"),
+			report.Notef("`import weak` is deprecated and not supported correctly "+
+				"in most Protobuf implementations"),
 		)
 	}
 }

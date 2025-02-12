@@ -19,7 +19,7 @@ warning: non-canonical string literal in import
 20 | - import "bar" ".proto";
 20 | + import "bar.proto";
    |
-   = note: Protobuf implicitly concatenates adjacent string literals,
-   = note: like C or Python, which can lead to surprising behavior
+   = note: Protobuf implicitly concatenates adjacent string literals, like C or
+           Python; this can lead to surprising behavior
 
 encountered 2 warnings

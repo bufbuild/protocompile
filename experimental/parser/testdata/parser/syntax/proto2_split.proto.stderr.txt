@@ -8,7 +8,7 @@ warning: non-canonical string literal in `syntax` declaration
 15 | - syntax = "proto" "2";
 15 | + syntax = "proto2";
    |
-   = note: Protobuf implicitly concatenates adjacent string literals,
-   = note: like C or Python, which can lead to surprising behavior
+   = note: Protobuf implicitly concatenates adjacent string literals, like C or
+           Python; this can lead to surprising behavior
 
 encountered 1 warning

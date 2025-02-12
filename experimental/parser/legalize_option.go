@@ -194,7 +194,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 			if parent.IsZero() {
 				err = p.Errorf("cannot use %s for %s here", taxa.Angles, taxa.Dict)
 			} else {
-				err = p.Warnf("using %s for %s is not recommended", taxa.Braces, taxa.Dict)
+				err = p.Warnf("using %s for %s is not recommended", taxa.Angles, taxa.Dict)
 			}
 
 			err.Apply(
@@ -205,8 +205,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 					report.Edit{Start: 0, End: 1, Replace: "{"},
 					report.Edit{Start: dict.Span().Len() - 1, End: dict.Span().Len(), Replace: "}"},
 				),
-				report.Notef("%s are only permitted for sub-messages within a %s,", taxa.Angles, taxa.Dict),
-				report.Notef("but as top-level option values"),
+				report.Notef("%s are only permitted for sub-messages within a %s, but as top-level option values", taxa.Angles, taxa.Dict),
 				report.Helpf("%s %ss are an obscure feature and not recommended", taxa.Angles, taxa.Dict),
 			)
 		}
@@ -309,10 +308,8 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 								"because this %s is missing a %s",
 								taxa.DictField, taxa.Colon),
 							report.Notef(
-								"the %s can be omitted in a %s, but only if the value",
-								taxa.Colon, taxa.DictField),
-							report.Notef(
-								"is a %s or a %s of the same",
+								"the %s can be omitted in a %s, but only if the value is a %s or a %s of them",
+								taxa.Colon, taxa.DictField,
 								taxa.Dict, taxa.Array),
 						)
 
