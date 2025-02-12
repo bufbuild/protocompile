@@ -140,7 +140,7 @@ func (d TypeList) At(n int) TypeAny {
 	return newTypeAny(d.Context(), d.raw.args[n].Value)
 }
 
-// At implements [seq.Setter].
+// SetAt implements [seq.Setter].
 func (d TypeList) SetAt(n int, ty TypeAny) {
 	d.Context().Nodes().panicIfNotOurs(ty)
 	d.raw.args[n].Value = ty.raw

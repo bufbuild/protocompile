@@ -258,6 +258,12 @@ func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 	}))
 }
 
+// SetTypeListBrackets sets the brackets for a given TypeList.
+func (n *Nodes) SetTypeListBrackets(types TypeList, brackets token.Token) {
+	n.panicIfNotOurs(brackets)
+	types.raw.brackets = brackets.ID()
+}
+
 // panicIfNotOurs checks that a contextual value is owned by this context, and panics if not.
 //
 // Does not panic if that is zero or has a zero context. Panics if n is zero.
