@@ -17,6 +17,7 @@ package report
 import (
 	"bytes"
 	"io"
+	"regexp"
 	"slices"
 	"unicode"
 
@@ -58,6 +59,36 @@ func (w *writer) WriteString(data string) {
 		}
 		first = false
 		w.buf = append(w.buf, line...)
+		return true
+	})
+}
+
+var ansiEscapePat = regexp.MustCompile("^\033\\[([\\d;]*)m")
+
+// WriteWrapped writes a string to w, taking care to wrap data such that a line
+// is (ideally) never wider than width.
+func (w *writer) WriteWrapped(data string, width int) {
+	// NOTE: We currently assume that WriteWrapped is never called with user-
+	// provided text as a prefix; this avoids a fussy call to stringWidth.
+	var margin int
+	for i := 0; i < len(w.buf); i++ {
+		// Need to skip any ANSI color codes.
+		if esc := ansiEscapePat.Find(w.buf[i:]); esc != nil {
+			i += len(esc) - 1
+			continue
+		}
+
+		margin++
+	}
+
+	first := true
+	wordWrap(data, width-margin)(func(line string) bool {
+		if !first {
+			w.WriteString("\n")
+			w.WriteSpaces(margin)
+		}
+		first = false
+		w.WriteString(line)
 		return true
 	})
 }

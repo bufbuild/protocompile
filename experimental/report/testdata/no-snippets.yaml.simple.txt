@@ -1,3 +1,5 @@
 error: system not supported
+error: this diagnostic message is comically long to illustrate message wrapping; real diagnostics should probably avoid doing this
 error: foo.proto: could not open file "foo.proto": os error 2: no such file or directory
 warning: foo.proto: file consists only of the byte `0xaa`
+remark: foo.proto: very long footers

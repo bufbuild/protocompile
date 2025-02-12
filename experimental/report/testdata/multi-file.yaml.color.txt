@@ -1,4 +1,4 @@
-⟨b.red⟩error: two files⟨reset⟩
+⟨b.red⟩error: two files
 ⟨blu⟩  --> foo.proto:3:9
    |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
@@ -11,7 +11,7 @@
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz2;
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩-------⟨reset⟩ ⟨b.blu⟩baz⟨reset⟩
 
-⟨b.red⟩error: three files⟨reset⟩
+⟨b.red⟩error: three files
 ⟨blu⟩  --> foo.proto:3:9
    |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;

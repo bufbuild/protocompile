@@ -3,6 +3,7 @@ error: unterminated string literal
    |
  1 | '\'
    | ^^^ expected to be terminated by `'`
-   = note: this string appears to end in an escaped quote; replace `\'` with `\\''`
+   = note: this string appears to end in an escaped quote; replace `\'` with
+           `\\''`
 
 encountered 1 error
