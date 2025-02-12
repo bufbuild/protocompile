@@ -23,8 +23,7 @@
   ⟨blu⟩ = ⟨b.cyn⟩help: ⟨reset⟩this one contains a newline
            which overrides the default word wrap behavior (but this line is
            wrapped naturally)
-  ⟨blu⟩ = ⟨b.red⟩debug: ⟨reset⟩debug lines are never wrapped, no matter how crazy long they are,
-            since they can contain stack traces⟨reset⟩
+  ⟨blu⟩ = ⟨b.red⟩debug: ⟨reset⟩debug lines are never wrapped, no matter how crazy long they are, since they can contain stack traces⟨reset⟩
 
 ⟨b.red⟩encountered 3 errors and 1 warning
 ⟨reset⟩

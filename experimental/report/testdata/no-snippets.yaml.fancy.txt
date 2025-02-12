@@ -23,7 +23,6 @@ remark: very long footers
    = help: this one contains a newline
            which overrides the default word wrap behavior (but this line is
            wrapped naturally)
-   = debug: debug lines are never wrapped, no matter how crazy long they are,
-            since they can contain stack traces
+   = debug: debug lines are never wrapped, no matter how crazy long they are, since they can contain stack traces
 
 encountered 3 errors and 1 warning
