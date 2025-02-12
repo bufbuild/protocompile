@@ -48,7 +48,6 @@ func wordWrap(text string, width int) iter.Seq[string] {
 		// Split along lines first, since those are hard breaks we don't plan
 		// to change.
 		stringsx.Lines(text)(func(line string) bool {
-			line = strings.TrimSpace(line)
 			var nextIsSpace bool
 			var column, cursor int
 
@@ -56,20 +55,27 @@ func wordWrap(text string, width int) iter.Seq[string] {
 				isSpace := nextIsSpace
 				nextIsSpace = !nextIsSpace
 
-				column = stringWidth(column, chunk, true, nil)
-				if column <= width {
+				if isSpace && column == 0 {
 					return true
 				}
 
-				line := line[cursor:start]
-				if !yield(strings.TrimSpace(line)) {
+				w := stringWidth(column, chunk, true, nil) - column
+				if column+w <= width {
+					column += w
+					return true
+				}
+
+				if !yield(strings.TrimSpace(line[cursor:start])) {
 					return false
 				}
-				cursor = start
+
 				if isSpace {
-					cursor += len(chunk)
+					cursor = start + len(chunk)
+					column = 0
+				} else {
+					cursor = start
+					column = w
 				}
-				column = 0
 				return true
 			})
 

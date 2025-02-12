@@ -15,7 +15,8 @@
 ⟨b.cyn⟩remark: very long footers
 ⟨blu⟩ --> foo.proto
   ⟨blu⟩ = ⟨b.cyn⟩note: ⟨reset⟩this footer is a very very very very very very very very very very
-           very very very very very very very very very very very very long footer
+           very very very very very very very very very very very very long
+           footer
   ⟨blu⟩ = ⟨b.cyn⟩note: ⟨reset⟩this one is also long, and it's also
            supercalifragilistcexpialidocious, leading to a very early break
   ⟨blu⟩ = ⟨b.cyn⟩help: ⟨reset⟩this help is very long (and triggers the same word-wrapping code
