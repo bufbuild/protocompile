@@ -11,14 +11,14 @@ import (
 
 // TODO list
 //
-// - clean up new compound body logic
+// - find bug in method.Inputs/Outputs giving zeros for brackets (despite having them)
+// - may want to refactor compound body vs. field body... again
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
 // - debug various decls/defs
 // - a bunch of performance optimizations
 // - refactor splitChunk behaviour/callback?
 // - improve performance with cursors
-// - clean-up parsePrefixChunks, getTokensAndCursorForDecl
 // - a bunch of docs
 // - do a naming sanity check with Ed/Miguel
 
@@ -88,12 +88,12 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 		// TODO: figure out what to do with an empty declaration
 	case ast.DeclKindSyntax:
 		syntax := decl.AsSyntax()
-		tokens, cursor := getTokensAndCursorForDecl(stream, syntax.Span())
+		tokens, cursor := getTokensAndCursorForSpan(stream, syntax.Span())
 		return oneLiner(
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				if t.ID() == syntax.Semicolon().ID() || spanWithinSpan(t.Span(), syntax.Value().Span()) {
+				if t.ID() == syntax.Semicolon().ID() || spanOverlappingSpan(t.Span(), syntax.Value().Span()) {
 					return false
 				}
 				return true
@@ -111,12 +111,12 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 		)
 	case ast.DeclKindPackage:
 		pkg := decl.AsPackage()
-		tokens, cursor := getTokensAndCursorForDecl(stream, pkg.Span())
+		tokens, cursor := getTokensAndCursorForSpan(stream, pkg.Span())
 		return oneLiner(
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				if t.ID() == pkg.Semicolon().ID() || spanWithinSpan(t.Span(), pkg.Path().Span()) {
+				if t.ID() == pkg.Semicolon().ID() || spanOverlappingSpan(t.Span(), pkg.Path().Span()) {
 					return false
 				}
 				return true
@@ -134,12 +134,12 @@ func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, in
 		)
 	case ast.DeclKindImport:
 		imprt := decl.AsImport()
-		tokens, cursor := getTokensAndCursorForDecl(stream, imprt.Span())
+		tokens, cursor := getTokensAndCursorForSpan(stream, imprt.Span())
 		return oneLiner(
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				if t.ID() == imprt.Semicolon().ID() || spanWithinSpan(t.Span(), imprt.ImportPath().Span()) {
+				if t.ID() == imprt.Semicolon().ID() || spanOverlappingSpan(t.Span(), imprt.ImportPath().Span()) {
 					return false
 				}
 				return true
@@ -177,13 +177,40 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		// TODO: figure out what to do with invalid definitions
 	case ast.DefKindMessage:
 		message := decl.AsMessage()
-		return compoundBody(stream, message.Span(), message.Body, applyFormatting, indentLevel)
+		return compoundBody(
+			stream,
+			message.Span(),
+			message.Body,
+			func(t token.Token) bool {
+				return t.ID() != message.Body.Braces().ID()
+			},
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindEnum:
 		enum := decl.AsEnum()
-		return compoundBody(stream, enum.Span(), enum.Body, applyFormatting, indentLevel)
+		return compoundBody(
+			stream,
+			enum.Span(),
+			enum.Body,
+			func(t token.Token) bool {
+				return t.ID() != enum.Body.Braces().ID()
+			},
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindService:
 		service := decl.AsService()
-		return compoundBody(stream, service.Span(), service.Body, applyFormatting, indentLevel)
+		return compoundBody(
+			stream,
+			service.Span(),
+			service.Body,
+			func(t token.Token) bool {
+				return t.ID() != service.Body.Braces().ID()
+			},
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
@@ -199,7 +226,16 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		)
 	case ast.DefKindOneof:
 		oneof := decl.AsOneof()
-		chunks := compoundBody(stream, oneof.Span(), oneof.Body, applyFormatting, indentLevel)
+		chunks := compoundBody(
+			stream,
+			oneof.Span(),
+			oneof.Body,
+			func(t token.Token) bool {
+				return t.ID() != oneof.Body.Braces().ID()
+			},
+			applyFormatting,
+			indentLevel,
+		)
 		return chunks
 	case ast.DefKindGroup:
 		// TODO: implement
@@ -216,7 +252,25 @@ func defChunks(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, ind
 		)
 	case ast.DefKindMethod:
 		method := decl.AsMethod()
-		return compoundBody(stream, method.Span(), method.Body, applyFormatting, indentLevel)
+		return compoundBody(
+			stream,
+			method.Span(),
+			method.Body,
+			func(t token.Token) bool {
+				if t.ID() == method.Body.Braces().ID() {
+					return false
+				}
+				if spanWithinSpan(t.Span(), method.Signature.Inputs().Span()) {
+					return false
+				}
+				if spanWithinSpan(t.Span(), method.Signature.Outputs().Span()) {
+					return false
+				}
+				return true
+			},
+			applyFormatting,
+			indentLevel,
+		)
 	case ast.DefKindOption:
 		option := decl.AsOption()
 		return optionChunks(stream, option.Span(), option.Option, applyFormatting, indentLevel)
@@ -238,7 +292,7 @@ func fieldChunks(
 ) []chunk {
 	// No options to handle, so we just process all the tokens like a single one liner
 	if options.IsZero() {
-		tokens, cursor := getTokensAndCursorForDecl(stream, fieldSpan)
+		tokens, cursor := getTokensAndCursorForSpan(stream, fieldSpan)
 		return oneLiner(
 			tokens,
 			cursor,
@@ -246,7 +300,7 @@ func fieldChunks(
 				// We don't want to add a space after the semicolon
 				// We also don't want to add a space after the tag
 				// TODO
-				if t.ID() == semicolon.ID() || spanWithinSpan(t.Span(), fieldTagSpan) {
+				if t.ID() == semicolon.ID() || spanOverlappingSpan(t.Span(), fieldTagSpan) {
 					return false
 				}
 				return true
@@ -270,7 +324,8 @@ func fieldChunks(
 	}
 	// TODO: this is similar but not exactly the same as a compound body, because it's not recursive.
 	// Keep this separate for now.
-	tokens, cursor := getTokensAndCursorFromStartToEnd(stream, fieldSpan, options.Span())
+	tokens := getTokensForCompoundBody(stream, fieldSpan, options.Span())
+	cursor := token.NewCursorAt(tokens[len(tokens)-1])
 	chunks := oneLiner(
 		tokens,
 		cursor,
@@ -401,12 +456,12 @@ func optionChunks(
 	applyFormatting bool,
 	indentLevel uint32,
 ) []chunk {
-	tokens, cursor := getTokensAndCursorForDecl(stream, optionSpan)
+	tokens, cursor := getTokensAndCursorForSpan(stream, optionSpan)
 	return oneLiner(
 		tokens,
 		cursor,
 		func(t token.Token) bool {
-			if spanWithinSpan(t.Span(), option.Path.Span()) || spanWithinSpan(t.Span(), option.Value.Span()) {
+			if spanWithinSpan(t.Span(), option.Path.Span()) || spanOverlappingSpan(t.Span(), option.Value.Span()) {
 				return false
 			}
 			return true
@@ -480,40 +535,39 @@ func compoundBody(
 	stream *token.Stream,
 	span report.Span,
 	body ast.DeclBody,
+	topLineSpacer addSpace,
 	applyFormatting bool,
 	indentLevel uint32,
 ) []chunk {
-	tokens, _ := getTokensAndCursorFromStartToEnd(stream, span, body.Span())
+	tokens := getTokensForCompoundBody(stream, span, body.Span())
+	// For compound bodies, we figure out whether to split the first line
+	// based on the whitespace between the open brace and then first body decl.
+	// So we set the cursor to the first body decl, walk backwards until the open brace
+	// and then go from there.
+	var firstSpan report.Span
+	var firstToken token.Token
+	seq.Values(body.Decls())(func(d ast.DeclAny) bool {
+		firstSpan = d.Span()
+		return false
+	})
+	stream.All()(func(t token.Token) bool {
+		if spanOverlappingSpan(t.Span(), firstSpan) {
+			firstToken = t
+			return false
+		}
+		return true
+	})
+	if firstToken.IsZero() {
+		// Not sure if this will happen... would expect at least an empty decl
+		panic("no first decl token for body")
+	}
+	cursor := token.NewCursorAt(firstToken)
 	chunks := oneLiner(
 		tokens,
-		nil,
-		func(t token.Token) bool {
-			// TODO: This is not true for all compound bodies
-			return t.ID() != body.Braces().ID()
-		},
-		func(_ *token.Cursor) (splitKind, bool) {
-			// For compound bodies, we figure out whether to split the first line
-			// based on the whitespace between the open brace and then first body decl.
-			// So we set the cursor to the first body decl, walk backwards until the open brace
-			// and then go from there.
-			var first report.Span
-			var firstToken token.Token
-			seq.Values(body.Decls())(func(d ast.DeclAny) bool {
-				first = d.Span()
-				return false
-			})
-			stream.All()(func(t token.Token) bool {
-				if spanWithinSpan(t.Span(), first) {
-					firstToken = t
-					return false
-				}
-				return true
-			})
-			if firstToken.IsZero() {
-				panic("AAAAAAAAA")
-			}
-			cursor := token.NewCursorAt(firstToken)
-			// Walk back until the open brace
+		cursor,
+		topLineSpacer,
+		func(cursor *token.Cursor) (splitKind, bool) {
+			// Walk back until the open brace and check for new lines, trailing comments, etc.
 			t := cursor.PrevSkippable()
 			var commentFound bool
 			var singleFound bool
@@ -529,9 +583,6 @@ func compoundBody(
 					}
 				case token.Comment:
 					commentFound = true
-				}
-				if singleFound {
-					break
 				}
 				if cursor.PeekPrevSkippable().IsZero() {
 					break
@@ -672,10 +723,10 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 	return chunks
 }
 
-func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
+func getTokensAndCursorForSpan(stream *token.Stream, span report.Span) ([]token.Token, *token.Cursor) {
 	var tokens []token.Token
 	stream.All()(func(t token.Token) bool {
-		if spanWithinSpan(t.Span(), span) {
+		if spanOverlappingSpan(t.Span(), span) {
 			tokens = append(tokens, t)
 		}
 		// We are past the end, so no need to continue
@@ -691,34 +742,35 @@ func getTokensAndCursorForDecl(stream *token.Stream, span report.Span) ([]token.
 	return tokens, token.NewCursorAt(tokens[len(tokens)-1])
 }
 
-// get all the tokens from the start to the end (inclusive) and the cursor starting at the end.
-func getTokensAndCursorFromStartToEnd(stream *token.Stream, start, end report.Span) ([]token.Token, *token.Cursor) {
+func getTokensForCompoundBody(stream *token.Stream, fullSpan, bodySpan report.Span) []token.Token {
 	var tokens []token.Token
 	stream.All()(func(t token.Token) bool {
-		if spanWithinRange(t.Span(), start, end) {
+		if spanWithinRange(t.Span(), fullSpan.Start, bodySpan.Start) {
 			tokens = append(tokens, t)
 		}
-		// No need to continue if we've moved past the end span
-		if t.Span().Start > end.Start {
+		// No need to continue if we've moved past the body span
+		if t.Span().Start > bodySpan.Start {
 			return false
 		}
 		return true
 	})
 	// TODO: what does it mean to have no tokens?
-	if tokens == nil {
-		return nil, nil
-	}
-	return tokens, token.NewCursorAt(tokens[len(tokens)-1])
+	return tokens
 }
 
-// Check that the given span is within the bounds of the start and end spans.
-func spanWithinRange(span, start, end report.Span) bool {
-	return span.Start >= start.Start && span.Start <= end.Start
+// Check that the given span starts within the bounds of range, inclusive.
+func spanWithinRange(span report.Span, start, end int) bool {
+	return span.Start >= start && span.Start <= end
 }
 
 // Check that the given span is within the bounds of another span, inclusive.
-func spanWithinSpan(span, base report.Span) bool {
+func spanOverlappingSpan(span, base report.Span) bool {
 	return span.Start >= base.Start && span.End <= base.End
+}
+
+// Check that the given span is within the bounds of another span, exclusive of the end.
+func spanWithinSpan(span, base report.Span) bool {
+	return span.Start >= base.Start && span.End < base.End
 }
 
 // TODO: docs

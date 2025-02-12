@@ -19,10 +19,10 @@ message FooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFoo {
 }
 
 message Bar {
-  string id = 1 [  my.option= "value"];
+  string id = 1 [  my.option = "value"];
 
   oneof value {
-    option (stuff).required= true; 
+    option (stuff).required = true; 
 
     string id = 2;
     int32 count = 3;
@@ -35,5 +35,5 @@ enum AH {
 
 service FooService {
   rpc GetFoo ( GetFooRequest ) returns ( GetBarResponse ) {
-    option idempotency_level= NO_SIDE_EFFECTS;    }
+    option idempotency_level = NO_SIDE_EFFECTS;    }
 }
