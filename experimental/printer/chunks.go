@@ -12,15 +12,21 @@ import (
 // TODO list
 //
 // - at each break point, we need to figure out our "prefix" chunks
+//   - cursor at the closing brace does not look into the body, we need to do the thing again
 // - may want to refactor compound body vs. field body... again
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
 // - debug various decls/defs
 // - a bunch of performance optimizations
-// - refactor splitChunk behaviour/callback?
-// - improve performance with cursors
+//   - refactor splitChunk behaviour/callback?
+//   - improve performance with cursors
 // - a bunch of docs
 // - do a naming sanity check with Ed/Miguel
+//
+// - col width should be unicode width not len of string
+// - chunk is basically a DOM
+// - should break this into two packages -> one for the DOM abstractions and rendering and
+//   the parsing layer
 
 // TODO: docs
 type splitKind int8
@@ -85,7 +91,7 @@ func declBlock(stream *token.Stream, decl ast.DeclAny, applyFormatting bool) blo
 func declChunks(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, indentLevel uint32) []chunk {
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
-		// TODO: figure out what to do with an empty declaration
+		// TODO: figure out what to do with an empty declaration/what exactly causes empty decls
 	case ast.DeclKindSyntax:
 		syntax := decl.AsSyntax()
 		tokens, cursor := getTokensAndCursorForSpan(stream, syntax.Span())
@@ -299,9 +305,6 @@ func fieldChunks(
 			tokens,
 			cursor,
 			func(t token.Token) bool {
-				// We don't want to add a space after the semicolon
-				// We also don't want to add a space after the tag
-				// TODO
 				if t.ID() == semicolon.ID() || spanOverlappingSpan(t.Span(), fieldTagSpan) {
 					return false
 				}
@@ -463,6 +466,7 @@ func optionChunks(
 		tokens,
 		cursor,
 		func(t token.Token) bool {
+			// TODO: docs
 			if spanWithinSpan(t.Span(), option.Path.Span()) || spanOverlappingSpan(t.Span(), option.Value.Span()) {
 				return false
 			}
@@ -492,25 +496,33 @@ func bodyChunks(
 	applyFormatting bool,
 	indentLevel uint32,
 ) []chunk {
+	var lastSpan report.Span
+	var lastToken token.Token
 	var chunks []chunk
 	seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
 		chunks = append(chunks, declChunks(stream, d, applyFormatting, indentLevel)...)
+		lastSpan = d.Span()
 		return true
 	})
 	if !decl.Braces().IsZero() {
+		// Similar to how we walk from the contents of the braces backwards to the opening brace,
+		// we must walk from the contents of the braces forwards to the closing brace.
+		// WIP
+		stream.All()
 		if indentLevel > 0 {
 			indentLevel--
 		}
 		_, end := decl.Braces().StartEnd()
 		chunks = append(chunks, oneLiner(
 			[]token.Token{end},
-			// TODO: pending fix to NewCursorAt
 			token.NewCursorAt(end),
 			func(t token.Token) bool {
 				// No spaces
 				return false
 			},
 			func(cursor *token.Cursor) (splitKind, bool) {
+				// We should not be looking back from the closing brace, we should be looking between
+				// the last decl and the closing brace
 				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
 				if trailingComment {
 					return splitKindNever, true
@@ -845,7 +857,10 @@ func (b block) calculateSplits(lineLimit int) {
 		if c.splitKind != splitKindSoft {
 			cost = 0
 		}
+		// TODO: measuring should be in unicode length
 		cost += len(c.text)
+		// TODO: forgot to add indentation level
+
 		// Check if cost has exceeded line limit, if so, we break early
 		if cost > lineLimit {
 			break
