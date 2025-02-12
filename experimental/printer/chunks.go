@@ -11,7 +11,7 @@ import (
 
 // TODO list
 //
-// - find bug in method.Inputs/Outputs giving zeros for brackets (despite having them)
+// - at each break point, we need to figure out our "prefix" chunks
 // - may want to refactor compound body vs. field body... again
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
@@ -494,12 +494,9 @@ func bodyChunks(
 ) []chunk {
 	var chunks []chunk
 	seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
-		// TODO: docs
 		chunks = append(chunks, declChunks(stream, d, applyFormatting, indentLevel)...)
 		return true
 	})
-	// TODO: figure out what are the edges of this
-	// We are already handling the opening brace, so we just want to handle the closing brace here
 	if !decl.Braces().IsZero() {
 		if indentLevel > 0 {
 			indentLevel--
@@ -546,59 +543,79 @@ func compoundBody(
 	// based on the whitespace between the open brace and then first body decl.
 	// So we set the cursor to the first body decl, walk backwards until the open brace
 	// and then go from there.
-	var firstSpan report.Span
-	var firstToken token.Token
-	seq.Values(body.Decls())(func(d ast.DeclAny) bool {
-		firstSpan = d.Span()
-		return false
-	})
-	stream.All()(func(t token.Token) bool {
-		if spanOverlappingSpan(t.Span(), firstSpan) {
-			firstToken = t
+	var cursor *token.Cursor
+	if body.Decls().Len() > 0 {
+		var firstSpan report.Span
+		var firstToken token.Token
+		seq.Values(body.Decls())(func(d ast.DeclAny) bool {
+			firstSpan = d.Span()
 			return false
-		}
-		return true
-	})
-	if firstToken.IsZero() {
-		// Not sure if this will happen... would expect at least an empty decl
-		panic("no first decl token for body")
+		})
+		stream.All()(func(t token.Token) bool {
+			if spanOverlappingSpan(t.Span(), firstSpan) {
+				firstToken = t
+				return false
+			}
+			return true
+		})
+		cursor = token.NewCursorAt(firstToken)
 	}
-	cursor := token.NewCursorAt(firstToken)
 	chunks := oneLiner(
 		tokens,
 		cursor,
 		topLineSpacer,
 		func(cursor *token.Cursor) (splitKind, bool) {
-			// Walk back until the open brace and check for new lines, trailing comments, etc.
-			t := cursor.PrevSkippable()
-			var commentFound bool
-			var singleFound bool
-			var doubleFound bool
-			for t.ID() != tokens[len(tokens)-1].ID() {
-				switch t.Kind() {
-				case token.Space:
-					if strings.Contains(t.Text(), "\n\n") {
-						doubleFound = true
-					}
-					if strings.Contains(t.Text(), "\n") {
-						singleFound = true
-					}
-				case token.Comment:
-					commentFound = true
+			if body.Decls().Len() == 0 {
+				// In the case where there are no declarations in the body, we want to check the
+				// span in-between the open and close brackets and see if there are any trailing
+				// comments and/or new lines.
+				start, end := body.Braces().StartEnd()
+				textWithin := strings.TrimPrefix(strings.TrimSuffix(body.Braces().Span().Text(), end.Text()), start.Text())
+				if len(strings.Fields(textWithin)) > 0 {
+					// TODO: this isn't exactly correct, we should still check if there should be splits
+					// within, however, we are already priced into all the contents of this? Maybe?
+					// Assume that anything here is a comment, and we never split
+					return splitKindNever, true
 				}
-				if cursor.PeekPrevSkippable().IsZero() {
-					break
+				if strings.Contains(textWithin, "\n\n") {
+					return splitKindDouble, false
 				}
-				t = cursor.PrevSkippable()
-			}
-			if commentFound {
-				return splitKindNever, true
-			}
-			if doubleFound {
-				return splitKindDouble, false
-			}
-			if singleFound {
-				return splitKindHard, false
+				if strings.Contains(textWithin, "\n") {
+					return splitKindHard, false
+				}
+				return splitKindSoft, false
+			} else {
+				// Walk back until the open brace and check for new lines, trailing comments, etc.
+				t := cursor.PrevSkippable()
+				var commentFound bool
+				var singleFound bool
+				var doubleFound bool
+				for t.ID() != tokens[len(tokens)-1].ID() {
+					switch t.Kind() {
+					case token.Space:
+						if strings.Contains(t.Text(), "\n\n") {
+							doubleFound = true
+						}
+						if strings.Contains(t.Text(), "\n") {
+							singleFound = true
+						}
+					case token.Comment:
+						commentFound = true
+					}
+					if cursor.PeekPrevSkippable().IsZero() {
+						break
+					}
+					t = cursor.PrevSkippable()
+				}
+				if commentFound {
+					return splitKindNever, true
+				}
+				if doubleFound {
+					return splitKindDouble, false
+				}
+				if singleFound {
+					return splitKindHard, false
+				}
 			}
 			return splitKindSoft, false
 		},

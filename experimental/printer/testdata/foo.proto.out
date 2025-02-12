@@ -29,6 +29,8 @@ message Bar {
   }
 }
 
+message Baz {}
+
 enum AH {
   AH_UNSPECIFIED = 0;
 }
