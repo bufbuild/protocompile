@@ -59,3 +59,19 @@ func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
 		})
 	}
 }
+
+// Chain returns an iterator that calls a sequence of iterators in sequence.
+func Chain[T any](seqs ...iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		var done bool
+		for _, seq := range seqs {
+			if done {
+				return
+			}
+			seq(func(v T) bool {
+				done = !yield(v)
+				return !done
+			})
+		}
+	}
+}

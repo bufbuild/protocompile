@@ -1,11 +1,11 @@
-⟨b.cyn⟩remark: let protocompile pick a syntax for you⟨reset⟩
+⟨b.cyn⟩remark: let protocompile pick a syntax for you
 ⟨blu⟩  --> foo.proto:1:1
 ⟨blu⟩  help: delete this
    |
 ⟨blu⟩ 1 | ⟨b.red⟩-⟨red⟩ syntax = "proto3";
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.cyn⟩remark: let protocompile pick a syntax for you⟨reset⟩
+⟨b.cyn⟩remark: let protocompile pick a syntax for you
 ⟨blu⟩  --> foo.proto:1:10
 ⟨blu⟩  help: delete this
    |
@@ -13,7 +13,7 @@
 ⟨blu⟩ 1 | ⟨b.grn⟩+⟨grn⟩ syntax = ;
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.ylw⟩warning: services should have a `Service` suffix⟨reset⟩
+⟨b.ylw⟩warning: services should have a `Service` suffix
 ⟨blu⟩  --> foo.proto:5:9
    |
 ⟨blu⟩ 5 | ⟨reset⟩service Foo {
@@ -23,7 +23,7 @@
 ⟨blu⟩ 5 | ⟨reset⟩service Foo⟨grn⟩Service⟨reset⟩ {
 ⟨blu⟩   | ⟨reset⟩           ⟨b.grn⟩+++++++⟨reset⟩  ⟨reset⟩
 
-⟨b.red⟩error: missing (...) around return type⟨reset⟩
+⟨b.red⟩error: missing (...) around return type
 ⟨blu⟩  --> foo.proto:6:31
    |
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse
@@ -33,7 +33,7 @@
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)
 ⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+⟨reset⟩
 
-⟨b.red⟩error: method options must go in a block⟨reset⟩
+⟨b.red⟩error: method options must go in a block
 ⟨blu⟩  --> foo.proto:7:45
    |
 ⟨blu⟩ 7 | ⟨reset⟩  rpc Put(PutRequest) returns (PutResponse) [foo = bar];
@@ -46,7 +46,7 @@
 ⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩   }
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.red⟩error: delete some stuff⟨reset⟩
+⟨b.red⟩error: delete some stuff
 ⟨blu⟩  --> foo.proto:5:1
 ⟨blu⟩  help:
    |
@@ -60,7 +60,7 @@
 ⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩ }
 ⟨blu⟩   | ⟨reset⟩
 
-⟨b.red⟩error: delete this method⟨reset⟩
+⟨b.red⟩error: delete this method
 ⟨blu⟩  --> foo.proto:5:1
 ⟨blu⟩  help:
    |

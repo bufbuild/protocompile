@@ -99,3 +99,38 @@ func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
 func Lines(s string) iter.Seq[string] {
 	return Split(s, '\n')
 }
+
+// PartitionKey returns an iterator of the largest substrings of s such that
+// key(r) for each rune in each substring is the same value.
+//
+// The iterator also yields the index at which each substring begins.
+//
+// Will never yield an empty string.
+func PartitionKey[K comparable](s string, key func(rune) K) iter.Seq2[int, string] {
+	return func(yield func(int, string) bool) {
+		var start int
+		var prev K
+		for i, r := range s {
+			next := key(r)
+			if i == 0 {
+				prev = next
+				continue
+			}
+
+			if prev == next {
+				continue
+			}
+
+			if !yield(start, s[start:i]) {
+				return
+			}
+
+			start = i
+			prev = next
+		}
+
+		if start < len(s) {
+			yield(start, s[start:])
+		}
+	}
+}

@@ -1,4 +1,4 @@
-⟨b.ylw⟩warning: whole block⟨reset⟩
+⟨b.ylw⟩warning: whole block
 ⟨blu⟩  --> foo.proto:5:1
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
@@ -6,7 +6,7 @@
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\_^ this block⟨reset⟩
 
-⟨b.ylw⟩warning: nested blocks⟨reset⟩
+⟨b.ylw⟩warning: nested blocks
 ⟨blu⟩  --> foo.proto:5:1
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
@@ -18,7 +18,7 @@
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\___^ this block⟨reset⟩
 
-⟨b.ylw⟩warning: parallel blocks⟨reset⟩
+⟨b.ylw⟩warning: parallel blocks
 ⟨blu⟩  --> foo.proto:5:1
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
@@ -31,7 +31,7 @@
 ⟨blu⟩12 | ⟨b.blu⟩/ ⟨reset⟩}
 ⟨blu⟩   | ⟨b.blu⟩\_- and this block⟨reset⟩
 
-⟨b.ylw⟩warning: nested blocks same start⟨reset⟩
+⟨b.ylw⟩warning: nested blocks same start
 ⟨blu⟩  --> foo.proto:5:1
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨b.blu⟩/ ⟨reset⟩message Blah {
@@ -41,7 +41,7 @@
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\___^ this block⟨reset⟩
 
-⟨b.ylw⟩warning: nested blocks same end⟨reset⟩
+⟨b.ylw⟩warning: nested blocks same end
 ⟨blu⟩  --> foo.proto:5:1
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
@@ -52,7 +52,7 @@
 ⟨blu⟩   | ⟨b.ylw⟩\___^ this block
 ⟨blu⟩   | ⟨b.ylw⟩  ⟨b.blu⟩\_- and this block⟨reset⟩
 
-⟨b.ylw⟩warning: nested overlap⟨reset⟩
+⟨b.ylw⟩warning: nested overlap
 ⟨blu⟩  --> foo.proto:5:1
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩/ ⟨reset⟩message Blah {
@@ -64,7 +64,7 @@
 ⟨blu⟩12 |   ⟨b.blu⟩| ⟨reset⟩}
 ⟨blu⟩   |   ⟨b.blu⟩\_- and this block⟨reset⟩
 
-⟨b.ylw⟩warning: nesting just the braces⟨reset⟩
+⟨b.ylw⟩warning: nesting just the braces
 ⟨blu⟩  --> foo.proto:5:15
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩  ⟨reset⟩message Blah {
@@ -78,7 +78,7 @@
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\___^ this block⟨reset⟩
 
-⟨b.ylw⟩warning: nesting just the braces same start⟨reset⟩
+⟨b.ylw⟩warning: nesting just the braces same start
 ⟨blu⟩  --> foo.proto:5:15
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩  ⟨b.blu⟩  ⟨reset⟩message Blah {
@@ -90,7 +90,7 @@
 ⟨blu⟩12 | ⟨b.ylw⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.ylw⟩\___^ this block⟨reset⟩
 
-⟨b.ylw⟩warning: nesting just the braces same start (2)⟨reset⟩
+⟨b.ylw⟩warning: nesting just the braces same start (2)
 ⟨blu⟩  --> foo.proto:5:15
    |
 ⟨blu⟩ 5 | ⟨b.blu⟩  ⟨b.ylw⟩  ⟨reset⟩message Blah {
@@ -102,7 +102,7 @@
 ⟨blu⟩12 | ⟨b.blu⟩| ⟨reset⟩}
 ⟨blu⟩   | ⟨b.blu⟩\___- this block⟨reset⟩
 
-⟨b.ylw⟩warning: braces nesting overlap⟨reset⟩
+⟨b.ylw⟩warning: braces nesting overlap
 ⟨blu⟩  --> foo.proto:5:15
    |
 ⟨blu⟩ 5 | ⟨b.ylw⟩  ⟨reset⟩message Blah {
@@ -116,7 +116,7 @@
 ⟨blu⟩12 |   ⟨b.blu⟩| ⟨reset⟩}
 ⟨blu⟩   |   ⟨b.blu⟩\_- and this block⟨reset⟩
 
-⟨b.ylw⟩warning: braces nesting overlap (2)⟨reset⟩
+⟨b.ylw⟩warning: braces nesting overlap (2)
 ⟨blu⟩  --> foo.proto:7:17
    |
 ⟨blu⟩ 5 | ⟨b.blu⟩  ⟨reset⟩message Blah {

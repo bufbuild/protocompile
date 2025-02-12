@@ -1,4 +1,4 @@
-⟨b.red⟩error: emoji, CJK, bidi⟨reset⟩
+⟨b.red⟩error: emoji, CJK, bidi
 ⟨blu⟩  --> foo.proto:5:9
    |
 ⟨blu⟩ 5 | ⟨reset⟩message 🐈<U+200D>⬛ {
@@ -10,7 +10,7 @@
 ⟨blu⟩ 1 | ⟨reset⟩import "חתול שחור.proto";
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩---------------⟨reset⟩ ⟨b.blu⟩bidi works if it's quoted, at least⟨reset⟩
 
-⟨b.red⟩error: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts⟨reset⟩
+⟨b.red⟩error: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
 ⟨blu⟩  --> foo.proto:7:10
    |
 ⟨blu⟩ 7 | ⟨reset⟩  string القطة السوداء = 2;

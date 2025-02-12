@@ -76,7 +76,7 @@ func TestPartition(t *testing.T) {
 				ss    [][]int
 				count int
 			)
-			it := slicesx.Partition(test.slice, func(a, b *int) bool { return *a != *b })
+			it := slicesx.Partition(test.slice)
 			it(func(i int, s []int) bool {
 				if test.breakAt == count {
 					return false
