@@ -585,9 +585,7 @@ func (r *renderer) window(w *window) {
 			// in a whole diagnostic, much less five snippets that share a line, so
 			// this shouldn't be an issue.
 			restSorted := slices.Clone(rest[idx:])
-			slices.SortFunc(restSorted, func(a, b *underline) int {
-				return a.start - b.start
-			})
+			slices.SortFunc(restSorted, cmpx.Key(func(u *underline) int { return u.start }))
 
 			var nonColorLen int
 			for _, ul := range restSorted {

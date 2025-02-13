@@ -15,7 +15,13 @@
 // package cmpx contains extensions to Go's package cmp.
 package cmpx
 
-import "cmp"
+import (
+	"cmp"
+	"fmt"
+	"math"
+	"reflect"
+	"unsafe"
+)
 
 // Result is the type returned by an [Ordering], and in particular
 // [cmp.Compare].
@@ -27,6 +33,11 @@ const (
 	Equal   Result = 0
 	Greater Result = 1
 )
+
+// Ordered is like [cmp.Ordered], but includes additional types.
+type Ordered interface {
+	~bool | cmp.Ordered
+}
 
 // Ordering is an ordering for the type T, which is any function with the same
 // signature as [Compare].
@@ -48,5 +59,124 @@ func Join[T any](cmps ...Ordering[T]) Ordering[T] {
 			}
 		}
 		return Equal
+	}
+}
+
+// Bool compares two bools, where false < true.
+//
+// This works around a bug where bool does not satisfy [cmp.Ordered].
+func Bool[B ~bool](a, b B) Result {
+	var ai, bi byte
+	if a {
+		ai = 1
+	}
+	if b {
+		bi = 1
+	}
+	return cmp.Compare(ai, bi)
+}
+
+// Address compares two pointers by address.
+//
+// The result will be unstable if either pointer points to the stack, since
+// stack resizing may cause their relative addresses to change.
+func Address[P ~*E, E any](a, b P) Result {
+	return cmp.Compare(uintptr(unsafe.Pointer(a)), uintptr(unsafe.Pointer(b)))
+}
+
+// Any compares any two [cmp.Ordered] types, according to the following criteria:
+//
+//  1. any(nil) is least of all.
+//
+//  2. If the values are not mutually comparable, their [reflect.Kind]s are
+//     compared.
+//
+//  3. If either value is not of a [cmp.Ordered] type, this function panics.
+//
+//  4. Otherwise, the arguments are compared as-if by [cmp.Compare].
+//
+// For the purposes of this function, bool is treated as satisfying [cmp.Compare].
+func Any(a, b any) Result {
+	if a == nil || b == nil {
+		return Bool(a != nil, b != nil)
+	}
+
+	ra := reflect.ValueOf(a)
+	rb := reflect.ValueOf(b)
+
+	type kind int
+	const (
+		kBool kind = 1 << iota
+		kInt
+		kUint
+		kFloat
+		kString
+	)
+
+	which := func(r reflect.Value) kind {
+		switch r.Kind() {
+		case reflect.Bool:
+			return kBool
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return kInt
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Uintptr:
+			return kUint
+		case reflect.Float32, reflect.Float64:
+			return kFloat
+		case reflect.String:
+			return kString
+		default:
+			panic(fmt.Sprintf("cmpx.Any: incomparable value %v (type %[1]T)", r.Interface()))
+		}
+	}
+
+	switch which(ra) | which(rb) {
+	case kBool:
+		return Bool(ra.Bool(), rb.Bool())
+
+	case kInt:
+		return cmp.Compare(ra.Int(), rb.Int())
+
+	case kUint:
+		return cmp.Compare(ra.Uint(), rb.Uint())
+
+	case kInt | kUint:
+		if rb.CanUint() {
+			v := rb.Uint()
+			if v > math.MaxInt64 {
+				return Less
+			}
+			return cmp.Compare(ra.Int(), int64(v))
+		} else {
+			v := ra.Uint()
+			if v > math.MaxInt64 {
+				return Greater
+			}
+			return cmp.Compare(int64(v), rb.Int())
+		}
+
+	case kFloat:
+		return cmp.Compare(ra.Float(), rb.Float())
+
+	case kFloat | kInt:
+		if ra.CanFloat() {
+			return cmp.Compare(ra.Float(), float64(rb.Int()))
+		} else {
+			return cmp.Compare(float64(ra.Int()), rb.Float())
+		}
+
+	case kFloat | kUint:
+		if ra.CanFloat() {
+			return cmp.Compare(ra.Float(), float64(rb.Uint()))
+		} else {
+			return cmp.Compare(float64(ra.Uint()), rb.Float())
+		}
+
+	case kString:
+		return cmp.Compare(ra.String(), rb.String())
+
+	default:
+		return cmp.Compare(ra.Kind(), rb.Kind())
 	}
 }
