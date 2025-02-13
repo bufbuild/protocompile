@@ -132,7 +132,7 @@ func (t *measuringTape) measure(value reflect.Value) {
 		if !t.insert(value.Pointer(), uint64(value.Cap())*uint64(value.Type().Elem().Size())) {
 			return
 		}
-		for i := 0; i < value.Len(); i++ {
+		for i := range value.Len() {
 			t.measure(value.Index(i))
 		}
 
@@ -173,7 +173,7 @@ func (t *measuringTape) measure(value reflect.Value) {
 		t.insert(value.Pointer(), uint64(value.Len()))
 
 	case reflect.Struct:
-		for i := 0; i < value.NumField(); i++ {
+		for i := range value.NumField() {
 			t.measure(value.Field(i))
 		}
 

@@ -64,7 +64,7 @@ func (y *toYAML) message(m protoreflect.Message) *doc {
 	fs := desc.Fields()
 
 	d := new(doc)
-	for i := 0; i < fs.Len(); i++ {
+	for i := range fs.Len() {
 		f := fs.Get(i)
 
 		has := m.Has(f)
@@ -92,7 +92,7 @@ func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any
 
 	case protoreflect.List:
 		d := new(doc)
-		for i := 0; i < v.Len(); i++ {
+		for i := range v.Len() {
 			d.push(nil, y.value(v.Get(i), f))
 		}
 		return d
@@ -219,7 +219,7 @@ func (y *toYAML) isOneLine(v any) bool {
 func (y *toYAML) indent() {
 	s := y.out.String()
 	if s == "" || strings.HasSuffix(s, "\n") {
-		for i := 0; i < y.nesting; i++ {
+		for range y.nesting {
 			y.out.WriteString("  ")
 		}
 	}
