@@ -11,8 +11,6 @@ import (
 
 // TODO list
 //
-// - at each break point, we need to figure out our "prefix" chunks
-//   - cursor at the closing brace does not look into the body, we need to do the thing again
 // - may want to refactor compound body vs. field body... again
 // - finish all decl types
 // - what does it mean to have no tokens for a decl...
@@ -417,39 +415,30 @@ func optionsChunks(
 	indentLevel uint32,
 ) []chunk {
 	var chunks []chunk
+	var lastSpan report.Span
+	var lastToken token.Token
 	seq.Values(options.Entries())(func(o ast.Option) bool {
 		chunks = append(chunks, optionChunks(stream, o.Span(), o, applyFormatting, indentLevel)...)
+		lastSpan = o.Span()
 		return true
 	})
 	if !options.Brackets().IsZero() {
+		_, end := options.Brackets().StartEnd()
+		cursor := token.NewCursorAt(end)
+		if options.Entries().Len() > 0 {
+			stream.All()(func(t token.Token) bool {
+				if spanOverlappingSpan(t.Span(), lastSpan) {
+					lastToken = t
+					return false
+				}
+				return true
+			})
+			cursor = token.NewCursorAt(lastToken)
+		}
 		if indentLevel > 0 {
 			indentLevel--
 		}
-		_, end := options.Brackets().StartEnd()
-		chunks = append(chunks, oneLiner(
-			[]token.Token{end},
-			// TODO: pending fix to NewCursorAt
-			token.NewCursorAt(end),
-			func(t token.Token) bool {
-				// No spaces
-				return false
-			},
-			func(cursor *token.Cursor) (splitKind, bool) {
-				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return splitKindNever, true
-				}
-				if double {
-					return splitKindDouble, false
-				}
-				if single {
-					return splitKindHard, false
-				}
-				return splitKindSoft, false
-			},
-			applyFormatting,
-			indentLevel,
-		)...)
+		chunks = append(chunks, closingBrace(end, cursor, applyFormatting, indentLevel)...)
 	}
 	return chunks
 }
@@ -492,52 +481,38 @@ func optionChunks(
 
 func bodyChunks(
 	stream *token.Stream,
-	decl ast.DeclBody,
+	body ast.DeclBody,
 	applyFormatting bool,
 	indentLevel uint32,
 ) []chunk {
+	var chunks []chunk
 	var lastSpan report.Span
 	var lastToken token.Token
-	var chunks []chunk
-	seq.Values(decl.Decls())(func(d ast.DeclAny) bool {
+	seq.Values(body.Decls())(func(d ast.DeclAny) bool {
 		chunks = append(chunks, declChunks(stream, d, applyFormatting, indentLevel)...)
+		// TODO: surely there is a better way to do this
 		lastSpan = d.Span()
 		return true
 	})
-	if !decl.Braces().IsZero() {
-		// Similar to how we walk from the contents of the braces backwards to the opening brace,
-		// we must walk from the contents of the braces forwards to the closing brace.
-		// WIP
-		stream.All()
+	if !body.Braces().IsZero() {
+		_, end := body.Braces().StartEnd()
+		cursor := token.NewCursorAt(end)
+		if body.Decls().Len() > 0 {
+			// Similar to how we walk from the contents of the braces backwards to the opening brace,
+			// we must walk from the contents of the braces forwards to the closing brace.
+			stream.All()(func(t token.Token) bool {
+				if spanOverlappingSpan(t.Span(), lastSpan) {
+					lastToken = t
+					return false
+				}
+				return true
+			})
+			cursor = token.NewCursorAt(lastToken)
+		}
 		if indentLevel > 0 {
 			indentLevel--
 		}
-		_, end := decl.Braces().StartEnd()
-		chunks = append(chunks, oneLiner(
-			[]token.Token{end},
-			token.NewCursorAt(end),
-			func(t token.Token) bool {
-				// No spaces
-				return false
-			},
-			func(cursor *token.Cursor) (splitKind, bool) {
-				// We should not be looking back from the closing brace, we should be looking between
-				// the last decl and the closing brace
-				trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return splitKindNever, true
-				}
-				if double {
-					return splitKindDouble, false
-				}
-				if single {
-					return splitKindHard, false
-				}
-				return splitKindSoft, false
-			},
-			applyFormatting,
-			indentLevel,
-		)...)
+		chunks = append(chunks, closingBrace(end, cursor, applyFormatting, indentLevel)...)
 	}
 	return chunks
 }
@@ -697,9 +672,77 @@ func oneLiner(
 			text += t.Text()
 		}
 	}
-	splitKind, spaceWhenUnsplit := splitter(cursor)
+	// TODO: this should only be called if formatting is applied, otherwise the splitKind
+	// and space is always splitKindSoft, false
+	var splitKind splitKind
+	var spaceWhenUnsplit bool
+	if applyFormatting {
+		splitKind, spaceWhenUnsplit = splitter(cursor)
+	}
 	chunks = append(chunks, chunk{
 		text:             text,
+		splitKind:        splitKind,
+		spaceWhenUnsplit: spaceWhenUnsplit,
+		indentLevel:      indentLevel,
+	})
+	return chunks
+}
+
+// TODO: docs
+func closingBrace(
+	closeToken token.Token,
+	cursor *token.Cursor,
+	applyFormatting bool,
+	indentLevel uint32,
+) []chunk {
+	var chunks []chunk
+	t := cursor.NextSkippable()
+	// TODO: docs.
+	// Collect up any prefix chunks. In the case where there are no decls, this is taken care
+	// of by the top-line stuff (which is sketchy.. wtf doria).
+	for t.ID() != closeToken.ID() {
+		switch t.Kind() {
+		case token.Space:
+			if !applyFormatting {
+				chunks = append(chunks, chunk{
+					text:      t.Text(),
+					splitKind: splitKindSoft,
+				})
+			}
+		case token.Comment:
+			chunks = append(chunks, chunk{
+				text:             t.Text(),
+				splitKind:        splitKindSoft,
+				spaceWhenUnsplit: true,
+			})
+		case token.Unrecognized:
+			// TODO: figure out what to do with unrecognized tokens
+		}
+		if cursor.PeekSkippable().IsZero() {
+			break
+		}
+		t = cursor.NextSkippable()
+	}
+	// Reset the cursor to the close token for split logic
+	cursor = token.NewCursorAt(closeToken)
+	var splitKind splitKind
+	var spaceWhenUnsplit bool
+	if applyFormatting {
+		trailingComment, single, double := trailingCommentSingleDoubleFound(cursor)
+		if trailingComment {
+			splitKind = splitKindNever
+			spaceWhenUnsplit = true
+		} else if double {
+			splitKind = splitKindDouble
+		} else if single {
+			splitKind = splitKindHard
+		} else {
+			splitKind = splitKindSoft
+			spaceWhenUnsplit = false
+		}
+	}
+	chunks = append(chunks, chunk{
+		text:             closeToken.Text(),
 		splitKind:        splitKind,
 		spaceWhenUnsplit: spaceWhenUnsplit,
 		indentLevel:      indentLevel,
@@ -731,17 +774,10 @@ func parsePrefixChunks(until token.Token, applyFormatting bool) []chunk {
 				})
 			}
 		case token.Comment:
-			var splitKind splitKind
-			_, single, _ := trailingCommentSingleDoubleFound(cursor)
-			if single {
-				splitKind = splitKindHard
-			} else {
-				splitKind = splitKindSoft
-			}
 			chunks = append(chunks, chunk{
 				text:             t.Text(),
-				splitKind:        splitKind,
-				spaceWhenUnsplit: true, // Always want to provide a space after an unsplit comment
+				splitKind:        splitKindSoft,
+				spaceWhenUnsplit: true,
 			})
 		case token.Unrecognized:
 			// TODO: figure out what to do with unrecognized tokens.

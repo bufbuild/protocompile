@@ -14,7 +14,7 @@ import "google/protobuf/empty.proto" ;
 message FooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFoo { message Bar { string id = 1; } string id = 1; string foo = 2; }
 
 message Bar {
-  string id = 1 [ my.option = "value" ];
+  string id = 1 [ my.option = "value" /* stuff */              ];
 
   oneof value {
     option (stuff).required = true;
