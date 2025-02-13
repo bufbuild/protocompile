@@ -18,8 +18,9 @@ import (
 	"math"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 )
 
 func TestAny(t *testing.T) {

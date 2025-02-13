@@ -19,9 +19,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 )
 
 // ToYAMLOptions contains configuration for [ToYAML].
