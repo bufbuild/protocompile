@@ -164,7 +164,7 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 			record(dep)
 		}
 	}
-	report.Sort()
+	report.Canonicalize()
 
 	return results, report, nil
 }

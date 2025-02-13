@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 		errs := &report.Report{Options: report.Options{Tracing: 10}}
 		file, _ := Parse(report.NewFile(path, text), errs)
 
-		errs.Sort()
+		errs.Canonicalize()
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,
 			ShowDebug: true,

@@ -119,3 +119,14 @@ func Values[S ~[]E, E any](s S) iter.Seq[E] {
 		}
 	}
 }
+
+// Backward is a polyfill for [slices.Backward].
+func Backward[S ~[]E, E any](s S) iter.Seq2[int, E] {
+	return func(yield func(int, E) bool) {
+		for i := len(s) - 1; i > 0; i-- {
+			if !yield(i, s[i]) {
+				return
+			}
+		}
+	}
+}
