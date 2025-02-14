@@ -17,6 +17,7 @@ package slicesx
 
 import (
 	"slices"
+	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
@@ -37,7 +38,7 @@ func Get[S ~[]E, E any, I SliceIndex](s S, idx I) (element E, ok bool) {
 
 	// Dodge the bounds check, since Go probably won't be able to
 	// eliminate it even after stenciling.
-	return *unsafex.Add(unsafex.SliceData(s), idx), true
+	return *unsafex.Add(unsafe.SliceData(s), idx), true
 }
 
 // GetPointer is like [Get], but it returns a pointer to the selected element
@@ -52,7 +53,7 @@ func GetPointer[S ~[]E, E any, I SliceIndex](s S, idx I) *E {
 
 	// Dodge the bounds check, since Go probably won't be able to
 	// eliminate it even after stenciling.
-	return unsafex.Add(unsafex.SliceData(s), idx)
+	return unsafex.Add(unsafe.SliceData(s), idx)
 }
 
 // Last returns the last element of the slice, unless it is empty, in which
