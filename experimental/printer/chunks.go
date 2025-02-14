@@ -11,9 +11,11 @@ import (
 
 // TODO list
 //
-// - may want to refactor compound body vs. field body... again
+// - re-write the tests in print_test.go and clean some stuff up
+// - abstract out the rendering vs. the parsing layers -- right now it's all muddled together
+//   so it's hard to debug and also driving me crazy.
 // - finish all decl types
-// - what does it mean to have no tokens for a decl...
+//   - what does it mean to have no tokens for a decl...
 // - debug various decls/defs
 // - a bunch of performance optimizations
 //   - refactor splitChunk behaviour/callback?
