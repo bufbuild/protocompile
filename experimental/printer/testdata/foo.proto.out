@@ -1,28 +1,30 @@
-/*
+  /*
 multi line comment
 with new line after
-*/ syntax = /* comment explaining this */ "proto3"; // trailing comment
+*/
+  /*
+multi line comment
+with new line after
+*/
+syntax = /* comment explaining this */ "proto3"; // trailing comment
  package foo.bar;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/empty.proto";
 
-message FooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFoo {
-  message Bar {
+  message FooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFooFoo {
+    message Bar {
+      string id = 1;
+    }
     string id = 1;
+    string foo = 2;
   }
-  string id = 1;
-  string foo = 2;
-}
-
 message Bar {
-  string id = 1 [  my.option = "value" /* stuff */ ];
+  string id = 1 [    my.option = "value" /* stuff */   ]  ;
 
   oneof value {
-    option (stuff).required = true; 
-
-    string id = 2;
+    (stuff).required = true    string id = 2;
     int32 count = 3;
   }
 }
@@ -35,6 +37,6 @@ enum AH {
 
 service FooService {
   rpc GetFoo (GetFooRequest) returns (GetBarResponse) {
-    option idempotency_level = NO_SIDE_EFFECTS;  // sdlkfjslkdjflksjdkjf
+    idempotency_level = NO_SIDE_EFFECTS// sdlkfjslkdjflksjdkjf
    }
 }

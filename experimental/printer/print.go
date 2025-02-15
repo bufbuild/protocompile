@@ -24,11 +24,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-const (
-	defaultLineLimit = 80
-	defaultIndent    = "  " // 2 spaces
-)
-
 // Print prints the file to the given writer.
 //
 // TODO: this is a placeholder, we need to implement this.
@@ -73,41 +68,6 @@ type printer struct {
 
 	// TODO: for synthetic tokens record the depth??
 	depth int
-}
-
-func (p *printer) printFile(file ast.File) {
-	// TODO: applyFormatting = true; we need to make this configurable
-	applyFormatting := true
-
-	for _, block := range fileToBlocks(file, applyFormatting) {
-		block.calculateSplits(defaultLineLimit)
-		for _, chunk := range block.chunks {
-			p.printChunk(chunk, applyFormatting)
-		}
-	}
-}
-
-// TODO: make indentSize configurable
-func (p *printer) printChunk(c chunk, applyFormatting bool) {
-	// TODO: make this a little nicer
-	for i := uint32(0); i < c.indentLevel; i++ {
-		p.WriteString(defaultIndent)
-	}
-	p.WriteString(c.text)
-	// In the case where formatting is not applied, we do not want to add whitespace,
-	// we want to use/preserve the user-defined whitespace instead.
-	if applyFormatting {
-		switch c.splitKind {
-		case splitKindHard:
-			p.WriteString("\n")
-		case splitKindDouble:
-			p.WriteString("\n\n")
-		case splitKindSoft, splitKindNever:
-			if c.spaceWhenUnsplit {
-				p.WriteString(" ")
-			}
-		}
-	}
 }
 
 func (p *printer) File(file ast.File) {

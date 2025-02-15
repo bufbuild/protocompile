@@ -41,7 +41,7 @@ func TestChunks(t *testing.T) {
 		file, ok := parser.Parse(report.NewFile(path, text), &report.Report{Options: report.Options{Tracing: 10}})
 		require.True(t, ok)
 		p := printer{}
-		p.printFile(file)
+		p.printFile(file, true)
 		t.Log(p.String())
 		outputs[0] = p.String()
 	})
