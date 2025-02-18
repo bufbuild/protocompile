@@ -12,19 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package printer
+// TODO: write docs
+package dom
 
-import (
-	"github.com/bufbuild/protocompile/experimental/ast"
-)
-
-const (
-	defaultLineLimit  = 80
-	defaultIndentSize = 2
-)
-
-func (p *printer) printFile(file ast.File, format bool) {
-	for _, doms := range fileToDom(file, format) {
-		p.WriteString(doms.Output(format, defaultLineLimit, defaultIndentSize))
-	}
-}
+//go:generate go run github.com/bufbuild/protocompile/internal/enum split.yaml

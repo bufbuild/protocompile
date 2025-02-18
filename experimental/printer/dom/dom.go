@@ -14,90 +14,44 @@
 
 package dom
 
-// TODO list
-//
-// - improve docs
-// - maybe refactor with report/width.go
-
-type Doms struct {
-	doms []*Dom
-}
-
-// NewDoms constructs a new Doms.
-func NewDoms() *Doms {
-	return &Doms{}
-}
-
-// Insert will only add the Dom if it contains chunks. A Dom without chunks will not be inserted.
-func (d *Doms) Insert(doms ...*Dom) {
-	for _, dom := range doms {
-		if len(dom.chunks) == 0 {
-			continue
-		}
-		d.doms = append(d.doms, dom)
-	}
-}
-
-func (d *Doms) Contents() []*Dom {
-	return d.doms
-}
-
-// TODO: remove, for debugging right now only
-func (d *Doms) What() string {
-	var what string
-	for _, dom := range d.doms {
-		what += dom.What() + " "
-	}
-	return what
-}
-
-// dom represents a "block" of source code that can be formatted.
+// Dom represents a "block" of source code that can be formatted.
 // It is made up of an ordered slice of chunks.
 //
 // When rendering a dom, we calculate...
 //
 // We must denote whether this is a formatted Dom or if this is for printing without formatting.
 type Dom struct {
-	chunks []*Chunk
-	format bool
+	chunks    []*Chunk
+	formatted bool
 }
 
 // NewDom constructs a new Dom.
-func NewDom(chunks []*Chunk, format bool) *Dom {
+func NewDom(chunks []*Chunk) *Dom {
 	return &Dom{
 		chunks: chunks,
-		format: format,
 	}
 }
 
-// TODO: remove, for debugging right now only
-func (d *Dom) What() string {
-	var what string
-	for _, c := range d.chunks {
-		what += c.What()
+func (d *Dom) LastSplitKind() SplitKind {
+	if len(d.chunks) > 0 {
+		return d.chunks[len(d.chunks)-1].SplitKind()
 	}
-	return what
+	return SplitKindUnknown
 }
 
-// Format the Dom.
-func (d *Dom) Format(lineLimit int) {
-	if d.format {
+func (d *Dom) format(lineLimit int) {
+	if !d.formatted {
 		if d.longestLen() > lineLimit {
 			d.split()
 		}
 		for _, c := range d.chunks {
 			if c.children != nil {
-				for _, child := range c.children.Contents() {
-					child.Format(lineLimit)
+				for _, child := range *c.children {
+					child.format(lineLimit)
 				}
 			}
 		}
 	}
-}
-
-// Chunks returns the Dom's chunks.
-func (d *Dom) Chunks() []*Chunk {
-	return d.chunks
 }
 
 func (d *Dom) longestLen() int {
@@ -117,17 +71,16 @@ func (d *Dom) longestLen() int {
 }
 
 func (d *Dom) split() {
-	if d.format {
-		for _, c := range d.chunks {
-			// This chunk has already been split or can never be split, simply move on.
-			if c.splitKind == SplitKindHard || c.splitKind == SplitKindNever {
-				continue
-			}
-			c.splitKind = SplitKindHard
-			c.indent++
-			for _, child := range c.children.Contents() {
-				child.split()
-			}
+	for _, c := range d.chunks {
+		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble || c.splitKind == SplitKindNever {
+			continue
+		}
+		c.splitKind = SplitKindHard
+		if c.children.first() != nil {
+			c.children.first().indented = true
+		}
+		if c.children.last() != nil {
+			c.children.last().splitKind = SplitKindHard
 		}
 	}
 }

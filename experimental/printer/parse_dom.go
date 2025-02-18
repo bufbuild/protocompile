@@ -26,20 +26,14 @@ import (
 
 // TODO list
 //
-// - re-write the tests in print_test.go and clean some stuff up
+// - rewrite compound to be better and refactor accordingly
 // - finish all decl types
-//   - what does it mean to have no tokens for a decl...
 // - debug various decls/defs
 // - a bunch of performance optimizations
 //   - refactor splitChunk behaviour/callback?
 //   - improve performance with cursors
 // - a bunch of docs
 // - do a naming sanity check with Ed/Miguel
-//
-// - col width should be unicode width not len of string
-// - chunk is basically a DOM
-// - should break this into two packages -> one for the DOM abstractions and rendering and
-//   the parsing layer
 
 // splitSetter sets the splitKind of the chunk using a cursor based on the surrounding tokens.
 type splitSetter func(*token.Cursor) (dom.SplitKind, bool)
@@ -50,14 +44,14 @@ type spaceSetter func(token.Token) bool
 func fileToDom(file ast.File, applyFormatting bool) []*dom.Doms {
 	var doms []*dom.Doms
 	seq.Values(file.Decls())(func(decl ast.DeclAny) bool {
-		d := declDoms(decl.Context().Stream(), decl, applyFormatting, 0)
+		d := declDoms(decl.Context().Stream(), decl, applyFormatting, 0, true)
 		doms = append(doms, d)
 		return true
 	})
 	return doms
 }
 
-func declDoms(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, indentLevel uint32) *dom.Doms {
+func declDoms(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, indentLevel uint32, indented bool) *dom.Doms {
 	doms := dom.NewDoms()
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
@@ -65,92 +59,89 @@ func declDoms(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, inde
 	case ast.DeclKindSyntax:
 		syntax := decl.AsSyntax()
 		tokens := getTokensForSpan(stream, syntax.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(dom.NewDom([]*dom.Chunk{single(
+				tokens,
+				func(t token.Token) bool {
+					if t.ID() == syntax.Semicolon().ID() || spanOverlappingSpan(t.Span(), syntax.Value().Span()) {
+						return false
+					}
+					return true
+				},
+				func(cursor *token.Cursor) (dom.SplitKind, bool) {
+					trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
+					if trailingComment {
+						return dom.SplitKindNever, true
+					}
+					// Otherwise, by default we always want a double split after a syntax declaration
+					return dom.SplitKindDouble, false
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			)}))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(dom.NewDom([]*dom.Chunk{single(
-			tokens,
-			func(t token.Token) bool {
-				if t.ID() == syntax.Semicolon().ID() || spanOverlappingSpan(t.Span(), syntax.Value().Span()) {
-					return false
-				}
-				return true
-			},
-			func(cursor *token.Cursor) (dom.SplitKind, bool) {
-				trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return dom.SplitKindNever, true
-				}
-				// Otherwise, by default we always want a double split after a syntax declaration
-				return dom.SplitKindDouble, false
-			},
-			applyFormatting,
-			indentLevel,
-		)}, applyFormatting))
 	case ast.DeclKindPackage:
 		pkg := decl.AsPackage()
 		tokens := getTokensForSpan(stream, pkg.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(dom.NewDom([]*dom.Chunk{single(
+				tokens,
+				func(t token.Token) bool {
+					if t.ID() == pkg.Semicolon().ID() || spanOverlappingSpan(t.Span(), pkg.Path().Span()) {
+						return false
+					}
+					return true
+				},
+				func(cursor *token.Cursor) (dom.SplitKind, bool) {
+					trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
+					if trailingComment {
+						return dom.SplitKindNever, true
+					}
+					// Otherwise, by default we always want a double split after a syntax declaration
+					return dom.SplitKindDouble, false
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			)}))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(dom.NewDom([]*dom.Chunk{single(
-			tokens,
-			func(t token.Token) bool {
-				if t.ID() == pkg.Semicolon().ID() || spanOverlappingSpan(t.Span(), pkg.Path().Span()) {
-					return false
-				}
-				return true
-			},
-			func(cursor *token.Cursor) (dom.SplitKind, bool) {
-				trailingComment, _, _ := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return dom.SplitKindNever, true
-				}
-				// Otherwise, by default we always want a double split after a syntax declaration
-				return dom.SplitKindDouble, false
-			},
-			applyFormatting,
-			indentLevel,
-		)}, applyFormatting))
 	case ast.DeclKindImport:
 		imprt := decl.AsImport()
 		tokens := getTokensForSpan(stream, imprt.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(dom.NewDom([]*dom.Chunk{single(
+				tokens,
+				func(t token.Token) bool {
+					if t.ID() == imprt.Semicolon().ID() || spanOverlappingSpan(t.Span(), imprt.ImportPath().Span()) {
+						return false
+					}
+					return true
+				},
+				func(cursor *token.Cursor) (dom.SplitKind, bool) {
+					trailingComment, _, double := trailingCommentSingleDoubleFound(cursor)
+					if trailingComment {
+						return dom.SplitKindNever, true
+					}
+					// TODO: there is some consideration for the last import in an import block should
+					// always be a double. Something to look at after we have a working prototype.
+					if double {
+						return dom.SplitKindDouble, false
+					}
+					return dom.SplitKindHard, false
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			)}))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(dom.NewDom([]*dom.Chunk{single(
-			tokens,
-			func(t token.Token) bool {
-				if t.ID() == imprt.Semicolon().ID() || spanOverlappingSpan(t.Span(), imprt.ImportPath().Span()) {
-					return false
-				}
-				return true
-			},
-			func(cursor *token.Cursor) (dom.SplitKind, bool) {
-				trailingComment, _, double := trailingCommentSingleDoubleFound(cursor)
-				if trailingComment {
-					return dom.SplitKindNever, true
-				}
-				// TODO: there is some consideration for the last import in an import block should
-				// always be a double. Something to look at after we have a working prototype.
-				if double {
-					return dom.SplitKindDouble, false
-				}
-				return dom.SplitKindHard, false
-			},
-			applyFormatting,
-			indentLevel,
-		)}, applyFormatting))
 	case ast.DeclKindDef:
-		return defDoms(stream, decl.AsDef(), applyFormatting, indentLevel)
+		return defDoms(stream, decl.AsDef(), applyFormatting, indentLevel, indented)
 	case ast.DeclKindBody:
-		return bodyDoms(stream, decl.AsBody(), applyFormatting, indentLevel)
+		return bodyDoms(stream, decl.AsBody(), applyFormatting, indentLevel, indented)
 	case ast.DeclKindRange:
 		// TODO: implement
 	default:
@@ -159,7 +150,7 @@ func declDoms(stream *token.Stream, decl ast.DeclAny, applyFormatting bool, inde
 	return doms
 }
 
-func defDoms(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, indentLevel uint32) *dom.Doms {
+func defDoms(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, indentLevel uint32, indented bool) *dom.Doms {
 	doms := dom.NewDoms()
 	switch decl.Classify() {
 	case ast.DefKindInvalid:
@@ -167,57 +158,55 @@ func defDoms(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, inden
 	case ast.DefKindMessage:
 		message := decl.AsMessage()
 		tokens := getTokensForCompoundBody(stream, message.Span(), message.Body.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(compound(
+				stream,
+				tokens,
+				message.Body,
+				func(t token.Token) bool {
+					return t.ID() != message.Body.Braces().ID()
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(compound(
-			stream,
-			tokens,
-			message.Body,
-			func(t token.Token) bool {
-				return t.ID() != message.Body.Braces().ID()
-			},
-			applyFormatting,
-			indentLevel,
-		))
 	case ast.DefKindEnum:
 		enum := decl.AsEnum()
 		tokens := getTokensForCompoundBody(stream, enum.Span(), enum.Body.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(compound(
+				stream,
+				tokens,
+				enum.Body,
+				func(t token.Token) bool {
+					return t.ID() != enum.Body.Braces().ID()
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(compound(
-			stream,
-			tokens,
-			enum.Body,
-			func(t token.Token) bool {
-				return t.ID() != enum.Body.Braces().ID()
-			},
-			applyFormatting,
-			indentLevel,
-		))
 	case ast.DefKindService:
 		service := decl.AsService()
 		tokens := getTokensForCompoundBody(stream, service.Span(), service.Body.Span())
 		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(compound(
+				stream,
+				tokens,
+				service.Body,
+				func(t token.Token) bool {
+					return t.ID() != service.Body.Braces().ID()
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(compound(
-			stream,
-			tokens,
-			service.Body,
-			func(t token.Token) bool {
-				return t.ID() != service.Body.Braces().ID()
-			},
-			applyFormatting,
-			indentLevel,
-		))
 	case ast.DefKindExtend:
 		// TODO: implement
 	case ast.DefKindField:
@@ -230,25 +219,25 @@ func defDoms(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, inden
 			field.Options,
 			applyFormatting,
 			indentLevel,
+			indented,
 		)
 	case ast.DefKindOneof:
 		oneof := decl.AsOneof()
 		tokens := getTokensForCompoundBody(stream, oneof.Span(), oneof.Body.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(compound(
+				stream,
+				tokens,
+				oneof.Body,
+				func(t token.Token) bool {
+					return t.ID() != oneof.Body.Braces().ID()
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			))
 		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(compound(
-			stream,
-			tokens,
-			oneof.Body,
-			func(t token.Token) bool {
-				return t.ID() != oneof.Body.Braces().ID()
-			},
-			applyFormatting,
-			indentLevel,
-		))
 	case ast.DefKindGroup:
 		// TODO: implement
 	case ast.DefKindEnumValue:
@@ -261,59 +250,64 @@ func defDoms(stream *token.Stream, decl ast.DeclDef, applyFormatting bool, inden
 			enumValue.Options,
 			applyFormatting,
 			indentLevel,
+			indented,
 		)
 	case ast.DefKindMethod:
 		method := decl.AsMethod()
 		tokens := getTokensForCompoundBody(stream, method.Span(), method.Body.Span())
-		// TODO: what does it mean to have no tokens?
-		if tokens == nil {
-			return nil
-		}
-		doms.Insert(prefix(tokens[0], applyFormatting))
-		doms.Insert(compound(
-			stream,
-			tokens,
-			method.Body,
+		if tokens != nil {
+			doms.Insert(prefix(tokens[0], applyFormatting))
+			doms.Insert(compound(
+				stream,
+				tokens,
+				method.Body,
 
-			func(t token.Token) bool {
-				if t.ID() == method.Body.Braces().ID() {
-					return false
-				}
-				if spanOverlappingSpan(t.Span(), method.Signature.Inputs().Span()) {
-					_, end := method.Signature.Inputs().Brackets().StartEnd()
-					return t.ID() == end.ID()
-				}
-				if spanOverlappingSpan(t.Span(), method.Signature.Outputs().Span()) {
-					_, end := method.Signature.Outputs().Brackets().StartEnd()
-					return t.ID() == end.ID()
-				}
-				return true
-			},
-			applyFormatting,
-			indentLevel,
-		))
+				func(t token.Token) bool {
+					if t.ID() == method.Body.Braces().ID() {
+						return false
+					}
+					if spanOverlappingSpan(t.Span(), method.Signature.Inputs().Span()) {
+						_, end := method.Signature.Inputs().Brackets().StartEnd()
+						return t.ID() == end.ID()
+					}
+					if spanOverlappingSpan(t.Span(), method.Signature.Outputs().Span()) {
+						_, end := method.Signature.Outputs().Brackets().StartEnd()
+						return t.ID() == end.ID()
+					}
+					return true
+				},
+				applyFormatting,
+				indentLevel,
+				indented,
+			))
+		}
 	case ast.DefKindOption:
 		// TODO: handle semicolon
-		return optionDoms(stream, decl.AsOption().Option, applyFormatting, indentLevel)
+		return optionDoms(stream, decl.AsOption().Option, applyFormatting, indentLevel, indented)
 	default:
 		panic("unknown DefKind in File")
 	}
 	return doms
 }
 
-func bodyDoms(stream *token.Stream, body ast.DeclBody, applyFormatting bool, indentLevel uint32) *dom.Doms {
+func bodyDoms(stream *token.Stream, body ast.DeclBody, applyFormatting bool, indentLevel uint32, indented bool) *dom.Doms {
 	doms := dom.NewDoms()
 	seq.Values(body.Decls())(func(d ast.DeclAny) bool {
-		doms.Insert(declDoms(stream, d, applyFormatting, indentLevel).Contents()...)
+		doms.Insert(declDoms(stream, d, applyFormatting, indentLevel, indented).Contents()...)
+		if len(doms.Contents()) > 0 {
+			switch doms.Contents()[len(doms.Contents())-1].LastSplitKind() {
+			case dom.SplitKindSoft, dom.SplitKindNever:
+				indented = false
+			case dom.SplitKindHard, dom.SplitKindDouble:
+				indented = true
+			}
+		}
 		return true
 	})
 	return doms
 }
 
-func prefix(
-	start token.Token,
-	format bool,
-) *dom.Dom {
+func prefix(start token.Token, format bool) *dom.Dom {
 	cursor := token.NewCursorAt(start)
 	t := cursor.PrevSkippable()
 	for t.Kind().IsSkippable() {
@@ -333,6 +327,7 @@ func prefix(
 					t.Text(),
 					// indent, splitKind, spaceWhenUnsplit do not matter since in this case, we are not formatting
 					0,
+					false,
 					dom.SplitKindNever,
 					false,
 				))
@@ -348,12 +343,13 @@ func prefix(
 					return dom.SplitKindSoft, true
 				},
 				format,
-				0, // TODO: figure out what we should do with this
+				0,     // TODO: figure out what we should do with this
+				false, // TODO: figure out what we should do with this... i think it's never indented...
 			))
 		}
 		t = cursor.NextSkippable()
 	}
-	return dom.NewDom(chunks, format)
+	return dom.NewDom(chunks)
 }
 
 // TODO: we are iterating through the body multiple times super inefficiently here. improve.
@@ -364,6 +360,7 @@ func compound(
 	topLineSpacer spaceSetter,
 	applyFormatting bool,
 	indentLevel uint32,
+	indented bool,
 ) *dom.Dom {
 	cursor := token.NewCursorAt(tokens[len(tokens)-1])
 	if body.Decls().Len() > 0 {
@@ -443,12 +440,15 @@ func compound(
 		},
 		applyFormatting,
 		indentLevel,
+		indented,
 	)
-	bodyIndentLevel := indentLevel
-	if topLineChunk.SplitKind() != dom.SplitKindSoft || topLineChunk.SplitKind() != dom.SplitKindNever {
-		bodyIndentLevel++
+	switch topLineChunk.SplitKind() {
+	case dom.SplitKindSoft, dom.SplitKindNever:
+		indented = false
+	case dom.SplitKindHard, dom.SplitKindDouble:
+		indented = true
 	}
-	bodyDoms := bodyDoms(stream, body, applyFormatting, bodyIndentLevel)
+	bodyDoms := bodyDoms(stream, body, applyFormatting, indentLevel+1, indented)
 	var closingBrace *dom.Chunk
 	if !body.Braces().IsZero() {
 		_, end := body.Braces().StartEnd()
@@ -480,6 +480,7 @@ func compound(
 							t.Text(),
 							// indent, splitKind, spaceWhenUnsplit do not matter since in this case, we are not formatting
 							0,
+							false,
 							dom.SplitKindNever,
 							false,
 						))
@@ -496,6 +497,7 @@ func compound(
 						},
 						applyFormatting,
 						0,
+						false,
 					))
 				}
 				if cursor.PeekSkippable().IsZero() {
@@ -504,7 +506,7 @@ func compound(
 				t = cursor.NextSkippable()
 			}
 			if len(prefixChunks) > 0 {
-				bodyDoms.Insert(dom.NewDom(prefixChunks, applyFormatting))
+				bodyDoms.Insert(dom.NewDom(prefixChunks))
 			}
 		}
 		var splitKind dom.SplitKind
@@ -521,10 +523,19 @@ func compound(
 			} else {
 				splitKind = dom.SplitKindSoft
 			}
+			if len(bodyDoms.Contents()) > 0 {
+				switch bodyDoms.Contents()[len(bodyDoms.Contents())-1].LastSplitKind() {
+				case dom.SplitKindSoft, dom.SplitKindNever:
+					indented = false
+				case dom.SplitKindHard, dom.SplitKindDouble:
+					indented = true
+				}
+			}
 		}
 		closingBrace = dom.NewChunk(
 			end.Text(),
 			indentLevel,
+			indented, // TODO: check indent level
 			splitKind,
 			spaceWhenUnsplit,
 		)
@@ -534,19 +545,27 @@ func compound(
 	if closingBrace != nil {
 		chunks = append(chunks, closingBrace)
 	}
-	return dom.NewDom(chunks, applyFormatting)
+	return dom.NewDom(chunks)
 }
 
-func optionsDoms(stream *token.Stream, options ast.CompactOptions, applyFormatting bool, indentLevel uint32) *dom.Doms {
+func optionsDoms(stream *token.Stream, options ast.CompactOptions, applyFormatting bool, indentLevel uint32, indented bool) *dom.Doms {
 	doms := dom.NewDoms()
 	seq.Values(options.Entries())(func(o ast.Option) bool {
-		doms.Insert(optionDoms(stream, o, applyFormatting, indentLevel).Contents()...)
+		doms.Insert(optionDoms(stream, o, applyFormatting, indentLevel, indented).Contents()...)
+		if len(doms.Contents()) > 0 {
+			switch doms.Contents()[len(doms.Contents())-1].LastSplitKind() {
+			case dom.SplitKindSoft, dom.SplitKindNever:
+				indented = false
+			case dom.SplitKindHard, dom.SplitKindDouble:
+				indented = true
+			}
+		}
 		return true
 	})
 	return doms
 }
 
-func optionDoms(stream *token.Stream, option ast.Option, applyFormatting bool, indentLevel uint32) *dom.Doms {
+func optionDoms(stream *token.Stream, option ast.Option, applyFormatting bool, indentLevel uint32, indented bool) *dom.Doms {
 	doms := dom.NewDoms()
 	tokens := getTokensForSpan(stream, option.Span())
 	if tokens == nil {
@@ -576,7 +595,8 @@ func optionDoms(stream *token.Stream, option ast.Option, applyFormatting bool, i
 		},
 		applyFormatting,
 		indentLevel,
-	)}, applyFormatting))
+		indented,
+	)}))
 	return doms
 }
 
@@ -588,6 +608,7 @@ func fieldDoms(
 	options ast.CompactOptions,
 	applyFormatting bool,
 	indentLevel uint32,
+	indented bool,
 ) *dom.Doms {
 	doms := dom.NewDoms()
 	if options.IsZero() {
@@ -619,7 +640,8 @@ func fieldDoms(
 			},
 			applyFormatting,
 			indentLevel,
-		)}, applyFormatting))
+			indented,
+		)}))
 	} else {
 		tokens := getTokensForCompoundBody(stream, fieldSpan, options.Span())
 		if tokens == nil {
@@ -698,12 +720,14 @@ func fieldDoms(
 			},
 			applyFormatting,
 			indentLevel,
+			indented,
 		)
 		optionsIndentLevel := indentLevel
 		if topLineChunk.SplitKind() != dom.SplitKindSoft || topLineChunk.SplitKind() != dom.SplitKindNever {
 			optionsIndentLevel++
+			indented = true
 		}
-		optionsDoms := optionsDoms(stream, options, applyFormatting, optionsIndentLevel)
+		optionsDoms := optionsDoms(stream, options, applyFormatting, optionsIndentLevel, indented)
 		var closingBracket *dom.Chunk
 		if !options.Brackets().IsZero() {
 			_, end := options.Brackets().StartEnd()
@@ -731,6 +755,7 @@ func fieldDoms(
 								t.Text(),
 								// indent, splitKind, spaceWhenUnsplit do not matter since in this case, we are not formatting
 								0,
+								false,
 								dom.SplitKindNever,
 								false,
 							))
@@ -746,6 +771,7 @@ func fieldDoms(
 							},
 							applyFormatting,
 							0,
+							false,
 						))
 					}
 					if cursor.PeekSkippable().IsZero() {
@@ -754,7 +780,7 @@ func fieldDoms(
 					t = cursor.NextSkippable()
 				}
 				if len(prefixChunks) > 0 {
-					optionsDoms.Insert(dom.NewDom(prefixChunks, applyFormatting))
+					optionsDoms.Insert(dom.NewDom(prefixChunks))
 				}
 			}
 			var splitKind dom.SplitKind
@@ -771,10 +797,19 @@ func fieldDoms(
 				} else {
 					splitKind = dom.SplitKindSoft
 				}
+				if len(optionsDoms.Contents()) > 0 {
+					switch optionsDoms.Contents()[len(optionsDoms.Contents())-1].LastSplitKind() {
+					case dom.SplitKindSoft, dom.SplitKindNever:
+						indented = false
+					case dom.SplitKindHard, dom.SplitKindDouble:
+						indented = true
+					}
+				}
 			}
 			closingBracket = dom.NewChunk(
 				end.Text(),
 				indentLevel,
+				indented,
 				splitKind,
 				spaceWhenUnsplit,
 			)
@@ -783,6 +818,9 @@ func fieldDoms(
 		chunks := []*dom.Chunk{topLineChunk}
 		if closingBracket != nil {
 			chunks = append(chunks, closingBracket)
+			if closingBracket.SplitKind() != dom.SplitKindSoft || closingBracket.SplitKind() != dom.SplitKindNever {
+				indented = true
+			}
 		}
 		// Handle the semicolon
 		chunks[len(chunks)-1].Children().Insert(prefix(semicolon, applyFormatting))
@@ -806,8 +844,9 @@ func fieldDoms(
 			},
 			applyFormatting,
 			indentLevel,
+			indented,
 		))
-		doms.Insert(dom.NewDom(chunks, applyFormatting))
+		doms.Insert(dom.NewDom(chunks))
 	}
 	return doms
 }
@@ -818,6 +857,7 @@ func single(
 	splitter splitSetter,
 	format bool,
 	indentLevel uint32,
+	indented bool,
 ) *dom.Chunk {
 	var text string
 	if format {
@@ -843,6 +883,7 @@ func single(
 	return dom.NewChunk(
 		text,
 		indentLevel,
+		indented,
 		splitKind,
 		spaceWhenUnsplit,
 	)
