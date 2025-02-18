@@ -75,12 +75,12 @@ func (o CompactOptions) Entries() Commas[Option] {
 
 	return slice{
 		ctx: o.Context(),
-		SliceInserter: seq.SliceInserter[Option, withComma[rawOption]]{
-			Slice: &o.raw.options,
-			Wrap: func(c *withComma[rawOption]) Option {
+		SliceInserter: seq.NewSliceInserter(
+			&o.raw.options,
+			func(_ int, c withComma[rawOption]) Option {
 				return c.Value.With(o.Context())
 			},
-			Unwrap: func(v Option) withComma[rawOption] {
+			func(_ int, v Option) withComma[rawOption] {
 				o.Context().Nodes().panicIfNotOurs(v.Path, v.Equals, v.Value)
 				return withComma[rawOption]{Value: rawOption{
 					path:   v.Path.raw,
@@ -88,7 +88,7 @@ func (o CompactOptions) Entries() Commas[Option] {
 					value:  v.Value.raw,
 				}}
 			},
-		},
+		),
 	}
 }
 
