@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"unsafe"
 )
 
 // Result is the type returned by an [Ordering], and in particular
@@ -62,6 +61,11 @@ func Join[T any](cmps ...Ordering[T]) Ordering[T] {
 	}
 }
 
+// Reverse returns an ordering which is the reverse of cmp.
+func Reverse[T any](cmp Ordering[T]) Ordering[T] {
+	return func(a, b T) Result { return -cmp(a, b) }
+}
+
 // Bool compares two bools, where false < true.
 //
 // This works around a bug where bool does not satisfy [cmp.Ordered].
@@ -74,14 +78,6 @@ func Bool[B ~bool](a, b B) Result {
 		bi = 1
 	}
 	return cmp.Compare(ai, bi)
-}
-
-// Address compares two pointers by address.
-//
-// The result will be unstable if either pointer points to the stack, since
-// stack resizing may cause their relative addresses to change.
-func Address[P ~*E, E any](a, b P) Result {
-	return cmp.Compare(uintptr(unsafe.Pointer(a)), uintptr(unsafe.Pointer(b)))
 }
 
 // Any compares any two [cmp.Ordered] types, according to the following criteria:

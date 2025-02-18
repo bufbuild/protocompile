@@ -416,7 +416,7 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 	))
 	slices.SortFunc(w.multilines, cmpx.Join(
 		cmpx.Key(func(m multiline) int { return m.start }),
-		cmpx.Key(func(m multiline) int { return m.end }),
+		cmpx.Key(func(m multiline) int { return -m.end }), // Descending order.
 	))
 	return w
 }
