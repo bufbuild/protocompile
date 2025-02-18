@@ -26,7 +26,7 @@ import "slices"
 // underlying raw values.
 //
 // The first argument of Wrap/Unwrap given is the index the value has/will have
-// have in the slice.
+// in the slice.
 type Slice[T, E any] struct {
 	Slice  []E
 	Wrap   func(int, E) T
