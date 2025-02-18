@@ -72,18 +72,11 @@ func (o CompactOptions) Entries() Commas[Option] {
 	if o.IsZero() {
 		return slice{}
 	}
-
 	return slice{
 		ctx: o.Context(),
-<<<<<<< HEAD
-		SliceInserter: seq.SliceInserter[Option, withComma[rawOption]]{
-			Slice: &o.raw.options,
-			Wrap: func(c *withComma[rawOption]) Option {
-=======
 		SliceInserter: seq.NewSliceInserter(
 			&o.raw.options,
 			func(_ int, c withComma[rawOption]) Option {
->>>>>>> origin/main
 				return c.Value.With(o.Context())
 			},
 			func(_ int, v Option) withComma[rawOption] {

@@ -5,17 +5,10 @@ package {{.Package}}
 {{with .YAML -}}
 import (
 	"fmt"
-<<<<<<< HEAD
-	"github.com/bufbuild/protocompile/internal/iter"
-)
-
-var _ iter.Seq[int] // Mark iter as used.
-=======
 
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
->>>>>>> origin/main
 {{range $_, $e := .}}
 {{makeDocs $e.Docs "" -}}
 type {{$e.Name}} {{$e.Type}}
@@ -56,19 +49,11 @@ func {{$m.Name}}(s string) {{$e.Name}} {
 {{makeDocs $m.Docs "" -}}
 func {{$m.Name}}() iter.Seq[{{$e.Name}}] {
 	return func(yield func({{$e.Name}}) bool) {
-<<<<<<< HEAD
-		for _, v := range _table_{{$e.Name}}_{{$m.Name}} {
-			if !yield(v) {
-				return
-			}
-		}
-=======
 		{{range $m.Ranges -}}
 		for i := {{.Start}}; i < {{.End}}; i++ {
 			if !yield({{$e.Name}}(i)) { return }
 		}
 		{{- end}}
->>>>>>> origin/main
 	}
 }
 {{end -}}{{- end -}}
