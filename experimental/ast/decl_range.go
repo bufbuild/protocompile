@@ -71,16 +71,16 @@ func (d DeclRange) Ranges() Commas[ExprAny] {
 	}
 	return slice{
 		ctx: d.Context(),
-		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
-			Slice: &d.raw.args,
-			Wrap: func(c *withComma[rawExpr]) ExprAny {
+		SliceInserter: seq.NewSliceInserter(
+			&d.raw.args,
+			func(_ int, c withComma[rawExpr]) ExprAny {
 				return newExprAny(d.Context(), c.Value)
 			},
-			Unwrap: func(e ExprAny) withComma[rawExpr] {
+			func(_ int, e ExprAny) withComma[rawExpr] {
 				d.Context().Nodes().panicIfNotOurs(e)
 				return withComma[rawExpr]{Value: e.raw}
 			},
-		},
+		),
 	}
 }
 

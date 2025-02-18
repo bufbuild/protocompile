@@ -46,6 +46,11 @@ type Option struct {
 	Value  ExprAny
 }
 
+// Span implements [report.Spanner].
+func (o Option) Span() report.Span {
+	return report.Join(o.Path, o.Equals, o.Value)
+}
+
 type rawOption struct {
 	path   rawPath
 	equals token.ID
@@ -70,12 +75,18 @@ func (o CompactOptions) Entries() Commas[Option] {
 
 	return slice{
 		ctx: o.Context(),
+<<<<<<< HEAD
 		SliceInserter: seq.SliceInserter[Option, withComma[rawOption]]{
 			Slice: &o.raw.options,
 			Wrap: func(c *withComma[rawOption]) Option {
+=======
+		SliceInserter: seq.NewSliceInserter(
+			&o.raw.options,
+			func(_ int, c withComma[rawOption]) Option {
+>>>>>>> origin/main
 				return c.Value.With(o.Context())
 			},
-			Unwrap: func(v Option) withComma[rawOption] {
+			func(_ int, v Option) withComma[rawOption] {
 				o.Context().Nodes().panicIfNotOurs(v.Path, v.Equals, v.Value)
 				return withComma[rawOption]{Value: rawOption{
 					path:   v.Path.raw,
@@ -83,7 +94,7 @@ func (o CompactOptions) Entries() Commas[Option] {
 					value:  v.Value.raw,
 				}}
 			},
-		},
+		),
 	}
 }
 

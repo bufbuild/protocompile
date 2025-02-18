@@ -494,7 +494,6 @@ func TestVisitorAll(t *testing.T) {
 	}
 
 	for n := range testCases {
-		n := n
 		expectedCalls := testCases[n]
 		t.Run(fmt.Sprintf("%T", n), func(t *testing.T) {
 			t.Parallel()

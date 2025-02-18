@@ -18,10 +18,9 @@ package ast
 
 import (
 	"fmt"
+
 	"github.com/bufbuild/protocompile/internal/iter"
 )
-
-var _ iter.Seq[int] // Mark iter as used.
 
 // DeclKind is a kind of declaration. There is one value of DeclKind for each
 // Decl* type in this package.
@@ -222,102 +221,102 @@ func TypePrefixByName(s string) TypePrefix {
 
 var _table_DeclKind_String = [...]string{
 	DeclKindInvalid: "DeclKindInvalid",
-	DeclKindEmpty: "DeclKindEmpty",
-	DeclKindSyntax: "DeclKindSyntax",
+	DeclKindEmpty:   "DeclKindEmpty",
+	DeclKindSyntax:  "DeclKindSyntax",
 	DeclKindPackage: "DeclKindPackage",
-	DeclKindImport: "DeclKindImport",
-	DeclKindDef: "DeclKindDef",
-	DeclKindBody: "DeclKindBody",
-	DeclKindRange: "DeclKindRange",
+	DeclKindImport:  "DeclKindImport",
+	DeclKindDef:     "DeclKindDef",
+	DeclKindBody:    "DeclKindBody",
+	DeclKindRange:   "DeclKindRange",
 }
 
 var _table_DeclKind_GoString = [...]string{
 	DeclKindInvalid: "DeclKindInvalid",
-	DeclKindEmpty: "DeclKindEmpty",
-	DeclKindSyntax: "DeclKindSyntax",
+	DeclKindEmpty:   "DeclKindEmpty",
+	DeclKindSyntax:  "DeclKindSyntax",
 	DeclKindPackage: "DeclKindPackage",
-	DeclKindImport: "DeclKindImport",
-	DeclKindDef: "DeclKindDef",
-	DeclKindBody: "DeclKindBody",
-	DeclKindRange: "DeclKindRange",
+	DeclKindImport:  "DeclKindImport",
+	DeclKindDef:     "DeclKindDef",
+	DeclKindBody:    "DeclKindBody",
+	DeclKindRange:   "DeclKindRange",
 }
 
 var _table_DefKind_String = [...]string{
-	DefKindInvalid: "DefKindInvalid",
-	DefKindMessage: "DefKindMessage",
-	DefKindEnum: "DefKindEnum",
-	DefKindService: "DefKindService",
-	DefKindExtend: "DefKindExtend",
-	DefKindField: "DefKindField",
-	DefKindOneof: "DefKindOneof",
-	DefKindGroup: "DefKindGroup",
+	DefKindInvalid:   "DefKindInvalid",
+	DefKindMessage:   "DefKindMessage",
+	DefKindEnum:      "DefKindEnum",
+	DefKindService:   "DefKindService",
+	DefKindExtend:    "DefKindExtend",
+	DefKindField:     "DefKindField",
+	DefKindOneof:     "DefKindOneof",
+	DefKindGroup:     "DefKindGroup",
 	DefKindEnumValue: "DefKindEnumValue",
-	DefKindMethod: "DefKindMethod",
-	DefKindOption: "DefKindOption",
+	DefKindMethod:    "DefKindMethod",
+	DefKindOption:    "DefKindOption",
 }
 
 var _table_DefKind_GoString = [...]string{
-	DefKindInvalid: "DefKindInvalid",
-	DefKindMessage: "DefKindMessage",
-	DefKindEnum: "DefKindEnum",
-	DefKindService: "DefKindService",
-	DefKindExtend: "DefKindExtend",
-	DefKindField: "DefKindField",
-	DefKindOneof: "DefKindOneof",
-	DefKindGroup: "DefKindGroup",
+	DefKindInvalid:   "DefKindInvalid",
+	DefKindMessage:   "DefKindMessage",
+	DefKindEnum:      "DefKindEnum",
+	DefKindService:   "DefKindService",
+	DefKindExtend:    "DefKindExtend",
+	DefKindField:     "DefKindField",
+	DefKindOneof:     "DefKindOneof",
+	DefKindGroup:     "DefKindGroup",
 	DefKindEnumValue: "DefKindEnumValue",
-	DefKindMethod: "DefKindMethod",
-	DefKindOption: "DefKindOption",
+	DefKindMethod:    "DefKindMethod",
+	DefKindOption:    "DefKindOption",
 }
 
 var _table_ExprKind_String = [...]string{
-	ExprKindInvalid: "ExprKindInvalid",
-	ExprKindError: "ExprKindError",
-	ExprKindLiteral: "ExprKindLiteral",
+	ExprKindInvalid:  "ExprKindInvalid",
+	ExprKindError:    "ExprKindError",
+	ExprKindLiteral:  "ExprKindLiteral",
 	ExprKindPrefixed: "ExprKindPrefixed",
-	ExprKindPath: "ExprKindPath",
-	ExprKindRange: "ExprKindRange",
-	ExprKindArray: "ExprKindArray",
-	ExprKindDict: "ExprKindDict",
-	ExprKindField: "ExprKindField",
+	ExprKindPath:     "ExprKindPath",
+	ExprKindRange:    "ExprKindRange",
+	ExprKindArray:    "ExprKindArray",
+	ExprKindDict:     "ExprKindDict",
+	ExprKindField:    "ExprKindField",
 }
 
 var _table_ExprKind_GoString = [...]string{
-	ExprKindInvalid: "ExprKindInvalid",
-	ExprKindError: "ExprKindError",
-	ExprKindLiteral: "ExprKindLiteral",
+	ExprKindInvalid:  "ExprKindInvalid",
+	ExprKindError:    "ExprKindError",
+	ExprKindLiteral:  "ExprKindLiteral",
 	ExprKindPrefixed: "ExprKindPrefixed",
-	ExprKindPath: "ExprKindPath",
-	ExprKindRange: "ExprKindRange",
-	ExprKindArray: "ExprKindArray",
-	ExprKindDict: "ExprKindDict",
-	ExprKindField: "ExprKindField",
+	ExprKindPath:     "ExprKindPath",
+	ExprKindRange:    "ExprKindRange",
+	ExprKindArray:    "ExprKindArray",
+	ExprKindDict:     "ExprKindDict",
+	ExprKindField:    "ExprKindField",
 }
 
 var _table_TypeKind_String = [...]string{
-	TypeKindInvalid: "TypeKindInvalid",
-	TypeKindError: "TypeKindError",
-	TypeKindPath: "TypeKindPath",
+	TypeKindInvalid:  "TypeKindInvalid",
+	TypeKindError:    "TypeKindError",
+	TypeKindPath:     "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",
-	TypeKindGeneric: "TypeKindGeneric",
+	TypeKindGeneric:  "TypeKindGeneric",
 }
 
 var _table_TypeKind_GoString = [...]string{
-	TypeKindInvalid: "TypeKindInvalid",
-	TypeKindError: "TypeKindError",
-	TypeKindPath: "TypeKindPath",
+	TypeKindInvalid:  "TypeKindInvalid",
+	TypeKindError:    "TypeKindError",
+	TypeKindPath:     "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",
-	TypeKindGeneric: "TypeKindGeneric",
+	TypeKindGeneric:  "TypeKindGeneric",
 }
 
 var _table_ExprPrefix_String = [...]string{
 	ExprPrefixUnknown: "unknown",
-	ExprPrefixMinus: "-",
+	ExprPrefixMinus:   "-",
 }
 
 var _table_ExprPrefix_GoString = [...]string{
 	ExprPrefixUnknown: "ExprPrefixUnknown",
-	ExprPrefixMinus: "ExprPrefixMinus",
+	ExprPrefixMinus:   "ExprPrefixMinus",
 }
 
 var _table_ExprPrefix_ExprPrefixByName = map[string]ExprPrefix{
@@ -325,24 +324,25 @@ var _table_ExprPrefix_ExprPrefixByName = map[string]ExprPrefix{
 }
 
 var _table_TypePrefix_String = [...]string{
-	TypePrefixUnknown: "unknown",
+	TypePrefixUnknown:  "unknown",
 	TypePrefixOptional: "optional",
 	TypePrefixRepeated: "repeated",
 	TypePrefixRequired: "required",
-	TypePrefixStream: "stream",
+	TypePrefixStream:   "stream",
 }
 
 var _table_TypePrefix_GoString = [...]string{
-	TypePrefixUnknown: "TypePrefixUnknown",
+	TypePrefixUnknown:  "TypePrefixUnknown",
 	TypePrefixOptional: "TypePrefixOptional",
 	TypePrefixRepeated: "TypePrefixRepeated",
 	TypePrefixRequired: "TypePrefixRequired",
-	TypePrefixStream: "TypePrefixStream",
+	TypePrefixStream:   "TypePrefixStream",
 }
 
 var _table_TypePrefix_TypePrefixByName = map[string]TypePrefix{
 	"optional": TypePrefixOptional,
 	"repeated": TypePrefixRepeated,
 	"required": TypePrefixRequired,
-	"stream": TypePrefixStream,
+	"stream":   TypePrefixStream,
 }
+var _ iter.Seq[int] // Mark iter as used.

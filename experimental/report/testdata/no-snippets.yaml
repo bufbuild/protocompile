@@ -18,6 +18,9 @@ diagnostics:
   - message: "system not supported"
     level: LEVEL_ERROR
 
+  - message: "this diagnostic message is comically long to illustrate message wrapping; real diagnostics should probably avoid doing this"
+    level: LEVEL_ERROR
+
   - message: 'could not open file "foo.proto": os error 2: no such file or directory'
     level: LEVEL_ERROR
     in_file: foo.proto
@@ -28,3 +31,15 @@ diagnostics:
     notes: ["that means that the file is screaming"]
     help: ["you should delete it to put it out of its misery"]
     debug: ["0xaaaaaaaaaaaaaaaa"]
+
+  - message: "very long footers"
+    level: LEVEL_REMARK
+    in_file: foo.proto
+    notes: 
+      - "this footer is a very very very very very very very very very very very very very very very very very very very very very very long footer"
+      - "this one is also long, and it's also supercalifragilistcexpialidocious, leading to a very early break"
+    help:
+      - "this help is very long (and triggers the same word-wrapping code path)"
+      - "this one contains a newline\nwhich overrides the default word wrap behavior (but this line is wrapped naturally)"
+    debug:
+      - "debug lines are never wrapped, no matter how crazy long they are, since they can contain stack traces"

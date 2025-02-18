@@ -931,7 +931,7 @@ func findOptionSpan(
 			limit = len(path)
 		}
 		var nextIsIndex bool
-		for i := 0; i < limit; i++ {
+		for i := range limit {
 			if desc == nil || nextIsIndex {
 				// Can't match anymore. Try next option.
 				return true

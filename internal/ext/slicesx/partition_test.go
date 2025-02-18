@@ -67,7 +67,6 @@ func TestPartition(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(fmt.Sprint(test.slice), func(t *testing.T) {
 			t.Parallel()
 
@@ -76,7 +75,7 @@ func TestPartition(t *testing.T) {
 				ss    [][]int
 				count int
 			)
-			it := slicesx.Partition(test.slice, func(a, b *int) bool { return *a != *b })
+			it := slicesx.Partition(test.slice)
 			it(func(i int, s []int) bool {
 				if test.breakAt == count {
 					return false

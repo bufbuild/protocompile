@@ -26,7 +26,7 @@ import (
 //go:nosplit
 func PointerIndex[S ~[]E, E any](s S, p *E) int {
 	a := unsafe.Pointer(p)
-	b := unsafe.Pointer(unsafex.SliceData(s))
+	b := unsafe.Pointer(unsafe.SliceData(s))
 
 	diff := uintptr(a) - uintptr(b)
 	size := unsafex.Size[E]()

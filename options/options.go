@@ -814,7 +814,7 @@ func (interp *interpreter) validateRecursive(
 	if validateRequiredFields {
 		flds := msg.Descriptor().Fields()
 		var missingFields []string
-		for i := 0; i < flds.Len(); i++ {
+		for i := range flds.Len() {
 			fld := flds.Get(i)
 			if fld.Cardinality() == protoreflect.Required && !msg.Has(fld) {
 				missingFields = append(missingFields, fmt.Sprintf("%s%s", prefix, fld.Name()))
@@ -889,7 +889,7 @@ func (interp *interpreter) validateRecursive(
 					}
 				case fld.IsList():
 					sl := val.List()
-					for i := 0; i < sl.Len(); i++ {
+					for i := range sl.Len() {
 						v := sl.Get(i)
 						err = interp.validateEnumValueFeatureSupport(edition, enum, v.Enum(), append(chpath, int32(i)), element)
 						if err != nil {
@@ -918,7 +918,7 @@ func (interp *interpreter) validateRecursive(
 			}
 		case fld.IsList() && fld.Message() != nil:
 			sl := val.List()
-			for i := 0; i < sl.Len(); i++ {
+			for i := range sl.Len() {
 				v := sl.Get(i)
 				chprefix := fmt.Sprintf("%s%s[%d].", prefix, fieldName(fld), i)
 				if !inMap {
@@ -1083,7 +1083,7 @@ func isPathMatch(a, b []int32) bool {
 	if len(b) < length {
 		length = len(b)
 	}
-	for i := 0; i < length; i++ {
+	for i := range length {
 		if a[i] != b[i] {
 			return false
 		}

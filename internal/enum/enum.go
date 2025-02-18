@@ -27,10 +27,12 @@
 package main
 
 import (
+	"bytes"
 	"debug/buildinfo"
 	_ "embed"
 	"errors"
 	"fmt"
+	"go/format"
 	"os"
 	"path/filepath"
 	"slices"
@@ -39,6 +41,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/bufbuild/protocompile/internal/ext/osx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -48,15 +51,17 @@ type Enum struct {
 	Docs    string   `yaml:"docs"`  // Documentation for the type.
 	Total   string   `yaml:"total"` // The name of a "total values" constant.
 	Methods []Method `yaml:"methods"`
-	Values_ []Value  `yaml:"values"`
+	Values  []Value  `yaml:"values"`
 }
 
-func (e *Enum) Values() []Value {
-	for i := range e.Values_ {
-		e.Values_[i].Parent = e
-		e.Values_[i].Idx = i
+func (e *Enum) Init() {
+	for i := range e.Values {
+		e.Values[i].Parent = e
+		e.Values[i].Idx = i
 	}
-	return e.Values_
+	for i := range e.Methods {
+		e.Methods[i].Parent = e
+	}
 }
 
 type Value struct {
@@ -70,7 +75,7 @@ type Value struct {
 }
 
 func (v Value) HasSuffixDocs() bool {
-	next, ok := slicesx.Get(v.Parent.Values_, v.Idx+1)
+	next, ok := slicesx.Get(v.Parent.Values, v.Idx+1)
 	return v.Docs != "" && !strings.Contains(v.Docs, "\n") && (!ok || next.Docs != "")
 }
 
@@ -86,6 +91,8 @@ type Method struct {
 	Name_ string     `yaml:"name"` // The method's name; optional for some methods.
 	Docs_ string     `yaml:"docs"` // Documentation for the method.
 	Skip  []string   `yaml:"skip"` // Enum values to ignore in this method.
+
+	Parent *Enum `yaml:"-"`
 }
 
 func (m Method) Name() (string, error) {
@@ -118,6 +125,34 @@ func (m Method) Docs() string {
 	default:
 		return ""
 	}
+}
+
+type Range struct{ Start, End int }
+
+// Returns the ranges (exclusive) of values not skipped by this method.
+func (m Method) Ranges() []Range {
+	var out []Range //nolint:prealloc // This lint is completely wrong here.
+	var aliases int
+	for i, v := range m.Parent.Values {
+		if v.Alias != "" {
+			aliases++
+			continue
+		}
+
+		if slices.Contains(m.Skip, v.Name) {
+			continue
+		}
+
+		i -= aliases
+		last := slicesx.LastPointer(out)
+		if last != nil && last.End == i {
+			last.End++
+			continue
+		}
+
+		out = append(out, Range{i, i + 1})
+	}
+	return out
 }
 
 type MethodKind string
@@ -178,6 +213,9 @@ func Main(config string) error {
 	if err := yaml.Unmarshal(text, &input.YAML); err != nil {
 		return err
 	}
+	for i := range input.YAML {
+		input.YAML[i].Init()
+	}
 
 	tmpl, err := template.New("enum.go.tmpl").Funcs(template.FuncMap{
 		"makeDocs": makeDocs,
@@ -187,12 +225,17 @@ func Main(config string) error {
 		return err
 	}
 
-	out, err := os.Create(input.Path)
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, input); err != nil {
+		return err
+	}
+
+	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-	return tmpl.ExecuteTemplate(out, "enum.go.tmpl", input)
+
+	return os.WriteFile(input.Path, formatted, osx.PermAR|osx.PermAW)
 }
 
 func main() {

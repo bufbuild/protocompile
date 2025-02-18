@@ -1,0 +1,7 @@
+remark: foo.proto:1:1: let protocompile pick a syntax for you
+remark: foo.proto:1:10: let protocompile pick a syntax for you
+warning: foo.proto:5:9: services should have a `Service` suffix
+error: foo.proto:6:31: missing (...) around return type
+error: foo.proto:7:45: method options must go in a block
+error: foo.proto:5:1: delete some stuff
+error: foo.proto:5:1: delete this method

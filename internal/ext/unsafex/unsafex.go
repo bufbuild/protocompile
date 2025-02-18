@@ -117,20 +117,6 @@ func (badBitcast[To, From]) Error() string {
 	)
 }
 
-// StringData is like [unsafe.StringData], but it avoids a bug in Go 1.21 where
-// calling the StringData intrinsic (which is *not* a generic function) with
-// a generic type with a string constraint would be incorrectly diagnosed.
-func StringData[S ~string](data S) *byte {
-	return unsafe.StringData(string(data))
-}
-
-// SliceData is like [unsafe.SliceData], but it avoids a bug in Go 1.21 where
-// calling the SliceData intrinsic (which is *not* a generic function) with
-// a generic type with a slice constraint would be incorrectly diagnosed.
-func SliceData[S ~[]E, E any](data S) *E {
-	return unsafe.SliceData([]E(data))
-}
-
 // StringAlias returns a string that aliases a slice. This is useful for
 // situations where we're allocating a string on the stack, or where we have
 // a slice that will never be written to and we want to interpret as a string
@@ -144,7 +130,7 @@ func SliceData[S ~[]E, E any](data S) *E {
 //go:nosplit
 func StringAlias[S ~[]E, E any](data S) string {
 	return unsafe.String(
-		Bitcast[*byte](SliceData(data)),
+		Bitcast[*byte](unsafe.SliceData(data)),
 		len(data)*Size[E](),
 	)
 }

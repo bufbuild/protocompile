@@ -51,16 +51,16 @@ func (e ExprArray) Elements() Commas[ExprAny] {
 	}
 	return slice{
 		ctx: e.Context(),
-		SliceInserter: seq.SliceInserter[ExprAny, withComma[rawExpr]]{
-			Slice: &e.raw.args,
-			Wrap: func(c *withComma[rawExpr]) ExprAny {
+		SliceInserter: seq.NewSliceInserter(
+			&e.raw.args,
+			func(_ int, c withComma[rawExpr]) ExprAny {
 				return newExprAny(e.Context(), c.Value)
 			},
-			Unwrap: func(e ExprAny) withComma[rawExpr] {
+			func(_ int, e ExprAny) withComma[rawExpr] {
 				e.Context().Nodes().panicIfNotOurs(e)
 				return withComma[rawExpr]{Value: e.raw}
 			},
-		},
+		),
 	}
 }
 
