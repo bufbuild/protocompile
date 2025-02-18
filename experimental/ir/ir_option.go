@@ -46,8 +46,8 @@ type rawOption struct {
 	//
 	// In particular, (foo.bar).baz is represented as ["", "foo.bar", "baz"].
 	//
-	// The names of extensions therein are populated with fully qualified names,
-	// without the leading dot.
+	// The names of extensions therein are to be interpreted as absolute (i.e.,
+	// fully-qualified), although they will not have leading dots.
 	//
 	// If this slice is nil, that means that name resolution has not happened
 	// yet, and the ast node contains the partially-qualified extension names

@@ -18,10 +18,9 @@ package presence
 
 import (
 	"fmt"
+
 	"github.com/bufbuild/protocompile/internal/iter"
 )
-
-var _ iter.Seq[int] // Mark iter as used.
 
 // Presence represents how a field is present in a message. This generalizes
 // cardinality (viz. optional or repeated).
@@ -72,19 +71,20 @@ func (v Kind) GoString() string {
 }
 
 var _table_Kind_String = [...]string{
-	Unknown: "Unknown",
+	Unknown:  "Unknown",
 	Explicit: "Explicit",
 	Implicit: "Implicit",
 	Required: "Required",
 	Repeated: "Repeated",
-	Shared: "Shared",
+	Shared:   "Shared",
 }
 
 var _table_Kind_GoString = [...]string{
-	Unknown: "Unknown",
+	Unknown:  "Unknown",
 	Explicit: "Explicit",
 	Implicit: "Implicit",
 	Required: "Required",
 	Repeated: "Repeated",
-	Shared: "Shared",
+	Shared:   "Shared",
 }
+var _ iter.Seq[int] // Mark iter as used.
