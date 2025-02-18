@@ -20,10 +20,6 @@ import (
 	"github.com/rivo/uniseg"
 )
 
-const (
-	space = " "
-)
-
 // Chunk represents a line of text with some configurations around indendation and splitting
 // (what whitespace should follow, if any).
 type Chunk struct {
@@ -32,20 +28,13 @@ type Chunk struct {
 	indented         bool
 	splitKind        SplitKind
 	spaceWhenUnsplit bool
-	splitKindIfSplit SplitKind
+	splitKindIfSplit SplitKind // Restricted to SplitKindHard or SplitKindDouble
 	children         *Doms
 }
 
 // NewChunk constructs a new Chunk.
-func NewChunk(text string, indent uint32, indented bool, splitKind SplitKind, spaceWhenUnsplit bool) *Chunk {
-	return &Chunk{
-		text:             text,
-		indent:           indent,
-		indented:         indented,
-		splitKind:        splitKind,
-		spaceWhenUnsplit: spaceWhenUnsplit,
-		children:         NewDoms(),
-	}
+func NewChunk(text string) *Chunk {
+	return &Chunk{text: text, children: NewDoms()}
 }
 
 func (c *Chunk) SplitKind() SplitKind {
@@ -63,16 +52,51 @@ func (c *Chunk) Indent() uint32 {
 	return 0
 }
 
-func (c *Chunk) SetChildren(children *Doms) {
-	c.children.Insert(*children...)
+func (c *Chunk) Children() *Doms {
+	return c.children
 }
 
-// Measures the length of the chunk.
-func (c *Chunk) measure() int {
-	cost := uniseg.StringWidth(c.text + strings.Repeat(space, int(c.indent)))
+// Setters
+
+func (c *Chunk) SetIndent(indent uint32) {
+	c.indent = indent
+}
+
+func (c *Chunk) SetIndented(indented bool) {
+	c.indented = indented
+}
+
+func (c *Chunk) SetSplitKind(splitKind SplitKind) {
+	c.splitKind = splitKind
+}
+
+func (c *Chunk) SetSpaceWhenUnsplit(spaceWhenUnsplit bool) {
+	c.spaceWhenUnsplit = spaceWhenUnsplit
+}
+
+func (c *Chunk) SetSplitKindIfSplit(splitKindIfSplit SplitKind) {
+	if splitKindIfSplit != SplitKindHard && splitKindIfSplit != SplitKindDouble {
+		panic("invalid splitKindIfSplit")
+	}
+	c.splitKindIfSplit = splitKindIfSplit
+}
+
+func (c *Chunk) SetChildren(children *Doms) {
+	c.children = children
+}
+
+// Private
+
+// Measure the length of the chunk text. Requires an indentSize.
+func (c *Chunk) measure(indentSize int) int {
+	cost := uniseg.StringWidth(c.text)
+	// Only count indent if indented
+	if c.indented {
+		cost += uniseg.StringWidth(strings.Repeat(strings.Repeat(" ", indentSize), int(c.indent)))
+	}
 	// If the chunk is soft split, we need to account for whether a space is added also.
 	if (c.splitKind == SplitKindSoft || c.splitKind == SplitKindNever) && c.spaceWhenUnsplit {
-		cost += uniseg.StringWidth(strings.Repeat(space, 1))
+		cost += uniseg.StringWidth(strings.Repeat(" ", 1))
 	}
 	// We must also add the length of any children that are not split
 out:
@@ -81,9 +105,8 @@ out:
 			if chunk.splitKind == SplitKindHard || chunk.splitKind == SplitKindDouble {
 				break out
 			}
-			cost += chunk.measure()
+			cost += chunk.measure(indentSize)
 		}
 	}
-
 	return cost
 }

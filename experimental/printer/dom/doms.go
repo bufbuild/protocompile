@@ -29,7 +29,7 @@ func NewDoms() *Doms {
 	return &doms
 }
 
-// Insert will only add the Dom if it contains chunks. A Dom without chunks will not be inserted.
+// Insert will only add a Dom if it contains a non-zero number of chunks. A Dom without chunks will not be ignored.
 func (d *Doms) Insert(doms ...*Dom) {
 	for _, dom := range doms {
 		if len(dom.chunks) == 0 {
@@ -42,13 +42,13 @@ func (d *Doms) Insert(doms ...*Dom) {
 // Output returns the output string of Doms.
 // If format is set to true, then the output will be formatted based on the given line limit
 // and indent size.
-func (d *Doms) Output(format bool, lineLimit, indent int) string {
+func (d *Doms) Output(format bool, lineLimit, indentSize int) string {
 	var buf bytes.Buffer
 	if format {
 		for _, dom := range *d {
-			dom.format(lineLimit)
+			dom.format(lineLimit, indentSize)
 			for _, c := range dom.chunks {
-				buf.WriteString(strings.Repeat(strings.Repeat(" ", indent), int(c.Indent())))
+				buf.WriteString(strings.Repeat(strings.Repeat(" ", indentSize), int(c.Indent())))
 				buf.WriteString(c.Text())
 				switch c.SplitKind() {
 				case SplitKindHard:
@@ -60,27 +60,22 @@ func (d *Doms) Output(format bool, lineLimit, indent int) string {
 						buf.WriteString(" ")
 					}
 				}
-				buf.WriteString(c.children.Output(format, lineLimit, indent))
+				buf.WriteString(c.children.Output(format, lineLimit, indentSize))
 			}
 		}
 	} else {
 		for _, dom := range *d {
 			for _, c := range dom.chunks {
 				buf.WriteString(c.Text())
-				buf.WriteString(c.children.Output(format, lineLimit, indent))
+				buf.WriteString(c.children.Output(format, lineLimit, indentSize))
 			}
 		}
 	}
 	return buf.String()
 }
 
-// TODO: remove?
-func (d *Doms) Contents() []*Dom {
-	return *d
-}
-
 // First chunk in Doms.
-func (d *Doms) first() *Chunk {
+func (d *Doms) First() *Chunk {
 	if len(*d) > 0 {
 		doms := *d
 		return doms[0].chunks[0]
@@ -89,7 +84,7 @@ func (d *Doms) first() *Chunk {
 }
 
 // Last chunk in Doms.
-func (d *Doms) last() *Chunk {
+func (d *Doms) Last() *Chunk {
 	if len(*d) > 0 {
 		doms := *d
 		return doms[len(doms)-1].chunks[len(doms[len(doms)-1].chunks)-1]

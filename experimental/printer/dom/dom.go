@@ -32,29 +32,20 @@ func NewDom(chunks []*Chunk) *Dom {
 	}
 }
 
-func (d *Dom) LastSplitKind() SplitKind {
-	if len(d.chunks) > 0 {
-		return d.chunks[len(d.chunks)-1].SplitKind()
-	}
-	return SplitKindUnknown
-}
-
-func (d *Dom) format(lineLimit int) {
+func (d *Dom) format(lineLimit, indent int) {
 	if !d.formatted {
-		if d.longestLen() > lineLimit {
+		if d.longestLen(indent) > lineLimit {
 			d.split()
 		}
 		for _, c := range d.chunks {
-			if c.children != nil {
-				for _, child := range *c.children {
-					child.format(lineLimit)
-				}
+			for _, child := range *c.children {
+				child.format(lineLimit, indent)
 			}
 		}
 	}
 }
 
-func (d *Dom) longestLen() int {
+func (d *Dom) longestLen(indent int) int {
 	var max int
 	var cost int
 	for _, c := range d.chunks {
@@ -62,7 +53,7 @@ func (d *Dom) longestLen() int {
 		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
 			cost = 0
 		}
-		cost += c.measure()
+		cost += c.measure(indent)
 		if cost > max {
 			max = cost
 		}
@@ -75,12 +66,10 @@ func (d *Dom) split() {
 		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble || c.splitKind == SplitKindNever {
 			continue
 		}
-		c.splitKind = SplitKindHard
-		if c.children.first() != nil {
-			c.children.first().indented = true
-		}
-		if c.children.last() != nil {
-			c.children.last().splitKind = SplitKindHard
+		c.splitKind = c.splitKindIfSplit
+		c.indented = true
+		for _, child := range *c.children {
+			child.split()
 		}
 	}
 }
