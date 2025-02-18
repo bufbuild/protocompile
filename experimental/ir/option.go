@@ -37,7 +37,8 @@ type rawOption struct {
 	ast ast.DeclDef
 
 	// This is an alternating sequence of path parts, where the first is
-	// a non-extension, the second is an extension, and so on.
+	// a non-extension, the second is a fully-qualified extension path, and so
+	// on.
 	//
 	// For example, foo.(bar.baz).bang.bonk is represented as
 	// ["foo", "bar.baz", "bang", "", "bonk"]. The empty string is used as a
@@ -45,7 +46,12 @@ type rawOption struct {
 	//
 	// In particular, (foo.bar).baz is represented as ["", "foo.bar", "baz"].
 	//
-	// The names of extensions therein are populated with fully qualified names.
+	// The names of extensions therein are populated with fully qualified names,
+	// without the leading dot.
+	//
+	// If this slice is nil, that means that name resolution has not happened
+	// yet, and the ast node contains the partially-qualified extension names
+	// to use for name resolution..
 	name []intern.ID //nolint:unused // Will become used in a followup.
 
 	field ref[rawField] // Set if this option matches a field.
@@ -98,6 +104,8 @@ type Value struct {
 //  4. Repeated fields. This holds an arena.Pointer[[]rawValue], where each
 //     value is interpreted as a non-array with this value's type.
 //     This exploits the fact that arrays cannot contain other arrays.
+//     Note that within the IR, map fields do not exist, and are represented as
+//     the repeated message fields that they will ultimately become.
 type rawValue uint64
 
 // AST returns the expression that evaluated to this value.
@@ -133,12 +141,9 @@ func (v Value) Elements() seq.Indexer[Element] {
 		slice = *v.Context().arenas.arrays.Deref(arena.Pointer[[]rawValue](v.raw))
 	}
 
-	return seq.Slice[Element, rawValue]{
-		Slice: slice,
-		Wrap: func(bits *rawValue) Element {
-			return Element{v.withContext, v.field, *bits}
-		},
-	}
+	return seq.NewFixedSlice(slice, func(_ int, bits rawValue) Element {
+		return Element{v.withContext, v.field, bits}
+	})
 }
 
 // Element is an element within a [Value].
@@ -243,6 +248,9 @@ type rawMessageValueEntry struct {
 	key   intern.ID
 	field int32 // Index of the field within rawMessageValue.ty; -1 if unknown.
 	value rawValue
+
+	// TODO: This currently cannot represent an Any field correctly, because we
+	// need to know its "dynamic" type as well.
 }
 
 // Type returns this value's message type.
@@ -253,10 +261,9 @@ func (v MessageValue) Type() Type {
 // Fields returns the fields within this message literal.
 func (v MessageValue) Fields() seq.Indexer[FieldValue] {
 	ty := v.Type()
-	return seq.Slice[FieldValue, rawMessageValueEntry]{
-		Slice: v.raw.entries,
-		Wrap: func(e *rawMessageValueEntry) FieldValue {
-			i := slicesx.PointerIndex(v.raw.entries, e)
+	return seq.NewFixedSlice(
+		v.raw.entries,
+		func(i int, e rawMessageValueEntry) FieldValue {
 			field := FieldValue{
 				Value: Value{
 					withContext: v.withContext,
@@ -271,7 +278,7 @@ func (v MessageValue) Fields() seq.Indexer[FieldValue] {
 			}
 			return field
 		},
-	}
+	)
 }
 
 // FieldValue is an entry within a [MessageValue].

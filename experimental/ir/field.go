@@ -147,12 +147,12 @@ func (f Field) Oneof() Oneof {
 
 // Options returns the options applied to this field.
 func (f Field) Options() seq.Indexer[Option] {
-	return seq.Slice[Option, arena.Pointer[rawOption]]{
-		Slice: f.raw.options,
-		Wrap: func(p *arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), *p)
+	return seq.NewFixedSlice(
+		f.raw.options,
+		func(_ int, p arena.Pointer[rawOption]) Option {
+			return wrapOption(f.Context(), p)
 		},
-	}
+	)
 }
 
 func wrapField(c *Context, r ref[rawField]) Field {
@@ -207,12 +207,12 @@ func (o Oneof) FullName() string {
 
 // Members returns this oneof's member fields.
 func (o Oneof) Members() seq.Indexer[Field] {
-	return seq.Slice[Field, arena.Pointer[rawField]]{
-		Slice: o.raw.members,
-		Wrap: func(p *arena.Pointer[rawField]) Field {
-			return wrapField(o.Context(), ref[rawField]{ptr: *p})
+	return seq.NewFixedSlice(
+		o.raw.members,
+		func(_ int, p arena.Pointer[rawField]) Field {
+			return wrapField(o.Context(), ref[rawField]{ptr: p})
 		},
-	}
+	)
 }
 
 // Parent returns the type that this oneof is declared within,.
@@ -223,12 +223,12 @@ func (o Oneof) Parent() Type {
 
 // Options returns the options applied to this oneof.
 func (o Oneof) Options() seq.Indexer[Option] {
-	return seq.Slice[Option, arena.Pointer[rawOption]]{
-		Slice: o.raw.options,
-		Wrap: func(p *arena.Pointer[rawOption]) Option {
-			return wrapOption(o.Context(), *p)
+	return seq.NewFixedSlice(
+		o.raw.options,
+		func(_ int, p arena.Pointer[rawOption]) Option {
+			return wrapOption(o.Context(), p)
 		},
-	}
+	)
 }
 
 func wrapOneof(c *Context, p arena.Pointer[rawOneof]) Oneof {
@@ -271,12 +271,12 @@ func (r TagRange) Range() (start, end int32) {
 //
 // Reserved ranges cannot carry options; only extension ranges do.
 func (r TagRange) Options() seq.Indexer[Option] {
-	return seq.Slice[Option, arena.Pointer[rawOption]]{
-		Slice: r.raw.options,
-		Wrap: func(p *arena.Pointer[rawOption]) Option {
-			return wrapOption(r.Context(), *p)
+	return seq.NewFixedSlice(
+		r.raw.options,
+		func(_ int, p arena.Pointer[rawOption]) Option {
+			return wrapOption(r.Context(), p)
 		},
-	}
+	)
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for

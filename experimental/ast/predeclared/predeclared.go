@@ -18,16 +18,8 @@ package predeclared
 
 import (
 	"fmt"
-<<<<<<< HEAD
 	"github.com/bufbuild/protocompile/internal/iter"
 )
-
-var _ iter.Seq[int] // Mark iter as used.
-=======
-
-	"github.com/bufbuild/protocompile/internal/iter"
-)
->>>>>>> origin/main
 
 // Name is one of the built-in Protobuf names. These represent particular
 // paths whose meaning the language overrides to mean something other than
@@ -109,13 +101,8 @@ func Lookup(s string) Name {
 // All returns an iterator over all distinct [Name] values.
 func All() iter.Seq[Name] {
 	return func(yield func(Name) bool) {
-<<<<<<< HEAD
-		for _, v := range _table_Name_All {
-			if !yield(v) {
-=======
 		for i := 0; i < 22; i++ {
 			if !yield(Name(i)) {
->>>>>>> origin/main
 				return
 			}
 		}
@@ -123,17 +110,6 @@ func All() iter.Seq[Name] {
 }
 
 var _table_Name_String = [...]string{
-<<<<<<< HEAD
-	Unknown: "unknown",
-	Int32: "int32",
-	Int64: "int64",
-	UInt32: "uint32",
-	UInt64: "uint64",
-	SInt32: "sint32",
-	SInt64: "sint64",
-	Fixed32: "fixed32",
-	Fixed64: "fixed64",
-=======
 	Unknown:  "unknown",
 	Int32:    "int32",
 	Int64:    "int64",
@@ -143,7 +119,6 @@ var _table_Name_String = [...]string{
 	SInt64:   "sint64",
 	Fixed32:  "fixed32",
 	Fixed64:  "fixed64",
->>>>>>> origin/main
 	SFixed32: "sfixed32",
 	SFixed64: "sfixed64",
 	Float:    "float",
@@ -160,17 +135,6 @@ var _table_Name_String = [...]string{
 }
 
 var _table_Name_GoString = [...]string{
-<<<<<<< HEAD
-	Unknown: "Unknown",
-	Int32: "Int32",
-	Int64: "Int64",
-	UInt32: "UInt32",
-	UInt64: "UInt64",
-	SInt32: "SInt32",
-	SInt64: "SInt64",
-	Fixed32: "Fixed32",
-	Fixed64: "Fixed64",
-=======
 	Unknown:  "Unknown",
 	Int32:    "Int32",
 	Int64:    "Int64",
@@ -180,7 +144,6 @@ var _table_Name_GoString = [...]string{
 	SInt64:   "SInt64",
 	Fixed32:  "Fixed32",
 	Fixed64:  "Fixed64",
->>>>>>> origin/main
 	SFixed32: "SFixed32",
 	SFixed64: "SFixed64",
 	Float:    "Float",
@@ -197,17 +160,6 @@ var _table_Name_GoString = [...]string{
 }
 
 var _table_Name_Lookup = map[string]Name{
-<<<<<<< HEAD
-	"unknown": Unknown,
-	"int32": Int32,
-	"int64": Int64,
-	"uint32": UInt32,
-	"uint64": UInt64,
-	"sint32": SInt32,
-	"sint64": SInt64,
-	"fixed32": Fixed32,
-	"fixed64": Fixed64,
-=======
 	"unknown":  Unknown,
 	"int32":    Int32,
 	"int64":    Int64,
@@ -217,7 +169,6 @@ var _table_Name_Lookup = map[string]Name{
 	"sint64":   SInt64,
 	"fixed32":  Fixed32,
 	"fixed64":  Fixed64,
->>>>>>> origin/main
 	"sfixed32": SFixed32,
 	"sfixed64": SFixed64,
 	"float":    Float,
@@ -232,32 +183,4 @@ var _table_Name_Lookup = map[string]Name{
 	"inf":      Inf,
 	"nan":      NAN,
 }
-<<<<<<< HEAD
-
-var _table_Name_All = [...]Name{
-	Unknown,
-	Int32,
-	Int64,
-	UInt32,
-	UInt64,
-	SInt32,
-	SInt64,
-	Fixed32,
-	Fixed64,
-	SFixed32,
-	SFixed64,
-	Float,
-	Double,
-	Bool,
-	String,
-	Bytes,
-	Map,
-	Max,
-	True,
-	False,
-	Inf,
-	NAN,
-}
-=======
 var _ iter.Seq[int] // Mark iter as used.
->>>>>>> origin/main

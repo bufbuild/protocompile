@@ -157,13 +157,13 @@ func (t Type) InternedName() intern.ID {
 //
 // Only message types have nested types.
 func (t Type) Nested() seq.Indexer[Type] {
-	return seq.Slice[Type, arena.Pointer[rawType]]{
-		Slice: t.raw.nested,
-		Wrap: func(p *arena.Pointer[rawType]) Type {
+	return seq.NewFixedSlice(
+		t.raw.nested,
+		func(_ int, p arena.Pointer[rawType]) Type {
 			// Nested types are always in the current file.
-			return wrapType(t.Context(), ref[rawType]{ptr: *p})
+			return wrapType(t.Context(), ref[rawType]{ptr: p})
 		},
-	}
+	)
 }
 
 // Fields returns the fields of this type.
@@ -172,74 +172,70 @@ func (t Type) Nested() seq.Indexer[Type] {
 // field corresponds to an enum value, and will report the zero value for its
 // type.
 func (t Type) Fields() seq.Indexer[Field] {
-	return seq.Slice[Field, arena.Pointer[rawField]]{
-		Slice: t.raw.fields[:t.raw.fieldsExtnStart],
-		Wrap: func(p *arena.Pointer[rawField]) Field {
-			return wrapField(t.Context(), ref[rawField]{ptr: *p})
+	return seq.NewFixedSlice(
+		t.raw.fields[:t.raw.fieldsExtnStart],
+		func(_ int, p arena.Pointer[rawField]) Field {
+			return wrapField(t.Context(), ref[rawField]{ptr: p})
 		},
-	}
+	)
 }
 
 // Extensions returns any extensions nested within this type.
 func (t Type) Extensions() seq.Indexer[Field] {
-	return seq.Slice[Field, arena.Pointer[rawField]]{
-		Slice: t.raw.fields[t.raw.fieldsExtnStart:],
-		Wrap: func(p *arena.Pointer[rawField]) Field {
-			return wrapField(t.Context(), ref[rawField]{ptr: *p})
+	return seq.NewFixedSlice(
+		t.raw.fields[t.raw.fieldsExtnStart:],
+		func(_ int, p arena.Pointer[rawField]) Field {
+			return wrapField(t.Context(), ref[rawField]{ptr: p})
 		},
-	}
+	)
 }
 
 // ReservedRanges returns the reserved ranges declared in this type.
 //
 // This does not include reserved field names; see [Type.ReservedNames].
 func (t Type) ReservedRanges() seq.Indexer[TagRange] {
-	return seq.Slice[TagRange, rawRange]{
-		Slice: t.raw.ranges[:t.raw.rangesExtnStart],
-		Wrap: func(r *rawRange) TagRange {
-			return TagRange{t.withContext, r}
-		},
-	}
+	slice := t.raw.ranges[:t.raw.rangesExtnStart]
+	return seq.NewFixedSlice(slice, func(i int, _ rawRange) TagRange {
+		return TagRange{t.withContext, &slice[i]}
+	})
 }
 
 // ExtensionRanges returns the extension ranges declared in this type.
 func (t Type) ExtensionRanges() seq.Indexer[TagRange] {
-	return seq.Slice[TagRange, rawRange]{
-		Slice: t.raw.ranges[t.raw.rangesExtnStart:],
-		Wrap: func(r *rawRange) TagRange {
-			return TagRange{t.withContext, r}
-		},
-	}
+	slice := t.raw.ranges[t.raw.rangesExtnStart:]
+	return seq.NewFixedSlice(slice, func(i int, _ rawRange) TagRange {
+		return TagRange{t.withContext, &slice[i]}
+	})
 }
 
 // ReservedNames returns the reserved named declared in this type.
 func (t Type) ReservedNames() seq.Indexer[ReservedName] {
-	return seq.Slice[ReservedName, rawReservedName]{
-		Slice: t.raw.reservedNames,
-		Wrap: func(r *rawReservedName) ReservedName {
-			return ReservedName{t.withContext, r}
+	return seq.NewFixedSlice(
+		t.raw.reservedNames,
+		func(i int, _ rawReservedName) ReservedName {
+			return ReservedName{t.withContext, &t.raw.reservedNames[i]}
 		},
-	}
+	)
 }
 
 // Options returns the options applied to this type.
 func (t Type) Oneofs() seq.Indexer[Oneof] {
-	return seq.Slice[Oneof, arena.Pointer[rawOneof]]{
-		Slice: t.raw.oneofs,
-		Wrap: func(p *arena.Pointer[rawOneof]) Oneof {
-			return wrapOneof(t.Context(), *p)
+	return seq.NewFixedSlice(
+		t.raw.oneofs,
+		func(_ int, p arena.Pointer[rawOneof]) Oneof {
+			return wrapOneof(t.Context(), p)
 		},
-	}
+	)
 }
 
 // Options returns the options applied to this type.
 func (t Type) Options() seq.Indexer[Option] {
-	return seq.Slice[Option, arena.Pointer[rawOption]]{
-		Slice: t.raw.options,
-		Wrap: func(p *arena.Pointer[rawOption]) Option {
-			return wrapOption(t.Context(), *p)
+	return seq.NewFixedSlice(
+		t.raw.options,
+		func(_ int, p arena.Pointer[rawOption]) Option {
+			return wrapOption(t.Context(), p)
 		},
-	}
+	)
 }
 
 func wrapType(c *Context, r ref[rawType]) Type {

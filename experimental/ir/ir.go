@@ -19,7 +19,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -119,50 +118,46 @@ func (f File) AST() ast.File {
 // Imports returns.
 func (f File) Imports() seq.Indexer[Import] {
 	file := f.Context().file
-	return seq.Slice[Import, File]{
-		Slice: file.imports[:file.importEnd],
-		Wrap: func(f *File) Import {
-			n := slicesx.PointerIndex(file.imports, f)
+	return seq.NewFixedSlice(
+		file.imports[:file.importEnd],
+		func(n int, f File) Import {
 			return Import{
-				File:   *f,
+				File:   f,
 				Public: n < file.publicEnd,
 				Weak:   n >= file.publicEnd && n < file.weakEnd,
 			}
 		},
-	}
+	)
 }
 
 // Types returns the top level types of this file.
 func (f File) Types() seq.Indexer[Type] {
-	return seq.Slice[Type, arena.Pointer[rawType]]{
-		Slice: f.Context().file.types,
-		Wrap: func(p *arena.Pointer[rawType]) Type {
+	return seq.NewFixedSlice(
+		f.Context().file.types,
+		func(_ int, p arena.Pointer[rawType]) Type {
 			// Implicitly in current file.
-			return wrapType(f.Context(), ref[rawType]{ptr: *p})
+			return wrapType(f.Context(), ref[rawType]{ptr: p})
 		},
-		Unwrap: nil, // Not settable.
-	}
+	)
 }
 
 // Extensions returns the top level extensions defined in this file (i.e.,
 // the contents of any top-level `extends` blocks).
 func (f File) Extensions() seq.Indexer[Field] {
-	return seq.Slice[Field, arena.Pointer[rawField]]{
-		Slice: f.Context().file.extns,
-		Wrap: func(p *arena.Pointer[rawField]) Field {
-			return wrapField(f.Context(), ref[rawField]{ptr: *p})
+	return seq.NewFixedSlice(
+		f.Context().file.extns,
+		func(_ int, p arena.Pointer[rawField]) Field {
+			return wrapField(f.Context(), ref[rawField]{ptr: p})
 		},
-		Unwrap: nil, // Not settable.
-	}
+	)
 }
 
 // Options returns the top level options applied to this file.
 func (f File) Options() seq.Indexer[Option] {
-	return seq.Slice[Option, arena.Pointer[rawOption]]{
-		Slice: f.Context().file.options,
-		Wrap: func(p *arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), *p)
+	return seq.NewFixedSlice(
+		f.Context().file.options,
+		func(_ int, p arena.Pointer[rawOption]) Option {
+			return wrapOption(f.Context(), p)
 		},
-		Unwrap: nil, // Not settable.
-	}
+	)
 }

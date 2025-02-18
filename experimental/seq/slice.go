@@ -45,6 +45,19 @@ func NewSlice[T, E any](
 	return Slice[T, E]{slice, wrap, unwrap}
 }
 
+// NewFixedSlice constructs a new [Slice] whose Set method panics. This
+// function is intended for cases where the [Slice] will immediately be turned
+// into an [Indexer].
+//
+// This method exists because Go currently will not infer type parameters of a
+// type.
+func NewFixedSlice[T, E any](
+	slice []E,
+	wrap func(int, E) T,
+) Slice[T, E] {
+	return Slice[T, E]{slice, wrap, nil}
+}
+
 // Len implements [Indexer].
 func (s Slice[T, _]) Len() int {
 	return len(s.Slice)
