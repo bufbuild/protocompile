@@ -248,7 +248,7 @@ func TestUnchanged(t *testing.T) {
 		gsPerRun = 16
 	)
 
-	for i := 0; i < runs; i++ {
+	for range runs {
 		exec.Evict(ParseInt{"42"})
 		results, _, _ := incremental.Run(ctx, exec, queries...)
 		for j, r := range results[1:] {
@@ -263,9 +263,8 @@ func TestUnchanged(t *testing.T) {
 
 		exec.Evict(ParseInt{"42"})
 		barrier.Add(1)
-		for i := 0; i < gsPerRun; i++ {
+		for i := range gsPerRun {
 			wg.Add(1)
-			i := i
 			go func() {
 				barrier.Wait() // Ensure all goroutines start together.
 				defer wg.Done()

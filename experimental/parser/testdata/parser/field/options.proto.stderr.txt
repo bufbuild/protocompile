@@ -1,6 +1,6 @@
 error: unexpected `:` in compact option
   --> testdata/parser/field/options.proto:27:19
-   | 
+   |
 27 |     M bad = 4 [foo: {bar: baz}];
    |                   ^ help: replace this with `=`
    = note: top-level `option` assignment uses `=`, not `:`

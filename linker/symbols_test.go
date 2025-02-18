@@ -105,7 +105,6 @@ func TestSymbolsImport(t *testing.T) {
 	}
 
 	for name, fd := range testCases {
-		fd := fd
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

@@ -45,10 +45,8 @@ func TestIntern(t *testing.T) {
 	}
 
 	var table intern.Table
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		for _, s := range data {
-			s := s
-
 			t.Run(fmt.Sprintf("%s/%d", s, i), func(t *testing.T) {
 				t.Parallel()
 
