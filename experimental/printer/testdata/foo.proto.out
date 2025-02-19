@@ -4,7 +4,6 @@ with new line after
 */
 
 syntax = /* comment explaining this */ "proto3"; // trailing comment
-
 package foo.bar;
 
 import "google/protobuf/empty.proto";
@@ -36,7 +35,7 @@ enum AH {
 }
 
 service FooService {
-  rpc GetFoo (GetFooRequestreturns (GetBarResponse{
+  rpc GetFoo (GetFooRequest) returns (GetBarResponse) {
     option idempotency_level = NO_SIDE_EFFECTS;  // sdlkfjslkdjflksjdkjf
-}
+  }
 }

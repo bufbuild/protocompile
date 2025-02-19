@@ -691,7 +691,8 @@ func single(
 			if t.Kind() == token.Space {
 				continue
 			}
-			text += t.Text()
+			// In formatted mode, whitespace is handled by split logic, trim extraneous whitespaces.
+			text += strings.TrimSpace(t.Text())
 			if spacer(t) {
 				text += " "
 			}
@@ -721,12 +722,17 @@ func splitTokens(tokens []token.Token, splitSpan report.Span) ([]token.Token, []
 	var front, back []token.Token
 	for _, t := range tokens {
 		if t.Span().Start <= splitSpan.Start {
-			if !t.IsLeaf() {
-				start, end := t.StartEnd()
-				if t.ID() == end.ID() {
-					continue
+			// If this is specifically the body brace token, then we only want the opening brace
+			// Otherwise we need to add all tokens (e.g. both the open and closing braces of a method
+			// input/output).
+			if t.Span().Start == splitSpan.Start {
+				if !t.IsLeaf() {
+					start, end := t.StartEnd()
+					if t.ID() == end.ID() {
+						continue
+					}
+					t = start
 				}
-				t = start
 			}
 			front = append(front, t)
 			continue
@@ -783,6 +789,10 @@ func trailingCommentSingleDoubleFound(cursor *token.Cursor) (bool, bool, bool) {
 			}
 		case token.Comment:
 			commentFound = true
+			// If the comment ends in a new line, we should still respect that while setting the split.
+			if strings.HasSuffix(t.Text(), "\n") {
+				singleFound = true
+			}
 		}
 		if cursor.PeekSkippable().IsZero() {
 			break
