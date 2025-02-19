@@ -21,8 +21,10 @@ package dom
 //
 // We must denote whether this is a formatted Dom or if this is for printing without formatting.
 type Dom struct {
-	chunks    []*Chunk
-	formatted bool
+	chunks []*Chunk
+	// TODO: implement
+	splitChunksWithParent bool
+	formatted             bool
 }
 
 // NewDom constructs a new Dom.
