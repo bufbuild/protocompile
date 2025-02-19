@@ -19,6 +19,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // parsePath parses the longest path at cursor. Returns a nil path if
@@ -38,7 +40,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 	}
 
 	var prevSeparator token.Token
-	if start.Text() == "." || start.Text() == "/" {
+	if slicesx.Among(start.Keyword(), keyword.Dot, keyword.Slash) {
 		prevSeparator = c.Next()
 	}
 
@@ -49,7 +51,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 		first := start == next
 
 		switch {
-		case next.Text() == "." || next.Text() == "/":
+		case slicesx.Among(next.Keyword(), keyword.Dot, keyword.Slash):
 			if !prevSeparator.IsZero() {
 				// This is a double dot, so something like foo..bar, ..foo, or
 				// foo.. We diagnose it and move on -- Path.Components is robust
@@ -74,7 +76,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			prevSeparator = token.Zero
 			c.Next()
 
-		case next.Text() == "(":
+		case next.Keyword() == keyword.Parens:
 			if !first && prevSeparator.IsZero() {
 				// This means we found something like `foo(bar)`, which means we
 				// should stop consuming components.

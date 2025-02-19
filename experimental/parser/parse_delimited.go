@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // delimited is a mechanism for parsing a punctuation-delimited list.
@@ -33,8 +34,8 @@ type delimited[T report.Spanner] struct {
 	// generating diagnostics.
 	what, in taxa.Noun
 
-	// Permitted delimiters. If empty, assumed to be []string{","}.
-	delims []string
+	// Permitted delimiters. If empty, assumed to be keyword.Comma.
+	delims []keyword.Keyword
 	// Whether a delimiter must be present, rather than merely optional.
 	required bool
 	// Whether iteration should expect to exhaust c.
@@ -67,15 +68,16 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 	// we don't want to have to deal with asking the caller to provide Nouns
 	// for each delimiter.
 	if len(d.delims) == 0 {
-		d.delims = []string{","}
+		d.delims = []keyword.Keyword{keyword.Comma}
 	}
 
 	var delim token.Token
 	var latest int // The index of the most recently seen delimiter.
 
-	if next := d.c.Peek(); slices.Contains(d.delims, next.Text()) {
+	next := d.c.Peek()
+	if idx := slices.Index(d.delims, next.Keyword()); idx >= 0 {
 		_ = d.c.Next()
-		latest = slices.Index(d.delims, next.Text())
+		latest = idx
 
 		d.p.Error(errUnexpected{
 			what:  next,
@@ -145,7 +147,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		// Pop as many delimiters as we can.
 		delim = token.Zero
 		for {
-			which := slices.Index(d.delims, d.c.Peek().Text())
+			which := slices.Index(d.delims, d.c.Peek().Keyword())
 			if which < 0 {
 				break
 			}
@@ -200,7 +202,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 func (d delimited[T]) delimNouns() taxa.Set {
 	var set taxa.Set
 	for _, delim := range d.delims {
-		set = set.With(taxa.Punct(delim, false))
+		set = set.With(taxa.Keyword(delim))
 	}
 	return set
 }

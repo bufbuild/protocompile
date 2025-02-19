@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // lexer is a Protobuf parser.
@@ -32,23 +33,26 @@ type parser struct {
 //
 // If the wrong token is encountered, it DOES NOT consume the token, returning a nil
 // token instead. Returns a diagnostic on failure.
-func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.Token, report.Diagnose) {
+func (p *parser) Punct(c *token.Cursor, want keyword.Keyword, where taxa.Place) (token.Token, report.Diagnose) {
 	next := c.Peek()
-	if next.Text() == want {
+	if next.Keyword() == want {
 		return c.Next(), nil
 	}
 
-	wanted := taxa.NewSet(taxa.Punct(want, false))
+	wanted := taxa.NewSet(taxa.Keyword(want))
 	if next.IsZero() {
-		tok, span := c.SeekToEnd()
+		end, span := c.SeekToEnd()
 		err := errUnexpected{
 			what:  span,
 			where: where,
 			want:  wanted,
 			got:   taxa.EOF,
 		}
-		if !tok.IsZero() {
-			err.got = taxa.Classify(tok)
+		if _, close, ok := end.Keyword().OpenClose(); ok {
+			// Special case for closing braces.
+			err.got = "`" + close + "`"
+		} else if !end.IsZero() {
+			err.got = taxa.Classify(end)
 		}
 
 		return token.Zero, err
