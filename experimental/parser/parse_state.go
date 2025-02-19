@@ -48,9 +48,9 @@ func (p *parser) Punct(c *token.Cursor, want keyword.Keyword, where taxa.Place) 
 			want:  wanted,
 			got:   taxa.EOF,
 		}
-		if _, close, ok := end.Keyword().OpenClose(); ok {
+		if _, c, ok := end.Keyword().OpenClose(); ok {
 			// Special case for closing braces.
-			err.got = "`" + close + "`"
+			err.got = "`" + c + "`"
 		} else if !end.IsZero() {
 			err.got = taxa.Classify(end)
 		}

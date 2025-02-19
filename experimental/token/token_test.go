@@ -144,9 +144,9 @@ func TestTreeTokens(t *testing.T) {
 	close3 := s.NewPunct(")")
 	s.NewFused(open3, close3, def, open2)
 
-	assert.Equal(message.Keyword(), keyword.Message)
-	assert.Equal(open3.Keyword(), keyword.Parens)
-	assert.Equal(close3.Keyword(), keyword.Parens)
+	assert.Equal(keyword.Message, message.Keyword())
+	assert.Equal(keyword.Parens, open3.Keyword())
+	assert.Equal(keyword.Parens, close3.Keyword())
 	assert.False(open3.IsLeaf())
 	assert.False(close3.IsLeaf())
 	start, end = open3.StartEnd()
