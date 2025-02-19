@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package unsafex contains extensions to Go's package unsafe.
+// Package unsafex contains extensions to Go's package unsafe.
 //
 // Importing this package should be treated as equivalent to importing unsafe.
 package unsafex

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iter is a collection of polyfills for the standard iter package.
+// Package iter is a collection of polyfills for the standard iter package.
 package iter
 
 type Seq[T any] func(yield func(T) bool) // The "yield" name here helps code completion.
