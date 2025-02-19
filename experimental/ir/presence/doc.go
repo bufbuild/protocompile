@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package presence provides [Kind], which denotes the way in which a field
+// Package presence provides [Kind], which denotes the way in which a field
 // can be present in a Protobuf message. Presence generalizes the naive concept
 // of the cardinality of a message.
 package presence

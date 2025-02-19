@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package ir defines the intermediate representation used by Protocompile.
+// Package ir defines the intermediate representation used by Protocompile.
 //
 // This package provides both the IR, and the lowering machinery for that IR.
 // The IR is intended to provide a richer and easier to manipulate structure
