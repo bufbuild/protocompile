@@ -21,10 +21,8 @@ package dom
 //
 // We must denote whether this is a formatted Dom or if this is for printing without formatting.
 type Dom struct {
-	chunks []*Chunk
-	// TODO: implement
-	splitChunksWithParent bool
-	formatted             bool
+	chunks    []*Chunk
+	formatted bool
 }
 
 // NewDom constructs a new Dom.
@@ -32,6 +30,14 @@ func NewDom(chunks []*Chunk) *Dom {
 	return &Dom{
 		chunks: chunks,
 	}
+}
+
+func (d *Dom) Insert(c ...*Chunk) {
+	d.chunks = append(d.chunks, c...)
+}
+
+func (d *Dom) Chunks() []*Chunk {
+	return d.chunks
 }
 
 func (d *Dom) format(lineLimit, indent int) {
@@ -65,13 +71,6 @@ func (d *Dom) longestLen(indent int) int {
 
 func (d *Dom) split() {
 	for _, c := range d.chunks {
-		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble || c.splitKind == SplitKindNever {
-			continue
-		}
-		c.splitKind = c.splitKindIfSplit
-		c.indented = true
-		for _, child := range *c.children {
-			child.split()
-		}
+		c.split(false)
 	}
 }

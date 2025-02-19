@@ -23,13 +23,15 @@ import (
 // Chunk represents a line of text with some configurations around indendation and splitting
 // (what whitespace should follow, if any).
 type Chunk struct {
-	text             string
-	indent           uint32
-	indented         bool
-	splitKind        SplitKind
-	spaceWhenUnsplit bool
-	splitKindIfSplit SplitKind // Restricted to SplitKindHard or SplitKindDouble
-	children         *Doms
+	text                      string
+	indent                    uint32
+	indented                  bool
+	splitKind                 SplitKind
+	spaceWhenUnsplit          bool
+	splitKindIfSplit          SplitKind // Restricted to SplitKindHard or SplitKindDouble
+	splitWithParent           bool
+	indentWhenSplitWithParent bool
+	children                  *Doms
 }
 
 // NewChunk constructs a new Chunk.
@@ -63,6 +65,10 @@ func (c *Chunk) SetIndent(indent uint32) {
 }
 
 func (c *Chunk) SetIndented(indented bool) {
+	//switch c.splitKind {
+	//case SplitKindSoft, SplitKindNever:
+	//	panic("invalid SplitKind for indented")
+	//}
 	c.indented = indented
 }
 
@@ -79,6 +85,17 @@ func (c *Chunk) SetSplitKindIfSplit(splitKindIfSplit SplitKind) {
 		panic("invalid splitKindIfSplit")
 	}
 	c.splitKindIfSplit = splitKindIfSplit
+}
+
+func (c *Chunk) SetSplitWithParent(splitWithParent bool) {
+	c.splitWithParent = splitWithParent
+}
+
+func (c *Chunk) SetIndentWhenSplitWithParent(indentWhenSplitWithParent bool) {
+	if !c.splitWithParent {
+		panic("can only set indentWhenSplitWithParent if splitWithParent is true")
+	}
+	c.indentWhenSplitWithParent = indentWhenSplitWithParent
 }
 
 func (c *Chunk) SetChildren(children *Doms) {
@@ -109,4 +126,26 @@ out:
 		}
 	}
 	return cost
+}
+
+func (c *Chunk) split(child bool) {
+	switch c.splitKind {
+	case SplitKindHard, SplitKindDouble, SplitKindNever:
+		return
+	}
+	if child {
+		c.indented = true
+		if c.splitWithParent {
+			c.splitKind = c.splitKindIfSplit
+			c.indented = c.indentWhenSplitWithParent
+		}
+	} else {
+		c.splitKind = c.splitKindIfSplit
+		c.indented = true
+		for _, child := range *c.children {
+			for _, childChunk := range child.chunks {
+				childChunk.split(true)
+			}
+		}
+	}
 }
