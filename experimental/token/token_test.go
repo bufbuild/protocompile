@@ -21,6 +21,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 type Context struct {
@@ -93,7 +94,7 @@ func TestTreeTokens(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := NewContext("abc(def(x), ghi)")
+	ctx := NewContext("abc(def(x), message)")
 	s := ctx.Stream()
 
 	_ = s.Push(3, token.Ident)
@@ -105,7 +106,7 @@ func TestTreeTokens(t *testing.T) {
 	token.Fuse(open2, close2)
 	comma := s.Push(1, token.Punct)
 	s.Push(1, token.Space)
-	ghi := s.Push(3, token.Ident)
+	message := s.Push(7, token.Ident)
 	close := s.Push(1, token.Punct) //nolint:revive,predeclared
 	token.Fuse(open, close)
 
@@ -136,13 +137,16 @@ func TestTreeTokens(t *testing.T) {
 	tokensEq(t, collect(open2.Children().Rest()), x)
 	tokensEq(t, collect(close2.Children().Rest()), x)
 
-	tokensEq(t, collect(open.Children().Rest()), def, open2, comma, ghi)
-	tokensEq(t, collect(close.Children().Rest()), def, open2, comma, ghi)
+	tokensEq(t, collect(open.Children().Rest()), def, open2, comma, message)
+	tokensEq(t, collect(close.Children().Rest()), def, open2, comma, message)
 
 	open3 := s.NewPunct("(")
 	close3 := s.NewPunct(")")
 	s.NewFused(open3, close3, def, open2)
 
+	assert.Equal(message.Keyword(), keyword.Message)
+	assert.Equal(open3.Keyword(), keyword.Parens)
+	assert.Equal(close3.Keyword(), keyword.Parens)
 	assert.False(open3.IsLeaf())
 	assert.False(close3.IsLeaf())
 	start, end = open3.StartEnd()

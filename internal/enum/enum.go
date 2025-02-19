@@ -65,10 +65,11 @@ func (e *Enum) Init() {
 }
 
 type Value struct {
-	Name    string `yaml:"name"`   // The name of the value.
-	Alias   string `yaml:"alias"`  // Another value this value aliases, if any.
-	String_ string `yaml:"string"` // The string representation of this value.
-	Docs    string `yaml:"docs"`   // Documentation for the value.
+	Name    string   `yaml:"name"`   // The name of the value.
+	Alias   string   `yaml:"alias"`  // Another value this value aliases, if any.
+	String_ string   `yaml:"string"` // The string representation of this value.
+	Docs    string   `yaml:"docs"`   // Documentation for the value.
+	From    []string `yaml:"from"`   // Names for use in from-string instead of String_.
 
 	Parent *Enum `yaml:"-"`
 	Idx    int   `yaml:"-"`
