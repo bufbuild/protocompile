@@ -285,9 +285,9 @@ var kwToNoun = []Noun{
 	keyword.Default:  Unknown,
 	keyword.JsonName: Unknown,
 
-	keyword.Semi:     Semicolon,
+	keyword.Semi:     Semi,
 	keyword.Comma:    Comma,
-	keyword.Dot:      Period,
+	keyword.Dot:      Dot,
 	keyword.Slash:    Slash,
 	keyword.Colon:    Colon,
 	keyword.Equals:   Equals,

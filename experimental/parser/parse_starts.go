@@ -22,8 +22,8 @@ import (
 )
 
 var (
-	startsPath = taxa.NewSet(taxa.Ident, taxa.Parens, taxa.Period)
-	startsDecl = startsPath.With(taxa.Braces, taxa.Semicolon)
+	startsPath = taxa.NewSet(taxa.Ident, taxa.Parens, taxa.Dot)
+	startsDecl = startsPath.With(taxa.Braces, taxa.Semi)
 )
 
 func canStartDecl(tok token.Token) bool {
