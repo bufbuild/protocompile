@@ -22,12 +22,7 @@ const (
 	space = " "
 )
 
-// Dom represents a "block" of source code that can be formatted.
-// It is made up of an ordered slice of chunks.
-//
-// When rendering a dom, we calculate...
-//
-// We must denote whether this is a formatted Dom or if this is for printing without formatting.
+// Dom represents a block of text with formatting information. It is a tree of [Chunk]s.
 type Dom struct {
 	chunks []*Chunk
 }

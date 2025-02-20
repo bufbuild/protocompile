@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package dom provides a DOM-like tree structure for formatting test. A [Dom] is a tree of
+// Package dom provides a DOM-like tree structure for formatting text. A [Dom] is a tree of
 // [Chunk]s, and each [Chunk] represents a line of text with formatting information for
 // indentation and splitting (what whitespace should follow the text, if any). [Chunk]s also
 // contain rules for formatting:
