@@ -147,12 +147,6 @@ func (c *Chunk) SetChild(child *Dom) {
 	c.child = child
 }
 
-func (c *Chunk) format(lineLimit, indent int) {
-	if c.length(indent) > lineLimit {
-		c.split(false)
-	}
-}
-
 func (c *Chunk) output(indent int) string {
 	var buf bytes.Buffer
 	buf.WriteString(strings.Repeat(strings.Repeat(space, indent), int(c.Indent())))

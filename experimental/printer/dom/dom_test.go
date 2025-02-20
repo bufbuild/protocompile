@@ -27,7 +27,7 @@ func TestDom(t *testing.T) {
 	corpus := golden.Corpus{
 		Root:      "testdata",
 		Refresh:   "PROTOCOMPILE_REFRESH",
-		Extension: "in",
+		Extension: "",
 		Outputs: []golden.Output{
 			{Extension: "formatted.out"},
 			{Extension: "unformatted.out"},
@@ -55,7 +55,7 @@ func TestDom(t *testing.T) {
 				}
 				chunkText += word
 				count++
-				if count == 20 {
+				if count == 5 {
 					chunk.SetText(chunkText)
 					chunk.SetSplitKind(SplitKindSoft)
 					chunk.SetSpaceWhenUnsplit(true)
@@ -70,8 +70,7 @@ func TestDom(t *testing.T) {
 			}
 			return true
 		})
-
-		outputs[0] = d.Output(true, 80, 2)
 		outputs[1] = d.Output(false, 0, 0)
+		outputs[0] = d.Output(true, 20, 2)
 	})
 }

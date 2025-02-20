@@ -56,11 +56,26 @@ func (d *Dom) LastSplitKind() SplitKind {
 func (d *Dom) Output(format bool, lineLimit, indentSize int) string {
 	var buf bytes.Buffer
 	// We need to format the dom -- since there could still be a contiguous line across chunks.
+	if format {
+		d.format(lineLimit, indentSize)
+	}
 	for _, c := range d.chunks {
-		if format {
-			c.format(lineLimit, indentSize)
-		}
 		buf.WriteString(c.output(indentSize))
 	}
 	return buf.String()
+}
+
+func (d *Dom) format(lineLimit, indentSize int) {
+	// Measure contiguous chunks
+	var cost int
+	for _, c := range d.chunks {
+		cost += c.length(indentSize)
+		if cost > lineLimit {
+			c.split(false)
+		}
+		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
+			// Reset the cost for any non-contiguous chunk
+			cost = 0
+		}
+	}
 }
