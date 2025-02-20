@@ -14,6 +14,14 @@
 
 package dom
 
+import (
+	"bytes"
+)
+
+const (
+	space = " "
+)
+
 // Dom represents a "block" of source code that can be formatted.
 // It is made up of an ordered slice of chunks.
 //
@@ -21,56 +29,42 @@ package dom
 //
 // We must denote whether this is a formatted Dom or if this is for printing without formatting.
 type Dom struct {
-	chunks    []*Chunk
-	formatted bool
+	chunks []*Chunk
 }
 
 // NewDom constructs a new Dom.
-func NewDom(chunks []*Chunk) *Dom {
-	return &Dom{
-		chunks: chunks,
-	}
+func NewDom() *Dom {
+	return &Dom{}
 }
 
-func (d *Dom) Insert(c ...*Chunk) {
-	d.chunks = append(d.chunks, c...)
-}
-
-func (d *Dom) Chunks() []*Chunk {
-	return d.chunks
-}
-
-func (d *Dom) format(lineLimit, indent int) {
-	if !d.formatted {
-		if d.longestLen(indent) > lineLimit {
-			d.split()
-		}
-		for _, c := range d.chunks {
-			for _, child := range *c.children {
-				child.format(lineLimit, indent)
-			}
+// Insert a Chunk into the Dom. Only Chunks that have text set will be inserted, any Chunks
+// that have not had text set will be dropped.
+func (d *Dom) Insert(chunks ...*Chunk) {
+	for _, c := range chunks {
+		if c.hasText {
+			d.chunks = append(d.chunks, c)
 		}
 	}
 }
 
-func (d *Dom) longestLen(indent int) int {
-	var max int
-	var cost int
+// LastSplitKind returns the SplitKind of the last chunk in the Dom.
+func (d *Dom) LastSplitKind() SplitKind {
+	if len(d.chunks) > 0 {
+		return d.chunks[len(d.chunks)-1].SplitKind()
+	}
+	return SplitKindUnknown
+}
+
+// Output returns the output string of the Dom.
+// If format is set to true, then the output will be formatted based on the given line limit
+// and indent size.
+func (d *Dom) Output(format bool, lineLimit, indentSize int) string {
+	var buf bytes.Buffer
 	for _, c := range d.chunks {
-		// Reset the cost if the chunk is already hard split
-		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
-			cost = 0
+		if format {
+			c.format(lineLimit, indentSize)
 		}
-		cost += c.measure(indent)
-		if cost > max {
-			max = cost
-		}
+		buf.WriteString(c.output(indentSize))
 	}
-	return max
-}
-
-func (d *Dom) split() {
-	for _, c := range d.chunks {
-		c.split(false)
-	}
+	return buf.String()
 }

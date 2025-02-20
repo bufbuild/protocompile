@@ -24,7 +24,5 @@ const (
 )
 
 func (p *printer) printFile(file ast.File, format bool) {
-	for _, doms := range fileToDom(file, format) {
-		p.WriteString(doms.Output(format, defaultLineLimit, defaultIndentSize))
-	}
+	p.WriteString(fileToDom(file, format).Output(format, defaultLineLimit, defaultIndentSize))
 }

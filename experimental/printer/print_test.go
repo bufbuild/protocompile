@@ -33,7 +33,8 @@ func TestChunks(t *testing.T) {
 		Refresh:   "PROTOCOMPILE_REFRESH",
 		Extension: "proto",
 		Outputs: []golden.Output{
-			{Extension: "out"},
+			{Extension: "formatted.out"},
+			{Extension: "unformatted.out"},
 		},
 	}
 
@@ -44,6 +45,9 @@ func TestChunks(t *testing.T) {
 		p.printFile(file, true)
 		t.Log(p.String())
 		outputs[0] = p.String()
+		p.Reset()
+		p.printFile(file, false)
+		outputs[1] = p.String()
 	})
 }
 

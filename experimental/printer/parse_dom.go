@@ -40,39 +40,38 @@ type splitSetter func(*token.Cursor) (dom.SplitKind, bool)
 // spaceSetter sets a space after the given token when true is returned.
 type spaceSetter func(token.Token) bool
 
-type bodyDomsSetter func(indented bool) *dom.Doms
+type bodyDomSetter func(indented bool) *dom.Dom
 
-func fileToDom(file ast.File, format bool) []*dom.Doms {
-	var doms []*dom.Doms
+func fileToDom(file ast.File, format bool) *dom.Dom {
+	d := dom.NewDom()
 	seq.Values(file.Decls())(func(decl ast.DeclAny) bool {
-		d := declDoms(decl.Context().Stream(), decl, format, 0, true, false)
-		doms = append(doms, d)
+		d.Insert(declChunks(decl.Context().Stream(), decl, format, 0, true, false)...)
 		return true
 	})
-	return doms
+	return d
 }
 
-func declDoms(
+func declChunks(
 	stream *token.Stream,
 	decl ast.DeclAny,
 	format bool,
 	indentLevel uint32,
 	indented bool,
 	splitWithParent bool,
-) *dom.Doms {
-	doms := dom.NewDoms()
+) []*dom.Chunk {
+	var chunks []*dom.Chunk
 	tokens := getTokensForSpan(stream, decl.Span())
 	// TODO: what does it mean to have no tokens?
 	if tokens == nil {
 		return nil
 	}
-	doms.Insert(prefix(tokens[0], format))
+	chunks = append(chunks, prefix(tokens[0], format)...)
 	switch decl.Kind() {
 	case ast.DeclKindEmpty:
 		// TODO: figure out what to do with an empty declaration/what exactly causes empty decls
 	case ast.DeclKindSyntax:
 		syntax := decl.AsSyntax()
-		doms.Insert(dom.NewDom([]*dom.Chunk{single(
+		chunks = append(chunks, single(
 			tokens,
 			format,
 			func(t token.Token) bool {
@@ -94,10 +93,11 @@ func declDoms(
 			splitWithParent,
 			indentLevel,
 			indented,
-		)}))
+			false,
+		))
 	case ast.DeclKindPackage:
 		pkg := decl.AsPackage()
-		doms.Insert(dom.NewDom([]*dom.Chunk{single(
+		chunks = append(chunks, single(
 			tokens,
 			format,
 			func(t token.Token) bool {
@@ -118,10 +118,11 @@ func declDoms(
 			splitWithParent,
 			indentLevel,
 			indented,
-		)}))
+			false,
+		))
 	case ast.DeclKindImport:
 		imprt := decl.AsImport()
-		doms.Insert(dom.NewDom([]*dom.Chunk{single(
+		chunks = append(chunks, single(
 			tokens,
 			format,
 			func(t token.Token) bool {
@@ -146,20 +147,21 @@ func declDoms(
 			splitWithParent,
 			indentLevel,
 			indented,
-		)}))
+			false,
+		))
 	case ast.DeclKindDef:
-		doms.Insert(defDom(stream, tokens, decl.AsDef(), format, indentLevel, indented, splitWithParent))
+		chunks = append(chunks, defChunks(stream, tokens, decl.AsDef(), format, indentLevel, indented, splitWithParent)...)
 	case ast.DeclKindBody:
-		return bodyDoms(stream, decl.AsBody(), format, indentLevel, indented)
+		chunks = append(chunks, bodyChunks(stream, decl.AsBody(), format, indentLevel, indented)...)
 	case ast.DeclKindRange:
 		// TODO: implement
 	default:
 		panic("unknown DeclKind in File")
 	}
-	return doms
+	return chunks
 }
 
-func defDom(
+func defChunks(
 	stream *token.Stream,
 	tokens []token.Token,
 	decl ast.DeclDef,
@@ -167,7 +169,7 @@ func defDom(
 	indentLevel uint32,
 	indented bool,
 	splitWithParent bool,
-) *dom.Dom {
+) []*dom.Chunk {
 	switch decl.Classify() {
 	case ast.DefKindInvalid:
 		// TODO: figure out what to do with invalid definitions
@@ -177,8 +179,10 @@ func defDom(
 			tokens,
 			format,
 			message.Body.Span(),
-			func(indentedBody bool) *dom.Doms {
-				return bodyDoms(stream, message.Body, format, indentLevel+1, indentedBody)
+			func(indentedBody bool) *dom.Dom {
+				d := dom.NewDom()
+				d.Insert(bodyChunks(stream, message.Body, format, indentLevel+1, indentedBody)...)
+				return d
 			},
 			message.Body.Braces(),
 			func(t token.Token) bool {
@@ -194,8 +198,10 @@ func defDom(
 			tokens,
 			format,
 			enum.Body.Span(),
-			func(indentedBody bool) *dom.Doms {
-				return bodyDoms(stream, enum.Body, format, indentLevel+1, indentedBody)
+			func(indentedBody bool) *dom.Dom {
+				d := dom.NewDom()
+				d.Insert(bodyChunks(stream, enum.Body, format, indentLevel+1, indentedBody)...)
+				return d
 			},
 			enum.Body.Braces(),
 			func(t token.Token) bool {
@@ -211,8 +217,10 @@ func defDom(
 			tokens,
 			format,
 			service.Body.Span(),
-			func(indentedBody bool) *dom.Doms {
-				return bodyDoms(stream, service.Body, format, indentLevel+1, indentedBody)
+			func(indentedBody bool) *dom.Dom {
+				d := dom.NewDom()
+				d.Insert(bodyChunks(stream, service.Body, format, indentLevel+1, indentedBody)...)
+				return d
 			},
 			service.Body.Braces(),
 			func(t token.Token) bool {
@@ -226,7 +234,7 @@ func defDom(
 		// TODO: implement
 	case ast.DefKindField:
 		field := decl.AsField()
-		return fieldDom(
+		return fieldChunks(
 			stream,
 			tokens,
 			field.Span(),
@@ -244,8 +252,10 @@ func defDom(
 			tokens,
 			format,
 			oneof.Body.Span(),
-			func(indentedBody bool) *dom.Doms {
-				return bodyDoms(stream, oneof.Body, format, indentLevel+1, indentedBody)
+			func(indentedBody bool) *dom.Dom {
+				d := dom.NewDom()
+				d.Insert(bodyChunks(stream, oneof.Body, format, indentLevel+1, indentedBody)...)
+				return d
 			},
 			oneof.Body.Braces(),
 			func(t token.Token) bool {
@@ -259,7 +269,7 @@ func defDom(
 		// TODO: implement
 	case ast.DefKindEnumValue:
 		enumValue := decl.AsEnumValue()
-		return fieldDom(
+		return fieldChunks(
 			stream,
 			tokens,
 			enumValue.Span(),
@@ -277,8 +287,10 @@ func defDom(
 			tokens,
 			format,
 			method.Body.Span(),
-			func(indentedBody bool) *dom.Doms {
-				return bodyDoms(stream, method.Body, format, indentLevel+1, indentedBody)
+			func(indentedBody bool) *dom.Dom {
+				d := dom.NewDom()
+				d.Insert(bodyChunks(stream, method.Body, format, indentLevel+1, indentedBody)...)
+				return d
 			},
 			method.Body.Braces(),
 			func(t token.Token) bool {
@@ -300,15 +312,14 @@ func defDom(
 			splitWithParent,
 		)
 	case ast.DefKindOption:
-		// TODO: handle semicolon
-		return optionDom(tokens, decl.AsOption().Option, format, indentLevel, indented, splitWithParent)
+		return []*dom.Chunk{optionChunk(tokens, decl.AsOption().Option, format, indentLevel, indented, splitWithParent)}
 	default:
 		panic("unknown DefKind in File")
 	}
 	return nil
 }
 
-func fieldDom(
+func fieldChunks(
 	stream *token.Stream,
 	tokens []token.Token,
 	fieldSpan report.Span,
@@ -319,9 +330,9 @@ func fieldDom(
 	indentLevel uint32,
 	indented bool,
 	splitWithParent bool,
-) *dom.Dom {
+) []*dom.Chunk {
 	if options.IsZero() {
-		return dom.NewDom([]*dom.Chunk{single(
+		return []*dom.Chunk{single(
 			tokens,
 			format,
 			func(t token.Token) bool {
@@ -347,14 +358,17 @@ func fieldDom(
 			splitWithParent,
 			indentLevel,
 			indented,
-		)})
+			true,
+		)}
 	}
 	return compound(
 		tokens,
 		format,
 		options.Span(),
-		func(indentedBody bool) *dom.Doms {
-			return optionsDoms(stream, options, format, indentLevel+1, indentedBody)
+		func(indentedBody bool) *dom.Dom {
+			d := dom.NewDom()
+			d.Insert(optionsChunks(stream, options, format, indentLevel+1, indentedBody)...)
+			return d
 		},
 		options.Brackets(),
 		func(t token.Token) bool {
@@ -366,15 +380,15 @@ func fieldDom(
 	)
 }
 
-func optionDom(
+func optionChunk(
 	tokens []token.Token,
 	option ast.Option,
 	format bool,
 	indentLevel uint32,
 	indented bool,
 	splitWithParent bool,
-) *dom.Dom {
-	return dom.NewDom([]*dom.Chunk{single(
+) *dom.Chunk {
+	return single(
 		tokens,
 		format,
 		func(t token.Token) bool {
@@ -400,22 +414,22 @@ func optionDom(
 		splitWithParent,
 		indentLevel,
 		indented,
-	)})
+		true,
+	)
 }
 
-func bodyDoms(
+func bodyChunks(
 	stream *token.Stream,
 	body ast.DeclBody,
 	format bool,
 	indentLevel uint32,
 	indented bool,
-) *dom.Doms {
-	doms := dom.NewDoms()
+) []*dom.Chunk {
+	var chunks []*dom.Chunk
 	seq.Values(body.Decls())(func(d ast.DeclAny) bool {
-		declDoms := declDoms(stream, d, format, indentLevel, indented, true)
-		doms.Insert(*declDoms...)
-		if doms.Last() != nil {
-			switch doms.Last().SplitKind() {
+		chunks = append(chunks, declChunks(stream, d, format, indentLevel, indented, true)...)
+		if len(chunks) > 0 {
+			switch chunks[len(chunks)-1].SplitKind() {
 			case dom.SplitKindSoft, dom.SplitKindNever:
 				indented = false
 			case dom.SplitKindHard, dom.SplitKindDouble:
@@ -424,26 +438,26 @@ func bodyDoms(
 		}
 		return true
 	})
-	return doms
+	return chunks
 }
 
-func optionsDoms(
+func optionsChunks(
 	stream *token.Stream,
 	options ast.CompactOptions,
 	format bool,
 	indentLevel uint32,
 	indented bool,
-) *dom.Doms {
-	doms := dom.NewDoms()
+) []*dom.Chunk {
+	var chunks []*dom.Chunk
 	seq.Values(options.Entries())(func(o ast.Option) bool {
 		tokens := getTokensForSpan(stream, o.Span())
 		if len(tokens) == 0 {
 			return true
 		}
-		doms.Insert(prefix(tokens[0], format))
-		doms.Insert(optionDom(tokens, o, format, indentLevel, indented, true))
-		if doms.Last() != nil {
-			switch doms.Last().SplitKind() {
+		chunks = append(chunks, prefix(tokens[0], format)...)
+		chunks = append(chunks, optionChunk(tokens, o, format, indentLevel, indented, true))
+		if len(chunks) > 0 {
+			switch chunks[len(chunks)-1].SplitKind() {
 			case dom.SplitKindSoft, dom.SplitKindNever:
 				indented = false
 			case dom.SplitKindHard, dom.SplitKindDouble:
@@ -452,10 +466,10 @@ func optionsDoms(
 		}
 		return true
 	})
-	return doms
+	return chunks
 }
 
-func prefix(start token.Token, format bool) *dom.Dom {
+func prefix(start token.Token, format bool) []*dom.Chunk {
 	cursor := token.NewCursorAt(start)
 	t := cursor.PrevSkippable()
 	for t.Kind().IsSkippable() {
@@ -472,7 +486,9 @@ func prefix(start token.Token, format bool) *dom.Dom {
 			// Only create a chunk for spaces if formatting is not applied.
 			// Otherwise extraneous whitepsace is dropped and whitespace.
 			if !format {
-				chunks = append(chunks, dom.NewChunk(t.Text()))
+				chunk := dom.NewChunk()
+				chunk.SetText(t.Text())
+				chunks = append(chunks, chunk)
 			}
 		case token.Comment:
 			chunks = append(chunks, single(
@@ -495,24 +511,25 @@ func prefix(start token.Token, format bool) *dom.Dom {
 				false,
 				0,
 				false,
+				false,
 			))
 		}
 		t = cursor.NextSkippable()
 	}
-	return dom.NewDom(chunks)
+	return chunks
 }
 
 func compound(
 	tokens []token.Token,
 	format bool,
 	bodySpan report.Span,
-	bodyDomsSetter bodyDomsSetter,
+	bodyDomSetter bodyDomSetter,
 	braces token.Token,
 	topLineSpacer spaceSetter,
 	indentLevel uint32,
 	indented bool,
 	splitWithParent bool,
-) *dom.Dom {
+) []*dom.Chunk {
 	topLineTokens, bodyTokens := splitTokens(tokens, bodySpan)
 	topLineChunk := single(
 		topLineTokens,
@@ -536,9 +553,10 @@ func compound(
 			return dom.SplitKindSoft, false
 		},
 		dom.SplitKindHard,
-		false, // HMMM
+		false,
 		indentLevel,
 		indented,
+		true,
 	)
 	switch topLineChunk.SplitKind() {
 	case dom.SplitKindSoft, dom.SplitKindNever:
@@ -546,7 +564,7 @@ func compound(
 	case dom.SplitKindHard, dom.SplitKindDouble:
 		indented = true
 	}
-	bodyDoms := bodyDomsSetter(indented)
+	bodyDom := bodyDomSetter(indented)
 	var closingBrace *dom.Chunk
 	var extras []token.Token
 	if !braces.IsZero() {
@@ -572,7 +590,9 @@ func compound(
 				switch t.Kind() {
 				case token.Space:
 					if !format {
-						prefixChunks = append(prefixChunks, dom.NewChunk(t.Text()))
+						prefixChunk := dom.NewChunk()
+						prefixChunk.SetText(t.Text())
+						prefixChunks = append(prefixChunks, prefixChunk)
 					}
 				case token.Comment:
 					prefixChunks = append(prefixChunks, single(
@@ -595,20 +615,17 @@ func compound(
 						false,
 						0,
 						false,
+						false,
 					))
 				}
 			}
-			if len(prefixChunks) > 0 {
-				bodyDoms.Insert(dom.NewDom(prefixChunks))
-			}
+			bodyDom.Insert(prefixChunks...)
 		}
-		if bodyDoms.Last() != nil {
-			switch bodyDoms.Last().SplitKind() {
-			case dom.SplitKindSoft, dom.SplitKindNever:
-				indented = false
-			case dom.SplitKindHard, dom.SplitKindDouble:
-				indented = true
-			}
+		switch bodyDom.LastSplitKind() {
+		case dom.SplitKindSoft, dom.SplitKindNever:
+			indented = false
+		case dom.SplitKindHard, dom.SplitKindDouble:
+			indented = true
 		}
 		closingBrace = single(
 			[]token.Token{end},
@@ -631,22 +648,20 @@ func compound(
 			},
 			// TODO: not exactly, but eh.
 			dom.SplitKindDouble,
-			splitWithParent, // hmm.
+			splitWithParent,
 			indentLevel,
 			indented,
+			false,
 		)
-		if splitWithParent {
-			closingBrace.SetIndentWhenSplitWithParent(false)
-		}
 	}
-	topLineChunk.SetChildren(bodyDoms)
+	topLineChunk.SetChild(bodyDom)
 	chunks := []*dom.Chunk{topLineChunk}
 	if closingBrace != nil {
 		chunks = append(chunks, closingBrace)
 	}
 	// TODO: handle all remaining tokens.
 	if len(extras) > 0 {
-		chunks = append(chunks, prefix(extras[0], format).Chunks()...)
+		chunks = append(chunks, prefix(extras[0], format)...)
 		chunks = append(chunks, single(
 			extras,
 			format,
@@ -670,9 +685,10 @@ func compound(
 			splitWithParent,
 			indentLevel,
 			indented,
+			false,
 		))
 	}
-	return dom.NewDom(chunks)
+	return chunks
 }
 
 func single(
@@ -684,6 +700,7 @@ func single(
 	splitWithParent bool,
 	indentLevel uint32,
 	indented bool,
+	indentOnParentSplit bool,
 ) *dom.Chunk {
 	var text string
 	if format {
@@ -702,7 +719,8 @@ func single(
 			text += t.Text()
 		}
 	}
-	chunk := dom.NewChunk(text)
+	chunk := dom.NewChunk()
+	chunk.SetText(text)
 	if format {
 		chunk.SetIndent(indentLevel)
 		chunk.SetIndented(indented)
@@ -711,9 +729,7 @@ func single(
 		chunk.SetSpaceWhenUnsplit(spaceWhenUnsplit)
 		chunk.SetSplitKindIfSplit(splitKindIfSplit)
 		chunk.SetSplitWithParent(splitWithParent)
-		if splitWithParent {
-			chunk.SetIndentWhenSplitWithParent(splitWithParent)
-		}
+		chunk.SetIndentOnParentSplit(indentOnParentSplit)
 	}
 	return chunk
 }
