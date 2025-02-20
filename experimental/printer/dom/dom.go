@@ -55,6 +55,7 @@ func (d *Dom) LastSplitKind() SplitKind {
 // and indent size.
 func (d *Dom) Output(format bool, lineLimit, indentSize int) string {
 	var buf bytes.Buffer
+	// We need to format the dom -- since there could still be a contiguous line across chunks.
 	for _, c := range d.chunks {
 		if format {
 			c.format(lineLimit, indentSize)

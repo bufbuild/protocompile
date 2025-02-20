@@ -15,6 +15,7 @@
 package dom
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/bufbuild/protocompile/internal/golden"
@@ -24,8 +25,9 @@ func TestDom(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
-		Root:    "testdata",
-		Refresh: "PROTOCOMPILE_REFRESH",
+		Root:      "testdata",
+		Refresh:   "PROTOCOMPILE_REFRESH",
+		Extension: "in",
 		Outputs: []golden.Output{
 			{Extension: "formatted.out"},
 			{Extension: "unformatted.out"},
@@ -35,8 +37,40 @@ func TestDom(t *testing.T) {
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		d := NewDom()
 		chunk := NewChunk()
-		chunk.SetText(text)
-		d.Insert(chunk)
+		var chunkText string
+		var count int
+		strings.Lines(text)(func(line string) bool {
+			// Make arbitary 10 word chunks.
+			for _, word := range strings.Split(line, space) {
+				if cut, ok := strings.CutSuffix(word, "\n"); ok {
+					// Last word in the line, we trim the whitespace, set the chunk, and reset.
+					chunkText += cut
+					chunk.SetText(chunkText)
+					chunk.SetSplitKind(SplitKindHard)
+					d.Insert(chunk)
+					count = 0
+					chunkText = ""
+					chunk = NewChunk()
+					continue
+				}
+				chunkText += word
+				count++
+				if count == 20 {
+					chunk.SetText(chunkText)
+					chunk.SetSplitKind(SplitKindSoft)
+					chunk.SetSpaceWhenUnsplit(true)
+					chunk.SetSplitKindIfSplit(SplitKindHard)
+					d.Insert(chunk)
+					count = 0
+					chunkText = ""
+					chunk = NewChunk()
+					continue
+				}
+				chunkText += space
+			}
+			return true
+		})
+
 		outputs[0] = d.Output(true, 80, 2)
 		outputs[1] = d.Output(false, 0, 0)
 	})
