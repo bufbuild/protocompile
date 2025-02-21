@@ -58,20 +58,20 @@ func (e ExprDict) Elements() Commas[ExprField] {
 	}
 	return slice{
 		ctx: e.Context(),
-		SliceInserter: seq.SliceInserter[ExprField, withComma[arena.Pointer[rawExprField]]]{
-			Slice: &e.raw.fields,
-			Wrap: func(c withComma[arena.Pointer[rawExprField]]) ExprField {
+		SliceInserter: seq.NewSliceInserter(
+			&e.raw.fields,
+			func(_ int, c withComma[arena.Pointer[rawExprField]]) ExprField {
 				return ExprField{exprImpl[rawExprField]{
 					e.withContext,
 					e.Context().Nodes().exprs.fields.Deref(c.Value),
 				}}
 			},
-			Unwrap: func(e ExprField) withComma[arena.Pointer[rawExprField]] {
+			func(_ int, e ExprField) withComma[arena.Pointer[rawExprField]] {
 				e.Context().Nodes().panicIfNotOurs(e)
 				ptr := e.Context().Nodes().exprs.fields.Compress(e.raw)
-				return withComma[arena.Pointer[rawExprField]]{ptr, 0}
+				return withComma[arena.Pointer[rawExprField]]{Value: ptr}
 			},
-		},
+		),
 	}
 }
 
