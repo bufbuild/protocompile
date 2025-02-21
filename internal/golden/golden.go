@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package golden provides a framework for writing file-based golden tests.
+// Package golden provides a framework for writing file-based golden tests.
 //
 // The primary entry-point is [Corpus]. Define a new corpus in an ordinary Go
 // test body and call [Corpus.Run] to execute it.

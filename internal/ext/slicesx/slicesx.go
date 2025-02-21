@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package slicesx contains extensions to Go's package slices.
+// Package slicesx contains extensions to Go's package slices.
 package slicesx
 
 import (

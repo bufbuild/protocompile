@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package predeclared provides all of the identifiers with a special meaning
+// Package predeclared provides all of the identifiers with a special meaning
 // in Protobuf.
 //
 // These are not keywords, but are rather special names injected into scope in

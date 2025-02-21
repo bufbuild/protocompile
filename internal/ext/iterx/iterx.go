@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iterx contains extensions to Go's package iter.
+// Package iterx contains extensions to Go's package iter.
 package iterx
 
 import "github.com/bufbuild/protocompile/internal/iter"
