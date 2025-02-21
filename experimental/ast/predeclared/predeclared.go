@@ -184,4 +184,29 @@ var _table_Name_Lookup = map[string]Name{
 	"inf":      Inf,
 	"nan":      NAN,
 }
+
+var _table_Name_All = [...]Name{
+	Unknown,
+	Int32,
+	Int64,
+	UInt32,
+	UInt64,
+	SInt32,
+	SInt64,
+	Fixed32,
+	Fixed64,
+	SFixed32,
+	SFixed64,
+	Float,
+	Double,
+	Bool,
+	String,
+	Bytes,
+	Map,
+	Max,
+	True,
+	False,
+	Inf,
+	NAN,
+}
 var _ iter.Seq[int] // Mark iter as used.

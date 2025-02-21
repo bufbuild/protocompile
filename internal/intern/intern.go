@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"unsafe"
 )
 
 // ID is an interned string in a particular [Table].
@@ -113,6 +114,9 @@ func (t *Table) Query(s string) (ID, bool) {
 func (t *Table) internSlow(s string) ID {
 	// Intern tables are expected to be long-lived. Avoid holding onto a larger
 	// buffer that s is an internal pointer to by cloning it.
+	//
+	// This is also necessary for the correctness of InternBytes, which aliases
+	// a []byte as a string temporarily for querying the intern table.
 	s = strings.Clone(s)
 
 	t.mu.Lock()
@@ -145,6 +149,20 @@ func (t *Table) internSlow(s string) ID {
 	t.index[s] = id
 
 	return id
+}
+
+// InternBytes interns the given byte string into this table.
+//
+// This function may be called by multiple goroutines concurrently, but bytes
+// must not be modified until this function returns.
+func (t *Table) InternBytes(bytes []byte) ID {
+	// Intern() will not modify its argument, since it believes that it is a
+	// string. It will also clone the string if it needs to write it to the
+	// intern table, so it does not hold onto its argument after it returns.
+	//
+	// Thus, we can simply turn bytes into a string temporarily to pass to
+	// Intern.
+	return t.Intern(unsafe.String(unsafe.SliceData(bytes), len(bytes)))
 }
 
 // Value converts an [ID] back into its corresponding string.
