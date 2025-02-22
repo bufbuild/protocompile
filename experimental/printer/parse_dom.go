@@ -26,6 +26,7 @@ import (
 
 // TODO list
 //
+// - support new structure with SetOnlyPrintUnformatted
 // - finish all decl types
 // - debug various decls/defs
 // - a bunch of performance optimizations

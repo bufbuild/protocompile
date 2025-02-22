@@ -1,0 +1,13 @@
+while (x == y) { something(); something(); }
+while (x == y)
+{
+something();
+something();
+}
+while(x ==                y) { something();      something(); }
+while (reallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongname == y) { something(); something(); }
+while (a == b) { while (c == d) { while (e == f) { something(); } something(); something(); } }
+while (     x ==y) { something();                   something();            }
+while (x =              =y)
+{ something(          );
+}

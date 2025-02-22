@@ -39,6 +39,9 @@ type Chunk struct {
 	splitKindIfSplit    SplitKind // Restricted to SplitKindHard or SplitKindDouble
 	splitWithParent     bool
 	indentOnParentSplit bool
+	// TODO: I don't know if I love this, tbh. I think that this means that we'll need to
+	// on every chunk, and I would prefer to not do that, but I am not sure what the
+	onlyOutputUnformatted bool
 }
 
 func NewChunk() *Chunk {
@@ -98,6 +101,11 @@ func (c *Chunk) SetText(text string) {
 	c.hasText = true
 }
 
+// SetChild sets the Chunk's child.
+func (c *Chunk) SetChild(child *Dom) {
+	c.child = child
+}
+
 // SetIndent sets the indent of the Chunk.
 func (c *Chunk) SetIndent(indent uint32) {
 	c.indent = indent
@@ -142,28 +150,35 @@ func (c *Chunk) SetIndentOnParentSplit(indentOnParentSplit bool) {
 	c.indentOnParentSplit = indentOnParentSplit
 }
 
-// SetChild sets the Chunk's child.
-func (c *Chunk) SetChild(child *Dom) {
-	c.child = child
+// SetOnlyOutputUnformatted sets whether the Chunk should only be printed when unformatted.
+// This is useful for extraneous whitespaces, for example, which we want to capture in our
+// structure but we want the splits and indentation to control the whitespace in a formatted
+// output.
+func (c *Chunk) SetOnlyOutputUnformatted(onlyOutputUnformatted bool) {
+	c.onlyOutputUnformatted = onlyOutputUnformatted
 }
 
-func (c *Chunk) output(indent int) string {
+func (c *Chunk) output(format bool, indent int) string {
 	var buf bytes.Buffer
-	buf.WriteString(strings.Repeat(strings.Repeat(space, indent), int(c.Indent())))
+	if format {
+		buf.WriteString(strings.Repeat(strings.Repeat(space, indent), int(c.Indent())))
+	}
 	buf.WriteString(c.Text())
-	switch c.SplitKind() {
-	case SplitKindHard:
-		buf.WriteString("\n")
-	case SplitKindDouble:
-		buf.WriteString("\n\n")
-	case SplitKindSoft, SplitKindNever:
-		if c.spaceWhenUnsplit {
-			buf.WriteString(space)
+	if format {
+		switch c.SplitKind() {
+		case SplitKindHard:
+			buf.WriteString("\n")
+		case SplitKindDouble:
+			buf.WriteString("\n\n")
+		case SplitKindSoft, SplitKindNever:
+			if c.spaceWhenUnsplit {
+				buf.WriteString(space)
+			}
 		}
 	}
 	if c.child != nil {
 		for _, chunk := range c.child.chunks {
-			buf.WriteString(chunk.output(indent))
+			buf.WriteString(chunk.output(format, indent))
 		}
 	}
 	return buf.String()
