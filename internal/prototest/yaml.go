@@ -113,9 +113,8 @@ func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any
 		enum := f.Enum()
 		if value := enum.Values().ByNumber(v); value != nil {
 			return value.Name()
-		} else {
-			return int32(v)
 		}
+		return int32(v)
 
 	case []byte:
 		return string(v)
