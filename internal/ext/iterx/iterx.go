@@ -15,49 +15,43 @@
 // Package iterx contains extensions to Go's package iter.
 package iterx
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import (
+	"fmt"
 
-// Limit limits a sequence to only yield at most limit times.
-func Limit[T any](limit uint, seq iter.Seq[T]) iter.Seq[T] {
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+// Take returns an iterator over the first n elements of a sequence.
+func Take[T any](seq iter.Seq[T], n int) iter.Seq[T] {
 	return func(yield func(T) bool) {
-		seq(func(value T) bool {
-			if limit == 0 || !yield(value) {
-				return false
+		seq(func(v T) bool {
+			if n > 0 && yield(v) {
+				n--
+				return true
 			}
-			limit--
-			return true
+			return false
 		})
 	}
 }
 
-// First retrieves the first element of an iterator.
-func First[T any](seq iter.Seq[T]) (v T, ok bool) {
-	seq(func(x T) bool {
-		v = x
-		ok = true
-		return false
+// Enumerate adapts an iterator to yield an incrementing index each iteration
+// step.
+func Enumerate[T any](seq iter.Seq[T]) iter.Seq2[int, T] {
+	var i int
+	return Map1To2(seq, func(v T) (int, T) {
+		i++
+		return i - 1, v
 	})
-	return v, ok
 }
 
-// All returns whether every element of an iterator satisfies the given
-// predicate. Returns true if seq yields no values.
-func All[T any](seq iter.Seq[T], p func(T) bool) bool {
-	all := true
-	seq(func(v T) bool {
-		all = p(v)
-		return all
+// Strings maps an iterator with [fmt.Sprint], yielding an iterator of strings.
+func Strings[T any](seq iter.Seq[T]) iter.Seq[string] {
+	return Map(seq, func(v T) string {
+		if s, ok := any(v).(string); ok {
+			return s // Avoid dumb copies.
+		}
+		return fmt.Sprint(v)
 	})
-	return all
-}
-
-// Map returns a new iterator applying f to each element of seq.
-func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
-	return func(yield func(U) bool) {
-		seq(func(value T) bool {
-			return yield(f(value))
-		})
-	}
 }
 
 // Chain returns an iterator that calls a sequence of iterators in sequence.
