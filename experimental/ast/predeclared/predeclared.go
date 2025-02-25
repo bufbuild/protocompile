@@ -109,7 +109,7 @@ func All() iter.Seq[Name] {
 			return
 		}
 		for i := Int32; i <= Max; i++ {
-			if !yield(Name(i)) {
+			if !yield(i) {
 				return
 			}
 		}
