@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dom
+package dom_test
 
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
 	"testing"
-	"unicode"
 
+	"github.com/bufbuild/protocompile/experimental/printer/dom"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/stretchr/testify/require"
 )
@@ -39,203 +41,243 @@ func TestDom(t *testing.T) {
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
-		d := parseText(bytes.NewBufferString(text))
-		outputs[0] = d.Output(false, 0, 0)
+		d := parseText(t, bytes.NewBufferString(text), 0, dom.SplitKindUnknown, false)
+		require.NotNil(t, d)
+		outputs[0] = d.Output()
 		require.Equal(t, text, outputs[0])
-		outputs[1] = d.Output(true, 60, 2)
+		d.SetFormatting(60, 2)
+		d.Format()
+		outputs[1] = d.Output()
 	})
 }
 
 // Read the input text and parse with the following rules:
-//   - If a newline is found, then we respect the newline by creating a chunk with a hard
-//     split
-//   - If a punctuation is found:
-//   - If it is an opening paren, (, then we create a chunk with a soft split that is
-//     indented when the parent is split, but not split when the parent is split. All
-//     contents between ( and ) are parsed as children of that chunk. The children are will
-//     have an increased indent level, and will be indented and split when the parent is
-//     split.
-//   - If it is a closing paren, ), then we create a chunk. If it is followed by a ";", then
-//     we combine the two into a single chunk. The chunk will be indented but not split when
-//     the parent is split. It will have a soft split unless followed by a new-line.
-//   - If it is an opening brace, {, then we create a chunk that is indented when the parent
-//     is split, but not split when the parent is split. The split will be set based on the
-//     following character -- if it is followed by a new-line, it will be a hard split,
-//     otherwise it will be a soft split. All contents between { and } are parsed as children
-//     of that chunk. The children will have an increased indent level, be indented if the
-//     parent has a hard split set, and will be indented and split when the parent is split.
-//   - If it is a closing brace, }, then we create a chunk that is split when the parent is
-//     split, but not indented when the parent is split, and will have a hard split unless
-//     followed by a double new line, in which case, it will have a double split.
-//   - If a full stop, ".", is found, then we create a chunk. If it is followed by a new
-//     line, then it will have a hard split, otherwise it will have a soft split.
-//   - Single whitespace following a word or punctuation will be preserved. The rest will
-//     be treated as extraneous whitespace and created into their own chunk that will be
-//     outputed only when unformatted.
-//   - All other words and symbols will be added to the current chunk, and will be made into
-//     arbitrarily large 5 word chunks if nothing else is found. Spaces will be preserved
-//     for all text that follow a space.
-func parseText(text *bytes.Buffer) *Dom {
-	d := NewDom()
-	chunk := NewChunk()
+//   - Break off a chunk for:
+//     -- Arbitraritly for every 5 words (words are considered space delimited)
+//     -- At a '.'
+//     -- At a '\n'
+//     -- If a '(' is found, then break off the chunk, and all contents between '(' and ')'
+//     are inserted as a child dom. The child dom will have a higher indent level. The ')'
+//     will be a separate chunk.
+//     -- If a '{' is found, then break off the chunk, and all contents between '{' and '}'
+//     are inserted as a child dom. The child dom will have a higher indent level. The '}'
+//     will be a separate chunk.
+//   - When breaking off a chunk, we check the next character. If it is a '\n', then we promote
+//     the split (soft split -> hard split, hard split -> double split).
+func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind dom.SplitKind, closeBrace bool) *dom.Dom {
+	d := dom.NewDom()
+	chunk := dom.NewChunk()
 	var chunkText string
 	var count int
-	var last rune
 	r, _, err := text.ReadRune()
 	for !errors.Is(err, io.EOF) {
 		switch r {
-		case '(':
-			chunkText += string(r)
-			chunk.SetText(chunkText)
-			chunk.SetSplitKind(SplitKindSoft)
-			chunk.SetSpaceWhenUnsplit(true)
-			chunk.SetSplitKindIfSplit(SplitKindHard)
-			chunk.SetChild(parseText(parens(text)))
-			d.Insert(chunk)
-			// Reset
-			count = 0
-			chunk = NewChunk()
-			chunkText = ""
-		case ')':
-			chunkText += string(r)
-			splitKind := SplitKindSoft
-			if r, _, err = text.ReadRune(); err != nil {
-				if !errors.Is(err, io.EOF) {
-					panic("unexpected error reading rune after )")
-				}
-				// If this is a EOF, this will be handled naturally by the Unread.
-			} else {
-				if r == ';' {
-					chunkText += string(r)
-				} else {
-					if r == '\n' {
-						splitKind = SplitKindHard
-					}
-					text.UnreadRune()
-				}
-			}
-			chunk.SetText(chunkText)
-			chunk.SetSplitKind(splitKind)
-			chunk.SetSpaceWhenUnsplit(true)
-			chunk.SetSplitKindIfSplit(SplitKindHard)
-			chunk.SetSplitWithParent(false)
-			chunk.SetIndentOnParentSplit(true)
-			d.Insert(chunk)
-			// Reset
-			count = 0
-			chunk = NewChunk()
-			chunkText = ""
 		case ' ':
-			if unicode.IsSpace(last) {
-				// Break off the last chunk, if there is any content, read ahead until the next
-				// non-space character, collect them all up and create a single chunk.
-				if chunkText != "" {
-					chunk.SetText(chunkText)
-					// Since we don't know what it is, we'll simply set no splits.
-					chunk.SetSplitKind(SplitKindNever)
-					d.Insert(chunk)
-					// Reset
-					count = 0
-					chunk = NewChunk()
-					chunkText = ""
-				}
-				chunkText += string(r)
-				chunkText += spaces(text)
+			if chunkText != "" {
+				count++
+			}
+			chunkText += string(r)
+			// Read ahead to see if there are consecutive spaces. If yes, then return all of those
+			// as a space chunk, insert, and reset.
+			spacesChunk, err := spacesChunk(text)
+			if err != nil && !errors.Is(err, io.EOF) {
+				require.NoError(t, err)
+			}
+			if count == 5 || spacesChunk != nil || errors.Is(err, io.EOF) {
 				chunk.SetText(chunkText)
-				chunk.SetOnlyOutputUnformatted(true)
+				chunk.SetIndent(indent)
+				splitKind, _, err := setSplitKind(text, dom.SplitKindSoft)
+				if err != nil && !errors.Is(err, io.EOF) {
+					require.NoError(t, err)
+				}
+				chunk.SetSplitKind(splitKind)
+				chunk.SetSpaceIfUnsplit(true)
+				chunk.SetSplitKindIfSplit(dom.SplitKindHard)
+				chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 				d.Insert(chunk)
+				d.Insert(spacesChunk)
 				// Reset
 				count = 0
-				chunk = NewChunk()
+				chunk = dom.NewChunk()
+				lastSplitKind = splitKind
 				chunkText = ""
-			} else {
-				chunkText += string(r)
-				count++
-				if count == 5 {
-					chunk.SetText(chunkText)
-					chunk.SetSplitKind(SplitKindSoft)
-					chunk.SetSplitKindIfSplit(SplitKindHard)
-					d.Insert(chunk)
-					// Reset
-					count = 0
-					chunk = NewChunk()
-					chunkText = ""
-				}
 			}
 		case '.':
 			chunkText += string(r)
-			splitKind := SplitKindSoft
-			if r, _, _ := text.ReadRune(); r == '\n' {
-				splitKind = SplitKindHard
-			}
-			if err := text.UnreadRune(); err != nil {
-				panic("failed to unread")
-			}
 			chunk.SetText(chunkText)
+			chunk.SetIndent(indent)
+			splitKind, spaceIfUnsplit, err := setSplitKind(text, dom.SplitKindSoft)
+			if err != nil && !errors.Is(err, io.EOF) {
+				require.NoError(t, err)
+			}
 			chunk.SetSplitKind(splitKind)
-			chunk.SetSplitKindIfSplit(SplitKindHard)
+			chunk.SetSpaceIfUnsplit(spaceIfUnsplit)
+			chunk.SetSplitKindIfSplit(dom.SplitKindHard)
+			chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 			d.Insert(chunk)
 			// Reset
 			count = 0
-			chunk = NewChunk()
+			chunk = dom.NewChunk()
+			lastSplitKind = splitKind
 			chunkText = ""
 		case '\n':
-			// Break off there is any text
 			if chunkText != "" {
 				chunk.SetText(chunkText)
-				chunk.SetSplitKind(SplitKindHard)
+				chunk.SetIndent(indent)
+				splitKind, _, err := setSplitKind(text, dom.SplitKindHard)
+				if err != nil && !errors.Is(err, io.EOF) {
+					require.NoError(t, err)
+				}
+				chunk.SetSplitKind(splitKind)
+				chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 				d.Insert(chunk)
-				chunk = NewChunk()
+			} else {
+				// A chunk was just cut before this, in which case, adjust the last chunk's splitKind
+				// accordingly.
+				// We aren't using dom.SplitKindNever right now, so we can get away with this.
+				if d.Last() != nil {
+					splitKind, _, err := setSplitKind(text, d.Last().SplitKind())
+					if err != nil && !errors.Is(err, io.EOF) {
+						require.NoError(t, err)
+					}
+					d.Last().SetSplitKind(splitKind)
+				}
 			}
 			// Create newline chunk
+			chunk = dom.NewChunk()
 			chunk.SetText(string(r))
-			chunk.SetOnlyOutputUnformatted(true)
 			d.Insert(chunk)
 			// Reset
 			count = 0
-			chunk = NewChunk()
+			chunk = dom.NewChunk()
+			chunkText = ""
+		case '(', '{':
+			chunkText += string(r)
+			chunk.SetText(chunkText)
+			chunk.SetIndent(indent)
+			splitKind, spaceIfUnsplit, err := setSplitKind(text, dom.SplitKindSoft)
+			if err != nil && !errors.Is(err, io.EOF) {
+				require.NoError(t, err)
+			}
+			chunk.SetSplitKind(splitKind)
+			if r == '(' {
+				// Never have a space after a (
+				spaceIfUnsplit = false
+			}
+			chunk.SetSpaceIfUnsplit(spaceIfUnsplit)
+			chunk.SetSplitKindIfSplit(dom.SplitKindHard)
+			chunk.SetChild(parseText(t, text, indent+1, splitKind, true))
+			chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
+			d.Insert(chunk)
+			closeBrace = false
+			// Reset
+			count = 0
+			chunk = dom.NewChunk()
+			lastSplitKind = splitKind
+			chunkText = ""
+		case ')', '}':
+			if closeBrace {
+				if chunkText != "" {
+					splitKind := dom.SplitKindSoft
+					if strings.HasSuffix(chunkText, "\n") {
+						splitKind = dom.SplitKindHard
+					}
+					if strings.HasSuffix(chunkText, "\n\n") {
+						splitKind = dom.SplitKindDouble
+					}
+					chunk.SetText(chunkText)
+					chunk.SetIndent(indent)
+					chunk.SetSplitKind(splitKind)
+					chunk.SetSpaceIfUnsplit(false)
+					chunk.SetSplitKindIfSplit(dom.SplitKindHard)
+					chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
+					d.Insert(chunk)
+				}
+				require.NoError(t, text.UnreadRune())
+				return d
+			}
+			chunkText += string(r)
+			// Account for the semicolon
+			r, _, err = text.ReadRune()
+			if err != nil && !errors.Is(err, io.EOF) {
+				require.NoError(t, err)
+			}
+			if r == ';' {
+				chunkText += string(r)
+			} else if err == nil {
+				require.NoError(t, text.UnreadRune())
+			}
+			chunk.SetText(chunkText)
+			chunk.SetIndent(indent)
+			splitKind, spaceIfUnsplit, err := setSplitKind(text, dom.SplitKindSoft)
+			if err != nil && !errors.Is(err, io.EOF) {
+				require.NoError(t, err)
+			}
+			chunk.SetSplitKind(splitKind)
+			chunk.SetSpaceIfUnsplit(spaceIfUnsplit)
+			chunk.SetSplitKindIfSplit(dom.SplitKindHard)
+			chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
+			d.Insert(chunk)
+			// Reset
+			closeBrace = true
+			count = 0
+			chunk = dom.NewChunk()
+			lastSplitKind = splitKind
 			chunkText = ""
 		default:
 			chunkText += string(r)
 		}
-		last = r
 		r, _, err = text.ReadRune()
-		if errors.Is(err, io.EOF) {
-			break
-		}
 	}
 	return d
 }
 
-func parens(text *bytes.Buffer) *bytes.Buffer {
-	var body string
+func setSplitKind(text *bytes.Buffer, base dom.SplitKind) (dom.SplitKind, bool, error) {
+	var spaceIfUnsplit bool
+	if base == dom.SplitKindDouble {
+		return base, spaceIfUnsplit, fmt.Errorf("cannot set %s as base split kind", dom.SplitKindDouble)
+	}
 	r, _, err := text.ReadRune()
-	for r != ')' {
-		body += string(r)
-		r, _, err = text.ReadRune()
-		if errors.Is(err, io.EOF) {
-			panic("unexpected end hit before closing parens")
-		}
+	if err != nil {
+		return base, spaceIfUnsplit, err
 	}
-	// Unread the rune so we can parse the closing parens next
-	if err := text.UnreadRune(); err != nil {
-		panic("fail on unread")
+	if r == ' ' {
+		spaceIfUnsplit = true
 	}
-	return bytes.NewBufferString(body)
+	if r == '\n' {
+		base++
+	}
+	return base, spaceIfUnsplit, text.UnreadRune()
 }
 
-func spaces(text *bytes.Buffer) string {
-	var spaces string
+func spacesChunk(text *bytes.Buffer) (*dom.Chunk, error) {
+	var chunk *dom.Chunk
+	var chunkText string
 	r, _, err := text.ReadRune()
-	for !errors.Is(err, io.EOF) {
-		if !unicode.IsSpace(r) {
-			break
-		}
-		spaces += string(r)
+	if err != nil {
+		return nil, err
+	}
+	for r == ' ' {
+		chunkText += string(r)
 		r, _, err = text.ReadRune()
+		if err != nil {
+			// Set whatever we have and return
+			chunk = dom.NewChunk()
+			chunk.SetText(chunkText)
+			return chunk, err
+		}
 	}
-	if err := text.UnreadRune(); err != nil {
-		panic("fail on unread")
+	if chunkText != "" {
+		chunk = dom.NewChunk()
+		chunk.SetText(chunkText)
 	}
-	return spaces
+	return chunk, text.UnreadRune()
+}
+
+func indentOnLastSplitKind(splitKind dom.SplitKind) bool {
+	switch splitKind {
+	case dom.SplitKindHard, dom.SplitKindDouble:
+		return true
+	}
+	return false
 }

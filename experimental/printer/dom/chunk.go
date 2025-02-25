@@ -22,6 +22,10 @@ import (
 	"github.com/rivo/uniseg"
 )
 
+const (
+	space = " "
+)
+
 // TODO: considering whether the panics in Chunk are too strict... I am of the opinion that
 // we should be inflexible with this behaviour because we want this API to inform the use
 // patterns strictly, but open to the opinions of others.
@@ -29,19 +33,15 @@ import (
 // Chunk represents a line of text with some configurations around indendation and splitting
 // (what whitespace should follow, if any).
 type Chunk struct {
-	text                string
-	hasText             bool
-	child               *Dom
-	indent              uint32
-	indented            bool
-	splitKind           SplitKind
-	spaceWhenUnsplit    bool
-	splitKindIfSplit    SplitKind // Restricted to SplitKindHard or SplitKindDouble
-	splitWithParent     bool
-	indentOnParentSplit bool
-	// TODO: I don't know if I love this, tbh. I think that this means that we'll need to
-	// on every chunk, and I would prefer to not do that, but I am not sure what the
-	onlyOutputUnformatted bool
+	text             string
+	hasText          bool
+	child            *Dom
+	indent           uint32
+	indented         bool
+	splitKind        SplitKind
+	spaceIfUnsplit   bool
+	splitKindIfSplit SplitKind // Restricted to SplitKindHard or SplitKindDouble
+	formatted        bool
 }
 
 func NewChunk() *Chunk {
@@ -78,7 +78,7 @@ func (c *Chunk) SplitKind() SplitKind {
 // This will panic if called on a Chunk where text has not been explicitly set.
 func (c *Chunk) Indent() uint32 {
 	if !c.hasText {
-		panic("protocompile/printer/dom: called SplitKind() on unset Chunk")
+		panic("protocompile/printer/dom: called Indent() on unset Chunk")
 	}
 	if c.indented {
 		return c.indent
@@ -90,7 +90,7 @@ func (c *Chunk) Indent() uint32 {
 // This will panic if called on a Chunk where text has not been explicitly set.
 func (c *Chunk) Child() *Dom {
 	if !c.hasText {
-		panic("protocompile/printer/dom: called SplitKind() on unset Chunk")
+		panic("protocompile/printer/dom: called Child() on unset Chunk")
 	}
 	return c.child
 }
@@ -121,9 +121,9 @@ func (c *Chunk) SetSplitKind(splitKind SplitKind) {
 	c.splitKind = splitKind
 }
 
-// SetSpaceWhenUnsplit sets whether the Chunk will output a space if it is not split.
-func (c *Chunk) SetSpaceWhenUnsplit(spaceWhenUnsplit bool) {
-	c.spaceWhenUnsplit = spaceWhenUnsplit
+// SetSpaceIfUnsplit sets whether the Chunk will output a space if it is not split.
+func (c *Chunk) SetSpaceIfUnsplit(spaceIfUnsplit bool) {
+	c.spaceIfUnsplit = spaceIfUnsplit
 }
 
 // SetSplitKindIfSplit sets the SplitKind of the Chunk if it is split. This will panic if it
@@ -140,45 +140,34 @@ func (c *Chunk) SetSplitKindIfSplit(splitKindIfSplit SplitKind) {
 	c.splitKindIfSplit = splitKindIfSplit
 }
 
-// SetSplitWithParent sets whether the Chunk will be split when the parent is split.
-func (c *Chunk) SetSplitWithParent(splitWithParent bool) {
-	c.splitWithParent = splitWithParent
-}
-
-// SetNoIndentOnParentSplit sets whether the Chunk will be indented when the parent is split.
-func (c *Chunk) SetIndentOnParentSplit(indentOnParentSplit bool) {
-	c.indentOnParentSplit = indentOnParentSplit
-}
-
-// SetOnlyOutputUnformatted sets whether the Chunk should only be printed when unformatted.
-// This is useful for extraneous whitespaces, for example, which we want to capture in our
-// structure but we want the splits and indentation to control the whitespace in a formatted
-// output.
-func (c *Chunk) SetOnlyOutputUnformatted(onlyOutputUnformatted bool) {
-	c.onlyOutputUnformatted = onlyOutputUnformatted
-}
-
-func (c *Chunk) output(format bool, indent int) string {
+func (c *Chunk) output(formatting *formatting) string {
 	var buf bytes.Buffer
-	if format {
-		buf.WriteString(strings.Repeat(strings.Repeat(space, indent), int(c.Indent())))
-	}
-	buf.WriteString(c.Text())
-	if format {
+	if !c.formatted {
+		// If there is no formatting, or the Dom has not been formatted, provide the unformatting
+		// output.
+		buf.WriteString(c.Text())
+	} else {
+		if strings.TrimSpace(c.Text()) == "" {
+			return ""
+		}
+		buf.WriteString(strings.Repeat(strings.Repeat(space, formatting.indentSize), int(c.Indent())))
+		// We let splits and indents dictate the leading and trailing whitespaces, so we trim them
+		// from the text when outputting.
+		buf.WriteString(strings.TrimSpace(c.Text()))
 		switch c.SplitKind() {
 		case SplitKindHard:
 			buf.WriteString("\n")
 		case SplitKindDouble:
 			buf.WriteString("\n\n")
 		case SplitKindSoft, SplitKindNever:
-			if c.spaceWhenUnsplit {
+			if c.spaceIfUnsplit {
 				buf.WriteString(space)
 			}
 		}
 	}
 	if c.child != nil {
 		for _, chunk := range c.child.chunks {
-			buf.WriteString(chunk.output(format, indent))
+			buf.WriteString(chunk.output(formatting))
 		}
 	}
 	return buf.String()
@@ -188,15 +177,12 @@ func (c *Chunk) output(format bool, indent int) string {
 // a line break. So this captures the Chunk's text, indents, and if the Chunk is not split,
 // the output of any child chunks until a line break is hit.
 func (c *Chunk) length(indentSize int) int {
-	cost := uniseg.StringWidth(c.text)
-	// Only count indent if indented
-	if c.indented {
-		cost += uniseg.StringWidth(strings.Repeat(strings.Repeat(" ", indentSize), int(c.indent)))
-	}
+	cost := uniseg.StringWidth(strings.Repeat(strings.Repeat(" ", indentSize), int(c.Indent())))
+	cost += uniseg.StringWidth(strings.TrimSpace(c.text))
 	switch c.splitKind {
 	case SplitKindSoft, SplitKindNever:
-		if c.spaceWhenUnsplit {
-			cost += uniseg.StringWidth(strings.Repeat(" ", 1))
+		if c.spaceIfUnsplit {
+			cost += uniseg.StringWidth(space)
 		}
 		if c.child != nil {
 			for _, chunk := range c.child.chunks {
@@ -210,28 +196,28 @@ func (c *Chunk) length(indentSize int) int {
 	return cost
 }
 
-// Split the Chunk. This sets the splitKind to the splitKind when Split and then checks the
-// splitting behaviour of each child.
-// Splitting is not a cascading effect down the tree, we measure and split as needed at
-// each Chunk.
-func (c *Chunk) split(child bool) {
+// Split the Chunk. This sets the splitKind to the splitKind when Split and indents the
+// chunks of the child Dom based on the split behaviour currently set.
+func (c *Chunk) split() {
+	if !c.formatted {
+		panic("protocompile/printer/dom: called split() on a chunk that is not being formatted")
+	}
 	switch c.splitKind {
 	case SplitKindHard, SplitKindDouble, SplitKindNever:
 		return
 	}
-	if child {
-		if c.indentOnParentSplit {
-			c.indented = true
-		}
-		if c.splitWithParent {
-			c.splitKind = c.splitKindIfSplit
-		}
-	} else {
-		c.splitKind = c.splitKindIfSplit
-		c.indented = true
-		if c.child != nil {
-			for _, chunk := range c.child.chunks {
-				chunk.split(true)
+	c.splitKind = c.splitKindIfSplit
+	if c.child != nil && len(c.child.chunks) > 0 {
+		// Indent first chunk, split last chunk
+		c.child.First().SetIndented(true)
+		// TODO: this is kind of sketchy looking, may need to rethink this.
+		last := c.child.lastNonWhitespaceChunk()
+		if last != nil {
+			// TODO: this should be based on its last chunk's behaviour...
+			last.SetIndented(true)
+			switch last.splitKind {
+			case SplitKindSoft:
+				last.splitKind = last.splitKindIfSplit
 			}
 		}
 	}

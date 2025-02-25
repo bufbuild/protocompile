@@ -1,0 +1,25 @@
+while (x == y) { method_a(); method_b(); }
+
+while (x == y)
+{
+  method_a();
+  method_b();
+}
+
+while(x == y) { method_a(); method_b(); }
+
+while (
+  reallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongname == y
+) { method_a(); method_b(); }
+
+while (a == b) {
+  while (c == d) {
+    while (e == f) { method_a(); } method_b(); method_c(    );
+  }
+}
+
+while (x == y) { method_a(); method_b(); }
+
+while (x == y)
+{ method_a();
+}

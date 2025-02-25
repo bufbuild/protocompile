@@ -16,18 +16,14 @@ package dom
 
 import (
 	"bytes"
-
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-)
-
-const (
-	space = " "
+	"strings"
 )
 
 // Dom represents a block of text with formatting information. It is a tree of [Chunk]s.
 type Dom struct {
-	chunks    []*Chunk
-	formatted bool
+	// TODO: I think this needs a cursor...
+	chunks     []*Chunk
+	formatting *formatting
 }
 
 // NewDom constructs a new Dom.
@@ -39,76 +35,102 @@ func NewDom() *Dom {
 // that have not had text set will be dropped.
 func (d *Dom) Insert(chunks ...*Chunk) {
 	for _, c := range chunks {
+		if c == nil {
+			continue
+		}
 		if c.hasText {
 			d.chunks = append(d.chunks, c)
 		}
 	}
 }
 
-// LastSplitKind returns the SplitKind of the last chunk in the Dom.
-func (d *Dom) LastSplitKind() SplitKind {
-	chunk, ok := slicesx.Last(d.chunks)
-	if ok {
-		return chunk.SplitKind()
+// First returns the first chunk in the Dom. Returns nil if the Dom is empty.
+func (d *Dom) First() *Chunk {
+	if len(d.chunks) == 0 {
+		return nil
 	}
-	return SplitKindUnknown
+	return d.chunks[0]
 }
 
-// TODO: is the behaviour of Output with respect to formatting too strict?
+// Last returns the last chunk in the Dom. Returns nil if the Dom is empty.
+func (d *Dom) Last() *Chunk {
+	if len(d.chunks) == 0 {
+		return nil
+	}
+	return d.chunks[len(d.chunks)-1]
+}
 
-// Output returns the output string of the Dom.
-// If format is set to true, then the output will be formatted based on the given line limit
-// and indent size.
-//
-// Once Output has been called with format=true, then the Dom will be formatted forever, and
-// calling Output with format=false will result in a panic.
-func (d *Dom) Output(format bool, lineLimit, indentSize int) string {
-	var buf bytes.Buffer
-	// We need to format the dom -- since there could still be a contiguous line across chunks.
-	if format {
-		d.format(lineLimit, indentSize)
-	} else {
-		if d.formatted {
-			panic("protocompile/printer/dom: called Output with format=falses on a formatted Dom")
-		}
+// Formatting returns the formatting used for the current Dom. This is nil if no formatting
+// has been set on the Dom.
+func (d *Dom) Formatting() *formatting {
+	return d.formatting
+}
+
+// SetFormatting sets the Formatting that the Dom and all of its children should use.
+func (d *Dom) SetFormatting(lineLimit, indentSize int) {
+	d.formatting = &formatting{
+		lineLimit:  lineLimit,
+		indentSize: indentSize,
 	}
 	for _, c := range d.chunks {
-		buf.WriteString(c.output(format, indentSize))
+		if c.child != nil {
+			c.child.SetFormatting(lineLimit, indentSize)
+		}
+	}
+}
+
+// Format the Dom. If this is called and no formatting has been set, then this will panic.
+func (d *Dom) Format() {
+	if d.formatting == nil {
+		panic("protocompile/printer/dom: attempted to format Dom with no formatting set")
+	}
+	if !d.formatting.formatted {
+		var cost int
+		for _, c := range d.chunks {
+			c.formatted = true
+			cost += c.length(d.formatting.indentSize)
+			if cost > d.formatting.lineLimit {
+				c.split()
+			}
+			if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
+				cost = 0
+			}
+		}
+		// TODO: this algorithm splits from "outside inwards". So it requires iterating through
+		// the chunks a second time to split the children. We can collect up the children so we're
+		// iterating through a smaller list, but I don't know if that's a meaningful improvement...
+		for _, c := range d.chunks {
+			if c.child != nil {
+				c.child.Format()
+			}
+		}
+		d.formatting.formatted = true
+	}
+}
+
+// Output returns the output string of the Dom.
+func (d *Dom) Output() string {
+	var buf bytes.Buffer
+	for _, c := range d.chunks {
+		buf.WriteString(c.output(d.formatting))
 	}
 	return buf.String()
 }
 
-func (d *Dom) format(lineLimit, indentSize int) {
-	if !d.formatted {
-		// Measure contiguous chunks
-		var cost int
-		var remove []int
-		for i, c := range d.chunks {
-			if c.onlyOutputUnformatted {
-				remove = append(remove, i)
-				continue
-			}
-			cost += c.length(indentSize)
-			if cost > lineLimit {
-				c.split(false)
-			}
-			if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
-				// Reset the cost for any non-contiguous chunk
-				cost = 0
-			}
-		}
-		if len(remove) > 0 {
-			var last int
-			var cleanedChunks []*Chunk
-			for _, i := range remove {
-				cleanedChunks = append(cleanedChunks, d.chunks[last:i]...)
-				last = i + 1
-				if last > len(d.chunks) {
-					panic("protocompile/printer/dom: attempted to remove an out-of-range chunk while formatting")
-				}
-			}
-			d.chunks = cleanedChunks
-		}
-		d.formatted = true
+func (d *Dom) lastNonWhitespaceChunk() *Chunk {
+	if len(d.chunks) == 0 {
+		return nil
 	}
+	for i := len(d.chunks) - 1; i >= 0; i-- {
+		if strings.TrimSpace(d.chunks[i].text) != "" {
+			return d.chunks[i]
+		}
+	}
+	return nil
+}
+
+type formatting struct {
+	lineLimit  int
+	indentSize int
+	formatted  bool
 }

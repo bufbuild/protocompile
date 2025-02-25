@@ -113,7 +113,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 		testName, _ := filepath.Rel(root, path)
 		testName = filepath.ToSlash(testName)
 		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 
 			bytes, err := os.ReadFile(path)
 			if err != nil {
