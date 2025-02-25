@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package seq provides an interface for sequence-like types that can be indexed
+// Package seq provides an interface for sequence-like types that can be indexed
 // and inserted into.
 //
 // Protocompile avoids storing slices of its public types as a means of achieving

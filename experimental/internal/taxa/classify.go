@@ -133,12 +133,10 @@ func Classify(node report.Spanner) Noun {
 			first = pc
 			return false
 		})
-
 		if !first.AsExtension().IsZero() {
 			return CustomOption
-		} else {
-			return Option
 		}
+		return Option
 	case ast.DefField, ast.DefGroup:
 		return Field
 	case ast.DefEnumValue:

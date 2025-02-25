@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package osx contains extensions to the os package.
+// Package osx contains extensions to the os package.
 package osx
 
 // Go does not consider it worthy to include constants for the user permission
