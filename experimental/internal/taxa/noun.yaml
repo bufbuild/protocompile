@@ -115,6 +115,8 @@
   - {name: Braces, string: "`{...}`"}
   - {name: Angles, string: "`<...>`"}
 
+  - {name: ReturnsParens, string: "`returns (...)`"}
+
   - {name: KeywordSyntax, string: "`syntax`"}
   - {name: KeywordEdition, string: "`edition`"}
   - {name: KeywordImport, string: "`import`"}

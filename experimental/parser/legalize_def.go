@@ -95,7 +95,8 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 			err = errUnexpected{
 				what:  pc.Separator(),
 				where: taxa.Ident.In(),
-				want:  taxa.Ident.AsSet(),
+
+				repeatUnexpected: true,
 			}
 			return false
 		})
@@ -253,7 +254,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		if sig.Inputs().Span().IsZero() {
 			def.MarkCorrupt()
 			p.Errorf("missing %v in %v", taxa.MethodIns, taxa.Method).Apply(
-				report.Snippetf(def.Name(), "expected type in %s after this", taxa.Parens),
+				report.Snippetf(def.Name(), "expected argument type in %s after this", taxa.Parens),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Inputs(), taxa.MethodIns)
@@ -262,17 +263,21 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		if sig.Outputs().Span().IsZero() {
 			def.MarkCorrupt()
 			var after report.Spanner
+			var expected taxa.Noun
 			switch {
 			case !sig.Returns().IsZero():
 				after = sig.Returns()
+				expected = taxa.Parens
 			case !sig.Inputs().IsZero():
 				after = sig.Inputs()
+				expected = taxa.ReturnsParens
 			default:
 				after = def.Name()
+				expected = taxa.ReturnsParens
 			}
 
 			p.Errorf("missing %v in %v", taxa.MethodOuts, taxa.Method).Apply(
-				report.Snippetf(after, "expected type in %s after this", taxa.Parens),
+				report.Snippetf(after, "expected return type in %s after this", expected),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Outputs(), taxa.MethodOuts)

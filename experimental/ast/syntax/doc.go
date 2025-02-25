@@ -26,7 +26,7 @@ import (
 // Editions returns an iterator over all the editions in this package.
 func Editions() iter.Seq[Syntax] {
 	return func(yield func(Syntax) bool) {
-		for i := 0; i < totalEditions; i++ {
+		for i := range totalEditions {
 			if !yield(Syntax(i + int(Edition2023))) {
 				break
 			}

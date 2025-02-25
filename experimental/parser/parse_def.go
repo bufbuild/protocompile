@@ -206,6 +206,9 @@ func (defOutputs) parse(p *defParser) report.Span {
 	// Note that the inputs and outputs of a method are parsed
 	// separately, so foo(bar) and foo returns (bar) are both possible.
 	returns := p.c.Next()
+	if p.args.Returns.IsZero() {
+		p.args.Returns = returns
+	}
 
 	var ty ast.TypeAny
 	list, err := p.Punct(p.c, "(", taxa.KeywordReturns.After())
@@ -220,7 +223,6 @@ func (defOutputs) parse(p *defParser) report.Span {
 	}
 
 	if p.outputs.IsZero() && p.outputTy.IsZero() {
-		p.args.Returns = returns
 		if !list.IsZero() {
 			p.outputs = list
 		} else {

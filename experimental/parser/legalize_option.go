@@ -157,6 +157,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 				}
 				fallthrough
 			default:
+				// TODO: generate a suggestion for this.
 				err.Apply(report.Helpf("break this %s into one per element", taxa.Option))
 			}
 

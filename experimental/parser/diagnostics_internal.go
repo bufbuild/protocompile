@@ -15,6 +15,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -37,7 +39,10 @@ type errUnexpected struct {
 	// shown, but if it's not set, we call describe(what) to get a user-visible
 	// description.
 	want taxa.Set
-	got  any
+	// If set and want is empty, the snippet will repeat the "unexpected foo"
+	// text under the snippet.
+	repeatUnexpected bool
+	got              any
 }
 
 func (e errUnexpected) Diagnose(d *report.Diagnostic) {
@@ -49,20 +54,22 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 		}
 	}
 
-	var message report.DiagnosticOption
+	var message string
 	if e.where.Subject() == taxa.Unknown {
-		message = report.Message("unexpected %v", got)
+		message = fmt.Sprintf("unexpected %v", got)
 	} else {
-		message = report.Message("unexpected %v %v", got, e.where)
+		message = fmt.Sprintf("unexpected %v %v", got, e.where)
 	}
 
 	snippet := report.Snippet(e.what)
 	if e.want.Len() > 0 {
 		snippet = report.Snippetf(e.what, "expected %v", e.want.Join("or"))
+	} else if e.repeatUnexpected {
+		snippet = report.Snippetf(e.what, "%v", message)
 	}
 
 	d.Apply(
-		message,
+		report.Message("%v", message),
 		snippet,
 		report.Snippetf(e.prev, "previous %v is here", e.where.Subject()),
 	)

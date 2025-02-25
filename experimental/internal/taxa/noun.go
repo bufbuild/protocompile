@@ -103,6 +103,7 @@ const (
 	Brackets
 	Braces
 	Angles
+	ReturnsParens
 	KeywordSyntax
 	KeywordEdition
 	KeywordImport
@@ -223,6 +224,7 @@ var _table_Noun_String = [...]string{
 	Brackets:           "`[...]`",
 	Braces:             "`{...}`",
 	Angles:             "`<...>`",
+	ReturnsParens:      "`returns (...)`",
 	KeywordSyntax:      "`syntax`",
 	KeywordEdition:     "`edition`",
 	KeywordImport:      "`import`",
@@ -326,6 +328,7 @@ var _table_Noun_GoString = [...]string{
 	Brackets:           "Brackets",
 	Braces:             "Braces",
 	Angles:             "Angles",
+	ReturnsParens:      "ReturnsParens",
 	KeywordSyntax:      "KeywordSyntax",
 	KeywordEdition:     "KeywordEdition",
 	KeywordImport:      "KeywordImport",

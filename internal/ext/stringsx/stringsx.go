@@ -26,7 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
-// Rune returns the rune at the given index.
+// Rune returns the rune at the given byte index.
 //
 // Returns 0, false if out of bounds. Returns U+FFFD, false if rune decoding fails.
 func Rune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
@@ -37,7 +37,7 @@ func Rune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
 	return r, r != utf8.RuneError
 }
 
-// Rune returns the previous rune at the given index.
+// Rune returns the previous rune at the given byte index.
 //
 // Returns 0, false if out of bounds. Returns U+FFFD, false if rune decoding fails.
 func PrevRune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
