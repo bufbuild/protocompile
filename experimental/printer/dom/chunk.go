@@ -208,10 +208,13 @@ func (c *Chunk) split() {
 	}
 	c.splitKind = c.splitKindIfSplit
 	if c.child != nil && len(c.child.chunks) > 0 {
-		// Indent first chunk, split last chunk
-		c.child.First().SetIndented(true)
-		// TODO: this is kind of sketchy looking, may need to rethink this.
-		last := c.child.lastNonWhitespaceChunk()
+		// TODO: what we actually care about here are the first non whitespace-only chunk
+		// and last non whitespace-only chunks. This is pretty sus looking tho...
+		first := c.child.FirstNonWhitespaceChunk()
+		if first != nil {
+			first.SetIndented(true)
+		}
+		last := c.child.LastNonWhitespaceChunk()
 		if last != nil {
 			// TODO: this should be based on its last chunk's behaviour...
 			last.SetIndented(true)

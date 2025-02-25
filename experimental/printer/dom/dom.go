@@ -52,12 +52,36 @@ func (d *Dom) First() *Chunk {
 	return d.chunks[0]
 }
 
+func (d *Dom) FirstNonWhitespaceChunk() *Chunk {
+	if len(d.chunks) == 0 {
+		return nil
+	}
+	for _, c := range d.chunks {
+		if strings.TrimSpace(c.text) != "" {
+			return c
+		}
+	}
+	return nil
+}
+
 // Last returns the last chunk in the Dom. Returns nil if the Dom is empty.
 func (d *Dom) Last() *Chunk {
 	if len(d.chunks) == 0 {
 		return nil
 	}
 	return d.chunks[len(d.chunks)-1]
+}
+
+func (d *Dom) LastNonWhitespaceChunk() *Chunk {
+	if len(d.chunks) == 0 {
+		return nil
+	}
+	for i := len(d.chunks) - 1; i >= 0; i-- {
+		if strings.TrimSpace(d.chunks[i].text) != "" {
+			return d.chunks[i]
+		}
+	}
+	return nil
 }
 
 // Formatting returns the formatting used for the current Dom. This is nil if no formatting
@@ -115,18 +139,6 @@ func (d *Dom) Output() string {
 		buf.WriteString(c.output(d.formatting))
 	}
 	return buf.String()
-}
-
-func (d *Dom) lastNonWhitespaceChunk() *Chunk {
-	if len(d.chunks) == 0 {
-		return nil
-	}
-	for i := len(d.chunks) - 1; i >= 0; i-- {
-		if strings.TrimSpace(d.chunks[i].text) != "" {
-			return d.chunks[i]
-		}
-	}
-	return nil
 }
 
 type formatting struct {
