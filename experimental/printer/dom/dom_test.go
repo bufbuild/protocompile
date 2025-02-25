@@ -132,15 +132,13 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 				chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 				d.Insert(chunk)
 			} else {
-				// A chunk was just cut before this, in which case, adjust the last chunk's splitKind
-				// accordingly.
-				// We aren't using dom.SplitKindNever right now, so we can get away with this.
-				if d.Last() != nil {
-					splitKind, _, err := setSplitKind(text, d.Last().SplitKind())
+				last := d.LastNonWhitespaceChunk()
+				if last != nil && last.SplitKind() != dom.SplitKindDouble {
+					splitKind, _, err := setSplitKind(text, last.SplitKind())
 					if err != nil && !errors.Is(err, io.EOF) {
 						require.NoError(t, err)
 					}
-					d.Last().SetSplitKind(splitKind)
+					last.SetSplitKind(splitKind)
 				}
 			}
 			// Create newline chunk

@@ -14,7 +14,7 @@ while (
 
 while (a == b) {
   while (c == d) {
-    while (e == f) { method_a(); } method_b(); method_c(    );
+    while (e == f) { method_a(); } method_b(); method_c();
   }
 }
 

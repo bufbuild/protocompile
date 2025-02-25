@@ -207,21 +207,4 @@ func (c *Chunk) split() {
 		return
 	}
 	c.splitKind = c.splitKindIfSplit
-	if c.child != nil && len(c.child.chunks) > 0 {
-		// TODO: what we actually care about here are the first non whitespace-only chunk
-		// and last non whitespace-only chunks. This is pretty sus looking tho...
-		first := c.child.FirstNonWhitespaceChunk()
-		if first != nil {
-			first.SetIndented(true)
-		}
-		last := c.child.LastNonWhitespaceChunk()
-		if last != nil {
-			// TODO: this should be based on its last chunk's behaviour...
-			last.SetIndented(true)
-			switch last.splitKind {
-			case SplitKindSoft:
-				last.splitKind = last.splitKindIfSplit
-			}
-		}
-	}
 }

@@ -52,6 +52,7 @@ func (d *Dom) First() *Chunk {
 	return d.chunks[0]
 }
 
+// TODO: track at insertion time
 func (d *Dom) FirstNonWhitespaceChunk() *Chunk {
 	if len(d.chunks) == 0 {
 		return nil
@@ -72,6 +73,7 @@ func (d *Dom) Last() *Chunk {
 	return d.chunks[len(d.chunks)-1]
 }
 
+// TODO: track at insertion time
 func (d *Dom) LastNonWhitespaceChunk() *Chunk {
 	if len(d.chunks) == 0 {
 		return nil
@@ -110,11 +112,31 @@ func (d *Dom) Format() {
 	}
 	if !d.formatting.formatted {
 		var cost int
+		var indentNext bool
 		for _, c := range d.chunks {
 			c.formatted = true
+			if indentNext {
+				c.indented = true
+				indentNext = false
+			}
 			cost += c.length(d.formatting.indentSize)
 			if cost > d.formatting.lineLimit {
 				c.split()
+				if c.child != nil && len(c.child.chunks) > 0 {
+					// TODO: this looks kinda sketchy, review.
+					first := c.child.FirstNonWhitespaceChunk()
+					if first != nil {
+						first.SetIndented(true)
+					}
+					last := c.child.LastNonWhitespaceChunk()
+					if last != nil {
+						switch last.splitKind {
+						case SplitKindSoft:
+							last.splitKind = last.splitKindIfSplit
+						}
+						indentNext = true
+					}
+				}
 			}
 			if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
 				cost = 0
