@@ -161,7 +161,6 @@ func TestScan(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			result, err := Scan("", strings.NewReader(testCase.input))

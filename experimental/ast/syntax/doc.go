@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package syntax specifies all of the syntax pragmas (including editions)
+// Package syntax specifies all of the syntax pragmas (including editions)
 // that Protocompile understands.
 package syntax
 

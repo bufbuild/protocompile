@@ -358,7 +358,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, extendees ma
 		// make sure the tag number is in range
 		found := false
 		tag := protoreflect.FieldNumber(fld.GetNumber())
-		for i := 0; i < extd.ExtensionRanges().Len(); i++ {
+		for i := range extd.ExtensionRanges().Len() {
 			rng := extd.ExtensionRanges().Get(i)
 			if tag >= rng[0] && tag < rng[1] {
 				found = true
@@ -410,7 +410,7 @@ func resolveFieldTypes(f *fldDescriptor, handler *reporter.Handler, extendees ma
 				if isValid && f.index > 0 {
 					// also make sure there are no earlier fields that are valid for this map entry
 					flds := f.Parent().(protoreflect.MessageDescriptor).Fields() //nolint:errcheck
-					for i := 0; i < f.index; i++ {
+					for i := range f.index {
 						if isValidMap(flds.Get(i), dsc) {
 							isValid = false
 							break

@@ -352,7 +352,7 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 			buf  strings.Builder
 		)
 		frames := runtime.CallersFrames(pc)
-		for i := 0; i < r.Tracing; i++ {
+		for range r.Tracing {
 			frame, more := frames.Next()
 			if frame == zero || !more {
 				break

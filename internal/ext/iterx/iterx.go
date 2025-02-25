@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iterx contains extensions to Go's package iter.
+// Package iterx contains extensions to Go's package iter.
 package iterx
 
 import (
@@ -124,7 +124,7 @@ func FilterMap[T, U any](seq iter.Seq[T], f func(T) (U, bool)) iter.Seq[U] {
 	}
 }
 
-// FilterMap1To2 is like [FilterMap], but it also acts a Y pipe for converting a one-element
+// Map1To2 is like [Map], but it also acts a Y pipe for converting a one-element
 // iterator into a two-element iterator.
 func Map1To2[T, U, V any](seq iter.Seq[T], f func(T) (U, V)) iter.Seq2[U, V] {
 	return FilterMap1To2(seq, func(v T) (U, V, bool) {

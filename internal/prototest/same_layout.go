@@ -48,7 +48,7 @@ func RequireSameLayout(t *testing.T, a, b reflect.Type) {
 		require.Equal(t, a.NumField(), b.NumField(),
 			"mismatched field counts: %s has %d fields; %s has %d fields", a, a.NumField(), b, b.NumField())
 
-		for i := 0; i < a.NumField(); i++ {
+		for i := range a.NumField() {
 			RequireSameLayout(t, a.Field(i).Type, b.Field(i).Type)
 		}
 
