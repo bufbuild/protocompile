@@ -229,7 +229,7 @@ func classifyToken(tok token.Token) Noun {
 	}
 }
 
-// Keyword a keyword to its [Noun], if it has one.
+// Keyword maps a keyword to its [Noun], if it has one.
 func Keyword(kw keyword.Keyword) Noun {
 	n, _ := slicesx.Get(kwToNoun, kw)
 	return n

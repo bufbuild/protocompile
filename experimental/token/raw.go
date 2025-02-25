@@ -106,7 +106,8 @@ type nat struct {
 	// set correctly, and don't depend on the next token being pushed.
 	end uint32
 
-	// This contains compressed metadata about a token in the following format:
+	// This contains compressed metadata about a token in the following format.
+	// (Bit ranges [a:b] are exclusive like Go slice syntax.)
 	//
 	// 1. Bits [0:3] is the Kind.
 	// 2. Bit [3] is whether this is a non-leaf.
@@ -114,6 +115,12 @@ type nat struct {
 	//	     Kind is Punct, and bits [6:32] are a signed offset to the matching
 	//       open/close.
 	//    b. If it is a leaf, bits [4:12] are a Keyword value.
+	//
+	// TODO: One potential optimization for the tree representation is to use
+	// fewer bits for kind, since in practice, it is only ever Punct or String.
+	// We do not currently make this optimization because it seems that the
+	// current 32 million maximum size for separating two tokens is probably
+	// sufficient, for now.
 	metadata int32
 }
 
