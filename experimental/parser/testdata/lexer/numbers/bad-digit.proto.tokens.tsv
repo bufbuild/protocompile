@@ -1,10 +1,10 @@
-#		kind		offsets		linecol		text
-0		Number		000:002		001:001		"0f"		int:0
-1		Space		002:003		001:003		"\n"
-2		Number		003:007		002:001		"0b02"		int:0
-3		Space		007:008		002:005		"\n"
-4		Number		008:012		003:001		"0o08"		int:0
-5		Space		012:013		003:005		"\n"
-6		Number		013:015		004:001		"08"		int:0
-7		Space		015:016		004:003		"\n"
-8		Number		016:020		005:001		"0x0G"		int:0
+#		kind		keyword		offsets		linecol		text
+0		Number		Unknown		000:002		001:001		"0f"		int:0
+1		Space		Unknown		002:003		001:003		"\n"
+2		Number		Unknown		003:007		002:001		"0b02"		int:0
+3		Space		Unknown		007:008		002:005		"\n"
+4		Number		Unknown		008:012		003:001		"0o08"		int:0
+5		Space		Unknown		012:013		003:005		"\n"
+6		Number		Unknown		013:015		004:001		"08"		int:0
+7		Space		Unknown		015:016		004:003		"\n"
+8		Number		Unknown		016:020		005:001		"0x0G"		int:0
