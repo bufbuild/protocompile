@@ -8,13 +8,13 @@ error: missing method return type in service method
   --> testdata/parser/method/incomplete.proto:21:13
    |
 21 |     rpc Bar2(foo.Bar);
-   |             ^^^^^^^^^ expected type in `(...)` after this
+   |             ^^^^^^^^^ expected return type in `returns (...)` after this
 
 error: missing method parameter list in service method
   --> testdata/parser/method/incomplete.proto:22:9
    |
 22 |     rpc Bar3 returns (foo.Bar);
-   |         ^^^^ expected type in `(...)` after this
+   |         ^^^^ expected argument type in `(...)` after this
 
 error: expected exactly one type in method return type, got 0
   --> testdata/parser/method/incomplete.proto:23:31
@@ -35,10 +35,10 @@ error: expected exactly one type in method parameter list, got 0
    |             ^^
 
 error: missing method return type in service method
-  --> testdata/parser/method/incomplete.proto:25:13
+  --> testdata/parser/method/incomplete.proto:25:16
    |
 25 |     rpc Bar6() returns;
-   |             ^^ expected type in `(...)` after this
+   |                ^^^^^^^ expected return type in `(...)` after this
 
 error: unexpected `;` after `returns`
   --> testdata/parser/method/incomplete.proto:25:23
