@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
 
@@ -418,8 +419,13 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 	case ast.ExprKindPrefixed:
 		expr := expr.AsPrefixed()
 
+		var prefix compilerpb.Expr_Prefixed_Prefix
+		if expr.Prefix() == keyword.Minus {
+			prefix = compilerpb.Expr_Prefixed_PREFIX_MINUS
+		}
+
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Prefixed_{Prefixed: &compilerpb.Expr_Prefixed{
-			Prefix:     compilerpb.Expr_Prefixed_Prefix(expr.Prefix()),
+			Prefix:     prefix,
 			Expr:       c.expr(expr.Expr()),
 			Span:       c.span(expr),
 			PrefixSpan: c.span(expr.PrefixToken()),
@@ -504,8 +510,21 @@ func (c *protoEncoder) type_(ty ast.TypeAny) *compilerpb.Type {
 
 	case ast.TypeKindPrefixed:
 		ty := ty.AsPrefixed()
+
+		var prefix compilerpb.Type_Prefixed_Prefix
+		switch ty.Prefix() {
+		case keyword.Optional:
+			prefix = compilerpb.Type_Prefixed_PREFIX_OPTIONAL
+		case keyword.Repeated:
+			prefix = compilerpb.Type_Prefixed_PREFIX_REPEATED
+		case keyword.Required:
+			prefix = compilerpb.Type_Prefixed_PREFIX_REQUIRED
+		case keyword.Stream:
+			prefix = compilerpb.Type_Prefixed_PREFIX_STREAM
+		}
+
 		return &compilerpb.Type{Type: &compilerpb.Type_Prefixed_{Prefixed: &compilerpb.Type_Prefixed{
-			Prefix:     compilerpb.Type_Prefixed_Prefix(ty.Prefix()),
+			Prefix:     prefix,
 			Type:       c.type_(ty.Type()),
 			Span:       c.span(ty),
 			PrefixSpan: c.span(ty.PrefixToken()),
