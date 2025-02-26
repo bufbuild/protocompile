@@ -84,21 +84,13 @@ const (
 	String
 	Float
 	Int
-	Semicolon
+	Semi
 	Comma
 	Slash
 	Colon
 	Equals
 	Minus
-	Period
-	LParen
-	LBracket
-	LBrace
-	LAngle
-	RParen
-	RBracket
-	RBrace
-	RAngle
+	Dot
 	Parens
 	Brackets
 	Braces
@@ -205,21 +197,13 @@ var _table_Noun_String = [...]string{
 	String:             "string literal",
 	Float:              "floating-point literal",
 	Int:                "integer literal",
-	Semicolon:          "`;`",
+	Semi:               "`;`",
 	Comma:              "`,`",
 	Slash:              "`/`",
 	Colon:              "`:`",
 	Equals:             "`=`",
 	Minus:              "`-`",
-	Period:             "`.`",
-	LParen:             "`(`",
-	LBracket:           "`[`",
-	LBrace:             "`{`",
-	LAngle:             "`<`",
-	RParen:             "`)`",
-	RBracket:           "`]`",
-	RBrace:             "`}`",
-	RAngle:             "`>`",
+	Dot:                "`.`",
 	Parens:             "`(...)`",
 	Brackets:           "`[...]`",
 	Braces:             "`{...}`",
@@ -309,21 +293,13 @@ var _table_Noun_GoString = [...]string{
 	String:             "String",
 	Float:              "Float",
 	Int:                "Int",
-	Semicolon:          "Semicolon",
+	Semi:               "Semi",
 	Comma:              "Comma",
 	Slash:              "Slash",
 	Colon:              "Colon",
 	Equals:             "Equals",
 	Minus:              "Minus",
-	Period:             "Period",
-	LParen:             "LParen",
-	LBracket:           "LBracket",
-	LBrace:             "LBrace",
-	LAngle:             "LAngle",
-	RParen:             "RParen",
-	RBracket:           "RBracket",
-	RBrace:             "RBrace",
-	RAngle:             "RAngle",
+	Dot:                "Dot",
 	Parens:             "Parens",
 	Brackets:           "Brackets",
 	Braces:             "Braces",

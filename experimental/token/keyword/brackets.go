@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package syntax specifies all of the syntax pragmas (including editions)
-// that Protocompile understands.
-package syntax
+package keyword
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum syntax.yaml
+// OpenClose returns the open and close brackets for the four bracket
+// keywords: [Parens], [Brackets], [Braces], and [Angles].
+func (k Keyword) OpenClose() (string, string, bool) {
+	switch k {
+	case Parens:
+		return "(", ")", true
+	case Brackets:
+		return "[", "]", true
+	case Braces:
+		return "{", "}", true
+	case Angles:
+		return "<", ">", true
+	default:
+		return "", "", false
+	}
+}

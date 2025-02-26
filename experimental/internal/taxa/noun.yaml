@@ -92,23 +92,13 @@
   - {name: Float, string: "floating-point literal"}
   - {name: Int, string: "integer literal"}
 
-  - {name: Semicolon, string: "`;`"}
+  - {name: Semi, string: "`;`"}
   - {name: Comma, string: "`,`"}
   - {name: Slash, string: "`/`"}
   - {name: Colon, string: "`:`"}
   - {name: Equals, string: "`=`"}
   - {name: Minus, string: "`-`"}
-  - {name: Period, string: "`.`"}
-
-  - {name: LParen, string: "`(`"}
-  - {name: LBracket, string: "`[`"}
-  - {name: LBrace, string: "`{`"}
-  - {name: LAngle, string: "`<`"}
-
-  - {name: RParen, string: "`)`"}
-  - {name: RBracket, string: "`]`"}
-  - {name: RBrace, string: "`}`"}
-  - {name: RAngle, string: "`>`"}
+  - {name: Dot, string: "`.`"}
 
   - {name: Parens, string: "`(...)`"}
   - {name: Brackets, string: "`[...]`"}

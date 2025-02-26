@@ -14,7 +14,25 @@
 
 package syntax
 
+import (
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
 // IsEdition returns whether this represents an edition.
 func (s Syntax) IsEdition() bool {
 	return s != Proto2 && s != Proto3
 }
+
+// Editions returns an iterator over all the editions in this package.
+func Editions() iter.Seq[Syntax] {
+	return func(yield func(Syntax) bool) {
+		for i := range totalEditions {
+			if !yield(Syntax(i + int(Edition2023))) {
+				break
+			}
+		}
+	}
+}
+
+var totalEditions = iterx.Count(iterx.Filter(All(), Syntax.IsEdition), nil)
