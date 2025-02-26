@@ -29,15 +29,21 @@ func First[T any](seq iter.Seq[T]) (v T, ok bool) {
 	return v, ok
 }
 
-// OnlyOne retrieved the only element of an iterator.
+// OnlyOne retrieves the only element of an iterator.
 func OnlyOne[T any](seq iter.Seq[T]) (v T, ok bool) {
+	var found T
 	seq(func(x T) bool {
 		if !ok {
-			v = x
+			found = x
 		}
 		ok = !ok
 		return ok
 	})
+	if ok {
+		// Ensure we return the zero value if there is more
+		// than one element.
+		v = found
+	}
 	return v, ok
 }
 

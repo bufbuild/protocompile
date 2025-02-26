@@ -15,8 +15,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -103,8 +101,6 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	if path := ty.AsPath(); !path.IsZero() {
 		kw = path.AsIdent()
 	}
-
-	fmt.Println(kw, kw.Text(), ty.AsPath().Span().Text())
 
 	// Check for the various special cases.
 	next := c.Peek()
