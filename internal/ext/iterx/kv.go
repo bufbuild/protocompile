@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iterx contains extensions to Go's package iter.
 package iterx
 
 import (
@@ -21,10 +20,10 @@ import (
 
 // Left returns a new iterator that drops the right value of a [iter.Seq2].
 func Left[K, V any](seq iter.Seq2[K, V]) iter.Seq[K] {
-	return Map2to1(seq, func(k K, v V) K { return k })
+	return Map2to1(seq, func(k K, _ V) K { return k })
 }
 
 // Right returns a new iterator that drops the left value of a [iter.Seq2].
 func Right[K, V any](seq iter.Seq2[K, V]) iter.Seq[V] {
-	return Map2to1(seq, func(k K, v V) V { return v })
+	return Map2to1(seq, func(_ K, v V) V { return v })
 }

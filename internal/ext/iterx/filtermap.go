@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iterx contains extensions to Go's package iter.
 package iterx
 
 import (
 	"github.com/bufbuild/protocompile/internal/iter"
 )
+
+// This file contains the matrix of {Map, Filter, FilterMap} x {1, 2, 1to2, 2to1},
+// except that Filter1to2 and Filter2to1 don't really make sense.
 
 // Map returns a new iterator applying f to each element of seq.
 func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
