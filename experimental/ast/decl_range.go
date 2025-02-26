@@ -44,7 +44,7 @@ type DeclRangeArgs struct {
 	Semicolon token.Token
 }
 
-// Keyword returns the keyword for this this range.
+// Keyword returns the keyword for this range.
 func (d DeclRange) Keyword() keyword.Keyword {
 	return d.KeywordToken().Keyword()
 }
