@@ -107,7 +107,7 @@ func lexStringContent(_ rune, l *lexer) (sc stringContent) {
 		nl := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped newlines are not permitted in string literals").Apply(
 			report.Snippet(nl),
-			report.Helpf("consider splitting this into two adjacent string literals"),
+			report.Helpf("consider splitting this into adjacent string literals; Protobuf will automatically concatenate them"),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't

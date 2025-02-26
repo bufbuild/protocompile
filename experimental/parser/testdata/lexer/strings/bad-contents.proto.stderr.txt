@@ -3,21 +3,24 @@ error: unescaped newlines are not permitted in string literals
    |
  1 | "this string
    |             ^
-   = help: consider splitting this into two adjacent string literals
+   = help: consider splitting this into adjacent string literals; Protobuf will
+           automatically concatenate them
 
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:3:2
    |
  3 | "
    |  ^
-   = help: consider splitting this into two adjacent string literals
+   = help: consider splitting this into adjacent string literals; Protobuf will
+           automatically concatenate them
 
 error: unescaped newlines are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:6:32
    |
  6 |     "this is an indented string
    |                                ^
-   = help: consider splitting this into two adjacent string literals
+   = help: consider splitting this into adjacent string literals; Protobuf will
+           automatically concatenate them
 
 error: unescaped NUL bytes are not permitted in string literals
   --> testdata/lexer/strings/bad-contents.proto:9:30
