@@ -214,7 +214,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			Value:         c.expr(decl.Value()),
 			Options:       c.options(decl.Options()),
 			Span:          c.span(decl),
-			KeywordSpan:   c.span(decl.Keyword()),
+			KeywordSpan:   c.span(decl.KeywordToken()),
 			EqualsSpan:    c.span(decl.Equals()),
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}}}
@@ -226,7 +226,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			Path:          c.path(decl.Path()),
 			Options:       c.options(decl.Options()),
 			Span:          c.span(decl),
-			KeywordSpan:   c.span(decl.Keyword()),
+			KeywordSpan:   c.span(decl.KeywordToken()),
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}}}
 
@@ -245,8 +245,8 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			ImportPath:     c.expr(decl.ImportPath()),
 			Options:        c.options(decl.Options()),
 			Span:           c.span(decl),
-			KeywordSpan:    c.span(decl.Keyword()),
-			ModifierSpan:   c.span(decl.Modifier()),
+			KeywordSpan:    c.span(decl.KeywordToken()),
+			ModifierSpan:   c.span(decl.ModifierToken()),
 			ImportPathSpan: c.span(decl.ImportPath()),
 			SemicolonSpan:  c.span(decl.Semicolon()),
 		}}}
@@ -277,7 +277,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			Kind:          kind,
 			Options:       c.options(decl.Options()),
 			Span:          c.span(decl),
-			KeywordSpan:   c.span(decl.Keyword()),
+			KeywordSpan:   c.span(decl.KeywordToken()),
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}
 
@@ -321,7 +321,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			Value:         c.expr(decl.Value()),
 			Options:       c.options(decl.Options()),
 			Span:          c.span(decl),
-			KeywordSpan:   c.span(decl.Keyword()),
+			KeywordSpan:   c.span(decl.KeywordToken()),
 			EqualsSpan:    c.span(decl.Equals()),
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}
