@@ -61,7 +61,8 @@ func lexNumber(l *lexer) token.Token {
 
 	what := taxa.Int
 	result, ok := parseInt(digits, base)
-	if !ok {
+	switch {
+	case !ok:
 		if !taxa.IsFloatText(digits) {
 			l.Error(errInvalidNumber{Token: tok})
 			// Need to set a value to avoid parse errors in Token.AsInt.
@@ -99,12 +100,16 @@ func lexNumber(l *lexer) token.Token {
 		} else {
 			token.SetValue(tok, value)
 		}
-	} else if result.big != nil {
+
+	case result.big != nil:
 		token.SetValue(tok, result.big)
-	} else if base != 10 || result.hasThousands {
+
+	case base == 10 && !result.hasThousands:
 		// We explicitly do not call SetValue for the most common case of base
 		// 10 integers, because that is handled for us on-demand in AsInt. This
 		// is a memory consumption optimization.
+
+	default:
 		token.SetValue(tok, result.small)
 	}
 
