@@ -20,7 +20,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/method/bad_type.proto:22:31
    |
 22 |     rpc Bar2(foo.Bar) returns repeated foo.Bar;
-   |                               ^^^^^^^^^^^^^^^^ help: replace this with `(repeated foo.Bar)`
+   |                               ^^^^^^^^^^^^^^^^
+  help: insert (...) around the return type
+   |
+22 |     rpc Bar2(foo.Bar) returns (repeated foo.Bar);
+   |                               +                +
 
 error: only message types may appear in method parameter list
   --> testdata/parser/method/bad_type.proto:23:14

@@ -8,6 +8,10 @@ error: unexpected `;` in `edition` declaration
    |
 15 | edition;
    |        ^ expected `=`
+  help: consider inserting a `=`
+   |
+15 | edition = ;
+   |        +++
 
 error: unexpected `syntax` declaration
   --> testdata/parser/syntax/lonely.proto:17:1

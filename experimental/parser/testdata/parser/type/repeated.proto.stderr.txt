@@ -122,7 +122,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:33:41
    |
 33 |     rpc X4(required optional M) returns stream optional M {}
-   |                                         ^^^^^^^^^^^^^^^^^ help: replace this with `(stream optional M)`
+   |                                         ^^^^^^^^^^^^^^^^^
+  help: insert (...) around the return type
+   |
+33 |     rpc X4(required optional M) returns (stream optional M) {}
+   |                                         +                 +
 
 error: only message types may appear in method return type
   --> testdata/parser/type/repeated.proto:33:48
@@ -152,7 +156,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:34:46
    |
 34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
-   |                                              ^^^^^^^^^^^^^^^^^^^^^^^ help: replace this with `(repeated stream .test.M)`
+   |                                              ^^^^^^^^^^^^^^^^^^^^^^^
+  help: insert (...) around the return type
+   |
+34 |     rpc X5(repeated repeated test.M) returns (repeated stream .test.M) {}
+   |                                              +                       +
 
 error: only message types may appear in method return type
   --> testdata/parser/type/repeated.proto:34:55
@@ -170,7 +178,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:35:43
    |
 35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
-   |                                           ^^^^^^^^^^^^^^^^^ help: replace this with `(stream repeated M)`
+   |                                           ^^^^^^^^^^^^^^^^^
+  help: insert (...) around the return type
+   |
+35 |     rpc X6(stream stream .test.M) returns (stream repeated M) {}
+   |                                           +                 +
 
 error: only message types may appear in method return type
   --> testdata/parser/type/repeated.proto:35:50

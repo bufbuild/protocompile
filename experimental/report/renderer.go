@@ -955,15 +955,11 @@ func (r *renderer) suggestion(snip snippet) {
 
 	if multiline {
 		span, hunks := unifiedDiff(snip.Span, snip.edits)
-		aLine := span.StartLoc().Line
-		bLine := aLine
-		for i, hunk := range hunks {
-			// Trim a single newline before and after hunk. This helps deal with
-			// cases where a newline gets duplicated across hunks of different
-			// type.
-			hunk.content, _ = strings.CutPrefix(hunk.content, "\n")
-			hunk.content, _ = strings.CutSuffix(hunk.content, "\n")
+		startLine := span.StartLoc().Line
 
+		aLine := startLine
+		bLine := startLine
+		for i, hunk := range hunks {
 			if hunk.content == "" {
 				continue
 			}
@@ -985,11 +981,11 @@ func (r *renderer) suggestion(snip snippet) {
 
 				// Draw the line as we would for an ordinary window, but prefix
 				// each line with a the hunk's kind and color.
-				fmt.Fprintf(r, "\n%s%*d | %s%c%s %s",
+				fmt.Fprintf(r, "\n%s%*d | %s%c%s ",
 					r.ss.nAccent, r.margin, lineno,
 					hunk.bold(&r.ss), hunk.kind, hunk.color(&r.ss),
-					line,
 				)
+				stringWidth(0, line, false, &r.writer)
 
 				switch hunk.kind {
 				case hunkUnchanged:

@@ -12,27 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package syntax
+package iterx
 
 import (
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
-// IsEdition returns whether this represents an edition.
-func (s Syntax) IsEdition() bool {
-	return s != Proto2 && s != Proto3
+// Left returns a new iterator that drops the right value of a [iter.Seq2].
+func Left[K, V any](seq iter.Seq2[K, V]) iter.Seq[K] {
+	return Map2to1(seq, func(k K, _ V) K { return k })
 }
 
-// Editions returns an iterator over all the editions in this package.
-func Editions() iter.Seq[Syntax] {
-	return func(yield func(Syntax) bool) {
-		for i := range totalEditions {
-			if !yield(Syntax(i + int(Edition2023))) {
-				break
-			}
-		}
-	}
+// Right returns a new iterator that drops the left value of a [iter.Seq2].
+func Right[K, V any](seq iter.Seq2[K, V]) iter.Seq[V] {
+	return Map2to1(seq, func(_ K, v V) V { return v })
 }
-
-var totalEditions = iterx.Count(iterx.Filter(All(), Syntax.IsEdition))

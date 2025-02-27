@@ -92,6 +92,10 @@ error: unexpected type name in type parameters
    |             ^^^ expected `,`
    |             |
    |             note: assuming a missing `,` here
+  help: add a `,` here
+   |
+37 |     set<Foo, bar> x13 = 13;
+   |            +
 
 error: generic types other than `map` are not supported
   --> testdata/parser/type/generic.proto:38:5

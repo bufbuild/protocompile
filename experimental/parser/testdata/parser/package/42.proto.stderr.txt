@@ -11,6 +11,10 @@ error: unexpected integer literal after `package` declaration
    |
 21 | package 42;
    |         ^^ expected `;`
+  help: consider inserting a `;`
+   |
+21 | package; 42;
+   |        +
 
 error: unexpected integer literal in file scope
   --> testdata/parser/package/42.proto:21:9

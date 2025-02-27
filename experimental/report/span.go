@@ -68,11 +68,7 @@ func (s Span) Text() string {
 // Indentation is defined as the substring between the last newline in
 // [Span.Before] and the first non-Pattern_White_Space after that newline.
 func (s Span) Indentation() string {
-	nl := strings.LastIndexByte(s.Before(), '\n') + 1
-	margin := strings.IndexFunc(s.File.Text()[nl:], func(r rune) bool {
-		return !unicode.In(r, unicode.Pattern_White_Space)
-	})
-	return s.File.Text()[nl : nl+margin]
+	return s.File.Indentation(s.Start)
 }
 
 // Before returns all text before this span.
@@ -303,6 +299,18 @@ func (f *File) Location(offset int) Location {
 	}
 
 	return f.location(offset, true)
+}
+
+// Indentation calculates the indentation some offset.
+//
+// Indentation is defined as the substring between the last newline in
+// before the offset and the first non-Pattern_White_Space after that newline.
+func (f *File) Indentation(offset int) string {
+	nl := strings.LastIndexByte(f.Text()[:offset], '\n') + 1
+	margin := strings.IndexFunc(f.Text()[nl:], func(r rune) bool {
+		return !unicode.In(r, unicode.Pattern_White_Space)
+	})
+	return f.Text()[nl : nl+margin]
 }
 
 // Span is a shorthand for creating a new Span.

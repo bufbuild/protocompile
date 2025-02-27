@@ -79,6 +79,10 @@ error: unexpected `:` after definition
    |
 38 | option x = <>:
    |              ^ expected `;`
+  help: consider inserting a `;`
+   |
+38 | option x = <>;:
+   |           +
 
 error: unexpected `:` in file scope
   --> testdata/parser/option/values.proto:38:14
@@ -165,6 +169,11 @@ error: unexpected trailing `,` in array expression
    |
 66 |         [1],
    |            ^
+  help: delete this `,`
+   |
+66 | -         [1],
+66 | +         [1]
+   |
 
 warning: using `<...>` for message expression is not recommended
   --> testdata/parser/option/values.proto:69:8

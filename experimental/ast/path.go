@@ -70,8 +70,8 @@ func (p Path) ToRelative() Path {
 // AsIdent returns the single identifier that comprises this path, or
 // the zero token.
 func (p Path) AsIdent() token.Token {
-	first, ok := iterx.OnlyOne(p.Components)
-	if !ok || !first.Separator().IsZero() {
+	first, _ := iterx.OnlyOne(p.Components)
+	if !first.Separator().IsZero() {
 		return token.Zero
 	}
 	return first.AsIdent()

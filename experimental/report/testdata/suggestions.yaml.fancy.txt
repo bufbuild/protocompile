@@ -26,11 +26,11 @@ warning: services should have a `Service` suffix
 error: missing (...) around return type
   --> foo.proto:6:31
    |
- 6 |   rpc Get(GetRequest) returns GetResponse;
+ 6 |   rpc Get(GetRequest) returns GetResponse
    |                               ^^^^^^^^^^^
   help: add `(...)` around the type
    |
- 6 |   rpc Get(GetRequest) returns (GetResponse);
+ 6 |   rpc Get(GetRequest) returns (GetResponse)
    |                               +           +
 
 error: method options must go in a block
@@ -51,9 +51,13 @@ error: delete some stuff
   help:
    |
  5 | - service Foo {
- 6 |     rpc Get(GetRequest) returns GetResponse;
- 7 |     rpc Put(PutRequest) returns (PutResponse) [foo = bar];
- 8 | - }
+ 6 |
+ 7 |     rpc Get(GetRequest) returns GetResponse
+ 8 |     rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+ 9 |
+10 | - }
+11 | -
+ 9 | + }
    |
 
 error: delete this method
@@ -61,6 +65,8 @@ error: delete this method
   help:
    |
  7 | -   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+ 8 | - }
+ 7 | +   r}
    |
 
 encountered 4 errors and 1 warning

@@ -49,6 +49,10 @@ error: unexpected integer literal in array expression
    |                    ^ expected `,`
    |                    |
    |                    note: assuming a missing `,` here
+  help: add a `,` here
+   |
+20 | option foo = [1, 2, 3];
+   |                   +
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:21:14
@@ -65,6 +69,11 @@ error: unexpected extra `,` in array expression
    |                   -^ expected expression
    |                   |
    |                   first delimiter is here
+  help: delete this `,`
+   |
+21 | - option foo = [1, 2,, 3];
+21 | + option foo = [1, 2, 3];
+   |
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:22:14
@@ -81,12 +90,22 @@ error: unexpected extra `,` in array expression
    |                   -^ expected expression
    |                   |
    |                   first delimiter is here
+  help: delete this `,`
+   |
+22 | - option foo = [1, 2,, 3,];
+22 | + option foo = [1, 2, 3,];
+   |
 
 error: unexpected trailing `,` in array expression
   --> testdata/parser/lists.proto:22:23
    |
 22 | option foo = [1, 2,, 3,];
    |                       ^
+  help: delete this `,`
+   |
+22 | - option foo = [1, 2,, 3,];
+22 | + option foo = [1, 2,, 3];
+   |
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:23:14
@@ -101,6 +120,11 @@ error: unexpected leading `,` in array expression
    |
 23 | option foo = [,1 2,, 3,];
    |               ^ expected expression
+  help: delete this `,`
+   |
+23 | - option foo = [,1 2,, 3,];
+23 | + option foo = [1 2,, 3,];
+   |
 
 error: unexpected integer literal in array expression
   --> testdata/parser/lists.proto:23:18
@@ -109,6 +133,10 @@ error: unexpected integer literal in array expression
    |                  ^ expected `,`
    |                  |
    |                  note: assuming a missing `,` here
+  help: add a `,` here
+   |
+23 | option foo = [,1, 2,, 3,];
+   |                 +
 
 error: unexpected extra `,` in array expression
   --> testdata/parser/lists.proto:23:20
@@ -117,12 +145,22 @@ error: unexpected extra `,` in array expression
    |                   -^ expected expression
    |                   |
    |                   first delimiter is here
+  help: delete this `,`
+   |
+23 | - option foo = [,1 2,, 3,];
+23 | + option foo = [,1 2, 3,];
+   |
 
 error: unexpected trailing `,` in array expression
   --> testdata/parser/lists.proto:23:23
    |
 23 | option foo = [,1 2,, 3,];
    |                       ^
+  help: delete this `,`
+   |
+23 | - option foo = [,1 2,, 3,];
+23 | + option foo = [,1 2,, 3];
+   |
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:24:14
@@ -159,6 +197,10 @@ error: unexpected message expression in array expression
    |                 ^^ expected `,`
    |                 |
    |                 note: assuming a missing `,` here
+  help: add a `,` here
+   |
+25 | option foo = [a, {}];
+   |                +
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:26:14
@@ -176,6 +218,11 @@ error: unexpected leading `,` in array expression
    |
 26 | option foo = [,];
    |               ^ expected expression
+  help: delete this `,`
+   |
+26 | - option foo = [,];
+26 | + option foo = [];
+   |
 
 error: unexpected extra `;` in message expression
   --> testdata/parser/lists.proto:31:16
@@ -184,12 +231,22 @@ error: unexpected extra `;` in message expression
    |               -^ expected message field value
    |               |
    |               first delimiter is here
+  help: delete this `;`
+   |
+31 | -         bar: 2;;
+31 | +         bar: 2;
+   |
 
 error: unexpected leading `;` in message expression
   --> testdata/parser/lists.proto:34:15
    |
 34 | option foo = {;bar: 1};
    |               ^ expected message field value
+  help: delete this `;`
+   |
+34 | - option foo = {;bar: 1};
+34 | + option foo = {bar: 1};
+   |
 
 error: unexpected extra `;` in message expression
   --> testdata/parser/lists.proto:35:22
@@ -198,6 +255,11 @@ error: unexpected extra `;` in message expression
    |                     -^ expected message field value
    |                     |
    |                     first delimiter is here
+  help: delete this `;`
+   |
+35 | - option foo = {baz: 1;; baz: 1};
+35 | + option foo = {baz: 1; baz: 1};
+   |
 
 error: unexpected extra `;` in message expression
   --> testdata/parser/lists.proto:36:22
@@ -206,18 +268,33 @@ error: unexpected extra `;` in message expression
    |                     -^ expected message field value
    |                     |
    |                     first delimiter is here
+  help: delete this `;`
+   |
+36 | - option foo = {baz: 1,; baz: 1;};
+36 | + option foo = {baz: 1, baz: 1;};
+   |
 
 error: unexpected leading `;` in message expression
   --> testdata/parser/lists.proto:38:10
    |
 38 |     bar {;}
    |          ^ expected message field value
+  help: delete this `;`
+   |
+38 | -     bar {;}
+38 | +     bar {}
+   |
 
 error: unexpected leading `,` in message expression
   --> testdata/parser/lists.proto:39:10
    |
 39 |     bar {,}
    |          ^ expected message field value
+  help: delete this `,`
+   |
+39 | -     bar {,}
+39 | +     bar {}
+   |
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:44:12
@@ -244,6 +321,10 @@ error: unexpected type name in method parameter list
    |                 ^^^ expected `,`
    |                 |
    |                 note: assuming a missing `,` here
+  help: add a `,` here
+   |
+45 |     rpc Foo(int, int) returns (int int);
+   |                +
 
 error: expected exactly one type in method return type, got 2
   --> testdata/parser/lists.proto:45:30
@@ -258,6 +339,10 @@ error: unexpected type name in method return type
    |                                   ^^^ expected `,`
    |                                   |
    |                                   note: assuming a missing `,` here
+  help: add a `,` here
+   |
+45 |     rpc Foo(int int) returns (int, int);
+   |                                  +
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:46:12
@@ -282,6 +367,11 @@ error: unexpected trailing `,` in method return type
    |
 46 |     rpc Foo(int; int) returns (int, int,);
    |                                        ^
+  help: delete this `,`
+   |
+46 | -     rpc Foo(int; int) returns (int, int,);
+46 | +     rpc Foo(int; int) returns (int, int);
+   |
 
 error: expected exactly one type in method parameter list, got 2
   --> testdata/parser/lists.proto:47:12
@@ -294,6 +384,11 @@ error: unexpected leading `,` in method parameter list
    |
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |             ^ expected type
+  help: delete this `,`
+   |
+47 | -     rpc Foo(, int, int) returns (int,, int,);
+47 | +     rpc Foo( int, int) returns (int,, int,);
+   |
 
 error: expected exactly one type in method return type, got 2
   --> testdata/parser/lists.proto:47:33
@@ -308,12 +403,22 @@ error: unexpected extra `,` in method return type
    |                                     -^ expected type
    |                                     |
    |                                     first delimiter is here
+  help: delete this `,`
+   |
+47 | -     rpc Foo(, int, int) returns (int,, int,);
+47 | +     rpc Foo(, int, int) returns (int, int,);
+   |
 
 error: unexpected trailing `,` in method return type
   --> testdata/parser/lists.proto:47:43
    |
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |                                           ^
+  help: delete this `,`
+   |
+47 | -     rpc Foo(, int, int) returns (int,, int,);
+47 | +     rpc Foo(, int, int) returns (int,, int);
+   |
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/lists.proto:48:12
@@ -338,6 +443,11 @@ error: unexpected leading `,` in method return type
    |
 48 |     rpc Foo(;) returns (,);
    |                         ^ expected type
+  help: delete this `,`
+   |
+48 | -     rpc Foo(;) returns (,);
+48 | +     rpc Foo(;) returns ();
+   |
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/lists.proto:49:12
@@ -400,6 +510,10 @@ error: unexpected type name in type parameters
    |             ^^^ expected `,`
    |             |
    |             note: assuming a missing `,` here
+  help: add a `,` here
+   |
+55 |     map<int, int> x;
+   |            +
 
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:56:5
@@ -423,6 +537,11 @@ error: unexpected extra `,` in type parameters
    |            -^ expected type
    |            |
    |            first delimiter is here
+  help: delete this `,`
+   |
+56 | -     map<int,, int> x;
+56 | +     map<int, int> x;
+   |
 
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:57:5
@@ -441,6 +560,11 @@ error: unexpected leading `,` in type parameters
    |
 57 |     map<,> x;
    |         ^ expected type
+  help: delete this `,`
+   |
+57 | -     map<,> x;
+57 | +     map<> x;
+   |
 
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:58:5
@@ -465,6 +589,11 @@ error: unexpected leading `,` in type parameters
    |
 59 |     map<,int, int> x;
    |         ^ expected type
+  help: delete this `,`
+   |
+59 | -     map<,int, int> x;
+59 | +     map<int, int> x;
+   |
 
 error: unexpected non-comparable type in map key type
   --> testdata/parser/lists.proto:59:10
@@ -518,6 +647,11 @@ error: unexpected trailing `,` in type parameters
    |
 63 |         int,
    |            ^
+  help: delete this `,`
+   |
+63 | -         int,
+63 | +         int
+   |
 
 error: unexpected integer literal in reserved range
   --> testdata/parser/lists.proto:68:19
@@ -526,6 +660,10 @@ error: unexpected integer literal in reserved range
    |                   ^ expected `,`
    |                   |
    |                   note: assuming a missing `,` here
+  help: add a `,` here
+   |
+68 |     reserved 1, 2, 3;
+   |                  +
 
 error: unexpected extra `,` in reserved range
   --> testdata/parser/lists.proto:69:19
@@ -534,6 +672,11 @@ error: unexpected extra `,` in reserved range
    |                  -^ expected expression
    |                  |
    |                  first delimiter is here
+  help: delete this `,`
+   |
+69 | -     reserved 1, 2,, 3;
+69 | +     reserved 1, 2, 3;
+   |
 
 error: unexpected extra `,` in reserved range
   --> testdata/parser/lists.proto:70:19
@@ -542,18 +685,33 @@ error: unexpected extra `,` in reserved range
    |                  -^ expected expression
    |                  |
    |                  first delimiter is here
+  help: delete this `,`
+   |
+70 | -     reserved 1, 2,, 3,;
+70 | +     reserved 1, 2, 3,;
+   |
 
 error: unexpected trailing `,` in reserved range
   --> testdata/parser/lists.proto:70:22
    |
 70 |     reserved 1, 2,, 3,;
    |                      ^
+  help: delete this `,`
+   |
+70 | -     reserved 1, 2,, 3,;
+70 | +     reserved 1, 2,, 3;
+   |
 
 error: unexpected leading `,` in reserved range
   --> testdata/parser/lists.proto:71:14
    |
 71 |     reserved ,1 2,, 3,;
    |              ^ expected expression
+  help: delete this `,`
+   |
+71 | -     reserved ,1 2,, 3,;
+71 | +     reserved 1 2,, 3,;
+   |
 
 error: unexpected integer literal in reserved range
   --> testdata/parser/lists.proto:71:17
@@ -562,6 +720,10 @@ error: unexpected integer literal in reserved range
    |                 ^ expected `,`
    |                 |
    |                 note: assuming a missing `,` here
+  help: add a `,` here
+   |
+71 |     reserved ,1, 2,, 3,;
+   |                +
 
 error: unexpected extra `,` in reserved range
   --> testdata/parser/lists.proto:71:19
@@ -570,12 +732,22 @@ error: unexpected extra `,` in reserved range
    |                  -^ expected expression
    |                  |
    |                  first delimiter is here
+  help: delete this `,`
+   |
+71 | -     reserved ,1 2,, 3,;
+71 | +     reserved ,1 2, 3,;
+   |
 
 error: unexpected trailing `,` in reserved range
   --> testdata/parser/lists.proto:71:22
    |
 71 |     reserved ,1 2,, 3,;
    |                      ^
+  help: delete this `,`
+   |
+71 | -     reserved ,1 2,, 3,;
+71 | +     reserved ,1 2,, 3;
+   |
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:72:14
@@ -600,12 +772,21 @@ error: unexpected message expression in reserved range
    |                ^^ expected `,`
    |                |
    |                note: assuming a missing `,` here
+  help: add a `,` here
+   |
+72 |     reserved a, {};
+   |               +
 
 error: unexpected leading `,` in reserved range
   --> testdata/parser/lists.proto:73:14
    |
 73 |     reserved ,;
    |              ^ expected expression
+  help: delete this `,`
+   |
+73 | -     reserved ,;
+73 | +     reserved ;
+   |
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:75:14
@@ -644,6 +825,10 @@ error: unexpected identifier in reserved range
    |                   ^ expected `,`
    |                   |
    |                   note: assuming a missing `,` here
+  help: add a `,` here
+   |
+75 |     reserved a, b, c;
+   |                  +
 
 error: cannot use identifiers in reserved range in syntax mode
   --> testdata/parser/lists.proto:76:14
@@ -682,11 +867,19 @@ error: unexpected identifier in reserved range
    |                   ^ expected `,`
    |                   |
    |                   note: assuming a missing `,` here
+  help: add a `,` here
+   |
+76 |     reserved a, b, c
+   |                  +
 
 error: unexpected `message` after reserved range
   --> testdata/parser/lists.proto:77:5
    |
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
+  help: consider inserting a `;`
+   |
+76 |     reserved a, b c;
+   |                    +
 
 encountered 94 errors and 1 warning

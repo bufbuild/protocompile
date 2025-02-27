@@ -84,7 +84,11 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			where: d.in.In(),
 			want:  d.what.AsSet(),
 			got:   fmt.Sprintf("leading `%s`", next.Text()),
-		})
+		}).Apply(report.SuggestEdits(
+			next.Span(),
+			fmt.Sprintf("delete this `%s`", next.Text()),
+			report.Edit{Start: 0, End: len(next.Text())},
+		))
 	}
 
 	var needDelim bool
@@ -138,8 +142,16 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				where: d.in.In(),
 				want:  d.delimNouns(),
 			}).Apply(
-				// TODO: this should be a suggestion.
 				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
+				justify(
+					d.p.Stream(),
+					v.Span(),
+					fmt.Sprintf("add a `%s` here", d.delims[latest]),
+					justified{
+						report.Edit{Replace: d.delims[latest].String()},
+						justifyLeft,
+					},
+				),
 			)
 		}
 		needDelim = d.required
@@ -165,7 +177,14 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				where: d.in.In(),
 				want:  d.what.AsSet(),
 				got:   fmt.Sprintf("extra `%s`", next.Text()),
-			}).Apply(report.Snippetf(delim, "first delimiter is here"))
+			}).Apply(
+				report.Snippetf(delim, "first delimiter is here"),
+				report.SuggestEdits(
+					next.Span(),
+					fmt.Sprintf("delete this `%s`", next.Text()),
+					report.Edit{Start: 0, End: len(next.Text())},
+				),
+			)
 		}
 
 		if !yield(v, delim) {
@@ -195,7 +214,11 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			what:  delim,
 			where: d.in.In(),
 			got:   fmt.Sprintf("trailing `%s`", delim.Text()),
-		})
+		}).Apply(report.SuggestEdits(
+			delim.Span(),
+			fmt.Sprintf("delete this `%s`", delim.Text()),
+			report.Edit{Start: 0, End: len(delim.Text())},
+		))
 	}
 }
 

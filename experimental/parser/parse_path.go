@@ -15,9 +15,12 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -56,13 +59,27 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 				// This is a double dot, so something like foo..bar, ..foo, or
 				// foo.. We diagnose it and move on -- Path.Components is robust
 				// against double dots.
+
+				// We consume additional separators here so that we can diagnose
+				// them all in one shot.
+				for {
+					prevSeparator = c.Next()
+					next := c.Peek()
+					if !slicesx.Among(next.Text(), ".", "/") {
+						break
+					}
+				}
+
+				tokens := report.Join(next, prevSeparator)
 				p.Error(errUnexpected{
-					what:  next,
+					what:  tokens,
 					where: taxa.Classify(next).After(),
 					want:  taxa.NewSet(taxa.Ident, taxa.Parens),
+					got:   "tokens",
 				})
+			} else {
+				prevSeparator = c.Next()
 			}
-			prevSeparator = c.Next()
 
 		case next.Kind() == token.Ident:
 			if !first && prevSeparator.IsZero() {
@@ -115,9 +132,13 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			// consume this token.
 			p.Error(errUnexpected{
 				what:  next,
-				where: taxa.QualifiedName.In(),
+				where: taxa.QualifiedName.After(),
 				want:  taxa.NewSet(taxa.Ident, taxa.Parens),
-			})
+			}).Apply(report.SuggestEdits(
+				prevSeparator,
+				fmt.Sprintf("delete the extra `%s`", prevSeparator.Text()),
+				report.Edit{Start: 0, End: 1},
+			))
 
 			end = prevSeparator // Include the trailing separator.
 			done = true

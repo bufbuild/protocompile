@@ -8,8 +8,8 @@ error: unexpected definition body in message definition
   help: remove these braces
    |
 21 | -     {
-22 |           int32 y = 2;
-23 | -     }
+23 |           int32 y = 2;
+25 | -     }
    |
 
 error: unexpected definition body in file scope
@@ -22,10 +22,10 @@ error: unexpected definition body in file scope
   help: remove these braces
    |
 26 | - {
-27 |       message N {
-28 |           int32 y = 2;
-29 |       }
-30 | - }
+28 |       message N {
+29 |           int32 y = 2;
+30 |       }
+32 | - }
    |
 
 encountered 2 errors

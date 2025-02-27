@@ -54,7 +54,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:22:17
    |
 22 |     M x returns T (T);
-   |                 ^ help: replace this with `(T)`
+   |                 ^
+  help: insert (...) around the return type
+   |
+22 |     M x returns (T) (T);
+   |                 + +
 
 error: unexpected method parameter list after method return type
   --> testdata/parser/def/ordering.proto:22:19
@@ -194,7 +198,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:30:17
    |
 30 |     M x returns T returns T;
-   |                 ^ help: replace this with `(T)`
+   |                 ^
+  help: insert (...) around the return type
+   |
+30 |     M x returns (T) returns T;
+   |                 + +
 
 error: encountered more than one method return type
   --> testdata/parser/def/ordering.proto:30:19
@@ -220,7 +228,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:31:17
    |
 31 |     M x returns T [] returns T;
-   |                 ^ help: replace this with `(T)`
+   |                 ^
+  help: insert (...) around the return type
+   |
+31 |     M x returns (T) [] returns T;
+   |                 + +
 
 error: compact options cannot be empty
   --> testdata/parser/def/ordering.proto:31:19
@@ -260,7 +272,11 @@ error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:32:29
    |
 32 |     M x [foo = bar] returns T;
-   |                             ^ help: replace this with `(T)`
+   |                             ^
+  help: insert (...) around the return type
+   |
+32 |     M x [foo = bar] returns (T);
+   |                             + +
 
 error: missing message field tag in declaration
   --> testdata/parser/def/ordering.proto:33:5

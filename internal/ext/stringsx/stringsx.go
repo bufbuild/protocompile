@@ -49,9 +49,14 @@ func PrevRune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
 	return r, r != utf8.RuneError
 }
 
+// Byte returns the rune at the given index.
+func Byte[I slicesx.SliceIndex](s string, idx I) (byte, bool) {
+	return slicesx.Get(unsafex.BytesAlias[[]byte](s), idx)
+}
+
 // EveryFunc verifies that all runes in the string satisfy the given predicate.
 func EveryFunc(s string, p func(rune) bool) bool {
-	return iterx.All(Runes(s), p)
+	return iterx.Every(Runes(s), p)
 }
 
 // Runes returns an iterator over the runes in a string.

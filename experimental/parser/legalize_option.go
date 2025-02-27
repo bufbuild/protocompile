@@ -269,10 +269,10 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 					break
 				}
 
-				_, isURL := iterx.Find(path.Components, func(pc ast.PathComponent) bool {
+				slashIdx, _ := iterx.Find(path.Components, func(pc ast.PathComponent) bool {
 					return pc.Separator().Keyword() == keyword.Slash
 				})
-				if isURL {
+				if slashIdx != -1 {
 					legalizePath(p, taxa.TypeURL.In(), path, pathOptions{AllowSlash: true})
 				} else {
 					legalizePath(p, taxa.ExtensionName.In(), path, pathOptions{
