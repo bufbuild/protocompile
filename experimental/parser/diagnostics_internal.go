@@ -132,8 +132,8 @@ func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
 const (
 	justifyNone int = iota
 	justifyBetween
-	justifyRight
 	justifyLeft
+	justifyRight
 )
 
 type justified struct {
@@ -141,98 +141,182 @@ type justified struct {
 	justify int
 }
 
+// justify generates suggested edits using justification information.
+//
+// "Justification" is a token-aware operation that ensures that each suggested
+// edit is either:
+//
+// 1. Surrounded on both sides by at least once space. (justifyBetween)
+// 2. Has no whitespace to its left or its right. (justifyLeft, justifyRight)
+//
+// This is necessary in order to generate sensible suggestions in a number of
+// cases.
+//
+// # Case 1: Inserting an equals sign.
 func justify(stream *token.Stream, span report.Span, message string, edits ...justified) report.DiagnosticOption {
-	text := span.File.Text()
 	for i := range edits {
-		e := &edits[i]
-		// Convert the edits to absolute offsets.
-		e.Start += span.Start
-		e.End += span.Start
-		empty := e.Start == e.End
-
-		spaceAfter := func(text string, idx int) int {
-			r, ok := stringsx.Rune(text, idx)
-			if !ok || !unicode.IsSpace(r) {
-				return 0
-			}
-			return utf8.RuneLen(r)
-		}
-		spaceBefore := func(text string, idx int) int {
-			r, ok := stringsx.PrevRune(text, idx)
-			if !ok || !unicode.IsSpace(r) {
-				return 0
-			}
-			return utf8.RuneLen(r)
-		}
-
 		switch edits[i].justify {
 		case justifyBetween:
-			// If possible, shift the offset such that it is surrounded by
-			// whitespace. However, this is not always possible, in which case we
-			// must add whitespace to text.
-			prev := spaceBefore(text, e.Start)
-			next := spaceAfter(text, e.End)
-			switch {
-			case prev > 0 && next > 0:
-				// Nothing to do here.
-
-			case empty && prev > 0 && spaceBefore(text, e.Start-prev) > 0:
-				e.Start -= prev
-				e.End -= prev
-			case prev > 0:
-				e.Replace += " "
-
-			case empty && next > 0 && spaceAfter(text, e.End+next) > 0:
-				e.Start += next
-				e.End += next
-			case next > 0:
-				e.Replace = " " + e.Replace
-
-			default:
-				// We're crammed between non-whitespace.
-				e.Replace = " " + e.Replace + " "
-			}
-
+			doJustifyBetween(span, &edits[i].Edit)
 		case justifyLeft:
-			// Get the token at the start of the span.
-			start, end := stream.Around(e.Start)
-			if end.IsZero() {
-				break
-			}
-
-			c := token.NewCursorAt(start)
-			// Seek to the previous unskippable token, and use its end as
-			// the start of the justification.
-			e.Start = c.Prev().Span().End
-			if empty {
-				e.End = e.Start
-			}
-
+			doJustifyLeft(stream, span, &edits[i].Edit)
 		case justifyRight:
-			// Identical to the above, but reversed.
-			start, end := stream.Around(e.Start)
-			if start.IsZero() {
-				break
-			}
-
-			c := token.NewCursorAt(end)
-			e.End = c.Next().Span().Start
-			if empty {
-				e.Start = e.End
-			}
+			doJustifyRight(stream, span, &edits[i].Edit)
 		}
 	}
 
-	span = report.JoinSeq(iterx.Map(slicesx.Values(edits), func(j justified) report.Span {
-		return span.File.Span(j.Start, j.End)
-	}))
-	return report.SuggestEdits(
-		span, message,
-		slicesx.Collect(iterx.Map(slicesx.Values(edits),
-			func(j justified) report.Edit {
-				j.Start -= span.Start
-				j.End -= span.Start
-				return j.Edit
-			}))...,
-	)
+	return report.SuggestEditsWithWidening(span, message,
+		slicesx.Collect(slicesx.Map(edits, func(j justified) report.Edit { return j.Edit }))...)
+}
+
+// doJustifyBetween performs "between" justification.
+//
+// In well-formatted Protobuf, an equals sign should be surrounded by spaces on
+// both sides. Thus, if the user wrote [option: 5], we want to suggest
+// [option = 5]. justifyBetween handles this case by inserting an extra space
+// into the replacement string, so that it goes from "=" to " =". We need to
+// not blindly convert it into " = ", because that would suggest [option =  5],
+// which looks ugly.
+//
+// It also handles the case [option/*foo*/: 5] by *not* being token aware: it
+// will suggest [option/*foo*/ = 5].
+//
+// We *also* need to handle cases like [foo  5], where we want to insert an
+// sign that somehow got deleted. The suggestion will probably be placed right
+// after foo, so naively it will become [foo=  5], and after justification,
+// [foo =  5]. To avoid this, we have a special case where we move the insertion
+// point one space over to avoid needing to insert an extra space, producing
+// [foo = 5].
+//
+// Of course, all of these operations are performed symmetrically.
+func doJustifyBetween(span report.Span, e *report.Edit) {
+	text := span.File.Text()
+
+	// Helpers which returns the number of bytes of the space before or
+	// after the given offset. This byte width is used to shift the
+	// replaced region when there are extra spaces around it.
+	spaceAfter := func(idx int) int {
+		r, ok := stringsx.Rune(text, idx+span.Start)
+		if !ok || !unicode.IsSpace(r) {
+			return 0
+		}
+		return utf8.RuneLen(r)
+	}
+	spaceBefore := func(idx int) int {
+		r, ok := stringsx.PrevRune(text, idx+span.Start)
+		if !ok || !unicode.IsSpace(r) {
+			return 0
+		}
+		return utf8.RuneLen(r)
+	}
+
+	// If possible, shift the offset such that it is surrounded by
+	// whitespace. However, this is not always possible, in which case we
+	// must add whitespace to text.
+	prev := spaceBefore(e.Start)
+	next := spaceAfter(e.End)
+	switch {
+	case prev > 0 && next > 0:
+		// Nothing to do here.
+
+	case prev > 0:
+		if !e.IsDeletion() && spaceBefore(e.Start-prev) > 0 {
+			// Case for inserting = into [foo  5].
+			e.Start -= prev
+			e.End -= prev
+		} else {
+			// Case for replacing : -> = in [foo :5].
+			e.Replace += " "
+		}
+
+	case next > 0:
+		if !e.IsDeletion() && spaceAfter(e.End+next) > 0 {
+			// Mirror-image case for inserting = into [foo  5].
+			e.Start += next
+			e.End += next
+		} else {
+			// Case for replacing : -> = in [foo: 5].
+			e.Replace = " " + e.Replace
+		}
+
+	default:
+		// Case for replacing : -> = in [foo:5].
+		e.Replace = " " + e.Replace + " "
+	}
+}
+
+// doJustifyLeft performs left justification.
+//
+// This will ensure that the suggestion is as far to the left as possible before
+// any other token.
+//
+// For example, consider the following fragment.
+//
+//	int32 x
+//	int32 y;
+//
+// We want to suggest a semicolon after x. However, the parser won't give up
+// parsing followers of x until it hits int32 on the second line, by which time
+// it's very hard to figure out, from the parser state, where the semicolon
+// should go. So, we suggest inserting it immediately before the second int32,
+// but with left justification: that will cause the suggestion to move until
+// just after x on the first line.
+//
+// This must use token information to work correctly. Consider now
+//
+//	int32 x // comment
+//	int32 y;
+//
+// If we simply chased spaces backwards, we would wind up with the following
+// bad suggestion:
+//
+//	int32 x // comment;
+//	int32 y;
+//
+// To avoid this, we instead rewind past any skippable tokens, which is why
+// we use a stream here.
+//
+// This is used in some other palces, such as when converting {x = y} into
+// {x: y}. In this case, because we're performing a deletion, we *consume*
+// the extra space, instead of merely moving the insertion point. This case
+// can result in comments getting deleted; avoiding this is probably not
+// worth it. E.g. `{x/*f*/ = y}` becomes `{x: y}`, because the deleted region
+// is expanded from "=" into "/*f*/ =".
+func doJustifyLeft(stream *token.Stream, span report.Span, e *report.Edit) {
+	wasDelete := e.IsDeletion()
+
+	// Get the token at the start of the span.
+	start, _ := stream.Around(e.Start + span.Start)
+	if start.IsZero() {
+		// Start of the file, so we can't rewind beyond this.
+		return
+	}
+
+	// Seek to the previous unskippable token, and use its end as
+	// the start of the justification.
+	e.Start = token.NewCursorAt(start).Prev().Span().End - span.Start
+
+	if !wasDelete {
+		e.End = e.Start
+	}
+}
+
+// doJustifyRight is the mirror image of doJustifyLeft.
+func doJustifyRight(stream *token.Stream, span report.Span, e *report.Edit) {
+	wasDelete := e.IsDeletion()
+
+	// Get the token at the start of the span.
+	_, end := stream.Around(e.Start + span.Start)
+	if end.IsZero() {
+		// End of the file, so we can't fast-forward beyond this.
+		return
+	}
+
+	// Seek to the next unskippable token, and use its start as
+	// the start of the justification.
+	e.End = token.NewCursorAt(end).Next().Span().Start - span.Start
+
+	if !wasDelete {
+		e.Start = e.End
+	}
 }
