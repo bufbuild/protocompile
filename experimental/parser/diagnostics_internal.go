@@ -16,7 +16,6 @@ package parser
 
 import (
 	"fmt"
-
 	"unicode"
 	"unicode/utf8"
 
