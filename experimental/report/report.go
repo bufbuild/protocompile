@@ -23,6 +23,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
 
@@ -54,6 +56,10 @@ type Options struct {
 	// Higher values mean more debugging information. What debugging information
 	// is actually provided is subject to change.
 	Tracing int
+
+	// If set, [Report.Sort] will not discard duplicate diagnostics, as defined
+	// in that function's contract.
+	KeepDuplicates bool
 }
 
 // Diagnose is a type that can be rendered as a diagnostic.
@@ -141,11 +147,15 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	}
 }
 
-// Sort canonicalizes this report's diagnostic order according to an specific
-// ordering criteria. Diagnostics are sorted by, in order;
+// Canonicalize sorts this report's diagnostics according to an specific
+// ordering criteria. Diagnostics are sorted by, in order:
 //
-// File name of primary span, SortOrder value, start offset of primary snippet,
-// end offset of primary snippet, content of error message.
+// 1. File name of primary span.
+// 2. SortOrder value.
+// 3. Start offset of primary snippet.
+// 4. End offset of primary snippet.
+// 5. Diagnostic tag.
+// 6. Textual content of error message.
 //
 // Where diagnostics have no primary span, the file is treated as empty and the
 // offsets are treated as zero.
@@ -153,29 +163,47 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 // These criteria ensure that diagnostics for the same file go together,
 // diagnostics for the same sort order (lex, parse, etc) go together, and they
 // are otherwise ordered by where they occur in the file.
-func (r *Report) Sort() {
-	slices.SortFunc(r.Diagnostics, func(a, b Diagnostic) int {
-		aPrime := a.Primary()
-		bPrime := b.Primary()
+//
+// Canonicalize will deduplicate diagnostics whose primary span and (nonempty)
+// diagnostic tags are equal, selecting the diagnostic that sorts as greatest
+// as the canonical value. This allows later diagnostics to replace earlier
+// diagnostics, so long as they cooperate by using the same tag. Deduplication
+// can be suppressed using [Options].KeepDuplicates.
+func (r *Report) Canonicalize() {
+	slices.SortFunc(r.Diagnostics, cmpx.Join(
+		cmpx.Key(func(d Diagnostic) string { return d.Primary().Path() }),
+		cmpx.Key(func(d Diagnostic) int { return d.sortOrder }),
+		cmpx.Key(func(d Diagnostic) int { return d.Primary().Start }),
+		cmpx.Key(func(d Diagnostic) int { return d.Primary().End }),
+		cmpx.Key(func(d Diagnostic) string { return d.tag }),
+		cmpx.Key(func(d Diagnostic) string { return d.message }),
+	))
 
-		if diff := strings.Compare(aPrime.Path(), bPrime.Path()); diff != 0 {
-			return diff
+	if r.KeepDuplicates {
+		return
+	}
+
+	type key struct {
+		span Span
+		tag  string
+	}
+	var cur key
+	slicesx.Backward(r.Diagnostics)(func(i int, d Diagnostic) bool {
+		if d.tag == "" {
+			return true
 		}
 
-		if diff := a.sortOrder - b.sortOrder; diff != 0 {
-			return diff
+		key := key{d.Primary().Span(), d.tag}
+		if cur.tag != "" && cur == key {
+			r.Diagnostics[i].level = -1 // Use this to mark which diagnostics to delete.
+		} else {
+			cur = key
 		}
 
-		if diff := aPrime.Start - bPrime.Start; diff != 0 {
-			return diff
-		}
-
-		if diff := aPrime.End - bPrime.End; diff != 0 {
-			return diff
-		}
-
-		return strings.Compare(a.message, b.message)
+		return true
 	})
+
+	r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d Diagnostic) bool { return d.level == -1 })
 }
 
 // ToProto converts this report into a Protobuf message for serialization.
