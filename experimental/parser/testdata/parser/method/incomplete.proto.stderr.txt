@@ -44,7 +44,7 @@ error: unexpected `;` after `returns`
   --> testdata/parser/method/incomplete.proto:25:23
    |
 25 |     rpc Bar6() returns;
-   |                       ^ expected `(`
+   |                       ^ expected `(...)`
 
 error: expected exactly one type in method parameter list, got 0
   --> testdata/parser/method/incomplete.proto:26:13
