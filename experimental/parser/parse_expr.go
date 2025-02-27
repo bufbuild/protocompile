@@ -108,8 +108,8 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 
 	case 1:
 		//nolint:gocritic // This is a switch for consistency with the rest of the file.
-		switch next.Text() {
-		case "to":
+		switch next.Keyword() {
+		case keyword.To:
 			return p.NewExprRange(ast.ExprRangeArgs{
 				Start: lhs,
 				To:    c.Next(),
@@ -134,7 +134,7 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case next.IsZero():
 		return ast.ExprAny{}
 
-	case next.Text() == "-":
+	case next.Keyword() == keyword.Minus:
 		c.Next()
 		inner := parseExprPrefix(p, c, taxa.Minus.After())
 		return p.NewExprPrefixed(ast.ExprPrefixedArgs{

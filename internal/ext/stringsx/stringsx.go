@@ -26,7 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
-// Rune returns the rune at the given index.
+// Rune returns the rune at the given byte index.
 //
 // Returns 0, false if out of bounds. Returns U+FFFD, false if rune decoding fails.
 func Rune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
@@ -37,7 +37,7 @@ func Rune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
 	return r, r != utf8.RuneError
 }
 
-// Rune returns the previous rune at the given index.
+// Rune returns the previous rune at the given byte index.
 //
 // Returns 0, false if out of bounds. Returns U+FFFD, false if rune decoding fails.
 func PrevRune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
@@ -49,9 +49,14 @@ func PrevRune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
 	return r, r != utf8.RuneError
 }
 
+// Byte returns the rune at the given index.
+func Byte[I slicesx.SliceIndex](s string, idx I) (byte, bool) {
+	return slicesx.Get(unsafex.BytesAlias[[]byte](s), idx)
+}
+
 // EveryFunc verifies that all runes in the string satisfy the given predicate.
 func EveryFunc(s string, p func(rune) bool) bool {
-	return iterx.All(Runes(s), p)
+	return iterx.Every(Runes(s), p)
 }
 
 // Runes returns an iterator over the runes in a string.
