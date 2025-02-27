@@ -77,6 +77,7 @@ func (c *Cursor) IsSynthetic() bool {
 // Clone returns a copy of this cursor, which allows performing operations on
 // it without mutating the original cursor.
 func (c *Cursor) Clone() *Cursor {
+	//nolint:revive,stylecheck // The type here is explicit to show a copy actually happens.
 	var clone Cursor = *c
 	return &clone
 }
