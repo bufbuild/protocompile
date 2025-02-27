@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -115,7 +116,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		// 	- package
 		// 	- extend
 		if !isList && len(mods) == 0 &&
-			slicesx.Among(ident.Text(), "package", "extend") &&
+			slicesx.Among(ident.Keyword(), keyword.Package, keyword.Extend) &&
 			!canStartPath(c.Peek()) {
 			kw, path := tyPath.Split(1)
 			if !path.IsZero() {
@@ -166,7 +167,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 
 	// Next, look for some angle brackets. We need to do this before draining
 	// mods, because angle brackets bind more tightly than modifiers.
-	if angles := c.Peek(); angles.Text() == "<" && !angles.IsLeaf() {
+	if angles := c.Peek(); angles.Keyword() == keyword.Angles {
 		c.Next() // Consume the angle brackets.
 		generic := p.NewTypeGeneric(ast.TypeGenericArgs{
 			Path:          tyPath,

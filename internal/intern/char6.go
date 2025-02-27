@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package intern provides an interning table abstraction to optimize symbol
-// resolution.
 package intern
 
 import (

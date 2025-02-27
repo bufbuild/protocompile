@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package source provides standard queries and interfaces for accessing the
+// Package source provides standard queries and interfaces for accessing the
 // contents of source files.
 package source
 

@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -63,7 +64,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		})
 	}
 
-	if first.Text() == ";" {
+	if first.Keyword() == keyword.Semi {
 		c.Next()
 
 		// This is an empty decl.
@@ -104,8 +105,8 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	// Check for the various special cases.
 	next := c.Peek()
-	switch kw.Text() {
-	case "syntax", "edition":
+	switch kw.Keyword() {
+	case keyword.Syntax, keyword.Edition:
 		// Syntax and edition are parsed only at the top level. Otherwise, they
 		// start a def.
 		if in != taxa.TopLevel {
@@ -117,7 +118,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		}
 
 		in := taxa.Syntax
-		if kw.Text() == "edition" {
+		if kw.Keyword() == keyword.Edition {
 			in = taxa.Edition
 		}
 
@@ -126,12 +127,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			// few stanzas will be garbage.
 			p.Error(errUnexpectedEOF(c, in.In()))
 		} else {
-			eq, err := punctParser{
-				parser: p, c: c,
-				want:   "=",
-				where:  in.In(),
-				insert: justifyBetween,
-			}.parse()
+			eq, err := parseEquals(p, c, in)
 			args.Equals = eq
 			if err != nil {
 				p.Error(err)
@@ -145,12 +141,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 			args.Options = tryParseOptions(p, c, in)
 
-			args.Semicolon, err = punctParser{
-				parser: p, c: c,
-				want:   ";",
-				where:  in.After(),
-				insert: justifyLeft,
-			}.parse()
+			args.Semicolon, err = parseSemi(p, c, in)
 			// Only diagnose a missing semicolon if we successfully parsed some
 			// kind of partially-valid expression. Otherwise, we might diagnose
 			// the same extraneous/missing ; twice.
@@ -167,7 +158,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		return p.NewDeclSyntax(args).AsAny()
 
-	case "package":
+	case keyword.Package:
 		// Package is only parsed only at the top level. Otherwise, it starts
 		// a def.
 		//
@@ -178,6 +169,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if in != taxa.TopLevel {
 			break
 		}
+		in := taxa.Package
 
 		args := ast.DeclPackageArgs{
 			Keyword: kw,
@@ -187,16 +179,11 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if c.Done() && path.IsZero() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, taxa.Package.In()))
+			p.Error(errUnexpectedEOF(c, in.In()))
 		} else {
 			args.Options = tryParseOptions(p, c, in)
 
-			semi, err := punctParser{
-				parser: p, c: c,
-				want:   ";",
-				where:  taxa.Package.After(),
-				insert: justifyLeft,
-			}.parse()
+			semi, err := parseSemi(p, c, in)
 			args.Semicolon = semi
 			if err != nil {
 				p.Error(err)
@@ -205,7 +192,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		return p.NewDeclPackage(args).AsAny()
 
-	case "import":
+	case keyword.Import:
 		// We parse imports inside of any body. However, outside of the top
 		// level, we interpret import foo as a field. import foo.bar is still
 		// an import, because we want to diagnose what is clearly an attempt to
@@ -217,7 +204,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			break
 		}
 		// This is definitely a field.
-		if next.Text() == "=" {
+		if next.Keyword() == keyword.Equals {
 			break
 		}
 
@@ -226,12 +213,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		}
 
 		in := taxa.Import
-		modifier := path.AsIdent().Name()
+		modifier := path.AsIdent().Keyword()
 		switch {
-		case modifier == "public":
+		case modifier == keyword.Public:
 			in = taxa.PublicImport
 			args.Modifier = path.AsIdent()
-		case modifier == "weak":
+		case modifier == keyword.Weak:
 			in = taxa.WeakImport
 			args.Modifier = path.AsIdent()
 		case !path.IsZero():
@@ -250,12 +237,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			// few stanzas will be garbage.
 			p.Error(errUnexpectedEOF(c, in.In()))
 		} else {
-			semi, err := punctParser{
-				parser: p, c: c,
-				want:   ";",
-				where:  in.After(),
-				insert: justifyLeft,
-			}.parse()
+			semi, err := parseSemi(p, c, in)
 			args.Semicolon = semi
 			if err != nil && args.ImportPath.IsZero() {
 				p.Error(err)
@@ -264,8 +246,8 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		return p.NewDeclImport(args).AsAny()
 
-	case "reserved", "extensions":
-		if next.Text() == "=" {
+	case keyword.Reserved, keyword.Extensions:
+		if next.Keyword() == keyword.Equals {
 			// If whatever follows the path is an =, we're going to assume this
 			// is trying to be a field.
 			break
@@ -314,7 +296,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	kw := c.Next()
 
 	in := taxa.Extensions
-	if kw.Text() == "reserved" {
+	if kw.Keyword() == keyword.Reserved {
 		in = taxa.Reserved
 	}
 
@@ -350,7 +332,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 			},
 			start: canStartExpr,
 			stop: func(t token.Token) bool {
-				if t.Text() == ";" || t.Text() == "[" {
+				if slicesx.Among(t.Keyword(), keyword.Semi, keyword.Brackets) {
 					return true
 				}
 
@@ -390,12 +372,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	options := tryParseOptions(p, c, in)
 
 	// Parse a semicolon, if possible.
-	semi, err := punctParser{
-		parser: p, c: c,
-		want:   ";",
-		where:  in.After(),
-		insert: justifyLeft,
-	}.parse()
+	semi, err := parseSemi(p, c, in)
 	if err != nil && (!options.IsZero() || !badExpr) {
 		p.Error(err)
 	}

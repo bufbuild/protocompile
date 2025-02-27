@@ -19,6 +19,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // parseExpr attempts to parse a full expression.
@@ -45,8 +47,8 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	switch prec {
 	case 0:
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
-			switch next.Text() {
-			case "=": // Allow equals signs, which are usually a mistake.
+			switch next.Keyword() {
+			case keyword.Equals: // Allow equals signs, which are usually a mistake.
 				p.Errorf("unexpected `=` in expression").Apply(
 					report.Snippet(next),
 					justify(p.Stream(), next.Span(), "replace this with an `:`", justified{
@@ -56,14 +58,15 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 					report.Notef("a %s use `=`, not `:`, for setting fields", taxa.Dict),
 				)
 				fallthrough
-			case ":":
+			case keyword.Colon:
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
 					Colon: c.Next(),
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
-			case "{", "<", "[": // This is for colon-less, array or dict-valued fields.
+			case keyword.Braces, keyword.Angles, keyword.Brackets:
+				// This is for colon-less, array or dict-valued fields.
 				if next.IsLeaf() {
 					break
 				}
@@ -160,10 +163,10 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()
 
-	case (next.Text() == "{" || next.Text() == "<" || next.Text() == "[") && !next.IsLeaf():
+	case slicesx.Among(next.Keyword(), keyword.Braces, keyword.Angles, keyword.Brackets):
 		body := c.Next()
 		in := taxa.Dict
-		if next.Text() == "[" {
+		if next.Keyword() == keyword.Brackets {
 			in = taxa.Array
 		}
 
@@ -173,7 +176,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			what: taxa.DictField,
 			in:   in,
 
-			delims:   []string{",", ";"},
+			delims:   []keyword.Keyword{keyword.Comma, keyword.Semi},
 			required: false,
 			exhaust:  true,
 			trailing: true,
@@ -184,9 +187,9 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			start: canStartExpr,
 		}
 
-		if next.Text() == "[" {
+		if in == taxa.Array {
 			elems.what = taxa.Expr
-			elems.delims = []string{","}
+			elems.delims = []keyword.Keyword{keyword.Comma}
 			elems.required = true
 			elems.trailing = false
 

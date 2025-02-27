@@ -94,8 +94,6 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 	// *every* query.
 	anyAsync := false
 	for i, q := range queries {
-		i := i // Avoid pesky capture-by-ref of loop induction variables.
-
 		q := AsAny(q) // This will also cache the result of q.Key() for us.
 		deps[i] = caller.exec.getTask(q.Key())
 

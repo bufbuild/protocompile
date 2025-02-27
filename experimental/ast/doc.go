@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package ast is a high-performance implementation of a Protobuf IDL abstract
+// Package ast is a high-performance implementation of a Protobuf IDL abstract
 // syntax tree. It is intended to be end-all, be-all AST for the following
 // use-cases:
 //

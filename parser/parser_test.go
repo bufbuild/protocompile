@@ -64,7 +64,6 @@ func TestJunkParse(t *testing.T) {
 		                }`,
 	}
 	for name, input := range inputs {
-		name, input := name, input
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			errHandler := reporter.NewHandler(reporter.NewReporter(
@@ -88,7 +87,6 @@ type parseErrorTestCase struct {
 
 func runParseErrorTestCases(t *testing.T, testCases map[string]parseErrorTestCase, expected string) {
 	for name, testCase := range testCases {
-		name, testCase := name, testCase
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			protoName := name + ".proto"
@@ -954,7 +952,7 @@ func BenchmarkBasicSuccess(b *testing.B) {
 	require.NoError(b, err)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.ReportAllocs()
 		byteReader := bytes.NewReader(bs)
 		handler := reporter.NewHandler(nil)
@@ -991,7 +989,6 @@ func TestPathological(t *testing.T) {
 		"pathological3.proto": false,
 	}
 	for fileName := range testCases {
-		fileName, canParse := fileName, testCases[fileName] // don't want test func below to capture loop var
 		t.Run(fileName, func(t *testing.T) {
 			t.Parallel()
 			// Fuzz testing complains if this loop, with 100 iterations, takes longer
@@ -1014,14 +1011,14 @@ func TestPathological(t *testing.T) {
 				}
 				cancel()
 			}()
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				if ctx.Err() != nil {
 					break
 				}
 				r := readerForTestdata(t, fileName)
 				handler := reporter.NewHandler(nil)
 				fileNode, err := Parse(fileName, r, handler)
-				if canParse {
+				if testCases[fileName] {
 					require.NoError(t, err)
 					_, err = ResultFromAST(fileNode, true, handler)
 				}

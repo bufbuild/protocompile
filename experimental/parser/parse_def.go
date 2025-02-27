@@ -20,6 +20,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 type defParser struct {
@@ -116,12 +118,7 @@ func (p *defParser) parse() ast.DeclDef {
 
 	// If we didn't see any braces, this def needs to be ended by a semicolon.
 	if !skipSemi {
-		semi, err := punctParser{
-			parser: p.parser, c: p.c,
-			want:   ";",
-			where:  taxa.Def.After(),
-			insert: justifyLeft,
-		}.parse()
+		semi, err := parseSemi(p.parser, p.c, taxa.Def)
 		p.args.Semicolon = semi
 		if err != nil {
 			p.Error(err)
@@ -193,7 +190,7 @@ func (p *defParser) parse() ast.DeclDef {
 type defInputs struct{}
 
 func (defInputs) what(*defParser) taxa.Noun  { return taxa.MethodIns }
-func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "(" }
+func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Keyword() == keyword.Parens }
 
 func (defInputs) parse(p *defParser) report.Span {
 	next := p.c.Next()
@@ -212,7 +209,7 @@ func (defInputs) prev(p *defParser) report.Span { return p.inputs.Span() }
 type defOutputs struct{}
 
 func (defOutputs) what(*defParser) taxa.Noun  { return taxa.MethodOuts }
-func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "returns" }
+func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Keyword() == keyword.Returns }
 
 func (defOutputs) parse(p *defParser) report.Span {
 	// Note that the inputs and outputs of a method are parsed
@@ -222,7 +219,7 @@ func (defOutputs) parse(p *defParser) report.Span {
 	var ty ast.TypeAny
 	list, err := punctParser{
 		parser: p.parser, c: p.c,
-		want:  "(",
+		want:  keyword.Parens,
 		where: taxa.KeywordReturns.After(),
 	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
@@ -281,13 +278,13 @@ func (defValue) canStart(p *defParser) bool {
 	// However, if we've already seen {}, [], or another value, we break
 	// instead, since this suggests we're peeking the next def.
 	switch {
-	case next.Text() == "=":
+	case next.Keyword() == keyword.Equals:
 		return true
 	case canStartPath(next):
 		// If the next "expression" looks like a path, this likelier to be
 		// due to a missing semicolon than a missing =.
 		return false
-	case next.Text() == "[", next.Text() == "{":
+	case slicesx.Among(next.Keyword(), keyword.Brackets, keyword.Braces):
 		// Exclude the two followers after this one.
 		return false
 	case canStartExpr(next):
@@ -302,7 +299,7 @@ func (defValue) canStart(p *defParser) bool {
 func (defValue) parse(p *defParser) report.Span {
 	eq, err := punctParser{
 		parser: p.parser, c: p.c,
-		want:   "=",
+		want:   keyword.Equals,
 		where:  taxa.Def.In(),
 		insert: justifyBetween,
 	}.parse()

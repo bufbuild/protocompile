@@ -12,14 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package predeclared provides all of the identifiers with a special meaning
-// in Protobuf.
-//
-// These are not keywords, but are rather special names injected into scope in
-// places where any user-defined path is allowed. For example, the identifier
-// string overrides the meaning of a path with a single identifier called string,
-// (such as a reference to a message named string in the current package) and as
-// such counts as a predeclared identifier.
-package predeclared
+// package keyword provides [Keyword], an enum of all special "grammar particles"
+// (i.e., literal tokens with special meaning in the grammar such as identifier
+// keywords and punctuation) recognized by Protocompile.
+package keyword
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum predeclared.yaml
+//go:generate go run github.com/bufbuild/protocompile/internal/enum keyword.yaml

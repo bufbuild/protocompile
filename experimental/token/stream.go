@@ -22,6 +22,8 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
@@ -160,9 +162,14 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		panic(fmt.Sprintf("protocompile/token: Push() overflowed backing text: %d > %d", end, len(s.Text())))
 	}
 
+	var kw keyword.Keyword
+	if slicesx.Among(kind, Ident, Punct) {
+		kw = keyword.Lookup(s.Text()[prevEnd:end])
+	}
+
 	s.nats = append(s.nats, nat{
-		end:           uint32(prevEnd + length),
-		kindAndOffset: int32(kind) & kindMask,
+		end:      uint32(prevEnd + length),
+		metadata: (int32(kind) & kindMask) | (int32(kw) << keywordShift),
 	})
 
 	return Token{internal.NewWith[Context](s), ID(len(s.nats))}

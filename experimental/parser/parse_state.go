@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // lexer is a Protobuf parser.
@@ -31,7 +32,7 @@ type parser struct {
 type punctParser struct {
 	*parser
 	c      *token.Cursor
-	want   string
+	want   keyword.Keyword
 	where  taxa.Place
 	insert int // One of the justify* values.
 }
@@ -45,31 +46,59 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 	start = start.File.Span(start.Start, start.Start)
 
 	next := p.c.Peek()
-	if next.Text() == p.want {
+	if next.Keyword() == p.want {
 		return p.c.Next(), nil
 	}
 
+	wanted := taxa.NewSet(taxa.Keyword(p.want))
 	err := errUnexpected{
+		what:  next,
 		where: p.where,
-		want:  taxa.NewSet(taxa.Punct(p.want, false)),
+		want:  wanted,
 	}
 	if next.IsZero() {
-		tok, span := p.c.SeekToEnd()
+		end, span := p.c.SeekToEnd()
 		err.what = span
 		err.got = taxa.EOF
-		if !tok.IsZero() {
-			err.got = taxa.Classify(tok)
+
+		if _, c, ok := end.Keyword().OpenClose(); ok {
+			// Special case for closing braces.
+			err.got = "`" + c + "`"
+		} else if !end.IsZero() {
+			err.got = taxa.Classify(end)
 		}
-	} else {
-		err.what = next
 	}
 
 	if p.insert != 0 {
 		err.stream = p.Stream()
-		err.insert = p.want
+		err.insert = p.want.String()
 		err.insertAt = err.what.Span().Start
 		err.insertJustify = p.insert
 	}
 
 	return token.Zero, err
+}
+
+// parseEquals parses an equals sign.
+//
+// This is a shorthand for a very common version of punctParser.
+func parseEquals(p *parser, c *token.Cursor, in taxa.Noun) (token.Token, report.Diagnose) {
+	return punctParser{
+		parser: p, c: c,
+		want:   keyword.Equals,
+		where:  in.In(),
+		insert: justifyBetween,
+	}.parse()
+}
+
+// parseSemi parses a semicolon.
+//
+// This is a shorthand for a very common version of punctParser.
+func parseSemi(p *parser, c *token.Cursor, after taxa.Noun) (token.Token, report.Diagnose) {
+	return punctParser{
+		parser: p, c: c,
+		want:   keyword.Semi,
+		where:  after.After(),
+		insert: justifyLeft,
+	}.parse()
 }

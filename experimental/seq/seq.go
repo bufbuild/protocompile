@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package seq provides an interface for sequence-like types that can be indexed
+// Package seq provides an interface for sequence-like types that can be indexed
 // and inserted into.
 //
 // Protocompile avoids storing slices of its public types as a means of achieving
@@ -63,7 +63,7 @@ type Inserter[T any] interface {
 func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 	return func(yield func(int, T) bool) {
 		n := seq.Len()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !yield(i, seq.At(i)) {
 				return
 			}
@@ -75,7 +75,7 @@ func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 func Values[T any](seq Indexer[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		n := seq.Len()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !yield(seq.At(i)) {
 				return
 			}

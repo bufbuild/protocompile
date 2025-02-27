@@ -36,7 +36,7 @@ diagnostics:
     level: LEVEL_REMARK
     in_file: foo.proto
     notes: 
-      - "this footer is very very very very very very very very very very very very very very very very very very long"
+      - "this footer is a very very very very very very very very very very very very very very very very very very very very very very long footer"
       - "this one is also long, and it's also supercalifragilistcexpialidocious, leading to a very early break"
     help:
       - "this help is very long (and triggers the same word-wrapping code path)"

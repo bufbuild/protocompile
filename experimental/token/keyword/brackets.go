@@ -12,14 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package queries provides specific [incremental.Query] types for various parts
-// of Protocompile. It is separate from package incremental itself because it is
-// Protocompile-specific.
-package queries
+package keyword
 
-// Values for [report.Report].SortOrder, which determine how diagnostics
-// generated across parts of the compiler are sorted.
-const (
-	stageFile int = iota * 10
-	stageAST
-)
+// OpenClose returns the open and close brackets for the four bracket
+// keywords: [Parens], [Brackets], [Braces], and [Angles].
+func (k Keyword) OpenClose() (string, string, bool) {
+	switch k {
+	case Parens:
+		return "(", ")", true
+	case Brackets:
+		return "[", "]", true
+	case Braces:
+		return "{", "}", true
+	case Angles:
+		return "<", ">", true
+	default:
+		return "", "", false
+	}
+}
