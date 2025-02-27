@@ -17,6 +17,7 @@ package ast
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // ExprPrefixed is an expression prefixed with an operator.
@@ -38,12 +39,11 @@ type ExprPrefixedArgs struct {
 }
 
 // Prefix returns this expression's prefix.
-func (e ExprPrefixed) Prefix() ExprPrefix {
-	if e.IsZero() {
-		return 0
-	}
-
-	return ExprPrefixByName(e.PrefixToken().Text())
+//
+// Returns [keyword.Unknown] if [TypePrefixed.PrefixToken] does not contain
+// a known prefix.
+func (e ExprPrefixed) Prefix() keyword.Keyword {
+	return e.PrefixToken().Keyword()
 }
 
 // Prefix returns the token representing this expression's prefix.
