@@ -122,32 +122,38 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			in = taxa.Edition
 		}
 
-		eq, err := p.Punct(c, keyword.Equals, in.In())
-		args.Equals = eq
-		if err != nil {
-			p.Error(err)
-		}
+		if c.Done() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			eq, err := parseEquals(p, c, in)
+			args.Equals = eq
+			if err != nil {
+				p.Error(err)
+			}
 
-		// Regardless of if we see an = sign, try to parse an expression if we
-		// can.
-		if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
-			args.Value = parseExpr(p, c, in.In())
-		}
+			// Regardless of if we see an = sign, try to parse an expression if we
+			// can.
+			if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
+				args.Value = parseExpr(p, c, in.In())
+			}
 
-		args.Options = tryParseOptions(p, c, in)
+			args.Options = tryParseOptions(p, c, in)
 
-		args.Semicolon, err = p.Punct(c, keyword.Semi, in.After())
-		// Only diagnose a missing semicolon if we successfully parsed some
-		// kind of partially-valid expression. Otherwise, we might diagnose
-		// the same extraneous/missing ; twice.
-		//
-		// For example, consider `syntax = ;`. WHen we enter parseExpr, it
-		// will complain about the unexpected ;.
-		//
-		// TODO: Add something like ExprError and check if args.Value
-		// contains one.
-		if err != nil && !args.Value.IsZero() {
-			p.Error(err)
+			args.Semicolon, err = parseSemi(p, c, in)
+			// Only diagnose a missing semicolon if we successfully parsed some
+			// kind of partially-valid expression. Otherwise, we might diagnose
+			// the same extraneous/missing ; twice.
+			//
+			// For example, consider `syntax = ;`. WHen we enter parseExpr, it
+			// will complain about the unexpected ;.
+			//
+			// TODO: Add something like ExprError and check if args.Value
+			// contains one.
+			if err != nil && !args.Value.IsZero() {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclSyntax(args).AsAny()
@@ -163,18 +169,25 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if in != taxa.TopLevel {
 			break
 		}
+		in := taxa.Package
 
 		args := ast.DeclPackageArgs{
 			Keyword: kw,
 			Path:    path,
 		}
 
-		args.Options = tryParseOptions(p, c, in)
+		if c.Done() && path.IsZero() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			args.Options = tryParseOptions(p, c, in)
 
-		semi, err := p.Punct(c, keyword.Semi, taxa.Package.After())
-		args.Semicolon = semi
-		if err != nil {
-			p.Error(err)
+			semi, err := parseSemi(p, c, in)
+			args.Semicolon = semi
+			if err != nil {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclPackage(args).AsAny()
@@ -219,10 +232,16 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		args.Options = tryParseOptions(p, c, in)
 
-		semi, err := p.Punct(c, keyword.Semi, in.After())
-		args.Semicolon = semi
-		if err != nil && args.ImportPath.IsZero() {
-			p.Error(err)
+		if args.ImportPath.IsZero() && c.Done() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			semi, err := parseSemi(p, c, in)
+			args.Semicolon = semi
+			if err != nil && args.ImportPath.IsZero() {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclImport(args).AsAny()
@@ -353,7 +372,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	options := tryParseOptions(p, c, in)
 
 	// Parse a semicolon, if possible.
-	semi, err := p.Punct(c, keyword.Semi, in.After())
+	semi, err := parseSemi(p, c, in)
 	if err != nil && (!options.IsZero() || !badExpr) {
 		p.Error(err)
 	}
@@ -418,7 +437,11 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			switch eq.Text() {
 			case ":": // Allow colons, which is usually a mistake.
 				p.Errorf("unexpected `:` in compact option").Apply(
-					report.Snippetf(eq, "help: replace this with `=`"),
+					report.Snippet(eq),
+					justify(p.Stream(), eq.Span(), "replace this with an `=`", justified{
+						report.Edit{Start: 0, End: 1, Replace: "="},
+						justifyBetween,
+					}),
 					report.Notef("top-level `option` assignment uses `=`, not `:`"),
 				)
 				fallthrough

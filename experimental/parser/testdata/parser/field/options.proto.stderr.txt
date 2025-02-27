@@ -2,7 +2,24 @@ error: unexpected `:` in compact option
   --> testdata/parser/field/options.proto:27:19
    |
 27 |     M bad = 4 [foo: {bar: baz}];
-   |                   ^ help: replace this with `=`
+   |                   ^
+  help: replace this with an `=`
+   |
+27 | -     M bad = 4 [foo: {bar: baz}];
+27 | +     M bad = 4 [foo = {bar: baz}];
+   |
    = note: top-level `option` assignment uses `=`, not `:`
 
-encountered 1 error
+error: unexpected `=` in expression
+  --> testdata/parser/field/options.proto:28:28
+   |
+28 |     M bad2 = 5 [foo = {bar = baz}];
+   |                            ^
+  help: replace this with an `:`
+   |
+28 | -     M bad2 = 5 [foo = {bar = baz}];
+28 | +     M bad2 = 5 [foo = {bar: baz}];
+   |
+   = note: a message expression use `=`, not `:`, for setting fields
+
+encountered 2 errors

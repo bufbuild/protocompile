@@ -42,7 +42,7 @@ func lexString(l *lexer) token.Token {
 		}
 
 		cursor := l.cursor
-		sc := lexStringContent(l)
+		sc := lexStringContent(quote, l)
 		if sc.isEscape && !haveEsc {
 			// If we saw our first escape, spill the string into the buffer
 			// up to just before the escape.
@@ -79,14 +79,20 @@ type stringContent struct {
 
 // lexStringContent lexes a single logical rune's worth of content for a quoted
 // string.
-func lexStringContent(l *lexer) (sc stringContent) {
+func lexStringContent(_ rune, l *lexer) (sc stringContent) {
 	start := l.cursor
 	r := l.Pop()
 
 	switch {
 	case r == 0:
+		esc := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped NUL bytes are not permitted in string literals").Apply(
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
+			report.Snippet(esc),
+			report.SuggestEdits(esc, "replace it with `\\0` or `\\x00`", report.Edit{
+				Start:   0,
+				End:     1,
+				Replace: "\\0",
+			}),
 		)
 	case r == '\n':
 		// TODO: This diagnostic is simply user-hostile. We should remove it.
@@ -98,10 +104,10 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		// Many programming languages have since thoughtlessly copied this
 		// choice, including Protobuf, whose lexical morphology is almost
 		// exactly C's).
+		nl := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped newlines are not permitted in string literals").Apply(
-			// Not to mention, this diagnostic is not ideal: we should probably
-			// tell users to split the string into multiple quoted fragments.
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
+			report.Snippet(nl),
+			report.Helpf("consider splitting this into adjacent string literals; Protobuf will automatically concatenate them"),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't
@@ -116,8 +122,14 @@ func lexStringContent(l *lexer) (sc stringContent) {
 			escape = fmt.Sprintf(`\U%08x`, r)
 		}
 
+		esc := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Warnf("non-printable character in string literal").Apply(
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "help: consider escaping this with e.g. `%s` instead", escape),
+			report.Snippet(esc),
+			report.SuggestEdits(esc, "consider escaping it", report.Edit{
+				Start:   0,
+				End:     len(esc.Text()),
+				Replace: escape,
+			}),
 		)
 	}
 

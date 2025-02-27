@@ -118,7 +118,7 @@ func (p *defParser) parse() ast.DeclDef {
 
 	// If we didn't see any braces, this def needs to be ended by a semicolon.
 	if !skipSemi {
-		semi, err := p.Punct(p.c, keyword.Semi, taxa.Def.After())
+		semi, err := parseSemi(p.parser, p.c, taxa.Def)
 		p.args.Semicolon = semi
 		if err != nil {
 			p.Error(err)
@@ -147,8 +147,15 @@ func (p *defParser) parse() ast.DeclDef {
 	if !p.outputs.IsZero() {
 		parseTypeList(p.parser, p.outputs, def.WithSignature().Outputs(), taxa.MethodOuts)
 	} else if !p.outputTy.IsZero() {
+		span := p.outputTy.Span()
 		p.Errorf("missing `(...)` around method return type").Apply(
-			report.Snippetf(p.outputTy, "help: replace this with `(%s)`", p.outputTy.Span().Text()),
+			report.Snippet(span),
+			report.SuggestEdits(
+				span,
+				"insert (...) around the return type",
+				report.Edit{Start: 0, End: 0, Replace: "("},
+				report.Edit{Start: span.Len(), End: span.Len(), Replace: ")"},
+			),
 		)
 		seq.Append(def.WithSignature().Outputs(), p.outputTy)
 	}
@@ -210,7 +217,11 @@ func (defOutputs) parse(p *defParser) report.Span {
 	returns := p.c.Next()
 
 	var ty ast.TypeAny
-	list, err := p.Punct(p.c, keyword.Parens, taxa.KeywordReturns.After())
+	list, err := punctParser{
+		parser: p.parser, c: p.c,
+		want:  keyword.Parens,
+		where: taxa.KeywordReturns.After(),
+	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
@@ -286,7 +297,12 @@ func (defValue) canStart(p *defParser) bool {
 }
 
 func (defValue) parse(p *defParser) report.Span {
-	eq, err := p.Punct(p.c, keyword.Equals, taxa.Def.In())
+	eq, err := punctParser{
+		parser: p.parser, c: p.c,
+		want:   keyword.Equals,
+		where:  taxa.Def.In(),
+		insert: justifyBetween,
+	}.parse()
 	if err != nil {
 		p.Error(err)
 	}
