@@ -149,10 +149,8 @@ type justified struct {
 // 1. Surrounded on both sides by at least once space. (justifyBetween)
 // 2. Has no whitespace to its left or its right. (justifyLeft, justifyRight)
 //
-// This is necessary in order to generate sensible suggestions in a number of
-// cases.
-//
-// # Case 1: Inserting an equals sign.
+// See the comments on doJustify* for details on the different cases this
+// function handles.
 func justify(stream *token.Stream, span report.Span, message string, edits ...justified) report.DiagnosticOption {
 	for i := range edits {
 		switch edits[i].justify {
