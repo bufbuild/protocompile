@@ -1,5 +1,9 @@
-error: files must be encoded as valid UTF-8
- --> testdata/lexer/non-utf8.proto
-   = note: unexpected 0xff byte at offset 616
+error: input contains non-UTF-8 byte
+  --> testdata/lexer/non-utf8.proto:15:11
+   |
+15 | syntax = "<FF>";
+   |           ^^^^
+   = note: invalid byte occurs at offset 616 (0x268)
+   = note: Protobuf files must be UTF-8 encoded
 
 encountered 1 error

@@ -18,35 +18,7 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/experimental/token"
 )
-
-// errUnrecognized diagnoses the presence of an unrecognized token.
-type errUnrecognized struct {
-	Token token.Token // The offending token.
-}
-
-// Diagnose implements [report.Diagnose].
-func (e errUnrecognized) Diagnose(d *report.Diagnostic) {
-	d.Apply(
-		report.Message("unrecognized token"),
-		report.Snippet(e.Token),
-		report.Debugf("%v, %v, %q", e.Token.ID(), e.Token.Span(), e.Token.Text()),
-	)
-}
-
-// errNonASCIIIdent diagnoses an identifier that contains non-ASCII runes.
-type errNonASCIIIdent struct {
-	Token token.Token // The offending identifier token.
-}
-
-// Diagnose implements [report.Diagnose].
-func (e errNonASCIIIdent) Diagnose(d *report.Diagnostic) {
-	d.Apply(
-		report.Message("non-ASCII identifiers are not allowed"),
-		report.Snippet(e.Token),
-	)
-}
 
 // errUnmatched diagnoses a delimiter for which we found one half of a matched
 // delimiter but not the other.

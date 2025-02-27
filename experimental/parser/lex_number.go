@@ -15,11 +15,14 @@
 package parser
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"unicode"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -56,60 +59,47 @@ func lexNumber(l *lexer) token.Token {
 		}
 	}
 
+	what := taxa.Int
 	result, ok := parseInt(digits, base)
 	if !ok {
-		// This may be a floating-point number. Confirm this by hunting
-		// for a decimal point or an exponent.
-		if strings.ContainsAny(digits, ".Ee") {
-			if legacyOctal {
-				base = 10
-			}
-
-			if base != 10 {
-				// TODO: We should return ErrInvalidBase here but that requires
-				// validating the syntax of the float to distinguish it from
-				// cases where we want tor return ErrInvalidNumber instead.
-				l.Error(errInvalidNumber{Token: tok})
-				token.SetValue(tok, math.NaN())
-				return tok
-			}
-
-			// Delete all underscores.
-			filteredDigits := strings.ReplaceAll(digits, "_", "")
-			hasThousands := len(filteredDigits) < len(digits)
-
-			// We want this to overflow to Infinity as needed, which ParseFloat
-			// will do for us. Otherwise it will ties-to-even as the
-			// protobuf.com spec requires.
-			//
-			// ParseFloat itself says it "returns the nearest floating-point
-			// number rounded using IEEE754 unbiased rounding", which is just a
-			// weird, non-standard way to say "ties-to-even".
-			value, err := strconv.ParseFloat(digits, 64)
-
-			//nolint:errcheck // The strconv package guarantees this assertion.
-			if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
-				l.Error(errInvalidNumber{Token: tok})
-				token.SetValue(tok, math.NaN())
-			} else {
-				token.SetValue(tok, value)
-
-				if hasThousands {
-					// Diagnose any thousands separators. We parse it as an
-					// extension currently.
-					l.Error(errThousandsSep{Token: tok})
-				}
-			}
-		} else {
+		if !taxa.IsFloatText(digits) {
 			l.Error(errInvalidNumber{Token: tok})
 			// Need to set a value to avoid parse errors in Token.AsInt.
 			token.SetValue(tok, uint64(0))
+			return tok
 		}
 
-		return tok
-	}
+		what = taxa.Float
+		if legacyOctal {
+			base = 10
+		}
 
-	if result.big != nil {
+		if base != 10 {
+			// TODO: We should return ErrInvalidBase here but that requires
+			// validating the syntax of the float to distinguish it from
+			// cases where we want tor return ErrInvalidNumber instead.
+			l.Error(errInvalidNumber{Token: tok})
+			token.SetValue(tok, math.NaN())
+			return tok
+		}
+
+		// We want this to overflow to Infinity as needed, which ParseFloat
+		// will do for us. Otherwise it will ties-to-even as the
+		// protobuf.com spec requires.
+		//
+		// ParseFloat itself says it "returns the nearest floating-point
+		// number rounded using IEEE754 unbiased rounding", which is just a
+		// weird, non-standard way to say "ties-to-even".
+		value, err := strconv.ParseFloat(strings.ReplaceAll(digits, "_", ""), 64)
+
+		//nolint:errcheck // The strconv package guarantees this assertion.
+		if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
+			l.Error(errInvalidNumber{Token: tok})
+			token.SetValue(tok, math.NaN())
+		} else {
+			token.SetValue(tok, value)
+		}
+	} else if result.big != nil {
 		token.SetValue(tok, result.big)
 	} else if base != 10 || result.hasThousands {
 		// We explicitly do not call SetValue for the most common case of base
@@ -118,16 +108,74 @@ func lexNumber(l *lexer) token.Token {
 		token.SetValue(tok, result.small)
 	}
 
+	var validBase bool
+	switch base {
+	case 2:
+		validBase = false
+	case 8:
+		validBase = legacyOctal
+	case 10:
+		validBase = true
+	case 16:
+		validBase = what == taxa.Int
+	}
+
+	if validBase {
+		if result.hasThousands {
+			span := tok.Span()
+			l.Errorf("%s contains underscores", what).Apply(
+				report.SuggestEdits(tok, "remove these underscores", report.Edit{
+					Start:   0,
+					End:     len(span.Text()),
+					Replace: strings.ReplaceAll(span.Text(), "_", ""),
+				}),
+				report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
+			)
+		}
+		return tok
+	}
+
 	// Diagnose against number literals we currently accept but which are not
 	// part of Protobuf.
-	if base == 2 || (base == 8 && !legacyOctal) {
-		l.Error(errInvalidBase{
-			Token: tok,
-			Base:  int(base),
-		})
-	} else if result.hasThousands {
-		l.Error(errThousandsSep{Token: tok})
+	err := l.Errorf("unsupported base for %s", what)
+
+	if what == taxa.Int {
+		switch base {
+		case 2:
+			if value := tok.AsBigInt(); value != nil {
+				err.Apply(
+					report.SuggestEdits(tok, "use a hexadecimal literal instead", report.Edit{
+						Start:   0,
+						End:     len(tok.Text()),
+						Replace: fmt.Sprintf("%#x", value),
+					}),
+					report.Notef("Protobuf does not support binary literals"),
+				)
+				return tok
+			}
+		case 8:
+			err.Apply(
+				report.SuggestEdits(tok, "remove the `o`", report.Edit{Start: 1, End: 2}),
+				report.Notef("octal literals are prefixed with `0`, not `0o`"),
+			)
+			return tok
+		}
 	}
+
+	var name string
+	switch base {
+	case 2:
+		name = "binary"
+	case 8:
+		name = "octal"
+	case 16:
+		name = "hexadecimal"
+	}
+
+	err.Apply(
+		report.Snippet(tok),
+		report.Notef("Protobuf does not support %s %s", name, what),
+	)
 
 	return tok
 }
@@ -161,4 +209,21 @@ func lexRawNumber(l *lexer) token.Token {
 	// the parser pick up bad numbers into number literals.
 	digits := l.Text()[start:l.cursor]
 	return l.Push(len(digits), token.Number)
+}
+
+// errInvalidNumber diagnoses a numeric literal with invalid syntax.
+type errInvalidNumber struct {
+	Token token.Token // The offending number token.
+}
+
+// Diagnose implements [report.Diagnose].
+func (e errInvalidNumber) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("unexpected characters in %s", taxa.Classify(e.Token)),
+		report.Snippet(e.Token),
+	)
+
+	// TODO: This is a pretty terrible diagnostic. We should at least add a note
+	// specifying the correct syntax. For example, there should be a way to tell
+	// that the invalid character is an out-of-range digit.
 }

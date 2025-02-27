@@ -15,13 +15,18 @@
 package parser
 
 import (
+	"math"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
+
+// maxFileSize is the maximum file size Protocompile supports.
+const maxFileSize int = math.MaxInt32 // 2GB
 
 // lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
@@ -49,23 +54,43 @@ func lex(ctx token.Context, errs *report.Report) {
 	// Check that the file isn't too big. We give up immediately if that's
 	// the case.
 	if len(l.Text()) > maxFileSize {
-		l.Error(errFileTooBig{Path: l.Path()})
+		l.Errorf("files larger than 2GB (%d bytes) are not supported", maxFileSize).Apply(
+			report.InFile(l.Path()),
+		)
 		return
 	}
 
 	// Also check that the text of the file is actually UTF-8.
 	// We go rune by rune to find the first invalid offset.
-	for text := l.Text(); text != ""; {
-		r := decodeRune(text)
+	var idx int
+	var count int
+	stringsx.Runes(l.Text())(func(n int, r rune) bool {
 		if r == -1 {
-			l.Error(errNotUTF8{
-				Path: l.Path(),
-				At:   len(l.Text()) - len(text),
-				Byte: text[0],
-			})
-			return
+			if count == 0 {
+				idx = n
+			}
+			count++
 		}
-		text = text[utf8.RuneLen(r):]
+		return true
+	})
+	switch {
+	case count == 0:
+		break
+	case count < 32:
+		// This diagnostic is for cases where there appear to be one or two
+		// stray, non-UTF-8 values.
+		l.Errorf("input contains non-UTF-8 byte").Apply(
+			report.Snippet(l.Span(idx, idx+1)),
+			report.Notef("invalid byte occurs at offset %d (%#x)", idx, idx),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return
+	default:
+		l.Errorf("input appears to be a binary file").Apply(
+			report.InFile(l.Path()),
+			report.Notef("invalid byte occurs at offset %d (%#x)", idx, idx),
+		)
+		return
 	}
 
 	// This is the main loop of the lexer. Each iteration will examine the next
@@ -162,7 +187,10 @@ func lex(ctx token.Context, errs *report.Report) {
 				// This "identifier" appears to consist entirely of unprintable
 				// characters (e.g. combining marks).
 				tok := l.Push(len(rawIdent), token.Unrecognized)
-				l.Error(errUnrecognized{Token: tok})
+				l.Errorf("unrecognized token").Apply(
+					report.Snippet(tok),
+					report.Debugf("%v, %v, %q", tok.ID(), tok.Span(), tok.Text()),
+				)
 				continue
 			}
 
@@ -171,7 +199,9 @@ func lex(ctx token.Context, errs *report.Report) {
 
 			// Legalize non-ASCII runes.
 			if !isASCIIIdent(tok.Text()) {
-				l.Error(errNonASCIIIdent{Token: tok})
+				l.Errorf("non-ASCII identifiers are not allowed").Apply(
+					report.Snippet(tok),
+				)
 			}
 
 		default:
@@ -185,7 +215,10 @@ func lex(ctx token.Context, errs *report.Report) {
 					!unicode.In(r, unicode.Pattern_White_Space)
 			})
 			tok := l.Push(len(unknown), token.Unrecognized)
-			l.Error(errUnrecognized{Token: tok})
+			l.Errorf("unrecognized token").Apply(
+				report.Snippet(tok),
+				report.Debugf("%v, %v, %q", tok.ID(), tok.Span(), tok.Text()),
+			)
 		}
 	}
 
