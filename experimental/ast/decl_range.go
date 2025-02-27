@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -44,7 +45,12 @@ type DeclRangeArgs struct {
 }
 
 // Keyword returns the keyword for this range.
-func (d DeclRange) Keyword() token.Token {
+func (d DeclRange) Keyword() keyword.Keyword {
+	return d.KeywordToken().Keyword()
+}
+
+// KeywordToken returns the keyword token for this range.
+func (d DeclRange) KeywordToken() token.Token {
 	if d.IsZero() {
 		return token.Zero
 	}
@@ -54,12 +60,12 @@ func (d DeclRange) Keyword() token.Token {
 
 // IsExtensions checks whether this is an extension range.
 func (d DeclRange) IsExtensions() bool {
-	return d.Keyword().Text() == "extensions"
+	return d.Keyword() == keyword.Extensions
 }
 
 // IsReserved checks whether this is a reserved range.
 func (d DeclRange) IsReserved() bool {
-	return d.Keyword().Text() == "reserved"
+	return d.Keyword() == keyword.Reserved
 }
 
 // Ranges returns the sequence of expressions denoting the ranges in this
@@ -118,10 +124,10 @@ func (d DeclRange) Span() report.Span {
 	case d.IsZero():
 		return report.Span{}
 	case r.Len() == 0:
-		return report.Join(d.Keyword(), d.Semicolon(), d.Options())
+		return report.Join(d.KeywordToken(), d.Semicolon(), d.Options())
 	default:
 		return report.Join(
-			d.Keyword(), d.Semicolon(), d.Options(),
+			d.KeywordToken(), d.Semicolon(), d.Options(),
 			r.At(0),
 			r.At(r.Len()-1),
 		)
