@@ -51,45 +51,7 @@ func lex(ctx token.Context, errs *report.Report) {
 	})
 	defer l.Freeze()
 
-	// Check that the file isn't too big. We give up immediately if that's
-	// the case.
-	if len(l.Text()) > maxFileSize {
-		l.Errorf("files larger than 2GB (%d bytes) are not supported", maxFileSize).Apply(
-			report.InFile(l.Path()),
-		)
-		return
-	}
-
-	// Also check that the text of the file is actually UTF-8.
-	// We go rune by rune to find the first invalid offset.
-	var idx int
-	var count int
-	stringsx.Runes(l.Text())(func(n int, r rune) bool {
-		if r == -1 {
-			if count == 0 {
-				idx = n
-			}
-			count++
-		}
-		return true
-	})
-	switch {
-	case count == 0:
-		break
-	case count < 32:
-		// This diagnostic is for cases where there appear to be one or two
-		// stray, non-UTF-8 values.
-		l.Errorf("input contains non-UTF-8 byte").Apply(
-			report.Snippet(l.Span(idx, idx+1)),
-			report.Notef("invalid byte occurs at offset %d (%#x)", idx, idx),
-			report.Notef("Protobuf files must be UTF-8 encoded"),
-		)
-		return
-	default:
-		l.Errorf("input appears to be a binary file").Apply(
-			report.InFile(l.Path()),
-			report.Notef("invalid byte occurs at offset %d (%#x)", idx, idx),
-		)
+	if !lexPrelude(l) {
 		return
 	}
 
@@ -228,6 +190,77 @@ func lex(ctx token.Context, errs *report.Report) {
 
 	// Perform implicit string concatenation.
 	fuseStrings(l)
+}
+
+// lexPrelude performs various file-prelude checks, such as size and encoding
+// verification. Returns whether lexing should proceed.
+func lexPrelude(l *lexer) bool {
+	// Check that the file isn't too big. We give up immediately if that's
+	// the case.
+	if len(l.Text()) > maxFileSize {
+		l.Errorf("files larger than 2GB (%d bytes) are not supported", maxFileSize).Apply(
+			report.InFile(l.Path()),
+		)
+		return false
+	}
+
+	// Heuristically check for a UTF-16-encoded file. There are two good
+	// heuristics:
+	// 1. Presence of a UTF-16 BOM, which is either FE FF or FF FE, depending on
+	//    endianness.
+	// 2. Exactly one of the first two bytes is a NUL. Valid Protobuf cannot
+	//    contain a NUL in the first two bytes, so this is probably a UTF-16-encoded
+	//    ASCII rune.
+	bom16 := strings.HasPrefix(l.Text(), "\xfe\xff") || strings.HasPrefix(l.Text(), "\xff\xfe")
+	ascii16 := len(l.Text()) >= 2 && (l.Text()[0] == 0 || l.Text()[1] == 0)
+	if bom16 || ascii16 {
+		l.Errorf("input appears to be encoded with UTF-16").Apply(
+			report.InFile(l.Path()),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return false
+	}
+
+	// Check that the text of the file is actually UTF-8.
+	var idx int
+	var count int
+	stringsx.Runes(l.Text())(func(n int, r rune) bool {
+		if r == -1 {
+			if count == 0 {
+				idx = n
+			}
+			count++
+		}
+		return true
+	})
+	frac := float64(count) / float64(len(l.Text()))
+	switch {
+	case frac == 0:
+		break
+	case frac < 0.2:
+		// This diagnostic is for cases where this file appears to be corrupt.
+		// We pick 20% non-UTF-8 as the threshold to show this error.
+		l.Errorf("input appears to be encoded with UTF-8, but found invalid byte").Apply(
+			report.Snippet(l.Span(idx, idx+1)),
+			report.Notef("non-UTF-8 byte occurs at offset %d (%#x)", idx, idx),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return false
+	default:
+		l.Errorf("input appears to be a binary file").Apply(
+			report.InFile(l.Path()),
+			report.Notef("non-UTF-8 byte occurs at offset %d (%#x)", idx, idx),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return false
+	}
+
+	if l.Peek() == '\uFEFF' {
+		l.Pop() // Peel off a leading UTF-8 BOM.
+		l.Push(3, token.Unrecognized)
+	}
+
+	return true
 }
 
 // fuseBraces performs brace matching and token fusion, based on the contents of
