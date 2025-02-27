@@ -67,7 +67,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	switch {
 	case def.Name().IsZero():
 		def.MarkCorrupt()
-		kw := taxa.Keyword(def.Keyword().Text())
+		kw := taxa.Keyword(def.Keyword())
 		p.Errorf("missing name %v", kw.After()).Apply(
 			report.Snippet(def),
 		)
@@ -77,7 +77,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 
 	case def.Name().AsIdent().IsZero():
 		def.MarkCorrupt()
-		kw := taxa.Keyword(def.Keyword().Text())
+		kw := taxa.Keyword(def.Keyword())
 
 		err := errUnexpected{
 			what:  def.Name(),

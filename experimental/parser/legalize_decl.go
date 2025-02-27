@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -127,7 +128,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			}
 		case ast.ExprKindPrefixed:
 			expr := expr.AsPrefixed()
-			if expr.Prefix() == ast.ExprPrefixMinus {
+			if expr.Prefix() == keyword.Minus {
 				lit := expr.Expr().AsLiteral()
 				if lit.Kind() != token.Number || strings.Contains(lit.Text(), ".") {
 					p.Error(errUnexpected{

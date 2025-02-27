@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -61,15 +62,15 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 			return true
 		}
 
-		if pc.Separator().Text() == "/" {
+		if pc.Separator().Keyword() == keyword.Slash {
 			if !opts.AllowSlash {
-				p.Errorf("unexpected `/` in path %s", where).Apply(
-					report.Snippetf(pc.Separator(), "help: replace this with a `.`"),
+				p.Errorf("unexpected %s in path %s", taxa.Slash, where).Apply(
+					report.Snippetf(pc.Separator(), "help: replace this with a %s", taxa.Dot),
 				)
 				ok = false
 				return true
 			} else if !slash.IsZero() {
-				p.Errorf("type URL can only contain a single `/`").Apply(
+				p.Errorf("type URL can only contain a single %s", taxa.Slash).Apply(
 					report.Snippet(pc.Separator()),
 					report.Snippetf(slash, "first one is here"),
 				)

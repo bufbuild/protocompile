@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -37,7 +38,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 	case ast.TypeKindPrefixed:
 		prefixed := ty.AsPrefixed()
-		if prefixed.Prefix() != ast.TypePrefixStream {
+		if prefixed.Prefix() != keyword.Stream {
 			p.Errorf("only the %s modifier may appear in %s", taxa.KeywordStream, what).Apply(
 				report.Snippet(prefixed.PrefixToken()),
 			)
@@ -65,7 +66,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny) {
 
 	case ast.TypeKindPrefixed:
 		ty := ty.AsPrefixed()
-		if ty.Prefix() == ast.TypePrefixStream {
+		if ty.Prefix() == keyword.Stream {
 			p.Errorf("the %s modifier may only appear in a %s", taxa.KeywordStream, taxa.Signature).Apply(
 				report.Snippet(ty.PrefixToken()),
 			)

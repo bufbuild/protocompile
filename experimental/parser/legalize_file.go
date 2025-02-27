@@ -339,7 +339,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 
 	if in == taxa.WeakImport {
 		p.Warnf("use of `import weak`").Apply(
-			report.Snippet(report.Join(decl.Keyword(), decl.Modifier())),
+			report.Snippet(report.Join(decl.KeywordToken(), decl.ModifierToken())),
 			report.Notef("`import weak` is deprecated and not supported correctly "+
 				"in most Protobuf implementations"),
 		)

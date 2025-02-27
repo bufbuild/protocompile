@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -106,7 +107,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 
 		//nolint:gocritic // Intentional single-case switch.
 		switch value.Prefix() {
-		case ast.ExprPrefixMinus:
+		case keyword.Minus:
 			ok := value.Expr().AsLiteral().Kind() == token.Number
 			if path := value.Expr().AsPath(); !path.IsZero() {
 				// A minus sign may precede inf or nan, but it may also precede
@@ -190,7 +191,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 
 		// Legalize against <...> in all cases, but only emit a warning when they
 		// are not strictly illegal.
-		if dict.Braces().Text() == "<" {
+		if dict.Braces().Keyword() == keyword.Angles {
 			var err *report.Diagnostic
 			if parent.IsZero() {
 				err = p.Errorf("cannot use %s for %s here", taxa.Angles, taxa.Dict)
@@ -269,7 +270,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 				}
 
 				_, isURL := iterx.Find(path.Components, func(pc ast.PathComponent) bool {
-					return pc.Separator().Text() == "/"
+					return pc.Separator().Keyword() == keyword.Slash
 				})
 				if isURL {
 					legalizePath(p, taxa.TypeURL.In(), path, pathOptions{AllowSlash: true})
