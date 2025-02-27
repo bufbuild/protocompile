@@ -364,10 +364,13 @@ func doJustifyLeft(stream *token.Stream, span report.Span, e *report.Edit) {
 		return
 	}
 
-	// Seek to the previous unskippable token, and use its end as
-	// the start of the justification.
-	e.Start = token.NewCursorAt(start).Prev().Span().End - span.Start
+	if start.Kind().IsSkippable() {
+		// Seek to the previous unskippable token, and use its end as
+		// the start of the justification.
+		start = token.NewCursorAt(start).Prev()
+	}
 
+	e.Start = start.Span().End - span.Start
 	if !wasDelete {
 		e.End = e.Start
 	}
@@ -384,10 +387,13 @@ func doJustifyRight(stream *token.Stream, span report.Span, e *report.Edit) {
 		return
 	}
 
-	// Seek to the next unskippable token, and use its start as
-	// the start of the justification.
-	e.End = token.NewCursorAt(end).Next().Span().Start - span.Start
+	if end.Kind().IsSkippable() {
+		// Seek to the next unskippable token, and use its start as
+		// the start of the justification.
+		end = token.NewCursorAt(end).Next()
+	}
 
+	e.End = end.Span().Start - span.Start
 	if !wasDelete {
 		e.Start = e.End
 	}

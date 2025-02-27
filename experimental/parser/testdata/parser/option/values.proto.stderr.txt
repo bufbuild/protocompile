@@ -82,7 +82,7 @@ error: unexpected `:` after definition
   help: consider inserting a `;`
    |
 38 | option x = <>;:
-   |           +
+   |              +
 
 error: unexpected `:` in file scope
   --> testdata/parser/option/values.proto:38:14
