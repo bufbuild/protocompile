@@ -107,8 +107,7 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	var tokens iter.Seq[token.Token]
 	first := p.raw.Start.In(p.Context())
 	if p.IsSynthetic() {
-		i := int(^int16(p.raw.End))
-		j := int(^int16(p.raw.End >> 16))
+		i, j := p.raw.synthRange()
 		tokens = first.SyntheticChildren(i, j).Rest()
 	} else {
 		tokens = iterx.TakeWhile(token.NewCursorAt(first).Rest(), func(tok token.Token) bool {
