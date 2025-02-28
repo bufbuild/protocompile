@@ -93,7 +93,7 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 			strings.Contains(src[edit.End:next.Start], "\n")
 	})
 
-	var out []hunk
+	var out []hunk //nolint:prealloc // False positive.
 	var prevHunk int
 	for edits := range parts {
 		if len(edits) == 0 {
