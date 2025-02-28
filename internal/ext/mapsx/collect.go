@@ -16,27 +16,13 @@ package mapsx
 
 import "iter"
 
-// Collect polyfills [maps.Collect].
-func Collect[K comparable, V any](seq iter.Seq2[K, V]) map[K]V {
-	return Insert(make(map[K]V), seq)
-}
-
-// Insert polyfills [maps.Insert].
-func Insert[M ~map[K]V, K comparable, V any](m M, seq iter.Seq2[K, V]) M {
-	seq(func(k K, v V) bool {
-		m[k] = v
-		return true
-	})
-	return m
-}
-
-// CollectSet is like [Collect], but it implicitly fills in each map value
+// CollectSet is like [maps.Collect], but it implicitly fills in each map value
 // with a struct{} value.
 func CollectSet[K comparable](seq iter.Seq[K]) map[K]struct{} {
 	return InsertKeys(make(map[K]struct{}), seq)
 }
 
-// InsertKeys is like [Insert], but it implicitly fills in each map value
+// InsertKeys is like [maps.Insert], but it implicitly fills in each map value
 // with the zero value.
 func InsertKeys[M ~map[K]V, K comparable, V any](m M, seq iter.Seq[K]) M {
 	seq(func(k K) bool {

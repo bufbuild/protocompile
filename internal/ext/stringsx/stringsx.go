@@ -112,7 +112,9 @@ func Bytes(s string) iter.Seq[byte] {
 	}
 }
 
-// Split is like [strings.Split], but returning an iterator instead of a slice.
+// Split polyfills [strings.SplitSeq].
+//
+// Remove in go 1.24.
 func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
 	r := string(sep)
 	return func(yield func(string) bool) {
@@ -126,9 +128,9 @@ func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
 	}
 }
 
-// Lines returns an iterator over the lines in the given string.
+// Split polyfills [strings.Lines].
 //
-// It is equivalent to Split(s, '\n').
+// Remove in go 1.24.
 func Lines(s string) iter.Seq[string] {
 	return Split(s, '\n')
 }

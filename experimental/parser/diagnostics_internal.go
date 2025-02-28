@@ -16,6 +16,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"unicode"
 	"unicode/utf8"
 
@@ -164,7 +165,7 @@ func justify(stream *token.Stream, span report.Span, message string, edits ...ju
 	}
 
 	return report.SuggestEditsWithWidening(span, message,
-		slicesx.Collect(slicesx.Map(edits, func(j justified) report.Edit { return j.Edit }))...)
+		slices.Collect(slicesx.Map(edits, func(j justified) report.Edit { return j.Edit }))...)
 }
 
 // doJustifyBetween performs "between" justification.

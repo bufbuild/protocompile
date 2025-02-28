@@ -15,19 +15,6 @@
 // package mapsx contains extensions to Go's package maps.
 package mapsx
 
-import "iter"
-
-// Keys polyfills [maps.Keys].
-func Keys[M ~map[K]V, K comparable, V any](m M) iter.Seq[K] {
-	return func(yield func(k K) bool) {
-		for k := range m {
-			if !yield(k) {
-				return
-			}
-		}
-	}
-}
-
 // KeySet returns a copy of m, with its values replaced with empty structs.
 func KeySet[M ~map[K]V, K comparable, V any](m M) map[K]struct{} {
 	// return CollectSet(Keys(m))

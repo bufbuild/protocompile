@@ -15,6 +15,8 @@
 package parser
 
 import (
+	"slices"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -57,7 +59,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		})
 	case 2:
 		p.Error(errUnexpected{
-			what:  report.JoinSeq(slicesx.Values(unexpected)),
+			what:  report.JoinSeq(slices.Values(unexpected)),
 			where: in.In(),
 			want:  startsDecl,
 			got:   "tokens",
