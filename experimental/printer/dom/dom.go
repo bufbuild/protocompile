@@ -21,7 +21,6 @@ import (
 
 // Dom represents a block of text with formatting information. It is a tree of [Chunk]s.
 type Dom struct {
-	// TODO: I think this needs a cursor...
 	chunks     []*Chunk
 	formatting *formatting
 }
@@ -114,7 +113,6 @@ func (d *Dom) Format() {
 		var cost int
 		var indentNext bool
 		for _, c := range d.chunks {
-			c.formatted = true
 			if indentNext {
 				c.indented = true
 				indentNext = false
@@ -122,29 +120,18 @@ func (d *Dom) Format() {
 			cost += c.length(d.formatting.indentSize)
 			if cost > d.formatting.lineLimit {
 				c.split()
-				if c.child != nil && len(c.child.chunks) > 0 {
-					// TODO: this looks kinda sketchy, review.
-					first := c.child.FirstNonWhitespaceChunk()
-					if first != nil {
-						first.SetIndented(true)
-					}
-					last := c.child.LastNonWhitespaceChunk()
-					if last != nil {
-						switch last.splitKind {
-						case SplitKindSoft:
-							last.splitKind = last.splitKindIfSplit
-						}
-						indentNext = true
-					}
-				}
+				// If you're splitting, you always indent the next thing
+				indentNext = true
 			}
 			if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
 				cost = 0
+				// If something is already split, the next thing is always indented.
+				indentNext = true
 			}
 		}
-		// TODO: this algorithm splits from "outside inwards". So it requires iterating through
-		// the chunks a second time to split the children. We can collect up the children so we're
-		// iterating through a smaller list, but I don't know if that's a meaningful improvement...
+		// TODO: we are currently splitting from "outside inwards"/"breadth first",
+		// so we iterate through the children after we iterate through all the outer chunks.
+		// I think this is correct, but want to sanity check this.
 		for _, c := range d.chunks {
 			if c.child != nil {
 				c.child.Format()

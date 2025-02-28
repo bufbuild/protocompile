@@ -45,7 +45,7 @@ func TestDom(t *testing.T) {
 		require.NotNil(t, d)
 		outputs[0] = d.Output()
 		require.Equal(t, text, outputs[0])
-		d.SetFormatting(60, 2)
+		d.SetFormatting(100, 2)
 		d.Format()
 		outputs[1] = d.Output()
 	})
@@ -53,9 +53,11 @@ func TestDom(t *testing.T) {
 
 // Read the input text and parse with the following rules:
 //   - Break off a chunk for:
-//     -- Arbitraritly for every 5 words (words are considered space delimited)
 //     -- At a '.'
+//     -- At a ','
 //     -- At a '\n'
+//     -- If consecutive spaces are found, we break the chunk off, and add a chunk for just
+//     the whitespace.
 //     -- If a '(' is found, then break off the chunk, and all contents between '(' and ')'
 //     are inserted as a child dom. The child dom will have a higher indent level. The ')'
 //     will be a separate chunk.
@@ -68,14 +70,10 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 	d := dom.NewDom()
 	chunk := dom.NewChunk()
 	var chunkText string
-	var count int
 	r, _, err := text.ReadRune()
 	for !errors.Is(err, io.EOF) {
 		switch r {
 		case ' ':
-			if chunkText != "" {
-				count++
-			}
 			chunkText += string(r)
 			// Read ahead to see if there are consecutive spaces. If yes, then return all of those
 			// as a space chunk, insert, and reset.
@@ -83,7 +81,7 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 			if err != nil && !errors.Is(err, io.EOF) {
 				require.NoError(t, err)
 			}
-			if count == 5 || spacesChunk != nil || errors.Is(err, io.EOF) {
+			if spacesChunk != nil || errors.Is(err, io.EOF) {
 				chunk.SetText(chunkText)
 				chunk.SetIndent(indent)
 				splitKind, _, err := setSplitKind(text, dom.SplitKindSoft)
@@ -93,16 +91,14 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 				chunk.SetSplitKind(splitKind)
 				chunk.SetSpaceIfUnsplit(true)
 				chunk.SetSplitKindIfSplit(dom.SplitKindHard)
-				chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 				d.Insert(chunk)
 				d.Insert(spacesChunk)
 				// Reset
-				count = 0
 				chunk = dom.NewChunk()
 				lastSplitKind = splitKind
 				chunkText = ""
 			}
-		case '.':
+		case '.', ',':
 			chunkText += string(r)
 			chunk.SetText(chunkText)
 			chunk.SetIndent(indent)
@@ -113,10 +109,8 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 			chunk.SetSplitKind(splitKind)
 			chunk.SetSpaceIfUnsplit(spaceIfUnsplit)
 			chunk.SetSplitKindIfSplit(dom.SplitKindHard)
-			chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 			d.Insert(chunk)
 			// Reset
-			count = 0
 			chunk = dom.NewChunk()
 			lastSplitKind = splitKind
 			chunkText = ""
@@ -129,7 +123,6 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 					require.NoError(t, err)
 				}
 				chunk.SetSplitKind(splitKind)
-				chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 				d.Insert(chunk)
 			} else {
 				last := d.LastNonWhitespaceChunk()
@@ -146,7 +139,6 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 			chunk.SetText(string(r))
 			d.Insert(chunk)
 			// Reset
-			count = 0
 			chunk = dom.NewChunk()
 			chunkText = ""
 		case '(', '{':
@@ -165,11 +157,9 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 			chunk.SetSpaceIfUnsplit(spaceIfUnsplit)
 			chunk.SetSplitKindIfSplit(dom.SplitKindHard)
 			chunk.SetChild(parseText(t, text, indent+1, splitKind, true))
-			chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 			d.Insert(chunk)
 			closeBrace = false
 			// Reset
-			count = 0
 			chunk = dom.NewChunk()
 			lastSplitKind = splitKind
 			chunkText = ""
@@ -188,7 +178,6 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 					chunk.SetSplitKind(splitKind)
 					chunk.SetSpaceIfUnsplit(false)
 					chunk.SetSplitKindIfSplit(dom.SplitKindHard)
-					chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 					d.Insert(chunk)
 				}
 				require.NoError(t, text.UnreadRune())
@@ -214,11 +203,9 @@ func parseText(t *testing.T, text *bytes.Buffer, indent uint32, lastSplitKind do
 			chunk.SetSplitKind(splitKind)
 			chunk.SetSpaceIfUnsplit(spaceIfUnsplit)
 			chunk.SetSplitKindIfSplit(dom.SplitKindHard)
-			chunk.SetIndented(indentOnLastSplitKind(lastSplitKind))
 			d.Insert(chunk)
 			// Reset
 			closeBrace = true
-			count = 0
 			chunk = dom.NewChunk()
 			lastSplitKind = splitKind
 			chunkText = ""
@@ -270,12 +257,4 @@ func spacesChunk(text *bytes.Buffer) (*dom.Chunk, error) {
 		chunk.SetText(chunkText)
 	}
 	return chunk, text.UnreadRune()
-}
-
-func indentOnLastSplitKind(splitKind dom.SplitKind) bool {
-	switch splitKind {
-	case dom.SplitKindHard, dom.SplitKindDouble:
-		return true
-	}
-	return false
 }

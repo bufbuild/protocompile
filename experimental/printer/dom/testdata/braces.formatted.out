@@ -2,20 +2,24 @@ while (x == y) { method_a(); method_b(); }
 
 while (x == y)
 {
-  method_a();
-  method_b();
+method_a();
+method_b();
 }
 
 while(x == y) { method_a(); method_b(); }
 
-while (
-  reallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongname == y
-) { method_a(); method_b(); }
+while (reallyreallyreallyreallyreallyreallyreallyreallyreallyreallylongname == y) {
+  method_a(); method_b();
+}
 
 while (a == b) {
-  while (c == d) {
-    while (e == f) { method_a(); } method_b(); method_c();
-  }
+  method_a(); while (nested_c == nested_d) {
+    while (nested_nested_e == nested_nested_f) {
+      nested_nested_method_b(); while (nested_nested_nested_g == nested_nested_nested_h) {
+        nested_nested_nested_method_c();
+      } nested_nested_method_d(); nested_nested_method_e();
+    } nested_method_f();
+  } method_g();
 }
 
 while (x == y) { method_a(); method_b(); }

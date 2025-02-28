@@ -14,11 +14,9 @@
 
 // Package dom provides a DOM-like tree structure for formatting text. A [Dom] is a tree of
 // [Chunk]s, and each [Chunk] represents a line of text with formatting information for
-// indentation and splitting (what whitespace should follow the text, if any). [Chunk]s also
-// contain rules for formatting:
-//   - If a split occurs, how it should be split
-//   - If its parent splits, whether it should also split
-//   - If its parent splits, whether it should be indented
+// indentation and splitting (what whitespace should follow the text, if any).
+//
+// TODO
 package dom
 
 //go:generate go run github.com/bufbuild/protocompile/internal/enum split.yaml

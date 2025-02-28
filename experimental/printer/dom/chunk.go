@@ -41,7 +41,6 @@ type Chunk struct {
 	splitKind        SplitKind
 	spaceIfUnsplit   bool
 	splitKindIfSplit SplitKind // Restricted to SplitKindHard or SplitKindDouble
-	formatted        bool
 }
 
 func NewChunk() *Chunk {
@@ -111,11 +110,6 @@ func (c *Chunk) SetIndent(indent uint32) {
 	c.indent = indent
 }
 
-// SetIndented sets whether the Chunk's output will be indented.
-func (c *Chunk) SetIndented(indented bool) {
-	c.indented = indented
-}
-
 // SetSplitKind sets the SplitKind of the Chunk.
 func (c *Chunk) SetSplitKind(splitKind SplitKind) {
 	c.splitKind = splitKind
@@ -142,7 +136,7 @@ func (c *Chunk) SetSplitKindIfSplit(splitKindIfSplit SplitKind) {
 
 func (c *Chunk) output(formatting *formatting) string {
 	var buf bytes.Buffer
-	if !c.formatted {
+	if formatting == nil || !formatting.formatted {
 		// If there is no formatting, or the Dom has not been formatted, provide the unformatting
 		// output.
 		buf.WriteString(c.Text())
@@ -199,12 +193,22 @@ func (c *Chunk) length(indentSize int) int {
 // Split the Chunk. This sets the splitKind to the splitKind when Split and indents the
 // chunks of the child Dom based on the split behaviour currently set.
 func (c *Chunk) split() {
-	if !c.formatted {
-		panic("protocompile/printer/dom: called split() on a chunk that is not being formatted")
-	}
 	switch c.splitKind {
 	case SplitKindHard, SplitKindDouble, SplitKindNever:
 		return
 	}
 	c.splitKind = c.splitKindIfSplit
+	if c.child != nil && len(c.child.chunks) > 0 {
+		first := c.child.FirstNonWhitespaceChunk()
+		if first != nil {
+			first.indented = true
+		}
+		last := c.child.LastNonWhitespaceChunk()
+		if last != nil {
+			switch last.splitKind {
+			case SplitKindSoft:
+				last.splitKind = last.splitKindIfSplit
+			}
+		}
+	}
 }
