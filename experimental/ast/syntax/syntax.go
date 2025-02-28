@@ -18,8 +18,7 @@ package syntax
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Syntax is a known syntax pragma.
