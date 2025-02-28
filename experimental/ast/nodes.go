@@ -16,6 +16,7 @@ package ast
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -32,6 +33,10 @@ type Nodes struct {
 	types   types
 	exprs   exprs
 	options arena.Arena[rawCompactOptions]
+
+	// A cache of raw paths that have been converted into parenthesized
+	// components in NewExtensionComponent.
+	extnPathCache map[rawPath]token.ID
 }
 
 // Root returns the root AST node for this context.
@@ -41,6 +46,110 @@ func (n *Nodes) Root() File {
 	// file. We use a 1 here, not a 0, because arena.Arena's indices are
 	// off-by-one to accommodate the zero representation.
 	return File{wrapDeclBody(n.Context, 1)}
+}
+
+// NewPathComponent returns a new path component with the given separator and
+// name.
+//
+// sep must be a [token.Punct] whose value is either '.' or '/'. name must be
+// a [token.Ident]. This function will panic if either condition does not
+// hold.
+//
+// To create a path component with an extension value, see [Nodes.NewExtensionComponent].
+func (n *Nodes) NewPathComponent(separator, name token.Token) PathComponent {
+	n.panicIfNotOurs(separator, name)
+	if !separator.IsZero() {
+		if separator.Kind() != token.Punct || (separator.Text() != "." && separator.Text() != "/") {
+			panic(fmt.Sprintf("protocompile/ast: passed non '.' or '/' separator to NewPathComponent: %s", separator))
+		}
+	}
+	if name.Kind() != token.Ident {
+		panic("protocompile/ast: passed non-identifier name to NewPathComponent")
+	}
+
+	return PathComponent{
+		withContext: internal.NewWith(n.Context),
+		separator:   separator.ID(),
+		name:        name.ID(),
+	}
+}
+
+// NewExtensionComponent returns a new extension path component containing the
+// given path.
+func (n *Nodes) NewExtensionComponent(separator token.Token, path Path) PathComponent {
+	n.panicIfNotOurs(separator, path)
+	if !separator.IsZero() {
+		if separator.Kind() != token.Punct || (separator.Text() != "." && separator.Text() != "/") {
+			panic(fmt.Sprintf("protocompile/ast: passed non '.' or '/' separator to NewPathComponent: %s", separator))
+		}
+	}
+
+	name, ok := n.extnPathCache[path.raw]
+	if !ok {
+		stream := n.Context.Stream()
+		start := stream.NewPunct("(")
+		end := stream.NewPunct(")")
+		var children []token.Token
+		path.Components(func(pc PathComponent) bool {
+			if !pc.Separator().IsZero() {
+				children = append(children, pc.Separator())
+			}
+			if !pc.Name().IsZero() {
+				children = append(children, pc.Name())
+			}
+			return true
+		})
+		stream.NewFused(start, end, children...)
+
+		name = start.ID()
+		if n.extnPathCache == nil {
+			n.extnPathCache = make(map[rawPath]token.ID)
+		}
+		n.extnPathCache[path.raw] = name
+	}
+
+	return PathComponent{
+		withContext: internal.NewWith(n.Context),
+		separator:   separator.ID(),
+		name:        name,
+	}
+}
+
+// NewPath creates a new synthetic Path.
+func (n *Nodes) NewPath(components ...PathComponent) Path {
+	if len(components) > math.MaxInt16 {
+		panic("protocompile/ast: cannot build path with more than 2^15 components")
+	}
+
+	for _, t := range components {
+		n.panicIfNotOurs(t)
+	}
+
+	stream := n.Context.Stream()
+
+	// Every synthetic path looks like a (a.b.c) token tree. Users can't see the
+	// parens here.
+	start := stream.NewPunct("(")
+	end := stream.NewPunct(")")
+	var children []token.Token
+	for _, pc := range components {
+		if !pc.Separator().IsZero() {
+			children = append(children, pc.Separator())
+		}
+		if !pc.Name().IsZero() {
+			children = append(children, pc.Name())
+		}
+	}
+	stream.NewFused(start, end, children...)
+
+	path := rawPath{Start: start.ID()}.withSynthRange(0, len(children))
+
+	if n.extnPathCache == nil {
+		n.extnPathCache = make(map[rawPath]token.ID)
+	}
+	n.extnPathCache[path] = path.Start
+
+	return path.With(n.Context)
 }
 
 // NewDeclEmpty creates a new DeclEmpty node.

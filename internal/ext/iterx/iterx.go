@@ -22,14 +22,16 @@ import (
 
 // Take returns an iterator over the first n elements of a sequence.
 func Take[T any](seq iter.Seq[T], n int) iter.Seq[T] {
+	return TakeWhile(seq, func(_ T) bool {
+		n--
+		return n >= 0
+	})
+}
+
+// TakeWhile returns a new iterator that yields elements until p is false.
+func TakeWhile[T any](seq iter.Seq[T], p func(T) bool) iter.Seq[T] {
 	return func(yield func(T) bool) {
-		seq(func(v T) bool {
-			if n > 0 && yield(v) {
-				n--
-				return true
-			}
-			return false
-		})
+		seq(func(v T) bool { return p(v) && yield(v) })
 	}
 }
 

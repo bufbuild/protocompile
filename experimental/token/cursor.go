@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"iter"
 
+	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -61,6 +62,15 @@ func NewCursorAt(tok Token) *Cursor {
 		withContext: tok.withContext,
 		idx:         tok.ID().naturalIndex(), // Convert to 0-based index.
 		isBackwards: tok.nat().IsClose(),     // Set the direction to calculate the offset.
+	}
+}
+
+// NewSliceCursor returns a new cursor over a slice of token IDs in the given
+// context.
+func NewSliceCursor(ctx Context, slice []ID) *Cursor {
+	return &Cursor{
+		withContext: internal.NewWith(ctx),
+		stream:      slice,
 	}
 }
 

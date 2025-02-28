@@ -353,10 +353,22 @@ func (t Token) Children() *Cursor {
 	if synth.IsClose() {
 		return synth.otherEnd.In(t.Context()).Children()
 	}
-	return &Cursor{
-		withContext: t.withContext,
-		stream:      synth.children,
+	return NewSliceCursor(t.Context(), synth.children)
+}
+
+// SyntheticChildren returns a cursor over the given subslice of the children
+// of this token.
+//
+// Panics if t is not synthetic.
+func (t Token) SyntheticChildren(i, j int) *Cursor {
+	synth := t.synth()
+	if synth == nil {
+		panic("protocompile/token: called SyntheticChildren() on non-synthetic token")
 	}
+	if synth.IsClose() {
+		return synth.otherEnd.In(t.Context()).SyntheticChildren(i, j)
+	}
+	return NewSliceCursor(t.Context(), synth.children[i:j])
 }
 
 // Name converts this token into its corresponding identifier name, potentially
