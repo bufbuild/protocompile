@@ -1,0 +1,12 @@
+warning: non-canonical string literal in `syntax` declaration
+  --> testdata/parser/syntax/proto2_escaped.proto:15:10
+   |
+15 | syntax = "proto\x32";
+   |          ^^^^^^^^^^^
+  help: replace it with a canonical string
+   |
+15 | - syntax = "proto\x32";
+15 | + syntax = "proto2";
+   |
+
+encountered 1 warning

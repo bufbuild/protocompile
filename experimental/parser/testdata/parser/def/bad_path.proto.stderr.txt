@@ -1,0 +1,63 @@
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:19:12
+   |
+19 | message foo.Bar {
+   |            ^ unexpected `.` in identifier
+   = note: the name of a message definition must be a single identifier
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:20:14
+   |
+20 |     oneof foo.Bar {}
+   |              ^ unexpected `.` in identifier
+   = note: the name of a oneof definition must be a single identifier
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:21:14
+   |
+21 |     oneof foo.(bar.baz).Bar {}
+   |              ^ unexpected `.` in identifier
+   = note: the name of a oneof definition must be a single identifier
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:23:12
+   |
+23 | message foo.(bar.baz).Bar {}
+   |            ^ unexpected `.` in identifier
+   = note: the name of a message definition must be a single identifier
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:25:9
+   |
+25 | enum foo.Bar {}
+   |         ^ unexpected `.` in identifier
+   = note: the name of a enum definition must be a single identifier
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:26:9
+   |
+26 | enum foo.(bar.baz).Bar {}
+   |         ^ unexpected `.` in identifier
+   = note: the name of a enum definition must be a single identifier
+
+error: unexpected nested extension path in message extension block
+  --> testdata/parser/def/bad_path.proto:29:12
+   |
+29 | extend foo.(bar.baz).Bar {}
+   |            ^^^^^^^^^
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:31:12
+   |
+31 | service foo.Bar {}
+   |            ^ unexpected `.` in identifier
+   = note: the name of a service definition must be a single identifier
+
+error: unexpected `.` in identifier
+  --> testdata/parser/def/bad_path.proto:32:12
+   |
+32 | service foo.(bar.baz).Bar {}
+   |            ^ unexpected `.` in identifier
+   = note: the name of a service definition must be a single identifier
+
+encountered 9 errors

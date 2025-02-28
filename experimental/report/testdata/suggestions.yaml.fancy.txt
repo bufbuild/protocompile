@@ -51,13 +51,11 @@ error: delete some stuff
   help:
    |
  5 | - service Foo {
- 6 |
- 7 |     rpc Get(GetRequest) returns GetResponse
- 8 |     rpc Put(PutRequest) returns (PutResponse) [foo = bar];
- 9 |
-10 | - }
-11 | -
- 9 | + }
+ 6 |     rpc Get(GetRequest) returns GetResponse
+ 7 |     rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+ 8 | - }
+ 9 | -
+ 7 | + }
    |
 
 error: delete this method

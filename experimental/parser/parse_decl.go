@@ -202,7 +202,8 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		//
 		// TODO: this treats import public inside of a message as a field, which
 		// may result in worse diagnostics.
-		if in != taxa.TopLevel && !path.AsIdent().IsZero() {
+		if in != taxa.TopLevel &&
+			(!path.AsIdent().IsZero() && next.Kind() != token.String) {
 			break
 		}
 		// This is definitely a field.
