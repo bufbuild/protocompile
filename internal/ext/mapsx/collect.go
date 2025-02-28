@@ -25,10 +25,9 @@ func CollectSet[K comparable](seq iter.Seq[K]) map[K]struct{} {
 // InsertKeys is like [maps.Insert], but it implicitly fills in each map value
 // with the zero value.
 func InsertKeys[M ~map[K]V, K comparable, V any](m M, seq iter.Seq[K]) M {
-	seq(func(k K) bool {
+	for k := range seq {
 		var zero V
 		m[k] = zero
-		return true
-	})
+	}
 	return m
 }
