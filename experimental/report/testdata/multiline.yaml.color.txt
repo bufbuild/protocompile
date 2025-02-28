@@ -25,7 +25,7 @@
 ⟨blu⟩ 6 | ⟨b.ylw⟩| ⟨reset⟩  required size_t x = 0;
 ⟨blu⟩ 7 | ⟨b.ylw⟩| ⟨reset⟩  message Bonk {
 ⟨blu⟩   | ⟨b.ylw⟩\__^ this block
-⟨blu⟩...  ⟨b.blu⟩
+⟨blu⟩...  ⟨b.ylw⟩|
 ⟨blu⟩11 | ⟨b.blu⟩  ⟨reset⟩  }
 ⟨blu⟩   | ⟨b.blu⟩ ___-
 ⟨blu⟩12 | ⟨b.blu⟩/ ⟨reset⟩}

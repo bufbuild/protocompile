@@ -1,0 +1,97 @@
+error: message definition cannot specify compact options
+  --> testdata/parser/def/mixed.proto:19:13
+   |
+19 | message Foo [foo=bar] {
+   |             ^^^^^^^^^ help: remove this
+
+error: enum definition cannot specify compact options
+  --> testdata/parser/def/mixed.proto:20:14
+   |
+20 |     enum Foo [foo=bar] {}
+   |              ^^^^^^^^^ help: remove this
+
+error: oneof definition cannot specify compact options
+  --> testdata/parser/def/mixed.proto:21:15
+   |
+21 |     oneof Foo [foo=bar] {}
+   |               ^^^^^^^^^ help: remove this
+
+error: message extension block cannot specify compact options
+  --> testdata/parser/def/mixed.proto:23:16
+   |
+23 | extend bar.Foo [foo=bar] {}
+   |                ^^^^^^^^^ help: remove this
+
+error: service definition cannot specify compact options
+  --> testdata/parser/def/mixed.proto:25:20
+   |
+25 | service FooService [foo=bar] {}
+   |                    ^^^^^^^^^ help: remove this
+
+error: unexpected integer literal in message definition
+  --> testdata/parser/def/mixed.proto:27:13
+   |
+27 | message Foo = 1 {
+   |             ^^^
+
+error: unexpected integer literal in enum definition
+  --> testdata/parser/def/mixed.proto:28:14
+   |
+28 |     enum Foo = 1 {}
+   |              ^^^
+
+error: unexpected integer literal in oneof definition
+  --> testdata/parser/def/mixed.proto:29:15
+   |
+29 |     oneof Foo = 1 {}
+   |               ^^^
+
+error: unexpected integer literal in message extension block
+  --> testdata/parser/def/mixed.proto:31:16
+   |
+31 | extend bar.Foo = 1 {}
+   |                ^^^
+
+error: unexpected integer literal in service definition
+  --> testdata/parser/def/mixed.proto:33:20
+   |
+33 | service FooService = 1 {}
+   |                    ^^^
+
+error: message definition appears to have method signature
+  --> testdata/parser/def/mixed.proto:35:12
+   |
+35 | message Foo(X) returns (X) {
+   |            ^^^^^^^^^^^^^^^ help: remove this
+
+error: enum definition appears to have method signature
+  --> testdata/parser/def/mixed.proto:36:13
+   |
+36 |     enum Foo(X) returns (X) {}
+   |             ^^^^^^^^^^^^^^^ help: remove this
+
+error: oneof definition appears to have method signature
+  --> testdata/parser/def/mixed.proto:37:14
+   |
+37 |     oneof Foo(X) returns (X) {}
+   |              ^^^^^^^^^^^^^^^ help: remove this
+
+error: message extension block appears to have method signature
+  --> testdata/parser/def/mixed.proto:39:15
+   |
+39 | extend bar.Foo(X) returns (X) {}
+   |               ^^^^^^^^^^^^^^^ help: remove this
+
+error: service definition appears to have method signature
+  --> testdata/parser/def/mixed.proto:41:19
+   |
+41 | service FooService(X) returns (X) {}
+   |                   ^^^^^^^^^^^^^^^ help: remove this
+
+error: unexpected string literal in message definition
+  --> testdata/parser/def/mixed.proto:43:13
+   |
+43 | message Foo = "bar" {}
+   |             ^^^^^^^
+
+encountered 16 errors

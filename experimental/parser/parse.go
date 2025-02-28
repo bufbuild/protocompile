@@ -67,6 +67,9 @@ func parse(ctx ast.Context, errs *report.Report) {
 			seq.Append(root.Decls(), node)
 		}
 	}
+
+	p.parseComplete = true
+	legalizeFile(p, root)
 }
 
 // ensureProgress is used to make sure that the parser makes progress on each

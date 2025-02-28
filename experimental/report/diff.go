@@ -121,9 +121,13 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 		}
 		buf.WriteString(original[prev:])
 
+		unchanged := src[prevHunk:start]
+		unchanged = strings.TrimPrefix(unchanged, "\n")
+		unchanged = strings.TrimSuffix(unchanged, "\n")
+
 		// Dump the result into the output.
 		out = append(out,
-			hunk{hunkUnchanged, src[prevHunk:start]},
+			hunk{hunkUnchanged, unchanged},
 			hunk{hunkDelete, src[start:end]},
 			hunk{hunkAdd, buf.String()},
 		)

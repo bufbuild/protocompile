@@ -20,6 +20,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -44,7 +45,10 @@ type errUnexpected struct {
 	// shown, but if it's not set, we call describe(what) to get a user-visible
 	// description.
 	want taxa.Set
-	got  any
+	// If set and want is empty, the snippet will repeat the "unexpected foo"
+	// text under the snippet.
+	repeatUnexpected bool
+	got              any
 
 	// If nonempty, inserting this text will be suggested at the given offset.
 	insert        string
@@ -77,21 +81,23 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 		}
 	}
 
-	var message report.DiagnosticOption
+	var message string
 	if e.where.Subject() == taxa.Unknown {
-		message = report.Message("unexpected %v", got)
+		message = fmt.Sprintf("unexpected %v", got)
 	} else {
-		message = report.Message("unexpected %v %v", got, e.where)
+		message = fmt.Sprintf("unexpected %v %v", got, e.where)
 	}
 
 	what := e.what.Span()
 	snippet := report.Snippet(what)
 	if e.want.Len() > 0 {
 		snippet = report.Snippetf(what, "expected %v", e.want.Join("or"))
+	} else if e.repeatUnexpected {
+		snippet = report.Snippetf(what, "%v", message)
 	}
 
 	d.Apply(
-		message,
+		report.Message("%v", message),
 		snippet,
 		report.Snippetf(e.prev, "previous %v is here", e.where.Subject()),
 	)
@@ -128,6 +134,73 @@ func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
 		report.Snippetf(e.second, "help: consider removing this"),
 		report.Snippetf(e.first, "first one is here"),
 	)
+}
+
+// errHasOptions diagnoses the presence of compact options on a construct that
+// does not permit them.
+type errHasOptions struct {
+	what interface {
+		report.Spanner
+		Options() ast.CompactOptions
+	}
+}
+
+func (e errHasOptions) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("%s cannot specify %s", taxa.Classify(e.what), taxa.CompactOptions),
+		report.Snippetf(e.what.Options(), "help: remove this"),
+	)
+}
+
+// errHasSignature diagnoses the presence of a method signature on a non-method.
+type errHasSignature struct {
+	what ast.DeclDef
+}
+
+func (e errHasSignature) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("%s appears to have %s", taxa.Classify(e.what), taxa.Signature),
+		report.Snippetf(e.what.Signature(), "help: remove this"),
+	)
+}
+
+// errBadNest diagnoses bad nesting: parent should not contain child.
+type errBadNest struct {
+	parent       classified
+	child        report.Spanner
+	validParents taxa.Set
+}
+
+func (e errBadNest) Diagnose(d *report.Diagnostic) {
+	what := taxa.Classify(e.child)
+	if e.parent.what == taxa.TopLevel {
+		d.Apply(
+			report.Message("unexpected %s at %s", what, e.parent.what),
+			report.Snippetf(e.child, "this %s cannot be declared here", what),
+		)
+	} else {
+		d.Apply(
+			report.Message("unexpected %s within %s", what, e.parent.what),
+			report.Snippetf(e.child, "this %s...", what),
+			report.Snippetf(e.parent, "...cannot be declared within this %s", e.parent.what),
+		)
+	}
+
+	if e.validParents.Len() == 1 {
+		v, _ := iterx.First(e.validParents.All())
+		if v == taxa.TopLevel {
+			// This case is just to avoid printing "within a top-level scope",
+			// which looks wrong.
+			d.Apply(report.Helpf("a %s can only appear at %s", what, v))
+		} else {
+			d.Apply(report.Helpf("a %s can only appear within a %s", what, v))
+		}
+	} else {
+		d.Apply(report.Helpf(
+			"a %s can only appear within one of %s",
+			what, e.validParents.Join("or"),
+		))
+	}
 }
 
 const (
@@ -291,10 +364,13 @@ func doJustifyLeft(stream *token.Stream, span report.Span, e *report.Edit) {
 		return
 	}
 
-	// Seek to the previous unskippable token, and use its end as
-	// the start of the justification.
-	e.Start = token.NewCursorAt(start).Prev().Span().End - span.Start
+	if start.Kind().IsSkippable() {
+		// Seek to the previous unskippable token, and use its end as
+		// the start of the justification.
+		start = token.NewCursorAt(start).Prev()
+	}
 
+	e.Start = start.Span().End - span.Start
 	if !wasDelete {
 		e.End = e.Start
 	}
@@ -311,10 +387,13 @@ func doJustifyRight(stream *token.Stream, span report.Span, e *report.Edit) {
 		return
 	}
 
-	// Seek to the next unskippable token, and use its start as
-	// the start of the justification.
-	e.End = token.NewCursorAt(end).Next().Span().Start - span.Start
+	if end.Kind().IsSkippable() {
+		// Seek to the next unskippable token, and use its start as
+		// the start of the justification.
+		end = token.NewCursorAt(end).Next()
+	}
 
+	e.End = end.Span().Start - span.Start
 	if !wasDelete {
 		e.Start = e.End
 	}

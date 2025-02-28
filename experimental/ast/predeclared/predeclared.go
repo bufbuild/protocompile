@@ -95,6 +95,18 @@ func (v Name) InRange() bool {
 	return v == Unknown || (v >= Int32 && v <= Max)
 }
 
+// IsScalar returns whether this predeclared name represents one of the scalar
+// types.
+func (v Name) IsScalar() bool {
+	return v >= Int32 && v <= Bytes
+}
+
+// IsMapKey returns whether this predeclared name represents one of the map key
+// types.
+func (v Name) IsMapKey() bool {
+	return (v >= Int32 && v <= SFixed64) || v == Bool || v == String
+}
+
 // Lookup looks up a predefined identifier by name.
 //
 // If name does not name a predefined identifier, returns [Unknown].

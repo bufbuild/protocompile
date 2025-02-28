@@ -1,0 +1,71 @@
+error: only the `stream` modifier may appear in method parameter list
+  --> testdata/parser/method/bad_type.proto:20:14
+   |
+20 |     rpc Bar1(optional foo.Bar) returns (foo.Bar);
+   |              ^^^^^^^^
+
+error: only the `stream` modifier may appear in method return type
+  --> testdata/parser/method/bad_type.proto:21:32
+   |
+21 |     rpc Bar2(foo.Bar) returns (repeated foo.Bar);
+   |                                ^^^^^^^^
+
+error: only the `stream` modifier may appear in method return type
+  --> testdata/parser/method/bad_type.proto:22:31
+   |
+22 |     rpc Bar2(foo.Bar) returns repeated foo.Bar;
+   |                               ^^^^^^^^
+
+error: missing `(...)` around method return type
+  --> testdata/parser/method/bad_type.proto:22:31
+   |
+22 |     rpc Bar2(foo.Bar) returns repeated foo.Bar;
+   |                               ^^^^^^^^^^^^^^^^
+  help: insert (...) around the return type
+   |
+22 |     rpc Bar2(foo.Bar) returns (repeated foo.Bar);
+   |                               +                +
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/method/bad_type.proto:23:14
+   |
+23 |     rpc Bar3(map<string, foo.Bar>) returns (foo.Bar);
+   |              ^^^^^^^^^^^^^^^^^^^^
+
+error: expected exactly one type in method parameter list, got 2
+  --> testdata/parser/method/bad_type.proto:24:13
+   |
+24 |     rpc Bar4(string, foo.Bar) returns (foo.Bar);
+   |             ^^^^^^^^^^^^^^^^^
+
+error: expected exactly one type in method return type, got 2
+  --> testdata/parser/method/bad_type.proto:25:31
+   |
+25 |     rpc Bar5(foo.Bar) returns (foo.Bar, stream string);
+   |                               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/method/bad_type.proto:26:21
+   |
+26 |     rpc Bar6(stream repeated foo.Bar) returns (foo.Bar);
+   |                     ^^^^^^^^^^^^^^^^
+
+error: only message types may appear in method parameter list
+  --> testdata/parser/method/bad_type.proto:27:21
+   |
+27 |     rpc Bar7(stream map<string, foo.Bar>) returns (foo.Bar);
+   |                     ^^^^^^^^^^^^^^^^^^^^
+
+error: unexpected nested extension path in method parameter list
+  --> testdata/parser/method/bad_type.proto:29:18
+   |
+29 |     rpc Bar8(foo.(bar.baz)) returns (buf.build/x.y);
+   |                  ^^^^^^^^^
+
+error: unexpected `/` in path in method return type
+  --> testdata/parser/method/bad_type.proto:29:47
+   |
+29 |     rpc Bar8(foo.(bar.baz)) returns (buf.build/x.y);
+   |                                               ^ help: replace this with a `.`
+
+encountered 11 errors

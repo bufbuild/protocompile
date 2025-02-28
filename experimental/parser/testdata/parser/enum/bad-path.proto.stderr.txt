@@ -1,0 +1,19 @@
+error: unexpected qualified name in enum value
+  --> testdata/parser/enum/bad-path.proto:20:5
+   |
+20 |     foo.bar = 1;
+   |     ^^^^^^^ expected identifier
+
+error: unexpected extension name in enum value
+  --> testdata/parser/enum/bad-path.proto:21:5
+   |
+21 |     (foo) = 2;
+   |     ^^^^^ expected identifier
+
+error: unexpected qualified name in enum value
+  --> testdata/parser/enum/bad-path.proto:22:5
+   |
+22 |     foo/bar = 3;
+   |     ^^^^^^^ expected identifier
+
+encountered 3 errors

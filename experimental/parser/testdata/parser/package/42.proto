@@ -14,4 +14,8 @@
 
 syntax = "proto2";
 
+// TODO: This produces a less-than-ideal diagnostic, but it's not an
+// especially reasonable-to-expect case.
+//
+// See https://github.com/bufbuild/protocompile/pull/438#discussion_r1947046609
 package 42;

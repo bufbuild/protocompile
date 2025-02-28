@@ -1,0 +1,8 @@
+error: unrecognized `edition` declaration value
+  --> testdata/parser/syntax/2024.proto:15:11
+   |
+15 | edition = "2024";
+   |           ^^^^^^
+   = note: permitted values: "2023"
+
+encountered 1 error

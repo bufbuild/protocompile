@@ -8,6 +8,7 @@ decls:
         - def:
             kind: KIND_GROUP
             name.components: [{ ident: "foo" }]
+            type.path.components: [{ ident: "group" }]
             value.literal.int_value: 1
             body.decls:
               - def:
@@ -20,7 +21,7 @@ decls:
                   type.path.components: [{ ident: "Foo" }]
                   value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
+            kind: KIND_GROUP
             name.components: [{ ident: "bar" }]
             type.prefixed:
               prefix: PREFIX_OPTIONAL
@@ -35,6 +36,7 @@ decls:
         - def:
             kind: KIND_GROUP
             name.components: [{ ident: "x" }]
+            type.path.components: [{ ident: "group" }]
             value.literal.int_value: 3
             options.entries:
               - path.components: [{ ident: "bar" }]
