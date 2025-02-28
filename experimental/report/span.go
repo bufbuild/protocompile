@@ -73,6 +73,11 @@ func (s Span) EndLoc() Location {
 	return s.Location(s.End)
 }
 
+// Len returns the length of this span in bytes.
+func (s Span) Len() int {
+	return s.End - s.Start
+}
+
 // Span implements [Spanner].
 func (s Span) Span() Span {
 	return s

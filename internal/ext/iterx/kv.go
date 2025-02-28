@@ -12,14 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package predeclared provides all of the identifiers with a special meaning
-// in Protobuf.
-//
-// These are not keywords, but are rather special names injected into scope in
-// places where any user-defined path is allowed. For example, the identifier
-// string overrides the meaning of a path with a single identifier called string,
-// (such as a reference to a message named string in the current package) and as
-// such counts as a predeclared identifier.
-package predeclared
+package iterx
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum predeclared.yaml
+import (
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+// Left returns a new iterator that drops the right value of a [iter.Seq2].
+func Left[K, V any](seq iter.Seq2[K, V]) iter.Seq[K] {
+	return Map2to1(seq, func(k K, _ V) K { return k })
+}
+
+// Right returns a new iterator that drops the left value of a [iter.Seq2].
+func Right[K, V any](seq iter.Seq2[K, V]) iter.Seq[V] {
+	return Map2to1(seq, func(_ K, v V) V { return v })
+}

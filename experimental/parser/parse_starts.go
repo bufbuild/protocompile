@@ -17,39 +17,37 @@ package parser
 import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 var (
-	startsPath = taxa.NewSet(taxa.Ident, taxa.Parens, taxa.Period)
-	startsDecl = startsPath.With(taxa.Braces, taxa.Semicolon)
+	startsPath = taxa.NewSet(taxa.Ident, taxa.Parens, taxa.Dot)
+	startsDecl = startsPath.With(taxa.Braces, taxa.Semi)
 )
 
 func canStartDecl(tok token.Token) bool {
 	return canStartPath(tok) ||
-		tok.Text() == ";" ||
-		(tok.Text() == "{" && !tok.IsLeaf())
+		slicesx.Among(tok.Keyword(), keyword.Semi, keyword.Braces)
 }
 
 // canStartPath returns whether or not tok can start a path.
 func canStartPath(tok token.Token) bool {
 	return tok.Kind() == token.Ident ||
-		tok.Text() == "." ||
-		tok.Text() == "/" ||
-		(tok.Text() == "(" && !tok.IsLeaf())
+		slicesx.Among(tok.Keyword(), keyword.Dot, keyword.Slash, keyword.Parens)
 }
 
 // canStartExpr returns whether or not tok can start an expression.
 func canStartExpr(tok token.Token) bool {
 	return canStartPath(tok) ||
 		tok.Kind() == token.Number || tok.Kind() == token.String ||
-		tok.Text() == "-" ||
-		((tok.Text() == "{" || tok.Text() == "[") && !tok.IsLeaf())
+		slicesx.Among(tok.Keyword(), keyword.Minus, keyword.Braces, keyword.Brackets)
 }
 
 func canStartOptions(tok token.Token) bool {
-	return !tok.IsLeaf() && tok.Text() == "["
+	return tok.Keyword() == keyword.Brackets
 }
 
 func canStartBody(tok token.Token) bool {
-	return !tok.IsLeaf() && tok.Text() == "{"
+	return tok.Keyword() == keyword.Braces
 }

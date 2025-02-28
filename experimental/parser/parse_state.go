@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // lexer is a Protobuf parser.
@@ -28,35 +29,76 @@ type parser struct {
 	*report.Report
 }
 
-// parsePunct attempts to unconditionally parse some punctuation.
+type punctParser struct {
+	*parser
+	c      *token.Cursor
+	want   keyword.Keyword
+	where  taxa.Place
+	insert int // One of the justify* values.
+}
+
+// parse attempts to unconditionally parse some punctuation.
 //
 // If the wrong token is encountered, it DOES NOT consume the token, returning a nil
 // token instead. Returns a diagnostic on failure.
-func (p *parser) Punct(c *token.Cursor, want string, where taxa.Place) (token.Token, report.Diagnose) {
-	next := c.Peek()
-	if next.Text() == want {
-		return c.Next(), nil
+func (p punctParser) parse() (token.Token, report.Diagnose) {
+	start := p.c.PeekSkippable().Span()
+	start = start.File.Span(start.Start, start.Start)
+
+	next := p.c.Peek()
+	if next.Keyword() == p.want {
+		return p.c.Next(), nil
 	}
 
-	wanted := taxa.NewSet(taxa.Punct(want, false))
-	if next.IsZero() {
-		tok, span := c.SeekToEnd()
-		err := errUnexpected{
-			what:  span,
-			where: where,
-			want:  wanted,
-			got:   taxa.EOF,
-		}
-		if !tok.IsZero() {
-			err.got = taxa.Classify(tok)
-		}
-
-		return token.Zero, err
-	}
-
-	return token.Zero, errUnexpected{
+	wanted := taxa.NewSet(taxa.Keyword(p.want))
+	err := errUnexpected{
 		what:  next,
-		where: where,
+		where: p.where,
 		want:  wanted,
 	}
+	if next.IsZero() {
+		end, span := p.c.SeekToEnd()
+		err.what = span
+		err.got = taxa.EOF
+
+		if _, c, ok := end.Keyword().OpenClose(); ok {
+			// Special case for closing braces.
+			err.got = "`" + c + "`"
+		} else if !end.IsZero() {
+			err.got = taxa.Classify(end)
+		}
+	}
+
+	if p.insert != 0 {
+		err.stream = p.Stream()
+		err.insert = p.want.String()
+		err.insertAt = err.what.Span().Start
+		err.insertJustify = p.insert
+	}
+
+	return token.Zero, err
+}
+
+// parseEquals parses an equals sign.
+//
+// This is a shorthand for a very common version of punctParser.
+func parseEquals(p *parser, c *token.Cursor, in taxa.Noun) (token.Token, report.Diagnose) {
+	return punctParser{
+		parser: p, c: c,
+		want:   keyword.Equals,
+		where:  in.In(),
+		insert: justifyBetween,
+	}.parse()
+}
+
+// parseSemi parses a semicolon.
+//
+// This is a shorthand for a very common version of punctParser.
+func parseSemi(p *parser, c *token.Cursor, after taxa.Noun) (token.Token, report.Diagnose) {
+	return punctParser{
+		parser: p, c: c,
+		want:   keyword.Semi,
+		where:  after.After(),
+		insert: justifyLeft,
+	}.parse()
 }

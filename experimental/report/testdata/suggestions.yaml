@@ -22,7 +22,7 @@ files:
       package abc.xyz;
 
       service Foo {
-        rpc Get(GetRequest) returns GetResponse;
+        rpc Get(GetRequest) returns GetResponse
         rpc Put(PutRequest) returns (PutResponse) [foo = bar];
       }
 
@@ -92,12 +92,12 @@ diagnostics:
     annotations:
       - message: compact options not allowed here
         file: 0
-        start: 139
-        end: 150
+        start: 138
+        end: 149
       - message: use `option` settings inside of the method body
         file: 0
-        start: 139
-        end: 151
+        start: 138
+        end: 150
         edits:
           - start: 0
             end: 1

@@ -22,7 +22,11 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
+
+// Set to true to enable verbose debug printing of tokens.
+const debug = true
 
 // IsSkippable returns whether this is a token that should be examined during
 // syntactic analysis.
@@ -98,6 +102,22 @@ func (t Token) Kind() Kind {
 		return impl.Kind()
 	}
 	return t.synth().kind
+}
+
+// Keyword returns the [keyword.Keyword] corresponding to this token's textual
+// value.
+//
+// This is intended to be used for simplifying parsing, instead of comparing
+// [Token.Text] to a literal string value.
+func (t Token) Keyword() keyword.Keyword {
+	switch {
+	case t.IsZero():
+		return keyword.Unknown
+	case t.IsSynthetic():
+		return t.synth().Keyword()
+	default:
+		return t.nat().Keyword()
+	}
 }
 
 // Text returns the text fragment referred to by this token. This does not
@@ -470,6 +490,13 @@ func (t Token) IsPureString() bool {
 
 // String implements [strings.Stringer].
 func (t Token) String() string {
+	if debug && !t.IsZero() {
+		if t.IsSynthetic() {
+			return fmt.Sprintf("{%v %#v}", t.id, t.synth())
+		}
+		return fmt.Sprintf("{%v %#v}", t.id, t.nat())
+	}
+
 	return fmt.Sprintf("{%v %v}", t.id, t.Kind())
 }
 

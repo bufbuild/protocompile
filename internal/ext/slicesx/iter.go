@@ -19,6 +19,39 @@ import (
 	"github.com/bufbuild/protocompile/internal/iter"
 )
 
+// All is a polyfill for [slices.All].
+func All[S ~[]E, E any](s S) iter.Seq2[int, E] {
+	return func(yield func(int, E) bool) {
+		for i, v := range s {
+			if !yield(i, v) {
+				return
+			}
+		}
+	}
+}
+
+// Backward is a polyfill for [slices.Backward].
+func Backward[S ~[]E, E any](s S) iter.Seq2[int, E] {
+	return func(yield func(int, E) bool) {
+		for i := len(s) - 1; i >= 0; i-- {
+			if !yield(i, s[i]) {
+				return
+			}
+		}
+	}
+}
+
+// Values is a polyfill for [slices.Values].
+func Values[S ~[]E, E any](s S) iter.Seq[E] {
+	return func(yield func(E) bool) {
+		for _, v := range s {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
 // Collect polyfills [slices.Collect].
 func Collect[E any](seq iter.Seq[E]) []E {
 	return AppendSeq[[]E](nil, seq)
@@ -83,39 +116,6 @@ func PartitionKey[S ~[]E, E any, K comparable](s S, key func(E) K) iter.Seq2[int
 
 		if start < len(s) {
 			yield(start, s[start:])
-		}
-	}
-}
-
-// SplitFunc splits a slice according to the given predicate.
-//
-// Whenever p returns true, this function will yield all prior elements not
-// yet yielded.
-func SplitFunc[S ~[]E, E any](s S, p func(int, E) bool) iter.Seq[S] {
-	return func(yield func(S) bool) {
-		var start int
-		for i, r := range s {
-			if !p(i, r) {
-				continue
-			}
-			if !yield(s[start:i]) {
-				return
-			}
-			start = i
-		}
-		if start < len(s) {
-			yield(s[start:])
-		}
-	}
-}
-
-// Values is a polyfill for [slices.Values].
-func Values[S ~[]E, E any](s S) iter.Seq[E] {
-	return func(yield func(E) bool) {
-		for _, v := range s {
-			if !yield(v) {
-				return
-			}
 		}
 	}
 }
