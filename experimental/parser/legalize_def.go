@@ -254,7 +254,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		if sig.Inputs().Span().IsZero() {
 			def.MarkCorrupt()
 			p.Errorf("missing %v in %v", taxa.MethodIns, taxa.Method).Apply(
-				report.Snippetf(def.Name(), "expected argument type in %s after this", taxa.Parens),
+				report.Snippetf(def.Name(), "expected %s after this", taxa.Parens),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Inputs(), taxa.MethodIns)
@@ -277,7 +277,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 			}
 
 			p.Errorf("missing %v in %v", taxa.MethodOuts, taxa.Method).Apply(
-				report.Snippetf(after, "expected return type in %s after this", expected),
+				report.Snippetf(after, "expected %s after this", expected),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Outputs(), taxa.MethodOuts)
