@@ -41,10 +41,9 @@ func legalizeCompactOptions(p *parser, opts ast.CompactOptions) {
 		return
 	}
 
-	seq.Values(entries)(func(opt ast.Option) bool {
+	for opt := range seq.Values(entries) {
 		legalizeOptionEntry(p, opt, opt.Span())
-		return true
-	})
+	}
 }
 
 // legalizeCompactOptions is the common path for legalizing options, either
@@ -169,10 +168,9 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 			)
 
 		default:
-			seq.Values(array)(func(e ast.ExprAny) bool {
+			for e := range seq.Values(array) {
 				legalizeOptionValue(p, decl, value, e)
-				return true
-			})
+			}
 
 			if parent.Kind() == ast.ExprKindField && array.Len() == 0 {
 				p.Warnf("empty %s has no effect", taxa.Array).Apply(
@@ -212,7 +210,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 			)
 		}
 
-		seq.Values(value.AsDict().Elements())(func(kv ast.ExprField) bool {
+		for kv := range seq.Values(dict.Elements()) {
 			want := taxa.NewSet(taxa.FieldName, taxa.ExtensionName, taxa.TypeURL)
 			switch kv.Key().Kind() {
 			case ast.ExprKindLiteral:
@@ -299,32 +297,30 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 				// information. Namely, {a []} is not allowed if a is not of message
 				// type. Arguably, because this syntax does nothing, it should
 				// be disallowed...
-				seq.Values(kv.Value().AsArray().Elements())(func(e ast.ExprAny) bool {
-					if e.Kind() != ast.ExprKindDict {
-						p.Error(errUnexpected{
-							what:  e,
-							where: taxa.Array.In(),
-							want:  taxa.Dict.AsSet(),
-						}).Apply(
-							report.Snippetf(kv.Key(),
-								"because this %s is missing a %s",
-								taxa.DictField, taxa.Colon),
-							report.Notef(
-								"the %s can be omitted in a %s, but only if the value is a %s or a %s of them",
-								taxa.Colon, taxa.DictField,
-								taxa.Dict, taxa.Array),
-						)
-
-						return false // Only diagnose the first one.
+				for e := range seq.Values(kv.Value().AsArray().Elements()) {
+					if e.Kind() == ast.ExprKindDict {
+						continue
 					}
+					p.Error(errUnexpected{
+						what:  e,
+						where: taxa.Array.In(),
+						want:  taxa.Dict.AsSet(),
+					}).Apply(
+						report.Snippetf(kv.Key(),
+							"because this %s is missing a %s",
+							taxa.DictField, taxa.Colon),
+						report.Notef(
+							"the %s can be omitted in a %s, but only if the value is a %s or a %s of them",
+							taxa.Colon, taxa.DictField,
+							taxa.Dict, taxa.Array),
+					)
 
-					return true
-				})
+					break // Only diagnose the first one.
+				}
 			}
 
 			legalizeOptionValue(p, decl, kv.AsAny(), kv.Value())
-			return true
-		})
+		}
 	default:
 		p.Error(errUnexpected{
 			what:  value,
