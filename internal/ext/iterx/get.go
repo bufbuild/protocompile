@@ -15,7 +15,7 @@
 package iterx
 
 import (
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // First retrieves the first element of an iterator.

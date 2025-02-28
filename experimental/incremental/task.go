@@ -16,13 +16,13 @@ package incremental
 
 import (
 	"context"
+	"iter"
 	"runtime/debug"
 	"slices"
 	"sync"
 	"sync/atomic"
 
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Task represents a query that is currently being executed.

@@ -18,8 +18,7 @@ package ast
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // DeclKind is a kind of declaration. There is one value of DeclKind for each

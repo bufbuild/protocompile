@@ -5,8 +5,7 @@ package {{.Package}}
 {{with .YAML -}}
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 {{range $_, $e := .}}

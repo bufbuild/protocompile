@@ -16,15 +16,13 @@ package report
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
-
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Spanner is any type with a [Span].
@@ -151,7 +149,7 @@ func (s Span) String() string {
 // If there are at least two distinct files among the non-zero spans,
 // this function panics.
 func Join(spans ...Spanner) Span {
-	return JoinSeq[Spanner](slicesx.Values(spans))
+	return JoinSeq[Spanner](slices.Values(spans))
 }
 
 // JoinSeq is like [Join], but takes a sequence of any spannable type.

@@ -15,6 +15,7 @@
 package token_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 type Context struct {
@@ -76,7 +76,7 @@ func TestLeafTokens(t *testing.T) {
 		assert.True(tok.IsLeaf())
 		assert.Equal(text, tok.Text())
 		assert.Equal(token.Ident, abc.Kind())
-		tokensEq(t, slicesx.Collect(tok.Children().Rest()))
+		tokensEq(t, slices.Collect(tok.Children().Rest()))
 	}
 
 	assertIdent(abc, 0, 3, "abc")
@@ -88,7 +88,7 @@ func TestLeafTokens(t *testing.T) {
 	assert.True(jkl.IsLeaf())
 	assert.True(jkl.IsSynthetic())
 	assert.Equal("jkl", jkl.Text())
-	tokensEq(t, slicesx.Collect(jkl.Children().Rest()))
+	tokensEq(t, slices.Collect(jkl.Children().Rest()))
 }
 
 func TestTreeTokens(t *testing.T) {
@@ -135,11 +135,11 @@ func TestTreeTokens(t *testing.T) {
 	tokenEq(t, start, open)
 	tokenEq(t, end, close)
 
-	tokensEq(t, slicesx.Collect(open2.Children().Rest()), x)
-	tokensEq(t, slicesx.Collect(close2.Children().Rest()), x)
+	tokensEq(t, slices.Collect(open2.Children().Rest()), x)
+	tokensEq(t, slices.Collect(close2.Children().Rest()), x)
 
-	tokensEq(t, slicesx.Collect(open.Children().Rest()), def, open2, comma, message)
-	tokensEq(t, slicesx.Collect(close.Children().Rest()), def, open2, comma, message)
+	tokensEq(t, slices.Collect(open.Children().Rest()), def, open2, comma, message)
+	tokensEq(t, slices.Collect(close.Children().Rest()), def, open2, comma, message)
 
 	open3 := s.NewPunct("(")
 	close3 := s.NewPunct(")")
@@ -157,7 +157,7 @@ func TestTreeTokens(t *testing.T) {
 	tokenEq(t, start, open3)
 	tokenEq(t, end, close3)
 
-	tokensEq(t, slicesx.Collect(close3.Children().Rest()), def, open2)
+	tokensEq(t, slices.Collect(close3.Children().Rest()), def, open2)
 }
 
 // tokenEq is the singular version of tokensEq.

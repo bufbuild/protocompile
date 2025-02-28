@@ -17,9 +17,8 @@ package iterx
 
 import (
 	"fmt"
+	"iter"
 	"strings"
-
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Count counts the number of elements in seq that match the given predicate.
