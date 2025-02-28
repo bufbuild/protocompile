@@ -34,10 +34,11 @@ func Filter[T any](seq iter.Seq[T], p func(T) bool) iter.Seq[T] {
 // FilterMap combines the operations of [Map] and [Filter].
 func FilterMap[T, U any](seq iter.Seq[T], f func(T) (U, bool)) iter.Seq[U] {
 	return func(yield func(U) bool) {
-		seq(func(v T) bool {
-			v2, ok := f(v)
-			return !ok || yield(v2)
-		})
+		for v := range seq {
+			if v2, ok := f(v); ok && !yield(v2) {
+				return
+			}
+		}
 	}
 }
 

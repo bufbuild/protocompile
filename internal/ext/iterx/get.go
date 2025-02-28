@@ -20,28 +20,23 @@ import (
 
 // First retrieves the first element of an iterator.
 func First[T any](seq iter.Seq[T]) (v T, ok bool) {
-	seq(func(x T) bool {
-		v = x
-		ok = true
-		return false
-	})
-	return v, ok
+	for x := range seq {
+		return x, true
+	}
+	return v, false
 }
 
 // OnlyOne retrieves the only element of an iterator.
 func OnlyOne[T any](seq iter.Seq[T]) (v T, ok bool) {
-	var found T
-	seq(func(x T) bool {
-		if !ok {
-			found = x
+	for i, x := range Enumerate(seq) {
+		if i > 0 {
+			var z T
+			// Ensure we return the zero value if there is more
+			// than one element.
+			return z, false
 		}
-		ok = !ok
-		return ok
-	})
-	if ok {
-		// Ensure we return the zero value if there is more
-		// than one element.
-		v = found
+		v = x
+		ok = true
 	}
 	return v, ok
 }
@@ -51,43 +46,27 @@ func OnlyOne[T any](seq iter.Seq[T]) (v T, ok bool) {
 // Returns the value and the index at which it was found, or -1 if it wasn't
 // found.
 func Find[T any](seq iter.Seq[T], p func(T) bool) (int, T) {
-	var v T
-	var idx int
-	var found bool
-	seq(func(x T) bool {
+	for i, x := range Enumerate(seq) {
 		if p(x) {
-			v = x
-			found = true
-			return false
+			return i, x
 		}
-		idx++
-		return true
-	})
-	if !found {
-		idx = -1
 	}
-	return idx, v
+	var z T
+	return -1, z
 }
 
 // Find2 is like [Find] but for two-element iterators.
 func Find2[T, U any](seq iter.Seq2[T, U], p func(T, U) bool) (int, T, U) {
-	var v1 T
-	var v2 U
-	var idx int
-	var found bool
-	seq(func(x1 T, x2 U) bool {
+	var i int
+	for x1, x2 := range seq {
 		if p(x1, x2) {
-			v1, v2 = x1, x2
-			found = true
-			return false
+			return i, x1, x2
 		}
-		idx++
-		return true
-	})
-	if !found {
-		idx = -1
+		i++
 	}
-	return idx, v1, v2
+	var z1 T
+	var z2 U
+	return -1, z1, z2
 }
 
 // Index returns the index of the first element of seq that satisfies p.

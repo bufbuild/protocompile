@@ -26,10 +26,9 @@ import (
 // If p is nil, it is treated as func(_ T) bool { return true }.
 func Count[T any](seq iter.Seq[T]) int {
 	var total int
-	seq(func(_ T) bool {
+	for range seq {
 		total++
-		return true
-	})
+	}
 	return total
 }
 
@@ -37,26 +36,22 @@ func Count[T any](seq iter.Seq[T]) int {
 // stringified as if by [fmt.Print].
 func Join[T any](seq iter.Seq[T], sep string) string {
 	var out strings.Builder
-	first := true
-	seq(func(v T) bool {
-		if !first {
+	for i, v := range Enumerate(seq) {
+		if i > 0 {
 			out.WriteString(sep)
 		}
-		first = false
-
 		fmt.Fprint(&out, v)
-		return true
-	})
+	}
 	return out.String()
 }
 
 // Every returns whether every element of an iterator satisfies the given
 // predicate. Returns true if seq yields no values.
 func Every[T any](seq iter.Seq[T], p func(T) bool) bool {
-	all := true
-	seq(func(v T) bool {
-		all = p(v)
-		return all
-	})
-	return all
+	for v := range seq {
+		if !p(v) {
+			return false
+		}
+	}
+	return true
 }
