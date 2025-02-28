@@ -16,6 +16,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -319,7 +320,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		edits = append(edits, report.Edit{
 			Start: span.Len(), End: span.Len(),
 			Replace: fmt.Sprintf("\n%sreserved %s;", span.Indentation(), iterx.Join(
-				iterx.Map(slicesx.Values(least), func(e ast.ExprAny) string { return e.Span().Text() }),
+				iterx.Map(slices.Values(least), func(e ast.ExprAny) string { return e.Span().Text() }),
 				", ",
 			)),
 		})

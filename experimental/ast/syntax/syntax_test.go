@@ -15,6 +15,7 @@
 package syntax_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,13 +24,12 @@ import (
 	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestEditions(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, []syntax.Syntax{syntax.Edition2023}, slicesx.Collect(syntax.Editions()))
+	assert.Equal(t, []syntax.Syntax{syntax.Edition2023}, slices.Collect(syntax.Editions()))
 	assert.Equal(t,
 		mapsx.KeySet(editions.SupportedEditions),
 		mapsx.CollectSet(iterx.Strings(syntax.Editions())),

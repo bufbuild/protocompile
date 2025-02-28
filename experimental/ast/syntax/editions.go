@@ -15,8 +15,9 @@
 package syntax
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // IsEdition returns whether this represents an edition.
