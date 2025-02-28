@@ -1,0 +1,9 @@
+error: missing path in `package` declaration
+  --> testdata/parser/package/no_path.proto:17:1
+   |
+17 | package;
+   | ^^^^^^^^
+   = help: to place a file in the unnamed package, omit the `package`
+           declaration; however, using the unnamed package is discouraged
+
+encountered 1 error

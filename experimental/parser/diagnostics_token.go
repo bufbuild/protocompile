@@ -17,7 +17,9 @@ package parser
 import (
 	"fmt"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 )
 
 // errUnmatched diagnoses a delimiter for which we found one half of a matched
@@ -65,5 +67,35 @@ func (e errUnmatched) Diagnose(d *report.Diagnostic) {
 	}
 	if text == "*/" {
 		d.Apply(report.Notef("Protobuf does not support nested block comments"))
+	}
+}
+
+// errImpureString diagnoses a string literal that probably should not contain
+// escapes or concatenation.
+type errImpureString struct {
+	lit   token.Token
+	where taxa.Place
+}
+
+// Diagnose implements [report.Diagnose].
+func (e errImpureString) Diagnose(d *report.Diagnostic) {
+	text, _ := e.lit.AsString()
+	quote := e.lit.Text()[0]
+	d.Apply(
+		report.Message("non-canonical string literal %s", e.where.String()),
+		report.Snippet(e.lit),
+		report.SuggestEdits(e.lit, "replace it with a canonical string", report.Edit{
+			Start: 0, End: e.lit.Span().Len(),
+			Replace: fmt.Sprintf("%c%v%c", quote, text, quote),
+		}),
+	)
+
+	if !e.lit.IsLeaf() {
+		d.Apply(
+			report.Notef(
+				"Protobuf implicitly concatenates adjacent %ss, like C or Python; this can lead to surprising behavior",
+				taxa.String,
+			),
+		)
 	}
 }

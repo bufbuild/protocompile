@@ -7,3 +7,13 @@ decls:
       body.decls:
         - range: { kind: KIND_EXTENSIONS, ranges: [{ dict: {} }] }
         - range: { kind: KIND_RESERVED, ranges: [{ dict: {} }] }
+        - range:
+            kind: KIND_EXTENSIONS
+            ranges:
+              - literal.string_value: "foo"
+              - prefixed:
+                  prefix: PREFIX_MINUS
+                  expr.literal.string_value: "bar"
+              - range:
+                  start.literal.string_value: "foo"
+                  end.literal.string_value: "bar"

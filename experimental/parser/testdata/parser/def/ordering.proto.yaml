@@ -37,9 +37,7 @@ decls:
             name.components: [{ ident: "x" }]
             type.path.components: [{ ident: "M" }]
             body: {}
-        - def:
-            kind: KIND_FIELD
-            type.path.components: [{ extension.components: [{ ident: "T" }] }]
+        - def.type.path.components: [{ extension.components: [{ ident: "T" }] }]
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "x" }]
@@ -59,7 +57,6 @@ decls:
             type.path.components: [{ ident: "M" }]
             body: {}
         - def:
-            kind: KIND_FIELD
             name.components: [{ extension.components: [{ ident: "T" }] }]
             type.path.components: [{ ident: "returns" }]
         - def:

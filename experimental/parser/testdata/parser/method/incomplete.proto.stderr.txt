@@ -1,0 +1,69 @@
+error: missing `(...)` around method return type
+  --> testdata/parser/method/incomplete.proto:20:31
+   |
+20 |     rpc Bar1(foo.Bar) returns foo.Bar;
+   |                               ^^^^^^^
+  help: insert (...) around the return type
+   |
+20 |     rpc Bar1(foo.Bar) returns (foo.Bar);
+   |                               +       +
+
+error: missing method return type in service method
+  --> testdata/parser/method/incomplete.proto:21:13
+   |
+21 |     rpc Bar2(foo.Bar);
+   |             ^^^^^^^^^ expected `returns (...)` after this
+
+error: missing method parameter list in service method
+  --> testdata/parser/method/incomplete.proto:22:9
+   |
+22 |     rpc Bar3 returns (foo.Bar);
+   |         ^^^^ expected `(...)` after this
+
+error: expected exactly one type in method return type, got 0
+  --> testdata/parser/method/incomplete.proto:23:31
+   |
+23 |     rpc Bar4(foo.Bar) returns () {}
+   |                               ^^
+
+error: expected exactly one type in method parameter list, got 0
+  --> testdata/parser/method/incomplete.proto:24:13
+   |
+24 |     rpc Bar5() returns (stream foo.Bar);
+   |             ^^
+
+error: expected exactly one type in method parameter list, got 0
+  --> testdata/parser/method/incomplete.proto:25:13
+   |
+25 |     rpc Bar6() returns;
+   |             ^^
+
+error: missing method return type in service method
+  --> testdata/parser/method/incomplete.proto:25:16
+   |
+25 |     rpc Bar6() returns;
+   |                ^^^^^^^ expected `(...)` after this
+
+error: unexpected `;` after `returns`
+  --> testdata/parser/method/incomplete.proto:25:23
+   |
+25 |     rpc Bar6() returns;
+   |                       ^ expected `(...)`
+
+error: expected exactly one type in method parameter list, got 0
+  --> testdata/parser/method/incomplete.proto:26:13
+   |
+26 |     rpc Bar7() returns stream foo.Bar;
+   |             ^^
+
+error: missing `(...)` around method return type
+  --> testdata/parser/method/incomplete.proto:26:24
+   |
+26 |     rpc Bar7() returns stream foo.Bar;
+   |                        ^^^^^^^^^^^^^^
+  help: insert (...) around the return type
+   |
+26 |     rpc Bar7() returns (stream foo.Bar);
+   |                        +              +
+
+encountered 10 errors

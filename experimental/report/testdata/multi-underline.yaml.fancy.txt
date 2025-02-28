@@ -3,7 +3,6 @@ error: `size_t` is not a built-in Protobuf type
    |
  1 | syntax = "proto4"
    |          -------- syntax version specified here
- 2 |
 ...
  6 |   required size_t x = 0;
    |            ^^^^^

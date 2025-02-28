@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -78,9 +79,16 @@ func (p Path) AsIdent() token.Token {
 
 // AsPredeclared returns the [predeclared.Name] that this path represents.
 //
-// If this path does not represent a builtin, returns [BuiltinUnknown].
+// If this path does not represent a builtin, returns [predeclared.Unknown].
 func (p Path) AsPredeclared() predeclared.Name {
-	return predeclared.Lookup(p.AsIdent().Text())
+	return predeclared.FromKeyword(p.AsKeyword())
+}
+
+// AsKeyword returns the [keyword.Keyword] that this path represents.
+//
+// If this path does not represent a builtin, returns [keyword.Unknown].
+func (p Path) AsKeyword() keyword.Keyword {
+	return p.AsIdent().Keyword()
 }
 
 // report.Span implements [report.Spanner].
@@ -274,7 +282,11 @@ func (p PathComponent) AsExtension() Path {
 //
 // May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
-	return p.name.In(p.Context())
+	tok := p.name.In(p.Context())
+	if tok.Kind() == token.Ident {
+		return tok
+	}
+	return token.Zero
 }
 
 // rawPath is the raw contents of a Path without its Context.

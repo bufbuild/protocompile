@@ -1,3 +1,9 @@
+error: compact options cannot be empty
+  --> testdata/parser/field/options.proto:21:15
+   |
+21 |     M bar = 2 [];
+   |               ^^ help: remove this
+
 error: unexpected `:` in compact option
   --> testdata/parser/field/options.proto:27:19
    |
@@ -22,4 +28,4 @@ error: unexpected `=` in expression
    |
    = note: a message expression use `=`, not `:`, for setting fields
 
-encountered 2 errors
+encountered 3 errors

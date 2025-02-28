@@ -746,20 +746,48 @@ func (r *renderer) window(w *window) {
 		}
 	}
 	for i := range info {
+		printable := func(r rune) bool { return !unicode.IsSpace(r) }
+
 		// At least two of the below conditions must be true for
 		// this line to be shown. Annoyingly, go does not have a conversion
 		// from bool to int...
 		var score int
-		if strings.IndexFunc(lines[i], unicode.IsGraphic) != 0 {
+		if strings.IndexFunc(lines[i], printable) != -1 {
 			score++
 		}
-		if mustEmit[i-1] {
+
+		sameIndent := func(a, b string) bool {
+			if a == "" || b == "" {
+				return true
+			}
+			d1 := strings.IndexFunc(a, printable)
+			if d1 == -1 {
+				d1 = len(a)
+			}
+			d2 := strings.IndexFunc(b, printable)
+			if d2 == -1 {
+				d2 = len(b)
+			}
+			return a[:d1] == b[:d2]
+		}
+
+		if mustEmit[i-1] && sameIndent(lines[i-1], lines[i]) {
 			score++
 		}
-		if mustEmit[i+1] {
+		if mustEmit[i+1] && sameIndent(lines[i+1], lines[i]) {
 			score++
 		}
 		if score >= 2 {
+			info[i].shouldEmit = true
+		}
+	}
+	// Ensure that there are no single-line elided chunks.
+	// This necessarily results in a fixed point after one iteration.
+	for i := range info {
+		mustEmit[i] = info[i].shouldEmit
+	}
+	for i := range info {
+		if mustEmit[i-1] && mustEmit[i+1] {
 			info[i].shouldEmit = true
 		}
 	}
@@ -803,7 +831,7 @@ func (r *renderer) window(w *window) {
 				slashAt = len(prevSidebar) - 1
 			}
 
-			r.WriteString(r.sidebar(sidebarLen, lineno, slashAt, cur.sidebar))
+			r.WriteString(r.sidebar(sidebarLen, lastEmit+1, slashAt, info[lastEmit-w.start].sidebar))
 		}
 
 		// Ok, we are definitely printing this line out.

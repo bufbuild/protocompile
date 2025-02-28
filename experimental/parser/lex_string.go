@@ -70,7 +70,14 @@ func lexString(l *lexer) token.Token {
 		if len(tok.Text()) == 1 {
 			note = report.Notef("this string consists of a single orphaned quote")
 		} else if strings.HasSuffix(tok.Text(), string(quote)) {
-			note = report.Notef("this string appears to end in an escaped quote; replace `\\%c` with `\\\\%[1]c%[1]c`", quote)
+			note = report.SuggestEdits(
+				tok,
+				"this string appears to end in an escaped quote",
+				report.Edit{
+					Start: tok.Span().Len() - 2, End: tok.Span().Len(),
+					Replace: fmt.Sprintf(`\\%c%c`, quote, quote),
+				},
+			)
 		}
 
 		l.Errorf("unterminated string literal").Apply(

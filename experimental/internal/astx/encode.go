@@ -327,7 +327,9 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 			SemicolonSpan: c.span(decl.Semicolon()),
 		}
 
-		if kind == compilerpb.Def_KIND_FIELD || kind == compilerpb.Def_KIND_UNSPECIFIED {
+		if kind == compilerpb.Def_KIND_FIELD ||
+			kind == compilerpb.Def_KIND_GROUP ||
+			kind == compilerpb.Def_KIND_UNSPECIFIED {
 			proto.Type = c.type_(decl.Type())
 		}
 

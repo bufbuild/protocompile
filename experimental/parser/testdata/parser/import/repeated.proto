@@ -17,6 +17,6 @@ syntax = "proto2";
 package test;
 
 import "foo.proto";
-import "foo.proto"; // Second
-
 import "foo\x2eproto";
+
+import "foo.proto"; // This should not trip the diagnostic again.

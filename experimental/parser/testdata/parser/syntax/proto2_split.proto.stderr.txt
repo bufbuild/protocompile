@@ -1,0 +1,14 @@
+warning: non-canonical string literal in `syntax` declaration
+  --> testdata/parser/syntax/proto2_split.proto:15:10
+   |
+15 | syntax = "proto" "2";
+   |          ^^^^^^^^^^^
+  help: replace it with a canonical string
+   |
+15 | - syntax = "proto" "2";
+15 | + syntax = "proto2";
+   |
+   = note: Protobuf implicitly concatenates adjacent string literals, like C or
+           Python; this can lead to surprising behavior
+
+encountered 1 warning

@@ -1,0 +1,31 @@
+warning: non-canonical string literal in reserved range
+  --> testdata/parser/range/escapes.proto:20:14
+   |
+20 |     reserved "foo" "bar";
+   |              ^^^^^^^^^^^
+  help: replace it with a canonical string
+   |
+20 | -     reserved "foo" "bar";
+20 | +     reserved "foobar";
+   |
+   = note: Protobuf implicitly concatenates adjacent string literals, like C or
+           Python; this can lead to surprising behavior
+
+error: reserved message field name is not a valid identifier
+  --> testdata/parser/range/escapes.proto:21:14
+   |
+21 |     reserved "foo\n", "b\x61r";
+   |              ^^^^^^^
+
+warning: non-canonical string literal in reserved range
+  --> testdata/parser/range/escapes.proto:21:23
+   |
+21 |     reserved "foo\n", "b\x61r";
+   |                       ^^^^^^^^
+  help: replace it with a canonical string
+   |
+21 | -     reserved "foo\n", "b\x61r";
+21 | +     reserved "foo\n", "bar";
+   |
+
+encountered 1 error and 2 warnings

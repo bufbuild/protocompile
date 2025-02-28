@@ -215,6 +215,9 @@ func (defOutputs) parse(p *defParser) report.Span {
 	// Note that the inputs and outputs of a method are parsed
 	// separately, so foo(bar) and foo returns (bar) are both possible.
 	returns := p.c.Next()
+	if p.args.Returns.IsZero() {
+		p.args.Returns = returns
+	}
 
 	var ty ast.TypeAny
 	list, err := punctParser{
@@ -233,7 +236,6 @@ func (defOutputs) parse(p *defParser) report.Span {
 	}
 
 	if p.outputs.IsZero() && p.outputTy.IsZero() {
-		p.args.Returns = returns
 		if !list.IsZero() {
 			p.outputs = list
 		} else {
@@ -284,7 +286,7 @@ func (defValue) canStart(p *defParser) bool {
 		// If the next "expression" looks like a path, this likelier to be
 		// due to a missing semicolon than a missing =.
 		return false
-	case slicesx.Among(next.Keyword(), keyword.Brackets, keyword.Braces):
+	case slicesx.Among(next.Keyword(), keyword.Brackets, keyword.Braces, keyword.Angles):
 		// Exclude the two followers after this one.
 		return false
 	case canStartExpr(next):

@@ -1,0 +1,11 @@
+error: unexpected `syntax` declaration
+  --> testdata/parser/syntax/not_first.proto:17:1
+   |
+15 | package test;
+   | ------------- previous declaration is here
+16 |
+17 | syntax = "proto2";
+   | ^^^^^^^^^^^^^^^^^^
+   = note: a `syntax` declaration must be the first declaration in a file
+
+encountered 1 error
