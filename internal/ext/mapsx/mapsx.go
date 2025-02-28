@@ -15,7 +15,7 @@
 // package mapsx contains extensions to Go's package maps.
 package mapsx
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import "iter"
 
 // Keys polyfills [maps.Keys].
 func Keys[M ~map[K]V, K comparable, V any](m M) iter.Seq[K] {

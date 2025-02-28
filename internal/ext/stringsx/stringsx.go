@@ -16,6 +16,7 @@
 package stringsx
 
 import (
+	"iter"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -24,7 +25,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Rune returns the rune at the given byte index.

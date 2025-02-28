@@ -15,7 +15,7 @@
 package iterx
 
 import (
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Left returns a new iterator that drops the right value of a [iter.Seq2].

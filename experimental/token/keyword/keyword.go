@@ -18,8 +18,7 @@ package keyword
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Keywords are special "grammar particles" recognized by Protobuf. These

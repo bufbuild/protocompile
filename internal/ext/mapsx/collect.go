@@ -14,7 +14,7 @@
 
 package mapsx
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import "iter"
 
 // Collect polyfills [maps.Collect].
 func Collect[K comparable, V any](seq iter.Seq2[K, V]) map[K]V {

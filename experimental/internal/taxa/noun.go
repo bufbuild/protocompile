@@ -18,8 +18,7 @@ package taxa
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Noun is a syntactic or semantic element within the grammar that can be

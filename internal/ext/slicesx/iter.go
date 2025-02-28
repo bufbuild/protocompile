@@ -15,8 +15,9 @@
 package slicesx
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // All is a polyfill for [slices.All].

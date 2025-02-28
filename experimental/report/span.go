@@ -16,6 +16,7 @@ package report
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 	"strings"
@@ -24,7 +25,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Spanner is any type with a [Span].

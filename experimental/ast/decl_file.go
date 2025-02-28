@@ -15,12 +15,13 @@
 package ast
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // File is the top-level AST node for a Protobuf file.

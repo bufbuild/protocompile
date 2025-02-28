@@ -17,8 +17,7 @@ package iterx
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Take returns an iterator over the first n elements of a sequence.

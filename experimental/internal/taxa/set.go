@@ -16,11 +16,11 @@ package taxa
 
 import (
 	"fmt"
+	"iter"
 	"math/bits"
 	"strings"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Set is a set of [Noun] values, implicitly ordered by the [Noun] values'

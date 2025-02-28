@@ -24,9 +24,9 @@ package predeclared
 
 import (
 	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Name is one of the built-in Protobuf names. These represent particular

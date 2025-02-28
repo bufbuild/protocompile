@@ -16,6 +16,7 @@ package report
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 const (
