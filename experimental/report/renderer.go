@@ -223,7 +223,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		return snip.Path()
 	})
 
-	parts(func(i int, snippets []snippet) bool {
+	for i, snippets := range parts {
 		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
@@ -243,7 +243,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 				r.WriteString("\n")
 			}
 			r.suggestion(snippets[0])
-			return true
+			continue
 		}
 
 		// Add a blank line after the file. This gives the diagnostic window some
@@ -253,8 +253,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
 		r.window(window)
-		return true
-	})
+	}
 
 	// Render a remedial file name for spanless errors.
 	if len(d.snippets) == 0 && d.inFile != "" {
@@ -274,10 +273,10 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		slicesx.Map(d.debug, func(s string) footer { return footer{r.ss.bError, "debug", s} }),
 	)
 
-	footers(func(f footer) bool {
+	for f := range footers {
 		isDebug := f.label == "debug"
 		if isDebug && !r.ShowDebug {
-			return true
+			continue
 		}
 
 		r.WriteString("\n")
@@ -289,9 +288,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		} else {
 			r.WriteWrapped(f.text, MaxMessageWidth)
 		}
-
-		return true
-	})
+	}
 
 	r.WriteString(r.ss.reset)
 	r.WriteString("\n\n")
@@ -486,7 +483,7 @@ func (r *renderer) window(w *window) {
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
 	parts := slicesx.PartitionKey(w.underlines, func(u underline) int { return u.line })
-	parts(func(_ int, part []underline) bool {
+	for _, part := range parts {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
 
@@ -520,7 +517,7 @@ func (r *renderer) window(w *window) {
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		slicesx.Partition(buf)(func(_ int, line []byte) bool {
+		for _, line := range slicesx.Partition(buf) {
 			level := Level(line[0])
 			if line[0] == 0 {
 				out.WriteString(r.ss.reset)
@@ -537,8 +534,7 @@ func (r *renderer) window(w *window) {
 					out.WriteByte('^')
 				}
 			}
-			return true
-		})
+		}
 
 		// Next we need to find the message that goes inline with the underlines. This will be
 		// the message belonging to the rightmost underline.
@@ -637,9 +633,7 @@ func (r *renderer) window(w *window) {
 			}
 			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
 		}
-
-		return true
-	})
+	}
 
 	//nolint:dupword
 	// Now that we've laid out the underlines, we can add the starts and ends of all
