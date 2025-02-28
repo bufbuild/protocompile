@@ -47,7 +47,7 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 
 	var bytes, components int
 	var slash token.Token
-	iterx.Enumerate(path.Components)(func(i int, pc ast.PathComponent) bool {
+	for i, pc := range iterx.Enumerate(path.Components) {
 		bytes += pc.Separator().Span().Len()
 		// Just Len() here is technically incorrect, because it could be an
 		// extension, but MaxBytes is never used with AllowExts.
@@ -59,7 +59,7 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 				report.Snippetf(path, "expected a path without a leading `%s`", pc.Separator().Text()),
 			)
 			ok = false
-			return true
+			continue
 		}
 
 		if pc.Separator().Keyword() == keyword.Slash {
@@ -68,14 +68,14 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 					report.Snippetf(pc.Separator(), "help: replace this with a %s", taxa.Dot),
 				)
 				ok = false
-				return true
+				continue
 			} else if !slash.IsZero() {
 				p.Errorf("type URL can only contain a single %s", taxa.Slash).Apply(
 					report.Snippet(pc.Separator()),
 					report.Snippetf(slash, "first one is here"),
 				)
 				ok = false
-				return true
+				continue
 			}
 			slash = pc.Separator()
 		}
@@ -87,7 +87,7 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 					AllowExts:     false,
 				})
 				if !ok {
-					return true
+					continue
 				}
 			} else {
 				p.Errorf("unexpected nested extension path %s", where).Apply(
@@ -95,12 +95,10 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 					report.Snippet(pc.Name()),
 				)
 				ok = false
-				return true
+				continue
 			}
 		}
-
-		return true
-	})
+	}
 
 	if ok {
 		if opts.MaxBytes > 0 && bytes > opts.MaxBytes {

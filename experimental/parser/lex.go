@@ -16,6 +16,7 @@ package parser
 
 import (
 	"math"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -224,15 +225,15 @@ func lexPrelude(l *lexer) bool {
 	// Check that the text of the file is actually UTF-8.
 	var idx int
 	var count int
-	stringsx.Runes(l.Text())(func(n int, r rune) bool {
-		if r == -1 {
-			if count == 0 {
-				idx = n
-			}
-			count++
+	for i, r := range stringsx.Runes(l.Text()) {
+		if r != -1 {
+			continue
 		}
-		return true
-	})
+		if count == 0 {
+			idx = i
+		}
+		count++
+	}
 	frac := float64(count) / float64(len(l.Text()))
 	switch {
 	case frac == 0:
@@ -356,9 +357,9 @@ func fuseBraces(l *lexer) {
 
 	// In backwards order, generate empty tokens to fuse with
 	// the unclosed delimiters.
-	for i := len(opens) - 1; i >= 0; i-- {
+	for _, open := range slices.Backward(opens) {
 		empty := l.Push(0, token.Unrecognized)
-		token.Fuse(opens[i].In(l.Context), empty)
+		token.Fuse(open.In(l.Context), empty)
 	}
 }
 
@@ -384,10 +385,9 @@ func fuseStrings(l *lexer) {
 	}
 
 	var start, end token.Token
-	l.All()(func(tok token.Token) bool {
+	for tok := range l.All() {
 		switch tok.Kind() {
 		case token.Space, token.Comment:
-			break
 
 		case token.String:
 			if start.IsZero() {
@@ -400,9 +400,8 @@ func fuseStrings(l *lexer) {
 			start = token.Zero
 			end = token.Zero
 		}
+	}
 
-		return true
-	})
 	concat(start, end)
 }
 

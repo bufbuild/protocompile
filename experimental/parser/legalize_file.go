@@ -37,7 +37,7 @@ func legalizeFile(p *parser, file ast.File) {
 		pkg     ast.DeclPackage
 		imports = make(map[string][]ast.DeclImport)
 	)
-	seq.All(file.Decls())(func(i int, decl ast.DeclAny) bool {
+	for i, decl := range seq.All(file.Decls()) {
 		file := classified{file, taxa.TopLevel}
 		switch decl.Kind() {
 		case ast.DeclKindSyntax:
@@ -49,9 +49,7 @@ func legalizeFile(p *parser, file ast.File) {
 		default:
 			legalizeDecl(p, file, decl)
 		}
-
-		return true
-	})
+	}
 
 	if pkg.IsZero() {
 		p.Warnf("missing %s", taxa.Package).Apply(
@@ -135,15 +133,15 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	}
 
 	permitted := func() report.DiagnosticOption {
-		values := iterx.Join(iterx.FilterMap(syntax.All(), func(s syntax.Syntax) (string, bool) {
+		values := iterx.FilterMap(syntax.All(), func(s syntax.Syntax) (string, bool) {
 			if s.IsEdition() != (in == taxa.Edition) {
 				return "", false
 			}
 
 			return fmt.Sprintf("%q", s), true
-		}), ", ")
+		})
 
-		return report.Notef("permitted values: %s", values)
+		return report.Notef("permitted values: %s", iterx.Join(values, ", "))
 	}
 
 	value := syntax.Lookup(name)
@@ -251,13 +249,6 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 // imports is a map that classifies DeclImports by the contents of their import string.
 // This populates it and uses it to detect duplicates.
 func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports map[string][]ast.DeclImport) {
-	in := taxa.Import
-	if decl.IsPublic() {
-		in = taxa.PublicImport
-	} else if decl.IsWeak() {
-		in = taxa.WeakImport
-	}
-
 	if parent.what != taxa.TopLevel {
 		p.Error(errBadNest{parent: parent, child: decl, validParents: taxa.TopLevel.AsSet()})
 		return
@@ -267,6 +258,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 		p.Error(errHasOptions{decl})
 	}
 
+	in := taxa.Classify(decl)
 	expr := decl.ImportPath()
 	switch expr.Kind() {
 	case ast.ExprKindLiteral:

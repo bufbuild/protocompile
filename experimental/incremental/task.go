@@ -281,26 +281,29 @@ func (t *task) run(caller Task, q *AnyQuery) (output *result) {
 
 	// Check for a potential cycle.
 	var cycle *ErrCycle
-	caller.path.Walk()(func(node *path) bool {
-		if node.Query.Key() == q.Key() {
-			cycle = new(ErrCycle)
-
-			// Re-walk the list to collect the cycle itself.
-			caller.path.Walk()(func(node2 *path) bool {
-				cycle.Cycle = append(cycle.Cycle, node2.Query)
-				return node2 != node
-			})
-
-			// Reverse the list so that dependency arrows point to the
-			// right (i.e., Cycle[n] depends on Cycle[n+1]).
-			slices.Reverse(cycle.Cycle)
-
-			// Insert a copy of the current query to complete the cycle.
-			cycle.Cycle = append(cycle.Cycle, AsAny(q))
-			return false
+	for node := range caller.path.Walk() {
+		if node.Query.Key() != q.Key() {
+			continue
 		}
-		return true
-	})
+
+		cycle = new(ErrCycle)
+
+		// Re-walk the list to collect the cycle itself.
+		for node2 := range caller.path.Walk() {
+			cycle.Cycle = append(cycle.Cycle, node2.Query)
+			if node2 == node {
+				break
+			}
+		}
+
+		// Reverse the list so that dependency arrows point to the
+		// right (i.e., Cycle[n] depends on Cycle[n+1]).
+		slices.Reverse(cycle.Cycle)
+
+		// Insert a copy of the current query to complete the cycle.
+		cycle.Cycle = append(cycle.Cycle, AsAny(q))
+		break
+	}
 	if cycle != nil {
 		output.Fatal = cycle
 		return output

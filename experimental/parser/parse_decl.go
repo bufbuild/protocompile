@@ -319,7 +319,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// to parse this as an array, instead.
 	if !canStartOptions(c.Peek()) {
 		var last token.Token
-		delimited[ast.ExprAny]{
+		d := delimited[ast.ExprAny]{
 			p: p, c: c,
 			what: taxa.Expr,
 			in:   in,
@@ -366,10 +366,11 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 
 				return false
 			},
-		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
+		}
+
+		for expr, comma := range d.iter {
 			exprs = append(exprs, exprComma{expr, comma})
-			return true
-		})
+		}
 	}
 
 	options := tryParseOptions(p, c, in)

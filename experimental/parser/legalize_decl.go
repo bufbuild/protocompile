@@ -61,12 +61,11 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 			),
 		)
 
-		seq.Values(body.Decls())(func(decl ast.DeclAny) bool {
+		for decl := range seq.Values(body.Decls()) {
 			// Treat bodies as being immediately inlined, hence we pass
 			// parent here and not body as the parent.
 			legalizeDecl(p, parent, decl)
-			return true
-		})
+		}
 
 	case ast.DeclKindDef:
 		def := decl.AsDef()
@@ -77,10 +76,9 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 		what := classified{def, taxa.Classify(def)}
 
 		legalizeDef(p, parent, def)
-		seq.Values(body.Decls())(func(decl ast.DeclAny) bool {
+		for decl := range seq.Values(body.Decls()) {
 			legalizeDecl(p, what, decl)
-			return true
-		})
+		}
 	}
 }
 
@@ -155,7 +153,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 	}
 
 	var names, tags []ast.ExprAny
-	seq.Values(decl.Ranges())(func(expr ast.ExprAny) bool {
+	for expr := range seq.Values(decl.Ranges()) {
 		switch expr.Kind() {
 		case ast.ExprKindPath:
 			path := expr.AsPath()
@@ -260,9 +258,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 				want:  want,
 			})
 		}
-
-		return true
-	})
+	}
 
 	if len(names) > 0 && len(tags) > 0 {
 		parentWhat := "field"
