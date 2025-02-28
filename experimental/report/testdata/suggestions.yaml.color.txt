@@ -51,13 +51,11 @@
 ⟨blu⟩  help:
    |
 ⟨blu⟩ 5 | ⟨b.red⟩-⟨red⟩ service Foo {
-⟨blu⟩ 6 | ⟨reset⟩ ⟨reset⟩
-⟨blu⟩ 7 | ⟨reset⟩ ⟨reset⟩   rpc Get(GetRequest) returns GetResponse
-⟨blu⟩ 8 | ⟨reset⟩ ⟨reset⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-⟨blu⟩ 9 | ⟨reset⟩ ⟨reset⟩
-⟨blu⟩10 | ⟨b.red⟩-⟨red⟩ }
-⟨blu⟩11 | ⟨b.red⟩-⟨red⟩
-⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩ }
+⟨blu⟩ 6 | ⟨reset⟩ ⟨reset⟩   rpc Get(GetRequest) returns GetResponse
+⟨blu⟩ 7 | ⟨reset⟩ ⟨reset⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
+⟨blu⟩ 9 | ⟨b.red⟩-⟨red⟩
+⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩ }
 ⟨blu⟩   | ⟨reset⟩
 
 ⟨b.red⟩error: delete this method
