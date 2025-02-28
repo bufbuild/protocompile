@@ -26,11 +26,17 @@ import (
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
 func IsFloat(tok token.Token) bool {
-	digits := tok.Text()
+	return IsFloatText(tok.Text())
+}
+
+// IsFloatText checks whether or not the given number text is intended to be
+// a floating-point literal.
+func IsFloatText(digits string) bool {
+	needle := ".Ee"
 	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
-		return strings.ContainsRune(digits, '.')
+		needle = ".Pp"
 	}
-	return strings.ContainsAny(digits, ".eE")
+	return strings.ContainsAny(digits, needle)
 }
 
 // Classify attempts to classify node for use in a diagnostic.

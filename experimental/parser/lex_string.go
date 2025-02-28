@@ -16,6 +16,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -65,7 +66,17 @@ func lexString(l *lexer) token.Token {
 	}
 
 	if !terminated {
-		l.Error(errUnclosedString{Token: tok})
+		var note report.DiagnosticOption
+		if len(tok.Text()) == 1 {
+			note = report.Notef("this string consists of a single orphaned quote")
+		} else if strings.HasSuffix(tok.Text(), string(quote)) {
+			note = report.Notef("this string appears to end in an escaped quote; replace `\\%c` with `\\\\%[1]c%[1]c`", quote)
+		}
+
+		l.Errorf("unterminated string literal").Apply(
+			report.Snippetf(tok, "expected to be terminated by `%c`", quote),
+			note,
+		)
 	}
 
 	return tok
@@ -224,4 +235,49 @@ func lexStringContent(_ rune, l *lexer) (sc stringContent) {
 	}
 
 	return sc
+}
+
+// errInvalidEscape diagnoses an invalid escape sequence within a string
+// literal.
+type errInvalidEscape struct {
+	Span report.Span // The span of the offending escape within a literal.
+}
+
+// Diagnose implements [report.Diagnose].
+func (e errInvalidEscape) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("invalid escape sequence"))
+
+	text := e.Span.Text()
+
+	if len(text) < 2 {
+		d.Apply(report.Snippet(e.Span))
+	}
+
+	switch c := text[1]; c {
+	case 'x', 'X':
+		if len(text) < 3 {
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by at least one hex digit", c))
+			return
+		}
+		return
+	case 'u', 'U':
+		expected := 4
+		if c == 'U' {
+			expected = 8
+		}
+
+		if len(text[2:]) != expected {
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by exactly %d hex digits", c, expected))
+			return
+		}
+
+		value, _ := strconv.ParseUint(text[2:], 16, 32)
+		if !utf8.ValidRune(rune(value)) {
+			d.Apply(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
+			return
+		}
+		return
+	}
+
+	d.Apply(report.Snippet(e.Span))
 }

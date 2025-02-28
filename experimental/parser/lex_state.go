@@ -20,6 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
 
 // lexer is a Protobuf lexer.
@@ -56,7 +57,11 @@ func (l *lexer) Rest() string {
 //
 // Returns -1 if l.Done().
 func (l *lexer) Peek() rune {
-	return decodeRune(l.Rest())
+	r, ok := stringsx.Rune(l.Rest(), 0)
+	if !ok {
+		return -1
+	}
+	return r
 }
 
 // Pop consumes the next character.
@@ -129,19 +134,4 @@ func (mp *mustProgress) check() {
 		panic("lexer failed to make progress; this is a bug in protocompile")
 	}
 	mp.prev = mp.l.count
-}
-
-// decodeRune is a wrapper around utf8.DecodeRuneInString that makes it easier
-// to check for failure. Instead of returning RuneError (which is a valid rune!),
-// it returns -1.
-//
-// The success conditions for DecodeRune are kind of subtle; this makes
-// sure we get the logic right every time. It is somewhat annoying that
-// Go did not chose to make this easier to inspect.
-func decodeRune(s string) rune {
-	r, n := utf8.DecodeRuneInString(s)
-	if r == utf8.RuneError && n < 2 {
-		return -1
-	}
-	return r
 }
