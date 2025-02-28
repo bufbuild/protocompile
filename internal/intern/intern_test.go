@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package intern provides an interning table abstraction to optimize symbol
-// resolution.
 package intern_test
 
 import (
@@ -45,10 +43,8 @@ func TestIntern(t *testing.T) {
 	}
 
 	var table intern.Table
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		for _, s := range data {
-			s := s
-
 			t.Run(fmt.Sprintf("%s/%d", s, i), func(t *testing.T) {
 				t.Parallel()
 

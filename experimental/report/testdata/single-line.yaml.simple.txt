@@ -1,4 +1,6 @@
 remark: foo.proto:1:10: "proto4" isn't real, it can't hurt you
+error: foo.proto:1:18: missing `;`
+remark: foo.proto:7:2: EOF
 error: foo.proto:3:1: package
 error: foo.proto:3:1: this is an overlapping error
 error: foo.proto:3:1: P A C K A G E

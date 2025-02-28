@@ -127,6 +127,9 @@ func TestRender(t *testing.T) {
 			ShowRemarks: true,
 			ShowDebug:   true,
 		}.RenderString(r)
+		// This allows colored terminal output to be inspected using -test.v and
+		// -test.skip.
+		t.Log("\n" + text)
 		outputs[2] = ansiToMarkup(text)
 	})
 }

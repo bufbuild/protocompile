@@ -100,7 +100,7 @@ func printAST(w io.Writer, file *ast.FileNode) error {
 }
 
 func printComments(sw stringWriter, comments ast.Comments) error {
-	for i := 0; i < comments.Len(); i++ {
+	for i := range comments.Len() {
 		comment := comments.Index(i)
 		if _, err := sw.WriteString(comment.LeadingWhitespace()); err != nil {
 			return err

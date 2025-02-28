@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package taxa (plural of taxon, an element of a taxonomy) provides support for
+// Package taxa (plural of taxon, an element of a taxonomy) provides support for
 // classifying Protobuf syntax productions for use in the parser and in
 // diagnostics.
 //

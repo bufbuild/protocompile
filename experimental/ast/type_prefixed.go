@@ -17,6 +17,7 @@ package ast
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // TypePrefixed is a type with a [TypePrefix].
@@ -48,14 +49,10 @@ type TypePrefixedArgs struct {
 
 // Prefix extracts the modifier out of this type.
 //
-// Returns [TypePrefixUnknown] if [TypePrefixed.PrefixToken] does not contain
-// a known modifier.
-func (t TypePrefixed) Prefix() TypePrefix {
-	if t.IsZero() {
-		return 0
-	}
-
-	return TypePrefixByName(t.PrefixToken().Text())
+// Returns [keyword.Unknown] if [TypePrefixed.PrefixToken] does not contain
+// a known prefix.
+func (t TypePrefixed) Prefix() keyword.Keyword {
+	return t.PrefixToken().Keyword()
 }
 
 // PrefixToken returns the token representing this type's prefix.

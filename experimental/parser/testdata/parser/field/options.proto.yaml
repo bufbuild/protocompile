@@ -39,3 +39,13 @@ decls:
                 value.dict.entries:
                   - key.path.components: [{ ident: "bar" }]
                     value.path.components: [{ ident: "baz" }]
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "bad2" }]
+            type.path.components: [{ ident: "M" }]
+            value.literal.int_value: 5
+            options.entries:
+              - path.components: [{ ident: "foo" }]
+                value.dict.entries:
+                  - key.path.components: [{ ident: "bar" }]
+                    value.path.components: [{ ident: "baz" }]

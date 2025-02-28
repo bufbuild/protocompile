@@ -12,31 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package report
+package iterx
 
-// AsError wraps a [Report] as an [error].
-type AsError struct {
-	Report Report
+import (
+	"github.com/bufbuild/protocompile/internal/iter"
+)
+
+// Left returns a new iterator that drops the right value of a [iter.Seq2].
+func Left[K, V any](seq iter.Seq2[K, V]) iter.Seq[K] {
+	return Map2to1(seq, func(k K, _ V) K { return k })
 }
 
-// Error implements [error].
-func (e *AsError) Error() string {
-	text, _, _ := Renderer{Compact: true}.RenderString(&e.Report)
-	return text
-}
-
-// ErrInFile wraps an [error] into a diagnostic on the given file.
-type ErrInFile struct {
-	Err  error
-	Path string
-}
-
-var _ Diagnose = &ErrInFile{}
-
-// Diagnose implements [Diagnose].
-func (e *ErrInFile) Diagnose(d *Diagnostic) {
-	d.Apply(
-		Message("%v", e.Err),
-		InFile(e.Path),
-	)
+// Right returns a new iterator that drops the left value of a [iter.Seq2].
+func Right[K, V any](seq iter.Seq2[K, V]) iter.Seq[V] {
+	return Map2to1(seq, func(_ K, v V) V { return v })
 }

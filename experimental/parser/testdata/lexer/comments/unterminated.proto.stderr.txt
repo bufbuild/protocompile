@@ -1,6 +1,6 @@
 error: encountered unmatched `/*` delimiter
   --> testdata/lexer/comments/unterminated.proto:1:1
-   | 
+   |
  1 | /*
    | ^^ expected a closing `*/`
 

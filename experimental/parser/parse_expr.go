@@ -19,6 +19,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // parseExpr attempts to parse a full expression.
@@ -45,46 +47,60 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	switch prec {
 	case 0:
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
-			switch next.Text() {
-			case "=": // Allow equals signs, which are usually a mistake.
-				p.Errorf("unexpected `=` where expression").Apply(
-					report.Snippetf(next, "help: replace this with `:`"),
+			switch next.Keyword() {
+			case keyword.Equals: // Allow equals signs, which are usually a mistake.
+				p.Errorf("unexpected `=` in expression").Apply(
+					report.Snippet(next),
+					justify(p.Stream(), next.Span(), "replace this with an `:`", justified{
+						report.Edit{Start: 0, End: 1, Replace: ":"},
+						justifyLeft,
+					}),
 					report.Notef("a %s use `=`, not `:`, for setting fields", taxa.Dict),
 				)
 				fallthrough
-			case ":":
+			case keyword.Colon:
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
-					Colon: c.Pop(),
+					Colon: c.Next(),
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
-			case "{", "<", "[": // This is for colon-less, array or dict-valued fields.
-				if !next.IsLeaf() && lhs.Kind() != ast.ExprKindField {
-					// The previous expression cannot also be a key-value pair, since
-					// this messes with parsing of dicts, which are not comma-separated.
-					//
-					// In other words, consider the following, inside of an expression
-					// context:
-					//
-					// foo: bar { ... }
-					//
-					// We want to diagnose the { as unexpected here, and it is better
-					// for that to be done by whatever is calling parseExpr since it
-					// will have more context.
-					return p.NewExprField(ast.ExprFieldArgs{
-						Key: lhs,
-						// Why not call parseExprSolo? Suppose the following
-						// (invalid) production:
-						//
-						// foo { ... } to { ... }
-						//
-						// Calling parseExprInfix will cause this to be parsed
-						// as a range expression, which will be diagnosed when
-						// we legalize.
-						Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
-					}).AsAny()
+			case keyword.Braces, keyword.Angles, keyword.Brackets:
+				// This is for colon-less, array or dict-valued fields.
+				if next.IsLeaf() {
+					break
 				}
+
+				// The previous expression cannot also be a key-value pair, since
+				// this messes with parsing of dicts, which are not comma-separated.
+				//
+				// In other words, consider the following, inside of an expression
+				// context:
+				//
+				// foo: bar { ... }
+				//
+				// We want to diagnose the { as unexpected here, and it is better
+				// for that to be done by whatever is calling parseExpr since it
+				// will have more context.
+				//
+				// We also do not allow this inside of arrays, because we want
+				// [a {}] to parse as [a, {}] not [a: {}].
+				if lhs.Kind() == ast.ExprKindField || where.Subject() == taxa.Array {
+					break
+				}
+
+				return p.NewExprField(ast.ExprFieldArgs{
+					Key: lhs,
+					// Why not call parseExprSolo? Suppose the following
+					// (invalid) production:
+					//
+					// foo { ... } to { ... }
+					//
+					// Calling parseExprInfix will cause this to be parsed
+					// as a range expression, which will be diagnosed when
+					// we legalize.
+					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
+				}).AsAny()
 			}
 		}
 
@@ -92,11 +108,11 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 
 	case 1:
 		//nolint:gocritic // This is a switch for consistency with the rest of the file.
-		switch next.Text() {
-		case "to":
+		switch next.Keyword() {
+		case keyword.To:
 			return p.NewExprRange(ast.ExprRangeArgs{
 				Start: lhs,
-				To:    c.Pop(),
+				To:    c.Next(),
 				End:   parseExprInfix(p, c, taxa.KeywordTo.After(), ast.ExprAny{}, prec),
 			}).AsAny()
 		}
@@ -118,8 +134,8 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case next.IsZero():
 		return ast.ExprAny{}
 
-	case next.Text() == "-":
-		c.Pop()
+	case next.Keyword() == keyword.Minus:
+		c.Next()
 		inner := parseExprPrefix(p, c, taxa.Minus.After())
 		return p.NewExprPrefixed(ast.ExprPrefixedArgs{
 			Prefix: next,
@@ -142,25 +158,25 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		return ast.ExprAny{}
 
 	case next.Kind() == token.String, next.Kind() == token.Number:
-		return ast.ExprLiteral{Token: c.Pop()}.AsAny()
+		return ast.ExprLiteral{Token: c.Next()}.AsAny()
 
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()
 
-	case (next.Text() == "{" || next.Text() == "<" || next.Text() == "[") && !next.IsLeaf():
-		body := c.Pop()
+	case slicesx.Among(next.Keyword(), keyword.Braces, keyword.Angles, keyword.Brackets):
+		body := c.Next()
 		in := taxa.Dict
-		if next.Text() == "[" {
+		if next.Keyword() == keyword.Brackets {
 			in = taxa.Array
 		}
 
 		elems := delimited[ast.ExprAny]{
 			p:    p,
 			c:    body.Children(),
-			what: taxa.Expr,
+			what: taxa.DictField,
 			in:   in,
 
-			delims:   []string{",", ";"},
+			delims:   []keyword.Keyword{keyword.Comma, keyword.Semi},
 			required: false,
 			exhaust:  true,
 			trailing: true,
@@ -168,9 +184,15 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 				expr := parseExpr(p, c, in.In())
 				return expr, !expr.IsZero()
 			},
+			start: canStartExpr,
 		}
 
-		if next.Text() == "[" {
+		if in == taxa.Array {
+			elems.what = taxa.Expr
+			elems.delims = []keyword.Keyword{keyword.Comma}
+			elems.required = true
+			elems.trailing = false
+
 			array := p.NewExprArray(body)
 			elems.appendTo(array.Elements())
 			return array.AsAny()
@@ -210,7 +232,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 func peekTokenExpr(p *parser, c *token.Cursor) token.Token {
 	next := c.Peek()
 	if next.IsZero() {
-		token, span := c.JustAfter()
+		token, span := c.SeekToEnd()
 		err := errUnexpected{
 			what:  span,
 			where: taxa.Expr.In(),

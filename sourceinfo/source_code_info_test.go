@@ -204,7 +204,6 @@ func TestSourceCodeInfoOptions(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			output := generateSourceInfoText(t, testCase.filename, testCase.mode)
@@ -232,7 +231,7 @@ var pathRoot = (&descriptorpb.FileDescriptorProto{}).ProtoReflect().Descriptor()
 
 func describeSourceCodeInfo(fileName string, locs protoreflect.SourceLocations, resolver linker.Resolver) string {
 	var buf bytes.Buffer
-	for i := 0; i < locs.Len(); i++ {
+	for i := range locs.Len() {
 		if i > 0 {
 			buf.WriteString("\n")
 		}

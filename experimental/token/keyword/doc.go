@@ -12,19 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package queries
+// package keyword provides [Keyword], an enum of all special "grammar particles"
+// (i.e., literal tokens with special meaning in the grammar such as identifier
+// keywords and punctuation) recognized by Protocompile.
+package keyword
 
-import "github.com/bufbuild/protocompile/experimental/report"
-
-// Values for [report.Report].SortOrder, which determine how diagnostics
-// generated across parts of the compiler are sorted.
-const (
-	stageFile int = iota * 10
-)
-
-// newReport returns a new report for the given stage.
-func newReport(stage int) *report.AsError {
-	return &report.AsError{Report: report.Report{
-		Stage: stage,
-	}}
-}
+//go:generate go run github.com/bufbuild/protocompile/internal/enum keyword.yaml

@@ -25,4 +25,5 @@ message M {
     ];
     
     M bad = 4 [foo: {bar: baz}];
+    M bad2 = 5 [foo = {bar = baz}];
 }

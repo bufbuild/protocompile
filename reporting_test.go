@@ -411,7 +411,6 @@ func TestWarningReporting(t *testing.T) {
 	}
 	ctx := context.Background()
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 			var msgs []msg

@@ -16,7 +16,7 @@ package seq
 
 import "slices"
 
-// TODO: Would this optimize better if this was a single type parameter
+// TODO: Would this optimize better if Wrap/Unwrap was a single type parameter
 // constrained by interface { Wrap(E) T; Unwrap(T) E }? Indexer values are
 // ephemera, so the size of this struct is not crucial, but it would save on
 // having to allocate two [runtime.funcval]s when returning an Indexer.
@@ -24,10 +24,25 @@ import "slices"
 // Slice implements [Indexer][T] using an ordinary slice as the backing storage,
 // and using the given functions to perform the conversion to and from the
 // underlying raw values.
+//
+// The first argument of Wrap/Unwrap given is the index the value has/will have
+// in the slice.
 type Slice[T, E any] struct {
 	Slice  []E
-	Wrap   func(E) T
-	Unwrap func(T) E
+	Wrap   func(int, E) T
+	Unwrap func(int, T) E
+}
+
+// NewSlice constructs a new [Slice].
+//
+// This method exists because Go currently will not infer type parameters of a
+// type.
+func NewSlice[T, E any](
+	slice []E,
+	wrap func(int, E) T,
+	unwrap func(int, T) E,
+) Slice[T, E] {
+	return Slice[T, E]{slice, wrap, unwrap}
 }
 
 // Len implements [Indexer].
@@ -37,19 +52,31 @@ func (s Slice[T, _]) Len() int {
 
 // At implements [Indexer].
 func (s Slice[T, _]) At(idx int) T {
-	return s.Wrap(s.Slice[idx])
+	return s.Wrap(idx, s.Slice[idx])
 }
 
 // SetAt implements [Setter].
 func (s Slice[T, _]) SetAt(idx int, value T) {
-	s.Slice[idx] = s.Unwrap(value)
+	s.Slice[idx] = s.Unwrap(idx, value)
 }
 
 // SliceInserter is like [Slice], but also implements [Inserter][T].
 type SliceInserter[T, E any] struct {
 	Slice  *[]E
-	Wrap   func(E) T
-	Unwrap func(T) E
+	Wrap   func(int, E) T
+	Unwrap func(int, T) E
+}
+
+// NewSliceInserter constructs a new [SliceInserter].
+//
+// This method exists because Go currently will not infer type parameters of a
+// type.
+func NewSliceInserter[T, E any](
+	slice *[]E,
+	wrap func(int, E) T,
+	unwrap func(int, T) E,
+) SliceInserter[T, E] {
+	return SliceInserter[T, E]{slice, wrap, unwrap}
 }
 
 // Len implements [Indexer].
@@ -62,17 +89,17 @@ func (s SliceInserter[T, _]) Len() int {
 
 // At implements [Indexer].
 func (s SliceInserter[T, _]) At(idx int) T {
-	return s.Wrap((*s.Slice)[idx])
+	return s.Wrap(idx, (*s.Slice)[idx])
 }
 
 // SetAt implements [Setter].
 func (s SliceInserter[T, _]) SetAt(idx int, value T) {
-	(*s.Slice)[idx] = s.Unwrap(value)
+	(*s.Slice)[idx] = s.Unwrap(idx, value)
 }
 
 // Insert implements [Inserter].
 func (s SliceInserter[T, _]) Insert(idx int, value T) {
-	*s.Slice = slices.Insert(*s.Slice, idx, s.Unwrap(value))
+	*s.Slice = slices.Insert(*s.Slice, idx, s.Unwrap(idx, value))
 }
 
 // Delete implements [Inserter].
@@ -90,8 +117,21 @@ type Slice2[T, E1, E2 any] struct {
 	Slice1 []E1
 	Slice2 []E2
 
-	Wrap   func(E1, E2) T
-	Unwrap func(T) (E1, E2)
+	Wrap   func(int, E1, E2) T
+	Unwrap func(int, T) (E1, E2)
+}
+
+// NewSlice2 constructs a new [Slice2].
+//
+// This method exists because Go currently will not infer type parameters of a
+// type.
+func NewSlice2[T, E1, E2 any](
+	slice1 []E1,
+	slice2 []E2,
+	wrap func(int, E1, E2) T,
+	unwrap func(int, T) (E1, E2),
+) Slice2[T, E1, E2] {
+	return Slice2[T, E1, E2]{slice1, slice2, wrap, unwrap}
 }
 
 // Len implements [Indexer].
@@ -101,12 +141,12 @@ func (s Slice2[T, _, _]) Len() int {
 
 // At implements [Indexer].
 func (s Slice2[T, _, _]) At(idx int) T {
-	return s.Wrap(s.Slice1[idx], s.Slice2[idx])
+	return s.Wrap(idx, s.Slice1[idx], s.Slice2[idx])
 }
 
 // SetAt implements [Setter].
 func (s Slice2[T, _, _]) SetAt(idx int, value T) {
-	s.Slice1[idx], s.Slice2[idx] = s.Unwrap(value)
+	s.Slice1[idx], s.Slice2[idx] = s.Unwrap(idx, value)
 }
 
 // SliceInserter2 is like Slice2, but also implements [Inserter][T].
@@ -116,8 +156,21 @@ type SliceInserter2[T, E1, E2 any] struct {
 	Slice1 *[]E1
 	Slice2 *[]E2
 
-	Wrap   func(E1, E2) T
-	Unwrap func(T) (E1, E2)
+	Wrap   func(int, E1, E2) T
+	Unwrap func(int, T) (E1, E2)
+}
+
+// NewSliceInserter2 constructs a new [SliceInserter2].
+//
+// This method exists because Go currently will not infer type parameters of a
+// type.
+func NewSliceInserter2[T, E1, E2 any](
+	slice1 *[]E1,
+	slice2 *[]E2,
+	wrap func(int, E1, E2) T,
+	unwrap func(int, T) (E1, E2),
+) SliceInserter2[T, E1, E2] {
+	return SliceInserter2[T, E1, E2]{slice1, slice2, wrap, unwrap}
 }
 
 // Len implements [Indexer].
@@ -130,17 +183,17 @@ func (s SliceInserter2[T, _, _]) Len() int {
 
 // At implements [Indexer].
 func (s SliceInserter2[T, _, _]) At(idx int) T {
-	return s.Wrap((*s.Slice1)[idx], (*s.Slice2)[idx])
+	return s.Wrap(idx, (*s.Slice1)[idx], (*s.Slice2)[idx])
 }
 
 // SetAt implements [Setter].
 func (s SliceInserter2[T, _, _]) SetAt(idx int, value T) {
-	(*s.Slice1)[idx], (*s.Slice2)[idx] = s.Unwrap(value)
+	(*s.Slice1)[idx], (*s.Slice2)[idx] = s.Unwrap(idx, value)
 }
 
 // Insert implements [Inserter].
 func (s SliceInserter2[T, _, _]) Insert(idx int, value T) {
-	r1, r2 := s.Unwrap(value)
+	r1, r2 := s.Unwrap(idx, value)
 	*s.Slice1 = slices.Insert(*s.Slice1, idx, r1)
 	*s.Slice2 = slices.Insert(*s.Slice2, idx, r2)
 }

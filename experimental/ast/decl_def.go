@@ -17,6 +17,7 @@ package ast
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -87,7 +88,7 @@ type DeclDefArgs struct {
 // introduced by a special keyword, this will be a [TypePath] whose single
 // identifier is that keyword.
 //
-// See [DeclDef.Keyword].
+// See [DeclDef.KeywordToken].
 func (d DeclDef) Type() TypeAny {
 	if d.IsZero() {
 		return TypeAny{}
@@ -101,19 +102,28 @@ func (d DeclDef) SetType(ty TypeAny) {
 	d.raw.ty = ty.raw
 }
 
-// Keyword returns the introducing keyword for this definition, if
+// KeywordToken returns the introducing keyword for this definition, if
 // there is one.
 //
 // See [DeclDef.Type] for details on where this keyword comes from.
-func (d DeclDef) Keyword() token.Token {
+func (d DeclDef) Keyword() keyword.Keyword {
+	return d.KeywordToken().Keyword()
+}
+
+// KeywordToken returns the introducing keyword token for this definition, if
+// there is one.
+//
+// See [DeclDef.Type] for details on where this keyword comes from.
+func (d DeclDef) KeywordToken() token.Token {
 	path := d.Type().AsPath()
 	if path.IsZero() {
 		return token.Zero
 	}
 
 	ident := path.Path.AsIdent()
-	switch ident.Text() {
-	case "message", "enum", "service", "extend", "oneof", "group", "rpc", "option":
+	switch ident.Keyword() {
+	case keyword.Message, keyword.Enum, keyword.Service, keyword.Extend,
+		keyword.Oneof, keyword.Group, keyword.RPC, keyword.Option:
 		return ident
 	default:
 		return token.Zero
@@ -234,7 +244,7 @@ func (d DeclDef) Semicolon() token.Token {
 // See [DeclDef.Classify].
 func (d DeclDef) AsMessage() DefMessage {
 	return DefMessage{
-		Keyword: d.Keyword(),
+		Keyword: d.KeywordToken(),
 		Name:    d.Name().AsIdent(),
 		Body:    d.Body(),
 		Decl:    d,
@@ -250,7 +260,7 @@ func (d DeclDef) AsMessage() DefMessage {
 // See [DeclDef.Classify].
 func (d DeclDef) AsEnum() DefEnum {
 	return DefEnum{
-		Keyword: d.Keyword(),
+		Keyword: d.KeywordToken(),
 		Name:    d.Name().AsIdent(),
 		Body:    d.Body(),
 		Decl:    d,
@@ -266,7 +276,7 @@ func (d DeclDef) AsEnum() DefEnum {
 // See [DeclDef.Classify].
 func (d DeclDef) AsService() DefService {
 	return DefService{
-		Keyword: d.Keyword(),
+		Keyword: d.KeywordToken(),
 		Name:    d.Name().AsIdent(),
 		Body:    d.Body(),
 		Decl:    d,
@@ -281,7 +291,7 @@ func (d DeclDef) AsService() DefService {
 // See [DeclDef.Classify].
 func (d DeclDef) AsExtend() DefExtend {
 	return DefExtend{
-		Keyword:  d.Keyword(),
+		Keyword:  d.KeywordToken(),
 		Extendee: d.Name(),
 		Body:     d.Body(),
 		Decl:     d,
@@ -316,7 +326,7 @@ func (d DeclDef) AsField() DefField {
 // See [DeclDef.Classify].
 func (d DeclDef) AsOneof() DefOneof {
 	return DefOneof{
-		Keyword: d.Keyword(),
+		Keyword: d.KeywordToken(),
 		Name:    d.Name().AsIdent(),
 		Body:    d.Body(),
 		Decl:    d,
@@ -332,7 +342,7 @@ func (d DeclDef) AsOneof() DefOneof {
 // See [DeclDef.Classify].
 func (d DeclDef) AsGroup() DefGroup {
 	return DefGroup{
-		Keyword: d.Keyword(),
+		Keyword: d.KeywordToken(),
 		Name:    d.Name().AsIdent(),
 		Equals:  d.Equals(),
 		Tag:     d.Value(),
@@ -368,7 +378,7 @@ func (d DeclDef) AsEnumValue() DefEnumValue {
 // See [DeclDef.Classify].
 func (d DeclDef) AsMethod() DefMethod {
 	return DefMethod{
-		Keyword:   d.Keyword(),
+		Keyword:   d.KeywordToken(),
 		Name:      d.Name().AsIdent(),
 		Signature: d.Signature(),
 		Body:      d.Body(),
@@ -384,7 +394,7 @@ func (d DeclDef) AsMethod() DefMethod {
 // See [DeclDef.Classify].
 func (d DeclDef) AsOption() DefOption {
 	return DefOption{
-		Keyword: d.Keyword(),
+		Keyword: d.KeywordToken(),
 		Option: Option{
 			Path:   d.Name(),
 			Equals: d.Equals(),
@@ -399,7 +409,7 @@ func (d DeclDef) AsOption() DefOption {
 // definition it's supposed to represent.
 //
 // To select which definition this probably is, this function looks at
-// [DeclDef.Keyword]. If there is no keyword or it isn't something that it
+// [DeclDef.KeywordToken]. If there is no keyword or it isn't something that it
 // recognizes, it is classified as either an enum value or a field, depending on
 // whether this definition has a type.
 //
@@ -411,7 +421,7 @@ func (d DeclDef) Classify() DefKind {
 		return DefKindInvalid
 	}
 
-	switch d.Keyword().Text() {
+	switch d.KeywordToken().Text() {
 	case "message":
 		if !d.Body().IsZero() {
 			return DefKindMessage

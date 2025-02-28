@@ -1,2 +1,2 @@
-#		kind		offsets		linecol		text
-0		Punct		000:001		001:001		")"
+#		kind		keyword		offsets		linecol		text
+0		Punct		Parens		000:001		001:001		")"

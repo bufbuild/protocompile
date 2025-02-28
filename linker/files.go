@@ -51,7 +51,7 @@ func NewFile(f protoreflect.FileDescriptor, deps Files) (File, error) {
 		return asFile, nil
 	}
 	checkedDeps := make(Files, f.Imports().Len())
-	for i := 0; i < f.Imports().Len(); i++ {
+	for i := range f.Imports().Len() {
 		imprt := f.Imports().Get(i)
 		dep := deps.FindFileByPath(imprt.Path())
 		if dep == nil {
@@ -108,7 +108,7 @@ func newFileRecursive(fd protoreflect.FileDescriptor, seen map[protoreflect.File
 
 	seen[fd] = nil
 	deps := make([]File, fd.Imports().Len())
-	for i := 0; i < fd.Imports().Len(); i++ {
+	for i := range fd.Imports().Len() {
 		imprt := fd.Imports().Get(i)
 		dep, err := newFileRecursive(imprt, seen)
 		if err != nil {
@@ -340,13 +340,13 @@ type hasExtensionsAndMessages interface {
 }
 
 func findExtension(d hasExtensionsAndMessages, message protoreflect.FullName, field protoreflect.FieldNumber) protoreflect.ExtensionTypeDescriptor {
-	for i := 0; i < d.Extensions().Len(); i++ {
+	for i := range d.Extensions().Len() {
 		if extType := isExtensionMatch(d.Extensions().Get(i), message, field); extType != nil {
 			return extType
 		}
 	}
 
-	for i := 0; i < d.Messages().Len(); i++ {
+	for i := range d.Messages().Len() {
 		if extType := findExtension(d.Messages().Get(i), message, field); extType != nil {
 			return extType
 		}

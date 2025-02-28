@@ -1,7 +1,11 @@
 error: unexpected `}` after definition
   --> testdata/parser/enum/incomplete.proto:22:1
-   | 
+   |
 22 | }
    | ^ expected `;`
+  help: consider inserting a `;`
+   |
+21 |     NO_TAG2;
+   |            +
 
 encountered 1 error

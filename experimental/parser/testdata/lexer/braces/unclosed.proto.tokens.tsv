@@ -1,3 +1,3 @@
-#		kind		offsets		linecol		text
-0		Punct		000:001		001:001		"("		close:Token(1)
-1		Unrecognized		000:001		001:001		""		open:Token(0)
+#		kind		keyword		offsets		linecol		text
+0		Punct		Parens		000:001		001:001		"("		close:Token(1)
+1		Unrecognized		Unknown		000:001		001:001		""		open:Token(0)

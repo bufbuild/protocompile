@@ -307,7 +307,6 @@ func TestResolveCustomFeature(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		testCase := testCase
 		t.Run(testCase.syntax, func(t *testing.T) {
 			t.Parallel()
 			sourceResolver := &protocompile.SourceResolver{
@@ -441,7 +440,6 @@ func TestResolveCustomFeature_Generated(t *testing.T) {
 		},
 	}
 	for _, testCase := range preEditionsTestCases {
-		testCase := testCase
 		t.Run(testCase.syntax, func(t *testing.T) {
 			t.Parallel()
 			sourceResolver := &protocompile.SourceResolver{
@@ -512,7 +510,6 @@ func TestResolveCustomFeature_Generated(t *testing.T) {
 	}
 
 	for _, testCase := range editionsTestCases {
-		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 

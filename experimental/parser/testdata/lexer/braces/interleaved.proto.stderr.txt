@@ -1,6 +1,6 @@
 error: encountered unmatched `[` delimiter
   --> testdata/lexer/braces/interleaved.proto:2:5
-   | 
+   |
  2 |     [
    |     ^ expected a closing `]`
  3 | }

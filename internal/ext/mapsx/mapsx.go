@@ -12,30 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package iters contains helpers for working with iterators.
-package slicesx
+// package mapsx contains extensions to Go's package maps.
+package mapsx
 
 import "github.com/bufbuild/protocompile/internal/iter"
 
-// Collect polyfills [slices.Collect].
-func Collect[E any](seq iter.Seq[E]) []E {
-	return AppendSeq[[]E](nil, seq)
-}
-
-// AppendSeq polyfills [slices.AppendSeq].
-func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
-	seq(func(v E) bool {
-		s = append(s, v)
-		return true
-	})
-	return s
-}
-
-// Map constructs a new slice by applying f to each element.
-func Map[S ~[]E, E, R any](s S, f func(E) R) []R {
-	out := make([]R, len(s))
-	for i, e := range s {
-		out[i] = f(e)
+// Keys polyfills [maps.Keys].
+func Keys[M ~map[K]V, K comparable, V any](m M) iter.Seq[K] {
+	return func(yield func(k K) bool) {
+		for k := range m {
+			if !yield(k) {
+				return
+			}
+		}
 	}
-	return out
+}
+
+// KeySet returns a copy of m, with its values replaced with empty structs.
+func KeySet[M ~map[K]V, K comparable, V any](m M) map[K]struct{} {
+	// return CollectSet(Keys(m))
+	// Instead of going through an iterator, inline the loop so that
+	// we can preallocate and avoid rehashes.
+	keys := make(map[K]struct{}, len(m))
+	for k := range m {
+		keys[k] = struct{}{}
+	}
+	return keys
 }

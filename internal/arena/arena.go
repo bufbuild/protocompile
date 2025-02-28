@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package arena defines an [Arena] type with compressed pointers.
+// Package arena defines an [Arena] type with compressed pointers.
 //
 // The benefits of using compressed pointers are as follows:
 //

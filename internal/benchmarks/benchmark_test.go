@@ -258,7 +258,7 @@ func BenchmarkGoogleapisProtocompileNoSourceInfo(b *testing.B) {
 }
 
 func benchmarkGoogleapisProtocompile(b *testing.B, factory func() *protocompile.Compiler) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		benchmarkProtocompile(b, factory(), googleapisSources)
 	}
 }
@@ -299,12 +299,12 @@ func benchmarkGoogleapisProtoparse(b *testing.B, factory func() *protoparse.Pars
 	if par > cpus {
 		par = cpus
 	}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		// Buf currently batches files into chunks and then runs all chunks in parallel
 		chunks := make([][]string, par)
 		j := 0
 		total := 0
-		for ch := 0; ch < par; ch++ {
+		for ch := range par {
 			chunkStart := j
 			chunkEnd := (ch + 1) * len(googleapisSources) / par
 			chunks[ch] = googleapisSources[chunkStart:chunkEnd]
@@ -316,7 +316,6 @@ func benchmarkGoogleapisProtoparse(b *testing.B, factory func() *protoparse.Pars
 		results := make([][]*desc.FileDescriptor, par)
 		errors := make([]error, par)
 		for ch, chunk := range chunks {
-			ch, chunk := ch, chunk
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -349,7 +348,7 @@ func BenchmarkGoogleapisFastScan(b *testing.B) {
 		filename   string
 		scanResult fastscan.Result
 	}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		workCh := make(chan string, par)
 		resultsCh := make(chan entry, par)
 		grp, ctx := errgroup.WithContext(context.Background())
@@ -367,7 +366,7 @@ func BenchmarkGoogleapisFastScan(b *testing.B) {
 		})
 		var numProcs atomic.Int32
 		numProcs.Store(int32(par))
-		for i := 0; i < par; i++ {
+		for range par {
 			// consumers/processors
 			grp.Go(func() error {
 				defer func() {

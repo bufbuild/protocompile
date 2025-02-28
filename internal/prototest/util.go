@@ -57,7 +57,7 @@ func checkFiles(t *testing.T, act protoreflect.FileDescriptor, expSet *descripto
 	ret := AssertMessagesEqual(t, expProto, actProto, expProto.GetName())
 
 	if recursive {
-		for i := 0; i < act.Imports().Len(); i++ {
+		for i := range act.Imports().Len() {
 			if !checkFiles(t, act.Imports().Get(i), expSet, true, checked) {
 				ret = false
 			}

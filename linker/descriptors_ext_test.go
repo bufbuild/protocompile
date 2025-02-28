@@ -58,7 +58,6 @@ func TestFields(t *testing.T) {
 		{"file_default_delimited.proto", editionFiles},
 	}
 	for _, testCase := range testCases {
-		testCase := testCase // must not capture loop variable below, for thread safety
 		t.Run(testCase.filename, func(t *testing.T) {
 			t.Parallel()
 			protocFd, err := testCase.fileSet.FindFileByPath(testCase.filename)
@@ -119,7 +118,7 @@ type container interface {
 
 func checkAttributes(t *testing.T, exp, actual container, path string) {
 	if assert.Equal(t, exp.Messages().Len(), actual.Messages().Len()) {
-		for i := 0; i < exp.Messages().Len(); i++ {
+		for i := range exp.Messages().Len() {
 			expMsg := exp.Messages().Get(i)
 			actMsg := actual.Messages().Get(i)
 			if !assert.Equal(t, expMsg.Name(), actMsg.Name(), "%s: message name at index %d", path, i) {
@@ -143,7 +142,7 @@ func checkAttributesInFields(t *testing.T, exp, actual protoreflect.ExtensionDes
 	if !assert.Equal(t, exp.Len(), actual.Len(), "%s: number of fields", where) {
 		return
 	}
-	for i := 0; i < exp.Len(); i++ {
+	for i := range exp.Len() {
 		expFld := exp.Get(i)
 		actFld := actual.Get(i)
 		if !assert.Equal(t, expFld.Name(), actFld.Name(), "%s: field name at index %d", where, i) {
@@ -220,7 +219,7 @@ func checkAttributesInOneofs(t *testing.T, exp, actual protoreflect.OneofDescrip
 	if !assert.Equal(t, exp.Len(), actual.Len(), "%s: number of fields", where) {
 		return
 	}
-	for i := 0; i < exp.Len(); i++ {
+	for i := range exp.Len() {
 		expOo := exp.Get(i)
 		actOo := actual.Get(i)
 		if !assert.Equal(t, expOo.Name(), actOo.Name(), "%s: oneof name at index %d", where, i) {
@@ -233,7 +232,7 @@ func checkAttributesInEnums(t *testing.T, exp, actual protoreflect.EnumDescripto
 	if !assert.Equal(t, exp.Len(), actual.Len(), "%s: number of enums", where) {
 		return
 	}
-	for i := 0; i < exp.Len(); i++ {
+	for i := range exp.Len() {
 		expEnum := exp.Get(i)
 		actEnum := actual.Get(i)
 		if !assert.Equal(t, expEnum.Name(), actEnum.Name(), "%s: enum name at index %d", where, i) {

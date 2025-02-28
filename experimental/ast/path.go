@@ -22,7 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Path represents a multi-part identifier.
@@ -75,12 +75,11 @@ func (p Path) ToRelative() Path {
 // AsIdent returns the single identifier that comprises this path, or
 // the zero token.
 func (p Path) AsIdent() token.Token {
-	var buf [2]PathComponent
-	prefix := slicesx.AppendSeq(buf[:0], iterx.Limit(2, p.Components))
-	if len(prefix) != 1 || !prefix[0].Separator().IsZero() {
+	first, _ := iterx.OnlyOne(p.Components)
+	if !first.Separator().IsZero() {
 		return token.Zero
 	}
-	return prefix[0].AsIdent()
+	return first.AsIdent()
 }
 
 // AsPredeclared returns the [predeclared.Name] that this path represents.
@@ -105,19 +104,21 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		return
 	}
 
-	var cursor *token.Cursor
+	var tokens iter.Seq[token.Token]
 	first := p.raw.Start.In(p.Context())
 	if p.IsSynthetic() {
 		i := int(^int16(p.raw.End))
 		j := int(^int16(p.raw.End >> 16))
-		cursor = first.SyntheticChildren(i, j)
+		tokens = first.SyntheticChildren(i, j).Rest()
 	} else {
-		cursor = token.NewCursor(first, p.raw.End.In(p.Context()))
+		tokens = iterx.TakeWhile(token.NewCursorAt(first).Rest(), func(tok token.Token) bool {
+			return tok.ID() <= p.raw.End
+		})
 	}
 
 	var sep token.Token
 	var broken bool
-	cursor.Rest()(func(tok token.Token) bool {
+	tokens(func(tok token.Token) bool {
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.IsZero() {
 				// Uh-oh, empty path component!

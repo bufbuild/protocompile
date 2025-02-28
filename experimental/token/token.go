@@ -22,7 +22,11 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
+
+// Set to true to enable verbose debug printing of tokens.
+const debug = true
 
 // IsSkippable returns whether this is a token that should be examined during
 // syntactic analysis.
@@ -98,6 +102,22 @@ func (t Token) Kind() Kind {
 		return impl.Kind()
 	}
 	return t.synth().kind
+}
+
+// Keyword returns the [keyword.Keyword] corresponding to this token's textual
+// value.
+//
+// This is intended to be used for simplifying parsing, instead of comparing
+// [Token.Text] to a literal string value.
+func (t Token) Keyword() keyword.Keyword {
+	switch {
+	case t.IsZero():
+		return keyword.Unknown
+	case t.IsSynthetic():
+		return t.synth().Keyword()
+	default:
+		return t.nat().Keyword()
+	}
 }
 
 // Text returns the text fragment referred to by this token. This does not
@@ -322,11 +342,10 @@ func (t Token) Children() *Cursor {
 	}
 
 	if impl := t.nat(); impl != nil {
-		start, end := t.StartEnd()
+		start, _ := t.StartEnd()
 		return &Cursor{
 			withContext: t.withContext,
-			start:       start.id + 1, // Skip the start!
-			end:         end.id,
+			idx:         start.id.naturalIndex() + 1, // Skip the start!
 		}
 	}
 
@@ -483,6 +502,13 @@ func (t Token) IsPureString() bool {
 
 // String implements [strings.Stringer].
 func (t Token) String() string {
+	if debug && !t.IsZero() {
+		if t.IsSynthetic() {
+			return fmt.Sprintf("{%v %#v}", t.id, t.synth())
+		}
+		return fmt.Sprintf("{%v %#v}", t.id, t.nat())
+	}
+
 	return fmt.Sprintf("{%v %v}", t.id, t.Kind())
 }
 
@@ -510,14 +536,12 @@ func (t Token) nat() *nat {
 	if t.IsSynthetic() {
 		return nil
 	}
-	// Need to subtract off one, because the zeroth
-	// ID is used as a "missing" sentinel.
-	return &t.Context().Stream().nats[t.id-1]
+	return &t.Context().Stream().nats[t.id.naturalIndex()]
 }
 
 func (t Token) synth() *synth {
 	if !t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().synths[^t.id]
+	return &t.Context().Stream().synths[t.id.syntheticIndex()]
 }

@@ -48,7 +48,6 @@ type aggregate string
 func TestCustomOptionsAreKnown(t *testing.T) {
 	t.Parallel()
 	for _, withOverride := range []bool{false, true} {
-		withOverride := withOverride
 		name := "no overrides"
 		if withOverride {
 			name = "with override descriptor.proto"
@@ -234,7 +233,6 @@ func TestOptionsInUnlinkedFiles(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			h := reporter.NewHandler(nil)
@@ -380,7 +378,6 @@ func TestOptionsEncoding(t *testing.T) {
 		"defaults":              "desc_test_defaults.proto",
 	}
 	for testCaseName, file := range testCases {
-		file := file // must not capture loop variable below, for thread safety
 		t.Run(testCaseName, func(t *testing.T) {
 			t.Parallel()
 			fileToCompile := strings.TrimPrefix(file, "options/")

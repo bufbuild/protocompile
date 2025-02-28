@@ -65,7 +65,7 @@ func testItemsSequence(t *testing.T, path string, data []byte) {
 	item, ok := seq.First()
 	require.True(t, ok)
 	checkComments := func(comments ast.Comments) {
-		for i := 0; i < comments.Len(); i++ {
+		for i := range comments.Len() {
 			c := comments.Index(i)
 			astItem := c.AsItem()
 			require.Equal(t, astItem, item)

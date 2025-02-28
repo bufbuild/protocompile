@@ -79,7 +79,7 @@ func TestWithStandardImports(t *testing.T) {
 			md, ok := d.(protoreflect.MessageDescriptor)
 			require.True(t, ok)
 			var extRangeCount int
-			for i := 0; i < md.ExtensionRanges().Len(); i++ {
+			for i := range md.ExtensionRanges().Len() {
 				opts, ok := md.ExtensionRangeOptions(i).(*descriptorpb.ExtensionRangeOptions)
 				require.True(t, ok)
 				extRangeCount += len(opts.GetDeclaration())

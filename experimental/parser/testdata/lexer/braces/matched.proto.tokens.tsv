@@ -1,43 +1,43 @@
-#		kind		offsets		linecol		text
-0		Punct		000:002		001:001		"{"		close:Token(1)
-1		Punct		000:002		001:001		"}"		open:Token(0)
-2		Space		002:003		001:003		" "
-3		Punct		003:005		001:004		"["		close:Token(4)
-4		Punct		003:005		001:004		"]"		open:Token(3)
-5		Space		005:006		001:006		" "
-6		Punct		006:008		001:007		"("		close:Token(7)
-7		Punct		006:008		001:007		")"		open:Token(6)
-8		Space		008:009		001:009		" "
-9		Punct		009:011		001:010		"<"		close:Token(10)
-10		Punct		009:011		001:010		">"		open:Token(9)
-11		Space		011:012		001:012		"\n"
-12		Punct		012:076		002:001		"{"		close:Token(26)
-13		Space		013:018		002:002		"\n    "
-14		Punct		018:074		003:005		"{"		close:Token(24)
-15		Space		019:028		003:006		"\n        "
-16		Punct		028:068		004:009		"["		close:Token(22)
-17		Space		029:042		004:010		"\n            "
-18		Punct		042:058		005:013		"<"		close:Token(20)
-19		Space		043:057		005:014		"\n\n            "
-20		Punct		042:058		005:013		">"		open:Token(18)
-21		Space		058:067		007:014		"\n        "
-22		Punct		028:068		004:009		"]"		open:Token(16)
-23		Space		068:073		008:010		"\n    "
-24		Punct		018:074		003:005		"}"		open:Token(14)
-25		Space		074:075		009:006		"\n"
-26		Punct		012:076		002:001		"}"		open:Token(12)
-27		Space		076:077		010:002		"\n"
-28		Punct		077:091		011:001		"<"		close:Token(41)
-29		Punct		078:090		011:002		"<"		close:Token(40)
-30		Punct		079:089		011:003		"<"		close:Token(39)
-31		Punct		080:088		011:004		"<"		close:Token(38)
-32		Punct		081:087		011:005		"("		close:Token(37)
-33		Punct		082:086		011:006		"("		close:Token(36)
-34		Punct		083:085		011:007		"("		close:Token(35)
-35		Punct		083:085		011:007		")"		open:Token(34)
-36		Punct		082:086		011:006		")"		open:Token(33)
-37		Punct		081:087		011:005		")"		open:Token(32)
-38		Punct		080:088		011:004		">"		open:Token(31)
-39		Punct		079:089		011:003		">"		open:Token(30)
-40		Punct		078:090		011:002		">"		open:Token(29)
-41		Punct		077:091		011:001		">"		open:Token(28)
+#		kind		keyword		offsets		linecol		text
+0		Punct		Braces		000:002		001:001		"{"		close:Token(1)
+1		Punct		Braces		000:002		001:001		"}"		open:Token(0)
+2		Space		Unknown		002:003		001:003		" "
+3		Punct		Brackets		003:005		001:004		"["		close:Token(4)
+4		Punct		Brackets		003:005		001:004		"]"		open:Token(3)
+5		Space		Unknown		005:006		001:006		" "
+6		Punct		Parens		006:008		001:007		"("		close:Token(7)
+7		Punct		Parens		006:008		001:007		")"		open:Token(6)
+8		Space		Unknown		008:009		001:009		" "
+9		Punct		Angles		009:011		001:010		"<"		close:Token(10)
+10		Punct		Angles		009:011		001:010		">"		open:Token(9)
+11		Space		Unknown		011:012		001:012		"\n"
+12		Punct		Braces		012:076		002:001		"{"		close:Token(26)
+13		Space		Unknown		013:018		002:002		"\n    "
+14		Punct		Braces		018:074		003:005		"{"		close:Token(24)
+15		Space		Unknown		019:028		003:006		"\n        "
+16		Punct		Brackets		028:068		004:009		"["		close:Token(22)
+17		Space		Unknown		029:042		004:010		"\n            "
+18		Punct		Angles		042:058		005:013		"<"		close:Token(20)
+19		Space		Unknown		043:057		005:014		"\n\n            "
+20		Punct		Angles		042:058		005:013		">"		open:Token(18)
+21		Space		Unknown		058:067		007:014		"\n        "
+22		Punct		Brackets		028:068		004:009		"]"		open:Token(16)
+23		Space		Unknown		068:073		008:010		"\n    "
+24		Punct		Braces		018:074		003:005		"}"		open:Token(14)
+25		Space		Unknown		074:075		009:006		"\n"
+26		Punct		Braces		012:076		002:001		"}"		open:Token(12)
+27		Space		Unknown		076:077		010:002		"\n"
+28		Punct		Angles		077:091		011:001		"<"		close:Token(41)
+29		Punct		Angles		078:090		011:002		"<"		close:Token(40)
+30		Punct		Angles		079:089		011:003		"<"		close:Token(39)
+31		Punct		Angles		080:088		011:004		"<"		close:Token(38)
+32		Punct		Parens		081:087		011:005		"("		close:Token(37)
+33		Punct		Parens		082:086		011:006		"("		close:Token(36)
+34		Punct		Parens		083:085		011:007		"("		close:Token(35)
+35		Punct		Parens		083:085		011:007		")"		open:Token(34)
+36		Punct		Parens		082:086		011:006		")"		open:Token(33)
+37		Punct		Parens		081:087		011:005		")"		open:Token(32)
+38		Punct		Angles		080:088		011:004		">"		open:Token(31)
+39		Punct		Angles		079:089		011:003		">"		open:Token(30)
+40		Punct		Angles		078:090		011:002		">"		open:Token(29)
+41		Punct		Angles		077:091		011:001		">"		open:Token(28)

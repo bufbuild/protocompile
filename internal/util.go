@@ -65,7 +65,7 @@ func CreatePrefixList(pkg string) []string {
 
 	numDots := 0
 	// one pass to pre-allocate the returned slice
-	for i := 0; i < len(pkg); i++ {
+	for i := range len(pkg) {
 		if pkg[i] == '.' {
 			numDots++
 		}
@@ -76,7 +76,7 @@ func CreatePrefixList(pkg string) []string {
 
 	prefixes := make([]string, numDots+2)
 	// second pass to fill in returned slice
-	for i := 0; i < len(pkg); i++ {
+	for i := range len(pkg) {
 		if pkg[i] == '.' {
 			prefixes[numDots] = pkg[:i]
 			numDots--

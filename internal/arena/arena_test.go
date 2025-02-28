@@ -32,14 +32,14 @@ func TestPointers(t *testing.T) {
 	p2 := a.Deref(p1)
 	assert.Equal(5, *a.Deref(p1))
 
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		a.New(i + 5)
 	}
 	assert.Equal(19, *a.Deref(16))
 	assert.Equal(20, *a.Deref(17))
 	assert.Same(a.Deref(p1), p2)
 
-	for i := 0; i < 32; i++ {
+	for i := range 32 {
 		a.New(i + 21)
 	}
 	assert.Equal(51, *a.Deref(48))
@@ -62,7 +62,7 @@ func TestCompress(t *testing.T) {
 	assert.Equal(arena.Pointer[int](0), a.Compress(nil))
 	assert.Equal(arena.Pointer[int](0), a.Compress(new(int)))
 
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		a.New(i + 5)
 	}
 	x = a.NewCompressed(5)

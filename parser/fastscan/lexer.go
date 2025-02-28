@@ -355,7 +355,7 @@ func (l *lexer) readStringLiteral(quote rune) string {
 					c, err := l.input.readRune()
 					if err != nil {
 						buf.WriteString("\\u")
-						for j := 0; j < i; j++ {
+						for j := range i {
 							buf.WriteRune(u[j])
 						}
 						break
@@ -379,7 +379,7 @@ func (l *lexer) readStringLiteral(quote rune) string {
 					c, err := l.input.readRune()
 					if err != nil {
 						buf.WriteString("\\U")
-						for j := 0; j < i; j++ {
+						for j := range i {
 							buf.WriteRune(u[j])
 						}
 						break

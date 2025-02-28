@@ -16,7 +16,11 @@
 
 package ast
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bufbuild/protocompile/internal/iter"
+)
 
 // DeclKind is a kind of declaration. There is one value of DeclKind for each
 // Decl* type in this package.
@@ -47,28 +51,6 @@ func (v DeclKind) GoString() string {
 		return fmt.Sprintf("astDeclKind(%v)", int(v))
 	}
 	return _table_DeclKind_GoString[int(v)]
-}
-
-var _table_DeclKind_String = [...]string {
-	DeclKindInvalid: "DeclKindInvalid",
-	DeclKindEmpty: "DeclKindEmpty",
-	DeclKindSyntax: "DeclKindSyntax",
-	DeclKindPackage: "DeclKindPackage",
-	DeclKindImport: "DeclKindImport",
-	DeclKindDef: "DeclKindDef",
-	DeclKindBody: "DeclKindBody",
-	DeclKindRange: "DeclKindRange",
-}
-
-var _table_DeclKind_GoString = [...]string {
-	DeclKindInvalid: "DeclKindInvalid",
-	DeclKindEmpty: "DeclKindEmpty",
-	DeclKindSyntax: "DeclKindSyntax",
-	DeclKindPackage: "DeclKindPackage",
-	DeclKindImport: "DeclKindImport",
-	DeclKindDef: "DeclKindDef",
-	DeclKindBody: "DeclKindBody",
-	DeclKindRange: "DeclKindRange",
 }
 
 // DefKind is the kind of definition a [DeclDef] contains.
@@ -106,34 +88,6 @@ func (v DefKind) GoString() string {
 	return _table_DefKind_GoString[int(v)]
 }
 
-var _table_DefKind_String = [...]string {
-	DefKindInvalid: "DefKindInvalid",
-	DefKindMessage: "DefKindMessage",
-	DefKindEnum: "DefKindEnum",
-	DefKindService: "DefKindService",
-	DefKindExtend: "DefKindExtend",
-	DefKindField: "DefKindField",
-	DefKindOneof: "DefKindOneof",
-	DefKindGroup: "DefKindGroup",
-	DefKindEnumValue: "DefKindEnumValue",
-	DefKindMethod: "DefKindMethod",
-	DefKindOption: "DefKindOption",
-}
-
-var _table_DefKind_GoString = [...]string {
-	DefKindInvalid: "DefKindInvalid",
-	DefKindMessage: "DefKindMessage",
-	DefKindEnum: "DefKindEnum",
-	DefKindService: "DefKindService",
-	DefKindExtend: "DefKindExtend",
-	DefKindField: "DefKindField",
-	DefKindOneof: "DefKindOneof",
-	DefKindGroup: "DefKindGroup",
-	DefKindEnumValue: "DefKindEnumValue",
-	DefKindMethod: "DefKindMethod",
-	DefKindOption: "DefKindOption",
-}
-
 // ExprKind is a kind of expression. There is one value of ExprKind for each
 // Expr* type in this package.
 type ExprKind int8
@@ -166,30 +120,6 @@ func (v ExprKind) GoString() string {
 	return _table_ExprKind_GoString[int(v)]
 }
 
-var _table_ExprKind_String = [...]string {
-	ExprKindInvalid: "ExprKindInvalid",
-	ExprKindError: "ExprKindError",
-	ExprKindLiteral: "ExprKindLiteral",
-	ExprKindPrefixed: "ExprKindPrefixed",
-	ExprKindPath: "ExprKindPath",
-	ExprKindRange: "ExprKindRange",
-	ExprKindArray: "ExprKindArray",
-	ExprKindDict: "ExprKindDict",
-	ExprKindField: "ExprKindField",
-}
-
-var _table_ExprKind_GoString = [...]string {
-	ExprKindInvalid: "ExprKindInvalid",
-	ExprKindError: "ExprKindError",
-	ExprKindLiteral: "ExprKindLiteral",
-	ExprKindPrefixed: "ExprKindPrefixed",
-	ExprKindPath: "ExprKindPath",
-	ExprKindRange: "ExprKindRange",
-	ExprKindArray: "ExprKindArray",
-	ExprKindDict: "ExprKindDict",
-	ExprKindField: "ExprKindField",
-}
-
 // TypeKind is a kind of type. There is one value of TypeKind for each
 // Type* type in this package.
 type TypeKind int8
@@ -218,126 +148,93 @@ func (v TypeKind) GoString() string {
 	return _table_TypeKind_GoString[int(v)]
 }
 
-var _table_TypeKind_String = [...]string {
-	TypeKindInvalid: "TypeKindInvalid",
-	TypeKindError: "TypeKindError",
-	TypeKindPath: "TypeKindPath",
+var _table_DeclKind_String = [...]string{
+	DeclKindInvalid: "DeclKindInvalid",
+	DeclKindEmpty:   "DeclKindEmpty",
+	DeclKindSyntax:  "DeclKindSyntax",
+	DeclKindPackage: "DeclKindPackage",
+	DeclKindImport:  "DeclKindImport",
+	DeclKindDef:     "DeclKindDef",
+	DeclKindBody:    "DeclKindBody",
+	DeclKindRange:   "DeclKindRange",
+}
+
+var _table_DeclKind_GoString = [...]string{
+	DeclKindInvalid: "DeclKindInvalid",
+	DeclKindEmpty:   "DeclKindEmpty",
+	DeclKindSyntax:  "DeclKindSyntax",
+	DeclKindPackage: "DeclKindPackage",
+	DeclKindImport:  "DeclKindImport",
+	DeclKindDef:     "DeclKindDef",
+	DeclKindBody:    "DeclKindBody",
+	DeclKindRange:   "DeclKindRange",
+}
+
+var _table_DefKind_String = [...]string{
+	DefKindInvalid:   "DefKindInvalid",
+	DefKindMessage:   "DefKindMessage",
+	DefKindEnum:      "DefKindEnum",
+	DefKindService:   "DefKindService",
+	DefKindExtend:    "DefKindExtend",
+	DefKindField:     "DefKindField",
+	DefKindOneof:     "DefKindOneof",
+	DefKindGroup:     "DefKindGroup",
+	DefKindEnumValue: "DefKindEnumValue",
+	DefKindMethod:    "DefKindMethod",
+	DefKindOption:    "DefKindOption",
+}
+
+var _table_DefKind_GoString = [...]string{
+	DefKindInvalid:   "DefKindInvalid",
+	DefKindMessage:   "DefKindMessage",
+	DefKindEnum:      "DefKindEnum",
+	DefKindService:   "DefKindService",
+	DefKindExtend:    "DefKindExtend",
+	DefKindField:     "DefKindField",
+	DefKindOneof:     "DefKindOneof",
+	DefKindGroup:     "DefKindGroup",
+	DefKindEnumValue: "DefKindEnumValue",
+	DefKindMethod:    "DefKindMethod",
+	DefKindOption:    "DefKindOption",
+}
+
+var _table_ExprKind_String = [...]string{
+	ExprKindInvalid:  "ExprKindInvalid",
+	ExprKindError:    "ExprKindError",
+	ExprKindLiteral:  "ExprKindLiteral",
+	ExprKindPrefixed: "ExprKindPrefixed",
+	ExprKindPath:     "ExprKindPath",
+	ExprKindRange:    "ExprKindRange",
+	ExprKindArray:    "ExprKindArray",
+	ExprKindDict:     "ExprKindDict",
+	ExprKindField:    "ExprKindField",
+}
+
+var _table_ExprKind_GoString = [...]string{
+	ExprKindInvalid:  "ExprKindInvalid",
+	ExprKindError:    "ExprKindError",
+	ExprKindLiteral:  "ExprKindLiteral",
+	ExprKindPrefixed: "ExprKindPrefixed",
+	ExprKindPath:     "ExprKindPath",
+	ExprKindRange:    "ExprKindRange",
+	ExprKindArray:    "ExprKindArray",
+	ExprKindDict:     "ExprKindDict",
+	ExprKindField:    "ExprKindField",
+}
+
+var _table_TypeKind_String = [...]string{
+	TypeKindInvalid:  "TypeKindInvalid",
+	TypeKindError:    "TypeKindError",
+	TypeKindPath:     "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",
-	TypeKindGeneric: "TypeKindGeneric",
+	TypeKindGeneric:  "TypeKindGeneric",
 }
 
-var _table_TypeKind_GoString = [...]string {
-	TypeKindInvalid: "TypeKindInvalid",
-	TypeKindError: "TypeKindError",
-	TypeKindPath: "TypeKindPath",
+var _table_TypeKind_GoString = [...]string{
+	TypeKindInvalid:  "TypeKindInvalid",
+	TypeKindError:    "TypeKindError",
+	TypeKindPath:     "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",
-	TypeKindGeneric: "TypeKindGeneric",
+	TypeKindGeneric:  "TypeKindGeneric",
 }
-
-// TypePrefix is a prefix for an expression, such as a minus sign.
-type ExprPrefix int8
-
-const (
-	ExprPrefixUnknown ExprPrefix = iota
-	ExprPrefixMinus
-)
-
-// String implements [fmt.Stringer].
-func (v ExprPrefix) String() string {
-	if int(v) < 0 || int(v) > len(_table_ExprPrefix_String) {
-		return fmt.Sprintf("ExprPrefix(%v)", int(v))
-	}
-	return _table_ExprPrefix_String[int(v)]
-}
-
-// GoString implements [fmt.GoStringer].
-func (v ExprPrefix) GoString() string {
-	if int(v) < 0 || int(v) > len(_table_ExprPrefix_GoString) {
-		return fmt.Sprintf("astExprPrefix(%v)", int(v))
-	}
-	return _table_ExprPrefix_GoString[int(v)]
-}
-
-// ExprPrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [ExprPrefixUnknown].
-func ExprPrefixByName(s string) ExprPrefix {
-	return _table_ExprPrefix_ExprPrefixByName[s]
-}
-
-var _table_ExprPrefix_String = [...]string {
-	ExprPrefixUnknown: "unknown",
-	ExprPrefixMinus: "-",
-}
-
-var _table_ExprPrefix_GoString = [...]string {
-	ExprPrefixUnknown: "ExprPrefixUnknown",
-	ExprPrefixMinus: "ExprPrefixMinus",
-}
-
-var _table_ExprPrefix_ExprPrefixByName = map[string]ExprPrefix {
-	"-": ExprPrefixMinus,
-}
-
-// TypeKind is a kind of type. There is one value of TypeKind for each
-// Type* type in this package.
-//
-// TypePrefix is a prefix for a type, such as required, optional, or repeated.
-type TypePrefix int8
-
-const (
-	TypePrefixUnknown TypePrefix = iota
-	TypePrefixOptional
-	TypePrefixRepeated
-	TypePrefixRequired
-
-	// This is the "stream Foo.bar" syntax of RPC methods. It is also treated as
-	// a prefix.
-	TypePrefixStream
-)
-
-// String implements [fmt.Stringer].
-func (v TypePrefix) String() string {
-	if int(v) < 0 || int(v) > len(_table_TypePrefix_String) {
-		return fmt.Sprintf("TypePrefix(%v)", int(v))
-	}
-	return _table_TypePrefix_String[int(v)]
-}
-
-// GoString implements [fmt.GoStringer].
-func (v TypePrefix) GoString() string {
-	if int(v) < 0 || int(v) > len(_table_TypePrefix_GoString) {
-		return fmt.Sprintf("astTypePrefix(%v)", int(v))
-	}
-	return _table_TypePrefix_GoString[int(v)]
-}
-
-// TypePrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [TypePrefixUnknown].
-func TypePrefixByName(s string) TypePrefix {
-	return _table_TypePrefix_TypePrefixByName[s]
-}
-
-var _table_TypePrefix_String = [...]string {
-	TypePrefixUnknown: "unknown",
-	TypePrefixOptional: "optional",
-	TypePrefixRepeated: "repeated",
-	TypePrefixRequired: "required",
-	TypePrefixStream: "stream",
-}
-
-var _table_TypePrefix_GoString = [...]string {
-	TypePrefixUnknown: "TypePrefixUnknown",
-	TypePrefixOptional: "TypePrefixOptional",
-	TypePrefixRepeated: "TypePrefixRepeated",
-	TypePrefixRequired: "TypePrefixRequired",
-	TypePrefixStream: "TypePrefixStream",
-}
-
-var _table_TypePrefix_TypePrefixByName = map[string]TypePrefix {
-	"optional": TypePrefixOptional,
-	"repeated": TypePrefixRepeated,
-	"required": TypePrefixRequired,
-	"stream": TypePrefixStream,
-}
+var _ iter.Seq[int] // Mark iter as used.

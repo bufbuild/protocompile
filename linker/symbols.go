@@ -110,7 +110,7 @@ func (s *Symbols) Import(fd protoreflect.FileDescriptor, handler *reporter.Handl
 		return nil
 	}
 
-	for i := 0; i < fd.Imports().Len(); i++ {
+	for i := range fd.Imports().Len() {
 		if err := s.Import(fd.Imports().Get(i).FileDescriptor, handler); err != nil {
 			return err
 		}

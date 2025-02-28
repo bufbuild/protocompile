@@ -43,7 +43,7 @@ func TestLexer(t *testing.T) {
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		text = unescapeTestCase(text)
 
-		errs := &report.Report{Tracing: 10}
+		errs := &report.Report{Options: report.Options{Tracing: 10}}
 		ctx := ast.NewContext(report.NewFile(path, text))
 		lex(ctx, errs)
 
@@ -56,15 +56,16 @@ func TestLexer(t *testing.T) {
 
 		var tsv strings.Builder
 		var count int
-		tsv.WriteString("#\t\tkind\t\toffsets\t\tlinecol\t\ttext\n")
+		tsv.WriteString("#\t\tkind\t\tkeyword\t\toffsets\t\tlinecol\t\ttext\n")
 		ctx.Stream().All()(func(tok token.Token) bool {
 			count++
 
 			sp := tok.Span()
 			start := ctx.Stream().Location(sp.Start)
 			fmt.Fprintf(
-				&tsv, "%v\t\t%v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
-				int32(tok.ID())-1, tok.Kind(),
+				&tsv, "%v\t\t%v\t\t%#v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
+				int32(tok.ID())-1,
+				tok.Kind(), tok.Keyword(),
 				sp.Start, sp.End,
 				start.Line, start.Column,
 				tok.Text(),

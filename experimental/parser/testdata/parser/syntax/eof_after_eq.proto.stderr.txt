@@ -1,7 +1,7 @@
 error: unexpected end-of-file in expression
   --> testdata/parser/syntax/eof_after_eq.proto:15:9
-   | 
-15 | syntax = 
+   |
+15 | syntax =
    |         ^ expected expression
 
 encountered 1 error

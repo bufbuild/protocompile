@@ -992,7 +992,6 @@ func TestBasicValidation(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc := tc
 		expectedPrefix := "success_"
 		if tc.expectedErr != "" {
 			expectedPrefix = "failure_"

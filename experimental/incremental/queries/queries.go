@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package predeclared provides all of the identifiers with a special meaning
-// in Protobuf.
-//
-// These are not keywords, but are rather special names injected into scope in
-// places where any user-defined path is allowed. For example, the identifier
-// string overrides the meaning of a path with a single identifier called string,
-// (such as a reference to a message named string in the current package) and as
-// such counts as a predeclared identifier.
-package predeclared
+// Package queries provides specific [incremental.Query] types for various parts
+// of Protocompile. It is separate from package incremental itself because it is
+// Protocompile-specific.
+package queries
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum predeclared.yaml
+// Values for [report.Report].SortOrder, which determine how diagnostics
+// generated across parts of the compiler are sorted.
+const (
+	stageFile int = iota * 10
+	stageAST
+)

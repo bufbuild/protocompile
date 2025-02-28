@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package golden provides a framework for writing file-based golden tests.
+// Package golden provides a framework for writing file-based golden tests.
 //
 // The primary entry-point is [Corpus]. Define a new corpus in an ordinary Go
 // test body and call [Corpus.Run] to execute it.
@@ -106,8 +106,6 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 
 	// Execute the tests.
 	for _, path := range tests {
-		path := path // Avoid loop variable capture.
-
 		// Make sure the path is normalized regardless of platform. This
 		// is necessary to avoid breakages on Windows.
 		name, _ := filepath.Rel(testDir, path)

@@ -20,12 +20,17 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 type exprComma struct {
 	expr  ast.ExprAny
 	comma token.Token
+}
+
+func (e exprComma) Span() report.Span {
+	return e.expr.Span()
 }
 
 // parseDecl parses any Protobuf declaration.
@@ -39,7 +44,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	var unexpected []token.Token
 	for !c.Done() && !canStartDecl(first) {
-		unexpected = append(unexpected, c.Pop())
+		unexpected = append(unexpected, c.Next())
 		first = c.Peek()
 	}
 	switch len(unexpected) {
@@ -59,8 +64,8 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		})
 	}
 
-	if first.Text() == ";" {
-		c.Pop()
+	if first.Keyword() == keyword.Semi {
+		c.Next()
 
 		// This is an empty decl.
 		return p.NewDeclEmpty(first).AsAny()
@@ -68,7 +73,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	// This is a bare declaration body.
 	if canStartBody(first) {
-		return parseBody(p, c.Pop(), in).AsAny()
+		return parseBody(p, c.Next(), in).AsAny()
 	}
 
 	// We need to parse a path here. At this point, we need to generate a
@@ -100,8 +105,8 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 	// Check for the various special cases.
 	next := c.Peek()
-	switch kw.Text() {
-	case "syntax", "edition":
+	switch kw.Keyword() {
+	case keyword.Syntax, keyword.Edition:
 		// Syntax and edition are parsed only at the top level. Otherwise, they
 		// start a def.
 		if in != taxa.TopLevel {
@@ -113,41 +118,47 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		}
 
 		in := taxa.Syntax
-		if kw.Text() == "edition" {
+		if kw.Keyword() == keyword.Edition {
 			in = taxa.Edition
 		}
 
-		eq, err := p.Punct(c, "=", in.In())
-		args.Equals = eq
-		if err != nil {
-			p.Error(err)
-		}
+		if c.Done() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			eq, err := parseEquals(p, c, in)
+			args.Equals = eq
+			if err != nil {
+				p.Error(err)
+			}
 
-		// Regardless of if we see an = sign, try to parse an expression if we
-		// can.
-		if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
-			args.Value = parseExpr(p, c, in.In())
-		}
+			// Regardless of if we see an = sign, try to parse an expression if we
+			// can.
+			if !args.Equals.IsZero() || canStartExpr(c.Peek()) {
+				args.Value = parseExpr(p, c, in.In())
+			}
 
-		args.Options = tryParseOptions(p, c, in)
+			args.Options = tryParseOptions(p, c, in)
 
-		args.Semicolon, err = p.Punct(c, ";", in.After())
-		// Only diagnose a missing semicolon if we successfully parsed some
-		// kind of partially-valid expression. Otherwise, we might diagnose
-		// the same extraneous/missing ; twice.
-		//
-		// For example, consider `syntax = ;`. WHen we enter parseExpr, it
-		// will complain about the unexpected ;.
-		//
-		// TODO: Add something like ExprError and check if args.Value
-		// contains one.
-		if err != nil && !args.Value.IsZero() {
-			p.Error(err)
+			args.Semicolon, err = parseSemi(p, c, in)
+			// Only diagnose a missing semicolon if we successfully parsed some
+			// kind of partially-valid expression. Otherwise, we might diagnose
+			// the same extraneous/missing ; twice.
+			//
+			// For example, consider `syntax = ;`. WHen we enter parseExpr, it
+			// will complain about the unexpected ;.
+			//
+			// TODO: Add something like ExprError and check if args.Value
+			// contains one.
+			if err != nil && !args.Value.IsZero() {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclSyntax(args).AsAny()
 
-	case "package":
+	case keyword.Package:
 		// Package is only parsed only at the top level. Otherwise, it starts
 		// a def.
 		//
@@ -158,23 +169,30 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if in != taxa.TopLevel {
 			break
 		}
+		in := taxa.Package
 
 		args := ast.DeclPackageArgs{
 			Keyword: kw,
 			Path:    path,
 		}
 
-		args.Options = tryParseOptions(p, c, in)
+		if c.Done() && path.IsZero() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			args.Options = tryParseOptions(p, c, in)
 
-		semi, err := p.Punct(c, ";", taxa.Package.After())
-		args.Semicolon = semi
-		if err != nil {
-			p.Error(err)
+			semi, err := parseSemi(p, c, in)
+			args.Semicolon = semi
+			if err != nil {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclPackage(args).AsAny()
 
-	case "import":
+	case keyword.Import:
 		// We parse imports inside of any body. However, outside of the top
 		// level, we interpret import foo as a field. import foo.bar is still
 		// an import, because we want to diagnose what is clearly an attempt to
@@ -186,7 +204,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			break
 		}
 		// This is definitely a field.
-		if next.Text() == "=" {
+		if next.Keyword() == keyword.Equals {
 			break
 		}
 
@@ -195,12 +213,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		}
 
 		in := taxa.Import
-		modifier := path.AsIdent().Name()
+		modifier := path.AsIdent().Keyword()
 		switch {
-		case modifier == "public":
+		case modifier == keyword.Public:
 			in = taxa.PublicImport
 			args.Modifier = path.AsIdent()
-		case modifier == "weak":
+		case modifier == keyword.Weak:
 			in = taxa.WeakImport
 			args.Modifier = path.AsIdent()
 		case !path.IsZero():
@@ -214,16 +232,22 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		args.Options = tryParseOptions(p, c, in)
 
-		semi, err := p.Punct(c, ";", in.After())
-		args.Semicolon = semi
-		if err != nil && args.ImportPath.IsZero() {
-			p.Error(err)
+		if args.ImportPath.IsZero() && c.Done() {
+			// If we see an EOF at this point, suggestions from the next
+			// few stanzas will be garbage.
+			p.Error(errUnexpectedEOF(c, in.In()))
+		} else {
+			semi, err := parseSemi(p, c, in)
+			args.Semicolon = semi
+			if err != nil && args.ImportPath.IsZero() {
+				p.Error(err)
+			}
 		}
 
 		return p.NewDeclImport(args).AsAny()
 
-	case "reserved", "extensions":
-		if next.Text() == "=" {
+	case keyword.Reserved, keyword.Extensions:
+		if next.Keyword() == keyword.Equals {
 			// If whatever follows the path is an =, we're going to assume this
 			// is trying to be a field.
 			break
@@ -269,10 +293,10 @@ func parseBody(p *parser, braces token.Token, in taxa.Noun) ast.DeclBody {
 // parseRange parses a reserved/extensions range.
 func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// Consume the keyword token.
-	kw := c.Pop()
+	kw := c.Next()
 
 	in := taxa.Extensions
-	if kw.Text() == "reserved" {
+	if kw.Keyword() == keyword.Reserved {
 		in = taxa.Reserved
 	}
 
@@ -291,6 +315,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	// is empty, or if the first comma occurs without seeing an =, we can choose
 	// to parse this as an array, instead.
 	if !canStartOptions(c.Peek()) {
+		var last token.Token
 		delimited[ast.ExprAny]{
 			p: p, c: c,
 			what: taxa.Expr,
@@ -299,10 +324,44 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 			required: true,
 			exhaust:  false,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
+				last = c.Peek()
 				expr := parseExpr(p, c, in.In())
 				badExpr = expr.IsZero()
 
 				return expr, !expr.IsZero()
+			},
+			start: canStartExpr,
+			stop: func(t token.Token) bool {
+				if slicesx.Among(t.Keyword(), keyword.Semi, keyword.Brackets) {
+					return true
+				}
+
+				// After the first element, stop if we see an identifier
+				// coming up. This is for a case like this:
+				//
+				// reserved 1, 2
+				// message Foo {}
+				//
+				// If we don't do this, message will be interpreted as an
+				// expression.
+				if !last.IsZero() && t.Kind() == token.Ident {
+					// However, this will cause
+					//
+					// reserved foo, bar baz;
+					//
+					// to treat baz as a new declaration, rather than assume a
+					// missing comma. Distinguishing this case is tricky: the
+					// cheapest option is to check whether a newline exists between
+					// this token and the last position passed to parse.
+					//
+					// This case will not be hit for valid syntax, so it's ok
+					// to do 2*O(log n) line lookups.
+					prev := last.Span().EndLoc()
+					next := t.Span().StartLoc()
+					return prev.Line != next.Line
+				}
+
+				return false
 			},
 		}.iter(func(expr ast.ExprAny, comma token.Token) bool {
 			exprs = append(exprs, exprComma{expr, comma})
@@ -313,7 +372,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 	options := tryParseOptions(p, c, in)
 
 	// Parse a semicolon, if possible.
-	semi, err := p.Punct(c, ";", in.After())
+	semi, err := parseSemi(p, c, in)
 	if err != nil && (!options.IsZero() || !badExpr) {
 		p.Error(err)
 	}
@@ -332,6 +391,7 @@ func parseRange(p *parser, c *token.Cursor) ast.DeclRange {
 
 // parseTypeList parses a type list out of a bracket token.
 func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.Noun) {
+	types.SetBrackets(parens)
 	delimited[ast.TypeAny]{
 		p:    p,
 		c:    parens.Children(),
@@ -344,6 +404,7 @@ func parseTypeList(p *parser, parens token.Token, types ast.TypeList, in taxa.No
 			ty := parseType(p, c, in.In())
 			return ty, !ty.IsZero()
 		},
+		start: canStartPath,
 	}.appendTo(types)
 }
 
@@ -351,7 +412,7 @@ func tryParseOptions(p *parser, c *token.Cursor, in taxa.Noun) ast.CompactOption
 	if !canStartOptions(c.Peek()) {
 		return ast.CompactOptions{}
 	}
-	return parseOptions(p, c.Pop(), in)
+	return parseOptions(p, c.Next(), in)
 }
 
 // parseOptions parses a ([]-delimited) compact options list.
@@ -376,12 +437,16 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			switch eq.Text() {
 			case ":": // Allow colons, which is usually a mistake.
 				p.Errorf("unexpected `:` in compact option").Apply(
-					report.Snippetf(eq, "help: replace this with `=`"),
+					report.Snippet(eq),
+					justify(p.Stream(), eq.Span(), "replace this with an `=`", justified{
+						report.Edit{Start: 0, End: 1, Replace: "="},
+						justifyBetween,
+					}),
 					report.Notef("top-level `option` assignment uses `=`, not `:`"),
 				)
 				fallthrough
 			case "=":
-				c.Pop()
+				c.Next()
 			default:
 				p.Error(errUnexpected{
 					what:  eq,
@@ -398,6 +463,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			}
 			return option, !option.Value.IsZero()
 		},
+		start: canStartPath,
 	}.appendTo(options.Entries())
 
 	return options
