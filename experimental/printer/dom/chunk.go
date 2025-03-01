@@ -15,7 +15,6 @@
 package dom
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -33,11 +32,14 @@ const (
 // Chunk represents a line of text with some configurations around indendation and splitting
 // (what whitespace should follow, if any).
 type Chunk struct {
-	text             string
+	rawText          string
+	whitespaceOnly   bool
 	hasText          bool
 	child            *Dom
-	indent           uint32
 	indented         bool
+	indentDepth      int
+	indentStr        string
+	formatted        bool
 	splitKind        SplitKind
 	spaceIfUnsplit   bool
 	splitKindIfSplit SplitKind // Restricted to SplitKindHard or SplitKindDouble
@@ -54,13 +56,20 @@ func (c *Chunk) HasText() bool {
 	return c.hasText
 }
 
-// Text returns the Chunk's current text.
+// SetText sets the text of the Chunk.
+func (c *Chunk) SetText(rawText string) {
+	c.rawText = rawText
+	c.hasText = true
+	c.whitespaceOnly = strings.TrimSpace(c.rawText) == ""
+}
+
+// WhitespaceOnly returns whether the Chunk's raw text is whitespace-only.
 // This will panic if called on a Chunk where text has not been explicitly set.
-func (c *Chunk) Text() string {
+func (c *Chunk) WhitespaceOnly() bool {
 	if !c.hasText {
-		panic("protocompile/printer/dom: called Text() on unset Chunk")
+		panic("protocompile/printer/dom: called WhitespaceOnly() on unset Chunk")
 	}
-	return c.text
+	return c.whitespaceOnly
 }
 
 // SplitKind returns the Chunk's current SplitKind.
@@ -72,32 +81,9 @@ func (c *Chunk) SplitKind() SplitKind {
 	return c.splitKind
 }
 
-// Indent returns the Chunk's current number of indents. If the Chunk is not indented, then
-// this will always return 0.
-// This will panic if called on a Chunk where text has not been explicitly set.
-func (c *Chunk) Indent() uint32 {
-	if !c.hasText {
-		panic("protocompile/printer/dom: called Indent() on unset Chunk")
-	}
-	if c.indented {
-		return c.indent
-	}
-	return 0
-}
-
-// Child returns the Chunk's child.
-// This will panic if called on a Chunk where text has not been explicitly set.
-func (c *Chunk) Child() *Dom {
-	if !c.hasText {
-		panic("protocompile/printer/dom: called Child() on unset Chunk")
-	}
-	return c.child
-}
-
-// SetText sets the text of the Chunk.
-func (c *Chunk) SetText(text string) {
-	c.text = text
-	c.hasText = true
+// SetSplitKind sets the SplitKind of the Chunk.
+func (c *Chunk) SetSplitKind(splitKind SplitKind) {
+	c.splitKind = splitKind
 }
 
 // SetChild sets the Chunk's child.
@@ -105,14 +91,9 @@ func (c *Chunk) SetChild(child *Dom) {
 	c.child = child
 }
 
-// SetIndent sets the indent of the Chunk.
-func (c *Chunk) SetIndent(indent uint32) {
-	c.indent = indent
-}
-
-// SetSplitKind sets the SplitKind of the Chunk.
-func (c *Chunk) SetSplitKind(splitKind SplitKind) {
-	c.splitKind = splitKind
+// SetIndentDepth sets the indent depth of the Chunk.
+func (c *Chunk) SetIndentDepth(indentDepth int) {
+	c.indentDepth = indentDepth
 }
 
 // SetSpaceIfUnsplit sets whether the Chunk will output a space if it is not split.
@@ -134,45 +115,65 @@ func (c *Chunk) SetSplitKindIfSplit(splitKindIfSplit SplitKind) {
 	c.splitKindIfSplit = splitKindIfSplit
 }
 
-func (c *Chunk) output(formatting *formatting) string {
-	var buf bytes.Buffer
-	if formatting == nil || !formatting.formatted {
-		// If there is no formatting, or the Dom has not been formatted, provide the unformatting
-		// output.
-		buf.WriteString(c.Text())
-	} else {
-		if strings.TrimSpace(c.Text()) == "" {
-			return ""
-		}
-		buf.WriteString(strings.Repeat(strings.Repeat(space, formatting.indentSize), int(c.Indent())))
-		// We let splits and indents dictate the leading and trailing whitespaces, so we trim them
-		// from the text when outputting.
-		buf.WriteString(strings.TrimSpace(c.Text()))
-		switch c.SplitKind() {
+// The Chunk's current text. For formatted chunks, we use indenting and splitting logic to
+// control whitespaces, so this will be the raw text with leading and trailing whitespaces
+// trimmed. If the chunk is not formatted, then the raw text will be returned.
+// This will panic if called on a Chunk where text has not been explicitly set.
+func (c *Chunk) text() string {
+	if c.formatted {
+		return strings.TrimSpace(c.rawText)
+	}
+	return c.rawText
+}
+
+// The Chunk's indent string. Unformatted chunks will not have an indent string. For formatted
+// chunks, if the text is whitespace-only, then there will be no indent string. The indent
+// string is based on the indent depth, and indent character set on the Chunk.
+func (c *Chunk) indent() string {
+	if c.indented && c.formatted && !c.whitespaceOnly {
+		return strings.Repeat(c.indentStr, c.indentDepth)
+	}
+	return ""
+}
+
+// The Chunk's split string. Unformatted chunks will not have a split string. For formatted
+// chunks, if the text is whitespace-only, then there will be no split string. A hard split
+// returns a newline, a double hard split returns a double newline, and soft/never split will
+// check if a space should follow.
+func (c *Chunk) splitString() string {
+	if c.formatted && !c.whitespaceOnly {
+		switch c.splitKind {
 		case SplitKindHard:
-			buf.WriteString("\n")
+			return "\n"
 		case SplitKindDouble:
-			buf.WriteString("\n\n")
+			return "\n\n"
 		case SplitKindSoft, SplitKindNever:
 			if c.spaceIfUnsplit {
-				buf.WriteString(space)
+				return space
 			}
 		}
 	}
-	if c.child != nil {
-		for _, chunk := range c.child.chunks {
-			buf.WriteString(chunk.output(formatting))
-		}
-	}
-	return buf.String()
+	return ""
 }
 
-// Provides the length of the Chunk's output, defined as the contiguous length of text until
-// a line break. So this captures the Chunk's text, indents, and if the Chunk is not split,
-// the output of any child chunks until a line break is hit.
-func (c *Chunk) length(indentSize int) int {
-	cost := uniseg.StringWidth(strings.Repeat(strings.Repeat(" ", indentSize), int(c.Indent())))
-	cost += uniseg.StringWidth(strings.TrimSpace(c.text))
+// The Chunk's output string.
+func (c *Chunk) output() string {
+	output := c.indent() + c.text() + c.splitString()
+	if c.child != nil {
+		for _, chunk := range c.child.chunks {
+			output += chunk.output()
+		}
+	}
+	return output
+}
+
+// This sets the indent string on the chunk and its children, and measures the first output
+// from the chunk and its child, defined as the first contiguous length of text until a line
+// break. If a hard or double split is encountered, we cut the measurement and return.
+func (c *Chunk) setIndentStrAndMeasure(indentStr string) int {
+	c.indentStr = indentStr
+	cost := uniseg.StringWidth(c.indent())
+	cost += uniseg.StringWidth(c.text())
 	switch c.splitKind {
 	case SplitKindSoft, SplitKindNever:
 		if c.spaceIfUnsplit {
@@ -183,7 +184,7 @@ func (c *Chunk) length(indentSize int) int {
 				if chunk.splitKind == SplitKindHard || chunk.splitKind == SplitKindDouble {
 					break
 				}
-				cost += chunk.length(indentSize)
+				cost += chunk.setIndentStrAndMeasure(indentStr)
 			}
 		}
 	}
@@ -198,17 +199,10 @@ func (c *Chunk) split() {
 		return
 	}
 	c.splitKind = c.splitKindIfSplit
-	if c.child != nil && len(c.child.chunks) > 0 {
-		first := c.child.FirstNonWhitespaceChunk()
-		if first != nil {
-			first.indented = true
-		}
-		last := c.child.LastNonWhitespaceChunk()
-		if last != nil {
-			switch last.splitKind {
-			case SplitKindSoft:
-				last.splitKind = last.splitKindIfSplit
-			}
+	if c.child != nil {
+		last := c.child.lastNonWhitespaceChunk()
+		if last != nil && last.splitKind == SplitKindSoft {
+			last.splitKind = last.splitKindIfSplit
 		}
 	}
 }

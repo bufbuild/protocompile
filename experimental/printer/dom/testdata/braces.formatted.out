@@ -2,8 +2,8 @@ while (x == y) { method_a(); method_b(); }
 
 while (x == y)
 {
-method_a();
-method_b();
+  method_indented_a();
+  method_indented_b();
 }
 
 while(x == y) { method_a(); method_b(); }
@@ -23,6 +23,16 @@ while (a == b) {
 }
 
 while (x == y) { method_a(); method_b(); }
+
+while (x == y) {
+
+  method_a(); method_b();
+}
+
+while (x == y) {
+  method_a();
+  method_b();
+}
 
 while (x == y)
 { method_a();

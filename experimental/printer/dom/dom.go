@@ -16,13 +16,17 @@ package dom
 
 import (
 	"bytes"
-	"strings"
+	"fmt"
+	"slices"
 )
 
 // Dom represents a block of text with formatting information. It is a tree of [Chunk]s.
 type Dom struct {
-	chunks     []*Chunk
-	formatting *formatting
+	chunks []*Chunk
+	// Maintain a pointer to the last non-whitespace-only chunk inserted in the Dom.
+	lastNonWhitespaceChunkIdx int
+	lastNonWhitespaceChunkSet bool
+	formatting                *formatting
 }
 
 // NewDom constructs a new Dom.
@@ -30,128 +34,127 @@ func NewDom() *Dom {
 	return &Dom{}
 }
 
-// Insert a Chunk into the Dom. Only Chunks that have text set will be inserted, any Chunks
-// that have not had text set will be dropped.
+// Insert a Chunk into the Dom. If a nil Chunk is passed, it is dropped. If an unset Chunk
+// is passed, it is dropped.
 func (d *Dom) Insert(chunks ...*Chunk) {
 	for _, c := range chunks {
-		if c == nil {
+		if c == nil || !c.hasText {
 			continue
 		}
 		if c.hasText {
+			// We set the initial indenting based on the last non-whitespace-only chunk's splitKind.
+			// This may change after formatting and potential new splits are applied.
+			if d.lastNonWhitespaceChunkSet {
+				c.indented = indentChunk(d.chunks[d.lastNonWhitespaceChunkIdx].splitKind)
+			}
 			d.chunks = append(d.chunks, c)
+			if !c.whitespaceOnly {
+				d.lastNonWhitespaceChunkIdx = len(d.chunks) - 1
+				d.lastNonWhitespaceChunkSet = true
+			}
 		}
 	}
 }
 
-// First returns the first chunk in the Dom. Returns nil if the Dom is empty.
-func (d *Dom) First() *Chunk {
-	if len(d.chunks) == 0 {
-		return nil
-	}
-	return d.chunks[0]
-}
-
-// TODO: track at insertion time
-func (d *Dom) FirstNonWhitespaceChunk() *Chunk {
-	if len(d.chunks) == 0 {
-		return nil
-	}
-	for _, c := range d.chunks {
-		if strings.TrimSpace(c.text) != "" {
-			return c
-		}
-	}
-	return nil
-}
-
-// Last returns the last chunk in the Dom. Returns nil if the Dom is empty.
-func (d *Dom) Last() *Chunk {
-	if len(d.chunks) == 0 {
-		return nil
-	}
-	return d.chunks[len(d.chunks)-1]
-}
-
-// TODO: track at insertion time
-func (d *Dom) LastNonWhitespaceChunk() *Chunk {
-	if len(d.chunks) == 0 {
-		return nil
-	}
-	for i := len(d.chunks) - 1; i >= 0; i-- {
-		if strings.TrimSpace(d.chunks[i].text) != "" {
-			return d.chunks[i]
-		}
-	}
-	return nil
-}
-
-// Formatting returns the formatting used for the current Dom. This is nil if no formatting
-// has been set on the Dom.
+// Formatting provides the formatting information on the Dom.
+// TODO: was thinking this might be a useful API for instrospection, but not entirely sure.
 func (d *Dom) Formatting() *formatting {
 	return d.formatting
 }
 
-// SetFormatting sets the Formatting that the Dom and all of its children should use.
-func (d *Dom) SetFormatting(lineLimit, indentSize int) {
+// Format the Dom using the given line limit and indent string.
+//
+// Formatting is done "outside-in"/"breadth first", so we first format the Dom's top-level
+// chunks, then we format their children.
+// TODO: I think this makes sense, but want to sanity check this. Should probably also expand
+// on this information.
+func (d *Dom) Format(lineLimit int, indentStr string) {
+	var cost int
 	d.formatting = &formatting{
-		lineLimit:  lineLimit,
-		indentSize: indentSize,
+		lineLimit: lineLimit,
+		indentStr: indentStr,
 	}
 	for _, c := range d.chunks {
+		c.formatted = true
+		cost += c.setIndentStrAndMeasure(indentStr)
+		if cost > d.formatting.lineLimit {
+			c.split()
+		}
+		if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
+			cost = 0
+		}
+	}
+	var indented bool
+	for _, c := range d.chunks {
+		if c.text() == "" {
+			continue
+		}
+		c.indented = indented
+		indented = indentChunk(c.splitKind)
 		if c.child != nil {
-			c.child.SetFormatting(lineLimit, indentSize)
-		}
-	}
-}
-
-// Format the Dom. If this is called and no formatting has been set, then this will panic.
-func (d *Dom) Format() {
-	if d.formatting == nil {
-		panic("protocompile/printer/dom: attempted to format Dom with no formatting set")
-	}
-	if !d.formatting.formatted {
-		var cost int
-		var indentNext bool
-		for _, c := range d.chunks {
-			if indentNext {
-				c.indented = true
-				indentNext = false
-			}
-			cost += c.length(d.formatting.indentSize)
-			if cost > d.formatting.lineLimit {
-				c.split()
-				// If you're splitting, you always indent the next thing
-				indentNext = true
-			}
-			if c.splitKind == SplitKindHard || c.splitKind == SplitKindDouble {
-				cost = 0
-				// If something is already split, the next thing is always indented.
-				indentNext = true
+			c.child.Format(lineLimit, indentStr)
+			for _, c := range c.child.chunks {
+				if c.text() == "" {
+					continue
+				}
+				c.indented = indented
+				indented = indentChunk(c.splitKind)
 			}
 		}
-		// TODO: we are currently splitting from "outside inwards"/"breadth first",
-		// so we iterate through the children after we iterate through all the outer chunks.
-		// I think this is correct, but want to sanity check this.
-		for _, c := range d.chunks {
-			if c.child != nil {
-				c.child.Format()
-			}
-		}
-		d.formatting.formatted = true
 	}
+	d.formatting.formatted = true
 }
 
 // Output returns the output string of the Dom.
+//
+// TODO: should we simply return the bytes.Buffer here?
 func (d *Dom) Output() string {
 	var buf bytes.Buffer
 	for _, c := range d.chunks {
-		buf.WriteString(c.output(d.formatting))
+		buf.WriteString(c.output())
 	}
 	return buf.String()
 }
 
+// Returns the last non-whitespace-only chunk from the Dom.
+func (d *Dom) lastNonWhitespaceChunk() *Chunk {
+	if len(d.chunks) == 0 && !d.lastNonWhitespaceChunkSet {
+		return nil
+	}
+	return d.chunks[d.lastNonWhitespaceChunkIdx]
+}
+
 type formatting struct {
-	lineLimit  int
-	indentSize int
-	formatted  bool
+	fmt.Stringer
+
+	lineLimit int
+	indentStr string
+	formatted bool
+}
+
+func (f *formatting) String() string {
+	state := "unformatted"
+	if f.formatted {
+		state = "formatted"
+	}
+	return fmt.Sprintf("state: %s, line limit %d, indent string %q", state, f.lineLimit, f.indentStr)
+}
+
+// Formatted returns if the formatting has been applied.
+func (f *formatting) Formatted() bool {
+	return f.formatted
+}
+
+// LineLimit returns the line limit of the formatting.
+func (f *formatting) LineLimit() int {
+	return f.lineLimit
+}
+
+// IndentString returns the indent string of the formatting.
+func (f *formatting) IndentString() string {
+	return f.indentStr
+}
+
+func indentChunk(splitKind SplitKind) bool {
+	return slices.Contains([]SplitKind{SplitKindHard, SplitKindDouble}, splitKind)
 }
