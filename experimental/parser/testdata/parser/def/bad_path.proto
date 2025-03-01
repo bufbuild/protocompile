@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2024 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iter is a collection of polyfills for the standard iter package.
-package iter
+syntax = "proto2";
 
-type Seq[T any] func(yield func(T) bool) // The "yield" name here helps code completion.
-type Seq2[T, U any] func(yield func(T, U) bool)
+package test;
+
+message foo.Bar {
+    oneof foo.Bar {}
+    oneof foo.(bar.baz).Bar {}
+}
+message foo.(bar.baz).Bar {}
+
+enum foo.Bar {}
+enum foo.(bar.baz).Bar {}
+
+extend foo.Bar {}
+extend foo.(bar.baz).Bar {}
+
+service foo.Bar {}
+service foo.(bar.baz).Bar {}

@@ -1,0 +1,30 @@
+// Copyright 2020-2024 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package test;
+
+service Foo {
+    rpc Bar1(optional foo.Bar) returns (foo.Bar);
+    rpc Bar2(foo.Bar) returns (repeated foo.Bar);
+    rpc Bar2(foo.Bar) returns repeated foo.Bar;
+    rpc Bar3(map<string, foo.Bar>) returns (foo.Bar);
+    rpc Bar4(string, foo.Bar) returns (foo.Bar);
+    rpc Bar5(foo.Bar) returns (foo.Bar, stream string);
+    rpc Bar6(stream repeated foo.Bar) returns (foo.Bar);
+    rpc Bar7(stream map<string, foo.Bar>) returns (foo.Bar);
+
+    rpc Bar8(foo.(bar.baz)) returns (buf.build/x.y);
+}

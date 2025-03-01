@@ -18,8 +18,7 @@ package taxa
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Noun is a syntactic or semantic element within the grammar that can be
@@ -31,6 +30,8 @@ const (
 	Unrecognized
 	TopLevel
 	EOF
+	SyntaxMode
+	EditionMode
 	Decl
 	Empty
 	Syntax
@@ -48,6 +49,7 @@ const (
 	Service
 	Extend
 	Oneof
+	Group
 	Option
 	CustomOption
 	Field
@@ -56,11 +58,14 @@ const (
 	CompactOptions
 	MethodIns
 	MethodOuts
+	Signature
 	FieldTag
+	FieldName
 	OptionValue
 	QualifiedName
 	FullyQualifiedName
 	ExtensionName
+	TypeURL
 	Expr
 	Range
 	Array
@@ -69,6 +74,9 @@ const (
 	Type
 	TypePath
 	TypeParams
+	TypePrefix
+	MapKey
+	MapValue
 	Whitespace
 	Comment
 	Ident
@@ -86,6 +94,7 @@ const (
 	Brackets
 	Braces
 	Angles
+	ReturnsParens
 	KeywordSyntax
 	KeywordEdition
 	KeywordImport
@@ -108,6 +117,8 @@ const (
 	KeywordRequired
 	KeywordGroup
 	KeywordStream
+	PredeclaredMap
+	PredeclaredMax
 	total int = iota
 )
 
@@ -132,6 +143,8 @@ var _table_Noun_String = [...]string{
 	Unrecognized:       "unrecognized token",
 	TopLevel:           "file scope",
 	EOF:                "end-of-file",
+	SyntaxMode:         "syntax mode",
+	EditionMode:        "editions mode",
 	Decl:               "declaration",
 	Empty:              "empty declaration",
 	Syntax:             "`syntax` declaration",
@@ -149,6 +162,7 @@ var _table_Noun_String = [...]string{
 	Service:            "service definition",
 	Extend:             "message extension block",
 	Oneof:              "oneof definition",
+	Group:              "group definition",
 	Option:             "option setting",
 	CustomOption:       "custom option setting",
 	Field:              "message field",
@@ -157,11 +171,14 @@ var _table_Noun_String = [...]string{
 	CompactOptions:     "compact options",
 	MethodIns:          "method parameter list",
 	MethodOuts:         "method return type",
+	Signature:          "method signature",
 	FieldTag:           "message field tag",
+	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
 	FullyQualifiedName: "fully qualified name",
 	ExtensionName:      "extension name",
+	TypeURL:            "`Any` type URL",
 	Expr:               "expression",
 	Range:              "range expression",
 	Array:              "array expression",
@@ -170,6 +187,9 @@ var _table_Noun_String = [...]string{
 	Type:               "type",
 	TypePath:           "type name",
 	TypeParams:         "type parameters",
+	TypePrefix:         "type modifier",
+	MapKey:             "map key type",
+	MapValue:           "map value type",
 	Whitespace:         "whitespace",
 	Comment:            "comment",
 	Ident:              "identifier",
@@ -187,6 +207,7 @@ var _table_Noun_String = [...]string{
 	Brackets:           "`[...]`",
 	Braces:             "`{...}`",
 	Angles:             "`<...>`",
+	ReturnsParens:      "`returns (...)`",
 	KeywordSyntax:      "`syntax`",
 	KeywordEdition:     "`edition`",
 	KeywordImport:      "`import`",
@@ -209,6 +230,8 @@ var _table_Noun_String = [...]string{
 	KeywordRequired:    "`required`",
 	KeywordGroup:       "`group`",
 	KeywordStream:      "`stream`",
+	PredeclaredMap:     "`map`",
+	PredeclaredMax:     "`max`",
 }
 
 var _table_Noun_GoString = [...]string{
@@ -216,6 +239,8 @@ var _table_Noun_GoString = [...]string{
 	Unrecognized:       "Unrecognized",
 	TopLevel:           "TopLevel",
 	EOF:                "EOF",
+	SyntaxMode:         "SyntaxMode",
+	EditionMode:        "EditionMode",
 	Decl:               "Decl",
 	Empty:              "Empty",
 	Syntax:             "Syntax",
@@ -233,6 +258,7 @@ var _table_Noun_GoString = [...]string{
 	Service:            "Service",
 	Extend:             "Extend",
 	Oneof:              "Oneof",
+	Group:              "Group",
 	Option:             "Option",
 	CustomOption:       "CustomOption",
 	Field:              "Field",
@@ -241,11 +267,14 @@ var _table_Noun_GoString = [...]string{
 	CompactOptions:     "CompactOptions",
 	MethodIns:          "MethodIns",
 	MethodOuts:         "MethodOuts",
+	Signature:          "Signature",
 	FieldTag:           "FieldTag",
+	FieldName:          "FieldName",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",
 	FullyQualifiedName: "FullyQualifiedName",
 	ExtensionName:      "ExtensionName",
+	TypeURL:            "TypeURL",
 	Expr:               "Expr",
 	Range:              "Range",
 	Array:              "Array",
@@ -254,6 +283,9 @@ var _table_Noun_GoString = [...]string{
 	Type:               "Type",
 	TypePath:           "TypePath",
 	TypeParams:         "TypeParams",
+	TypePrefix:         "TypePrefix",
+	MapKey:             "MapKey",
+	MapValue:           "MapValue",
 	Whitespace:         "Whitespace",
 	Comment:            "Comment",
 	Ident:              "Ident",
@@ -271,6 +303,7 @@ var _table_Noun_GoString = [...]string{
 	Brackets:           "Brackets",
 	Braces:             "Braces",
 	Angles:             "Angles",
+	ReturnsParens:      "ReturnsParens",
 	KeywordSyntax:      "KeywordSyntax",
 	KeywordEdition:     "KeywordEdition",
 	KeywordImport:      "KeywordImport",
@@ -293,5 +326,7 @@ var _table_Noun_GoString = [...]string{
 	KeywordRequired:    "KeywordRequired",
 	KeywordGroup:       "KeywordGroup",
 	KeywordStream:      "KeywordStream",
+	PredeclaredMap:     "PredeclaredMap",
+	PredeclaredMax:     "PredeclaredMax",
 }
 var _ iter.Seq[int] // Mark iter as used.

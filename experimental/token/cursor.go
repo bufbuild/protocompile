@@ -16,10 +16,10 @@ package token
 
 import (
 	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Cursor is an iterator-like construct for looping over a token tree.

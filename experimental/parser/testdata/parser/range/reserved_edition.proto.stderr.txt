@@ -1,0 +1,15 @@
+error: cannot use string literals in reserved range in editions mode
+  --> testdata/parser/range/reserved_edition.proto:20:19
+   |
+15 | edition = "2023";
+   | ----------------- editions mode is specified here
+...
+20 |     reserved foo, "foo";
+   |                   ^^^^^
+  help: replace this with an identifier
+   |
+20 | -     reserved foo, "foo";
+20 | +     reserved foo, foo;
+   |
+
+encountered 1 error

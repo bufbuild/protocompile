@@ -27,6 +27,9 @@
   - {name: TopLevel, string: "file scope"}
   - {name: EOF, string: "end-of-file"}
 
+  - {name: SyntaxMode, string: "syntax mode"}
+  - {name: EditionMode, string: "editions mode"}
+
   - {name: Decl, string: "declaration"}
   - {name: Empty, string: "empty declaration"}
   - {name: Syntax, string: "`syntax` declaration"}
@@ -45,6 +48,7 @@
   - {name: Service, string: "service definition"}
   - {name: Extend, string: "message extension block"}
   - {name: Oneof, string: "oneof definition"}
+  - {name: Group, string: "group definition"}
 
   - {name: Option, string: "option setting"}
   - {name: CustomOption, string: "custom option setting"}
@@ -56,13 +60,16 @@
   - {name: CompactOptions, string: "compact options"}
   - {name: MethodIns, string: "method parameter list"}
   - {name: MethodOuts, string: "method return type"}
+  - {name: Signature, string: "method signature"}
 
   - {name: FieldTag, string: "message field tag"}
+  - {name: FieldName, string: "message field name"}
   - {name: OptionValue, string: "option setting value"}
 
   - {name: QualifiedName, string: "qualified name"}
   - {name: FullyQualifiedName, string: "fully qualified name"}
   - {name: ExtensionName, string: "extension name"}
+  - {name: TypeURL, string: "`Any` type URL"}
 
   - {name: Expr, string: "expression"}
   - {name: Range, string: "range expression"}
@@ -73,6 +80,10 @@
   - {name: Type, string: "type"}
   - {name: TypePath, string: "type name"}
   - {name: TypeParams, string: "type parameters"}
+  - {name: TypePrefix, string: "type modifier"}
+
+  - {name: MapKey, string: "map key type"}
+  - {name: MapValue, string: "map value type"}
 
   - {name: Whitespace, string: "whitespace"}
   - {name: Comment, string: "comment"}
@@ -93,6 +104,8 @@
   - {name: Brackets, string: "`[...]`"}
   - {name: Braces, string: "`{...}`"}
   - {name: Angles, string: "`<...>`"}
+
+  - {name: ReturnsParens, string: "`returns (...)`"}
 
   - {name: KeywordSyntax, string: "`syntax`"}
   - {name: KeywordEdition, string: "`edition`"}
@@ -119,3 +132,6 @@
   - {name: KeywordRequired, string: "`required`"}
   - {name: KeywordGroup, string: "`group`"}
   - {name: KeywordStream, string: "`stream`"}
+
+  - {name: PredeclaredMap, string: "`map`"}
+  - {name: PredeclaredMax, string: "`max`"}

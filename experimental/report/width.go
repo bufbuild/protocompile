@@ -16,14 +16,15 @@ package report
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
 
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 const (
@@ -103,19 +104,27 @@ func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 		if !allowNonPrint {
 			// Handle unprintable characters. We render those as <U+NNNN>.
 			for next != "" {
-				nextNonPrint := strings.IndexFunc(next, NonPrint)
-				chunk := next
-				if nextNonPrint != -1 {
-					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
-					nonPrint, runeLen := utf8.DecodeRuneInString(next)
-					next = next[runeLen:]
+				pos, nextNonPrint, nonPrint := iterx.Find2(stringsx.Runes(next), func(_ int, r rune) bool {
+					return r == -1 || NonPrint(r)
+				})
 
-					escape := fmt.Sprintf("<U+%04X>", nonPrint)
+				chunk := next
+				if pos != -1 {
+					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
+
+					var escape string
+					if nonPrint == -1 {
+						escape = fmt.Sprintf("<%02X>", next[0])
+						next = next[1:]
+					} else {
+						escape = fmt.Sprintf("<U+%04X>", nonPrint)
+						next = next[utf8.RuneLen(nonPrint):]
+					}
+
 					if out != nil {
 						out.WriteString(chunk)
 						out.WriteString(escape)
 					}
-
 					column += uniseg.StringWidth(chunk) + len(escape)
 				} else {
 					if out != nil {

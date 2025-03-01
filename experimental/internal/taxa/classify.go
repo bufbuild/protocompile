@@ -21,16 +21,23 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
 func IsFloat(tok token.Token) bool {
-	digits := tok.Text()
+	return IsFloatText(tok.Text())
+}
+
+// IsFloatText checks whether or not the given number text is intended to be
+// a floating-point literal.
+func IsFloatText(digits string) bool {
+	needle := ".Ee"
 	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
-		return strings.ContainsRune(digits, '.')
+		needle = ".Pp"
 	}
-	return strings.ContainsAny(digits, ".eE")
+	return strings.ContainsAny(digits, needle)
 }
 
 // Classify attempts to classify node for use in a diagnostic.
@@ -43,12 +50,19 @@ func Classify(node report.Spanner) Noun {
 	case ast.File:
 		return TopLevel
 	case ast.Path:
-		if id := node.AsIdent(); !id.IsZero() {
-			return classifyToken(id)
+		if first, ok := iterx.OnlyOne(node.Components); ok && first.Separator().IsZero() {
+			if id := first.AsIdent(); !id.IsZero() {
+				return classifyToken(id)
+			}
+			if !first.AsExtension().IsZero() {
+				return ExtensionName
+			}
 		}
+
 		if node.Absolute() {
 			return FullyQualifiedName
 		}
+
 		return QualifiedName
 
 	case ast.DeclAny:
@@ -116,6 +130,8 @@ func Classify(node report.Spanner) Noun {
 			return Classify(node.AsMethod())
 		case ast.DefKindOneof:
 			return Classify(node.AsOneof())
+		case ast.DefKindGroup:
+			return Classify(node.AsGroup())
 		default:
 			return Def
 		}
@@ -137,12 +153,14 @@ func Classify(node report.Spanner) Noun {
 			return CustomOption
 		}
 		return Option
-	case ast.DefField, ast.DefGroup:
+	case ast.DefField:
 		return Field
+	case ast.DefGroup:
+		return Group
 	case ast.DefEnumValue:
 		return EnumValue
 	case ast.DefMethod:
-		return Service
+		return Method
 	case ast.DefOneof:
 		return Oneof
 
@@ -197,6 +215,16 @@ func Classify(node report.Spanner) Noun {
 
 	case ast.CompactOptions:
 		return CompactOptions
+
+	case ast.Signature:
+		switch {
+		case node.Inputs().IsZero() == node.Outputs().IsZero():
+			return Signature
+		case !node.Inputs().IsZero():
+			return MethodIns
+		default:
+			return MethodOuts
+		}
 	}
 
 	return Unknown

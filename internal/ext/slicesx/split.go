@@ -15,9 +15,8 @@
 package slicesx
 
 import (
+	"iter"
 	"slices"
-
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Cut is like [strings.Cut], but for slices.

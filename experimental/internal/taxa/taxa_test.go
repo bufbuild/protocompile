@@ -15,12 +15,12 @@
 package taxa_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestSet(t *testing.T) {
@@ -38,7 +38,7 @@ func TestSet(t *testing.T) {
 
 	assert.Equal(t,
 		[]taxa.Noun{taxa.EOF, taxa.Decl, taxa.Message, taxa.Array, taxa.Comment},
-		slicesx.Collect(set.All()),
+		slices.Collect(set.All()),
 	)
 }
 

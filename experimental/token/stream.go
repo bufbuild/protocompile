@@ -17,6 +17,7 @@ package token
 import (
 	"cmp"
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Stream is a token stream.

@@ -15,14 +15,13 @@
 package ast
 
 import (
-	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // File is the top-level AST node for a Protobuf file.
@@ -310,10 +309,10 @@ type rawDeclImport struct {
 	options                 arena.Pointer[rawCompactOptions]
 }
 
-func (d DeclImport) What() string {
-	r := d.raw
-	return fmt.Sprintf("%T %+v", r.importPath, r.importPath)
-}
+// func (d DeclImport) What() string {
+// 	r := d.raw
+// 	return fmt.Sprintf("%T %+v", r.importPath, r.importPath)
+// }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
 type DeclImportArgs struct {

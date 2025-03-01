@@ -115,8 +115,9 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		// This case applies to the keywords:
 		// 	- package
 		// 	- extend
+		//  - option
 		if !isList && len(mods) == 0 &&
-			slicesx.Among(ident.Keyword(), keyword.Package, keyword.Extend) &&
+			slicesx.Among(ident.Keyword(), keyword.Package, keyword.Extend, keyword.Option) &&
 			!canStartPath(c.Peek()) {
 			kw, path := tyPath.Split(1)
 			if !path.IsZero() {

@@ -1,0 +1,7 @@
+error: unexpected `/` in path in `package` declaration
+  --> testdata/parser/package/host_qualified.proto:17:18
+   |
+17 | package buf.build/test.test2;
+   |                  ^ help: replace this with a `.`
+
+encountered 1 error

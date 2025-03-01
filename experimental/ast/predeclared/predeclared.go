@@ -24,9 +24,9 @@ package predeclared
 
 import (
 	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Name is one of the built-in Protobuf names. These represent particular
@@ -93,6 +93,18 @@ func (v Name) GoString() string {
 // values.
 func (v Name) InRange() bool {
 	return v == Unknown || (v >= Int32 && v <= Max)
+}
+
+// IsScalar returns whether this predeclared name represents one of the scalar
+// types.
+func (v Name) IsScalar() bool {
+	return v >= Int32 && v <= Bytes
+}
+
+// IsMapKey returns whether this predeclared name represents one of the map key
+// types.
+func (v Name) IsMapKey() bool {
+	return (v >= Int32 && v <= SFixed64) || v == Bool || v == String
 }
 
 // Lookup looks up a predefined identifier by name.

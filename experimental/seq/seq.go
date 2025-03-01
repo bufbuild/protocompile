@@ -20,7 +20,7 @@
 // and thus must use proxy types that implement the interfaces in this package.
 package seq
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import "iter"
 
 // Indexer is a type that can be indexed like a slice.
 type Indexer[T any] interface {

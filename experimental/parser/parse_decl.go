@@ -15,6 +15,8 @@
 package parser
 
 import (
+	"slices"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -57,7 +59,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		})
 	case 2:
 		p.Error(errUnexpected{
-			what:  report.JoinSeq(slicesx.Values(unexpected)),
+			what:  report.JoinSeq(slices.Values(unexpected)),
 			where: in.In(),
 			want:  startsDecl,
 			got:   "tokens",
@@ -200,7 +202,8 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		//
 		// TODO: this treats import public inside of a message as a field, which
 		// may result in worse diagnostics.
-		if in != taxa.TopLevel && !path.AsIdent().IsZero() {
+		if in != taxa.TopLevel &&
+			(!path.AsIdent().IsZero() && next.Kind() != token.String) {
 			break
 		}
 		// This is definitely a field.

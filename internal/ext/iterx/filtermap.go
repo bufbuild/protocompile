@@ -15,7 +15,7 @@
 package iterx
 
 import (
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // This file contains the matrix of {Map, Filter, FilterMap} x {1, 2, 1to2, 2to1},
