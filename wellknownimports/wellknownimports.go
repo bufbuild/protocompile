@@ -18,13 +18,57 @@ package wellknownimports
 
 import (
 	"embed"
+	"fmt"
 	"io"
+	"io/fs"
+	"path/filepath"
 
 	"github.com/bufbuild/protocompile"
 )
 
 //go:embed google/protobuf/*.proto google/protobuf/*/*.proto
 var files embed.FS
+
+var filesByName = make(map[string]string)
+
+func init() {
+	// We initialize a map instead of going through the embed.FS for two reasons:
+	//
+	// 1. ReadFile performs an unnecessary copy of the file's text.
+	// 2. It requires some non-trivial work to identify when the user passes a
+	//    directory such as "google/" or "google/protobuf/".
+	err := fs.WalkDir(files, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !d.IsDir() {
+			bytes, err := files.ReadFile(path)
+			if err != nil {
+				return err
+			}
+
+			path = filepath.Clean(path)
+			if filepath.Separator != '/' {
+				path = filepath.ToSlash(path)
+			}
+			filesByName[path] = string(bytes)
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(fmt.Errorf("protocompile/wellknownimports: could not initialize filesByName %w", err))
+	}
+}
+
+// StandardImport gets the text of the given standard import file; path is
+// expected to start with "google/protobuf".
+//
+// Returns "" if no such standard import exists.
+func StandardImport(path string) string {
+	return filesByName[path]
+}
 
 // WithStandardImports returns a new resolver that can provide the source code for the
 // standard imports that are included with protoc. This differs from

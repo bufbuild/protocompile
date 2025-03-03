@@ -62,6 +62,27 @@ func (id ID) GoString() string {
 	return id.String()
 }
 
+// Lookup performs a map lookup into a map whose keys are [ID]s.
+//
+// This is identical to m[table.Intern(s)], but may be faster, since it avoids
+// interning s in the case it has not been interned yet, which means the table
+// lookup would fail.
+func Lookup[M ~map[ID]V, V any](table *Table, m M, s string) (V, bool) {
+	k, ok := table.Query(s)
+	if !ok {
+		var z V
+		return z, false
+	}
+	v, ok := m[k]
+	return v, ok
+}
+
+// Contains is like [mapsx.Contains], but using [Lookup].
+func Contains[M ~map[ID]V, V any](table *Table, m M, s string) bool {
+	_, ok := Lookup(table, m, s)
+	return ok
+}
+
 // Table is an interning table.
 //
 // A table can be used to convert strings into [ID]s and back again.

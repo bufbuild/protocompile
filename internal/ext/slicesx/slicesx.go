@@ -73,6 +73,15 @@ func LastPointer[S ~[]E, E any](s S) *E {
 	return GetPointer(s, len(s)-1)
 }
 
+// Pop is like [Last], but it removes the last element.
+func Pop[S ~[]E, E any](s *S) (E, bool) {
+	v, ok := Last(*s)
+	if ok {
+		*s = (*s)[len(*s)-1:]
+	}
+	return v, ok
+}
+
 // BoundsCheck performs a generic bounds check as efficiently as possible.
 //
 // This function assumes that len is the length of a slice, i.e, it is
