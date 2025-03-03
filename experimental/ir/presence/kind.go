@@ -18,8 +18,7 @@ package presence
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Presence represents how a field is present in a message. This generalizes

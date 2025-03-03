@@ -82,13 +82,6 @@ var _table_{{$e.Name}}_{{$m.Name}} = map[string]{{$e.Name}}{
 {{end}}{{else}}{{printf "%q" .String}}: {{.Name}},
 {{end}}{{end -}}
 }
-{{else if eq $m.Kind "all"}}
-var _table_{{$e.Name}}_{{$m.Name}} = [...]{{$e.Name}}{
-{{range $e.Values -}}
-{{- with .Alias}}{{continue}}{{end -}}
-{{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}},
-{{end -}}
-}
 {{end -}}{{- end -}}
 {{- end -}}{{- end -}}
 
