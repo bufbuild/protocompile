@@ -75,7 +75,7 @@ type ref[T any] struct {
 // The file can be used to access top-level elements of the IR, for walking it
 // recursively (as is needed for e.g. assembling a FileDescriptorProto).
 func (c *Context) File() File {
-	return File{bug50729{internal.NewWith(c)}}
+	return File{withContext2{internal.NewWith(c)}}
 }
 
 // Package returns the package name for this file.
@@ -93,16 +93,16 @@ func (c *Context) InternedPackage() intern.ID {
 
 // File is an IR file, which provides access to the top-level declarations of
 // a Protobuf file.
-type File struct{ bug50729 }
+type File struct{ withContext2 }
 
-// bug50729 is a workaround for go.dev/issue/50729, a bug in how Go
+// withContext2 is a workaround for go.dev/issue/50729, a bug in how Go
 // handles embedded type aliases. In this case, Go incorrectly believes that
 // File is a recursive type of infinite size. This issue is fixed in recent Go
 // versions but not in some of the versions we support.
 //
 // We can't just embed With into File, because then it would be an exported
 // field.
-type bug50729 struct{ internal.With[*Context] }
+type withContext2 struct{ internal.With[*Context] }
 
 // Import is an import in a [File].
 type Import struct {

@@ -245,12 +245,8 @@ type rawMessageValue struct {
 }
 
 type rawMessageValueEntry struct {
-	key   intern.ID
-	field int32 // Index of the field within rawMessageValue.ty; -1 if unknown.
+	field ref[rawField]
 	value rawValue
-
-	// TODO: This currently cannot represent an Any field correctly, because we
-	// need to know its "dynamic" type as well.
 }
 
 // Type returns this value's message type.
@@ -259,35 +255,16 @@ func (v MessageValue) Type() Type {
 }
 
 // Fields returns the fields within this message literal.
-func (v MessageValue) Fields() seq.Indexer[FieldValue] {
-	ty := v.Type()
+func (v MessageValue) Fields() seq.Indexer[Value] {
 	return seq.NewFixedSlice(
 		v.raw.entries,
-		func(i int, e rawMessageValueEntry) FieldValue {
-			field := FieldValue{
-				Value: Value{
-					withContext: v.withContext,
-					field:       v.Type().Fields().At(int(e.field)),
-					ast:         v.raw.ast.Elements().At(i).Value(),
-					raw:         e.value,
-				},
-				InternedName: e.key,
+		func(i int, e rawMessageValueEntry) Value {
+			return Value{
+				withContext: v.withContext,
+				field:       wrapField(v.Context(), e.field),
+				ast:         v.raw.ast.Elements().At(i).Value(),
+				raw:         e.value,
 			}
-			if e.field >= 0 {
-				field.field = ty.Fields().At(int(e.field))
-			}
-			return field
 		},
 	)
-}
-
-// FieldValue is an entry within a [MessageValue].
-type FieldValue struct {
-	Value
-	InternedName intern.ID
-}
-
-// Name returns this field's name.
-func (v FieldValue) Name() string {
-	return v.Context().intern.Value(v.InternedName)
 }
