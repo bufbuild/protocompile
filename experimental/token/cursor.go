@@ -16,10 +16,10 @@ package token
 
 import (
 	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Cursor is an iterator-like construct for looping over a token tree.
@@ -72,6 +72,13 @@ func (c *Cursor) Done() bool {
 // IsSynthetic returns whether this is a cursor over synthetic tokens.
 func (c *Cursor) IsSynthetic() bool {
 	return c.stream != nil
+}
+
+// Clone returns a copy of this cursor, which allows performing operations on
+// it without mutating the original cursor.
+func (c *Cursor) Clone() *Cursor {
+	clone := *c
+	return &clone
 }
 
 // Mark makes a mark on this cursor to indicate a place that can be rewound

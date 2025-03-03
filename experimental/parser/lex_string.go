@@ -16,6 +16,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -42,7 +43,7 @@ func lexString(l *lexer) token.Token {
 		}
 
 		cursor := l.cursor
-		sc := lexStringContent(l)
+		sc := lexStringContent(quote, l)
 		if sc.isEscape && !haveEsc {
 			// If we saw our first escape, spill the string into the buffer
 			// up to just before the escape.
@@ -65,7 +66,24 @@ func lexString(l *lexer) token.Token {
 	}
 
 	if !terminated {
-		l.Error(errUnclosedString{Token: tok})
+		var note report.DiagnosticOption
+		if len(tok.Text()) == 1 {
+			note = report.Notef("this string consists of a single orphaned quote")
+		} else if strings.HasSuffix(tok.Text(), string(quote)) {
+			note = report.SuggestEdits(
+				tok,
+				"this string appears to end in an escaped quote",
+				report.Edit{
+					Start: tok.Span().Len() - 2, End: tok.Span().Len(),
+					Replace: fmt.Sprintf(`\\%c%c`, quote, quote),
+				},
+			)
+		}
+
+		l.Errorf("unterminated string literal").Apply(
+			report.Snippetf(tok, "expected to be terminated by `%c`", quote),
+			note,
+		)
 	}
 
 	return tok
@@ -79,14 +97,20 @@ type stringContent struct {
 
 // lexStringContent lexes a single logical rune's worth of content for a quoted
 // string.
-func lexStringContent(l *lexer) (sc stringContent) {
+func lexStringContent(_ rune, l *lexer) (sc stringContent) {
 	start := l.cursor
 	r := l.Pop()
 
 	switch {
 	case r == 0:
+		esc := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped NUL bytes are not permitted in string literals").Apply(
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\0` or `\\x00`"),
+			report.Snippet(esc),
+			report.SuggestEdits(esc, "replace it with `\\0` or `\\x00`", report.Edit{
+				Start:   0,
+				End:     1,
+				Replace: "\\0",
+			}),
 		)
 	case r == '\n':
 		// TODO: This diagnostic is simply user-hostile. We should remove it.
@@ -98,10 +122,10 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		// Many programming languages have since thoughtlessly copied this
 		// choice, including Protobuf, whose lexical morphology is almost
 		// exactly C's).
+		nl := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Errorf("unescaped newlines are not permitted in string literals").Apply(
-			// Not to mention, this diagnostic is not ideal: we should probably
-			// tell users to split the string into multiple quoted fragments.
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "replace this with `\\n`"),
+			report.Snippet(nl),
+			report.Helpf("consider splitting this into adjacent string literals; Protobuf will automatically concatenate them"),
 		)
 	case report.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't
@@ -116,8 +140,14 @@ func lexStringContent(l *lexer) (sc stringContent) {
 			escape = fmt.Sprintf(`\U%08x`, r)
 		}
 
+		esc := l.SpanFrom(l.cursor - utf8.RuneLen(r))
 		l.Warnf("non-printable character in string literal").Apply(
-			report.Snippetf(l.SpanFrom(l.cursor-utf8.RuneLen(r)), "help: consider escaping this with e.g. `%s` instead", escape),
+			report.Snippet(esc),
+			report.SuggestEdits(esc, "consider escaping it", report.Edit{
+				Start:   0,
+				End:     len(esc.Text()),
+				Replace: escape,
+			}),
 		)
 	}
 
@@ -212,4 +242,49 @@ func lexStringContent(l *lexer) (sc stringContent) {
 	}
 
 	return sc
+}
+
+// errInvalidEscape diagnoses an invalid escape sequence within a string
+// literal.
+type errInvalidEscape struct {
+	Span report.Span // The span of the offending escape within a literal.
+}
+
+// Diagnose implements [report.Diagnose].
+func (e errInvalidEscape) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("invalid escape sequence"))
+
+	text := e.Span.Text()
+
+	if len(text) < 2 {
+		d.Apply(report.Snippet(e.Span))
+	}
+
+	switch c := text[1]; c {
+	case 'x', 'X':
+		if len(text) < 3 {
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by at least one hex digit", c))
+			return
+		}
+		return
+	case 'u', 'U':
+		expected := 4
+		if c == 'U' {
+			expected = 8
+		}
+
+		if len(text[2:]) != expected {
+			d.Apply(report.Snippetf(e.Span, "`\\%c` must be followed by exactly %d hex digits", c, expected))
+			return
+		}
+
+		value, _ := strconv.ParseUint(text[2:], 16, 32)
+		if !utf8.ValidRune(rune(value)) {
+			d.Apply(report.Snippetf(e.Span, "must be in the range U+0000 to U+10FFFF, except U+DC00 to U+DFFF"))
+			return
+		}
+		return
+	}
+
+	d.Apply(report.Snippet(e.Span))
 }

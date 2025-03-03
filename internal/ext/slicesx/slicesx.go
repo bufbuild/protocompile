@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package slicesx contains extensions to Go's package slices.
+// Package slicesx contains extensions to Go's package slices.
 package slicesx
 
 import (
@@ -40,10 +40,7 @@ func One[E any](p *E) []E {
 //
 // If the bounds check fails, returns the zero value and false.
 func Get[S ~[]E, E any, I SliceIndex](s S, idx I) (element E, ok bool) {
-	if idx < 0 {
-		return element, false
-	}
-	if uint64(idx) >= uint64(len(s)) {
+	if !BoundsCheck(idx, len(s)) {
 		return element, false
 	}
 
@@ -55,10 +52,7 @@ func Get[S ~[]E, E any, I SliceIndex](s S, idx I) (element E, ok bool) {
 // GetPointer is like [Get], but it returns a pointer to the selected element
 // instead, returning nil on out-of-bounds indices.
 func GetPointer[S ~[]E, E any, I SliceIndex](s S, idx I) *E {
-	if idx < 0 {
-		return nil
-	}
-	if uint64(idx) >= uint64(len(s)) {
+	if !BoundsCheck(idx, len(s)) {
 		return nil
 	}
 
@@ -77,6 +71,20 @@ func Last[S ~[]E, E any](s S) (element E, ok bool) {
 // instead, returning nil if s is empty.
 func LastPointer[S ~[]E, E any](s S) *E {
 	return GetPointer(s, len(s)-1)
+}
+
+// BoundsCheck performs a generic bounds check as efficiently as possible.
+//
+// This function assumes that len is the length of a slice, i.e, it is
+// non-negative.
+//
+//nolint:revive,predeclared // len is the right variable name ugh.
+func BoundsCheck[I SliceIndex](idx I, len int) bool {
+	// An unsigned comparison is sufficient. If idx is non-negative, it checks
+	// that it is less than len. If idx is negative, converting it to uint64
+	// will produce a value greater than math.Int64Max, which is greater than
+	// the positive value we get from casting len.
+	return uint64(idx) < uint64(len)
 }
 
 // Among is like [slices.Contains], but the haystack is passed variadically.

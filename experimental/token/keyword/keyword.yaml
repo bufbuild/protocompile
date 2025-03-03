@@ -1,0 +1,110 @@
+# Copyright 2020-2024 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Keyword
+  type: byte
+  docs: |
+    Keywords are special "grammar particles" recognized by Protobuf. These
+    include both the reserved words listed at
+    https://protobuf.com/docs/language-spec#identifiers-and-keywords, as well
+    as all valid punctuation.
+  methods:
+    - kind: string
+    - kind: go-string
+    - kind: from-string
+      name: Lookup
+      docs: |
+        Lookup looks up a keyword by name.
+
+        If name does not name a keyword, returns [Unknown].
+    - kind: all
+      name: All
+      docs: |
+        All returns an iterator over all distinct [Keyword] values.
+
+  values:
+  - {name: Unknown, string: unknown}
+
+  # Keywords according to protobuf.com
+
+  - {name: Syntax, string: syntax}
+  - {name: Edition, string: edition}
+  - {name: Import, string: import}
+  - {name: Weak, string: weak}
+  - {name: Public, string: public}
+  - {name: Package, string: package}
+
+  - {name: Message, string: message}
+  - {name: Enum, string: enum}
+  - {name: Service, string: service}
+  - {name: Extend, string: extend}
+  - {name: Option, string: option}
+  - {name: Group, string: group}
+  - {name: Oneof, string: oneof}
+  - {name: Extensions, string: extensions}
+  - {name: Reserved, string: reserved}
+  - {name: RPC, string: rpc}
+
+  - {name: Returns, string: returns}
+  - {name: To, string: to}
+
+  - {name: Repeated, string: repeated}
+  - {name: Optional, string: optional}
+  - {name: Required, string: required}
+  - {name: Stream, string: stream}
+
+  - {name: Int32, string: int32}
+  - {name: Int64, string: int64}
+  - {name: UInt32, string: uint32}
+  - {name: UInt64, string: uint64}
+  - {name: SInt32, string: sint32}
+  - {name: SInt64, string: sint64}
+  - {name: Fixed32, string: fixed32}
+  - {name: Fixed64, string: fixed64}
+  - {name: SFixed32, string: sfixed32}
+  - {name: SFixed64, string: sfixed64}
+  - {name: Float, string: float}
+  - {name: Double, string: double}
+  - {name: Bool, string: bool}
+  - {name: String, string: string}
+  - {name: Bytes, string: bytes}
+
+  - {name: Inf, string: inf}
+  - {name: NAN, string: nan}
+  - {name: 'True', string: 'true'}
+  - {name: 'False', string: 'false'}
+  - {name: Map, string: map}
+  - {name: Max, string: max}
+
+  # Pseudo-option names.
+
+  - {name: Default, string: default}
+  - {name: JsonName, string: json_name}
+
+  # Punctuation.
+  
+  - {name: Semi, string: ";"}
+  - {name: Comma, string: ","}
+  - {name: Dot, string: "."}
+  - {name: Slash, string: "/"}
+  - {name: Colon, string: ":"}
+  - {name: Equals, string: "="}
+  - {name: Minus, string: "-"}
+
+  # These four must be declared together, since this is used for layout
+  # compression in token.nat.
+  - {name: Parens, string: "(...)", from: ["(", ")"]}
+  - {name: Brackets, string: "[...]", from: ["[", "]"]}
+  - {name: Braces, string: "{...}", from: ["{", "}"]}
+  - {name: Angles, string: "<...>", from: ["<", ">"]}

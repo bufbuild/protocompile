@@ -15,10 +15,18 @@
 package slicesx
 
 import (
+	"slices"
 	"unsafe"
 
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
+
+// IndexFunc is like [slices.IndexFunc], but also takes the index of the element
+// being examined as an input to the predicate.
+func IndexFunc[S ~[]E, E any](s S, p func(int, E) bool) int {
+	return iterx.Index2(slices.All(s), p)
+}
 
 // PointerIndex returns an integer n such that p == &s[n], or -1 if there is
 // no such integer.

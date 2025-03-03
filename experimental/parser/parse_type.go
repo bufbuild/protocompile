@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -114,8 +115,9 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		// This case applies to the keywords:
 		// 	- package
 		// 	- extend
+		//  - option
 		if !isList && len(mods) == 0 &&
-			slicesx.Among(ident.Text(), "package", "extend") &&
+			slicesx.Among(ident.Keyword(), keyword.Package, keyword.Extend, keyword.Option) &&
 			!canStartPath(c.Peek()) {
 			kw, path := tyPath.Split(1)
 			if !path.IsZero() {
@@ -131,8 +133,8 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		// based on what comes after it.
 		var isMod bool
 		_, rest := tyPath.Split(1)
-		switch ast.TypePrefixByName(ident.Name()) {
-		case ast.TypePrefixOptional, ast.TypePrefixRepeated, ast.TypePrefixRequired:
+		switch ident.Keyword() {
+		case keyword.Optional, keyword.Repeated, keyword.Required:
 			// NOTE: We do not need to look at isInMethod here, because it
 			// implies isList (sort of: in the case of writing something
 			// like `returns optional.Foo`, this will be parsed as
@@ -140,7 +142,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			// invalid, because of the missing parentheses, so we don't need to
 			// legalize it.
 			isMod = !isList || rest.IsZero()
-		case ast.TypePrefixStream:
+		case keyword.Stream:
 			isMod = isInMethod || rest.IsZero()
 		}
 
@@ -166,7 +168,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 
 	// Next, look for some angle brackets. We need to do this before draining
 	// mods, because angle brackets bind more tightly than modifiers.
-	if angles := c.Peek(); angles.Text() == "<" && !angles.IsLeaf() {
+	if angles := c.Peek(); angles.Keyword() == keyword.Angles {
 		c.Next() // Consume the angle brackets.
 		generic := p.NewTypeGeneric(ast.TypeGenericArgs{
 			Path:          tyPath,

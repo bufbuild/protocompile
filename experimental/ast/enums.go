@@ -18,8 +18,7 @@ package ast
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // DeclKind is a kind of declaration. There is one value of DeclKind for each
@@ -148,77 +147,6 @@ func (v TypeKind) GoString() string {
 	return _table_TypeKind_GoString[int(v)]
 }
 
-// TypePrefix is a prefix for an expression, such as a minus sign.
-type ExprPrefix int8
-
-const (
-	ExprPrefixUnknown ExprPrefix = iota
-	ExprPrefixMinus
-)
-
-// String implements [fmt.Stringer].
-func (v ExprPrefix) String() string {
-	if int(v) < 0 || int(v) > len(_table_ExprPrefix_String) {
-		return fmt.Sprintf("ExprPrefix(%v)", int(v))
-	}
-	return _table_ExprPrefix_String[int(v)]
-}
-
-// GoString implements [fmt.GoStringer].
-func (v ExprPrefix) GoString() string {
-	if int(v) < 0 || int(v) > len(_table_ExprPrefix_GoString) {
-		return fmt.Sprintf("astExprPrefix(%v)", int(v))
-	}
-	return _table_ExprPrefix_GoString[int(v)]
-}
-
-// ExprPrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [ExprPrefixUnknown].
-func ExprPrefixByName(s string) ExprPrefix {
-	return _table_ExprPrefix_ExprPrefixByName[s]
-}
-
-// TypeKind is a kind of type. There is one value of TypeKind for each
-// Type* type in this package.
-//
-// TypePrefix is a prefix for a type, such as required, optional, or repeated.
-type TypePrefix int8
-
-const (
-	TypePrefixUnknown TypePrefix = iota
-	TypePrefixOptional
-	TypePrefixRepeated
-	TypePrefixRequired
-
-	// This is the "stream Foo.bar" syntax of RPC methods. It is also treated as
-	// a prefix.
-	TypePrefixStream
-)
-
-// String implements [fmt.Stringer].
-func (v TypePrefix) String() string {
-	if int(v) < 0 || int(v) > len(_table_TypePrefix_String) {
-		return fmt.Sprintf("TypePrefix(%v)", int(v))
-	}
-	return _table_TypePrefix_String[int(v)]
-}
-
-// GoString implements [fmt.GoStringer].
-func (v TypePrefix) GoString() string {
-	if int(v) < 0 || int(v) > len(_table_TypePrefix_GoString) {
-		return fmt.Sprintf("astTypePrefix(%v)", int(v))
-	}
-	return _table_TypePrefix_GoString[int(v)]
-}
-
-// TypePrefixByName looks up a prefix kind by name.
-//
-// If name is not a known prefix, returns [TypePrefixUnknown].
-func TypePrefixByName(s string) TypePrefix {
-	return _table_TypePrefix_TypePrefixByName[s]
-}
-
 var _table_DeclKind_String = [...]string{
 	DeclKindInvalid: "DeclKindInvalid",
 	DeclKindEmpty:   "DeclKindEmpty",
@@ -307,42 +235,5 @@ var _table_TypeKind_GoString = [...]string{
 	TypeKindPath:     "TypeKindPath",
 	TypeKindPrefixed: "TypeKindPrefixed",
 	TypeKindGeneric:  "TypeKindGeneric",
-}
-
-var _table_ExprPrefix_String = [...]string{
-	ExprPrefixUnknown: "unknown",
-	ExprPrefixMinus:   "-",
-}
-
-var _table_ExprPrefix_GoString = [...]string{
-	ExprPrefixUnknown: "ExprPrefixUnknown",
-	ExprPrefixMinus:   "ExprPrefixMinus",
-}
-
-var _table_ExprPrefix_ExprPrefixByName = map[string]ExprPrefix{
-	"-": ExprPrefixMinus,
-}
-
-var _table_TypePrefix_String = [...]string{
-	TypePrefixUnknown:  "unknown",
-	TypePrefixOptional: "optional",
-	TypePrefixRepeated: "repeated",
-	TypePrefixRequired: "required",
-	TypePrefixStream:   "stream",
-}
-
-var _table_TypePrefix_GoString = [...]string{
-	TypePrefixUnknown:  "TypePrefixUnknown",
-	TypePrefixOptional: "TypePrefixOptional",
-	TypePrefixRepeated: "TypePrefixRepeated",
-	TypePrefixRequired: "TypePrefixRequired",
-	TypePrefixStream:   "TypePrefixStream",
-}
-
-var _table_TypePrefix_TypePrefixByName = map[string]TypePrefix{
-	"optional": TypePrefixOptional,
-	"repeated": TypePrefixRepeated,
-	"required": TypePrefixRequired,
-	"stream":   TypePrefixStream,
 }
 var _ iter.Seq[int] // Mark iter as used.

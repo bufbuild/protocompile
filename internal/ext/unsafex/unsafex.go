@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package unsafex contains extensions to Go's package unsafe.
+// Package unsafex contains extensions to Go's package unsafe.
 //
 // Importing this package should be treated as equivalent to importing unsafe.
 package unsafex
@@ -132,5 +132,17 @@ func StringAlias[S ~[]E, E any](data S) string {
 	return unsafe.String(
 		Bitcast[*byte](unsafe.SliceData(data)),
 		len(data)*Size[E](),
+	)
+}
+
+// BytesAlias is the inverse of [StringAlias].
+//
+// The same caveats apply as with [StringAlias] around mutating `data`.
+//
+//go:nosplit
+func BytesAlias[S ~[]B, B ~byte](data string) []B {
+	return unsafe.Slice(
+		Bitcast[*B](unsafe.StringData(data)),
+		len(data),
 	)
 }

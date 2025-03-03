@@ -6,11 +6,9 @@ decls:
       name.components: [{ ident: "M" }]
       body.decls:
         - def:
-            kind: KIND_FIELD
             type.path.components: [{ ident: "name" }]
             value.literal.int_value: 1
         - def:
-            kind: KIND_FIELD
             type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1
         - def:
@@ -30,5 +28,26 @@ decls:
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "name" }]
+            type.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components:
+              - ident: "foo"
+              - separator: SEPARATOR_DOT
+              - { ident: "bar", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "name" }]
+            type.path.components:
+              - ident: "foo"
+              - separator: SEPARATOR_DOT
+              - separator: SEPARATOR_DOT
+              - { ident: "bar", separator: SEPARATOR_DOT }
+            value.literal.int_value: 1
+        - def:
+            name.components: [{ ident: "name" }, { separator: SEPARATOR_DOT }]
             type.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
             value.literal.int_value: 1

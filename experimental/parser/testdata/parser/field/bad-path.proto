@@ -21,11 +21,14 @@ message M {
     repeated Type path.name = 1;
     required Type path.name = 1;
     Type path.name = 1;
+    Type path/name = 1;
 
     optional package.Type path.name = 1;
     repeated package.Type path.name = 1;
     required package.Type path.name = 1;
     package.Type name = 1;
+    package/Type name = 1;
+    optional package/Type path.name = 1;
 
     optional (foo.bar).Type name = 1;
     repeated (foo.bar).Type name = 1;
@@ -38,4 +41,7 @@ message M {
     package.Type (foo.bar).name = 1;
 
     (foo) (bar) = 1;
+
+    map<string, foo.(bar)> foo = 1;
+    map<string, foo/bar> foo = 1;
 }

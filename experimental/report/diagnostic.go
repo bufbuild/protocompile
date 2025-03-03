@@ -16,6 +16,8 @@ package report
 
 import (
 	"fmt"
+
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Level represents the severity of a diagnostic message.
@@ -195,6 +197,27 @@ func SuggestEdits(at Spanner, message string, edits ...Edit) DiagnosticOption {
 		message: message,
 		edits:   edits,
 	}
+}
+
+// SuggestEditsWithWidening is like [SuggestEdits], but it allows edits' starts and
+// ends to not conform to the given span exactly (e.g., the end points are
+// negative or greater than the length of the span).
+//
+// This will widen the span for the suggestion to fit the edits.
+func SuggestEditsWithWidening(at Spanner, message string, edits ...Edit) DiagnosticOption {
+	span := getSpan(at)
+	start := span.Start
+	span = JoinSeq(slicesx.Map(edits, func(e Edit) Span {
+		return span.File.Span(e.Start+start, e.End+start)
+	}))
+	delta := start - span.Start
+
+	for i := range edits {
+		edits[i].Start += delta
+		edits[i].End += delta
+	}
+
+	return SuggestEdits(span, message, edits...)
 }
 
 // Notef returns a DiagnosticOption that provides the user with context about the

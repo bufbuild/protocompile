@@ -1,7 +1,15 @@
-error: unexpected end-of-file after `package` declaration
+error: missing path in `package` declaration
+  --> testdata/parser/package/eof_after_kw.proto:17:1
+   |
+17 | package
+   | ^^^^^^^
+   = help: to place a file in the unnamed package, omit the `package`
+           declaration; however, using the unnamed package is discouraged
+
+error: unexpected end-of-file in `package` declaration
   --> testdata/parser/package/eof_after_kw.proto:17:8
    |
 17 | package
-   |        ^ expected `;`
+   |        ^
 
-encountered 1 error
+encountered 2 errors

@@ -26,12 +26,12 @@
 ⟨b.red⟩error: missing (...) around return type
 ⟨blu⟩  --> foo.proto:6:31
    |
-⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse;
+⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse
 ⟨blu⟩   | ⟨reset⟩                              ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
 ⟨blu⟩  help: add `(...)` around the type
    |
-⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)⟨reset⟩;
-⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+⟨reset⟩ ⟨reset⟩
+⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)
+⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+⟨reset⟩
 
 ⟨b.red⟩error: method options must go in a block
 ⟨blu⟩  --> foo.proto:7:45
@@ -51,9 +51,11 @@
 ⟨blu⟩  help:
    |
 ⟨blu⟩ 5 | ⟨b.red⟩-⟨red⟩ service Foo {
-⟨blu⟩ 6 | ⟨reset⟩ ⟨reset⟩   rpc Get(GetRequest) returns GetResponse;
+⟨blu⟩ 6 | ⟨reset⟩ ⟨reset⟩   rpc Get(GetRequest) returns GetResponse
 ⟨blu⟩ 7 | ⟨reset⟩ ⟨reset⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
 ⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
+⟨blu⟩ 9 | ⟨b.red⟩-⟨red⟩
+⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩ }
 ⟨blu⟩   | ⟨reset⟩
 
 ⟨b.red⟩error: delete this method
@@ -61,6 +63,8 @@
 ⟨blu⟩  help:
    |
 ⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
+⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
+⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩   r}
 ⟨blu⟩   | ⟨reset⟩
 
 ⟨b.red⟩encountered 4 errors and 1 warning

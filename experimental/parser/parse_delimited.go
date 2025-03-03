@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // delimited is a mechanism for parsing a punctuation-delimited list.
@@ -33,8 +34,8 @@ type delimited[T report.Spanner] struct {
 	// generating diagnostics.
 	what, in taxa.Noun
 
-	// Permitted delimiters. If empty, assumed to be []string{","}.
-	delims []string
+	// Permitted delimiters. If empty, assumed to be keyword.Comma.
+	delims []keyword.Keyword
 	// Whether a delimiter must be present, rather than merely optional.
 	required bool
 	// Whether iteration should expect to exhaust c.
@@ -67,22 +68,27 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 	// we don't want to have to deal with asking the caller to provide Nouns
 	// for each delimiter.
 	if len(d.delims) == 0 {
-		d.delims = []string{","}
+		d.delims = []keyword.Keyword{keyword.Comma}
 	}
 
 	var delim token.Token
 	var latest int // The index of the most recently seen delimiter.
 
-	if next := d.c.Peek(); slices.Contains(d.delims, next.Text()) {
+	next := d.c.Peek()
+	if idx := slices.Index(d.delims, next.Keyword()); idx >= 0 {
 		_ = d.c.Next()
-		latest = slices.Index(d.delims, next.Text())
+		latest = idx
 
 		d.p.Error(errUnexpected{
 			what:  next,
 			where: d.in.In(),
 			want:  d.what.AsSet(),
 			got:   fmt.Sprintf("leading `%s`", next.Text()),
-		})
+		}).Apply(report.SuggestEdits(
+			next.Span(),
+			fmt.Sprintf("delete this `%s`", next.Text()),
+			report.Edit{Start: 0, End: len(next.Text())},
+		))
 	}
 
 	var needDelim bool
@@ -136,8 +142,16 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				where: d.in.In(),
 				want:  d.delimNouns(),
 			}).Apply(
-				// TODO: this should be a suggestion.
 				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
+				justify(
+					d.p.Stream(),
+					v.Span(),
+					fmt.Sprintf("add a `%s` here", d.delims[latest]),
+					justified{
+						report.Edit{Replace: d.delims[latest].String()},
+						justifyLeft,
+					},
+				),
 			)
 		}
 		needDelim = d.required
@@ -145,7 +159,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		// Pop as many delimiters as we can.
 		delim = token.Zero
 		for {
-			which := slices.Index(d.delims, d.c.Peek().Text())
+			which := slices.Index(d.delims, d.c.Peek().Keyword())
 			if which < 0 {
 				break
 			}
@@ -163,7 +177,14 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				where: d.in.In(),
 				want:  d.what.AsSet(),
 				got:   fmt.Sprintf("extra `%s`", next.Text()),
-			}).Apply(report.Snippetf(delim, "first delimiter is here"))
+			}).Apply(
+				report.Snippetf(delim, "first delimiter is here"),
+				report.SuggestEdits(
+					next.Span(),
+					fmt.Sprintf("delete this `%s`", next.Text()),
+					report.Edit{Start: 0, End: len(next.Text())},
+				),
+			)
 		}
 
 		if !yield(v, delim) {
@@ -193,14 +214,18 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			what:  delim,
 			where: d.in.In(),
 			got:   fmt.Sprintf("trailing `%s`", delim.Text()),
-		})
+		}).Apply(report.SuggestEdits(
+			delim.Span(),
+			fmt.Sprintf("delete this `%s`", delim.Text()),
+			report.Edit{Start: 0, End: len(delim.Text())},
+		))
 	}
 }
 
 func (d delimited[T]) delimNouns() taxa.Set {
 	var set taxa.Set
 	for _, delim := range d.delims {
-		set = set.With(taxa.Punct(delim, false))
+		set = set.With(taxa.Keyword(delim))
 	}
 	return set
 }

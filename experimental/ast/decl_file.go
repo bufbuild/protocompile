@@ -15,11 +15,14 @@
 package ast
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/iter"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // File is the top-level AST node for a Protobuf file.
@@ -35,48 +38,37 @@ type File struct {
 	DeclBody
 }
 
-// Syntax returns this file's pragma, if it has one.
-func (f File) Syntax() (syntax DeclSyntax) {
-	seq.Values(f.Decls())(func(d DeclAny) bool {
+// Syntax returns this file's declaration, if it has one.
+func (f File) Syntax() DeclSyntax {
+	for d := range seq.Values(f.Decls()) {
 		if s := d.AsSyntax(); !s.IsZero() {
-			syntax = s
-			return false
+			return s
 		}
-		return true
-	})
-	return
+	}
+	return DeclSyntax{}
 }
 
 // Package returns this file's package declaration, if it has one.
-func (f File) Package() (pkg DeclPackage) {
-	seq.Values(f.Decls())(func(d DeclAny) bool {
+func (f File) Package() DeclPackage {
+	for d := range seq.Values(f.Decls()) {
 		if p := d.AsPackage(); !p.IsZero() {
-			pkg = p
-			return false
+			return p
 		}
-		return true
-	})
-	return
+	}
+	return DeclPackage{}
 }
 
 // Imports returns an iterator over this file's import declarations.
 func (f File) Imports() iter.Seq2[int, DeclImport] {
-	return func(yield func(int, DeclImport) bool) {
-		var i int
-		seq.Values(f.Decls())(func(d DeclAny) bool {
-			if imp := d.AsImport(); !imp.IsZero() {
-				if !yield(i, imp) {
-					return false
-				}
-				i++
-			}
-
-			return true
-		})
-	}
+	return iterx.FilterMap2(seq.All(f.Decls()), func(i int, d DeclAny) (int, DeclImport, bool) {
+		if imp := d.AsImport(); !imp.IsZero() {
+			return i, imp, true
+		}
+		return 0, DeclImport{}, false
+	})
 }
 
-// DeclSyntax represents a language pragma, such as the syntax or edition
+// DeclSyntax represents a language declaration, such as the syntax or edition
 // keywords.
 //
 // # Grammar
@@ -103,8 +95,13 @@ type DeclSyntaxArgs struct {
 	Semicolon token.Token
 }
 
-// Keyword returns the keyword for this pragma.
-func (d DeclSyntax) Keyword() token.Token {
+// Keyword returns the keyword for this declaration.
+func (d DeclSyntax) Keyword() keyword.Keyword {
+	return d.KeywordToken().Keyword()
+}
+
+// KeywordToken returns the keyword token for this declaration.
+func (d DeclSyntax) KeywordToken() token.Token {
 	if d.IsZero() {
 		return token.Zero
 	}
@@ -112,14 +109,14 @@ func (d DeclSyntax) Keyword() token.Token {
 	return d.raw.keyword.In(d.Context())
 }
 
-// IsSyntax checks whether this is an OG syntax pragma.
+// IsSyntax checks whether this is an OG syntax declaration.
 func (d DeclSyntax) IsSyntax() bool {
-	return d.Keyword().Text() == "syntax"
+	return d.Keyword() == keyword.Syntax
 }
 
-// IsEdition checks whether this is a new-style edition pragma.
+// IsEdition checks whether this is a new-style edition declaration.
 func (d DeclSyntax) IsEdition() bool {
-	return d.Keyword().Text() == "edition"
+	return d.Keyword() == keyword.Edition
 }
 
 // Equals returns the equals sign after the keyword.
@@ -133,7 +130,7 @@ func (d DeclSyntax) Equals() token.Token {
 	return d.raw.equals.In(d.Context())
 }
 
-// Value returns the value expression of this pragma.
+// Value returns the value expression of this declaration.
 //
 // May be zero, if the user wrote something like syntax;. It can also be
 // a number or an identifier, for cases like edition = 2024; or syntax = proto2;.
@@ -145,7 +142,7 @@ func (d DeclSyntax) Value() ExprAny {
 	return newExprAny(d.Context(), d.raw.value)
 }
 
-// SetValue sets the expression for this pragma's value.
+// SetValue sets the expression for this declaration's value.
 //
 // If passed zero, this clears the value (e.g., for syntax = ;).
 func (d DeclSyntax) SetValue(expr ExprAny) {
@@ -170,7 +167,7 @@ func (d DeclSyntax) SetOptions(opts CompactOptions) {
 	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
 }
 
-// Semicolon returns this pragma's ending semicolon.
+// Semicolon returns this declaration's ending semicolon.
 //
 // May be zero, if the user forgot it.
 func (d DeclSyntax) Semicolon() token.Token {
@@ -187,7 +184,7 @@ func (d DeclSyntax) Span() report.Span {
 		return report.Span{}
 	}
 
-	return report.Join(d.Keyword(), d.Equals(), d.Value(), d.Semicolon())
+	return report.Join(d.KeywordToken(), d.Equals(), d.Value(), d.Semicolon())
 }
 
 func wrapDeclSyntax(c Context, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
@@ -219,8 +216,13 @@ type DeclPackageArgs struct {
 	Semicolon token.Token
 }
 
-// Keyword returns the "package" keyword for this declaration.
-func (d DeclPackage) Keyword() token.Token {
+// Keyword returns the keyword for this declaration.
+func (d DeclPackage) Keyword() keyword.Keyword {
+	return d.KeywordToken().Keyword()
+}
+
+// KeywordToken returns the "package" token for this declaration.
+func (d DeclPackage) KeywordToken() token.Token {
 	if d.IsZero() {
 		return token.Zero
 	}
@@ -274,7 +276,7 @@ func (d DeclPackage) Span() report.Span {
 		return report.Span{}
 	}
 
-	return report.Join(d.Keyword(), d.Path(), d.Semicolon())
+	return report.Join(d.KeywordToken(), d.Path(), d.Semicolon())
 }
 
 func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
@@ -306,8 +308,13 @@ type DeclImportArgs struct {
 	Semicolon  token.Token
 }
 
-// Keyword returns the "import" keyword for this pragma.
-func (d DeclImport) Keyword() token.Token {
+// Keyword returns the keyword for this declaration.
+func (d DeclImport) Keyword() keyword.Keyword {
+	return d.KeywordToken().Keyword()
+}
+
+// KeywordToken returns the "import" keyword for this declaration.
+func (d DeclImport) KeywordToken() token.Token {
 	if d.IsZero() {
 		return token.Zero
 	}
@@ -315,10 +322,15 @@ func (d DeclImport) Keyword() token.Token {
 	return d.raw.keyword.In(d.Context())
 }
 
-// Keyword returns the modifier keyword for this pragma.
+// Modifier returns the modifier keyword for this declaration.
+func (d DeclImport) Modifier() keyword.Keyword {
+	return d.ModifierToken().Keyword()
+}
+
+// ModifierToken returns the modifier token for this declaration.
 //
 // May be zero if there is no modifier.
-func (d DeclImport) Modifier() token.Token {
+func (d DeclImport) ModifierToken() token.Token {
 	if d.IsZero() {
 		return token.Zero
 	}
@@ -328,12 +340,12 @@ func (d DeclImport) Modifier() token.Token {
 
 // IsSyntax checks whether this is an "import public".
 func (d DeclImport) IsPublic() bool {
-	return d.Modifier().Text() == "public"
+	return d.Modifier() == keyword.Public
 }
 
 // IsEdition checks whether this is an "import weak".
 func (d DeclImport) IsWeak() bool {
-	return d.Modifier().Text() == "weak"
+	return d.Modifier() == keyword.Weak
 }
 
 // ImportPath returns the file path for this import as a string.
@@ -389,7 +401,7 @@ func (d DeclImport) Span() report.Span {
 		return report.Span{}
 	}
 
-	return report.Join(d.Keyword(), d.Modifier(), d.ImportPath(), d.Semicolon())
+	return report.Join(d.KeywordToken(), d.ModifierToken(), d.ImportPath(), d.Semicolon())
 }
 
 func wrapDeclImport(c Context, ptr arena.Pointer[rawDeclImport]) DeclImport {

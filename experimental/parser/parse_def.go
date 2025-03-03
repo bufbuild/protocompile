@@ -20,6 +20,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 type defParser struct {
@@ -116,7 +118,7 @@ func (p *defParser) parse() ast.DeclDef {
 
 	// If we didn't see any braces, this def needs to be ended by a semicolon.
 	if !skipSemi {
-		semi, err := p.Punct(p.c, ";", taxa.Def.After())
+		semi, err := parseSemi(p.parser, p.c, taxa.Def)
 		p.args.Semicolon = semi
 		if err != nil {
 			p.Error(err)
@@ -145,8 +147,15 @@ func (p *defParser) parse() ast.DeclDef {
 	if !p.outputs.IsZero() {
 		parseTypeList(p.parser, p.outputs, def.WithSignature().Outputs(), taxa.MethodOuts)
 	} else if !p.outputTy.IsZero() {
+		span := p.outputTy.Span()
 		p.Errorf("missing `(...)` around method return type").Apply(
-			report.Snippetf(p.outputTy, "help: replace this with `(%s)`", p.outputTy.Span().Text()),
+			report.Snippet(span),
+			report.SuggestEdits(
+				span,
+				"insert (...) around the return type",
+				report.Edit{Start: 0, End: 0, Replace: "("},
+				report.Edit{Start: span.Len(), End: span.Len(), Replace: ")"},
+			),
 		)
 		seq.Append(def.WithSignature().Outputs(), p.outputTy)
 	}
@@ -181,7 +190,7 @@ func (p *defParser) parse() ast.DeclDef {
 type defInputs struct{}
 
 func (defInputs) what(*defParser) taxa.Noun  { return taxa.MethodIns }
-func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "(" }
+func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Keyword() == keyword.Parens }
 
 func (defInputs) parse(p *defParser) report.Span {
 	next := p.c.Next()
@@ -200,15 +209,22 @@ func (defInputs) prev(p *defParser) report.Span { return p.inputs.Span() }
 type defOutputs struct{}
 
 func (defOutputs) what(*defParser) taxa.Noun  { return taxa.MethodOuts }
-func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Text() == "returns" }
+func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Keyword() == keyword.Returns }
 
 func (defOutputs) parse(p *defParser) report.Span {
 	// Note that the inputs and outputs of a method are parsed
 	// separately, so foo(bar) and foo returns (bar) are both possible.
 	returns := p.c.Next()
+	if p.args.Returns.IsZero() {
+		p.args.Returns = returns
+	}
 
 	var ty ast.TypeAny
-	list, err := p.Punct(p.c, "(", taxa.KeywordReturns.After())
+	list, err := punctParser{
+		parser: p.parser, c: p.c,
+		want:  keyword.Parens,
+		where: taxa.KeywordReturns.After(),
+	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
@@ -220,7 +236,6 @@ func (defOutputs) parse(p *defParser) report.Span {
 	}
 
 	if p.outputs.IsZero() && p.outputTy.IsZero() {
-		p.args.Returns = returns
 		if !list.IsZero() {
 			p.outputs = list
 		} else {
@@ -265,13 +280,13 @@ func (defValue) canStart(p *defParser) bool {
 	// However, if we've already seen {}, [], or another value, we break
 	// instead, since this suggests we're peeking the next def.
 	switch {
-	case next.Text() == "=":
+	case next.Keyword() == keyword.Equals:
 		return true
 	case canStartPath(next):
 		// If the next "expression" looks like a path, this likelier to be
 		// due to a missing semicolon than a missing =.
 		return false
-	case next.Text() == "[", next.Text() == "{":
+	case slicesx.Among(next.Keyword(), keyword.Brackets, keyword.Braces, keyword.Angles):
 		// Exclude the two followers after this one.
 		return false
 	case canStartExpr(next):
@@ -284,7 +299,12 @@ func (defValue) canStart(p *defParser) bool {
 }
 
 func (defValue) parse(p *defParser) report.Span {
-	eq, err := p.Punct(p.c, "=", taxa.Def.In())
+	eq, err := punctParser{
+		parser: p.parser, c: p.c,
+		want:   keyword.Equals,
+		where:  taxa.Def.In(),
+		insert: justifyBetween,
+	}.parse()
 	if err != nil {
 		p.Error(err)
 	}

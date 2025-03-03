@@ -34,9 +34,7 @@ decls:
                   start.literal.int_value: 4
                   end.literal.int_value: 5
               - literal.int_value: 6
-        - range:
-            kind: KIND_RESERVED
-            ranges: [{ literal.int_value: 1 }, { literal.string_value: "foo" }]
+        - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 1 }] }
         - range:
             kind: KIND_RESERVED
             ranges:
@@ -45,44 +43,17 @@ decls:
               - range:
                   start.literal.int_value: 5
                   end.literal.int_value: 7
-              - path.components: [{ ident: "foo" }]
-              - literal.string_value: "bar"
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - range:
+                  start.literal.int_value: 10
+                  end.path.components: [{ ident: "max" }]
   - def:
       kind: KIND_ENUM
       name.components: [{ ident: "Foo" }]
       body.decls:
-        - range: { kind: KIND_EXTENSIONS, ranges: [{ literal.int_value: 1 }] }
-        - range:
-            kind: KIND_EXTENSIONS
-            ranges:
-              - range:
-                  start.literal.int_value: 1
-                  end.literal.int_value: 2
-        - range:
-            kind: KIND_EXTENSIONS
-            ranges:
-              - range:
-                  start.prefixed: { prefix: PREFIX_MINUS, expr.literal.int_value: 5 }
-                  end.literal.int_value: 32
-        - range:
-            kind: KIND_EXTENSIONS
-            ranges:
-              - range:
-                  start.literal.int_value: 0
-                  end.path.components: [{ ident: "max" }]
-        - range:
-            kind: KIND_EXTENSIONS
-            ranges:
-              - literal.int_value: 1
-              - literal.int_value: 2
-              - literal.int_value: 3
-              - range:
-                  start.literal.int_value: 4
-                  end.literal.int_value: 5
-              - literal.int_value: 6
-        - range:
-            kind: KIND_RESERVED
-            ranges: [{ literal.int_value: 1 }, { literal.string_value: "foo" }]
+        - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 1 }] }
         - range:
             kind: KIND_RESERVED
             ranges:
@@ -91,5 +62,9 @@ decls:
               - range:
                   start.literal.int_value: 5
                   end.literal.int_value: 7
-              - path.components: [{ ident: "foo" }]
-              - literal.string_value: "bar"
+        - range:
+            kind: KIND_RESERVED
+            ranges:
+              - range:
+                  start.literal.int_value: 10
+                  end.path.components: [{ ident: "max" }]

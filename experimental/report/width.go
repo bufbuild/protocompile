@@ -16,14 +16,15 @@ package report
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/rivo/uniseg"
 
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 const (
@@ -47,26 +48,26 @@ func wordWrap(text string, width int) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		// Split along lines first, since those are hard breaks we don't plan
 		// to change.
-		stringsx.Lines(text)(func(line string) bool {
+		for line := range stringsx.Lines(text) {
 			var nextIsSpace bool
 			var column, cursor int
 
-			stringsx.PartitionKey(line, unicode.IsSpace)(func(start int, chunk string) bool {
+			for start, chunk := range stringsx.PartitionKey(line, unicode.IsSpace) {
 				isSpace := nextIsSpace
 				nextIsSpace = !nextIsSpace
 
 				if isSpace && column == 0 {
-					return true
+					continue
 				}
 
 				w := stringWidth(column, chunk, true, nil) - column
 				if column+w <= width {
 					column += w
-					return true
+					continue
 				}
 
 				if !yield(strings.TrimSpace(line[cursor:start])) {
-					return false
+					return
 				}
 
 				if isSpace {
@@ -76,12 +77,13 @@ func wordWrap(text string, width int) iter.Seq[string] {
 					cursor = start
 					column = w
 				}
-				return true
-			})
+			}
 
 			rest := line[cursor:]
-			return rest == "" || yield(rest)
-		})
+			if rest != "" && !yield(rest) {
+				return
+			}
+		}
 	}
 }
 
@@ -90,32 +92,39 @@ func wordWrap(text string, width int) iter.Seq[string] {
 func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.
-	for text != "" {
-		nextTab := strings.IndexByte(text, '\t')
-		haveTab := nextTab != -1
-		next := text
-		if haveTab {
-			next, text = text[:nextTab], text[nextTab+1:]
-		} else {
-			text = ""
+	for i, next := range iterx.Enumerate(stringsx.Split(text, '\t')) {
+		if i > 0 {
+			tab := TabstopWidth - (column % TabstopWidth)
+			column += tab
+			if out != nil {
+				out.WriteSpaces(tab)
+			}
 		}
 
 		if !allowNonPrint {
 			// Handle unprintable characters. We render those as <U+NNNN>.
 			for next != "" {
-				nextNonPrint := strings.IndexFunc(next, NonPrint)
-				chunk := next
-				if nextNonPrint != -1 {
-					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
-					nonPrint, runeLen := utf8.DecodeRuneInString(next)
-					next = next[runeLen:]
+				pos, nextNonPrint, nonPrint := iterx.Find2(stringsx.Runes(next), func(_ int, r rune) bool {
+					return r == -1 || NonPrint(r)
+				})
 
-					escape := fmt.Sprintf("<U+%04X>", nonPrint)
+				chunk := next
+				if pos != -1 {
+					chunk, next = next[:nextNonPrint], next[nextNonPrint:]
+
+					var escape string
+					if nonPrint == -1 {
+						escape = fmt.Sprintf("<%02X>", next[0])
+						next = next[1:]
+					} else {
+						escape = fmt.Sprintf("<U+%04X>", nonPrint)
+						next = next[utf8.RuneLen(nonPrint):]
+					}
+
 					if out != nil {
 						out.WriteString(chunk)
 						out.WriteString(escape)
 					}
-
 					column += uniseg.StringWidth(chunk) + len(escape)
 				} else {
 					if out != nil {
@@ -131,14 +140,7 @@ func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 				out.WriteString(next)
 			}
 		}
-
-		if haveTab {
-			tab := TabstopWidth - (column % TabstopWidth)
-			column += tab
-			if out != nil {
-				out.WriteSpaces(tab)
-			}
-		}
 	}
+
 	return column
 }

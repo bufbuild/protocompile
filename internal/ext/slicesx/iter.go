@@ -15,28 +15,16 @@
 package slicesx
 
 import (
+	"iter"
+	"slices"
+
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
-
-// Collect polyfills [slices.Collect].
-func Collect[E any](seq iter.Seq[E]) []E {
-	return AppendSeq[[]E](nil, seq)
-}
-
-// AppendSeq polyfills [slices.AppendSeq].
-func AppendSeq[S ~[]E, E any](s S, seq iter.Seq[E]) []E {
-	seq(func(v E) bool {
-		s = append(s, v)
-		return true
-	})
-	return s
-}
 
 // Map is a helper for generating a mapped iterator over a slice, to avoid
 // a noisy call to [Values].
 func Map[S ~[]E, E, U any](s S, f func(E) U) iter.Seq[U] {
-	return iterx.Map(Values(s), f)
+	return iterx.Map(slices.Values(s), f)
 }
 
 // PartitionFunc returns an iterator of the largest substrings of s of equal
@@ -83,39 +71,6 @@ func PartitionKey[S ~[]E, E any, K comparable](s S, key func(E) K) iter.Seq2[int
 
 		if start < len(s) {
 			yield(start, s[start:])
-		}
-	}
-}
-
-// SplitFunc splits a slice according to the given predicate.
-//
-// Whenever p returns true, this function will yield all prior elements not
-// yet yielded.
-func SplitFunc[S ~[]E, E any](s S, p func(int, E) bool) iter.Seq[S] {
-	return func(yield func(S) bool) {
-		var start int
-		for i, r := range s {
-			if !p(i, r) {
-				continue
-			}
-			if !yield(s[start:i]) {
-				return
-			}
-			start = i
-		}
-		if start < len(s) {
-			yield(s[start:])
-		}
-	}
-}
-
-// Values is a polyfill for [slices.Values].
-func Values[S ~[]E, E any](s S) iter.Seq[E] {
-	return func(yield func(E) bool) {
-		for _, v := range s {
-			if !yield(v) {
-				return
-			}
 		}
 	}
 }

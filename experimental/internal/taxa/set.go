@@ -16,11 +16,10 @@ package taxa
 
 import (
 	"fmt"
+	"iter"
 	"math/bits"
+	"slices"
 	"strings"
-
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Set is a set of [Noun] values, implicitly ordered by the [Noun] values'
@@ -97,7 +96,7 @@ func (s Set) All() iter.Seq[Noun] {
 //
 // If the set is empty, returns the empty string.
 func (s Set) Join(conj string) string {
-	elems := slicesx.Collect(s.All())
+	elems := slices.Collect(s.All())
 
 	var out strings.Builder
 	switch len(elems) {
