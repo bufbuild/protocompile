@@ -72,7 +72,6 @@ func (o CompactOptions) Entries() Commas[Option] {
 	if o.IsZero() {
 		return slice{}
 	}
-
 	return slice{
 		ctx: o.Context(),
 		SliceInserter: seq.NewSliceInserter(

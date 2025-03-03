@@ -74,37 +74,67 @@ func FromKeyword(kw keyword.Keyword) Name {
 }
 
 // String implements [fmt.Stringer].
-func (v Name) String() string {
-	if !v.InRange() {
-		return fmt.Sprintf("Name(%d)", int(v))
+func (n Name) String() string {
+	if !n.InRange() {
+		return fmt.Sprintf("Name(%d)", int(n))
 	}
-	return keyword.Keyword(v).String()
+	return keyword.Keyword(n).String()
 }
 
 // GoString implements [fmt.GoStringer].
-func (v Name) GoString() string {
-	if !v.InRange() {
-		return fmt.Sprintf("predeclared.Name(%d)", int(v))
+func (n Name) GoString() string {
+	if !n.InRange() {
+		return fmt.Sprintf("predeclared.Name(%d)", int(n))
 	}
-	return keyword.Keyword(v).GoString()
+	return keyword.Keyword(n).GoString()
 }
 
 // InRange returns whether this name value is within the range of declared
 // values.
-func (v Name) InRange() bool {
-	return v == Unknown || (v >= Int32 && v <= Max)
+func (n Name) InRange() bool {
+	return n == Unknown || (n >= Int32 && n <= Max)
 }
 
-// IsScalar returns whether this predeclared name represents one of the scalar
-// types.
-func (v Name) IsScalar() bool {
-	return v >= Int32 && v <= Bytes
+// IsScalar returns whether a predeclared name corresponds to one of the
+// primitive scalar types.
+func (n Name) IsScalar() bool {
+	return n >= Int32 && n <= Bytes
+}
+
+// IsInt returns whether this is an integer type.
+func (n Name) IsInt() bool {
+	return n >= Int32 && n <= SFixed64
+}
+
+// IsUnsigned returns whether this is an unsigned integer type.
+func (n Name) IsUnsigned() bool {
+	switch n {
+	case UInt32, UInt64, Fixed32, Fixed64:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsUnsigned returns whether this is a signed integer type.
+func (n Name) IsSigned() bool {
+	return n.IsInt() && !n.IsUnsigned()
+}
+
+// IsFloat returns whether this is a floating-point type.
+func (n Name) IsFloat() bool {
+	return n == Float32 || n == Float64
+}
+
+// IsString returns whether this is a string type (string or bytes).
+func (n Name) IsString() bool {
+	return n == String || n == Bytes
 }
 
 // IsMapKey returns whether this predeclared name represents one of the map key
 // types.
-func (v Name) IsMapKey() bool {
-	return (v >= Int32 && v <= SFixed64) || v == Bool || v == String
+func (n Name) IsMapKey() bool {
+	return (n >= Int32 && n <= SFixed64) || n == Bool || n == String
 }
 
 // Lookup looks up a predefined identifier by name.
