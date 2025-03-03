@@ -25,6 +25,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -305,8 +306,7 @@ type window struct {
 	// The byte offset range this window's text occupies in the containing
 	// source File.
 	offsets [2]int
-	// A list of all underline elements in this window. Must be sorted
-	// according to cmpUnderlines.
+	// A list of all underline elements in this window.
 	underlines []underline
 	multilines []multiline
 }
@@ -344,8 +344,7 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 				end:        locations[i][1].Line,
 				startWidth: locations[i][0].Column,
 				endWidth:   locations[i][1].Column,
-				level:      noteLevel,
-				message:    snippet.message,
+				level:      noteLevel, message: snippet.message,
 			})
 			ml := &w.multilines[len(w.multilines)-1]
 
@@ -406,8 +405,16 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 		}
 	}
 
-	slices.SortFunc(w.underlines, cmpUnderlines)
-	slices.SortFunc(w.multilines, cmpMultilines)
+	slices.SortFunc(w.underlines, cmpx.Join(
+		cmpx.Key(func(u underline) int { return u.line }),
+		cmpx.Key(func(u underline) Level { return u.level }),
+		cmpx.Key(func(u underline) int { return u.Len() }),
+		cmpx.Key(func(u underline) int { return u.start }),
+	))
+	slices.SortFunc(w.multilines, cmpx.Join(
+		cmpx.Key(func(m multiline) int { return m.start }),
+		cmpx.Key(func(m multiline) int { return -m.end }), // Descending order.
+	))
 	return w
 }
 
@@ -574,9 +581,7 @@ func (r *renderer) window(w *window) {
 			// in a whole diagnostic, much less five snippets that share a line, so
 			// this shouldn't be an issue.
 			restSorted := slices.Clone(rest[idx:])
-			slices.SortFunc(restSorted, func(a, b *underline) int {
-				return a.start - b.start
-			})
+			slices.SortFunc(restSorted, cmpx.Key(func(u *underline) int { return u.start }))
 
 			var nonColorLen int
 			for _, ul := range restSorted {
@@ -866,35 +871,11 @@ func (u underline) Len() int {
 	return u.end - u.start
 }
 
-// cmpUnderliens sorts ascending on line, then level, then length, then
-// start column.
-func cmpUnderlines(a, b underline) int {
-	if diff := a.line - b.line; diff != 0 {
-		return diff
-	}
-	if diff := a.level - b.level; diff != 0 {
-		return int(diff)
-	}
-	if diff := a.Len() - b.Len(); diff != 0 {
-		return diff
-	}
-	return a.start - b.start
-}
-
 type multiline struct {
 	start, end           int
 	startWidth, endWidth int
 	level                Level
 	message              string
-}
-
-// cmpMultilines sorts ascending on line, then descending on end. This sort
-// order is intended to promote visual nesting of multis from left to right.
-func cmpMultilines(a, b multiline) int {
-	if diff := a.start - b.start; diff != 0 {
-		return diff
-	}
-	return b.end - a.end
 }
 
 func (r *renderer) sidebar(bars, lineno, slashAt int, multis []*multiline) string {
