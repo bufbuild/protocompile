@@ -60,15 +60,12 @@ func (p Path) Absolute() bool {
 //
 // If called on zero or a relative path, returns p.
 func (p Path) ToRelative() Path {
-	p.Components(func(pc PathComponent) bool {
-		if pc.IsEmpty() {
-			// Skip path components until we see one that is non-empty.
-			return true
+	for pc := range p.Components {
+		if !pc.IsEmpty() {
+			p.raw.Start = pc.name
+			break
 		}
-
-		p.raw.Start = pc.name
-		return false
-	})
+	}
 	return p
 }
 
@@ -118,30 +115,30 @@ func (p Path) Components(yield func(PathComponent) bool) {
 
 	var sep token.Token
 	var broken bool
-	token.NewCursorAt(first).Rest()(func(tok token.Token) bool {
+	for tok := range token.NewCursorAt(first).Rest() {
 		if tok.ID() > p.raw.End {
 			// We've reached the end of the path.
-			return false
+			break
 		}
+
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.IsZero() {
 				// Uh-oh, empty path component!
 				if !yield(PathComponent{p.withContext, sep.ID(), 0}) {
 					broken = true
-					return false
+					break
 				}
 			}
 			sep = tok
-			return true
+			continue
 		}
 
 		if !yield(PathComponent{p.withContext, sep.ID(), tok.ID()}) {
 			broken = true
-			return false
+			break
 		}
 		sep = token.Zero
-		return true
-	})
+	}
 	if !broken && !sep.IsZero() {
 		yield(PathComponent{p.withContext, sep.ID(), 0})
 	}
@@ -166,11 +163,11 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 	}
 
 	var prev PathComponent
-	p.Components(func(pc PathComponent) bool {
+	for pc := range p.Components {
 		if n > 0 {
 			prev = pc
 			n--
-			return true
+			continue
 		}
 
 		prefix = p
@@ -187,8 +184,8 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 			suffix.raw.Start = pc.name
 		}
 
-		return false
-	})
+		break
+	}
 
 	return prefix, suffix
 }

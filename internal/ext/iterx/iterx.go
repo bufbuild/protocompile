@@ -23,13 +23,12 @@ import (
 // Take returns an iterator over the first n elements of a sequence.
 func Take[T any](seq iter.Seq[T], n int) iter.Seq[T] {
 	return func(yield func(T) bool) {
-		seq(func(v T) bool {
-			if n > 0 && yield(v) {
-				n--
-				return true
+		for v := range seq {
+			if n == 0 || !yield(v) {
+				return
 			}
-			return false
-		})
+			n--
+		}
 	}
 }
 
@@ -56,15 +55,12 @@ func Strings[T any](seq iter.Seq[T]) iter.Seq[string] {
 // Chain returns an iterator that calls a sequence of iterators in sequence.
 func Chain[T any](seqs ...iter.Seq[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
-		var done bool
 		for _, seq := range seqs {
-			if done {
-				return
+			for v := range seq {
+				if !yield(v) {
+					return
+				}
 			}
-			seq(func(v T) bool {
-				done = !yield(v)
-				return !done
-			})
 		}
 	}
 }

@@ -48,26 +48,26 @@ func wordWrap(text string, width int) iter.Seq[string] {
 	return func(yield func(string) bool) {
 		// Split along lines first, since those are hard breaks we don't plan
 		// to change.
-		stringsx.Lines(text)(func(line string) bool {
+		for line := range stringsx.Lines(text) {
 			var nextIsSpace bool
 			var column, cursor int
 
-			stringsx.PartitionKey(line, unicode.IsSpace)(func(start int, chunk string) bool {
+			for start, chunk := range stringsx.PartitionKey(line, unicode.IsSpace) {
 				isSpace := nextIsSpace
 				nextIsSpace = !nextIsSpace
 
 				if isSpace && column == 0 {
-					return true
+					continue
 				}
 
 				w := stringWidth(column, chunk, true, nil) - column
 				if column+w <= width {
 					column += w
-					return true
+					continue
 				}
 
 				if !yield(strings.TrimSpace(line[cursor:start])) {
-					return false
+					return
 				}
 
 				if isSpace {
@@ -77,12 +77,13 @@ func wordWrap(text string, width int) iter.Seq[string] {
 					cursor = start
 					column = w
 				}
-				return true
-			})
+			}
 
 			rest := line[cursor:]
-			return rest == "" || yield(rest)
-		})
+			if rest != "" && !yield(rest) {
+				return
+			}
+		}
 	}
 }
 
@@ -91,14 +92,13 @@ func wordWrap(text string, width int) iter.Seq[string] {
 func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 	// We can't just use StringWidth, because that doesn't respect tabstops
 	// correctly.
-	for text != "" {
-		nextTab := strings.IndexByte(text, '\t')
-		haveTab := nextTab != -1
-		next := text
-		if haveTab {
-			next, text = text[:nextTab], text[nextTab+1:]
-		} else {
-			text = ""
+	for i, next := range iterx.Enumerate(stringsx.Split(text, '\t')) {
+		if i > 0 {
+			tab := TabstopWidth - (column % TabstopWidth)
+			column += tab
+			if out != nil {
+				out.WriteSpaces(tab)
+			}
 		}
 
 		if !allowNonPrint {
@@ -140,14 +140,7 @@ func stringWidth(column int, text string, allowNonPrint bool, out *writer) int {
 				out.WriteString(next)
 			}
 		}
-
-		if haveTab {
-			tab := TabstopWidth - (column % TabstopWidth)
-			column += tab
-			if out != nil {
-				out.WriteSpaces(tab)
-			}
-		}
 	}
+
 	return column
 }

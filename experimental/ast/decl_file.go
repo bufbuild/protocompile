@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // File is the top-level AST node for a Protobuf file.
@@ -38,44 +39,33 @@ type File struct {
 }
 
 // Syntax returns this file's declaration, if it has one.
-func (f File) Syntax() (syntax DeclSyntax) {
-	seq.Values(f.Decls())(func(d DeclAny) bool {
+func (f File) Syntax() DeclSyntax {
+	for d := range seq.Values(f.Decls()) {
 		if s := d.AsSyntax(); !s.IsZero() {
-			syntax = s
-			return false
+			return s
 		}
-		return true
-	})
-	return
+	}
+	return DeclSyntax{}
 }
 
 // Package returns this file's package declaration, if it has one.
-func (f File) Package() (pkg DeclPackage) {
-	seq.Values(f.Decls())(func(d DeclAny) bool {
+func (f File) Package() DeclPackage {
+	for d := range seq.Values(f.Decls()) {
 		if p := d.AsPackage(); !p.IsZero() {
-			pkg = p
-			return false
+			return p
 		}
-		return true
-	})
-	return
+	}
+	return DeclPackage{}
 }
 
 // Imports returns an iterator over this file's import declarations.
 func (f File) Imports() iter.Seq2[int, DeclImport] {
-	return func(yield func(int, DeclImport) bool) {
-		var i int
-		seq.Values(f.Decls())(func(d DeclAny) bool {
-			if imp := d.AsImport(); !imp.IsZero() {
-				if !yield(i, imp) {
-					return false
-				}
-				i++
-			}
-
-			return true
-		})
-	}
+	return iterx.FilterMap2(seq.All(f.Decls()), func(i int, d DeclAny) (int, DeclImport, bool) {
+		if imp := d.AsImport(); !imp.IsZero() {
+			return i, imp, true
+		}
+		return 0, DeclImport{}, false
+	})
 }
 
 // DeclSyntax represents a language declaration, such as the syntax or edition
