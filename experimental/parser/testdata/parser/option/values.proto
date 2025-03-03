@@ -1,0 +1,90 @@
+// Copyright 2020-2024 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package test;
+
+option x = 0;
+option x = 42.4;
+option x = inf;
+option x = nan;
+option x = -inf;
+option x = -nan;
+option x = true;
+option x = false;
+option x = Infinity;
+option x = -Infinity;
+option x = foo.bar;
+option x = foo.(foo.bar).bar;
+option x = .foo;
+option x = x to y;
+
+option x = [];
+option x = [1];
+option x = [1, 2];
+
+option x = <>:
+option x = <a: 42>;
+
+option x = {};
+option x = {
+    x: 0
+    x: 42.4
+    x: inf
+    x: nan
+    x: -inf
+    x: -nan
+    x: true
+    x: false
+    x: Infinity
+    x: -Infinity
+    x: foo.bar
+    x: foo.(foo.bar).bar
+    x: .foo
+    
+    x: x to y
+
+    x
+
+    x: []
+    x: [1]
+    x: [1, 2]
+    x: [1, 2, 3, [4, 5, [6]]]
+    x: [
+        [1],
+    ]
+
+    x: <>
+    x: <a: 42>
+    x: <a: <a: 42>>
+
+    "ident": 42
+    "???": 42
+    42: 42
+    x.y: 42
+    (x.y): 42
+    .x: 42
+
+    [x]: 42
+    [x.y]: 42
+    [.x.y]: 42
+    [x, y, z]: 42
+    []: 42
+    [buf.build/x.y]: 42
+    [buf.build/x/y]: 42
+
+    x [{x: 5}, 1, <x: 5>, 2, 3],
+};
+

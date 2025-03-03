@@ -20,15 +20,24 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
 func IsFloat(tok token.Token) bool {
-	digits := tok.Text()
+	return IsFloatText(tok.Text())
+}
+
+// IsFloatText checks whether or not the given number text is intended to be
+// a floating-point literal.
+func IsFloatText(digits string) bool {
+	needle := ".Ee"
 	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
-		return strings.ContainsRune(digits, '.')
+		needle = ".Pp"
 	}
-	return strings.ContainsAny(digits, ".eE")
+	return strings.ContainsAny(digits, needle)
 }
 
 // Classify attempts to classify node for use in a diagnostic.
@@ -41,12 +50,19 @@ func Classify(node report.Spanner) Noun {
 	case ast.File:
 		return TopLevel
 	case ast.Path:
-		if id := node.AsIdent(); !id.IsZero() {
-			return classifyToken(id)
+		if first, ok := iterx.OnlyOne(node.Components); ok && first.Separator().IsZero() {
+			if id := first.AsIdent(); !id.IsZero() {
+				return classifyToken(id)
+			}
+			if !first.AsExtension().IsZero() {
+				return ExtensionName
+			}
 		}
+
 		if node.Absolute() {
 			return FullyQualifiedName
 		}
+
 		return QualifiedName
 
 	case ast.DeclAny:
@@ -114,6 +130,8 @@ func Classify(node report.Spanner) Noun {
 			return Classify(node.AsMethod())
 		case ast.DefKindOneof:
 			return Classify(node.AsOneof())
+		case ast.DefKindGroup:
+			return Classify(node.AsGroup())
 		default:
 			return Def
 		}
@@ -131,18 +149,18 @@ func Classify(node report.Spanner) Noun {
 			first = pc
 			return false
 		})
-
 		if !first.AsExtension().IsZero() {
 			return CustomOption
-		} else {
-			return Option
 		}
-	case ast.DefField, ast.DefGroup:
+		return Option
+	case ast.DefField:
 		return Field
+	case ast.DefGroup:
+		return Group
 	case ast.DefEnumValue:
 		return EnumValue
 	case ast.DefMethod:
-		return Service
+		return Method
 	case ast.DefOneof:
 		return Oneof
 
@@ -197,6 +215,16 @@ func Classify(node report.Spanner) Noun {
 
 	case ast.CompactOptions:
 		return CompactOptions
+
+	case ast.Signature:
+		switch {
+		case node.Inputs().IsZero() == node.Outputs().IsZero():
+			return Signature
+		case !node.Inputs().IsZero():
+			return MethodIns
+		default:
+			return MethodOuts
+		}
 	}
 
 	return Unknown
@@ -209,7 +237,10 @@ func classifyToken(tok token.Token) Noun {
 	case token.Comment:
 		return Comment
 	case token.Ident:
-		return Keyword(tok.Text())
+		if kw := Keyword(tok.Keyword()); kw != Unknown {
+			return kw
+		}
+		return Ident
 	case token.String:
 		return String
 	case token.Number:
@@ -218,122 +249,77 @@ func classifyToken(tok token.Token) Noun {
 		}
 		return Int
 	case token.Punct:
-		return Punct(tok.Text(), !tok.IsLeaf())
+		return Keyword(tok.Keyword())
 	default:
 		return Unrecognized
 	}
 }
 
-// Keyword maps the text of a keyword to its [Noun].
-//
-// Returns Ident if this is not considered a keyword for the purposes of
-// diagnostics.
-func Keyword(text string) Noun {
-	switch text {
-	case "syntax":
-		return KeywordSyntax
-	case "edition":
-		return KeywordEdition
-	case "import":
-		return KeywordImport
-	case "weak":
-		return KeywordWeak
-	case "public":
-		return KeywordPublic
-	case "package":
-		return KeywordPackage
-
-	case "option":
-		return KeywordOption
-	case "message":
-		return KeywordMessage
-	case "enum":
-		return KeywordEnum
-	case "service":
-		return KeywordService
-	case "extend":
-		return KeywordExtend
-	case "oneof":
-		return KeywordOneof
-
-	case "extensions":
-		return KeywordExtensions
-	case "reserved":
-		return KeywordReserved
-	case "to":
-		return KeywordTo
-	case "rpc":
-		return KeywordRPC
-	case "returns":
-		return KeywordReturns
-
-	case "repeated":
-		return KeywordRepeated
-	case "optional":
-		return KeywordOptional
-	case "required":
-		return KeywordRequired
-	case "group":
-		return KeywordGroup
-	case "stream":
-		return KeywordStream
-
-	default:
-		return Ident
-	}
+// Keyword maps a keyword to its [Noun], if it has one.
+func Keyword(kw keyword.Keyword) Noun {
+	n, _ := slicesx.Get(kwToNoun, kw)
+	return n
 }
 
-// Punct maps the text of a punctuator to its [Noun].
-func Punct(text string, isTree bool) Noun {
-	switch text {
-	case ";":
-		return Semicolon
-	case ",":
-		return Comma
-	case "/":
-		return Slash
-	case ":":
-		return Colon
-	case "=":
-		return Equals
-	case "-":
-		return Minus
-	case ".":
-		return Period
+var kwToNoun = []Noun{
+	keyword.Syntax:     KeywordSyntax,
+	keyword.Edition:    KeywordEdition,
+	keyword.Import:     KeywordImport,
+	keyword.Weak:       KeywordWeak,
+	keyword.Public:     KeywordPublic,
+	keyword.Package:    KeywordPackage,
+	keyword.Message:    KeywordMessage,
+	keyword.Enum:       KeywordEnum,
+	keyword.Service:    KeywordService,
+	keyword.Extend:     KeywordExtend,
+	keyword.Option:     KeywordOption,
+	keyword.Group:      KeywordGroup,
+	keyword.Oneof:      KeywordOneof,
+	keyword.Extensions: KeywordExtensions,
+	keyword.Reserved:   KeywordReserved,
+	keyword.RPC:        KeywordRPC,
+	keyword.Returns:    KeywordReturns,
+	keyword.To:         KeywordTo,
+	keyword.Repeated:   KeywordRepeated,
+	keyword.Optional:   KeywordOptional,
+	keyword.Required:   KeywordRequired,
+	keyword.Stream:     KeywordStream,
 
-	case "(":
-		if isTree {
-			return Parens
-		}
-		return LParen
-	case ")":
-		return RParen
+	// TODO: Give these taxa if it turns out they wind up in diagnostics.
+	keyword.Int32:    Unknown,
+	keyword.Int64:    Unknown,
+	keyword.UInt32:   Unknown,
+	keyword.UInt64:   Unknown,
+	keyword.SInt32:   Unknown,
+	keyword.SInt64:   Unknown,
+	keyword.Fixed32:  Unknown,
+	keyword.Fixed64:  Unknown,
+	keyword.SFixed32: Unknown,
+	keyword.SFixed64: Unknown,
+	keyword.Float:    Unknown,
+	keyword.Double:   Unknown,
+	keyword.Bool:     Unknown,
+	keyword.String:   Unknown,
+	keyword.Bytes:    Unknown,
+	keyword.Inf:      Unknown,
+	keyword.NAN:      Unknown,
+	keyword.True:     Unknown,
+	keyword.False:    Unknown,
 
-	case "[":
-		if isTree {
-			return Brackets
-		}
-		return LBracket
-	case "]":
-		return RBracket
+	keyword.Map:      Unknown,
+	keyword.Max:      Unknown,
+	keyword.Default:  Unknown,
+	keyword.JsonName: Unknown,
 
-	case "{":
-		if isTree {
-			return Braces
-		}
-		return LBrace
-	case "}":
-		return RBrace
-
-	case "<":
-		if isTree {
-			return Angles
-		}
-		return LAngle
-	case ">":
-		return RAngle
-
-	default:
-		return Unrecognized
-	}
+	keyword.Semi:     Semi,
+	keyword.Comma:    Comma,
+	keyword.Dot:      Dot,
+	keyword.Slash:    Slash,
+	keyword.Colon:    Colon,
+	keyword.Equals:   Equals,
+	keyword.Minus:    Minus,
+	keyword.Parens:   Parens,
+	keyword.Brackets: Brackets,
+	keyword.Braces:   Braces,
+	keyword.Angles:   Angles,
 }

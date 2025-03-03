@@ -18,8 +18,7 @@ package token
 
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 // Kind identifies what kind of token a particular [Token] is.

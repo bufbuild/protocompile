@@ -5,8 +5,7 @@ package {{.Package}}
 {{with .YAML -}}
 import (
 	"fmt"
-
-	"github.com/bufbuild/protocompile/internal/iter"
+	"iter"
 )
 
 {{range $_, $e := .}}
@@ -78,8 +77,10 @@ var _table_{{$e.Name}}_{{$m.Name}} = [...]string{
 var _table_{{$e.Name}}_{{$m.Name}} = map[string]{{$e.Name}}{
 {{range $e.Values -}}
 {{- with .Alias}}{{continue}}{{end -}}
-{{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{printf "%q" .String}}: {{.Name}},
-{{end -}}
+{{- if contains $m.Skip .Name}}{{continue}}{{end -}}	
+{{- if ne (len .From) 0}}{{$v:=.}}{{range $_, $n := .From}}{{printf "%q" $n}}: {{$v.Name}},
+{{end}}{{else}}{{printf "%q" .String}}: {{.Name}},
+{{end}}{{end -}}
 }
 {{end -}}{{- end -}}
 {{- end -}}{{- end -}}

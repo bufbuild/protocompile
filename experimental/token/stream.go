@@ -15,12 +15,16 @@
 package token
 
 import (
+	"cmp"
 	"fmt"
+	"iter"
 	"math"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/internal/iter"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Stream is a token stream.
@@ -82,6 +86,36 @@ func (s *Stream) All() iter.Seq[Token] {
 	}
 }
 
+// Around returns the tokens around the given offset. It has the following
+// potential return values:
+//
+//  1. offset == 0, returns [Zero], first token.
+//  2. offset == len(File.Text()), returns last token, [Zero].
+//  3. offset is the end of a token. Returns the tokens ending and starting
+//     at offset, respectively.
+//  4. offset is inside of a token tok. Returns tok, tok.
+func (s *Stream) Around(offset int) (Token, Token) {
+	if offset == 0 {
+		return Zero, ID(1).In(s.Context)
+	}
+	if offset == len(s.File.Text()) {
+		return ID(len(s.nats)).In(s.Context), Zero
+	}
+
+	idx, exact := slices.BinarySearchFunc(s.nats, offset, func(n nat, offset int) int {
+		return cmp.Compare(int(n.end), offset)
+	})
+
+	if exact {
+		// We landed between two tokens. idx+1 is the ID of the token that ends
+		// at offset.
+		return ID(idx + 1).In(s.Context), ID(idx + 2).In(s.Context)
+	}
+
+	// We landed in the middle of a token, specifically idx+1.
+	return ID(idx + 1).In(s.Context), ID(idx + 1).In(s.Context)
+}
+
 // Cursor returns a cursor over the natural token stream.
 func (s *Stream) Cursor() *Cursor {
 	return &Cursor{
@@ -128,9 +162,14 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		panic(fmt.Sprintf("protocompile/token: Push() overflowed backing text: %d > %d", end, len(s.Text())))
 	}
 
+	var kw keyword.Keyword
+	if slicesx.Among(kind, Ident, Punct) {
+		kw = keyword.Lookup(s.Text()[prevEnd:end])
+	}
+
 	s.nats = append(s.nats, nat{
-		end:           uint32(prevEnd + length),
-		kindAndOffset: int32(kind) & kindMask,
+		end:      uint32(prevEnd + length),
+		metadata: (int32(kind) & kindMask) | (int32(kw) << keywordShift),
 	})
 
 	return Token{internal.NewWith[Context](s), ID(len(s.nats))}

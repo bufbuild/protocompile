@@ -23,7 +23,6 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
@@ -56,15 +55,16 @@ func TestLexer(t *testing.T) {
 
 		var tsv strings.Builder
 		var count int
-		tsv.WriteString("#\t\tkind\t\toffsets\t\tlinecol\t\ttext\n")
-		ctx.Stream().All()(func(tok token.Token) bool {
+		tsv.WriteString("#\t\tkind\t\tkeyword\t\toffsets\t\tlinecol\t\ttext\n")
+		for tok := range ctx.Stream().All() {
 			count++
 
 			sp := tok.Span()
 			start := ctx.Stream().Location(sp.Start)
 			fmt.Fprintf(
-				&tsv, "%v\t\t%v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
-				int32(tok.ID())-1, tok.Kind(),
+				&tsv, "%v\t\t%v\t\t%#v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
+				int32(tok.ID())-1,
+				tok.Kind(), tok.Keyword(),
 				sp.Start, sp.End,
 				start.Line, start.Column,
 				tok.Text(),
@@ -87,8 +87,7 @@ func TestLexer(t *testing.T) {
 			}
 
 			tsv.WriteByte('\n')
-			return true
-		})
+		}
 		if count > 0 {
 			outputs[0] = tsv.String()
 		}

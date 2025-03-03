@@ -24,7 +24,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
 
@@ -188,7 +187,7 @@ func (r *Report) Canonicalize() {
 		tag  string
 	}
 	var cur key
-	slicesx.Backward(r.Diagnostics)(func(i int, d Diagnostic) bool {
+	slices.Backward(r.Diagnostics)(func(i int, d Diagnostic) bool {
 		if d.tag == "" {
 			return true
 		}
@@ -380,7 +379,7 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 			buf  strings.Builder
 		)
 		frames := runtime.CallersFrames(pc)
-		for i := 0; i < r.Tracing; i++ {
+		for range r.Tracing {
 			frame, more := frames.Next()
 			if frame == zero || !more {
 				break

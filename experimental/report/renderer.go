@@ -224,7 +224,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		return snip.Path()
 	})
 
-	parts(func(i int, snippets []snippet) bool {
+	for i, snippets := range parts {
 		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
@@ -244,7 +244,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 				r.WriteString("\n")
 			}
 			r.suggestion(snippets[0])
-			return true
+			continue
 		}
 
 		// Add a blank line after the file. This gives the diagnostic window some
@@ -254,8 +254,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
 		r.window(window)
-		return true
-	})
+	}
 
 	// Render a remedial file name for spanless errors.
 	if len(d.snippets) == 0 && d.inFile != "" {
@@ -275,10 +274,10 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		slicesx.Map(d.debug, func(s string) footer { return footer{r.ss.bError, "debug", s} }),
 	)
 
-	footers(func(f footer) bool {
+	for f := range footers {
 		isDebug := f.label == "debug"
 		if isDebug && !r.ShowDebug {
-			return true
+			continue
 		}
 
 		r.WriteString("\n")
@@ -290,9 +289,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		} else {
 			r.WriteWrapped(f.text, MaxMessageWidth)
 		}
-
-		return true
-	})
+	}
 
 	r.WriteString(r.ss.reset)
 	r.WriteString("\n\n")
@@ -493,7 +490,7 @@ func (r *renderer) window(w *window) {
 	// Next, we can render the underline parts. This aggregates all underlines
 	// for the same line into rendered chunks
 	parts := slicesx.PartitionKey(w.underlines, func(u underline) int { return u.line })
-	parts(func(_ int, part []underline) bool {
+	for _, part := range parts {
 		cur := &info[part[0].line-w.start]
 		cur.shouldEmit = true
 
@@ -527,7 +524,7 @@ func (r *renderer) window(w *window) {
 
 		// Now, convert the buffer into a proper string.
 		var out strings.Builder
-		slicesx.Partition(buf)(func(_ int, line []byte) bool {
+		for _, line := range slicesx.Partition(buf) {
 			level := Level(line[0])
 			if line[0] == 0 {
 				out.WriteString(r.ss.reset)
@@ -544,8 +541,7 @@ func (r *renderer) window(w *window) {
 					out.WriteByte('^')
 				}
 			}
-			return true
-		})
+		}
 
 		// Next we need to find the message that goes inline with the underlines. This will be
 		// the message belonging to the rightmost underline.
@@ -632,7 +628,7 @@ func (r *renderer) window(w *window) {
 					// If we got here, it means we're going to crop an escape if
 					// we don't do something about it.
 					spaceNeeded := len(writeTo) - lastEsc
-					for i := 0; i < spaceNeeded; i++ {
+					for range spaceNeeded {
 						buf = append(buf, 0)
 					}
 					copy(buf[actualStart+lastEsc+spaceNeeded:], buf[actualStart+lastEsc:])
@@ -642,9 +638,7 @@ func (r *renderer) window(w *window) {
 			}
 			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
 		}
-
-		return true
-	})
+	}
 
 	//nolint:dupword
 	// Now that we've laid out the underlines, we can add the starts and ends of all
@@ -757,20 +751,48 @@ func (r *renderer) window(w *window) {
 		}
 	}
 	for i := range info {
+		printable := func(r rune) bool { return !unicode.IsSpace(r) }
+
 		// At least two of the below conditions must be true for
 		// this line to be shown. Annoyingly, go does not have a conversion
 		// from bool to int...
 		var score int
-		if strings.IndexFunc(lines[i], unicode.IsGraphic) != 0 {
+		if strings.IndexFunc(lines[i], printable) != -1 {
 			score++
 		}
-		if mustEmit[i-1] {
+
+		sameIndent := func(a, b string) bool {
+			if a == "" || b == "" {
+				return true
+			}
+			d1 := strings.IndexFunc(a, printable)
+			if d1 == -1 {
+				d1 = len(a)
+			}
+			d2 := strings.IndexFunc(b, printable)
+			if d2 == -1 {
+				d2 = len(b)
+			}
+			return a[:d1] == b[:d2]
+		}
+
+		if mustEmit[i-1] && sameIndent(lines[i-1], lines[i]) {
 			score++
 		}
-		if mustEmit[i+1] {
+		if mustEmit[i+1] && sameIndent(lines[i+1], lines[i]) {
 			score++
 		}
 		if score >= 2 {
+			info[i].shouldEmit = true
+		}
+	}
+	// Ensure that there are no single-line elided chunks.
+	// This necessarily results in a fixed point after one iteration.
+	for i := range info {
+		mustEmit[i] = info[i].shouldEmit
+	}
+	for i := range info {
+		if mustEmit[i-1] && mustEmit[i+1] {
 			info[i].shouldEmit = true
 		}
 	}
@@ -814,7 +836,7 @@ func (r *renderer) window(w *window) {
 				slashAt = len(prevSidebar) - 1
 			}
 
-			r.WriteString(r.sidebar(sidebarLen, lineno, slashAt, cur.sidebar))
+			r.WriteString(r.sidebar(sidebarLen, lastEmit+1, slashAt, info[lastEmit-w.start].sidebar))
 		}
 
 		// Ok, we are definitely printing this line out.
@@ -908,15 +930,11 @@ func (r *renderer) suggestion(snip snippet) {
 
 	if multiline {
 		span, hunks := unifiedDiff(snip.Span, snip.edits)
-		aLine := span.StartLoc().Line
-		bLine := aLine
-		for i, hunk := range hunks {
-			// Trim a single newline before and after hunk. This helps deal with
-			// cases where a newline gets duplicated across hunks of different
-			// type.
-			hunk.content, _ = strings.CutPrefix(hunk.content, "\n")
-			hunk.content, _ = strings.CutSuffix(hunk.content, "\n")
+		startLine := span.StartLoc().Line
 
+		aLine := startLine
+		bLine := startLine
+		for i, hunk := range hunks {
 			if hunk.content == "" {
 				continue
 			}
@@ -938,11 +956,11 @@ func (r *renderer) suggestion(snip snippet) {
 
 				// Draw the line as we would for an ordinary window, but prefix
 				// each line with a the hunk's kind and color.
-				fmt.Fprintf(r, "\n%s%*d | %s%c%s %s",
+				fmt.Fprintf(r, "\n%s%*d | %s%c%s ",
 					r.ss.nAccent, r.margin, lineno,
 					hunk.bold(&r.ss), hunk.kind, hunk.color(&r.ss),
-					line,
 				)
+				stringWidth(0, line, false, &r.writer)
 
 				switch hunk.kind {
 				case hunkUnchanged:
@@ -992,7 +1010,7 @@ func (r *renderer) suggestion(snip snippet) {
 		prev := column
 		column = stringWidth(column, hunk.content, false, nil)
 		r.WriteString(hunk.bold(&r.ss))
-		for i := 0; i < column-prev; i++ {
+		for range column - prev {
 			r.WriteString(string(hunk.kind))
 		}
 	}
@@ -1012,7 +1030,7 @@ func adjustLineOffsets(text string, start, end int) (int, int) {
 }
 
 func padByRune(out *strings.Builder, spaces int, r rune) {
-	for i := 0; i < spaces; i++ {
+	for range spaces {
 		out.WriteRune(r)
 	}
 }

@@ -1,19 +1,78 @@
+error: missing name in message field
+  --> testdata/parser/field/incomplete.proto:20:5
+   |
+20 |     name = 1;
+   |     ^^^^^^^^^
+
+error: missing name in message field
+  --> testdata/parser/field/incomplete.proto:21:5
+   |
+21 |     foo.Bar = 1;
+   |     ^^^^^^^^^^^^
+
 error: unexpected identifier after definition
   --> testdata/parser/field/incomplete.proto:24:5
    |
 24 |     foo.Bar name;
    |     ^^^ expected `;`
+  help: consider inserting a `;`
+   |
+23 |     foo.bar name = 1;
+   |                     +
+
+error: missing message field tag in declaration
+  --> testdata/parser/field/incomplete.proto:24:5
+   |
+24 |     foo.Bar name;
+   |     ^^^^^^^^^^^^^
 
 error: unexpected integer literal in definition
   --> testdata/parser/field/incomplete.proto:25:18
    |
 25 |     foo.Bar name 1;
    |                  ^ expected `=`
-
-error: unexpected `}` after definition
-  --> testdata/parser/field/incomplete.proto:27:1
+  help: consider inserting a `=`
    |
-27 | }
-   | ^ expected `;`
+25 |     foo.Bar name = 1;
+   |                  ++
 
-encountered 3 errors
+error: unexpected identifier after definition
+  --> testdata/parser/field/incomplete.proto:28:5
+   |
+28 |     foo..bar name = 1;
+   |     ^^^ expected `;`
+  help: consider inserting a `;`
+   |
+26 |     foo.bar name = 1;  // Comment
+   |                     +
+
+error: unexpected tokens after `.`
+  --> testdata/parser/field/incomplete.proto:28:9
+   |
+28 |     foo..bar name = 1;
+   |         ^ expected identifier or `(...)`
+
+error: unexpected tokens after `.`
+  --> testdata/parser/field/incomplete.proto:29:9
+   |
+29 |     foo...bar name = 1;
+   |         ^^ expected identifier or `(...)`
+
+error: unexpected qualified name in message field
+  --> testdata/parser/field/incomplete.proto:30:13
+   |
+30 |     foo.bar name. = 1;
+   |             ^^^^^ expected identifier
+
+error: unexpected `=` after qualified name
+  --> testdata/parser/field/incomplete.proto:30:19
+   |
+30 |     foo.bar name. = 1;
+   |                   ^ expected identifier or `(...)`
+  help: delete the extra `.`
+   |
+30 | -     foo.bar name. = 1;
+30 | +     foo.bar name = 1;
+   |
+
+encountered 10 errors

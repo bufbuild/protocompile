@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Implementation notes:
@@ -88,8 +90,11 @@ func (t ID) syntheticIndex() int {
 
 // Constants for extracting the parts of tokenImpl.kindAndOffset.
 const (
-	kindMask    = 0b111
-	offsetShift = 3
+	kindMask     = 0b00_0_111
+	isTreeMask   = 0b00_1_000
+	treeKwMask   = 0b11_0_000
+	offsetShift  = 6
+	keywordShift = 4
 )
 
 // nat is the data of a token stored in a [Context].
@@ -99,18 +104,48 @@ type nat struct {
 	// than the start, it makes adding tokens one by one to the stream
 	// easier, because once the token is pushed, its start and end are
 	// set correctly, and don't depend on the next token being pushed.
-	end           uint32
-	kindAndOffset int32
+	end uint32
+
+	// This contains compressed metadata about a token in the following format.
+	// (Bit ranges [a:b] are exclusive like Go slice syntax.)
+	//
+	// 1. Bits [0:3] is the Kind.
+	// 2. Bit [3] is whether this is a non-leaf.
+	//    a. If it is a non-leaf, bits [4:6] determine the Keyword value if
+	//	     Kind is Punct, and bits [6:32] are a signed offset to the matching
+	//       open/close.
+	//    b. If it is a leaf, bits [4:12] are a Keyword value.
+	//
+	// TODO: One potential optimization for the tree representation is to use
+	// fewer bits for kind, since in practice, it is only ever Punct or String.
+	// We do not currently make this optimization because it seems that the
+	// current 32 million maximum size for separating two tokens is probably
+	// sufficient, for now.
+	metadata int32
 }
 
 // Kind extracts the token's kind, which is stored.
 func (t nat) Kind() Kind {
-	return Kind(t.kindAndOffset & kindMask)
+	return Kind(t.metadata & kindMask)
 }
 
 // Offset returns the offset from this token to its matching open/close, if any.
 func (t nat) Offset() int {
-	return int(t.kindAndOffset >> offsetShift)
+	if t.metadata&isTreeMask == 0 {
+		return 0
+	}
+	return int(t.metadata >> offsetShift)
+}
+
+// Keyword returns the keyword for this token, if it is an identifier.
+func (t nat) Keyword() keyword.Keyword {
+	if t.IsLeaf() {
+		return keyword.Keyword(t.metadata >> keywordShift)
+	}
+	if t.Kind() != Punct {
+		return keyword.Unknown
+	}
+	return keyword.Parens + keyword.Keyword((t.metadata&treeKwMask)>>keywordShift)
 }
 
 // IsLeaf checks whether this is a leaf token.
@@ -128,6 +163,18 @@ func (t nat) IsClose() bool {
 	return t.Offset() < 0
 }
 
+func (t nat) GoString() string {
+	type nat struct {
+		End     int
+		Kind    Kind
+		IsLeaf  bool
+		Keyword keyword.Keyword
+		Offset  int
+	}
+
+	return fmt.Sprintf("%#v", nat{int(t.end), t.Kind(), t.IsLeaf(), t.Keyword(), t.Offset()})
+}
+
 // Fuse marks a pair of tokens as their respective open and close.
 //
 // If open or close are synthetic or not currently a leaf, this function panics.
@@ -138,8 +185,16 @@ func fuseImpl(diff int32, open, close *nat) {
 		panic("protocompile/token: called Fuse() with out-of-order")
 	}
 
-	open.kindAndOffset |= diff << offsetShift
-	close.kindAndOffset |= -diff << offsetShift
+	compressKw := func(kw keyword.Keyword) int32 {
+		v := int32(kw - keyword.Parens)
+		if v >= 0 && v < 4 {
+			return v << keywordShift
+		}
+		return 0
+	}
+
+	open.metadata = diff<<offsetShift | compressKw(open.Keyword()) | isTreeMask | int32(open.Kind())
+	close.metadata = -diff<<offsetShift | compressKw(close.Keyword()) | isTreeMask | int32(close.Kind())
 }
 
 // synth is the data of a synth token stored in a [Context].
@@ -152,6 +207,14 @@ type synth struct {
 	// nil: it is nil for the closer.
 	otherEnd ID
 	children []ID
+}
+
+// Keyword returns the keyword for this token, if it is an identifier.
+func (t synth) Keyword() keyword.Keyword {
+	if !slicesx.Among(t.kind, Ident, Punct) {
+		return keyword.Unknown
+	}
+	return keyword.Lookup(t.text)
 }
 
 // IsLeaf checks whether this is a leaf token.

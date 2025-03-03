@@ -12,31 +12,89 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package stringsx contains extensions to Go's package strings.
+// Package stringsx contains extensions to Go's package strings.
 package stringsx
 
 import (
+	"iter"
 	"strings"
+	"unicode"
+	"unicode/utf8"
+	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
+
+// Rune returns the rune at the given byte index.
+//
+// Returns 0, false if out of bounds. Returns -1, false if rune decoding fails.
+func Rune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
+	if !slicesx.BoundsCheck(idx, len(s)) {
+		return 0, false
+	}
+	r, n := utf8.DecodeRuneInString(s[idx:])
+	if r == utf8.RuneError && n < 2 {
+		// The success conditions for DecodeRune are kind of subtle; this makes
+		// sure we get the logic right every time. It is somewhat annoying that
+		// Go did not chose to make this easier to inspect.
+		return -1, false
+	}
+	return r, true
+}
+
+// Rune returns the previous rune at the given byte index.
+//
+// Returns 0, false if out of bounds. Returns -1, false if rune decoding fails.
+func PrevRune[I slicesx.SliceIndex](s string, idx I) (rune, bool) {
+	if !slicesx.BoundsCheck(idx-1, len(s)) {
+		return 0, false
+	}
+
+	r, n := utf8.DecodeLastRuneInString(s[:idx])
+	if r == utf8.RuneError && n < 2 {
+		// The success conditions for DecodeRune are kind of subtle; this makes
+		// sure we get the logic right every time. It is somewhat annoying that
+		// Go did not chose to make this easier to inspect.
+		return -1, false
+	}
+	return r, true
+}
+
+// Byte returns the rune at the given index.
+func Byte[I slicesx.SliceIndex](s string, idx I) (byte, bool) {
+	return slicesx.Get(unsafex.BytesAlias[[]byte](s), idx)
+}
 
 // EveryFunc verifies that all runes in the string satisfy the given predicate.
 func EveryFunc(s string, p func(rune) bool) bool {
-	return iterx.All(Runes(s), p)
+	return iterx.Every(iterx.Map2to1(Runes(s), func(_ int, r rune) rune {
+		if r == -1 {
+			r = unicode.ReplacementChar
+		}
+		return r
+	}), p)
 }
 
-// Runes returns an iterator over the runes in a string.
+// Runes returns an iterator over the runes in a string, and their byte indices.
 //
-// Each non-UTF-8 byte in the string is yielded as a replacement character (U+FFFD).
-func Runes(s string) iter.Seq[rune] {
-	return func(yield func(r rune) bool) {
-		for _, r := range s {
-			if !yield(r) {
+// Each non-UTF-8 byte in the string is yielded with a rune value of `-1`.
+func Runes(s string) iter.Seq2[int, rune] {
+	return func(yield func(i int, r rune) bool) {
+		orig := len(s)
+		for {
+			r, n := utf8.DecodeRuneInString(s)
+			if n == 0 {
 				return
 			}
+			if r == utf8.RuneError && n < 2 {
+				r = -1
+			}
+			if !yield(orig-len(s), r) {
+				return
+			}
+			s = s[n:]
 		}
 	}
 }
@@ -44,9 +102,9 @@ func Runes(s string) iter.Seq[rune] {
 // Bytes returns an iterator over the bytes in a string.
 func Bytes(s string) iter.Seq[byte] {
 	return func(yield func(byte) bool) {
-		for i := 0; i < len(s); i++ {
+		for i := range len(s) {
 			// Avoid performing a bounds check each loop step.
-			b := *unsafex.Add(unsafex.StringData(s), i)
+			b := *unsafex.Add(unsafe.StringData(s), i)
 			if !yield(b) {
 				return
 			}
@@ -54,7 +112,9 @@ func Bytes(s string) iter.Seq[byte] {
 	}
 }
 
-// Split is like [strings.Split], but returning an iterator instead of a slice.
+// Split polyfills [strings.SplitSeq].
+//
+// Remove in go 1.24.
 func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
 	r := string(sep)
 	return func(yield func(string) bool) {
@@ -68,9 +128,9 @@ func Split[Sep string | rune](s string, sep Sep) iter.Seq[string] {
 	}
 }
 
-// Lines returns an iterator over the lines in the given string.
+// Split polyfills [strings.Lines].
 //
-// It is equivalent to Split(s, '\n').
+// Remove in go 1.24.
 func Lines(s string) iter.Seq[string] {
 	return Split(s, '\n')
 }

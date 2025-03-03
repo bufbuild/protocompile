@@ -35,6 +35,15 @@ import (
 // the source file, rather than braces.
 type DeclBody struct{ declImpl[rawDeclBody] }
 
+// HasBody is an AST node that contains a [Body].
+//
+// [File], [DeclBody], and [DeclDef] all implement this interface.
+type HasBody interface {
+	report.Spanner
+
+	Body() DeclBody
+}
+
 type rawDeclBody struct {
 	braces token.ID
 
@@ -69,24 +78,27 @@ func (d DeclBody) Span() report.Span {
 	}
 }
 
+// Body implements [HasBody].
+func (d DeclBody) Body() DeclBody {
+	return d
+}
+
 // Decls returns a [seq.Inserter] over the declarations in this body.
 func (d DeclBody) Decls() seq.Inserter[DeclAny] {
-	type slice = seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]
 	if d.IsZero() {
-		return slice{}
+		return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{}
 	}
-
-	return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{
-		Slice1: &d.raw.kinds,
-		Slice2: &d.raw.ptrs,
-		Wrap: func(k DeclKind, p arena.Untyped) DeclAny {
+	return seq.NewSliceInserter2(
+		&d.raw.kinds,
+		&d.raw.ptrs,
+		func(_ int, k DeclKind, p arena.Untyped) DeclAny {
 			return rawDecl{p, k}.With(d.Context())
 		},
-		Unwrap: func(d DeclAny) (DeclKind, arena.Untyped) {
+		func(_ int, d DeclAny) (DeclKind, arena.Untyped) {
 			d.Context().Nodes().panicIfNotOurs(d)
 			return d.raw.kind, d.raw.ptr
 		},
-	}
+	)
 }
 
 func wrapDeclBody(c Context, ptr arena.Pointer[rawDeclBody]) DeclBody {

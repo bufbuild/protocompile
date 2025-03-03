@@ -19,4 +19,6 @@ package test;
 message Foo {
     extensions {};
     reserved {};
+
+    extensions "foo", -"bar", "foo" to "bar";
 }

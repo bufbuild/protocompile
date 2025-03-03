@@ -1,0 +1,37 @@
+error: unexpected message expression in extension range
+  --> testdata/parser/range/invalid_exprs.proto:20:16
+   |
+20 |     extensions {};
+   |                ^^ expected range expression or integer literal
+
+error: unexpected message expression in reserved range
+  --> testdata/parser/range/invalid_exprs.proto:21:14
+   |
+21 |     reserved {};
+   |              ^^ expected range expression, string literal, or integer literal
+
+error: unexpected string literal in extension range
+  --> testdata/parser/range/invalid_exprs.proto:23:16
+   |
+23 |     extensions "foo", -"bar", "foo" to "bar";
+   |                ^^^^^ expected range expression or integer literal
+
+error: unexpected string literal after `-`
+  --> testdata/parser/range/invalid_exprs.proto:23:24
+   |
+23 |     extensions "foo", -"bar", "foo" to "bar";
+   |                        ^^^^^ expected integer literal
+
+error: unexpected string literal in extension range
+  --> testdata/parser/range/invalid_exprs.proto:23:31
+   |
+23 |     extensions "foo", -"bar", "foo" to "bar";
+   |                               ^^^^^ expected integer literal
+
+error: unexpected string literal in extension range
+  --> testdata/parser/range/invalid_exprs.proto:23:40
+   |
+23 |     extensions "foo", -"bar", "foo" to "bar";
+   |                                        ^^^^^ expected integer literal or `max`
+
+encountered 6 errors

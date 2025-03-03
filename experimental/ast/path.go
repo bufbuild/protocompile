@@ -21,8 +21,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Path represents a multi-part identifier.
@@ -55,34 +55,37 @@ func (p Path) Absolute() bool {
 //
 // If called on zero or a relative path, returns p.
 func (p Path) ToRelative() Path {
-	p.Components(func(pc PathComponent) bool {
-		if pc.IsEmpty() {
-			// Skip path components until we see one that is non-empty.
-			return true
+	for pc := range p.Components {
+		if !pc.IsEmpty() {
+			p.raw.Start = pc.name
+			break
 		}
-
-		p.raw.Start = pc.name
-		return false
-	})
+	}
 	return p
 }
 
 // AsIdent returns the single identifier that comprises this path, or
 // the zero token.
 func (p Path) AsIdent() token.Token {
-	var buf [2]PathComponent
-	prefix := slicesx.AppendSeq(buf[:0], iterx.Limit(2, p.Components))
-	if len(prefix) != 1 || !prefix[0].Separator().IsZero() {
+	first, _ := iterx.OnlyOne(p.Components)
+	if !first.Separator().IsZero() {
 		return token.Zero
 	}
-	return prefix[0].AsIdent()
+	return first.AsIdent()
 }
 
 // AsPredeclared returns the [predeclared.Name] that this path represents.
 //
-// If this path does not represent a builtin, returns [BuiltinUnknown].
+// If this path does not represent a builtin, returns [predeclared.Unknown].
 func (p Path) AsPredeclared() predeclared.Name {
-	return predeclared.Lookup(p.AsIdent().Text())
+	return predeclared.FromKeyword(p.AsKeyword())
+}
+
+// AsKeyword returns the [keyword.Keyword] that this path represents.
+//
+// If this path does not represent a builtin, returns [keyword.Unknown].
+func (p Path) AsKeyword() keyword.Keyword {
+	return p.AsIdent().Keyword()
 }
 
 // report.Span implements [report.Spanner].
@@ -107,30 +110,30 @@ func (p Path) Components(yield func(PathComponent) bool) {
 
 	var sep token.Token
 	var broken bool
-	token.NewCursorAt(first).Rest()(func(tok token.Token) bool {
+	for tok := range token.NewCursorAt(first).Rest() {
 		if tok.ID() > p.raw.End {
 			// We've reached the end of the path.
-			return false
+			break
 		}
+
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.IsZero() {
 				// Uh-oh, empty path component!
 				if !yield(PathComponent{p.withContext, sep.ID(), 0}) {
 					broken = true
-					return false
+					break
 				}
 			}
 			sep = tok
-			return true
+			continue
 		}
 
 		if !yield(PathComponent{p.withContext, sep.ID(), tok.ID()}) {
 			broken = true
-			return false
+			break
 		}
 		sep = token.Zero
-		return true
-	})
+	}
 	if !broken && !sep.IsZero() {
 		yield(PathComponent{p.withContext, sep.ID(), 0})
 	}
@@ -155,11 +158,11 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 	}
 
 	var prev PathComponent
-	p.Components(func(pc PathComponent) bool {
+	for pc := range p.Components {
 		if n > 0 {
 			prev = pc
 			n--
-			return true
+			continue
 		}
 
 		prefix = p
@@ -176,8 +179,8 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 			suffix.raw.Start = pc.name
 		}
 
-		return false
-	})
+		break
+	}
 
 	return prefix, suffix
 }
@@ -276,7 +279,11 @@ func (p PathComponent) AsExtension() Path {
 //
 // May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
-	return p.name.In(p.Context())
+	tok := p.name.In(p.Context())
+	if tok.Kind() == token.Ident {
+		return tok
+	}
+	return token.Zero
 }
 
 // rawPath is the raw contents of a Path without its Context.

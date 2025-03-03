@@ -19,6 +19,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // parseExpr attempts to parse a full expression.
@@ -45,21 +47,26 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	switch prec {
 	case 0:
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
-			switch next.Text() {
-			case "=": // Allow equals signs, which are usually a mistake.
-				p.Errorf("unexpected `=` where expression").Apply(
-					report.Snippetf(next, "help: replace this with `:`"),
+			switch next.Keyword() {
+			case keyword.Equals: // Allow equals signs, which are usually a mistake.
+				p.Errorf("unexpected `=` in expression").Apply(
+					report.Snippet(next),
+					justify(p.Stream(), next.Span(), "replace this with an `:`", justified{
+						report.Edit{Start: 0, End: 1, Replace: ":"},
+						justifyLeft,
+					}),
 					report.Notef("a %s use `=`, not `:`, for setting fields", taxa.Dict),
 				)
 				fallthrough
-			case ":":
+			case keyword.Colon:
 				return p.NewExprField(ast.ExprFieldArgs{
 					Key:   lhs,
 					Colon: c.Next(),
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
-			case "{", "<", "[": // This is for colon-less, array or dict-valued fields.
+			case keyword.Braces, keyword.Angles, keyword.Brackets:
+				// This is for colon-less, array or dict-valued fields.
 				if next.IsLeaf() {
 					break
 				}
@@ -101,8 +108,8 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 
 	case 1:
 		//nolint:gocritic // This is a switch for consistency with the rest of the file.
-		switch next.Text() {
-		case "to":
+		switch next.Keyword() {
+		case keyword.To:
 			return p.NewExprRange(ast.ExprRangeArgs{
 				Start: lhs,
 				To:    c.Next(),
@@ -127,7 +134,7 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case next.IsZero():
 		return ast.ExprAny{}
 
-	case next.Text() == "-":
+	case next.Keyword() == keyword.Minus:
 		c.Next()
 		inner := parseExprPrefix(p, c, taxa.Minus.After())
 		return p.NewExprPrefixed(ast.ExprPrefixedArgs{
@@ -156,10 +163,10 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()
 
-	case (next.Text() == "{" || next.Text() == "<" || next.Text() == "[") && !next.IsLeaf():
+	case slicesx.Among(next.Keyword(), keyword.Braces, keyword.Angles, keyword.Brackets):
 		body := c.Next()
 		in := taxa.Dict
-		if next.Text() == "[" {
+		if next.Keyword() == keyword.Brackets {
 			in = taxa.Array
 		}
 
@@ -169,7 +176,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			what: taxa.DictField,
 			in:   in,
 
-			delims:   []string{",", ";"},
+			delims:   []keyword.Keyword{keyword.Comma, keyword.Semi},
 			required: false,
 			exhaust:  true,
 			trailing: true,
@@ -180,9 +187,9 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			start: canStartExpr,
 		}
 
-		if next.Text() == "[" {
+		if in == taxa.Array {
 			elems.what = taxa.Expr
-			elems.delims = []string{","}
+			elems.delims = []keyword.Keyword{keyword.Comma}
 			elems.required = true
 			elems.trailing = false
 
@@ -192,7 +199,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		}
 
 		dict := p.NewExprDict(body)
-		elems.iter(func(expr ast.ExprAny, comma token.Token) bool {
+		for expr, comma := range elems.iter {
 			field := expr.AsField()
 			if field.IsZero() {
 				p.Error(errUnexpected{
@@ -204,9 +211,8 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 				field = p.NewExprField(ast.ExprFieldArgs{Value: expr})
 			}
 
-			dict.AppendComma(field, comma)
-			return true
-		})
+			dict.Elements().AppendComma(field, comma)
+		}
 		return dict.AsAny()
 
 	default:

@@ -16,15 +16,13 @@ package report
 
 import (
 	"fmt"
+	"iter"
 	"math"
 	"slices"
 	"strings"
 	"sync"
 	"unicode"
 	"unicode/utf8"
-
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/iter"
 )
 
 // Spanner is any type with a [Span].
@@ -61,6 +59,55 @@ func (s Span) IsZero() bool {
 // Text returns the text corresponding to this span.
 func (s Span) Text() string {
 	return s.File.Text()[s.Start:s.End]
+}
+
+// Indentation calculates the indentation at this span.
+//
+// Indentation is defined as the substring between the last newline in
+// [Span.Before] and the first non-Pattern_White_Space after that newline.
+func (s Span) Indentation() string {
+	return s.File.Indentation(s.Start)
+}
+
+// Before returns all text before this span.
+func (s Span) Before() string {
+	return s.File.Text()[:s.Start]
+}
+
+// Before returns all text after this span.
+func (s Span) After() string {
+	return s.File.Text()[s.End:]
+}
+
+// GrowLeft returns a new span which contains the largest suffix of [Span.Before]
+// which match p.
+func (s Span) GrowLeft(p func(r rune) bool) Span {
+	for {
+		r, sz := utf8.DecodeLastRuneInString(s.Before())
+		if r == utf8.RuneError || !p(r) {
+			break
+		}
+		s.Start -= sz
+	}
+	return s
+}
+
+// GrowLeft returns a new span which contains the largest prefix of [Span.After]
+// which match p.
+func (s Span) GrowRight(p func(r rune) bool) Span {
+	for {
+		r, sz := utf8.DecodeRuneInString(s.After())
+		if r == utf8.RuneError || !p(r) {
+			break
+		}
+		s.End += sz
+	}
+	return s
+}
+
+// Len returns the length of this span, in bytes.
+func (s Span) Len() int {
+	return s.End - s.Start
 }
 
 // StartLoc returns the start location for this span.
@@ -146,16 +193,16 @@ func (s Span) String() string {
 // If there are at least two distinct files among the non-zero spans,
 // this function panics.
 func Join(spans ...Spanner) Span {
-	return JoinSeq[Spanner](slicesx.Values(spans))
+	return JoinSeq[Spanner](slices.Values(spans))
 }
 
 // JoinSeq is like [Join], but takes a sequence of any spannable type.
 func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	joined := Span{Start: math.MaxInt}
-	seq(func(spanner S) bool {
+	for spanner := range seq {
 		span := getSpan(spanner)
 		if span.IsZero() {
-			return true
+			continue
 		}
 
 		if joined.IsZero() {
@@ -170,8 +217,7 @@ func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 
 		joined.Start = min(joined.Start, span.Start)
 		joined.End = max(joined.End, span.End)
-		return true
-	})
+	}
 
 	if joined.File == nil {
 		return Span{}
@@ -250,6 +296,18 @@ func (f *File) Location(offset int) Location {
 	}
 
 	return f.location(offset, true)
+}
+
+// Indentation calculates the indentation some offset.
+//
+// Indentation is defined as the substring between the last newline in
+// before the offset and the first non-Pattern_White_Space after that newline.
+func (f *File) Indentation(offset int) string {
+	nl := strings.LastIndexByte(f.Text()[:offset], '\n') + 1
+	margin := strings.IndexFunc(f.Text()[nl:], func(r rune) bool {
+		return !unicode.In(r, unicode.Pattern_White_Space)
+	})
+	return f.Text()[nl : nl+margin]
 }
 
 // Span is a shorthand for creating a new Span.

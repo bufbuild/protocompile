@@ -67,7 +67,6 @@ func TestPartition(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(fmt.Sprint(test.slice), func(t *testing.T) {
 			t.Parallel()
 

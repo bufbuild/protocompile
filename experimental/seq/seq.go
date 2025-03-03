@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package seq provides an interface for sequence-like types that can be indexed
+// Package seq provides an interface for sequence-like types that can be indexed
 // and inserted into.
 //
 // Protocompile avoids storing slices of its public types as a means of achieving
@@ -20,7 +20,11 @@
 // and thus must use proxy types that implement the interfaces in this package.
 package seq
 
-import "github.com/bufbuild/protocompile/internal/iter"
+import (
+	"iter"
+
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+)
 
 // Indexer is a type that can be indexed like a slice.
 type Indexer[T any] interface {
@@ -63,7 +67,7 @@ type Inserter[T any] interface {
 func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 	return func(yield func(int, T) bool) {
 		n := seq.Len()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !yield(i, seq.At(i)) {
 				return
 			}
@@ -75,12 +79,17 @@ func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 func Values[T any](seq Indexer[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		n := seq.Len()
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if !yield(seq.At(i)) {
 				return
 			}
 		}
 	}
+}
+
+// Map is like [slicesx.Map].
+func Map[T, U any](seq Indexer[T], f func(T) U) iter.Seq[U] {
+	return iterx.Map(Values(seq), f)
 }
 
 // Append appends values to an Inserter.

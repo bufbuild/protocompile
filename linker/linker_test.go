@@ -3829,7 +3829,6 @@ func TestLinkerValidation(t *testing.T) {
 	}
 
 	for name, tc := range testCases {
-		tc := tc
 		expectedPrefix := "success_"
 		if tc.expectedErr != "" {
 			expectedPrefix = "failure_"
@@ -3876,7 +3875,7 @@ func TestLinkerValidation(t *testing.T) {
 				if limit > len(errs) {
 					limit = len(errs)
 				}
-				for i := 0; i < limit; i++ {
+				for i := range limit {
 					err := errs[i]
 					var panicErr protocompile.PanicError
 					if errors.As(err, &panicErr) {
@@ -4212,7 +4211,6 @@ func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
 			expectedPrefix = "failure_"
 		}
 		assert.Truef(t, strings.HasPrefix(name, expectedPrefix), "expected test name %q to have %q prefix", name, expectedPrefix)
-		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
@@ -4500,7 +4498,7 @@ func addFileDescriptorsToMap[F protoreflect.FileDescriptor](files []F, allFiles 
 		}
 		allFiles[file.Path()] = protoutil.ProtoFromFileDescriptor(file)
 		deps := make([]protoreflect.FileDescriptor, file.Imports().Len())
-		for i := 0; i < file.Imports().Len(); i++ {
+		for i := range file.Imports().Len() {
 			deps[i] = file.Imports().Get(i).FileDescriptor
 		}
 		addFileDescriptorsToMap(deps, allFiles)

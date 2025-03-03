@@ -15,13 +15,19 @@
 package parser
 
 import (
+	"math"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
+
+// maxFileSize is the maximum file size Protocompile supports.
+const maxFileSize int = math.MaxInt32 // 2GB
 
 // lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
@@ -46,26 +52,8 @@ func lex(ctx token.Context, errs *report.Report) {
 	})
 	defer l.Freeze()
 
-	// Check that the file isn't too big. We give up immediately if that's
-	// the case.
-	if len(l.Text()) > maxFileSize {
-		l.Error(errFileTooBig{Path: l.Path()})
+	if !lexPrelude(l) {
 		return
-	}
-
-	// Also check that the text of the file is actually UTF-8.
-	// We go rune by rune to find the first invalid offset.
-	for text := l.Text(); text != ""; {
-		r := decodeRune(text)
-		if r == -1 {
-			l.Error(errNotUTF8{
-				Path: l.Path(),
-				At:   len(l.Text()) - len(text),
-				Byte: text[0],
-			})
-			return
-		}
-		text = text[utf8.RuneLen(r):]
 	}
 
 	// This is the main loop of the lexer. Each iteration will examine the next
@@ -162,7 +150,10 @@ func lex(ctx token.Context, errs *report.Report) {
 				// This "identifier" appears to consist entirely of unprintable
 				// characters (e.g. combining marks).
 				tok := l.Push(len(rawIdent), token.Unrecognized)
-				l.Error(errUnrecognized{Token: tok})
+				l.Errorf("unrecognized token").Apply(
+					report.Snippet(tok),
+					report.Debugf("%v, %v, %q", tok.ID(), tok.Span(), tok.Text()),
+				)
 				continue
 			}
 
@@ -171,7 +162,9 @@ func lex(ctx token.Context, errs *report.Report) {
 
 			// Legalize non-ASCII runes.
 			if !isASCIIIdent(tok.Text()) {
-				l.Error(errNonASCIIIdent{Token: tok})
+				l.Errorf("non-ASCII identifiers are not allowed").Apply(
+					report.Snippet(tok),
+				)
 			}
 
 		default:
@@ -185,7 +178,10 @@ func lex(ctx token.Context, errs *report.Report) {
 					!unicode.In(r, unicode.Pattern_White_Space)
 			})
 			tok := l.Push(len(unknown), token.Unrecognized)
-			l.Error(errUnrecognized{Token: tok})
+			l.Errorf("unrecognized token").Apply(
+				report.Snippet(tok),
+				report.Debugf("%v, %v, %q", tok.ID(), tok.Span(), tok.Text()),
+			)
 		}
 	}
 
@@ -195,6 +191,77 @@ func lex(ctx token.Context, errs *report.Report) {
 
 	// Perform implicit string concatenation.
 	fuseStrings(l)
+}
+
+// lexPrelude performs various file-prelude checks, such as size and encoding
+// verification. Returns whether lexing should proceed.
+func lexPrelude(l *lexer) bool {
+	// Check that the file isn't too big. We give up immediately if that's
+	// the case.
+	if len(l.Text()) > maxFileSize {
+		l.Errorf("files larger than 2GB (%d bytes) are not supported", maxFileSize).Apply(
+			report.InFile(l.Path()),
+		)
+		return false
+	}
+
+	// Heuristically check for a UTF-16-encoded file. There are two good
+	// heuristics:
+	// 1. Presence of a UTF-16 BOM, which is either FE FF or FF FE, depending on
+	//    endianness.
+	// 2. Exactly one of the first two bytes is a NUL. Valid Protobuf cannot
+	//    contain a NUL in the first two bytes, so this is probably a UTF-16-encoded
+	//    ASCII rune.
+	bom16 := strings.HasPrefix(l.Text(), "\xfe\xff") || strings.HasPrefix(l.Text(), "\xff\xfe")
+	ascii16 := len(l.Text()) >= 2 && (l.Text()[0] == 0 || l.Text()[1] == 0)
+	if bom16 || ascii16 {
+		l.Errorf("input appears to be encoded with UTF-16").Apply(
+			report.InFile(l.Path()),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return false
+	}
+
+	// Check that the text of the file is actually UTF-8.
+	var idx int
+	var count int
+	for i, r := range stringsx.Runes(l.Text()) {
+		if r != -1 {
+			continue
+		}
+		if count == 0 {
+			idx = i
+		}
+		count++
+	}
+	frac := float64(count) / float64(len(l.Text()))
+	switch {
+	case frac == 0:
+		break
+	case frac < 0.2:
+		// This diagnostic is for cases where this file appears to be corrupt.
+		// We pick 20% non-UTF-8 as the threshold to show this error.
+		l.Errorf("input appears to be encoded with UTF-8, but found invalid byte").Apply(
+			report.Snippet(l.Span(idx, idx+1)),
+			report.Notef("non-UTF-8 byte occurs at offset %d (%#x)", idx, idx),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return false
+	default:
+		l.Errorf("input appears to be a binary file").Apply(
+			report.InFile(l.Path()),
+			report.Notef("non-UTF-8 byte occurs at offset %d (%#x)", idx, idx),
+			report.Notef("Protobuf files must be UTF-8 encoded"),
+		)
+		return false
+	}
+
+	if l.Peek() == '\uFEFF' {
+		l.Pop() // Peel off a leading UTF-8 BOM.
+		l.Push(3, token.Unrecognized)
+	}
+
+	return true
 }
 
 // fuseBraces performs brace matching and token fusion, based on the contents of
@@ -290,9 +357,9 @@ func fuseBraces(l *lexer) {
 
 	// In backwards order, generate empty tokens to fuse with
 	// the unclosed delimiters.
-	for i := len(opens) - 1; i >= 0; i-- {
+	for _, open := range slices.Backward(opens) {
 		empty := l.Push(0, token.Unrecognized)
-		token.Fuse(opens[i].In(l.Context), empty)
+		token.Fuse(open.In(l.Context), empty)
 	}
 }
 
@@ -318,10 +385,9 @@ func fuseStrings(l *lexer) {
 	}
 
 	var start, end token.Token
-	l.All()(func(tok token.Token) bool {
+	for tok := range l.All() {
 		switch tok.Kind() {
 		case token.Space, token.Comment:
-			break
 
 		case token.String:
 			if start.IsZero() {
@@ -334,9 +400,8 @@ func fuseStrings(l *lexer) {
 			start = token.Zero
 			end = token.Zero
 		}
+	}
 
-		return true
-	})
 	concat(start, end)
 }
 
@@ -360,15 +425,18 @@ func bracePair(s string) (string, string) {
 }
 
 func isASCIIIdent(s string) bool {
-	for _, r := range s {
+	for i, r := range s {
 		switch {
 		case r >= 'a' && r <= 'z':
 		case r >= 'A' && r <= 'Z':
 		case r >= '0' && r <= '9':
+			if i == 0 {
+				return false
+			}
 		case r == '_':
 		default:
 			return false
 		}
 	}
-	return true
+	return len(s) > 0
 }
