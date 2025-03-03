@@ -127,6 +127,7 @@ func Any(a, b any) Result {
 		}
 	}
 
+	//nolint:revive // Recommends removing some else {} branches that make the code less symmetric
 	switch which(ra) | which(rb) {
 	case kBool:
 		return Bool(ra.Bool(), rb.Bool())
