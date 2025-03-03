@@ -56,10 +56,9 @@ type delimited[T report.Spanner] struct {
 }
 
 func (d delimited[T]) appendTo(commas ast.Commas[T]) {
-	d.iter(func(v T, delim token.Token) bool {
-		commas.AppendComma(v, delim)
-		return true
-	})
+	for v, d := range d.iter {
+		commas.AppendComma(v, d)
+	}
 }
 
 func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {

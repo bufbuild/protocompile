@@ -199,7 +199,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		}
 
 		dict := p.NewExprDict(body)
-		elems.iter(func(expr ast.ExprAny, comma token.Token) bool {
+		for expr, comma := range elems.iter {
 			field := expr.AsField()
 			if field.IsZero() {
 				p.Error(errUnexpected{
@@ -212,8 +212,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 			}
 
 			dict.Elements().AppendComma(field, comma)
-			return true
-		})
+		}
 		return dict.AsAny()
 
 	default:
