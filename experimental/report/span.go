@@ -199,10 +199,10 @@ func Join(spans ...Spanner) Span {
 // JoinSeq is like [Join], but takes a sequence of any spannable type.
 func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 	joined := Span{Start: math.MaxInt}
-	seq(func(spanner S) bool {
+	for spanner := range seq {
 		span := getSpan(spanner)
 		if span.IsZero() {
-			return true
+			continue
 		}
 
 		if joined.IsZero() {
@@ -217,8 +217,7 @@ func JoinSeq[S Spanner](seq iter.Seq[S]) Span {
 
 		joined.Start = min(joined.Start, span.Start)
 		joined.End = max(joined.End, span.End)
-		return true
-	})
+	}
 
 	if joined.File == nil {
 		return Span{}
