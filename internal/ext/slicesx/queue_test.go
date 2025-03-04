@@ -18,8 +18,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 func TestQueue(t *testing.T) {
