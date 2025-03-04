@@ -40,7 +40,7 @@ type rawType struct {
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         []arena.Pointer[rawOption]
-	fqn             intern.ID // 0 for predeclared types.
+	fqn, name       intern.ID // 0 for predeclared types.
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
 	isEnum          bool
