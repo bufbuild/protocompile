@@ -79,7 +79,7 @@ func (f Field) Name() string {
 	if f.IsZero() {
 		return ""
 	}
-	return f.Context().intern.Value(f.raw.name)
+	return f.Context().session.intern.Value(f.raw.name)
 }
 
 // FullName returns this fields's fully-qualified name.
@@ -87,7 +87,7 @@ func (f Field) FullName() string {
 	if f.IsZero() {
 		return ""
 	}
-	return f.Context().intern.Value(f.raw.fqn)
+	return f.Context().session.intern.Value(f.raw.fqn)
 }
 
 // Number returns the number for this field after expression evaluation.
@@ -194,7 +194,7 @@ func (o Oneof) Name() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().intern.Value(o.raw.name)
+	return o.Context().session.intern.Value(o.raw.name)
 }
 
 // FullName returns this oneof's fully-qualified name.
@@ -202,7 +202,7 @@ func (o Oneof) FullName() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().intern.Value(o.raw.fqn)
+	return o.Context().session.intern.Value(o.raw.fqn)
 }
 
 // Members returns this oneof's member fields.
@@ -298,5 +298,5 @@ func (r ReservedName) AST() ast.ExprAny {
 
 // Name returns the name that was reserved.
 func (r ReservedName) Name() string {
-	return r.Context().intern.Value(r.raw.name)
+	return r.Context().session.intern.Value(r.raw.name)
 }
