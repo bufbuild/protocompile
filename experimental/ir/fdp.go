@@ -17,6 +17,9 @@ package ir
 import (
 	"strings"
 
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -24,8 +27,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/wellknownimports"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // FDS code-generates a FileDescriptorSet for the given files, and returns the
@@ -112,6 +113,7 @@ func (c *codegen) file(file File, fdp *descriptorpb.FileDescriptorProto) {
 
 	if file.Syntax().IsEdition() {
 		fdp.Syntax = addr("editions")
+		//nolint:gocritic // Complains about single-case switch.
 		switch file.Syntax() {
 		case syntax.Edition2023:
 			fdp.Edition = descriptorpb.Edition_EDITION_2023.Enum()
@@ -188,6 +190,7 @@ func (c *codegen) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 		c.message(ty, mdp)
 	}
 
+	//nolint:revive // Complains about range_.
 	for range_ := range seq.Values(ty.ExtensionRanges()) {
 		er := new(descriptorpb.DescriptorProto_ExtensionRange)
 		mdp.ExtensionRange = append(mdp.ExtensionRange, er)
@@ -205,6 +208,7 @@ func (c *codegen) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 		}
 	}
 
+	//nolint:revive // Complains about range_.
 	for range_ := range seq.Values(ty.ReservedRanges()) {
 		rr := new(descriptorpb.DescriptorProto_ReservedRange)
 		mdp.ReservedRange = append(mdp.ReservedRange, rr)
@@ -340,6 +344,7 @@ func (c *codegen) enum(ty Type, mdp *descriptorpb.EnumDescriptorProto) {
 		c.enumValue(field, evd)
 	}
 
+	//nolint:revive // Complains about range_.
 	for range_ := range seq.Values(ty.ReservedRanges()) {
 		rr := new(descriptorpb.EnumDescriptorProto_EnumReservedRange)
 		mdp.ReservedRange = append(mdp.ReservedRange, rr)
@@ -375,12 +380,14 @@ func (c *codegen) enumValue(f Field, fdp *descriptorpb.EnumValueDescriptorProto)
 	}
 }
 
-func (c *codegen) option(option Option, target proto.Message) {
+func (c *codegen) option(_ Option, target proto.Message) {
 	var fdp *descriptorpb.FieldDescriptorProto
 	if actual, ok := target.(*descriptorpb.FieldDescriptorProto); ok {
 		fdp = actual
 		target = fdp.Options
 	}
+
+	_ = target
 
 	// There are two cases and both are painful.
 	//

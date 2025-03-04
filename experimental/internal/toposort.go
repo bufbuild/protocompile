@@ -47,6 +47,7 @@ func TopoSort[Node any, Key comparable](
 		case unsorted:
 			state[k] = working
 			stack = append(stack, v)
+			//nolint:makezero // False positive.
 			visited = append(visited, false)
 		case working:
 			stack = append(stack, v)

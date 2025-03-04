@@ -108,7 +108,7 @@ func (f Field) Number() int32 {
 
 // Presence returns this field's presence kind.
 func (f Field) Presence() presence.Kind {
-	if int32(f.raw.oneof) > 0 {
+	if f.raw.oneof > 0 {
 		return presence.Shared
 	}
 	return presence.Kind(-f.raw.oneof)
