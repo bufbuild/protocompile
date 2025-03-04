@@ -15,7 +15,11 @@
 package ir
 
 import (
+	"iter"
+	"slices"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -31,6 +35,9 @@ type Context struct {
 
 	file struct {
 		ast ast.File
+
+		syntax syntax.Syntax
+
 		// All transitively-imported files. This slice is divided into the
 		// following segments:
 		//
@@ -110,12 +117,22 @@ type Import struct {
 	Public, Weak bool // The kind of import this is.
 }
 
+// Path returns the file name for this file.
+func (f File) Path() string {
+	return f.AST().Context().Stream().Path()
+}
+
+// Syntax returns the syntax for this file.
+func (f File) Syntax() syntax.Syntax {
+	return f.Context().file.syntax
+}
+
 // AST returns the AST this file was parsed from.
 func (f File) AST() ast.File {
 	return f.Context().file.ast
 }
 
-// Imports returns.
+// Imports returns the files directly imported by this file.
 func (f File) Imports() seq.Indexer[Import] {
 	file := f.Context().file
 	return seq.NewFixedSlice(
@@ -158,6 +175,21 @@ func (f File) Options() seq.Indexer[Option] {
 		f.Context().file.options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(f.Context(), p)
+		},
+	)
+}
+
+// TopologicalSort sorts a graph of [File]s according to their dependency graph,
+// in topological order. Files with no dependencies are yielded first.
+func TopologicalSort(files ...File) iter.Seq[File] {
+	// NOTE: This cannot panic because Files, by construction, do not contain
+	// graph cycles.
+	return internal.TopoSort(
+		files,
+		File.Context,
+		func(f File) iter.Seq[File] {
+			impl := f.Context().file
+			return slices.Values(impl.imports[impl.importEnd:])
 		},
 	)
 }
