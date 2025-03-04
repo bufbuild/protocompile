@@ -40,7 +40,7 @@ type rawType struct {
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         []arena.Pointer[rawOption]
-	fqn             intern.ID
+	fqn             intern.ID // 0 for predeclared types.
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
 	isEnum          bool
@@ -50,7 +50,6 @@ type rawType struct {
 // types.
 var primitiveCtx = func() *Context {
 	ctx := new(Context)
-	ctx.intern = new(intern.Table)
 
 	predeclared.All()(func(n predeclared.Name) bool {
 		if n == predeclared.Unknown || !n.IsScalar() {
@@ -61,9 +60,7 @@ var primitiveCtx = func() *Context {
 			return true
 		}
 
-		ptr := ctx.arenas.types.NewCompressed(rawType{
-			fqn: ctx.intern.Intern(n.String()),
-		})
+		ptr := ctx.arenas.types.NewCompressed(rawType{})
 
 		if int(ptr) != int(n) {
 			panic(fmt.Sprintf("IR initialization error: %d != %d; this is a bug in protocompile", ptr, n))
@@ -139,7 +136,7 @@ func (t Type) Name() string {
 	if p := t.Predeclared(); p != predeclared.Unknown {
 		return p.String()
 	}
-	return t.Context().intern.Value(t.raw.fqn)
+	return t.Context().session.intern.Value(t.raw.fqn)
 }
 
 // InternedName returns this type's fully-qualified name, if it has been
@@ -147,7 +144,7 @@ func (t Type) Name() string {
 //
 // Predeclared types do not have an interned name.
 func (t Type) InternedName() intern.ID {
-	if t.IsPredeclared() {
+	if t.IsZero() {
 		return 0
 	}
 	return t.raw.fqn

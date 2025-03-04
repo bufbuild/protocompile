@@ -26,8 +26,8 @@ import (
 //
 // Unlike [ast.Context], this Context is shared by many files.
 type Context struct {
-	pkg    intern.ID
-	intern *intern.Table
+	session *Session
+	pkg     intern.ID
 
 	file struct {
 		ast ast.File
@@ -83,7 +83,7 @@ func (c *Context) File() File {
 // The name will not include a leading dot. It will be empty for the empty
 // package.
 func (c *Context) Package() string {
-	return c.intern.Value(c.pkg)
+	return c.session.intern.Value(c.pkg)
 }
 
 // InternedPackage returns the intern ID for the value of [Context.Package].
