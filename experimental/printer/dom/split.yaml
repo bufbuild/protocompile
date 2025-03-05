@@ -1,0 +1,18 @@
+- name: SplitKind
+  type: int8
+  docs: |
+    SplitKind identifies the kind of whitespace that should follow the text of a chunk.
+  methods:
+  - kind: string
+  - kind: go-string
+  values:
+  - name: SplitKindUnknown
+    docs: "Unknown whitespace."
+  - name: SplitKindSoft
+    docs: "SplitKindSoft represents a soft split, which means that if a split happens, then the chunk may be converted to a hard split. If a split does not happen, then the text of the chunk will be followed by a space based on spaceWhenUnsplit at the time of output."
+  - name: SplitKindHard
+    docs: "SplitKindHard represents a hard split, which means the text for the chunk will be followed by a newline at the time of output."
+  - name: SplitKindDouble
+    docs: "SplitKindDouble represents a double hard split, which means the text for the chunk will be followed by two newlines at the time of output."
+  - name: SplitKindNever
+    docs: "SplitKindNever means that the chunks should never be split, and the text for the chunk will be followed by a space based on spaceWhenUnsplit at the time of output."
