@@ -73,6 +73,26 @@ func LastPointer[S ~[]E, E any](s S) *E {
 	return GetPointer(s, len(s)-1)
 }
 
+// LastIndex is like [slices.Index], but from the end of the slice.
+func LastIndex[S ~[]E, E comparable](s S, needle E) int {
+	for i, v := range slices.Backward(s) {
+		if v == needle {
+			return i
+		}
+	}
+	return -1
+}
+
+// LastIndex is like [slices.IndexFunc], but from the end of the slice.
+func LastIndexFunc[S ~[]E, E any](s S, p func(E) bool) int {
+	for i, v := range slices.Backward(s) {
+		if p(v) {
+			return i
+		}
+	}
+	return -1
+}
+
 // BoundsCheck performs a generic bounds check as efficiently as possible.
 //
 // This function assumes that len is the length of a slice, i.e, it is
