@@ -111,15 +111,12 @@ func (c *codegen) file(file File, fdp *descriptorpb.FileDescriptorProto) {
 	fdp.Name = addr(file.Path())
 	fdp.Package = addr(file.Context().Package())
 
-	if file.Syntax().IsEdition() {
-		fdp.Syntax = addr("editions")
-		//nolint:gocritic // Complains about single-case switch.
-		switch file.Syntax() {
-		case syntax.Edition2023:
-			fdp.Edition = descriptorpb.Edition_EDITION_2023.Enum()
-		}
-	} else {
+	switch file.Syntax() {
+	case syntax.Proto2, syntax.Proto3:
 		fdp.Syntax = addr(file.Syntax().String())
+	case syntax.Edition2023:
+		fdp.Syntax = addr("editions")
+		fdp.Edition = descriptorpb.Edition_EDITION_2023.Enum()
 	}
 
 	for imp := range seq.Values(file.Imports()) {
