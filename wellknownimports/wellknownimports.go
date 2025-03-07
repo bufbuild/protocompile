@@ -48,10 +48,9 @@ func init() {
 				return err
 			}
 
-			path = filepath.Clean(path)
-			if filepath.Separator != '/' {
-				path = filepath.ToSlash(path)
-			}
+			// Technically ToSlash is redundant here, since embed.FS always uses
+			// / as a separator. But it's a good idea to avoid surprises.
+			path = filepath.ToSlash(filepath.Clean(path))
 			filesByName[path] = string(bytes)
 		}
 
