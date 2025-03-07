@@ -18,6 +18,7 @@ package iterx
 import (
 	"fmt"
 	"iter"
+	"slices"
 )
 
 // Take returns an iterator over the first n elements of a sequence.
@@ -63,4 +64,9 @@ func Chain[T any](seqs ...iter.Seq[T]) iter.Seq[T] {
 			}
 		}
 	}
+}
+
+// Of returns an iterator that yields the given values.
+func Of[T any](v ...T) iter.Seq[T] {
+	return slices.Values(v)
 }
