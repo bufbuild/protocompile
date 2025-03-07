@@ -38,7 +38,7 @@ type rawType struct {
 	fields          []arena.Pointer[rawField]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
-	oneofs          []arena.Pointer[rawOneof]
+	oneofs          []rawOneof
 	options         []arena.Pointer[rawOption]
 	fqn             intern.ID
 	fieldsExtnStart uint32
@@ -222,8 +222,8 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.raw.oneofs,
-		func(_ int, p arena.Pointer[rawOneof]) Oneof {
-			return wrapOneof(t.Context(), p)
+		func(i int, _ rawOneof) Oneof {
+			return Oneof{t.withContext, uint32(i), t.raw}
 		},
 	)
 }
