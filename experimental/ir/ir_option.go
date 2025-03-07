@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // Option is an option in a Protobuf file.
@@ -267,4 +268,170 @@ func (v MessageValue) Fields() seq.Indexer[Value] {
 			}
 		},
 	)
+}
+
+// Marshal encodes a value as a Protobuf wire format record and writes
+// it to buf.
+//
+// The record will include the number of the field this value is for.
+func (v Value) Marshal(b []byte) []byte {
+	if v.IsZero() || v.Elements().Len() == 0 {
+		return b
+	}
+
+	n := protowire.Number(v.Field().Number())
+	t := v.Type().Predeclared()
+	if t == predeclared.Unknown && v.Type().IsEnum() {
+		t = predeclared.Int32
+	}
+
+	switch t := v.Type().Predeclared(); t {
+	case predeclared.Int32, predeclared.Int64,
+		predeclared.UInt32, predeclared.UInt64,
+		predeclared.SInt32, predeclared.SInt64, predeclared.Bool:
+		zigzag := t == predeclared.SInt32 || t == predeclared.SInt64
+
+		if v.Elements().Len() == 1 {
+			x := uint64(v.Elements().At(0).bits)
+			if zigzag {
+				x = protowire.EncodeZigZag(int64(x))
+			}
+
+			b = protowire.AppendTag(b, n, protowire.VarintType)
+			b = protowire.AppendVarint(b, x)
+			break
+		}
+
+		var len int
+		for e := range seq.Values(v.Elements()) {
+			x := uint64(e.bits)
+			if zigzag {
+				x = protowire.EncodeZigZag(int64(x))
+			}
+			len += protowire.SizeVarint(x)
+		}
+
+		b = protowire.AppendTag(b, n, protowire.BytesType)
+		b = protowire.AppendVarint(b, uint64(len))
+		for e := range seq.Values(v.Elements()) {
+			x := uint64(e.bits)
+			if zigzag {
+				x = protowire.EncodeZigZag(int64(x))
+			}
+			b = protowire.AppendVarint(b, x)
+		}
+
+	case predeclared.Fixed32, predeclared.SFixed32, predeclared.Float32:
+		if v.Elements().Len() == 1 {
+			e := v.Elements().At(0)
+			b = protowire.AppendTag(b, n, protowire.Fixed32Type)
+			b = protowire.AppendFixed32(b, uint32(e.bits))
+			break
+		}
+
+		b = protowire.AppendTag(b, n, protowire.BytesType)
+		b = protowire.AppendVarint(b, uint64(v.Elements().Len())*4)
+		for e := range seq.Values(v.Elements()) {
+			b = protowire.AppendFixed32(b, uint32(e.bits))
+		}
+
+	case predeclared.Fixed64, predeclared.SFixed64, predeclared.Float64:
+		if v.Elements().Len() == 1 {
+			e := v.Elements().At(0)
+			b = protowire.AppendTag(b, n, protowire.Fixed32Type)
+			b = protowire.AppendFixed64(b, uint64(e.bits))
+			break
+		}
+
+		b = protowire.AppendTag(b, n, protowire.BytesType)
+		b = protowire.AppendVarint(b, uint64(v.Elements().Len())*8)
+		for e := range seq.Values(v.Elements()) {
+			b = protowire.AppendFixed64(b, uint64(e.bits))
+		}
+
+	case predeclared.String, predeclared.Bytes:
+		for e := range seq.Values(v.Elements()) {
+			s, _ := e.AsString()
+			b = protowire.AppendTag(b, n, protowire.Fixed32Type)
+			b = protowire.AppendString(b, s)
+		}
+
+	default:
+		// Is this value an any, i.e., was the AST of the form { [...]: {...} }?
+		// This is the case if v's field is itself the magic Any type, but v
+		// has a type that is *not* Any itself. This is necessary to deal with
+		// the case where someone writes down an Any explicitly as
+		// { type_url: ..., value: ... }.
+		isAny := v.Field().Element().raw.isAny &&
+			v.Field().Element() != v.Type()
+
+		v.Type()
+		for e := range seq.Values(v.Elements()) {
+			b = protowire.AppendTag(b, n, protowire.BytesType)
+			if !isAny {
+				b = marshalMessage(b, func(b []byte) []byte {
+					for f := range seq.Values(e.AsMessage().Fields()) {
+						b = f.Marshal(b)
+					}
+					return b
+				})
+				continue
+			}
+
+			b = marshalMessage(b, func(b []byte) []byte {
+				/*
+					syntax = "proto3";
+					message Any {
+						string type_url = 1;
+						bytes value = 2;
+					}
+				*/
+				const (
+					Any_type_url = 1
+					Any_value    = 2
+				)
+
+				b = protowire.AppendTag(b, Any_type_url, protowire.BytesType)
+
+				// A valid, type-checked Any will always be a dict with one
+				// element. Its key will be an array with one element.
+				entry := v.AST().AsDict().Elements().At(0)
+				url := entry.Key().AsArray().Elements().At(0).AsPath()
+				b = protowire.AppendString(b, url.Canonicalized())
+
+				b = protowire.AppendTag(b, Any_value, protowire.BytesType)
+				b = marshalMessage(b, func(b []byte) []byte {
+					for f := range seq.Values(e.AsMessage().Fields()) {
+						b = f.Marshal(b)
+					}
+					return b
+				})
+				return b
+			})
+		}
+	}
+
+	return b
+}
+
+func marshalMessage(b []byte, cb func([]byte) []byte) []byte {
+	// TODO: Group encoding.
+	prefixAt := len(b)
+	// Messages can only be 2GB at most so we can pre-allocate five
+	// bytes for the length prefix and then always use an over-long
+	// prefix.
+	b = append(b, 0x80, 0x80, 0x80, 0x80, 0x00)
+	start := len(b)
+	b = cb(b)
+	total := len(b) - start
+	if total > math.MaxInt32 {
+		// File size limits mean this error will be diagnosed long
+		// before we reach this panic.
+		panic("protocompile/ir: message value for option is too large")
+	}
+	protowire.AppendVarint(b[prefixAt:], uint64(total))
+	for i := range 4 {
+		b[prefixAt+i] |= 0x80
+	}
+	return b
 }

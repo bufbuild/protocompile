@@ -43,7 +43,9 @@ type rawType struct {
 	fqn, name       intern.ID // 0 for predeclared types.
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
-	isEnum          bool
+
+	isEnum bool
+	isAny  bool // True if this is google.protobuf.Any
 }
 
 // primitiveCtx represents a special file that defines all of the primitive
