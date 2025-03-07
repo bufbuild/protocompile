@@ -94,7 +94,7 @@ func (c *codegen) files(files []File, fds *descriptorpb.FileDescriptorSet) {
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
-	for file := range TopologicalSort(files...) {
+	for file := range TopoSort(files...) {
 		if !c.includeWKTs && wellknownimports.StandardImport(file.Path()) != "" {
 			continue
 		}

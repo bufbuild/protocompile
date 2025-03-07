@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/toposort"
 )
 
 // Context is where all of the book-keeping for an IR session is kept.
@@ -179,12 +180,12 @@ func (f File) Options() seq.Indexer[Option] {
 	)
 }
 
-// TopologicalSort sorts a graph of [File]s according to their dependency graph,
+// TopoSort sorts a graph of [File]s according to their dependency graph,
 // in topological order. Files with no dependencies are yielded first.
-func TopologicalSort(files ...File) iter.Seq[File] {
+func TopoSort(files ...File) iter.Seq[File] {
 	// NOTE: This cannot panic because Files, by construction, do not contain
 	// graph cycles.
-	return internal.TopoSort(
+	return toposort.Sort(
 		files,
 		File.Context,
 		func(f File) iter.Seq[File] {
