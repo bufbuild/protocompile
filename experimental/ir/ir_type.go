@@ -52,6 +52,7 @@ var primitiveCtx = func() *Context {
 	ctx := new(Context)
 	ctx.intern = new(intern.Table)
 
+	nextPtr := 1
 	predeclared.All()(func(n predeclared.Name) bool {
 		if n == predeclared.Unknown || !n.IsScalar() {
 			// Skip allocating a pointer for the very first value. This ensures
@@ -61,7 +62,12 @@ var primitiveCtx = func() *Context {
 			return true
 		}
 
+		for nextPtr != int(n) {
+			_ = ctx.arenas.types.NewCompressed(rawType{})
+			nextPtr++
+		}
 		ptr := ctx.arenas.types.NewCompressed(rawType{})
+		nextPtr++
 
 		if int(ptr) != int(n) {
 			panic(fmt.Sprintf("IR initialization error: %d != %d; this is a bug in protocompile", ptr, n))
