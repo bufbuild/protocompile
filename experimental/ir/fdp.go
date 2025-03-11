@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"iter"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -24,89 +25,81 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
-	"github.com/bufbuild/protocompile/wellknownimports"
 )
 
-// FDS code-generates a FileDescriptorSet for the given files, and returns the
+// DescriptorSet generates a FileDescriptorSet for the given files, and returns the
 // result as an encoded byte slice.
 //
-// The resulting FDS is always fully linked: it contains all dependencies except
+// The resulting FileDescriptorSet is always fully linked: it contains all dependencies except
 // the WKTs, and all names are fully-qualified.
-func FDS(files []File, options ...CodegenOption) ([]byte, error) {
-	var c codegen
+func DescriptorSet(files []File, options ...DescriptorOption) ([]byte, error) {
+	var dg descGenerator
 	for _, opt := range options {
 		if opt != nil {
-			opt(&c)
+			opt(&dg)
 		}
 	}
 
 	fds := new(descriptorpb.FileDescriptorSet)
-	c.files(files, fds)
+	dg.files(files, fds)
 	return proto.Marshal(fds)
 }
 
-// FDP code-generates a single FileDescriptorProto for file, and returns the
+// DescriptorProto generates a single FileDescriptorProto for file, and returns the
 // result as an encoded byte slice.
 //
-// The resulting FDP is fully linked: all names are fully-qualified.
-func FDP(file File, options ...CodegenOption) ([]byte, error) {
-	var c codegen
+// The resulting FileDescriptorProto is fully linked: all names are fully-qualified.
+func DescriptorProto(file File, options ...DescriptorOption) ([]byte, error) {
+	var dg descGenerator
 	for _, opt := range options {
 		if opt != nil {
-			opt(&c)
+			opt(&dg)
 		}
 	}
 
 	fdp := new(descriptorpb.FileDescriptorProto)
-	c.file(file, fdp)
+	dg.file(file, fdp)
 	return proto.Marshal(fdp)
 }
 
-// CodegenOption is an option to pass to [DescriptorSet].
-type CodegenOption func(*codegen)
+// DescriptorOption is an option to pass to [DescriptorSet] or [DescriptorProto].
+type DescriptorOption func(*descGenerator)
 
-// IncludeWKTs is an option for including FDPs for the Well-Known Types in
-// codegen output.
-func IncludeWKTs() CodegenOption {
-	return func(c *codegen) { c.includeWKTs = true }
+// ExcludeFiles is an option that causes all files that match the given
+// predicate to be excluded from the output of [DescriptorSet].
+func ExcludeFiles(p func(File) bool) DescriptorOption {
+	return func(dg *descGenerator) { dg.exclude = append(dg.exclude, p) }
 }
 
-// IncludeSourceCodeInfo is an option that requires generating source code info
-// for the descriptors.
-func IncludeSourceCodeInfo() CodegenOption {
-	return func(c *codegen) { c.includeSourceCodeInfo = true }
-}
-
-type codegen struct {
-	includeWKTs           bool
-	includeSourceCodeInfo bool
+type descGenerator struct {
+	exclude []func(File) bool
 
 	currentFile File
 }
 
-func (c *codegen) files(files []File, fds *descriptorpb.FileDescriptorSet) {
-	if c.includeSourceCodeInfo {
-		panic("protocompile/ir: NYI: IncludeSourceCodeInfo()")
-	}
-
+func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet) {
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
-	for file := range TopoSort(files...) {
-		if !c.includeWKTs && wellknownimports.StandardImport(file.Path()) != "" {
-			continue
+	for file := range topoSort(files...) {
+		for _, p := range dg.exclude {
+			if p(file) {
+				return
+			}
 		}
 
 		fdp := new(descriptorpb.FileDescriptorProto)
 		fds.File = append(fds.File, fdp)
-		c.file(file, fdp)
+		dg.file(file, fdp)
 	}
 }
 
-func (c *codegen) file(file File, fdp *descriptorpb.FileDescriptorProto) {
-	c.currentFile = file
+func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) {
+	dg.currentFile = file
 
 	fdp.Name = addr(file.Path())
 	fdp.Package = addr(file.Context().Package())
@@ -133,13 +126,13 @@ func (c *codegen) file(file File, fdp *descriptorpb.FileDescriptorProto) {
 		if ty.IsEnum() {
 			edp := new(descriptorpb.EnumDescriptorProto)
 			fdp.EnumType = append(fdp.EnumType, edp)
-			c.enum(ty, edp)
+			dg.enum(ty, edp)
 			continue
 		}
 
 		mdp := new(descriptorpb.DescriptorProto)
 		fdp.MessageType = append(fdp.MessageType, mdp)
-		c.message(ty, mdp)
+		dg.message(ty, mdp)
 	}
 
 	// TODO: Services.
@@ -147,7 +140,7 @@ func (c *codegen) file(file File, fdp *descriptorpb.FileDescriptorProto) {
 	for extn := range seq.Values(file.Extensions()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
 		fdp.Extension = append(fdp.Extension, fd)
-		c.field(extn, fd)
+		dg.field(extn, fd)
 	}
 
 	for option := range seq.Values(file.Options()) {
@@ -155,62 +148,60 @@ func (c *codegen) file(file File, fdp *descriptorpb.FileDescriptorProto) {
 			fdp.Options = new(descriptorpb.FileOptions)
 		}
 
-		c.option(option, fdp.Options)
+		dg.option(option, fdp.Options)
 	}
 }
 
-func (c *codegen) message(ty Type, mdp *descriptorpb.DescriptorProto) {
+func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 	mdp.Name = addr(ty.Name()) // Has a leading dot.
 
 	for field := range seq.Values(ty.Fields()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
 		mdp.Field = append(mdp.Field, fd)
-		c.field(field, fd)
+		dg.field(field, fd)
 	}
 
 	for extn := range seq.Values(ty.Extensions()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
 		mdp.Extension = append(mdp.Extension, fd)
-		c.field(extn, fd)
+		dg.field(extn, fd)
 	}
 
 	for ty := range seq.Values(ty.Nested()) {
 		if ty.IsEnum() {
 			edp := new(descriptorpb.EnumDescriptorProto)
 			mdp.EnumType = append(mdp.EnumType, edp)
-			c.enum(ty, edp)
+			dg.enum(ty, edp)
 			continue
 		}
 
 		mdp := new(descriptorpb.DescriptorProto)
 		mdp.NestedType = append(mdp.NestedType, mdp)
-		c.message(ty, mdp)
+		dg.message(ty, mdp)
 	}
 
-	//nolint:revive // Complains about range_.
-	for range_ := range seq.Values(ty.ExtensionRanges()) {
+	for extensions := range seq.Values(ty.ExtensionRanges()) {
 		er := new(descriptorpb.DescriptorProto_ExtensionRange)
 		mdp.ExtensionRange = append(mdp.ExtensionRange, er)
 
-		start, end := range_.Range()
+		start, end := extensions.Range()
 		er.Start = addr(start)
 		er.End = addr(end - 1)
 
-		for option := range seq.Values(range_.Options()) {
+		for option := range seq.Values(extensions.Options()) {
 			if er.Options == nil {
 				er.Options = new(descriptorpb.ExtensionRangeOptions)
 			}
 
-			c.option(option, er.Options)
+			dg.option(option, er.Options)
 		}
 	}
 
-	//nolint:revive // Complains about range_.
-	for range_ := range seq.Values(ty.ReservedRanges()) {
+	for reserved := range seq.Values(ty.ReservedRanges()) {
 		rr := new(descriptorpb.DescriptorProto_ReservedRange)
 		mdp.ReservedRange = append(mdp.ReservedRange, rr)
 
-		start, end := range_.Range()
+		start, end := reserved.Range()
 		rr.Start = addr(start)
 		rr.End = addr(end - 1)
 	}
@@ -222,10 +213,10 @@ func (c *codegen) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 	for oneof := range seq.Values(ty.Oneofs()) {
 		odp := new(descriptorpb.OneofDescriptorProto)
 		mdp.OneofDecl = append(mdp.OneofDecl, odp)
-		c.oneof(oneof, odp)
+		dg.oneof(oneof, odp)
 	}
 
-	if c.currentFile.Syntax() == syntax.Proto3 {
+	if dg.currentFile.Syntax() == syntax.Proto3 {
 		var names syntheticNames
 
 		// Only now that we have added all of the normal oneofs do we add the
@@ -250,7 +241,7 @@ func (c *codegen) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 			mdp.Options = new(descriptorpb.MessageOptions)
 		}
 
-		c.option(option, mdp.Options)
+		dg.option(option, mdp.Options)
 	}
 }
 
@@ -275,7 +266,7 @@ var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
 	predeclared.Bytes:  descriptorpb.FieldDescriptorProto_TYPE_BYTES,
 }
 
-func (c *codegen) field(f Field, fdp *descriptorpb.FieldDescriptorProto) {
+func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) {
 	fdp.Name = addr(f.Name())
 	fdp.Number = addr(f.Number())
 
@@ -293,15 +284,15 @@ func (c *codegen) field(f Field, fdp *descriptorpb.FieldDescriptorProto) {
 		fdp.Type = kind.Enum()
 	} else if ty.IsEnum() {
 		fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-		fdp.TypeName = addr(ty.Name())
+		fdp.TypeName = addr(ty.FullName())
 	} else {
 		// TODO: Groups
 		fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
-		fdp.TypeName = addr(ty.Name())
+		fdp.TypeName = addr(ty.FullName())
 	}
 
 	if f.IsExtension() {
-		fdp.Extendee = addr(f.Container().Name())
+		fdp.Extendee = addr(f.Container().FullName())
 	}
 
 	if oneof := f.Oneof(); !oneof.IsZero() {
@@ -316,11 +307,11 @@ func (c *codegen) field(f Field, fdp *descriptorpb.FieldDescriptorProto) {
 		// We pass the FDP directly, because we want to keep it around for
 		// dealing with the pseudo-options. codegen.option has a special case
 		// for this.
-		c.option(option, fdp)
+		dg.option(option, fdp)
 	}
 }
 
-func (c *codegen) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {
+func (dg *descGenerator) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {
 	odp.Name = addr(o.Name())
 
 	for option := range seq.Values(o.Options()) {
@@ -328,25 +319,24 @@ func (c *codegen) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {
 			odp.Options = new(descriptorpb.OneofOptions)
 		}
 
-		c.option(option, odp.Options)
+		dg.option(option, odp.Options)
 	}
 }
 
-func (c *codegen) enum(ty Type, mdp *descriptorpb.EnumDescriptorProto) {
-	mdp.Name = addr(ty.Name()) // Has a leading dot.
+func (dg *descGenerator) enum(ty Type, mdp *descriptorpb.EnumDescriptorProto) {
+	mdp.Name = addr(ty.Name())
 
 	for field := range seq.Values(ty.Fields()) {
 		evd := new(descriptorpb.EnumValueDescriptorProto)
 		mdp.Value = append(mdp.Value, evd)
-		c.enumValue(field, evd)
+		dg.enumValue(field, evd)
 	}
 
-	//nolint:revive // Complains about range_.
-	for range_ := range seq.Values(ty.ReservedRanges()) {
+	for reserved := range seq.Values(ty.ReservedRanges()) {
 		rr := new(descriptorpb.EnumDescriptorProto_EnumReservedRange)
 		mdp.ReservedRange = append(mdp.ReservedRange, rr)
 
-		start, end := range_.Range()
+		start, end := reserved.Range()
 		rr.Start = addr(start)
 		rr.End = addr(end - 1)
 	}
@@ -360,11 +350,11 @@ func (c *codegen) enum(ty Type, mdp *descriptorpb.EnumDescriptorProto) {
 			mdp.Options = new(descriptorpb.EnumOptions)
 		}
 
-		c.option(option, mdp.Options)
+		dg.option(option, mdp.Options)
 	}
 }
 
-func (c *codegen) enumValue(f Field, fdp *descriptorpb.EnumValueDescriptorProto) {
+func (dg *descGenerator) enumValue(f Field, fdp *descriptorpb.EnumValueDescriptorProto) {
 	fdp.Name = addr(f.Name())
 	fdp.Number = addr(f.Number())
 
@@ -373,11 +363,11 @@ func (c *codegen) enumValue(f Field, fdp *descriptorpb.EnumValueDescriptorProto)
 			fdp.Options = new(descriptorpb.EnumValueOptions)
 		}
 
-		c.option(option, fdp.Options)
+		dg.option(option, fdp.Options)
 	}
 }
 
-func (c *codegen) option(_ Option, target proto.Message) {
+func (dg *descGenerator) option(_ Option, target proto.Message) {
 	var fdp *descriptorpb.FieldDescriptorProto
 	if actual, ok := target.(*descriptorpb.FieldDescriptorProto); ok {
 		fdp = actual
@@ -410,34 +400,32 @@ type syntheticNames map[intern.ID]struct{}
 
 func (sn *syntheticNames) generate(candidate string, message Type) string {
 	table := message.Context().intern
-	var names = *sn
 	if *sn == nil {
-		names = make(map[intern.ID]struct{})
-		*sn = names
+		*sn = mapsx.CollectSet(iterx.Chain(
+			seq.Map(message.Fields(), Field.InternedName),
+			seq.Map(message.Extensions(), Field.InternedName),
+			seq.Map(message.Oneofs(), Oneof.InternedName),
+			iterx.FlatMap(seq.Values(message.Nested()), func(ty Type) iter.Seq[intern.ID] {
+				name := table.Intern(ty.Name())
+				if !ty.IsEnum() {
+					return iterx.Of(name)
+				}
 
-		for field := range seq.Values(message.Fields()) {
-			names[field.InternedName()] = struct{}{}
-		}
-		for extn := range seq.Values(message.Extensions()) {
-			names[extn.InternedName()] = struct{}{}
-		}
-		for oneof := range seq.Values(message.Oneofs()) {
-			names[oneof.InternedName()] = struct{}{}
-		}
-		for ty := range seq.Values(message.Nested()) {
-			name := ty.Name()
-			name = name[strings.LastIndex(name, ".")+1:]
-			names[table.Intern(name)] = struct{}{}
-		}
+				return iterx.Chain(
+					iterx.Of(name),
+					seq.Map(ty.Fields(), Field.InternedName),
+				)
+			}),
+		))
 	}
 
 	if !strings.HasPrefix(candidate, "_") {
 		candidate = "_" + candidate
 	}
-	for intern.Contains(table, names, candidate) {
+	for intern.Contains(table, *sn, candidate) {
 		candidate = "X" + candidate
 	}
 
-	names[table.Intern(candidate)] = struct{}{}
+	(*sn)[table.Intern(candidate)] = struct{}{}
 	return candidate
 }

@@ -135,6 +135,15 @@ func Lines(s string) iter.Seq[string] {
 	return Split(s, '\n')
 }
 
+// CutLast is like [strings.Cut], but searches for the last occurrence of sep.
+// If sep is not present in s, returns "", s, false.
+func CutLast(s, sep string) (before, after string, found bool) {
+	if i := strings.LastIndex(s, sep); i >= 0 {
+		return s[:i], s[i+len(sep):], true
+	}
+	return "", s, false
+}
+
 // PartitionKey returns an iterator of the largest substrings of s such that
 // key(r) for each rune in each substring is the same value.
 //

@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -128,11 +129,18 @@ func (t Type) Predeclared() predeclared.Name {
 	)
 }
 
-// Name returns this type's fully-qualified name.
+// Name returns this type's declared name, i.e., the last component of its
+// full-qualified name.
+func (t Type) Name() string {
+	_, name, _ := stringsx.CutLast(t.FullName(), ".")
+	return name
+}
+
+// FullName returns this type's fully-qualified name.
 //
 // If t is zero, returns "". If t is a primitive type, the returned name will
 // not have a leading dot; otherwise, if it is a user-defined type, it will.
-func (t Type) Name() string {
+func (t Type) FullName() string {
 	if t.IsZero() {
 		return ""
 	}
