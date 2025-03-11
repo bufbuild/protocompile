@@ -90,7 +90,7 @@ func (f Field) FullName() FullName {
 	return FullName(f.Context().intern.Value(f.raw.fqn))
 }
 
-// InternedName returns the intern ID for [Field.FullName]().Name()
+// InternedName returns the intern ID for [Field.FullName]().Name().
 func (f Field) InternedName() intern.ID {
 	if f.IsZero() {
 		return 0
@@ -98,7 +98,7 @@ func (f Field) InternedName() intern.ID {
 	return f.raw.name
 }
 
-// InternedName returns the intern ID for [Field.FullName]
+// InternedName returns the intern ID for [Field.FullName].
 func (f Field) InternedFullName() intern.ID {
 	if f.IsZero() {
 		return 0
@@ -221,7 +221,7 @@ func (o Oneof) FullName() FullName {
 	return FullName(o.Context().intern.Value(o.raw.fqn))
 }
 
-// InternedName returns the intern ID for [Oneof.FullName]().Name()
+// InternedName returns the intern ID for [Oneof.FullName]().Name().
 func (o Oneof) InternedName() intern.ID {
 	if o.IsZero() {
 		return 0
@@ -229,7 +229,7 @@ func (o Oneof) InternedName() intern.ID {
 	return o.raw.name
 }
 
-// InternedName returns the intern ID for [Oneof.FullName]
+// InternedName returns the intern ID for [Oneof.FullName].
 func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
 		return 0
