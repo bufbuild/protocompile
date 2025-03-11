@@ -93,9 +93,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			ty := w.newType(def, parent)
 			ty.raw.isEnum = kind == ast.DefKindEnum
 
-			for decl := range seq.Values(def.Body().Decls()) {
-				w.recurse(decl, ty)
-			}
+			w.recurse(def.Body().AsAny(), ty)
 
 		case ast.DefKindField, ast.DefKindEnumValue:
 			w.newField(def, parent)
@@ -105,22 +103,16 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 
 		case ast.DefKindOneof:
 			oneofDef := def.AsOneof()
-			oneof := oneof{
+			w.recurse(def.Body().AsAny(), oneof{
 				parent: extractParentType(parent),
 				Oneof:  w.newOneof(oneofDef, parent),
-			}
-			for decl := range seq.Values(oneofDef.Body.Decls()) {
-				w.recurse(decl, oneof)
-			}
+			})
 
 		case ast.DefKindExtend:
-			extend := extend{
+			w.recurse(def.Body().AsAny(), extend{
 				parent: extractParentType(parent),
 				extend: def.AsExtend(),
-			}
-			for decl := range seq.Values(extend.extend.Body.Decls()) {
-				w.recurse(decl, extend)
-			}
+			})
 
 		case ast.DefKindService:
 			sorry("services")

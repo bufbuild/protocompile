@@ -153,7 +153,7 @@ func (f File) Imports() seq.Indexer[Import] {
 func (f File) TransitiveImports() seq.Indexer[Import] {
 	file := f.Context().file
 	return seq.NewFixedSlice(
-		file.imports[:file.importEnd],
+		file.imports,
 		func(n int, f File) Import {
 			return Import{
 				File: f,

@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -22,7 +23,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -38,6 +38,8 @@ import (
 type Importer func(n int, path string, decl ast.DeclImport) (File, ErrCycle[ast.DeclImport])
 
 // ErrCycle is an error indicating that a cycle has occurred during processing.
+//
+// The first and last elements of this slice should be equal.
 type ErrCycle[T any] []T
 
 // buildImports builds the transitive imports table.
@@ -53,19 +55,8 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 		file, cycle := importer(i, path, imp)
 		if cycle != nil {
-			err := r.Errorf("encountered cycle while importing %q", path).Apply(
-				report.Snippet(imp),
-			)
-			for _, imp := range cycle[1 : len(cycle)-1] {
-				path, ok := imp.ImportPath().AsLiteral().AsString()
-				if !ok {
-					err.Apply(report.Snippet(imp))
-					continue
-				}
-				err.Apply(report.Snippetf(imp, "which imports %q", path))
-			}
-			last, _ := slicesx.Last(cycle)
-			err.Apply(report.Snippetf(last, "which imports %q, completing the cycle", path))
+			diagnoseCycle(r, path, cycle)
+			continue
 		}
 
 		if !mapsx.Add(dedup, file.InternedPath()) {
@@ -107,5 +98,25 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 			c.file.imports = append(c.file.imports, imp.File)
 		}
+	}
+}
+
+func diagnoseCycle(r *report.Report, path string, cycle ErrCycle[ast.DeclImport]) {
+	err := r.Errorf("encountered cycle while importing %q", path)
+
+	for i, imp := range cycle {
+		var message string
+		path, ok := imp.ImportPath().AsLiteral().AsString()
+		if ok {
+			switch i {
+			case 0:
+				break
+			case len(cycle) - 1:
+				message = fmt.Sprintf("which imports %q, completing the cycle", path)
+			default:
+				message = fmt.Sprintf("which imports %q", path)
+			}
+		}
+		err.Apply(report.Snippetf(imp, "%v", message))
 	}
 }

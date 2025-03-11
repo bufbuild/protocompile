@@ -190,8 +190,8 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 // canonicalization.
 //
 // Canonicalization converts a path into something that can be used for name
-// resolution. This includes removing extra separators, deleting whitespace,
-// and converting all separators into dots.
+// resolution. This includes removing extra separators and deleting whitespace
+// and comments.
 func (p Path) Canonicalized() string {
 	// Most paths are already in canonical form. Verify this before allocating
 	// a fresh string.
@@ -202,23 +202,27 @@ func (p Path) Canonicalized() string {
 	}
 
 	var out strings.Builder
+	p.canonicalized(&out)
+	return out.String()
+}
+
+func (p Path) canonicalized(out *strings.Builder) {
 	for i, pc := range iterx.Enumerate(p.Components) {
 		if pc.Name().IsZero() {
 			continue
 		}
 
 		if i > 0 || !pc.Separator().IsZero() {
-			out.WriteByte('.')
+			out.WriteString(pc.Separator().Text())
 		}
 		if id := pc.Name(); !id.IsZero() {
 			out.WriteString(id.Name())
 		} else {
 			out.WriteByte('(')
-			out.WriteString(pc.AsExtension().Canonicalized())
+			pc.AsExtension().canonicalized(out)
 			out.WriteByte(')')
 		}
 	}
-	return out.String()
 }
 
 func (p Path) isCanonical() bool {
@@ -227,9 +231,6 @@ func (p Path) isCanonical() bool {
 		sep := pc.Separator()
 		name := pc.Name()
 
-		if sep.Keyword() == keyword.Slash {
-			return false
-		}
 		if name.IsZero() {
 			return false
 		}
