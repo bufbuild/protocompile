@@ -17,13 +17,13 @@ package ir_test
 import (
 	"testing"
 
-	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/experimental/ir"
 )
 
 func TestFullNameAbsolute(t *testing.T) {
 	t.Parallel()
-
 	tests := []struct {
 		fqn, abs ir.FullName
 	}{
@@ -37,6 +37,7 @@ func TestFullNameAbsolute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.fqn), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.fqn == tt.abs, tt.fqn.Absolute())
 			assert.Equal(t, tt.abs, tt.fqn.ToAbsolute())
 		})
@@ -44,6 +45,7 @@ func TestFullNameAbsolute(t *testing.T) {
 }
 
 func TestFullNameParts(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		fqn, parent ir.FullName
 		name        string
@@ -59,6 +61,7 @@ func TestFullNameParts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.fqn), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.name, tt.fqn.Name())
 			assert.Equal(t, tt.parent, tt.fqn.Parent())
 		})
@@ -66,6 +69,7 @@ func TestFullNameParts(t *testing.T) {
 }
 
 func TestFullNameAppend(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		fqn, got ir.FullName
 		names    []string
@@ -121,6 +125,7 @@ func TestFullNameAppend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.fqn), func(t *testing.T) {
+			t.Parallel()
 			assert.Equal(t, tt.got, tt.fqn.Append(tt.names...))
 		})
 	}
