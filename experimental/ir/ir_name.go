@@ -14,7 +14,11 @@
 
 package ir
 
-import "github.com/bufbuild/protocompile/internal/ext/stringsx"
+import (
+	"strings"
+
+	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+)
 
 // FullName is a fully-qualified Protobuf name, which is a dot-separated list of
 // identifiers, with an optional dot prefix.
@@ -56,13 +60,28 @@ func (n FullName) Parent() FullName {
 //
 // If this is an empty name, the resulting name will not be absolute.
 func (n FullName) Append(names ...string) FullName {
-	for _, name := range names {
-		switch n {
-		case "":
-			n = FullName(name)
-		default:
-			n += "." + FullName(name)
-		}
+	if len(names) == 0 {
+		return n
 	}
-	return n
+
+	m := len(n) + len(names) - 1
+	if n != "" {
+		m++
+	}
+	for _, name := range names {
+		m += len(name)
+	}
+
+	var out strings.Builder
+	out.Grow(m)
+	out.WriteString(string(n))
+
+	for _, name := range names {
+		if out.Len() > 0 {
+			out.WriteByte('.')
+		}
+		out.WriteString(name)
+	}
+
+	return FullName(out.String())
 }
