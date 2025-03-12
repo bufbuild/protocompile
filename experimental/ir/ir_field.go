@@ -75,7 +75,7 @@ func (f Field) AST() ast.DeclDef {
 	return f.raw.def
 }
 
-// Name returns this fields's declared name.
+// FullName returns this fields's name.
 func (f Field) Name() string {
 	if f.IsZero() {
 		return ""
@@ -83,7 +83,15 @@ func (f Field) Name() string {
 	return f.Context().intern.Value(f.raw.name)
 }
 
-// InternedName returns this fields's declared name as an intern ID.
+// FullName returns this fields's fully-qualified name.
+func (f Field) FullName() FullName {
+	if f.IsZero() {
+		return ""
+	}
+	return FullName(f.Context().intern.Value(f.raw.fqn))
+}
+
+// InternedName returns the intern ID for [Field.FullName]().Name().
 func (f Field) InternedName() intern.ID {
 	if f.IsZero() {
 		return 0
@@ -91,12 +99,12 @@ func (f Field) InternedName() intern.ID {
 	return f.raw.name
 }
 
-// FullName returns this fields's fully-qualified name.
-func (f Field) FullName() string {
+// InternedName returns the intern ID for [Field.FullName].
+func (f Field) InternedFullName() intern.ID {
 	if f.IsZero() {
-		return ""
+		return 0
 	}
-	return f.Context().intern.Value(f.raw.fqn)
+	return f.raw.fqn
 }
 
 // Number returns the number for this field after expression evaluation.
@@ -211,7 +219,15 @@ func (o Oneof) Name() string {
 	return o.Context().intern.Value(o.raw().name)
 }
 
-// InternedName returns this oneof's declared name as an intern ID.
+// FullName returns this oneof's fully-qualified name.
+func (o Oneof) FullName() FullName {
+	if o.IsZero() {
+		return ""
+	}
+	return FullName(o.Context().intern.Value(o.raw().fqn))
+}
+
+// InternedName returns the intern ID for [Oneof.FullName]().Name().
 func (o Oneof) InternedName() intern.ID {
 	if o.IsZero() {
 		return 0
@@ -219,12 +235,12 @@ func (o Oneof) InternedName() intern.ID {
 	return o.raw().name
 }
 
-// FullName returns this oneof's fully-qualified name.
-func (o Oneof) FullName() string {
+// InternedName returns the intern ID for [Oneof.FullName].
+func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
-		return ""
+		return 0
 	}
-	return o.Context().intern.Value(o.raw().fqn)
+	return o.raw().fqn
 }
 
 // Container returns the message type which contains it.

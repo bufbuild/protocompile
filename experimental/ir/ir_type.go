@@ -22,7 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -41,7 +40,7 @@ type rawType struct {
 	reservedNames   []rawReservedName
 	oneofs          []rawOneof
 	options         []arena.Pointer[rawOption]
-	fqn             intern.ID
+	fqn, name       intern.ID
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
 	isEnum          bool
@@ -53,6 +52,7 @@ var primitiveCtx = func() *Context {
 	ctx := new(Context)
 	ctx.intern = new(intern.Table)
 
+	nextPtr := 1
 	predeclared.All()(func(n predeclared.Name) bool {
 		if n == predeclared.Unknown || !n.IsScalar() {
 			// Skip allocating a pointer for the very first value. This ensures
@@ -62,9 +62,12 @@ var primitiveCtx = func() *Context {
 			return true
 		}
 
-		ptr := ctx.arenas.types.NewCompressed(rawType{
-			fqn: ctx.intern.Intern(n.String()),
-		})
+		for nextPtr != int(n) {
+			_ = ctx.arenas.types.NewCompressed(rawType{})
+			nextPtr++
+		}
+		ptr := ctx.arenas.types.NewCompressed(rawType{})
+		nextPtr++
 
 		if int(ptr) != int(n) {
 			panic(fmt.Sprintf("IR initialization error: %d != %d; this is a bug in protocompile", ptr, n))
@@ -129,33 +132,41 @@ func (t Type) Predeclared() predeclared.Name {
 	)
 }
 
-// Name returns this type's declared name, i.e., the last component of its
-// full-qualified name.
+// Name returns this type's declared name, i.e. the last component of its
+// full name.
 func (t Type) Name() string {
-	_, name, _ := stringsx.CutLast(t.FullName(), ".")
-	return name
+	return t.FullName().Name()
 }
 
 // FullName returns this type's fully-qualified name.
 //
-// If t is zero, returns "". If t is a primitive type, the returned name will
-// not have a leading dot; otherwise, if it is a user-defined type, it will.
-func (t Type) FullName() string {
+// If t is zero, returns "". Otherwise, the returned name will be absolute
+// unless this is a primitive type.
+func (t Type) FullName() FullName {
 	if t.IsZero() {
 		return ""
 	}
 	if p := t.Predeclared(); p != predeclared.Unknown {
-		return p.String()
+		return FullName(p.String())
 	}
-	return t.Context().intern.Value(t.raw.fqn)
+	return FullName(t.Context().intern.Value(t.raw.fqn))
 }
 
-// InternedName returns this type's fully-qualified name, if it has been
-// interned.
+// InternedName returns the intern ID for [Type.FullName]().Name()
 //
 // Predeclared types do not have an interned name.
 func (t Type) InternedName() intern.ID {
-	if t.IsPredeclared() {
+	if t.IsZero() {
+		return 0
+	}
+	return t.raw.name
+}
+
+// InternedName returns the intern ID for [Type.FullName]
+//
+// Predeclared types do not have an interned name.
+func (t Type) InternedFullName() intern.ID {
+	if t.IsZero() {
 		return 0
 	}
 	return t.raw.fqn

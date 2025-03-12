@@ -102,7 +102,7 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 	dg.currentFile = file
 
 	fdp.Name = addr(file.Path())
-	fdp.Package = addr(file.Context().Package())
+	fdp.Package = addr(string(file.Package()))
 
 	switch file.Syntax() {
 	case syntax.Proto2, syntax.Proto3:
@@ -153,7 +153,7 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 }
 
 func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
-	mdp.Name = addr(ty.Name()) // Has a leading dot.
+	mdp.Name = addr(ty.Name())
 
 	for field := range seq.Values(ty.Fields()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
@@ -284,15 +284,15 @@ func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) 
 		fdp.Type = kind.Enum()
 	} else if ty.IsEnum() {
 		fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-		fdp.TypeName = addr(ty.FullName())
+		fdp.TypeName = addr(string(ty.FullName()))
 	} else {
 		// TODO: Groups
 		fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
-		fdp.TypeName = addr(ty.FullName())
+		fdp.TypeName = addr(string(ty.FullName()))
 	}
 
 	if f.IsExtension() {
-		fdp.Extendee = addr(f.Container().FullName())
+		fdp.Extendee = addr(string(f.Container().FullName()))
 	}
 
 	if oneof := f.Oneof(); !oneof.IsZero() {
@@ -406,13 +406,11 @@ func (sn *syntheticNames) generate(candidate string, message Type) string {
 			seq.Map(message.Extensions(), Field.InternedName),
 			seq.Map(message.Oneofs(), Oneof.InternedName),
 			iterx.FlatMap(seq.Values(message.Nested()), func(ty Type) iter.Seq[intern.ID] {
-				name := table.Intern(ty.Name())
 				if !ty.IsEnum() {
-					return iterx.Of(name)
+					return iterx.Of(ty.InternedName())
 				}
-
 				return iterx.Chain(
-					iterx.Of(name),
+					iterx.Of(ty.InternedName()),
 					seq.Map(ty.Fields(), Field.InternedName),
 				)
 			}),

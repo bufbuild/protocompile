@@ -34,6 +34,12 @@ type Context struct {
 	pkg    intern.ID
 	intern *intern.Table
 
+	// The path for this file. This need not be what ast.Span() reports, because
+	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
+	// to normalize it.
+	path   string
+	syntax syntax.Syntax
+
 	file struct {
 		ast ast.File
 
@@ -86,19 +92,6 @@ func (c *Context) File() File {
 	return File{withContext2{internal.NewWith(c)}}
 }
 
-// Package returns the package name for this file.
-//
-// The name will not include a leading dot. It will be empty for the empty
-// package.
-func (c *Context) Package() string {
-	return c.intern.Value(c.pkg)
-}
-
-// InternedPackage returns the intern ID for the value of [Context.Package].
-func (c *Context) InternedPackage() intern.ID {
-	return c.pkg
-}
-
 // File is an IR file, which provides access to the top-level declarations of
 // a Protobuf file.
 type File struct{ withContext2 }
@@ -112,28 +105,44 @@ type File struct{ withContext2 }
 // field.
 type withContext2 struct{ internal.With[*Context] }
 
+// AST returns the AST this file was parsed from.
+func (f File) AST() ast.File {
+	return f.Context().file.ast
+}
+
+// Syntax returns the syntax pragma that applies to this file.
+func (f File) Syntax() syntax.Syntax {
+	return f.Context().syntax
+}
+
+// Path returns the canoniocal path for this file.
+//
+// This need not be the same as [File.AST]().Span().Path().
+func (f File) Path() string {
+	return f.Context().path
+}
+
+// Package returns the package name for this file.
+//
+// The name will not include a leading dot. It will be empty for the empty
+// package.
+func (f File) Package() FullName {
+	c := f.Context()
+	return FullName(c.intern.Value(c.pkg))
+}
+
+// InternedPackage returns the intern ID for the value of [File.Package].
+func (f File) InternedPackage() intern.ID {
+	return f.Context().pkg
+}
+
 // Import is an import in a [File].
 type Import struct {
 	File              // The file that is imported.
 	Public, Weak bool // The kind of import this is.
 }
 
-// Path returns the file name for this file.
-func (f File) Path() string {
-	return f.AST().Context().Stream().Path()
-}
-
-// Syntax returns the syntax for this file.
-func (f File) Syntax() syntax.Syntax {
-	return f.Context().file.syntax
-}
-
-// AST returns the AST this file was parsed from.
-func (f File) AST() ast.File {
-	return f.Context().file.ast
-}
-
-// Imports returns the files directly imported by this file.
+// Imports returns.
 func (f File) Imports() seq.Indexer[Import] {
 	file := f.Context().file
 	return seq.NewFixedSlice(
