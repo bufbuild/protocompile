@@ -74,20 +74,36 @@ func (f Field) AST() ast.DeclDef {
 	return f.raw.def
 }
 
-// Name returns this fields's declared name.
-func (f Field) Name() string {
+// FullName returns this fields's name.
+func (f Field) Name() FullName {
 	if f.IsZero() {
 		return ""
 	}
-	return f.Context().session.intern.Value(f.raw.name)
+	return FullName(f.Context().session.intern.Value(f.raw.name))
 }
 
 // FullName returns this fields's fully-qualified name.
-func (f Field) FullName() string {
+func (f Field) FullName() FullName {
 	if f.IsZero() {
 		return ""
 	}
-	return f.Context().session.intern.Value(f.raw.fqn)
+	return FullName(f.Context().session.intern.Value(f.raw.fqn))
+}
+
+// InternedName returns the intern ID for [Field.FullName]().Name().
+func (f Field) InternedName() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
+	return f.raw.name
+}
+
+// InternedName returns the intern ID for [Field.FullName].
+func (f Field) InternedFullName() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
+	return f.raw.fqn
 }
 
 // Number returns the number for this field after expression evaluation.
@@ -198,11 +214,27 @@ func (o Oneof) Name() string {
 }
 
 // FullName returns this oneof's fully-qualified name.
-func (o Oneof) FullName() string {
+func (o Oneof) FullName() FullName {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().session.intern.Value(o.raw.fqn)
+	return FullName(o.Context().session.intern.Value(o.raw.fqn))
+}
+
+// InternedName returns the intern ID for [Oneof.FullName]().Name().
+func (o Oneof) InternedName() intern.ID {
+	if o.IsZero() {
+		return 0
+	}
+	return o.raw.name
+}
+
+// InternedName returns the intern ID for [Oneof.FullName].
+func (o Oneof) InternedFullName() intern.ID {
+	if o.IsZero() {
+		return 0
+	}
+	return o.raw.fqn
 }
 
 // Members returns this oneof's member fields.

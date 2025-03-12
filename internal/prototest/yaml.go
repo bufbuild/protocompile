@@ -15,14 +15,14 @@
 package prototest
 
 import (
-	"cmp"
 	"fmt"
-	"math"
 	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 )
 
 // ToYAMLOptions contains configuration for [ToYAML].
@@ -252,7 +252,9 @@ func (d *doc) push(k, v any) {
 // appropriate.
 func (d *doc) prepare() {
 	if d.needsSort {
-		slices.SortFunc(d.pairs, cmpMapKeys)
+		slices.SortFunc(d.pairs, func(a, b [2]any) int {
+			return cmpx.Any(a[0], b[0])
+		})
 	}
 
 	if d.isArray || len(d.pairs) == 0 {
@@ -289,63 +291,5 @@ func (d *doc) prepare() {
 				}
 			}
 		}
-	}
-}
-
-func cmpMapKeys(a, b [2]any) int {
-	// key is a concrete comparable type that is useful for forcing relative
-	// order between types.
-	type key struct {
-		which int
-		bool
-		int64
-		uint64
-		string
-	}
-
-	any2key := func(v any) key {
-		switch v := v.(type) {
-		case bool:
-			return key{which: 0, bool: v}
-		case int32:
-			return key{which: 1, int64: int64(v)}
-		case int64:
-			return key{which: 1, int64: v}
-		case uint32:
-			return key{which: 1, int64: int64(v)}
-		case uint64:
-			if v <= math.MaxInt64 {
-				return key{which: 1, int64: int64(v)}
-			}
-			return key{which: 2, uint64: v}
-		case protoreflect.Name:
-			return key{which: 3, string: string(v)}
-		case string:
-			return key{which: 3, string: v}
-		default:
-			return key{}
-		}
-	}
-
-	ak := any2key(b)
-	bk := any2key(a)
-	if n := cmp.Compare(ak.which, bk.which); n != 0 {
-		return n
-	}
-
-	switch ak.which {
-	case 0:
-		if !ak.bool {
-			return -1
-		}
-		return 1
-	case 1:
-		return cmp.Compare(ak.int64, bk.int64)
-	case 2:
-		return cmp.Compare(ak.uint64, bk.uint64)
-	case 3:
-		return cmp.Compare(ak.string, bk.string)
-	default:
-		return 0
 	}
 }

@@ -59,7 +59,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		if !mapsx.Add(dedup, file.InternedPath()) {
+		if !mapsx.AddZero(dedup, file.InternedPath()) {
 			continue
 		}
 
@@ -84,7 +84,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	// in all of *their* transitive imports.
 	for file := range seq.Values(f.Imports()) {
 		for imp := range seq.Values(file.TransitiveImports()) {
-			if !mapsx.Add(dedup, imp.File.InternedPath()) {
+			if !mapsx.AddZero(dedup, imp.File.InternedPath()) {
 				continue
 			}
 

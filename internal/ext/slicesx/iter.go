@@ -27,6 +27,11 @@ func Map[S ~[]E, E, U any](s S, f func(E) U) iter.Seq[U] {
 	return iterx.Map(slices.Values(s), f)
 }
 
+// Join is a helper for applying [iterx.Join] to a slice.
+func Join[S ~[]E, E any](s S, sep string) string {
+	return iterx.Join(slices.Values(s), sep)
+}
+
 // PartitionFunc returns an iterator of the largest substrings of s of equal
 // elements.
 //

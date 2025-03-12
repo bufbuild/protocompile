@@ -16,6 +16,7 @@ package ir
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -26,8 +27,14 @@ import (
 //
 // Unlike [ast.Context], this Context is shared by many files.
 type Context struct {
-	session   *Session
-	path, pkg intern.ID
+	session *Session
+	pkg     intern.ID
+
+	// The path for this file. This need not be what ast.Span() reports, because
+	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
+	// to normalize it.
+	path   intern.ID
+	syntax syntax.Syntax
 
 	file struct {
 		ast ast.File
@@ -92,21 +99,19 @@ type File struct{ withContext2 }
 // field.
 type withContext2 struct{ internal.With[*Context] }
 
-// Import is an import in a [File].
-type Import struct {
-	File              // The file that is imported.
-	Public, Weak bool // The kind of import this is.
-}
-
 // AST returns the AST this file was parsed from.
 func (f File) AST() ast.File {
 	return f.Context().file.ast
 }
 
-// Path returns the Protobuf file path for this file.
+// Syntax returns the syntax pragma that applies to this file.
+func (f File) Syntax() syntax.Syntax {
+	return f.Context().syntax
+}
+
+// Path returns the canoniocal path for this file.
 //
-// The path will be canonicalized, and will use / as the separator regardless
-// of platform.
+// This need not be the same as [File.AST]().Span().Path().
 func (f File) Path() string {
 	c := f.Context()
 	return c.session.intern.Value(c.path)
@@ -121,14 +126,20 @@ func (f File) InternedPath() intern.ID {
 //
 // The name will not include a leading dot. It will be empty for the empty
 // package.
-func (f File) Package() string {
+func (f File) Package() FullName {
 	c := f.Context()
-	return c.session.intern.Value(c.pkg)
+	return FullName(c.session.intern.Value(c.pkg))
 }
 
 // InternedPackage returns the intern ID for the value of [File.Package].
 func (f File) InternedPackage() intern.ID {
 	return f.Context().pkg
+}
+
+// Import is an import in a [File].
+type Import struct {
+	File              // The file that is imported.
+	Public, Weak bool // The kind of import this is.
 }
 
 // Imports returns an indexer over the imports declared in this file.

@@ -16,7 +16,6 @@ package ir
 
 import (
 	"path/filepath"
-	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
@@ -28,6 +27,8 @@ import (
 type walker struct {
 	File
 	*report.Report
+
+	pkg FullName
 }
 
 // walk is the first step in constructing an IR module: converting an AST file
@@ -44,6 +45,7 @@ func (w *walker) walk() {
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}
+	w.pkg = w.Package().ToAbsolute()
 
 	w.recurse(w.AST().AsAny(), nil)
 }
@@ -128,9 +130,8 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 
 func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	parentTy := extractParentType(parent)
-
 	name := def.Name().AsIdent().Name()
-	var fqn string
+	fqn := w.fullname(parentTy, name)
 
 	raw := w.Context().arenas.types.New(rawType{
 		def:  def,
@@ -149,20 +150,8 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 
 func (w *walker) newField(def ast.DeclDef, parent any) Field {
 	parentTy := extractParentType(parent)
-
 	name := def.Name().AsIdent().Name()
-	var fqn string
-	if !parentTy.IsZero() {
-		parentName := parentTy.Name()
-		if parentTy.IsEnum() {
-			// Protobuf dumps the names of enum values in the enum's parent, so
-			// we need to drop a path component.
-			parentName = parentName[:strings.LastIndexByte(parentName, '.')]
-		}
-		fqn = parentName + "." + name
-	} else {
-		fqn = "." + w.Package() + "." + name
-	}
+	fqn := w.fullname(parentTy, name)
 
 	id := w.Context().arenas.fields.NewCompressed(rawField{
 		def:    def,
@@ -196,14 +185,8 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 
 func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 	parentTy := extractParentType(parent)
-
 	name := def.Name.Name()
-	var fqn string
-	if !parentTy.IsZero() {
-		fqn = parentTy.Name() + "." + name
-	} else {
-		fqn = "." + w.Package() + "." + name
-	}
+	fqn := w.fullname(parentTy, name)
 
 	raw := w.Context().arenas.oneofs.New(rawOneof{
 		def:  def.Decl,
@@ -215,11 +198,20 @@ func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 		parentTy.raw.oneofs = append(parentTy.raw.oneofs,
 			w.Context().arenas.oneofs.Compress(raw),
 		)
-
-		if _, ok := parent.(extend); !ok {
-			parentTy.raw.fieldsExtnStart++
-		}
 	}
 
 	return Oneof{internal.NewWith(w.Context()), raw}
+}
+
+func (w *walker) fullname(parentTy Type, name string) string {
+	parentName := w.pkg
+	if !parentTy.IsZero() {
+		parentName = parentTy.FullName()
+		if parentTy.IsEnum() {
+			// Protobuf dumps the names of enum values in the enum's parent, so
+			// we need to drop a path component.
+			parentName = parentName.Parent()
+		}
+	}
+	return string(parentName.Append(name))
 }

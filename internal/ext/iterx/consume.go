@@ -62,3 +62,14 @@ func Every[T any](seq iter.Seq[T], p func(T) bool) bool {
 	}
 	return true
 }
+
+// Exhaust runs an iterator to completion for its side-effects.
+//
+// This mostly exists because there is a noisy lint that incorrectly thinks all
+// range loops are side-effect free, and because gofmt won't format
+// "for range iter {}" on one line.
+func Exhaust[T any](seq iter.Seq[T]) {
+	//nolint:revive // Empty block has side-effects.
+	for range seq {
+	}
+}

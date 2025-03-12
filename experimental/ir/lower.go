@@ -58,7 +58,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	})
 
 	// First, build the Type graph for this file.
-	(&walker{c.File(), r}).walk()
+	(&walker{File: c.File(), Report: r}).walk()
 
 	// Now, resolve all the imports.
 	buildImports(c.File(), r, importer)
