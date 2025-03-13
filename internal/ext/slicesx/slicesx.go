@@ -73,6 +73,15 @@ func LastPointer[S ~[]E, E any](s S) *E {
 	return GetPointer(s, len(s)-1)
 }
 
+// Pop is like [Last], but it removes the last element.
+func Pop[S ~[]E, E any](s *S) (E, bool) {
+	v, ok := Last(*s)
+	if ok {
+		*s = (*s)[len(*s)-1:]
+	}
+	return v, ok
+}
+
 // LastIndex is like [slices.Index], but from the end of the slice.
 func LastIndex[S ~[]E, E comparable](s S, needle E) int {
 	for i, v := range slices.Backward(s) {

@@ -15,12 +15,16 @@
 package ir
 
 import (
+	"iter"
+	"slices"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/toposort"
 )
 
 // Context is where all of the book-keeping for an IR session is kept.
@@ -38,6 +42,9 @@ type Context struct {
 
 	file struct {
 		ast ast.File
+
+		syntax syntax.Syntax
+
 		// All transitively-imported files. This slice is divided into the
 		// following segments:
 		//
@@ -178,6 +185,21 @@ func (f File) Options() seq.Indexer[Option] {
 		f.Context().file.options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(f.Context(), p)
+		},
+	)
+}
+
+// topoSort sorts a graph of [File]s according to their dependency graph,
+// in topological order. Files with no dependencies are yielded first.
+func topoSort(files ...File) iter.Seq[File] {
+	// NOTE: This cannot panic because Files, by construction, do not contain
+	// graph cycles.
+	return toposort.Sort(
+		files,
+		File.Context,
+		func(f File) iter.Seq[File] {
+			impl := f.Context().file
+			return slices.Values(impl.imports[impl.importEnd:])
 		},
 	)
 }
