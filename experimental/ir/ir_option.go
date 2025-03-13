@@ -215,7 +215,7 @@ func (e Element) AsString() (string, bool) {
 	if !e.Type().Predeclared().IsString() {
 		return "", false
 	}
-	return e.Context().intern.Value(intern.ID(e.bits)), true
+	return e.Context().session.intern.Value(intern.ID(e.bits)), true
 }
 
 // AsMessage returns the value of this element as a message literal.

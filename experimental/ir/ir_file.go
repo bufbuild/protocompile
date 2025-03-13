@@ -27,13 +27,13 @@ import (
 //
 // Unlike [ast.Context], this Context is shared by many files.
 type Context struct {
-	pkg    intern.ID
-	intern *intern.Table
+	session *Session
+	pkg     intern.ID
 
 	// The path for this file. This need not be what ast.Span() reports, because
 	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
 	// to normalize it.
-	path   string
+	path   intern.ID
 	syntax syntax.Syntax
 
 	file struct {
@@ -44,11 +44,12 @@ type Context struct {
 		// 1. Public imports.
 		// 2. Weak imports.
 		// 3. Regular imports.
+		// 4. Transitive public imports.
 		// 4. Transitive imports.
 		//
 		// The fields after this one specify where each of these segments ends.
-		imports                       []File
-		publicEnd, weakEnd, importEnd int
+		imports                                       []File
+		publicEnd, weakEnd, importEnd, transPublicEnd int
 
 		types   []arena.Pointer[rawType]
 		extns   []arena.Pointer[rawField]
@@ -112,6 +113,12 @@ func (f File) Syntax() syntax.Syntax {
 //
 // This need not be the same as [File.AST]().Span().Path().
 func (f File) Path() string {
+	c := f.Context()
+	return c.session.intern.Value(c.path)
+}
+
+// InternedPackage returns the intern ID for the value of [File.Path].
+func (f File) InternedPath() intern.ID {
 	return f.Context().path
 }
 
@@ -121,7 +128,7 @@ func (f File) Path() string {
 // package.
 func (f File) Package() FullName {
 	c := f.Context()
-	return FullName(c.intern.Value(c.pkg))
+	return FullName(c.session.intern.Value(c.pkg))
 }
 
 // InternedPackage returns the intern ID for the value of [File.Package].
@@ -135,7 +142,7 @@ type Import struct {
 	Public, Weak bool // The kind of import this is.
 }
 
-// Imports returns.
+// Imports returns an indexer over the imports declared in this file.
 func (f File) Imports() seq.Indexer[Import] {
 	file := f.Context().file
 	return seq.NewFixedSlice(
@@ -145,6 +152,24 @@ func (f File) Imports() seq.Indexer[Import] {
 				File:   f,
 				Public: n < file.publicEnd,
 				Weak:   n >= file.publicEnd && n < file.weakEnd,
+			}
+		},
+	)
+}
+
+// TransitiveImports returns an indexer over the transitive imports for this
+// file.
+//
+// This function does not report whether those imports are weak or not.
+func (f File) TransitiveImports() seq.Indexer[Import] {
+	file := f.Context().file
+	return seq.NewFixedSlice(
+		file.imports,
+		func(n int, f File) Import {
+			return Import{
+				File: f,
+				Public: n < file.publicEnd ||
+					(n >= file.importEnd && n < file.transPublicEnd),
 			}
 		},
 	)
