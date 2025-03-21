@@ -16,13 +16,10 @@ package ir
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
-	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -37,15 +34,10 @@ import (
 // which it needs the caller to resolve a [File] for it.
 type Importer func(n int, path string, decl ast.DeclImport) (File, ErrCycle[ast.DeclImport])
 
-// ErrCycle is an error indicating that a cycle has occurred during processing.
-//
-// The first and last elements of this slice should be equal.
-type ErrCycle[T any] []T
-
 // buildImports builds the transitive imports table.
 func buildImports(f File, r *report.Report, importer Importer) {
 	c := f.Context()
-	dedup := make(map[intern.ID]struct{}, iterx.Count2(f.AST().Imports()))
+	dedup := make(intern.Set, iterx.Count2(f.AST().Imports()))
 
 	for i, imp := range f.AST().Imports() {
 		path, ok := imp.ImportPath().AsLiteral().AsString()
@@ -59,48 +51,30 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		if !mapsx.AddZero(dedup, file.InternedPath()) {
+		if !dedup.AddID(file.InternedPath()) {
+			// Duplicates are diagnosed in the legalizer.
 			continue
 		}
 
-		// Figure out where to insert the file into the imports array.
-		switch {
-		case imp.IsPublic():
-			c.file.imports = slices.Insert(c.file.imports, c.file.publicEnd, file)
-			c.file.publicEnd++
-			c.file.weakEnd++
-		case imp.IsWeak():
-			c.file.imports = slices.Insert(c.file.imports, c.file.weakEnd, file)
-			c.file.weakEnd++
-		default:
-			c.file.imports = append(c.file.imports, file)
-		}
+		c.file.imports.AddDirect(Import{
+			File:   file,
+			Public: imp.IsPublic(),
+			Weak:   imp.IsWeak(),
+		})
 	}
-
-	c.file.importEnd = len(c.file.imports)
-	c.file.transPublicEnd = len(c.file.imports)
 
 	// Having found all of the imports that are not cyclic, we now need to pull
 	// in all of *their* transitive imports.
-	for file := range seq.Values(f.Imports()) {
-		for imp := range seq.Values(file.TransitiveImports()) {
-			if !mapsx.AddZero(dedup, imp.File.InternedPath()) {
-				continue
-			}
-
-			// Transitive imports are public to us if and only if they are
-			// imported through a public import.
-			if file.Public && imp.Public {
-				c.file.imports = slices.Insert(c.file.imports, c.file.transPublicEnd, imp.File)
-				c.file.transPublicEnd++
-				continue
-			}
-
-			c.file.imports = append(c.file.imports, imp.File)
-		}
-	}
+	c.file.imports.Recurse(dedup)
 }
 
+// ErrCycle is an error indicating that a cycle has occurred during processing.
+//
+// The first and last elements of this slice should be equal.
+type ErrCycle[T any] []T
+
+// diagnoseCycle generates a diagnostic for an import cycle, showing each
+// import contributing to the cycle in turn.
 func diagnoseCycle(r *report.Report, path string, cycle ErrCycle[ast.DeclImport]) {
 	err := r.Errorf("encountered cycle while importing %q", path)
 
@@ -110,7 +84,7 @@ func diagnoseCycle(r *report.Report, path string, cycle ErrCycle[ast.DeclImport]
 		if ok {
 			switch i {
 			case 0:
-				break
+				message = "imported here"
 			case len(cycle) - 1:
 				message = fmt.Sprintf("which imports %q, completing the cycle", path)
 			default:

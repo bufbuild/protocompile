@@ -266,7 +266,7 @@ func wrapType(c *Context, r ref[rawType]) Type {
 	case r.file == -1:
 		ctx = primitiveCtx
 	case r.file > 0:
-		ctx = c.file.imports[r.file-1].Context()
+		ctx = c.file.imports.files[r.file-1].Context()
 	default:
 		ctx = c.File().Context()
 	}

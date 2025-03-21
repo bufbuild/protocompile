@@ -37,20 +37,8 @@ type Context struct {
 	syntax syntax.Syntax
 
 	file struct {
-		ast ast.File
-		// All transitively-imported files. This slice is divided into the
-		// following segments:
-		//
-		// 1. Public imports.
-		// 2. Weak imports.
-		// 3. Regular imports.
-		// 4. Transitive public imports.
-		// 4. Transitive imports.
-		//
-		// The fields after this one specify where each of these segments ends.
-		imports                                       []File
-		publicEnd, weakEnd, importEnd, transPublicEnd int
-
+		ast     ast.File
+		imports imports
 		types   []arena.Pointer[rawType]
 		extns   []arena.Pointer[rawField]
 		options []arena.Pointer[rawOption]
@@ -136,25 +124,9 @@ func (f File) InternedPackage() intern.ID {
 	return f.Context().pkg
 }
 
-// Import is an import in a [File].
-type Import struct {
-	File              // The file that is imported.
-	Public, Weak bool // The kind of import this is.
-}
-
 // Imports returns an indexer over the imports declared in this file.
 func (f File) Imports() seq.Indexer[Import] {
-	file := f.Context().file
-	return seq.NewFixedSlice(
-		file.imports[:file.importEnd],
-		func(n int, f File) Import {
-			return Import{
-				File:   f,
-				Public: n < file.publicEnd,
-				Weak:   n >= file.publicEnd && n < file.weakEnd,
-			}
-		},
-	)
+	return f.Context().file.imports.Directs()
 }
 
 // TransitiveImports returns an indexer over the transitive imports for this
@@ -162,17 +134,7 @@ func (f File) Imports() seq.Indexer[Import] {
 //
 // This function does not report whether those imports are weak or not.
 func (f File) TransitiveImports() seq.Indexer[Import] {
-	file := f.Context().file
-	return seq.NewFixedSlice(
-		file.imports,
-		func(n int, f File) Import {
-			return Import{
-				File: f,
-				Public: n < file.publicEnd ||
-					(n >= file.importEnd && n < file.transPublicEnd),
-			}
-		},
-	)
+	return f.Context().file.imports.Transitive()
 }
 
 // Types returns the top level types of this file.
