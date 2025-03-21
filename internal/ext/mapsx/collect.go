@@ -16,6 +16,15 @@ package mapsx
 
 import "iter"
 
+// Set constructs a set-like map from the given elements.
+func Set[K comparable](elems ...K) map[K]struct{} {
+	s := make(map[K]struct{}, len(elems))
+	for _, elem := range elems {
+		s[elem] = struct{}{}
+	}
+	return s
+}
+
 // CollectSet is like [maps.Collect], but it implicitly fills in each map value
 // with a struct{} value.
 func CollectSet[K comparable](seq iter.Seq[K]) map[K]struct{} {

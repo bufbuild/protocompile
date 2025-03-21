@@ -26,6 +26,9 @@ func Map[T, U any](seq iter.Seq[T], f func(T) U) iter.Seq[U] {
 	return FilterMap(seq, func(v T) (U, bool) { return f(v), true })
 }
 
+// FlatMap is like [Map], but expects the yielded type to itself be an iterator.
+//
+// Returns a new iterator over the concatenation of the iterators yielded by f.
 func FlatMap[T, U any](seq iter.Seq[T], f func(T) iter.Seq[U]) iter.Seq[U] {
 	return func(yield func(U) bool) {
 		for x := range seq {

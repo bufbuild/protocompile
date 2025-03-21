@@ -15,8 +15,7 @@
 package ir
 
 import (
-	"iter"
-	"strings"
+	"slices"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -25,10 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 // DescriptorSet generates a FileDescriptorSet for the given files, and returns the
@@ -82,14 +78,19 @@ type descGenerator struct {
 }
 
 func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet) {
+	excluded := func(f File) bool {
+		return slices.IndexFunc(
+			dg.exclude,
+			func(exclude func(File) bool) bool { return exclude(f) },
+		) >= 0
+	}
+
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
-	for file := range topoSort(files...) {
-		for _, p := range dg.exclude {
-			if p(file) {
-				return
-			}
+	for file := range topoSort(files) {
+		if excluded(file) {
+			continue
 		}
 
 		fdp := new(descriptorpb.FileDescriptorProto)
@@ -393,37 +394,3 @@ func (dg *descGenerator) option(_ Option, target proto.Message) {
 // addr is a helper for creating a pointer out of any type, because Go is
 // missing the syntax &"foo", etc.
 func addr[T any](v T) *T { return &v }
-
-// Set of all names that are defined in scope of some message; used for
-// generating synthetic names.
-type syntheticNames map[intern.ID]struct{}
-
-func (sn *syntheticNames) generate(candidate string, message Type) string {
-	table := message.Context().intern
-	if *sn == nil {
-		*sn = mapsx.CollectSet(iterx.Chain(
-			seq.Map(message.Fields(), Field.InternedName),
-			seq.Map(message.Extensions(), Field.InternedName),
-			seq.Map(message.Oneofs(), Oneof.InternedName),
-			iterx.FlatMap(seq.Values(message.Nested()), func(ty Type) iter.Seq[intern.ID] {
-				if !ty.IsEnum() {
-					return iterx.Of(ty.InternedName())
-				}
-				return iterx.Chain(
-					iterx.Of(ty.InternedName()),
-					seq.Map(ty.Fields(), Field.InternedName),
-				)
-			}),
-		))
-	}
-
-	if !strings.HasPrefix(candidate, "_") {
-		candidate = "_" + candidate
-	}
-	for intern.Contains(table, *sn, candidate) {
-		candidate = "X" + candidate
-	}
-
-	(*sn)[table.Intern(candidate)] = struct{}{}
-	return candidate
-}

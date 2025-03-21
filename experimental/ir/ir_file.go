@@ -191,7 +191,7 @@ func (f File) Options() seq.Indexer[Option] {
 
 // topoSort sorts a graph of [File]s according to their dependency graph,
 // in topological order. Files with no dependencies are yielded first.
-func topoSort(files ...File) iter.Seq[File] {
+func topoSort(files []File) iter.Seq[File] {
 	// NOTE: This cannot panic because Files, by construction, do not contain
 	// graph cycles.
 	return toposort.Sort(
