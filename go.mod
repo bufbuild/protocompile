@@ -1,6 +1,8 @@
 module github.com/bufbuild/protocompile
 
 go 1.23
+toolchain go1.24.1
+
 require (
 	github.com/bmatcuk/doublestar/v4 v4.8.1
 	github.com/google/go-cmp v0.7.0
@@ -8,7 +10,7 @@ require (
 	github.com/rivo/uniseg v0.4.7
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sync v0.12.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
 )
 
