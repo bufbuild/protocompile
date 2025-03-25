@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 )
 
 // ID is an interned string in a particular [Table].
@@ -60,27 +62,6 @@ func (id ID) String() string {
 // GoString implements [fmt.GoStringer].
 func (id ID) GoString() string {
 	return id.String()
-}
-
-// Lookup performs a map lookup into a map whose keys are [ID]s.
-//
-// This is identical to m[table.Intern(s)], but may be faster, since it avoids
-// interning s in the case it has not been interned yet, which means the table
-// lookup would fail.
-func Lookup[M ~map[ID]V, V any](table *Table, m M, s string) (V, bool) {
-	k, ok := table.Query(s)
-	if !ok {
-		var z V
-		return z, false
-	}
-	v, ok := m[k]
-	return v, ok
-}
-
-// Contains is like [mapsx.Contains], but using [Lookup].
-func Contains[M ~map[ID]V, V any](table *Table, m M, s string) bool {
-	_, ok := Lookup(table, m, s)
-	return ok
 }
 
 // Table is an interning table.
@@ -211,4 +192,38 @@ func (t *Table) getSlow(id ID) string {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.table[int(id)-1]
+}
+
+// Set is a set of intern IDs.
+type Set map[ID]struct{}
+
+// ContainsID returns whether s contains the given ID.
+func (s Set) ContainsID(id ID) bool {
+	_, ok := s[id]
+	return ok
+}
+
+// Contains returns whether s contains the given string.
+func (s Set) Contains(table *Table, key string) bool {
+	k, ok := table.Query(key)
+	if !ok {
+		return false
+	}
+	_, ok = s[k]
+	return ok
+}
+
+// AddID adds an ID to s, and returns whether it was added.
+func (s Set) AddID(id ID) (inserted bool) {
+	return mapsx.AddZero(s, id)
+}
+
+// Add adds a string to s, and returns whether it was added.
+func (s Set) Add(table *Table, key string) (inserted bool) {
+	k := table.Intern(key)
+	_, ok := s[k]
+	if !ok {
+		s[k] = struct{}{}
+	}
+	return !ok
 }

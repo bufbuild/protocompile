@@ -33,3 +33,14 @@ func Contains[M ~map[K]V, K comparable, V any](m M, k K) bool {
 	_, ok := m[k]
 	return ok
 }
+
+// AddZero inserts k into the map if it is not present, using the zero value of
+// V as the value. Returns whether insertion occurred.
+func AddZero[M ~map[K]V, K comparable, V any](m M, k K) (inserted bool) {
+	if _, ok := m[k]; ok {
+		return false
+	}
+	var z V
+	m[k] = z
+	return true
+}

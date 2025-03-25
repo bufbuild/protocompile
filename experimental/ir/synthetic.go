@@ -26,7 +26,7 @@ import (
 
 // Set of all names that are defined in scope of some message; used for
 // generating synthetic names.
-type syntheticNames map[intern.ID]struct{}
+type syntheticNames intern.Set
 
 // generate generates a new synthetic name, according to the rules for synthetic
 // oneofs.
@@ -72,7 +72,7 @@ func (sn *syntheticNames) generate(candidate string, message Type) string {
 		))
 	}
 
-	return sn.generateIn(candidate, message.Context().intern)
+	return sn.generateIn(candidate, &message.Context().session.intern)
 }
 
 // generateIn is the part of [syntheticNames.generate] that actually constructs
@@ -87,10 +87,8 @@ func (sn *syntheticNames) generateIn(candidate string, table *intern.Table) stri
 	}
 
 	// Each time we fail, we add an X to the prefix.
-	for intern.Contains(table, *sn, candidate) {
+	for !intern.Set(*sn).Add(table, candidate) {
 		candidate = "X" + candidate
 	}
-
-	(*sn)[table.Intern(candidate)] = struct{}{}
 	return candidate
 }

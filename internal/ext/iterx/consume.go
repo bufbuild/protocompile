@@ -21,10 +21,17 @@ import (
 	"strings"
 )
 
-// Count counts the number of elements in seq that match the given predicate.
-//
-// If p is nil, it is treated as func(_ T) bool { return true }.
+// Count counts the number of elements in seq.
 func Count[T any](seq iter.Seq[T]) int {
+	var total int
+	for range seq {
+		total++
+	}
+	return total
+}
+
+// Count2 counts the number of elements in seq.
+func Count2[T, U any](seq iter.Seq2[T, U]) int {
 	var total int
 	for range seq {
 		total++

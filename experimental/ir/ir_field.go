@@ -80,7 +80,7 @@ func (f Field) Name() string {
 	if f.IsZero() {
 		return ""
 	}
-	return f.Context().intern.Value(f.raw.name)
+	return f.Context().session.intern.Value(f.raw.name)
 }
 
 // FullName returns this fields's fully-qualified name.
@@ -88,7 +88,7 @@ func (f Field) FullName() FullName {
 	if f.IsZero() {
 		return ""
 	}
-	return FullName(f.Context().intern.Value(f.raw.fqn))
+	return FullName(f.Context().session.intern.Value(f.raw.fqn))
 }
 
 // InternedName returns the intern ID for [Field.FullName]().Name().
@@ -161,7 +161,7 @@ func (f Field) Oneof() Oneof {
 	}
 	return Oneof{
 		f.withContext,
-		uint32(f.raw.oneof),
+		int(f.raw.oneof),
 		f.Parent().raw, // Extension fields are not part of oneofs.
 	}
 }
@@ -183,7 +183,7 @@ func wrapField(c *Context, r ref[rawField]) Field {
 
 	file := c.File()
 	if r.file > 0 {
-		file = c.file.imports[r.file-1]
+		file = c.file.imports.files[r.file-1]
 	}
 
 	return Field{
@@ -195,7 +195,7 @@ func wrapField(c *Context, r ref[rawField]) Field {
 // Oneof represents a oneof within a message definition.
 type Oneof struct {
 	withContext
-	index     uint32
+	index     int
 	container *rawType
 }
 
@@ -216,7 +216,7 @@ func (o Oneof) Name() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().intern.Value(o.raw().name)
+	return o.Context().session.intern.Value(o.raw().name)
 }
 
 // FullName returns this oneof's fully-qualified name.
@@ -224,7 +224,7 @@ func (o Oneof) FullName() FullName {
 	if o.IsZero() {
 		return ""
 	}
-	return FullName(o.Context().intern.Value(o.raw().fqn))
+	return FullName(o.Context().session.intern.Value(o.raw().fqn))
 }
 
 // InternedName returns the intern ID for [Oneof.FullName]().Name().
@@ -347,5 +347,5 @@ func (r ReservedName) AST() ast.ExprAny {
 
 // Name returns the name that was reserved.
 func (r ReservedName) Name() string {
-	return r.Context().intern.Value(r.raw.name)
+	return r.Context().session.intern.Value(r.raw.name)
 }
