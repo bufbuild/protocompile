@@ -257,7 +257,7 @@ func (o Oneof) Index() int {
 	if o.IsZero() {
 		return 0
 	}
-	return int(o.index)
+	return o.index
 }
 
 // Members returns this oneof's member fields.

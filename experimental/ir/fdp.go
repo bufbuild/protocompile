@@ -15,8 +15,6 @@
 package ir
 
 import (
-	"slices"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -27,12 +25,12 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
-// DescriptorSet generates a FileDescriptorSet for the given files, and returns the
+// DescriptorSetBytes generates a FileDescriptorSet for the given files, and returns the
 // result as an encoded byte slice.
 //
 // The resulting FileDescriptorSet is always fully linked: it contains all dependencies except
 // the WKTs, and all names are fully-qualified.
-func DescriptorSet(files []File, options ...DescriptorOption) ([]byte, error) {
+func DescriptorSetBytes(files []File, options ...DescriptorOption) ([]byte, error) {
 	var dg descGenerator
 	for _, opt := range options {
 		if opt != nil {
@@ -45,11 +43,11 @@ func DescriptorSet(files []File, options ...DescriptorOption) ([]byte, error) {
 	return proto.Marshal(fds)
 }
 
-// DescriptorProto generates a single FileDescriptorProto for file, and returns the
+// DescriptorProtoBytes generates a single FileDescriptorProto for file, and returns the
 // result as an encoded byte slice.
 //
 // The resulting FileDescriptorProto is fully linked: all names are fully-qualified.
-func DescriptorProto(file File, options ...DescriptorOption) ([]byte, error) {
+func DescriptorProtoBytes(file File, options ...DescriptorOption) ([]byte, error) {
 	var dg descGenerator
 	for _, opt := range options {
 		if opt != nil {
@@ -62,37 +60,18 @@ func DescriptorProto(file File, options ...DescriptorOption) ([]byte, error) {
 	return proto.Marshal(fdp)
 }
 
-// DescriptorOption is an option to pass to [DescriptorSet] or [DescriptorProto].
+// DescriptorOption is an option to pass to [DescriptorSetBytes] or [DescriptorProtoBytes].
 type DescriptorOption func(*descGenerator)
 
-// ExcludeFiles is an option that causes all files that match the given
-// predicate to be excluded from the output of [DescriptorSet].
-func ExcludeFiles(p func(File) bool) DescriptorOption {
-	return func(dg *descGenerator) { dg.exclude = append(dg.exclude, p) }
-}
-
 type descGenerator struct {
-	exclude []func(File) bool
-
 	currentFile File
 }
 
 func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet) {
-	excluded := func(f File) bool {
-		return slices.IndexFunc(
-			dg.exclude,
-			func(exclude func(File) bool) bool { return exclude(f) },
-		) >= 0
-	}
-
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
 	for file := range topoSort(files) {
-		if excluded(file) {
-			continue
-		}
-
 		fdp := new(descriptorpb.FileDescriptorProto)
 		fds.File = append(fds.File, fdp)
 		dg.file(file, fdp)
