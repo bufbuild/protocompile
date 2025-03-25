@@ -16,6 +16,7 @@ package ast
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
@@ -185,6 +186,88 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 	return prefix, suffix
 }
 
+// Canonicalized returns a string containing this path's value after
+// canonicalization.
+//
+// Canonicalization converts a path into something that can be used for name
+// resolution. This includes removing extra separators and deleting whitespace
+// and comments.
+func (p Path) Canonicalized() string {
+	// Most paths are already in canonical form. Verify this before allocating
+	// a fresh string.
+	if id := p.AsIdent(); !id.IsZero() {
+		return id.Name()
+	} else if p.isCanonical() {
+		return p.Span().Text()
+	}
+
+	var out strings.Builder
+	p.canonicalized(&out)
+	return out.String()
+}
+
+func (p Path) canonicalized(out *strings.Builder) {
+	for i, pc := range iterx.Enumerate(p.Components) {
+		if pc.Name().IsZero() {
+			continue
+		}
+
+		if i > 0 || !pc.Separator().IsZero() {
+			out.WriteString(pc.Separator().Text())
+		}
+		if id := pc.Name(); !id.IsZero() {
+			out.WriteString(id.Name())
+		} else {
+			out.WriteByte('(')
+			pc.AsExtension().canonicalized(out)
+			out.WriteByte(')')
+		}
+	}
+}
+
+func (p Path) isCanonical() bool {
+	var prev PathComponent
+	for pc := range p.Components {
+		sep := pc.Separator()
+		name := pc.Name()
+
+		if name.IsZero() {
+			return false
+		}
+		if !sep.IsZero() && sep.Span().End != name.Span().Start {
+			return false
+		}
+
+		if extn := pc.AsExtension(); !extn.IsZero() {
+			if !extn.isCanonical() {
+				return false
+			}
+
+			// Ensure that the parens tightly wrap extn.
+			parens := name.Span()
+			extn := extn.Span()
+			if parens.Start+1 != extn.Start || parens.End-1 != extn.End {
+				return false
+			}
+		} else if pc.AsIdent().Text() != pc.AsIdent().Name() {
+			return false
+		}
+
+		if !prev.IsZero() {
+			if sep.IsZero() {
+				return false
+			}
+			if prev.Name().Span().End != sep.Span().Start {
+				return false
+			}
+		}
+
+		prev = pc
+	}
+
+	return true
+}
+
 // TypePath is a simple path reference as a type.
 //
 // # Grammar
@@ -263,13 +346,12 @@ func (p PathComponent) AsExtension() Path {
 
 	// Find the first and last non-skippable tokens to be the bounds.
 	var first, last token.Token
-	p.Name().Children().Rest()(func(token token.Token) bool {
+	for tok := range p.Name().Children().Rest() {
 		if first.IsZero() {
-			first = token
+			first = tok
 		}
-		last = token
-		return true
-	})
+		last = tok
+	}
 
 	return rawPath{first.ID(), last.ID()}.With(p.Context())
 }

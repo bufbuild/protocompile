@@ -40,7 +40,7 @@ type rawType struct {
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         []arena.Pointer[rawOption]
-	fqn, name       intern.ID
+	fqn, name       intern.ID // 0 for predeclared types.
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
 	isEnum          bool
@@ -50,7 +50,6 @@ type rawType struct {
 // types.
 var primitiveCtx = func() *Context {
 	ctx := new(Context)
-	ctx.intern = new(intern.Table)
 
 	nextPtr := 1
 	predeclared.All()(func(n predeclared.Name) bool {
@@ -149,7 +148,7 @@ func (t Type) FullName() FullName {
 	if p := t.Predeclared(); p != predeclared.Unknown {
 		return FullName(p.String())
 	}
-	return FullName(t.Context().intern.Value(t.raw.fqn))
+	return FullName(t.Context().session.intern.Value(t.raw.fqn))
 }
 
 // InternedName returns the intern ID for [Type.FullName]().Name()
@@ -267,7 +266,7 @@ func wrapType(c *Context, r ref[rawType]) Type {
 	case r.file == -1:
 		ctx = primitiveCtx
 	case r.file > 0:
-		ctx = c.file.imports[r.file-1].Context()
+		ctx = c.file.imports.files[r.file-1].Context()
 	default:
 		ctx = c.File().Context()
 	}
