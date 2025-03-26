@@ -36,7 +36,7 @@ func (r Root) Key() any {
 	return r
 }
 
-func (Root) Execute(_ incremental.Task) (struct{}, error) {
+func (Root) Execute(_ *incremental.Task) (struct{}, error) {
 	time.Sleep(100 * time.Millisecond)
 	return struct{}{}, nil
 }
@@ -49,7 +49,7 @@ func (i ParseInt) Key() any {
 	return i
 }
 
-func (i ParseInt) Execute(t incremental.Task) (int, error) {
+func (i ParseInt) Execute(t *incremental.Task) (int, error) {
 	// This tests that a thundering stampede of queries all waiting on the same
 	// query (as in a diamond-shaped graph) do not cause any issues.
 	_, err := incremental.Resolve(t, Root{})
@@ -75,7 +75,7 @@ func (s Sum) Key() any {
 	return s
 }
 
-func (s Sum) Execute(t incremental.Task) (int, error) {
+func (s Sum) Execute(t *incremental.Task) (int, error) {
 	var queries []incremental.Query[int] //nolint:prealloc
 	for _, s := range strings.Split(s.Input, ",") {
 		queries = append(queries, ParseInt{s})
@@ -105,7 +105,7 @@ func (c Cyclic) Key() any {
 	return c
 }
 
-func (c Cyclic) Execute(t incremental.Task) (int, error) {
+func (c Cyclic) Execute(t *incremental.Task) (int, error) {
 	next, err := incremental.Resolve(t, Cyclic{
 		Mod:  c.Mod,
 		Step: (c.Step + 1) % c.Mod,
@@ -113,11 +113,12 @@ func (c Cyclic) Execute(t incremental.Task) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if next[0].Fatal != nil {
-		return 0, next[0].Fatal
-	}
 
-	return next[0].Value * next[0].Value, nil
+	// NOTE: This call is a regression check against a case where calling
+	// Report() after a cyclic error would incorrectly treat the cycle point
+	// as having been completed.
+	t.Report().Remarkf("squaring: %d", next[0].Value)
+	return next[0].Value * next[0].Value, next[0].Fatal
 }
 
 func TestSum(t *testing.T) {

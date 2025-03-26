@@ -43,7 +43,7 @@ func (f File) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (f File) Execute(t incremental.Task) (*report.File, error) {
+func (f File) Execute(t *incremental.Task) (*report.File, error) {
 	t.Report().Options.Stage += stageFile
 
 	text, err := f.Open(f.Path)

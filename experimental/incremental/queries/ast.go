@@ -44,7 +44,7 @@ func (a AST) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (a AST) Execute(t incremental.Task) (ast.File, error) {
+func (a AST) Execute(t *incremental.Task) (ast.File, error) {
 	t.Report().Options.Stage += stageAST
 
 	r, err := incremental.Resolve(t, File(a))

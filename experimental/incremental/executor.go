@@ -27,6 +27,9 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
+// Set this to true to enable debug printing.
+const debugIncremental = false
+
 // Executor is a caching executor for incremental queries.
 //
 // See [New], [Run], and [Invalidate].
@@ -125,13 +128,6 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
 
-	// Need to acquire a hold on the global semaphore to represent the root
-	// task we're about to execute.
-	if e.sema.Acquire(ctx, 1) != nil {
-		return nil, nil, context.Cause(ctx)
-	}
-	defer e.sema.Release(1)
-
 	generation := e.counter.Add(1)
 	root := Task{
 		ctx:    ctx,
@@ -141,7 +137,14 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		runID:  generation,
 	}
 
-	results, expired := Resolve(root, queries...)
+	// Need to acquire a hold on the global semaphore to represent the root
+	// task we're about to execute.
+	if !root.acquire() {
+		return nil, nil, context.Cause(ctx)
+	}
+	defer root.release()
+
+	results, expired := Resolve(&root, queries...)
 	if expired != nil {
 		return nil, nil, expired
 	}

@@ -16,7 +16,10 @@ package incremental
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"iter"
+	"os"
 	"runtime/debug"
 	"slices"
 	"sync"
@@ -24,6 +27,10 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 )
+
+// ErrNilQuery is set as the Fatal error for the result of executing a nil
+// query.
+var ErrNilQuery = errors.New("incremental: nil query value")
 
 // Task represents a query that is currently being executed.
 //
@@ -43,6 +50,11 @@ type Task struct {
 
 	// Intrusive linked list node for cycle detection.
 	path path
+
+	// Set if we're currently holding the executor's semaphore. This exists to
+	// ensure that we do not violate concurrency assumptions, and is never
+	// itself mutated concurrently.
+	holding bool
 }
 
 // Context returns the cancellation context for this task.
@@ -55,6 +67,36 @@ func (t *Task) Context() context.Context {
 func (t *Task) Report() *report.Report {
 	t.checkDone()
 	return &t.task.report
+}
+
+// acquire acquires a hold on the global semaphore.
+//
+// Returns false if the underlying context has timed out.
+func (t *Task) acquire() bool {
+	if t.holding {
+		panic("incremental: called acquire() while holding the semaphore; this is a bug")
+	}
+	err := t.exec.sema.Acquire(t.ctx, 1)
+	if debugIncremental {
+		fmt.Fprintf(os.Stderr,
+			"incremental: acquire: %p/%d, %T/%v\n",
+			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
+	}
+	t.holding = err == nil
+	return t.holding
+}
+
+// release releases a hold on the global semaphore.
+func (t *Task) release() {
+	if debugIncremental {
+		fmt.Fprintf(os.Stderr,
+			"incremental: release: %p/%d, %T/%v\n",
+			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
+	}
+	if t.holding {
+		t.exec.sema.Release(1)
+	}
+	t.holding = false
 }
 
 // Resolve executes a set of queries in parallel. Each query is run on its own
@@ -80,7 +122,7 @@ func (t *Task) Report() *report.Report {
 //
 // Note: this function really wants to be a method of [Task], but it isn't
 // because it's generic.
-func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expired error) {
+func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], expired error) {
 	caller.checkDone()
 
 	results = make([]Result[T], len(queries))
@@ -94,6 +136,11 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 	// *every* query.
 	anyAsync := false
 	for i, q := range queries {
+		if q == nil {
+			results[i].Fatal = ErrNilQuery
+			continue
+		}
+
 		q := AsAny(q) // This will also cache the result of q.Key() for us.
 		deps[i] = caller.exec.getTask(q.Key())
 
@@ -145,12 +192,12 @@ func Resolve[T any](caller Task, queries ...Query[T]) (results []Result[T], expi
 		// Release our current hold on the global semaphore, since we're about to
 		// go to sleep. This avoids potential resource starvation for deeply-nested
 		// queries on low parallelism settings.
-		caller.exec.sema.Release(1)
+		caller.release()
 		wg.Wait()
 
 		// Reacquire from the global semaphore before returning, so
 		// execution of the calling task may resume.
-		if caller.exec.sema.Acquire(caller.ctx, 1) != nil {
+		if !caller.acquire() {
 			return nil, context.Cause(caller.ctx)
 		}
 	}
@@ -244,7 +291,7 @@ func (p *path) Walk() iter.Seq[*path] {
 
 // start executes a query in the context of some task and records the result by
 // calling done.
-func (t *task) start(caller Task, q *AnyQuery, done func(*result)) (async bool) {
+func (t *task) start(caller *Task, q *AnyQuery, done func(*result)) (async bool) {
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
@@ -261,7 +308,7 @@ func (t *task) start(caller Task, q *AnyQuery, done func(*result)) (async bool) 
 
 // run actually executes the query passed to start. It is called on its own
 // goroutine.
-func (t *task) run(caller Task, q *AnyQuery) (output *result) {
+func (t *task) run(caller *Task, q *AnyQuery) (output *result) {
 	output = t.result.Load()
 
 	defer func() {
@@ -275,11 +322,23 @@ func (t *task) run(caller Task, q *AnyQuery) (output *result) {
 		}
 
 		if output != nil && !closed(output.done) {
+			if _, ok := output.Fatal.(*ErrCycle); ok {
+				// Do not mark completion on cycles: we want the original call of this
+				// query to continue executing and handle the cycle in some way.
+				return
+			}
+
+			if debugIncremental {
+				fmt.Fprintf(os.Stderr,
+					"incremental: done: %p/%d, %T/%v\n",
+					caller.exec, caller.runID, q.Underlying(), q.Underlying())
+			}
 			close(output.done)
 		}
 	}()
 
 	// Check for a potential cycle.
+	// TODO: use a map for this check.
 	var cycle *ErrCycle
 	for node := range caller.path.Walk() {
 		if node.Query.Key() != q.Key() {
@@ -336,13 +395,26 @@ func (t *task) run(caller Task, q *AnyQuery) (output *result) {
 		},
 	}
 
-	if callee.exec.sema.Acquire(caller.ctx, 1) != nil {
+	if !callee.acquire() {
 		return nil
 	}
-	defer callee.exec.sema.Release(1)
+	defer callee.release()
 
-	output.Value, output.Fatal = q.Execute(callee)
+	if debugIncremental {
+		fmt.Fprintf(os.Stderr,
+			"incremental: executing: %p/%d, %T/%v\n",
+			caller.exec, caller.runID, q.Underlying(), q.Underlying())
+	}
+
+	output.Value, output.Fatal = q.Execute(&callee)
 	output.runID = callee.runID
+
+	if debugIncremental {
+		fmt.Fprintf(os.Stderr,
+			"incremental: returning: %p/%d, %T/%v\n",
+			caller.exec, caller.runID, q.Underlying(), q.Underlying())
+	}
+
 	return output
 }
 

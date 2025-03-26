@@ -22,4 +22,5 @@ package queries
 const (
 	stageFile int = iota * 10
 	stageAST
+	stageIR
 )
