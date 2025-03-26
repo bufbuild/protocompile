@@ -49,7 +49,8 @@ func (w *walker) walk() {
 	w.pkg = w.Package().ToAbsolute()
 
 	if syn := w.AST().Syntax(); !syn.IsZero() {
-		c.syntax = syntax.Lookup(syn.Value().AsLiteral().Text())
+		unquoted, _ := syn.Value().AsLiteral().AsString()
+		c.syntax = syntax.Lookup(unquoted)
 	}
 
 	w.recurse(w.AST().AsAny(), nil)
@@ -153,10 +154,10 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		parentTy.raw.nested = append(parentTy.raw.nested,
 			w.Context().arenas.types.Compress(raw),
 		)
+	} else {
+		file := &w.Context().file
+		file.types = append(file.types, w.Context().arenas.types.Compress(raw))
 	}
-
-	file := &w.Context().file
-	file.types = append(file.types, w.Context().arenas.types.Compress(raw))
 
 	return Type{internal.NewWith(w.Context()), raw}
 }
