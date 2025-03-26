@@ -181,14 +181,10 @@ func wrapField(c *Context, r ref[rawField]) Field {
 		return Field{}
 	}
 
-	file := c.File()
-	if r.file > 0 {
-		file = c.imports.files[r.file-1]
-	}
-
+	c = r.context(c)
 	return Field{
-		withContext: internal.NewWith(file.Context()),
-		raw:         file.Context().arenas.fields.Deref(r.ptr),
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.fields.Deref(r.ptr),
 	}
 }
 
@@ -336,8 +332,8 @@ type ReservedName struct {
 }
 
 type rawReservedName struct {
-	ast  ast.ExprAny
-	name intern.ID
+	ast       ast.ExprAny
+	fqn, name intern.ID
 }
 
 // AST returns the expression that this name was evaluated from, if known.
@@ -346,6 +342,33 @@ func (r ReservedName) AST() ast.ExprAny {
 }
 
 // Name returns the name that was reserved.
-func (r ReservedName) Name() string {
-	return r.Context().session.intern.Value(r.raw.name)
+func (r ReservedName) Name() FullName {
+	if r.IsZero() {
+		return ""
+	}
+	return FullName(r.Context().session.intern.Value(r.raw.name))
+}
+
+// FullName returns the fully-qualified name that was reserved.
+func (r ReservedName) FullName() FullName {
+	if r.IsZero() {
+		return ""
+	}
+	return FullName(r.Context().session.intern.Value(r.raw.fqn))
+}
+
+// InternedName returns the intern ID for [ReservedName.Name].
+func (r ReservedName) InternedName() intern.ID {
+	if r.IsZero() {
+		return 0
+	}
+	return r.raw.name
+}
+
+// InternedName returns the intern ID for [ReservedName.FullName].
+func (r ReservedName) InternedFullName() intern.ID {
+	if r.IsZero() {
+		return 0
+	}
+	return r.raw.fqn
 }

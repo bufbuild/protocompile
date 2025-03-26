@@ -53,10 +53,16 @@ type Context struct {
 
 	options []arena.Pointer[rawOption]
 
+	symbols struct {
+		locals, imports symtab
+	}
+
 	arenas struct {
-		types    arena.Arena[rawType]
-		fields   arena.Arena[rawField]
-		oneofs   arena.Arena[rawOneof]
+		types   arena.Arena[rawType]
+		fields  arena.Arena[rawField]
+		oneofs  arena.Arena[rawOneof]
+		symbols arena.Arena[rawSymbol]
+
 		options  arena.Arena[rawOption]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValue]
@@ -73,6 +79,18 @@ type ref[T any] struct {
 	// import (with its index offset by 1).
 	file int32
 	ptr  arena.Pointer[T]
+}
+
+// context returns the context for this reference relative to a base context.
+func (r ref[T]) context(base *Context) *Context {
+	switch r.file {
+	case 0:
+		return base
+	case -1:
+		return primitiveCtx
+	default:
+		return base.imports.files[r.file-1].Context()
+	}
 }
 
 // File returns the file associated with this context.

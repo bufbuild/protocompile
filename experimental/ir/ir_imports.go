@@ -27,6 +27,7 @@ import (
 type Import struct {
 	File              // The file that is imported.
 	Public, Weak bool // The kind of import this is.
+	Direct       bool // Whether this is a direct or transitive import.
 }
 
 // imports is a data structure for compactly classifying the transitive imports
@@ -136,6 +137,7 @@ func (i *imports) Directs() seq.Indexer[Import] {
 				File:   f,
 				Public: n < i.publicEnd,
 				Weak:   n >= i.publicEnd && n < i.weakEnd,
+				Direct: true,
 			}
 		},
 	)
@@ -152,6 +154,7 @@ func (i *imports) Transitive() seq.Indexer[Import] {
 				File: f,
 				Public: n < i.publicEnd ||
 					(n >= i.importEnd && n < i.transPublicEnd),
+				Direct: n < i.importEnd,
 			}
 		},
 	)

@@ -72,7 +72,12 @@ var primitiveCtx = func() *Context {
 			panic(fmt.Sprintf("IR initialization error: %d != %d; this is a bug in protocompile", ptr, n))
 		}
 
+<<<<<<< HEAD
 		ctx.types = append(ctx.types, ptr)
+=======
+		ctx.file.topLevelTypes = append(ctx.file.topLevelTypes, ptr)
+		ctx.file.allTypes = append(ctx.file.allTypes, ptr)
+>>>>>>> 0b41755 (wip)
 		return true
 	})
 	return ctx
@@ -261,6 +266,7 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		return Type{}
 	}
 
+<<<<<<< HEAD
 	var ctx *Context
 	switch {
 	case r.file == -1:
@@ -271,8 +277,11 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		ctx = c.File().Context()
 	}
 
+=======
+	c = r.context(c)
+>>>>>>> 0b41755 (wip)
 	return Type{
-		withContext: internal.NewWith(ctx),
-		raw:         ctx.arenas.types.Deref(r.ptr),
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.types.Deref(r.ptr),
 	}
 }
