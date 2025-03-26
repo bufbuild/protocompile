@@ -45,7 +45,7 @@ func (w *walker) walk() {
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}
-	w.pkg = w.Package().ToAbsolute()
+	w.pkg = w.Package()
 
 	if syn := w.AST().Syntax(); !syn.IsZero() {
 		unquoted, _ := syn.Value().AsLiteral().AsString()
@@ -145,9 +145,10 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	fqn := w.fullname(parentTy, name)
 
 	raw := c.arenas.types.NewCompressed(rawType{
-		def:  def,
-		name: c.session.intern.Intern(name),
-		fqn:  c.session.intern.Intern(fqn),
+		def:    def,
+		name:   c.session.intern.Intern(name),
+		fqn:    c.session.intern.Intern(fqn),
+		parent: c.arenas.types.Compress(parentTy.raw),
 	})
 
 	if !parentTy.IsZero() {
@@ -177,8 +178,8 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 
 	switch parent := parent.(type) {
 	case oneof:
-		raw.oneof = int32(parent.index)
-		parent.raw().members = append(parent.raw().members, id)
+		raw.oneof = int32(parent.Index())
+		parent.raw.members = append(parent.raw.members, id)
 	case extend:
 		// TODO: Cram the extension type somewhere so we can resolve it later.
 	}
@@ -203,17 +204,20 @@ func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 	name := def.Name.Name()
 	fqn := w.fullname(parentTy, name)
 
-	var index int
-	if !parentTy.IsZero() {
-		index = len(parentTy.raw.oneofs)
-		parentTy.raw.oneofs = append(parentTy.raw.oneofs, rawOneof{
-			def:  def.Decl,
-			name: w.Context().session.intern.Intern(name),
-			fqn:  w.Context().session.intern.Intern(fqn),
-		})
+	if parentTy.IsZero() {
+		return Oneof{}
 	}
 
-	return Oneof{internal.NewWith(w.Context()), index, parentTy.raw}
+	raw := w.Context().arenas.oneofs.NewCompressed(rawOneof{
+		def:       def.Decl,
+		name:      w.Context().session.intern.Intern(name),
+		fqn:       w.Context().session.intern.Intern(fqn),
+		index:     uint32(len(parentTy.raw.oneofs)),
+		container: w.Context().arenas.types.Compress(parentTy.raw),
+	})
+
+	parentTy.raw.oneofs = append(parentTy.raw.oneofs, raw)
+	return wrapOneof(w.Context(), raw)
 }
 
 func (w *walker) fullname(parentTy Type, name string) string {

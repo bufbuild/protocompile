@@ -31,9 +31,12 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/bufbuild/protocompile/internal/prototest"
 )
@@ -58,6 +61,7 @@ func TestIR(t *testing.T) {
 		Extensions: []string{"proto", "proto.yaml"},
 		Outputs: []golden.Output{
 			{Extension: "fds.yaml"},
+			{Extension: "symtab.yaml"},
 			{Extension: "stderr.txt"},
 		},
 	}
@@ -106,7 +110,7 @@ func TestIR(t *testing.T) {
 			ShowDebug: true,
 		}.RenderString(r)
 		t.Log(stderr)
-		outputs[1], _, _ = report.Renderer{}.RenderString(r)
+		outputs[2], _, _ = report.Renderer{}.RenderString(r)
 		assert.NotContains(t, outputs[1], "internal compiler error")
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
@@ -118,5 +122,53 @@ func TestIR(t *testing.T) {
 		require.NoError(t, proto.Unmarshal(bytes, fds))
 
 		outputs[0] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
+		outputs[1] = prototest.ToYAML(symtabProto(irs), prototest.ToYAMLOptions{})
 	})
+}
+
+func symtabProto(files []ir.File) *compilerpb.SymbolSet {
+	set := new(compilerpb.SymbolSet)
+	set.Tables = make(map[string]*compilerpb.SymbolTable)
+
+	for _, file := range files {
+		if file.Symbols().Len() <= 1 {
+			// Don't bother if the file only has a single symbol for its
+			// package.
+			continue
+		}
+
+		symtab := new(compilerpb.SymbolTable)
+
+		for imp := range seq.Values(file.TransitiveImports()) {
+			symtab.Imports = append(symtab.Imports, &compilerpb.Import{
+				Path:       imp.Path(),
+				Public:     imp.Public,
+				Weak:       imp.Weak,
+				Transitive: !imp.Direct,
+				Visible:    imp.Visible,
+			})
+		}
+		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
+
+		for sym := range seq.Values(file.Symbols()) {
+			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
+				Fqn:     string(sym.FullName()),
+				Kind:    compilerpb.Symbol_Kind(sym.Kind()),
+				File:    sym.File().Path(),
+				Index:   uint32(sym.RawData()),
+				Visible: sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
+			})
+		}
+		slices.SortFunc(symtab.Symbols,
+			cmpx.Join(
+				cmpx.Key(func(x *compilerpb.Symbol) string { return x.File }),
+				cmpx.Key(func(x *compilerpb.Symbol) compilerpb.Symbol_Kind { return x.Kind }),
+				cmpx.Key(func(x *compilerpb.Symbol) uint32 { return x.Index }),
+			),
+		)
+
+		set.Tables[file.Path()] = symtab
+	}
+
+	return set
 }

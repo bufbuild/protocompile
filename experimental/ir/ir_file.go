@@ -53,10 +53,18 @@ type Context struct {
 
 	options []arena.Pointer[rawOption]
 
+	// Table of all symbols transitively imported by this file. This is all
+	// local symbols plus the imported tables of all direct imports. Importing
+	// everything and checking visibility later allows us to diagnose
+	// missing import errors.
+	symbols symtab
+
 	arenas struct {
-		types    arena.Arena[rawType]
-		fields   arena.Arena[rawField]
-		oneofs   arena.Arena[rawOneof]
+		types   arena.Arena[rawType]
+		fields  arena.Arena[rawField]
+		oneofs  arena.Arena[rawOneof]
+		symbols arena.Arena[rawSymbol]
+
 		options  arena.Arena[rawOption]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValue]
@@ -73,6 +81,18 @@ type ref[T any] struct {
 	// import (with its index offset by 1).
 	file int32
 	ptr  arena.Pointer[T]
+}
+
+// context returns the context for this reference relative to a base context.
+func (r ref[T]) context(base *Context) *Context {
+	switch r.file {
+	case 0:
+		return base
+	case -1:
+		return primitiveCtx
+	default:
+		return base.imports.files[r.file-1].Context()
+	}
 }
 
 // File returns the file associated with this context.
@@ -146,6 +166,16 @@ func (f File) TransitiveImports() seq.Indexer[Import] {
 	return f.Context().imports.Transitive()
 }
 
+// ImportFor returns import metadata for a given file, if this file imports it.
+func (f File) ImportFor(that File) Import {
+	idx, ok := f.Context().imports.byPath[that.InternedPath()]
+	if !ok {
+		return Import{}
+	}
+
+	return f.TransitiveImports().At(int(idx))
+}
+
 // Types returns the top level types of this file.
 func (f File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
@@ -197,6 +227,16 @@ func (f File) Options() seq.Indexer[Option] {
 		f.Context().options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(f.Context(), p)
+		},
+	)
+}
+
+// Symbols returns this file's transitive symbol table.
+func (f File) Symbols() seq.Indexer[Symbol] {
+	return seq.NewFixedSlice(
+		f.Context().symbols,
+		func(_ int, r ref[rawSymbol]) Symbol {
+			return wrapSymbol(f.Context(), r)
 		},
 	)
 }
