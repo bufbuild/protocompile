@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -94,7 +95,33 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 	// Having found all of the imports that are not cyclic, we now need to pull
 	// in all of *their* transitive imports.
+<<<<<<< HEAD
 	c.imports.Recurse(dedup)
+=======
+	c.file.imports.Recurse(dedup)
+
+	clear(dedup) // Reuse the dedup set to avoid extra allocations.
+	c.file.visibleImports = dedup
+
+	// Next, we need to record which imports we're allowed to import symbols
+	// from in the visibleImports set. This consists of all of the direct
+	// imports and their transitive public imports.
+	//
+	// Note that this is *not* all of the Direct + Public imports from
+	// f.TransitiveImports(), because that will not include files that are
+	// publicly imported by a direct non-public import.
+	for imp := range seq.Values(f.Imports()) {
+		c.file.visibleImports.InsertID(imp.InternedPath())
+
+		// TODO: Add a flag that indicates if any public imports exist so we
+		// can skip this loop in the common case.
+		for imp := range seq.Values(imp.TransitiveImports()) {
+			if imp.Public {
+				c.file.visibleImports.InsertID(imp.InternedPath())
+			}
+		}
+	}
+>>>>>>> 0b41755 (wip)
 }
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each
