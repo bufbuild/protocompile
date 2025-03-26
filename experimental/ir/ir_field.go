@@ -50,8 +50,9 @@ type rawField struct {
 	number     int32
 	parent     arena.Pointer[rawType]
 
-	// If nonpositive, this is the negative of a presence.Kind.
-	oneof arena.Pointer[rawOneof]
+	// If nonpositive, this is the negative of a presence.Kind. Otherwise, it's
+	// a oneof index.
+	oneof int32
 }
 
 // Returns whether this is a non-extension message field.
@@ -75,11 +76,11 @@ func (f Field) AST() ast.DeclDef {
 }
 
 // FullName returns this fields's name.
-func (f Field) Name() FullName {
+func (f Field) Name() string {
 	if f.IsZero() {
 		return ""
 	}
-	return FullName(f.Context().session.intern.Value(f.raw.name))
+	return f.Context().session.intern.Value(f.raw.name)
 }
 
 // FullName returns this fields's fully-qualified name.
@@ -115,7 +116,7 @@ func (f Field) Number() int32 {
 
 // Presence returns this field's presence kind.
 func (f Field) Presence() presence.Kind {
-	if int32(f.raw.oneof) > 0 {
+	if f.raw.oneof > 0 {
 		return presence.Shared
 	}
 	return presence.Kind(-f.raw.oneof)
@@ -158,7 +159,11 @@ func (f Field) Oneof() Oneof {
 	if f.Presence() != presence.Shared {
 		return Oneof{}
 	}
-	return wrapOneof(f.Context(), f.raw.oneof)
+	return Oneof{
+		f.withContext,
+		int(f.raw.oneof),
+		f.Parent().raw, // Extension fields are not part of oneofs.
+	}
 }
 
 // Options returns the options applied to this field.
@@ -190,7 +195,8 @@ func wrapField(c *Context, r ref[rawField]) Field {
 // Oneof represents a oneof within a message definition.
 type Oneof struct {
 	withContext
-	raw *rawOneof
+	index     int
+	container *rawType
 }
 
 type rawOneof struct {
@@ -202,7 +208,7 @@ type rawOneof struct {
 
 // AST returns the declaration for this oneof, if known.
 func (o Oneof) AST() ast.DeclDef {
-	return o.raw.def
+	return o.raw().def
 }
 
 // Name returns this oneof's declared name.
@@ -210,7 +216,7 @@ func (o Oneof) Name() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().session.intern.Value(o.raw.name)
+	return o.Context().session.intern.Value(o.raw().name)
 }
 
 // FullName returns this oneof's fully-qualified name.
@@ -218,7 +224,7 @@ func (o Oneof) FullName() FullName {
 	if o.IsZero() {
 		return ""
 	}
-	return FullName(o.Context().session.intern.Value(o.raw.fqn))
+	return FullName(o.Context().session.intern.Value(o.raw().fqn))
 }
 
 // InternedName returns the intern ID for [Oneof.FullName]().Name().
@@ -226,7 +232,7 @@ func (o Oneof) InternedName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw.name
+	return o.raw().name
 }
 
 // InternedName returns the intern ID for [Oneof.FullName].
@@ -234,13 +240,30 @@ func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw.fqn
+	return o.raw().fqn
+}
+
+// Container returns the message type which contains it.
+func (o Oneof) Container() Type {
+	if o.IsZero() {
+		return Type{}
+	}
+
+	return Type{o.withContext, o.container}
+}
+
+// Index returns this oneof's index in its containing message.
+func (o Oneof) Index() int {
+	if o.IsZero() {
+		return 0
+	}
+	return o.index
 }
 
 // Members returns this oneof's member fields.
 func (o Oneof) Members() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
-		o.raw.members,
+		o.raw().members,
 		func(_ int, p arena.Pointer[rawField]) Field {
 			return wrapField(o.Context(), ref[rawField]{ptr: p})
 		},
@@ -256,21 +279,15 @@ func (o Oneof) Parent() Type {
 // Options returns the options applied to this oneof.
 func (o Oneof) Options() seq.Indexer[Option] {
 	return seq.NewFixedSlice(
-		o.raw.options,
+		o.raw().options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(o.Context(), p)
 		},
 	)
 }
 
-func wrapOneof(c *Context, p arena.Pointer[rawOneof]) Oneof {
-	if p.Nil() || c == nil {
-		return Oneof{}
-	}
-	return Oneof{
-		withContext: internal.NewWith(c),
-		raw:         c.arenas.oneofs.Deref(p),
-	}
+func (o Oneof) raw() *rawOneof {
+	return &o.container.oneofs[o.index]
 }
 
 // TagRange is a range of reserved field or enum numbers, either from a reserved

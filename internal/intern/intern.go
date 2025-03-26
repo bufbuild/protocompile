@@ -203,7 +203,27 @@ func (s Set) ContainsID(id ID) bool {
 	return ok
 }
 
+// Contains returns whether s contains the given string.
+func (s Set) Contains(table *Table, key string) bool {
+	k, ok := table.Query(key)
+	if !ok {
+		return false
+	}
+	_, ok = s[k]
+	return ok
+}
+
 // AddID adds an ID to s, and returns whether it was added.
 func (s Set) AddID(id ID) (inserted bool) {
 	return mapsx.AddZero(s, id)
+}
+
+// Add adds a string to s, and returns whether it was added.
+func (s Set) Add(table *Table, key string) (inserted bool) {
+	k := table.Intern(key)
+	_, ok := s[k]
+	if !ok {
+		s[k] = struct{}{}
+	}
+	return !ok
 }

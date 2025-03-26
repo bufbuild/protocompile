@@ -104,6 +104,11 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			sorry("groups")
 
 		case ast.DefKindOneof:
+			parent := extractParentType(parent)
+			if parent.IsZero() {
+				return // Already diagnosed elsewhere.
+			}
+
 			oneofDef := def.AsOneof()
 			w.recurse(def.Body().AsAny(), oneof{
 				parent: extractParentType(parent),
@@ -163,8 +168,8 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 
 	switch parent := parent.(type) {
 	case oneof:
-		raw.oneof = w.Context().arenas.oneofs.Compress(parent.Oneof.raw)
-		parent.Oneof.raw.members = append(parent.Oneof.raw.members, id)
+		raw.oneof = int32(parent.index)
+		parent.raw().members = append(parent.raw().members, id)
 	case extend:
 		// TODO: Cram the extension type somewhere so we can resolve it later.
 	}
@@ -188,19 +193,17 @@ func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 	name := def.Name.Name()
 	fqn := w.fullname(parentTy, name)
 
-	raw := w.Context().arenas.oneofs.New(rawOneof{
-		def:  def.Decl,
-		name: w.Context().session.intern.Intern(name),
-		fqn:  w.Context().session.intern.Intern(fqn),
-	})
-
+	var index int
 	if !parentTy.IsZero() {
-		parentTy.raw.oneofs = append(parentTy.raw.oneofs,
-			w.Context().arenas.oneofs.Compress(raw),
-		)
+		index = len(parentTy.raw.oneofs)
+		parentTy.raw.oneofs = append(parentTy.raw.oneofs, rawOneof{
+			def:  def.Decl,
+			name: w.Context().session.intern.Intern(name),
+			fqn:  w.Context().session.intern.Intern(fqn),
+		})
 	}
 
-	return Oneof{internal.NewWith(w.Context()), raw}
+	return Oneof{internal.NewWith(w.Context()), index, parentTy.raw}
 }
 
 func (w *walker) fullname(parentTy Type, name string) string {

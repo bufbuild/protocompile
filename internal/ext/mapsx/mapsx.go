@@ -27,6 +27,13 @@ func KeySet[M ~map[K]V, K comparable, V any](m M) map[K]struct{} {
 	return keys
 }
 
+// Contains is a shorthand for _, ok := m[k] that allows it to be used in
+// expression position.
+func Contains[M ~map[K]V, K comparable, V any](m M, k K) bool {
+	_, ok := m[k]
+	return ok
+}
+
 // AddZero inserts k into the map if it is not present, using the zero value of
 // V as the value. Returns whether insertion occurred.
 func AddZero[M ~map[K]V, K comparable, V any](m M, k K) (inserted bool) {
