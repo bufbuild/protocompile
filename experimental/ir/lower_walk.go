@@ -50,7 +50,6 @@ func (w *walker) walk() {
 
 	if syn := w.AST().Syntax(); !syn.IsZero() {
 		c.syntax = syntax.Lookup(syn.Value().AsLiteral().Text())
-		c.file.syntax = syntax.Lookup(syn.Value().AsLiteral().Text())
 	}
 
 	w.recurse(w.AST().AsAny(), nil)
