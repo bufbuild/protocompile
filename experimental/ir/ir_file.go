@@ -98,7 +98,7 @@ func (f File) AST() ast.File {
 
 // Syntax returns the syntax pragma that applies to this file.
 func (f File) Syntax() syntax.Syntax {
-	return f.Context().syntax
+	return f.Context().file.syntax
 }
 
 // Path returns the canoniocal path for this file.
