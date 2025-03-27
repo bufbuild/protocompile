@@ -16,13 +16,13 @@ package ir
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"golang.org/x/exp/slices"
 )
 
 // walker is the state struct for the AST-walking logic.

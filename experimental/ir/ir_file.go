@@ -30,28 +30,9 @@ import (
 //
 // Unlike [ast.Context], this Context is shared by many files.
 type Context struct {
-	session *Session
 	ast     ast.File
-
-	// The path for this file. This need not be what ast.Span() reports, because
-	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
-	// to normalize it.
-	path intern.ID
-
-	syntax syntax.Syntax
-	pkg    intern.ID
-
-	imports imports
-
-	types            []arena.Pointer[rawType]
-	topLevelTypesEnd int // Index of the last top-level type in types.
-
-	extns            []arena.Pointer[rawField]
-	topLevelExtnsEnd int // Index of the last top-level extension in extns.
-
-	options []arena.Pointer[rawOption]
-
-	arenas struct {
+	session *Session
+	arenas  struct {
 		types    arena.Arena[rawType]
 		fields   arena.Arena[rawField]
 		oneofs   arena.Arena[rawOneof]
@@ -59,6 +40,15 @@ type Context struct {
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValue]
 	}
+	types            []arena.Pointer[rawType]
+	extns            []arena.Pointer[rawField]
+	options          []arena.Pointer[rawOption]
+	imports          imports
+	syntax           syntax.Syntax
+	topLevelTypesEnd int
+	topLevelExtnsEnd int
+	path             intern.ID
+	pkg              intern.ID
 }
 
 type withContext = internal.With[*Context]
