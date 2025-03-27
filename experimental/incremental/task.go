@@ -228,7 +228,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	}
 
 	// Schedule all but the first query to run asynchronously.
-	for i := range len(queries) {
+	for i := range queries {
 		if i > 0 {
 			schedule(i, false)
 		}
@@ -465,14 +465,14 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		}
 
 		return t.waitUntilDone(caller)
-	} else {
-		// Try to become the leader (the task responsible for computing the result).
-		output = &result{done: make(chan struct{})}
-		if !t.result.CompareAndSwap(nil, output) {
-			// We failed to become the executor, so we're gonna go to sleep
-			// until it's done.
-			return t.waitUntilDone(caller)
-		}
+	}
+
+	// Try to become the leader (the task responsible for computing the result).
+	output = &result{done: make(chan struct{})}
+	if !t.result.CompareAndSwap(nil, output) {
+		// We failed to become the executor, so we're gonna go to sleep
+		// until it's done.
+		return t.waitUntilDone(caller)
 	}
 
 	callee := &Task{

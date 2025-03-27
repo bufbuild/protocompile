@@ -1,13 +1,27 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package incremental_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
-	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bufbuild/protocompile/experimental/incremental"
 )
 
 type Panic bool
@@ -16,7 +30,7 @@ func (p Panic) Key() any {
 	return p
 }
 
-func (p Panic) Execute(t *incremental.Task) (bool, error) {
+func (p Panic) Execute(_ *incremental.Task) (bool, error) {
 	if p {
 		panic("aaa!")
 	}
@@ -36,14 +50,14 @@ func TestPanic(t *testing.T) {
 
 	_, _, err = incremental.Run(ctx, exec, Panic(true), Panic(false))
 	var panicked *incremental.ErrPanic
-	require.True(t, errors.As(err, &panicked))
+	require.ErrorAs(t, err, &panicked)
 	assert.Equal(t, panicked.Query, Panic(true))
-	assert.Equal(t, panicked.Panic, "aaa!")
+	assert.Equal(t, "aaa!", panicked.Panic)
 
 	_, _, err = incremental.Run(ctx, exec, Panic(false), Panic(true))
-	require.True(t, errors.As(err, &panicked))
+	require.ErrorAs(t, err, &panicked)
 	assert.Equal(t, panicked.Query, Panic(true))
-	assert.Equal(t, panicked.Panic, "aaa!")
+	assert.Equal(t, "aaa!", panicked.Panic)
 }
 
 type Abort bool
@@ -74,9 +88,11 @@ func TestAbort(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Panics(t, func() {
+		//nolint:errcheck
 		incremental.Run(ctx, exec, Abort(true), Abort(false))
 	})
 	assert.Panics(t, func() {
+		//nolint:errcheck
 		incremental.Run(ctx, exec, Abort(false), Abort(true))
 	})
 }
