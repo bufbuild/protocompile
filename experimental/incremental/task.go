@@ -297,6 +297,9 @@ type task struct {
 
 	// If this task has not been started yet, this is nil.
 	// Otherwise, if it is complete, result.done will be closed.
+	//
+	// In other words, if result is non-nil and result.done is not closed, this
+	// task is pending.
 	result atomic.Pointer[result]
 	report report.Report
 }
@@ -428,50 +431,48 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		}
 	}()
 
-	// Check for a potential cycle.
-	// TODO: use a map for this check.
-	var cycle *ErrCycle
-	for node := range caller.path.Walk() {
-		if node.Query.Key() != q.Key() {
-			continue
-		}
-
-		cycle = new(ErrCycle)
-
-		// Re-walk the list to collect the cycle itself.
-		for node2 := range caller.path.Walk() {
-			cycle.Cycle = append(cycle.Cycle, node2.Query)
-			if node2 == node {
-				break
+	output = t.result.Load()
+	if output != nil && !closed(output.done) {
+		// Check for a potential cycle. This is only possible if output is
+		// pending; if it isn't, it can't be in our history path.
+		var cycle *ErrCycle
+		for node := range caller.path.Walk() {
+			if node.Query.Key() != q.Key() {
+				continue
 			}
+
+			cycle = new(ErrCycle)
+
+			// Re-walk the list to collect the cycle itself.
+			for node2 := range caller.path.Walk() {
+				cycle.Cycle = append(cycle.Cycle, node2.Query)
+				if node2 == node {
+					break
+				}
+			}
+
+			// Reverse the list so that dependency arrows point to the
+			// right (i.e., Cycle[n] depends on Cycle[n+1]).
+			slices.Reverse(cycle.Cycle)
+
+			// Insert a copy of the current query to complete the cycle.
+			cycle.Cycle = append(cycle.Cycle, AsAny(q))
+			break
+		}
+		if cycle != nil {
+			output.Fatal = cycle
+			return output
 		}
 
-		// Reverse the list so that dependency arrows point to the
-		// right (i.e., Cycle[n] depends on Cycle[n+1]).
-		slices.Reverse(cycle.Cycle)
-
-		// Insert a copy of the current query to complete the cycle.
-		cycle.Cycle = append(cycle.Cycle, AsAny(q))
-		break
-	}
-	if cycle != nil {
-		output.Fatal = cycle
-		return output
-	}
-
-	// Try to become the leader (the task responsible for computing the result).
-	output = &result{done: make(chan struct{})}
-	if !t.result.CompareAndSwap(nil, output) {
-		// We failed to become the executor, so we're gonna go to sleep
-		// until it's done.
-		select {
-		case <-t.result.Load().done:
-		case <-caller.ctx.Done():
+		return t.waitUntilDone(caller)
+	} else {
+		// Try to become the leader (the task responsible for computing the result).
+		output = &result{done: make(chan struct{})}
+		if !t.result.CompareAndSwap(nil, output) {
+			// We failed to become the executor, so we're gonna go to sleep
+			// until it's done.
+			return t.waitUntilDone(caller)
 		}
-
-		// Reload the result pointer. This is needed if the leader panics,
-		// because the result will be set to nil.
-		return t.result.Load()
 	}
 
 	callee := &Task{
@@ -519,6 +520,18 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	}
 
 	return output
+}
+
+// waitUntilDone waits for this task to be completed by another goroutine.
+func (t *task) waitUntilDone(caller *Task) *result {
+	select {
+	case <-t.result.Load().done:
+	case <-caller.ctx.Done():
+	}
+
+	// Reload the result pointer. This is needed if the leader panics,
+	// because the result will be set to nil.
+	return t.result.Load()
 }
 
 // closed checks if ch is closed. This may return false negatives, in that it
