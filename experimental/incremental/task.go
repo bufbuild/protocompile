@@ -32,7 +32,7 @@ import (
 )
 
 // Set this to true to enable debug printing.
-const debugIncremental = true
+const debugIncremental = false
 
 // ErrNilQuery is set as the Fatal error for the result of executing a nil
 // query.
