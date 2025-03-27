@@ -26,11 +26,13 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"golang.org/x/sync/semaphore"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
 // Set this to true to enable debug printing.
-const debugIncremental = false
+const debugIncremental = true
 
 // ErrNilQuery is set as the Fatal error for the result of executing a nil
 // query.
@@ -63,8 +65,8 @@ type Task struct {
 	// ensure that we do not violate concurrency assumptions, and is never
 	// itself mutated concurrently.
 	holding bool
-	// True if this task is executing on the g that called [Run].
-	rootg bool
+	// True if this task is intended to execute on the goroutine that called [Run].
+	onRootGoroutine bool
 }
 
 // Context returns the cancellation context for this task.
@@ -91,7 +93,7 @@ func (t *Task) acquire() bool {
 
 	if debugIncremental {
 		fmt.Fprintf(os.Stderr,
-			"incremental: acquire: %p/%d, %T/%v\n",
+			"incremental: acquire(%v): %p/%d, %T/%v\n", t.holding,
 			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
 	}
 
@@ -107,11 +109,34 @@ func (t *Task) release() {
 	}
 
 	if !t.holding {
+		if context.Cause(t.ctx) != nil {
+			// This context was cancelled, so acquires prior to this release
+			// may have failed, in which case we do nothing instead of panic.
+			return
+		}
+
 		t.abort(errBadRelease)
 	}
 
 	t.exec.sema.Release(1)
 	t.holding = false
+}
+
+// transferFrom acquires a hold on the global semaphore from the given task.
+func (t *Task) transferFrom(that *Task) {
+	if t.holding || !that.holding {
+		t.abort(errBadAcquire)
+	}
+
+	t.holding, that.holding = that.holding, t.holding
+
+	if debugIncremental {
+		fmt.Fprintf(os.Stderr,
+			"incremental: acquireFrom: %p/%d, %T/%v -> %T/%v\n",
+			t.exec, t.runID,
+			that.path.Query.Underlying(), that.path.Query.Underlying(),
+			t.path.Query.Underlying(), t.path.Query.Underlying())
+	}
 }
 
 type errAbort struct {
@@ -195,8 +220,10 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	results = make([]Result[T], len(queries))
 	deps := make([]*task, len(queries))
 
-	var wg sync.WaitGroup
-	wg.Add(len(queries))
+	// We use a semaphore here instead of a WaitGroup so that when we block
+	// on it later in this function, we can bail if caller.ctx is cancelled.
+	join := semaphore.NewWeighted(int64(len(queries)))
+	join.TryAcquire(int64(len(queries))) // Always succeeds because there are no waiters.
 
 	var needWait bool
 	schedule := func(i int, runNow bool) {
@@ -221,7 +248,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 				results[i].Changed = r.runID == caller.runID
 			}
 
-			wg.Done()
+			join.Release(1)
 		})
 
 		needWait = needWait || async
@@ -268,7 +295,9 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		// go to sleep. This avoids potential resource starvation for deeply-nested
 		// queries on low parallelism settings.
 		caller.release()
-		wg.Wait()
+		if join.Acquire(caller.ctx, int64(len(queries))) != nil {
+			return nil, context.Cause(caller.ctx)
+		}
 
 		// Reacquire from the global semaphore before returning, so
 		// execution of the calling task may resume.
@@ -277,7 +306,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		}
 	}
 
-	return results, nil
+	return results, context.Cause(caller.ctx)
 }
 
 // checkDone returns an error if this task is completed. This is to avoid shenanigans with
@@ -376,6 +405,11 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
+		if debugIncremental {
+			fmt.Fprintf(os.Stderr,
+				"incremental: cache hit: %p/%d, %T/%v\n",
+				caller.exec, caller.runID, q.Underlying(), q.Underlying())
+		}
 		done(r)
 		return false
 	}
@@ -396,43 +430,11 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 // goroutine.
 func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	output = t.result.Load()
-
-	defer func() {
-		if caller.aborted() == nil {
-			if panicked := recover(); panicked != nil {
-				output = nil
-				caller.cancel(&ErrPanic{
-					Query:     q,
-					Panic:     panicked,
-					Backtrace: string(debug.Stack()),
-				})
-			}
-		} else if !caller.rootg {
-			// For Gs spawned by the executor, we just kill them here without
-			// panicking, so we don't blow up the whole process. The root G for
-			// this Run call will panic when it exits Resolve.
-			_ = recover()
-			runtime.Goexit()
+	if output != nil {
+		if closed(output.done) {
+			return output
 		}
 
-		if output != nil && !closed(output.done) {
-			if _, ok := output.Fatal.(*ErrCycle); ok {
-				// Do not mark completion on cycles: we want the original call of this
-				// query to continue executing and handle the cycle in some way.
-				return
-			}
-
-			if debugIncremental {
-				fmt.Fprintf(os.Stderr,
-					"incremental: done: %p/%d, %T/%v\n",
-					caller.exec, caller.runID, q.Underlying(), q.Underlying())
-			}
-			close(output.done)
-		}
-	}()
-
-	output = t.result.Load()
-	if output != nil && !closed(output.done) {
 		// Check for a potential cycle. This is only possible if output is
 		// pending; if it isn't, it can't be in our history path.
 		var cycle *ErrCycle
@@ -487,8 +489,59 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 			Prev:  &caller.path,
 		},
 
-		rootg: caller.rootg && !async,
+		onRootGoroutine: caller.onRootGoroutine && !async,
 	}
+
+	defer func() {
+		if caller.aborted() == nil {
+			if panicked := recover(); panicked != nil {
+				if debugIncremental {
+					fmt.Fprintf(os.Stderr,
+						"incremental: panic: %p/%d, %T/%v, %v\n",
+						callee.exec, callee.runID, q.Underlying(), q.Underlying(),
+						panicked)
+				}
+
+				t.result.CompareAndSwap(output, nil)
+				output = nil
+
+				caller.cancel(&ErrPanic{
+					Query:     q,
+					Panic:     panicked,
+					Backtrace: string(debug.Stack()),
+				})
+			}
+		} else {
+			// If this task is pending and we're the leader, do not allow it to
+			// stick around. This will cause future calls to the same failed
+			// query to hit the cache.
+			t.result.CompareAndSwap(output, nil)
+			output = nil
+
+			if !callee.onRootGoroutine {
+				// For Gs spawned by the executor, we just kill them here without
+				// panicking, so we don't blow up the whole process. The root G for
+				// this Run call will panic when it exits Resolve.
+				_ = recover()
+				runtime.Goexit()
+			}
+		}
+
+		if output != nil && !closed(output.done) {
+			if _, ok := output.Fatal.(*ErrCycle); ok {
+				// Do not mark completion on cycles: we want the original call of this
+				// query to continue executing and handle the cycle in some way.
+				return
+			}
+
+			if debugIncremental {
+				fmt.Fprintf(os.Stderr,
+					"incremental: done: %p/%d, %T/%v\n",
+					callee.exec, callee.runID, q.Underlying(), q.Underlying())
+			}
+			close(output.done)
+		}
+	}()
 
 	if async {
 		// If synchronous, this is executing under the hold of the caller query.
@@ -498,10 +551,8 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		defer callee.release()
 	} else {
 		// Steal our caller's semaphore hold.
-		callee.holding, caller.holding = caller.holding, callee.holding
-		defer func() {
-			callee.holding, caller.holding = caller.holding, callee.holding
-		}()
+		callee.transferFrom(caller)
+		defer caller.transferFrom(callee)
 	}
 
 	if debugIncremental {

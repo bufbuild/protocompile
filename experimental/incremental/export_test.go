@@ -18,4 +18,4 @@ package incremental
 // file avoids them being exported "for real".
 
 // Abort forces an abort on the given task.
-func Abort(t *Task, err error) { t.abort(err) }
+func (t *Task) Abort(err error) { t.abort(err) }

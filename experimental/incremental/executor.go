@@ -127,12 +127,12 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 
 	generation := e.counter.Add(1)
 	root := &Task{
-		ctx:    ctx,
-		cancel: cancel,
-		exec:   e,
-		result: &result{done: make(chan struct{})},
-		runID:  generation,
-		rootg:  true,
+		ctx:             ctx,
+		cancel:          cancel,
+		exec:            e,
+		result:          &result{done: make(chan struct{})},
+		runID:           generation,
+		onRootGoroutine: true,
 	}
 
 	// Need to acquire a hold on the global semaphore to represent the root
@@ -144,11 +144,10 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 
 	results, expired := Resolve(root, queries...)
 	if expired != nil {
+		if _, aborted := expired.(*errAbort); aborted {
+			panic(expired)
+		}
 		return nil, nil, expired
-	}
-
-	if err := root.aborted(); err != nil {
-		panic(err)
 	}
 
 	// Record all diagnostics generates by the queries.

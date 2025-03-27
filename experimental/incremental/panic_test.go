@@ -51,12 +51,12 @@ func TestPanic(t *testing.T) {
 	_, _, err = incremental.Run(ctx, exec, Panic(true), Panic(false))
 	var panicked *incremental.ErrPanic
 	require.ErrorAs(t, err, &panicked)
-	assert.Equal(t, panicked.Query, Panic(true))
+	assert.Equal(t, panicked.Query.Underlying(), Panic(true))
 	assert.Equal(t, "aaa!", panicked.Panic)
 
 	_, _, err = incremental.Run(ctx, exec, Panic(false), Panic(true))
 	require.ErrorAs(t, err, &panicked)
-	assert.Equal(t, panicked.Query, Panic(true))
+	assert.Equal(t, panicked.Query.Underlying(), Panic(true))
 	assert.Equal(t, "aaa!", panicked.Panic)
 }
 
@@ -68,7 +68,7 @@ func (a Abort) Key() any {
 
 func (a Abort) Execute(t *incremental.Task) (bool, error) {
 	if a {
-		incremental.Abort(t, a)
+		t.Abort(a)
 	}
 	return bool(a), nil
 }
