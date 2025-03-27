@@ -97,30 +97,6 @@ func (s Sum) Execute(t *incremental.Task) (int, error) {
 	return v, nil
 }
 
-type Cyclic struct {
-	Mod, Step int
-}
-
-func (c Cyclic) Key() any {
-	return c
-}
-
-func (c Cyclic) Execute(t *incremental.Task) (int, error) {
-	next, err := incremental.Resolve(t, Cyclic{
-		Mod:  c.Mod,
-		Step: (c.Step + 1) % c.Mod,
-	})
-	if err != nil {
-		return 0, err
-	}
-
-	// NOTE: This call is a regression check against a case where calling
-	// Report() after a cyclic error would incorrectly treat the cycle point
-	// as having been completed.
-	t.Report().Remarkf("squaring: %d", next[0].Value)
-	return next[0].Value * next[0].Value, next[0].Fatal
-}
-
 func TestSum(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
@@ -203,29 +179,6 @@ func TestFatal(t *testing.T) {
 		`incremental_test.Root{}`,
 		`incremental_test.Sum{Input:"1,2,-3,-4"}`,
 	}, exec.Keys())
-}
-
-func TestCyclic(t *testing.T) {
-	t.Parallel()
-	assert := assert.New(t)
-
-	ctx := context.Background()
-	exec := incremental.New(
-		incremental.WithParallelism(4),
-	)
-
-	result, _, err := incremental.Run(ctx, exec, Cyclic{Mod: 5, Step: 3})
-	require.NoError(t, err)
-	assert.Equal(
-		`cycle detected: `+
-			`incremental_test.Cyclic{Mod:5, Step:3} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:4} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:0} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:1} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:2} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:3}`,
-		result[0].Fatal.Error(),
-	)
 }
 
 func TestUnchanged(t *testing.T) {

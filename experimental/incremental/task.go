@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"iter"
 	"os"
+	"runtime"
 	"runtime/debug"
 	"slices"
 	"sync"
@@ -28,9 +29,16 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 )
 
+// Set this to true to enable debug printing.
+const debugIncremental = false
+
 // ErrNilQuery is set as the Fatal error for the result of executing a nil
 // query.
-var ErrNilQuery = errors.New("incremental: nil query value")
+var (
+	ErrNilQuery   = errors.New("incremental: nil query value")
+	errBadAcquire = errors.New("called acquire() while holding the semaphore")
+	errBadRelease = errors.New("called release() without holding the semaphore")
+)
 
 // Task represents a query that is currently being executed.
 //
@@ -55,6 +63,8 @@ type Task struct {
 	// ensure that we do not violate concurrency assumptions, and is never
 	// itself mutated concurrently.
 	holding bool
+	// True if this task is executing on the g that called [Run].
+	rootg bool
 }
 
 // Context returns the cancellation context for this task.
@@ -74,15 +84,17 @@ func (t *Task) Report() *report.Report {
 // Returns false if the underlying context has timed out.
 func (t *Task) acquire() bool {
 	if t.holding {
-		panic("incremental: called acquire() while holding the semaphore; this is a bug")
+		t.abort(errBadAcquire)
 	}
-	err := t.exec.sema.Acquire(t.ctx, 1)
+
+	t.holding = t.exec.sema.Acquire(t.ctx, 1) == nil
+
 	if debugIncremental {
 		fmt.Fprintf(os.Stderr,
 			"incremental: acquire: %p/%d, %T/%v\n",
 			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
 	}
-	t.holding = err == nil
+
 	return t.holding
 }
 
@@ -93,10 +105,62 @@ func (t *Task) release() {
 			"incremental: release: %p/%d, %T/%v\n",
 			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
 	}
-	if t.holding {
-		t.exec.sema.Release(1)
+
+	if !t.holding {
+		t.abort(errBadRelease)
 	}
+
+	t.exec.sema.Release(1)
 	t.holding = false
+}
+
+type errAbort struct {
+	err error
+}
+
+func (e *errAbort) Unwrap() error {
+	return e.err
+}
+
+func (e *errAbort) Error() string {
+	return fmt.Sprintf(
+		"incremental: internal error: %v (this is a bug in protocompile)", e.err,
+	)
+}
+
+// abort aborts the current computation due to an unrecoverable error.
+//
+// This will cause the outer call to Run() to immediately wake up and panic.
+func (t *Task) abort(err error) {
+	if debugIncremental {
+		fmt.Fprintf(os.Stderr,
+			"incremental: abort: %p/%d, %T/%v, %v\n",
+			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying(), err)
+	}
+
+	if prev := t.aborted(); prev != nil {
+		// Prevent multiple errors from cascading and getting spammed all over
+		// the place.
+		err = prev
+	} else {
+		err = &errAbort{err}
+		t.cancel(err)
+	}
+
+	// Destroy the current task, it's in a broken state.
+	panic(err)
+}
+
+// aborted returns the error passed to [Task.abort] by some task in the current
+// Run call.
+//
+// Returns nil if there is no such error.
+func (t *Task) aborted() error {
+	err, ok := context.Cause(t.ctx).(*errAbort)
+	if !ok {
+		return nil
+	}
+	return err
 }
 
 // Resolve executes a set of queries in parallel. Each query is run on its own
@@ -124,6 +188,9 @@ func (t *Task) release() {
 // because it's generic.
 func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], expired error) {
 	caller.checkDone()
+	if len(queries) == 0 {
+		return nil, nil
+	}
 
 	results = make([]Result[T], len(queries))
 	deps := make([]*task, len(queries))
@@ -131,20 +198,17 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	var wg sync.WaitGroup
 	wg.Add(len(queries))
 
-	// TODO: A potential optimization is to make the current goroutine
-	// execute the zeroth query, which saves on allocating a fresh g for
-	// *every* query.
-	anyAsync := false
-	for i, q := range queries {
+	var needWait bool
+	schedule := func(i int, runNow bool) {
+		q := AsAny(queries[i]) // This will also cache the result of q.Key() for us.
+
 		if q == nil {
 			results[i].Fatal = ErrNilQuery
-			continue
+			return
 		}
 
-		q := AsAny(q) // This will also cache the result of q.Key() for us.
 		deps[i] = caller.exec.getTask(q.Key())
-
-		async := deps[i].start(caller, q, func(r *result) {
+		async := deps[i].start(caller, q, runNow, func(r *result) {
 			if r != nil {
 				if r.Value != nil {
 					// This type assertion will always succeed, unless the user has
@@ -160,7 +224,14 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 			wg.Done()
 		})
 
-		anyAsync = anyAsync || async
+		needWait = needWait || async
+	}
+
+	// Schedule all but the first query to run asynchronously.
+	for i := range len(queries) {
+		if i > 0 {
+			schedule(i, false)
+		}
 	}
 
 	// Update dependency links for each of our dependencies. This occurs in a
@@ -188,7 +259,11 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		}
 	}()
 
-	if anyAsync {
+	// Run the zeroth query synchronously, inheriting this task's semaphore
+	// hold.
+	schedule(0, true)
+
+	if needWait {
 		// Release our current hold on the global semaphore, since we're about to
 		// go to sleep. This avoids potential resource starvation for deeply-nested
 		// queries on low parallelism settings.
@@ -291,7 +366,10 @@ func (p *path) Walk() iter.Seq[*path] {
 
 // start executes a query in the context of some task and records the result by
 // calling done.
-func (t *task) start(caller *Task, q *AnyQuery, done func(*result)) (async bool) {
+//
+// If sync is false, the computation will occur asynchronously. Returns whether
+// the computation is in fact executing asynchronously as a result.
+func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (async bool) {
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
@@ -299,26 +377,39 @@ func (t *task) start(caller *Task, q *AnyQuery, done func(*result)) (async bool)
 		return false
 	}
 
+	if sync {
+		done(t.run(caller, q, false))
+		return false
+	}
+
 	// Complete the rest of the computation asynchronously.
 	go func() {
-		done(t.run(caller, q))
+		done(t.run(caller, q, true))
 	}()
 	return true
 }
 
 // run actually executes the query passed to start. It is called on its own
 // goroutine.
-func (t *task) run(caller *Task, q *AnyQuery) (output *result) {
+func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	output = t.result.Load()
 
 	defer func() {
-		if panicked := recover(); panicked != nil {
-			output = nil
-			caller.cancel(&ErrPanic{
-				Query:     q,
-				Panic:     panicked,
-				Backtrace: string(debug.Stack()),
-			})
+		if caller.aborted() == nil {
+			if panicked := recover(); panicked != nil {
+				output = nil
+				caller.cancel(&ErrPanic{
+					Query:     q,
+					Panic:     panicked,
+					Backtrace: string(debug.Stack()),
+				})
+			}
+		} else if !caller.rootg {
+			// For Gs spawned by the executor, we just kill them here without
+			// panicking, so we don't blow up the whole process. The root G for
+			// this Run call will panic when it exits Resolve.
+			_ = recover()
+			runtime.Goexit()
 		}
 
 		if output != nil && !closed(output.done) {
@@ -383,8 +474,9 @@ func (t *task) run(caller *Task, q *AnyQuery) (output *result) {
 		return t.result.Load()
 	}
 
-	callee := Task{
+	callee := &Task{
 		ctx:    caller.ctx,
+		cancel: caller.cancel,
 		exec:   caller.exec,
 		runID:  caller.runID,
 		task:   t,
@@ -393,12 +485,23 @@ func (t *task) run(caller *Task, q *AnyQuery) (output *result) {
 			Query: q,
 			Prev:  &caller.path,
 		},
+
+		rootg: caller.rootg && !async,
 	}
 
-	if !callee.acquire() {
-		return nil
+	if async {
+		// If synchronous, this is executing under the hold of the caller query.
+		if !callee.acquire() {
+			return nil
+		}
+		defer callee.release()
+	} else {
+		// Steal our caller's semaphore hold.
+		callee.holding, caller.holding = caller.holding, callee.holding
+		defer func() {
+			callee.holding, caller.holding = caller.holding, callee.holding
+		}()
 	}
-	defer callee.release()
 
 	if debugIncremental {
 		fmt.Fprintf(os.Stderr,
@@ -406,7 +509,7 @@ func (t *task) run(caller *Task, q *AnyQuery) (output *result) {
 			caller.exec, caller.runID, q.Underlying(), q.Underlying())
 	}
 
-	output.Value, output.Fatal = q.Execute(&callee)
+	output.Value, output.Fatal = q.Execute(callee)
 	output.runID = callee.runID
 
 	if debugIncremental {
