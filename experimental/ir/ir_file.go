@@ -43,9 +43,12 @@ type Context struct {
 
 	imports imports
 
-	types []arena.Pointer[rawType]
+	types            []arena.Pointer[rawType]
+	topLevelTypesEnd int // Index of the last top-level type in types.
 
-	extns   []arena.Pointer[rawField]
+	extns            []arena.Pointer[rawField]
+	topLevelExtnsEnd int // Index of the last top-level extension in extns.
+
 	options []arena.Pointer[rawOption]
 
 	arenas struct {
@@ -144,6 +147,17 @@ func (f File) TransitiveImports() seq.Indexer[Import] {
 // Types returns the top level types of this file.
 func (f File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
+		f.Context().types[:f.Context().topLevelTypesEnd],
+		func(_ int, p arena.Pointer[rawType]) Type {
+			// Implicitly in current file.
+			return wrapType(f.Context(), ref[rawType]{ptr: p})
+		},
+	)
+}
+
+// AllTypes returns all types defined in this file.
+func (f File) AllTypes() seq.Indexer[Type] {
+	return seq.NewFixedSlice(
 		f.Context().types,
 		func(_ int, p arena.Pointer[rawType]) Type {
 			// Implicitly in current file.
@@ -156,8 +170,20 @@ func (f File) Types() seq.Indexer[Type] {
 // the contents of any top-level `extends` blocks).
 func (f File) Extensions() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
+		f.Context().extns[:f.Context().topLevelExtnsEnd],
+		func(_ int, p arena.Pointer[rawField]) Field {
+			// Implicitly in current file.
+			return wrapField(f.Context(), ref[rawField]{ptr: p})
+		},
+	)
+}
+
+// AllExtensions returns all extensions defined in this file.
+func (f File) AllExtensions() seq.Indexer[Field] {
+	return seq.NewFixedSlice(
 		f.Context().extns,
 		func(_ int, p arena.Pointer[rawField]) Field {
+			// Implicitly in current file.
 			return wrapField(f.Context(), ref[rawField]{ptr: p})
 		},
 	)
