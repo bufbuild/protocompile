@@ -17,6 +17,8 @@ package ir
 import (
 	"math"
 
+	"google.golang.org/protobuf/encoding/protowire"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
@@ -25,7 +27,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
-	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // Option is an option in a Protobuf file.
@@ -285,7 +286,7 @@ func (v Value) Marshal(b []byte) []byte {
 		t = predeclared.Int32
 	}
 
-	switch t := v.Type().Predeclared(); t {
+	switch t {
 	case predeclared.Int32, predeclared.Int64,
 		predeclared.UInt32, predeclared.UInt64,
 		predeclared.SInt32, predeclared.SInt64, predeclared.Bool:
@@ -302,17 +303,17 @@ func (v Value) Marshal(b []byte) []byte {
 			break
 		}
 
-		var len int
+		var bytes int
 		for e := range seq.Values(v.Elements()) {
 			x := uint64(e.bits)
 			if zigzag {
 				x = protowire.EncodeZigZag(int64(x))
 			}
-			len += protowire.SizeVarint(x)
+			bytes += protowire.SizeVarint(x)
 		}
 
 		b = protowire.AppendTag(b, n, protowire.BytesType)
-		b = protowire.AppendVarint(b, uint64(len))
+		b = protowire.AppendVarint(b, uint64(bytes))
 		for e := range seq.Values(v.Elements()) {
 			x := uint64(e.bits)
 			if zigzag {
@@ -386,6 +387,7 @@ func (v Value) Marshal(b []byte) []byte {
 						bytes value = 2;
 					}
 				*/
+				//nolint:stylecheck,revive // Trying to make the names below match their Protobuf names.
 				const (
 					Any_type_url = 1
 					Any_value    = 2
