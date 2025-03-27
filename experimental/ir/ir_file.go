@@ -31,21 +31,22 @@ import (
 // Unlike [ast.Context], this Context is shared by many files.
 type Context struct {
 	session *Session
-	pkg     intern.ID
+	ast     ast.File
 
 	// The path for this file. This need not be what ast.Span() reports, because
 	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
 	// to normalize it.
-	path   intern.ID
-	syntax syntax.Syntax
+	path intern.ID
 
-	file struct {
-		ast     ast.File
-		imports imports
-		types   []arena.Pointer[rawType]
-		extns   []arena.Pointer[rawField]
-		options []arena.Pointer[rawOption]
-	}
+	syntax syntax.Syntax
+	pkg    intern.ID
+
+	imports imports
+
+	types []arena.Pointer[rawType]
+
+	extns   []arena.Pointer[rawField]
+	options []arena.Pointer[rawOption]
 
 	arenas struct {
 		types    arena.Arena[rawType]
@@ -92,7 +93,7 @@ type withContext2 struct{ internal.With[*Context] }
 
 // AST returns the AST this file was parsed from.
 func (f File) AST() ast.File {
-	return f.Context().file.ast
+	return f.Context().ast
 }
 
 // Syntax returns the syntax pragma that applies to this file.
@@ -129,7 +130,7 @@ func (f File) InternedPackage() intern.ID {
 
 // Imports returns an indexer over the imports declared in this file.
 func (f File) Imports() seq.Indexer[Import] {
-	return f.Context().file.imports.Directs()
+	return f.Context().imports.Directs()
 }
 
 // TransitiveImports returns an indexer over the transitive imports for this
@@ -137,13 +138,13 @@ func (f File) Imports() seq.Indexer[Import] {
 //
 // This function does not report whether those imports are weak or not.
 func (f File) TransitiveImports() seq.Indexer[Import] {
-	return f.Context().file.imports.Transitive()
+	return f.Context().imports.Transitive()
 }
 
 // Types returns the top level types of this file.
 func (f File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
-		f.Context().file.types,
+		f.Context().types,
 		func(_ int, p arena.Pointer[rawType]) Type {
 			// Implicitly in current file.
 			return wrapType(f.Context(), ref[rawType]{ptr: p})
@@ -155,7 +156,7 @@ func (f File) Types() seq.Indexer[Type] {
 // the contents of any top-level `extends` blocks).
 func (f File) Extensions() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
-		f.Context().file.extns,
+		f.Context().extns,
 		func(_ int, p arena.Pointer[rawField]) Field {
 			return wrapField(f.Context(), ref[rawField]{ptr: p})
 		},
@@ -165,7 +166,7 @@ func (f File) Extensions() seq.Indexer[Field] {
 // Options returns the top level options applied to this file.
 func (f File) Options() seq.Indexer[Option] {
 	return seq.NewFixedSlice(
-		f.Context().file.options,
+		f.Context().options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(f.Context(), p)
 		},
@@ -182,7 +183,7 @@ func topoSort(files []File) iter.Seq[File] {
 		File.Context,
 		func(f File) iter.Seq[File] {
 			return seq.Map(
-				f.Context().file.imports.Directs(),
+				f.Context().imports.Directs(),
 				func(i Import) File { return i.File },
 			)
 		},

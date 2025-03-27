@@ -37,7 +37,7 @@ type Session struct {
 func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer) (file File, ok bool) {
 	prior := len(errs.Diagnostics)
 	c := &Context{session: s}
-	c.file.ast = source
+	c.ast = source
 
 	lower(c, errs, importer)
 

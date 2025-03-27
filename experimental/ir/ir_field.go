@@ -183,7 +183,7 @@ func wrapField(c *Context, r ref[rawField]) Field {
 
 	file := c.File()
 	if r.file > 0 {
-		file = c.file.imports.files[r.file-1]
+		file = c.imports.files[r.file-1]
 	}
 
 	return Field{

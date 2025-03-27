@@ -28,5 +28,5 @@ func NewFile(s *Session, path string) File {
 }
 
 func GetImports(f File) *Imports {
-	return &f.Context().file.imports
+	return &f.Context().imports
 }

@@ -56,7 +56,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		c.file.imports.AddDirect(Import{
+		c.imports.AddDirect(Import{
 			File:   file,
 			Public: imp.IsPublic(),
 			Weak:   imp.IsWeak(),
@@ -65,7 +65,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 	// Having found all of the imports that are not cyclic, we now need to pull
 	// in all of *their* transitive imports.
-	c.file.imports.Recurse(dedup)
+	c.imports.Recurse(dedup)
 }
 
 // ErrCycle is an error indicating that a cycle has occurred during processing.

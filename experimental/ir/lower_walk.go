@@ -155,8 +155,8 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 			w.Context().arenas.types.Compress(raw),
 		)
 	} else {
-		file := &w.Context().file
-		file.types = append(file.types, w.Context().arenas.types.Compress(raw))
+		c := w.Context()
+		c.types = append(c.types, c.arenas.types.Compress(raw))
 	}
 
 	return Type{internal.NewWith(w.Context()), raw}
@@ -190,8 +190,7 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 			parentTy.raw.fieldsExtnStart++
 		}
 	} else if _, ok := parent.(extend); !ok {
-		file := &w.Context().file
-		file.extns = append(file.extns, id)
+		w.Context().extns = append(w.Context().extns, id)
 	}
 
 	return Field{internal.NewWith(w.Context()), raw}
