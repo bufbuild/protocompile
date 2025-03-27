@@ -41,7 +41,6 @@ type Context struct {
 
 	file struct {
 		ast     ast.File
-		syntax  syntax.Syntax
 		imports imports
 		types   []arena.Pointer[rawType]
 		extns   []arena.Pointer[rawField]

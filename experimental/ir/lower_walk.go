@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -46,6 +47,11 @@ func (w *walker) walk() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}
 	w.pkg = w.Package().ToAbsolute()
+
+	if syn := w.AST().Syntax(); !syn.IsZero() {
+		unquoted, _ := syn.Value().AsLiteral().AsString()
+		c.syntax = syntax.Lookup(unquoted)
+	}
 
 	w.recurse(w.AST().AsAny(), nil)
 }
@@ -148,6 +154,9 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		parentTy.raw.nested = append(parentTy.raw.nested,
 			w.Context().arenas.types.Compress(raw),
 		)
+	} else {
+		file := &w.Context().file
+		file.types = append(file.types, w.Context().arenas.types.Compress(raw))
 	}
 
 	return Type{internal.NewWith(w.Context()), raw}
