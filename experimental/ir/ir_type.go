@@ -72,7 +72,7 @@ var primitiveCtx = func() *Context {
 			panic(fmt.Sprintf("IR initialization error: %d != %d; this is a bug in protocompile", ptr, n))
 		}
 
-		ctx.file.types = append(ctx.file.types, ptr)
+		ctx.types = append(ctx.types, ptr)
 		return true
 	})
 	return ctx
@@ -266,7 +266,7 @@ func wrapType(c *Context, r ref[rawType]) Type {
 	case r.file == -1:
 		ctx = primitiveCtx
 	case r.file > 0:
-		ctx = c.file.imports.files[r.file-1].Context()
+		ctx = c.imports.files[r.file-1].Context()
 	default:
 		ctx = c.File().Context()
 	}

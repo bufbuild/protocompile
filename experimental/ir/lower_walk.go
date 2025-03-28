@@ -16,6 +16,7 @@ package ir
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
@@ -140,40 +141,41 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 }
 
 func (w *walker) newType(def ast.DeclDef, parent any) Type {
+	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
-	raw := w.Context().arenas.types.New(rawType{
+	raw := c.arenas.types.NewCompressed(rawType{
 		def:  def,
-		name: w.Context().session.intern.Intern(name),
-		fqn:  w.Context().session.intern.Intern(fqn),
+		name: c.session.intern.Intern(name),
+		fqn:  c.session.intern.Intern(fqn),
 	})
 
 	if !parentTy.IsZero() {
-		parentTy.raw.nested = append(parentTy.raw.nested,
-			w.Context().arenas.types.Compress(raw),
-		)
+		parentTy.raw.nested = append(parentTy.raw.nested, raw)
+		c.types = append(c.types, raw)
 	} else {
-		file := &w.Context().file
-		file.types = append(file.types, w.Context().arenas.types.Compress(raw))
+		c.types = slices.Insert(c.types, c.topLevelTypesEnd, raw)
+		c.topLevelTypesEnd++
 	}
 
-	return Type{internal.NewWith(w.Context()), raw}
+	return Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
 }
 
 func (w *walker) newField(def ast.DeclDef, parent any) Field {
+	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
-	id := w.Context().arenas.fields.NewCompressed(rawField{
+	id := c.arenas.fields.NewCompressed(rawField{
 		def:    def,
-		name:   w.Context().session.intern.Intern(name),
-		fqn:    w.Context().session.intern.Intern(fqn),
-		parent: w.Context().arenas.types.Compress(parentTy.raw),
+		name:   c.session.intern.Intern(name),
+		fqn:    c.session.intern.Intern(fqn),
+		parent: c.arenas.types.Compress(parentTy.raw),
 	})
-	raw := w.Context().arenas.fields.Deref(id)
+	raw := c.arenas.fields.Deref(id)
 
 	switch parent := parent.(type) {
 	case oneof:
@@ -187,11 +189,12 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 		parentTy.raw.fields = append(parentTy.raw.fields, id)
 
 		if _, ok := parent.(extend); !ok {
+			c.extns = append(c.extns, id)
 			parentTy.raw.fieldsExtnStart++
 		}
 	} else if _, ok := parent.(extend); !ok {
-		file := &w.Context().file
-		file.extns = append(file.extns, id)
+		c.extns = slices.Insert(c.extns, c.topLevelExtnsEnd, id)
+		c.topLevelExtnsEnd++
 	}
 
 	return Field{internal.NewWith(w.Context()), raw}
