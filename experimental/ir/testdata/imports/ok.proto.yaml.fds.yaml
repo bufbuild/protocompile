@@ -1,0 +1,10 @@
+file:
+  - { name: "a.proto", package: "buf.test", syntax: "proto2" }
+  - { name: "c.proto", package: "buf.test", syntax: "proto2" }
+  - { name: "b.proto", package: "buf.test", syntax: "proto2" }
+  - name: "main.proto"
+    package: "buf.test"
+    dependency: ["a.proto", "b.proto", "c.proto"]
+    public_dependency: [1]
+    weak_dependency: [2]
+    syntax: "proto2"
