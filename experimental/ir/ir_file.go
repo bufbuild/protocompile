@@ -29,10 +29,31 @@ import (
 // Context is where all of the book-keeping for an IR session is kept.
 //
 // Unlike [ast.Context], this Context is shared by many files.
+//
+//nolint:govet // For some reason, this lint mangles the field order on this struct. >:(
 type Context struct {
-	ast     ast.File
 	session *Session
-	arenas  struct {
+	ast     ast.File
+
+	// The path for this file. This need not be what ast.Span() reports, because
+	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
+	// to normalize it.
+	path intern.ID
+
+	syntax syntax.Syntax
+	pkg    intern.ID
+
+	imports imports
+
+	types            []arena.Pointer[rawType]
+	topLevelTypesEnd int // Index of the last top-level type in types.
+
+	extns            []arena.Pointer[rawField]
+	topLevelExtnsEnd int // Index of the last top-level extension in extns.
+
+	options []arena.Pointer[rawOption]
+
+	arenas struct {
 		types    arena.Arena[rawType]
 		fields   arena.Arena[rawField]
 		oneofs   arena.Arena[rawOneof]
@@ -40,15 +61,6 @@ type Context struct {
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValue]
 	}
-	types            []arena.Pointer[rawType]
-	extns            []arena.Pointer[rawField]
-	options          []arena.Pointer[rawOption]
-	imports          imports
-	syntax           syntax.Syntax
-	topLevelTypesEnd int
-	topLevelExtnsEnd int
-	path             intern.ID
-	pkg              intern.ID
 }
 
 type withContext = internal.With[*Context]
