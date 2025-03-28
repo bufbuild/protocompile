@@ -12,15 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package queries provides specific [incremental.Query] types for various parts
-// of Protocompile. It is separate from package incremental itself because it is
-// Protocompile-specific.
-package queries
+package incremental
 
-// Values for [report.Report].SortOrder, which determine how diagnostics
-// generated across parts of the compiler are sorted.
-const (
-	stageFile int = iota * 10
-	stageAST
-	stageIR
-)
+// Exported symbols for test use only. Placing such symbols in a _test.go
+// file avoids them being exported "for real".
+
+// Abort forces an abort on the given task.
+func (t *Task) Abort(err error) { t.abort(err) }

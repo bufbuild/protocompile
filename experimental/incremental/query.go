@@ -23,6 +23,8 @@ import (
 //
 // Types which implement Query can be executed by an [Executor], which
 // automatically caches the results of a query.
+//
+// Nil query values will cause [Run] and [Resolve] to panic.
 type Query[T any] interface {
 	// Returns a unique key representing this query.
 	//
@@ -44,7 +46,7 @@ type Query[T any] interface {
 	// Panicking in execute is not interpreted as a fatal error that should be
 	// memoized; instead, it is treated as cancellation of the context that
 	// was passed to [Run].
-	Execute(Task) (value T, fatal error)
+	Execute(*Task) (value T, fatal error)
 }
 
 // ErrCycle is returned by [Resolve] if a cycle occurs during query execution.
@@ -89,7 +91,7 @@ func (e *ErrPanic) Error() string {
 // AnyQuery is a [Query] that has been type-erased.
 type AnyQuery struct {
 	actual, key any
-	execute     func(Task) (any, error)
+	execute     func(*Task) (any, error)
 }
 
 // AsAny type-erases a [Query].
@@ -97,8 +99,12 @@ type AnyQuery struct {
 // This is intended to be combined with [Resolve], for cases where queries
 // of different types want to be run in parallel.
 //
-// Panics if q is nil.
+// If q is nil, returns nil.
 func AsAny[T any](q Query[T]) *AnyQuery {
+	if q == nil {
+		return nil
+	}
+
 	if q, ok := any(q).(*AnyQuery); ok {
 		return q
 	}
@@ -106,13 +112,16 @@ func AsAny[T any](q Query[T]) *AnyQuery {
 	return &AnyQuery{
 		actual:  q,
 		key:     q.Key(),
-		execute: func(t Task) (any, error) { return q.Execute(t) },
+		execute: func(t *Task) (any, error) { return q.Execute(t) },
 	}
 }
 
 // Underlying returns the original, non-AnyQuery query this query was
 // constructed with.
 func (q *AnyQuery) Underlying() any {
+	if q == nil {
+		return nil
+	}
 	return q.actual
 }
 
@@ -120,7 +129,7 @@ func (q *AnyQuery) Underlying() any {
 func (q *AnyQuery) Key() any { return q.key }
 
 // Execute implements [Query].
-func (q *AnyQuery) Execute(t Task) (any, error) { return q.execute(t) }
+func (q *AnyQuery) Execute(t *Task) (any, error) { return q.execute(t) }
 
 // AsTyped undoes the effect of [AsAny].
 //

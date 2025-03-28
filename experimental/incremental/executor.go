@@ -125,24 +125,28 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
 
+	generation := e.counter.Add(1)
+	root := &Task{
+		ctx:             ctx,
+		cancel:          cancel,
+		exec:            e,
+		result:          &result{done: make(chan struct{})},
+		runID:           generation,
+		onRootGoroutine: true,
+	}
+
 	// Need to acquire a hold on the global semaphore to represent the root
 	// task we're about to execute.
-	if e.sema.Acquire(ctx, 1) != nil {
+	if !root.acquire() {
 		return nil, nil, context.Cause(ctx)
 	}
-	defer e.sema.Release(1)
-
-	generation := e.counter.Add(1)
-	root := Task{
-		ctx:    ctx,
-		cancel: cancel,
-		exec:   e,
-		result: &result{done: make(chan struct{})},
-		runID:  generation,
-	}
+	defer root.release()
 
 	results, expired := Resolve(root, queries...)
 	if expired != nil {
+		if _, aborted := expired.(*errAbort); aborted {
+			panic(expired)
+		}
 		return nil, nil, expired
 	}
 
