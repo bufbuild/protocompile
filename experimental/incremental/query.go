@@ -88,6 +88,23 @@ func (e *ErrPanic) Error() string {
 	)
 }
 
+// ZeroQuery is a [Query] that produces the zero value of T.
+//
+// This query is useful for cases where you are building a slice of queries out
+// of some input slice, but some of the elements of that slice are invalid. This
+// can be used as a "placeholder" query so that indices of the input slice
+// match the indices of the result slice returned by [Resolve].
+type ZeroQuery[T any] struct{}
+
+// Key implements [Query].
+func (q ZeroQuery[T]) Key() any { return q }
+
+// Execute implements [Query].
+func (q ZeroQuery[T]) Execute(t *Task) (T, error) {
+	var zero T
+	return zero, nil
+}
+
 // AnyQuery is a [Query] that has been type-erased.
 type AnyQuery struct {
 	actual, key any
