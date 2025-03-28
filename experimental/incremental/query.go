@@ -24,9 +24,7 @@ import (
 // Types which implement Query can be executed by an [Executor], which
 // automatically caches the results of a query.
 //
-// Nil query values will not panic the executor; instead, they will fail with
-// [ErrNilQuery]. This allows nil queries to be processed in cases where we
-// "don't care" about their result, so they can be used as a placeholder.
+// Nil query values will cause [Run] and [Resolve] to panic.
 type Query[T any] interface {
 	// Returns a unique key representing this query.
 	//

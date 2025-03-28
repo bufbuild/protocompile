@@ -24,19 +24,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 )
 
-type Panic bool
-
-func (p Panic) Key() any {
-	return p
-}
-
-func (p Panic) Execute(_ *incremental.Task) (bool, error) {
-	if p {
-		panic("aaa!")
-	}
-	return bool(p), nil
-}
-
 func TestPanic(t *testing.T) {
 	t.Parallel()
 
@@ -60,6 +47,42 @@ func TestPanic(t *testing.T) {
 	assert.Equal(t, "aaa!", panicked.Panic)
 }
 
+func TestAbort(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	exec := incremental.New(
+		incremental.WithParallelism(4),
+	)
+
+	_, _, err := incremental.Run(ctx, exec, Abort(false))
+	require.NoError(t, err)
+
+	assert.Panics(t, func() {
+		_, _, _ = incremental.Run(ctx, exec, Abort(true), Abort(false))
+	})
+	assert.Panics(t, func() {
+		_, _, _ = incremental.Run(ctx, exec, Abort(false), Abort(true))
+	})
+}
+
+// Panic is a query that conditionally panics, for testing that panic
+// propagation works correctly.
+type Panic bool
+
+func (p Panic) Key() any {
+	return p
+}
+
+func (p Panic) Execute(_ *incremental.Task) (bool, error) {
+	if p {
+		panic("aaa!")
+	}
+	return bool(p), nil
+}
+
+// Abort is a query that conditionally triggers a task abort, for testing that
+// task aborts produce a panic on the root goroutine reliably.
 type Abort bool
 
 func (a Abort) Key() any {
@@ -75,24 +98,4 @@ func (a Abort) Execute(t *incremental.Task) (bool, error) {
 
 func (a Abort) Error() string {
 	return "aaa!"
-}
-func TestAbort(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	exec := incremental.New(
-		incremental.WithParallelism(4),
-	)
-
-	_, _, err := incremental.Run(ctx, exec, Abort(false))
-	require.NoError(t, err)
-
-	assert.Panics(t, func() {
-		//nolint:errcheck
-		incremental.Run(ctx, exec, Abort(true), Abort(false))
-	})
-	assert.Panics(t, func() {
-		//nolint:errcheck
-		incremental.Run(ctx, exec, Abort(false), Abort(true))
-	})
 }

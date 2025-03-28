@@ -34,10 +34,7 @@ import (
 // Set this to true to enable debug printing.
 const debugIncremental = false
 
-// ErrNilQuery is set as the Fatal error for the result of executing a nil
-// query.
 var (
-	ErrNilQuery   = errors.New("incremental: nil query value")
 	errBadAcquire = errors.New("called acquire() while holding the semaphore")
 	errBadRelease = errors.New("called release() without holding the semaphore")
 )
@@ -228,11 +225,6 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	var needWait bool
 	schedule := func(i int, runNow bool) {
 		q := AsAny(queries[i]) // This will also cache the result of q.Key() for us.
-
-		if q == nil {
-			results[i].Fatal = ErrNilQuery
-			return
-		}
 
 		deps[i] = caller.exec.getTask(q.Key())
 		async := deps[i].start(caller, q, runNow, func(r *result) {

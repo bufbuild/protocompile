@@ -24,6 +24,35 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 )
 
+func TestStarvation(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	exec := incremental.New(
+		// Very low parallelism to ensure we avoid starvation.
+		incremental.WithParallelism(2),
+	)
+
+	result, _, err := incremental.Run(ctx, exec, Fanout{Depth: 4})
+	require.NoError(t, err)
+	assert.Equal(t, 1*2*3*4, result[0].Value)
+	assert.Equal(t, []string{
+		"incremental_test.Fanout{Depth:4, Level:0, Index:0}",
+		"incremental_test.Fanout{Depth:4, Level:1, Index:0}",
+		"incremental_test.Fanout{Depth:4, Level:2, Index:0}",
+		"incremental_test.Fanout{Depth:4, Level:2, Index:1}",
+		"incremental_test.Fanout{Depth:4, Level:3, Index:0}",
+		"incremental_test.Fanout{Depth:4, Level:3, Index:1}",
+		"incremental_test.Fanout{Depth:4, Level:3, Index:2}",
+		"incremental_test.Fanout{Depth:4, Level:4, Index:0}",
+		"incremental_test.Fanout{Depth:4, Level:4, Index:1}",
+		"incremental_test.Fanout{Depth:4, Level:4, Index:2}",
+		"incremental_test.Fanout{Depth:4, Level:4, Index:3}",
+	}, exec.Keys())
+}
+
+// Fanout is a query that spawns a wide fan-out of subqueries, quadratic in
+// Depth.
 type Fanout struct {
 	Depth, Level, Index int
 }
@@ -57,31 +86,4 @@ func (c Fanout) Execute(t *incremental.Task) (int, error) {
 	}
 
 	return total, nil
-}
-
-func TestStarvation(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	exec := incremental.New(
-		// Very low parallelism to ensure we avoid starvation.
-		incremental.WithParallelism(2),
-	)
-
-	result, _, err := incremental.Run(ctx, exec, Fanout{Depth: 4})
-	require.NoError(t, err)
-	assert.Equal(t, 1*2*3*4, result[0].Value)
-	assert.Equal(t, []string{
-		"incremental_test.Fanout{Depth:4, Level:0, Index:0}",
-		"incremental_test.Fanout{Depth:4, Level:1, Index:0}",
-		"incremental_test.Fanout{Depth:4, Level:2, Index:0}",
-		"incremental_test.Fanout{Depth:4, Level:2, Index:1}",
-		"incremental_test.Fanout{Depth:4, Level:3, Index:0}",
-		"incremental_test.Fanout{Depth:4, Level:3, Index:1}",
-		"incremental_test.Fanout{Depth:4, Level:3, Index:2}",
-		"incremental_test.Fanout{Depth:4, Level:4, Index:0}",
-		"incremental_test.Fanout{Depth:4, Level:4, Index:1}",
-		"incremental_test.Fanout{Depth:4, Level:4, Index:2}",
-		"incremental_test.Fanout{Depth:4, Level:4, Index:3}",
-	}, exec.Keys())
 }

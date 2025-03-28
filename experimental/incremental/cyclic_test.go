@@ -24,6 +24,30 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 )
 
+func TestCyclic(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+
+	ctx := context.Background()
+	exec := incremental.New(
+		incremental.WithParallelism(4),
+	)
+
+	result, _, err := incremental.Run(ctx, exec, Cyclic{Mod: 5, Step: 3})
+	require.NoError(t, err)
+	assert.Equal(
+		`cycle detected: `+
+			`incremental_test.Cyclic{Mod:5, Step:3} -> `+
+			`incremental_test.Cyclic{Mod:5, Step:4} -> `+
+			`incremental_test.Cyclic{Mod:5, Step:0} -> `+
+			`incremental_test.Cyclic{Mod:5, Step:1} -> `+
+			`incremental_test.Cyclic{Mod:5, Step:2} -> `+
+			`incremental_test.Cyclic{Mod:5, Step:3}`,
+		result[0].Fatal.Error(),
+	)
+}
+
+// Cyclic is a query that queries itself, for triggering cycle detection.
 type Cyclic struct {
 	Mod, Step int
 }
@@ -46,27 +70,4 @@ func (c Cyclic) Execute(t *incremental.Task) (int, error) {
 	// as having been completed.
 	t.Report().Remarkf("squaring: %d", next[0].Value)
 	return next[0].Value * next[0].Value, next[0].Fatal
-}
-
-func TestCyclic(t *testing.T) {
-	t.Parallel()
-	assert := assert.New(t)
-
-	ctx := context.Background()
-	exec := incremental.New(
-		incremental.WithParallelism(4),
-	)
-
-	result, _, err := incremental.Run(ctx, exec, Cyclic{Mod: 5, Step: 3})
-	require.NoError(t, err)
-	assert.Equal(
-		`cycle detected: `+
-			`incremental_test.Cyclic{Mod:5, Step:3} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:4} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:0} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:1} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:2} -> `+
-			`incremental_test.Cyclic{Mod:5, Step:3}`,
-		result[0].Fatal.Error(),
-	)
 }

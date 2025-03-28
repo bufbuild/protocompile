@@ -30,73 +30,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 )
 
-type Root struct{}
-
-func (r Root) Key() any {
-	return r
-}
-
-func (Root) Execute(_ *incremental.Task) (struct{}, error) {
-	time.Sleep(100 * time.Millisecond)
-	return struct{}{}, nil
-}
-
-type ParseInt struct {
-	Input string
-}
-
-func (i ParseInt) Key() any {
-	return i
-}
-
-func (i ParseInt) Execute(t *incremental.Task) (int, error) {
-	// This tests that a thundering stampede of queries all waiting on the same
-	// query (as in a diamond-shaped graph) do not cause any issues.
-	_, err := incremental.Resolve(t, Root{})
-	if err != nil {
-		return 0, err
-	}
-
-	v, err := strconv.Atoi(i.Input)
-	if err != nil {
-		t.Report().Errorf("%s", err)
-	}
-	if v < 0 {
-		return 0, fmt.Errorf("negative value: %v", v)
-	}
-	return v, nil
-}
-
-type Sum struct {
-	Input string
-}
-
-func (s Sum) Key() any {
-	return s
-}
-
-func (s Sum) Execute(t *incremental.Task) (int, error) {
-	var queries []incremental.Query[int] //nolint:prealloc
-	for _, s := range strings.Split(s.Input, ",") {
-		queries = append(queries, ParseInt{s})
-	}
-
-	ints, err := incremental.Resolve(t, queries...)
-	if err != nil {
-		return 0, err
-	}
-
-	var v int
-	for _, i := range ints {
-		if i.Fatal != nil {
-			return 0, i.Fatal
-		}
-
-		v += i.Value
-	}
-	return v, nil
-}
-
 func TestSum(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
@@ -248,4 +181,74 @@ func TestUnchanged(t *testing.T) {
 			assert.False(r.Changed, "%d", j)
 		}
 	}
+}
+
+// ParseInt is a fallible query that parses an integer.
+type ParseInt struct {
+	Input string
+}
+
+func (i ParseInt) Key() any {
+	return i
+}
+
+func (i ParseInt) Execute(t *incremental.Task) (int, error) {
+	// This tests that a thundering stampede of queries all waiting on the same
+	// query (as in a diamond-shaped graph) do not cause any issues.
+	_, err := incremental.Resolve(t, Root{})
+	if err != nil {
+		return 0, err
+	}
+
+	v, err := strconv.Atoi(i.Input)
+	if err != nil {
+		t.Report().Errorf("%s", err)
+	}
+	if v < 0 {
+		return 0, fmt.Errorf("negative value: %v", v)
+	}
+	return v, nil
+}
+
+// Sum is a fallible query that sums the elements of a comma-separated string.
+type Sum struct {
+	Input string
+}
+
+func (s Sum) Key() any {
+	return s
+}
+
+func (s Sum) Execute(t *incremental.Task) (int, error) {
+	var queries []incremental.Query[int] //nolint:prealloc
+	for _, s := range strings.Split(s.Input, ",") {
+		queries = append(queries, ParseInt{s})
+	}
+
+	ints, err := incremental.Resolve(t, queries...)
+	if err != nil {
+		return 0, err
+	}
+
+	var v int
+	for _, i := range ints {
+		if i.Fatal != nil {
+			return 0, i.Fatal
+		}
+
+		v += i.Value
+	}
+	return v, nil
+}
+
+// Root is a query that ParseInt depends on, which is used to test eviction.
+type Root struct{}
+
+func (r Root) Key() any {
+	return r
+}
+
+func (Root) Execute(_ *incremental.Task) (struct{}, error) {
+	time.Sleep(100 * time.Millisecond)
+	return struct{}{}, nil
 }
