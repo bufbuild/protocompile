@@ -47,7 +47,11 @@ func (a AST) Key() any {
 func (a AST) Execute(t *incremental.Task) (ast.File, error) {
 	t.Report().Options.Stage += stageAST
 
-	r, err := incremental.Resolve(t, File(a))
+	r, err := incremental.Resolve(t, File{
+		Opener:      a.Opener,
+		Path:        a.Path,
+		ReportError: true,
+	})
 	if err != nil {
 		return ast.File{}, err
 	}

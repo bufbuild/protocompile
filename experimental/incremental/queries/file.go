@@ -27,14 +27,19 @@ import (
 type File struct {
 	source.Opener // Must be comparable.
 	Path          string
+
+	// If set, any errors generated from opening the file are logged as
+	// diagnostics. Setting this to false is useful for cases where the
+	// caller wants to emit a more general diagnostic.
+	ReportError bool
 }
 
 var _ incremental.Query[*report.File] = File{}
 
 // Key implements [incremental.Query].
 //
-// The key for a Contents query is the query itself. This means that a single
-// [incremental.Executor] can host Contents queries for multiple Openers. It
+// The key for a File query is the query itself. This means that a single
+// [incremental.Executor] can host File queries for multiple Openers. It
 // also means that the Openers must all be comparable. As the [Opener]
 // documentation states, implementations should take a pointer receiver so that
 // comparison uses object identity.
@@ -44,9 +49,21 @@ func (f File) Key() any {
 
 // Execute implements [incremental.Query].
 func (f File) Execute(t *incremental.Task) (*report.File, error) {
-	t.Report().Options.Stage += stageFile
+	if !f.ReportError {
+		text, err := f.Open(f.Path)
+		if err != nil {
+			return nil, err
+		}
+		return report.NewFile(f.Path, text), nil
+	}
 
-	text, err := f.Open(f.Path)
+	f.ReportError = false
+	r, err := incremental.Resolve(t, f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r[0].Fatal
 	if err != nil {
 		t.Report().Errorf("%v", err).Apply(
 			report.InFile(f.Path),
@@ -54,5 +71,5 @@ func (f File) Execute(t *incremental.Task) (*report.File, error) {
 		return nil, err
 	}
 
-	return report.NewFile(f.Path, text), nil
+	return r[0].Value, nil
 }

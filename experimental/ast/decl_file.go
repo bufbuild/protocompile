@@ -59,12 +59,12 @@ func (f File) Package() DeclPackage {
 }
 
 // Imports returns an iterator over this file's import declarations.
-func (f File) Imports() iter.Seq2[int, DeclImport] {
-	return iterx.FilterMap2(seq.All(f.Decls()), func(i int, d DeclAny) (int, DeclImport, bool) {
+func (f File) Imports() iter.Seq[DeclImport] {
+	return iterx.FilterMap(seq.Values(f.Decls()), func(d DeclAny) (DeclImport, bool) {
 		if imp := d.AsImport(); !imp.IsZero() {
-			return i, imp, true
+			return imp, true
 		}
-		return 0, DeclImport{}, false
+		return DeclImport{}, false
 	})
 }
 

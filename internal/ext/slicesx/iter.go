@@ -32,6 +32,16 @@ func Join[S ~[]E, E any](s S, sep string) string {
 	return iterx.Join(slices.Values(s), sep)
 }
 
+// Transform is like calling [slices.Collect] with [Map], but is able to
+// preallocate.
+func Transform[S ~[]E, E, U any](s S, f func(E) U) []U {
+	out := make([]U, len(s))
+	for i, e := range s {
+		out[i] = f(e)
+	}
+	return out
+}
+
 // PartitionFunc returns an iterator of the largest substrings of s of equal
 // elements.
 //

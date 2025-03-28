@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"slices"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -22,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -92,13 +95,19 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		fdp.Edition = descriptorpb.Edition_EDITION_2023.Enum()
 	}
 
-	for imp := range seq.Values(file.Imports()) {
+	// Canonicalize import order so that it does not change whenever we refactor
+	// internal structures.
+	// TODO: sort in declaration order to match protoc? Not done currently
+	// since that requires additional book-keeping in [imports].
+	imports := seq.ToSlice(file.Imports())
+	slices.SortFunc(imports, cmpx.Key(Import.Path))
+	for i, imp := range imports {
 		fdp.Dependency = append(fdp.Dependency, imp.Path())
 		if imp.Public {
-			fdp.PublicDependency = append(fdp.PublicDependency, int32(len(fdp.Dependency)-1))
+			fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
 		}
 		if imp.Weak {
-			fdp.WeakDependency = append(fdp.WeakDependency, int32(len(fdp.Dependency)-1))
+			fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
 		}
 	}
 
@@ -259,16 +268,17 @@ func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) 
 		fdp.Label = descriptorpb.FieldDescriptorProto_LABEL_REQUIRED.Enum()
 	}
 
-	ty := f.Element()
-	if kind, _ := slicesx.Get(predeclaredToFDPType, ty.Predeclared()); kind != 0 {
-		fdp.Type = kind.Enum()
-	} else if ty.IsEnum() {
-		fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-		fdp.TypeName = addr(string(ty.FullName()))
-	} else {
-		// TODO: Groups
-		fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
-		fdp.TypeName = addr(string(ty.FullName()))
+	if ty := f.Element(); !ty.IsZero() {
+		if kind, _ := slicesx.Get(predeclaredToFDPType, ty.Predeclared()); kind != 0 {
+			fdp.Type = kind.Enum()
+		} else if ty.IsEnum() {
+			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
+			fdp.TypeName = addr(string(ty.FullName()))
+		} else {
+			// TODO: Groups
+			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
+			fdp.TypeName = addr(string(ty.FullName()))
+		}
 	}
 
 	if f.IsExtension() {
