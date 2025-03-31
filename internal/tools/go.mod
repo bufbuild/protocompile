@@ -2,10 +2,10 @@ module github.com/bufbuild/protocompile/internal/tools
 
 go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.24.1
 
 require (
-	github.com/bufbuild/buf v1.50.1
+	github.com/bufbuild/buf v1.51.0
 	github.com/golangci/golangci-lint v1.64.8
 	golang.org/x/tools v0.31.0
 )
