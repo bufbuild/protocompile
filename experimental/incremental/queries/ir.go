@@ -64,7 +64,7 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 
 	// Resolve all of the imports in the AST.
 	var queries []incremental.Query[ir.File]
-	var errors []error
+	var errors []error //nolint:prealloc // False positive.
 	for decl := range file.Imports() {
 		path, ok := decl.ImportPath().AsLiteral().AsString()
 		// Not filepath.ToSlash, since this conversion is file-system independent.
