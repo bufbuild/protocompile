@@ -49,24 +49,23 @@ type Query[T any] interface {
 	Execute(*Task) (value T, fatal error)
 }
 
-// ErrCycle is returned by [Resolve] if a cycle occurs during query execution.
-type ErrCycle struct {
-	// The offending cycle. The first and last queries will have the same URL.
-	//
-	// To inspect the concrete types of the cycle members, use [DowncastQuery],
-	// which will automatically unwrap any calls to [AnyQuery].
-	Cycle []*AnyQuery
+// ErrCycle is an error due to cyclic dependencies.
+//
+// When returned by [Resolve] or [Run], this will be *ErrCycle[*AnyQuery].
+type ErrCycle[T any] struct {
+	// The offending cycle. The first and last entries will be equal.
+	Cycle []T
 }
 
 // Error implements [error].
-func (e *ErrCycle) Error() string {
+func (e *ErrCycle[T]) Error() string {
 	var buf strings.Builder
 	buf.WriteString("cycle detected: ")
 	for i, q := range e.Cycle {
 		if i != 0 {
 			buf.WriteString(" -> ")
 		}
-		fmt.Fprintf(&buf, "%#v", q.Key())
+		fmt.Fprintf(&buf, "%#v", q)
 	}
 	return buf.String()
 }
