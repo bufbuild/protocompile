@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -48,7 +49,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 		if !ok {
 			continue // Already legalized in parser.legalizeImport()
 		}
-		path = caonicalizeImportPath(path, r, imp)
+		path = canonicalizeImportPath(path, r, imp)
 		if path == "" {
 			continue
 		}
@@ -112,22 +113,28 @@ func diagnoseCycle(r *report.Report, cycle *incremental.ErrCycle[ast.DeclImport]
 	}
 }
 
-// caonicalizeImportPath canonicalizes the path of an import declaration.
+// canonicalizeImportPath canonicalizes the path of an import declaration.
 //
 // This will generate diagnostics for invalid paths. Returns "" for paths that
 // cannot be made canonical.
-func caonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) string {
+//
+// If r is nil, no diagnostics are emitted. This behavior exists to avoid
+// duplicating code with [CanonicalizeFilePath].
+func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) string {
 	if path == "" {
-		r.Errorf("import path cannot be empty").Apply(
-			report.Snippet(decl.ImportPath()),
-		)
+		if r != nil {
+			r.Errorf("import path cannot be empty").Apply(
+				report.Snippet(decl.ImportPath()),
+			)
+		}
 		return ""
 	}
 
 	orig := path
 	// Not filepath.ToSlash, since this conversion is file-system independent.
 	path = strings.ReplaceAll(path, `\`, `/`)
-	if orig != path {
+	hasBackslash := orig != path
+	if r != nil && hasBackslash {
 		r.Errorf("import path cannot use `\\` as a path separator").Apply(
 			report.Snippetf(decl.ImportPath(), "this path begins with a `%c`", path[0]),
 			report.SuggestEdits(decl.ImportPath(), "use `/` as the separator instead", report.Edit{
@@ -138,23 +145,52 @@ func caonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) s
 		)
 	}
 
-	isLetter := func(b byte) bool {
-		return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
+	path = filepath.Clean(path)
+	isClean := !hasBackslash && orig == path
+	if r != nil && !isClean {
+		r.Warnf("import path should be canonicalized").Apply(
+			report.Snippetf(decl.ImportPath(), "imported here"),
+			report.SuggestEdits(decl.ImportPath(), "replace it with its canonical equivalent", report.Edit{
+				Start: 0, End: decl.ImportPath().Span().Len(),
+				Replace: strconv.Quote(path),
+			}),
+		)
 	}
 
-	if len(path) >= 2 && isLetter(path[0]) && path[1] == ':' {
-		r.Warnf("import path appears to begin with the Windows drive prefix `%s`", path[:2]).Apply(
-			report.Snippet(decl.ImportPath()),
-			report.Notef("this is not an error, because `protoc` accepts it, but may result in unexpected behavior on Windows"),
+	if r != nil && isClean && strings.HasPrefix(path, "../") {
+		r.Warnf("import path should be canonicalized").Apply(
+			report.Snippetf(decl.ImportPath(), "imported here"),
 		)
+	}
+
+	if r != nil {
+		isLetter := func(b byte) bool {
+			return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
+		}
+		if len(path) >= 2 && isLetter(path[0]) && path[1] == ':' {
+			r.Warnf("import path appears to begin with the Windows drive prefix `%s`", path[:2]).Apply(
+				report.Snippet(decl.ImportPath()),
+				report.Notef("this is not an error, because `protoc` accepts it, but may result in unexpected behavior on Windows"),
+			)
+		}
 	}
 
 	if strings.HasPrefix(path, "/") {
-		r.Errorf("import path cannot be absolute").Apply(
-			report.Snippetf(decl.ImportPath(), "this path begins with a `%c`", path[0]),
-		)
-		return ""
+		if r != nil {
+			r.Errorf("import path cannot be absolute").Apply(
+				report.Snippetf(decl.ImportPath(), "this path begins with a `%c`", path[0]),
+			)
+			return ""
+		}
 	}
 
 	return path
+}
+
+// CanonicalizeFilePath puts a file path into canonical form.
+//
+// This function is exported so that all code depending on this module can make
+// sure paths are consistently canonicalized.
+func CanonicalizeFilePath(path string) string {
+	return canonicalizeImportPath(path, nil, ast.DeclImport{})
 }

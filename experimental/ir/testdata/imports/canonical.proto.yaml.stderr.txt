@@ -1,0 +1,40 @@
+warning: import path should be canonicalized
+  --> main.proto:4:8
+   |
+ 4 | import "nested//path.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^ imported here
+  help: replace it with its canonical equivalent
+   |
+ 4 | - import "nested//path.proto";
+ 4 | + import "nested/path.proto";
+   |
+
+warning: import path should be canonicalized
+  --> main.proto:5:8
+   |
+ 5 | import "./local.proto";
+   |        ^^^^^^^^^^^^^^^ imported here
+  help: replace it with its canonical equivalent
+   |
+ 5 | - import "./local.proto";
+ 5 | + import "local.proto";
+   |
+
+warning: import path should be canonicalized
+  --> main.proto:6:8
+   |
+ 6 | import "nested/../local2.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+  help: replace it with its canonical equivalent
+   |
+ 6 | - import "nested/../local2.proto";
+ 6 | + import "local2.proto";
+   |
+
+warning: import path should be canonicalized
+  --> main.proto:7:8
+   |
+ 7 | import "../up.proto"
+   |        ^^^^^^^^^^^^^ imported here
+
+encountered 4 warnings

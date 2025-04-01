@@ -15,8 +15,6 @@
 package queries
 
 import (
-	"strings"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
@@ -67,8 +65,7 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 	var errors []error //nolint:prealloc // False positive.
 	for decl := range file.Imports() {
 		path, ok := decl.ImportPath().AsLiteral().AsString()
-		// Not filepath.ToSlash, since this conversion is file-system independent.
-		path = strings.ReplaceAll(path, `\`, `/`)
+		path = ir.CanonicalizeFilePath(path)
 
 		if !ok { // Already legalized in parser.legalizeImport()
 			continue
