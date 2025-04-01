@@ -13,25 +13,23 @@
 # limitations under the License.
 
 files:
-- path: "a.proto"
+- path: "main.proto"
   text: |
     syntax = "proto2";
-    package buf.test;
+    package foo.bar;
 
-    import "b.proto";
+    import "nested\\path.proto";
+    import "C:/MyFiles/foo.proto";
+    import "C:\\MyFiles\\foo.proto";
 
-- path: "b.proto"
+- path: "nested/path.proto"
   import: true
   text: |
     syntax = "proto2";
-    package buf.test;
+    package foo.bar;
 
-    import "c.proto";
-
-- path: "c.proto"
+- path: "C:/MyFiles/foo.proto"
   import: true
   text: |
     syntax = "proto2";
-    package buf.test;
-
-    import "a.proto";
+    package foo.bar;

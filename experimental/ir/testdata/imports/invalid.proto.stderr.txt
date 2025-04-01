@@ -13,39 +13,7 @@ error: import path cannot be absolute
 error: imported file does not exist
   --> testdata/imports/invalid.proto:21:1
    |
-21 | import "C:/windows.proto";
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
-
-warning: import path appears to begin with the Windows drive prefix `C:`
-  --> testdata/imports/invalid.proto:21:8
-   |
-21 | import "C:/windows.proto";
-   |        ^^^^^^^^^^^^^^^^^^
-   = note: this is not an error, because `protoc` accepts it, but may result in
-           unexpected behavior on Windows
-
-error: imported file does not exist
-  --> testdata/imports/invalid.proto:22:1
-   |
-22 | import "does_not_exist.proto";
+21 | import "does_not_exist.proto";
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
 
-error: imported file does not exist
-  --> testdata/imports/invalid.proto:23:1
-   |
-23 | import "windows\\path.proto";
-   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
-
-error: import path cannot use `\` as a path separator
-  --> testdata/imports/invalid.proto:23:8
-   |
-23 | import "windows\\path.proto";
-   |        ^^^^^^^^^^^^^^^^^^^^^ this path begins with a `w`
-  help: use `/` as the separator instead
-   |
-23 | - import "windows\\path.proto";
-23 | + import "windows/path.proto";
-   |
-   = note: this restriction also applies when compiling on a non-Windows system
-
-encountered 6 errors and 1 warning
+encountered 3 errors

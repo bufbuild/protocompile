@@ -18,6 +18,4 @@ package buf.test;
 
 import "";
 import "/root.proto";
-import "C:/windows.proto";
 import "does_not_exist.proto";
-import "windows\\path.proto";

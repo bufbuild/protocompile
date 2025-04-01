@@ -1,0 +1,63 @@
+error: import path cannot use `\` as a path separator
+  --> main.proto:4:8
+   |
+ 4 | import "nested\\path.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^ this path begins with a `n`
+  help: use `/` as the separator instead
+   |
+ 4 | - import "nested\\path.proto";
+ 4 | + import "nested/path.proto";
+   |
+   = note: this restriction also applies when compiling on a non-Windows system
+
+warning: import path should be canonicalized
+  --> main.proto:4:8
+   |
+ 4 | import "nested\\path.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^ imported here
+  help: replace it with its canonical equivalent
+   |
+ 4 | - import "nested\\path.proto";
+ 4 | + import "nested/path.proto";
+   |
+
+warning: import path appears to begin with the Windows drive prefix `C:`
+  --> main.proto:5:8
+   |
+ 5 | import "C:/MyFiles/foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+   = note: this is not an error, because `protoc` accepts it, but may result in
+           unexpected behavior on Windows
+
+warning: import path appears to begin with the Windows drive prefix `C:`
+  --> main.proto:6:8
+   |
+ 6 | import "C:\\MyFiles\\foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this is not an error, because `protoc` accepts it, but may result in
+           unexpected behavior on Windows
+
+error: import path cannot use `\` as a path separator
+  --> main.proto:6:8
+   |
+ 6 | import "C:\\MyFiles\\foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^ this path begins with a `C`
+  help: use `/` as the separator instead
+   |
+ 6 | - import "C:\\MyFiles\\foo.proto";
+ 6 | + import "C:/MyFiles/foo.proto";
+   |
+   = note: this restriction also applies when compiling on a non-Windows system
+
+warning: import path should be canonicalized
+  --> main.proto:6:8
+   |
+ 6 | import "C:\\MyFiles\\foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+  help: replace it with its canonical equivalent
+   |
+ 6 | - import "C:\\MyFiles\\foo.proto";
+ 6 | + import "C:/MyFiles/foo.proto";
+   |
+
+encountered 2 errors and 4 warnings
