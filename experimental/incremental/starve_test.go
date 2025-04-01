@@ -29,11 +29,16 @@ func TestStarvation(t *testing.T) {
 
 	ctx := context.Background()
 	exec := incremental.New(
-		// Very low parallelism to ensure we avoid starvation.
-		incremental.WithParallelism(2),
+		// Force serialization to test to trigger starvation corner-cases.
+		incremental.WithParallelism(1),
 	)
 
-	result, _, err := incremental.Run(ctx, exec, Fanout{Depth: 4})
+	result, _, err := incremental.Run(ctx, exec,
+		Fanout{Depth: 4},
+
+		// This triggers a corner-case handled in (*task).waitUntilDone.
+		Fanout{Depth: 4, Level: 4, Index: 3},
+	)
 	require.NoError(t, err)
 	assert.Equal(t, 1*2*3*4, result[0].Value)
 	assert.Equal(t, []string{

@@ -26,6 +26,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/timandy/routine"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -87,23 +88,16 @@ func (t *Task) acquire() bool {
 	}
 
 	t.holding = t.exec.sema.Acquire(t.ctx, 1) == nil
-
-	if debugIncremental {
-		fmt.Fprintf(os.Stderr,
-			"incremental: acquire(%v): %p/%d, %T/%v\n", t.holding,
-			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
-	}
+	t.log("acquire", "%v %T/%v",
+		t.holding, t.path.Query.Underlying(), t.path.Query.Underlying())
 
 	return t.holding
 }
 
 // release releases a hold on the global semaphore.
 func (t *Task) release() {
-	if debugIncremental {
-		fmt.Fprintf(os.Stderr,
-			"incremental: release: %p/%d, %T/%v\n",
-			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying())
-	}
+	t.log("release", "%T/%v",
+		t.path.Query.Underlying(), t.path.Query.Underlying())
 
 	if !t.holding {
 		if context.Cause(t.ctx) != nil {
@@ -127,12 +121,23 @@ func (t *Task) transferFrom(that *Task) {
 
 	t.holding, that.holding = that.holding, t.holding
 
+	t.log("acquireFrom", "%T/%v -> %T/%v",
+		that.path.Query.Underlying(), that.path.Query.Underlying(),
+		t.path.Query.Underlying(), t.path.Query.Underlying())
+}
+
+func (t *Task) log(what string, format string, args ...any) {
 	if debugIncremental {
 		fmt.Fprintf(os.Stderr,
-			"incremental: acquireFrom: %p/%d, %T/%v -> %T/%v\n",
+			"incremental[%p/%d g%d] %s: %s\n",
 			t.exec, t.runID,
-			that.path.Query.Underlying(), that.path.Query.Underlying(),
-			t.path.Query.Underlying(), t.path.Query.Underlying())
+			// Associating the g's ID with the debug output helps associate
+			// print lines with the stack traces produces when crashing due
+			// to a -test.timeout being exhausted.
+			routine.Goid(),
+			what, fmt.Sprintf(format, args...),
+		)
+		_ = os.Stderr.Sync()
 	}
 }
 
@@ -154,11 +159,8 @@ func (e *errAbort) Error() string {
 //
 // This will cause the outer call to Run() to immediately wake up and panic.
 func (t *Task) abort(err error) {
-	if debugIncremental {
-		fmt.Fprintf(os.Stderr,
-			"incremental: abort: %p/%d, %T/%v, %v\n",
-			t.exec, t.runID, t.path.Query.Underlying(), t.path.Query.Underlying(), err)
-	}
+	t.log("abort", "%T/%v, %v",
+		t.path.Query.Underlying(), t.path.Query.Underlying(), err)
 
 	if prev := t.aborted(); prev != nil {
 		// Prevent multiple errors from cascading and getting spammed all over
@@ -397,11 +399,7 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
-		if debugIncremental {
-			fmt.Fprintf(os.Stderr,
-				"incremental: cache hit: %p/%d, %T/%v\n",
-				caller.exec, caller.runID, q.Underlying(), q.Underlying())
-		}
+		caller.log("cache hit", "%T/%v", q.Underlying(), q.Underlying())
 		done(r)
 		return false
 	}
@@ -458,7 +456,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 			return output
 		}
 
-		return t.waitUntilDone(caller)
+		return t.waitUntilDone(caller, async)
 	}
 
 	// Try to become the leader (the task responsible for computing the result).
@@ -466,7 +464,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	if !t.result.CompareAndSwap(nil, output) {
 		// We failed to become the executor, so we're gonna go to sleep
 		// until it's done.
-		return t.waitUntilDone(caller)
+		return t.waitUntilDone(caller, async)
 	}
 
 	callee := &Task{
@@ -488,10 +486,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		if caller.aborted() == nil {
 			if panicked := recover(); panicked != nil {
 				if debugIncremental {
-					fmt.Fprintf(os.Stderr,
-						"incremental: panic: %p/%d, %T/%v, %v\n",
-						callee.exec, callee.runID, q.Underlying(), q.Underlying(),
-						panicked)
+					caller.log("panic", "%T/%v, %v", q.Underlying(), q.Underlying(), panicked)
 				}
 
 				t.result.CompareAndSwap(output, nil)
@@ -520,17 +515,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		}
 
 		if output != nil && !closed(output.done) {
-			if _, ok := output.Fatal.(*ErrCycle); ok {
-				// Do not mark completion on cycles: we want the original call of this
-				// query to continue executing and handle the cycle in some way.
-				return
-			}
-
-			if debugIncremental {
-				fmt.Fprintf(os.Stderr,
-					"incremental: done: %p/%d, %T/%v\n",
-					callee.exec, callee.runID, q.Underlying(), q.Underlying())
-			}
+			callee.log("done", "%T/%v", q.Underlying(), q.Underlying())
 			close(output.done)
 		}
 	}()
@@ -548,28 +533,41 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	}
 
 	if debugIncremental {
-		fmt.Fprintf(os.Stderr,
-			"incremental: executing: %p/%d, %T/%v\n",
-			caller.exec, caller.runID, q.Underlying(), q.Underlying())
+		callee.log("executing", "%T/%v", q.Underlying(), q.Underlying())
 	}
 
 	output.Value, output.Fatal = q.Execute(callee)
 	output.runID = callee.runID
 
 	if debugIncremental {
-		fmt.Fprintf(os.Stderr,
-			"incremental: returning: %p/%d, %T/%v\n",
-			caller.exec, caller.runID, q.Underlying(), q.Underlying())
+		callee.log("returning", "%T/%v", q.Underlying(), q.Underlying())
 	}
 
 	return output
 }
 
 // waitUntilDone waits for this task to be completed by another goroutine.
-func (t *task) waitUntilDone(caller *Task) *result {
+func (t *task) waitUntilDone(caller *Task, async bool) *result {
+	// If this task is being executed synchronously with its caller, we need to
+	// drop our semaphore hold, otherwise we will deadlock: this caller will
+	// be waiting for the leader of this task to complete, but that one
+	// may be waiting on a semaphore hold, which it will not acquire due to
+	// tasks waiting for it to complete holding the semaphore in this function.
+	//
+	// If the task is being executed asynchronously, this function is not
+	// called while the semaphore is being held, which avoids the above
+	// deadlock scenario.
+	if !async {
+		caller.release()
+	}
+
 	select {
 	case <-t.result.Load().done:
 	case <-caller.ctx.Done():
+	}
+
+	if !async && !caller.acquire() {
+		return nil
 	}
 
 	// Reload the result pointer. This is needed if the leader panics,
