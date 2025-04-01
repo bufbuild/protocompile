@@ -65,7 +65,6 @@ func buildImports(f File, r *report.Report, importer Importer) {
 					report.Snippetf(imp, "imported here"),
 				)
 			} else {
-
 				r.Errorf("could not open imported file: %v", err).Apply(
 					report.Snippetf(imp, "imported here"),
 				)

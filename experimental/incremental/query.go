@@ -99,7 +99,7 @@ type ZeroQuery[T any] struct{}
 func (q ZeroQuery[T]) Key() any { return q }
 
 // Execute implements [Query].
-func (q ZeroQuery[T]) Execute(t *Task) (T, error) {
+func (q ZeroQuery[T]) Execute(_ *Task) (T, error) {
 	var zero T
 	return zero, nil
 }
