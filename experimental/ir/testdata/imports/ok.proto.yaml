@@ -1,0 +1,27 @@
+files:
+- path: "main.proto"
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "a.proto";
+    import public "b.proto";
+    import weak "c.proto";
+
+- path: "a.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+- path: "b.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+- path: "c.proto"
+  import: true
+  text: |
+    syntax = "proto2";
+    package buf.test;
