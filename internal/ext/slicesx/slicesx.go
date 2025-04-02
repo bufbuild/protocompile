@@ -123,3 +123,8 @@ func BoundsCheck[I SliceIndex](idx I, len int) bool {
 func Among[E comparable](needle E, haystack ...E) bool {
 	return slices.Contains(haystack, needle)
 }
+
+// PointerEqual returns whether two slices have the same data pointer.
+func PointerEqual[S ~[]E, E any](a, b S) bool {
+	return unsafe.SliceData(a) == unsafe.SliceData(b)
+}
