@@ -67,6 +67,27 @@ func Byte[I slicesx.SliceIndex](s string, idx I) (byte, bool) {
 	return slicesx.Get(unsafex.BytesAlias[[]byte](s), idx)
 }
 
+// LastLine returns the substring after the last newline (U+000A) rune.
+func LastLine(s string) string {
+	return s[strings.IndexByte(s, '\n')+1:]
+}
+
+// Every verifies that all runes in the string are the one given.
+func Every(s string, r rune) bool {
+	buf := string(r)
+	if len(s)%len(buf) != 0 {
+		return false
+	}
+
+	for i := 0; i < len(s); i += len(buf) {
+		if s[i:i+len(buf)] != buf {
+			return false
+		}
+	}
+
+	return true
+}
+
 // EveryFunc verifies that all runes in the string satisfy the given predicate.
 func EveryFunc(s string, p func(rune) bool) bool {
 	return iterx.Every(iterx.Map2to1(Runes(s), func(_ int, r rune) rune {
