@@ -147,6 +147,11 @@ func (q *AnyQuery) Key() any { return q.key }
 // Execute implements [Query].
 func (q *AnyQuery) Execute(t *Task) (any, error) { return q.execute(t) }
 
+// Format implements [fmt.Formatter].
+func (q *AnyQuery) Format(state fmt.State, verb rune) {
+	fmt.Fprintf(state, fmt.FormatString(state, verb), q.Underlying())
+}
+
 // AsTyped undoes the effect of [AsAny].
 //
 // For some Query[any] values, you may be able to use ordinary Go type
