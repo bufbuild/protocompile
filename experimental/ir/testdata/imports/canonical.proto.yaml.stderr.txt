@@ -62,7 +62,7 @@ error: import path must not contain `.`, `..`, or repeated separators
 error: import path must not refer to parent directory
   --> main.proto:9:8
    |
- 9 | import "../up.proto"
+ 9 | import "../up.proto";
    |        ^^^^^^^^^^^^^ imported here
 
 encountered 7 errors
