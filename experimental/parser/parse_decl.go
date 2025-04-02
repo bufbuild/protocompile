@@ -242,7 +242,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		} else {
 			semi, err := parseSemi(p, c, in)
 			args.Semicolon = semi
-			if err != nil && args.ImportPath.IsZero() {
+			if err != nil {
 				p.Error(err)
 			}
 		}

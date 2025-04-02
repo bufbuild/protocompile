@@ -1,0 +1,21 @@
+error: unexpected `import` after import
+  --> testdata/parser/import/nosemi.proto:20:1
+   |
+20 | import "bar.proto"
+   | ^^^^^^ expected `;`
+  help: consider inserting a `;`
+   |
+19 | import "foo.proto";
+   |                   +
+
+error: unexpected end-of-file after import
+  --> testdata/parser/import/nosemi.proto:20:19
+   |
+20 | import "bar.proto"
+   |                   ^ expected `;`
+  help: consider inserting a `;`
+   |
+20 | import "bar.proto";
+   |                   +
+
+encountered 2 errors
