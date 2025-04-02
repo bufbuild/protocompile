@@ -17,7 +17,9 @@ package ir
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -105,10 +107,10 @@ func (i *imports) AddDirect(imp Import) {
 
 // Recurse updates the import table to incorporate the transitive imports of
 // each import.
-func (i *imports) Recurse(dedup intern.Set) {
+func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 	for file := range seq.Values(i.Directs()) {
 		for imp := range seq.Values(file.TransitiveImports()) {
-			if !dedup.AddID(imp.File.InternedPath()) {
+			if !mapsx.AddZero(dedup, imp.InternedPath()) {
 				continue
 			}
 

@@ -1,40 +1,68 @@
-warning: import path should be canonicalized
-  --> main.proto:4:8
+error: file imported multiple times
+  --> main.proto:5:1
    |
- 4 | import "nested//path.proto";
-   |        ^^^^^^^^^^^^^^^^^^^^ imported here
-  help: replace it with its canonical equivalent
-   |
- 4 | - import "nested//path.proto";
- 4 | + import "nested/path.proto";
-   |
+ 4 | import "nested/path.proto";
+   | --------------------------- first imported here
+ 5 | import "nested//path.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: both paths are equivalent to "nested/path.proto"
 
-warning: import path should be canonicalized
+error: import path must not contain `.`, `..`, or repeated separators
   --> main.proto:5:8
    |
- 5 | import "./local.proto";
-   |        ^^^^^^^^^^^^^^^ imported here
-  help: replace it with its canonical equivalent
+ 5 | import "nested//path.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^ imported here
+  help: canonicalize this path
    |
- 5 | - import "./local.proto";
- 5 | + import "local.proto";
+ 5 | - import "nested//path.proto";
+ 5 | + import "nested/path.proto";
    |
 
-warning: import path should be canonicalized
+error: import path must not contain `.`, `..`, or repeated separators
   --> main.proto:6:8
    |
- 6 | import "nested/../local2.proto";
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^ imported here
-  help: replace it with its canonical equivalent
+ 6 | import "./local.proto";
+   |        ^^^^^^^^^^^^^^^ imported here
+  help: canonicalize this path
    |
- 6 | - import "nested/../local2.proto";
- 6 | + import "local2.proto";
+ 6 | - import "./local.proto";
+ 6 | + import "local.proto";
    |
 
-warning: import path should be canonicalized
-  --> main.proto:7:8
+error: file imported multiple times
+  --> main.proto:7:1
    |
- 7 | import "../up.proto"
+ 6 | import "./local.proto";
+   | ----------------------- first imported here
+ 7 | import "local.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^
+   = help: both paths are equivalent to "local.proto"
+
+error: file imported multiple times
+  --> main.proto:8:1
+   |
+ 6 | import "./local.proto";
+   | ----------------------- first imported here
+ 7 | import "local.proto";
+ 8 | import "fake/../local.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: both paths are equivalent to "local.proto"
+
+error: import path must not contain `.`, `..`, or repeated separators
+  --> main.proto:8:8
+   |
+ 8 | import "fake/../local.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^ imported here
+  help: canonicalize this path
+   |
+ 8 | - import "fake/../local.proto";
+ 8 | + import "local.proto";
+   |
+
+error: import path must not refer to parent directory
+  --> main.proto:9:8
+   |
+ 9 | import "../up.proto";
    |        ^^^^^^^^^^^^^ imported here
 
-encountered 4 warnings
+encountered 7 errors

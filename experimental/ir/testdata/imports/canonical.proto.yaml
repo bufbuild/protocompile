@@ -18,10 +18,12 @@ files:
     syntax = "proto2";
     package foo.bar;
 
+    import "nested/path.proto";
     import "nested//path.proto";
     import "./local.proto";
-    import "nested/../local2.proto";
-    import "../up.proto"
+    import "local.proto";
+    import "fake/../local.proto";
+    import "../up.proto";
 
 - path: "nested/path.proto"
   import: true
@@ -30,12 +32,6 @@ files:
     package foo.bar;
 
 - path: "local.proto"
-  import: true
-  text: |
-    syntax = "proto2";
-    package foo.bar;
-
-- path: "local2.proto"
   import: true
   text: |
     syntax = "proto2";

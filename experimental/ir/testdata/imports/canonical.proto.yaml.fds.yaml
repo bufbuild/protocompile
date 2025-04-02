@@ -1,9 +1,7 @@
 file:
-  - { name: "../up.proto", package: "foo.bar", syntax: "proto2" }
-  - { name: "local2.proto", package: "foo.bar", syntax: "proto2" }
   - { name: "local.proto", package: "foo.bar", syntax: "proto2" }
   - { name: "nested/path.proto", package: "foo.bar", syntax: "proto2" }
   - name: "main.proto"
     package: "foo.bar"
-    dependency: ["../up.proto", "local.proto", "local2.proto", "nested/path.proto"]
+    dependency: ["local.proto", "nested/path.proto"]
     syntax: "proto2"

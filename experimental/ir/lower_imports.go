@@ -42,7 +42,7 @@ type Importer func(n int, path string, decl ast.DeclImport) (File, error)
 // buildImports builds the transitive imports table.
 func buildImports(f File, r *report.Report, importer Importer) {
 	c := f.Context()
-	dedup := make(intern.Set, iterx.Count(f.AST().Imports()))
+	dedup := make(intern.Map[ast.DeclImport], iterx.Count(f.AST().Imports()))
 
 	for i, imp := range iterx.Enumerate(f.AST().Imports()) {
 		path, ok := imp.ImportPath().AsLiteral().AsString()
@@ -73,8 +73,15 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		if !dedup.AddID(file.InternedPath()) {
-			// Duplicates are diagnosed in the legalizer.
+		if prev, ok := dedup.AddID(file.InternedPath(), imp); !ok {
+			d := r.Errorf("file imported multiple times").Apply(
+				report.Snippet(imp),
+				report.Snippetf(prev, "first imported here"),
+			)
+			if prev.ImportPath().AsLiteral().Text() != imp.ImportPath().AsLiteral().Text() {
+				d.Apply(report.Helpf("both paths are equivalent to %q", path))
+			}
+
 			continue
 		}
 
@@ -145,12 +152,12 @@ func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) 
 		)
 	}
 
-	path = filepath.Clean(path)
+	path = filepath.ToSlash(filepath.Clean(path))
 	isClean := !hasBackslash && orig == path
 	if r != nil && !isClean {
-		r.Warnf("import path should be canonicalized").Apply(
+		r.Errorf("import path must not contain `.`, `..`, or repeated separators").Apply(
 			report.Snippetf(decl.ImportPath(), "imported here"),
-			report.SuggestEdits(decl.ImportPath(), "replace it with its canonical equivalent", report.Edit{
+			report.SuggestEdits(decl.ImportPath(), "canonicalize this path", report.Edit{
 				Start: 0, End: decl.ImportPath().Span().Len(),
 				Replace: strconv.Quote(path),
 			}),
@@ -158,9 +165,11 @@ func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) 
 	}
 
 	if r != nil && isClean && strings.HasPrefix(path, "../") {
-		r.Warnf("import path should be canonicalized").Apply(
+		r.Errorf("import path must not refer to parent directory").Apply(
 			report.Snippetf(decl.ImportPath(), "imported here"),
 		)
+
+		return "" // Refuse to escape to a parent directory.
 	}
 
 	if r != nil {
@@ -168,6 +177,7 @@ func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) 
 			return (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z')
 		}
 		if len(path) >= 2 && isLetter(path[0]) && path[1] == ':' {
+			// TODO: error on windows?
 			r.Warnf("import path appears to begin with the Windows drive prefix `%s`", path[:2]).Apply(
 				report.Snippet(decl.ImportPath()),
 				report.Notef("this is not an error, because `protoc` accepts it, but may result in unexpected behavior on Windows"),
@@ -175,13 +185,11 @@ func canonicalizeImportPath(path string, r *report.Report, decl ast.DeclImport) 
 		}
 	}
 
-	if strings.HasPrefix(path, "/") {
-		if r != nil {
-			r.Errorf("import path cannot be absolute").Apply(
-				report.Snippetf(decl.ImportPath(), "this path begins with a `%c`", path[0]),
-			)
-			return ""
-		}
+	if r != nil && strings.HasPrefix(path, "/") {
+		r.Errorf("import path must be relative").Apply(
+			report.Snippetf(decl.ImportPath(), "this path begins with a `%c`", path[0]),
+		)
+		return ""
 	}
 
 	return path

@@ -56,10 +56,7 @@ func legalizeFile(p *parser, file ast.File) {
 		}
 	}
 
-	var (
-		pkg     ast.DeclPackage
-		imports = make(map[string][]ast.DeclImport)
-	)
+	var pkg ast.DeclPackage
 	for i, decl := range seq.All(file.Decls()) {
 		file := classified{file, taxa.TopLevel}
 		switch decl.Kind() {
@@ -68,7 +65,7 @@ func legalizeFile(p *parser, file ast.File) {
 		case ast.DeclKindPackage:
 			legalizePackage(p, file, i, &pkg, decl.AsPackage())
 		case ast.DeclKindImport:
-			legalizeImport(p, file, decl.AsImport(), imports)
+			legalizeImport(p, file, decl.AsImport())
 		default:
 			legalizeDecl(p, file, decl)
 		}
@@ -272,10 +269,7 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 }
 
 // legalizeImport legalizes a DeclImport.
-//
-// imports is a map that classifies DeclImports by the contents of their import string.
-// This populates it and uses it to detect duplicates.
-func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports map[string][]ast.DeclImport) {
+func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 	if parent.what != taxa.TopLevel {
 		p.Error(errBadNest{parent: parent, child: decl, validParents: taxa.TopLevel.AsSet()})
 		return
@@ -291,20 +285,6 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport, imports m
 	case ast.ExprKindLiteral:
 		lit := expr.AsLiteral()
 		if file, ok := lit.AsString(); ok {
-			if imports != nil {
-				prev := imports[file]
-				imports[file] = append(prev, decl)
-				if len(prev) == 1 { // Do not bother diagnosing this more than once.
-					p.Errorf("file %q imported multiple times", file).Apply(
-						report.Snippet(decl),
-						report.Snippetf(prev[0], "first imported here"),
-					)
-				}
-				if prev != nil {
-					return
-				}
-			}
-
 			if !expr.AsLiteral().IsPureString() {
 				// Only warn for cases where the import is alphanumeric.
 				if isOrdinaryFilePath.MatchString(file) {

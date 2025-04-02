@@ -4,7 +4,7 @@ error: import path cannot be empty
 19 | import "";
    |        ^^
 
-error: import path cannot be absolute
+error: import path must be relative
   --> testdata/imports/invalid.proto:20:8
    |
 20 | import "/root.proto";

@@ -10,12 +10,12 @@ error: import path cannot use `\` as a path separator
    |
    = note: this restriction also applies when compiling on a non-Windows system
 
-warning: import path should be canonicalized
+error: import path must not contain `.`, `..`, or repeated separators
   --> main.proto:4:8
    |
  4 | import "nested\\path.proto";
    |        ^^^^^^^^^^^^^^^^^^^^ imported here
-  help: replace it with its canonical equivalent
+  help: canonicalize this path
    |
  4 | - import "nested\\path.proto";
  4 | + import "nested/path.proto";
@@ -28,6 +28,15 @@ warning: import path appears to begin with the Windows drive prefix `C:`
    |        ^^^^^^^^^^^^^^^^^^^^^^
    = note: this is not an error, because `protoc` accepts it, but may result in
            unexpected behavior on Windows
+
+error: file imported multiple times
+  --> main.proto:6:1
+   |
+ 5 | import "C:/MyFiles/foo.proto";
+   | ------------------------------ first imported here
+ 6 | import "C:\\MyFiles\\foo.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: both paths are equivalent to "C:/MyFiles/foo.proto"
 
 warning: import path appears to begin with the Windows drive prefix `C:`
   --> main.proto:6:8
@@ -49,15 +58,15 @@ error: import path cannot use `\` as a path separator
    |
    = note: this restriction also applies when compiling on a non-Windows system
 
-warning: import path should be canonicalized
+error: import path must not contain `.`, `..`, or repeated separators
   --> main.proto:6:8
    |
  6 | import "C:\\MyFiles\\foo.proto";
    |        ^^^^^^^^^^^^^^^^^^^^^^^^ imported here
-  help: replace it with its canonical equivalent
+  help: canonicalize this path
    |
  6 | - import "C:\\MyFiles\\foo.proto";
  6 | + import "C:/MyFiles/foo.proto";
    |
 
-encountered 2 errors and 4 warnings
+encountered 5 errors and 2 warnings
