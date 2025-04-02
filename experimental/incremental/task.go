@@ -19,21 +19,17 @@ import (
 	"errors"
 	"fmt"
 	"iter"
-	"os"
 	"runtime"
 	"runtime/debug"
 	"slices"
 	"sync"
 	"sync/atomic"
 
-	"github.com/timandy/routine"
 	"golang.org/x/sync/semaphore"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal"
 )
-
-// Set this to true to enable debug printing.
-const debugIncremental = false
 
 var (
 	errBadAcquire = errors.New("called acquire() while holding the semaphore")
@@ -126,19 +122,11 @@ func (t *Task) transferFrom(that *Task) {
 		t.path.Query.Underlying(), t.path.Query.Underlying())
 }
 
+// log is used for printf debugging in the task scheduling code.
 func (t *Task) log(what string, format string, args ...any) {
-	if debugIncremental {
-		fmt.Fprintf(os.Stderr,
-			"incremental[%p/%d g%d] %s: %s\n",
-			t.exec, t.runID,
-			// Associating the g's ID with the debug output helps associate
-			// print lines with the stack traces produces when crashing due
-			// to a -test.timeout being exhausted.
-			routine.Goid(),
-			what, fmt.Sprintf(format, args...),
-		)
-		_ = os.Stderr.Sync()
-	}
+	internal.DebugLog(
+		[]any{"%p/%d", t.exec, t.runID},
+		what, format, args...)
 }
 
 type errAbort struct {
@@ -485,9 +473,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	defer func() {
 		if caller.aborted() == nil {
 			if panicked := recover(); panicked != nil {
-				if debugIncremental {
-					caller.log("panic", "%T/%v, %v", q.Underlying(), q.Underlying(), panicked)
-				}
+				caller.log("panic", "%T/%v, %v", q.Underlying(), q.Underlying(), panicked)
 
 				t.result.CompareAndSwap(output, nil)
 				output = nil
@@ -532,16 +518,10 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		defer caller.transferFrom(callee)
 	}
 
-	if debugIncremental {
-		callee.log("executing", "%T/%v", q.Underlying(), q.Underlying())
-	}
-
+	callee.log("executing", "%T/%v", q.Underlying(), q.Underlying())
 	output.Value, output.Fatal = q.Execute(callee)
 	output.runID = callee.runID
-
-	if debugIncremental {
-		callee.log("returning", "%T/%v", q.Underlying(), q.Underlying())
-	}
+	callee.log("returning", "%T/%v", q.Underlying(), q.Underlying())
 
 	return output
 }
