@@ -110,7 +110,7 @@ func (t Type) IsMessage() bool {
 func (t Type) IsEnum() bool {
 	// All of the predeclared types have isEnum set to false, so we don't
 	// need to check for them here.
-	return t.raw.isEnum
+	return !t.IsZero() && t.raw.isEnum
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
