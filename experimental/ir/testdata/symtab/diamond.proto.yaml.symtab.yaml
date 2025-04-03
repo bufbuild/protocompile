@@ -2,7 +2,7 @@ tables:
   "a.proto":
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - fqn: ".dep.X"
+      - fqn: "dep.X"
         kind: KIND_TYPE
         file: "a.proto"
         index: 1
@@ -11,7 +11,7 @@ tables:
     imports: [{ path: "a.proto", public: true, visible: true }]
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - fqn: ".dep.X"
+      - fqn: "dep.X"
         kind: KIND_TYPE
         file: "a.proto"
         index: 1
@@ -20,7 +20,7 @@ tables:
     imports: [{ path: "a.proto", public: true, visible: true }]
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - fqn: ".dep.X"
+      - fqn: "dep.X"
         kind: KIND_TYPE
         file: "a.proto"
         index: 1
@@ -32,7 +32,7 @@ tables:
       - { path: "c.proto", visible: true }
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - fqn: ".dep.X"
+      - fqn: "dep.X"
         kind: KIND_TYPE
         file: "a.proto"
         index: 1

@@ -54,7 +54,6 @@ func buildLocalSymbols(f File, r *report.Report) {
 	}
 
 	c.symbols.sort(c)
-	diagnoseDuplicates(f, &c.symbols, r)
 }
 
 func newTypeSymbol(ty Type) {

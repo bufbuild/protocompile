@@ -45,7 +45,7 @@ func (w *walker) walk() {
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}
-	w.pkg = w.Package().ToAbsolute()
+	w.pkg = w.Package()
 
 	if syn := w.AST().Syntax(); !syn.IsZero() {
 		unquoted, _ := syn.Value().AsLiteral().AsString()

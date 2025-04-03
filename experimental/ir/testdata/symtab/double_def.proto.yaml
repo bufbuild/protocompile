@@ -48,4 +48,13 @@ files:
     syntax = "proto2";
     package dep.foo;
 
+    import "dep/priv.proto";
+
     message Foo {}
+
+- path: "dep/priv.proto"
+  text: |
+    syntax = "proto2";
+    package dep.foo;
+
+    message Main {}
