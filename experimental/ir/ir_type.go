@@ -41,6 +41,7 @@ type rawType struct {
 	oneofs          []arena.Pointer[rawOneof]
 	options         []arena.Pointer[rawOption]
 	fqn, name       intern.ID // 0 for predeclared types.
+	parent          arena.Pointer[rawType]
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
 	isEnum          bool
@@ -169,6 +170,15 @@ func (t Type) InternedFullName() intern.ID {
 		return 0
 	}
 	return t.raw.fqn
+}
+
+// Parent returns the type that this type is declared inside of, if it isn't
+// at the top level.
+func (t Type) Parent() Type {
+	if t.IsZero() || t.raw.parent.Nil() {
+		return Type{}
+	}
+	return wrapType(t.Context(), ref[rawType]{ptr: t.raw.parent})
 }
 
 // Nested returns those types which are nested within this one.
