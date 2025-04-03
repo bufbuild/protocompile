@@ -16,7 +16,9 @@ package ir
 
 import (
 	"cmp"
+	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -28,10 +30,12 @@ import (
 
 // Symbol is an entry in a [File]'s symbol table.
 //
-// [Symbol.Context] returns the context for the file in which the symbol was
-// defined.
+// [Symbol.Context] returns the context for the file which imported this
+// symbol. To map this to the context in which the symbol was defined, use
+// [Symbol.InDefFile].
 type Symbol struct {
 	withContext
+	ref ref[rawSymbol]
 	raw *rawSymbol
 }
 
@@ -57,6 +61,20 @@ func (s Symbol) InternedFullName() intern.ID {
 	return s.raw.fqn
 }
 
+// InDefFile returns this symbol with its context set to that of its defining
+// file.
+func (s Symbol) InDefFile() Symbol {
+	c := s.ref.context(s.Context())
+	s.withContext = internal.NewWith(c)
+	s.ref.file = 0 // Now points to the current file.
+	return s
+}
+
+// File returns the file in which this symbol was defined.
+func (s Symbol) File() File {
+	return s.ref.context(s.Context()).File()
+}
+
 // Kind returns which kind of symbol this is.
 func (s Symbol) Kind() SymbolKind {
 	if s.IsZero() {
@@ -70,7 +88,7 @@ func (s Symbol) AsType() Type {
 	if s.Kind() != SymbolKindType {
 		return Type{}
 	}
-	return wrapType(s.Context(), ref[rawType]{
+	return wrapType(s.InDefFile().Context(), ref[rawType]{
 		file: 0, // Symbol context == context of declaring file.
 		ptr:  arena.Pointer[rawType](s.raw.data),
 	})
@@ -81,7 +99,7 @@ func (s Symbol) AsField() Field {
 	if s.Kind() != SymbolKindField {
 		return Field{}
 	}
-	return wrapField(s.Context(), ref[rawField]{
+	return wrapField(s.InDefFile().Context(), ref[rawField]{
 		file: 0, // Symbol context == context of declaring file.
 		ptr:  arena.Pointer[rawField](s.raw.data),
 	})
@@ -92,7 +110,14 @@ func (s Symbol) AsOneof() Oneof {
 	if s.Kind() != SymbolKindOneof {
 		return Oneof{}
 	}
-	return wrapOneof(s.Context(), arena.Pointer[rawOneof](s.raw.data))
+	return wrapOneof(s.InDefFile().Context(), arena.Pointer[rawOneof](s.raw.data))
+}
+
+// Visible returns whether or not this symbol is visible according to Protobuf's
+// import semantics, within s.Context().File().
+func (s Symbol) Visible() bool {
+	return s.ref.file == 0 ||
+		s.Context().imports.visible.Test(uint(s.ref.file)-1)
 }
 
 // Definition returns a span for the definition site of this symbol;
@@ -100,7 +125,7 @@ func (s Symbol) AsOneof() Oneof {
 func (s Symbol) Definition() report.Span {
 	switch s.Kind() {
 	case SymbolKindPackage:
-		return s.Context().File().AST().Package().Span()
+		return s.File().AST().Package().Span()
 	case SymbolKindType:
 		return s.AsType().AST().Name().Span()
 	case SymbolKindField:
@@ -117,15 +142,18 @@ func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 		return Symbol{}
 	}
 
-	c = r.context(c)
 	return Symbol{
 		withContext: internal.NewWith(c),
-		raw:         c.arenas.symbols.Deref(r.ptr),
+		ref:         r,
+		raw:         r.context(c).arenas.symbols.Deref(r.ptr),
 	}
 }
 
 // symtab is a symbol table: a mapping of the fully qualified names of symbols
-// (stored as [intern.IDs]) to the entities they refer to.
+// to the entities they refer to.
+//
+// The elements of a symtab are sorted by the [intern.ID] of their FQN, allowing
+// for O(n) merging of symbol tables.
 type symtab []ref[rawSymbol]
 
 // sort sorts this symbol table according according to the value of each intern
@@ -136,4 +164,19 @@ func (s symtab) sort(c *Context) {
 		symB := wrapSymbol(c, b)
 		return cmp.Compare(symA.InternedFullName(), symB.InternedFullName())
 	})
+}
+
+func (s symtab) dump(c *Context) string {
+	var out strings.Builder
+	out.WriteByte('[')
+	for i, r := range s {
+		if i > 0 {
+			out.WriteString(", ")
+		}
+
+		s := wrapSymbol(c, r)
+		fmt.Fprintf(&out, "%v: %q", int(s.InternedFullName()), s.FullName())
+	}
+	out.WriteByte(']')
+	return out.String()
 }

@@ -17,6 +17,7 @@ package prototest
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -42,7 +43,12 @@ func ToYAML(m proto.Message, opts ToYAMLOptions) string {
 	y := &toYAML{
 		ToYAMLOptions: opts,
 	}
+
 	d := y.message(m.ProtoReflect())
+	if len(d.pairs) == 0 {
+		return ""
+	}
+
 	d.prepare()
 	y.write(d)
 	return y.out.String()
@@ -128,7 +134,7 @@ func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any
 // buffer.
 func (y *toYAML) write(v any) {
 	switch v := v.(type) {
-	case int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
+	case bool, int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
 		fmt.Fprint(&y.out, v)
 	case string:
 		fmt.Fprintf(&y.out, "%q", v)
@@ -266,6 +272,13 @@ func (d *doc) prepare() {
 	for i := range d.pairs {
 		pair := &d.pairs[i]
 		if pair[0] != nil {
+			switch v := pair[0].(type) {
+			case bool, int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
+				d.width += len(fmt.Sprint(v))
+			case string:
+				d.width += len(strconv.Quote(v))
+			}
+
 			// The 2 accounts for the ": " token.
 			d.width += len(fmt.Sprint(pair[0])) + 2
 		}
@@ -275,8 +288,10 @@ func (d *doc) prepare() {
 		}
 
 		switch v := pair[1].(type) {
-		case int32, int64, uint32, uint64, float32, float64, protoreflect.Name, string:
+		case bool, int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
 			d.width += len(fmt.Sprint(v))
+		case string:
+			d.width += len(strconv.Quote(v))
 		case *doc:
 			v.prepare()
 			d.width += v.width

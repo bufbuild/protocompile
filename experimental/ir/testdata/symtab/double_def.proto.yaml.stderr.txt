@@ -1,0 +1,42 @@
+error: `.dep.foo.Foo` declared multiple times
+  --> dep/foo.proto:4:9
+   |
+ 4 | message Foo {}
+   |         ^^^ first encountered here
+  ::: main.proto:11:9
+   |
+11 | message Foo {
+   |         --- ...also declared here
+
+error: `.dep.foo.Main` declared multiple times
+  --> main.proto:6:9
+   |
+ 6 | message Main {}
+   |         ^^^^ first encountered here
+ 7 | message Main {
+   |         ---- ...also declared here
+...
+17 | message Main {
+   |         ---- ...and here
+
+error: `.dep.foo.Main.x` declared multiple times
+  --> main.proto:8:18
+   |
+ 8 |   optional int32 x = 1;
+   |                  ^ first encountered here
+...
+18 |   optional string x = 2;
+   |                   - ...also declared here
+
+error: `.dep.foo.Foo.BAR` declared multiple times
+  --> main.proto:12:8
+   |
+12 |   enum BAR {
+   |        ^^^ first encountered here
+13 |     BAR = 0;
+   |     --- ...also declared here
+   = help: the fully-qualified names of enum values do not include the name of
+           the enum; `BAR` defined inside of enum `.dep.foo.Foo.BAR` has the
+           name `.dep.foo.Foo.BAR`, not `.dep.foo.Foo.BAR.BAR
+
+encountered 4 errors
