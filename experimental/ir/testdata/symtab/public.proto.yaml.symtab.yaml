@@ -5,7 +5,7 @@ tables:
       - { path: "dep/public.proto", public: true, visible: true }
     symbols:
       - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
-      - fqn: ".dep.foo.Foo"
+      - fqn: "dep.foo.Foo"
         kind: KIND_TYPE
         file: "dep/foo.proto"
         index: 1
@@ -13,13 +13,13 @@ tables:
       - fqn: "dep.foo.not_public"
         kind: KIND_PACKAGE
         file: "dep/not_public.proto"
-      - fqn: ".dep.foo.not_public.X"
+      - fqn: "dep.foo.not_public.X"
         kind: KIND_TYPE
         file: "dep/not_public.proto"
         index: 1
         visible: true
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
-      - fqn: ".dep.foo.public.X"
+      - fqn: "dep.foo.public.X"
         kind: KIND_TYPE
         file: "dep/public.proto"
         index: 1
@@ -29,7 +29,7 @@ tables:
       - fqn: "dep.foo.not_public"
         kind: KIND_PACKAGE
         file: "dep/not_public.proto"
-      - fqn: ".dep.foo.not_public.X"
+      - fqn: "dep.foo.not_public.X"
         kind: KIND_TYPE
         file: "dep/not_public.proto"
         index: 1
@@ -37,7 +37,7 @@ tables:
   "dep/public.proto":
     symbols:
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
-      - fqn: ".dep.foo.public.X"
+      - fqn: "dep.foo.public.X"
         kind: KIND_TYPE
         file: "dep/public.proto"
         index: 1
@@ -49,7 +49,7 @@ tables:
       - { path: "dep/public.proto", transitive: true, visible: true }
     symbols:
       - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
-      - fqn: ".dep.foo.Foo"
+      - fqn: "dep.foo.Foo"
         kind: KIND_TYPE
         file: "dep/foo.proto"
         index: 1
@@ -57,18 +57,18 @@ tables:
       - fqn: "dep.foo.not_public"
         kind: KIND_PACKAGE
         file: "dep/not_public.proto"
-      - fqn: ".dep.foo.not_public.X"
+      - fqn: "dep.foo.not_public.X"
         kind: KIND_TYPE
         file: "dep/not_public.proto"
         index: 1
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
-      - fqn: ".dep.foo.public.X"
+      - fqn: "dep.foo.public.X"
         kind: KIND_TYPE
         file: "dep/public.proto"
         index: 1
         visible: true
       - { fqn: "main", kind: KIND_PACKAGE, file: "main.proto" }
-      - fqn: ".main.Main"
+      - fqn: "main.Main"
         kind: KIND_TYPE
         file: "main.proto"
         index: 1

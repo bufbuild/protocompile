@@ -1,6 +1,11 @@
 file:
+  - name: "dep/priv.proto"
+    package: "dep.foo"
+    message_type: [{ name: "Main" }]
+    syntax: "proto2"
   - name: "dep/foo.proto"
     package: "dep.foo"
+    dependency: ["dep/priv.proto"]
     message_type: [{ name: "Foo" }]
     syntax: "proto2"
   - name: "main.proto"

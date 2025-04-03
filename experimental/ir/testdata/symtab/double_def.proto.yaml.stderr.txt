@@ -1,12 +1,27 @@
-error: `.dep.foo.Foo` declared multiple times
-  --> dep/foo.proto:4:9
+error: `dep.foo.Foo` declared multiple times
+  --> dep/foo.proto:6:9
    |
- 4 | message Foo {}
+ 6 | message Foo {}
    |         ^^^ first encountered here
   ::: main.proto:11:9
    |
 11 | message Foo {
    |         --- ...also declared here
+
+error: `dep.foo.Main` declared multiple times
+  --> dep/priv.proto:4:9
+   |
+ 4 | message Main {}
+   |         ^^^^ first encountered here
+  ::: main.proto:6:9
+   |
+ 6 | message Main {}
+   |         ---- ...also declared here
+ 7 | message Main {
+   |         ---- ...and here
+...
+17 | message Main {
+   |         ---- ...and here
 
 error: unexpected `message` after import
   --> main.proto:6:1
@@ -18,18 +33,7 @@ error: unexpected `message` after import
  4 | import "dep/foo.proto";
    |                       +
 
-error: `.dep.foo.Main` declared multiple times
-  --> main.proto:6:9
-   |
- 6 | message Main {}
-   |         ^^^^ first encountered here
- 7 | message Main {
-   |         ---- ...also declared here
-...
-17 | message Main {
-   |         ---- ...and here
-
-error: `.dep.foo.Main.x` declared multiple times
+error: `dep.foo.Main.x` declared multiple times
   --> main.proto:8:18
    |
  8 |   optional int32 x = 1;
@@ -38,7 +42,7 @@ error: `.dep.foo.Main.x` declared multiple times
 18 |   optional string x = 2;
    |                   - ...also declared here
 
-error: `.dep.foo.Foo.BAR` declared multiple times
+error: `dep.foo.Foo.BAR` declared multiple times
   --> main.proto:12:8
    |
 12 |   enum BAR {
@@ -46,8 +50,8 @@ error: `.dep.foo.Foo.BAR` declared multiple times
 13 |     BAR = 0;
    |     --- ...also declared here
    = help: the fully-qualified names of enum values do not include the name of
-           the enum; `BAR` defined inside of enum `.dep.foo.Foo.BAR` has the
-           name `.dep.foo.Foo.BAR`, not `.dep.foo.Foo.BAR.BAR
+           the enum; `BAR` defined inside of enum `dep.foo.Foo.BAR` has the name
+           `dep.foo.Foo.BAR`, not `dep.foo.Foo.BAR.BAR
 
 error: unexpected end-of-file after import
   --> main2.proto:4:23
@@ -59,4 +63,14 @@ error: unexpected end-of-file after import
  4 | import "dep/foo.proto";
    |                       +
 
-encountered 6 errors
+error: `dep.foo.Foo` declared multiple times
+  --> main2.proto:2:1
+   |
+ 2 | package dep.foo.Foo;
+   | ^^^^^^^^^^^^^^^^^^^^ first encountered here
+  ::: dep/foo.proto:6:9
+   |
+ 6 | message Foo {}
+   |         --- ...also declared here
+
+encountered 7 errors

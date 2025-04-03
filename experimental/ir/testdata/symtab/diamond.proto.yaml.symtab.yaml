@@ -2,17 +2,17 @@ tables:
   "a.proto":
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - { fqn: ".dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
+      - { fqn: "dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
   "b.proto":
     imports: [{ path: "a.proto", public: true, visible: true }]
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - { fqn: ".dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
+      - { fqn: "dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
   "c.proto":
     imports: [{ path: "a.proto", public: true, visible: true }]
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - { fqn: ".dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
+      - { fqn: "dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
   "main.proto":
     imports:
       - { path: "a.proto", transitive: true, visible: true }
@@ -20,5 +20,5 @@ tables:
       - { path: "c.proto", visible: true }
     symbols:
       - { fqn: "dep", kind: KIND_PACKAGE, file: "a.proto" }
-      - { fqn: ".dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
+      - { fqn: "dep.X", kind: KIND_TYPE, file: "a.proto", index: 1, visible: true }
       - { fqn: "main", kind: KIND_PACKAGE, file: "main.proto" }
