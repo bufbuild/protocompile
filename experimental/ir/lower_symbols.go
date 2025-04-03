@@ -17,6 +17,7 @@ package ir
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -159,12 +160,15 @@ func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 			// Ignore all refs that are packages except for the first one. This
 			// is because a package can be defined in multiple files.
 			isFirst := true
+			havePackage := false
 			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
+				pkg := wrapSymbol(f.Context(), r).Kind() == SymbolKindPackage
+				havePackage = havePackage || pkg
 				if isFirst {
 					isFirst = false
 					return false
 				}
-				return wrapSymbol(f.Context(), r).Kind() == SymbolKindPackage
+				return pkg
 			})
 
 			// Deduplicate references to the same element.
@@ -176,19 +180,67 @@ func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 
 			first := wrapSymbol(f.Context(), refs[0])
 			second := wrapSymbol(f.Context(), refs[1])
-			d := r.Errorf("`%s` declared multiple times", first.FullName()).Apply(
+
+			name := first.FullName()
+			if !havePackage {
+				name = FullName(name.Name())
+			}
+
+			// TODO: In the diagnostic construction code below, we can wind up
+			// saying nonsense like "a enum". Currently, we chose the article
+			// based on whether the noun starts with an e, but this is really
+			// icky.
+			article := func(n taxa.Noun) string {
+				if n.String()[0] == 'e' {
+					return "an"
+				}
+				return "a"
+			}
+
+			noun := first.noun()
+			d := r.Errorf("`%s` declared multiple times", name).Apply(
 				report.Tag(tagSymbolRedefined),
-				report.Snippetf(first.Definition(), "first encountered here"),
-				report.Snippetf(second.Definition(), "...also declared here"),
+				report.Snippetf(first.Definition(), "first here, as %s %s", article(first.noun()), first.noun()),
 			)
+
+			if next := second.noun(); next != noun {
+				d.Apply(report.Snippetf(second.Definition(), "...also declared here, now as %s %s", article(next), next))
+				noun = next
+			} else {
+				d.Apply(report.Snippetf(second.Definition(), "...also declared here"))
+			}
+
 			for _, r := range refs[2:] {
 				s := wrapSymbol(f.Context(), r)
-				d.Apply(report.Snippetf(s.Definition(), "...and here"))
+				next := s.noun()
+
+				if noun != next {
+					d.Apply(report.Snippetf(s.Definition(), "...and then here as a %s %s", article(next), next))
+					noun = next
+				} else {
+					d.Apply(report.Snippetf(s.Definition(), "...and here"))
+				}
+			}
+
+			// If at least one duplicated symbol is a non-visible type, explain
+			// that symbol names are global!
+			idx := slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
+				s := wrapSymbol(f.Context(), r)
+				return s.Kind() == SymbolKindType && !s.Visible()
+			})
+			if idx != -1 {
+				s := wrapSymbol(f.Context(), refs[idx])
+				d.Apply(report.Helpf(
+					"symbol names must be unique across all transitive imports; "+
+						"for example, %q declares `%s` but is not directly imported",
+					s.File().Path(),
+					name,
+				))
 			}
 
 			// If at least one of them was an enum value, we note the weird language
 			// bug with enum scoping.
-			idx := slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
+			idx = slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
 				f := wrapSymbol(f.Context(), r).AsField()
 				// NOTE: Can't use f.IsEnumValue() yet because types have not
 				// yet been resolved.
@@ -197,12 +249,20 @@ func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 			if idx != -1 {
 				value := wrapSymbol(f.Context(), refs[idx]).AsField()
 				enum := value.Container()
+
+				// Avoid unreasonably-nested names where reasonable.
+				parentName := enum.FullName().Parent()
+				if parent := enum.Parent(); !parent.IsZero() {
+					parentName = FullName(parent.Name())
+				}
+
 				d.Apply(report.Helpf(
 					"the fully-qualified names of enum values do not include the name of the enum; "+
-						"`%s` defined inside of enum `%s` has the name `%s`, not `%[2]s.%[1]s",
+						"`%[3]s` defined inside of enum `%[1]s.%[2]s` has the name `%[1]s.%[3]s`, "+
+						"not `%[1]s.%[2]s.%[3]s`",
+					parentName,
+					enum.Name(),
 					value.Name(),
-					enum.FullName(),
-					value.FullName(),
 				))
 			}
 

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -135,6 +136,32 @@ func (s Symbol) Definition() report.Span {
 	}
 
 	return report.Span{}
+}
+
+// noun returns a [taxa.Noun] for diagnostic use.
+func (s Symbol) noun() taxa.Noun {
+	switch s.Kind() {
+	case SymbolKindPackage:
+		return taxa.Package
+	case SymbolKindType:
+		ty := s.AsType()
+		if ty.IsEnum() {
+			return taxa.Enum
+		}
+		return taxa.Message
+
+	case SymbolKindField:
+		ty := s.AsField().Container()
+		if ty.IsEnum() {
+			return taxa.EnumValue
+		}
+		return taxa.Field
+
+	case SymbolKindOneof:
+		return taxa.Oneof
+	}
+
+	return taxa.Unknown
 }
 
 func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {

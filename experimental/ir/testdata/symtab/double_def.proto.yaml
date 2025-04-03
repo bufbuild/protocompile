@@ -18,7 +18,7 @@ files:
     syntax = "proto2";
     package dep.foo;
 
-    import "dep/foo.proto"
+    import "dep/foo.proto";
 
     message Main {}
     message Main {
@@ -40,7 +40,7 @@ files:
     syntax = "proto2";
     package dep.foo.Foo;
 
-    import "dep/foo.proto"
+    import "dep/foo.proto";
 
 
 - path: "dep/foo.proto"

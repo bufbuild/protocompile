@@ -145,9 +145,10 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	fqn := w.fullname(parentTy, name)
 
 	raw := c.arenas.types.NewCompressed(rawType{
-		def:  def,
-		name: c.session.intern.Intern(name),
-		fqn:  c.session.intern.Intern(fqn),
+		def:    def,
+		name:   c.session.intern.Intern(name),
+		fqn:    c.session.intern.Intern(fqn),
+		parent: c.arenas.types.Compress(parentTy.raw),
 	})
 
 	if !parentTy.IsZero() {

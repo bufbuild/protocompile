@@ -1,18 +1,18 @@
-error: `dep.foo.Foo` declared multiple times
+error: `Foo` declared multiple times
   --> dep/foo.proto:6:9
    |
  6 | message Foo {}
-   |         ^^^ first encountered here
+   |         ^^^ first here, as a message definition
   ::: main.proto:11:9
    |
 11 | message Foo {
    |         --- ...also declared here
 
-error: `dep.foo.Main` declared multiple times
+error: `Main` declared multiple times
   --> dep/priv.proto:4:9
    |
  4 | message Main {}
-   |         ^^^^ first encountered here
+   |         ^^^^ first here, as a message definition
   ::: main.proto:6:9
    |
  6 | message Main {}
@@ -22,55 +22,38 @@ error: `dep.foo.Main` declared multiple times
 ...
 17 | message Main {
    |         ---- ...and here
+   = help: symbol names must be unique across all transitive imports; for
+           example, "dep/priv.proto" declares `Main` but is not directly
+           imported
 
-error: unexpected `message` after import
-  --> main.proto:6:1
-   |
- 6 | message Main {}
-   | ^^^^^^^ expected `;`
-  help: consider inserting a `;`
-   |
- 4 | import "dep/foo.proto";
-   |                       +
-
-error: `dep.foo.Main.x` declared multiple times
+error: `x` declared multiple times
   --> main.proto:8:18
    |
  8 |   optional int32 x = 1;
-   |                  ^ first encountered here
+   |                  ^ first here, as a message field
 ...
 18 |   optional string x = 2;
    |                   - ...also declared here
 
-error: `dep.foo.Foo.BAR` declared multiple times
+error: `BAR` declared multiple times
   --> main.proto:12:8
    |
 12 |   enum BAR {
-   |        ^^^ first encountered here
+   |        ^^^ first here, as an enum definition
 13 |     BAR = 0;
-   |     --- ...also declared here
+   |     --- ...also declared here, now as an enum value
    = help: the fully-qualified names of enum values do not include the name of
-           the enum; `BAR` defined inside of enum `dep.foo.Foo.BAR` has the name
-           `dep.foo.Foo.BAR`, not `dep.foo.Foo.BAR.BAR
-
-error: unexpected end-of-file after import
-  --> main2.proto:4:23
-   |
- 4 | import "dep/foo.proto"
-   |                       ^ expected `;`
-  help: consider inserting a `;`
-   |
- 4 | import "dep/foo.proto";
-   |                       +
+           the enum; `BAR` defined inside of enum `Foo.BAR` has the name
+           `Foo.BAR`, not `Foo.BAR.BAR`
 
 error: `dep.foo.Foo` declared multiple times
   --> main2.proto:2:1
    |
  2 | package dep.foo.Foo;
-   | ^^^^^^^^^^^^^^^^^^^^ first encountered here
+   | ^^^^^^^^^^^^^^^^^^^^ first here, as a `package` declaration
   ::: dep/foo.proto:6:9
    |
  6 | message Foo {}
-   |         --- ...also declared here
+   |         --- ...also declared here, now as a message definition
 
-encountered 7 errors
+encountered 5 errors
