@@ -30,6 +30,13 @@ import (
 // and places them in the local symbol table.
 func buildLocalSymbols(f File, r *report.Report) {
 	c := f.Context()
+
+	sym := c.arenas.symbols.NewCompressed(rawSymbol{
+		kind: SymbolKindPackage,
+		fqn:  f.InternedPackage(),
+	})
+	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
+
 	for ty := range seq.Values(f.AllTypes()) {
 		newTypeSymbol(ty)
 		for f := range seq.Values(ty.Fields()) {
@@ -46,8 +53,8 @@ func buildLocalSymbols(f File, r *report.Report) {
 		newFieldSymbol(f)
 	}
 
-	c.symbols.locals.sort(c)
-	diagnoseDuplicates(f, &c.symbols.locals, r)
+	c.symbols.sort(c)
+	diagnoseDuplicates(f, &c.symbols, r)
 }
 
 func newTypeSymbol(ty Type) {
@@ -57,7 +64,7 @@ func newTypeSymbol(ty Type) {
 		fqn:  ty.InternedFullName(),
 		data: arena.Untyped(c.arenas.types.Compress(ty.raw)),
 	})
-	c.symbols.locals = append(c.symbols.locals, ref[rawSymbol]{ptr: sym})
+	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
 }
 
 func newFieldSymbol(f Field) {
@@ -67,7 +74,7 @@ func newFieldSymbol(f Field) {
 		fqn:  f.InternedFullName(),
 		data: arena.Untyped(c.arenas.fields.Compress(f.raw)),
 	})
-	c.symbols.locals = append(c.symbols.locals, ref[rawSymbol]{ptr: sym})
+	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
 }
 
 func newOneofSymbol(o Oneof) {
@@ -77,32 +84,50 @@ func newOneofSymbol(o Oneof) {
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.raw)),
 	})
-	c.symbols.locals = append(c.symbols.locals, ref[rawSymbol]{ptr: sym})
+	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
 }
 
 // buildImportedSymbols builds a symbol table of every symbol in every
 // transitive import. This will contain symbols that are not visible to this
 // file, but visibility can be tested with f.visibleImports.
 func buildImportedSymbols(f File, r *report.Report) {
-	imports := f.TransitiveImports()
-	symbols := &f.Context().symbols
-	symbols.imports = slicesx.MergeKeySeq(
+	// Only need to merge from the direct imports's tables, since each
+	// import table is fully transitive.
+	imports := f.Imports()
+
+	f.Context().symbols = slicesx.MergeKeySeq(
 		iterx.Chain(
-			iterx.Of(f.Context().symbols.locals),
+			iterx.Of(f.Context().symbols),
 			seq.Map(imports, func(i Import) symtab {
-				return i.Context().symbols.locals
+				return i.Context().symbols
 			}),
 		),
+
 		func(which int, elem ref[rawSymbol]) intern.ID {
-			elem.file = int32(which)
-			return wrapSymbol(f.Context(), elem).InternedFullName()
+			c := f.Context()
+			if which > 0 {
+				// Need to make sure to use the correct context here for
+				// scoping the lookup.
+				c = imports.At(which - 1).Context()
+			}
+
+			return wrapSymbol(c, elem).InternedFullName()
 		},
+
 		func(which int, elem ref[rawSymbol]) ref[rawSymbol] {
-			elem.file = int32(which)
+			// We need top map the file number from src to the current one.
+			if which > 0 {
+				src := imports.At(which - 1)
+				theirs := wrapSymbol(src.Context(), elem)
+				ours := f.Context().imports.byPath[theirs.File().InternedPath()]
+				elem.file = int32(ours + 1)
+			}
+
 			return elem
 		},
 	)
-	diagnoseDuplicates(f, &symbols.imports, r)
+
+	diagnoseDuplicates(f, &f.Context().symbols, r)
 }
 
 // diagnoseDuplicates diagnoses duplicate symbols in a sorted symbol table, and
@@ -114,73 +139,75 @@ func buildImportedSymbols(f File, r *report.Report) {
 func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 	*symbols = slicesx.DedupKey(
 		*symbols,
-		func(r ref[rawSymbol]) intern.ID {
-			return wrapSymbol(f.Context(), r).InternedFullName()
-		},
+		func(r ref[rawSymbol]) intern.ID { return wrapSymbol(f.Context(), r).InternedFullName() },
 		func(refs []ref[rawSymbol]) ref[rawSymbol] {
 			if len(refs) == 1 {
 				return refs[0]
 			}
 
-			type entry struct {
-				ref[rawSymbol]
-				Symbol
-			}
-
-			// TODO: It is possible to avoid this copy, but doing so seems
-			// quite painful.
-			syms := slices.Collect(slicesx.Map(refs, func(r ref[rawSymbol]) entry {
-				return entry{r, wrapSymbol(f.Context(), r)}
-			}))
-
-			slices.SortFunc(syms, cmpx.Join(
-				cmpx.Key(entry.Kind), // Packages sort first, reserved names sort last.
-				cmpx.Key(func(e entry) string {
+			slices.SortFunc(refs, cmpx.Map(
+				func(r ref[rawSymbol]) Symbol { return wrapSymbol(f.Context(), r) },
+				cmpx.Key(Symbol.Kind), // Packages sort first, reserved names sort last.
+				cmpx.Key(func(s Symbol) string {
 					// NOTE: we do not choose a winner based on the path's intern
 					// ID, because that is non-deterministic!
-					return e.Context().File().Path()
+					return s.File().Path()
 				}),
-				cmpx.Key(func(e entry) int { return e.Definition().Start }),
+				// Break ties with whichever came first in the file.
+				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
-			// If every element of syms is a package symbol, we don't diagnose.
-			allPackages := !iterx.Every(slices.Values(syms), func(e entry) bool {
-				return e.Kind() == SymbolKindPackage
+			// Ignore all refs that are packages except for the first one. This
+			// is because a package can be defined in multiple files.
+			isFirst := true
+			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
+				if isFirst {
+					isFirst = false
+					return false
+				}
+				return wrapSymbol(f.Context(), r).Kind() == SymbolKindPackage
 			})
 
-			if !allPackages {
-				d := r.Errorf("`%s` declared multiple times", syms[0].FullName()).Apply(
-					report.Tag(tagSymbolRedefined),
-					report.Snippetf(syms[0].Definition(), "first encountered here"),
-					report.Snippetf(syms[1].Definition(), "...also declared here"),
-				)
-				for _, e := range syms[2:] {
-					d.Apply(report.Snippetf(e.Definition(), "...and here"))
-				}
+			// Deduplicate references to the same element.
+			refs = slicesx.Dedup(refs)
 
-				// If at least one of them was an enum value, we note the weird language
-				// bug with enum scoping.
-				idx := slices.IndexFunc(syms, func(e entry) bool {
-					f := e.AsField()
-					if f.IsZero() {
-						return false
-					}
-					return f.IsEnumValue()
-				})
-				if idx != -1 {
-					value := syms[idx].AsField()
-					enum := value.Container()
-					d.Apply(report.Helpf(
-						"the fully-qualified names of enum values do not include the name of the enum; "+
-							"`%s` defined inside of enum `%s` has the name `%s`, not `%[2]s.%[1]s",
-						value.Name(),
-						enum.FullName(),
-						value.FullName(),
-					))
-				}
+			if len(refs) == 1 {
+				return refs[0]
 			}
 
-			return syms[0].ref
+			first := wrapSymbol(f.Context(), refs[0])
+			second := wrapSymbol(f.Context(), refs[1])
+			d := r.Errorf("`%s` declared multiple times", first.FullName()).Apply(
+				report.Tag(tagSymbolRedefined),
+				report.Snippetf(first.Definition(), "first encountered here"),
+				report.Snippetf(second.Definition(), "...also declared here"),
+			)
+			for _, r := range refs[2:] {
+				s := wrapSymbol(f.Context(), r)
+				d.Apply(report.Snippetf(s.Definition(), "...and here"))
+			}
+
+			// If at least one of them was an enum value, we note the weird language
+			// bug with enum scoping.
+			idx := slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
+				f := wrapSymbol(f.Context(), r).AsField()
+				// NOTE: Can't use f.IsEnumValue() yet because types have not
+				// yet been resolved.
+				return !f.IsZero() && f.Container().IsEnum()
+			})
+			if idx != -1 {
+				value := wrapSymbol(f.Context(), refs[idx]).AsField()
+				enum := value.Container()
+				d.Apply(report.Helpf(
+					"the fully-qualified names of enum values do not include the name of the enum; "+
+						"`%s` defined inside of enum `%s` has the name `%s`, not `%[2]s.%[1]s",
+					value.Name(),
+					enum.FullName(),
+					value.FullName(),
+				))
+			}
+
+			return refs[0]
 		},
 	)
 }

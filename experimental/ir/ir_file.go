@@ -53,9 +53,11 @@ type Context struct {
 
 	options []arena.Pointer[rawOption]
 
-	symbols struct {
-		locals, imports symtab
-	}
+	// Table of all symbols transitively imported by this file. This is all
+	// local symbols plus the imported tables of all direct imports. Importing
+	// everything and checking visibility later allows us to diagnose
+	// missing import errors.
+	symbols symtab
 
 	arenas struct {
 		types   arena.Arena[rawType]
@@ -164,6 +166,16 @@ func (f File) TransitiveImports() seq.Indexer[Import] {
 	return f.Context().imports.Transitive()
 }
 
+// ImportFor returns import metadata for a given file, if this file imports it.
+func (f File) ImportFor(that File) Import {
+	idx, ok := f.Context().imports.byPath[that.InternedPath()]
+	if !ok {
+		return Import{}
+	}
+
+	return f.TransitiveImports().At(int(idx))
+}
+
 // Types returns the top level types of this file.
 func (f File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
@@ -215,6 +227,16 @@ func (f File) Options() seq.Indexer[Option] {
 		f.Context().options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(f.Context(), p)
+		},
+	)
+}
+
+// Symbols returns this file's transitive symbol table.
+func (f File) Symbols() seq.Indexer[Symbol] {
+	return seq.NewFixedSlice(
+		f.Context().symbols,
+		func(_ int, r ref[rawSymbol]) Symbol {
+			return wrapSymbol(f.Context(), r)
 		},
 	)
 }

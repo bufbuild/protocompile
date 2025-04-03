@@ -38,7 +38,7 @@ type rawType struct {
 	fields          []arena.Pointer[rawField]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
-	oneofs          []rawOneof
+	oneofs          []arena.Pointer[rawOneof]
 	options         []arena.Pointer[rawOption]
 	fqn, name       intern.ID // 0 for predeclared types.
 	fieldsExtnStart uint32
@@ -72,12 +72,7 @@ var primitiveCtx = func() *Context {
 			panic(fmt.Sprintf("IR initialization error: %d != %d; this is a bug in protocompile", ptr, n))
 		}
 
-<<<<<<< HEAD
 		ctx.types = append(ctx.types, ptr)
-=======
-		ctx.file.topLevelTypes = append(ctx.file.topLevelTypes, ptr)
-		ctx.file.allTypes = append(ctx.file.allTypes, ptr)
->>>>>>> 0b41755 (wip)
 		return true
 	})
 	return ctx
@@ -245,8 +240,8 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.raw.oneofs,
-		func(i int, _ rawOneof) Oneof {
-			return Oneof{t.withContext, i, t.raw}
+		func(i int, p arena.Pointer[rawOneof]) Oneof {
+			return wrapOneof(t.Context(), p)
 		},
 	)
 }
@@ -266,20 +261,7 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		return Type{}
 	}
 
-<<<<<<< HEAD
-	var ctx *Context
-	switch {
-	case r.file == -1:
-		ctx = primitiveCtx
-	case r.file > 0:
-		ctx = c.imports.files[r.file-1].Context()
-	default:
-		ctx = c.File().Context()
-	}
-
-=======
 	c = r.context(c)
->>>>>>> 0b41755 (wip)
 	return Type{
 		withContext: internal.NewWith(c),
 		raw:         c.arenas.types.Deref(r.ptr),

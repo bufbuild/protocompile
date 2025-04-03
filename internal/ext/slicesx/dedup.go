@@ -14,6 +14,11 @@
 
 package slicesx
 
+// Dedup replaces runs of consecutive equal elements with a single element.
+func Dedup[S ~[]E, E comparable](s S) S {
+	return DedupKey(s, func(e E) E { return e }, func(e []E) E { return e[0] })
+}
+
 // DedupKey deduplicates consecutive elements in a slice, using key to obtain
 // a key to deduplicate by, and choose to select which element in a run to keep.
 func DedupKey[S ~[]E, E any, K comparable](
@@ -28,7 +33,7 @@ func DedupKey[S ~[]E, E any, K comparable](
 	i := 0 // Index to write the next value at.
 	j := 0 // Index of prev.
 	prev := key(s[0])
-	for k := i + 1; k < len(s); k++ {
+	for k := 1; k < len(s); k++ {
 		next := key(s[k])
 		if prev == next {
 			continue

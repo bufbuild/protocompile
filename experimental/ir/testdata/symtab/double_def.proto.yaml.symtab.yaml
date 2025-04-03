@@ -1,0 +1,43 @@
+tables:
+  "dep/foo.proto":
+    symbols:
+      - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
+      - fqn: ".dep.foo.Foo"
+        kind: KIND_TYPE
+        file: "dep/foo.proto"
+        index: 1
+        visible: true
+  "main.proto":
+    imports: [{ path: "dep/foo.proto", visible: true }]
+    symbols:
+      - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
+      - fqn: ".dep.foo.Foo"
+        kind: KIND_TYPE
+        file: "dep/foo.proto"
+        index: 1
+        visible: true
+      - fqn: ".dep.foo.Main"
+        kind: KIND_TYPE
+        file: "main.proto"
+        index: 1
+        visible: true
+      - fqn: ".dep.foo.Foo.BAR"
+        kind: KIND_TYPE
+        file: "main.proto"
+        index: 4
+        visible: true
+      - fqn: ".dep.foo.Main.x"
+        kind: KIND_FIELD
+        file: "main.proto"
+        index: 1
+        visible: true
+  "main2.proto":
+    imports: [{ path: "dep/foo.proto", visible: true }]
+    symbols:
+      - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
+      - fqn: ".dep.foo.Foo"
+        kind: KIND_TYPE
+        file: "dep/foo.proto"
+        index: 1
+        visible: true
+      - { fqn: "dep.foo.Foo", kind: KIND_PACKAGE, file: "main2.proto" }
