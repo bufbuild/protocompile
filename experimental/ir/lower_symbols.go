@@ -29,7 +29,7 @@ import (
 
 // buildLocalSymbols allocates new symbols for each definition in this file,
 // and places them in the local symbol table.
-func buildLocalSymbols(f File, r *report.Report) {
+func buildLocalSymbols(f File) {
 	c := f.Context()
 
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{

@@ -18,9 +18,10 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDedup(t *testing.T) {
@@ -48,6 +49,8 @@ func TestDedup(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
+			t.Parallel()
+
 			assert.Equal(t, test.want, slicesx.DedupKey(test.input, first, func(run []V) V {
 				return slices.MinFunc(run, cmpx.Key(second))
 			}))
