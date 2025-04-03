@@ -20,8 +20,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -110,9 +112,9 @@ func buildFile(
 	file := ir.NewFile(session, path)
 	table := ir.GetImports(file)
 
-	dedup := make(intern.Set)
+	dedup := make(intern.Map[ast.DeclImport])
 	for _, imp := range imports {
-		if !dedup.AddID(imp.File.InternedPath()) {
+		if !mapsx.AddZero(dedup, imp.File.InternedPath()) {
 			continue
 		}
 
