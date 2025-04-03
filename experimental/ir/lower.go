@@ -69,7 +69,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Next, we can build various symbol tables in preparation for name
 	// resolution.
-	buildLocalSymbols(c.File(), r)
+	buildLocalSymbols(c.File())
 	buildImportedSymbols(c.File(), r)
 }
 

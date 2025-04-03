@@ -18,6 +18,7 @@ import (
 	"slices"
 
 	"github.com/bits-and-blooms/bitset"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"

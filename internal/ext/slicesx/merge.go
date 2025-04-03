@@ -58,7 +58,6 @@ func MergeKeySeq[S ~[]E, E any, K cmp.Ordered, V any](
 	key func(slice int, elem E) K,
 	mapper func(slice int, elem E) V,
 ) []V {
-
 	type entry struct {
 		index int
 		slice S

@@ -250,7 +250,7 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.raw.oneofs,
-		func(i int, p arena.Pointer[rawOneof]) Oneof {
+		func(_ int, p arena.Pointer[rawOneof]) Oneof {
 			return wrapOneof(t.Context(), p)
 		},
 	)

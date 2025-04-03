@@ -16,9 +16,7 @@ package ir
 
 import (
 	"cmp"
-	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -183,7 +181,7 @@ func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 // for O(n) merging of symbol tables.
 type symtab []ref[rawSymbol]
 
-// sort sorts this symbol table according according to the value of each intern
+// sort sorts this symbol table according to the value of each intern
 // ID.
 func (s symtab) sort(c *Context) {
 	slices.SortFunc(s, func(a, b ref[rawSymbol]) int {
@@ -191,19 +189,4 @@ func (s symtab) sort(c *Context) {
 		symB := wrapSymbol(c, b)
 		return cmp.Compare(symA.InternedFullName(), symB.InternedFullName())
 	})
-}
-
-func (s symtab) dump(c *Context) string {
-	var out strings.Builder
-	out.WriteByte('[')
-	for i, r := range s {
-		if i > 0 {
-			out.WriteString(", ")
-		}
-
-		s := wrapSymbol(c, r)
-		fmt.Fprintf(&out, "%v: %q", int(s.InternedFullName()), s.FullName())
-	}
-	out.WriteByte(']')
-	return out.String()
 }
