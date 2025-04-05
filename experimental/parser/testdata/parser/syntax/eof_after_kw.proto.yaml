@@ -1,1 +1,1 @@
-{ decls: [{ syntax.kind: KIND_SYNTAX }] }
+decls: [{ syntax.kind: KIND_SYNTAX }]

@@ -1,3 +1,3 @@
 decls:
-  - syntax: { kind: KIND_EDITION, value.literal.int_value: 2023 }
-  - package.path.components: [{ ident: "test" }]
+- syntax: { kind: KIND_EDITION, value.literal.int_value: 2023 }
+- package.path.components: [{ ident: "test" }]

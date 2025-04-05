@@ -1,57 +1,77 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_SERVICE
-      name.components: [{ ident: "Foo" }]
-      body.decls:
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar1" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-              outputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar2" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-              outputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-            body: {}
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar3" }]
-            signature:
-              inputs:
-                - prefixed:
-                    prefix: PREFIX_STREAM
-                    type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-              outputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar4" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-              outputs:
-                - prefixed:
-                    prefix: PREFIX_STREAM
-                    type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-            body: {}
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar5" }]
-            signature:
-              inputs:
-                - prefixed:
-                    prefix: PREFIX_STREAM
-                    type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-              outputs:
-                - prefixed:
-                    prefix: PREFIX_STREAM
-                    type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_SERVICE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar1" }]
+        signature:
+          inputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+          outputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar2" }]
+        signature:
+          inputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+          outputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+        body: {}
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar3" }]
+        signature:
+          inputs:
+          - prefixed:
+              prefix: PREFIX_STREAM
+              type.path.components:
+              - ident: "foo"
+              - { ident: "Bar", separator: SEPARATOR_DOT }
+          outputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar4" }]
+        signature:
+          inputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+          outputs:
+          - prefixed:
+              prefix: PREFIX_STREAM
+              type.path.components:
+              - ident: "foo"
+              - { ident: "Bar", separator: SEPARATOR_DOT }
+        body: {}
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar5" }]
+        signature:
+          inputs:
+          - prefixed:
+              prefix: PREFIX_STREAM
+              type.path.components:
+              - ident: "foo"
+              - { ident: "Bar", separator: SEPARATOR_DOT }
+          outputs:
+          - prefixed:
+              prefix: PREFIX_STREAM
+              type.path.components:
+              - ident: "foo"
+              - { ident: "Bar", separator: SEPARATOR_DOT }

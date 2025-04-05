@@ -1,49 +1,63 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_SERVICE
-      name.components: [{ ident: "Foo" }]
-      body.decls:
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar1" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-              outputs:
-                - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-        - def:
-            name.components: [{ ident: "Bar2" }]
-            type.path.components: [{ ident: "rpc" }]
-            signature.inputs:
-              - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-        - def:
-            name.components: [{ ident: "Bar3" }]
-            type.path.components: [{ ident: "rpc" }]
-            signature.outputs:
-              - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar4" }]
-            signature.inputs:
-              - path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-            body: {}
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar5" }]
-            signature.outputs:
-              - prefixed:
-                  prefix: PREFIX_STREAM
-                  type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
-        - def:
-            name.components: [{ ident: "Bar6" }]
-            type.path.components: [{ ident: "rpc" }]
-            signature: {}
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Bar7" }]
-            signature.outputs:
-              - prefixed:
-                  prefix: PREFIX_STREAM
-                  type.path.components: [{ ident: "foo" }, { ident: "Bar", separator: SEPARATOR_DOT }]
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_SERVICE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar1" }]
+        signature:
+          inputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+          outputs:
+          - path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+    - def:
+        name.components: [{ ident: "Bar2" }]
+        type.path.components: [{ ident: "rpc" }]
+        signature.inputs:
+        - path.components:
+          - ident: "foo"
+          - { ident: "Bar", separator: SEPARATOR_DOT }
+    - def:
+        name.components: [{ ident: "Bar3" }]
+        type.path.components: [{ ident: "rpc" }]
+        signature.outputs:
+        - path.components:
+          - ident: "foo"
+          - { ident: "Bar", separator: SEPARATOR_DOT }
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar4" }]
+        signature.inputs:
+        - path.components:
+          - ident: "foo"
+          - { ident: "Bar", separator: SEPARATOR_DOT }
+        body: {}
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar5" }]
+        signature.outputs:
+        - prefixed:
+            prefix: PREFIX_STREAM
+            type.path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }
+    - def:
+        name.components: [{ ident: "Bar6" }]
+        type.path.components: [{ ident: "rpc" }]
+        signature: {}
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Bar7" }]
+        signature.outputs:
+        - prefixed:
+            prefix: PREFIX_STREAM
+            type.path.components:
+            - ident: "foo"
+            - { ident: "Bar", separator: SEPARATOR_DOT }

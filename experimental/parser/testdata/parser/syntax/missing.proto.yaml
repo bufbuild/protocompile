@@ -1,1 +1,1 @@
-{ decls: [{ package.path.components: [{ ident: "test" }] }] }
+decls: [{ package.path.components: [{ ident: "test" }] }]
