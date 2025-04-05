@@ -1,4 +1,4 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - import.import_path.literal.int_value: 42
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- import.import_path.literal.int_value: 42

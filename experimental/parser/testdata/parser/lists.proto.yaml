@@ -1,266 +1,254 @@
 decls:
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array: {}
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements: [{ literal.int_value: 1 }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements: [{ literal.int_value: 1 }, { literal.int_value: 2 }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements:
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array: {}
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements: [{ literal.int_value: 1 }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements: [{ literal.int_value: 1 }, { literal.int_value: 2 }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements:
+    - literal.int_value: 1
+    - literal.int_value: 2
+    - literal.int_value: 3
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements:
+    - literal.int_value: 1
+    - literal.int_value: 2
+    - literal.int_value: 3
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements:
+    - literal.int_value: 1
+    - literal.int_value: 2
+    - literal.int_value: 3
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements:
+    - literal.int_value: 1
+    - literal.int_value: 2
+    - literal.int_value: 3
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements:
+    - literal.int_value: 1
+    - literal.int_value: 2
+    - literal.int_value: 3
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array.elements: [{ path.components: [{ ident: "a" }] }, { dict: {} }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.array: {}
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "bar" }], value.literal.int_value: 1 }
+    - key.path.components: [{ ident: "bar" }]
+      value.dict.entries:
+      - { key.path.components: [{ ident: "bar" }], value.literal.int_value: 2 }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "bar" }], value.literal.int_value: 1 }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "baz" }], value.literal.int_value: 1 }
+    - { key.path.components: [{ ident: "baz" }], value.literal.int_value: 1 }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "baz" }], value.literal.int_value: 1 }
+    - { key.path.components: [{ ident: "baz" }], value.literal.int_value: 1 }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "foo" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "bar" }], value.dict: {} }
+    - { key.path.components: [{ ident: "bar" }], value.dict: {} }
+- def:
+    kind: KIND_SERVICE
+    name.components: [{ ident: "S" }]
+    body.decls:
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature:
+          inputs: [{ path.components: [{ ident: "int" }] }]
+          outputs: [{ path.components: [{ ident: "int" }] }]
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature:
+          inputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+          outputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature:
+          inputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+          outputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature:
+          inputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+          outputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature:
+          inputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+          outputs:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature: {}
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "Foo" }]
+        signature: {}
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args: [{ path.components: [{ ident: "int" }] }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic.path.components: [{ ident: "map" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic.path.components: [{ ident: "map" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "int" }]
+          - path.components: [{ ident: "int" }]
+    - range.kind: KIND_RESERVED
+    - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 1 }] }
+    - range:
+        kind: KIND_RESERVED
+        ranges:
         - literal.int_value: 1
         - literal.int_value: 2
         - literal.int_value: 3
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements:
+    - range:
+        kind: KIND_RESERVED
+        ranges:
         - literal.int_value: 1
         - literal.int_value: 2
         - literal.int_value: 3
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements:
+    - range:
+        kind: KIND_RESERVED
+        ranges:
         - literal.int_value: 1
         - literal.int_value: 2
         - literal.int_value: 3
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements:
+    - range:
+        kind: KIND_RESERVED
+        ranges:
         - literal.int_value: 1
         - literal.int_value: 2
         - literal.int_value: 3
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements:
-        - literal.int_value: 1
-        - literal.int_value: 2
-        - literal.int_value: 3
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array.elements: [{ path.components: [{ ident: "a" }] }, { dict: {} }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.array: {}
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.dict.entries:
-        - key.path.components: [{ ident: "bar" }]
-          value.literal.int_value: 1
-        - key.path.components: [{ ident: "bar" }]
-          value.dict.entries:
-            - key.path.components: [{ ident: "bar" }]
-              value.literal.int_value: 2
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.dict.entries:
-        - key.path.components: [{ ident: "bar" }]
-          value.literal.int_value: 1
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.dict.entries:
-        - key.path.components: [{ ident: "baz" }]
-          value.literal.int_value: 1
-        - key.path.components: [{ ident: "baz" }]
-          value.literal.int_value: 1
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.dict.entries:
-        - key.path.components: [{ ident: "baz" }]
-          value.literal.int_value: 1
-        - key.path.components: [{ ident: "baz" }]
-          value.literal.int_value: 1
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }]
-      value.dict.entries:
-        - key.path.components: [{ ident: "bar" }]
-          value.dict: {}
-        - key.path.components: [{ ident: "bar" }]
-          value.dict: {}
-  - def:
-      kind: KIND_SERVICE
-      name.components: [{ ident: "S" }]
-      body.decls:
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature:
-              inputs: [{ path.components: [{ ident: "int" }] }]
-              outputs: [{ path.components: [{ ident: "int" }] }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-              outputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-              outputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-              outputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature:
-              inputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-              outputs:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature: {}
-        - def:
-            kind: KIND_METHOD
-            name.components: [{ ident: "Foo" }]
-            signature: {}
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "M" }]
-      body.decls:
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args: [{ path.components: [{ ident: "int" }] }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic.path.components: [{ ident: "map" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic.path.components: [{ ident: "map" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "int" }]
-                - path.components: [{ ident: "int" }]
-        - range.kind: KIND_RESERVED
-        - range: { kind: KIND_RESERVED, ranges: [{ literal.int_value: 1 }] }
-        - range:
-            kind: KIND_RESERVED
-            ranges:
-              - literal.int_value: 1
-              - literal.int_value: 2
-              - literal.int_value: 3
-        - range:
-            kind: KIND_RESERVED
-            ranges:
-              - literal.int_value: 1
-              - literal.int_value: 2
-              - literal.int_value: 3
-        - range:
-            kind: KIND_RESERVED
-            ranges:
-              - literal.int_value: 1
-              - literal.int_value: 2
-              - literal.int_value: 3
-        - range:
-            kind: KIND_RESERVED
-            ranges:
-              - literal.int_value: 1
-              - literal.int_value: 2
-              - literal.int_value: 3
-        - range:
-            kind: KIND_RESERVED
-            ranges: [{ path.components: [{ ident: "a" }] }, { dict: {} }]
-        - range.kind: KIND_RESERVED
-        - range:
-            kind: KIND_RESERVED
-            ranges:
-              - path.components: [{ ident: "a" }]
-              - path.components: [{ ident: "b" }]
-              - path.components: [{ ident: "c" }]
-        - range:
-            kind: KIND_RESERVED
-            ranges:
-              - path.components: [{ ident: "a" }]
-              - path.components: [{ ident: "b" }]
-              - path.components: [{ ident: "c" }]
-        - def:
-            kind: KIND_MESSAGE
-            name.components: [{ ident: "Foo" }]
-            body: {}
+    - range:
+        kind: KIND_RESERVED
+        ranges: [{ path.components: [{ ident: "a" }] }, { dict: {} }]
+    - range.kind: KIND_RESERVED
+    - range:
+        kind: KIND_RESERVED
+        ranges:
+        - path.components: [{ ident: "a" }]
+        - path.components: [{ ident: "b" }]
+        - path.components: [{ ident: "c" }]
+    - range:
+        kind: KIND_RESERVED
+        ranges:
+        - path.components: [{ ident: "a" }]
+        - path.components: [{ ident: "b" }]
+        - path.components: [{ ident: "c" }]
+    - def: { kind: KIND_MESSAGE, name.components: [{ ident: "Foo" }], body: {} }

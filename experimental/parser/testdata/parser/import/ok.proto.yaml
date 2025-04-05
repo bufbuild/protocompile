@@ -1,10 +1,10 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - import.import_path.literal.string_value: "foo.proto"
-  - import:
-      modifier: MODIFIER_WEAK
-      import_path.literal.string_value: "weak.proto"
-  - import:
-      modifier: MODIFIER_PUBLIC
-      import_path.literal.string_value: "public.proto"
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- import.import_path.literal.string_value: "foo.proto"
+- import:
+    modifier: MODIFIER_WEAK
+    import_path.literal.string_value: "weak.proto"
+- import:
+    modifier: MODIFIER_PUBLIC
+    import_path.literal.string_value: "public.proto"
