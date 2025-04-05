@@ -1,51 +1,50 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "M" }]
-      body.decls:
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "foo" }]
-            type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 1
-            options.entries:
-              - path.components: [{ ident: "foo" }]
-                value.path.components: [{ ident: "bar" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "bar" }]
-            type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 2
-            options: {}
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "baz" }]
-            type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 3
-            options.entries:
-              - path.components: [{ ident: "foo" }]
-                value.path.components: [{ ident: "bar" }]
-              - path.components: [{ ident: "bang" }]
-                value.literal.int_value: 5
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "bad" }]
-            type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 4
-            options.entries:
-              - path.components: [{ ident: "foo" }]
-                value.dict.entries:
-                  - key.path.components: [{ ident: "bar" }]
-                    value.path.components: [{ ident: "baz" }]
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "bad2" }]
-            type.path.components: [{ ident: "M" }]
-            value.literal.int_value: 5
-            options.entries:
-              - path.components: [{ ident: "foo" }]
-                value.dict.entries:
-                  - key.path.components: [{ ident: "bar" }]
-                    value.path.components: [{ ident: "baz" }]
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "foo" }]
+        type.path.components: [{ ident: "M" }]
+        value.literal.int_value: 1
+        options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.path.components: [{ ident: "bar" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "bar" }]
+        type.path.components: [{ ident: "M" }]
+        value.literal.int_value: 2
+        options: {}
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "baz" }]
+        type.path.components: [{ ident: "M" }]
+        value.literal.int_value: 3
+        options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.path.components: [{ ident: "bar" }]
+        - { path.components: [{ ident: "bang" }], value.literal.int_value: 5 }
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "bad" }]
+        type.path.components: [{ ident: "M" }]
+        value.literal.int_value: 4
+        options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.dict.entries:
+          - key.path.components: [{ ident: "bar" }]
+            value.path.components: [{ ident: "baz" }]
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "bad2" }]
+        type.path.components: [{ ident: "M" }]
+        value.literal.int_value: 5
+        options.entries:
+        - path.components: [{ ident: "foo" }]
+          value.dict.entries:
+          - key.path.components: [{ ident: "bar" }]
+            value.path.components: [{ ident: "baz" }]

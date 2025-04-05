@@ -1,160 +1,190 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "M" }]
-      body.decls:
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "syntax" }]
-            type.path.components: [{ ident: "syntax" }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "edition" }]
-            type.path.components: [{ ident: "edition" }]
-            value.literal.int_value: 2
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "import" }]
-            type.path.components: [{ ident: "import" }]
-            value.literal.int_value: 3
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "package" }]
-            type.path.components: [{ ident: "package" }]
-            value.literal.int_value: 4
-        - def:
-            kind: KIND_OPTION
-            name.components: [{ ident: "option" }]
-            value.literal.int_value: 5
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "message" }]
-            type.path.components: [{ ident: "message" }]
-            value.literal.int_value: 6
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "enum" }]
-            type.path.components: [{ ident: "enum" }]
-            value.literal.int_value: 7
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "service" }]
-            type.path.components: [{ ident: "service" }]
-            value.literal.int_value: 8
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "extend" }]
-            type.path.components: [{ ident: "extend" }]
-            value.literal.int_value: 9
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "group" }]
-            type.path.components: [{ ident: "group" }]
-            value.literal.int_value: 10
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "oneof" }]
-            type.path.components: [{ ident: "oneof" }]
-            value.literal.int_value: 11
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "map" }]
-            type.path.components: [{ ident: "map" }]
-            value.literal.int_value: 12
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "extensions" }]
-            type.path.components: [{ ident: "extensions" }]
-            value.literal.int_value: 13
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "reserved" }]
-            type.path.components: [{ ident: "reserved" }]
-            value.literal.int_value: 14
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "rpc" }]
-            type.path.components: [{ ident: "rpc" }]
-            value.literal.int_value: 15
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "M2" }]
-      body.decls:
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "syntax" }]
-            type.path.components: [{ ident: "syntax" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "edition" }]
-            type.path.components: [{ ident: "edition" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 2
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "import" }]
-            type.path.components: [{ ident: "import" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 3
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "package" }]
-            type.path.components: [{ ident: "package" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 4
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "option" }]
-            type.path.components: [{ ident: "option" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 5
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "message" }]
-            type.path.components: [{ ident: "message" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 6
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "enum" }]
-            type.path.components: [{ ident: "enum" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 7
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "service" }]
-            type.path.components: [{ ident: "service" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 8
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "extend" }]
-            type.path.components: [{ ident: "extend" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 9
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "group" }]
-            type.path.components: [{ ident: "group" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 10
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "oneof" }]
-            type.path.components: [{ ident: "oneof" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 11
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "map" }]
-            type.path.components: [{ ident: "map" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 12
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "extensions" }]
-            type.path.components: [{ ident: "extensions" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 13
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "reserved" }]
-            type.path.components: [{ ident: "reserved" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 14
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "rpc" }]
-            type.path.components: [{ ident: "rpc" }, { ident: "X", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 15
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "syntax" }]
+        type.path.components: [{ ident: "syntax" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "edition" }]
+        type.path.components: [{ ident: "edition" }]
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "import" }]
+        type.path.components: [{ ident: "import" }]
+        value.literal.int_value: 3
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "package" }]
+        type.path.components: [{ ident: "package" }]
+        value.literal.int_value: 4
+    - def:
+        kind: KIND_OPTION
+        name.components: [{ ident: "option" }]
+        value.literal.int_value: 5
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "message" }]
+        type.path.components: [{ ident: "message" }]
+        value.literal.int_value: 6
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "enum" }]
+        type.path.components: [{ ident: "enum" }]
+        value.literal.int_value: 7
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "service" }]
+        type.path.components: [{ ident: "service" }]
+        value.literal.int_value: 8
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "extend" }]
+        type.path.components: [{ ident: "extend" }]
+        value.literal.int_value: 9
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "group" }]
+        type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 10
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "oneof" }]
+        type.path.components: [{ ident: "oneof" }]
+        value.literal.int_value: 11
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "map" }]
+        type.path.components: [{ ident: "map" }]
+        value.literal.int_value: 12
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "extensions" }]
+        type.path.components: [{ ident: "extensions" }]
+        value.literal.int_value: 13
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "reserved" }]
+        type.path.components: [{ ident: "reserved" }]
+        value.literal.int_value: 14
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "rpc" }]
+        type.path.components: [{ ident: "rpc" }]
+        value.literal.int_value: 15
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M2" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "syntax" }]
+        type.path.components:
+        - ident: "syntax"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "edition" }]
+        type.path.components:
+        - ident: "edition"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "import" }]
+        type.path.components:
+        - ident: "import"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 3
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "package" }]
+        type.path.components:
+        - ident: "package"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 4
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "option" }]
+        type.path.components:
+        - ident: "option"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 5
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "message" }]
+        type.path.components:
+        - ident: "message"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 6
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "enum" }]
+        type.path.components:
+        - ident: "enum"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 7
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "service" }]
+        type.path.components:
+        - ident: "service"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 8
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "extend" }]
+        type.path.components:
+        - ident: "extend"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 9
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "group" }]
+        type.path.components:
+        - ident: "group"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 10
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "oneof" }]
+        type.path.components:
+        - ident: "oneof"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 11
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "map" }]
+        type.path.components:
+        - ident: "map"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 12
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "extensions" }]
+        type.path.components:
+        - ident: "extensions"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 13
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "reserved" }]
+        type.path.components:
+        - ident: "reserved"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 14
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "rpc" }]
+        type.path.components:
+        - ident: "rpc"
+        - { ident: "X", separator: SEPARATOR_DOT }
+        value.literal.int_value: 15

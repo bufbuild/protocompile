@@ -1,50 +1,60 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def.kind: KIND_OPTION
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-  - def: { kind: KIND_OPTION, value.literal.int_value: 2 }
-  - def:
-      kind: KIND_OPTION
-      name.components:
-        - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-          separator: SEPARATOR_DOT
-        - { ident: "baz", separator: SEPARATOR_DOT }
-      value.literal.int_value: 3
-  - def:
-      kind: KIND_OPTION
-      name.components:
-        - ident: "foo"
-        - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
-          separator: SEPARATOR_SLASH
-        - { ident: "foo", separator: SEPARATOR_DOT }
-      value.literal.int_value: 4
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "Foo" }]
-      body.decls:
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "x" }]
-            type.path.components: [{ ident: "int32" }]
-            value.literal.int_value: 1
-            options.entries:
-              - path.components:
-                  - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-                    separator: SEPARATOR_DOT
-                  - { ident: "baz", separator: SEPARATOR_DOT }
-                value.literal.int_value: 3
-              - path.components:
-                  - ident: "foo"
-                  - extension.components: [{ ident: "bar" }, { ident: "baz", separator: SEPARATOR_DOT }]
-                    separator: SEPARATOR_SLASH
-                  - { ident: "foo", separator: SEPARATOR_DOT }
-                value.literal.int_value: 4
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "y" }]
-            type.path.components: [{ ident: "int32" }]
-            value.literal.int_value: 2
-            options: {}
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def.kind: KIND_OPTION
+- def:
+    kind: KIND_OPTION
+    name.components:
+    - ident: "foo"
+    - { ident: "bar", separator: SEPARATOR_DOT }
+- def: { kind: KIND_OPTION, value.literal.int_value: 2 }
+- def:
+    kind: KIND_OPTION
+    name.components:
+    - extension.components:
+      - ident: "foo"
+      - { ident: "bar", separator: SEPARATOR_DOT }
+      separator: SEPARATOR_DOT
+    - { ident: "baz", separator: SEPARATOR_DOT }
+    value.literal.int_value: 3
+- def:
+    kind: KIND_OPTION
+    name.components:
+    - ident: "foo"
+    - extension.components:
+      - ident: "bar"
+      - { ident: "baz", separator: SEPARATOR_DOT }
+      separator: SEPARATOR_SLASH
+    - { ident: "foo", separator: SEPARATOR_DOT }
+    value.literal.int_value: 4
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 1
+        options.entries:
+        - path.components:
+          - extension.components:
+            - ident: "foo"
+            - { ident: "bar", separator: SEPARATOR_DOT }
+            separator: SEPARATOR_DOT
+          - { ident: "baz", separator: SEPARATOR_DOT }
+          value.literal.int_value: 3
+        - path.components:
+          - ident: "foo"
+          - extension.components:
+            - ident: "bar"
+            - { ident: "baz", separator: SEPARATOR_DOT }
+            separator: SEPARATOR_SLASH
+          - { ident: "foo", separator: SEPARATOR_DOT }
+          value.literal.int_value: 4
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "y" }]
+        type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 2
+        options: {}
