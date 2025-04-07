@@ -78,7 +78,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 
 	switch ty.Kind() {
 	case ast.TypeKindPath:
-		if topLevel && p.syntax == syntax.Proto2 {
+		if topLevel && p.syntax == syntax.Proto2 && oneof.IsZero() {
 			p.Error(errUnexpected{
 				what: ty,
 				want: expected,
@@ -104,7 +104,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 					justify: justifyRight,
 				}),
-				report.Notef("fields within a %s may not have modifiers applied to them", taxa.Oneof),
+				report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
 			)
 			if ty.Prefix() == keyword.Repeated {
 				d.Apply(report.Helpf(
@@ -151,9 +151,9 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 					report.Helpf(
 						"in %s, the presence behavior of a singular field "+
 							"is controlled with `[feature.field_presence = ...]`, with "+
-							"the default being equivalent to %s %s"+
-							"see <https://protobuf.com/docs/language-spec#field-presence>",
+							"the default being equivalent to %s %s",
 						taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
+					report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
 				)
 			}
 		case keyword.Stream:
