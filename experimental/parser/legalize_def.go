@@ -194,7 +194,7 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 	if what == taxa.Field {
 		var oneof ast.DeclDef
 		if parent.what == taxa.Oneof {
-			oneof = parent.Spanner.(ast.DeclDef)
+			oneof, _ = parent.Spanner.(ast.DeclDef)
 		}
 		legalizeFieldType(p, def.Type(), true, oneof)
 	}
