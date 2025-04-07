@@ -1,8 +1,31 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package dom is a Go port of https://github.com/mcy/strings/tree/main/allman,
 // a high-performance meta-formatting library.
 //
 // The function [Render] is the primary entry point. It is given a collection
-// of
+// of [Tag]s, which represent various formatting directives, such as indentation
+// and grouping.
+//
+// The main benefit of using this package is the ability to perform smart line
+// wrapping of code. The [Group] tag can be used to group a collection of tags
+// together that may be rendered in either a "flat" or "broken" orientation. The
+// layout engine will determine whether this element could be laid out flat
+// without going over a configured column limit, and if it would, the group is
+// marked as broken. This can be combined with conditioned tags (viz. [Cond])
+// to insert e.g. line breaks at strategic points.
 package dom
 
 import (
@@ -13,7 +36,7 @@ import (
 
 // Render renders a document consisting of the given sequence of tags.
 func Render(options Options, content func(push Sink)) string {
-	d := new(doc)
+	d := new(dom)
 	content(d.add)
 	return render(options, d)
 }
@@ -32,13 +55,25 @@ type Options struct {
 	HTML bool
 }
 
+// WithDefaults replaces any unset (read: zero value) fields of an Options which
+// specify a default value with that default value.
+func (o Options) WithDefaults() Options {
+	if o.MaxWidth == 0 {
+		o.MaxWidth = math.MaxInt
+	}
+	if o.TabstopWidth == 0 {
+		o.TabstopWidth = 1
+	}
+	return o
+}
+
 // Tag is data passed to a rendering function.
 //
 // The various factory functions in this package can be used to construct tags.
 // See their documentation for more information on what tags are available.
 //
 // The nil tag is equivalent to Text("").
-type Tag func(*doc)
+type Tag func(*dom)
 
 // Sink is a place to append tags. The given tags will be appended to whatever
 // context the sink was created for.
@@ -68,8 +103,8 @@ type Cond byte
 //   - Space tags adjacent to a newline will be deleted, so that lines do not
 //     have trailing whitespace.
 //
-//   - If two space or newline tags of the same rune are adjacent, the shorter one
-//     is deleted.
+//   - If two space or newline tags of the same rune are adjacent, the shorter
+//     one is deleted.
 func Text(text string) Tag {
 	return TextIf(Always, text)
 }
@@ -79,7 +114,7 @@ func Text(text string) Tag {
 // If the condition does not hold in the containing tag, this tag expands to
 // nothing. The outermost level is treated as always broken.
 func TextIf(cond Cond, text string) Tag {
-	return func(d *doc) {
+	return func(d *dom) {
 		if text == "" {
 			return
 		}
@@ -121,7 +156,7 @@ func Group(maxWidth int, content func(push Sink)) Tag {
 // If the condition does not hold in the containing tag, this tag expands to
 // nothing. The outermost level is treated as always broken.
 func GroupIf(cond Cond, maxWidth int, content func(push Sink)) Tag {
-	return func(d *doc) {
+	return func(d *dom) {
 		if maxWidth == 0 {
 			maxWidth = math.MaxInt
 		}
@@ -137,7 +172,7 @@ func GroupIf(cond Cond, maxWidth int, content func(push Sink)) Tag {
 // Indent cannot be conditioned, because it already has no effect in a flat
 // group.
 func Indent(by string, content func(push Sink)) Tag {
-	return func(d *doc) {
+	return func(d *dom) {
 		if by == "" {
 			content(d.add)
 			return
@@ -151,7 +186,7 @@ func Indent(by string, content func(push Sink)) Tag {
 // Unindent cannot be conditioned, because it already has no effect in a flat
 // group.
 func Unindent(content func(push Sink)) Tag {
-	return func(d *doc) {
+	return func(d *dom) {
 		d.push(tag{kind: kindUnindent}, content)
 	}
 }

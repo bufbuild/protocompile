@@ -1,87 +1,87 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package dom
 
 import (
-	"bytes"
 	"fmt"
 	"math"
 	"slices"
+	"strings"
 
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
+// printer holds state for converting a laid-out [dom] into a string.
 type printer struct {
 	Options
 
-	// Not strings.Builder so we can delete from the slice.
-	out byteWriter
+	out strings.Builder
+	// Buffered spaces and newlines, for whitespace merging in write().
+	spaces, newlines int
 
+	// Indentation state. See indentBy() for usage.
 	indent  []byte
 	indents []string
-	popped  bool
 
-	spaces, newlines int
+	// Whether a value has been popped from indent. This is used to handle the
+	// relatively rare case where indentBy is called inside of unindentBy.
+	popped bool
 }
 
-func render(options Options, doc *doc) string {
-	if options.MaxWidth == 0 {
-		options.MaxWidth = math.MaxInt
-	}
-	if options.TabstopWidth == 0 {
-		options.TabstopWidth = 4
-	}
-
+// render renders a dom with the given options.
+func render(options Options, doc *dom) string {
+	options = options.WithDefaults()
 	l := layout{Options: options}
-	l.do(*doc)
+	l.layout(*doc)
 
 	p := printer{Options: options}
 	if options.HTML {
 		p.html(doc.cursor())
 	} else {
+		// Top level group is always broken.
 		p.print(Broken, doc.cursor())
-		p.out = p.out[:len(p.out)-p.spaces]
 	}
 
-	if !bytes.HasSuffix(p.out, []byte("\n")) {
-		p.out = append(p.out, '\n')
+	if !strings.HasSuffix(p.out.String(), "\n") {
+		p.out.WriteByte('\n')
 	}
 
-	// π.out is not written to after this function returns.
-	return unsafex.StringAlias(p.out)
+	return p.out.String()
 }
 
+// print prints all of the elements of a cursor that are conditioned on cond.
+//
+// In other words, this function is called with cond set to whether the
+// containing group is broken.
 func (p *printer) print(cond Cond, cursor cursor) {
 	for tag, cursor := range cursor {
-		if !tag.check(cond) {
+		if !tag.renderIf(cond) {
 			continue
 		}
 
 		switch tag.kind {
 		case kindText:
-			p.writeIndent(false)
-
-			p.out = append(p.out, tag.text...)
+			p.write(tag.text)
 			p.spaces = 0
 			p.newlines = 0
 
 		case kindSpace:
-			if p.newlines > 0 {
-				continue
-			}
-
-			for i := p.spaces; i < len(tag.text); i++ {
-				p.out = append(p.out, ' ')
-				p.spaces++
-			}
+			p.spaces = max(p.spaces, len(tag.text))
 
 		case kindBreak:
-			p.out = p.out[:len(p.out)-p.spaces]
-			p.spaces = 0
-
-			for i := p.newlines; i < len(tag.text); i++ {
-				p.out = append(p.out, '\n')
-				p.newlines++
-			}
+			p.newlines = max(p.newlines, len(tag.text))
 
 		case kindGroup:
 			ourCond := Flat
@@ -103,6 +103,7 @@ func (p *printer) print(cond Cond, cursor cursor) {
 	}
 }
 
+// html renders the contents of cursor as pseudo-HTML.
 func (p *printer) html(cursor cursor) {
 	for tag, cursor := range cursor {
 		var cond string
@@ -113,20 +114,19 @@ func (p *printer) html(cursor cursor) {
 			cond = " if=broken"
 		}
 
-		p.writeIndent(true)
 		switch tag.kind {
 		case kindText:
 			if cond != "" {
-				fmt.Fprintf(&p.out, "<p%v>%q</p>\n", cond, tag.text)
+				fmt.Fprintf(&p.out, "<p%v>%q</p>", cond, tag.text)
 			} else {
-				fmt.Fprintf(&p.out, "%q\n", tag.text)
+				fmt.Fprintf(&p.out, "%q", tag.text)
 			}
 
 		case kindSpace:
-			fmt.Fprintf(&p.out, "<sp count=%v%v>\n", len(tag.text), cond)
+			fmt.Fprintf(&p.out, "<sp count=%v%v>", len(tag.text), cond)
 
 		case kindBreak:
-			fmt.Fprintf(&p.out, "<br count=%v%v>\n", len(tag.text), cond)
+			fmt.Fprintf(&p.out, "<br count=%v%v>", len(tag.text), cond)
 
 		case kindGroup:
 			name := "span"
@@ -139,33 +139,53 @@ func (p *printer) html(cursor cursor) {
 				limit = fmt.Sprintf(" limit=%v", tag.limit)
 			}
 
-			fmt.Fprintf(&p.out, "<%v%v width=%v col=%v%v>\n", name, limit, tag.width, tag.column, cond)
+			fmt.Fprintf(&p.out,
+				"<%v%v width=%v col=%v%v>",
+				name, limit, tag.width, tag.column, cond)
+			p.newlines++
 			p.withIndent("    ", func(p *printer) { p.html(cursor) })
-			p.writeIndent(true)
-			fmt.Fprintf(&p.out, "</%v>\n", name)
+			fmt.Fprintf(&p.out, "</%v>", name)
 
 		case kindIndent:
-			fmt.Fprintf(&p.out, "<indent by=%q%v>\n", tag.text, cond)
+			fmt.Fprintf(&p.out, "<indent by=%q%v>", tag.text, cond)
+			p.newlines++
 			p.withIndent("    ", func(p *printer) { p.html(cursor) })
-			p.writeIndent(true)
-			fmt.Fprintf(&p.out, "</indent>\n")
+			fmt.Fprintf(&p.out, "</indent>")
 
 		case kindUnindent:
-			fmt.Fprintf(&p.out, "<unindent%v>\n", cond)
+			fmt.Fprintf(&p.out, "<unindent%v>", cond)
+			p.newlines++
 			p.withIndent("    ", func(p *printer) { p.html(cursor) })
-			p.writeIndent(true)
-			fmt.Fprintf(&p.out, "</unindent>\n")
+			fmt.Fprintf(&p.out, "</unindent>")
 		}
+		p.newlines++
 	}
 }
 
-func (p *printer) writeIndent(force bool) {
-	if force || p.newlines > 0 {
+// write appends data to the output buffer.
+//
+// This function automatically handles newline/space merging and indentation.
+func (p *printer) write(data string) {
+	if p.newlines > 0 {
+		for range p.newlines {
+			p.out.WriteByte('\n')
+		}
 		p.newlines = 0
-		p.out = append(p.out, p.indent...)
+		p.spaces = 0
+
+		p.out.Write(p.indent)
 	}
+
+	for range p.spaces {
+		p.out.WriteByte(' ')
+	}
+	p.spaces = 0
+
+	p.out.WriteString(data)
 }
 
+// withIndent pushes an indentation string onto the indentation stack for
+// the duration of body.
 func (p *printer) withIndent(by string, body func(*printer)) {
 	prev := p.indent
 
@@ -192,6 +212,8 @@ func (p *printer) withIndent(by string, body func(*printer)) {
 	slicesx.Pop(&p.indents)
 }
 
+// withUnindent undoes the most recent call to [printer.withIndent] for the
+// duration of body.
 func (p *printer) withUnindent(body func(*printer)) {
 	if len(p.indents) == 0 {
 		body(p)
@@ -203,14 +225,7 @@ func (p *printer) withUnindent(body func(*printer)) {
 	p.indent = p.indent[:len(p.indent)-len(popped)]
 	p.popped = true
 	body(p)
+	p.popped = false
 	p.indent = prev
 	p.indents = append(p.indents, popped)
-}
-
-type byteWriter []byte
-
-// Write implements [io.Write].
-func (w *byteWriter) Write(buf []byte) (int, error) {
-	*w = append(*w, buf...)
-	return len(buf), nil
 }

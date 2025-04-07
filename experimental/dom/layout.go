@@ -1,12 +1,27 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package dom
 
 import (
 	"strings"
 
+	"github.com/rivo/uniseg"
+
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
-	"github.com/rivo/uniseg"
 )
 
 type layout struct {
@@ -18,15 +33,15 @@ type layout struct {
 	prevText *tag
 }
 
-func (l *layout) do(doc doc) {
-	l.flat(doc.cursor())
+func (l *layout) layout(doc dom) {
+	l.layoutFlat(doc.cursor())
 	l.prevText = nil
 
-	l.broken(doc.cursor())
+	l.layoutBroken(doc.cursor())
 }
 
-// flat calculates the potential flat width of an element.
-func (l *layout) flat(cursor cursor) (total int, broken bool) {
+// layoutFlat calculates the potential layoutFlat width of an element.
+func (l *layout) layoutFlat(cursor cursor) (total int, broken bool) {
 	for tag, cursor := range cursor {
 		switch tag.kind {
 		case kindText, kindSpace, kindBreak:
@@ -46,16 +61,16 @@ func (l *layout) flat(cursor cursor) (total int, broken bool) {
 			// know whether groups are broken yet.
 			tag.width = stringWidth(l.Options, -1, tag.text)
 
-			if tag.check(Flat) {
+			if tag.renderIf(Flat) {
 				l.prevText = tag
 			}
 		}
 
-		n, br := l.flat(cursor)
+		n, br := l.layoutFlat(cursor)
 		tag.width += n
 		tag.broken = tag.broken || br
 
-		if tag.check(Flat) {
+		if tag.renderIf(Flat) {
 			total += tag.width
 			broken = broken || tag.broken
 		}
@@ -63,10 +78,10 @@ func (l *layout) flat(cursor cursor) (total int, broken bool) {
 	return total, broken
 }
 
-// broken calculates the layout of a group we have decided to break.
-func (l *layout) broken(cursor cursor) {
+// layoutBroken calculates the layout of a group we have decided to break.
+func (l *layout) layoutBroken(cursor cursor) {
 	for tag, cursor := range cursor {
-		if !tag.check(Broken) {
+		if !tag.renderIf(Broken) {
 			continue
 		}
 
@@ -110,19 +125,19 @@ func (l *layout) broken(cursor cursor) {
 				// No need to recurse; we are leaving this group unbroken.
 				l.column += tag.width
 			} else {
-				l.broken(cursor)
+				l.layoutBroken(cursor)
 			}
 
 		case kindIndent:
 			prev, _ := slicesx.Last(l.indent)
 			next := stringWidth(l.Options, prev, tag.text)
 			l.indent = append(l.indent, next)
-			l.broken(cursor)
+			l.layoutBroken(cursor)
 			l.indent = l.indent[:len(l.indent)-1]
 
 		case kindUnindent:
 			prev, ok := slicesx.Pop(&l.indent)
-			l.broken(cursor)
+			l.layoutBroken(cursor)
 			if ok {
 				l.indent = append(l.indent, prev)
 			}
@@ -130,10 +145,12 @@ func (l *layout) broken(cursor cursor) {
 	}
 }
 
-// stringWidth calculates the rendered width of text if placed at the given column,
-// accounting for tabstops.
+// stringWidth calculates the rendered width of text if placed at the given
+// column, accounting for tabstops.
 //
-// If column is -1, all tabstops are given their maximum width.
+// If column is -1, all tabstops are given their maximum width. This is used for
+// cases where we are forced to be conservative because we do not know the
+// column we will be rendering at.
 func stringWidth(options Options, column int, text string) int {
 	maxWidth := column < 0
 	column = max(0, column)
