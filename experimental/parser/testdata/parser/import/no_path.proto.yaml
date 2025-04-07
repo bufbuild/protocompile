@@ -1,6 +1,6 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - import: {}
-  - import.modifier: MODIFIER_WEAK
-  - import.modifier: MODIFIER_PUBLIC
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- import: {}
+- import.modifier: MODIFIER_WEAK
+- import.modifier: MODIFIER_PUBLIC

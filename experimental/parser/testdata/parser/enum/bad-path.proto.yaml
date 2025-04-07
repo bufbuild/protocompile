@@ -1,16 +1,20 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_ENUM
-      name.components: [{ ident: "E" }]
-      body.decls:
-        - def:
-            name.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ extension.components: [{ ident: "foo" }] }]
-            value.literal.int_value: 2
-        - def:
-            name.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_SLASH }]
-            value.literal.int_value: 3
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_ENUM
+    name.components: [{ ident: "E" }]
+    body.decls:
+    - def:
+        name.components:
+        - ident: "foo"
+        - { ident: "bar", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components: [{ extension.components: [{ ident: "foo" }] }]
+        value.literal.int_value: 2
+    - def:
+        name.components:
+        - ident: "foo"
+        - { ident: "bar", separator: SEPARATOR_SLASH }
+        value.literal.int_value: 3

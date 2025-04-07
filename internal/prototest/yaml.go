@@ -17,11 +17,12 @@ package prototest
 import (
 	"fmt"
 	"slices"
-	"strings"
+	"strconv"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 )
 
@@ -32,6 +33,9 @@ type ToYAMLOptions struct {
 
 	// The maximum column width before wrapping starts to occur.
 	MaxWidth int
+
+	// The indentation string to use. If empty, defaults to "  ".
+	Indent string
 }
 
 // ToYAML converts a Protobuf message into a YAML document in a deterministic
@@ -39,27 +43,26 @@ type ToYAMLOptions struct {
 //
 // The result will use a compressed representation where possible.
 func ToYAML(m proto.Message, opts ToYAMLOptions) string {
-	y := &toYAML{
-		ToYAMLOptions: opts,
+	if opts.MaxWidth == 0 {
+		opts.MaxWidth = 80
 	}
-	d := y.message(m.ProtoReflect())
+
+	if len(opts.Indent) < 2 {
+		opts.Indent = "  "
+	}
+
+	d := opts.message(m.ProtoReflect())
 	d.prepare()
-	y.write(d)
-	return y.out.String()
-}
 
-// toYAML is state of an on-going YAML conversion.
-type toYAML struct {
-	ToYAMLOptions
-
-	out     strings.Builder
-	nesting int
+	return dom.Render(dom.Options{
+		MaxWidth: opts.MaxWidth,
+	}, func(push dom.Sink) { d.render(renderArgs{ToYAMLOptions: opts, root: true}, push) })
 }
 
 // message converts a Protobuf message into a [doc], which is used as an
 // intermediate processing stage to help make formatting decisions
 // (such as compressing nested messages).
-func (y *toYAML) message(m protoreflect.Message) *doc {
+func (y ToYAMLOptions) message(m protoreflect.Message) *doc {
 	desc := m.Descriptor()
 	fs := desc.Fields()
 
@@ -85,7 +88,7 @@ func (y *toYAML) message(m protoreflect.Message) *doc {
 
 // value converts a Protobuf value into a value that can be placed into a
 // [doc].
-func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any {
+func (y ToYAMLOptions) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any {
 	switch v := v.Interface().(type) {
 	case protoreflect.Message:
 		return y.message(v)
@@ -124,104 +127,149 @@ func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any
 	}
 }
 
-// write writes a value returned by [toYAML.value] into the internal output
-// buffer.
-func (y *toYAML) write(v any) {
-	switch v := v.(type) {
-	case int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
-		fmt.Fprint(&y.out, v)
-	case string:
-		fmt.Fprintf(&y.out, "%q", v)
-	case *doc:
-		if y.isOneLine(v) {
-			y.writeOneLineDoc(v)
-			return
+// prepare prepares a document for printing by compressing elements as
+// appropriate.
+func (d *doc) prepare() {
+	if d.needsSort {
+		slices.SortFunc(d.pairs, func(a, b [2]any) int {
+			return cmpx.Any(a[0], b[0])
+		})
+	}
+
+	for i := range d.pairs {
+		pair := &d.pairs[i]
+		if v, ok := pair[1].(*doc); ok {
+			v.prepare()
 		}
 
-		for _, pair := range v.pairs {
-			oneLine := y.isOneLine(pair[1])
-			y.indent()
+		for {
+			v, ok := pair[1].(*doc)
+			if !ok || len(v.pairs) != 1 {
+				break
+			}
 
-			if pair[0] == nil {
-				y.out.WriteString("- ")
-			} else {
-				y.write(pair[0])
-				if !oneLine {
-					y.out.WriteString(":\n")
-				} else {
-					y.out.WriteString(": ")
+			outer, ok1 := pair[0].(protoreflect.Name)
+			inner, ok2 := v.pairs[0][0].(protoreflect.Name)
+			if !ok1 || !ok2 {
+				break
+			}
+
+			//nolint:unconvert // Conversion below is included for readability.
+			pair[0] = protoreflect.Name(outer + "." + inner)
+			pair[1] = v.pairs[0][1]
+		}
+	}
+}
+
+type renderArgs struct {
+	ToYAMLOptions
+
+	root   bool
+	inList bool
+}
+
+func (d *doc) render(args renderArgs, push dom.Sink) {
+	value := func(args renderArgs, v any, push dom.Sink) {
+		switch v := v.(type) {
+		case int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
+			push(dom.Text(fmt.Sprint(v)))
+		case string:
+			push(dom.Text(strconv.Quote(v)))
+		case *doc:
+			v.render(args, push)
+		}
+	}
+
+	if d.isArray {
+		push(dom.Group(0, func(push dom.Sink) {
+			push(
+				dom.TextIf(dom.Flat, "["),
+				dom.TextIf(dom.Broken, "\n"),
+				dom.Indent(args.Indent[2:], func(push dom.Sink) {
+					for i, pair := range d.pairs {
+						if i > 0 {
+							push(dom.TextIf(dom.Flat, ","), dom.TextIf(dom.Flat, " "))
+						}
+
+						push(
+							dom.TextIf(dom.Broken, "-"), dom.TextIf(dom.Broken, " "),
+							dom.Indent("  ", func(push dom.Sink) {
+								if v, ok := pair[1].(*doc); ok && len(v.pairs) == 1 {
+									push(
+										dom.GroupIf(dom.Broken, 0, func(push dom.Sink) {
+											args := args
+											args.root = false
+											args.inList = false
+
+											pair := v.pairs[0]
+											value(args, pair[0], push)
+											push(dom.Text(":"), dom.Text(" "))
+											value(args, pair[1], push)
+										}),
+										dom.GroupIf(dom.Flat, 0, func(push dom.Sink) {
+											args := args
+											args.root = false
+											args.inList = true
+											value(args, pair[1], push)
+										}),
+									)
+								} else {
+									args := args
+									args.root = false
+									args.inList = true
+									value(args, pair[1], push)
+								}
+								push(dom.TextIf(dom.Broken, "\n"))
+							}))
+					}
+				}),
+				dom.TextIf(dom.Flat, "]"))
+		}))
+
+		return
+	}
+
+	if len(d.pairs) == 0 {
+		push(dom.Text("{}"))
+		return
+	}
+
+	push(dom.Group(0, func(push dom.Sink) {
+		if !args.root && !args.inList {
+			push(dom.TextIf(dom.Broken, "\n"))
+		}
+
+		indent := args.Indent
+		if args.root || args.inList {
+			indent = ""
+		}
+
+		push(
+			dom.TextIf(dom.Flat, "{"), dom.TextIf(dom.Flat, " "),
+			dom.Indent(indent, func(push dom.Sink) {
+				for i, pair := range d.pairs {
+					if i > 0 {
+						push(dom.TextIf(dom.Flat, ","), dom.TextIf(dom.Flat, " "))
+					}
+
+					args := args
+					args.root = false
+					args.inList = false
+
+					value(args, pair[0], push)
+					push(dom.Text(":"), dom.Text(" "))
+					value(args, pair[1], push)
+
+					push(dom.TextIf(dom.Broken, "\n"))
 				}
-			}
+			}),
+			dom.TextIf(dom.Flat, " "), dom.TextIf(dom.Flat, "}"),
+		)
 
-			if !oneLine {
-				y.nesting++
-			}
-
-			y.write(pair[1])
-			if !oneLine {
-				y.nesting--
-			} else {
-				y.out.WriteString("\n")
-			}
+		if args.root {
+			push(dom.Text("\n"))
 		}
-	}
-}
-
-func (y *toYAML) writeOneLineDoc(d *doc) {
-	switch {
-	case d.isArray:
-		y.out.WriteString("[")
-		for i, pair := range d.pairs {
-			if i > 0 {
-				y.out.WriteString(", ")
-			}
-			y.write(pair[1])
-		}
-		y.out.WriteString("]")
-
-	case len(d.pairs) == 0:
-		y.out.WriteString("{}")
-
-	case len(d.pairs) == 1 && strings.HasSuffix(y.out.String(), "- "):
-		// Special case: if we are a list element, and there is only
-		// one entry, print it directly.
-		y.write(d.pairs[0][0])
-		y.out.WriteString(": ")
-		y.write(d.pairs[0][1])
-
-	default:
-		y.out.WriteString("{ ")
-		for i, pair := range d.pairs {
-			if i > 0 {
-				y.out.WriteString(", ")
-			}
-			y.write(pair[0])
-			y.out.WriteString(": ")
-			y.write(pair[1])
-		}
-		y.out.WriteString(" }")
-	}
-}
-
-func (y *toYAML) isOneLine(v any) bool {
-	maxWidth := y.MaxWidth
-	if maxWidth == 0 {
-		maxWidth = 80
-	}
-	maxWidth -= y.nesting * 2
-
-	doc, ok := v.(*doc)
-	return !ok || doc.width < maxWidth
-}
-
-// indent appends indentation if necessary.
-func (y *toYAML) indent() {
-	s := y.out.String()
-	if s == "" || strings.HasSuffix(s, "\n") {
-		for range y.nesting {
-			y.out.WriteString("  ")
-		}
-	}
+	}))
 }
 
 // doc is a generic document structure used as an intermediate for generating
@@ -229,9 +277,7 @@ func (y *toYAML) indent() {
 //
 // It is composed of an array of pairs of arbitrary values.
 type doc struct {
-	pairs [][2]any
-
-	width              int
+	pairs              [][2]any
 	isArray, needsSort bool
 }
 
@@ -246,50 +292,4 @@ func (d *doc) push(k, v any) {
 	}
 
 	d.pairs = append(d.pairs, [2]any{k, v})
-}
-
-// prepare prepares a document for printing by compressing elements as
-// appropriate.
-func (d *doc) prepare() {
-	if d.needsSort {
-		slices.SortFunc(d.pairs, func(a, b [2]any) int {
-			return cmpx.Any(a[0], b[0])
-		})
-	}
-
-	if d.isArray || len(d.pairs) == 0 {
-		d.width = 2 // Accounts for [] or an empty {}.
-	} else {
-		d.width = 4 // Accounts for the { ... } delimiters.
-	}
-
-	for i := range d.pairs {
-		pair := &d.pairs[i]
-		if pair[0] != nil {
-			// The 2 accounts for the ": " token.
-			d.width += len(fmt.Sprint(pair[0])) + 2
-		}
-
-		if i > 0 {
-			d.width += 2 // Accounts for the ", "
-		}
-
-		switch v := pair[1].(type) {
-		case int32, int64, uint32, uint64, float32, float64, protoreflect.Name, string:
-			d.width += len(fmt.Sprint(v))
-		case *doc:
-			v.prepare()
-			d.width += v.width
-
-			if len(v.pairs) == 1 {
-				outer, ok1 := pair[0].(protoreflect.Name)
-				inner, ok2 := v.pairs[0][0].(protoreflect.Name)
-				if ok1 && ok2 {
-					//nolint:unconvert // Conversion below is included for readability.
-					pair[0] = protoreflect.Name(outer + "." + inner)
-					pair[1] = v.pairs[0][1]
-				}
-			}
-		}
-	}
 }

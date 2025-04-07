@@ -1,19 +1,17 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "Foo" }]
-      body.decls:
-        - range: { kind: KIND_EXTENSIONS, ranges: [{ dict: {} }] }
-        - range: { kind: KIND_RESERVED, ranges: [{ dict: {} }] }
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - range: { kind: KIND_EXTENSIONS, ranges: [{ dict: {} }] }
+    - range: { kind: KIND_RESERVED, ranges: [{ dict: {} }] }
+    - range:
+        kind: KIND_EXTENSIONS
+        ranges:
+        - literal.string_value: "foo"
+        - prefixed: { prefix: PREFIX_MINUS, expr.literal.string_value: "bar" }
         - range:
-            kind: KIND_EXTENSIONS
-            ranges:
-              - literal.string_value: "foo"
-              - prefixed:
-                  prefix: PREFIX_MINUS
-                  expr.literal.string_value: "bar"
-              - range:
-                  start.literal.string_value: "foo"
-                  end.literal.string_value: "bar"
+            start.literal.string_value: "foo"
+            end.literal.string_value: "bar"

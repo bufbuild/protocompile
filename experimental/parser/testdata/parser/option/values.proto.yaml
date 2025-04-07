@@ -1,223 +1,218 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
-      value.literal.int_value: 0
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
-      value.literal.float_value: 42.4
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 0
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.float_value: 42.4
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components: [{ ident: "inf" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components: [{ ident: "nan" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.prefixed:
+      prefix: PREFIX_MINUS
+      expr.path.components: [{ ident: "inf" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.prefixed:
+      prefix: PREFIX_MINUS
+      expr.path.components: [{ ident: "nan" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components: [{ ident: "true" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components: [{ ident: "false" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components: [{ ident: "Infinity" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.prefixed:
+      prefix: PREFIX_MINUS
+      expr.path.components: [{ ident: "Infinity" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components:
+    - ident: "foo"
+    - { ident: "bar", separator: SEPARATOR_DOT }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components:
+    - ident: "foo"
+    - extension.components:
+      - ident: "foo"
+      - { ident: "bar", separator: SEPARATOR_DOT }
+      separator: SEPARATOR_DOT
+    - { ident: "bar", separator: SEPARATOR_DOT }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.path.components: [{ ident: "foo", separator: SEPARATOR_DOT }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.range:
+      start.path.components: [{ ident: "x" }]
+      end.path.components: [{ ident: "y" }]
+- def: { kind: KIND_OPTION, name.components: [{ ident: "x" }], value.array: {} }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.array.elements: [{ literal.int_value: 1 }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.array.elements: [{ literal.int_value: 1 }, { literal.int_value: 2 }]
+- def: { kind: KIND_OPTION, name.components: [{ ident: "x" }], value.dict: {} }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+- def: { kind: KIND_OPTION, name.components: [{ ident: "x" }], value.dict: {} }
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.dict.entries:
+    - { key.path.components: [{ ident: "x" }], value.literal.int_value: 0 }
+    - { key.path.components: [{ ident: "x" }], value.literal.float_value: 42.4 }
+    - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "inf" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "nan" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.prefixed:
         prefix: PREFIX_MINUS
         expr.path.components: [{ ident: "inf" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.prefixed:
         prefix: PREFIX_MINUS
         expr.path.components: [{ ident: "nan" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "true" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "false" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "Infinity" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.prefixed:
         prefix: PREFIX_MINUS
         expr.path.components: [{ ident: "Infinity" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
-      value.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.path.components:
+      - ident: "foo"
+      - { ident: "bar", separator: SEPARATOR_DOT }
+    - key.path.components: [{ ident: "x" }]
+      value.path.components:
+      - ident: "foo"
+      - extension.components:
         - ident: "foo"
-        - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-          separator: SEPARATOR_DOT
         - { ident: "bar", separator: SEPARATOR_DOT }
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+        separator: SEPARATOR_DOT
+      - { ident: "bar", separator: SEPARATOR_DOT }
+    - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "foo", separator: SEPARATOR_DOT }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.range:
         start.path.components: [{ ident: "x" }]
         end.path.components: [{ ident: "y" }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
-      value.array: {}
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - value.path.components: [{ ident: "x" }]
+    - { key.path.components: [{ ident: "x" }], value.array: {} }
+    - key.path.components: [{ ident: "x" }]
       value.array.elements: [{ literal.int_value: 1 }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
       value.array.elements: [{ literal.int_value: 1 }, { literal.int_value: 2 }]
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
-      value.dict: {}
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+    - key.path.components: [{ ident: "x" }]
+      value.array.elements:
+      - literal.int_value: 1
+      - literal.int_value: 2
+      - literal.int_value: 3
+      - array.elements:
+        - literal.int_value: 4
+        - literal.int_value: 5
+        - array.elements: [{ literal.int_value: 6 }]
+    - key.path.components: [{ ident: "x" }]
+      value.array.elements: [{ array.elements: [{ literal.int_value: 1 }] }]
+    - { key.path.components: [{ ident: "x" }], value.dict: {} }
+    - key.path.components: [{ ident: "x" }]
       value.dict.entries:
-        - key.path.components: [{ ident: "a" }]
-          value.literal.int_value: 42
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
-      value.dict: {}
-  - def:
-      kind: KIND_OPTION
-      name.components: [{ ident: "x" }]
+      - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - key.path.components: [{ ident: "x" }]
       value.dict.entries:
-        - key.path.components: [{ ident: "x" }]
-          value.literal.int_value: 0
-        - key.path.components: [{ ident: "x" }]
-          value.literal.float_value: 42.4
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "inf" }]
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "nan" }]
-        - key.path.components: [{ ident: "x" }]
-          value.prefixed:
-            prefix: PREFIX_MINUS
-            expr.path.components: [{ ident: "inf" }]
-        - key.path.components: [{ ident: "x" }]
-          value.prefixed:
-            prefix: PREFIX_MINUS
-            expr.path.components: [{ ident: "nan" }]
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "true" }]
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "false" }]
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "Infinity" }]
-        - key.path.components: [{ ident: "x" }]
-          value.prefixed:
-            prefix: PREFIX_MINUS
-            expr.path.components: [{ ident: "Infinity" }]
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-        - key.path.components: [{ ident: "x" }]
-          value.path.components:
-            - ident: "foo"
-            - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-              separator: SEPARATOR_DOT
-            - { ident: "bar", separator: SEPARATOR_DOT }
-        - key.path.components: [{ ident: "x" }]
-          value.path.components: [{ ident: "foo", separator: SEPARATOR_DOT }]
-        - key.path.components: [{ ident: "x" }]
-          value.range:
-            start.path.components: [{ ident: "x" }]
-            end.path.components: [{ ident: "y" }]
-        - value.path.components: [{ ident: "x" }]
-        - { key.path.components: [{ ident: "x" }], value.array: {} }
-        - key.path.components: [{ ident: "x" }]
-          value.array.elements: [{ literal.int_value: 1 }]
-        - key.path.components: [{ ident: "x" }]
-          value.array.elements: [{ literal.int_value: 1 }, { literal.int_value: 2 }]
-        - key.path.components: [{ ident: "x" }]
-          value.array.elements:
-            - literal.int_value: 1
-            - literal.int_value: 2
-            - literal.int_value: 3
-            - array.elements:
-                - literal.int_value: 4
-                - literal.int_value: 5
-                - array.elements: [{ literal.int_value: 6 }]
-        - key.path.components: [{ ident: "x" }]
-          value.array.elements: [{ array.elements: [{ literal.int_value: 1 }] }]
-        - { key.path.components: [{ ident: "x" }], value.dict: {} }
-        - key.path.components: [{ ident: "x" }]
-          value.dict.entries:
-            - key.path.components: [{ ident: "a" }]
-              value.literal.int_value: 42
-        - key.path.components: [{ ident: "x" }]
-          value.dict.entries:
-            - key.path.components: [{ ident: "a" }]
-              value.dict.entries:
-                - key.path.components: [{ ident: "a" }]
-                  value.literal.int_value: 42
-        - key.literal.string_value: "ident"
-          value.literal.int_value: 42
-        - key.literal.string_value: "???"
-          value.literal.int_value: 42
-        - key.literal.int_value: 42
-          value.literal.int_value: 42
-        - key.path.components: [{ ident: "x" }, { ident: "y", separator: SEPARATOR_DOT }]
-          value.literal.int_value: 42
-        - key.path.components:
-            - extension.components: [{ ident: "x" }, { ident: "y", separator: SEPARATOR_DOT }]
-          value.literal.int_value: 42
-        - key.path.components: [{ ident: "x", separator: SEPARATOR_DOT }]
-          value.literal.int_value: 42
-        - key.array.elements: [{ path.components: [{ ident: "x" }] }]
-          value.literal.int_value: 42
-        - key.array.elements:
-            - path.components: [{ ident: "x" }, { ident: "y", separator: SEPARATOR_DOT }]
-          value.literal.int_value: 42
-        - key.array.elements:
-            - path.components:
-                - { ident: "x", separator: SEPARATOR_DOT }
-                - { ident: "y", separator: SEPARATOR_DOT }
-          value.literal.int_value: 42
-        - key.array.elements:
-            - path.components: [{ ident: "x" }]
-            - path.components: [{ ident: "y" }]
-            - path.components: [{ ident: "z" }]
-          value.literal.int_value: 42
-        - { key.array: {}, value.literal.int_value: 42 }
-        - key.array.elements:
-            - path.components:
-                - ident: "buf"
-                - { ident: "build", separator: SEPARATOR_DOT }
-                - { ident: "x", separator: SEPARATOR_SLASH }
-                - { ident: "y", separator: SEPARATOR_DOT }
-          value.literal.int_value: 42
-        - key.array.elements:
-            - path.components:
-                - ident: "buf"
-                - { ident: "build", separator: SEPARATOR_DOT }
-                - { ident: "x", separator: SEPARATOR_SLASH }
-                - { ident: "y", separator: SEPARATOR_SLASH }
-          value.literal.int_value: 42
-        - key.path.components: [{ ident: "x" }]
-          value.array.elements:
-            - dict.entries:
-                - key.path.components: [{ ident: "x" }]
-                  value.literal.int_value: 5
-            - literal.int_value: 1
-            - dict.entries:
-                - key.path.components: [{ ident: "x" }]
-                  value.literal.int_value: 5
-            - literal.int_value: 2
-            - literal.int_value: 3
+      - key.path.components: [{ ident: "a" }]
+        value.dict.entries:
+        - { key.path.components: [{ ident: "a" }], value.literal.int_value: 42 }
+    - { key.literal.string_value: "ident", value.literal.int_value: 42 }
+    - { key.literal.string_value: "???", value.literal.int_value: 42 }
+    - { key.literal.int_value: 42, value.literal.int_value: 42 }
+    - key.path.components:
+      - ident: "x"
+      - { ident: "y", separator: SEPARATOR_DOT }
+      value.literal.int_value: 42
+    - key.path.components:
+      - extension.components:
+        - ident: "x"
+        - { ident: "y", separator: SEPARATOR_DOT }
+      value.literal.int_value: 42
+    - key.path.components: [{ ident: "x", separator: SEPARATOR_DOT }]
+      value.literal.int_value: 42
+    - key.array.elements: [{ path.components: [{ ident: "x" }] }]
+      value.literal.int_value: 42
+    - key.array.elements:
+      - path.components:
+        - ident: "x"
+        - { ident: "y", separator: SEPARATOR_DOT }
+      value.literal.int_value: 42
+    - key.array.elements:
+      - path.components:
+        - { ident: "x", separator: SEPARATOR_DOT }
+        - { ident: "y", separator: SEPARATOR_DOT }
+      value.literal.int_value: 42
+    - key.array.elements:
+      - path.components: [{ ident: "x" }]
+      - path.components: [{ ident: "y" }]
+      - path.components: [{ ident: "z" }]
+      value.literal.int_value: 42
+    - { key.array: {}, value.literal.int_value: 42 }
+    - key.array.elements:
+      - path.components:
+        - ident: "buf"
+        - { ident: "build", separator: SEPARATOR_DOT }
+        - { ident: "x", separator: SEPARATOR_SLASH }
+        - { ident: "y", separator: SEPARATOR_DOT }
+      value.literal.int_value: 42
+    - key.array.elements:
+      - path.components:
+        - ident: "buf"
+        - { ident: "build", separator: SEPARATOR_DOT }
+        - { ident: "x", separator: SEPARATOR_SLASH }
+        - { ident: "y", separator: SEPARATOR_SLASH }
+      value.literal.int_value: 42
+    - key.path.components: [{ ident: "x" }]
+      value.array.elements:
+      - dict.entries:
+        - { key.path.components: [{ ident: "x" }], value.literal.int_value: 5 }
+      - literal.int_value: 1
+      - dict.entries:
+        - { key.path.components: [{ ident: "x" }], value.literal.int_value: 5 }
+      - literal.int_value: 2
+      - literal.int_value: 3

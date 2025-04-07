@@ -1,5 +1,5 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - import.import_path.literal.string_value: "foo.proto"
-  - import.import_path.literal.string_value: "bar.proto"
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- import.import_path.literal.string_value: "foo.proto"
+- import.import_path.literal.string_value: "bar.proto"
