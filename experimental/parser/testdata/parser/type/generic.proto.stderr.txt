@@ -52,6 +52,14 @@ error: unexpected type after `repeated`
 31 |     repeated map<string, string> x9 = 9;
    |              ^^^^^^^^^^^^^^^^^^^ expected type name
 
+warning: required fields are deprecated and should not be used
+  --> testdata/parser/type/generic.proto:32:5
+   |
+32 |     required map<string, string> x10 = 10;
+   |     ^^^^^^^^
+   = help: do not attempt to change this to optional if the field is already
+           in-use; doing so is a wire protocol break
+
 error: unexpected type after `required`
   --> testdata/parser/type/generic.proto:32:14
    |
@@ -139,4 +147,4 @@ error: only message types may appear in method return type
 44 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
    |                                                          ^^^^^^^^^^^^^^^^^^^
 
-encountered 21 errors
+encountered 21 errors and 1 warning
