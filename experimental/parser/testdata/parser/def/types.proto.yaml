@@ -6,10 +6,7 @@ decls:
     name.components: [{ ident: "MyMessage" }]
     body: {}
 - def: { kind: KIND_ENUM, name.components: [{ ident: "MyEnum" }], body: {} }
-- def:
-    kind: KIND_EXTEND
-    name.components: [{ ident: "MyMessage" }]
-    body: {}
+- def: { kind: KIND_EXTEND, name.components: [{ ident: "MyMessage" }], body: {} }
 - def:
     kind: KIND_EXTEND
     name.components:
