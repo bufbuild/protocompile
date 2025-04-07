@@ -380,8 +380,8 @@ func doJustifyLeft(stream *token.Stream, span report.Span, e *report.Edit) {
 func doJustifyRight(stream *token.Stream, span report.Span, e *report.Edit) {
 	wasDelete := e.IsDeletion()
 
-	// Get the token at the start of the span.
-	_, end := stream.Around(e.Start + span.Start)
+	// Get the token at the end of the span.
+	_, end := stream.Around(e.End + span.Start)
 	if end.IsZero() {
 		// End of the file, so we can't fast-forward beyond this.
 		return

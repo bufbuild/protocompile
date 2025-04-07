@@ -16,6 +16,7 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -30,45 +31,8 @@ type parser struct {
 
 	parseComplete bool
 
-	syntax     ast.DeclSyntax
-	cachedMode taxa.Noun
-}
-
-// Mode returns whether or not the parser believes it is in editions
-// mode. This function must not be called until AST construction is complete
-// and legalization begins.
-//
-// This function will return the same answer every time it is called. This is to
-// avoid diagnostics depending on where the editions keyword appears. For
-// example, consider:
-//
-//	message Foo {
-//	  reserved foo;
-//	}
-//
-//	edition = "2023";
-//
-//	message Bar {
-//	  reserved "foo";
-//	}
-//
-// If we only referenced p.syntax, we get into a situation where we diagnose
-// *both* reserved ranges, rather than just the one in Foo, which is potentially
-// confusing, and suggests that the order of declarations in Protobuf is
-// semantically meaningful.
-func (p *parser) Mode() taxa.Noun {
-	if !p.parseComplete {
-		panic("called parser.Mode() outside of the legalizer; this is a bug")
-	}
-
-	if p.cachedMode == taxa.Unknown {
-		p.cachedMode = taxa.SyntaxMode
-		if !p.syntax.IsZero() && p.syntax.IsEdition() {
-			p.cachedMode = taxa.EditionMode
-		}
-	}
-
-	return p.cachedMode
+	syntaxNode ast.DeclSyntax
+	syntax     syntax.Syntax
 }
 
 // classified is a spanner that has been classified by taxa.
