@@ -1,6 +1,8 @@
 module github.com/bufbuild/protocompile/internal/benchmarks
 
 go 1.23
+toolchain go1.24.1
+
 require (
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/igrmk/treemap/v2 v2.0.1
@@ -9,7 +11,7 @@ require (
 	google.golang.org/protobuf v1.36.5
 )
 
-require golang.org/x/sync v0.12.0
+require golang.org/x/sync v0.13.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
