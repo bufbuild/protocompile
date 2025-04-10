@@ -89,6 +89,9 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 	case ast.DeclKindRange:
+		if w.Context().File().Path() == DescriptorProtoPath {
+			return
+		}
 		sorry("ranges")
 
 	case ast.DeclKindDef:

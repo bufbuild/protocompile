@@ -38,8 +38,12 @@ func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer)
 	prior := len(errs.Diagnostics)
 	c := &Context{session: s}
 	c.ast = source
+	c.isDescriptorProto = c.ast.Span().File.Path() == DescriptorProtoPath
 
-	lower(c, errs, importer)
+	errs.SaveOptions(func() {
+		errs.SuppressWarnings = errs.SuppressWarnings || c.isDescriptorProto
+		lower(c, errs, importer)
+	})
 
 	ok = true
 	for _, d := range errs.Diagnostics[prior:] {

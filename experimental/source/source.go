@@ -21,6 +21,8 @@ import (
 	"io"
 	"io/fs"
 	"strings"
+
+	"github.com/bufbuild/protocompile/wellknownimports"
 )
 
 // Opener is a mechanism for opening files.
@@ -112,4 +114,9 @@ func (o *Openers) Open(path string) (string, error) {
 		return text, err
 	}
 	return "", fs.ErrNotExist
+}
+
+// WKTs returns an opener that yields protocompile's built-in WKT sources.
+func WKTs() Opener {
+	return &FS{FS: wellknownimports.FS()}
 }

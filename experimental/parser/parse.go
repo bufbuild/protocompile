@@ -32,8 +32,13 @@ func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 	prior := len(errs.Diagnostics)
 	ctx := ast.NewContext(source)
 
-	lex(ctx, errs)
-	parse(ctx, errs)
+	errs.SaveOptions(func() {
+		if source.Path() == "google/protobuf/descriptor.proto" {
+			errs.SuppressWarnings = true
+		}
+		lex(ctx, errs)
+		parse(ctx, errs)
+	})
 
 	ok = true
 	for _, d := range errs.Diagnostics[prior:] {

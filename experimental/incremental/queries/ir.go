@@ -93,6 +93,12 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 			request: decl,
 		}
 	}
+	queries = append(queries, IR{
+		Opener:  i.Opener,
+		Session: i.Session,
+		Path:    ir.DescriptorProtoPath,
+	})
+	errors = append(errors, nil)
 
 	imports, err := incremental.Resolve(t, queries...)
 	if err != nil {
@@ -100,6 +106,12 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 	}
 
 	importer := func(n int, _ string, _ ast.DeclImport) (ir.File, error) {
+		if n == -1 {
+			// The lowering code will call the importer with n == -1 if it needs
+			// descriptor.proto but it isn't imported (transitively).
+			n = len(queries) - 1
+		}
+
 		result := imports[n]
 		switch err := result.Fatal.(type) {
 		case nil:

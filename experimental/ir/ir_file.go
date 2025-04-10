@@ -40,8 +40,9 @@ type Context struct {
 	// to normalize it.
 	path intern.ID
 
-	syntax syntax.Syntax
-	pkg    intern.ID
+	syntax            syntax.Syntax
+	pkg               intern.ID
+	isDescriptorProto bool // This is the magic descriptor.proto file.
 
 	imports imports
 
@@ -128,11 +129,17 @@ type withContext2 struct{ internal.With[*Context] }
 
 // AST returns the AST this file was parsed from.
 func (f File) AST() ast.File {
+	if f.IsZero() {
+		return ast.File{}
+	}
 	return f.Context().ast
 }
 
 // Syntax returns the syntax pragma that applies to this file.
 func (f File) Syntax() syntax.Syntax {
+	if f.IsZero() {
+		return syntax.Unknown
+	}
 	return f.Context().syntax
 }
 
@@ -140,12 +147,18 @@ func (f File) Syntax() syntax.Syntax {
 //
 // This need not be the same as [File.AST]().Span().Path().
 func (f File) Path() string {
+	if f.IsZero() {
+		return ""
+	}
 	c := f.Context()
 	return c.session.intern.Value(c.path)
 }
 
 // InternedPackage returns the intern ID for the value of [File.Path].
 func (f File) InternedPath() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
 	return f.Context().path
 }
 
@@ -154,12 +167,18 @@ func (f File) InternedPath() intern.ID {
 // The name will not include a leading dot. It will be empty for the empty
 // package.
 func (f File) Package() FullName {
+	if f.IsZero() {
+		return ""
+	}
 	c := f.Context()
 	return FullName(c.session.intern.Value(c.pkg))
 }
 
 // InternedPackage returns the intern ID for the value of [File.Package].
 func (f File) InternedPackage() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
 	return f.Context().pkg
 }
 
