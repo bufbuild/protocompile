@@ -106,6 +106,11 @@ func (n Name) IsInt() bool {
 	return n >= Int32 && n <= SFixed64
 }
 
+// IsNumber returns whether this is a numeric type.
+func (n Name) IsNumber() bool {
+	return n >= Int32 && n <= Double
+}
+
 // IsUnsigned returns whether this is an unsigned integer type.
 func (n Name) IsUnsigned() bool {
 	switch n {
@@ -129,6 +134,20 @@ func (n Name) IsFloat() bool {
 // IsString returns whether this is a string type (string or bytes).
 func (n Name) IsString() bool {
 	return n == String || n == Bytes
+}
+
+// Bits returns the bit size of a name satisfying [Name.IsNumber].
+//
+// Return 0 for all other names.
+func (n Name) Bits() int {
+	switch n {
+	case Int32, UInt32, SInt32, Fixed32, SFixed32, Float32:
+		return 32
+	case Int64, UInt64, SInt64, Fixed64, SFixed64, Float64:
+		return 64
+	default:
+		return 0
+	}
 }
 
 // IsMapKey returns whether this predeclared name represents one of the map key

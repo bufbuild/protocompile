@@ -214,7 +214,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) {
 		return
 	}
 
-	if k := sym.Kind(); !r.accept(k) {
+	if k := sym.Kind(); r.accept != nil && !r.accept(k) {
 		r.Errorf("expected %s, found %s `%s`", r.want, k.noun(), sym.FullName()).Apply(
 			report.Snippetf(r.span, "expected %s", r.want),
 			report.Snippetf(sym.Definition(), "defined here"),

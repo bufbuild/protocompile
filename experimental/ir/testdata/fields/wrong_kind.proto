@@ -24,6 +24,6 @@ message Foo {
     test z = 3;
 
     oneof self {
-        self a = 3;
+        self a = 4;
     }
 }

@@ -87,6 +87,7 @@ const (
 	String
 	Float
 	Int
+	Number
 	Semi
 	Comma
 	Slash
@@ -204,6 +205,7 @@ var _table_Noun_String = [...]string{
 	String:             "string literal",
 	Float:              "floating-point literal",
 	Int:                "integer literal",
+	Number:             "number",
 	Semi:               "`;`",
 	Comma:              "`,`",
 	Slash:              "`/`",
@@ -304,6 +306,7 @@ var _table_Noun_GoString = [...]string{
 	String:             "String",
 	Float:              "Float",
 	Int:                "Int",
+	Number:             "Number",
 	Semi:               "Semi",
 	Comma:              "Comma",
 	Slash:              "Slash",

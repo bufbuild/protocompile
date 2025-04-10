@@ -16,10 +16,12 @@ package ir
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -36,6 +38,7 @@ type rawType struct {
 	def             ast.DeclDef
 	nested          []arena.Pointer[rawType]
 	fields          []arena.Pointer[rawField]
+	fieldsByName    func() intern.Map[arena.Pointer[rawField]]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
@@ -44,7 +47,8 @@ type rawType struct {
 	parent          arena.Pointer[rawType]
 	fieldsEnd       uint32
 	rangesExtnStart uint32
-	isEnum          bool
+
+	isEnum bool
 }
 
 // primitiveCtx represents a special file that defines all of the primitive
@@ -234,6 +238,39 @@ func (t Type) Fields() seq.Indexer[Field] {
 	)
 }
 
+// FieldByName returns the field with the given name, if there is one.
+//
+// Does not include extensions.
+func (t Type) FieldByName(name string) Field {
+	if t.IsZero() {
+		return Field{}
+	}
+	id, ok := t.Context().session.intern.Query(name)
+	if !ok {
+		return Field{}
+	}
+	return t.FieldByInternedName(id)
+}
+
+// FieldByInternedName is like [Type.FieldByName], but takes an interned string.
+func (t Type) FieldByInternedName(name intern.ID) Field {
+	if t.IsZero() {
+		return Field{}
+	}
+	return wrapField(t.Context(), ref[rawField]{ptr: t.raw.fieldsByName()[name]})
+}
+
+func (t rawType) fieldsByNameFunc(c *Context) func() intern.Map[arena.Pointer[rawField]] {
+	return sync.OnceValue(func() intern.Map[arena.Pointer[rawField]] {
+		m := make(intern.Map[arena.Pointer[rawField]], len(t.fields))
+		for _, f := range t.fields {
+			raw := c.arenas.fields.Deref(f)
+			m[raw.name] = f
+		}
+		return m
+	})
+}
+
 // Extensions returns any extensions nested within this type.
 func (t Type) Extensions() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
@@ -285,6 +322,18 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 // Options returns the options applied to this type.
 func (t Type) Options() MessageValue {
 	return wrapValue(t.Context(), t.raw.options).AsMessage()
+}
+
+// noun returns a [taxa.Noun] for diagnostic use.
+func (t Type) noun() taxa.Noun {
+	switch {
+	case t.Context() == primitiveCtx:
+		return taxa.ScalarType
+	case t.IsEnum():
+		return taxa.EnumType
+	default:
+		return taxa.MessageType
+	}
 }
 
 func wrapType(c *Context, r ref[rawType]) Type {

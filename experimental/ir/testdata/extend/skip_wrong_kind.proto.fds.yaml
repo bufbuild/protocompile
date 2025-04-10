@@ -6,14 +6,14 @@ file:
         nested_type:
           - name: "N"
           - name: "P"
-            extension: [{ name: "n", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
-            enum_type: [{ name: "X", value: [{ name: "N", number: 0 }] }]
+            extension: [{ name: "n", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+            enum_type: [{ name: "X", value: [{ name: "N", number: 1 }] }]
           - name: "Q"
             extension:
               - name: "n"
-                number: 0
+                number: 1
                 label: LABEL_OPTIONAL
                 type: TYPE_INT32
                 extendee: ".test.M.Q.N"
-            enum_type: [{ name: "N", value: [{ name: "Q", number: 0 }] }]
+            enum_type: [{ name: "N", value: [{ name: "Q", number: 1 }] }]
     syntax: "proto2"

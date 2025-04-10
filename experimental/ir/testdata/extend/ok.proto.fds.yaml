@@ -5,24 +5,24 @@ file:
       - name: "Foo"
         extension:
           - name: "x1"
-            number: 0
+            number: 1
             label: LABEL_OPTIONAL
             type: TYPE_INT32
             extendee: ".test.Foo.Foo"
           - name: "x2"
-            number: 0
+            number: 2
             label: LABEL_OPTIONAL
             type: TYPE_MESSAGE
             type_name: ".test.Foo.Foo"
             extendee: ".test.Foo.Foo"
           - name: "x3"
-            number: 0
+            number: 3
             label: LABEL_REPEATED
             type: TYPE_MESSAGE
             type_name: ".test.Foo"
             extendee: ".test.Foo"
           - name: "x4"
-            number: 0
+            number: 4
             label: LABEL_REPEATED
             type: TYPE_MESSAGE
             type_name: ".test.Foo"
@@ -30,23 +30,23 @@ file:
         nested_type: [{ name: "Foo" }]
     extension:
       - name: "x5"
-        number: 0
+        number: 5
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         extendee: ".test.Foo"
       - name: "x6"
-        number: 0
+        number: 6
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.Foo"
         extendee: ".test.Foo"
       - name: "x7"
-        number: 0
+        number: 7
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         extendee: ".test.Foo.Foo"
       - name: "x8"
-        number: 0
+        number: 8
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.Foo"

@@ -152,6 +152,8 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
 	})
+	ptr := c.arenas.types.Deref(raw)
+	ptr.fieldsByName = ptr.fieldsByNameFunc(w.Context())
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)

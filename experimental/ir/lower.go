@@ -70,6 +70,14 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Perform "early" name resolution, i.e. field names and extension types.
 	resolveNames(c.File(), r)
+
+	// Perform constant evaluation.
+	evaluateFieldNumbers(c.File(), r)
+
+	// Perform more constant evaluation. This is a separate step because we need
+	// to know if an extendee is a MessageSet before checking extension numbers,
+	// since MessageSet field numbers are 32-bit, not 29-bit.
+	evaluateExtensionNumbers(c.File(), r)
 }
 
 // sorry panics with an NYI error, which turns into an ICE inside of the

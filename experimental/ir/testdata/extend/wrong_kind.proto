@@ -26,21 +26,21 @@ message Foo {
         optional int32 y = 2;
     }
     extend Bar {
-        optional int32 z = 2;
+        optional int32 z = 3;
     }
     extend test {
-        optional int32 w = 3;
+        optional int32 w = 4;
     }
 
     oneof self {
-        int32 a = 4;
+        int32 a = 5;
     }
 
     extend self {
-        optional int32 b = 5;
+        optional int32 b = 6;
     }
 
     extend string {
-        optional int32 capacity = 3;
+        optional int32 capacity = 7;
     }
 }
