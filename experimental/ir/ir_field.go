@@ -43,26 +43,28 @@ type Field struct {
 }
 
 type rawField struct {
-	def        ast.DeclDef
-	options    []arena.Pointer[rawOption]
-	elem, extn ref[rawType]
-	fqn, name  intern.ID
-	number     int32
-	parent     arena.Pointer[rawType]
+	def ast.DeclDef
 
-	// If nonpositive, this is the negative of a presence.Kind. Otherwise, it's
+	options   []arena.Pointer[rawOption]
+	elem      ref[rawType]
+	extendee  arena.Pointer[rawExtendee]
+	fqn, name intern.ID
+	number    int32
+	parent    arena.Pointer[rawType]
+
+	// If negative, this is the negative of a presence.Kind. Otherwise, it's
 	// a oneof index.
 	oneof int32
 }
 
 // Returns whether this is a non-extension message field.
 func (f Field) IsMessageField() bool {
-	return !f.raw.elem.ptr.Nil() && f.raw.extn.ptr.Nil()
+	return !f.raw.elem.ptr.Nil() && f.raw.extendee.Nil()
 }
 
 // Returns whether this is a extension message field.
 func (f Field) IsExtension() bool {
-	return !f.raw.elem.ptr.Nil() && !f.raw.extn.ptr.Nil()
+	return !f.raw.elem.ptr.Nil() && !f.raw.extendee.Nil()
 }
 
 // Returns whether this is an enum value.
@@ -135,7 +137,7 @@ func (f Field) Number() int32 {
 
 // Presence returns this field's presence kind.
 func (f Field) Presence() presence.Kind {
-	if f.raw.oneof > 0 {
+	if f.raw.oneof >= 0 {
 		return presence.Shared
 	}
 	return presence.Kind(-f.raw.oneof)
@@ -164,11 +166,12 @@ func (f Field) Element() Type {
 // [Field.Parent], or the extendee if this is an extension. This is the
 // type it is declared to be *part of*.
 func (f Field) Container() Type {
-	if f.raw.extn.ptr.Nil() {
+	if f.raw.extendee.Nil() {
 		return f.Parent()
 	}
 
-	return wrapType(f.Context(), f.raw.extn)
+	extends := f.Context().arenas.extendees.Deref(f.raw.extendee)
+	return wrapType(f.Context(), extends.ty)
 }
 
 // Oneof returns the oneof that this field is a member of.
@@ -201,6 +204,27 @@ func wrapField(c *Context, r ref[rawField]) Field {
 		withContext: internal.NewWith(c),
 		raw:         c.arenas.fields.Deref(r.ptr),
 	}
+}
+
+// rawExtendee represents an extends block.
+//
+// Rather than each field carrying a reference to its extends block's AST, we
+// have a level of indirection to amortize symbol lookups.
+type rawExtendee struct {
+	def    ast.DeclDef
+	ty     ref[rawType]
+	parent arena.Pointer[rawType]
+}
+
+func (e *rawExtendee) Scope(c *Context) FullName {
+	return FullName(c.session.intern.Value(e.InternedScope(c)))
+}
+
+func (e *rawExtendee) InternedScope(c *Context) intern.ID {
+	if !e.parent.Nil() {
+		return wrapType(c, ref[rawType]{ptr: e.parent}).InternedFullName()
+	}
+	return c.File().InternedPackage()
 }
 
 // Oneof represents a oneof within a message definition.

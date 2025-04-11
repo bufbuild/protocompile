@@ -60,10 +60,11 @@ type Context struct {
 	symbols symtab
 
 	arenas struct {
-		types   arena.Arena[rawType]
-		fields  arena.Arena[rawField]
-		oneofs  arena.Arena[rawOneof]
-		symbols arena.Arena[rawSymbol]
+		types     arena.Arena[rawType]
+		fields    arena.Arena[rawField]
+		extendees arena.Arena[rawExtendee]
+		oneofs    arena.Arena[rawOneof]
+		symbols   arena.Arena[rawSymbol]
 
 		options  arena.Arena[rawOption]
 		messages arena.Arena[rawMessageValue]

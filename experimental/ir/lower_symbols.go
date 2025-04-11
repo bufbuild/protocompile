@@ -75,7 +75,7 @@ func newTypeSymbol(ty Type) {
 func newFieldSymbol(f Field) {
 	c := f.Context()
 	kind := SymbolKindField
-	if f.IsExtension() {
+	if !f.raw.extendee.Nil() {
 		kind = SymbolKindExtension
 	} else if f.AST().Classify() == ast.DefKindEnumValue {
 		kind = SymbolKindEnumValue
