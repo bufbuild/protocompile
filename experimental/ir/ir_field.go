@@ -43,26 +43,28 @@ type Field struct {
 }
 
 type rawField struct {
-	def        ast.DeclDef
-	options    []arena.Pointer[rawOption]
-	elem, extn ref[rawType]
-	fqn, name  intern.ID
-	number     int32
-	parent     arena.Pointer[rawType]
+	def ast.DeclDef
 
-	// If nonpositive, this is the negative of a presence.Kind. Otherwise, it's
+	options   []arena.Pointer[rawOption]
+	elem      ref[rawType]
+	extendee  arena.Pointer[rawExtendee]
+	fqn, name intern.ID
+	number    int32
+	parent    arena.Pointer[rawType]
+
+	// If negative, this is the negative of a presence.Kind. Otherwise, it's
 	// a oneof index.
 	oneof int32
 }
 
 // Returns whether this is a non-extension message field.
 func (f Field) IsMessageField() bool {
-	return !f.raw.elem.ptr.Nil() && f.raw.extn.ptr.Nil()
+	return !f.raw.elem.ptr.Nil() && f.raw.extendee.Nil()
 }
 
 // Returns whether this is a extension message field.
 func (f Field) IsExtension() bool {
-	return !f.raw.elem.ptr.Nil() && !f.raw.extn.ptr.Nil()
+	return !f.raw.elem.ptr.Nil() && !f.raw.extendee.Nil()
 }
 
 // Returns whether this is an enum value.
@@ -91,6 +93,14 @@ func (f Field) FullName() FullName {
 	return FullName(f.Context().session.intern.Value(f.raw.fqn))
 }
 
+// Scope returns the scope in which this field is defined.
+func (f Field) Scope() FullName {
+	if f.IsZero() {
+		return ""
+	}
+	return FullName(f.Context().session.intern.Value(f.InternedScope()))
+}
+
 // InternedName returns the intern ID for [Field.FullName]().Name().
 func (f Field) InternedName() intern.ID {
 	if f.IsZero() {
@@ -107,6 +117,17 @@ func (f Field) InternedFullName() intern.ID {
 	return f.raw.fqn
 }
 
+// InternedScope returns the intern ID for [Field.Scope].
+func (f Field) InternedScope() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
+	if parent := f.Parent(); !parent.IsZero() {
+		return parent.InternedFullName()
+	}
+	return f.Context().File().InternedPackage()
+}
+
 // Number returns the number for this field after expression evaluation.
 //
 // Defaults to zero if the number is not specified.
@@ -116,7 +137,7 @@ func (f Field) Number() int32 {
 
 // Presence returns this field's presence kind.
 func (f Field) Presence() presence.Kind {
-	if f.raw.oneof > 0 {
+	if f.raw.oneof >= 0 {
 		return presence.Shared
 	}
 	return presence.Kind(-f.raw.oneof)
@@ -145,11 +166,12 @@ func (f Field) Element() Type {
 // [Field.Parent], or the extendee if this is an extension. This is the
 // type it is declared to be *part of*.
 func (f Field) Container() Type {
-	if f.raw.extn.ptr.Nil() {
+	if f.raw.extendee.Nil() {
 		return f.Parent()
 	}
 
-	return wrapType(f.Context(), f.raw.extn)
+	extends := f.Context().arenas.extendees.Deref(f.raw.extendee)
+	return wrapType(f.Context(), extends.ty)
 }
 
 // Oneof returns the oneof that this field is a member of.
@@ -159,11 +181,7 @@ func (f Field) Oneof() Oneof {
 	if f.Presence() != presence.Shared {
 		return Oneof{}
 	}
-	return Oneof{
-		f.withContext,
-		int(f.raw.oneof),
-		f.Parent().raw, // Extension fields are not part of oneofs.
-	}
+	return f.Parent().Oneofs().At(int(f.raw.oneof))
 }
 
 // Options returns the options applied to this field.
@@ -181,34 +199,52 @@ func wrapField(c *Context, r ref[rawField]) Field {
 		return Field{}
 	}
 
-	file := c.File()
-	if r.file > 0 {
-		file = c.imports.files[r.file-1]
-	}
-
+	c = r.context(c)
 	return Field{
-		withContext: internal.NewWith(file.Context()),
-		raw:         file.Context().arenas.fields.Deref(r.ptr),
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.fields.Deref(r.ptr),
 	}
+}
+
+// rawExtendee represents an extends block.
+//
+// Rather than each field carrying a reference to its extends block's AST, we
+// have a level of indirection to amortize symbol lookups.
+type rawExtendee struct {
+	def    ast.DeclDef
+	ty     ref[rawType]
+	parent arena.Pointer[rawType]
+}
+
+func (e *rawExtendee) Scope(c *Context) FullName {
+	return FullName(c.session.intern.Value(e.InternedScope(c)))
+}
+
+func (e *rawExtendee) InternedScope(c *Context) intern.ID {
+	if !e.parent.Nil() {
+		return wrapType(c, ref[rawType]{ptr: e.parent}).InternedFullName()
+	}
+	return c.File().InternedPackage()
 }
 
 // Oneof represents a oneof within a message definition.
 type Oneof struct {
 	withContext
-	index     int
-	container *rawType
+	raw *rawOneof
 }
 
 type rawOneof struct {
 	def       ast.DeclDef
 	fqn, name intern.ID
+	index     uint32
+	container arena.Pointer[rawType]
 	members   []arena.Pointer[rawField]
 	options   []arena.Pointer[rawOption]
 }
 
 // AST returns the declaration for this oneof, if known.
 func (o Oneof) AST() ast.DeclDef {
-	return o.raw().def
+	return o.raw.def
 }
 
 // Name returns this oneof's declared name.
@@ -216,7 +252,7 @@ func (o Oneof) Name() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().session.intern.Value(o.raw().name)
+	return o.Context().session.intern.Value(o.raw.name)
 }
 
 // FullName returns this oneof's fully-qualified name.
@@ -224,7 +260,7 @@ func (o Oneof) FullName() FullName {
 	if o.IsZero() {
 		return ""
 	}
-	return FullName(o.Context().session.intern.Value(o.raw().fqn))
+	return FullName(o.Context().session.intern.Value(o.raw.fqn))
 }
 
 // InternedName returns the intern ID for [Oneof.FullName]().Name().
@@ -232,7 +268,7 @@ func (o Oneof) InternedName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw().name
+	return o.raw.name
 }
 
 // InternedName returns the intern ID for [Oneof.FullName].
@@ -240,7 +276,7 @@ func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw().fqn
+	return o.raw.fqn
 }
 
 // Container returns the message type which contains it.
@@ -249,7 +285,7 @@ func (o Oneof) Container() Type {
 		return Type{}
 	}
 
-	return Type{o.withContext, o.container}
+	return wrapType(o.Context(), ref[rawType]{ptr: o.raw.container})
 }
 
 // Index returns this oneof's index in its containing message.
@@ -257,13 +293,13 @@ func (o Oneof) Index() int {
 	if o.IsZero() {
 		return 0
 	}
-	return o.index
+	return int(o.raw.index)
 }
 
 // Members returns this oneof's member fields.
 func (o Oneof) Members() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
-		o.raw().members,
+		o.raw.members,
 		func(_ int, p arena.Pointer[rawField]) Field {
 			return wrapField(o.Context(), ref[rawField]{ptr: p})
 		},
@@ -279,15 +315,18 @@ func (o Oneof) Parent() Type {
 // Options returns the options applied to this oneof.
 func (o Oneof) Options() seq.Indexer[Option] {
 	return seq.NewFixedSlice(
-		o.raw().options,
+		o.raw.options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(o.Context(), p)
 		},
 	)
 }
 
-func (o Oneof) raw() *rawOneof {
-	return &o.container.oneofs[o.index]
+func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
+	return Oneof{
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.oneofs.Deref(raw),
+	}
 }
 
 // TagRange is a range of reserved field or enum numbers, either from a reserved
@@ -345,7 +384,18 @@ func (r ReservedName) AST() ast.ExprAny {
 	return r.raw.ast
 }
 
-// Name returns the name that was reserved.
+// Name returns the name (i.e., an identifier) that was reserved.
 func (r ReservedName) Name() string {
+	if r.IsZero() {
+		return ""
+	}
 	return r.Context().session.intern.Value(r.raw.name)
+}
+
+// InternedName returns the intern ID for [ReservedName.Name].
+func (r ReservedName) InternedName() intern.ID {
+	if r.IsZero() {
+		return 0
+	}
+	return r.raw.name
 }

@@ -1,0 +1,11 @@
+file:
+  - name: "testdata/fields/skip_wrong_kind.proto"
+    package: "test"
+    message_type:
+      - name: "M"
+        nested_type:
+          - name: "N"
+          - name: "P"
+            extension: [{ name: "n", number: 0 }]
+            enum_type: [{ name: "X" }]
+    syntax: "proto3"

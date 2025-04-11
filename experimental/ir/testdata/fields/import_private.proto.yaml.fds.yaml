@@ -1,0 +1,13 @@
+file:
+  - { name: "a.proto", package: "test", message_type: [{ name: "M" }], syntax: "proto3" }
+  - { name: "b.proto", package: "test", dependency: ["a.proto"], syntax: "proto3" }
+  - name: "c.proto"
+    package: "test"
+    dependency: ["b.proto"]
+    message_type:
+      - name: "N"
+        extension:
+          - { name: "m1", number: 0 }
+          - { name: "m2", number: 0 }
+          - { name: "m3", number: 0 }
+    syntax: "proto3"

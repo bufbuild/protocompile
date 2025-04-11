@@ -106,6 +106,7 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 			start = min(start, edit.Start)
 			end = max(end, edit.End)
 		}
+
 		// Then, snap the region to be newline delimited. This is the unedited
 		// lines.
 		start, end = adjustLineOffsets(src, start, end)
@@ -122,14 +123,28 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 		buf.WriteString(original[prev:])
 
 		unchanged := src[prevHunk:start]
-		unchanged = strings.TrimPrefix(unchanged, "\n")
-		unchanged = strings.TrimSuffix(unchanged, "\n")
+		deleted := src[start:end]
+		added := buf.String()
+		if stripped, ok := strings.CutPrefix(added, deleted); ok &&
+			strings.HasPrefix(stripped, "\n") {
+			// It is possible for deleted to be a line suffix of added; outputting
+			// a diff like this doesn't look good, so we should fix it up here.
+			unchanged = src[prevHunk:end]
+			deleted = ""
+			added = strings.TrimPrefix(stripped, "\n")
+		}
+
+		trim := func(s string) string {
+			s = strings.TrimPrefix(s, "\n")
+			s = strings.TrimSuffix(s, "\n")
+			return s
+		}
 
 		// Dump the result into the output.
 		out = append(out,
-			hunk{hunkUnchanged, unchanged},
-			hunk{hunkDelete, src[start:end]},
-			hunk{hunkAdd, buf.String()},
+			hunk{hunkUnchanged, trim(unchanged)},
+			hunk{hunkDelete, deleted},
+			hunk{hunkAdd, added},
 		)
 
 		prevHunk = end

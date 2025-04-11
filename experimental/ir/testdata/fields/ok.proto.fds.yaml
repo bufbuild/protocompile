@@ -1,0 +1,15 @@
+file:
+  - name: "testdata/fields/ok.proto"
+    package: "test"
+    message_type:
+      - name: "Foo"
+        extension:
+          - { name: "foo", number: 0 }
+          - { name: "bar", number: 0 }
+          - { name: "bars", number: 0 }
+          - { name: "foos", number: 0 }
+          - { name: "foo0", number: 0, label: LABEL_OPTIONAL, oneof_index: 0 }
+          - { name: "bar0", number: 0, label: LABEL_OPTIONAL, oneof_index: 0 }
+        nested_type: [{ name: "Bar" }]
+        oneof_decl: [{ name: "baz" }]
+    syntax: "proto3"

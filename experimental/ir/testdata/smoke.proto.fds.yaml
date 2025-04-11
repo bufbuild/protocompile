@@ -1,0 +1,11 @@
+file:
+  - name: "testdata/smoke.proto"
+    package: "buf.test"
+    message_type:
+      - name: "Foo"
+        extension:
+          - { name: "a", number: 0 }
+          - { name: "b", number: 0 }
+          - { name: "c", number: 0 }
+    enum_type: [{ name: "BAR" }]
+    syntax: "proto2"

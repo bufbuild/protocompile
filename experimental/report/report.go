@@ -138,8 +138,8 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// Report.CatchICE).
 	stack = stack[5:]
 
-	diagnostic.notes = append(diagnostic.notes, "", "stack trace:")
-	diagnostic.notes = append(diagnostic.notes, stack...)
+	diagnostic.debug = append(diagnostic.debug, "", "stack trace:")
+	diagnostic.debug = append(diagnostic.debug, stack...)
 
 	if resume {
 		panic(panicked)

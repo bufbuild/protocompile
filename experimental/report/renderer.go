@@ -237,12 +237,11 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 				sep = "-->"
 			}
 			fmt.Fprintf(r, "%s %s:%d:%d\n", sep, primary.Path(), start.Line, start.Column)
+		} else if len(snippets[0].edits) > 0 {
+			r.WriteString("\n")
 		}
 
 		if len(snippets[0].edits) > 0 {
-			if i > 0 {
-				r.WriteString("\n")
-			}
 			r.suggestion(snippets[0])
 			continue
 		}

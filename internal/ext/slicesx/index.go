@@ -15,6 +15,7 @@
 package slicesx
 
 import (
+	"cmp"
 	"slices"
 	"unsafe"
 
@@ -26,6 +27,12 @@ import (
 // being examined as an input to the predicate.
 func IndexFunc[S ~[]E, E any](s S, p func(int, E) bool) int {
 	return iterx.Index2(slices.All(s), p)
+}
+
+// BinarySearchKey is like [slices.BinarySearch], but each element is mapped
+// to a comparable type.
+func BinarySearchKey[S ~[]E, E any, T cmp.Ordered](s S, target T, key func(E) T) (int, bool) {
+	return slices.BinarySearchFunc(s, target, func(e E, t T) int { return cmp.Compare(key(e), t) })
 }
 
 // PointerIndex returns an integer n such that p == &s[n], or -1 if there is
