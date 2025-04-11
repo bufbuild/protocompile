@@ -64,9 +64,14 @@ var primitiveCtx = func() *Context {
 
 		for nextPtr != int(n) {
 			_ = ctx.arenas.types.NewCompressed(rawType{})
+			_ = ctx.arenas.symbols.NewCompressed(rawSymbol{})
 			nextPtr++
 		}
 		ptr := ctx.arenas.types.NewCompressed(rawType{})
+		ctx.arenas.symbols.NewCompressed(rawSymbol{
+			kind: SymbolKindScalar,
+			data: ptr.Untyped(),
+		})
 		nextPtr++
 
 		if int(ptr) != int(n) {
