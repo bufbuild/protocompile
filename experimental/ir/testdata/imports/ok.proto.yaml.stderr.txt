@@ -1,0 +1,9 @@
+warning: use of `import weak`
+  --> main.proto:6:1
+   |
+ 6 | import weak "c.proto";
+   | ^^^^^^^^^^^
+   = note: `import weak` is deprecated and not supported correctly in most
+           Protobuf implementations
+
+encountered 1 warning
