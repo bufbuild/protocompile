@@ -33,12 +33,29 @@ func (n FullName) Absolute() bool {
 	return n != "" && n[0] == '.'
 }
 
+// IsIdent returns whether this name is a single identifier.
+func (n FullName) IsIdent() bool {
+	return !strings.Contains(string(n), ".")
+}
+
 // ToAbsolute returns this name with a leading dot.
 func (n FullName) ToAbsolute() FullName {
 	if n.Absolute() {
 		return n
 	}
 	return "." + n
+}
+
+// ToRelative returns this name without a leading dot.
+func (n FullName) ToRelative() FullName {
+	return FullName(strings.TrimPrefix(string(n), "."))
+}
+
+// First returns the first component of this name.
+func (n FullName) First() string {
+	n = n.ToRelative()
+	name, _, _ := strings.Cut(string(n), ".")
+	return name
 }
 
 // Name returns the last component of this name.

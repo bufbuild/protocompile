@@ -91,6 +91,14 @@ func (f Field) FullName() FullName {
 	return FullName(f.Context().session.intern.Value(f.raw.fqn))
 }
 
+// Scope returns the scope in which this field is defined.
+func (f Field) Scope() FullName {
+	if f.IsZero() {
+		return ""
+	}
+	return FullName(f.Context().session.intern.Value(f.InternedScope()))
+}
+
 // InternedName returns the intern ID for [Field.FullName]().Name().
 func (f Field) InternedName() intern.ID {
 	if f.IsZero() {
@@ -105,6 +113,17 @@ func (f Field) InternedFullName() intern.ID {
 		return 0
 	}
 	return f.raw.fqn
+}
+
+// InternedScope returns the intern ID for [Field.Scope].
+func (f Field) InternedScope() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
+	if parent := f.Parent(); !parent.IsZero() {
+		return parent.InternedFullName()
+	}
+	return f.Context().File().InternedPackage()
 }
 
 // Number returns the number for this field after expression evaluation.

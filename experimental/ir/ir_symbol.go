@@ -174,6 +174,17 @@ func (k SymbolKind) IsField() bool {
 	}
 }
 
+// IsScope returns whether this is a symbol that defines a scope, for the
+// purposes of name lookup.
+func (k SymbolKind) IsScope() bool {
+	switch k {
+	case SymbolKindPackage, SymbolKindMessage:
+		return true
+	default:
+		return false
+	}
+}
+
 func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 	if r.ptr.Nil() || c == nil {
 		return Symbol{}

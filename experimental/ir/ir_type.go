@@ -152,6 +152,14 @@ func (t Type) FullName() FullName {
 	return FullName(t.Context().session.intern.Value(t.raw.fqn))
 }
 
+// Scope returns the scope in which this type is defined.
+func (t Type) Scope() FullName {
+	if t.IsZero() {
+		return ""
+	}
+	return FullName(t.Context().session.intern.Value(t.InternedScope()))
+}
+
 // InternedName returns the intern ID for [Type.FullName]().Name()
 //
 // Predeclared types do not have an interned name.
@@ -170,6 +178,19 @@ func (t Type) InternedFullName() intern.ID {
 		return 0
 	}
 	return t.raw.fqn
+}
+
+// InternedScope returns the intern ID for [Type.Scope]
+//
+// Predeclared types do not have an interned name.
+func (t Type) InternedScope() intern.ID {
+	if t.IsZero() {
+		return 0
+	}
+	if parent := t.Parent(); !parent.IsZero() {
+		return parent.InternedFullName()
+	}
+	return t.Context().File().InternedPackage()
 }
 
 // Parent returns the type that this type is declared inside of, if it isn't
