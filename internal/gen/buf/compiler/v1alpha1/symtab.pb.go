@@ -41,9 +41,13 @@ const (
 	// Numbers synced with those in symbol_kind.go
 	Symbol_KIND_UNSPECIFIED Symbol_Kind = 0
 	Symbol_KIND_PACKAGE     Symbol_Kind = 1
-	Symbol_KIND_TYPE        Symbol_Kind = 2
-	Symbol_KIND_FIELD       Symbol_Kind = 3
-	Symbol_KIND_ONEOF       Symbol_Kind = 4
+	Symbol_KIND_SCALAR      Symbol_Kind = 2
+	Symbol_KIND_MESSAGE     Symbol_Kind = 3
+	Symbol_KIND_ENUM        Symbol_Kind = 4
+	Symbol_KIND_FIELD       Symbol_Kind = 5
+	Symbol_KIND_ENUM_VALUE  Symbol_Kind = 6
+	Symbol_KIND_EXTENSION   Symbol_Kind = 7
+	Symbol_KIND_ONEOF       Symbol_Kind = 8
 )
 
 // Enum value maps for Symbol_Kind.
@@ -51,16 +55,24 @@ var (
 	Symbol_Kind_name = map[int32]string{
 		0: "KIND_UNSPECIFIED",
 		1: "KIND_PACKAGE",
-		2: "KIND_TYPE",
-		3: "KIND_FIELD",
-		4: "KIND_ONEOF",
+		2: "KIND_SCALAR",
+		3: "KIND_MESSAGE",
+		4: "KIND_ENUM",
+		5: "KIND_FIELD",
+		6: "KIND_ENUM_VALUE",
+		7: "KIND_EXTENSION",
+		8: "KIND_ONEOF",
 	}
 	Symbol_Kind_value = map[string]int32{
 		"KIND_UNSPECIFIED": 0,
 		"KIND_PACKAGE":     1,
-		"KIND_TYPE":        2,
-		"KIND_FIELD":       3,
-		"KIND_ONEOF":       4,
+		"KIND_SCALAR":      2,
+		"KIND_MESSAGE":     3,
+		"KIND_ENUM":        4,
+		"KIND_FIELD":       5,
+		"KIND_ENUM_VALUE":  6,
+		"KIND_EXTENSION":   7,
+		"KIND_ONEOF":       8,
 	}
 )
 
@@ -366,21 +378,25 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\n" +
 	"transitive\x18\x04 \x01(\bR\n" +
 	"transitive\x12\x18\n" +
-	"\avisible\x18\x05 \x01(\bR\avisible\"\xf5\x01\n" +
+	"\avisible\x18\x05 \x01(\bR\avisible\"\xc2\x02\n" +
 	"\x06Symbol\x12\x10\n" +
 	"\x03fqn\x18\x01 \x01(\tR\x03fqn\x126\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\".buf.compiler.v1alpha1.Symbol.KindR\x04kind\x12\x12\n" +
 	"\x04file\x18\x03 \x01(\tR\x04file\x12\x14\n" +
 	"\x05index\x18\x04 \x01(\rR\x05index\x12\x18\n" +
-	"\avisible\x18\x05 \x01(\bR\avisible\"]\n" +
+	"\avisible\x18\x05 \x01(\bR\avisible\"\xa9\x01\n" +
 	"\x04Kind\x12\x14\n" +
 	"\x10KIND_UNSPECIFIED\x10\x00\x12\x10\n" +
-	"\fKIND_PACKAGE\x10\x01\x12\r\n" +
-	"\tKIND_TYPE\x10\x02\x12\x0e\n" +
+	"\fKIND_PACKAGE\x10\x01\x12\x0f\n" +
+	"\vKIND_SCALAR\x10\x02\x12\x10\n" +
+	"\fKIND_MESSAGE\x10\x03\x12\r\n" +
+	"\tKIND_ENUM\x10\x04\x12\x0e\n" +
 	"\n" +
-	"KIND_FIELD\x10\x03\x12\x0e\n" +
+	"KIND_FIELD\x10\x05\x12\x13\n" +
+	"\x0fKIND_ENUM_VALUE\x10\x06\x12\x12\n" +
+	"\x0eKIND_EXTENSION\x10\a\x12\x0e\n" +
 	"\n" +
-	"KIND_ONEOF\x10\x04B\xf4\x01\n" +
+	"KIND_ONEOF\x10\bB\xf4\x01\n" +
 	"\x19com.buf.compiler.v1alpha1B\vSymtabProtoP\x01ZTgithub.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1;compilerv1alpha1\xa2\x02\x03BCX\xaa\x02\x15Buf.Compiler.V1alpha1\xca\x02\x15Buf\\Compiler\\V1alpha1\xe2\x02!Buf\\Compiler\\V1alpha1\\GPBMetadata\xea\x02\x17Buf::Compiler::V1alpha1b\x06proto3"
 
 var (

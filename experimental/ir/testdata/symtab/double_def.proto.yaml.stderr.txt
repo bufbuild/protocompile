@@ -2,7 +2,7 @@ error: `Foo` declared multiple times
   --> dep/foo.proto:6:9
    |
  6 | message Foo {}
-   |         ^^^ first here, as a message definition
+   |         ^^^ first here, as a message type
   ::: main.proto:11:9
    |
 11 | message Foo {
@@ -12,7 +12,7 @@ error: `Main` declared multiple times
   --> dep/priv.proto:4:9
    |
  4 | message Main {}
-   |         ^^^^ first here, as a message definition
+   |         ^^^^ first here, as a message type
   ::: main.proto:6:9
    |
  6 | message Main {}
@@ -39,7 +39,7 @@ error: `BAR` declared multiple times
   --> main.proto:12:8
    |
 12 |   enum BAR {
-   |        ^^^ first here, as an enum definition
+   |        ^^^ first here, as an enum type
 13 |     BAR = 0;
    |     --- ...also declared here, now as an enum value
    = help: the fully-qualified names of enum values do not include the name of
@@ -54,6 +54,6 @@ error: `dep.foo.Foo` declared multiple times
   ::: dep/foo.proto:6:9
    |
  6 | message Foo {}
-   |         --- ...also declared here, now as a message definition
+   |         --- ...also declared here, now as a message type
 
 encountered 5 errors

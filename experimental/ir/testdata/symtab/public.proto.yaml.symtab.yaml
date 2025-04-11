@@ -6,7 +6,7 @@ tables:
     symbols:
       - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
       - fqn: "dep.foo.Foo"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/foo.proto"
         index: 1
         visible: true
@@ -14,13 +14,13 @@ tables:
         kind: KIND_PACKAGE
         file: "dep/not_public.proto"
       - fqn: "dep.foo.not_public.X"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/not_public.proto"
         index: 1
         visible: true
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
       - fqn: "dep.foo.public.X"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/public.proto"
         index: 1
         visible: true
@@ -30,7 +30,7 @@ tables:
         kind: KIND_PACKAGE
         file: "dep/not_public.proto"
       - fqn: "dep.foo.not_public.X"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/not_public.proto"
         index: 1
         visible: true
@@ -38,7 +38,7 @@ tables:
     symbols:
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
       - fqn: "dep.foo.public.X"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/public.proto"
         index: 1
         visible: true
@@ -50,7 +50,7 @@ tables:
     symbols:
       - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
       - fqn: "dep.foo.Foo"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/foo.proto"
         index: 1
         visible: true
@@ -58,18 +58,18 @@ tables:
         kind: KIND_PACKAGE
         file: "dep/not_public.proto"
       - fqn: "dep.foo.not_public.X"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/not_public.proto"
         index: 1
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
       - fqn: "dep.foo.public.X"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "dep/public.proto"
         index: 1
         visible: true
       - { fqn: "main", kind: KIND_PACKAGE, file: "main.proto" }
       - fqn: "main.Main"
-        kind: KIND_TYPE
+        kind: KIND_MESSAGE
         file: "main.proto"
         index: 1
         visible: true

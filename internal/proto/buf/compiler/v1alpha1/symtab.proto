@@ -45,9 +45,13 @@ message Symbol {
         // Numbers synced with those in symbol_kind.go
         KIND_UNSPECIFIED = 0;
         KIND_PACKAGE = 1;
-        KIND_TYPE = 2;
-        KIND_FIELD = 3;
-        KIND_ONEOF = 4;
+        KIND_SCALAR = 2;
+        KIND_MESSAGE = 3;
+        KIND_ENUM = 4;
+        KIND_FIELD = 5;
+        KIND_ENUM_VALUE = 6;
+        KIND_EXTENSION = 7;
+        KIND_ONEOF = 8;
     }
     Kind kind = 2;
 

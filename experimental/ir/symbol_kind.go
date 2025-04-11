@@ -28,8 +28,12 @@ type SymbolKind int8
 const (
 	SymbolKindInvalid SymbolKind = iota
 	SymbolKindPackage
-	SymbolKindType
+	SymbolKindScalar
+	SymbolKindMessage
+	SymbolKindEnum
 	SymbolKindField
+	SymbolKindEnumValue
+	SymbolKindExtension
 	SymbolKindOneof
 )
 
@@ -50,18 +54,26 @@ func (v SymbolKind) GoString() string {
 }
 
 var _table_SymbolKind_String = [...]string{
-	SymbolKindInvalid: "SymbolKindInvalid",
-	SymbolKindPackage: "SymbolKindPackage",
-	SymbolKindType:    "SymbolKindType",
-	SymbolKindField:   "SymbolKindField",
-	SymbolKindOneof:   "SymbolKindOneof",
+	SymbolKindInvalid:   "SymbolKindInvalid",
+	SymbolKindPackage:   "SymbolKindPackage",
+	SymbolKindScalar:    "SymbolKindScalar",
+	SymbolKindMessage:   "SymbolKindMessage",
+	SymbolKindEnum:      "SymbolKindEnum",
+	SymbolKindField:     "SymbolKindField",
+	SymbolKindEnumValue: "SymbolKindEnumValue",
+	SymbolKindExtension: "SymbolKindExtension",
+	SymbolKindOneof:     "SymbolKindOneof",
 }
 
 var _table_SymbolKind_GoString = [...]string{
-	SymbolKindInvalid: "SymbolKindInvalid",
-	SymbolKindPackage: "SymbolKindPackage",
-	SymbolKindType:    "SymbolKindType",
-	SymbolKindField:   "SymbolKindField",
-	SymbolKindOneof:   "SymbolKindOneof",
+	SymbolKindInvalid:   "SymbolKindInvalid",
+	SymbolKindPackage:   "SymbolKindPackage",
+	SymbolKindScalar:    "SymbolKindScalar",
+	SymbolKindMessage:   "SymbolKindMessage",
+	SymbolKindEnum:      "SymbolKindEnum",
+	SymbolKindField:     "SymbolKindField",
+	SymbolKindEnumValue: "SymbolKindEnumValue",
+	SymbolKindExtension: "SymbolKindExtension",
+	SymbolKindOneof:     "SymbolKindOneof",
 }
 var _ iter.Seq[int] // Mark iter as used.

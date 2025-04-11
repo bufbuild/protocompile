@@ -23,6 +23,10 @@
   values:
   - name: SymbolKindInvalid
   - name: SymbolKindPackage
-  - name: SymbolKindType
+  - name: SymbolKindScalar
+  - name: SymbolKindMessage
+  - name: SymbolKindEnum
   - name: SymbolKindField
+  - name: SymbolKindEnumValue
+  - name: SymbolKindExtension
   - name: SymbolKindOneof

@@ -17,6 +17,7 @@ package ir
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -59,8 +60,12 @@ func buildLocalSymbols(f File) {
 
 func newTypeSymbol(ty Type) {
 	c := ty.Context()
+	kind := SymbolKindMessage
+	if ty.IsEnum() {
+		kind = SymbolKindEnum
+	}
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
-		kind: SymbolKindType,
+		kind: kind,
 		fqn:  ty.InternedFullName(),
 		data: arena.Untyped(c.arenas.types.Compress(ty.raw)),
 	})
@@ -69,8 +74,14 @@ func newTypeSymbol(ty Type) {
 
 func newFieldSymbol(f Field) {
 	c := f.Context()
+	kind := SymbolKindField
+	if f.IsExtension() {
+		kind = SymbolKindExtension
+	} else if f.AST().Classify() == ast.DefKindEnumValue {
+		kind = SymbolKindEnumValue
+	}
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
-		kind: SymbolKindField,
+		kind: kind,
 		fqn:  f.InternedFullName(),
 		data: arena.Untyped(c.arenas.fields.Compress(f.raw)),
 	})
@@ -197,36 +208,42 @@ func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 				return "a"
 			}
 
-			noun := first.noun()
+			noun := first.Kind().noun()
 			d := r.Errorf("`%s` declared multiple times", name).Apply(
 				report.Tag(tagSymbolRedefined),
-				report.Snippetf(first.Definition(), "first here, as %s %s", article(first.noun()), first.noun()),
+				report.Snippetf(first.Definition(),
+					"first here, as %s %s",
+					article(noun), noun),
 			)
 
-			if next := second.noun(); next != noun {
-				d.Apply(report.Snippetf(second.Definition(), "...also declared here, now as %s %s", article(next), next))
+			if next := second.Kind().noun(); next != noun {
+				d.Apply(report.Snippetf(second.Definition(),
+					"...also declared here, now as %s %s", article(next), next))
 				noun = next
 			} else {
-				d.Apply(report.Snippetf(second.Definition(), "...also declared here"))
+				d.Apply(report.Snippetf(second.Definition(),
+					"...also declared here"))
 			}
 
 			for _, r := range refs[2:] {
 				s := wrapSymbol(f.Context(), r)
-				next := s.noun()
+				next := s.Kind().noun()
 
 				if noun != next {
-					d.Apply(report.Snippetf(s.Definition(), "...and then here as a %s %s", article(next), next))
+					d.Apply(report.Snippetf(s.Definition(),
+						"...and then here as a %s %s", article(next), next))
 					noun = next
 				} else {
-					d.Apply(report.Snippetf(s.Definition(), "...and here"))
+					d.Apply(report.Snippetf(s.Definition(),
+						"...and here"))
 				}
 			}
 
-			// If at least one duplicated symbol is a non-visible type, explain
+			// If at least one duplicated symbol is non-visible, explain
 			// that symbol names are global!
 			idx := slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
 				s := wrapSymbol(f.Context(), r)
-				return s.Kind() == SymbolKindType && !s.Visible()
+				return !s.Visible()
 			})
 			if idx != -1 {
 				s := wrapSymbol(f.Context(), refs[idx])

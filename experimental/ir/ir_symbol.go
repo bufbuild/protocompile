@@ -84,7 +84,7 @@ func (s Symbol) Kind() SymbolKind {
 
 // AsType returns the type this symbol refers to, if it is one.
 func (s Symbol) AsType() Type {
-	if s.Kind() != SymbolKindType {
+	if !s.Kind().IsType() {
 		return Type{}
 	}
 	return wrapType(s.InDefFile().Context(), ref[rawType]{
@@ -95,7 +95,7 @@ func (s Symbol) AsType() Type {
 
 // AsField returns the field this symbol refers to, if it is one.
 func (s Symbol) AsField() Field {
-	if s.Kind() != SymbolKindField {
+	if !s.Kind().IsField() {
 		return Field{}
 	}
 	return wrapField(s.InDefFile().Context(), ref[rawField]{
@@ -115,7 +115,8 @@ func (s Symbol) AsOneof() Oneof {
 // Visible returns whether or not this symbol is visible according to Protobuf's
 // import semantics, within s.Context().File().
 func (s Symbol) Visible() bool {
-	return s.ref.file == 0 ||
+	return s.ref.file <= 0 ||
+		s.Kind() == SymbolKindPackage || // Packages don't get visibility checks.
 		s.Context().imports.visible.Test(uint(s.ref.file)-1)
 }
 
@@ -125,9 +126,9 @@ func (s Symbol) Definition() report.Span {
 	switch s.Kind() {
 	case SymbolKindPackage:
 		return s.File().AST().Package().Span()
-	case SymbolKindType:
+	case SymbolKindMessage, SymbolKindEnum:
 		return s.AsType().AST().Name().Span()
-	case SymbolKindField:
+	case SymbolKindField, SymbolKindEnumValue, SymbolKindExtension:
 		return s.AsField().AST().Name().Span()
 	case SymbolKindOneof:
 		return s.AsOneof().AST().Name().Span()
@@ -137,29 +138,40 @@ func (s Symbol) Definition() report.Span {
 }
 
 // noun returns a [taxa.Noun] for diagnostic use.
-func (s Symbol) noun() taxa.Noun {
-	switch s.Kind() {
-	case SymbolKindPackage:
-		return taxa.Package
-	case SymbolKindType:
-		ty := s.AsType()
-		if ty.IsEnum() {
-			return taxa.Enum
-		}
-		return taxa.Message
+func (k SymbolKind) noun() taxa.Noun {
+	return symbolNouns[k]
+}
 
-	case SymbolKindField:
-		ty := s.AsField().Container()
-		if ty.IsEnum() {
-			return taxa.EnumValue
-		}
-		return taxa.Field
+var symbolNouns = [...]taxa.Noun{
+	SymbolKindPackage:   taxa.Package,
+	SymbolKindScalar:    taxa.ScalarType,
+	SymbolKindMessage:   taxa.MessageType,
+	SymbolKindEnum:      taxa.EnumType,
+	SymbolKindField:     taxa.Field,
+	SymbolKindEnumValue: taxa.EnumValue,
+	SymbolKindExtension: taxa.Extension,
+	SymbolKindOneof:     taxa.Oneof,
+}
 
-	case SymbolKindOneof:
-		return taxa.Oneof
+// IsType returns whether this is a type's symbol kind.
+func (k SymbolKind) IsType() bool {
+	switch k {
+	case SymbolKindMessage, SymbolKindEnum, SymbolKindScalar:
+		return true
+	default:
+		return false
 	}
+}
 
-	return taxa.Unknown
+// IsType returns whether this is a field's symbol kind. This includes
+// enum values, which the ir package treats as fields of enum types.
+func (k SymbolKind) IsField() bool {
+	switch k {
+	case SymbolKindField, SymbolKindExtension, SymbolKindEnumValue:
+		return true
+	default:
+		return false
+	}
 }
 
 func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
