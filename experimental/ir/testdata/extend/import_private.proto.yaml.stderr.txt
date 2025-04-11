@@ -1,0 +1,49 @@
+error: cannot find `M` in this scope
+  --> c.proto:6:8
+   |
+ 6 | extend M {
+   |        ^ not visible in this scope
+  ::: a.proto:4:9
+   |
+ 4 | message M {
+   |         - found in unimported file
+  ::: c.proto:4:18
+  help: bring `M` into scope
+   |
+ 4 |   import "b.proto";
+ 5 | + import "a.proto";
+   |
+
+error: cannot find `test.M` in this scope
+  --> c.proto:10:8
+   |
+10 | extend test.M {
+   |        ^^^^^^ not visible in this scope
+  ::: a.proto:4:9
+   |
+ 4 | message M {
+   |         - found in unimported file
+  ::: c.proto:4:18
+  help: bring `test.M` into scope
+   |
+ 4 |   import "b.proto";
+ 5 | + import "a.proto";
+   |
+
+error: cannot find `.test.M` in this scope
+  --> c.proto:14:8
+   |
+14 | extend .test.M {
+   |        ^^^^^^^ not visible in this scope
+  ::: a.proto:4:9
+   |
+ 4 | message M {
+   |         - found in unimported file
+  ::: c.proto:4:18
+  help: bring `.test.M` into scope
+   |
+ 4 |   import "b.proto";
+ 5 | + import "a.proto";
+   |
+
+encountered 3 errors

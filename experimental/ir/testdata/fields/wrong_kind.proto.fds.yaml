@@ -1,0 +1,13 @@
+file:
+  - name: "testdata/fields/wrong_kind.proto"
+    package: "test"
+    message_type:
+      - name: "Foo"
+        extension:
+          - { name: "x", number: 0 }
+          - { name: "y", number: 0 }
+          - { name: "z", number: 0 }
+          - { name: "a", number: 0, label: LABEL_OPTIONAL, oneof_index: 0 }
+        enum_type: [{ name: "Bar" }]
+        oneof_decl: [{ name: "self" }]
+    syntax: "proto3"

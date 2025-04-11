@@ -1,0 +1,59 @@
+tables:
+  "testdata/extend/wrong_kind.proto":
+    symbols:
+      - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/extend/wrong_kind.proto" }
+      - fqn: "test.Foo"
+        kind: KIND_MESSAGE
+        file: "testdata/extend/wrong_kind.proto"
+        index: 1
+        visible: true
+      - fqn: "test.Foo.Bar"
+        kind: KIND_ENUM
+        file: "testdata/extend/wrong_kind.proto"
+        index: 2
+        visible: true
+      - fqn: "test.Foo.a"
+        kind: KIND_FIELD
+        file: "testdata/extend/wrong_kind.proto"
+        index: 6
+        visible: true
+      - fqn: "test.Foo.BAZ"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/extend/wrong_kind.proto"
+        index: 1
+        visible: true
+      - fqn: "test.Foo.x"
+        kind: KIND_EXTENSION
+        file: "testdata/extend/wrong_kind.proto"
+        index: 2
+        visible: true
+      - fqn: "test.Foo.y"
+        kind: KIND_EXTENSION
+        file: "testdata/extend/wrong_kind.proto"
+        index: 3
+        visible: true
+      - fqn: "test.Foo.z"
+        kind: KIND_EXTENSION
+        file: "testdata/extend/wrong_kind.proto"
+        index: 4
+        visible: true
+      - fqn: "test.Foo.w"
+        kind: KIND_EXTENSION
+        file: "testdata/extend/wrong_kind.proto"
+        index: 5
+        visible: true
+      - fqn: "test.Foo.b"
+        kind: KIND_EXTENSION
+        file: "testdata/extend/wrong_kind.proto"
+        index: 7
+        visible: true
+      - fqn: "test.Foo.capacity"
+        kind: KIND_EXTENSION
+        file: "testdata/extend/wrong_kind.proto"
+        index: 8
+        visible: true
+      - fqn: "test.Foo.self"
+        kind: KIND_ONEOF
+        file: "testdata/extend/wrong_kind.proto"
+        index: 1
+        visible: true
