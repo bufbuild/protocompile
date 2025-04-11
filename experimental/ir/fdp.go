@@ -164,9 +164,9 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 			continue
 		}
 
-		mdp := new(descriptorpb.DescriptorProto)
-		mdp.NestedType = append(mdp.NestedType, mdp)
-		dg.message(ty, mdp)
+		nested := new(descriptorpb.DescriptorProto)
+		mdp.NestedType = append(mdp.NestedType, nested)
+		dg.message(ty, nested)
 	}
 
 	for extensions := range seq.Values(ty.ExtensionRanges()) {
