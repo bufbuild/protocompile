@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // ID is an interned string in a particular [Table].
@@ -164,7 +164,16 @@ func (t *Table) InternBytes(bytes []byte) ID {
 	//
 	// Thus, we can simply turn bytes into a string temporarily to pass to
 	// Intern.
-	return t.Intern(unsafe.String(unsafe.SliceData(bytes), len(bytes)))
+	return t.Intern(unsafex.StringAlias(bytes))
+}
+
+// QueryBytes will query whether bytes has already been interned.
+//
+// This function may be called by multiple goroutines concurrently, but bytes
+// must not be modified until this function returns.
+func (t *Table) QueryBytes(bytes []byte) (ID, bool) {
+	// See InternBytes's comment.
+	return t.Query(unsafex.StringAlias(bytes))
 }
 
 // Value converts an [ID] back into its corresponding string.
