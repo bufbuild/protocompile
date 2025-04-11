@@ -1,0 +1,59 @@
+error: `Foo` declared multiple times
+  --> dep/foo.proto:6:9
+   |
+ 6 | message Foo {}
+   |         ^^^ first here, as a message type
+  ::: main.proto:11:9
+   |
+11 | message Foo {
+   |         --- ...also declared here
+
+error: `Main` declared multiple times
+  --> dep/priv.proto:4:9
+   |
+ 4 | message Main {}
+   |         ^^^^ first here, as a message type
+  ::: main.proto:6:9
+   |
+ 6 | message Main {}
+   |         ---- ...also declared here
+ 7 | message Main {
+   |         ---- ...and here
+...
+17 | message Main {
+   |         ---- ...and here
+   = help: symbol names must be unique across all transitive imports; for
+           example, "dep/priv.proto" declares `Main` but is not directly
+           imported
+
+error: `x` declared multiple times
+  --> main.proto:8:18
+   |
+ 8 |   optional int32 x = 1;
+   |                  ^ first here, as a message field
+...
+18 |   optional string x = 2;
+   |                   - ...also declared here
+
+error: `BAR` declared multiple times
+  --> main.proto:12:8
+   |
+12 |   enum BAR {
+   |        ^^^ first here, as an enum type
+13 |     BAR = 0;
+   |     --- ...also declared here, now as an enum value
+   = help: the fully-qualified names of enum values do not include the name of
+           the enum; `BAR` defined inside of enum `Foo.BAR` has the name
+           `Foo.BAR`, not `Foo.BAR.BAR`
+
+error: `dep.foo.Foo` declared multiple times
+  --> main2.proto:2:1
+   |
+ 2 | package dep.foo.Foo;
+   | ^^^^^^^^^^^^^^^^^^^^ first here, as a `package` declaration
+  ::: dep/foo.proto:6:9
+   |
+ 6 | message Foo {}
+   |         --- ...also declared here, now as a message type
+
+encountered 5 errors

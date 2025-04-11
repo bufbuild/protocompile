@@ -44,7 +44,7 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 	case ast.DeclKindPackage:
 		legalizePackage(p, parent, -1, nil, decl.AsPackage())
 	case ast.DeclKindImport:
-		legalizeImport(p, parent, decl.AsImport(), nil)
+		legalizeImport(p, parent, decl.AsImport())
 
 	case ast.DeclKindRange:
 		legalizeRange(p, parent, decl.AsRange())

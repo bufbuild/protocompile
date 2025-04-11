@@ -20,6 +20,10 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
+const (
+	tagSymbolRedefined = "symbol-redefined"
+)
+
 // Session is shared global configuration and state for all IR values that are
 // being used together.
 //
@@ -62,6 +66,11 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Now, resolve all the imports.
 	buildImports(c.File(), r, importer)
+
+	// Next, we can build various symbol tables in preparation for name
+	// resolution.
+	buildLocalSymbols(c.File())
+	buildImportedSymbols(c.File(), r)
 }
 
 // sorry panics with an NYI error, which turns into an ICE inside of the

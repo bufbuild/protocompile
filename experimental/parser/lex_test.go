@@ -30,9 +30,9 @@ func TestLexer(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
-		Root:      "testdata/lexer",
-		Refresh:   "PROTOCOMPILE_REFRESH",
-		Extension: "proto",
+		Root:       "testdata/lexer",
+		Refresh:    "PROTOCOMPILE_REFRESH",
+		Extensions: []string{"proto"},
 		Outputs: []golden.Output{
 			{Extension: "tokens.tsv"},
 			{Extension: "stderr.txt"},

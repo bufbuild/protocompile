@@ -159,11 +159,7 @@ func (f Field) Oneof() Oneof {
 	if f.Presence() != presence.Shared {
 		return Oneof{}
 	}
-	return Oneof{
-		f.withContext,
-		int(f.raw.oneof),
-		f.Parent().raw, // Extension fields are not part of oneofs.
-	}
+	return f.Parent().Oneofs().At(int(f.raw.oneof))
 }
 
 // Options returns the options applied to this field.
@@ -181,34 +177,31 @@ func wrapField(c *Context, r ref[rawField]) Field {
 		return Field{}
 	}
 
-	file := c.File()
-	if r.file > 0 {
-		file = c.imports.files[r.file-1]
-	}
-
+	c = r.context(c)
 	return Field{
-		withContext: internal.NewWith(file.Context()),
-		raw:         file.Context().arenas.fields.Deref(r.ptr),
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.fields.Deref(r.ptr),
 	}
 }
 
 // Oneof represents a oneof within a message definition.
 type Oneof struct {
 	withContext
-	index     int
-	container *rawType
+	raw *rawOneof
 }
 
 type rawOneof struct {
 	def       ast.DeclDef
 	fqn, name intern.ID
+	index     uint32
+	container arena.Pointer[rawType]
 	members   []arena.Pointer[rawField]
 	options   []arena.Pointer[rawOption]
 }
 
 // AST returns the declaration for this oneof, if known.
 func (o Oneof) AST() ast.DeclDef {
-	return o.raw().def
+	return o.raw.def
 }
 
 // Name returns this oneof's declared name.
@@ -216,7 +209,7 @@ func (o Oneof) Name() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().session.intern.Value(o.raw().name)
+	return o.Context().session.intern.Value(o.raw.name)
 }
 
 // FullName returns this oneof's fully-qualified name.
@@ -224,7 +217,7 @@ func (o Oneof) FullName() FullName {
 	if o.IsZero() {
 		return ""
 	}
-	return FullName(o.Context().session.intern.Value(o.raw().fqn))
+	return FullName(o.Context().session.intern.Value(o.raw.fqn))
 }
 
 // InternedName returns the intern ID for [Oneof.FullName]().Name().
@@ -232,7 +225,7 @@ func (o Oneof) InternedName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw().name
+	return o.raw.name
 }
 
 // InternedName returns the intern ID for [Oneof.FullName].
@@ -240,7 +233,7 @@ func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw().fqn
+	return o.raw.fqn
 }
 
 // Container returns the message type which contains it.
@@ -249,7 +242,7 @@ func (o Oneof) Container() Type {
 		return Type{}
 	}
 
-	return Type{o.withContext, o.container}
+	return wrapType(o.Context(), ref[rawType]{ptr: o.raw.container})
 }
 
 // Index returns this oneof's index in its containing message.
@@ -257,13 +250,13 @@ func (o Oneof) Index() int {
 	if o.IsZero() {
 		return 0
 	}
-	return o.index
+	return int(o.raw.index)
 }
 
 // Members returns this oneof's member fields.
 func (o Oneof) Members() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
-		o.raw().members,
+		o.raw.members,
 		func(_ int, p arena.Pointer[rawField]) Field {
 			return wrapField(o.Context(), ref[rawField]{ptr: p})
 		},
@@ -279,15 +272,18 @@ func (o Oneof) Parent() Type {
 // Options returns the options applied to this oneof.
 func (o Oneof) Options() seq.Indexer[Option] {
 	return seq.NewFixedSlice(
-		o.raw().options,
+		o.raw.options,
 		func(_ int, p arena.Pointer[rawOption]) Option {
 			return wrapOption(o.Context(), p)
 		},
 	)
 }
 
-func (o Oneof) raw() *rawOneof {
-	return &o.container.oneofs[o.index]
+func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
+	return Oneof{
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.oneofs.Deref(raw),
+	}
 }
 
 // TagRange is a range of reserved field or enum numbers, either from a reserved
@@ -345,7 +341,18 @@ func (r ReservedName) AST() ast.ExprAny {
 	return r.raw.ast
 }
 
-// Name returns the name that was reserved.
+// Name returns the name (i.e., an identifier) that was reserved.
 func (r ReservedName) Name() string {
+	if r.IsZero() {
+		return ""
+	}
 	return r.Context().session.intern.Value(r.raw.name)
+}
+
+// InternedName returns the intern ID for [ReservedName.Name].
+func (r ReservedName) InternedName() intern.ID {
+	if r.IsZero() {
+		return 0
+	}
+	return r.raw.name
 }

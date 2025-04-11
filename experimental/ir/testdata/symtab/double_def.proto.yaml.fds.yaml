@@ -1,0 +1,24 @@
+file:
+  - name: "dep/priv.proto"
+    package: "dep.foo"
+    message_type: [{ name: "Main" }]
+    syntax: "proto2"
+  - name: "dep/foo.proto"
+    package: "dep.foo"
+    dependency: ["dep/priv.proto"]
+    message_type: [{ name: "Foo" }]
+    syntax: "proto2"
+  - name: "main.proto"
+    package: "dep.foo"
+    dependency: ["dep/foo.proto"]
+    message_type:
+      - name: "Main"
+      - { name: "Main", field: [{ name: "x", number: 0 }] }
+      - name: "Foo"
+        enum_type: [{ name: "BAR", value: [{ name: "BAR", number: 0 }] }]
+      - { name: "Main", field: [{ name: "x", number: 0 }] }
+    syntax: "proto2"
+  - name: "main2.proto"
+    package: "dep.foo.Foo"
+    dependency: ["dep/foo.proto"]
+    syntax: "proto2"
