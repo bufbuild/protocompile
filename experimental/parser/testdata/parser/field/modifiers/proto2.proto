@@ -12,18 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+syntax = "proto2";
 
 package test;
 
-message M {
-    M foo = 1 [foo = bar];
-    M bar = 2 [];
-    M baz = 3 [
-        foo = bar,
-        bang = 5
-    ];
-    
-    M bad = 4 [foo: {bar: baz}];
-    M bad2 = 5 [foo = {bar = baz}];
+message Foo {
+    required int32 a = 1;
+    optional int32 a = 1;
+    repeated int32 a = 1;
+    int32 a = 1;
+    map<int32, int32> a = 1;
+
+    oneof bar {
+        required int32 a = 1;
+        optional int32 a = 1;
+        repeated int32 a = 1;
+        int32 a = 1;
+        map<int32, int32> a = 1;
+    }
 }

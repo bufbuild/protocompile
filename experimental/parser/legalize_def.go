@@ -53,7 +53,7 @@ func legalizeDef(p *parser, parent classified, def ast.DeclDef) {
 	case ast.DefKindMessage, ast.DefKindEnum, ast.DefKindService, ast.DefKindOneof, ast.DefKindExtend:
 		legalizeTypeDefLike(p, taxa.Classify(def), def)
 	case ast.DefKindField, ast.DefKindEnumValue, ast.DefKindGroup:
-		legalizeFieldLike(p, taxa.Classify(def), def)
+		legalizeFieldLike(p, taxa.Classify(def), def, parent)
 	case ast.DefKindOption:
 		legalizeOption(p, def)
 	case ast.DefKindMethod:
@@ -136,7 +136,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 
 // legalizeFieldLike legalizes something that resembles a field definition:
 // namely, fields, groups, and enum values.
-func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
+func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classified) {
 	if def.Name().IsZero() {
 		def.MarkCorrupt()
 		p.Errorf("missing name %v", what.In()).Apply(
@@ -192,7 +192,11 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	}
 
 	if what == taxa.Field {
-		legalizeFieldType(p, def.Type())
+		var oneof ast.DeclDef
+		if parent.what == taxa.Oneof {
+			oneof, _ = parent.Spanner.(ast.DeclDef)
+		}
+		legalizeFieldType(p, def.Type(), true, oneof)
 	}
 }
 

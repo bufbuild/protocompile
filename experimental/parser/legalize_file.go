@@ -33,6 +33,29 @@ var isOrdinaryFilePath = regexp.MustCompile("[0-9a-zA-Z./_-]*")
 
 // legalizeFile is the entry-point for legalizing a parsed Protobuf file.
 func legalizeFile(p *parser, file ast.File) {
+	// Legalize the first syntax node as soon as possible. This is because many
+	// grammar-level things depend on having figured out the file's syntax
+	// setting.
+	for i, decl := range seq.All(file.Decls()) {
+		if syn := decl.AsSyntax(); !syn.IsZero() {
+			file := classified{file, taxa.TopLevel}
+			legalizeSyntax(p, file, i, &p.syntaxNode, decl.AsSyntax())
+		}
+	}
+
+	if p.syntax == syntax.Unknown {
+		p.syntax = syntax.Proto2
+
+		if p.syntaxNode.IsZero() { // Don't complain if we found a bad syntax node.
+			p.Warnf("missing %s", taxa.Syntax).Apply(
+				report.InFile(p.Stream().Path()),
+				report.Notef("this defaults to \"proto2\"; not specifying this "+
+					" explicitly is discouraged"),
+				// TODO: suggestion.
+			)
+		}
+	}
+
 	var (
 		pkg     ast.DeclPackage
 		imports = make(map[string][]ast.DeclImport)
@@ -41,7 +64,7 @@ func legalizeFile(p *parser, file ast.File) {
 		file := classified{file, taxa.TopLevel}
 		switch decl.Kind() {
 		case ast.DeclKindSyntax:
-			legalizeSyntax(p, file, i, &p.syntax, decl.AsSyntax())
+			continue // Already did this one in the loop above.
 		case ast.DeclKindPackage:
 			legalizePackage(p, file, i, &pkg, decl.AsPackage())
 		case ast.DeclKindImport:
@@ -177,6 +200,10 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 
 	case !lit.IsZero() && !lit.IsPureString():
 		p.Warn(errImpureString{lit.Token, in.In()})
+	}
+
+	if p.syntax == syntax.Unknown {
+		p.syntax = value
 	}
 }
 

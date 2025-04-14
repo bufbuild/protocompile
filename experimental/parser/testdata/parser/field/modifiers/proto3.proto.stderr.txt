@@ -1,0 +1,81 @@
+error: unexpected `required`
+  --> testdata/parser/field/modifiers/proto3.proto:20:5
+   |
+20 |     required int32 a = 1;
+   |     ^^^^^^^^ expected type name, `optional`, or `repeated`
+  help: delete it
+   |
+20 | -     required int32 a = 1;
+20 | +     int32 a = 1;
+   |
+   = help: required fields are only permitted in proto2; even then, their use is
+           strongly discouraged
+
+error: unexpected `required`
+  --> testdata/parser/field/modifiers/proto3.proto:27:9
+   |
+26 | /     oneof bar {
+27 | |         required int32 a = 1;
+   | |         ^^^^^^^^ expected type name
+28 | |         optional int32 a = 1;
+...  |
+32 | |     }
+   | \_____- within this oneof definition
+  help: delete it
+   |
+27 | -         required int32 a = 1;
+27 | +         int32 a = 1;
+   |
+   = note: fields defined as part of a oneof definition may not have modifiers
+           applied to them
+
+error: unexpected `optional`
+  --> testdata/parser/field/modifiers/proto3.proto:28:9
+   |
+26 | /     oneof bar {
+27 | |         required int32 a = 1;
+28 | |         optional int32 a = 1;
+   | |         ^^^^^^^^ expected type name
+29 | |         repeated int32 a = 1;
+...  |
+32 | |     }
+   | \_____- within this oneof definition
+  help: delete it
+   |
+28 | -         optional int32 a = 1;
+28 | +         int32 a = 1;
+   |
+   = note: fields defined as part of a oneof definition may not have modifiers
+           applied to them
+
+error: unexpected `repeated`
+  --> testdata/parser/field/modifiers/proto3.proto:29:9
+   |
+26 | /     oneof bar {
+27 | |         required int32 a = 1;
+28 | |         optional int32 a = 1;
+29 | |         repeated int32 a = 1;
+   | |         ^^^^^^^^ expected type name
+30 | |         int32 a = 1;
+31 | |         map<int32, int32> a = 1;
+32 | |     }
+   | \_____- within this oneof definition
+  help: delete it
+   |
+29 | -         repeated int32 a = 1;
+29 | +         int32 a = 1;
+   |
+   = note: fields defined as part of a oneof definition may not have modifiers
+           applied to them
+   = help: to emulate a repeated field in a oneof definition, define a local
+           message type with a single repeated field
+
+error: map fields are not allowed inside of a oneof definition
+  --> testdata/parser/field/modifiers/proto3.proto:31:9
+   |
+31 |         map<int32, int32> a = 1;
+   |         ^^^^^^^^^^^^^^^^^
+   = help: to emulate a map field in a oneof definition, fine a local message
+           type with a single map field
+
+encountered 5 errors
