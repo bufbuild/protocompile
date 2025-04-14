@@ -21,8 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 )
 
-// AST is an [incremental.Query] for the contents of a file as provided
-// by a [source.Opener].
+// AST is an [incremental.Query] for the AST of a Protobuf file.
 //
 // AST queries with different Openers are considered distinct.
 type AST struct {

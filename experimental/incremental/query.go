@@ -16,7 +16,8 @@ package incremental
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/bufbuild/protocompile/experimental/internal/cycle"
 )
 
 // Query represents an incremental compilation query.
@@ -50,25 +51,7 @@ type Query[T any] interface {
 }
 
 // ErrCycle is an error due to cyclic dependencies.
-//
-// When returned by [Resolve] or [Run], this will be *ErrCycle[*AnyQuery].
-type ErrCycle[T any] struct {
-	// The offending cycle. The first and last entries will be equal.
-	Cycle []T
-}
-
-// Error implements [error].
-func (e *ErrCycle[T]) Error() string {
-	var buf strings.Builder
-	buf.WriteString("cycle detected: ")
-	for i, q := range e.Cycle {
-		if i != 0 {
-			buf.WriteString(" -> ")
-		}
-		fmt.Fprintf(&buf, "%#v", q)
-	}
-	return buf.String()
-}
+type ErrCycle = cycle.Error[*AnyQuery]
 
 // ErrPanic is returned by [Run] if any of the queries it executes panic.
 // This error is used to cancel the [context.Context] that governs the call to

@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/incremental"
+	"github.com/bufbuild/protocompile/experimental/internal/cycle"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -32,12 +32,15 @@ import (
 // Importer is a callback to resolve the imports of an [ast.File] being
 // lowered.
 //
-// If a cycle is encountered, should return an *[incremental.ErrCycle][[ast.DeclImport]],
+// If a cycle is encountered, should return an *[incremental.ErrCycle],
 // starting from decl and ending when the currently lowered file is imported.
 //
 // [Session.Lower] may not call this function on all imports; only those for
 // which it needs the caller to resolve a [File] for it.
 type Importer func(n int, path string, decl ast.DeclImport) (File, error)
+
+// ErrCycle is returned by an [Importer] when encountering an import cycle.
+type ErrCycle = cycle.Error[ast.DeclImport]
 
 // buildImports builds the transitive imports table.
 func buildImports(f File, r *report.Report, importer Importer) {
@@ -55,21 +58,23 @@ func buildImports(f File, r *report.Report, importer Importer) {
 		}
 
 		file, err := importer(i, path, imp)
-		switch err := err.(type) {
-		case nil:
-		case *incremental.ErrCycle[ast.DeclImport]:
-			diagnoseCycle(r, err)
+
+		var cycle *ErrCycle
+		switch {
+		case err == nil:
+
+		case errors.As(err, &cycle):
+			diagnoseCycle(r, cycle)
+			continue
+		case errors.Is(err, fs.ErrNotExist):
+			r.Errorf("imported file does not exist").Apply(
+				report.Snippetf(imp, "imported here"),
+			)
 			continue
 		default:
-			if errors.Is(err, fs.ErrNotExist) {
-				r.Errorf("imported file does not exist").Apply(
-					report.Snippetf(imp, "imported here"),
-				)
-			} else {
-				r.Errorf("could not open imported file: %v", err).Apply(
-					report.Snippetf(imp, "imported here"),
-				)
-			}
+			r.Errorf("could not open imported file: %v", err).Apply(
+				report.Snippetf(imp, "imported here"),
+			)
 			continue
 		}
 
@@ -99,7 +104,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each
 // import contributing to the cycle in turn.
-func diagnoseCycle(r *report.Report, cycle *incremental.ErrCycle[ast.DeclImport]) {
+func diagnoseCycle(r *report.Report, cycle *ErrCycle) {
 	path, _ := cycle.Cycle[0].ImportPath().AsLiteral().AsString()
 	err := r.Errorf("detected cyclic import while importing %q", path)
 
