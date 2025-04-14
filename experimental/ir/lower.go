@@ -20,10 +20,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-const (
-	tagSymbolRedefined = "symbol-redefined"
-)
-
 // Session is shared global configuration and state for all IR values that are
 // being used together.
 //

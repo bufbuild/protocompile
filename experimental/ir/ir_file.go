@@ -57,7 +57,16 @@ type Context struct {
 	// local symbols plus the imported tables of all direct imports. Importing
 	// everything and checking visibility later allows us to diagnose
 	// missing import errors.
-	symbols symtab
+
+	// This file's symbol tables. Each file has two symbol tables: its imported
+	// symbols and its exported symbols.
+	//
+	// The exported symbols are formed from the file's local symbols, and the
+	// exported symbols of each transitive public import.
+	//
+	// The imported symbols are the exported symbols plus the exported symbols
+	// of each direct import.
+	exported, imported symtab
 
 	arenas struct {
 		types   arena.Arena[rawType]
@@ -231,10 +240,10 @@ func (f File) Options() seq.Indexer[Option] {
 	)
 }
 
-// Symbols returns this file's transitive symbol table.
+// Symbols returns this file's symbol table.
 func (f File) Symbols() seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
-		f.Context().symbols,
+		f.Context().imported,
 		func(_ int, r ref[rawSymbol]) Symbol {
 			return wrapSymbol(f.Context(), r)
 		},

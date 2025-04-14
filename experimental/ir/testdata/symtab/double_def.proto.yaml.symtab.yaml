@@ -32,11 +32,25 @@ tables:
         file: "dep/foo.proto"
         index: 1
         visible: true
-      - { fqn: "dep.foo.Main", kind: KIND_MESSAGE, file: "dep/priv.proto", index: 1 }
+      - fqn: "dep.foo.Main"
+        kind: KIND_MESSAGE
+        file: "main.proto"
+        index: 1
+        visible: true
       - fqn: "dep.foo.Foo.BAR"
         kind: KIND_ENUM
         file: "main.proto"
         index: 4
+        visible: true
+      - fqn: "dep.foo.Foo.BAR"
+        kind: KIND_ENUM
+        file: "main.proto"
+        index: 4
+        visible: true
+      - fqn: "dep.foo.Main.x"
+        kind: KIND_FIELD
+        file: "main.proto"
+        index: 1
         visible: true
       - fqn: "dep.foo.Main.x"
         kind: KIND_FIELD
@@ -49,5 +63,4 @@ tables:
       - { path: "dep/priv.proto", transitive: true }
     symbols:
       - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
-      - { fqn: "dep.foo.Main", kind: KIND_MESSAGE, file: "dep/priv.proto", index: 1 }
       - { fqn: "dep.foo.Foo", kind: KIND_PACKAGE, file: "main2.proto" }

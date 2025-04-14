@@ -127,6 +127,10 @@ func (f Field) Presence() presence.Kind {
 //
 // May be zero for extensions declared at the top level.
 func (f Field) Parent() Type {
+	if f.IsZero() {
+		return Type{}
+	}
+
 	return wrapType(f.Context(), ref[rawType]{ptr: f.raw.parent})
 }
 
@@ -138,6 +142,10 @@ func (f Field) Parent() Type {
 //
 // This is zero for enum values.
 func (f Field) Element() Type {
+	if f.IsZero() {
+		return Type{}
+	}
+
 	return wrapType(f.Context(), f.raw.elem)
 }
 
@@ -145,6 +153,10 @@ func (f Field) Element() Type {
 // [Field.Parent], or the extendee if this is an extension. This is the
 // type it is declared to be *part of*.
 func (f Field) Container() Type {
+	if f.IsZero() {
+		return Type{}
+	}
+
 	if f.raw.extn.ptr.Nil() {
 		return f.Parent()
 	}

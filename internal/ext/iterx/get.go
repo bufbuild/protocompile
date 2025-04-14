@@ -82,3 +82,15 @@ func Index2[T, U any](seq iter.Seq2[T, U], p func(T, U) bool) int {
 	idx, _, _ := Find2(seq, p)
 	return idx
 }
+
+// Contains whether an element exists that satisfies p.
+func Contains[T any](seq iter.Seq[T], p func(T) bool) bool {
+	idx, _ := Find(seq, p)
+	return idx != -1
+}
+
+// Contains2 is like [Contains], but for two-element iterators.
+func Contains2[T, U any](seq iter.Seq2[T, U], p func(T, U) bool) bool {
+	idx, _, _ := Find2(seq, p)
+	return idx != -1
+}

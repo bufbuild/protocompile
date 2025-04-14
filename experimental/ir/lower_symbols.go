@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -37,7 +38,7 @@ func buildLocalSymbols(f File) {
 		kind: SymbolKindPackage,
 		fqn:  f.InternedPackage(),
 	})
-	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 
 	for ty := range seq.Values(f.AllTypes()) {
 		newTypeSymbol(ty)
@@ -55,7 +56,7 @@ func buildLocalSymbols(f File) {
 		newFieldSymbol(f)
 	}
 
-	c.symbols.sort(c)
+	c.exported.sort(c)
 }
 
 func newTypeSymbol(ty Type) {
@@ -69,7 +70,7 @@ func newTypeSymbol(ty Type) {
 		fqn:  ty.InternedFullName(),
 		data: arena.Untyped(c.arenas.types.Compress(ty.raw)),
 	})
-	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
 func newFieldSymbol(f Field) {
@@ -85,7 +86,7 @@ func newFieldSymbol(f Field) {
 		fqn:  f.InternedFullName(),
 		data: arena.Untyped(c.arenas.fields.Compress(f.raw)),
 	})
-	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
 func newOneofSymbol(o Oneof) {
@@ -95,59 +96,79 @@ func newOneofSymbol(o Oneof) {
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.raw)),
 	})
-	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
-// buildImportedSymbols builds a symbol table of every symbol in every
-// transitive import. This will contain symbols that are not visible to this
-// file, but visibility can be tested with f.visibleImports.
+// buildImportedSymbols builds a symbol table of every imported symbol.
+//
+// It also enhances the exported symbol table with the exported symbols of each
+// public import.
 func buildImportedSymbols(f File, r *report.Report) {
-	// Only need to merge from the direct imports's tables, since each
-	// import table is fully transitive.
 	imports := f.Imports()
+	locals := f.Context().exported
 
-	f.Context().symbols = slicesx.MergeKeySeq(
+	var havePublic bool
+	for sym := range seq.Values(imports) {
+		if sym.Public {
+			havePublic = true
+			break
+		}
+	}
+
+	// Form the exported symbol table from the public imports. Not necessary
+	// if there are no public imports.
+	if havePublic {
+		f.Context().exported = symtabMerge(
+			f.Context(),
+			iterx.Chain(
+				iterx.Of(locals),
+				seq.Map(imports, func(i Import) symtab {
+					if !i.Public {
+						// Return an empty symbol table so that the table to
+						// context mapping can still be an array index.
+						return symtab{}
+					}
+					return i.Context().exported
+				}),
+			),
+			func(i int) File {
+				if i == 0 {
+					return f
+				}
+				return f.Context().imports.files[i-1]
+			},
+		)
+	}
+	dedupSymbols(f, &f.Context().exported, nil)
+
+	// Form the imported symbol table from the full import list.
+	f.Context().imported = symtabMerge(
+		f.Context(),
 		iterx.Chain(
-			iterx.Of(f.Context().symbols),
+			iterx.Of(locals),
 			seq.Map(imports, func(i Import) symtab {
-				return i.Context().symbols
+				return i.Context().exported
 			}),
 		),
-
-		func(which int, elem ref[rawSymbol]) intern.ID {
-			c := f.Context()
-			if which > 0 {
-				// Need to make sure to use the correct context here for
-				// scoping the lookup.
-				c = imports.At(which - 1).Context()
+		func(i int) File {
+			if i == 0 {
+				return f
 			}
-
-			return wrapSymbol(c, elem).InternedFullName()
-		},
-
-		func(which int, elem ref[rawSymbol]) ref[rawSymbol] {
-			// We need top map the file number from src to the current one.
-			if which > 0 {
-				src := imports.At(which - 1)
-				theirs := wrapSymbol(src.Context(), elem)
-				ours := f.Context().imports.byPath[theirs.File().InternedPath()]
-				elem.file = int32(ours + 1)
-			}
-
-			return elem
+			return f.Context().imports.files[i-1]
 		},
 	)
-
-	diagnoseDuplicates(f, &f.Context().symbols, r)
+	dedupSymbols(f, &f.Context().imported, r)
 }
 
-// diagnoseDuplicates diagnoses duplicate symbols in a sorted symbol table, and
+// dedupSymbols diagnoses duplicate symbols in a sorted symbol table, and
 // deletes the duplicates.
+//
+// If r is nil, no diagnostics are emitted, but dedup still occurs.
 //
 // Which duplicate is chosen for deletion is deterministic: ties are broken
 // according to file names and span starts, in that order. This avoids
 // non-determinism around how intern IDs are assigned to names.
-func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
+func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 	*symbols = slicesx.DedupKey(
 		*symbols,
 		func(r ref[rawSymbol]) intern.ID { return wrapSymbol(f.Context(), r).InternedFullName() },
@@ -171,10 +192,8 @@ func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 			// Ignore all refs that are packages except for the first one. This
 			// is because a package can be defined in multiple files.
 			isFirst := true
-			havePackage := false
 			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
 				pkg := wrapSymbol(f.Context(), r).Kind() == SymbolKindPackage
-				havePackage = havePackage || pkg
 				if isFirst {
 					isFirst = false
 					return false
@@ -184,106 +203,129 @@ func diagnoseDuplicates(f File, symbols *symtab, r *report.Report) {
 
 			// Deduplicate references to the same element.
 			refs = slicesx.Dedup(refs)
-
-			if len(refs) == 1 {
-				return refs[0]
-			}
-
-			first := wrapSymbol(f.Context(), refs[0])
-			second := wrapSymbol(f.Context(), refs[1])
-
-			name := first.FullName()
-			if !havePackage {
-				name = FullName(name.Name())
-			}
-
-			// TODO: In the diagnostic construction code below, we can wind up
-			// saying nonsense like "a enum". Currently, we chose the article
-			// based on whether the noun starts with an e, but this is really
-			// icky.
-			article := func(n taxa.Noun) string {
-				if n.String()[0] == 'e' {
-					return "an"
-				}
-				return "a"
-			}
-
-			noun := first.Kind().noun()
-			d := r.Errorf("`%s` declared multiple times", name).Apply(
-				report.Tag(tagSymbolRedefined),
-				report.Snippetf(first.Definition(),
-					"first here, as %s %s",
-					article(noun), noun),
-			)
-
-			if next := second.Kind().noun(); next != noun {
-				d.Apply(report.Snippetf(second.Definition(),
-					"...also declared here, now as %s %s", article(next), next))
-				noun = next
-			} else {
-				d.Apply(report.Snippetf(second.Definition(),
-					"...also declared here"))
-			}
-
-			for _, r := range refs[2:] {
-				s := wrapSymbol(f.Context(), r)
-				next := s.Kind().noun()
-
-				if noun != next {
-					d.Apply(report.Snippetf(s.Definition(),
-						"...and then here as a %s %s", article(next), next))
-					noun = next
-				} else {
-					d.Apply(report.Snippetf(s.Definition(),
-						"...and here"))
-				}
-			}
-
-			// If at least one duplicated symbol is non-visible, explain
-			// that symbol names are global!
-			idx := slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
-				s := wrapSymbol(f.Context(), r)
-				return !s.Visible()
-			})
-			if idx != -1 {
-				s := wrapSymbol(f.Context(), refs[idx])
-				d.Apply(report.Helpf(
-					"symbol names must be unique across all transitive imports; "+
-						"for example, %q declares `%s` but is not directly imported",
-					s.File().Path(),
-					name,
-				))
-			}
-
-			// If at least one of them was an enum value, we note the weird language
-			// bug with enum scoping.
-			idx = slices.IndexFunc(refs, func(r ref[rawSymbol]) bool {
-				f := wrapSymbol(f.Context(), r).AsField()
-				// NOTE: Can't use f.IsEnumValue() yet because types have not
-				// yet been resolved.
-				return !f.IsZero() && f.Container().IsEnum()
-			})
-			if idx != -1 {
-				value := wrapSymbol(f.Context(), refs[idx]).AsField()
-				enum := value.Container()
-
-				// Avoid unreasonably-nested names where reasonable.
-				parentName := enum.FullName().Parent()
-				if parent := enum.Parent(); !parent.IsZero() {
-					parentName = FullName(parent.Name())
-				}
-
-				d.Apply(report.Helpf(
-					"the fully-qualified names of enum values do not include the name of the enum; "+
-						"`%[3]s` defined inside of enum `%[1]s.%[2]s` has the name `%[1]s.%[3]s`, "+
-						"not `%[1]s.%[2]s.%[3]s`",
-					parentName,
-					enum.Name(),
-					value.Name(),
-				))
+			if len(refs) > 1 && r != nil {
+				r.Error(errDuplicates{f.Context(), refs})
 			}
 
 			return refs[0]
 		},
 	)
+}
+
+// errDuplicates diagnoses duplicate symbols.
+type errDuplicates struct {
+	*Context
+	refs []ref[rawSymbol]
+}
+
+func (e errDuplicates) symbol(n int) Symbol {
+	return wrapSymbol(e.Context, e.refs[n])
+}
+
+func (e errDuplicates) Diagnose(d *report.Diagnostic) {
+	var havePkg bool
+	for i := range e.refs {
+		if e.symbol(i).Kind() == SymbolKindPackage {
+			havePkg = true
+			break
+		}
+	}
+
+	first, second := e.symbol(0), e.symbol(1)
+
+	name := first.FullName()
+	if !havePkg {
+		name = FullName(name.Name())
+	}
+
+	var inParent string
+	if !havePkg && name.Parent() != "" {
+		inParent = fmt.Sprintf(" in `%s`", name.Parent())
+	}
+
+	// TODO: In the diagnostic construction code below, we can wind up
+	// saying nonsense like "a enum". Currently, we chose the article
+	// based on whether the noun starts with an e, but this is really
+	// icky.
+	article := func(n taxa.Noun) string {
+		if n.String()[0] == 'e' {
+			return "an"
+		}
+		return "a"
+	}
+
+	noun := first.Kind().noun()
+	d.Apply(
+		report.Message("`%s` declared multiple times%s", name, inParent),
+		report.Snippetf(first.Definition(),
+			"first here, as %s %s",
+			article(noun), noun),
+	)
+
+	if next := second.Kind().noun(); next != noun {
+		d.Apply(report.Snippetf(second.Definition(),
+			"...also declared here, now as %s %s", article(next), next))
+		noun = next
+	} else {
+		d.Apply(report.Snippetf(second.Definition(),
+			"...also declared here"))
+	}
+
+	for i := range e.refs[2:] {
+		s := e.symbol(i + 2)
+		next := s.Kind().noun()
+
+		if noun != next {
+			d.Apply(report.Snippetf(s.Definition(),
+				"...and then here as a %s %s", article(next), next))
+			noun = next
+		} else {
+			d.Apply(report.Snippetf(s.Definition(),
+				"...and here"))
+		}
+	}
+
+	// If at least one duplicated symbol is non-visible, explain
+	// that symbol names are global!
+	for i := range e.refs {
+		s := e.symbol(i)
+		if s.Visible() {
+			continue
+		}
+
+		d.Apply(report.Helpf(
+			"symbol names must be unique across all transitive imports; "+
+				"for example, %q declares `%s` but is not directly imported",
+			s.File().Path(),
+			first.FullName(),
+		))
+		break
+	}
+
+	// If at least one of them was an enum value, we note the weird language
+	// bug with enum scoping.
+	for i := range e.refs {
+		s := e.symbol(i)
+		v := s.AsField()
+		if !v.Container().IsEnum() {
+			continue
+		}
+
+		enum := v.Container()
+
+		// Avoid unreasonably-nested names where reasonable.
+		parentName := enum.FullName().Parent()
+		if parent := enum.Parent(); !parent.IsZero() {
+			parentName = FullName(parent.Name())
+		}
+
+		d.Apply(report.Helpf(
+			"the fully-qualified names of enum values do not include the name of the enum; "+
+				"`%[3]s` defined inside of enum `%[1]s.%[2]s` has the name `%[1]s.%[3]s`, "+
+				"not `%[1]s.%[2]s.%[3]s`",
+			parentName,
+			enum.Name(),
+			v.Name(),
+		))
+	}
 }

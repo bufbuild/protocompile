@@ -16,12 +16,14 @@ package ir
 
 import (
 	"cmp"
+	"iter"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -192,6 +194,30 @@ func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 // The elements of a symtab are sorted by the [intern.ID] of their FQN, allowing
 // for O(n) merging of symbol tables.
 type symtab []ref[rawSymbol]
+
+// symtabMerge merges the given symbol tables in the given context.
+func symtabMerge(c *Context, tables iter.Seq[symtab], fileForTable func(int) File) symtab {
+	return slicesx.MergeKeySeq(
+		tables,
+
+		func(which int, elem ref[rawSymbol]) intern.ID {
+			f := fileForTable(which)
+			return wrapSymbol(f.Context(), elem).InternedFullName()
+		},
+
+		func(which int, elem ref[rawSymbol]) ref[rawSymbol] {
+			// We need top map the file number from src to the current one.
+			src := fileForTable(which)
+			if src.Context() != c {
+				theirs := wrapSymbol(src.Context(), elem)
+				ours := c.imports.byPath[theirs.File().InternedPath()]
+				elem.file = int32(ours + 1)
+			}
+
+			return elem
+		},
+	)
+}
 
 // sort sorts this symbol table according to the value of each intern
 // ID.
