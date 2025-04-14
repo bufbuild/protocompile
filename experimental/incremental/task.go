@@ -415,13 +415,13 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 
 		// Check for a potential cycle. This is only possible if output is
 		// pending; if it isn't, it can't be in our history path.
-		var cycle *ErrCycle[*AnyQuery]
+		var cycle *ErrCycle
 		for node := range caller.path.Walk() {
 			if node.Query.Key() != q.Key() {
 				continue
 			}
 
-			cycle = new(ErrCycle[*AnyQuery])
+			cycle = new(ErrCycle)
 
 			// Re-walk the list to collect the cycle itself.
 			for node2 := range caller.path.Walk() {
