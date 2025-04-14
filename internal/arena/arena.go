@@ -30,6 +30,7 @@ package arena
 
 import (
 	"fmt"
+	"iter"
 	"math/bits"
 	"strings"
 
@@ -171,6 +172,22 @@ func (a *Arena[T]) Deref(ptr Pointer[T]) *T {
 
 	slice, idx := a.coordinates(int(ptr) - 1)
 	return &a.table[slice][idx]
+}
+
+// Values returns an iterator that yields each value allocated on this arena.
+//
+// Values freshly allocated with [Arena.New] may or may not be yielded during
+// iteration.
+func (a *Arena[T]) Values() iter.Seq[*T] {
+	return func(yield func(*T) bool) {
+		for _, chunk := range a.table {
+			for i := range chunk {
+				if !yield(&chunk[i]) {
+					return
+				}
+			}
+		}
+	}
 }
 
 func (a *Arena[T]) len() int {

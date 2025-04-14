@@ -1,0 +1,14 @@
+tables:
+  "c.proto":
+    imports: [{ path: "a.proto", transitive: true }, { path: "b.proto", visible: true }]
+    symbols:
+      - { fqn: "foo.bar", kind: KIND_PACKAGE, file: "a.proto" }
+      - { fqn: "foo.bar.M", kind: KIND_MESSAGE, file: "a.proto", index: 1 }
+      - { fqn: "foo", kind: KIND_PACKAGE, file: "b.proto" }
+      - { fqn: "foo.M", kind: KIND_MESSAGE, file: "b.proto", index: 1, visible: true }
+      - { fqn: "foo.bar.baz", kind: KIND_PACKAGE, file: "c.proto" }
+      - fqn: "foo.bar.baz.m"
+        kind: KIND_EXTENSION
+        file: "c.proto"
+        index: 1
+        visible: true

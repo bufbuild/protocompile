@@ -62,9 +62,9 @@ func TestRender(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
-		Root:      "testdata",
-		Refresh:   "PROTOCOMPILE_REFRESH",
-		Extension: "yaml",
+		Root:       "testdata",
+		Refresh:    "PROTOCOMPILE_REFRESH",
+		Extensions: []string{"yaml"},
 		Outputs: []golden.Output{
 			{Extension: "simple.txt"},
 			{Extension: "fancy.txt"},
