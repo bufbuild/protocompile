@@ -16,7 +16,8 @@ package incremental
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/bufbuild/protocompile/experimental/internal/cycle"
 )
 
 // Query represents an incremental compilation query.
@@ -49,27 +50,8 @@ type Query[T any] interface {
 	Execute(*Task) (value T, fatal error)
 }
 
-// ErrCycle is returned by [Resolve] if a cycle occurs during query execution.
-type ErrCycle struct {
-	// The offending cycle. The first and last queries will have the same URL.
-	//
-	// To inspect the concrete types of the cycle members, use [DowncastQuery],
-	// which will automatically unwrap any calls to [AnyQuery].
-	Cycle []*AnyQuery
-}
-
-// Error implements [error].
-func (e *ErrCycle) Error() string {
-	var buf strings.Builder
-	buf.WriteString("cycle detected: ")
-	for i, q := range e.Cycle {
-		if i != 0 {
-			buf.WriteString(" -> ")
-		}
-		fmt.Fprintf(&buf, "%#v", q.Key())
-	}
-	return buf.String()
-}
+// ErrCycle is an error due to cyclic dependencies.
+type ErrCycle = cycle.Error[*AnyQuery]
 
 // ErrPanic is returned by [Run] if any of the queries it executes panic.
 // This error is used to cancel the [context.Context] that governs the call to
@@ -86,6 +68,23 @@ func (e *ErrPanic) Error() string {
 		"call to Query.Execute (key: %#v) panicked: %v\n%s",
 		e.Query.Key(), e.Panic, e.Backtrace,
 	)
+}
+
+// ZeroQuery is a [Query] that produces the zero value of T.
+//
+// This query is useful for cases where you are building a slice of queries out
+// of some input slice, but some of the elements of that slice are invalid. This
+// can be used as a "placeholder" query so that indices of the input slice
+// match the indices of the result slice returned by [Resolve].
+type ZeroQuery[T any] struct{}
+
+// Key implements [Query].
+func (q ZeroQuery[T]) Key() any { return q }
+
+// Execute implements [Query].
+func (q ZeroQuery[T]) Execute(_ *Task) (T, error) {
+	var zero T
+	return zero, nil
 }
 
 // AnyQuery is a [Query] that has been type-erased.
@@ -130,6 +129,11 @@ func (q *AnyQuery) Key() any { return q.key }
 
 // Execute implements [Query].
 func (q *AnyQuery) Execute(t *Task) (any, error) { return q.execute(t) }
+
+// Format implements [fmt.Formatter].
+func (q *AnyQuery) Format(state fmt.State, verb rune) {
+	fmt.Fprintf(state, fmt.FormatString(state, verb), q.Underlying())
+}
 
 // AsTyped undoes the effect of [AsAny].
 //

@@ -15,7 +15,6 @@
 package ir
 
 import (
-	"path/filepath"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -40,9 +39,8 @@ type walker struct {
 func (w *walker) walk() {
 	c := w.Context()
 
-	path := filepath.Clean(w.AST().Span().File.Path())
-	path = filepath.ToSlash(path)
-	c.path = c.session.intern.Intern(path)
+	path := w.AST().Span().File.Path()
+	c.path = c.session.intern.Intern(CanonicalizeFilePath(path))
 
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())

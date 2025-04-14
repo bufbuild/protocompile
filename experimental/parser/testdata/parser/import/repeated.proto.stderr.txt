@@ -1,9 +1,12 @@
-error: file "foo.proto" imported multiple times
-  --> testdata/parser/import/repeated.proto:20:1
+warning: non-canonical string literal in import
+  --> testdata/parser/import/repeated.proto:20:8
    |
-19 | import "foo.proto";
-   | ------------------- first imported here
 20 | import "foo\x2eproto";
-   | ^^^^^^^^^^^^^^^^^^^^^^
+   |        ^^^^^^^^^^^^^^
+  help: replace it with a canonical string
+   |
+20 | - import "foo\x2eproto";
+20 | + import "foo.proto";
+   |
 
-encountered 1 error
+encountered 1 warning

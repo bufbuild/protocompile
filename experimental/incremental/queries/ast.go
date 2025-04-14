@@ -21,8 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 )
 
-// AST is an [incremental.Query] for the contents of a file as provided
-// by a [source.Opener].
+// AST is an [incremental.Query] for the AST of a Protobuf file.
 //
 // AST queries with different Openers are considered distinct.
 type AST struct {
@@ -47,7 +46,11 @@ func (a AST) Key() any {
 func (a AST) Execute(t *incremental.Task) (ast.File, error) {
 	t.Report().Options.Stage += stageAST
 
-	r, err := incremental.Resolve(t, File(a))
+	r, err := incremental.Resolve(t, File{
+		Opener:      a.Opener,
+		Path:        a.Path,
+		ReportError: true,
+	})
 	if err != nil {
 		return ast.File{}, err
 	}

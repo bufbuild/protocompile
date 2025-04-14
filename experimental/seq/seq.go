@@ -98,3 +98,12 @@ func Append[T any](seq Inserter[T], values ...T) {
 		seq.Insert(seq.Len(), v)
 	}
 }
+
+// ToSlice copies an [Indexer] into a slice.
+func ToSlice[T any](seq Indexer[T]) []T {
+	out := make([]T, seq.Len())
+	for i := range out {
+		out[i] = seq.At(i)
+	}
+	return out
+}

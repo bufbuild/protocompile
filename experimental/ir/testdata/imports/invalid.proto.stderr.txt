@@ -1,0 +1,19 @@
+error: import path cannot be empty
+  --> testdata/imports/invalid.proto:19:8
+   |
+19 | import "";
+   |        ^^
+
+error: import path must be relative
+  --> testdata/imports/invalid.proto:20:8
+   |
+20 | import "/root.proto";
+   |        ^^^^^^^^^^^^^ this path begins with a `/`
+
+error: imported file does not exist
+  --> testdata/imports/invalid.proto:21:1
+   |
+21 | import "does_not_exist.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+
+encountered 3 errors
