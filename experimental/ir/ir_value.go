@@ -155,9 +155,14 @@ func (v Value) Field() Field {
 // If the value is not an array, it contains the singular element within;
 // otherwise, it returns the elements of the array.
 func (v Value) Elements() seq.Indexer[Element] {
-	slice := slicesx.One(&v.raw.bits)
-	if int32(v.raw.field.ptr) < 0 {
-		slice = *v.Context().arenas.arrays.Deref(arena.Pointer[[]rawValueBits](v.raw.bits))
+	var slice []rawValueBits
+	switch {
+	case v.IsZero():
+		break
+	case int32(v.raw.field.ptr) < 0:
+		slice = *v.slice()
+	default:
+		slice = slicesx.One(&v.raw.bits)
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, bits rawValueBits) Element {
@@ -167,7 +172,7 @@ func (v Value) Elements() seq.Indexer[Element] {
 
 // AsBool is a shortcut for [Element.AsBool], if this value is singular.
 func (v Value) AsBool() (value, ok bool) {
-	if v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().Presence() == presence.Repeated {
 		return false, false
 	}
 	return v.Elements().At(0).AsBool()
@@ -175,7 +180,7 @@ func (v Value) AsBool() (value, ok bool) {
 
 // AsUInt is a shortcut for [Element.AsUInt], if this value is singular.
 func (v Value) AsUInt() (uint64, bool) {
-	if v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().Presence() == presence.Repeated {
 		return 0, false
 	}
 	return v.Elements().At(0).AsUInt()
@@ -183,7 +188,7 @@ func (v Value) AsUInt() (uint64, bool) {
 
 // AsInt is a shortcut for [Element.AsUnt], if this value is singular.
 func (v Value) AsInt() (int64, bool) {
-	if v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().Presence() == presence.Repeated {
 		return 0, false
 	}
 	return v.Elements().At(0).AsInt()
@@ -191,7 +196,7 @@ func (v Value) AsInt() (int64, bool) {
 
 // AsFloat is a shortcut for [Element.AsFloat], if this value is singular.
 func (v Value) AsFloat() (float64, bool) {
-	if v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().Presence() == presence.Repeated {
 		return 0, false
 	}
 	return v.Elements().At(0).AsFloat()
@@ -199,7 +204,7 @@ func (v Value) AsFloat() (float64, bool) {
 
 // AsString is a shortcut for [Element.AsString], if this value is singular.
 func (v Value) AsString() (string, bool) {
-	if v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().Presence() == presence.Repeated {
 		return "", false
 	}
 	return v.Elements().At(0).AsString()
@@ -207,7 +212,7 @@ func (v Value) AsString() (string, bool) {
 
 // AsMessage is a shortcut for [Element.AsMessage], if this value is singular.
 func (v Value) AsMessage() MessageValue {
-	if v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().Presence() == presence.Repeated {
 		return MessageValue{}
 	}
 	return v.Elements().At(0).AsMessage()
