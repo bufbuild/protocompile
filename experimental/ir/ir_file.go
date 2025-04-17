@@ -51,15 +51,16 @@ type Context struct {
 	extns            []arena.Pointer[rawField]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options []arena.Pointer[rawOption]
+	options arena.Pointer[rawValue]
 
 	arenas struct {
-		types    arena.Arena[rawType]
-		fields   arena.Arena[rawField]
-		oneofs   arena.Arena[rawOneof]
-		options  arena.Arena[rawOption]
+		types  arena.Arena[rawType]
+		fields arena.Arena[rawField]
+		oneofs arena.Arena[rawOneof]
+
+		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
-		arrays   arena.Arena[[]rawValue]
+		arrays   arena.Arena[[]rawValueBits]
 	}
 }
 
@@ -192,13 +193,8 @@ func (f File) AllExtensions() seq.Indexer[Field] {
 }
 
 // Options returns the top level options applied to this file.
-func (f File) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		f.Context().options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), p)
-		},
-	)
+func (f File) Options() MessageValue {
+	return wrapValue(f.Context(), f.Context().options).AsMessage()
 }
 
 // topoSort sorts a graph of [File]s according to their dependency graph,

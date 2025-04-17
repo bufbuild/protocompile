@@ -132,12 +132,9 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		dg.field(extn, fd)
 	}
 
-	for option := range seq.Values(file.Options()) {
-		if fdp.Options == nil {
-			fdp.Options = new(descriptorpb.FileOptions)
-		}
-
-		dg.option(option, fdp.Options)
+	if options := file.Options(); !options.IsZero() {
+		fdp.Options = new(descriptorpb.FileOptions)
+		dg.options(options, fdp.Options)
 	}
 }
 
@@ -177,12 +174,9 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 		er.Start = addr(start)
 		er.End = addr(end - 1)
 
-		for option := range seq.Values(extensions.Options()) {
-			if er.Options == nil {
-				er.Options = new(descriptorpb.ExtensionRangeOptions)
-			}
-
-			dg.option(option, er.Options)
+		if options := extensions.Options(); !options.IsZero() {
+			er.Options = new(descriptorpb.ExtensionRangeOptions)
+			dg.options(options, er.Options)
 		}
 	}
 
@@ -225,12 +219,9 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 		}
 	}
 
-	for option := range seq.Values(ty.Options()) {
-		if mdp.Options == nil {
-			mdp.Options = new(descriptorpb.MessageOptions)
-		}
-
-		dg.option(option, mdp.Options)
+	if options := ty.Options(); !options.IsZero() {
+		mdp.Options = new(descriptorpb.MessageOptions)
+		dg.options(options, mdp.Options)
 	}
 }
 
@@ -289,42 +280,36 @@ func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) 
 		fdp.OneofIndex = addr(int32(oneof.Index()))
 	}
 
-	for option := range seq.Values(f.Options()) {
-		if fdp.Options == nil {
-			fdp.Options = new(descriptorpb.FieldOptions)
-		}
-
+	if options := f.Options(); !options.IsZero() {
+		fdp.Options = new(descriptorpb.FieldOptions)
 		// We pass the FDP directly, because we want to keep it around for
 		// dealing with the pseudo-options. codegen.option has a special case
 		// for this.
-		dg.option(option, fdp)
+		dg.options(options, fdp)
 	}
 }
 
 func (dg *descGenerator) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {
 	odp.Name = addr(o.Name())
 
-	for option := range seq.Values(o.Options()) {
-		if odp.Options == nil {
-			odp.Options = new(descriptorpb.OneofOptions)
-		}
-
-		dg.option(option, odp.Options)
+	if options := o.Options(); !options.IsZero() {
+		odp.Options = new(descriptorpb.OneofOptions)
+		dg.options(options, odp.Options)
 	}
 }
 
-func (dg *descGenerator) enum(ty Type, mdp *descriptorpb.EnumDescriptorProto) {
-	mdp.Name = addr(ty.Name())
+func (dg *descGenerator) enum(ty Type, edp *descriptorpb.EnumDescriptorProto) {
+	edp.Name = addr(ty.Name())
 
 	for field := range seq.Values(ty.Fields()) {
 		evd := new(descriptorpb.EnumValueDescriptorProto)
-		mdp.Value = append(mdp.Value, evd)
+		edp.Value = append(edp.Value, evd)
 		dg.enumValue(field, evd)
 	}
 
 	for reserved := range seq.Values(ty.ReservedRanges()) {
 		rr := new(descriptorpb.EnumDescriptorProto_EnumReservedRange)
-		mdp.ReservedRange = append(mdp.ReservedRange, rr)
+		edp.ReservedRange = append(edp.ReservedRange, rr)
 
 		start, end := reserved.Range()
 		rr.Start = addr(start)
@@ -332,32 +317,26 @@ func (dg *descGenerator) enum(ty Type, mdp *descriptorpb.EnumDescriptorProto) {
 	}
 
 	for name := range seq.Values(ty.ReservedNames()) {
-		mdp.ReservedName = append(mdp.ReservedName, name.Name())
+		edp.ReservedName = append(edp.ReservedName, name.Name())
 	}
 
-	for option := range seq.Values(ty.Options()) {
-		if mdp.Options == nil {
-			mdp.Options = new(descriptorpb.EnumOptions)
-		}
-
-		dg.option(option, mdp.Options)
+	if options := ty.Options(); !options.IsZero() {
+		edp.Options = new(descriptorpb.EnumOptions)
+		dg.options(options, edp.Options)
 	}
 }
 
-func (dg *descGenerator) enumValue(f Field, fdp *descriptorpb.EnumValueDescriptorProto) {
-	fdp.Name = addr(f.Name())
-	fdp.Number = addr(f.Number())
+func (dg *descGenerator) enumValue(f Field, evdp *descriptorpb.EnumValueDescriptorProto) {
+	evdp.Name = addr(f.Name())
+	evdp.Number = addr(f.Number())
 
-	for option := range seq.Values(f.Options()) {
-		if fdp.Options == nil {
-			fdp.Options = new(descriptorpb.EnumValueOptions)
-		}
-
-		dg.option(option, fdp.Options)
+	if options := f.Options(); !options.IsZero() {
+		evdp.Options = new(descriptorpb.EnumValueOptions)
+		dg.options(options, evdp.Options)
 	}
 }
 
-func (dg *descGenerator) option(_ Option, target proto.Message) {
+func (dg *descGenerator) options(_ MessageValue, target proto.Message) {
 	var fdp *descriptorpb.FieldDescriptorProto
 	if actual, ok := target.(*descriptorpb.FieldDescriptorProto); ok {
 		fdp = actual
