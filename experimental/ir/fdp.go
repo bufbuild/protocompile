@@ -273,16 +273,16 @@ func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) 
 			fdp.Type = kind.Enum()
 		} else if ty.IsEnum() {
 			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-			fdp.TypeName = addr(string(ty.FullName()))
+			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
 		} else {
 			// TODO: Groups
 			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
-			fdp.TypeName = addr(string(ty.FullName()))
+			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
 		}
 	}
 
 	if f.IsExtension() {
-		fdp.Extendee = addr(string(f.Container().FullName()))
+		fdp.Extendee = addr(string(f.Container().FullName().ToAbsolute()))
 	}
 
 	if oneof := f.Oneof(); !oneof.IsZero() {

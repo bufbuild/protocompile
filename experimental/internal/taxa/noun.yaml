@@ -54,6 +54,7 @@
   - {name: CustomOption, string: "custom option setting"}
 
   - {name: Field, string: "message field"}
+  - {name: Extension, string: "message extension"}
   - {name: EnumValue, string: "enum value"}
   - {name: Method, string: "service method"}
 
@@ -81,6 +82,10 @@
   - {name: TypePath, string: "type name"}
   - {name: TypeParams, string: "type parameters"}
   - {name: TypePrefix, string: "type modifier"}
+
+  - {name: MessageType, string: "message type"}
+  - {name: EnumType, string: "enum type"}
+  - {name: ScalarType, string: "scalar type"}
 
   - {name: MapKey, string: "map key type"}
   - {name: MapValue, string: "map value type"}

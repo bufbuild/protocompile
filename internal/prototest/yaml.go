@@ -42,7 +42,12 @@ func ToYAML(m proto.Message, opts ToYAMLOptions) string {
 	y := &toYAML{
 		ToYAMLOptions: opts,
 	}
+
 	d := y.message(m.ProtoReflect())
+	if len(d.pairs) == 0 {
+		return ""
+	}
+
 	d.prepare()
 	y.write(d)
 	return y.out.String()
@@ -128,7 +133,7 @@ func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any
 // buffer.
 func (y *toYAML) write(v any) {
 	switch v := v.(type) {
-	case int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
+	case bool, int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
 		fmt.Fprint(&y.out, v)
 	case string:
 		fmt.Fprintf(&y.out, "%q", v)

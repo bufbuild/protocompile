@@ -53,6 +53,7 @@ const (
 	Option
 	CustomOption
 	Field
+	Extension
 	EnumValue
 	Method
 	CompactOptions
@@ -75,6 +76,9 @@ const (
 	TypePath
 	TypeParams
 	TypePrefix
+	MessageType
+	EnumType
+	ScalarType
 	MapKey
 	MapValue
 	Whitespace
@@ -166,6 +170,7 @@ var _table_Noun_String = [...]string{
 	Option:             "option setting",
 	CustomOption:       "custom option setting",
 	Field:              "message field",
+	Extension:          "message extension",
 	EnumValue:          "enum value",
 	Method:             "service method",
 	CompactOptions:     "compact options",
@@ -188,6 +193,9 @@ var _table_Noun_String = [...]string{
 	TypePath:           "type name",
 	TypeParams:         "type parameters",
 	TypePrefix:         "type modifier",
+	MessageType:        "message type",
+	EnumType:           "enum type",
+	ScalarType:         "scalar type",
 	MapKey:             "map key type",
 	MapValue:           "map value type",
 	Whitespace:         "whitespace",
@@ -262,6 +270,7 @@ var _table_Noun_GoString = [...]string{
 	Option:             "Option",
 	CustomOption:       "CustomOption",
 	Field:              "Field",
+	Extension:          "Extension",
 	EnumValue:          "EnumValue",
 	Method:             "Method",
 	CompactOptions:     "CompactOptions",
@@ -284,6 +293,9 @@ var _table_Noun_GoString = [...]string{
 	TypePath:           "TypePath",
 	TypeParams:         "TypeParams",
 	TypePrefix:         "TypePrefix",
+	MessageType:        "MessageType",
+	EnumType:           "EnumType",
+	ScalarType:         "ScalarType",
 	MapKey:             "MapKey",
 	MapValue:           "MapValue",
 	Whitespace:         "Whitespace",

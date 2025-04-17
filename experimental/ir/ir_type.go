@@ -38,9 +38,10 @@ type rawType struct {
 	fields          []arena.Pointer[rawField]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
-	oneofs          []rawOneof
+	oneofs          []arena.Pointer[rawOneof]
 	options         []arena.Pointer[rawOption]
 	fqn, name       intern.ID // 0 for predeclared types.
+	parent          arena.Pointer[rawType]
 	fieldsExtnStart uint32
 	rangesExtnStart uint32
 	isEnum          bool
@@ -171,6 +172,15 @@ func (t Type) InternedFullName() intern.ID {
 	return t.raw.fqn
 }
 
+// Parent returns the type that this type is declared inside of, if it isn't
+// at the top level.
+func (t Type) Parent() Type {
+	if t.IsZero() || t.raw.parent.Nil() {
+		return Type{}
+	}
+	return wrapType(t.Context(), ref[rawType]{ptr: t.raw.parent})
+}
+
 // Nested returns those types which are nested within this one.
 //
 // Only message types have nested types.
@@ -240,8 +250,8 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.raw.oneofs,
-		func(i int, _ rawOneof) Oneof {
-			return Oneof{t.withContext, i, t.raw}
+		func(_ int, p arena.Pointer[rawOneof]) Oneof {
+			return wrapOneof(t.Context(), p)
 		},
 	)
 }
@@ -261,18 +271,9 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		return Type{}
 	}
 
-	var ctx *Context
-	switch {
-	case r.file == -1:
-		ctx = primitiveCtx
-	case r.file > 0:
-		ctx = c.imports.files[r.file-1].Context()
-	default:
-		ctx = c.File().Context()
-	}
-
+	c = r.context(c)
 	return Type{
-		withContext: internal.NewWith(ctx),
-		raw:         ctx.arenas.types.Deref(r.ptr),
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.types.Deref(r.ptr),
 	}
 }
