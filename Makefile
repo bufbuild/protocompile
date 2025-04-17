@@ -109,7 +109,11 @@ upgrade: ## Upgrade dependencies
 .PHONY: checkgenerate
 checkgenerate:
 	@# Used in CI to verify that `make generate` doesn't produce a diff.
-	test -z "$$(git status --porcelain | tee /dev/stderr)"
+	@echo git status --porcelain
+	@if [[ -n "$$(git status --porcelain | tee /dev/stderr)" ]]; then \
+	  git diff; \
+	  false; \
+	fi
 
 $(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)
