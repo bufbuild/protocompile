@@ -28,22 +28,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-// This silences unused function lints.
-//
-// These functions will be used by options lowering, which is not yet
-// implemented, but are included here now because they are an essential part
-// of the data structures in this file.
-//
-// They are all together here so it's easier to remember to delete them at the
-// same time, instead of putting //nolint on each function.
-//
-// TODO: Delete this.
-var _ = []any{
-	newScalar[int32], appendScalar[int32],
-	newMessage, appendMessage,
-	MessageValue.insert,
-}
-
 // Value is an evaluated expression, corresponding to an option in a Protobuf
 // file.
 type Value struct {
@@ -124,20 +108,11 @@ func (v Value) FieldAST() ast.ExprField {
 	return v.raw.expr.AsField()
 }
 
-// Type is the element type of this value. For arrays, this is the type of the
-// element; Protobuf does not have a concept of an "array type".
-func (v Value) Type() Type {
-	elems := v.Elements()
-	if elems.Len() == 0 {
-		return Type{}
-	}
-	return elems.At(0).Type()
-}
-
 // Field returns the field this value sets, which includes the value's type
 // information.
 //
-// This is the zero value if the field is uninterpreted.
+// NOTE: [Field.Element] returns google.protobuf.Any, the concrete type of the
+// values in [Value.Elements] may be distinct from it.
 func (v Value) Field() Field {
 	if v.IsZero() {
 		return Field{}
@@ -150,10 +125,19 @@ func (v Value) Field() Field {
 	return wrapField(v.Context(), v.raw.field)
 }
 
+// Singular returns whether this value is singular, i.e., [Value.Elements] will
+// contain exactly one value.
+func (v Value) Singular() bool {
+	return v.Field().Presence() != presence.Repeated
+}
+
 // Elements returns an indexer over the elements within this value.
 //
 // If the value is not an array, it contains the singular element within;
 // otherwise, it returns the elements of the array.
+//
+// The indexer will be nonempty except for the zero Value. That is to say, unset
+// fields of [MessageValue]s are not represented as a distinct "empty" Value.
 func (v Value) Elements() seq.Indexer[Element] {
 	var slice []rawValueBits
 	switch {
@@ -254,11 +238,26 @@ type Element struct {
 // Field returns the field this value sets, which includes the value's type
 // information.
 func (e Element) Field() Field {
+	if e.IsZero() {
+		return Field{}
+	}
+
 	return e.field
 }
 
 // Type returns the type of this element.
+//
+// Note that this may be distinct from [Field.Element]. In the case that this is
+// a google.protobuf.Any-typed field, this function will return the concrete
+// type if known, rather than Any.
 func (e Element) Type() Type {
+	if msg := e.AsMessage(); !msg.IsZero() {
+		// This will always be the concrete type, except in the case of
+		// something naughty like my_any: { type_url: "...", value: "..." };
+		// in that case this will be Any.
+		return msg.Type()
+	}
+
 	return e.Field().Element()
 }
 
@@ -334,12 +333,18 @@ type MessageValue struct {
 }
 
 type rawMessageValue struct {
-	ty      ref[rawType]
+	// The concrete type of this message. This cannot be implicit from the
+	// Field in a Value, because that might be Any.
+	ty ref[rawType]
+
+	// Fields set in this message in insertion order.
 	entries []arena.Pointer[rawValue]
 
 	// Which entries are already inserted. These are by field number, except for
 	// elements of oneofs, which are by negative oneof index. This makes it
 	// easy to check if any element of a oneof is already set.
+	//
+	//nolint:unused // Will be used by options lowering.
 	byNumber map[int32]uint32
 }
 
@@ -348,7 +353,7 @@ func (v MessageValue) Type() Type {
 	return wrapType(v.Context(), v.raw.ty)
 }
 
-// Fields returns the fields within this message literal.
+// Fields returns the fields within this message literal, in insertion order.
 func (v MessageValue) Fields() seq.Indexer[Value] {
 	return seq.NewFixedSlice(
 		v.raw.entries,
@@ -364,6 +369,8 @@ func (v MessageValue) Fields() seq.Indexer[Value] {
 // the same oneof in this value. To determine whether to diagnose as a duplicate
 // field or duplicate oneof, simply compare the field number of entry to that
 // of the duplicate. If they are different, they share a oneof.
+//
+//nolint:unused // Will be used by options lowering.
 func (v MessageValue) insert(entry Value) (idx int, inserted bool) {
 	number := entry.Field().Number()
 	if o := entry.Field().Oneof(); !o.IsZero() {
@@ -379,7 +386,9 @@ func (v MessageValue) insert(entry Value) (idx int, inserted bool) {
 	return n, true
 }
 
-// scalar is a type that can be converted into a rawValueBits.
+// scalar is a type that can be converted into a [rawValueBits].
+//
+//nolint:unused // Will be used by options lowering.
 type scalar interface {
 	bool |
 		int32 | uint32 | int64 | uint64 |
@@ -388,6 +397,8 @@ type scalar interface {
 }
 
 // newScalar constructs a new scalar value.
+//
+//nolint:unused // Will be used by options lowering.
 func newScalar[T scalar](c *Context, field ref[rawField], v T) Value {
 	return Value{
 		internal.NewWith(c),
@@ -399,6 +410,8 @@ func newScalar[T scalar](c *Context, field ref[rawField], v T) Value {
 }
 
 // newScalar appends a scalar value to the given array value.
+//
+//nolint:unused // Will be used by options lowering.
 func appendScalar[T scalar](array Value, v T) {
 	slice := array.slice()
 	*slice = append(*slice, newScalarBits(array.Context(), v))
@@ -407,6 +420,8 @@ func appendScalar[T scalar](array Value, v T) {
 // newScalar appends a new message value to the given array value, and returns it.
 //
 // anyType is as in [newMessage].
+//
+//nolint:unused // Will be used by options lowering.
 func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 	if anyType.ptr.Nil() {
 		anyType = array.Field().raw.elem
@@ -427,6 +442,8 @@ func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 // If anyType is not zero, it will be used as the type of the inner message
 // value. This is used for Any-typed fields. Otherwise, the type of field is
 // used instead.
+//
+//nolint:unused // Will be used by options lowering.
 func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 	if anyType.ptr.Nil() {
 		anyType = wrapField(c, field).raw.elem
@@ -444,6 +461,9 @@ func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 	}
 }
 
+// newScalarBits converts a scalar into raw bits for storing in a [Value].
+//
+//nolint:unused // Will be used by options lowering.
 func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 	switch v := any(v).(type) {
 	case bool:
@@ -473,7 +493,7 @@ func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 		return rawValueBits(v)
 	case string:
 		return rawValueBits(c.session.intern.Intern(v))
+	default:
+		panic("unreachable")
 	}
-
-	return 0
 }
