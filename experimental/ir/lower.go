@@ -66,7 +66,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Next, we can build various symbol tables in preparation for name
 	// resolution.
 	buildLocalSymbols(c.File())
-	buildImportedSymbols(c.File(), r)
+	mergeImportedSymbolTables(c.File(), r)
 }
 
 // sorry panics with an NYI error, which turns into an ICE inside of the

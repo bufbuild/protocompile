@@ -241,6 +241,10 @@ func (f File) Options() seq.Indexer[Option] {
 }
 
 // Symbols returns this file's symbol table.
+//
+// The symbol table includes both symbols defined in this file, and symbols
+// imported by the file. The symbols are returned in an arbitrary but fixed
+// order.
 func (f File) Symbols() seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
 		f.Context().imported,

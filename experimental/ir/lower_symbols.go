@@ -99,13 +99,12 @@ func newOneofSymbol(o Oneof) {
 	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
-// buildImportedSymbols builds a symbol table of every imported symbol.
+// mergeImportedSymbolTables builds a symbol table of every imported symbol.
 //
 // It also enhances the exported symbol table with the exported symbols of each
 // public import.
-func buildImportedSymbols(f File, r *report.Report) {
+func mergeImportedSymbolTables(f File, r *report.Report) {
 	imports := f.Imports()
-	locals := f.Context().exported
 
 	var havePublic bool
 	for sym := range seq.Values(imports) {
@@ -121,7 +120,7 @@ func buildImportedSymbols(f File, r *report.Report) {
 		f.Context().exported = symtabMerge(
 			f.Context(),
 			iterx.Chain(
-				iterx.Of(locals),
+				iterx.Of(f.Context().exported),
 				seq.Map(imports, func(i Import) symtab {
 					if !i.Public {
 						// Return an empty symbol table so that the table to
@@ -139,14 +138,18 @@ func buildImportedSymbols(f File, r *report.Report) {
 			},
 		)
 	}
-	dedupSymbols(f, &f.Context().exported, nil)
 
-	// Form the imported symbol table from the full import list.
+	// Form the imported symbol table from the exports list by adding all of
+	// the non-public imports.
 	f.Context().imported = symtabMerge(
 		f.Context(),
 		iterx.Chain(
-			iterx.Of(locals),
+			iterx.Of(f.Context().exported),
 			seq.Map(imports, func(i Import) symtab {
+				if i.Public {
+					// Already processed in the loop above.
+					return symtab{}
+				}
 				return i.Context().exported
 			}),
 		),
@@ -157,6 +160,8 @@ func buildImportedSymbols(f File, r *report.Report) {
 			return f.Context().imports.files[i-1]
 		},
 	)
+
+	dedupSymbols(f, &f.Context().exported, nil)
 	dedupSymbols(f, &f.Context().imported, r)
 }
 
