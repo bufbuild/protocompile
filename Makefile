@@ -9,7 +9,7 @@ MAKEFLAGS += --no-print-directory
 BIN ?= $(abspath .tmp/bin)
 CACHE := $(abspath .tmp/cache)
 COPYRIGHT_YEARS := 2020-2025
-LICENSE_IGNORE := -e /testdata/
+LICENSE_IGNORE := -E -e "/testdata/|^wellknownimports/google/protobuf/"
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
 GO_CMD := GOTOOLCHAIN=local $(GO)
@@ -86,7 +86,7 @@ lintfix: $(BIN)/golangci-lint ## Automatically fix some lint errors
 	cd internal/benchmarks && $(BIN)/golangci-lint run --fix
 
 .PHONY: generate
-generate: $(BIN)/license-header $(BIN)/goyacc test-descriptors ext-features-descriptors ## Regenerate code and licenses
+generate: $(BIN)/license-header $(BIN)/goyacc wellknownimports test-descriptors ext-features-descriptors ## Regenerate code and licenses
 	PATH="$(BIN)$(PATH_SEP)$(PATH)" $(GO_CMD) generate ./...
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
@@ -109,7 +109,11 @@ upgrade: ## Upgrade dependencies
 .PHONY: checkgenerate
 checkgenerate:
 	@# Used in CI to verify that `make generate` doesn't produce a diff.
-	test -z "$$(git status --porcelain | tee /dev/stderr)"
+	@echo git status --porcelain
+	@if [[ -n "$$(git status --porcelain | tee /dev/stderr)" ]]; then \
+	  git diff; \
+	  false; \
+	fi
 
 $(BIN)/license-header: internal/tools/go.mod internal/tools/go.sum
 	@mkdir -p $(@D)

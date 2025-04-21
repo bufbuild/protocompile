@@ -44,7 +44,7 @@ type Field struct {
 
 type rawField struct {
 	def        ast.DeclDef
-	options    []arena.Pointer[rawOption]
+	options    arena.Pointer[rawValue]
 	elem, extn ref[rawType]
 	fqn, name  intern.ID
 	number     int32
@@ -116,6 +116,9 @@ func (f Field) Number() int32 {
 
 // Presence returns this field's presence kind.
 func (f Field) Presence() presence.Kind {
+	if f.IsZero() {
+		return presence.Unknown
+	}
 	if f.raw.oneof > 0 {
 		return presence.Shared
 	}
@@ -175,13 +178,8 @@ func (f Field) Oneof() Oneof {
 }
 
 // Options returns the options applied to this field.
-func (f Field) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		f.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), p)
-		},
-	)
+func (f Field) Options() MessageValue {
+	return wrapValue(f.Context(), f.raw.options).AsMessage()
 }
 
 func wrapField(c *Context, r ref[rawField]) Field {
@@ -208,7 +206,7 @@ type rawOneof struct {
 	index     uint32
 	container arena.Pointer[rawType]
 	members   []arena.Pointer[rawField]
-	options   []arena.Pointer[rawOption]
+	options   arena.Pointer[rawValue]
 }
 
 // AST returns the declaration for this oneof, if known.
@@ -282,13 +280,8 @@ func (o Oneof) Parent() Type {
 }
 
 // Options returns the options applied to this oneof.
-func (o Oneof) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		o.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(o.Context(), p)
-		},
-	)
+func (o Oneof) Options() MessageValue {
+	return wrapValue(o.Context(), o.raw.options).AsMessage()
 }
 
 func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
@@ -308,7 +301,7 @@ type TagRange struct {
 type rawRange struct {
 	ast         ast.ExprAny
 	first, last int32
-	options     []arena.Pointer[rawOption]
+	options     arena.Pointer[rawValue]
 }
 
 // AST returns the expression that this range was evaluated from, if known.
@@ -327,13 +320,8 @@ func (r TagRange) Range() (start, end int32) {
 // Options returns the options applied to this range.
 //
 // Reserved ranges cannot carry options; only extension ranges do.
-func (r TagRange) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		r.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(r.Context(), p)
-		},
-	)
+func (r TagRange) Options() MessageValue {
+	return wrapValue(r.Context(), r.raw.options).AsMessage()
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for

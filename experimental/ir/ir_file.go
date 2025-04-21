@@ -51,7 +51,7 @@ type Context struct {
 	extns            []arena.Pointer[rawField]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options []arena.Pointer[rawOption]
+	options arena.Pointer[rawValue]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -74,9 +74,9 @@ type Context struct {
 		oneofs  arena.Arena[rawOneof]
 		symbols arena.Arena[rawSymbol]
 
-		options  arena.Arena[rawOption]
+		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
-		arrays   arena.Arena[[]rawValue]
+		arrays   arena.Arena[[]rawValueBits]
 	}
 }
 
@@ -231,13 +231,8 @@ func (f File) AllExtensions() seq.Indexer[Field] {
 }
 
 // Options returns the top level options applied to this file.
-func (f File) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		f.Context().options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), p)
-		},
-	)
+func (f File) Options() MessageValue {
+	return wrapValue(f.Context(), f.Context().options).AsMessage()
 }
 
 // Symbols returns this file's symbol table.
