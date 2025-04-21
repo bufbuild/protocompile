@@ -1,0 +1,44 @@
+tables:
+  "testdata/smoke.proto":
+    symbols:
+      - { fqn: "buf.test", kind: KIND_PACKAGE, file: "testdata/smoke.proto" }
+      - fqn: "buf.test.Foo"
+        kind: KIND_MESSAGE
+        file: "testdata/smoke.proto"
+        index: 1
+        visible: true
+      - fqn: "buf.test.BAR"
+        kind: KIND_ENUM
+        file: "testdata/smoke.proto"
+        index: 2
+        visible: true
+      - fqn: "buf.test.Foo.a"
+        kind: KIND_FIELD
+        file: "testdata/smoke.proto"
+        index: 1
+        visible: true
+      - fqn: "buf.test.Foo.b"
+        kind: KIND_FIELD
+        file: "testdata/smoke.proto"
+        index: 2
+        visible: true
+      - fqn: "buf.test.Foo.c"
+        kind: KIND_FIELD
+        file: "testdata/smoke.proto"
+        index: 3
+        visible: true
+      - fqn: "buf.test.BAR_ZERO"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/smoke.proto"
+        index: 4
+        visible: true
+      - fqn: "buf.test.BAR_A"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/smoke.proto"
+        index: 5
+        visible: true
+      - fqn: "buf.test.BAR_B"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/smoke.proto"
+        index: 6
+        visible: true
