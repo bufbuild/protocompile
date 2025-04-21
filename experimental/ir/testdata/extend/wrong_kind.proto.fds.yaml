@@ -1,0 +1,25 @@
+file:
+  - name: "testdata/extend/wrong_kind.proto"
+    package: "test"
+    message_type:
+      - name: "Foo"
+        field:
+          - { name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - { name: "y", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - { name: "z", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - { name: "w", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - name: "a"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_INT32
+            oneof_index: 0
+          - { name: "b", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+        extension:
+          - name: "capacity"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_INT32
+            extendee: ".string"
+        enum_type: [{ name: "Bar" }]
+        oneof_decl: [{ name: "self" }]
+    syntax: "proto2"

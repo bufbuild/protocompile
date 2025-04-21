@@ -18,6 +18,7 @@ import (
 	"cmp"
 	"iter"
 	"slices"
+	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -176,6 +177,17 @@ func (k SymbolKind) IsField() bool {
 	}
 }
 
+// IsScope returns whether this is a symbol that defines a scope, for the
+// purposes of name lookup.
+func (k SymbolKind) IsScope() bool {
+	switch k {
+	case SymbolKindPackage, SymbolKindMessage:
+		return true
+	default:
+		return false
+	}
+}
+
 func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 	if r.ptr.Nil() || c == nil {
 		return Symbol{}
@@ -194,6 +206,10 @@ func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 // The elements of a symtab are sorted by the [intern.ID] of their FQN, allowing
 // for O(n) merging of symbol tables.
 type symtab []ref[rawSymbol]
+
+var resolveScratch = sync.Pool{
+	New: func() any { return new([]byte) },
+}
 
 // symtabMerge merges the given symbol tables in the given context.
 func symtabMerge(c *Context, tables iter.Seq[symtab], fileForTable func(int) File) symtab {
@@ -227,4 +243,184 @@ func (s symtab) sort(c *Context) {
 		symB := wrapSymbol(c, b)
 		return cmp.Compare(symA.InternedFullName(), symB.InternedFullName())
 	})
+}
+
+// lookupBytes looks up a symbol with the given fully-qualified name.
+func (s symtab) lookup(c *Context, fqn intern.ID) ref[rawSymbol] {
+	idx, ok := slicesx.BinarySearchKey(s, fqn, func(r ref[rawSymbol]) intern.ID {
+		return wrapSymbol(c, r).InternedFullName()
+	})
+	if !ok {
+		return ref[rawSymbol]{}
+	}
+
+	return s[idx]
+}
+
+// lookupBytes looks up a symbol with the given fully-qualified name.
+func (s symtab) lookupBytes(c *Context, fqn []byte) ref[rawSymbol] {
+	id, ok := c.session.intern.QueryBytes(fqn)
+	if !ok {
+		return ref[rawSymbol]{}
+	}
+	idx, ok := slicesx.BinarySearchKey(s, id, func(r ref[rawSymbol]) intern.ID {
+		return wrapSymbol(c, r).InternedFullName()
+	})
+	if !ok {
+		return ref[rawSymbol]{}
+	}
+
+	return s[idx]
+}
+
+// resolve attempts to resolve the relative path name within the given scope
+// (which should itself be a possibly-empty relative path).
+//
+// Returns zero if the symbol is not found. If the symbol is not found due to
+// Protobuf's weird double-lookup semantics around nested identifiers, this
+// function will try to find the name as if this language bug did not exist, and
+// will report the name it had expected to find.
+//
+// If skipIfNot is nil, the symbol's kind will not be checked to determine if
+// we should continue climbing scopes.
+func (s symtab) resolve(
+	c *Context,
+	scope, name FullName,
+	skipIfNot func(SymbolKind) bool,
+) (found ref[rawSymbol], expected FullName) {
+	// This function implements the name resolution algorithm specified at
+	// https://protobuf.com/docs/language-spec#reference-resolution.
+
+	// Symbol resolution is not quite as simple as trying p + name for all
+	// ancestors of scope. Consider the following files:
+	//
+	//  // a.proto
+	//  package foo.bar;
+	//  message M {}
+	//
+	//  // b.proto
+	//  package foo;
+	//  import "a.proto";
+	//  message M {}
+	//
+	//  // c.proto
+	//  package foo.bar.baz;
+	//  import "b.proto";
+	//  message N {
+	//    M m = 1;
+	//  }
+	//
+	// The candidates, in order, are:
+	// - foo.bar.baz.M; does not exist.
+	// - foo.bar.M; not visible.
+	// - foo.M; correct answer.
+	// - M; not tried.
+	//
+	// If we do not keep going after encountering symbols that are not visible
+	// to us, we will reject valid code.
+
+	// A similar situation happens here:
+	//
+	//  package foo;
+	//  message M {
+	//    message N {}
+	//    message P {
+	//      enum X { N = 1; }
+	//      N n = 1;
+	//    }
+	//  }
+	//
+	// If we look up N, the candidates are foo.M.P.N, foo.M.N, foo.N, and N.
+	// We will find foo.M.P.N, which is not a message or enum type, so we must
+	// skip it to find the correct name, foo.M.N. This is what the accept
+	// predicate is for.
+
+	// Finally, consider the following situation, which involves partial
+	// names.
+	//
+	//  package foo;
+	//  message M {
+	//    message N {}
+	//    message M {
+	//      M.N n = 1;
+	//    }
+	//  }
+	//
+	// The candidates are foo.M.M.N, foo.M.N, M.N. However, protoc rejects this,
+	// because it actually searches for M first, and then appends the rest of
+	// the path and searches for that, in two phases.
+	//
+	// It is not clear why protoc does this, but it does mean we need to be
+	// careful in how we resolve partial names.
+
+	scopeSearch := !name.IsIdent()
+	first := name.First()
+
+	// This needs to be a mutable byte slice, because in the loop below, we
+	// delete intermediate chunks of it, e.g. a.b.c.d -> a.b.d -> a.d -> d.
+	//
+	// To avoid the cost of allocating a tiny slice every time we come through
+	// here, we us a sync.Pool. This also means we don't have to constantly
+	// zero memory that we're going to immediately overwrite.
+	buf := resolveScratch.Get().(*[]byte) //nolint:errcheck
+	candidate := (*buf)[:0]
+	defer func() {
+		// Re-using the buf pointer here allows us to avoid needing to
+		// re-allocate a *[]byte to stick back into the pool.
+		*buf = candidate
+		resolveScratch.Put(buf)
+	}()
+	candidate = scope.appendToBytes(candidate, first)
+
+	// Adapt skipIfNot to account for scopeSearch and to be ok to call if nil.
+	accept := func(kind SymbolKind) bool {
+		if scopeSearch {
+			return kind.IsScope()
+		}
+		return skipIfNot == nil || skipIfNot(kind)
+	}
+
+again:
+	for {
+		ref := s.lookupBytes(c, candidate)
+		if !ref.ptr.Nil() {
+			found = ref
+			sym := wrapSymbol(c, ref)
+			if sym.Visible() && accept(sym.Kind()) {
+				// If the symbol is not visible, keep looking; we may find
+				// another match that is actually visible.
+				break
+			}
+		}
+
+		if scope == "" {
+			// Out of places to look. This is probably a fail.
+			break
+		}
+		oldLen := len(scope)
+		scope = scope.Parent()
+		if scope == "" {
+			oldLen++
+		}
+		// Delete in-place to avoid spamming allocations for each candidate.
+		candidate = slices.Delete(candidate, len(scope), oldLen)
+	}
+
+	if !scopeSearch {
+		// This was a single identifier name so we're done.
+		return found, expected
+	}
+
+	// Now search for the full name inside of the scope we found.
+	candidate = append(candidate, name[len(first):]...)
+	ref := s.lookupBytes(c, candidate)
+	if ref.ptr.Nil() {
+		// Try again, this time using the full candidate name. This happens
+		// expressly for the purpose of diagnostics.
+		scopeSearch = false
+		expected = FullName(candidate)
+		goto again
+	}
+
+	return ref, expected
 }

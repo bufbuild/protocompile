@@ -1,0 +1,38 @@
+error: cannot find `x` in this scope
+  --> testdata/extend/wrong_kind.proto:22:12
+   |
+22 |     extend x {
+   |            ^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
+
+error: cannot find `BAZ` in this scope
+  --> testdata/extend/wrong_kind.proto:25:12
+   |
+25 |     extend BAZ {
+   |            ^^^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
+
+error: cannot find `Bar` in this scope
+  --> testdata/extend/wrong_kind.proto:28:12
+   |
+28 |     extend Bar {
+   |            ^^^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
+
+error: cannot find `test` in this scope
+  --> testdata/extend/wrong_kind.proto:31:12
+   |
+31 |     extend test {
+   |            ^^^^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
+
+error: expected message type, found oneof definition `test.Foo.self`
+  --> testdata/extend/wrong_kind.proto:39:12
+   |
+35 |     oneof self {
+   |           ---- defined here
+...
+39 |     extend self {
+   |            ^^^^ expected message type
+
+encountered 5 errors

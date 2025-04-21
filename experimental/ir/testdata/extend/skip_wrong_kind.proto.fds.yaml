@@ -1,0 +1,14 @@
+file:
+  - name: "testdata/extend/skip_wrong_kind.proto"
+    package: "test"
+    message_type:
+      - name: "M"
+        nested_type:
+          - name: "N"
+          - name: "P"
+            field: [{ name: "n", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+            enum_type: [{ name: "X" }]
+          - name: "Q"
+            field: [{ name: "n", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+            enum_type: [{ name: "N" }]
+    syntax: "proto2"

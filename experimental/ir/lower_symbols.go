@@ -76,7 +76,7 @@ func newTypeSymbol(ty Type) {
 func newFieldSymbol(f Field) {
 	c := f.Context()
 	kind := SymbolKindField
-	if f.IsExtension() {
+	if !f.raw.extendee.Nil() {
 		kind = SymbolKindExtension
 	} else if f.AST().Classify() == ast.DefKindEnumValue {
 		kind = SymbolKindEnumValue
@@ -96,7 +96,7 @@ func newOneofSymbol(o Oneof) {
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.raw)),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
 }
 
 // mergeImportedSymbolTables builds a symbol table of every imported symbol.
@@ -167,8 +167,6 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 
 // dedupSymbols diagnoses duplicate symbols in a sorted symbol table, and
 // deletes the duplicates.
-//
-// If r is nil, no diagnostics are emitted, but dedup still occurs.
 //
 // Which duplicate is chosen for deletion is deterministic: ties are broken
 // according to file names and span starts, in that order. This avoids

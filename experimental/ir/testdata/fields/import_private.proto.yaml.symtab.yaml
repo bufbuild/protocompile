@@ -1,0 +1,9 @@
+tables:
+  "c.proto":
+    imports: [{ path: "a.proto", transitive: true }, { path: "b.proto", visible: true }]
+    symbols:
+      - { fqn: "test", kind: KIND_PACKAGE, file: "b.proto" }
+      - { fqn: "test.N", kind: KIND_MESSAGE, file: "c.proto", index: 1, visible: true }
+      - { fqn: "test.N.m1", kind: KIND_FIELD, file: "c.proto", index: 1, visible: true }
+      - { fqn: "test.N.m2", kind: KIND_FIELD, file: "c.proto", index: 2, visible: true }
+      - { fqn: "test.N.m3", kind: KIND_FIELD, file: "c.proto", index: 3, visible: true }

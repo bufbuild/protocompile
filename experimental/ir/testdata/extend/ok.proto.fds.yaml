@@ -1,0 +1,17 @@
+file:
+  - name: "testdata/extend/ok.proto"
+    package: "test"
+    message_type:
+      - name: "Foo"
+        field:
+          - { name: "x1", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - { name: "x2", number: 0, label: LABEL_OPTIONAL }
+          - { name: "x3", number: 0, label: LABEL_REPEATED }
+          - { name: "x4", number: 0, label: LABEL_REPEATED }
+        nested_type: [{ name: "Foo" }]
+    extension:
+      - { name: "x5", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "x6", number: 0, label: LABEL_OPTIONAL }
+      - { name: "x7", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "x8", number: 0, label: LABEL_OPTIONAL }
+    syntax: "proto2"

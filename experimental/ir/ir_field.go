@@ -43,31 +43,33 @@ type Field struct {
 }
 
 type rawField struct {
-	def        ast.DeclDef
-	options    arena.Pointer[rawValue]
-	elem, extn ref[rawType]
-	fqn, name  intern.ID
-	number     int32
-	parent     arena.Pointer[rawType]
+	def ast.DeclDef
 
-	// If nonpositive, this is the negative of a presence.Kind. Otherwise, it's
+	options   arena.Pointer[rawValue]
+	elem      ref[rawType]
+	extendee  arena.Pointer[rawExtendee]
+	fqn, name intern.ID
+	number    int32
+	parent    arena.Pointer[rawType]
+
+	// If negative, this is the negative of a presence.Kind. Otherwise, it's
 	// a oneof index.
 	oneof int32
 }
 
 // Returns whether this is a non-extension message field.
 func (f Field) IsMessageField() bool {
-	return !f.raw.elem.ptr.Nil() && f.raw.extn.ptr.Nil()
+	return !f.IsZero() && !f.raw.elem.ptr.Nil() && f.raw.extendee.Nil()
 }
 
 // Returns whether this is a extension message field.
 func (f Field) IsExtension() bool {
-	return !f.raw.elem.ptr.Nil() && !f.raw.extn.ptr.Nil()
+	return !f.IsZero() && !f.raw.elem.ptr.Nil() && !f.raw.extendee.Nil()
 }
 
 // Returns whether this is an enum value.
 func (f Field) IsEnumValue() bool {
-	return f.raw.elem.ptr.Nil()
+	return !f.IsZero() && f.raw.elem.ptr.Nil()
 }
 
 // AST returns the declaration for this field, if known.
@@ -91,6 +93,14 @@ func (f Field) FullName() FullName {
 	return FullName(f.Context().session.intern.Value(f.raw.fqn))
 }
 
+// Scope returns the scope in which this field is defined.
+func (f Field) Scope() FullName {
+	if f.IsZero() {
+		return ""
+	}
+	return FullName(f.Context().session.intern.Value(f.InternedScope()))
+}
+
 // InternedName returns the intern ID for [Field.FullName]().Name().
 func (f Field) InternedName() intern.ID {
 	if f.IsZero() {
@@ -107,6 +117,17 @@ func (f Field) InternedFullName() intern.ID {
 	return f.raw.fqn
 }
 
+// InternedScope returns the intern ID for [Field.Scope].
+func (f Field) InternedScope() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
+	if parent := f.Parent(); !parent.IsZero() {
+		return parent.InternedFullName()
+	}
+	return f.Context().File().InternedPackage()
+}
+
 // Number returns the number for this field after expression evaluation.
 //
 // Defaults to zero if the number is not specified.
@@ -119,7 +140,7 @@ func (f Field) Presence() presence.Kind {
 	if f.IsZero() {
 		return presence.Unknown
 	}
-	if f.raw.oneof > 0 {
+	if f.raw.oneof >= 0 {
 		return presence.Shared
 	}
 	return presence.Kind(-f.raw.oneof)
@@ -160,11 +181,12 @@ func (f Field) Container() Type {
 		return Type{}
 	}
 
-	if f.raw.extn.ptr.Nil() {
+	if f.raw.extendee.Nil() {
 		return f.Parent()
 	}
 
-	return wrapType(f.Context(), f.raw.extn)
+	extends := f.Context().arenas.extendees.Deref(f.raw.extendee)
+	return wrapType(f.Context(), extends.ty)
 }
 
 // Oneof returns the oneof that this field is a member of.
@@ -192,6 +214,27 @@ func wrapField(c *Context, r ref[rawField]) Field {
 		withContext: internal.NewWith(c),
 		raw:         c.arenas.fields.Deref(r.ptr),
 	}
+}
+
+// rawExtendee represents an extends block.
+//
+// Rather than each field carrying a reference to its extends block's AST, we
+// have a level of indirection to amortize symbol lookups.
+type rawExtendee struct {
+	def    ast.DeclDef
+	ty     ref[rawType]
+	parent arena.Pointer[rawType]
+}
+
+func (e *rawExtendee) Scope(c *Context) FullName {
+	return FullName(c.session.intern.Value(e.InternedScope(c)))
+}
+
+func (e *rawExtendee) InternedScope(c *Context) intern.ID {
+	if !e.parent.Nil() {
+		return wrapType(c, ref[rawType]{ptr: e.parent}).InternedFullName()
+	}
+	return c.File().InternedPackage()
 }
 
 // Oneof represents a oneof within a message definition.

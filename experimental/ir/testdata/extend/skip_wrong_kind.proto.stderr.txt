@@ -1,0 +1,15 @@
+error: cannot find `N` in this scope
+  --> testdata/extend/skip_wrong_kind.proto:23:16
+   |
+23 |         extend N {   // Does not skip .test.M.P.N
+   |                ^ not found in this scope
+   = help: the full name of this scope is `test.M.P`
+
+error: cannot find `N` in this scope
+  --> testdata/extend/skip_wrong_kind.proto:30:16
+   |
+30 |         extend N {  // Does not skip .test.M.Q.N
+   |                ^ not found in this scope
+   = help: the full name of this scope is `test.M.Q`
+
+encountered 2 errors

@@ -161,9 +161,9 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 			continue
 		}
 
-		mdp := new(descriptorpb.DescriptorProto)
-		mdp.NestedType = append(mdp.NestedType, mdp)
-		dg.message(ty, mdp)
+		nested := new(descriptorpb.DescriptorProto)
+		mdp.NestedType = append(mdp.NestedType, nested)
+		dg.message(ty, nested)
 	}
 
 	for extensions := range seq.Values(ty.ExtensionRanges()) {
@@ -272,7 +272,7 @@ func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) 
 		}
 	}
 
-	if f.IsExtension() {
+	if f.IsExtension() && f.Container().FullName() != "" {
 		fdp.Extendee = addr(string(f.Container().FullName().ToAbsolute()))
 	}
 

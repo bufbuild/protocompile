@@ -67,6 +67,9 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// resolution.
 	buildLocalSymbols(c.File())
 	mergeImportedSymbolTables(c.File(), r)
+
+	// Perform "early" name resolution, i.e. field names and extension types.
+	resolveNames(c.File(), r)
 }
 
 // sorry panics with an NYI error, which turns into an ICE inside of the

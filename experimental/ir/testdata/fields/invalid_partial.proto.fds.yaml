@@ -1,0 +1,7 @@
+file:
+  - name: "testdata/fields/invalid_partial.proto"
+    package: "test"
+    message_type:
+      - name: "M"
+        nested_type: [{ name: "N" }, { name: "M", extension: [{ name: "n", number: 0 }] }]
+    syntax: "proto3"
