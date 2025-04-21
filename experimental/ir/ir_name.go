@@ -15,9 +15,11 @@
 package ir
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // FullName is a fully-qualified Protobuf name, which is a dot-separated list of
@@ -81,6 +83,15 @@ func (n FullName) Append(names ...string) FullName {
 		return n
 	}
 
+	return FullName(unsafex.StringAlias(n.appendToBytes(nil, names...)))
+}
+
+// appendToBytes is like [FullName.Append], but it appends to the given slice.
+func (n FullName) appendToBytes(b []byte, names ...string) []byte {
+	if len(names) == 0 {
+		return append(b, n...)
+	}
+
 	m := len(n) + len(names) - 1
 	if n != "" {
 		m++
@@ -89,16 +100,15 @@ func (n FullName) Append(names ...string) FullName {
 		m += len(name)
 	}
 
-	var out strings.Builder
-	out.Grow(m)
-	out.WriteString(string(n))
+	b = slices.Grow(b, m)
+	b = append(b, n...)
 
 	for _, name := range names {
-		if out.Len() > 0 {
-			out.WriteByte('.')
+		if len(b) > 0 {
+			b = append(b, '.')
 		}
-		out.WriteString(name)
+		b = append(b, name...)
 	}
 
-	return FullName(out.String())
+	return b
 }

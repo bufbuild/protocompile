@@ -18,6 +18,7 @@ import (
 	"cmp"
 	"iter"
 	"slices"
+	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -206,6 +207,10 @@ func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 // for O(n) merging of symbol tables.
 type symtab []ref[rawSymbol]
 
+var resolveScratch = sync.Pool{
+	New: func() any { return new([]byte) },
+}
+
 // symtabMerge merges the given symbol tables in the given context.
 func symtabMerge(c *Context, tables iter.Seq[symtab], fileForTable func(int) File) symtab {
 	return slicesx.MergeKeySeq(
@@ -289,11 +294,11 @@ func (s symtab) resolve(
 	// Symbol resolution is not quite as simple as trying p + name for all
 	// ancestors of scope. Consider the following files:
 	//
-	// 	// a.proto
-	// 	package foo.bar;
-	// 	message M {}
+	//  // a.proto
+	//  package foo.bar;
+	//  message M {}
 	//
-	// 	// b.proto
+	//  // b.proto
 	//  package foo;
 	//  import "a.proto";
 	//  message M {}
@@ -316,14 +321,14 @@ func (s symtab) resolve(
 
 	// A similar situation happens here:
 	//
-	// package foo;
-	// message M {
-	//   message N {}
-	//   message P {
-	//     enum X { N = 1; }
-	//     N n = 1;
-	//   }
-	// }
+	//  package foo;
+	//  message M {
+	//    message N {}
+	//    message P {
+	//      enum X { N = 1; }
+	//      N n = 1;
+	//    }
+	//  }
 	//
 	// If we look up N, the candidates are foo.M.P.N, foo.M.N, foo.N, and N.
 	// We will find foo.M.P.N, which is not a message or enum type, so we must
@@ -333,13 +338,13 @@ func (s symtab) resolve(
 	// Finally, consider the following situation, which involves partial
 	// names.
 	//
-	// package foo;
-	// message M {
-	//   message N {}
-	//   message M {
-	//     M.N n = 1;
-	//   }
-	// }
+	//  package foo;
+	//  message M {
+	//    message N {}
+	//    message M {
+	//      M.N n = 1;
+	//    }
+	//  }
 	//
 	// The candidates are foo.M.M.N, foo.M.N, M.N. However, protoc rejects this,
 	// because it actually searches for M first, and then appends the rest of
@@ -350,9 +355,24 @@ func (s symtab) resolve(
 
 	scopeSearch := !name.IsIdent()
 	first := name.First()
-	candidate := []byte(scope.Append(first))
 
-	// Adapt accept to account for scopeSearch and to be ok to call if nil.
+	// This needs to be a mutable byte slice, because in the loop below, we
+	// delete intermediate chunks of it, e.g. a.b.c.d -> a.b.d -> a.d -> d.
+	//
+	// To avoid the cost of allocating a tiny slice every time we come through
+	// here, we us a sync.Pool. This also means we don't have to constantly
+	// zero memory that we're going to immediately overwrite.
+	buf := resolveScratch.Get().(*[]byte) //nolint:errcheck
+	candidate := (*buf)[:0]
+	defer func() {
+		// Re-using the buf pointer here allows us to avoid needing to
+		// re-allocate a *[]byte to stick back into the pool.
+		*buf = candidate
+		resolveScratch.Put(buf)
+	}()
+	candidate = scope.appendToBytes(candidate, first)
+
+	// Adapt skipIfNot to account for scopeSearch and to be ok to call if nil.
 	accept := func(kind SymbolKind) bool {
 		if scopeSearch {
 			return kind.IsScope()
