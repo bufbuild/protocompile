@@ -39,7 +39,7 @@ type rawType struct {
 	ranges          []rawRange
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
-	options         []arena.Pointer[rawOption]
+	options         arena.Pointer[rawValue]
 	fqn, name       intern.ID // 0 for predeclared types.
 	parent          arena.Pointer[rawType]
 	fieldsExtnStart uint32
@@ -283,13 +283,8 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 }
 
 // Options returns the options applied to this type.
-func (t Type) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		t.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(t.Context(), p)
-		},
-	)
+func (t Type) Options() MessageValue {
+	return wrapValue(t.Context(), t.raw.options).AsMessage()
 }
 
 func wrapType(c *Context, r ref[rawType]) Type {

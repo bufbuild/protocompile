@@ -5,19 +5,7 @@ file:
     package: "test"
     dependency: ["b.proto"]
     extension:
-      - name: "a"
-        number: 0
-        label: LABEL_OPTIONAL
-        type: TYPE_INT32
-        extendee: ".test.M"
-      - name: "b"
-        number: 0
-        label: LABEL_OPTIONAL
-        type: TYPE_INT32
-        extendee: ".test.M"
-      - name: "c"
-        number: 0
-        label: LABEL_OPTIONAL
-        type: TYPE_INT32
-        extendee: ".test.M"
+      - { name: "a", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "b", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "c", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     syntax: "proto3"

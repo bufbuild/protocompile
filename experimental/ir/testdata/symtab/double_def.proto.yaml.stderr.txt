@@ -9,22 +9,15 @@ error: `Foo` declared multiple times
    |         --- ...also declared here
 
 error: `Main` declared multiple times
-  --> dep/priv.proto:4:9
-   |
- 4 | message Main {}
-   |         ^^^^ first here, as a message type
-  ::: main.proto:6:9
+  --> main.proto:6:9
    |
  6 | message Main {}
-   |         ---- ...also declared here
+   |         ^^^^ first here, as a message type
  7 | message Main {
-   |         ---- ...and here
+   |         ---- ...also declared here
 ...
 17 | message Main {
    |         ---- ...and here
-   = help: symbol names must be unique across all transitive imports; for
-           example, "dep/priv.proto" declares `Main` but is not directly
-           imported
 
 error: `x` declared multiple times
   --> main.proto:8:18

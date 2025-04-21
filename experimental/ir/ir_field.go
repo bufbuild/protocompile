@@ -45,7 +45,7 @@ type Field struct {
 type rawField struct {
 	def ast.DeclDef
 
-	options   []arena.Pointer[rawOption]
+	options   arena.Pointer[rawValue]
 	elem      ref[rawType]
 	extendee  arena.Pointer[rawExtendee]
 	fqn, name intern.ID
@@ -59,17 +59,17 @@ type rawField struct {
 
 // Returns whether this is a non-extension message field.
 func (f Field) IsMessageField() bool {
-	return !f.raw.elem.ptr.Nil() && f.raw.extendee.Nil()
+	return !f.IsZero() && !f.raw.elem.ptr.Nil() && f.raw.extendee.Nil()
 }
 
 // Returns whether this is a extension message field.
 func (f Field) IsExtension() bool {
-	return !f.raw.elem.ptr.Nil() && !f.raw.extendee.Nil()
+	return !f.IsZero() && !f.raw.elem.ptr.Nil() && !f.raw.extendee.Nil()
 }
 
 // Returns whether this is an enum value.
 func (f Field) IsEnumValue() bool {
-	return f.raw.elem.ptr.Nil()
+	return !f.IsZero() && f.raw.elem.ptr.Nil()
 }
 
 // AST returns the declaration for this field, if known.
@@ -137,6 +137,9 @@ func (f Field) Number() int32 {
 
 // Presence returns this field's presence kind.
 func (f Field) Presence() presence.Kind {
+	if f.IsZero() {
+		return presence.Unknown
+	}
 	if f.raw.oneof >= 0 {
 		return presence.Shared
 	}
@@ -148,6 +151,10 @@ func (f Field) Presence() presence.Kind {
 //
 // May be zero for extensions declared at the top level.
 func (f Field) Parent() Type {
+	if f.IsZero() {
+		return Type{}
+	}
+
 	return wrapType(f.Context(), ref[rawType]{ptr: f.raw.parent})
 }
 
@@ -159,6 +166,10 @@ func (f Field) Parent() Type {
 //
 // This is zero for enum values.
 func (f Field) Element() Type {
+	if f.IsZero() {
+		return Type{}
+	}
+
 	return wrapType(f.Context(), f.raw.elem)
 }
 
@@ -166,6 +177,10 @@ func (f Field) Element() Type {
 // [Field.Parent], or the extendee if this is an extension. This is the
 // type it is declared to be *part of*.
 func (f Field) Container() Type {
+	if f.IsZero() {
+		return Type{}
+	}
+
 	if f.raw.extendee.Nil() {
 		return f.Parent()
 	}
@@ -185,13 +200,8 @@ func (f Field) Oneof() Oneof {
 }
 
 // Options returns the options applied to this field.
-func (f Field) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		f.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), p)
-		},
-	)
+func (f Field) Options() MessageValue {
+	return wrapValue(f.Context(), f.raw.options).AsMessage()
 }
 
 func wrapField(c *Context, r ref[rawField]) Field {
@@ -239,7 +249,7 @@ type rawOneof struct {
 	index     uint32
 	container arena.Pointer[rawType]
 	members   []arena.Pointer[rawField]
-	options   []arena.Pointer[rawOption]
+	options   arena.Pointer[rawValue]
 }
 
 // AST returns the declaration for this oneof, if known.
@@ -313,13 +323,8 @@ func (o Oneof) Parent() Type {
 }
 
 // Options returns the options applied to this oneof.
-func (o Oneof) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		o.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(o.Context(), p)
-		},
-	)
+func (o Oneof) Options() MessageValue {
+	return wrapValue(o.Context(), o.raw.options).AsMessage()
 }
 
 func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
@@ -339,7 +344,7 @@ type TagRange struct {
 type rawRange struct {
 	ast         ast.ExprAny
 	first, last int32
-	options     []arena.Pointer[rawOption]
+	options     arena.Pointer[rawValue]
 }
 
 // AST returns the expression that this range was evaluated from, if known.
@@ -358,13 +363,8 @@ func (r TagRange) Range() (start, end int32) {
 // Options returns the options applied to this range.
 //
 // Reserved ranges cannot carry options; only extension ranges do.
-func (r TagRange) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		r.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(r.Context(), p)
-		},
-	)
+func (r TagRange) Options() MessageValue {
+	return wrapValue(r.Context(), r.raw.options).AsMessage()
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for

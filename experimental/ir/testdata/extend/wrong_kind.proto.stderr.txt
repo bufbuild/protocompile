@@ -1,40 +1,30 @@
-error: expected message type, found message extension `test.Foo.x`
+error: cannot find `x` in this scope
   --> testdata/extend/wrong_kind.proto:22:12
    |
 22 |     extend x {
-   |            ^ expected message type
-23 |         optional int32 x = 1;
-   |                        - defined here
+   |            ^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
 
-error: expected message type, found enum value `test.Foo.BAZ`
+error: cannot find `BAZ` in this scope
   --> testdata/extend/wrong_kind.proto:25:12
    |
-20 |     enum Bar { BAZ = 1; }
-   |                --- defined here
-...
-24 |     }
 25 |     extend BAZ {
-   |            ^^^ expected message type
+   |            ^^^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
 
-error: expected message type, found enum type `test.Foo.Bar`
+error: cannot find `Bar` in this scope
   --> testdata/extend/wrong_kind.proto:28:12
    |
-20 |     enum Bar { BAZ = 1; }
-   |          --- defined here
-...
-27 |     }
 28 |     extend Bar {
-   |            ^^^ expected message type
+   |            ^^^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
 
-error: expected message type, found `package` declaration `test`
+error: cannot find `test` in this scope
   --> testdata/extend/wrong_kind.proto:31:12
    |
-17 | package test;
-   | ------------- defined here
-...
-30 |     }
 31 |     extend test {
-   |            ^^^^ expected message type
+   |            ^^^^ not found in this scope
+   = help: the full name of this scope is `test.Foo`
 
 error: expected message type, found oneof definition `test.Foo.self`
   --> testdata/extend/wrong_kind.proto:39:12

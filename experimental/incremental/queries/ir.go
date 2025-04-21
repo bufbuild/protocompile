@@ -19,12 +19,12 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
 	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
-// AST is an [incremental.Query] for the contents of a file as provided
-// by a [source.Opener].
+// IR is an [incremental.Query] for the lowered IR of a Protobuf file.
 //
-// AST queries with different Openers are considered distinct.
+// IR queries with different Openers are considered distinct.
 type IR struct {
 	source.Opener // Must be comparable.
 	*ir.Session
@@ -61,9 +61,9 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 	file := r[0].Value
 
 	// Resolve all of the imports in the AST.
-	var queries []incremental.Query[ir.File]
-	var errors []error //nolint:prealloc // False positive.
-	for decl := range file.Imports() {
+	queries := make([]incremental.Query[ir.File], iterx.Count(file.Imports()))
+	errors := make([]error, len(queries))
+	for j, decl := range iterx.Enumerate(file.Imports()) {
 		path, ok := decl.ImportPath().AsLiteral().AsString()
 		path = ir.CanonicalizeFilePath(path)
 
@@ -80,17 +80,17 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 			return ir.File{}, err
 		}
 
-		err = r[0].Fatal
-		errors = append(errors, err)
-		if err == nil {
-			queries = append(queries, IR{
-				Opener:  i.Opener,
-				Session: i.Session,
-				Path:    path,
-				request: decl,
-			})
-		} else {
-			queries = append(queries, incremental.ZeroQuery[ir.File]{})
+		if err := r[0].Fatal; err != nil {
+			queries[j] = incremental.ZeroQuery[ir.File]{}
+			errors[j] = r[0].Fatal
+			continue
+		}
+
+		queries[j] = IR{
+			Opener:  i.Opener,
+			Session: i.Session,
+			Path:    path,
+			request: decl,
 		}
 	}
 
@@ -105,10 +105,10 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 		case nil:
 			return result.Value, errors[n]
 
-		case *incremental.ErrCycle[*incremental.AnyQuery]:
+		case *incremental.ErrCycle:
 			// We need to walk the cycle and extract which imports are
 			// responsible for the failure.
-			cyc := new(incremental.ErrCycle[ast.DeclImport])
+			cyc := new(ir.ErrCycle)
 			for _, q := range err.Cycle {
 				irq, ok := incremental.AsTyped[IR](q)
 				if !ok {

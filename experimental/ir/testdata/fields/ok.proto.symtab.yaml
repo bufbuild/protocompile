@@ -42,8 +42,3 @@ tables:
         file: "testdata/fields/ok.proto"
         index: 6
         visible: true
-      - fqn: "test.Foo.baz"
-        kind: KIND_ONEOF
-        file: "testdata/fields/ok.proto"
-        index: 1
-        visible: true

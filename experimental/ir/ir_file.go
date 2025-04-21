@@ -51,7 +51,22 @@ type Context struct {
 	extns            []arena.Pointer[rawField]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options []arena.Pointer[rawOption]
+	options arena.Pointer[rawValue]
+
+	// Table of all symbols transitively imported by this file. This is all
+	// local symbols plus the imported tables of all direct imports. Importing
+	// everything and checking visibility later allows us to diagnose
+	// missing import errors.
+
+	// This file's symbol tables. Each file has two symbol tables: its imported
+	// symbols and its exported symbols.
+	//
+	// The exported symbols are formed from the file's local symbols, and the
+	// exported symbols of each transitive public import.
+	//
+	// The imported symbols are the exported symbols plus the exported symbols
+	// of each direct import.
+	exported, imported symtab
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -66,9 +81,9 @@ type Context struct {
 		oneofs    arena.Arena[rawOneof]
 		symbols   arena.Arena[rawSymbol]
 
-		options  arena.Arena[rawOption]
+		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
-		arrays   arena.Arena[[]rawValue]
+		arrays   arena.Arena[[]rawValueBits]
 	}
 }
 
@@ -223,19 +238,18 @@ func (f File) AllExtensions() seq.Indexer[Field] {
 }
 
 // Options returns the top level options applied to this file.
-func (f File) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		f.Context().options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), p)
-		},
-	)
+func (f File) Options() MessageValue {
+	return wrapValue(f.Context(), f.Context().options).AsMessage()
 }
 
-// Symbols returns this file's transitive symbol table.
+// Symbols returns this file's symbol table.
+//
+// The symbol table includes both symbols defined in this file, and symbols
+// imported by the file. The symbols are returned in an arbitrary but fixed
+// order.
 func (f File) Symbols() seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
-		f.Context().symbols,
+		f.Context().imported,
 		func(_ int, r ref[rawSymbol]) Symbol {
 			return wrapSymbol(f.Context(), r)
 		},

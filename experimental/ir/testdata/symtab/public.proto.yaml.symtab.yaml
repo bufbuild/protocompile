@@ -54,13 +54,6 @@ tables:
         file: "dep/foo.proto"
         index: 1
         visible: true
-      - fqn: "dep.foo.not_public"
-        kind: KIND_PACKAGE
-        file: "dep/not_public.proto"
-      - fqn: "dep.foo.not_public.X"
-        kind: KIND_MESSAGE
-        file: "dep/not_public.proto"
-        index: 1
       - { fqn: "dep.foo.public", kind: KIND_PACKAGE, file: "dep/public.proto" }
       - fqn: "dep.foo.public.X"
         kind: KIND_MESSAGE

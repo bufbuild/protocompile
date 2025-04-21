@@ -11,10 +11,5 @@ file:
   - name: "c.proto"
     package: "foo.bar.baz"
     dependency: ["b.proto"]
-    extension:
-      - name: "m"
-        number: 0
-        label: LABEL_OPTIONAL
-        type: TYPE_INT32
-        extendee: ".foo.M"
+    extension: [{ name: "m", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
     syntax: "proto2"

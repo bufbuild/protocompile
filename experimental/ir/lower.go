@@ -20,10 +20,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-const (
-	tagSymbolRedefined = "symbol-redefined"
-)
-
 // Session is shared global configuration and state for all IR values that are
 // being used together.
 //
@@ -70,7 +66,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Next, we can build various symbol tables in preparation for name
 	// resolution.
 	buildLocalSymbols(c.File())
-	buildImportedSymbols(c.File(), r)
+	mergeImportedSymbolTables(c.File(), r)
 
 	// Perform "early" name resolution, i.e. field names and extension types.
 	resolveNames(c.File(), r)
