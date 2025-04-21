@@ -8,6 +8,17 @@ error: `Foo` declared multiple times
 11 | message Foo {
    |         --- ...also declared here
 
+error: `Main` declared multiple times
+  --> main.proto:6:9
+   |
+ 6 | message Main {}
+   |         ^^^^ first here, as a message type
+ 7 | message Main {
+   |         ---- ...also declared here
+...
+17 | message Main {
+   |         ---- ...and here
+
 error: `x` declared multiple times
   --> main.proto:8:18
    |
@@ -38,4 +49,4 @@ error: `dep.foo.Foo` declared multiple times
  6 | message Foo {}
    |         --- ...also declared here, now as a message type
 
-encountered 4 errors
+encountered 5 errors

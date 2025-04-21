@@ -42,16 +42,6 @@ tables:
         file: "main.proto"
         index: 4
         visible: true
-      - fqn: "dep.foo.Foo.BAR"
-        kind: KIND_ENUM
-        file: "main.proto"
-        index: 4
-        visible: true
-      - fqn: "dep.foo.Main.x"
-        kind: KIND_FIELD
-        file: "main.proto"
-        index: 1
-        visible: true
       - fqn: "dep.foo.Main.x"
         kind: KIND_FIELD
         file: "main.proto"
