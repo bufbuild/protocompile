@@ -9,6 +9,11 @@ file:
             field: [{ name: "n", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
             enum_type: [{ name: "X" }]
           - name: "Q"
-            field: [{ name: "n", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+            field:
+              - name: "n"
+                number: 0
+                label: LABEL_OPTIONAL
+                type: TYPE_INT32
+                extendee: ".test.M.Q.N"
             enum_type: [{ name: "N" }]
     syntax: "proto2"

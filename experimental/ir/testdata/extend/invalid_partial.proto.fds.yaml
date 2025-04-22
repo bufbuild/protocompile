@@ -6,5 +6,10 @@ file:
         nested_type:
           - name: "N"
           - name: "M"
-            field: [{ name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+            field:
+              - name: "x"
+                number: 0
+                label: LABEL_OPTIONAL
+                type: TYPE_INT32
+                extendee: ".test.M.N"
     syntax: "proto2"

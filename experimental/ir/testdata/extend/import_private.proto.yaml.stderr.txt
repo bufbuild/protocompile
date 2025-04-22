@@ -5,12 +5,15 @@ error: cannot find `M` in this scope
    |        ^ not found in this scope
    = help: the full name of this scope is `test`
 
-error: cannot find `test.M` in this scope
+error: expected message type, found `package` declaration `test`
   --> c.proto:10:8
    |
 10 | extend test.M {
-   |        ^^^^^^ not found in this scope
-   = help: the full name of this scope is `test`
+   |        ^^^^^^ expected message type
+  ::: b.proto:2:1
+   |
+ 2 | package test;
+   | ------------- defined here
 
 error: cannot find `.test.M` in this scope
   --> c.proto:14:8

@@ -52,3 +52,8 @@ tables:
         file: "testdata/extend/wrong_kind.proto"
         index: 8
         visible: true
+      - fqn: "test.Foo.self"
+        kind: KIND_ONEOF
+        file: "testdata/extend/wrong_kind.proto"
+        index: 1
+        visible: true

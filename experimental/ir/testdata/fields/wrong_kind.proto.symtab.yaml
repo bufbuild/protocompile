@@ -37,3 +37,8 @@ tables:
         file: "testdata/fields/wrong_kind.proto"
         index: 1
         visible: true
+      - fqn: "test.Foo.self"
+        kind: KIND_ONEOF
+        file: "testdata/fields/wrong_kind.proto"
+        index: 1
+        visible: true
