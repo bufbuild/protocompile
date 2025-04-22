@@ -1,8 +1,0 @@
-error: cannot find `M` in this scope
-  --> c.proto:6:8
-   |
- 6 | extend M {  // .foo.M
-   |        ^ not found in this scope
-   = help: the full name of this scope is `foo.bar.baz`
-
-encountered 1 error

@@ -172,7 +172,7 @@ func (r symbolRef) resolve() Symbol {
 	switch {
 	case r.name.Absolute():
 		if id, ok := r.session.intern.Query(string(r.name.ToRelative())); ok {
-			found = r.symbols.lookup(r.Context, id)
+			found = r.imported.lookup(r.Context, id)
 		}
 	case r.allowScalars:
 		// TODO: if symbol resolution would provide a different answer for
@@ -194,7 +194,7 @@ func (r symbolRef) resolve() Symbol {
 
 		fallthrough
 	default:
-		found, expected = r.symbols.resolve(r.Context, r.scope, r.name, r.skipIfNot)
+		found, expected = r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot)
 	}
 
 	sym := wrapSymbol(r.Context, found)

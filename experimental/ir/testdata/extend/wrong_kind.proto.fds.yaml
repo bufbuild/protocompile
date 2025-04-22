@@ -6,7 +6,11 @@ file:
         field:
           - { name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
           - { name: "y", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-          - { name: "z", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - name: "z"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_INT32
+            extendee: ".test.Foo.Bar"
           - { name: "w", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
           - name: "a"
             number: 0

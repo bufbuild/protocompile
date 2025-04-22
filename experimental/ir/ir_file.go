@@ -68,12 +68,6 @@ type Context struct {
 	// of each direct import.
 	exported, imported symtab
 
-	// Table of all symbols transitively imported by this file. This is all
-	// local symbols plus the imported tables of all direct imports. Importing
-	// everything and checking visibility later allows us to diagnose
-	// missing import errors.
-	symbols symtab
-
 	arenas struct {
 		types     arena.Arena[rawType]
 		fields    arena.Arena[rawField]
