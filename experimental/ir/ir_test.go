@@ -46,7 +46,7 @@ import (
 // Test is the type that a test case for the compiler is deserialized from.
 type Test struct {
 	Files       []File `yaml:"files"`
-	IncludeWKTs bool   `yaml:"include_wkts"`
+	IncludeWKTs bool   `yaml:"include_wkts"` //nolint:tagliatelle
 }
 
 type File struct {

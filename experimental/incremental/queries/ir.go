@@ -93,11 +93,13 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 			request: decl,
 		}
 	}
+	//nolint:makezero // False positive.
 	queries = append(queries, IR{
 		Opener:  i.Opener,
 		Session: i.Session,
 		Path:    ir.DescriptorProtoPath,
 	})
+	//nolint:makezero // False positive.
 	errors = append(errors, nil)
 
 	imports, err := incremental.Resolve(t, queries...)

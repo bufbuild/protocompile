@@ -345,8 +345,6 @@ type rawMessageValue struct {
 	// Which entries are already inserted. These are by field number, except for
 	// elements of oneofs, which are by negative oneof index. This makes it
 	// easy to check if any element of a oneof is already set.
-	//
-	//nolint:unused // Will be used by options lowering.
 	byName intern.Map[uint32]
 }
 
@@ -377,7 +375,7 @@ func (v MessageValue) Fields() seq.Indexer[Value] {
 // whereas if the value is being inserted for the first time, the returned arena
 // pointer will be nil and can be initialized by the caller.
 //
-//nolint:unused // Will be used by options lowering.
+
 func (v MessageValue) insert(field Field) *arena.Pointer[rawValue] {
 	id := field.InternedFullName()
 	if o := field.Oneof(); !o.IsZero() {
@@ -395,7 +393,7 @@ func (v MessageValue) insert(field Field) *arena.Pointer[rawValue] {
 
 // scalar is a type that can be converted into a [rawValueBits].
 //
-//nolint:unused // Will be used by options lowering.
+
 type scalar interface {
 	bool |
 		int32 | uint32 | int64 | uint64 |
@@ -405,7 +403,7 @@ type scalar interface {
 
 // newScalar constructs a new scalar value.
 //
-//nolint:unused // Will be used by options lowering.
+
 func newScalar[T scalar](c *Context, field ref[rawField], v T) Value {
 	return Value{
 		internal.NewWith(c),
@@ -448,7 +446,7 @@ func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 
 // newMessage constructs a new message value.
 //
-//nolint:unused // Will be used by options lowering.
+
 func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 	if anyType.ptr.Nil() {
 		anyType = wrapField(c, field).raw.elem
@@ -468,7 +466,7 @@ func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 
 // newScalarBits converts a scalar into raw bits for storing in a [Value].
 //
-//nolint:unused // Will be used by options lowering.
+
 func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 	switch v := any(v).(type) {
 	case bool:

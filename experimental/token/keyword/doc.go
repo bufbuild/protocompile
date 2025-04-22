@@ -19,8 +19,7 @@ package keyword
 
 //go:generate go run github.com/bufbuild/protocompile/internal/enum keyword.yaml
 
-// IsPseudoOption returns whether or not this keyword is one of the special
-// pseudo option names ([default = "..."] and [json_name = "..."])
+// pseudo option names ([default = "..."] and [json_name = "..."]).
 func (k Keyword) IsPseudoOption() bool {
 	return k == Default || k == JsonName
 }
