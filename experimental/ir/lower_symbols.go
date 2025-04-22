@@ -96,7 +96,7 @@ func newOneofSymbol(o Oneof) {
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.raw)),
 	})
-	c.symbols = append(c.symbols, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
 // mergeImportedSymbolTables builds a symbol table of every imported symbol.
