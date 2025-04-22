@@ -12,15 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package keyword provides [Keyword], an enum of all special "grammar particles"
-// (i.e., literal tokens with special meaning in the grammar such as identifier
-// keywords and punctuation) recognized by Protocompile.
-package keyword
+syntax = "proto2";
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum keyword.yaml
+package buf.test;
 
-// IsPseudoOption returns whether or not this keyword is one of the special
-// pseudo option names ([default = "..."] and [json_name = "..."])
-func (k Keyword) IsPseudoOption() bool {
-	return k == Default || k == JsonName
+import "google/protobuf/descriptor.proto";
+
+message Foo {
+    option (google.protobuf.MessageOptions.deprecated) = true;
 }

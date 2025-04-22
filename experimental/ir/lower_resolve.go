@@ -31,9 +31,13 @@ import (
 
 // resolveNames resolves all of the names that need resolving in a file.
 func resolveNames(f File, r *report.Report) {
+	resolveLangSymbols(f.Context())
+
 	for ty := range seq.Values(f.AllTypes()) {
-		for field := range seq.Values(ty.Fields()) {
-			resolveFieldType(field, r)
+		if ty.IsMessage() {
+			for field := range seq.Values(ty.Fields()) {
+				resolveFieldType(field, r)
+			}
 		}
 	}
 
@@ -142,6 +146,45 @@ func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
 		extendee.ty.file = sym.ref.file
 		extendee.ty.ptr = arena.Pointer[rawType](sym.raw.data)
 	}
+}
+
+func resolveLangSymbols(c *Context) {
+	if !c.isDescriptorProto {
+		return
+	}
+
+	field := func(name string) arena.Pointer[rawField] {
+		return mustResolve[rawField](c, "google.protobuf."+name, SymbolKindField)
+	}
+
+	l := inferNew(&c.langSymbols)
+
+	l.fileOptions = field("FileDescriptorProto.options")
+
+	l.messageOptions = field("DescriptorProto.options")
+	l.fieldOptions = field("FieldDescriptorProto.options")
+	l.oneofOptions = field("OneofDescriptorProto.options")
+
+	l.enumOptions = field("EnumDescriptorProto.options")
+	l.enumValueOptions = field("EnumValueDescriptorProto.options")
+}
+
+// inferNew is a helper for allocating a value of a large, complicated type.
+// Specifically, it's used with Context.langSymbols.
+func inferNew[T any](p **T) *T {
+	*p = new(T)
+	return *p
+}
+
+// mustResolve resolves a descriptor.proto name, and panics if it's not found.
+func mustResolve[Raw any](c *Context, name string, kind SymbolKind) arena.Pointer[Raw] {
+	id := c.session.intern.Intern(name)
+	ref := c.exported.lookup(c, id)
+	sym := wrapSymbol(c, ref)
+	if sym.Kind() != kind {
+		panic(fmt.Errorf("missing descriptor.proto symbol: %s `%s`; got kind %s", kind.noun(), name, sym.Kind()))
+	}
+	return arena.Pointer[Raw](sym.raw.data)
 }
 
 // symbolRef is all of the information necessary to resolve a symbol reference.

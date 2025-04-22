@@ -177,6 +177,16 @@ func (k SymbolKind) IsField() bool {
 	}
 }
 
+// IsType returns whether this is a *message* field's symbol kind.
+func (k SymbolKind) IsMessageField() bool {
+	switch k {
+	case SymbolKindField, SymbolKindExtension:
+		return true
+	default:
+		return false
+	}
+}
+
 // IsScope returns whether this is a symbol that defines a scope, for the
 // purposes of name lookup.
 func (k SymbolKind) IsScope() bool {

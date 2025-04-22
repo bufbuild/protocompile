@@ -17,6 +17,7 @@ package ir
 import (
 	"math"
 	"slices"
+	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
@@ -138,7 +139,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			sorry("methods")
 
 		case ast.DefKindOption:
-			return // Handled later, after symbol table building.
+			// Options are lowered elsewhere.
 		}
 	}
 }
@@ -156,6 +157,9 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		parent: c.arenas.types.Compress(parentTy.raw),
 	})
 
+	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
+	ty.raw.fieldByName = sync.OnceValue(ty.makeFieldByName)
+
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)
 		c.types = append(c.types, raw)
@@ -164,7 +168,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		c.topLevelTypesEnd++
 	}
 
-	return Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
+	return ty
 }
 
 func (w *walker) newField(def ast.DeclDef, parent any) Field {

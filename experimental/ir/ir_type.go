@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -36,6 +37,7 @@ type rawType struct {
 	def             ast.DeclDef
 	nested          []arena.Pointer[rawType]
 	fields          []arena.Pointer[rawField]
+	fieldByName     func() intern.Map[arena.Pointer[rawField]]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
@@ -109,7 +111,7 @@ func (t Type) IsPredeclared() bool {
 
 // IsMessage returns whether this is a message type.
 func (t Type) IsMessage() bool {
-	return !t.IsPredeclared() && !t.raw.isEnum
+	return !t.IsZero() && !t.IsPredeclared() && !t.raw.isEnum
 }
 
 // IsMessage returns whether this is an enum type.
@@ -234,6 +236,30 @@ func (t Type) Fields() seq.Indexer[Field] {
 	)
 }
 
+// FieldByName looks up a field with the given name.
+//
+// Returns a zero field if there is no such field.
+func (t Type) FieldByName(name string) Field {
+	id, ok := t.Context().session.intern.Query(name)
+	if !ok {
+		return Field{}
+	}
+
+	ptr := t.raw.fieldByName()[id]
+	return wrapField(t.Context(), ref[rawField]{ptr: ptr})
+}
+
+// makeFieldsByName creates the FieldByName map. This is used to keep
+// construction of this map lazy.
+func (t Type) makeFieldByName() intern.Map[arena.Pointer[rawField]] {
+	table := make(intern.Map[arena.Pointer[rawField]], t.Fields().Len())
+	for _, ptr := range t.raw.fields {
+		field := wrapField(t.Context(), ref[rawField]{ptr: ptr})
+		table[field.InternedName()] = ptr
+	}
+	return table
+}
+
 // Extensions returns any extensions nested within this type.
 func (t Type) Extensions() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
@@ -285,6 +311,18 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 // Options returns the options applied to this type.
 func (t Type) Options() MessageValue {
 	return wrapValue(t.Context(), t.raw.options).AsMessage()
+}
+
+// noun returns a [taxa.Noun] for diagnostics.
+func (t Type) noun() taxa.Noun {
+	switch {
+	case t.IsPredeclared():
+		return taxa.ScalarType
+	case t.IsEnum():
+		return taxa.EnumType
+	default:
+		return taxa.MessageType
+	}
 }
 
 func wrapType(c *Context, r ref[rawType]) Type {
