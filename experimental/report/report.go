@@ -59,6 +59,9 @@ type Options struct {
 	// If set, [Report.Sort] will not discard duplicate diagnostics, as defined
 	// in that function's contract.
 	KeepDuplicates bool
+
+	// If set, all diagnostics of level Warning and higher are suppressed.
+	SuppressWarnings bool
 }
 
 // Diagnose is a type that can be rendered as a diagnostic.
@@ -103,6 +106,14 @@ func (r *Report) Warnf(format string, args ...any) *Diagnostic {
 // [fmt.Errorf].
 func (r *Report) Remarkf(format string, args ...any) *Diagnostic {
 	return r.push(1, Remark).Apply(Message(format, args...))
+}
+
+// SaveOptions calls the given function and, upon its completion, restores
+// r.Options to the value it had before it was called.
+func (r *Report) SaveOptions(body func()) {
+	prev := r.Options
+	body()
+	r.Options = prev
 }
 
 // CatchICE will recover a panic (an internal compiler error, or ICE) and log it
@@ -360,6 +371,10 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 	// that callers of this function within this package can specify
 	// can specify how deeply-nested they are, even if they all have
 	// the same level of nesting right now.
+
+	if level >= Warning && r.SuppressWarnings {
+		return &Diagnostic{}
+	}
 
 	r.Diagnostics = append(r.Diagnostics, Diagnostic{
 		level:     level,
