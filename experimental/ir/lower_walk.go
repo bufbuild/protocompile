@@ -191,11 +191,13 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 	}
 
 	if !parentTy.IsZero() {
-		parentTy.raw.fields = append(parentTy.raw.fields, id)
 
 		if _, ok := parent.(extend); ok {
+			parentTy.raw.fields = append(parentTy.raw.fields, id)
 			c.extns = append(c.extns, id)
-			parentTy.raw.fieldsExtnStart++
+		} else {
+			parentTy.raw.fields = slices.Insert(parentTy.raw.fields, int(parentTy.raw.fieldsEnd), id)
+			parentTy.raw.fieldsEnd++
 		}
 	} else if _, ok := parent.(extend); ok {
 		c.extns = slices.Insert(c.extns, c.topLevelExtnsEnd, id)

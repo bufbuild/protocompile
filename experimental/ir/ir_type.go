@@ -42,7 +42,7 @@ type rawType struct {
 	options         arena.Pointer[rawValue]
 	fqn, name       intern.ID // 0 for predeclared types.
 	parent          arena.Pointer[rawType]
-	fieldsExtnStart uint32
+	fieldsEnd       uint32
 	rangesExtnStart uint32
 	isEnum          bool
 }
@@ -227,7 +227,7 @@ func (t Type) Nested() seq.Indexer[Type] {
 // type.
 func (t Type) Fields() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
-		t.raw.fields[:t.raw.fieldsExtnStart],
+		t.raw.fields[:t.raw.fieldsEnd],
 		func(_ int, p arena.Pointer[rawField]) Field {
 			return wrapField(t.Context(), ref[rawField]{ptr: p})
 		},
@@ -237,7 +237,7 @@ func (t Type) Fields() seq.Indexer[Field] {
 // Extensions returns any extensions nested within this type.
 func (t Type) Extensions() seq.Indexer[Field] {
 	return seq.NewFixedSlice(
-		t.raw.fields[t.raw.fieldsExtnStart:],
+		t.raw.fields[t.raw.fieldsEnd:],
 		func(_ int, p arena.Pointer[rawField]) Field {
 			return wrapField(t.Context(), ref[rawField]{ptr: p})
 		},

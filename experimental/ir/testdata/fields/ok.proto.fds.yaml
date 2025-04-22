@@ -3,13 +3,41 @@ file:
     package: "test"
     message_type:
       - name: "Foo"
-        extension:
-          - { name: "foo", number: 0 }
-          - { name: "bar", number: 0 }
-          - { name: "bars", number: 0 }
-          - { name: "foos", number: 0 }
-          - { name: "foo0", number: 0, label: LABEL_OPTIONAL, oneof_index: 0 }
-          - { name: "bar0", number: 0, label: LABEL_OPTIONAL, oneof_index: 0 }
+        field:
+          - name: "foo"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: ".test.Foo"
+            oneof_index: 1
+            proto3_optional: true
+          - name: "bar"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: ".test.Foo.Bar"
+          - name: "bars"
+            number: 0
+            label: LABEL_REPEATED
+            type: TYPE_MESSAGE
+            type_name: ".test.Foo.Bar"
+          - name: "foos"
+            number: 0
+            label: LABEL_REPEATED
+            type: TYPE_MESSAGE
+            type_name: ".test.Foo"
+          - name: "foo0"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: ".test.Foo"
+            oneof_index: 0
+          - name: "bar0"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: ".test.Foo.Bar"
+            oneof_index: 0
         nested_type: [{ name: "Bar" }]
-        oneof_decl: [{ name: "baz" }]
+        oneof_decl: [{ name: "baz" }, { name: "_foo" }]
     syntax: "proto3"
