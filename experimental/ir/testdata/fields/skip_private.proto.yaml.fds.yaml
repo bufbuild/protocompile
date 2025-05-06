@@ -11,5 +11,12 @@ file:
   - name: "c.proto"
     package: "foo.bar.baz"
     dependency: ["b.proto"]
-    message_type: [{ name: "N", extension: [{ name: "m", number: 0 }] }]
+    message_type:
+      - name: "N"
+        field:
+          - name: "m"
+            number: 0
+            label: LABEL_OPTIONAL
+            type: TYPE_MESSAGE
+            type_name: ".foo.M"
     syntax: "proto3"

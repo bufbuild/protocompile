@@ -1,0 +1,22 @@
+error: expected singular message, found scalar type `int32`
+  --> testdata/options/repeated_selector.proto:22:15
+   |
+22 |     option (x).z = 42;
+   |               ^^ field selector requires singular message
+23 |     option (y).z = 42;
+...
+30 |     repeated int32 x = 1000;
+   |     -------------- type specified here
+
+error: expected singular message, found repeated `buf.test.Foo`
+  --> testdata/options/repeated_selector.proto:23:15
+   |
+23 |     option (y).z = 42;
+   |               ^^ field selector requires singular message
+24 |     option (z).z = 42;
+...
+30 |     repeated int32 x = 1000;
+31 |     repeated Foo y = 1001;
+   |     ------------ type specified here
+
+encountered 2 errors

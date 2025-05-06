@@ -1,0 +1,74 @@
+tables:
+  "testdata/options/custom.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+      - fqn: "buf.test"
+        kind: KIND_PACKAGE
+        file: "testdata/options/custom.proto"
+      - fqn: "buf.test.Foo"
+        kind: KIND_MESSAGE
+        file: "testdata/options/custom.proto"
+        index: 1
+        visible: true
+        options.message.extns: { "buf.test.b": { repeated.values: [{ int: 0 }] } }
+      - fqn: "buf.test.Bar"
+        kind: KIND_ENUM
+        file: "testdata/options/custom.proto"
+        index: 2
+        visible: true
+        options.message.extns: { "buf.test.e": { repeated.values: [{ int: 0 }] } }
+      - fqn: "buf.test.Foo.x"
+        kind: KIND_FIELD
+        file: "testdata/options/custom.proto"
+        index: 1
+        visible: true
+        options.message.extns: { "buf.test.c": { repeated.values: [{ int: 0 }] } }
+      - fqn: "buf.test.Foo.z"
+        kind: KIND_FIELD
+        file: "testdata/options/custom.proto"
+        index: 2
+        visible: true
+        options.message.extns: { "buf.test.c": { repeated.values: [{ int: 0 }] } }
+      - fqn: "buf.test.X"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/options/custom.proto"
+        index: 3
+        visible: true
+        options.message.extns: { "buf.test.f": { repeated.values: [{ int: 0 }] } }
+      - fqn: "buf.test.a"
+        kind: KIND_EXTENSION
+        file: "testdata/options/custom.proto"
+        index: 4
+        visible: true
+      - fqn: "buf.test.b"
+        kind: KIND_EXTENSION
+        file: "testdata/options/custom.proto"
+        index: 5
+        visible: true
+      - fqn: "buf.test.c"
+        kind: KIND_EXTENSION
+        file: "testdata/options/custom.proto"
+        index: 6
+        visible: true
+      - fqn: "buf.test.d"
+        kind: KIND_EXTENSION
+        file: "testdata/options/custom.proto"
+        index: 7
+        visible: true
+      - fqn: "buf.test.e"
+        kind: KIND_EXTENSION
+        file: "testdata/options/custom.proto"
+        index: 8
+        visible: true
+      - fqn: "buf.test.f"
+        kind: KIND_EXTENSION
+        file: "testdata/options/custom.proto"
+        index: 9
+        visible: true
+      - fqn: "buf.test.Foo.y"
+        kind: KIND_ONEOF
+        file: "testdata/options/custom.proto"
+        index: 1
+        visible: true
+        options.message.extns: { "buf.test.d": { repeated.values: [{ int: 0 }] } }
+    options.message.extns: { "buf.test.a": { repeated.values: [{ int: 0 }] } }

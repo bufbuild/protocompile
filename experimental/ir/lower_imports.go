@@ -29,6 +29,8 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
+const DescriptorProtoPath = "google/protobuf/descriptor.proto"
+
 // Importer is a callback to resolve the imports of an [ast.File] being
 // lowered.
 //
@@ -37,6 +39,10 @@ import (
 //
 // [Session.Lower] may not call this function on all imports; only those for
 // which it needs the caller to resolve a [File] for it.
+//
+// This function will also be called with [DescriptorProtoPath] if it isn't
+// transitively imported by the lowered file, with an index value of -1.
+// Returning an error or a zero file will trigger an ICE.
 type Importer func(n int, path string, decl ast.DeclImport) (File, error)
 
 // ErrCycle is returned by an [Importer] when encountering an import cycle.
@@ -100,6 +106,33 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	// Having found all of the imports that are not cyclic, we now need to pull
 	// in all of *their* transitive imports.
 	c.imports.Recurse(dedup)
+
+	// Check if descriptor.proto was transitively imported. If not, import it.
+	if idx, ok := c.imports.byPath.Get(&f.Context().session.intern, DescriptorProtoPath); ok {
+		// Copy it to the end so that it's easy to find.
+		c.imports.files = append(c.imports.files, c.imports.files[idx])
+		return
+	}
+
+	// If this is descriptor.proto itself, use it. This step is necessary to
+	// avoid cycles.
+	if f.Context().isDescriptorProto {
+		c.imports.Insert(f, -1, false)
+		return
+	}
+
+	// Otherwise, try to look it up.
+	dproto, err := importer(-1, DescriptorProtoPath, ast.DeclImport{})
+
+	if err != nil {
+		panic(fmt.Errorf("could not import %q: %w", DescriptorProtoPath, err))
+	}
+
+	if dproto.IsZero() {
+		panic(fmt.Errorf("importing %q produced an invalid file", DescriptorProtoPath))
+	}
+
+	c.imports.Insert(dproto, -1, false)
 }
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each

@@ -6,6 +6,11 @@ file:
         nested_type:
           - name: "N"
           - name: "P"
-            extension: [{ name: "n", number: 0 }]
-            enum_type: [{ name: "X" }]
+            field:
+              - name: "n"
+                number: 0
+                label: LABEL_OPTIONAL
+                type: TYPE_MESSAGE
+                type_name: ".test.M.N"
+            enum_type: [{ name: "X", value: [{ name: "N", number: 0 }] }]
     syntax: "proto3"

@@ -25,6 +25,7 @@ message SymbolSet {
 message SymbolTable {
     repeated Import imports = 1;
     repeated Symbol symbols = 2;
+    Value options = 3;
 }
 
 // Metadata associated with a transitive import.
@@ -63,4 +64,27 @@ message Symbol {
 
     // Whether this symbol can be validly referenced in the current file.
     bool visible = 5;
+
+    Value options = 6;
+}
+
+// An option value attached to a symbol.
+message Value {
+    message Message {
+        map<string, Value> fields = 1;
+        map<string, Value> extns = 2;
+    }
+    message Repeated {
+        repeated Value values = 1;
+    }
+
+    oneof value {
+        bool bool = 1;
+        int64 int = 2;
+        uint64 uint = 3;
+        double float = 4;
+        bytes string = 5;
+        Repeated repeated = 6;
+        Message message = 7;
+    }
 }

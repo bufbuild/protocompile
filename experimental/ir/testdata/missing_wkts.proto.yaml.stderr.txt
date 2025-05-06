@@ -1,0 +1,8 @@
+internal compiler error: could not import `google/protobuf/descriptor.proto`
+   = note: protocompile is not configured correctly
+   = help: `descriptor.proto` must always be available, since it is required for
+           correctly implementing Protobuf's semantics. If you are using
+           protocompile as a library, you may be missing a source.WKTs() in your
+           source.Opener setup.
+
+encountered 1 error

@@ -3,7 +3,7 @@ file:
     package: "test"
     message_type:
       - name: "Foo"
-        field:
+        extension:
           - name: "x1"
             number: 0
             label: LABEL_OPTIONAL

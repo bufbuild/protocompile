@@ -1,0 +1,19 @@
+warning: redundant custom option setting syntax
+   --> testdata/options/redundant_fqn.proto:22:12
+    |
+ 22 |     option (google.protobuf.MessageOptions.deprecated) = true;
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this field is not a message extension
+   ::: google/protobuf/descriptor.proto:601:17
+    |
+601 |   optional bool deprecated = 3 [default = false];
+    |                 ---------- field declared inside of `google.protobuf.MessageOptions` here
+   ::: testdata/options/redundant_fqn.proto:22:12
+   help: replace `(...)` with a field name
+    |
+ 22 | -     option (google.protobuf.MessageOptions.deprecated) = true;
+ 22 | +     option deprecated = true;
+    |
+    = help: custom option setting syntax should only be used with message
+            extensions
+
+encountered 1 warning

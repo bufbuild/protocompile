@@ -17,6 +17,7 @@ package ir
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -154,7 +155,6 @@ func (f Field) Parent() Type {
 	if f.IsZero() {
 		return Type{}
 	}
-
 	return wrapType(f.Context(), ref[rawType]{ptr: f.raw.parent})
 }
 
@@ -169,7 +169,6 @@ func (f Field) Element() Type {
 	if f.IsZero() {
 		return Type{}
 	}
-
 	return wrapType(f.Context(), f.raw.elem)
 }
 
@@ -202,6 +201,18 @@ func (f Field) Oneof() Oneof {
 // Options returns the options applied to this field.
 func (f Field) Options() MessageValue {
 	return wrapValue(f.Context(), f.raw.options).AsMessage()
+}
+
+// noun returns a [taxa.Noun] for diagnostics.
+func (f Field) noun() taxa.Noun {
+	switch {
+	case f.IsEnumValue():
+		return taxa.EnumValue
+	case f.IsExtension():
+		return taxa.Extension
+	default:
+		return taxa.Field
+	}
 }
 
 func wrapField(c *Context, r ref[rawField]) Field {

@@ -1,0 +1,47 @@
+tables:
+  "testdata/options/missing.proto":
+    symbols:
+      - fqn: "buf.test"
+        kind: KIND_PACKAGE
+        file: "testdata/options/missing.proto"
+      - fqn: "buf.test.Foo"
+        kind: KIND_MESSAGE
+        file: "testdata/options/missing.proto"
+        index: 1
+        visible: true
+        options.message.fields: { "deprecated": { bool: false } }
+      - fqn: "buf.test.Bar"
+        kind: KIND_ENUM
+        file: "testdata/options/missing.proto"
+        index: 2
+        visible: true
+        options.message.fields: { "deprecated": { bool: false } }
+      - fqn: "buf.test.Foo.foo"
+        kind: KIND_FIELD
+        file: "testdata/options/missing.proto"
+        index: 1
+        visible: true
+        options.message.fields: { "lazy": { bool: false } }
+      - fqn: "buf.test.Foo.bar"
+        kind: KIND_FIELD
+        file: "testdata/options/missing.proto"
+        index: 2
+        visible: true
+      - fqn: "buf.test.Foo.baz"
+        kind: KIND_FIELD
+        file: "testdata/options/missing.proto"
+        index: 3
+        visible: true
+      - fqn: "buf.test.BAR_ZERO"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/options/missing.proto"
+        index: 4
+        visible: true
+        options.message.fields: { "deprecated": { bool: false } }
+      - fqn: "buf.test.Foo.x"
+        kind: KIND_ONEOF
+        file: "testdata/options/missing.proto"
+        index: 1
+        visible: true
+        options.message: {}
+    options.message.fields: { "go_package": { string: "" } }

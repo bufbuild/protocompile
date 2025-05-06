@@ -52,6 +52,8 @@ const (
 	Group
 	Option
 	CustomOption
+	FieldSelector
+	PseudoOption
 	Field
 	Extension
 	EnumValue
@@ -169,6 +171,8 @@ var _table_Noun_String = [...]string{
 	Group:              "group definition",
 	Option:             "option setting",
 	CustomOption:       "custom option setting",
+	FieldSelector:      "field selector",
+	PseudoOption:       "pseudo-option",
 	Field:              "message field",
 	Extension:          "message extension",
 	EnumValue:          "enum value",
@@ -269,6 +273,8 @@ var _table_Noun_GoString = [...]string{
 	Group:              "Group",
 	Option:             "Option",
 	CustomOption:       "CustomOption",
+	FieldSelector:      "FieldSelector",
+	PseudoOption:       "PseudoOption",
 	Field:              "Field",
 	Extension:          "Extension",
 	EnumValue:          "EnumValue",

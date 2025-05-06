@@ -316,9 +316,11 @@ func (e Element) AsString() (string, bool) {
 //
 // Returns the zero value if this is not a message.
 func (e Element) AsMessage() MessageValue {
-	if !e.Type().IsMessage() {
+	// Avoid infinite recursion: Type() calls AsMessage().
+	if !e.Field().Element().IsMessage() {
 		return MessageValue{}
 	}
+
 	return MessageValue{
 		e.withContext,
 		e.Context().arenas.messages.Deref(arena.Pointer[rawMessageValue](e.bits)),
@@ -343,9 +345,7 @@ type rawMessageValue struct {
 	// Which entries are already inserted. These are by field number, except for
 	// elements of oneofs, which are by negative oneof index. This makes it
 	// easy to check if any element of a oneof is already set.
-	//
-	//nolint:unused // Will be used by options lowering.
-	byNumber map[int32]uint32
+	byName intern.Map[uint32]
 }
 
 // Type returns this value's message type.
@@ -363,32 +363,37 @@ func (v MessageValue) Fields() seq.Indexer[Value] {
 	)
 }
 
-// insert adds a new field to this message value.
+// insert adds a new field to this message value, returning a pointer to the
+// corresponding entry in the entries array, which can be initialized as-needed.
 //
 // A conflict occurs if there is already a field with the same number or part of
 // the same oneof in this value. To determine whether to diagnose as a duplicate
 // field or duplicate oneof, simply compare the field number of entry to that
 // of the duplicate. If they are different, they share a oneof.
 //
-//nolint:unused // Will be used by options lowering.
-func (v MessageValue) insert(entry Value) (idx int, inserted bool) {
-	number := entry.Field().Number()
-	if o := entry.Field().Oneof(); !o.IsZero() {
-		number = -int32(o.Index())
+// When a conflict occurs, the existing rawValue pointer will be returned,
+// whereas if the value is being inserted for the first time, the returned arena
+// pointer will be nil and can be initialized by the caller.
+//
+
+func (v MessageValue) insert(field Field) *arena.Pointer[rawValue] {
+	id := field.InternedFullName()
+	if o := field.Oneof(); !o.IsZero() {
+		id = o.InternedFullName()
 	}
 
 	n := len(v.raw.entries)
-	if actual, ok := mapsx.Add(v.raw.byNumber, number, uint32(n)); !ok {
-		return int(actual), false
+	if actual, ok := mapsx.Add(v.raw.byName, id, uint32(n)); !ok {
+		return &v.raw.entries[actual]
 	}
 
-	v.raw.entries = append(v.raw.entries, v.Context().arenas.values.Compress(entry.raw))
-	return n, true
+	v.raw.entries = append(v.raw.entries, 0)
+	return slicesx.LastPointer(v.raw.entries)
 }
 
 // scalar is a type that can be converted into a [rawValueBits].
 //
-//nolint:unused // Will be used by options lowering.
+
 type scalar interface {
 	bool |
 		int32 | uint32 | int64 | uint64 |
@@ -398,7 +403,7 @@ type scalar interface {
 
 // newScalar constructs a new scalar value.
 //
-//nolint:unused // Will be used by options lowering.
+
 func newScalar[T scalar](c *Context, field ref[rawField], v T) Value {
 	return Value{
 		internal.NewWith(c),
@@ -419,7 +424,9 @@ func appendScalar[T scalar](array Value, v T) {
 
 // newScalar appends a new message value to the given array value, and returns it.
 //
-// anyType is as in [newMessage].
+// If anyType is not zero, it will be used as the type of the inner message
+// value. This is used for Any-typed fields. Otherwise, the type of field is
+// used instead.
 //
 //nolint:unused // Will be used by options lowering.
 func appendMessage(array Value, anyType ref[rawType]) MessageValue {
@@ -427,8 +434,8 @@ func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 		anyType = array.Field().raw.elem
 	}
 	message := array.Context().arenas.messages.New(rawMessageValue{
-		ty:       anyType,
-		byNumber: make(map[int32]uint32),
+		ty:     anyType,
+		byName: make(intern.Map[uint32]),
 	})
 
 	slice := array.slice()
@@ -439,11 +446,7 @@ func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 
 // newMessage constructs a new message value.
 //
-// If anyType is not zero, it will be used as the type of the inner message
-// value. This is used for Any-typed fields. Otherwise, the type of field is
-// used instead.
-//
-//nolint:unused // Will be used by options lowering.
+
 func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 	if anyType.ptr.Nil() {
 		anyType = wrapField(c, field).raw.elem
@@ -454,8 +457,8 @@ func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 		c.arenas.values.New(rawValue{
 			field: field,
 			bits: rawValueBits(c.arenas.messages.NewCompressed(rawMessageValue{
-				ty:       anyType,
-				byNumber: make(map[int32]uint32),
+				ty:     anyType,
+				byName: make(intern.Map[uint32]),
 			})),
 		}),
 	}
@@ -463,7 +466,7 @@ func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
 
 // newScalarBits converts a scalar into raw bits for storing in a [Value].
 //
-//nolint:unused // Will be used by options lowering.
+
 func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 	switch v := any(v).(type) {
 	case bool:

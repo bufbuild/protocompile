@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
@@ -58,6 +59,9 @@ type imports struct {
 	// 4. Transitive imports.
 	//
 	// The fields after this one specify where each of these segments ends.
+	//
+	// The last element of this slice is always descriptor.proto, even if it
+	// exists elsewhere as an ordinary import.
 	files []File
 
 	// Which of the above files we are permitted to import from.
@@ -158,6 +162,12 @@ func (i *imports) Insert(f File, pos int, visible bool) {
 	i.visible.SetTo(uint(pos), visible)
 }
 
+// DescriptorProto returns the file for descriptor.proto.
+func (i *imports) DescriptorProto() File {
+	file, _ := slicesx.Last(i.files)
+	return file
+}
+
 // Directs returns an indexer over the Directs imports.
 func (i *imports) Directs() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
@@ -180,7 +190,7 @@ func (i *imports) Directs() seq.Indexer[Import] {
 // This function does not report whether those imports are weak or not.
 func (i *imports) Transitive() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
-		i.files,
+		i.files[:max(0, len(i.files)-1)], // Exclude the implicit descriptor.proto.
 		func(j int, f File) Import {
 			n := uint32(j)
 			return Import{

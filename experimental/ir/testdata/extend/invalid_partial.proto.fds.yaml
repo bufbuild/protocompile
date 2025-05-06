@@ -6,7 +6,7 @@ file:
         nested_type:
           - name: "N"
           - name: "M"
-            field:
+            extension:
               - name: "x"
                 number: 0
                 label: LABEL_OPTIONAL

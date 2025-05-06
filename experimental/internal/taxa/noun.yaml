@@ -52,6 +52,8 @@
 
   - {name: Option, string: "option setting"}
   - {name: CustomOption, string: "custom option setting"}
+  - {name: FieldSelector, string: "field selector"}
+  - {name: PseudoOption, string: "pseudo-option"}
 
   - {name: Field, string: "message field"}
   - {name: Extension, string: "message extension"}

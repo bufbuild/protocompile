@@ -19,12 +19,18 @@ package wellknownimports
 import (
 	"embed"
 	"io"
+	"io/fs"
 
 	"github.com/bufbuild/protocompile"
 )
 
 //go:embed google/protobuf/*.proto google/protobuf/*/*.proto
 var files embed.FS
+
+// FS returns a filesystem over the built-in well-known imports.
+func FS() fs.FS {
+	return files
+}
 
 // WithStandardImports returns a new resolver that can provide the source code for the
 // standard imports that are included with protoc. This differs from

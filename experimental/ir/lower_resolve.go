@@ -31,9 +31,13 @@ import (
 
 // resolveNames resolves all of the names that need resolving in a file.
 func resolveNames(f File, r *report.Report) {
+	resolveLangSymbols(f.Context())
+
 	for ty := range seq.Values(f.AllTypes()) {
-		for field := range seq.Values(ty.Fields()) {
-			resolveFieldType(field, r)
+		if ty.IsMessage() {
+			for field := range seq.Values(ty.Fields()) {
+				resolveFieldType(field, r)
+			}
 		}
 	}
 
@@ -142,6 +146,38 @@ func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
 		extendee.ty.file = sym.ref.file
 		extendee.ty.ptr = arena.Pointer[rawType](sym.raw.data)
 	}
+}
+
+func resolveLangSymbols(c *Context) {
+	if !c.isDescriptorProto {
+		return
+	}
+
+	field := func(name string) arena.Pointer[rawField] {
+		return mustResolve[rawField](c, "google.protobuf."+name, SymbolKindField)
+	}
+
+	c.langSymbols = &langSymbols{
+		fileOptions: field("FileDescriptorProto.options"),
+
+		messageOptions: field("DescriptorProto.options"),
+		fieldOptions:   field("FieldDescriptorProto.options"),
+		oneofOptions:   field("OneofDescriptorProto.options"),
+
+		enumOptions:      field("EnumDescriptorProto.options"),
+		enumValueOptions: field("EnumValueDescriptorProto.options"),
+	}
+}
+
+// mustResolve resolves a descriptor.proto name, and panics if it's not found.
+func mustResolve[Raw any](c *Context, name string, kind SymbolKind) arena.Pointer[Raw] {
+	id := c.session.intern.Intern(name)
+	ref := c.exported.lookup(c, id)
+	sym := wrapSymbol(c, ref)
+	if sym.Kind() != kind {
+		panic(fmt.Errorf("missing descriptor.proto symbol: %s `%s`; got kind %s", kind.noun(), name, sym.Kind()))
+	}
+	return arena.Pointer[Raw](sym.raw.data)
 }
 
 // symbolRef is all of the information necessary to resolve a symbol reference.
