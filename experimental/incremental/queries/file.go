@@ -23,9 +23,6 @@ import (
 // File is an [incremental.Query] for the contents of a file as provided
 // by a [source.Opener].
 //
-// Will automatically include [source.WKTs] when performing the lookup of a
-// file, but only as a fallback when File.Opener does not override it.
-//
 // File queries with different Openers are considered distinct.
 type File struct {
 	source.Opener // Must be comparable.
@@ -53,8 +50,7 @@ func (f File) Key() any {
 // Execute implements [incremental.Query].
 func (f File) Execute(t *incremental.Task) (*report.File, error) {
 	if !f.ReportError {
-		src := source.Openers{f.Opener, source.WKTs()}
-		text, err := src.Open(f.Path)
+		text, err := f.Open(f.Path)
 
 		if err != nil {
 			return nil, err

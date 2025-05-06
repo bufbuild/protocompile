@@ -69,19 +69,7 @@ type Context struct {
 	// of each direct import.
 	exported, imported symtab
 
-	// Symbols that are built into the language, and which the compiler cannot
-	// handle not being present. This field is only present in the Context
-	// for descriptor.proto.
-	//
-	// See [resolveLangSymbols] for where they are resolved.
-	langSymbols *struct {
-		fileOptions,
-		messageOptions,
-		fieldOptions,
-		oneofOptions,
-		enumOptions,
-		enumValueOptions arena.Pointer[rawField]
-	}
+	langSymbols *langSymbols
 
 	arenas struct {
 		types     arena.Arena[rawType]
@@ -94,6 +82,20 @@ type Context struct {
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
 	}
+}
+
+// langSymbols contains those symbols that are built into the language, and which the compiler cannot
+// handle not being present. This field is only present in the Context
+// for descriptor.proto.
+//
+// See [resolveLangSymbols] for where they are resolved.
+type langSymbols struct {
+	fileOptions,
+	messageOptions,
+	fieldOptions,
+	oneofOptions,
+	enumOptions,
+	enumValueOptions arena.Pointer[rawField]
 }
 
 type withContext = internal.With[*Context]

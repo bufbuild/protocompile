@@ -63,7 +63,7 @@ func resolveOptions(f File, r *report.Report) {
 	}
 
 	for ty := range seq.Values(f.AllTypes()) {
-		for ast := range bodyOptions(ty.AST().Body()) {
+		for def := range bodyOptions(ty.AST().Body()) {
 			options := messageOptions
 			if ty.IsEnum() {
 				options = enumOptions
@@ -73,14 +73,14 @@ func resolveOptions(f File, r *report.Report) {
 				Report:  r,
 
 				scope: ty.Scope(),
-				def:   ast,
+				def:   def,
 
 				field: options,
 				raw:   &ty.raw.options,
 			}.resolve()
 		}
 		for field := range seq.Values(ty.Fields()) {
-			for ast := range seq.Values(field.AST().Options().Entries()) {
+			for def := range seq.Values(field.AST().Options().Entries()) {
 				options := fieldOptions
 				if ty.IsEnum() {
 					options = enumValueOptions
@@ -90,7 +90,7 @@ func resolveOptions(f File, r *report.Report) {
 					Report:  r,
 
 					scope: field.Scope(),
-					def:   ast,
+					def:   def,
 
 					field: options,
 					raw:   &field.raw.options,
@@ -98,13 +98,13 @@ func resolveOptions(f File, r *report.Report) {
 			}
 		}
 		for oneof := range seq.Values(ty.Oneofs()) {
-			for ast := range bodyOptions(oneof.AST().Body()) {
+			for def := range bodyOptions(oneof.AST().Body()) {
 				optionRef{
 					Context: f.Context(),
 					Report:  r,
 
 					scope: ty.Scope(),
-					def:   ast,
+					def:   def,
 
 					field: oneofOptions,
 					raw:   &oneof.raw.options,
@@ -113,13 +113,13 @@ func resolveOptions(f File, r *report.Report) {
 		}
 	}
 	for field := range seq.Values(f.AllExtensions()) {
-		for ast := range seq.Values(field.AST().Options().Entries()) {
+		for def := range seq.Values(field.AST().Options().Entries()) {
 			optionRef{
 				Context: f.Context(),
 				Report:  r,
 
 				scope: field.Scope(),
-				def:   ast,
+				def:   def,
 
 				field: fieldOptions,
 				raw:   &field.raw.options,

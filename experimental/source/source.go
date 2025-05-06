@@ -118,5 +118,8 @@ func (o *Openers) Open(path string) (string, error) {
 
 // WKTs returns an opener that yields protocompile's built-in WKT sources.
 func WKTs() Opener {
-	return &FS{FS: wellknownimports.FS()}
+	// Ensure that all openers returned by this function compare equal.
+	return &wkts
 }
+
+var wkts = FS{FS: wellknownimports.FS()}

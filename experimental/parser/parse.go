@@ -34,8 +34,13 @@ func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 
 	errs.SaveOptions(func() {
 		if source.Path() == "google/protobuf/descriptor.proto" {
+			// descriptor.proto contains required fields, which we warn against.
+			// However, that would cause literally every project ever to have
+			// warnings, and in general, any warnings we add should not ding
+			// the worst WKT file of them all.
 			errs.SuppressWarnings = true
 		}
+
 		lex(ctx, errs)
 		parse(ctx, errs)
 	})

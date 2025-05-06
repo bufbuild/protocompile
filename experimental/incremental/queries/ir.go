@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/ir"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
@@ -60,8 +61,32 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 	}
 	file := r[0].Value
 
+	// Check for descriptor.proto in the opener. If it's not present, that's
+	// going to produce a mess of weird errors, and we want this to be an ICE.
+	dp, err := incremental.Resolve(t, File{
+		Opener:      i.Opener,
+		Path:        ir.DescriptorProtoPath,
+		ReportError: false,
+	})
+	if err != nil {
+		return ir.File{}, err
+	}
+	if dp[0].Fatal != nil {
+		t.Report().Fatalf("could not import `%s`", ir.DescriptorProtoPath).Apply(
+			report.Notef("protocompile is not configured correctly"),
+			report.Helpf("`descriptor.proto` must always be available, since it is "+
+				"required for correctly implementing Protobuf's semantics. "+
+				"If you are using protocompile as a library, you may be missing a "+
+				"source.WKTs() in your source.Opener setup."),
+		)
+		return ir.File{}, dp[0].Fatal
+	}
+
 	// Resolve all of the imports in the AST.
-	queries := make([]incremental.Query[ir.File], iterx.Count(file.Imports()))
+	queries := make([]incremental.Query[ir.File],
+		// Preallocate for one extra query here, corresponding to the
+		// descriptor.proto query.
+		iterx.Count(file.Imports())+1)
 	errors := make([]error, len(queries))
 	for j, decl := range iterx.Enumerate(file.Imports()) {
 		path, ok := decl.ImportPath().AsLiteral().AsString()
@@ -93,14 +118,12 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 			request: decl,
 		}
 	}
-	//nolint:makezero // False positive.
-	queries = append(queries, IR{
+
+	queries[len(queries)-1] = IR{
 		Opener:  i.Opener,
 		Session: i.Session,
 		Path:    ir.DescriptorProtoPath,
-	})
-	//nolint:makezero // False positive.
-	errors = append(errors, nil)
+	}
 
 	imports, err := incremental.Resolve(t, queries...)
 	if err != nil {

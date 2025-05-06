@@ -166,7 +166,7 @@ func (k SymbolKind) IsType() bool {
 	}
 }
 
-// IsType returns whether this is a field's symbol kind. This includes
+// IsField returns whether this is a field's symbol kind. This includes
 // enum values, which the ir package treats as fields of enum types.
 func (k SymbolKind) IsField() bool {
 	switch k {
@@ -177,7 +177,7 @@ func (k SymbolKind) IsField() bool {
 	}
 }
 
-// IsType returns whether this is a *message* field's symbol kind.
+// IsMessageField returns whether this is a field's symbol kind.
 func (k SymbolKind) IsMessageField() bool {
 	switch k {
 	case SymbolKindField, SymbolKindExtension:

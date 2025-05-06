@@ -157,23 +157,16 @@ func resolveLangSymbols(c *Context) {
 		return mustResolve[rawField](c, "google.protobuf."+name, SymbolKindField)
 	}
 
-	l := inferNew(&c.langSymbols)
+	c.langSymbols = &langSymbols{
+		fileOptions: field("FileDescriptorProto.options"),
 
-	l.fileOptions = field("FileDescriptorProto.options")
+		messageOptions: field("DescriptorProto.options"),
+		fieldOptions:   field("FieldDescriptorProto.options"),
+		oneofOptions:   field("OneofDescriptorProto.options"),
 
-	l.messageOptions = field("DescriptorProto.options")
-	l.fieldOptions = field("FieldDescriptorProto.options")
-	l.oneofOptions = field("OneofDescriptorProto.options")
-
-	l.enumOptions = field("EnumDescriptorProto.options")
-	l.enumValueOptions = field("EnumValueDescriptorProto.options")
-}
-
-// inferNew is a helper for allocating a value of a large, complicated type.
-// Specifically, it's used with Context.langSymbols.
-func inferNew[T any](p **T) *T {
-	*p = new(T)
-	return *p
+		enumOptions:      field("EnumDescriptorProto.options"),
+		enumValueOptions: field("EnumValueDescriptorProto.options"),
+	}
 }
 
 // mustResolve resolves a descriptor.proto name, and panics if it's not found.

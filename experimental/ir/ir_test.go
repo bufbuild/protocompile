@@ -44,9 +44,12 @@ import (
 )
 
 // Test is the type that a test case for the compiler is deserialized from.
+//
+//nolint:tagliatelle
 type Test struct {
-	Files       []File `yaml:"files"`
-	IncludeWKTs bool   `yaml:"include_wkts"` //nolint:tagliatelle
+	Files          []File `yaml:"files"`
+	DisableSysroot bool   `yaml:"disable_sysroot"`
+	OutputWKTs     bool   `yaml:"output_wkts"`
 }
 
 type File struct {
@@ -78,12 +81,16 @@ func TestIR(t *testing.T) {
 			require.NoError(t, yaml.Unmarshal([]byte(text), &test))
 		}
 
-		files := source.NewMap(maps.Collect(iterx.Map1To2(
+		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
 			slices.Values(test.Files),
 			func(f File) (string, string) {
 				return f.Path, f.Text
 			},
 		)))
+
+		if !test.DisableSysroot {
+			files = &source.Openers{files, source.WKTs()}
+		}
 
 		exec := incremental.New(
 			incremental.WithParallelism(1),
@@ -114,7 +121,7 @@ func TestIR(t *testing.T) {
 		}.RenderString(r)
 		t.Log(stderr)
 		outputs[2], _, _ = report.Renderer{}.RenderString(r)
-		assert.NotContains(t, outputs[1], "internal compiler error")
+		assert.NotContains(t, outputs[1], "unexpected panic; this is a bug")
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
@@ -124,7 +131,7 @@ func TestIR(t *testing.T) {
 		fds := new(descriptorpb.FileDescriptorSet)
 		require.NoError(t, proto.Unmarshal(bytes, fds))
 
-		if !test.IncludeWKTs {
+		if !test.OutputWKTs {
 			fds.File = slices.DeleteFunc(fds.File, func(fdp *descriptorpb.FileDescriptorProto) bool {
 				return strings.HasPrefix(*fdp.Name, "google/protobuf/")
 			})
@@ -140,10 +147,17 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 	set.Tables = make(map[string]*compilerpb.SymbolTable)
 
 	for _, file := range files {
-		if file.Symbols().Len() <= 1 && file.Options().IsZero() {
-			// Don't bother if the file only has a single symbol for its
-			// package.
-			continue
+		// Don't bother if the file only has a single symbol for its
+		// package, and no options.
+		if file.Options().IsZero() {
+			switch file.Symbols().Len() {
+			case 0:
+				continue
+			case 1:
+				if file.Symbols().At(0).Kind() == ir.SymbolKindPackage {
+					continue
+				}
+			}
 		}
 
 		symtab := &compilerpb.SymbolTable{
@@ -162,7 +176,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
 
 		for sym := range seq.Values(file.Symbols()) {
-			if !t.IncludeWKTs && strings.HasPrefix(sym.File().Path(), "google/protobuf/") {
+			if !t.OutputWKTs && strings.HasPrefix(sym.File().Path(), "google/protobuf/") {
 				continue
 			}
 

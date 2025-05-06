@@ -60,7 +60,8 @@ type Options struct {
 	// in that function's contract.
 	KeepDuplicates bool
 
-	// If set, all diagnostics of level Warning and higher are suppressed.
+	// If set, all diagnostics of severity at most Warning (i.e., >= Warning
+	// as integers) are suppressed.
 	SuppressWarnings bool
 }
 
@@ -88,6 +89,12 @@ func (r *Report) Remark(err Diagnose) *Diagnostic {
 	d := r.push(1, Remark)
 	err.Diagnose(d)
 	return d
+}
+
+// Fatalf creates an ad-hoc [ICE] diagnostic with the given message; analogous to
+// [fmt.Errorf].
+func (r *Report) Fatalf(format string, args ...any) *Diagnostic {
+	return r.push(1, ICE).Apply(Message(format, args...))
 }
 
 // Errorf creates an ad-hoc error diagnostic with the given message; analogous to
@@ -134,9 +141,11 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// so that it is always visible.
 	tracing := r.Tracing
 	r.Tracing = 0 // Temporarily disable built-in tracing.
-	diagnostic := r.push(1, Error).Apply(Message("%v", panicked))
+	diagnostic := r.push(1, ICE).Apply(
+		Message("unexpected panic; this is a bug"),
+		Notef("%v", panicked),
+	)
 	r.Tracing = tracing
-	diagnostic.level = ICE
 
 	if diagnose != nil {
 		diagnose(diagnostic)
