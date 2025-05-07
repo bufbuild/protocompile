@@ -61,6 +61,7 @@ const (
 	MethodOuts
 	Signature
 	FieldTag
+	FieldNumber
 	FieldName
 	OptionValue
 	QualifiedName
@@ -179,6 +180,7 @@ var _table_Noun_String = [...]string{
 	MethodOuts:         "method return type",
 	Signature:          "method signature",
 	FieldTag:           "message field tag",
+	FieldNumber:        "field number",
 	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
@@ -205,7 +207,7 @@ var _table_Noun_String = [...]string{
 	String:             "string literal",
 	Float:              "floating-point literal",
 	Int:                "integer literal",
-	Number:             "number",
+	Number:             "number literal",
 	Semi:               "`;`",
 	Comma:              "`,`",
 	Slash:              "`/`",
@@ -280,6 +282,7 @@ var _table_Noun_GoString = [...]string{
 	MethodOuts:         "MethodOuts",
 	Signature:          "Signature",
 	FieldTag:           "FieldTag",
+	FieldNumber:        "FieldNumber",
 	FieldName:          "FieldName",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",
