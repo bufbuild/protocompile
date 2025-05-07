@@ -30,10 +30,14 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
-	"google.golang.org/protobuf/encoding/protowire"
 )
 
-const fieldNumberBits = 29
+const (
+	fieldNumberBits = 29
+	fieldNumberMax  = 1<<fieldNumberBits - 1
+	firstReserved   = 19000
+	lastReserved    = 19999
+)
 
 // evaluateFieldNumbers evaluates all non-extension field numbers: that is,
 // the numbers in reserved ranges and in non-extension field and enum value
@@ -226,7 +230,7 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 }
 
 // evalLiteral evaluates a literal expression.
-func (e evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (rawValueBits, bool) {
+func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (rawValueBits, bool) {
 	scalar := predeclared.Int32
 	if ty := args.Type(e.Context); !ty.IsZero() {
 		scalar = ty.Predeclared()
@@ -287,8 +291,8 @@ func (e evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (r
 // If bits == fieldNumberBits, the field number bounds check is used instead, which disallows
 // 0 and values in the implementation-reserved range.
 func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg bool, got any) (rawValueBits, bool) {
-	err := func() *report.Diagnostic {
-		return e.Error(errLiteralRange{
+	err := func() {
+		e.Error(errLiteralRange{
 			errTypeCheck: args.mismatch(e.Context, nil),
 			got:          got,
 			signed:       signed,
@@ -337,14 +341,13 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 	}
 
 	if bits == fieldNumberBits {
-		n := protowire.Number(v)
-		if n == 0 {
+		if v == 0 {
 			err()
 			return 0, false
 		}
 
 		// Check that this is not one of the special reserved numbers.
-		if n >= protowire.FirstReservedNumber && n <= protowire.LastReservedNumber {
+		if v >= firstReserved && v <= lastReserved {
 			err()
 			return rawValueBits(v), false
 		}
@@ -354,7 +357,7 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 }
 
 // evalPath evaluates a path expression.
-func (e evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) {
+func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) {
 	if ty := args.Type(e.Context); ty.IsEnum() {
 		// We can just plumb the text of the expression directly here, since
 		// if it's anything that isn't an identifier, this lookup will fail.
@@ -392,7 +395,7 @@ func (e evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) {
 		}
 
 		if args.uint29 {
-			return rawValueBits(protowire.MaxValidNumber), ok
+			return fieldNumberMax, ok
 		}
 
 		if scalar.IsFloat() {
@@ -549,8 +552,8 @@ func (e errLiteralRange) Diagnose(d *report.Diagnostic) {
 				taxa.FieldNumber,
 				itoa(1),
 				itoa(hi),
-				itoa(uint64(protowire.FirstReservedNumber)),
-				itoa(uint64(protowire.LastReservedNumber))),
+				itoa(uint64(firstReserved)),
+				itoa(uint64(lastReserved))),
 		)
 	} else {
 		d.Apply(
