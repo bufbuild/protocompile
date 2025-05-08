@@ -6,9 +6,9 @@ file:
         nested_type:
           - name: "N"
           - name: "M"
-            field:
+            extension:
               - name: "x"
-                number: 0
+                number: 1
                 label: LABEL_OPTIONAL
                 type: TYPE_INT32
                 extendee: ".test.M.N"
