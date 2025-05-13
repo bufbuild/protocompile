@@ -13,7 +13,7 @@ file:
     dependency: ["b.proto"]
     extension:
       - name: "m"
-        number: 0
+        number: 1
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         extendee: ".foo.M"
