@@ -49,7 +49,7 @@ type rawValue struct {
 	//
 	//  option a.b.c = 9;
 	//
-	// results in a field a: {b: {c: 9}}, which is four rawFieldValues deep.
+	// results in a field a: {b: {c: 9}}, which is four rawValues deep.
 	// Each of these will have the same optionPath, for a.b.c.
 	optionPath ast.Path
 
@@ -59,7 +59,7 @@ type rawValue struct {
 	// NOTE: we steal the high bit of the pointer to indicate whether or not
 	// bits refers to a slice. If the pointer part is negative, bits is a
 	// repeated field with multiple elements.
-	field ref[rawField]
+	field ref[rawMember]
 	bits  rawValueBits
 }
 
@@ -111,18 +111,18 @@ func (v Value) FieldAST() ast.ExprField {
 // Field returns the field this value sets, which includes the value's type
 // information.
 //
-// NOTE: [Field.Element] returns google.protobuf.Any, the concrete type of the
+// NOTE: [Member.Element] returns google.protobuf.Any, the concrete type of the
 // values in [Value.Elements] may be distinct from it.
-func (v Value) Field() Field {
+func (v Value) Field() Member {
 	if v.IsZero() {
-		return Field{}
+		return Member{}
 	}
 
 	field := v.raw.field
 	if int32(field.ptr) < 0 {
 		field.ptr = -field.ptr
 	}
-	return wrapField(v.Context(), v.raw.field)
+	return wrapMember(v.Context(), v.raw.field)
 }
 
 // Singular returns whether this value is singular, i.e., [Value.Elements] will
@@ -231,15 +231,15 @@ func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {
 // type provides uniform access to such elements. See [Value.Elements].
 type Element struct {
 	withContext
-	field Field
+	field Member
 	bits  rawValueBits
 }
 
 // Field returns the field this value sets, which includes the value's type
 // information.
-func (e Element) Field() Field {
+func (e Element) Field() Member {
 	if e.IsZero() {
-		return Field{}
+		return Member{}
 	}
 
 	return e.field
@@ -247,7 +247,7 @@ func (e Element) Field() Field {
 
 // Type returns the type of this element.
 //
-// Note that this may be distinct from [Field.Element]. In the case that this is
+// Note that this may be distinct from [Member.Element]. In the case that this is
 // a google.protobuf.Any-typed field, this function will return the concrete
 // type if known, rather than Any.
 func (e Element) Type() Type {
@@ -374,9 +374,7 @@ func (v MessageValue) Fields() seq.Indexer[Value] {
 // When a conflict occurs, the existing rawValue pointer will be returned,
 // whereas if the value is being inserted for the first time, the returned arena
 // pointer will be nil and can be initialized by the caller.
-//
-
-func (v MessageValue) insert(field Field) *arena.Pointer[rawValue] {
+func (v MessageValue) insert(field Member) *arena.Pointer[rawValue] {
 	id := field.InternedFullName()
 	if o := field.Oneof(); !o.IsZero() {
 		id = o.InternedFullName()
@@ -404,7 +402,7 @@ type scalar interface {
 // newScalar constructs a new scalar value.
 //
 
-func newScalar[T scalar](c *Context, field ref[rawField], v T) Value {
+func newScalar[T scalar](c *Context, field ref[rawMember], v T) Value {
 	return Value{
 		internal.NewWith(c),
 		c.arenas.values.New(rawValue{
@@ -447,9 +445,9 @@ func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 // newMessage constructs a new message value.
 //
 
-func newMessage(c *Context, field ref[rawField], anyType ref[rawType]) Value {
+func newMessage(c *Context, field ref[rawMember], anyType ref[rawType]) Value {
 	if anyType.ptr.Nil() {
-		anyType = wrapField(c, field).raw.elem
+		anyType = wrapMember(c, field).raw.elem
 	}
 
 	return Value{

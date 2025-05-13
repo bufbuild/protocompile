@@ -42,7 +42,7 @@ func buildLocalSymbols(f File) {
 
 	for ty := range seq.Values(f.AllTypes()) {
 		newTypeSymbol(ty)
-		for f := range seq.Values(ty.Fields()) {
+		for f := range seq.Values(ty.Members()) {
 			newFieldSymbol(f)
 		}
 		for f := range seq.Values(ty.Extensions()) {
@@ -73,7 +73,7 @@ func newTypeSymbol(ty Type) {
 	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
-func newFieldSymbol(f Field) {
+func newFieldSymbol(f Member) {
 	c := f.Context()
 	kind := SymbolKindField
 	if !f.raw.extendee.Nil() {
@@ -84,7 +84,7 @@ func newFieldSymbol(f Field) {
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
 		kind: kind,
 		fqn:  f.InternedFullName(),
-		data: arena.Untyped(c.arenas.fields.Compress(f.raw)),
+		data: arena.Untyped(c.arenas.members.Compress(f.raw)),
 	})
 	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
@@ -309,7 +309,7 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	// bug with enum scoping.
 	for i := range e.refs {
 		s := e.symbol(i)
-		v := s.AsField()
+		v := s.AsMember()
 		if !v.Container().IsEnum() {
 			continue
 		}

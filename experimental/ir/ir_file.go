@@ -49,7 +49,7 @@ type Context struct {
 	types            []arena.Pointer[rawType]
 	topLevelTypesEnd int // Index of the last top-level type in types.
 
-	extns            []arena.Pointer[rawField]
+	extns            []arena.Pointer[rawMember]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
 	options arena.Pointer[rawValue]
@@ -73,7 +73,7 @@ type Context struct {
 
 	arenas struct {
 		types     arena.Arena[rawType]
-		fields    arena.Arena[rawField]
+		members   arena.Arena[rawMember]
 		extendees arena.Arena[rawExtendee]
 		oneofs    arena.Arena[rawOneof]
 		symbols   arena.Arena[rawSymbol]
@@ -95,7 +95,7 @@ type langSymbols struct {
 	fieldOptions,
 	oneofOptions,
 	enumOptions,
-	enumValueOptions arena.Pointer[rawField]
+	enumValueOptions arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]
@@ -245,23 +245,23 @@ func (f File) AllTypes() seq.Indexer[Type] {
 
 // Extensions returns the top level extensions defined in this file (i.e.,
 // the contents of any top-level `extends` blocks).
-func (f File) Extensions() seq.Indexer[Field] {
+func (f File) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns[:f.Context().topLevelExtnsEnd],
-		func(_ int, p arena.Pointer[rawField]) Field {
+		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
-			return wrapField(f.Context(), ref[rawField]{ptr: p})
+			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
 
 // AllExtensions returns all extensions defined in this file.
-func (f File) AllExtensions() seq.Indexer[Field] {
+func (f File) AllExtensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns,
-		func(_ int, p arena.Pointer[rawField]) Field {
+		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
-			return wrapField(f.Context(), ref[rawField]{ptr: p})
+			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }

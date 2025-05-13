@@ -24,13 +24,13 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-// Field is a Protobuf message field, enum value, or extension field.
+// Member is a Protobuf message field, enum value, or extension field.
 //
-// A field has three types associated with it. The English language struggles
+// A member has three types associated with it. The English language struggles
 // to give these succinct names, so we review them here.
 //
-//  1. Its _element_, i.e. the type it contains. This is the type that a field is
-//     declared to be _of_.
+//  1. Its _element_, i.e. the type it contains. This is the type that a member
+//     is declared to be _of_. Not present for enum values.
 //
 //  2. Its _parent_, i.e., the type it is syntactically defined within.
 //     Extensions appear syntactically within their parent.
@@ -38,12 +38,12 @@ import (
 //  3. Its _container_, i.e., the type which it is part of for the purposes of
 //     serialization. Extensions are fields of their container, but are declared
 //     within their parent.
-type Field struct {
+type Member struct {
 	withContext
-	raw *rawField
+	raw *rawMember
 }
 
-type rawField struct {
+type rawMember struct {
 	def ast.DeclDef
 
 	options   arena.Pointer[rawValue]
@@ -59,171 +59,176 @@ type rawField struct {
 }
 
 // Returns whether this is a non-extension message field.
-func (f Field) IsMessageField() bool {
-	return !f.IsZero() && !f.raw.elem.ptr.Nil() && f.raw.extendee.Nil()
+func (m Member) IsMessageField() bool {
+	return !m.IsZero() && !m.raw.elem.ptr.Nil() && m.raw.extendee.Nil()
 }
 
 // Returns whether this is a extension message field.
-func (f Field) IsExtension() bool {
-	return !f.IsZero() && !f.raw.elem.ptr.Nil() && !f.raw.extendee.Nil()
+func (m Member) IsExtension() bool {
+	return !m.IsZero() && !m.raw.elem.ptr.Nil() && !m.raw.extendee.Nil()
 }
 
 // Returns whether this is an enum value.
-func (f Field) IsEnumValue() bool {
-	return !f.IsZero() && f.raw.elem.ptr.Nil()
+func (m Member) IsEnumValue() bool {
+	return !m.IsZero() && m.raw.elem.ptr.Nil()
 }
 
-// AST returns the declaration for this field, if known.
-func (f Field) AST() ast.DeclDef {
-	return f.raw.def
+// AST returns the declaration for this member, if known.
+func (m Member) AST() ast.DeclDef {
+	return m.raw.def
 }
 
-// FullName returns this fields's name.
-func (f Field) Name() string {
-	if f.IsZero() {
+// FullName returns this members's name.
+func (m Member) Name() string {
+	if m.IsZero() {
 		return ""
 	}
-	return f.Context().session.intern.Value(f.raw.name)
+	return m.Context().session.intern.Value(m.raw.name)
 }
 
-// FullName returns this fields's fully-qualified name.
-func (f Field) FullName() FullName {
-	if f.IsZero() {
+// FullName returns this members's fully-qualified name.
+func (m Member) FullName() FullName {
+	if m.IsZero() {
 		return ""
 	}
-	return FullName(f.Context().session.intern.Value(f.raw.fqn))
+	return FullName(m.Context().session.intern.Value(m.raw.fqn))
 }
 
-// Scope returns the scope in which this field is defined.
-func (f Field) Scope() FullName {
-	if f.IsZero() {
+// Scope returns the scope in which this member is defined.
+func (m Member) Scope() FullName {
+	if m.IsZero() {
 		return ""
 	}
-	return FullName(f.Context().session.intern.Value(f.InternedScope()))
+	return FullName(m.Context().session.intern.Value(m.InternedScope()))
 }
 
-// InternedName returns the intern ID for [Field.FullName]().Name().
-func (f Field) InternedName() intern.ID {
-	if f.IsZero() {
+// InternedName returns the intern ID for [Member.FullName]().Name().
+func (m Member) InternedName() intern.ID {
+	if m.IsZero() {
 		return 0
 	}
-	return f.raw.name
+	return m.raw.name
 }
 
-// InternedName returns the intern ID for [Field.FullName].
-func (f Field) InternedFullName() intern.ID {
-	if f.IsZero() {
+// InternedName returns the intern ID for [Member.FullName].
+func (m Member) InternedFullName() intern.ID {
+	if m.IsZero() {
 		return 0
 	}
-	return f.raw.fqn
+	return m.raw.fqn
 }
 
-// InternedScope returns the intern ID for [Field.Scope].
-func (f Field) InternedScope() intern.ID {
-	if f.IsZero() {
+// InternedScope returns the intern ID for [Member.Scope].
+func (m Member) InternedScope() intern.ID {
+	if m.IsZero() {
 		return 0
 	}
-	if parent := f.Parent(); !parent.IsZero() {
+	if parent := m.Parent(); !parent.IsZero() {
 		return parent.InternedFullName()
 	}
-	return f.Context().File().InternedPackage()
+	return m.Context().File().InternedPackage()
 }
 
-// Number returns the number for this field after expression evaluation.
+// Number returns the number for this member after expression evaluation.
 //
 // Defaults to zero if the number is not specified.
-func (f Field) Number() int32 {
-	return f.raw.number
+func (m Member) Number() int32 {
+	return m.raw.number
 }
 
-// Presence returns this field's presence kind.
-func (f Field) Presence() presence.Kind {
-	if f.IsZero() {
+// Presence returns this member's presence kind.
+//
+// Returns [presence.Unknown] for enum values.
+func (m Member) Presence() presence.Kind {
+	if m.IsZero() {
 		return presence.Unknown
 	}
-	if f.raw.oneof >= 0 {
+	if m.raw.oneof >= 0 {
+		if m.Parent().IsEnum() {
+			return presence.Unknown
+		}
 		return presence.Shared
 	}
-	return presence.Kind(-f.raw.oneof)
+	return presence.Kind(-m.raw.oneof)
 }
 
-// Parent returns the type this field is syntactically located in. This is the
+// Parent returns the type this member is syntactically located in. This is the
 // type it is declared *in*, but which it is not necessarily part of.
 //
 // May be zero for extensions declared at the top level.
-func (f Field) Parent() Type {
-	if f.IsZero() {
+func (m Member) Parent() Type {
+	if m.IsZero() {
 		return Type{}
 	}
-	return wrapType(f.Context(), ref[rawType]{ptr: f.raw.parent})
+	return wrapType(m.Context(), ref[rawType]{ptr: m.raw.parent})
 }
 
-// Element returns the this field's element type. This is the type it is
+// Element returns the this member's element type. This is the type it is
 // declared to be *of*, such as in the phrase "a string field's type is string".
 //
-// This does not include the field's presence: for example, a repeated int32
-// field will report the type as being the int32 primitive, not an int32 array.
+// This does not include the member's presence: for example, a repeated int32
+// member will report the type as being the int32 primitive, not an int32 array.
 //
 // This is zero for enum values.
-func (f Field) Element() Type {
-	if f.IsZero() {
+func (m Member) Element() Type {
+	if m.IsZero() {
 		return Type{}
 	}
-	return wrapType(f.Context(), f.raw.elem)
+	return wrapType(m.Context(), m.raw.elem)
 }
 
-// Container returns the type which contains this field: this is either
-// [Field.Parent], or the extendee if this is an extension. This is the
+// Container returns the type which contains this member: this is either
+// [Member.Parent], or the extendee if this is an extension. This is the
 // type it is declared to be *part of*.
-func (f Field) Container() Type {
-	if f.IsZero() {
+func (m Member) Container() Type {
+	if m.IsZero() {
 		return Type{}
 	}
 
-	if f.raw.extendee.Nil() {
-		return f.Parent()
+	if m.raw.extendee.Nil() {
+		return m.Parent()
 	}
 
-	extends := f.Context().arenas.extendees.Deref(f.raw.extendee)
-	return wrapType(f.Context(), extends.ty)
+	extends := m.Context().arenas.extendees.Deref(m.raw.extendee)
+	return wrapType(m.Context(), extends.ty)
 }
 
-// Oneof returns the oneof that this field is a member of.
+// Oneof returns the oneof that this member is a member of.
 //
-// Returns the zero value if this field does not have [presence.Shared].
-func (f Field) Oneof() Oneof {
-	if f.Presence() != presence.Shared {
+// Returns the zero value if this member does not have [presence.Shared].
+func (m Member) Oneof() Oneof {
+	if m.Presence() != presence.Shared {
 		return Oneof{}
 	}
-	return f.Parent().Oneofs().At(int(f.raw.oneof))
+	return m.Parent().Oneofs().At(int(m.raw.oneof))
 }
 
-// Options returns the options applied to this field.
-func (f Field) Options() MessageValue {
-	return wrapValue(f.Context(), f.raw.options).AsMessage()
+// Options returns the options applied to this member.
+func (m Member) Options() MessageValue {
+	return wrapValue(m.Context(), m.raw.options).AsMessage()
 }
 
 // noun returns a [taxa.Noun] for diagnostics.
-func (f Field) noun() taxa.Noun {
+func (m Member) noun() taxa.Noun {
 	switch {
-	case f.IsEnumValue():
+	case m.IsEnumValue():
 		return taxa.EnumValue
-	case f.IsExtension():
+	case m.IsExtension():
 		return taxa.Extension
 	default:
 		return taxa.Field
 	}
 }
 
-func wrapField(c *Context, r ref[rawField]) Field {
+func wrapMember(c *Context, r ref[rawMember]) Member {
 	if r.ptr.Nil() || c == nil {
-		return Field{}
+		return Member{}
 	}
 
 	c = r.context(c)
-	return Field{
+	return Member{
 		withContext: internal.NewWith(c),
-		raw:         c.arenas.fields.Deref(r.ptr),
+		raw:         c.arenas.members.Deref(r.ptr),
 	}
 }
 
@@ -259,7 +264,7 @@ type rawOneof struct {
 	fqn, name intern.ID
 	index     uint32
 	container arena.Pointer[rawType]
-	members   []arena.Pointer[rawField]
+	members   []arena.Pointer[rawMember]
 	options   arena.Pointer[rawValue]
 }
 
@@ -318,11 +323,11 @@ func (o Oneof) Index() int {
 }
 
 // Members returns this oneof's member fields.
-func (o Oneof) Members() seq.Indexer[Field] {
+func (o Oneof) Members() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		o.raw.members,
-		func(_ int, p arena.Pointer[rawField]) Field {
-			return wrapField(o.Context(), ref[rawField]{ptr: p})
+		func(_ int, p arena.Pointer[rawMember]) Member {
+			return wrapMember(o.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }

@@ -55,8 +55,8 @@ func (sn *syntheticNames) generate(candidate string, message Type) string {
 		//    synthetic group types.
 		// 5. Nested enums' values, due to a language bug.
 		*sn = mapsx.CollectSet(iterx.Chain(
-			seq.Map(message.Fields(), Field.InternedName),
-			seq.Map(message.Extensions(), Field.InternedName),
+			seq.Map(message.Members(), Member.InternedName),
+			seq.Map(message.Extensions(), Member.InternedName),
 			seq.Map(message.Oneofs(), Oneof.InternedName),
 			iterx.FlatMap(seq.Values(message.Nested()), func(ty Type) iter.Seq[intern.ID] {
 				if !ty.IsEnum() {
@@ -66,7 +66,7 @@ func (sn *syntheticNames) generate(candidate string, message Type) string {
 				return iterx.Chain(
 					iterx.Of(ty.InternedName()),
 					// We need to include the enum values' names.
-					seq.Map(ty.Fields(), Field.InternedName),
+					seq.Map(ty.Members(), Member.InternedName),
 				)
 			}),
 		))
