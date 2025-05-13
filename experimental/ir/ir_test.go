@@ -47,9 +47,9 @@ import (
 //
 //nolint:tagliatelle
 type Test struct {
-	Files          []File `yaml:"files"`
-	DisableSysroot bool   `yaml:"disable_sysroot"`
-	OutputWKTs     bool   `yaml:"output_wkts"`
+	Files             []File `yaml:"files"`
+	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
+	OutputWKTs        bool   `yaml:"output_wkts"`
 }
 
 type File struct {
@@ -88,7 +88,7 @@ func TestIR(t *testing.T) {
 			},
 		)))
 
-		if !test.DisableSysroot {
+		if !test.ExcludeWKTSources {
 			files = &source.Openers{files, source.WKTs()}
 		}
 

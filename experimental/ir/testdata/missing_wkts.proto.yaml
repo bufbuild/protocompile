@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-disable_sysroot: true
+exclude_wkt_sources: true
 files:
 - path: "a.proto"
   text: |
