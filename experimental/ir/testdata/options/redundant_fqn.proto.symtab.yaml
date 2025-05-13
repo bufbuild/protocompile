@@ -1,0 +1,13 @@
+tables:
+  "testdata/options/redundant_fqn.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+      - fqn: "buf.test"
+        kind: KIND_PACKAGE
+        file: "testdata/options/redundant_fqn.proto"
+      - fqn: "buf.test.Foo"
+        kind: KIND_MESSAGE
+        file: "testdata/options/redundant_fqn.proto"
+        index: 1
+        visible: true
+        options.message.fields: { "deprecated": { bool: false } }

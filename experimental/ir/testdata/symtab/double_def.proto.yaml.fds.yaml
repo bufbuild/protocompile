@@ -13,9 +13,12 @@ file:
     dependency: ["dep/foo.proto"]
     message_type:
       - name: "Main"
-      - { name: "Main", extension: [{ name: "x", number: 0 }] }
-      - { name: "Foo", enum_type: [{ name: "BAR" }] }
-      - { name: "Main", extension: [{ name: "x", number: 0 }] }
+      - name: "Main"
+        field: [{ name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+      - name: "Foo"
+        enum_type: [{ name: "BAR", value: [{ name: "BAR", number: 0 }] }]
+      - name: "Main"
+        field: [{ name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_STRING }]
     syntax: "proto2"
   - name: "main2.proto"
     package: "dep.foo.Foo"

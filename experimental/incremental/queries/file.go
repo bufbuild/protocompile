@@ -51,6 +51,7 @@ func (f File) Key() any {
 func (f File) Execute(t *incremental.Task) (*report.File, error) {
 	if !f.ReportError {
 		text, err := f.Open(f.Path)
+
 		if err != nil {
 			return nil, err
 		}

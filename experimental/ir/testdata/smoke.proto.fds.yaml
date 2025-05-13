@@ -3,9 +3,14 @@ file:
     package: "buf.test"
     message_type:
       - name: "Foo"
-        extension:
-          - { name: "a", number: 0 }
-          - { name: "b", number: 0 }
-          - { name: "c", number: 0 }
-    enum_type: [{ name: "BAR" }]
+        field:
+          - { name: "a", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - { name: "b", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+          - { name: "c", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    enum_type:
+      - name: "BAR"
+        value:
+          - { name: "BAR_ZERO", number: 0 }
+          - { name: "BAR_A", number: 0 }
+          - { name: "BAR_B", number: 0 }
     syntax: "proto2"

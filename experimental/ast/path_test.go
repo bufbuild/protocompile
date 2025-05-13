@@ -16,6 +16,7 @@ package ast_test
 
 import (
 	"fmt"
+	"iter"
 	"slices"
 	"testing"
 
@@ -77,6 +78,27 @@ func TestNaturalSplit(t *testing.T) {
 	start, end = path.Split(2)
 	pathEq(t, start, components[:2])
 	pathEq(t, end, components[2:])
+
+	start, end = nth(path.Components, 0).SplitBefore()
+	pathEq(t, start, [][2]token.Token{})
+	pathEq(t, end, components)
+	start, end = nth(path.Components, 0).SplitAfter()
+	pathEq(t, start, components[:1])
+	pathEq(t, end, components[1:])
+
+	start, end = nth(path.Components, 1).SplitBefore()
+	pathEq(t, start, components[:1])
+	pathEq(t, end, components[1:])
+	start, end = nth(path.Components, 1).SplitAfter()
+	pathEq(t, start, components[:2])
+	pathEq(t, end, components[2:])
+
+	start, end = nth(path.Components, 3).SplitBefore()
+	pathEq(t, start, components[:3])
+	pathEq(t, end, components[3:])
+	start, end = nth(path.Components, 3).SplitAfter()
+	pathEq(t, start, components)
+	pathEq(t, end, [][2]token.Token{})
 }
 
 func TestSyntheticSplit(t *testing.T) {
@@ -117,6 +139,10 @@ func TestSyntheticSplit(t *testing.T) {
 	pathEq(t, start, [][2]token.Token{})
 	pathEq(t, end, components)
 
+	start, end = path.Split(1)
+	pathEq(t, start, components[:1])
+	pathEq(t, end, components[1:])
+
 	start, end = path.Split(2)
 	pathEq(t, start, components[:2])
 	pathEq(t, end, components[2:])
@@ -143,4 +169,14 @@ func stringEq[T any](t *testing.T, tokens []T, expected []T) {
 		b[i] = fmt.Sprint(t)
 	}
 	assert.Equal(t, b, a)
+}
+
+func nth[T any](seq iter.Seq[T], n int) (x T) {
+	for v := range seq {
+		if n == 0 {
+			return v
+		}
+		n--
+	}
+	return x
 }
