@@ -35,7 +35,7 @@ func resolveNames(f File, r *report.Report) {
 
 	for ty := range seq.Values(f.AllTypes()) {
 		if ty.IsMessage() {
-			for field := range seq.Values(ty.Fields()) {
+			for field := range seq.Values(ty.Members()) {
 				resolveFieldType(field, r)
 			}
 		}
@@ -51,7 +51,7 @@ func resolveNames(f File, r *report.Report) {
 }
 
 // resolveFieldType fully resolves the type of a field (extension or otherwise).
-func resolveFieldType(field Field, r *report.Report) {
+func resolveFieldType(field Member, r *report.Report) {
 	ty := field.AST().Type()
 	var path ast.Path
 	kind := presence.Explicit
@@ -153,8 +153,8 @@ func resolveLangSymbols(c *Context) {
 		return
 	}
 
-	field := func(name string) arena.Pointer[rawField] {
-		return mustResolve[rawField](c, "google.protobuf."+name, SymbolKindField)
+	field := func(name string) arena.Pointer[rawMember] {
+		return mustResolve[rawMember](c, "google.protobuf."+name, SymbolKindField)
 	}
 
 	c.langSymbols = &langSymbols{

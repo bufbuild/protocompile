@@ -32,12 +32,12 @@ import (
 func resolveOptions(f File, r *report.Report) {
 	dpIdx := int32(len(f.Context().imports.files))
 	dp := f.Context().imports.DescriptorProto().Context()
-	fileOptions := ref[rawField]{dpIdx, dp.langSymbols.fileOptions}
-	messageOptions := ref[rawField]{dpIdx, dp.langSymbols.messageOptions}
-	fieldOptions := ref[rawField]{dpIdx, dp.langSymbols.fieldOptions}
-	oneofOptions := ref[rawField]{dpIdx, dp.langSymbols.oneofOptions}
-	enumOptions := ref[rawField]{dpIdx, dp.langSymbols.enumOptions}
-	enumValueOptions := ref[rawField]{dpIdx, dp.langSymbols.enumValueOptions}
+	fileOptions := ref[rawMember]{dpIdx, dp.langSymbols.fileOptions}
+	messageOptions := ref[rawMember]{dpIdx, dp.langSymbols.messageOptions}
+	fieldOptions := ref[rawMember]{dpIdx, dp.langSymbols.fieldOptions}
+	oneofOptions := ref[rawMember]{dpIdx, dp.langSymbols.oneofOptions}
+	enumOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumOptions}
+	enumValueOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumValueOptions}
 
 	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
@@ -79,7 +79,7 @@ func resolveOptions(f File, r *report.Report) {
 				raw:   &ty.raw.options,
 			}.resolve()
 		}
-		for field := range seq.Values(ty.Fields()) {
+		for field := range seq.Values(ty.Members()) {
 			for def := range seq.Values(field.AST().Options().Entries()) {
 				options := fieldOptions
 				if ty.IsEnum() {
@@ -136,13 +136,13 @@ type optionRef struct {
 	scope FullName
 	def   ast.Option
 
-	field ref[rawField]
+	field ref[rawMember]
 	raw   *arena.Pointer[rawValue]
 }
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
-	root := wrapField(r.Context, r.field).Element()
+	root := wrapMember(r.Context, r.field).Element()
 
 	// Check if this is a pseudo-option, and diagnose if it has multiple
 	// components. The values of pseudo-options are calculated elsewhere; this
@@ -200,7 +200,7 @@ func (r optionRef) resolve() {
 			message = root
 		}
 
-		var next Field
+		var next Member
 		if extn := pc.AsExtension(); !extn.IsZero() {
 			sym := symbolRef{
 				Context: r.Context,
@@ -222,7 +222,7 @@ func (r optionRef) resolve() {
 				return
 			}
 
-			next = sym.AsField()
+			next = sym.AsMember()
 			if next.Container() != message {
 				d := r.Errorf("expected `%s` extension, found %s in `%s`",
 					message.FullName(), next.noun(), next.Container().FullName(),
@@ -253,7 +253,7 @@ func (r optionRef) resolve() {
 				)
 			}
 		} else if ident := pc.AsIdent(); !ident.IsZero() {
-			next = message.FieldByName(ident.Text())
+			next = message.MemberByName(ident.Text())
 			if next.IsZero() {
 				d := r.Errorf("cannot find %s `%s` in `%s`", taxa.Field, ident.Text(), message.FullName()).Apply(
 					report.Snippetf(pc, "because of this %s", taxa.FieldSelector),
@@ -319,11 +319,11 @@ func (r optionRef) resolve() {
 		}
 
 		// Construct a new value for this option.
-		var fieldRef ref[rawField]
+		var fieldRef ref[rawMember]
 		if next.Context() != r.Context {
 			fieldRef.file = int32(r.imports.byPath[next.Context().File().InternedPath()] + 1)
 		}
-		fieldRef.ptr = next.Context().arenas.fields.Compress(next.raw)
+		fieldRef.ptr = next.Context().arenas.members.Compress(next.raw)
 
 		// TODO: Implement expression evaluation.
 		var value Value

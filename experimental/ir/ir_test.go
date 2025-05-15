@@ -185,7 +185,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 			case ir.SymbolKindMessage, ir.SymbolKindEnum:
 				options = sym.AsType().Options()
 			case ir.SymbolKindField, ir.SymbolKindExtension, ir.SymbolKindEnumValue:
-				options = sym.AsField().Options()
+				options = sym.AsMember().Options()
 			case ir.SymbolKindOneof:
 				options = sym.AsOneof().Options()
 			}

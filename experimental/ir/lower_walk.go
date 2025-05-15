@@ -158,7 +158,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	})
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
-	ty.raw.fieldByName = sync.OnceValue(ty.makeFieldByName)
+	ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)
@@ -171,20 +171,20 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	return ty
 }
 
-func (w *walker) newField(def ast.DeclDef, parent any) Field {
+func (w *walker) newField(def ast.DeclDef, parent any) Member {
 	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
-	id := c.arenas.fields.NewCompressed(rawField{
+	id := c.arenas.members.NewCompressed(rawMember{
 		def:    def,
 		name:   c.session.intern.Intern(name),
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
 		oneof:  math.MinInt32,
 	})
-	raw := c.arenas.fields.Deref(id)
+	raw := c.arenas.members.Deref(id)
 
 	switch parent := parent.(type) {
 	case oneof:
@@ -196,18 +196,18 @@ func (w *walker) newField(def ast.DeclDef, parent any) Field {
 
 	if !parentTy.IsZero() {
 		if _, ok := parent.(extend); ok {
-			parentTy.raw.fields = append(parentTy.raw.fields, id)
+			parentTy.raw.members = append(parentTy.raw.members, id)
 			c.extns = append(c.extns, id)
 		} else {
-			parentTy.raw.fields = slices.Insert(parentTy.raw.fields, int(parentTy.raw.fieldsEnd), id)
-			parentTy.raw.fieldsEnd++
+			parentTy.raw.members = slices.Insert(parentTy.raw.members, int(parentTy.raw.extnsStart), id)
+			parentTy.raw.extnsStart++
 		}
 	} else if _, ok := parent.(extend); ok {
 		c.extns = slices.Insert(c.extns, c.topLevelExtnsEnd, id)
 		c.topLevelExtnsEnd++
 	}
 
-	return Field{internal.NewWith(w.Context()), raw}
+	return Member{internal.NewWith(w.Context()), raw}
 }
 
 func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
