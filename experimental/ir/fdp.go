@@ -141,7 +141,7 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 	mdp.Name = addr(ty.Name())
 
-	for field := range seq.Values(ty.Fields()) {
+	for field := range seq.Values(ty.Members()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
 		mdp.Field = append(mdp.Field, fd)
 		dg.field(field, fd)
@@ -204,7 +204,7 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 
 		// Only now that we have added all of the normal oneofs do we add the
 		// synthetic oneofs.
-		for i, field := range seq.All(ty.Fields()) {
+		for i, field := range seq.All(ty.Members()) {
 			if field.Presence() != presence.Explicit ||
 				!field.Oneof().IsZero() {
 				continue
@@ -246,7 +246,7 @@ var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
 	predeclared.Bytes:  descriptorpb.FieldDescriptorProto_TYPE_BYTES,
 }
 
-func (dg *descGenerator) field(f Field, fdp *descriptorpb.FieldDescriptorProto) {
+func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto) {
 	fdp.Name = addr(f.Name())
 	fdp.Number = addr(f.Number())
 
@@ -301,7 +301,7 @@ func (dg *descGenerator) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) 
 func (dg *descGenerator) enum(ty Type, edp *descriptorpb.EnumDescriptorProto) {
 	edp.Name = addr(ty.Name())
 
-	for field := range seq.Values(ty.Fields()) {
+	for field := range seq.Values(ty.Members()) {
 		evd := new(descriptorpb.EnumValueDescriptorProto)
 		edp.Value = append(edp.Value, evd)
 		dg.enumValue(field, evd)
@@ -326,7 +326,7 @@ func (dg *descGenerator) enum(ty Type, edp *descriptorpb.EnumDescriptorProto) {
 	}
 }
 
-func (dg *descGenerator) enumValue(f Field, evdp *descriptorpb.EnumValueDescriptorProto) {
+func (dg *descGenerator) enumValue(f Member, evdp *descriptorpb.EnumValueDescriptorProto) {
 	evdp.Name = addr(f.Name())
 	evdp.Number = addr(f.Number())
 
