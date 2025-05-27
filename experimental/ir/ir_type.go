@@ -16,7 +16,6 @@ package ir
 
 import (
 	"fmt"
-	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -27,7 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-// Type is a Protobuf field type.
+// Type is a Protobuf message field type.
 type Type struct {
 	withContext
 
@@ -37,15 +36,15 @@ type Type struct {
 type rawType struct {
 	def             ast.DeclDef
 	nested          []arena.Pointer[rawType]
-	fields          []arena.Pointer[rawField]
-	fieldsByName    func() intern.Map[arena.Pointer[rawField]]
+	members         []arena.Pointer[rawMember]
+	memberByName    func() intern.Map[arena.Pointer[rawMember]]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         arena.Pointer[rawValue]
 	fqn, name       intern.ID // 0 for predeclared types.
 	parent          arena.Pointer[rawType]
-	fieldsEnd       uint32
+	extnsStart      uint32
 	rangesExtnStart uint32
 
 	isEnum bool
@@ -113,7 +112,7 @@ func (t Type) IsPredeclared() bool {
 
 // IsMessage returns whether this is a message type.
 func (t Type) IsMessage() bool {
-	return !t.IsPredeclared() && !t.raw.isEnum
+	return !t.IsZero() && !t.IsPredeclared() && !t.raw.isEnum
 }
 
 // IsMessage returns whether this is an enum type.
@@ -224,59 +223,57 @@ func (t Type) Nested() seq.Indexer[Type] {
 	)
 }
 
-// Fields returns the fields of this type.
+// Members returns the members of this type.
 //
-// Predeclared types have no fields; message and enum types do. For enums, a
-// field corresponds to an enum value, and will report the zero value for its
-// type.
-func (t Type) Fields() seq.Indexer[Field] {
+// Predeclared types have no members; message and enum types do.
+func (t Type) Members() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		t.raw.fields[:t.raw.fieldsEnd],
-		func(_ int, p arena.Pointer[rawField]) Field {
-			return wrapField(t.Context(), ref[rawField]{ptr: p})
+		t.raw.members[:t.raw.extnsStart],
+		func(_ int, p arena.Pointer[rawMember]) Member {
+			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
 
-// FieldByName returns the field with the given name, if there is one.
+// MemberByName looks up a member with the given name.
 //
-// Does not include extensions.
-func (t Type) FieldByName(name string) Field {
+// Returns a zero member if there is no such member.
+func (t Type) MemberByName(name string) Member {
 	if t.IsZero() {
-		return Field{}
+		return Member{}
 	}
 	id, ok := t.Context().session.intern.Query(name)
 	if !ok {
-		return Field{}
+		return Member{}
 	}
-	return t.FieldByInternedName(id)
+	return t.MemberByInternedName(id)
 }
 
-// FieldByInternedName is like [Type.FieldByName], but takes an interned string.
-func (t Type) FieldByInternedName(name intern.ID) Field {
+// MemberByInternedName is like [Type.MemberByName], but takes an interned string.
+func (t Type) MemberByInternedName(name intern.ID) Member {
 	if t.IsZero() {
-		return Field{}
+		return Member{}
 	}
-	return wrapField(t.Context(), ref[rawField]{ptr: t.raw.fieldsByName()[name]})
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
 }
 
-func (t rawType) fieldsByNameFunc(c *Context) func() intern.Map[arena.Pointer[rawField]] {
-	return sync.OnceValue(func() intern.Map[arena.Pointer[rawField]] {
-		m := make(intern.Map[arena.Pointer[rawField]], len(t.fields))
-		for _, f := range t.fields {
-			raw := c.arenas.fields.Deref(f)
-			m[raw.name] = f
-		}
-		return m
-	})
+// makeFieldsByName creates the FieldByName map. This is used to keep
+// construction of this map lazy.
+func (t Type) makeMembersByName() intern.Map[arena.Pointer[rawMember]] {
+	table := make(intern.Map[arena.Pointer[rawMember]], t.Members().Len())
+	for _, ptr := range t.raw.members {
+		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
+		table[field.InternedName()] = ptr
+	}
+	return table
 }
 
 // Extensions returns any extensions nested within this type.
-func (t Type) Extensions() seq.Indexer[Field] {
+func (t Type) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		t.raw.fields[t.raw.fieldsEnd:],
-		func(_ int, p arena.Pointer[rawField]) Field {
-			return wrapField(t.Context(), ref[rawField]{ptr: p})
+		t.raw.members[t.raw.extnsStart:],
+		func(_ int, p arena.Pointer[rawMember]) Member {
+			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
@@ -324,10 +321,10 @@ func (t Type) Options() MessageValue {
 	return wrapValue(t.Context(), t.raw.options).AsMessage()
 }
 
-// noun returns a [taxa.Noun] for diagnostic use.
+// noun returns a [taxa.Noun] for diagnostics.
 func (t Type) noun() taxa.Noun {
 	switch {
-	case t.Context() == primitiveCtx:
+	case t.IsPredeclared():
 		return taxa.ScalarType
 	case t.IsEnum():
 		return taxa.EnumType

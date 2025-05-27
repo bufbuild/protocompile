@@ -46,22 +46,22 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 	// TODO: Evaluate reserved ranges.
 
 	for ty := range seq.Values(f.AllTypes()) {
-		tags := make(map[int32]Field, ty.Fields().Len())
-		for field := range seq.Values(ty.Fields()) {
-			n, ok := evaluateFieldNumber(field, r)
-			field.raw.number = n
+		tags := make(map[int32]Member, ty.Members().Len())
+		for member := range seq.Values(ty.Members()) {
+			n, ok := evaluateFieldNumber(member, r)
+			member.raw.number = n
 			if !ok {
 				continue
 			}
 
 			// TODO: Need to check allow_alias here.
-			if first, ok := mapsx.Add(tags, n, field); !ok {
+			if first, ok := mapsx.Add(tags, n, member); !ok {
 				what := taxa.FieldNumber
 				if ty.IsEnum() {
 					what = taxa.EnumValue
 				}
 				r.Errorf("%ss must be unique", what).Apply(
-					report.Snippetf(field.AST().Value(), "used again here"),
+					report.Snippetf(member.AST().Value(), "used again here"),
 					report.Snippetf(first.AST().Value(), "first used here"),
 				)
 			}
@@ -84,21 +84,21 @@ func evaluateExtensionNumbers(f File, r *report.Report) {
 	}
 }
 
-func evaluateFieldNumber(field Field, r *report.Report) (int32, bool) {
-	if field.AST().Value().IsZero() {
+func evaluateFieldNumber(member Member, r *report.Report) (int32, bool) {
+	if member.AST().Value().IsZero() {
 		return 0, false // Diagnosed for us elsewhere.
 	}
 
 	e := &evaluator{
-		Context: field.Context(),
+		Context: member.Context(),
 		Report:  r,
-		scope:   field.FullName().Parent(),
+		scope:   member.FullName().Parent(),
 	}
 
 	// Don't bother allocating a whole Value for this.
 	v, ok := e.evalBits(evalArgs{
-		expr:   field.AST().Value(),
-		uint29: field.IsMessageField(), // TODO: MessageSet.
+		expr:   member.AST().Value(),
+		uint29: member.IsMessageField(), // TODO: MessageSet.
 	})
 
 	return int32(v), ok
@@ -116,7 +116,7 @@ type evalArgs struct {
 
 	// The field that this value maps to, if evaluating an option.
 	// If not set, we assume that we're evaluating a field number of some kind.
-	field ref[rawField]
+	field ref[rawMember]
 	// A span for whatever caused the above field to be selected.
 	annotation report.Spanner
 
@@ -124,8 +124,8 @@ type evalArgs struct {
 	uint29   bool // Whether this is a 29-bit field number.
 }
 
-func (ea evalArgs) Field(c *Context) Field {
-	return wrapField(c, ea.field)
+func (ea evalArgs) Field(c *Context) Member {
+	return wrapMember(c, ea.field)
 }
 
 func (ea evalArgs) Type(c *Context) Type {
@@ -361,7 +361,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 	if ty := args.Type(e.Context); ty.IsEnum() {
 		// We can just plumb the text of the expression directly here, since
 		// if it's anything that isn't an identifier, this lookup will fail.
-		value := ty.FieldByName(expr.Span().Text())
+		value := ty.MemberByName(expr.Span().Text())
 
 		// TODO: This depends on field numbers being resolved before options,
 		// but some options need to be resolved first.

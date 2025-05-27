@@ -249,6 +249,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.
 		r.WriteSpaces(r.margin)
+		r.WriteString(r.ss.nAccent)
 		r.WriteString(" | ")
 
 		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
@@ -916,6 +917,7 @@ func (r *renderer) suggestion(snip snippet) {
 	// visual breathing room.
 	r.WriteString("\n")
 	r.WriteSpaces(r.margin)
+	r.WriteString(r.ss.nAccent)
 	r.WriteString(" | ")
 
 	// When the suggestion spans multiple lines, we don't bother doing a by-the-rune

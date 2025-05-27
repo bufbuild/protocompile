@@ -19,6 +19,7 @@ import (
 	"maps"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
+	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -42,8 +44,12 @@ import (
 )
 
 // Test is the type that a test case for the compiler is deserialized from.
+//
+//nolint:tagliatelle
 type Test struct {
-	Files []File `yaml:"files"`
+	Files             []File `yaml:"files"`
+	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
+	OutputWKTs        bool   `yaml:"output_wkts"`
 }
 
 type File struct {
@@ -75,12 +81,16 @@ func TestIR(t *testing.T) {
 			require.NoError(t, yaml.Unmarshal([]byte(text), &test))
 		}
 
-		files := source.NewMap(maps.Collect(iterx.Map1To2(
+		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
 			slices.Values(test.Files),
 			func(f File) (string, string) {
 				return f.Path, f.Text
 			},
 		)))
+
+		if !test.ExcludeWKTSources {
+			files = &source.Openers{files, source.WKTs()}
+		}
 
 		exec := incremental.New(
 			incremental.WithParallelism(1),
@@ -111,7 +121,7 @@ func TestIR(t *testing.T) {
 		}.RenderString(r)
 		t.Log(stderr)
 		outputs[2], _, _ = report.Renderer{}.RenderString(r)
-		assert.NotContains(t, outputs[1], "internal compiler error")
+		assert.NotContains(t, outputs[1], "unexpected panic; this is a bug")
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
@@ -121,23 +131,38 @@ func TestIR(t *testing.T) {
 		fds := new(descriptorpb.FileDescriptorSet)
 		require.NoError(t, proto.Unmarshal(bytes, fds))
 
+		if !test.OutputWKTs {
+			fds.File = slices.DeleteFunc(fds.File, func(fdp *descriptorpb.FileDescriptorProto) bool {
+				return strings.HasPrefix(*fdp.Name, "google/protobuf/")
+			})
+		}
+
 		outputs[0] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
-		outputs[1] = prototest.ToYAML(symtabProto(irs), prototest.ToYAMLOptions{})
+		outputs[1] = prototest.ToYAML(symtabProto(irs, &test), prototest.ToYAMLOptions{})
 	})
 }
 
-func symtabProto(files []ir.File) *compilerpb.SymbolSet {
+func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 	set := new(compilerpb.SymbolSet)
 	set.Tables = make(map[string]*compilerpb.SymbolTable)
 
 	for _, file := range files {
-		if file.Symbols().Len() <= 1 {
-			// Don't bother if the file only has a single symbol for its
-			// package.
-			continue
+		// Don't bother if the file only has a single symbol for its
+		// package, and no options.
+		if file.Options().IsZero() {
+			switch file.Symbols().Len() {
+			case 0:
+				continue
+			case 1:
+				if file.Symbols().At(0).Kind() == ir.SymbolKindPackage {
+					continue
+				}
+			}
 		}
 
-		symtab := new(compilerpb.SymbolTable)
+		symtab := &compilerpb.SymbolTable{
+			Options: messageProto(file.Options()),
+		}
 
 		for imp := range seq.Values(file.TransitiveImports()) {
 			symtab.Imports = append(symtab.Imports, &compilerpb.Import{
@@ -151,12 +176,27 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
 
 		for sym := range seq.Values(file.Symbols()) {
+			if !t.OutputWKTs && strings.HasPrefix(sym.File().Path(), "google/protobuf/") {
+				continue
+			}
+
+			var options ir.MessageValue
+			switch sym.Kind() {
+			case ir.SymbolKindMessage, ir.SymbolKindEnum:
+				options = sym.AsType().Options()
+			case ir.SymbolKindField, ir.SymbolKindExtension, ir.SymbolKindEnumValue:
+				options = sym.AsMember().Options()
+			case ir.SymbolKindOneof:
+				options = sym.AsOneof().Options()
+			}
+
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
 				Fqn:     string(sym.FullName()),
 				Kind:    compilerpb.Symbol_Kind(sym.Kind()),
 				File:    sym.File().Path(),
 				Index:   uint32(sym.RawData()),
 				Visible: sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
+				Options: messageProto(options),
 			})
 		}
 		slices.SortFunc(symtab.Symbols,
@@ -171,4 +211,67 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 	}
 
 	return set
+}
+
+func messageProto(v ir.MessageValue) *compilerpb.Value {
+	if v.IsZero() {
+		return nil
+	}
+
+	m := new(compilerpb.Value_Message)
+	for elem := range seq.Values(v.Fields()) {
+		if elem.Field().IsExtension() {
+			if m.Extns == nil {
+				m.Extns = make(map[string]*compilerpb.Value)
+			}
+			m.Extns[string(elem.Field().FullName())] = valueProto(elem)
+		} else {
+			if m.Fields == nil {
+				m.Fields = make(map[string]*compilerpb.Value)
+			}
+			m.Fields[elem.Field().Name()] = valueProto(elem)
+		}
+	}
+
+	return &compilerpb.Value{Value: &compilerpb.Value_Message_{Message: m}}
+}
+
+func valueProto(v ir.Value) *compilerpb.Value {
+	if v.IsZero() {
+		return nil
+	}
+
+	element := func(v ir.Element) *compilerpb.Value {
+		if x, ok := v.AsBool(); ok {
+			return &compilerpb.Value{Value: &compilerpb.Value_Bool{Bool: x}}
+		}
+
+		if x, ok := v.AsInt(); ok {
+			return &compilerpb.Value{Value: &compilerpb.Value_Int{Int: x}}
+		}
+
+		if x, ok := v.AsUInt(); ok {
+			return &compilerpb.Value{Value: &compilerpb.Value_Uint{Uint: x}}
+		}
+
+		if x, ok := v.AsFloat(); ok {
+			return &compilerpb.Value{Value: &compilerpb.Value_Float{Float: x}}
+		}
+
+		if x, ok := v.AsString(); ok {
+			return &compilerpb.Value{Value: &compilerpb.Value_String_{String_: []byte(x)}}
+		}
+
+		return messageProto(v.AsMessage())
+	}
+
+	if v.Field().Presence() == presence.Repeated {
+		r := new(compilerpb.Value_Repeated)
+		for elem := range seq.Values(v.Elements()) {
+			r.Values = append(r.Values, element(elem))
+		}
+		return &compilerpb.Value{Value: &compilerpb.Value_Repeated_{Repeated: r}}
+	}
+
+	return element(v.Elements().At(0))
 }

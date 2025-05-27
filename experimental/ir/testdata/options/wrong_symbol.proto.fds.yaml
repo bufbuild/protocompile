@@ -1,0 +1,19 @@
+file:
+  - name: "testdata/options/wrong_symbol.proto"
+    package: "buf.test"
+    dependency: ["google/protobuf/descriptor.proto"]
+    message_type:
+      - name: "Foo"
+        field:
+          - name: "z"
+            number: 1
+            label: LABEL_OPTIONAL
+            type: TYPE_INT32
+            options: {}
+    extension:
+      - name: "x"
+        number: 1000
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        extendee: ".google.protobuf.MessageOptions"
+    syntax: "proto2"

@@ -96,14 +96,14 @@ func (s Symbol) AsType() Type {
 	})
 }
 
-// AsField returns the field this symbol refers to, if it is one.
-func (s Symbol) AsField() Field {
-	if !s.Kind().IsField() {
-		return Field{}
+// AsMember returns the member this symbol refers to, if it is one.
+func (s Symbol) AsMember() Member {
+	if !s.Kind().IsMember() {
+		return Member{}
 	}
-	return wrapField(s.InDefFile().Context(), ref[rawField]{
+	return wrapMember(s.InDefFile().Context(), ref[rawMember]{
 		file: 0, // Symbol context == context of declaring file.
-		ptr:  arena.Pointer[rawField](s.raw.data),
+		ptr:  arena.Pointer[rawMember](s.raw.data),
 	})
 }
 
@@ -132,7 +132,7 @@ func (s Symbol) Definition() report.Span {
 	case SymbolKindMessage, SymbolKindEnum:
 		return s.AsType().AST().Name().Span()
 	case SymbolKindField, SymbolKindEnumValue, SymbolKindExtension:
-		return s.AsField().AST().Name().Span()
+		return s.AsMember().AST().Name().Span()
 	case SymbolKindOneof:
 		return s.AsOneof().AST().Name().Span()
 	}
@@ -166,11 +166,21 @@ func (k SymbolKind) IsType() bool {
 	}
 }
 
-// IsType returns whether this is a field's symbol kind. This includes
+// IsMember returns whether this is a field's symbol kind. This includes
 // enum values, which the ir package treats as fields of enum types.
-func (k SymbolKind) IsField() bool {
+func (k SymbolKind) IsMember() bool {
 	switch k {
 	case SymbolKindField, SymbolKindExtension, SymbolKindEnumValue:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsMessageField returns whether this is a field's symbol kind.
+func (k SymbolKind) IsMessageField() bool {
+	switch k {
+	case SymbolKindField, SymbolKindExtension:
 		return true
 	default:
 		return false
