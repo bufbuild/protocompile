@@ -63,6 +63,8 @@ const (
 	MethodOuts
 	Signature
 	FieldTag
+	FieldNumber
+	MessageSetNumber
 	FieldName
 	OptionValue
 	QualifiedName
@@ -89,6 +91,7 @@ const (
 	String
 	Float
 	Int
+	Number
 	Semi
 	Comma
 	Slash
@@ -182,6 +185,8 @@ var _table_Noun_String = [...]string{
 	MethodOuts:         "method return type",
 	Signature:          "method signature",
 	FieldTag:           "message field tag",
+	FieldNumber:        "field number",
+	MessageSetNumber:   "`MessageSet` extension number",
 	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
@@ -208,6 +213,7 @@ var _table_Noun_String = [...]string{
 	String:             "string literal",
 	Float:              "floating-point literal",
 	Int:                "integer literal",
+	Number:             "number literal",
 	Semi:               "`;`",
 	Comma:              "`,`",
 	Slash:              "`/`",
@@ -284,6 +290,8 @@ var _table_Noun_GoString = [...]string{
 	MethodOuts:         "MethodOuts",
 	Signature:          "Signature",
 	FieldTag:           "FieldTag",
+	FieldNumber:        "FieldNumber",
+	MessageSetNumber:   "MessageSetNumber",
 	FieldName:          "FieldName",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",
@@ -310,6 +318,7 @@ var _table_Noun_GoString = [...]string{
 	String:             "String",
 	Float:              "Float",
 	Int:                "Int",
+	Number:             "Number",
 	Semi:               "Semi",
 	Comma:              "Comma",
 	Slash:              "Slash",

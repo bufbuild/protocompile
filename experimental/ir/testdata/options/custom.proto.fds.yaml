@@ -6,12 +6,12 @@ file:
       - name: "Foo"
         field:
           - name: "x"
-            number: 0
+            number: 1
             label: LABEL_OPTIONAL
             type: TYPE_INT32
             options: {}
           - name: "z"
-            number: 0
+            number: 2
             label: LABEL_OPTIONAL
             type: TYPE_INT32
             oneof_index: 0
@@ -21,32 +21,32 @@ file:
     enum_type: [{ name: "Bar", value: [{ name: "X", number: 0, options: {} }], options: {} }]
     extension:
       - name: "a"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.FileOptions"
       - name: "b"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.MessageOptions"
       - name: "c"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.FieldOptions"
       - name: "d"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.OneofOptions"
       - name: "e"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.EnumOptions"
       - name: "f"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.EnumValueOptions"

@@ -5,15 +5,12 @@ error: cannot find `M` in this scope
    |   ^ not found in this scope
    = help: the full name of this scope is `test.N`
 
-error: expected type, found `package` declaration `test`
+error: cannot find `test.M` in this scope
   --> c.proto:8:3
    |
  8 |   test.M m2 = 2;
-   |   ^^^^^^ expected type
-  ::: b.proto:2:1
-   |
- 2 | package test;
-   | ------------- defined here
+   |   ^^^^^^ not found in this scope
+   = help: the full name of this scope is `test.N`
 
 error: cannot find `.test.M` in this scope
   --> c.proto:9:3

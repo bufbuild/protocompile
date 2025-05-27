@@ -31,7 +31,7 @@ error: expected type, found oneof definition `test.Foo.self`
    |
 26 |     oneof self {
    |           ---- defined here
-27 |         self a = 3;
+27 |         self a = 4;
    |         ^^^^ expected type
 
 encountered 4 errors

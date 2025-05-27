@@ -293,10 +293,14 @@ func (s symtab) lookupBytes(c *Context, fqn []byte) ref[rawSymbol] {
 //
 // If skipIfNot is nil, the symbol's kind will not be checked to determine if
 // we should continue climbing scopes.
+//
+// If candidates is not nil, debugging remarks will be appended to the
+// diagnostic.
 func (s symtab) resolve(
 	c *Context,
 	scope, name FullName,
 	skipIfNot func(SymbolKind) bool,
+	remarks *report.Diagnostic,
 ) (found ref[rawSymbol], expected FullName) {
 	// This function implements the name resolution algorithm specified at
 	// https://protobuf.com/docs/language-spec#reference-resolution.
@@ -392,10 +396,12 @@ func (s symtab) resolve(
 
 again:
 	for {
-		ref := s.lookupBytes(c, candidate)
-		if !ref.ptr.Nil() {
-			found = ref
-			sym := wrapSymbol(c, ref)
+		r := s.lookupBytes(c, candidate)
+		remarks.Apply(report.Debugf("candidate: `%s`", candidate))
+
+		if !r.ptr.Nil() {
+			found = r
+			sym := wrapSymbol(c, r)
 			if sym.Visible() && accept(sym.Kind()) {
 				// If the symbol is not visible, keep looking; we may find
 				// another match that is actually visible.
@@ -423,14 +429,17 @@ again:
 
 	// Now search for the full name inside of the scope we found.
 	candidate = append(candidate, name[len(first):]...)
-	ref := s.lookupBytes(c, candidate)
-	if ref.ptr.Nil() {
+	r := s.lookupBytes(c, candidate)
+	if r.ptr.Nil() {
 		// Try again, this time using the full candidate name. This happens
 		// expressly for the purpose of diagnostics.
 		scopeSearch = false
+		// Need to clear the found scope, since otherwise we might get a weird
+		// error message where we say that we found the parent scope.
+		found = ref[rawSymbol]{}
 		expected = FullName(candidate)
 		goto again
 	}
 
-	return ref, expected
+	return r, expected
 }

@@ -4,10 +4,10 @@ file:
     message_type:
       - name: "Foo"
         field:
-          - { name: "x", number: 0, label: LABEL_OPTIONAL }
-          - { name: "y", number: 0, label: LABEL_OPTIONAL }
-          - { name: "z", number: 0, label: LABEL_OPTIONAL }
-          - { name: "a", number: 0, label: LABEL_OPTIONAL, oneof_index: 0 }
-        enum_type: [{ name: "Bar", value: [{ name: "BAZ", number: 0 }] }]
+          - { name: "x", number: 1, label: LABEL_OPTIONAL }
+          - { name: "y", number: 2, label: LABEL_OPTIONAL }
+          - { name: "z", number: 3, label: LABEL_OPTIONAL }
+          - { name: "a", number: 4, label: LABEL_OPTIONAL, oneof_index: 0 }
+        enum_type: [{ name: "Bar", value: [{ name: "BAZ", number: 1 }] }]
         oneof_decl: [{ name: "self" }]
     syntax: "proto3"

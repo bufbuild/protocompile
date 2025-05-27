@@ -14,11 +14,11 @@ file:
     message_type:
       - name: "Main"
       - name: "Main"
-        field: [{ name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+        field: [{ name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
       - name: "Foo"
         enum_type: [{ name: "BAR", value: [{ name: "BAR", number: 0 }] }]
       - name: "Main"
-        field: [{ name: "x", number: 0, label: LABEL_OPTIONAL, type: TYPE_STRING }]
+        field: [{ name: "x", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }]
     syntax: "proto2"
   - name: "main2.proto"
     package: "dep.foo.Foo"

@@ -1,0 +1,129 @@
+tables:
+  "testdata/tags/fields.proto":
+    symbols:
+      - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/tags/fields.proto" }
+      - fqn: "test.M"
+        kind: KIND_MESSAGE
+        file: "testdata/tags/fields.proto"
+        index: 1
+        visible: true
+      - fqn: "test.M.x"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 1
+        visible: true
+      - fqn: "test.M.y"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 2
+        visible: true
+      - fqn: "test.M.y2"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 3
+        visible: true
+      - fqn: "test.M.z1"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 4
+        visible: true
+      - fqn: "test.M.z12"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 5
+        visible: true
+      - fqn: "test.M.z2"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 6
+        visible: true
+      - fqn: "test.M.z3"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 7
+        visible: true
+      - fqn: "test.M.z4"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 8
+        visible: true
+      - fqn: "test.M.z5"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 9
+        visible: true
+      - fqn: "test.M.z6"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 10
+        visible: true
+      - fqn: "test.M.r1"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 12
+        visible: true
+      - fqn: "test.M.r2"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 13
+        visible: true
+      - fqn: "test.M.r3"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 14
+        visible: true
+      - fqn: "test.M.k1"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 15
+        visible: true
+      - fqn: "test.M.k2"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 16
+        visible: true
+      - fqn: "test.M.f1"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 17
+        visible: true
+      - fqn: "test.M.f2"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 18
+        visible: true
+      - fqn: "test.M.f3"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 19
+        visible: true
+      - fqn: "test.M.f4"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 20
+        visible: true
+      - fqn: "test.M.f5"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 21
+        visible: true
+      - fqn: "test.M.f6"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 22
+        visible: true
+      - fqn: "test.M.b1"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 23
+        visible: true
+      - fqn: "test.M.b2"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 24
+        visible: true
+      - fqn: "test.M.b3"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 25
+        visible: true

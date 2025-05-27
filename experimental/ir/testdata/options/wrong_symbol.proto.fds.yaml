@@ -6,13 +6,13 @@ file:
       - name: "Foo"
         field:
           - name: "z"
-            number: 0
+            number: 1
             label: LABEL_OPTIONAL
             type: TYPE_INT32
             options: {}
     extension:
       - name: "x"
-        number: 0
+        number: 1000
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         extendee: ".google.protobuf.MessageOptions"

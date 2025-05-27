@@ -66,6 +66,8 @@
   - {name: Signature, string: "method signature"}
 
   - {name: FieldTag, string: "message field tag"}
+  - {name: FieldNumber, string: "field number"}
+  - {name: MessageSetNumber, string: "`MessageSet` extension number"}
   - {name: FieldName, string: "message field name"}
   - {name: OptionValue, string: "option setting value"}
 
@@ -98,6 +100,7 @@
   - {name: String, string: "string literal"}
   - {name: Float, string: "floating-point literal"}
   - {name: Int, string: "integer literal"}
+  - {name: Number, string: "number literal"}
 
   - {name: Semi, string: "`;`"}
   - {name: Comma, string: "`,`"}

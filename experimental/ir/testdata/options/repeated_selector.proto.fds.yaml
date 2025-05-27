@@ -4,22 +4,22 @@ file:
     dependency: ["google/protobuf/descriptor.proto"]
     message_type:
       - name: "Foo"
-        field: [{ name: "z", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+        field: [{ name: "z", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
         options: {}
     extension:
       - name: "x"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_INT32
         extendee: ".google.protobuf.MessageOptions"
       - name: "y"
-        number: 0
+        number: 1001
         label: LABEL_REPEATED
         type: TYPE_MESSAGE
         type_name: ".buf.test.Foo"
         extendee: ".google.protobuf.MessageOptions"
       - name: "z"
-        number: 0
+        number: 1002
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".buf.test.Foo"

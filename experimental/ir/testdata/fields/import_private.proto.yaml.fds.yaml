@@ -7,7 +7,7 @@ file:
     message_type:
       - name: "N"
         field:
-          - { name: "m1", number: 0, label: LABEL_OPTIONAL }
-          - { name: "m2", number: 0, label: LABEL_OPTIONAL }
-          - { name: "m3", number: 0, label: LABEL_OPTIONAL }
+          - { name: "m1", number: 1, label: LABEL_OPTIONAL }
+          - { name: "m2", number: 2, label: LABEL_OPTIONAL }
+          - { name: "m3", number: 3, label: LABEL_OPTIONAL }
     syntax: "proto3"

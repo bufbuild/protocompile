@@ -6,23 +6,23 @@ file:
       - name: "Foo"
         field:
           - name: "a"
-            number: 0
+            number: 1
             label: LABEL_OPTIONAL
             type: TYPE_MESSAGE
             type_name: ".buf.test.Foo"
           - name: "b"
-            number: 0
+            number: 2
             label: LABEL_REPEATED
             type: TYPE_MESSAGE
             type_name: ".buf.test.Foo"
           - name: "x"
-            number: 0
+            number: 3
             label: LABEL_OPTIONAL
             type: TYPE_MESSAGE
             type_name: ".buf.test.Foo"
             oneof_index: 0
           - name: "y"
-            number: 0
+            number: 4
             label: LABEL_OPTIONAL
             type: TYPE_MESSAGE
             type_name: ".buf.test.Foo"
@@ -30,19 +30,19 @@ file:
         oneof_decl: [{ name: "k" }]
     extension:
       - name: "x"
-        number: 0
+        number: 1000
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".buf.test.Foo"
         extendee: ".google.protobuf.FileOptions"
       - name: "y"
-        number: 0
+        number: 1000
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".buf.test.Foo"
         extendee: ".buf.test.Foo"
       - name: "z"
-        number: 0
+        number: 1000
         label: LABEL_REPEATED
         type: TYPE_MESSAGE
         type_name: ".buf.test.Foo"

@@ -46,7 +46,8 @@ type rawType struct {
 	parent          arena.Pointer[rawType]
 	extnsStart      uint32
 	rangesExtnStart uint32
-	isEnum          bool
+
+	isEnum bool
 }
 
 // primitiveCtx represents a special file that defines all of the primitive
@@ -238,13 +239,22 @@ func (t Type) Members() seq.Indexer[Member] {
 //
 // Returns a zero member if there is no such member.
 func (t Type) MemberByName(name string) Member {
+	if t.IsZero() {
+		return Member{}
+	}
 	id, ok := t.Context().session.intern.Query(name)
 	if !ok {
 		return Member{}
 	}
+	return t.MemberByInternedName(id)
+}
 
-	ptr := t.raw.memberByName()[id]
-	return wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
+// MemberByInternedName is like [Type.MemberByName], but takes an interned string.
+func (t Type) MemberByInternedName(name intern.ID) Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
 }
 
 // makeFieldsByName creates the FieldByName map. This is used to keep

@@ -16,31 +16,27 @@ syntax = "proto2";
 
 package test;
 
-message Foo {
-    enum Bar { BAZ = 1; }
+enum E {
+    UNKNOWN = 0;
+    X = 1;
+    Y = 2;
+    Y2 = 2;
 
-    extend x { 
-        optional int32 x = 1;
-    }
-    extend BAZ {
-        optional int32 y = 2;
-    }
-    extend Bar {
-        optional int32 z = 3;
-    }
-    extend test {
-        optional int32 w = 4;
-    }
+    Z1 = -1;
+    Z2 = 0x7fffffff;
+    Z3 = -0x80000000;
+    Z4 = 0x80000000;
+    Z5 = -0x80000001;
+    Z6 = 0xffffffffffffffffffffffffffffffff;
 
-    oneof self {
-        int32 a = 5;
-    }
+    F1 = 1.0;
+    F2 = -1.0;
+    F3 = inf;
+    F4 = -inf;
+    F5 = nan;
+    F6 = -nan;
 
-    extend self {
-        optional int32 b = 6;
-    }
-
-    extend string {
-        optional int32 capacity = 7;
-    }
+    B1 = false;
+    B2 = true;
+    B3 = max;
 }

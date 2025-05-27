@@ -15,7 +15,7 @@ file:
       - name: "N"
         field:
           - name: "m"
-            number: 0
+            number: 1
             label: LABEL_OPTIONAL
             type: TYPE_MESSAGE
             type_name: ".foo.M"
