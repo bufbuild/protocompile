@@ -121,11 +121,13 @@ func (d *Diagnostic) Is(tag string) bool {
 
 // Apply applies the given options to this diagnostic.
 //
-// IsZero values are ignored.
+// Nil values are ignored; does nothing if d is nil.
 func (d *Diagnostic) Apply(options ...DiagnosticOption) *Diagnostic {
-	for _, option := range options {
-		if option != nil {
-			option.apply(d)
+	if d != nil {
+		for _, option := range options {
+			if option != nil {
+				option.apply(d)
+			}
 		}
 	}
 	return d
@@ -142,7 +144,7 @@ func Tag(t string) DiagnosticOption {
 
 // Message returns a DiagnosticOption that sets the main diagnostic message.
 func Message(format string, args ...any) DiagnosticOption {
-	return message(fmt.Sprintf(format, args...))
+	return message{format, args}
 }
 
 // InFile returns a DiagnosticOption that causes a diagnostic without a primary
@@ -223,19 +225,19 @@ func SuggestEditsWithWidening(at Spanner, message string, edits ...Edit) Diagnos
 // Notef returns a DiagnosticOption that provides the user with context about the
 // diagnostic, after the annotations.
 func Notef(format string, args ...any) DiagnosticOption {
-	return note(fmt.Sprintf(format, args...))
+	return note{format, args}
 }
 
 // Helpf returns a DiagnosticOption that provides the user with a helpful prose
 // suggestion for resolving the diagnostic.
 func Helpf(format string, args ...any) DiagnosticOption {
-	return help(fmt.Sprintf(format, args...))
+	return help{format, args}
 }
 
 // Debugf returns a DiagnosticOption appends debugging information to a diagnostic that
 // is not intended to be shown to normal users.
 func Debugf(format string, args ...any) DiagnosticOption {
-	return debug(fmt.Sprintf(format, args...))
+	return debug{format, args}
 }
 
 // snippet is an annotated source code snippet within a [Diagnostic].
@@ -275,12 +277,22 @@ func (a snippet) apply(d *Diagnostic) {
 	d.snippets = append(d.snippets, a)
 }
 
+type lazySprintf struct {
+	format string
+	args   []any
+}
+
+func (ls lazySprintf) String() string {
+	return fmt.Sprintf(ls.format, ls.args...)
+}
+
 type tag string
-type message string
 type inFile string
-type note string
-type help string
-type debug string
+
+type message lazySprintf
+type note lazySprintf
+type help lazySprintf
+type debug lazySprintf
 
 func (t tag) apply(d *Diagnostic) {
 	if d.tag != "" {
@@ -288,13 +300,6 @@ func (t tag) apply(d *Diagnostic) {
 	}
 
 	d.tag = string(t)
-}
-func (m message) apply(d *Diagnostic) {
-	if d.message != "" {
-		panic("protocompile/report: set diagnostic message more than once")
-	}
-
-	d.message = string(m)
 }
 
 func (f inFile) apply(d *Diagnostic) {
@@ -305,6 +310,14 @@ func (f inFile) apply(d *Diagnostic) {
 	d.inFile = string(f)
 }
 
-func (n note) apply(d *Diagnostic)  { d.notes = append(d.notes, string(n)) }
-func (n help) apply(d *Diagnostic)  { d.help = append(d.help, string(n)) }
-func (n debug) apply(d *Diagnostic) { d.debug = append(d.debug, string(n)) }
+func (m message) apply(d *Diagnostic) {
+	if d.message != "" {
+		panic("protocompile/report: set diagnostic message more than once")
+	}
+
+	d.message = lazySprintf(m).String()
+}
+
+func (n note) apply(d *Diagnostic)  { d.notes = append(d.notes, lazySprintf(n).String()) }
+func (n help) apply(d *Diagnostic)  { d.help = append(d.help, lazySprintf(n).String()) }
+func (n debug) apply(d *Diagnostic) { d.debug = append(d.debug, lazySprintf(n).String()) }

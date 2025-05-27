@@ -205,6 +205,7 @@ func (r symbolRef) resolve() Symbol {
 		expected FullName
 	)
 
+	var fullResolve bool
 	switch {
 	case r.name.Absolute():
 		if id, ok := r.session.intern.Query(string(r.name.ToRelative())); ok {
@@ -230,38 +231,41 @@ func (r symbolRef) resolve() Symbol {
 
 		fallthrough
 	default:
-		found, expected = r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot)
+		fullResolve = true
+		found, expected = r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, nil)
 	}
 
 	sym := wrapSymbol(r.Context, found)
-	r.diagnoseLookup(sym, expected)
+	d := r.diagnoseLookup(sym, expected)
+	if fullResolve && d != nil {
+		// Resolve a second time to add debugging information to the diagnostic.
+		r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, d)
+	}
 
 	return sym
 }
 
 // diagnoseLookup generates diagnostics for a possibly-failed symbol resolution
 // operation.
-func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) {
+func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Diagnostic {
 	if sym.IsZero() {
-		r.Errorf("cannot find `%s` in this scope", r.name).Apply(
+		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Helpf("the full name of this scope is `%s`", r.scope),
 		)
-		return
 	}
 
 	if k := sym.Kind(); r.accept != nil && !r.accept(k) {
-		r.Errorf("expected %s, found %s `%s`", r.want, k.noun(), sym.FullName()).Apply(
+		return r.Errorf("expected %s, found %s `%s`", r.want, k.noun(), sym.FullName()).Apply(
 			report.Snippetf(r.span, "expected %s", r.want),
 			report.Snippetf(sym.Definition(), "defined here"),
 		)
-		return
 	}
 
 	switch {
 	case expectedName != "":
 		// Complain if we found the "wrong" type.
-		r.Errorf("cannot find `%s` in this scope", r.name).Apply(
+		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Snippetf(sym.Definition(),
 				"found possibly related symbol `%s`", sym.FullName()),
@@ -278,7 +282,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) {
 		)
 
 		if !r.suggestImport {
-			return
+			return d
 		}
 
 		// Find the last import statement and stick the suggestion after it.
@@ -302,5 +306,9 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) {
 			fmt.Sprintf("bring `%s` into scope", r.name),
 			report.Edit{Replace: replacement},
 		))
+
+		return d
 	}
+
+	return nil
 }
