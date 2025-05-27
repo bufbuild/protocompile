@@ -37,6 +37,7 @@ file:
           - { name: "f3", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
           - { name: "f4", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
           - { name: "f5", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+          - { name: "f6", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
           - { name: "b1", number: 0, label: LABEL_OPTIONAL, type: TYPE_BOOL }
           - { name: "b2", number: 0, label: LABEL_OPTIONAL, type: TYPE_BOOL }
           - name: "b3"

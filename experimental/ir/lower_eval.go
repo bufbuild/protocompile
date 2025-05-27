@@ -37,6 +37,12 @@ const (
 	fieldNumberMax  = 1<<fieldNumberBits - 1
 	firstReserved   = 19000
 	lastReserved    = 19999
+
+	messageSetNumberBits = 31
+	messageSetNumberMax  = 1<<messageSetNumberBits - 1
+
+	enumNumberBits = 32
+	enumNumberMax  = math.MaxInt32
 )
 
 // evaluateFieldNumbers evaluates all non-extension field numbers: that is,
@@ -48,7 +54,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 	for ty := range seq.Values(f.AllTypes()) {
 		tags := make(map[int32]Member, ty.Members().Len())
 		for member := range seq.Values(ty.Members()) {
-			n, ok := evaluateFieldNumber(member, r)
+			n, ok := evaluateMemberNumber(member, r)
 			member.raw.number = n
 			if !ok {
 				continue
@@ -77,14 +83,14 @@ func evaluateExtensionNumbers(f File, r *report.Report) {
 	// TODO: Evaluate extension ranges.
 
 	for extn := range seq.Values(f.AllExtensions()) {
-		n, _ := evaluateFieldNumber(extn, r)
+		n, _ := evaluateMemberNumber(extn, r)
 		extn.raw.number = n
 
 		// TODO: compare with extension ranges.
 	}
 }
 
-func evaluateFieldNumber(member Member, r *report.Report) (int32, bool) {
+func evaluateMemberNumber(member Member, r *report.Report) (int32, bool) {
 	if member.AST().Value().IsZero() {
 		return 0, false // Diagnosed for us elsewhere.
 	}
@@ -95,10 +101,20 @@ func evaluateFieldNumber(member Member, r *report.Report) (int32, bool) {
 		scope:   member.FullName().Parent(),
 	}
 
+	var memberNumber memberNumber
+	switch {
+	case member.IsEnumValue():
+		memberNumber = enumNumber
+	case member.IsMessageField(), member.IsExtension():
+		memberNumber = fieldNumber
+
+		// TODO: MessageSet.
+	}
+
 	// Don't bother allocating a whole Value for this.
 	v, ok := e.evalBits(evalArgs{
-		expr:   member.AST().Value(),
-		uint29: member.IsMessageField(), // TODO: MessageSet.
+		expr:         member.AST().Value(),
+		memberNumber: memberNumber,
 	})
 
 	return int32(v), ok
@@ -120,9 +136,19 @@ type evalArgs struct {
 	// A span for whatever caused the above field to be selected.
 	annotation report.Spanner
 
-	allowMax bool // Whether the max keyword is to be honored.
-	uint29   bool // Whether this is a 29-bit field number.
+	allowMax     bool         // Whether the max keyword is to be honored.
+	memberNumber memberNumber // Specifies which member number type we're resolving.
 }
+
+// memberNumber is used to tag evalArgs with one of the special types associated
+// with a member number.
+type memberNumber byte
+
+const (
+	enumNumber       memberNumber = iota + 1 // int32
+	fieldNumber                              // uint29
+	messageSetNumber                         // uint31
+)
 
 func (ea evalArgs) Field(c *Context) Member {
 	return wrapMember(c, ea.field)
@@ -132,15 +158,24 @@ func (ea evalArgs) Type(c *Context) Type {
 	return ea.Field(c).Element()
 }
 
+func (ea evalArgs) Scalar(c *Context) predeclared.Name {
+	return ea.Field(c).Element().Predeclared()
+}
+
 // mismatch constructs a type mismatch error.
 func (ea evalArgs) mismatch(c *Context, got any) errTypeCheck {
 	var want any
 	if ty := ea.Type(c); !ty.IsZero() {
 		want = ty
-	} else if ea.uint29 {
-		want = taxa.FieldNumber
 	} else {
-		want = PredeclaredType(predeclared.Int32)
+		switch ea.memberNumber {
+		case enumNumber:
+			want = PredeclaredType(predeclared.Int32)
+		case fieldNumber:
+			want = taxa.FieldNumber
+		case messageSetNumber:
+			want = taxa.MessageSetNumber
+		}
 	}
 
 	return errTypeCheck{
@@ -198,7 +233,8 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 			}
 
 			// Special cases for certain literals.
-			if inner.AsPath().AsKeyword() == keyword.Inf {
+			if inner.AsPath().AsKeyword() == keyword.Inf ||
+				inner.AsPath().AsKeyword() == keyword.NAN {
 				v, ok := e.evalPath(args, inner.AsPath().Path)
 				v |= 0x8000_0000_0000_0000 // Set the floating-point sign bit.
 				return v, ok
@@ -231,33 +267,40 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 
 // evalLiteral evaluates a literal expression.
 func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (rawValueBits, bool) {
-	scalar := predeclared.Int32
-	if ty := args.Type(e.Context); !ty.IsZero() {
-		scalar = ty.Predeclared()
-	}
+	scalar := args.Scalar(e.Context)
 
 	switch expr.Kind() {
 	case token.Number:
 		if n, ok := expr.AsInt(); ok {
+			switch args.memberNumber {
+			case enumNumber:
+				return e.checkIntBounds(args, true, enumNumberBits, neg, n)
+			case fieldNumber:
+				return e.checkIntBounds(args, false, fieldNumberBits, neg, n)
+			case messageSetNumber:
+				return e.checkIntBounds(args, false, messageSetNumberBits, neg, n)
+			}
+
 			if !scalar.IsNumber() {
 				e.Error(args.mismatch(e.Context, taxa.Int))
 				return 0, false
-			}
-
-			if args.uint29 {
-				return e.checkIntBounds(args, false, fieldNumberBits, neg, n)
 			}
 			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), neg, n)
 		}
 
 		if n := expr.AsBigInt(); n != nil {
+			switch args.memberNumber {
+			case enumNumber:
+				return e.checkIntBounds(args, true, enumNumberBits, neg, n)
+			case fieldNumber:
+				return e.checkIntBounds(args, false, fieldNumberBits, neg, n)
+			case messageSetNumber:
+				return e.checkIntBounds(args, false, messageSetNumberBits, neg, n)
+			}
+
 			if !scalar.IsNumber() {
 				e.Error(args.mismatch(e.Context, taxa.Int))
 				return 0, false
-			}
-
-			if args.uint29 {
-				return e.checkIntBounds(args, false, fieldNumberBits, neg, n)
 			}
 			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), neg, n)
 		} else if n, ok := expr.AsFloat(); ok {
@@ -377,6 +420,9 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 
 	// If we see a name that matches one of the predeclared names, resolve
 	// to it, just like it would for type lookup.
+	//
+	// TODO: When implementing message literals, we need to make sure to accept
+	// all of the non-standard forms that are allowed only inside of them.
 	switch name := expr.AsPredeclared(); name {
 	case predeclared.Max:
 		if !scalar.IsNumber() {
@@ -394,8 +440,13 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 			)
 		}
 
-		if args.uint29 {
+		switch args.memberNumber {
+		case enumNumber:
+			return enumNumberMax, ok
+		case fieldNumber:
 			return fieldNumberMax, ok
+		case messageSetNumber:
+			return messageSetNumberMax, ok
 		}
 
 		if scalar.IsFloat() {

@@ -68,26 +68,34 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/values.proto:38:10
+  --> testdata/tags/values.proto:37:10
    |
-38 |     B1 = false;
+37 |     F6 = -nan;
+   |          ^^^^ expected `int32`, found floating-point literal
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/tags/values.proto:39:10
+   |
+39 |     B1 = false;
    |          ^^^^^ expected `int32`, found `bool`
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/tags/values.proto:39:10
+  --> testdata/tags/values.proto:40:10
    |
-39 |     B2 = true;
+40 |     B2 = true;
    |          ^^^^ expected `int32`, found `bool`
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
 error: `max` outside of range expression
-  --> testdata/tags/values.proto:40:10
+  --> testdata/tags/values.proto:41:10
    |
-40 |     B3 = max;
+41 |     B3 = max;
    |          ^^^
    = note: the special `max` expression is only allowed in a range expression
 
-encountered 12 errors
+encountered 13 errors

@@ -19,6 +19,7 @@ file:
           - { name: "F3", number: 0 }
           - { name: "F4", number: 0 }
           - { name: "F5", number: 0 }
+          - { name: "F6", number: 0 }
           - { name: "B1", number: 0 }
           - { name: "B2", number: 0 }
           - { name: "B3", number: 2147483647 }

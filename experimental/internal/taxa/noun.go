@@ -64,6 +64,7 @@ const (
 	Signature
 	FieldTag
 	FieldNumber
+	MessageSetNumber
 	FieldName
 	OptionValue
 	QualifiedName
@@ -185,6 +186,7 @@ var _table_Noun_String = [...]string{
 	Signature:          "method signature",
 	FieldTag:           "message field tag",
 	FieldNumber:        "field number",
+	MessageSetNumber:   "`MessageSet` extension number",
 	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
@@ -289,6 +291,7 @@ var _table_Noun_GoString = [...]string{
 	Signature:          "Signature",
 	FieldTag:           "FieldTag",
 	FieldNumber:        "FieldNumber",
+	MessageSetNumber:   "MessageSetNumber",
 	FieldName:          "FieldName",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",

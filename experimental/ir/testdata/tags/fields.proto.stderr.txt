@@ -136,26 +136,34 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:48:24
+  --> testdata/tags/fields.proto:47:25
    |
-48 |     optional bool b1 = false;
+47 |     optional float f6 = -nan;
+   |                         ^^^^ expected field number, found floating-point literal
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/tags/fields.proto:49:24
+   |
+49 |     optional bool b1 = false;
    |                        ^^^^^ expected field number, found `bool`
    = note: expected: field number
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/tags/fields.proto:49:24
+  --> testdata/tags/fields.proto:50:24
    |
-49 |     optional bool b2 = true;
+50 |     optional bool b2 = true;
    |                        ^^^^ expected field number, found `bool`
    = note: expected: field number
               found: scalar type `bool`
 
 error: `max` outside of range expression
-  --> testdata/tags/fields.proto:50:24
+  --> testdata/tags/fields.proto:51:24
    |
-50 |     optional bool b3 = max;
+51 |     optional bool b3 = max;
    |                        ^^^
    = note: the special `max` expression is only allowed in a range expression
 
-encountered 20 errors
+encountered 21 errors

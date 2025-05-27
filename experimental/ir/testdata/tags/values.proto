@@ -34,6 +34,7 @@ enum E {
     F3 = inf;
     F4 = -inf;
     F5 = nan;
+    F6 = -nan;
 
     B1 = false;
     B2 = true;

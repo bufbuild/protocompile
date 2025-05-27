@@ -107,18 +107,23 @@ tables:
         file: "testdata/tags/fields.proto"
         index: 21
         visible: true
-      - fqn: "test.M.b1"
+      - fqn: "test.M.f6"
         kind: KIND_FIELD
         file: "testdata/tags/fields.proto"
         index: 22
         visible: true
-      - fqn: "test.M.b2"
+      - fqn: "test.M.b1"
         kind: KIND_FIELD
         file: "testdata/tags/fields.proto"
         index: 23
         visible: true
-      - fqn: "test.M.b3"
+      - fqn: "test.M.b2"
         kind: KIND_FIELD
         file: "testdata/tags/fields.proto"
         index: 24
+        visible: true
+      - fqn: "test.M.b3"
+        kind: KIND_FIELD
+        file: "testdata/tags/fields.proto"
+        index: 25
         visible: true

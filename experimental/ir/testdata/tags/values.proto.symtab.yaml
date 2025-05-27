@@ -82,18 +82,23 @@ tables:
         file: "testdata/tags/values.proto"
         index: 15
         visible: true
-      - fqn: "test.B1"
+      - fqn: "test.F6"
         kind: KIND_ENUM_VALUE
         file: "testdata/tags/values.proto"
         index: 16
         visible: true
-      - fqn: "test.B2"
+      - fqn: "test.B1"
         kind: KIND_ENUM_VALUE
         file: "testdata/tags/values.proto"
         index: 17
         visible: true
-      - fqn: "test.B3"
+      - fqn: "test.B2"
         kind: KIND_ENUM_VALUE
         file: "testdata/tags/values.proto"
         index: 18
+        visible: true
+      - fqn: "test.B3"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 19
         visible: true
