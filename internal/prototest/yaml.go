@@ -193,7 +193,7 @@ func (y *toYAML) writeFloat(v any) {
 		y.out.WriteString("inf")
 	case math.IsInf(f, -1):
 		y.out.WriteString("-inf")
-	case v != v:
+	case math.IsNaN(f):
 		switch v := v.(type) {
 		case float32:
 			fmt.Fprintf(&y.out, "nan@%08x", math.Float32bits(v))
@@ -203,7 +203,6 @@ func (y *toYAML) writeFloat(v any) {
 	default:
 		y.out.WriteString(strconv.FormatFloat(f, 'g', -1, bits))
 	}
-
 }
 
 func (y *toYAML) writeOneLineDoc(d *doc) {

@@ -135,6 +135,7 @@ type evaluator struct {
 	scope FullName
 }
 
+//nolint:govet // vet complains about 8 wasted padding bytes.
 type evalArgs struct {
 	expr ast.ExprAny // The expression to evaluate.
 
@@ -251,7 +252,6 @@ func (e *evaluator) eval(args evalArgs) Value {
 		if first {
 			args.target = newZeroScalar(e.Context, args.rawField)
 			args.target.raw.bits = bits
-			first = false
 		} else {
 			appendRaw(args.target, bits)
 		}
@@ -350,8 +350,8 @@ func (e *evaluator) evalKey(args evalArgs, expr ast.ExprAny) Member {
 	//
 	// Everything else is unrecoverable.
 	ty := args.Type()
-	cannotResolveKey := func() *report.Diagnostic {
-		return e.Errorf("cannot resolve %s name for `%s`", taxa.Field, ty.FullName()).Apply(
+	cannotResolveKey := func() {
+		e.Errorf("cannot resolve %s name for `%s`", taxa.Field, ty.FullName()).Apply(
 			report.Snippetf(expr, "field referenced here"),
 			report.Snippetf(args.annotation, "expected `%s` field due to this", ty.Name()),
 		)
@@ -503,7 +503,7 @@ validate:
 		}
 
 		if wrongPath {
-			d.Apply(report.Notef("field names must be be a single identifier"))
+			d.Apply(report.Notef("field names must be a single identifier"))
 		}
 
 		if !hasBrackets {
@@ -898,7 +898,7 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 
 		// If bits == 64, we may be in a situation where - overflows. For
 		// example, if the input value is uint64(math.MaxInt32+1), then -
-		// is the identity (this is the only value other than 0 that its its
+		// is the identity (this is the only value other than 0 that its
 		// own two's complement).
 		//
 		// To detect this, we have to check that the sign of v is consistent
@@ -1055,9 +1055,8 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 
 			if value {
 				return 1, args.textFormat
-			} else {
-				return 0, args.textFormat
 			}
+			return 0, args.textFormat
 		}
 
 	case predeclared.Float32, predeclared.Float64:

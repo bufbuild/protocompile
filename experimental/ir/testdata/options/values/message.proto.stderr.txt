@@ -141,7 +141,7 @@ error: message field `buf.test.Foo.y` referenced incorrectly
    |
    = note: `[...]` must only be used when referencing extensions or concrete
            `Any` types
-   = note: field names must be be a single identifier
+   = note: field names must be a single identifier
 
 error: message field `buf.test.Foo.y` set multiple times
   --> testdata/options/values/message.proto:30:5
@@ -167,7 +167,7 @@ error: message field `buf.test.Foo.y` referenced incorrectly
 31 | -     Foo.y: 0,
 31 | +     y: 0,
    |
-   = note: field names must be be a single identifier
+   = note: field names must be a single identifier
 
 error: message field `buf.test.Foo.y` set multiple times
   --> testdata/options/values/message.proto:31:5
@@ -196,7 +196,7 @@ error: message field `buf.test.Foo.y` referenced incorrectly
    |
    = note: `[...]` must only be used when referencing extensions or concrete
            `Any` types
-   = note: field names must be be a single identifier
+   = note: field names must be a single identifier
 
 error: message field `buf.test.Foo.y` set multiple times
   --> testdata/options/values/message.proto:32:5
@@ -224,7 +224,7 @@ error: message field `buf.test.Foo.y` referenced incorrectly
 33 | -     "Foo.y": 0,
 33 | +     y: 0,
    |
-   = note: field names must be be a single identifier
+   = note: field names must be a single identifier
    = note: due to a parser quirk, `.protoc` rejects quoted strings here, even
            though textproto does not
 
@@ -253,7 +253,7 @@ error: message field `buf.test.Foo.y` referenced incorrectly
 35 | -     1: 0,
 35 | +     y: 0,
    |
-   = note: field names must be be a single identifier
+   = note: field names must be a single identifier
    = note: due to a parser quirk, `.protoc` rejects numbers here, even though
            textproto does not
 
