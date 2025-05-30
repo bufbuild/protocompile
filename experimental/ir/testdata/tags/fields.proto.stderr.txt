@@ -1,3 +1,27 @@
+error: unexpected `:` after definition
+  --> testdata/tags/fields.proto:61:26
+   |
+61 |     optional int32 m4 = a: 2;
+   |                          ^ expected `;`
+  help: consider inserting a `;`
+   |
+61 |     optional int32 m4 = a;: 2;
+   |                          +
+
+error: unexpected tokens in message definition
+  --> testdata/tags/fields.proto:61:26
+   |
+61 |     optional int32 m4 = a: 2;
+   |                          ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+
+error: encountered more than one message field tag
+  --> testdata/tags/fields.proto:62:27
+   |
+62 |     optional int32 m5 = a = 2;
+   |                       --- ^^^ help: consider removing this
+   |                       |
+   |                       first one is here
+
 error: field numbers must be unique
   --> testdata/tags/fields.proto:22:25
    |
@@ -120,26 +144,10 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/tags/fields.proto:45:25
-   |
-45 |     optional float f4 = -inf;
-   |                         ^^^^ expected field number, found floating-point literal
-   = note: expected: field number
-              found: floating-point literal
-
-error: mismatched types
   --> testdata/tags/fields.proto:46:25
    |
 46 |     optional float f5 = nan;
    |                         ^^^ expected field number, found floating-point literal
-   = note: expected: field number
-              found: floating-point literal
-
-error: mismatched types
-  --> testdata/tags/fields.proto:47:25
-   |
-47 |     optional float f6 = -nan;
-   |                         ^^^^ expected field number, found floating-point literal
    = note: expected: field number
               found: floating-point literal
 
@@ -166,4 +174,74 @@ error: `max` outside of range expression
    |                        ^^^
    = note: the special `max` expression is only allowed in a range expression
 
-encountered 21 errors
+error: mismatched types
+  --> testdata/tags/fields.proto:53:26
+   |
+53 |     optional string s1 = "";
+   |                          ^^ expected field number, found `string`
+   = note: expected: field number
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/fields.proto:54:26
+   |
+54 |     optional string s2 = '';
+   |                          ^^ expected field number, found `string`
+   = note: expected: field number
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/fields.proto:55:26
+   |
+55 |     optional string s3 = "abc";
+   |                          ^^^^^ expected field number, found `string`
+   = note: expected: field number
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/fields.proto:56:26
+   |
+56 |     optional string s4 = '\xff\xff\xff';
+   |                          ^^^^^^^^^^^^^^ expected field number, found `string`
+   = note: expected: field number
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/fields.proto:58:25
+   |
+58 |     optional int32 m1 = {};
+   |                         ^^ expected field number, found message expression
+   = note: expected: field number
+              found: message expression
+
+error: mismatched types
+  --> testdata/tags/fields.proto:59:25
+   |
+59 |     optional int32 m2 = [];
+   |                         ^^ expected field number, found array expression
+   = note: expected: field number
+              found: array expression
+
+error: mismatched types
+  --> testdata/tags/fields.proto:60:25
+   |
+60 |     optional int32 m3 = 1 to 2;
+   |                         ^^^^^^ expected field number, found range expression
+   = note: expected: field number
+              found: range expression
+
+error: cannot find `a` in this scope
+  --> testdata/tags/fields.proto:61:25
+   |
+61 |     optional int32 m4 = a: 2;
+   |                         ^ not found in this scope
+   = help: the full name of this scope is `test.M`
+
+error: cannot find `a` in this scope
+  --> testdata/tags/fields.proto:62:25
+   |
+62 |     optional int32 m5 = a = 2;
+   |                         ^ not found in this scope
+   = help: the full name of this scope is `test.M`
+
+encountered 31 errors

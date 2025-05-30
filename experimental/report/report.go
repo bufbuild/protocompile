@@ -15,6 +15,7 @@
 package report
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	runtimedebug "runtime/debug"
@@ -151,6 +152,11 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 		diagnose(diagnostic)
 	}
 
+	var ice *icePanic
+	if err, _ := panicked.(error); errors.As(err, &ice) {
+		diagnostic.Apply(ice.options...)
+	}
+
 	// Append a stack trace but only after any user-provided diagnostic
 	// information.
 	stack := strings.Split(strings.TrimSpace(string(runtimedebug.Stack())), "\n")
@@ -164,6 +170,37 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	if resume {
 		panic(panicked)
 	}
+}
+
+type icePanic struct {
+	error
+	options []DiagnosticOption
+}
+
+func (e *icePanic) Unwrap() error { return e.error }
+
+// AnnotatePanic will recover a panic and annotate it such that when [CatchICE]
+// recovers it, it can extract this information and display it in the
+// diagnostic.
+func (r *Report) AnnotateICE(options ...DiagnosticOption) {
+	panicked := recover()
+	if panicked == nil {
+		return
+	}
+
+	err, _ := panicked.(error)
+	if err == nil {
+		err = fmt.Errorf("%v", err)
+	}
+
+	var ice *icePanic
+	if errors.As(err, &ice) {
+		ice.options = append(ice.options, options...)
+	} else {
+		ice = &icePanic{err, options}
+	}
+
+	panic(ice)
 }
 
 // Canonicalize sorts this report's diagnostics according to an specific

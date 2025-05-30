@@ -49,4 +49,15 @@ message M {
     optional bool b1 = false;
     optional bool b2 = true;
     optional bool b3 = max;
+
+    optional string s1 = "";
+    optional string s2 = '';
+    optional string s3 = "abc";
+    optional string s4 = '\xff\xff\xff';
+
+    optional int32 m1 = {};
+    optional int32 m2 = [];
+    optional int32 m3 = 1 to 2;
+    optional int32 m4 = a: 2;
+    optional int32 m5 = a = 2;
 }

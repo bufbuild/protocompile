@@ -1,0 +1,658 @@
+error: nested array expressions are not allowed
+  --> testdata/options/values/int32.proto:57:42
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |         ---------------------------------^^--------- ...within this array expression
+   |                                          |
+   |                                          cannot nest this array expression...
+
+error: unexpected range expression in option setting value
+  --> testdata/options/values/int32.proto:57:46
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                              ^^^^^^
+
+error: nested array expressions are not allowed
+  --> testdata/options/values/int32.proto:58:42
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |         ---------------------------------^^--------- ...within this array expression
+   |                                          |
+   |                                          cannot nest this array expression...
+
+error: unexpected range expression in option setting value
+  --> testdata/options/values/int32.proto:58:46
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                              ^^^^^^
+
+error: nested array expressions are not allowed
+  --> testdata/options/values/int32.proto:59:42
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |         ---------------------------------^^--------- ...within this array expression
+   |                                          |
+   |                                          cannot nest this array expression...
+
+error: unexpected range expression in option setting value
+  --> testdata/options/values/int32.proto:59:46
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                              ^^^^^^
+
+error: nested array expressions are not allowed
+  --> testdata/options/values/int32.proto:60:42
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |         ---------------------------------^^--------- ...within this array expression
+   |                                          |
+   |                                          cannot nest this array expression...
+
+error: unexpected range expression in option setting value
+  --> testdata/options/values/int32.proto:60:46
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                              ^^^^^^
+
+error: nested array expressions are not allowed
+  --> testdata/options/values/int32.proto:61:42
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |         ---------------------------------^^--------- ...within this array expression
+   |                                          |
+   |                                          cannot nest this array expression...
+
+error: unexpected range expression in option setting value
+  --> testdata/options/values/int32.proto:61:46
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                              ^^^^^^
+
+error: literal out of range for `int32`
+  --> testdata/options/values/int32.proto:25:9
+   |
+25 |         0x80000000, -0x80000001,  // Out-of-range values.
+   |         ^^^^^^^^^^
+26 |         0x10000000000000000 // *big.Int value.
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `int32`
+  --> testdata/options/values/int32.proto:25:21
+   |
+25 |         0x80000000, -0x80000001,  // Out-of-range values.
+   |                     ^^^^^^^^^^^
+26 |         0x10000000000000000 // *big.Int value.
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `int32`
+  --> testdata/options/values/int32.proto:26:9
+   |
+26 |         0x10000000000000000 // *big.Int value.
+   |         ^^^^^^^^^^^^^^^^^^^
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `sint32`
+  --> testdata/options/values/int32.proto:31:9
+   |
+31 |         0x80000000, -0x80000001,  // Out-of-range values.
+   |         ^^^^^^^^^^
+32 |         0x10000000000000000 // *big.Int value.
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: the range for `sint32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `sint32`
+  --> testdata/options/values/int32.proto:31:21
+   |
+31 |         0x80000000, -0x80000001,  // Out-of-range values.
+   |                     ^^^^^^^^^^^
+32 |         0x10000000000000000 // *big.Int value.
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: the range for `sint32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `sint32`
+  --> testdata/options/values/int32.proto:32:9
+   |
+32 |         0x10000000000000000 // *big.Int value.
+   |         ^^^^^^^^^^^^^^^^^^^
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: the range for `sint32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `sfixed32`
+  --> testdata/options/values/int32.proto:37:9
+   |
+37 |         0x80000000, -0x80000001,  // Out-of-range values.
+   |         ^^^^^^^^^^
+38 |         0x10000000000000000 // *big.Int value.
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: the range for `sfixed32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `sfixed32`
+  --> testdata/options/values/int32.proto:37:21
+   |
+37 |         0x80000000, -0x80000001,  // Out-of-range values.
+   |                     ^^^^^^^^^^^
+38 |         0x10000000000000000 // *big.Int value.
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: the range for `sfixed32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `sfixed32`
+  --> testdata/options/values/int32.proto:38:9
+   |
+38 |         0x10000000000000000 // *big.Int value.
+   |         ^^^^^^^^^^^^^^^^^^^
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: the range for `sfixed32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `uint32`
+  --> testdata/options/values/int32.proto:43:9
+   |
+43 |         -1, -2,
+   |         ^^
+44 |         0xffffffff, // Max value.
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: the range for `uint32` is `0 to 4294967295`
+
+error: literal out of range for `uint32`
+  --> testdata/options/values/int32.proto:43:13
+   |
+43 |         -1, -2,
+   |             ^^
+44 |         0xffffffff, // Max value.
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: the range for `uint32` is `0 to 4294967295`
+
+error: literal out of range for `uint32`
+  --> testdata/options/values/int32.proto:45:9
+   |
+45 |         0x100000000, -0x80000000, // Out-of-range values.
+   |         ^^^^^^^^^^^
+46 |         0x10000000000000000 // *big.Int value.
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: the range for `uint32` is `0x0 to 0xffffffff`
+
+error: literal out of range for `uint32`
+  --> testdata/options/values/int32.proto:45:22
+   |
+45 |         0x100000000, -0x80000000, // Out-of-range values.
+   |                      ^^^^^^^^^^^
+46 |         0x10000000000000000 // *big.Int value.
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: the range for `uint32` is `0x0 to 0xffffffff`
+
+error: literal out of range for `uint32`
+  --> testdata/options/values/int32.proto:46:9
+   |
+46 |         0x10000000000000000 // *big.Int value.
+   |         ^^^^^^^^^^^^^^^^^^^
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: the range for `uint32` is `0x0 to 0xffffffff`
+
+error: literal out of range for `fixed32`
+  --> testdata/options/values/int32.proto:50:9
+   |
+50 |         -1, -2,
+   |         ^^
+51 |         0xffffffff, // Max value.
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: the range for `fixed32` is `0 to 4294967295`
+
+error: literal out of range for `fixed32`
+  --> testdata/options/values/int32.proto:50:13
+   |
+50 |         -1, -2,
+   |             ^^
+51 |         0xffffffff, // Max value.
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: the range for `fixed32` is `0 to 4294967295`
+
+error: literal out of range for `fixed32`
+  --> testdata/options/values/int32.proto:52:9
+   |
+52 |         0x100000000, -0x80000000, // Out-of-range values.
+   |         ^^^^^^^^^^^
+53 |         0x10000000000000000 // *big.Int value.
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: the range for `fixed32` is `0x0 to 0xffffffff`
+
+error: literal out of range for `fixed32`
+  --> testdata/options/values/int32.proto:52:22
+   |
+52 |         0x100000000, -0x80000000, // Out-of-range values.
+   |                      ^^^^^^^^^^^
+53 |         0x10000000000000000 // *big.Int value.
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: the range for `fixed32` is `0x0 to 0xffffffff`
+
+error: literal out of range for `fixed32`
+  --> testdata/options/values/int32.proto:53:9
+   |
+53 |         0x10000000000000000 // *big.Int value.
+   |         ^^^^^^^^^^^^^^^^^^^
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: the range for `fixed32` is `0x0 to 0xffffffff`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:57:10
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |          ^^^ expected `int32`, found floating-point literal
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:57:15
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |               ^^^^^ expected `int32`, found `string`
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: expected: scalar type `int32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:57:22
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                      ^^^^ expected `int32`, found `bool`
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: expected: scalar type `int32`
+              found: scalar type `bool`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:57:28
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                            ^^^ expected `int32`, found floating-point literal
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:57:33
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                 ^^^ expected `int32`, found floating-point literal
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:57:38
+   |
+57 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                      ^^ expected `int32`, found message expression
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+   |     -------------- expected due to this
+   = note: expected: scalar type `int32`
+              found: message expression
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:58:10
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |          ^^^ expected `sint32`, found floating-point literal
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: expected: scalar type `sint32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:58:15
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |               ^^^^^ expected `sint32`, found `string`
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: expected: scalar type `sint32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:58:22
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                      ^^^^ expected `sint32`, found `bool`
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: expected: scalar type `sint32`
+              found: scalar type `bool`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:58:28
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                            ^^^ expected `sint32`, found floating-point literal
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: expected: scalar type `sint32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:58:33
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                 ^^^ expected `sint32`, found floating-point literal
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: expected: scalar type `sint32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:58:38
+   |
+58 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                      ^^ expected `sint32`, found message expression
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+65 |     repeated int32 i1 = 1;
+66 |     repeated sint32 i2 = 2;
+   |     --------------- expected due to this
+   = note: expected: scalar type `sint32`
+              found: message expression
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:59:10
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |          ^^^ expected `sfixed32`, found floating-point literal
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: expected: scalar type `sfixed32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:59:15
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |               ^^^^^ expected `sfixed32`, found `string`
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: expected: scalar type `sfixed32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:59:22
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                      ^^^^ expected `sfixed32`, found `bool`
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: expected: scalar type `sfixed32`
+              found: scalar type `bool`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:59:28
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                            ^^^ expected `sfixed32`, found floating-point literal
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: expected: scalar type `sfixed32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:59:33
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                 ^^^ expected `sfixed32`, found floating-point literal
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: expected: scalar type `sfixed32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:59:38
+   |
+59 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                      ^^ expected `sfixed32`, found message expression
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+66 |     repeated sint32 i2 = 2;
+67 |     repeated sfixed32 i3 = 3;
+   |     ----------------- expected due to this
+   = note: expected: scalar type `sfixed32`
+              found: message expression
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:60:10
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |          ^^^ expected `uint32`, found floating-point literal
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: expected: scalar type `uint32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:60:15
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |               ^^^^^ expected `uint32`, found `string`
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: expected: scalar type `uint32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:60:22
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                      ^^^^ expected `uint32`, found `bool`
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: expected: scalar type `uint32`
+              found: scalar type `bool`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:60:28
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                            ^^^ expected `uint32`, found floating-point literal
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: expected: scalar type `uint32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:60:33
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                 ^^^ expected `uint32`, found floating-point literal
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: expected: scalar type `uint32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:60:38
+   |
+60 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                      ^^ expected `uint32`, found message expression
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+...
+69 |     repeated uint32 u1 = 11;
+   |     --------------- expected due to this
+   = note: expected: scalar type `uint32`
+              found: message expression
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:61:10
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |          ^^^ expected `fixed32`, found floating-point literal
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: expected: scalar type `fixed32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:61:15
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |               ^^^^^ expected `fixed32`, found `string`
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: expected: scalar type `fixed32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:61:22
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                      ^^^^ expected `fixed32`, found `bool`
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: expected: scalar type `fixed32`
+              found: scalar type `bool`
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:61:28
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                            ^^^ expected `fixed32`, found floating-point literal
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: expected: scalar type `fixed32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:61:33
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                 ^^^ expected `fixed32`, found floating-point literal
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: expected: scalar type `fixed32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/options/values/int32.proto:61:38
+   |
+61 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
+   |                                      ^^ expected `fixed32`, found message expression
+...
+69 |     repeated uint32 u1 = 11;
+70 |     repeated fixed32 u2 = 12;
+   |     ---------------- expected due to this
+   = note: expected: scalar type `fixed32`
+              found: message expression
+
+encountered 59 errors

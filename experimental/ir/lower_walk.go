@@ -42,9 +42,6 @@ type walker struct {
 func (w *walker) walk() {
 	c := w.Context()
 
-	path := w.AST().Span().File.Path()
-	c.path = c.session.intern.Intern(CanonicalizeFilePath(path))
-
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}
@@ -159,6 +156,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
 	ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
+	ty.raw.memberByNumber = sync.OnceValue(ty.makeMembersByNumber)
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)

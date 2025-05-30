@@ -169,14 +169,17 @@ func (r optionRef) resolve() {
 	}
 
 	if r.raw.Nil() {
-		v := newMessage(r.Context, r.field, ref[rawType]{})
+		v := newMessage(r.Context, r.field).AsValue()
 		*r.raw = r.arenas.values.Compress(v.raw)
 	}
 
 	current := wrapValue(r.Context, *r.raw)
+	field := current.Field()
 	for pc := range r.def.Path.Components {
-		field := current.Field()
 		message := field.Element()
+
+		// This diagnoses that people do not write option a.b.c where b is
+		// a not a message field.
 		if !message.IsZero() && !message.IsMessage() {
 			r.Error(errOptionMustBeMessage{
 				selector: pc,
@@ -186,6 +189,9 @@ func (r optionRef) resolve() {
 			})
 			return
 		}
+
+		// This diagnoses that people do not write option a.b.c where b is
+		// a repeated field.
 		if field.Presence() == presence.Repeated {
 			r.Error(errOptionMustBeMessage{
 				selector: pc,
@@ -282,65 +288,116 @@ func (r optionRef) resolve() {
 			value := wrapValue(r.Context, *raw)
 			switch {
 			case next.Presence() == presence.Repeated:
-				// TODO: Implement expression evaluation.
+				break // Handled below.
+
 			case value.Field() != next:
 				// A different member of a oneof was set.
-				r.Errorf("oneof `%s` set multiple times", next.Oneof().FullName()).Apply(
-					report.Snippetf(path, "... also set here"),
-					report.Snippetf(value.OptionPath(), "first set here..."),
-					report.Notef("at most one member of a oneof may be set by an option"),
-				)
+				r.Error(errSetMultipleTimes{
+					member: next.Oneof(),
+					first:  value.OptionPath(),
+					second: path,
+					root:   pc.IsFirst(),
+				})
 				return
 
 			case field.Element().IsMessage():
 				if !pc.IsLast() {
 					current = value
+					field = next
 					continue
 				}
 				fallthrough
 
 			default:
-				name := next.FullName()
-				what := any(next.noun())
-				if !next.IsExtension() && pc.IsFirst() {
-					// For non-custom options, use the short name and call it
-					// an "option".
-					name = FullName(next.Name())
-					what = "option"
-				}
-
-				r.Errorf("%v `%v` set multiple times", what, name).Apply(
-					report.Snippetf(path, "... also set here"),
-					report.Snippetf(value.OptionPath(), "first set here..."),
-					report.Notef("an option may be set at most once"),
-				)
+				r.Error(errSetMultipleTimes{
+					member: next,
+					first:  value.OptionPath(),
+					second: path,
+					root:   pc.IsFirst(),
+				})
 				return
 			}
 		}
 
-		// Construct a new value for this option.
-		var fieldRef ref[rawMember]
-		if next.Context() != r.Context {
-			fieldRef.file = int32(r.imports.byPath[next.Context().File().InternedPath()] + 1)
-		}
-		fieldRef.ptr = next.Context().arenas.members.Compress(next.raw)
+		if !pc.IsLast() {
+			message := next.Element()
+			if message.IsMessage() && next.Presence() != presence.Repeated {
+				value := newMessage(r.Context, compressMember(r.Context, next)).AsValue()
+				if value.raw.optionPath.IsZero() {
+					value.raw.optionPath = path
+				}
 
-		// TODO: Implement expression evaluation.
-		var value Value
-		if next.Element().IsMessage() {
-			value = newMessage(r.Context, fieldRef, ref[rawType]{})
-		} else {
-			// Just set the zero value; all scalars with a value of zero
-			// are well-defined.
-			value = newScalar[int32](r.Context, fieldRef, 0)
-		}
-		if value.raw.optionPath.IsZero() {
-			value.raw.optionPath = path
+				*raw = r.arenas.values.Compress(value.raw)
+				current = value
+			}
+
+			field = next
+			continue
 		}
 
-		*raw = r.arenas.values.Compress(value.raw)
-		current = value
+		evaluator := evaluator{
+			Context: r.Context,
+			Report:  r.Report,
+			scope:   r.scope,
+		}
+		args := evalArgs{
+			expr:       r.def.Value,
+			field:      next,
+			annotation: field.AST().Type(),
+			optionPath: path,
+		}
+
+		if !raw.Nil() {
+			args.target = wrapValue(r.Context, *raw)
+		}
+
+		v := evaluator.eval(args)
+		if !v.IsZero() {
+			*raw = r.arenas.values.Compress(v.raw)
+		}
 	}
+}
+
+type errSetMultipleTimes struct {
+	member        any
+	first, second report.Spanner
+	root          bool
+}
+
+func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
+	var what any
+	var name FullName
+	var note string
+	var def report.Spanner
+	switch member := e.member.(type) {
+	case Member:
+		if !member.IsExtension() && e.root {
+			// For non-custom options, use the short name and call it
+			// an "option".
+			name = FullName(member.Name())
+			what = "option"
+		} else {
+			name = member.FullName()
+			what = member.noun()
+		}
+		note = "a non-`repeated` option may be set at most once"
+		def = member.AST().Name()
+	case Oneof:
+		name = member.FullName()
+		what = "oneof"
+		note = "at most one member of a oneof may be set by an option"
+		def = member.AST().Name()
+	default:
+		panic("unreachable")
+	}
+
+	d.Apply(
+		report.Message("%v `%v` set multiple times", what, name),
+		report.Snippetf(e.second, "... also set here"),
+		report.Snippetf(e.first, "first set here..."),
+		report.Snippetf(def, "must be set at most once"),
+		report.Notef(note),
+	)
 }
 
 type errOptionMustBeMessage struct {
