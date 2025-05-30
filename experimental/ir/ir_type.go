@@ -122,6 +122,12 @@ func (t Type) IsEnum() bool {
 	return !t.IsZero() && t.raw.isEnum
 }
 
+// IsAny returns whether this is the type google.protobuf.Any, which gets special
+// treatment in the language.
+func (t Type) IsAny() bool {
+	return t.InternedFullName() == t.Context().session.langIDs.AnyPath
+}
+
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
 //
 // Returns either [predeclared.Unknown] or a value such that [predeclared.Name.IsScalar]

@@ -40,9 +40,8 @@ type Context struct {
 	// to normalize it.
 	path intern.ID
 
-	syntax            syntax.Syntax
-	pkg               intern.ID
-	isDescriptorProto bool // This is the magic descriptor.proto file.
+	syntax syntax.Syntax
+	pkg    intern.ID
 
 	imports imports
 
@@ -176,6 +175,13 @@ func (f File) InternedPath() intern.ID {
 		return 0
 	}
 	return f.Context().path
+}
+
+// IsDescriptorProto returns whether this is the special file
+// google/protobuf/descriptor.proto, which is given special treatment in
+// the language.
+func (f File) IsDescriptorProto() bool {
+	return f.InternedPath() == f.Context().session.langIDs.DescriptorFile
 }
 
 // Package returns the package name for this file.

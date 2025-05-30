@@ -42,9 +42,6 @@ type walker struct {
 func (w *walker) walk() {
 	c := w.Context()
 
-	path := w.AST().Span().File.Path()
-	c.path = c.session.intern.Intern(CanonicalizeFilePath(path))
-
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}

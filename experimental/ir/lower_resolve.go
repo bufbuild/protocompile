@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 // resolveNames resolves all of the names that need resolving in a file.
@@ -149,33 +150,32 @@ func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
 }
 
 func resolveLangSymbols(c *Context) {
-	if !c.isDescriptorProto {
+	if !c.File().IsDescriptorProto() {
 		return
 	}
 
-	field := func(name string) arena.Pointer[rawMember] {
-		return mustResolve[rawMember](c, "google.protobuf."+name, SymbolKindField)
-	}
-
+	names := &c.session.langIDs
 	c.langSymbols = &langSymbols{
-		fileOptions: field("FileDescriptorProto.options"),
+		fileOptions: mustResolve[rawMember](c, names.FileOptions, SymbolKindField),
 
-		messageOptions: field("DescriptorProto.options"),
-		fieldOptions:   field("FieldDescriptorProto.options"),
-		oneofOptions:   field("OneofDescriptorProto.options"),
+		messageOptions: mustResolve[rawMember](c, names.MessageOptions, SymbolKindField),
+		fieldOptions:   mustResolve[rawMember](c, names.FieldOptions, SymbolKindField),
+		oneofOptions:   mustResolve[rawMember](c, names.OneofOptions, SymbolKindField),
 
-		enumOptions:      field("EnumDescriptorProto.options"),
-		enumValueOptions: field("EnumValueDescriptorProto.options"),
+		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
+		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
 	}
 }
 
 // mustResolve resolves a descriptor.proto name, and panics if it's not found.
-func mustResolve[Raw any](c *Context, name string, kind SymbolKind) arena.Pointer[Raw] {
-	id := c.session.intern.Intern(name)
+func mustResolve[Raw any](c *Context, id intern.ID, kind SymbolKind) arena.Pointer[Raw] {
 	ref := c.exported.lookup(c, id)
 	sym := wrapSymbol(c, ref)
 	if sym.Kind() != kind {
-		panic(fmt.Errorf("missing descriptor.proto symbol: %s `%s`; got kind %s", kind.noun(), name, sym.Kind()))
+		panic(fmt.Errorf(
+			"missing descriptor.proto symbol: %s `%s`; got kind %s",
+			kind.noun(), c.session.intern.Value(id), sym.Kind(),
+		))
 	}
 	return arena.Pointer[Raw](sym.raw.data)
 }
