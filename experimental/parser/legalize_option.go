@@ -91,13 +91,9 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 	case ast.ExprKindLiteral:
 		// All literals are allowed.
 	case ast.ExprKindPath:
-		if value.AsPath().AsIdent().IsZero() {
-			p.Error(errUnexpected{
-				what:  value,
-				where: taxa.OptionValue.In(),
-				want:  taxa.Ident.AsSet(),
-			})
-		}
+		// Qualified paths are allowed, since we want to diagnose them once we
+		// have symbol lookup information so that we can suggest a proper
+		// reference.
 	case ast.ExprKindPrefixed:
 		value := value.AsPrefixed()
 		if value.Expr().IsZero() {
@@ -214,36 +210,14 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 			want := taxa.NewSet(taxa.FieldName, taxa.ExtensionName, taxa.TypeURL)
 			switch kv.Key().Kind() {
 			case ast.ExprKindLiteral:
-				lit := kv.Key().AsLiteral()
-				err := p.Error(errUnexpected{
-					what:  lit,
-					where: taxa.DictField.In(),
-					want:  want,
-				})
-
-				if name, _ := lit.AsString(); isASCIIIdent(name) {
-					err.Apply(report.SuggestEdits(
-						lit,
-						"remove the quotes",
-						report.Edit{
-							Start: 0, End: lit.Span().Len(),
-							Replace: name,
-						},
-					))
-				}
+				// Literals are allowed here, as they are in textproto; they
+				// are diagnosed in a later stage.
 
 			case ast.ExprKindPath:
 				path := kv.Key().AsPath()
-				first, ok := iterx.OnlyOne(path.Components)
-				if !ok || !first.Separator().IsZero() {
-					p.Error(errUnexpected{
-						what:  path,
-						where: taxa.DictField.In(),
-						want:  want,
-					})
-					break
-				}
+				first, _ := iterx.First(path.Components)
 				if !first.AsExtension().IsZero() {
+					// TODO: move this into ir/lower_eval.go
 					p.Errorf("cannot name extension field using %s in %s", taxa.Parens, taxa.Dict).Apply(
 						report.Snippetf(path, "expected this to be wrapped in %s instead", taxa.Brackets),
 						report.SuggestEdits(
@@ -259,6 +233,12 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 				elem, ok := iterx.OnlyOne(seq.Values(kv.Key().AsArray().Elements()))
 				path := elem.AsPath().Path
 				if !ok || path.IsZero() {
+					if !elem.AsLiteral().IsZero() {
+						// Allow literals in this position, since we can diagnose
+						// them better later.
+						break
+					}
+
 					p.Error(errUnexpected{
 						what:  kv.Key(),
 						where: taxa.DictField.In(),
