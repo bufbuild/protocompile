@@ -77,14 +77,27 @@ message Value {
     message Repeated {
         repeated Value values = 1;
     }
+    message Any {
+        string url = 1;
+        Value value = 2;
+    }
 
     oneof value {
-        bool bool = 1;
-        int64 int = 2;
-        uint64 uint = 3;
-        double float = 4;
-        bytes string = 5;
-        Repeated repeated = 6;
-        Message message = 7;
+        int32 i32 = 1;
+        uint32 u32 = 2;
+        float f32 = 3;
+        int64 i64 = 4;
+        uint64 u64 = 5;
+        double f64 = 6;
+        
+        bool bool = 7;
+        bytes string = 8;
+        Repeated repeated = 9;
+        
+        Message message = 10;
+        Any any = 11;
+
+        // Cyclic message. This is how many uprefs away the cycle element is.
+        int32 cycle = 20;
     }
 }

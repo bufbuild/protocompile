@@ -236,10 +236,12 @@ func (r symbolRef) resolve() Symbol {
 	}
 
 	sym := wrapSymbol(r.Context, found)
-	d := r.diagnoseLookup(sym, expected)
-	if fullResolve && d != nil {
-		// Resolve a second time to add debugging information to the diagnostic.
-		r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, d)
+	if r.Report != nil {
+		d := r.diagnoseLookup(sym, expected)
+		if fullResolve && d != nil {
+			// Resolve a second time to add debugging information to the diagnostic.
+			r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, d)
+		}
 	}
 
 	return sym

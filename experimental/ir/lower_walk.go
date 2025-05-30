@@ -156,6 +156,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
 	ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
+	ty.raw.memberByNumber = sync.OnceValue(ty.makeMembersByNumber)
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)
