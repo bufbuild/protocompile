@@ -18,11 +18,9 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -95,30 +93,9 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 		// have symbol lookup information so that we can suggest a proper
 		// reference.
 	case ast.ExprKindPrefixed:
-		value := value.AsPrefixed()
-		if value.Expr().IsZero() {
-			return
-		}
-
-		//nolint:gocritic // Intentional single-case switch.
-		switch value.Prefix() {
-		case keyword.Minus:
-			ok := value.Expr().AsLiteral().Kind() == token.Number
-			if path := value.Expr().AsPath(); !path.IsZero() {
-				// A minus sign may precede inf or nan, but it may also precede
-				// any identifier when inside of a message literal.
-				ok = (parent.Kind() == ast.ExprKindField && !path.AsIdent().IsZero()) ||
-					slicesx.Among(path.AsPredeclared(), predeclared.Inf, predeclared.NAN)
-			}
-
-			if !ok {
-				p.Error(errUnexpected{
-					what:  value.Expr(),
-					where: taxa.Minus.After(),
-					want:  taxa.NewSet(taxa.Int, taxa.Float),
-				})
-			}
-		}
+		// - is only allowed before certain identifiers, but which ones is
+		// quite tricky to determine. This needs to happen during constant
+		// evaluation, so repeating that logic here is somewhat redundant.
 	case ast.ExprKindArray:
 		array := value.AsArray().Elements()
 		switch {

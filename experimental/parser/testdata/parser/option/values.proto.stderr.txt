@@ -1,9 +1,3 @@
-error: unexpected identifier after `-`
-  --> testdata/parser/option/values.proto:28:13
-   |
-28 | option x = -Infinity;
-   |             ^^^^^^^^ expected floating-point literal or integer literal
-
 error: unexpected range expression in option setting value
   --> testdata/parser/option/values.proto:32:12
    |
@@ -266,4 +260,4 @@ warning: using `<...>` for message expression is not recommended
    = help: `<...>` message expressions are an obscure feature and not
            recommended
 
-encountered 20 errors and 6 warnings
+encountered 19 errors and 6 warnings
