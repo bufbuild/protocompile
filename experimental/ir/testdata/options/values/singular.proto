@@ -14,40 +14,27 @@
 
 syntax = "proto2";
 
-package test;
+package buf.test;
 
-enum E {
-    UNKNOWN = 0;
-    X = 1;
-    Y = 2;
-    Y2 = 2;
+import "google/protobuf/descriptor.proto";
 
-    Z1 = -1;
-    Z2 = 0x7fffffff;
-    Z3 = -0x80000000;
-    Z4 = 0x80000000;
-    Z5 = -0x80000001;
-    Z6 = 0xffffffffffffffffffffffffffffffff;
+option (x) = {
+    x1: 1,
+    x1: 2, // Setting more than once is an error.
 
-    F1 = 1.0;
-    F2 = -1.0;
-    F3 = inf;
-    F4 = -inf;
-    F5 = nan;
-    F6 = -nan;
+    x2: [-1, 1], // Setting from an array is an error.
 
-    B1 = false;
-    B2 = true;
-    B3 = max;
+    x3: -1,
+    x3: [0, "foo"], // Setting more than once with an array is an error,
+                    // and doing so still triggers type checking.
+};
 
-    S1 = "";
-    S2 = '';
-    S3 = "abc";
-    S4 = '\xff\xff\xff';
+message Foo {
+    optional int32 x1 = 1;
+    optional int32 x2 = 2;
+    optional int32 x3 = 3;
+}
 
-    M1 = {};
-    M2 = [];
-    M3 = 1 to 2;
-    M4 = a: 2;
-    M5 = a = 2;
+extend google.protobuf.FileOptions {
+    optional Foo x = 1000;
 }

@@ -1,3 +1,4 @@
+
 // Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,40 +15,41 @@
 
 syntax = "proto2";
 
-package test;
+package buf.test;
 
-enum E {
-    UNKNOWN = 0;
-    X = 1;
-    Y = 2;
-    Y2 = 2;
+import "google/protobuf/descriptor.proto";
 
-    Z1 = -1;
-    Z2 = 0x7fffffff;
-    Z3 = -0x80000000;
-    Z4 = 0x80000000;
-    Z5 = -0x80000001;
-    Z6 = 0xffffffffffffffffffffffffffffffff;
+option (x) = {
+    x: true
+    x: false
+    x: True
+    x: False
+    x: t
+    x: f
 
-    F1 = 1.0;
-    F2 = -1.0;
-    F3 = inf;
-    F4 = -inf;
-    F5 = nan;
-    F6 = -nan;
+    // These are all invalid.
+    x: TRUE
+    x: FALSE
+    x: T
+    x: F
 
-    B1 = false;
-    B2 = true;
-    B3 = max;
+    // Type-checking errors.
+    x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+};
 
-    S1 = "";
-    S2 = '';
-    S3 = "abc";
-    S4 = '\xff\xff\xff';
+// Compare with non-textproto.
+option (y) = true;
+option (y) = false;
+option (y) = True;
+option (y) = False;
+option (y) = t;
+option (y) = f;
 
-    M1 = {};
-    M2 = [];
-    M3 = 1 to 2;
-    M4 = a: 2;
-    M5 = a = 2;
+message Foo {
+    repeated bool x = 1;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo x = 1000;
+    repeated bool y = 1001;
 }

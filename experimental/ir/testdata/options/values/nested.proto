@@ -14,40 +14,40 @@
 
 syntax = "proto2";
 
-package test;
+package buf.test;
 
-enum E {
-    UNKNOWN = 0;
-    X = 1;
-    Y = 2;
-    Y2 = 2;
+import "google/protobuf/descriptor.proto";
 
-    Z1 = -1;
-    Z2 = 0x7fffffff;
-    Z3 = -0x80000000;
-    Z4 = 0x80000000;
-    Z5 = -0x80000001;
-    Z6 = 0xffffffffffffffffffffffffffffffff;
+option (x).b = {};
+option (x).b = {};
 
-    F1 = 1.0;
-    F2 = -1.0;
-    F3 = inf;
-    F4 = -inf;
-    F5 = nan;
-    F6 = -nan;
+option (x).b.a = {};
 
-    B1 = false;
-    B2 = true;
-    B3 = max;
+option (x).a.a = {};
+option (x).a = {};
+option (x).a.a.a = {};
 
-    S1 = "";
-    S2 = '';
-    S3 = "abc";
-    S4 = '\xff\xff\xff';
+option (x).(y).a = {};
+option (x).(y) = {};
+option (x).(y).a.(y) = {};
 
-    M1 = {};
-    M2 = [];
-    M3 = 1 to 2;
-    M4 = a: 2;
-    M5 = a = 2;
+option (x).a.a.b = {};
+option (x).a.a.b = {};
+
+option (x).a.(z).a = {};
+option (x).a.(z) = {};
+option (x).a.(z) = {};
+
+message Foo {
+    optional Foo a = 1;
+    repeated Foo b = 2;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo x = 1000;
+}
+
+extend Foo {
+    optional Foo y = 1000;
+    repeated Foo z = 1001;
 }

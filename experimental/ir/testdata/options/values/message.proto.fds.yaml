@@ -1,0 +1,22 @@
+file:
+  - name: "testdata/options/values/message.proto"
+    package: "buf.test"
+    dependency: ["google/protobuf/descriptor.proto"]
+    message_type:
+      - name: "Foo"
+        field: [{ name: "y", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+        extension:
+          - name: "z"
+            number: 1000
+            label: LABEL_OPTIONAL
+            type: TYPE_INT32
+            extendee: ".buf.test.Foo"
+    extension:
+      - name: "x"
+        number: 1000
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: ".buf.test.Foo"
+        extendee: ".google.protobuf.FileOptions"
+    options: {}
+    syntax: "proto2"
