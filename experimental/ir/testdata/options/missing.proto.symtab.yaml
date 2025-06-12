@@ -9,19 +9,19 @@ tables:
         file: "testdata/options/missing.proto"
         index: 1
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
+        options.message: {}
       - fqn: "buf.test.Bar"
         kind: KIND_ENUM
         file: "testdata/options/missing.proto"
         index: 2
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
+        options.message: {}
       - fqn: "buf.test.Foo.foo"
         kind: KIND_FIELD
         file: "testdata/options/missing.proto"
         index: 1
         visible: true
-        options.message.fields: { "lazy": { bool: false } }
+        options.message: {}
       - fqn: "buf.test.Foo.bar"
         kind: KIND_FIELD
         file: "testdata/options/missing.proto"
@@ -37,11 +37,11 @@ tables:
         file: "testdata/options/missing.proto"
         index: 4
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
+        options.message: {}
       - fqn: "buf.test.Foo.x"
         kind: KIND_ONEOF
         file: "testdata/options/missing.proto"
         index: 1
         visible: true
         options.message: {}
-    options.message.fields: { "go_package": { string: "" } }
+    options.message: {}

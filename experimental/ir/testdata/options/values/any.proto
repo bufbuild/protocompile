@@ -1,0 +1,98 @@
+
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/descriptor.proto";
+
+option (x) = { [type.googleapis.com/buf.test.Foo] {
+    x1: 42, x2: "foo"
+}};
+
+option (y) = { [type.googleprod.com/buf.test.Foo] {
+    x1: 42, x2: "foo"
+}};
+
+option (y) = { [buf.build/types/buf.test.Foo] {
+    x1: 42, x2: "foo"
+}};
+
+option (y) = { [/buf.test.Foo] {
+    x1: 42, x2: "foo"
+}};
+
+option (y) = { [type.googleapis.com/Foo] {
+    x1: 42, x2: "foo"
+}};
+
+option (y) = {
+    [type.googleapis.com/google.protobuf.Any] {
+        [type.googleapis.com/buf.test.Foo] {
+            x1: 42, x2: "foo"
+        }
+    }
+};
+
+option (y) = {
+    [type.googleapis.com/google.protobuf.Any] {
+        [type.googleapis.com/google.protobuf.Any] {
+            [type.googleapis.com/buf.test.Foo] {
+                x1: 42, x2: "foo"
+            }
+        }
+    }
+};
+
+
+option (y) = { [type.googleapis.com/buf.test.Foo] {
+    a: [
+        {
+            [type.googleapis.com/buf.test.Foo]: { x1: 42 }
+            [type.googleapis.com/google.protobuf.FileOptions]: {}
+        },
+        {
+            type_url: "type.googleapis.com/buf.test.Bar"
+            [type.googleapis.com/buf.test.Foo]: { x1: 42 }
+            bytes: "xyz"
+        },
+        {
+            type_url: "type.googleapis.com/buf.test.Bar"
+            value: "xyz"
+        },
+        { [type.googleapis.com/buf.test.Foo]: 42 },
+        { [type.googleapis.com/buf.test.Bar]: BAR_ZERO },
+        { [type.googleapis.com/buf.test.NotReal]: {} },
+        { [type.googleapis.com/buf.test.Foo.a]: 42 }
+    ]
+}};
+
+message Foo {
+    optional int32 x1 = 1;
+    optional string x2 = 2;
+
+    repeated google.protobuf.Any a = 3;
+}
+
+enum Bar {
+    BAR_ZERO = 0;
+}
+
+extend google.protobuf.FileOptions {
+    optional google.protobuf.Any x = 1000;
+    repeated google.protobuf.Any y = 1001;
+}

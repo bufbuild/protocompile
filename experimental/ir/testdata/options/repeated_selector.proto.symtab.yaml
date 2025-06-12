@@ -10,10 +10,7 @@ tables:
         file: "testdata/options/repeated_selector.proto"
         index: 1
         visible: true
-        options.message.extns:
-          "buf.test.x": { repeated.values: [{ int: 0 }] }
-          "buf.test.y": { repeated.values: [{ message: {} }] }
-          "buf.test.z": { message.fields: { "z": { int: 0 } } }
+        options.message.extns: { "buf.test.z": { message.fields: { "z": { i32: 42 } } } }
       - fqn: "buf.test.Foo.z"
         kind: KIND_FIELD
         file: "testdata/options/repeated_selector.proto"

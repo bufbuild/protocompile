@@ -116,7 +116,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 	// If this is descriptor.proto itself, use it. This step is necessary to
 	// avoid cycles.
-	if f.Context().isDescriptorProto {
+	if f.IsDescriptorProto() {
 		c.imports.Insert(f, -1, false)
 		return
 	}

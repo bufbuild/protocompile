@@ -10,31 +10,31 @@ tables:
         file: "testdata/options/custom.proto"
         index: 1
         visible: true
-        options.message.extns: { "buf.test.b": { repeated.values: [{ int: 0 }] } }
+        options.message.extns: { "buf.test.b": { repeated.values: [{ i32: 42 }] } }
       - fqn: "buf.test.Bar"
         kind: KIND_ENUM
         file: "testdata/options/custom.proto"
         index: 2
         visible: true
-        options.message.extns: { "buf.test.e": { repeated.values: [{ int: 0 }] } }
+        options.message.extns: { "buf.test.e": { repeated.values: [{ i32: 42 }] } }
       - fqn: "buf.test.Foo.x"
         kind: KIND_FIELD
         file: "testdata/options/custom.proto"
         index: 1
         visible: true
-        options.message.extns: { "buf.test.c": { repeated.values: [{ int: 0 }] } }
+        options.message.extns: { "buf.test.c": { repeated.values: [{ i32: 42 }] } }
       - fqn: "buf.test.Foo.z"
         kind: KIND_FIELD
         file: "testdata/options/custom.proto"
         index: 2
         visible: true
-        options.message.extns: { "buf.test.c": { repeated.values: [{ int: 0 }] } }
+        options.message.extns: { "buf.test.c": { repeated.values: [{ i32: 42 }] } }
       - fqn: "buf.test.X"
         kind: KIND_ENUM_VALUE
         file: "testdata/options/custom.proto"
         index: 3
         visible: true
-        options.message.extns: { "buf.test.f": { repeated.values: [{ int: 0 }] } }
+        options.message.extns: { "buf.test.f": { repeated.values: [{ i32: 42 }] } }
       - fqn: "buf.test.a"
         kind: KIND_EXTENSION
         file: "testdata/options/custom.proto"
@@ -70,5 +70,5 @@ tables:
         file: "testdata/options/custom.proto"
         index: 1
         visible: true
-        options.message.extns: { "buf.test.d": { repeated.values: [{ int: 0 }] } }
-    options.message.extns: { "buf.test.a": { repeated.values: [{ int: 0 }] } }
+        options.message.extns: { "buf.test.d": { repeated.values: [{ i32: 42 }] } }
+    options.message.extns: { "buf.test.a": { repeated.values: [{ i32: 42 }] } }
