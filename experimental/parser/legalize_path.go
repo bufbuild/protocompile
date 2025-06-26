@@ -54,9 +54,10 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 		bytes += pc.Name().Span().Len()
 		components++
 
-		if i == 0 && !opts.AllowAbsolute && !pc.Separator().IsZero() {
+		if i == 0 && !opts.AllowAbsolute && pc.Separator().Text() == "." {
 			p.Errorf("unexpected absolute path %s", where).Apply(
 				report.Snippetf(path, "expected a path without a leading `%s`", pc.Separator().Text()),
+				report.SuggestEdits(path, "remove the leading `.`", report.Edit{Start: 0, End: 1}),
 			)
 			ok = false
 			continue

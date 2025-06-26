@@ -232,6 +232,15 @@ func wrapMember(c *Context, r ref[rawMember]) Member {
 	}
 }
 
+func compressMember(c *Context, member Member) ref[rawMember] {
+	var ref ref[rawMember]
+	if member.Context() != c {
+		ref.file = int32(c.imports.byPath[member.Context().File().InternedPath()] + 1)
+	}
+	ref.ptr = member.Context().arenas.members.Compress(member.raw)
+	return ref
+}
+
 // rawExtendee represents an extends block.
 //
 // Rather than each field carrying a reference to its extends block's AST, we

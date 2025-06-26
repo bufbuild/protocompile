@@ -15,12 +15,14 @@
 package ir
 
 import (
+	"iter"
 	"math"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
@@ -108,6 +110,16 @@ func (v Value) FieldAST() ast.ExprField {
 	return v.raw.expr.AsField()
 }
 
+// key returns an AST node that best approximates where this value's field was
+// set.
+func (v Value) key() report.Spanner {
+	if field := v.FieldAST(); !field.IsZero() {
+		return field.Key()
+	}
+
+	return v.OptionPath()
+}
+
 // Field returns the field this value sets, which includes the value's type
 // information.
 //
@@ -122,7 +134,7 @@ func (v Value) Field() Member {
 	if int32(field.ptr) < 0 {
 		field.ptr = -field.ptr
 	}
-	return wrapMember(v.Context(), v.raw.field)
+	return wrapMember(v.Context(), field)
 }
 
 // Singular returns whether this value is singular, i.e., [Value.Elements] will
@@ -139,6 +151,13 @@ func (v Value) Singular() bool {
 // The indexer will be nonempty except for the zero Value. That is to say, unset
 // fields of [MessageValue]s are not represented as a distinct "empty" Value.
 func (v Value) Elements() seq.Indexer[Element] {
+	return seq.NewFixedSlice(v.getElements(), func(_ int, bits rawValueBits) Element {
+		return Element{v.withContext, v.Field(), bits}
+	})
+}
+
+// Outlined to promote inlining of Elements().
+func (v Value) getElements() []rawValueBits {
 	var slice []rawValueBits
 	switch {
 	case v.IsZero():
@@ -148,10 +167,7 @@ func (v Value) Elements() seq.Indexer[Element] {
 	default:
 		slice = slicesx.One(&v.raw.bits)
 	}
-
-	return seq.NewFixedSlice(slice, func(_ int, bits rawValueBits) Element {
-		return Element{v.withContext, v.Field(), bits}
-	})
+	return slice
 }
 
 // AsBool is a shortcut for [Element.AsBool], if this value is singular.
@@ -196,10 +212,17 @@ func (v Value) AsString() (string, bool) {
 
 // AsMessage is a shortcut for [Element.AsMessage], if this value is singular.
 func (v Value) AsMessage() MessageValue {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() {
 		return MessageValue{}
 	}
-	return v.Elements().At(0).AsMessage()
+
+	m := v.Elements().At(0).AsMessage()
+
+	// If this is the concrete version of an Any, it is effectively singular.
+	if m.TypeURL() == "" && v.Field().Presence() == presence.Repeated {
+		return MessageValue{}
+	}
+	return m
 }
 
 // slice returns the underlying slice for this value.
@@ -212,6 +235,7 @@ func (v Value) slice() *[]rawValueBits {
 
 	slice := v.Context().arenas.arrays.New([]rawValueBits{v.raw.bits})
 	v.raw.bits = rawValueBits(v.Context().arenas.arrays.Compress(slice))
+	v.raw.field.ptr = -v.raw.field.ptr
 	return slice
 }
 
@@ -335,32 +359,83 @@ type MessageValue struct {
 }
 
 type rawMessageValue struct {
-	// The concrete type of this message. This cannot be implicit from the
-	// Field in a Value, because that might be Any.
-	ty ref[rawType]
+	// The [Value] this message corresponds to.
+	self arena.Pointer[rawValue]
+
+	// The type of this message. If concrete is not nil, this may be distinct
+	// from AsValue().Field().Element().
+	ty  ref[rawType]
+	url intern.ID // The type URL for the above, if this is an Any.
+
+	// If present, this is the concrete version of this value if it is an Any
+	// constructed from a concrete type. This may itself be an Any with a
+	// non-nil concrete, for the pathological value
+	//
+	//   any: { [types.com/google.protobuf.Any]: { [types.com/my.Type]: { ... } }}
+	concrete arena.Pointer[rawMessageValue]
 
 	// Fields set in this message in insertion order.
 	entries []arena.Pointer[rawValue]
 
-	// Which entries are already inserted. These are by field number, except for
-	// elements of oneofs, which are by negative oneof index. This makes it
-	// easy to check if any element of a oneof is already set.
+	// Which entries are already inserted. These are by interned full name
+	// of either the field or its containing oneof.
 	byName intern.Map[uint32]
 }
 
+// AsValue returns the [Value] corresponding to this message.
+//
+// This value can be used to retrieve the associated [Member] and from it the
+// message's declared [Type].
+func (v MessageValue) AsValue() Value {
+	if v.IsZero() {
+		return Value{}
+	}
+	return wrapValue(v.Context(), v.raw.self)
+}
+
 // Type returns this value's message type.
+//
+// If v was returned from [MessageValue.Concrete], its type need not be the
+// same as v.AsValue()'s (although it can be, in the case of pathological
+// Any-within-an-Any messages).
 func (v MessageValue) Type() Type {
+	if v.IsZero() {
+		return Type{}
+	}
 	return wrapType(v.Context(), v.raw.ty)
 }
 
-// Fields returns the fields within this message literal, in insertion order.
-func (v MessageValue) Fields() seq.Indexer[Value] {
-	return seq.NewFixedSlice(
-		v.raw.entries,
-		func(_ int, p arena.Pointer[rawValue]) Value {
-			return wrapValue(v.Context(), p)
-		},
-	)
+// TypeURL returns this value's type URL, if it is the concrete value of an
+// Any.
+func (v MessageValue) TypeURL() string {
+	if v.IsZero() {
+		return ""
+	}
+	return v.Context().session.intern.Value(v.raw.url)
+}
+
+// Concrete returns the concrete version of this value if it is an Any.
+//
+// If it isn't an Any, or a "raw" Any (one not specified with the special type
+// URL syntax), this returns v.
+func (v MessageValue) Concrete() MessageValue {
+	if v.IsZero() || v.raw.concrete.Nil() {
+		return v
+	}
+	v.raw = v.Context().arenas.messages.Deref(v.raw.concrete)
+	return v
+}
+
+// Fields yields the fields within this message literal, in insertion order.
+func (v MessageValue) Fields() iter.Seq[Value] {
+	return func(yield func(Value) bool) {
+		for _, p := range v.raw.entries {
+			v := wrapValue(v.Context(), p)
+			if !v.IsZero() && !yield(v) {
+				return
+			}
+		}
+	}
 }
 
 // insert adds a new field to this message value, returning a pointer to the
@@ -390,8 +465,6 @@ func (v MessageValue) insert(field Member) *arena.Pointer[rawValue] {
 }
 
 // scalar is a type that can be converted into a [rawValueBits].
-//
-
 type scalar interface {
 	bool |
 		int32 | uint32 | int64 | uint64 |
@@ -399,25 +472,20 @@ type scalar interface {
 		intern.ID | string
 }
 
-// newScalar constructs a new scalar value.
-//
-
-func newScalar[T scalar](c *Context, field ref[rawMember], v T) Value {
+// newZeroScalar constructs a new scalar value.
+func newZeroScalar(c *Context, field ref[rawMember]) Value {
 	return Value{
 		internal.NewWith(c),
 		c.arenas.values.New(rawValue{
 			field: field,
-			bits:  newScalarBits(c, v),
 		}),
 	}
 }
 
-// newScalar appends a scalar value to the given array value.
-//
-//nolint:unused // Will be used by options lowering.
-func appendScalar[T scalar](array Value, v T) {
+// appendRaw appends a scalar value to the given array value.
+func appendRaw(array Value, bits rawValueBits) {
 	slice := array.slice()
-	*slice = append(*slice, newScalarBits(array.Context(), v))
+	*slice = append(*slice, bits)
 }
 
 // newScalar appends a new message value to the given array value, and returns it.
@@ -425,14 +493,10 @@ func appendScalar[T scalar](array Value, v T) {
 // If anyType is not zero, it will be used as the type of the inner message
 // value. This is used for Any-typed fields. Otherwise, the type of field is
 // used instead.
-//
-//nolint:unused // Will be used by options lowering.
-func appendMessage(array Value, anyType ref[rawType]) MessageValue {
-	if anyType.ptr.Nil() {
-		anyType = array.Field().raw.elem
-	}
+func appendMessage(array Value) MessageValue {
 	message := array.Context().arenas.messages.New(rawMessageValue{
-		ty:     anyType,
+		self:   array.Context().arenas.values.Compress(array.raw),
+		ty:     array.Field().raw.elem,
 		byName: make(intern.Map[uint32]),
 	})
 
@@ -444,27 +508,45 @@ func appendMessage(array Value, anyType ref[rawType]) MessageValue {
 
 // newMessage constructs a new message value.
 //
+// If anyType is not zero, it will be used as the type of the inner message
+// value. This is used for Any-typed fields. Otherwise, the type of field is
+// used instead.
+func newMessage(c *Context, field ref[rawMember]) MessageValue {
+	msg := c.arenas.messages.New(rawMessageValue{
+		ty:     wrapMember(c, field).raw.elem,
+		byName: make(intern.Map[uint32]),
+	})
+	v := c.arenas.values.NewCompressed(rawValue{
+		field: field,
+		bits:  rawValueBits(c.arenas.messages.Compress(msg)),
+	})
+	msg.self = v
+	return MessageValue{internal.NewWith(c), msg}
+}
 
-func newMessage(c *Context, field ref[rawMember], anyType ref[rawType]) Value {
-	if anyType.ptr.Nil() {
-		anyType = wrapMember(c, field).raw.elem
+// newConcrete constructs a new value to be the concrete representation of
+// v with the given type.
+func newConcrete(m MessageValue, ty Type, url string) MessageValue {
+	if !m.raw.concrete.Nil() {
+		panic("protocompile/ir: set a concrete type more than once")
+	}
+	if !m.Type().IsAny() {
+		panic("protocompile/ir: set concrete type on non-Any")
 	}
 
-	return Value{
-		internal.NewWith(c),
-		c.arenas.values.New(rawValue{
-			field: field,
-			bits: rawValueBits(c.arenas.messages.NewCompressed(rawMessageValue{
-				ty:     anyType,
-				byName: make(intern.Map[uint32]),
-			})),
-		}),
+	field := m.AsValue().raw.field
+	if int32(field.ptr) < 0 {
+		field.ptr = -field.ptr
 	}
+
+	msg := newMessage(m.Context(), field)
+	msg.raw.ty = compressType(m.Context(), ty)
+	msg.raw.url = m.Context().session.intern.Intern(url)
+	m.raw.concrete = m.Context().arenas.messages.Compress(msg.raw)
+	return msg
 }
 
 // newScalarBits converts a scalar into raw bits for storing in a [Value].
-//
-
 func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 	switch v := any(v).(type) {
 	case bool:

@@ -52,6 +52,9 @@ func (s Symbol) FullName() FullName {
 	if s.IsZero() {
 		return ""
 	}
+	if s.Kind() == SymbolKindScalar {
+		return s.AsType().FullName()
+	}
 	return FullName(s.Context().session.intern.Value(s.raw.fqn))
 }
 
@@ -138,6 +141,11 @@ func (s Symbol) Definition() report.Span {
 	}
 
 	return report.Span{}
+}
+
+// noun returns a [taxa.Noun] for diagnostic use.
+func (s Symbol) noun() taxa.Noun {
+	return s.Kind().noun()
 }
 
 // noun returns a [taxa.Noun] for diagnostic use.

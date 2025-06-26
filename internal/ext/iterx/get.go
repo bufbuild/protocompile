@@ -26,6 +26,14 @@ func First[T any](seq iter.Seq[T]) (v T, ok bool) {
 	return v, false
 }
 
+// Last retrieves the last element of an iterator.
+func Last[T any](seq iter.Seq[T]) (v T, ok bool) {
+	for x := range seq {
+		v, ok = x, true
+	}
+	return v, ok
+}
+
 // OnlyOne retrieves the only element of an iterator.
 func OnlyOne[T any](seq iter.Seq[T]) (v T, ok bool) {
 	for i, x := range Enumerate(seq) {

@@ -18,47 +18,38 @@ package buf.test;
 
 import "google/protobuf/descriptor.proto";
 
-option (x).b = {};
-option (x).b = {};
+option (x) = {
+    e: [0, 1, 2, 3, 4]
+    e: [BAR_ZERO, BAR_E1, BAR_E2],
+    e: BAR_E3
+    e: BAZ_ZERO
+    e: buf.test.BAR_E1
+    e: Bar.BAR_E1
 
-option (x).b.a = {};
+    i: Foo,
+    i: Foo.i,
+    i: Foo.e,
+    i: BAR_ZERO
+    i: buf.test.BAR_ZERO
 
-option (x).a.a = {};
-option (x).a = {};
-option (x).a.a.a = {};
-
-option (x).(y).a = {};
-option (x).(y) = {};
-option (x).(y).a.(y) = {};
-
-option (x).a.a.x = {};
-option (x).a.a.y = {};
-
-option (x).a.x.a = {};
-option (x).a.y.a = {};
-
-option (x).a.a.b = {};
-option (x).a.a.b = {};
-
-option (x).a.(z).a = {};
-option (x).a.(z) = {};
-option (x).a.(z) = {};
+    e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+};
 
 message Foo {
-    optional Foo a = 1;
-    repeated Foo b = 2;
+    repeated Bar e = 1;
+    repeated int32 i = 2;
+}
 
-    oneof k {
-        Foo x = 3;
-        Foo y = 4;
-    }
+enum Bar {
+    BAR_ZERO = 0;
+    BAR_E1 = 1;
+    BAR_E2 = 2;
+}
+
+enum Baz {
+    BAZ_ZERO = 0;
 }
 
 extend google.protobuf.FileOptions {
     optional Foo x = 1000;
-}
-
-extend Foo {
-    optional Foo y = 1000;
-    repeated Foo z = 1000;
 }

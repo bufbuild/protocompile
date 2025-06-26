@@ -21,6 +21,11 @@ error: unexpected absolute path in option setting
    |
 22 | option .(foo.bar).baz = 3;
    |        ^^^^^^^^^^^^^^ expected a path without a leading `.`
+  help: remove the leading `.`
+   |
+22 | - option .(foo.bar).baz = 3;
+22 | + option (foo.bar).baz = 3;
+   |
 
 error: unexpected `/` in path in option setting
   --> testdata/parser/option/bad_path.proto:23:11
@@ -33,6 +38,11 @@ error: unexpected absolute path in option setting
    |
 27 |         .(foo.bar).baz = 3,
    |         ^^^^^^^^^^^^^^ expected a path without a leading `.`
+  help: remove the leading `.`
+   |
+27 | -         .(foo.bar).baz = 3,
+27 | +         (foo.bar).baz = 3,
+   |
 
 error: unexpected `/` in path in option setting
   --> testdata/parser/option/bad_path.proto:28:12

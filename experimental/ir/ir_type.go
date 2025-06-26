@@ -38,6 +38,7 @@ type rawType struct {
 	nested          []arena.Pointer[rawType]
 	members         []arena.Pointer[rawMember]
 	memberByName    func() intern.Map[arena.Pointer[rawMember]]
+	memberByNumber  func() map[int32]arena.Pointer[rawMember]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
@@ -47,7 +48,8 @@ type rawType struct {
 	extnsStart      uint32
 	rangesExtnStart uint32
 
-	isEnum bool
+	isEnum      bool
+	haveNumbers bool
 }
 
 // primitiveCtx represents a special file that defines all of the primitive
@@ -120,6 +122,12 @@ func (t Type) IsEnum() bool {
 	// All of the predeclared types have isEnum set to false, so we don't
 	// need to check for them here.
 	return !t.IsZero() && t.raw.isEnum
+}
+
+// IsAny returns whether this is the type google.protobuf.Any, which gets special
+// treatment in the language.
+func (t Type) IsAny() bool {
+	return t.InternedFullName() == t.Context().session.langIDs.AnyPath
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
@@ -257,13 +265,38 @@ func (t Type) MemberByInternedName(name intern.ID) Member {
 	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
 }
 
-// makeFieldsByName creates the FieldByName map. This is used to keep
+// MemberByNumber looks up a member with the given number.
+//
+// Returns a zero member if there is no such member.
+func (t Type) MemberByNumber(number int32) Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByNumber()[number]})
+}
+
+// membersByNameFunc creates the MemberByName map. This is used to keep
 // construction of this map lazy.
 func (t Type) makeMembersByName() intern.Map[arena.Pointer[rawMember]] {
 	table := make(intern.Map[arena.Pointer[rawMember]], t.Members().Len())
-	for _, ptr := range t.raw.members {
+	for _, ptr := range t.raw.members[:t.raw.extnsStart] {
 		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
 		table[field.InternedName()] = ptr
+	}
+	return table
+}
+
+// membersByNameFunc creates the FieldByName map. This is used to keep
+// construction of this map lazy.
+func (t Type) makeMembersByNumber() map[int32]arena.Pointer[rawMember] {
+	if !t.raw.haveNumbers {
+		panic("called MemberByNumber before numbers were evaluated")
+	}
+
+	table := make(map[int32]arena.Pointer[rawMember], t.Members().Len())
+	for _, ptr := range t.raw.members[:t.raw.extnsStart] {
+		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
+		table[field.Number()] = ptr
 	}
 	return table
 }
@@ -343,4 +376,13 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		withContext: internal.NewWith(c),
 		raw:         c.arenas.types.Deref(r.ptr),
 	}
+}
+
+func compressType(c *Context, ty Type) ref[rawType] {
+	var ref ref[rawType]
+	if ty.Context() != c {
+		ref.file = int32(c.imports.byPath[ty.Context().File().InternedPath()] + 1)
+	}
+	ref.ptr = ty.Context().arenas.types.Compress(ty.raw)
+	return ref
 }
