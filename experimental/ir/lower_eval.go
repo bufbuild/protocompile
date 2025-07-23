@@ -981,7 +981,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 					annotation: neg.PrefixToken(),
 				}).Apply(report.SuggestEdits(neg, "replace it with a literal value", report.Edit{
 					Start: 0, End: neg.Span().Len(),
-					Replace: fmt.Sprint(v),
+					Replace: fmt.Sprint(v), //nolint:perfsprint // False positive.
 				}))
 			}
 
