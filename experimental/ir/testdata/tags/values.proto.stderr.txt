@@ -76,10 +76,26 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
+  --> testdata/tags/values.proto:35:10
+   |
+35 |     F4 = -inf;
+   |          ^^^^ expected `int32`, found floating-point literal
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
   --> testdata/tags/values.proto:36:10
    |
 36 |     F5 = nan;
    |          ^^^ expected `int32`, found floating-point literal
+   = note: expected: scalar type `int32`
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/tags/values.proto:37:10
+   |
+37 |     F6 = -nan;
+   |          ^^^^ expected `int32`, found floating-point literal
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -176,4 +192,20 @@ error: cannot find `a` in this scope
    |          ^ not found in this scope
    = help: the full name of this scope is `test`
 
-encountered 23 errors
+error: mismatched types
+  --> testdata/tags/values.proto:54:10
+   |
+54 |     E1 = X;
+   |          ^ expected `int32`, found `test.E`
+   = note: expected: scalar type `int32`
+              found: enum type `test.E`
+
+error: mismatched types
+  --> testdata/tags/values.proto:55:10
+   |
+55 |     E2 = -Y;
+   |          ^^ expected `int32`, found `test.E`
+   = note: expected: scalar type `int32`
+              found: enum type `test.E`
+
+encountered 27 errors

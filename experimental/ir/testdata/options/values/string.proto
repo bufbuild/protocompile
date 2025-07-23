@@ -23,6 +23,8 @@ option (x) = {
     s: ["", "foo", "foo bar" 'baz', '🐈‍⬛', "\xff"]
     b: ["", "foo", "foo bar" 'baz', '🐈‍⬛', "\xff"]
 
+    s: -"neg"
+
     // Type-checking errors.
     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]

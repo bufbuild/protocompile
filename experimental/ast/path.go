@@ -400,10 +400,10 @@ func (p PathComponent) SplitBefore() (before, after Path) {
 
 	prefix, suffix := p.Path(), p.Path()
 	if p.separator.IsZero() {
-		prefix.raw.End = p.name - 1
+		prefix.raw.End = p.name.In(p.Context()).Prev().ID()
 		suffix.raw.Start = p.name
 	} else {
-		prefix.raw.End = p.separator - 1
+		prefix.raw.End = p.separator.In(p.Context()).Prev().ID()
 		suffix.raw.Start = p.separator
 	}
 
@@ -426,10 +426,10 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 	prefix, suffix := p.Path(), p.Path()
 	if !p.name.IsZero() {
 		prefix.raw.End = p.name
-		suffix.raw.Start = p.name + 1
+		suffix.raw.Start = p.name.In(p.Context()).Next().ID()
 	} else {
 		prefix.raw.End = p.separator
-		suffix.raw.Start = p.separator + 1
+		suffix.raw.Start = p.separator.In(p.Context()).Next().ID()
 	}
 
 	return prefix.trim(), suffix.trim()
@@ -451,6 +451,13 @@ func (p PathComponent) Name() token.Token {
 // in the grammar but may occur in invalid inputs nonetheless.
 func (p PathComponent) IsEmpty() bool {
 	return p.Name().IsZero()
+}
+
+// Next returns the next path component after this one, if there is one.
+func (p PathComponent) Next() PathComponent {
+	_, after := p.SplitAfter()
+	next, _ := iterx.First(after.Components)
+	return next
 }
 
 // AsExtension returns the Path inside of this path component, if it is an extension

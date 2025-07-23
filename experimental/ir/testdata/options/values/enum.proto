@@ -25,6 +25,7 @@ option (x) = {
     e: BAZ_ZERO
     e: buf.test.BAR_E1
     e: Bar.BAR_E1
+    e: -BAR_E1
 
     i: Foo,
     i: Foo.i,

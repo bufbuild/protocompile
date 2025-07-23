@@ -7,7 +7,7 @@ error: message field `buf.test.Foo.x1` set multiple times
    |     ^^ ... also set here
 ...
 33 |     optional int32 x1 = 1;
-   |                    -- must be set at most once
+   |                    -- not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: mismatched types
@@ -32,7 +32,7 @@ error: message field `buf.test.Foo.x3` set multiple times
 ...
 34 |     optional int32 x2 = 2;
 35 |     optional int32 x3 = 3;
-   |                    -- must be set at most once
+   |                    -- not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: mismatched types

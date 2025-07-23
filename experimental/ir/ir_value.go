@@ -218,8 +218,15 @@ func (v Value) AsMessage() MessageValue {
 
 	m := v.Elements().At(0).AsMessage()
 
-	// If this is the concrete version of an Any, it is effectively singular.
-	if m.TypeURL() == "" && v.Field().Presence() == presence.Repeated {
+	if m.TypeURL() != "" {
+		// If this is the concrete version of an Any message, it is effectively
+		// singular: even if the reported field is a repeated g.p.Any, we treat
+		// Any as having a singular "concrete" field that contains the actual
+		// value (see [MessageValue.Concrete]).
+		return m
+	}
+
+	if v.Field().Presence() == presence.Repeated {
 		return MessageValue{}
 	}
 	return m

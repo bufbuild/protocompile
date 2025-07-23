@@ -250,9 +250,7 @@ func (ow *optionWalker) message(v ir.MessageValue) *compilerpb.Value {
 	}
 
 	m := new(compilerpb.Value_Message)
-	empty := true
 	for elem := range v.Fields() {
-		empty = false
 		if elem.Field().IsExtension() {
 			if m.Extns == nil {
 				m.Extns = make(map[string]*compilerpb.Value)
@@ -264,9 +262,6 @@ func (ow *optionWalker) message(v ir.MessageValue) *compilerpb.Value {
 			}
 			m.Fields[elem.Field().Name()] = ow.value(elem)
 		}
-	}
-	if ow.depth == 0 && empty {
-		return nil
 	}
 
 	return &compilerpb.Value{Value: &compilerpb.Value_Message_{Message: m}}

@@ -43,52 +43,51 @@ error: unexpected absolute path in extension name
    |
 
 error: mismatched types
-   --> testdata/options/values/message.proto:22:5
-    |
- 22 |     [x] {}
-    |     ^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
-   ::: google/protobuf/descriptor.proto:122:3
-    |
-122 |   optional FileOptions options = 8;
-    |   -------------------- expected due to this
-    = note: expected: `buf.test.Foo` field
-               found: `google.protobuf.FileOptions` field
+  --> testdata/options/values/message.proto:22:5
+   |
+22 |     [x] {}
+   |     ^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
+23 |     [buf.test.x] {}
+...
+59 |     optional Foo x = 1000;
+   |     ------------ expected due to this
+   = note: expected: `buf.test.Foo` field
+              found: `google.protobuf.FileOptions` field
 
 error: mismatched types
-   --> testdata/options/values/message.proto:23:5
-    |
- 23 |     [buf.test.x] {}
-    |     ^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
-   ::: google/protobuf/descriptor.proto:122:3
-    |
-122 |   optional FileOptions options = 8;
-    |   -------------------- expected due to this
-    = note: expected: `buf.test.Foo` field
-               found: `google.protobuf.FileOptions` field
+  --> testdata/options/values/message.proto:23:5
+   |
+23 |     [buf.test.x] {}
+   |     ^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
+24 |     (buf.test.x) {}
+...
+59 |     optional Foo x = 1000;
+   |     ------------ expected due to this
+   = note: expected: `buf.test.Foo` field
+              found: `google.protobuf.FileOptions` field
 
 error: mismatched types
-   --> testdata/options/values/message.proto:25:5
-    |
- 25 |     "buf.test.x" {}
-    |     ^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
-   ::: google/protobuf/descriptor.proto:122:3
-    |
-122 |   optional FileOptions options = 8;
-    |   -------------------- expected due to this
-    = note: expected: `buf.test.Foo` field
-               found: `google.protobuf.FileOptions` field
+  --> testdata/options/values/message.proto:25:5
+   |
+25 |     "buf.test.x" {}
+   |     ^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
+26 |     [.buf.test.x] {}
+...
+59 |     optional Foo x = 1000;
+   |     ------------ expected due to this
+   = note: expected: `buf.test.Foo` field
+              found: `google.protobuf.FileOptions` field
 
 error: mismatched types
-   --> testdata/options/values/message.proto:26:5
-    |
- 26 |     [.buf.test.x] {}
-    |     ^^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
-   ::: google/protobuf/descriptor.proto:122:3
-    |
-122 |   optional FileOptions options = 8;
-    |   -------------------- expected due to this
-    = note: expected: `buf.test.Foo` field
-               found: `google.protobuf.FileOptions` field
+  --> testdata/options/values/message.proto:26:5
+   |
+26 |     [.buf.test.x] {}
+   |     ^^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
+...
+59 |     optional Foo x = 1000;
+   |     ------------ expected due to this
+   = note: expected: `buf.test.Foo` field
+              found: `google.protobuf.FileOptions` field
 
 error: message field `buf.test.Foo.y` referenced incorrectly
   --> testdata/options/values/message.proto:28:5
@@ -126,7 +125,7 @@ error: message field `buf.test.Foo.y` set multiple times
 30 |     [Foo.y]: 0,
 ...
 49 |     optional int32 y = 1;
-   |                    - must be set at most once
+   |                    - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message field `buf.test.Foo.y` referenced incorrectly
@@ -154,7 +153,7 @@ error: message field `buf.test.Foo.y` set multiple times
 31 |     Foo.y: 0,
 ...
 49 |     optional int32 y = 1;
-   |                    - must be set at most once
+   |                    - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message field `buf.test.Foo.y` referenced incorrectly
@@ -181,7 +180,7 @@ error: message field `buf.test.Foo.y` set multiple times
 32 |     ["Foo.y"]: 0,
 ...
 49 |     optional int32 y = 1;
-   |                    - must be set at most once
+   |                    - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message field `buf.test.Foo.y` referenced incorrectly
@@ -211,7 +210,7 @@ error: message field `buf.test.Foo.y` set multiple times
 33 |     "Foo.y": 0,
 ...
 49 |     optional int32 y = 1;
-   |                    - must be set at most once
+   |                    - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message field `buf.test.Foo.y` referenced incorrectly
@@ -240,7 +239,7 @@ error: message field `buf.test.Foo.y` set multiple times
    |     ^^^^^^^ ... also set here
 ...
 49 |     optional int32 y = 1;
-   |                    - must be set at most once
+   |                    - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message field `buf.test.Foo.y` referenced incorrectly
@@ -269,28 +268,27 @@ error: message field `buf.test.Foo.y` set multiple times
 36 |     1000: 1,
 ...
 49 |     optional int32 y = 1;
-   |                    - must be set at most once
+   |                    - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: cannot resolve message field name for `buf.test.Foo`
-   --> testdata/options/values/message.proto:36:5
-    |
- 36 |     1000: 1,
-    |     ^^^^ field referenced here
-   ::: google/protobuf/descriptor.proto:122:3
-    |
-122 |   optional FileOptions options = 8;
-    |   -------------------- expected `Foo` field due to this
+  --> testdata/options/values/message.proto:36:5
+   |
+36 |     1000: 1,
+   |     ^^^^ field referenced here
+...
+59 |     optional Foo x = 1000;
+   |     ------------ expected `Foo` field due to this
 
 error: cannot resolve message field name for `buf.test.Foo`
-   --> testdata/options/values/message.proto:38:5
-    |
- 38 |     [z]: 0,
-    |     ^^^ field referenced here
-   ::: google/protobuf/descriptor.proto:122:3
-    |
-122 |   optional FileOptions options = 8;
-    |   -------------------- expected `Foo` field due to this
+  --> testdata/options/values/message.proto:38:5
+   |
+38 |     [z]: 0,
+   |     ^^^ field referenced here
+39 |     [Foo.z]: 1,
+...
+59 |     optional Foo x = 1000;
+   |     ------------ expected `Foo` field due to this
 
 error: message extension `buf.test.Foo.z` referenced incorrectly
   --> testdata/options/values/message.proto:41:5
@@ -314,7 +312,7 @@ error: message extension `buf.test.Foo.z` set multiple times
 42 |     Foo.z: 1,
 ...
 54 |         optional int32 z = 1000;
-   |                        - must be set at most once
+   |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message extension `buf.test.Foo.z` referenced incorrectly
@@ -341,7 +339,7 @@ error: message extension `buf.test.Foo.z` set multiple times
 43 |     "Foo.z": 1,
 ...
 54 |         optional int32 z = 1000;
-   |                        - must be set at most once
+   |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message extension `buf.test.Foo.z` referenced incorrectly
@@ -371,7 +369,7 @@ error: message extension `buf.test.Foo.z` set multiple times
 44 |     [buf.test.Foo.z]: 2,
 ...
 54 |         optional int32 z = 1000;
-   |                        - must be set at most once
+   |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message extension `buf.test.Foo.z` set multiple times
@@ -387,7 +385,7 @@ error: message extension `buf.test.Foo.z` set multiple times
 45 |     [.buf.test.Foo.z]: 3,
 ...
 54 |         optional int32 z = 1000;
-   |                        - must be set at most once
+   |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 error: message extension `buf.test.Foo.z` set multiple times
@@ -402,7 +400,7 @@ error: message extension `buf.test.Foo.z` set multiple times
    |     ^^^^^^^^^^^^^^^^^ ... also set here
 ...
 54 |         optional int32 z = 1000;
-   |                        - must be set at most once
+   |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
 encountered 31 errors

@@ -147,3 +147,13 @@ tables:
         file: "testdata/tags/values.proto"
         index: 28
         visible: true
+      - fqn: "test.E1"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 29
+        visible: true
+      - fqn: "test.E2"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 30
+        visible: true

@@ -1,15 +1,15 @@
 error: nested array expressions are not allowed
-  --> testdata/options/values/bool.proto:37:31
+  --> testdata/options/values/bool.proto:40:31
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |        -----------------------^^--------- ...within this array expression
    |                               |
    |                               cannot nest this array expression...
 
 error: unexpected range expression in option setting value
-  --> testdata/options/values/bool.proto:37:35
+  --> testdata/options/values/bool.proto:40:35
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                                   ^^^^^^
 
 warning: non-canonical `bool` literal
@@ -93,110 +93,143 @@ error: cannot find `F` in this scope
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
+  --> testdata/options/values/bool.proto:36:9
+   |
+36 |     x: -true
+   |        -^^^^ expected number, found `bool`
+   |        |
+   |        expected due to this
+   = note: expected: number
+              found: scalar type `bool`
+
+error: mismatched types
   --> testdata/options/values/bool.proto:37:9
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+37 |     x: -True
+   |        -^^^^ expected number, found `bool`
+   |        |
+   |        expected due to this
+   = note: expected: number
+              found: scalar type `bool`
+
+warning: non-canonical `bool` literal
+  --> testdata/options/values/bool.proto:37:9
+   |
+37 |     x: -True
+   |         ^^^^
+  help: replace with `true`
+   |
+37 | -     x: -True
+37 | +     x: -true
+   |
+   = note: within message expressions only, `True` is permitted as a `bool`, but
+           should be avoided
+
+error: mismatched types
+  --> testdata/options/values/bool.proto:40:9
+   |
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |         ^ expected `bool`, found integer literal
 ...
-49 |     repeated bool x = 1;
+52 |     repeated bool x = 1;
    |     ------------- expected due to this
    = note: expected: scalar type `bool`
               found: integer literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:37:12
+  --> testdata/options/values/bool.proto:40:12
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |            ^^^ expected `bool`, found floating-point literal
 ...
-49 |     repeated bool x = 1;
+52 |     repeated bool x = 1;
    |     ------------- expected due to this
    = note: expected: scalar type `bool`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:37:17
+  --> testdata/options/values/bool.proto:40:17
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                 ^^^ expected `bool`, found floating-point literal
 ...
-49 |     repeated bool x = 1;
+52 |     repeated bool x = 1;
    |     ------------- expected due to this
    = note: expected: scalar type `bool`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:37:22
+  --> testdata/options/values/bool.proto:40:22
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                      ^^^ expected `bool`, found floating-point literal
 ...
-49 |     repeated bool x = 1;
+52 |     repeated bool x = 1;
    |     ------------- expected due to this
    = note: expected: scalar type `bool`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:37:27
+  --> testdata/options/values/bool.proto:40:27
    |
-37 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                           ^^ expected `bool`, found message expression
 ...
-49 |     repeated bool x = 1;
+52 |     repeated bool x = 1;
    |     ------------- expected due to this
    = note: expected: scalar type `bool`
               found: message expression
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:43:14
+  --> testdata/options/values/bool.proto:46:14
    |
-43 | option (y) = True;
+46 | option (y) = True;
    |              ^^^^
   help: replace with `true`
    |
-43 | - option (y) = True;
-43 | + option (y) = true;
+46 | - option (y) = True;
+46 | + option (y) = true;
    |
    = note: within message expressions only, `True` is permitted as a `bool`, but
            should be avoided
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:44:14
+  --> testdata/options/values/bool.proto:47:14
    |
-44 | option (y) = False;
+47 | option (y) = False;
    |              ^^^^^
   help: replace with `false`
    |
-44 | - option (y) = False;
-44 | + option (y) = false;
+47 | - option (y) = False;
+47 | + option (y) = false;
    |
    = note: within message expressions only, `False` is permitted as a `bool`,
            but should be avoided
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:45:14
+  --> testdata/options/values/bool.proto:48:14
    |
-45 | option (y) = t;
+48 | option (y) = t;
    |              ^
   help: replace with `true`
    |
-45 | - option (y) = t;
-45 | + option (y) = true;
+48 | - option (y) = t;
+48 | + option (y) = true;
    |
    = note: within message expressions only, `t` is permitted as a `bool`, but
            should be avoided
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:46:14
+  --> testdata/options/values/bool.proto:49:14
    |
-46 | option (y) = f;
+49 | option (y) = f;
    |              ^
   help: replace with `false`
    |
-46 | - option (y) = f;
-46 | + option (y) = false;
+49 | - option (y) = f;
+49 | + option (y) = false;
    |
    = note: within message expressions only, `f` is permitted as a `bool`, but
            should be avoided
 
-encountered 15 errors and 4 warnings
+encountered 17 errors and 5 warnings

@@ -144,10 +144,26 @@ error: mismatched types
               found: floating-point literal
 
 error: mismatched types
+  --> testdata/tags/fields.proto:45:25
+   |
+45 |     optional float f4 = -inf;
+   |                         ^^^^ expected field number, found floating-point literal
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
   --> testdata/tags/fields.proto:46:25
    |
 46 |     optional float f5 = nan;
    |                         ^^^ expected field number, found floating-point literal
+   = note: expected: field number
+              found: floating-point literal
+
+error: mismatched types
+  --> testdata/tags/fields.proto:47:25
+   |
+47 |     optional float f6 = -nan;
+   |                         ^^^^ expected field number, found floating-point literal
    = note: expected: field number
               found: floating-point literal
 
@@ -244,4 +260,4 @@ error: cannot find `a` in this scope
    |                         ^ not found in this scope
    = help: the full name of this scope is `test.M`
 
-encountered 31 errors
+encountered 33 errors

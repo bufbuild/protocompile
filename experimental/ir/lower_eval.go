@@ -47,8 +47,23 @@ const (
 	enumNumberBits = 32
 	enumNumberMax  = math.MaxInt32
 
-	// These are the NaN bits used by protoc. Go's math.NaN() does not specify
-	// which NaN it returns, but it isn't this one.
+	// These are the NaN bits used by virtually every language ever: quiet,
+	// positive, and with an all-zeros payload. `protoc`, by nature of being
+	// written in C++, picks up this bitpattern automatically.
+	//
+	// Go's math.NaN() does not specify  NaN it returns, but it isn't this one.
+	// Originally, their NaN was 0x7ff0000000000001, which is floatBits(inf)+1,
+	// which is a valid NaN. However, it's a signaling NaN, which causes all
+	// kinds of unintended mayhem. They eventually fixed it to be a quiet NaN
+	// by setting the quiet bit, but left the payload as-is. This was,
+	// apparently, not a breaking change. We depend on the exact bit pattern,
+	// since that winds up in our tests, so depending on math.NaN() opens us up
+	// to Go randomly breaking us if they decide to fix their NaN constant
+	// again.
+	//
+	// The bitpattern probably doesn't matter for our users, but being explicit
+	// protects us from Go being sloppy with floating-point, which has
+	// historically been an issue, as noted above.
 	nanBits = 0x7ff8000000000000
 )
 
@@ -279,10 +294,10 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 		return 0, false
 
 	case ast.ExprKindLiteral:
-		return e.evalLiteral(args, args.expr.AsLiteral(), false)
+		return e.evalLiteral(args, args.expr.AsLiteral(), ast.ExprPrefixed{})
 
 	case ast.ExprKindPath:
-		return e.evalPath(args, args.expr.AsPath().Path)
+		return e.evalPath(args, args.expr.AsPath().Path, ast.ExprPrefixed{})
 
 	case ast.ExprKindPrefixed:
 		expr := args.expr.AsPrefixed()
@@ -291,21 +306,20 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 		switch expr.Prefix() {
 		case keyword.Minus:
 			// Special handling to ensure that negative literals work correctly.
-			if inner.AsLiteral().Kind() == token.Number {
-				return e.evalLiteral(args, inner.AsLiteral(), true)
+			if !inner.AsLiteral().IsZero() {
+				return e.evalLiteral(args, inner.AsLiteral(), expr)
 			}
 
 			// Special cases for "signed identifiers".
-			if inner.Kind() == ast.ExprKindPath &&
-				args.Type().Predeclared().IsFloat() {
-				v, ok := e.evalPath(args, inner.AsPath().Path)
-				v |= 0x8000_0000_0000_0000 // Set the floating-point sign bit.
-				return v, ok
+			if inner.Kind() == ast.ExprKindPath {
+				return e.evalPath(args, inner.AsPath().Path, expr)
 			}
 
 			// All other expressions cannot have a leading -.
 			err := args.mismatch(taxa.Classify(inner))
 			err.want = taxa.Number
+			e.Error(err)
+
 			return 0, false
 		default:
 			panic("unreachable")
@@ -591,7 +605,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 
 			splitURL := func(path ast.Path) (before, after ast.Path) {
 				// Figure out what part of the key expression actually contains
-				// the hostname. Look for the last component whose separator is a /.
+				// the domain. Look for the last component whose separator is a /.
 				pc, _ := iterx.Last(iterx.Filter(path.Components, func(pc ast.PathComponent) bool {
 					return pc.Separator().Text() == "/"
 				}))
@@ -603,28 +617,25 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			}
 
 			// Next, resolve the type name. protoc only allows one /, but
-			// we allow multiple and simply diagnose the hostname.
+			// we allow multiple and simply diagnose the domain.
 			host, path, _ := stringsx.CutLast(url, "/")
 			hostPath, typePath := splitURL(key.AsPath().Path)
+
+			const anyDomainNote = "The domain must be one of `type.googleapis.com` or `type.googleprod.com`. " +
+				"This is a quirk of textformat; the compiler does not actually make any network requests."
 
 			switch host {
 			case "type.googleapis.com", "type.googleprod.com":
 				break
 			case "":
-				e.Errorf("missing hostname in %s", taxa.TypeURL).Apply(
+				e.Errorf("missing domain in %s", taxa.TypeURL).Apply(
 					report.Snippet(urlExpr.Key()),
-					report.Notef("`protoc` requires that the hostname be one of "+
-						"`type.googleapis.com` or `type.googleprod.com`. "+
-						"This is a quirk of textformat; the compiler does not "+
-						"actually make any network requests."),
+					report.Notef(anyDomainNote),
 				)
 			default:
-				e.Errorf("unsupported hostname `%s` in %s", host, taxa.TypeURL).Apply(
+				e.Errorf("unsupported domain `%s` in %s", host, taxa.TypeURL).Apply(
 					report.Snippet(hostPath),
-					report.Notef("`protoc` will reject any hostname that are not "+
-						"`type.googleapis.com` or `type.googleprod.com`. "+
-						"This is a quirk of textformat; the compiler does not "+
-						"actually make any network requests."),
+					report.Notef(anyDomainNote),
 				)
 			}
 
@@ -735,7 +746,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 }
 
 // evalLiteral evaluates a literal expression.
-func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (rawValueBits, bool) {
+func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.ExprPrefixed) (rawValueBits, bool) {
 	scalar := args.Type().Predeclared()
 	if args.Type().IsEnum() {
 		scalar = predeclared.Int32
@@ -761,7 +772,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (
 					)
 				}
 
-				if neg {
+				if !neg.IsZero() {
 					n = -n
 				}
 				if scalar == predeclared.Float32 {
@@ -807,11 +818,11 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (
 		if n, ok := expr.AsInt(); ok {
 			switch args.memberNumber {
 			case enumNumber:
-				return e.checkIntBounds(args, true, enumNumberBits, neg, n)
+				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
 			case fieldNumber:
-				return e.checkIntBounds(args, false, fieldNumberBits, neg, n)
+				return e.checkIntBounds(args, false, fieldNumberBits, !neg.IsZero(), n)
 			case messageSetNumber:
-				return e.checkIntBounds(args, false, messageSetNumberBits, neg, n)
+				return e.checkIntBounds(args, false, messageSetNumberBits, !neg.IsZero(), n)
 			}
 
 			if !scalar.IsNumber() {
@@ -819,24 +830,24 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (
 				return 0, false
 			}
 
-			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), neg, n)
+			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), !neg.IsZero(), n)
 		}
 
 		if n := expr.AsBigInt(); n != nil {
 			switch args.memberNumber {
 			case enumNumber:
-				return e.checkIntBounds(args, true, enumNumberBits, neg, n)
+				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
 			case fieldNumber:
-				return e.checkIntBounds(args, false, fieldNumberBits, neg, n)
+				return e.checkIntBounds(args, false, fieldNumberBits, !neg.IsZero(), n)
 			case messageSetNumber:
-				return e.checkIntBounds(args, false, messageSetNumberBits, neg, n)
+				return e.checkIntBounds(args, false, messageSetNumberBits, !neg.IsZero(), n)
 			}
 
 			if !scalar.IsNumber() {
 				e.Error(args.mismatch(taxa.Int))
 				return 0, false
 			}
-			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), neg, n)
+			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), !neg.IsZero(), n)
 		}
 
 		if _, ok := expr.AsFloat(); ok {
@@ -848,6 +859,15 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg bool) (
 		if scalar != predeclared.String && scalar != predeclared.Bytes {
 			e.Error(args.mismatch(PredeclaredType(predeclared.String)))
 			return 0, false
+		}
+
+		if !neg.IsZero() {
+			e.Error(errTypeCheck{
+				want:       "number",
+				got:        args.Type(),
+				expr:       expr,
+				annotation: neg.PrefixToken(),
+			})
 		}
 
 		data, _ := expr.AsString()
@@ -941,16 +961,31 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 }
 
 // evalPath evaluates a path expression.
-func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) {
+func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed) (rawValueBits, bool) {
 	if ty := args.Type(); ty.IsEnum() {
 		// We can just plumb the text of the expression directly here, since
 		// if it's anything that isn't an identifier, this lookup will fail.
-		value := ty.MemberByName(expr.Span().Text())
-
+		//
 		// TODO: This depends on field numbers being resolved before options,
 		// but some options need to be resolved first.
+		value := ty.MemberByName(expr.Span().Text())
+
 		if !value.IsZero() {
-			return newScalarBits(e.Context, value.Number()), true
+			v := value.Number()
+			if !neg.IsZero() {
+				v = -v
+				e.Error(errTypeCheck{
+					want:       "number",
+					got:        ty,
+					expr:       expr,
+					annotation: neg.PrefixToken(),
+				}).Apply(report.SuggestEdits(neg, "replace it with a literal value", report.Edit{
+					Start: 0, End: neg.Span().Len(),
+					Replace: fmt.Sprint(v),
+				}))
+			}
+
+			return newScalarBits(e.Context, v), true
 		}
 
 		// Allow fall-through, which proceeds to eventually hit full symbol
@@ -986,13 +1021,25 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 			return 0, false
 		}
 
+		if !neg.IsZero() {
+			e.Errorf("negated %s", taxa.PredeclaredMax).Apply(
+				report.Snippet(neg),
+				report.Notef("the special %s expression may not be negated", taxa.PredeclaredMax),
+			)
+		}
+
 		if !scalar.IsNumber() {
 			e.Error(args.mismatch(taxa.PredeclaredMax))
 			return 0, false
 		}
 
 		if scalar.IsFloat() {
-			return newScalarBits(e.Context, math.Inf(0)), ok
+			v := math.Inf(0)
+			if !neg.IsZero() {
+				v = -v
+			}
+
+			return newScalarBits(e.Context, v), ok
 		}
 
 		n := uint64(1) << scalar.Bits()
@@ -1000,12 +1047,24 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 			n >>= 1
 		}
 		n--
+		if !neg.IsZero() {
+			n = -n
+		}
 		return rawValueBits(n), ok
 
 	case predeclared.True, predeclared.False:
 		if scalar != predeclared.Bool {
 			e.Error(args.mismatch(PredeclaredType(predeclared.Bool)))
 			return 0, false
+		}
+
+		if !neg.IsZero() {
+			e.Error(errTypeCheck{
+				want:       "number",
+				got:        PredeclaredType(predeclared.Bool),
+				expr:       expr,
+				annotation: neg.PrefixToken(),
+			})
 		}
 
 		switch name {
@@ -1021,12 +1080,18 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 			return 0, false
 		}
 
+		var v float64
 		switch name {
 		case predeclared.Inf:
-			return newScalarBits(e.Context, math.Inf(0)), true
+			v = math.Inf(0)
 		case predeclared.NAN:
-			return newScalarBits(e.Context, math.Float64frombits(nanBits)), true
+			v = math.Float64frombits(nanBits)
 		}
+		if !neg.IsZero() {
+			v = -v
+		}
+
+		return newScalarBits(e.Context, v), true
 	}
 
 	// Match the "non standard" symbols for true, false, inf, and nan. Make
@@ -1053,6 +1118,15 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 				report.Notef("within %ss only, `%s` is permitted as a `bool`, but should be avoided", taxa.Dict, text),
 			)
 
+			if !neg.IsZero() {
+				e.Error(errTypeCheck{
+					want:       "number",
+					got:        PredeclaredType(predeclared.Bool),
+					expr:       expr,
+					annotation: neg.PrefixToken(),
+				})
+			}
+
 			if value {
 				return 1, args.textFormat
 			}
@@ -1060,17 +1134,20 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 		}
 
 	case predeclared.Float32, predeclared.Float64:
-		var value float64
+		var v float64
 		var canonical string
 
 		switch {
 		case strings.EqualFold(text, "inf"), strings.EqualFold(text, "infinity"):
 			canonical = "inf"
-			value = math.Inf(0)
+			v = math.Inf(0)
 
 		case strings.EqualFold(text, "nan"):
 			canonical = "nan"
-			value = math.Float64frombits(nanBits)
+			v = math.Float64frombits(nanBits)
+		}
+		if !neg.IsZero() {
+			v = -v
 		}
 
 		var d *report.Diagnostic
@@ -1089,7 +1166,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path) (rawValueBits, bool) 
 			report.Notef("within %ss only, some %ss are case-insensitive", taxa.Dict, taxa.Float),
 		)
 
-		return newScalarBits(e.Context, value), args.textFormat
+		return newScalarBits(e.Context, v), args.textFormat
 	}
 
 	// Perform symbol lookup in the current scope. This isn't what protoc

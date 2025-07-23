@@ -42,3 +42,4 @@ tables:
               - string: "foo barbaz"
               - string: "🐈\u200d⬛"
               - string: "\xff"
+              - string: "neg"

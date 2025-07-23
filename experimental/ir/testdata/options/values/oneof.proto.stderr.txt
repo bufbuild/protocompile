@@ -8,7 +8,7 @@ error: oneof `buf.test.Foo.o` set multiple times
 22 | option (y).b.a = 1;
 ...
 27 |     oneof o {
-   |           - must be set at most once
+   |           - not a repeated field
    = note: at most one member of a oneof may be set by an option
 
 error: oneof `buf.test.Foo.o` set multiple times
@@ -21,7 +21,7 @@ error: oneof `buf.test.Foo.o` set multiple times
 24 | option (y).a = 2;
 ...
 27 |     oneof o {
-   |           - must be set at most once
+   |           - not a repeated field
    = note: at most one member of a oneof may be set by an option
 
 error: oneof `buf.test.Foo.o` set multiple times
@@ -34,7 +34,7 @@ error: oneof `buf.test.Foo.o` set multiple times
    |        ^^^^^ ... also set here
 ...
 27 |     oneof o {
-   |           - must be set at most once
+   |           - not a repeated field
    = note: at most one member of a oneof may be set by an option
 
 encountered 3 errors

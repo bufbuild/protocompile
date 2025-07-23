@@ -32,4 +32,6 @@ file:
           - { name: "M3", number: 0 }
           - { name: "M4", number: 0 }
           - { name: "M5", number: 0 }
+          - { name: "E1", number: 0 }
+          - { name: "E2", number: 0 }
     syntax: "proto2"

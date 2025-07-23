@@ -36,4 +36,6 @@ tables:
               - bool: false
               - bool: true
               - bool: false
+              - bool: true
+              - bool: true
       "buf.test.y": { repeated.values: [{ bool: true }, { bool: false }] }

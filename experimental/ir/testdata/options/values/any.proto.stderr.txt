@@ -6,22 +6,22 @@ error: type URL can only contain a single `/`
    |                          |
    |                          first one is here
 
-error: unsupported hostname `buf.build/types` in `Any` type URL
+error: unsupported domain `buf.build/types` in `Any` type URL
   --> testdata/options/values/any.proto:31:17
    |
 31 | option (y) = { [buf.build/types/buf.test.Foo] {
    |                 ^^^^^^^^^^^^^^^
-   = note: `protoc` will reject any hostname that are not `type.googleapis.com`
-           or `type.googleprod.com`. This is a quirk of textformat; the compiler
+   = note: The domain must be one of `type.googleapis.com` or
+           `type.googleprod.com`. This is a quirk of textformat; the compiler
            does not actually make any network requests.
 
-error: missing hostname in `Any` type URL
+error: missing domain in `Any` type URL
   --> testdata/options/values/any.proto:35:16
    |
 35 | option (y) = { [/buf.test.Foo] {
    |                ^^^^^^^^^^^^^^^
-   = note: `protoc` requires that the hostname be one of `type.googleapis.com`
-           or `type.googleprod.com`. This is a quirk of textformat; the compiler
+   = note: The domain must be one of `type.googleapis.com` or
+           `type.googleprod.com`. This is a quirk of textformat; the compiler
            does not actually make any network requests.
 
 error: partly-qualified name in `Any` type URL
