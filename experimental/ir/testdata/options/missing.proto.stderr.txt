@@ -9,9 +9,9 @@ error: expected singular message, found scalar type `string`
     |
  20 | option go_package.x = 42;
     |                  ^^ field selector requires singular message
-   ::: google/protobuf/descriptor.proto:494:3
+   ::: google/protobuf/descriptor.proto:504:3
     |
-494 |   optional string go_package = 11;
+504 |   optional string go_package = 11;
     |   --------------- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.MessageOptions`
@@ -25,9 +25,9 @@ error: expected singular message, found scalar type `bool`
     |
  24 |     option deprecated.x = 42;
     |                      ^^ field selector requires singular message
-   ::: google/protobuf/descriptor.proto:601:3
+   ::: google/protobuf/descriptor.proto:611:3
     |
-601 |   optional bool deprecated = 3 [default = false];
+611 |   optional bool deprecated = 3 [default = false];
     |   ------------- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.FieldOptions`
@@ -41,9 +41,9 @@ error: expected singular message, found scalar type `bool`
     |
  25 |     optional Foo foo = 1 [unknown = 42, lazy.x = 42];
     |                                             ^^ field selector requires singular message
-   ::: google/protobuf/descriptor.proto:733:3
+   ::: google/protobuf/descriptor.proto:743:3
     |
-733 |   optional bool lazy = 5 [default = false];
+743 |   optional bool lazy = 5 [default = false];
     |   ------------- type specified here
 
 error: expected singular message, found pseudo-option `default`
@@ -71,9 +71,9 @@ error: expected singular message, found scalar type `bool`
     |
  36 |     option deprecated.x = 42;
     |                      ^^ field selector requires singular message
-   ::: google/protobuf/descriptor.proto:848:3
+   ::: google/protobuf/descriptor.proto:858:3
     |
-848 |   optional bool deprecated = 3 [default = false];
+858 |   optional bool deprecated = 3 [default = false];
     |   ------------- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.EnumValueOptions`
@@ -87,9 +87,9 @@ error: expected singular message, found scalar type `bool`
     |
  37 |     BAR_ZERO = 0 [unknown = 42, deprecated.x = 42];
     |                                           ^^ field selector requires singular message
-   ::: google/protobuf/descriptor.proto:878:3
+   ::: google/protobuf/descriptor.proto:888:3
     |
-878 |   optional bool deprecated = 1 [default = false];
+888 |   optional bool deprecated = 1 [default = false];
     |   ------------- type specified here
 
 encountered 12 errors

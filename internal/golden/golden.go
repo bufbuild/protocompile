@@ -127,10 +127,9 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 			input := string(bytes)
 			results := make([]string, len(c.Outputs))
 
-			//nolint:revive,predeclared // it's fine to use panic as a name here.
-			panic, panicStack := catch(func() { test(t, name, input, results) })
-			if panic != nil {
-				t.Logf("test panicked: %v\n%s", panic, panicStack)
+			panicVal, panicStack := catch(func() { test(t, name, input, results) })
+			if panicVal != nil {
+				t.Logf("test panicked: %v\n%s", panicVal, panicStack)
 				t.Fail()
 			}
 
@@ -140,7 +139,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 
 			refresh, _ := doublestar.Match(refresh, name)
 			for i, output := range c.Outputs {
-				if panic != nil && results[i] == "" {
+				if panicVal != nil && results[i] == "" {
 					// If we panicked and the result is empty, this means there's a good
 					// chance this result was not written to, so we skip doing anything
 					// that would potentially be noisy.
