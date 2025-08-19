@@ -3,7 +3,7 @@ module github.com/bufbuild/protocompile
 go 1.23.0
 
 require (
-	github.com/bits-and-blooms/bitset v1.22.0
+	github.com/bits-and-blooms/bitset v1.24.0
 	github.com/bmatcuk/doublestar/v4 v4.9.1
 	github.com/google/go-cmp v0.7.0
 	github.com/petermattis/goid v0.0.0-20250319124200-ccd6737f222a
