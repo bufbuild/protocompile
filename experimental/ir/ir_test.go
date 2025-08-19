@@ -16,6 +16,7 @@ package ir_test
 
 import (
 	"context"
+	"flag"
 	"maps"
 	"path/filepath"
 	"slices"
@@ -28,6 +29,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"gopkg.in/yaml.v3"
 
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
@@ -41,6 +43,10 @@ import (
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/bufbuild/protocompile/internal/prototest"
+)
+
+var (
+	tracing = flag.Int("ir.tracing", 0, "trace depth for diagnostics")
 )
 
 // Test is the type that a test case for the compiler is deserialized from.
@@ -94,7 +100,7 @@ func TestIR(t *testing.T) {
 
 		exec := incremental.New(
 			incremental.WithParallelism(1),
-			incremental.WithReportOptions(report.Options{Tracing: 10}),
+			incremental.WithReportOptions(report.Options{Tracing: *tracing}),
 		)
 
 		session := new(ir.Session)
@@ -161,7 +167,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 		}
 
 		symtab := &compilerpb.SymbolTable{
-			Options: messageProto(file.Options()),
+			Options: new(optionWalker).message(file.Options()),
 		}
 
 		for imp := range seq.Values(file.TransitiveImports()) {
@@ -196,7 +202,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 				File:    sym.File().Path(),
 				Index:   uint32(sym.RawData()),
 				Visible: sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
-				Options: messageProto(options),
+				Options: new(optionWalker).message(options),
 			})
 		}
 		slices.SortFunc(symtab.Symbols,
@@ -213,59 +219,99 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 	return set
 }
 
-func messageProto(v ir.MessageValue) *compilerpb.Value {
+type optionWalker struct {
+	path  map[ir.MessageValue]int
+	depth int
+}
+
+func (ow *optionWalker) message(v ir.MessageValue) *compilerpb.Value {
 	if v.IsZero() {
 		return nil
 	}
+	if depth, ok := ow.path[v]; ok {
+		return &compilerpb.Value{Value: &compilerpb.Value_Cycle{Cycle: int32(ow.depth - depth)}}
+	}
+
+	if ow.path == nil {
+		ow.path = make(map[ir.MessageValue]int)
+	}
+	ow.path[v] = ow.depth
+	ow.depth++
+	defer func() {
+		ow.depth--
+		delete(ow.path, v)
+	}()
+
+	if concrete := v.Concrete(); concrete != v {
+		return &compilerpb.Value{Value: &compilerpb.Value_Any_{Any: &compilerpb.Value_Any{
+			Url:   concrete.TypeURL(),
+			Value: ow.value(concrete.AsValue()),
+		}}}
+	}
 
 	m := new(compilerpb.Value_Message)
-	for elem := range seq.Values(v.Fields()) {
+	for elem := range v.Fields() {
 		if elem.Field().IsExtension() {
 			if m.Extns == nil {
 				m.Extns = make(map[string]*compilerpb.Value)
 			}
-			m.Extns[string(elem.Field().FullName())] = valueProto(elem)
+			m.Extns[string(elem.Field().FullName())] = ow.value(elem)
 		} else {
 			if m.Fields == nil {
 				m.Fields = make(map[string]*compilerpb.Value)
 			}
-			m.Fields[elem.Field().Name()] = valueProto(elem)
+			m.Fields[elem.Field().Name()] = ow.value(elem)
 		}
 	}
 
 	return &compilerpb.Value{Value: &compilerpb.Value_Message_{Message: m}}
 }
 
-func valueProto(v ir.Value) *compilerpb.Value {
+func (ow *optionWalker) value(v ir.Value) *compilerpb.Value {
 	if v.IsZero() {
 		return nil
 	}
 
 	element := func(v ir.Element) *compilerpb.Value {
-		if x, ok := v.AsBool(); ok {
+		switch v.Field().Element().Predeclared() {
+		case predeclared.Int32, predeclared.SInt32, predeclared.SFixed32:
+			x, _ := v.AsInt()
+			return &compilerpb.Value{Value: &compilerpb.Value_I32{I32: int32(x)}}
+		case predeclared.UInt32, predeclared.Fixed32:
+			x, _ := v.AsUInt()
+			return &compilerpb.Value{Value: &compilerpb.Value_U32{U32: uint32(x)}}
+		case predeclared.Float32:
+			x, _ := v.AsFloat()
+			return &compilerpb.Value{Value: &compilerpb.Value_F32{F32: float32(x)}}
+
+		case predeclared.Int64, predeclared.SInt64, predeclared.SFixed64:
+			x, _ := v.AsInt()
+			return &compilerpb.Value{Value: &compilerpb.Value_I64{I64: x}}
+		case predeclared.UInt64, predeclared.Fixed64:
+			x, _ := v.AsUInt()
+			return &compilerpb.Value{Value: &compilerpb.Value_U64{U64: x}}
+		case predeclared.Float64:
+			x, _ := v.AsFloat()
+			return &compilerpb.Value{Value: &compilerpb.Value_F64{F64: x}}
+
+		case predeclared.String, predeclared.Bytes:
+			x, _ := v.AsString()
+			return &compilerpb.Value{Value: &compilerpb.Value_String_{String_: []byte(x)}}
+
+		case predeclared.Bool:
+			x, _ := v.AsBool()
 			return &compilerpb.Value{Value: &compilerpb.Value_Bool{Bool: x}}
 		}
 
-		if x, ok := v.AsInt(); ok {
-			return &compilerpb.Value{Value: &compilerpb.Value_Int{Int: x}}
+		if v.Field().Element().IsEnum() {
+			x, _ := v.AsInt()
+			return &compilerpb.Value{Value: &compilerpb.Value_I32{I32: int32(x)}}
 		}
 
-		if x, ok := v.AsUInt(); ok {
-			return &compilerpb.Value{Value: &compilerpb.Value_Uint{Uint: x}}
-		}
-
-		if x, ok := v.AsFloat(); ok {
-			return &compilerpb.Value{Value: &compilerpb.Value_Float{Float: x}}
-		}
-
-		if x, ok := v.AsString(); ok {
-			return &compilerpb.Value{Value: &compilerpb.Value_String_{String_: []byte(x)}}
-		}
-
-		return messageProto(v.AsMessage())
+		return ow.message(v.AsMessage())
 	}
 
-	if v.Field().Presence() == presence.Repeated {
+	if v.AsMessage().TypeURL() == "" && v.Field().Presence() == presence.Repeated {
 		r := new(compilerpb.Value_Repeated)
 		for elem := range seq.Values(v.Elements()) {
 			r.Values = append(r.Values, element(elem))

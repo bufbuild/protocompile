@@ -1,3 +1,27 @@
+error: unexpected `:` after definition
+  --> testdata/tags/values.proto:51:11
+   |
+51 |     M4 = a: 2;
+   |           ^ expected `;`
+  help: consider inserting a `;`
+   |
+51 |     M4 = a;: 2;
+   |           +
+
+error: unexpected tokens in enum definition
+  --> testdata/tags/values.proto:51:11
+   |
+51 |     M4 = a: 2;
+   |           ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+
+error: encountered more than one message field tag
+  --> testdata/tags/values.proto:52:12
+   |
+52 |     M5 = a = 2;
+   |        --- ^^^ help: consider removing this
+   |        |
+   |        first one is here
+
 error: enum values must be unique
   --> testdata/tags/values.proto:23:10
    |
@@ -98,4 +122,90 @@ error: `max` outside of range expression
    |          ^^^
    = note: the special `max` expression is only allowed in a range expression
 
-encountered 13 errors
+error: mismatched types
+  --> testdata/tags/values.proto:43:10
+   |
+43 |     S1 = "";
+   |          ^^ expected `int32`, found `string`
+   = note: expected: scalar type `int32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/values.proto:44:10
+   |
+44 |     S2 = '';
+   |          ^^ expected `int32`, found `string`
+   = note: expected: scalar type `int32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/values.proto:45:10
+   |
+45 |     S3 = "abc";
+   |          ^^^^^ expected `int32`, found `string`
+   = note: expected: scalar type `int32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/values.proto:46:10
+   |
+46 |     S4 = '\xff\xff\xff';
+   |          ^^^^^^^^^^^^^^ expected `int32`, found `string`
+   = note: expected: scalar type `int32`
+              found: scalar type `string`
+
+error: mismatched types
+  --> testdata/tags/values.proto:48:10
+   |
+48 |     M1 = {};
+   |          ^^ expected `int32`, found message expression
+   = note: expected: scalar type `int32`
+              found: message expression
+
+error: mismatched types
+  --> testdata/tags/values.proto:49:10
+   |
+49 |     M2 = [];
+   |          ^^ expected `int32`, found array expression
+   = note: expected: scalar type `int32`
+              found: array expression
+
+error: mismatched types
+  --> testdata/tags/values.proto:50:10
+   |
+50 |     M3 = 1 to 2;
+   |          ^^^^^^ expected `int32`, found range expression
+   = note: expected: scalar type `int32`
+              found: range expression
+
+error: cannot find `a` in this scope
+  --> testdata/tags/values.proto:51:10
+   |
+51 |     M4 = a: 2;
+   |          ^ not found in this scope
+   = help: the full name of this scope is `test`
+
+error: cannot find `a` in this scope
+  --> testdata/tags/values.proto:52:10
+   |
+52 |     M5 = a = 2;
+   |          ^ not found in this scope
+   = help: the full name of this scope is `test`
+
+error: mismatched types
+  --> testdata/tags/values.proto:54:10
+   |
+54 |     E1 = X;
+   |          ^ expected `int32`, found `test.E`
+   = note: expected: scalar type `int32`
+              found: enum type `test.E`
+
+error: mismatched types
+  --> testdata/tags/values.proto:55:10
+   |
+55 |     E2 = -Y;
+   |          ^^ expected `int32`, found `test.E`
+   = note: expected: scalar type `int32`
+              found: enum type `test.E`
+
+encountered 27 errors

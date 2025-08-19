@@ -246,6 +246,23 @@ func (t Token) StartEnd() (start, end Token) {
 	return
 }
 
+// Next returns the next token in this token's stream.
+//
+// Panics if this is not a natural token.
+func (t Token) Next() Token {
+	c := NewCursorAt(t)
+	_ = c.Next()
+	return c.Next()
+}
+
+// Prev returns the previous token in this token's stream.
+//
+// Panics if this is not a natural token.
+func (t Token) Prev() Token {
+	c := NewCursorAt(t)
+	return c.Prev()
+}
+
 // SetValue sets the associated literal value with a token. The token must be
 // of the appropriate kind ([Number] or [String]) for the literal.
 //

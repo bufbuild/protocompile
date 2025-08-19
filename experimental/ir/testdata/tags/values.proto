@@ -39,4 +39,18 @@ enum E {
     B1 = false;
     B2 = true;
     B3 = max;
+
+    S1 = "";
+    S2 = '';
+    S3 = "abc";
+    S4 = '\xff\xff\xff';
+
+    M1 = {};
+    M2 = [];
+    M3 = 1 to 2;
+    M4 = a: 2;
+    M5 = a = 2;
+
+    E1 = X;
+    E2 = -Y;
 }

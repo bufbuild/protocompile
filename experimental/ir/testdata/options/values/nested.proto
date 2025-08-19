@@ -31,12 +31,6 @@ option (x).(y).a = {};
 option (x).(y) = {};
 option (x).(y).a.(y) = {};
 
-option (x).a.a.x = {};
-option (x).a.a.y = {};
-
-option (x).a.x.a = {};
-option (x).a.y.a = {};
-
 option (x).a.a.b = {};
 option (x).a.a.b = {};
 
@@ -47,11 +41,6 @@ option (x).a.(z) = {};
 message Foo {
     optional Foo a = 1;
     repeated Foo b = 2;
-
-    oneof k {
-        Foo x = 3;
-        Foo y = 4;
-    }
 }
 
 extend google.protobuf.FileOptions {
@@ -60,5 +49,5 @@ extend google.protobuf.FileOptions {
 
 extend Foo {
     optional Foo y = 1000;
-    repeated Foo z = 1000;
+    repeated Foo z = 1001;
 }

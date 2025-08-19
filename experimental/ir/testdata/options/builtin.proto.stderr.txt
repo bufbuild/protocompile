@@ -1,10 +1,14 @@
 error: option `deprecated` set multiple times
-  --> testdata/options/builtin.proto:24:12
-   |
-23 |     option deprecated = true;
-   |            ---------- first set here...
-24 |     option deprecated = true;
-   |            ^^^^^^^^^^ ... also set here
-   = note: an option may be set at most once
+   --> testdata/options/builtin.proto:24:12
+    |
+ 23 |     option deprecated = true;
+    |            ---------- first set here...
+ 24 |     option deprecated = true;
+    |            ^^^^^^^^^^ ... also set here
+   ::: google/protobuf/descriptor.proto:601:17
+    |
+601 |   optional bool deprecated = 3 [default = false];
+    |                 ---------- not a repeated field
+    = note: a non-`repeated` option may be set at most once
 
 encountered 1 error

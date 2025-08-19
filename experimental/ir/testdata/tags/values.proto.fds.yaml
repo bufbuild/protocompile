@@ -22,5 +22,16 @@ file:
           - { name: "F6", number: 0 }
           - { name: "B1", number: 0 }
           - { name: "B2", number: 0 }
-          - { name: "B3", number: 2147483647 }
+          - { name: "B3", number: 0 }
+          - { name: "S1", number: 0 }
+          - { name: "S2", number: 0 }
+          - { name: "S3", number: 0 }
+          - { name: "S4", number: 0 }
+          - { name: "M1", number: 0 }
+          - { name: "M2", number: 0 }
+          - { name: "M3", number: 0 }
+          - { name: "M4", number: 0 }
+          - { name: "M5", number: 0 }
+          - { name: "E1", number: 0 }
+          - { name: "E2", number: 0 }
     syntax: "proto2"

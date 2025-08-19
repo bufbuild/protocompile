@@ -379,13 +379,18 @@ type Value struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Value:
 	//
+	//	*Value_I32
+	//	*Value_U32
+	//	*Value_F32
+	//	*Value_I64
+	//	*Value_U64
+	//	*Value_F64
 	//	*Value_Bool
-	//	*Value_Int
-	//	*Value_Uint
-	//	*Value_Float
 	//	*Value_String_
 	//	*Value_Repeated_
 	//	*Value_Message_
+	//	*Value_Any_
+	//	*Value_Cycle
 	Value         isValue_Value `protobuf_oneof:"value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -428,6 +433,60 @@ func (x *Value) GetValue() isValue_Value {
 	return nil
 }
 
+func (x *Value) GetI32() int32 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_I32); ok {
+			return x.I32
+		}
+	}
+	return 0
+}
+
+func (x *Value) GetU32() uint32 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_U32); ok {
+			return x.U32
+		}
+	}
+	return 0
+}
+
+func (x *Value) GetF32() float32 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_F32); ok {
+			return x.F32
+		}
+	}
+	return 0
+}
+
+func (x *Value) GetI64() int64 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_I64); ok {
+			return x.I64
+		}
+	}
+	return 0
+}
+
+func (x *Value) GetU64() uint64 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_U64); ok {
+			return x.U64
+		}
+	}
+	return 0
+}
+
+func (x *Value) GetF64() float64 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_F64); ok {
+			return x.F64
+		}
+	}
+	return 0
+}
+
 func (x *Value) GetBool() bool {
 	if x != nil {
 		if x, ok := x.Value.(*Value_Bool); ok {
@@ -435,33 +494,6 @@ func (x *Value) GetBool() bool {
 		}
 	}
 	return false
-}
-
-func (x *Value) GetInt() int64 {
-	if x != nil {
-		if x, ok := x.Value.(*Value_Int); ok {
-			return x.Int
-		}
-	}
-	return 0
-}
-
-func (x *Value) GetUint() uint64 {
-	if x != nil {
-		if x, ok := x.Value.(*Value_Uint); ok {
-			return x.Uint
-		}
-	}
-	return 0
-}
-
-func (x *Value) GetFloat() float64 {
-	if x != nil {
-		if x, ok := x.Value.(*Value_Float); ok {
-			return x.Float
-		}
-	}
-	return 0
 }
 
 func (x *Value) GetString_() []byte {
@@ -491,51 +523,100 @@ func (x *Value) GetMessage() *Value_Message {
 	return nil
 }
 
+func (x *Value) GetAny() *Value_Any {
+	if x != nil {
+		if x, ok := x.Value.(*Value_Any_); ok {
+			return x.Any
+		}
+	}
+	return nil
+}
+
+func (x *Value) GetCycle() int32 {
+	if x != nil {
+		if x, ok := x.Value.(*Value_Cycle); ok {
+			return x.Cycle
+		}
+	}
+	return 0
+}
+
 type isValue_Value interface {
 	isValue_Value()
 }
 
+type Value_I32 struct {
+	I32 int32 `protobuf:"varint,1,opt,name=i32,proto3,oneof"`
+}
+
+type Value_U32 struct {
+	U32 uint32 `protobuf:"varint,2,opt,name=u32,proto3,oneof"`
+}
+
+type Value_F32 struct {
+	F32 float32 `protobuf:"fixed32,3,opt,name=f32,proto3,oneof"`
+}
+
+type Value_I64 struct {
+	I64 int64 `protobuf:"varint,4,opt,name=i64,proto3,oneof"`
+}
+
+type Value_U64 struct {
+	U64 uint64 `protobuf:"varint,5,opt,name=u64,proto3,oneof"`
+}
+
+type Value_F64 struct {
+	F64 float64 `protobuf:"fixed64,6,opt,name=f64,proto3,oneof"`
+}
+
 type Value_Bool struct {
-	Bool bool `protobuf:"varint,1,opt,name=bool,proto3,oneof"`
-}
-
-type Value_Int struct {
-	Int int64 `protobuf:"varint,2,opt,name=int,proto3,oneof"`
-}
-
-type Value_Uint struct {
-	Uint uint64 `protobuf:"varint,3,opt,name=uint,proto3,oneof"`
-}
-
-type Value_Float struct {
-	Float float64 `protobuf:"fixed64,4,opt,name=float,proto3,oneof"`
+	Bool bool `protobuf:"varint,7,opt,name=bool,proto3,oneof"`
 }
 
 type Value_String_ struct {
-	String_ []byte `protobuf:"bytes,5,opt,name=string,proto3,oneof"`
+	String_ []byte `protobuf:"bytes,8,opt,name=string,proto3,oneof"`
 }
 
 type Value_Repeated_ struct {
-	Repeated *Value_Repeated `protobuf:"bytes,6,opt,name=repeated,proto3,oneof"`
+	Repeated *Value_Repeated `protobuf:"bytes,9,opt,name=repeated,proto3,oneof"`
 }
 
 type Value_Message_ struct {
-	Message *Value_Message `protobuf:"bytes,7,opt,name=message,proto3,oneof"`
+	Message *Value_Message `protobuf:"bytes,10,opt,name=message,proto3,oneof"`
 }
 
+type Value_Any_ struct {
+	Any *Value_Any `protobuf:"bytes,11,opt,name=any,proto3,oneof"`
+}
+
+type Value_Cycle struct {
+	// Cyclic message. This is how many uprefs away the cycle element is.
+	Cycle int32 `protobuf:"varint,20,opt,name=cycle,proto3,oneof"`
+}
+
+func (*Value_I32) isValue_Value() {}
+
+func (*Value_U32) isValue_Value() {}
+
+func (*Value_F32) isValue_Value() {}
+
+func (*Value_I64) isValue_Value() {}
+
+func (*Value_U64) isValue_Value() {}
+
+func (*Value_F64) isValue_Value() {}
+
 func (*Value_Bool) isValue_Value() {}
-
-func (*Value_Int) isValue_Value() {}
-
-func (*Value_Uint) isValue_Value() {}
-
-func (*Value_Float) isValue_Value() {}
 
 func (*Value_String_) isValue_Value() {}
 
 func (*Value_Repeated_) isValue_Value() {}
 
 func (*Value_Message_) isValue_Value() {}
+
+func (*Value_Any_) isValue_Value() {}
+
+func (*Value_Cycle) isValue_Value() {}
 
 type Value_Message struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -633,6 +714,58 @@ func (x *Value_Repeated) GetValues() []*Value {
 	return nil
 }
 
+type Value_Any struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	Value         *Value                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Value_Any) Reset() {
+	*x = Value_Any{}
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Value_Any) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Value_Any) ProtoMessage() {}
+
+func (x *Value_Any) ProtoReflect() protoreflect.Message {
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Value_Any.ProtoReflect.Descriptor instead.
+func (*Value_Any) Descriptor() ([]byte, []int) {
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4, 2}
+}
+
+func (x *Value_Any) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *Value_Any) GetValue() *Value {
+	if x != nil {
+		return x.Value
+	}
+	return nil
+}
+
 var File_buf_compiler_v1alpha1_symtab_proto protoreflect.FileDescriptor
 
 const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
@@ -673,15 +806,21 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\x0fKIND_ENUM_VALUE\x10\x06\x12\x12\n" +
 	"\x0eKIND_EXTENSION\x10\a\x12\x0e\n" +
 	"\n" +
-	"KIND_ONEOF\x10\b\"\x99\x05\n" +
-	"\x05Value\x12\x14\n" +
-	"\x04bool\x18\x01 \x01(\bH\x00R\x04bool\x12\x12\n" +
-	"\x03int\x18\x02 \x01(\x03H\x00R\x03int\x12\x14\n" +
-	"\x04uint\x18\x03 \x01(\x04H\x00R\x04uint\x12\x16\n" +
-	"\x05float\x18\x04 \x01(\x01H\x00R\x05float\x12\x18\n" +
-	"\x06string\x18\x05 \x01(\fH\x00R\x06string\x12C\n" +
-	"\brepeated\x18\x06 \x01(\v2%.buf.compiler.v1alpha1.Value.RepeatedH\x00R\brepeated\x12@\n" +
-	"\amessage\x18\a \x01(\v2$.buf.compiler.v1alpha1.Value.MessageH\x00R\amessage\x1a\xcb\x02\n" +
+	"KIND_ONEOF\x10\b\"\xea\x06\n" +
+	"\x05Value\x12\x12\n" +
+	"\x03i32\x18\x01 \x01(\x05H\x00R\x03i32\x12\x12\n" +
+	"\x03u32\x18\x02 \x01(\rH\x00R\x03u32\x12\x12\n" +
+	"\x03f32\x18\x03 \x01(\x02H\x00R\x03f32\x12\x12\n" +
+	"\x03i64\x18\x04 \x01(\x03H\x00R\x03i64\x12\x12\n" +
+	"\x03u64\x18\x05 \x01(\x04H\x00R\x03u64\x12\x12\n" +
+	"\x03f64\x18\x06 \x01(\x01H\x00R\x03f64\x12\x14\n" +
+	"\x04bool\x18\a \x01(\bH\x00R\x04bool\x12\x18\n" +
+	"\x06string\x18\b \x01(\fH\x00R\x06string\x12C\n" +
+	"\brepeated\x18\t \x01(\v2%.buf.compiler.v1alpha1.Value.RepeatedH\x00R\brepeated\x12@\n" +
+	"\amessage\x18\n" +
+	" \x01(\v2$.buf.compiler.v1alpha1.Value.MessageH\x00R\amessage\x124\n" +
+	"\x03any\x18\v \x01(\v2 .buf.compiler.v1alpha1.Value.AnyH\x00R\x03any\x12\x16\n" +
+	"\x05cycle\x18\x14 \x01(\x05H\x00R\x05cycle\x1a\xcb\x02\n" +
 	"\aMessage\x12H\n" +
 	"\x06fields\x18\x01 \x03(\v20.buf.compiler.v1alpha1.Value.Message.FieldsEntryR\x06fields\x12E\n" +
 	"\x05extns\x18\x02 \x03(\v2/.buf.compiler.v1alpha1.Value.Message.ExtnsEntryR\x05extns\x1aW\n" +
@@ -693,7 +832,10 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
 	"\x05value\x18\x02 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\x05value:\x028\x01\x1a@\n" +
 	"\bRepeated\x124\n" +
-	"\x06values\x18\x01 \x03(\v2\x1c.buf.compiler.v1alpha1.ValueR\x06valuesB\a\n" +
+	"\x06values\x18\x01 \x03(\v2\x1c.buf.compiler.v1alpha1.ValueR\x06values\x1aK\n" +
+	"\x03Any\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\x122\n" +
+	"\x05value\x18\x02 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\x05valueB\a\n" +
 	"\x05valueB\xf4\x01\n" +
 	"\x19com.buf.compiler.v1alpha1B\vSymtabProtoP\x01ZTgithub.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1;compilerv1alpha1\xa2\x02\x03BCX\xaa\x02\x15Buf.Compiler.V1alpha1\xca\x02\x15Buf\\Compiler\\V1alpha1\xe2\x02!Buf\\Compiler\\V1alpha1\\GPBMetadata\xea\x02\x17Buf::Compiler::V1alpha1b\x06proto3"
 
@@ -710,7 +852,7 @@ func file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP() []byte {
 }
 
 var file_buf_compiler_v1alpha1_symtab_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_buf_compiler_v1alpha1_symtab_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_buf_compiler_v1alpha1_symtab_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_buf_compiler_v1alpha1_symtab_proto_goTypes = []any{
 	(Symbol_Kind)(0),       // 0: buf.compiler.v1alpha1.Symbol.Kind
 	(*SymbolSet)(nil),      // 1: buf.compiler.v1alpha1.SymbolSet
@@ -721,8 +863,9 @@ var file_buf_compiler_v1alpha1_symtab_proto_goTypes = []any{
 	nil,                    // 6: buf.compiler.v1alpha1.SymbolSet.TablesEntry
 	(*Value_Message)(nil),  // 7: buf.compiler.v1alpha1.Value.Message
 	(*Value_Repeated)(nil), // 8: buf.compiler.v1alpha1.Value.Repeated
-	nil,                    // 9: buf.compiler.v1alpha1.Value.Message.FieldsEntry
-	nil,                    // 10: buf.compiler.v1alpha1.Value.Message.ExtnsEntry
+	(*Value_Any)(nil),      // 9: buf.compiler.v1alpha1.Value.Any
+	nil,                    // 10: buf.compiler.v1alpha1.Value.Message.FieldsEntry
+	nil,                    // 11: buf.compiler.v1alpha1.Value.Message.ExtnsEntry
 }
 var file_buf_compiler_v1alpha1_symtab_proto_depIdxs = []int32{
 	6,  // 0: buf.compiler.v1alpha1.SymbolSet.tables:type_name -> buf.compiler.v1alpha1.SymbolSet.TablesEntry
@@ -733,17 +876,19 @@ var file_buf_compiler_v1alpha1_symtab_proto_depIdxs = []int32{
 	5,  // 5: buf.compiler.v1alpha1.Symbol.options:type_name -> buf.compiler.v1alpha1.Value
 	8,  // 6: buf.compiler.v1alpha1.Value.repeated:type_name -> buf.compiler.v1alpha1.Value.Repeated
 	7,  // 7: buf.compiler.v1alpha1.Value.message:type_name -> buf.compiler.v1alpha1.Value.Message
-	2,  // 8: buf.compiler.v1alpha1.SymbolSet.TablesEntry.value:type_name -> buf.compiler.v1alpha1.SymbolTable
-	9,  // 9: buf.compiler.v1alpha1.Value.Message.fields:type_name -> buf.compiler.v1alpha1.Value.Message.FieldsEntry
-	10, // 10: buf.compiler.v1alpha1.Value.Message.extns:type_name -> buf.compiler.v1alpha1.Value.Message.ExtnsEntry
-	5,  // 11: buf.compiler.v1alpha1.Value.Repeated.values:type_name -> buf.compiler.v1alpha1.Value
-	5,  // 12: buf.compiler.v1alpha1.Value.Message.FieldsEntry.value:type_name -> buf.compiler.v1alpha1.Value
-	5,  // 13: buf.compiler.v1alpha1.Value.Message.ExtnsEntry.value:type_name -> buf.compiler.v1alpha1.Value
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	9,  // 8: buf.compiler.v1alpha1.Value.any:type_name -> buf.compiler.v1alpha1.Value.Any
+	2,  // 9: buf.compiler.v1alpha1.SymbolSet.TablesEntry.value:type_name -> buf.compiler.v1alpha1.SymbolTable
+	10, // 10: buf.compiler.v1alpha1.Value.Message.fields:type_name -> buf.compiler.v1alpha1.Value.Message.FieldsEntry
+	11, // 11: buf.compiler.v1alpha1.Value.Message.extns:type_name -> buf.compiler.v1alpha1.Value.Message.ExtnsEntry
+	5,  // 12: buf.compiler.v1alpha1.Value.Repeated.values:type_name -> buf.compiler.v1alpha1.Value
+	5,  // 13: buf.compiler.v1alpha1.Value.Any.value:type_name -> buf.compiler.v1alpha1.Value
+	5,  // 14: buf.compiler.v1alpha1.Value.Message.FieldsEntry.value:type_name -> buf.compiler.v1alpha1.Value
+	5,  // 15: buf.compiler.v1alpha1.Value.Message.ExtnsEntry.value:type_name -> buf.compiler.v1alpha1.Value
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_buf_compiler_v1alpha1_symtab_proto_init() }
@@ -752,13 +897,18 @@ func file_buf_compiler_v1alpha1_symtab_proto_init() {
 		return
 	}
 	file_buf_compiler_v1alpha1_symtab_proto_msgTypes[4].OneofWrappers = []any{
+		(*Value_I32)(nil),
+		(*Value_U32)(nil),
+		(*Value_F32)(nil),
+		(*Value_I64)(nil),
+		(*Value_U64)(nil),
+		(*Value_F64)(nil),
 		(*Value_Bool)(nil),
-		(*Value_Int)(nil),
-		(*Value_Uint)(nil),
-		(*Value_Float)(nil),
 		(*Value_String_)(nil),
 		(*Value_Repeated_)(nil),
 		(*Value_Message_)(nil),
+		(*Value_Any_)(nil),
+		(*Value_Cycle)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -766,7 +916,7 @@ func file_buf_compiler_v1alpha1_symtab_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_buf_compiler_v1alpha1_symtab_proto_rawDesc), len(file_buf_compiler_v1alpha1_symtab_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -169,38 +169,25 @@ func (r optionRef) resolve() {
 	}
 
 	if r.raw.Nil() {
-		v := newMessage(r.Context, r.field, ref[rawType]{})
+		v := newMessage(r.Context, r.field).AsValue()
 		*r.raw = r.arenas.values.Compress(v.raw)
 	}
 
 	current := wrapValue(r.Context, *r.raw)
+	field := current.Field()
+	var path ast.Path
+	var raw *arena.Pointer[rawValue]
 	for pc := range r.def.Path.Components {
-		field := current.Field()
+		// If this is the first iteration, use the *Options value as the current
+		// message.
 		message := field.Element()
-		if !message.IsZero() && !message.IsMessage() {
-			r.Error(errOptionMustBeMessage{
-				selector: pc,
-				got:      message.noun(),
-				gotName:  message.FullName(),
-				spec:     field.AST().Type(),
-			})
-			return
-		}
-		if field.Presence() == presence.Repeated {
-			r.Error(errOptionMustBeMessage{
-				selector: pc,
-				got:      "repeated",
-				gotName:  message.FullName(),
-				spec:     field.AST().Type(),
-			})
-			return
-		}
-
 		if message.IsZero() {
 			message = root
 		}
 
-		var next Member
+		// Calculate the corresponding member for this path component, which may
+		// be either a simple path or an extension name.
+		prev := field
 		if extn := pc.AsExtension(); !extn.IsZero() {
 			sym := symbolRef{
 				Context: r.Context,
@@ -222,50 +209,50 @@ func (r optionRef) resolve() {
 				return
 			}
 
-			next = sym.AsMember()
-			if next.Container() != message {
+			field = sym.AsMember()
+			if field.Container() != message {
 				d := r.Errorf("expected `%s` extension, found %s in `%s`",
-					message.FullName(), next.noun(), next.Container().FullName(),
+					message.FullName(), field.noun(), field.Container().FullName(),
 				).Apply(
 					report.Snippetf(pc, "because of this %s", taxa.FieldSelector),
-					report.Snippetf(next.AST().Name(), "`%s` defined here", next.FullName()),
+					report.Snippetf(field.AST().Name(), "`%s` defined here", field.FullName()),
 				)
-				if next.IsExtension() {
-					extendee := r.arenas.extendees.Deref(next.raw.extendee)
+				if field.IsExtension() {
+					extendee := r.arenas.extendees.Deref(field.raw.extendee)
 					d.Apply(report.Snippetf(extendee.def, "... within this %s", taxa.Extend))
 				} else {
-					d.Apply(report.Snippetf(next.Container().AST(), "... within this %s", taxa.Message))
+					d.Apply(report.Snippetf(field.Container().AST(), "... within this %s", taxa.Message))
 				}
 
 				return
 			}
 
-			if !next.IsExtension() {
+			if !field.IsExtension() {
 				// Protoc accepts this! The horror!
 				r.Warnf("redundant %s syntax", taxa.CustomOption).Apply(
 					report.Snippetf(pc, "this field is not a %s", taxa.Extension),
-					report.Snippetf(next.AST().Name(), "field declared inside of `%s` here", next.Parent().FullName()),
+					report.Snippetf(field.AST().Name(), "field declared inside of `%s` here", field.Parent().FullName()),
 					report.Helpf("%s syntax should only be used with %ss", taxa.CustomOption, taxa.Extension),
 					report.SuggestEdits(pc.Name(), fmt.Sprintf("replace %s with a field name", taxa.Parens), report.Edit{
 						Start: 0, End: pc.Name().Span().Len(),
-						Replace: next.Name(),
+						Replace: field.Name(),
 					}),
 				)
 			}
 		} else if ident := pc.AsIdent(); !ident.IsZero() {
-			next = message.MemberByName(ident.Text())
-			if next.IsZero() {
+			field = message.MemberByName(ident.Text())
+			if field.IsZero() {
 				d := r.Errorf("cannot find %s `%s` in `%s`", taxa.Field, ident.Text(), message.FullName()).Apply(
 					report.Snippetf(pc, "because of this %s", taxa.FieldSelector),
 				)
 				if !pc.IsFirst() {
-					d.Apply(report.Snippetf(field.AST().Type(), "`%s` specified here", message.FullName()))
+					d.Apply(report.Snippetf(prev.AST().Type(), "`%s` specified here", message.FullName()))
 				}
 				return
 			}
 		}
 
-		path, _ := pc.SplitAfter()
+		path, _ = pc.SplitAfter()
 
 		// Check to see if this value has already been set in the parent message.
 		// We have already validated current as a singular message by this point.
@@ -277,22 +264,24 @@ func (r optionRef) resolve() {
 		// 1. The current field is repeated and this is the last component.
 		// 2. The current field is of message type and this is not the last
 		//    component.
-		raw := parent.insert(next)
+		raw = parent.insert(field)
 		if !raw.Nil() {
 			value := wrapValue(r.Context, *raw)
 			switch {
-			case next.Presence() == presence.Repeated:
-				// TODO: Implement expression evaluation.
-			case value.Field() != next:
+			case field.Presence() == presence.Repeated:
+				break // Handled below.
+
+			case value.Field() != field:
 				// A different member of a oneof was set.
-				r.Errorf("oneof `%s` set multiple times", next.Oneof().FullName()).Apply(
-					report.Snippetf(path, "... also set here"),
-					report.Snippetf(value.OptionPath(), "first set here..."),
-					report.Notef("at most one member of a oneof may be set by an option"),
-				)
+				r.Error(errSetMultipleTimes{
+					member: field.Oneof(),
+					first:  value.OptionPath(),
+					second: path,
+					root:   pc.IsFirst(),
+				})
 				return
 
-			case field.Element().IsMessage():
+			case prev.Element().IsMessage():
 				if !pc.IsLast() {
 					current = value
 					continue
@@ -300,40 +289,50 @@ func (r optionRef) resolve() {
 				fallthrough
 
 			default:
-				name := next.FullName()
-				what := any(next.noun())
-				if !next.IsExtension() && pc.IsFirst() {
-					// For non-custom options, use the short name and call it
-					// an "option".
-					name = FullName(next.Name())
-					what = "option"
-				}
-
-				r.Errorf("%v `%v` set multiple times", what, name).Apply(
-					report.Snippetf(path, "... also set here"),
-					report.Snippetf(value.OptionPath(), "first set here..."),
-					report.Notef("an option may be set at most once"),
-				)
+				r.Error(errSetMultipleTimes{
+					member: field,
+					first:  value.OptionPath(),
+					second: path,
+					root:   pc.IsFirst(),
+				})
 				return
 			}
 		}
 
-		// Construct a new value for this option.
-		var fieldRef ref[rawMember]
-		if next.Context() != r.Context {
-			fieldRef.file = int32(r.imports.byPath[next.Context().File().InternedPath()] + 1)
+		if pc.IsLast() {
+			break
 		}
-		fieldRef.ptr = next.Context().arenas.members.Compress(next.raw)
 
-		// TODO: Implement expression evaluation.
-		var value Value
-		if next.Element().IsMessage() {
-			value = newMessage(r.Context, fieldRef, ref[rawType]{})
-		} else {
-			// Just set the zero value; all scalars with a value of zero
-			// are well-defined.
-			value = newScalar[int32](r.Context, fieldRef, 0)
+		// Handle a non-final component in an option path. That must be
+		// a singular message value, which the successive elements of the
+		// path index into as field names.
+		message = field.Element()
+
+		// This diagnoses that people do not write option a.b.c where b is
+		// not a message field.
+		if !message.IsZero() && !message.IsMessage() {
+			r.Error(errOptionMustBeMessage{
+				selector: pc.Next(),
+				got:      message.noun(),
+				gotName:  message.FullName(),
+				spec:     field.AST().Type(),
+			})
+			return
 		}
+
+		// This diagnoses that people do not write option a.b.c where b is
+		// a repeated field.
+		if field.Presence() == presence.Repeated {
+			r.Error(errOptionMustBeMessage{
+				selector: pc.Next(),
+				got:      "repeated",
+				gotName:  message.FullName(),
+				spec:     field.AST().Type(),
+			})
+			return
+		}
+
+		value := newMessage(r.Context, compressMember(r.Context, field)).AsValue()
 		if value.raw.optionPath.IsZero() {
 			value.raw.optionPath = path
 		}
@@ -341,6 +340,70 @@ func (r optionRef) resolve() {
 		*raw = r.arenas.values.Compress(value.raw)
 		current = value
 	}
+
+	// Now, evaluate the expression and assign it to the field we found.
+	evaluator := evaluator{
+		Context: r.Context,
+		Report:  r.Report,
+		scope:   r.scope,
+	}
+	args := evalArgs{
+		expr:       r.def.Value,
+		field:      field,
+		annotation: field.AST().Type(),
+		optionPath: path,
+	}
+
+	if !raw.Nil() {
+		args.target = wrapValue(r.Context, *raw)
+	}
+
+	v := evaluator.eval(args)
+	if !v.IsZero() {
+		*raw = r.arenas.values.Compress(v.raw)
+	}
+}
+
+type errSetMultipleTimes struct {
+	member        any
+	first, second report.Spanner
+	root          bool
+}
+
+func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
+	var what any
+	var name FullName
+	var note string
+	var def report.Spanner
+	switch member := e.member.(type) {
+	case Member:
+		if !member.IsExtension() && e.root {
+			// For non-custom options, use the short name and call it
+			// an "option".
+			name = FullName(member.Name())
+			what = "option"
+		} else {
+			name = member.FullName()
+			what = member.noun()
+		}
+		note = "a non-`repeated` option may be set at most once"
+		def = member.AST().Name()
+	case Oneof:
+		name = member.FullName()
+		what = "oneof"
+		note = "at most one member of a oneof may be set by an option"
+		def = member.AST().Name()
+	default:
+		panic("unreachable")
+	}
+
+	d.Apply(
+		report.Message("%v `%v` set multiple times", what, name),
+		report.Snippetf(e.second, "... also set here"),
+		report.Snippetf(e.first, "first set here..."),
+		report.Snippetf(def, "not a repeated field"),
+		report.Notef(note),
+	)
 }
 
 type errOptionMustBeMessage struct {

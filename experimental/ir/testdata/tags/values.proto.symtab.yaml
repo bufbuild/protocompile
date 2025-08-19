@@ -102,3 +102,58 @@ tables:
         file: "testdata/tags/values.proto"
         index: 19
         visible: true
+      - fqn: "test.S1"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 20
+        visible: true
+      - fqn: "test.S2"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 21
+        visible: true
+      - fqn: "test.S3"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 22
+        visible: true
+      - fqn: "test.S4"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 23
+        visible: true
+      - fqn: "test.M1"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 24
+        visible: true
+      - fqn: "test.M2"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 25
+        visible: true
+      - fqn: "test.M3"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 26
+        visible: true
+      - fqn: "test.M4"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 27
+        visible: true
+      - fqn: "test.M5"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 28
+        visible: true
+      - fqn: "test.E1"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 29
+        visible: true
+      - fqn: "test.E2"
+        kind: KIND_ENUM_VALUE
+        file: "testdata/tags/values.proto"
+        index: 30
+        visible: true

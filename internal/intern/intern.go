@@ -18,6 +18,7 @@ package intern
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -195,6 +196,28 @@ func (t *Table) Value(id ID) string {
 	// fast paths above. This in turn allows decodeChar6 to be inlined, which
 	// allows the returned string to be stack-promoted.
 	return t.getSlow(id)
+}
+
+// Preload takes a pointer to a struct type and initializes [ID]-typed fields
+// with statically-specified strings.
+//
+// Specifically, every exported field whose type is [ID] and which has a struct
+// tag "intern" will be set to t.Intern(...) with that tag's value.
+//
+// Panics if ids is not a pointer to a struct type.
+func (t *Table) Preload(ids any) {
+	r := reflect.ValueOf(ids).Elem()
+	for i := range r.NumField() {
+		f := r.Type().Field(i)
+		if !f.IsExported() || f.Type != reflect.TypeFor[ID]() {
+			continue
+		}
+
+		text, ok := f.Tag.Lookup("intern")
+		if ok {
+			r.Field(i).Set(reflect.ValueOf(t.Intern(text)))
+		}
+	}
 }
 
 func (t *Table) getSlow(id ID) string {

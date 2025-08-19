@@ -10,4 +10,4 @@ tables:
         file: "testdata/options/redundant_fqn.proto"
         index: 1
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
+        options.message.fields: { "deprecated": { bool: true } }

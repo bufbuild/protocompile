@@ -9,19 +9,19 @@ tables:
         file: "testdata/options/builtin.proto"
         index: 1
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
+        options.message.fields: { "deprecated": { bool: true } }
       - fqn: "buf.test.Bar"
         kind: KIND_ENUM
         file: "testdata/options/builtin.proto"
         index: 2
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
+        options.message.fields: { "deprecated": { bool: true } }
       - fqn: "buf.test.Foo.foo"
         kind: KIND_FIELD
         file: "testdata/options/builtin.proto"
         index: 1
         visible: true
-        options.message.fields: { "lazy": { bool: false } }
+        options.message.fields: { "lazy": { bool: true } }
       - fqn: "buf.test.Foo.bar"
         kind: KIND_FIELD
         file: "testdata/options/builtin.proto"
@@ -32,5 +32,7 @@ tables:
         file: "testdata/options/builtin.proto"
         index: 3
         visible: true
-        options.message.fields: { "deprecated": { bool: false } }
-    options.message.fields: { "java_multiple_files": { bool: false }, "java_package": { string: "" } }
+        options.message.fields: { "deprecated": { bool: true } }
+    options.message.fields:
+      "java_multiple_files": { bool: true }
+      "java_package": { string: "build.buf.protocompile" }

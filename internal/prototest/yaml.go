@@ -16,7 +16,9 @@ package prototest
 
 import (
 	"fmt"
+	"math"
 	"slices"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -133,8 +135,10 @@ func (y *toYAML) value(v protoreflect.Value, f protoreflect.FieldDescriptor) any
 // buffer.
 func (y *toYAML) write(v any) {
 	switch v := v.(type) {
-	case bool, int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
+	case bool, int32, int64, uint32, uint64, protoreflect.Name:
 		fmt.Fprint(&y.out, v)
+	case float32, float64:
+		y.writeFloat(v)
 	case string:
 		fmt.Fprintf(&y.out, "%q", v)
 	case *doc:
@@ -169,6 +173,35 @@ func (y *toYAML) write(v any) {
 				y.out.WriteString("\n")
 			}
 		}
+	}
+}
+
+func (y *toYAML) writeFloat(v any) {
+	var f float64
+	var bits int
+	switch v := v.(type) {
+	case float32:
+		f = float64(v)
+		bits = 32
+	case float64:
+		f = v
+		bits = 64
+	}
+
+	switch {
+	case math.IsInf(f, 1):
+		y.out.WriteString("inf")
+	case math.IsInf(f, -1):
+		y.out.WriteString("-inf")
+	case math.IsNaN(f):
+		switch v := v.(type) {
+		case float32:
+			fmt.Fprintf(&y.out, "nan@%08x", math.Float32bits(v))
+		case float64:
+			fmt.Fprintf(&y.out, "nan@%016x", math.Float64bits(v))
+		}
+	default:
+		y.out.WriteString(strconv.FormatFloat(f, 'g', -1, bits))
 	}
 }
 

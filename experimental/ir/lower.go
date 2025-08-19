@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"sync"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -28,6 +30,19 @@ import (
 // A zero [Session] is ready to use.
 type Session struct {
 	intern intern.Table
+
+	once    sync.Once
+	langIDs struct {
+		DescriptorFile intern.ID `intern:"google/protobuf/descriptor.proto"`
+		AnyPath        intern.ID `intern:"google.protobuf.Any"`
+
+		FileOptions      intern.ID `intern:"google.protobuf.FileDescriptorProto.options"`
+		MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
+		FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
+		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
+		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
+		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+	}
 }
 
 // Lower lowers an AST into an IR module.
@@ -35,13 +50,15 @@ type Session struct {
 // The ir package does not provide a mechanism for resolving imports; instead,
 // they must be provided as an argument to this function.
 func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer) (file File, ok bool) {
+	s.init()
+
 	prior := len(errs.Diagnostics)
 	c := &Context{session: s}
 	c.ast = source
-	c.isDescriptorProto = c.ast.Span().File.Path() == DescriptorProtoPath
+	c.path = c.session.intern.Intern(CanonicalizeFilePath(c.ast.Span().File.Path()))
 
 	errs.SaveOptions(func() {
-		errs.SuppressWarnings = errs.SuppressWarnings || c.isDescriptorProto
+		errs.SuppressWarnings = errs.SuppressWarnings || c.File().IsDescriptorProto()
 		lower(c, errs, importer)
 	})
 
@@ -54,6 +71,10 @@ func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer)
 	}
 
 	return c.File(), ok
+}
+
+func (s *Session) init() {
+	s.once.Do(func() { s.intern.Preload(&s.langIDs) })
 }
 
 func lower(c *Context, r *report.Report, importer Importer) {
