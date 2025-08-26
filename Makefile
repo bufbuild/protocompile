@@ -101,6 +101,10 @@ generate: $(BIN)/license-header $(BIN)/goyacc wellknownimports test-descriptors 
 			--copyright-holder "Buf Technologies, Inc." \
 			--year-range "$(COPYRIGHT_YEARS)"
 
+.PHONY: generate-golden
+generate-golden: generate
+	PATH="$(BIN)$(PATH_SEP)$(PATH)" PROTOCOMPILE_REFRESH=** $(GO) test ./experimental/...
+
 .PHONY: upgrade
 upgrade: ## Upgrade dependencies
 	go get -u -t ./... && go mod tidy -v
