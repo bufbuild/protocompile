@@ -103,7 +103,7 @@ generate: $(BIN)/license-header $(BIN)/goyacc wellknownimports test-descriptors 
 
 .PHONY: generate-golden
 generate-golden: generate
-	PATH="$(BIN)$(PATH_SEP)$(PATH)" PROTOCOMPILE_REFRESH=** $(GO) test ./experimental/...
+	PATH="$(BIN)$(PATH_SEP)$(PATH)" PROTOCOMPILE_REFRESH=** $(GO) test  ./... -run 'TestSourceCodeInfoOptions|TestIR|TestLexer|TestParse|TestRender' || true
 
 .PHONY: upgrade
 upgrade: ## Upgrade dependencies
