@@ -2251,7 +2251,20 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
+			expectedErr:            `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
+			expectedDiffWithProtoc: true, // protoc v32.0 does support edition 2024
+		},
+		"failure_unknown_edition_distant_future": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "99999";
+					message Foo {
+						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+						int32 bar = 2 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:1:11: edition value "99999" not recognized; should be one of ["2023"]`,
 		},
 		"failure_unknown_edition_past": {
 			input: map[string]string{

@@ -1196,7 +1196,7 @@ func (f *fldDescriptor) HasOptionalKeyword() bool {
 }
 
 func (f *fldDescriptor) IsWeak() bool {
-	return f.proto.Options.GetWeak()
+	return f.proto.Options.GetWeak() //nolint:staticcheck // yes, is_weak is deprecated; but we still have to query it to implement this interface
 }
 
 func (f *fldDescriptor) IsPacked() bool {
