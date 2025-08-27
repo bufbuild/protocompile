@@ -163,8 +163,7 @@ func fixupProtocSourceCodeInfo(info *descriptorpb.SourceCodeInfo) {
 func TestSourceCodeInfoOptions(t *testing.T) {
 	t.Parallel()
 
-	// set to true to re-generate golden output file
-	const regenerateGoldenOutputFile = false
+	regenerateGoldenOutputFile := os.Getenv("PROTOCOMPILE_REFRESH") != ""
 
 	generateSourceInfoText := func(t *testing.T, filename string, mode protocompile.SourceInfoMode) string {
 		t.Helper()
