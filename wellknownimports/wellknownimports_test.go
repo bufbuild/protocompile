@@ -15,7 +15,6 @@
 package wellknownimports
 
 import (
-	"context"
 	"io"
 	"os"
 	"testing"
@@ -56,7 +55,7 @@ func TestWithStandardImports(t *testing.T) {
 		}),
 		RetainASTs: true,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, name := range wellKnownImports {
 		t.Log(name)
 		fds, err := c.Compile(ctx, name)
@@ -109,7 +108,7 @@ func TestCantRedefineWellKnownCustomFeature(t *testing.T) {
 			}),
 		}),
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Compile(ctx, "features.proto")
 	require.ErrorContains(t, err, `features.proto:9:56: expected extension with number 1000 to be named pb.cpp, not custom, per declaration at google/protobuf/descriptor.proto`)
 }

@@ -16,7 +16,6 @@ package protocompile
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"os"
 	"strings"
@@ -43,7 +42,7 @@ func TestParseFilesMessageComments(t *testing.T) {
 		Resolver:       &SourceResolver{},
 		SourceInfoMode: SourceInfoStandard,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	files, err := comp.Compile(ctx, "internal/testdata/desc_test1.proto")
 	require.NoError(t, err)
 	comments := ""
@@ -74,7 +73,7 @@ func TestParseFilesWithImportsNoImportPath(t *testing.T) {
 			ImportPaths: []string{"internal/testdata/more"},
 		}),
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	protos, err := comp.Compile(ctx, relFilePaths...)
 	require.NoError(t, err)
 	assert.Equal(t, len(relFilePaths), len(protos))
@@ -105,7 +104,7 @@ func TestParseFilesWithDependencies(t *testing.T) {
 	fdset := prototest.LoadDescriptorSet(t, "./internal/testdata/all.protoset", nil)
 	wktDesc, wktDescProto := findAndLink(t, "desc_test_wellknowntypes.proto", fdset, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Establish that we *can* parse the source file with a resolver that provides
 	// the dependency, as either a full descriptor or as a descriptor proto.
@@ -207,7 +206,7 @@ message Foo {
 		Resolver:       &SourceResolver{Accessor: accessor},
 		SourceInfoMode: SourceInfoStandard,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	fds, err := compiler.Compile(ctx, "test.proto")
 	require.NoError(t, err)
 
@@ -237,7 +236,7 @@ message Foo {
 		Resolver:       WithStandardImports(&SourceResolver{Accessor: accessor}),
 		SourceInfoMode: SourceInfoStandard,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	fds, err := compiler.Compile(ctx, "test.proto")
 	require.NoError(t, err)
 
@@ -270,7 +269,7 @@ func TestDataRace(t *testing.T) {
 			ImportPaths: []string{"./internal/testdata"},
 		}),
 		SourceInfoMode: SourceInfoStandard,
-	}).Compile(context.Background(), "desc_test_complex.proto")
+	}).Compile(t.Context(), "desc_test_complex.proto")
 	require.NoError(t, err)
 	resolvedProto := files[0].(linker.Result).FileDescriptorProto() //nolint:errcheck
 
@@ -351,7 +350,7 @@ func TestDataRace(t *testing.T) {
 				Resolver:       testCase.resolver,
 				SourceInfoMode: SourceInfoStandard,
 			}
-			grp, ctx := errgroup.WithContext(context.Background())
+			grp, ctx := errgroup.WithContext(t.Context())
 			grp.Go(func() error {
 				_, err := compiler1.Compile(ctx, "desc_test_complex.proto")
 				return err
@@ -376,7 +375,7 @@ func TestPanicHandling(t *testing.T) {
 			panic(errors.New("mui mui bad"))
 		}),
 	}
-	_, err := c.Compile(context.Background(), "test.proto")
+	_, err := c.Compile(t.Context(), "test.proto")
 	panicErr, ok := err.(PanicError)
 	require.True(t, ok)
 	t.Logf("%v\n\n%v", panicErr, panicErr.Stack)

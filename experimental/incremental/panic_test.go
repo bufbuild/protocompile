@@ -15,7 +15,6 @@
 package incremental_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ import (
 func TestPanic(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		incremental.WithParallelism(4),
 	)
@@ -50,7 +49,7 @@ func TestPanic(t *testing.T) {
 func TestAbort(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		incremental.WithParallelism(4),
 	)

@@ -15,7 +15,6 @@
 package protoutil_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -571,7 +570,7 @@ func compileFile(
 	for i := range deps {
 		names[i+1] = deps[i].GetName()
 	}
-	files, err := compiler.Compile(context.Background(), names...)
+	files, err := compiler.Compile(t.Context(), names...)
 	require.NoError(t, err)
 
 	// See if compile included version of google.protobuf.FeatureSet

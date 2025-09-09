@@ -18,7 +18,6 @@
 package options_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -54,6 +53,6 @@ func TestOptionWithMessageSetWireFormat(t *testing.T) {
 			}),
 		}),
 	}
-	_, err := compiler.Compile(context.Background(), "test.proto")
+	_, err := compiler.Compile(t.Context(), "test.proto")
 	require.ErrorContains(t, err, `test.proto:17:52: field "Foo.message_set_field" may not be used in an option: it uses 'message set wire format' legacy proto1 feature which is not supported`)
 }

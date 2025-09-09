@@ -15,7 +15,6 @@
 package protocompile
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -213,7 +212,7 @@ func TestErrorReporting(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	for i, tc := range testCases {
 		fmt.Printf("---- case #%d: tracking ----\n", i+1)
 		compiler := Compiler{
@@ -409,10 +408,10 @@ func TestWarningReporting(t *testing.T) {
 			},
 		},
 	}
-	ctx := context.Background()
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
+			ctx := t.Context()
 			var msgs []msg
 			rep := func(warn reporter.ErrorWithPos) {
 				msgs = append(msgs, msg{

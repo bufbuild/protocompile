@@ -15,7 +15,6 @@
 package ir_test
 
 import (
-	"context"
 	"flag"
 	"maps"
 	"path/filepath"
@@ -118,7 +117,7 @@ func TestIR(t *testing.T) {
 			},
 		))
 
-		results, r, err := incremental.Run(context.Background(), exec, queries...)
+		results, r, err := incremental.Run(t.Context(), exec, queries...)
 		require.NoError(t, err)
 
 		stderr, _, _ := report.Renderer{
