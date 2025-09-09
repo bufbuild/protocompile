@@ -105,7 +105,7 @@ func TestMain(m *testing.M) {
 			}
 		}()
 
-		if err := downloadAndExpand(googleapisURI, dir); err != nil {
+		if err := downloadAndExpand(context.Background(), googleapisURI, dir); err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Failed to download and expand googleapis: %v\n", err)
 			stat = 1
 			return
@@ -136,9 +136,9 @@ func TestMain(m *testing.M) {
 	stat = m.Run()
 }
 
-func downloadAndExpand(url, targetDir string) (e error) {
+func downloadAndExpand(ctx context.Context, url, targetDir string) (e error) {
 	start := time.Now()
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
@@ -264,7 +264,7 @@ func benchmarkGoogleapisProtocompile(b *testing.B, factory func() *protocompile.
 }
 
 func benchmarkProtocompile(b *testing.B, c *protocompile.Compiler, sources []string) {
-	fds, err := c.Compile(context.Background(), sources...)
+	fds, err := c.Compile(b.Context(), sources...)
 	require.NoError(b, err)
 	var fdSet descriptorpb.FileDescriptorSet
 	fdSet.File = make([]*descriptorpb.FileDescriptorProto, len(fds))
@@ -351,7 +351,7 @@ func BenchmarkGoogleapisFastScan(b *testing.B) {
 	for range b.N {
 		workCh := make(chan string, par)
 		resultsCh := make(chan entry, par)
-		grp, ctx := errgroup.WithContext(context.Background())
+		grp, ctx := errgroup.WithContext(b.Context())
 		// producer
 		grp.Go(func() error {
 			defer close(workCh)
@@ -520,7 +520,7 @@ func TestGoogleapisProtocompileResultMemory(t *testing.T) {
 		}),
 		SourceInfoMode: protocompile.SourceInfoExtraComments,
 	}
-	fds, err := c.Compile(context.Background(), googleapisSources...)
+	fds, err := c.Compile(t.Context(), googleapisSources...)
 	require.NoError(t, err)
 	measure(t, fds)
 }
@@ -535,7 +535,7 @@ func TestGoogleapisProtocompileResultMemoryNoSourceInfo(t *testing.T) {
 		}),
 		SourceInfoMode: protocompile.SourceInfoNone,
 	}
-	fds, err := c.Compile(context.Background(), googleapisSources...)
+	fds, err := c.Compile(t.Context(), googleapisSources...)
 	require.NoError(t, err)
 	measure(t, fds)
 }
