@@ -10,7 +10,7 @@ require (
 	google.golang.org/protobuf v1.36.8
 )
 
-require golang.org/x/sync v0.16.0
+require golang.org/x/sync v0.17.0
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
