@@ -15,7 +15,6 @@
 package incremental_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +26,7 @@ import (
 func TestStarvation(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		// Force serialization to test to trigger starvation corner-cases.
 		incremental.WithParallelism(1),

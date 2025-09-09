@@ -16,7 +16,6 @@ package sourceinfo_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -44,7 +43,7 @@ func TestSourceCodeInfo(t *testing.T) {
 		}),
 		SourceInfoMode: protocompile.SourceInfoStandard,
 	}
-	fds, err := compiler.Compile(context.Background(), "desc_test_comments.proto", "desc_test_complex.proto")
+	fds, err := compiler.Compile(t.Context(), "desc_test_comments.proto", "desc_test_complex.proto")
 	if pe, ok := err.(protocompile.PanicError); ok {
 		t.Fatalf("panic! %v\n%v", pe, pe.Stack)
 	}
@@ -173,7 +172,7 @@ func TestSourceCodeInfoOptions(t *testing.T) {
 			}),
 			SourceInfoMode: mode,
 		}
-		fds, err := compiler.Compile(context.Background(), filename)
+		fds, err := compiler.Compile(t.Context(), filename)
 		if pe, ok := err.(protocompile.PanicError); ok {
 			t.Fatalf("panic! %v\n%v", pe, pe.Stack)
 		}

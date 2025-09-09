@@ -15,7 +15,6 @@
 package linker_test
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"testing"
@@ -68,7 +67,7 @@ func TestFields(t *testing.T) {
 					ImportPaths: []string{"../internal/testdata", "../internal/testdata/editions"},
 				}),
 			}
-			results, err := compiler.Compile(context.Background(), testCase.filename)
+			results, err := compiler.Compile(t.Context(), testCase.filename)
 			require.NoError(t, err)
 			fd := results[0]
 
@@ -100,7 +99,7 @@ func TestUnescape(t *testing.T) {
 			return protocompile.SearchResult{Proto: fileProto}, nil
 		})),
 	}
-	result, err := compiler.Compile(context.Background(), "foo.proto")
+	result, err := compiler.Compile(t.Context(), "foo.proto")
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	field := result.FindFileByPath("foo.proto").Messages().Get(0).Fields().Get(0)

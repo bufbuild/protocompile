@@ -15,7 +15,6 @@
 package incremental_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func TestCyclic(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		incremental.WithParallelism(4),
 	)
