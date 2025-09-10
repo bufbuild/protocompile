@@ -1,15 +1,15 @@
 file:
-  - name: "testdata/extend/invalid_partial.proto"
-    package: "test"
-    message_type:
-      - name: "M"
-        nested_type:
-          - name: "N"
-          - name: "M"
-            extension:
-              - name: "x"
-                number: 1
-                label: LABEL_OPTIONAL
-                type: TYPE_INT32
-                extendee: ".test.M.N"
-    syntax: "proto2"
+- name: "testdata/extend/invalid_partial.proto"
+  package: "test"
+  message_type:
+  - name: "M"
+    nested_type:
+    - name: "N"
+    - name: "M"
+      extension:
+      - name: "x"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        extendee: ".test.M.N"
+  syntax: "proto2"

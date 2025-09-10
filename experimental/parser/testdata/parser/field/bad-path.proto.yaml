@@ -1,156 +1,212 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "M" }]
-      body.decls:
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_OPTIONAL
-              type.path.components: [{ ident: "Type" }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_REPEATED
-              type.path.components: [{ ident: "Type" }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_REQUIRED
-              type.path.components: [{ ident: "Type" }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.path.components: [{ ident: "Type" }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_SLASH }]
-            type.path.components: [{ ident: "Type" }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_OPTIONAL
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_REPEATED
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_REQUIRED
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "name" }]
-            type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "name" }]
-            type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_SLASH }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ ident: "path" }, { ident: "name", separator: SEPARATOR_DOT }]
-            type.prefixed:
-              prefix: PREFIX_OPTIONAL
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_SLASH }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "name" }]
-            type.prefixed:
-              prefix: PREFIX_OPTIONAL
-              type.path.components:
-                - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-                - { ident: "Type", separator: SEPARATOR_DOT }
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "name" }]
-            type.prefixed:
-              prefix: PREFIX_REPEATED
-              type.path.components:
-                - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-                - { ident: "Type", separator: SEPARATOR_DOT }
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "name" }]
-            type.prefixed:
-              prefix: PREFIX_REQUIRED
-              type.path.components:
-                - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-                - { ident: "Type", separator: SEPARATOR_DOT }
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "name" }]
-            type.path.components:
-              - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-              - { ident: "Type", separator: SEPARATOR_DOT }
-            value.literal.int_value: 1
-        - def:
-            name.components:
-              - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-              - { ident: "name", separator: SEPARATOR_DOT }
-            type.prefixed:
-              prefix: PREFIX_OPTIONAL
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components:
-              - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-              - { ident: "name", separator: SEPARATOR_DOT }
-            type.prefixed:
-              prefix: PREFIX_REPEATED
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components:
-              - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-              - { ident: "name", separator: SEPARATOR_DOT }
-            type.prefixed:
-              prefix: PREFIX_REQUIRED
-              type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components:
-              - extension.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_DOT }]
-              - { ident: "name", separator: SEPARATOR_DOT }
-            type.path.components: [{ ident: "package" }, { ident: "Type", separator: SEPARATOR_DOT }]
-            value.literal.int_value: 1
-        - def:
-            name.components: [{ extension.components: [{ ident: "bar" }] }]
-            type.path.components: [{ extension.components: [{ ident: "foo" }] }]
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "foo" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "string" }]
-                - path.components:
-                    - ident: "foo"
-                    - extension.components: [{ ident: "bar" }]
-                      separator: SEPARATOR_DOT
-            value.literal.int_value: 1
-        - def:
-            kind: KIND_FIELD
-            name.components: [{ ident: "foo" }]
-            type.generic:
-              path.components: [{ ident: "map" }]
-              args:
-                - path.components: [{ ident: "string" }]
-                - path.components: [{ ident: "foo" }, { ident: "bar", separator: SEPARATOR_SLASH }]
-            value.literal.int_value: 1
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "Type" }]
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components: [{ ident: "Type" }]
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_REQUIRED
+          type.path.components: [{ ident: "Type" }]
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.path.components: [{ ident: "Type" }]
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_SLASH }
+        type.path.components: [{ ident: "Type" }]
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_REQUIRED
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "name" }]
+        type.path.components:
+        - ident: "package"
+        - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "name" }]
+        type.path.components:
+        - ident: "package"
+        - { ident: "Type", separator: SEPARATOR_SLASH }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - ident: "path"
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_SLASH }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "name" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components:
+          - extension.components:
+            - ident: "foo"
+            - { ident: "bar", separator: SEPARATOR_DOT }
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "name" }]
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components:
+          - extension.components:
+            - ident: "foo"
+            - { ident: "bar", separator: SEPARATOR_DOT }
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "name" }]
+        type.prefixed:
+          prefix: PREFIX_REQUIRED
+          type.path.components:
+          - extension.components:
+            - ident: "foo"
+            - { ident: "bar", separator: SEPARATOR_DOT }
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "name" }]
+        type.path.components:
+        - extension.components:
+          - ident: "foo"
+          - { ident: "bar", separator: SEPARATOR_DOT }
+        - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - extension.components:
+          - ident: "foo"
+          - { ident: "bar", separator: SEPARATOR_DOT }
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - extension.components:
+          - ident: "foo"
+          - { ident: "bar", separator: SEPARATOR_DOT }
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - extension.components:
+          - ident: "foo"
+          - { ident: "bar", separator: SEPARATOR_DOT }
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.prefixed:
+          prefix: PREFIX_REQUIRED
+          type.path.components:
+          - ident: "package"
+          - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components:
+        - extension.components:
+          - ident: "foo"
+          - { ident: "bar", separator: SEPARATOR_DOT }
+        - { ident: "name", separator: SEPARATOR_DOT }
+        type.path.components:
+        - ident: "package"
+        - { ident: "Type", separator: SEPARATOR_DOT }
+        value.literal.int_value: 1
+    - def:
+        name.components: [{ extension.components: [{ ident: "bar" }] }]
+        type.path.components: [{ extension.components: [{ ident: "foo" }] }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "foo" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "string" }]
+          - path.components:
+            - ident: "foo"
+            - extension.components: [{ ident: "bar" }]
+              separator: SEPARATOR_DOT
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "foo" }]
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "string" }]
+          - path.components:
+            - ident: "foo"
+            - { ident: "bar", separator: SEPARATOR_SLASH }
+        value.literal.int_value: 1

@@ -1,36 +1,36 @@
 tables:
   "testdata/fields/skip_wrong_kind.proto":
     symbols:
-      - fqn: "test"
-        kind: KIND_PACKAGE
-        file: "testdata/fields/skip_wrong_kind.proto"
-      - fqn: "test.M"
-        kind: KIND_MESSAGE
-        file: "testdata/fields/skip_wrong_kind.proto"
-        index: 1
-        visible: true
-      - fqn: "test.M.N"
-        kind: KIND_MESSAGE
-        file: "testdata/fields/skip_wrong_kind.proto"
-        index: 2
-        visible: true
-      - fqn: "test.M.P"
-        kind: KIND_MESSAGE
-        file: "testdata/fields/skip_wrong_kind.proto"
-        index: 3
-        visible: true
-      - fqn: "test.M.P.X"
-        kind: KIND_ENUM
-        file: "testdata/fields/skip_wrong_kind.proto"
-        index: 4
-        visible: true
-      - fqn: "test.M.P.n"
-        kind: KIND_FIELD
-        file: "testdata/fields/skip_wrong_kind.proto"
-        index: 2
-        visible: true
-      - fqn: "test.M.P.N"
-        kind: KIND_ENUM_VALUE
-        file: "testdata/fields/skip_wrong_kind.proto"
-        index: 1
-        visible: true
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/skip_wrong_kind.proto"
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/skip_wrong_kind.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.N"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/skip_wrong_kind.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.P"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/skip_wrong_kind.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.P.X"
+      kind: KIND_ENUM
+      file: "testdata/fields/skip_wrong_kind.proto"
+      index: 4
+      visible:
+    - fqn: "test.M.P.n"
+      kind: KIND_FIELD
+      file: "testdata/fields/skip_wrong_kind.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.P.N"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/fields/skip_wrong_kind.proto"
+      index: 1
+      visible:

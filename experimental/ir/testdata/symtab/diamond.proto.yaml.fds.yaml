@@ -1,16 +1,19 @@
 file:
-  - { name: "a.proto", package: "dep", message_type: [{ name: "X" }], syntax: "proto2" }
-  - name: "c.proto"
-    package: "dep"
-    dependency: ["a.proto"]
-    public_dependency: [0]
-    syntax: "proto2"
-  - name: "b.proto"
-    package: "dep"
-    dependency: ["a.proto"]
-    public_dependency: [0]
-    syntax: "proto2"
-  - name: "main.proto"
-    package: "main"
-    dependency: ["b.proto", "c.proto"]
-    syntax: "proto2"
+- name: "a.proto"
+  package: "dep"
+  message_type: [{ name: "X" }]
+  syntax: "proto2"
+- name: "c.proto"
+  package: "dep"
+  dependency: ["a.proto"]
+  public_dependency: [0]
+  syntax: "proto2"
+- name: "b.proto"
+  package: "dep"
+  dependency: ["a.proto"]
+  public_dependency: [0]
+  syntax: "proto2"
+- name: "main.proto"
+  package: "main"
+  dependency: ["b.proto", "c.proto"]
+  syntax: "proto2"

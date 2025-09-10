@@ -1,4 +1,10 @@
 file:
-  - { name: "c.proto", package: "buf.test", syntax: "proto2" }
-  - { name: "b.proto", package: "buf.test", dependency: ["c.proto"], syntax: "proto2" }
-  - { name: "a.proto", package: "buf.test", dependency: ["b.proto"], syntax: "proto2" }
+- { name: "c.proto", package: "buf.test", syntax: "proto2" }
+- name: "b.proto"
+  package: "buf.test"
+  dependency: ["c.proto"]
+  syntax: "proto2"
+- name: "a.proto"
+  package: "buf.test"
+  dependency: ["b.proto"]
+  syntax: "proto2"

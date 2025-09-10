@@ -1,21 +1,21 @@
 file:
-  - name: "testdata/options/values/int32.proto"
-    package: "buf.test"
-    dependency: ["google/protobuf/descriptor.proto"]
-    message_type:
-      - name: "Foo"
-        field:
-          - { name: "i1", number: 1, label: LABEL_REPEATED, type: TYPE_INT32 }
-          - { name: "i2", number: 2, label: LABEL_REPEATED, type: TYPE_INT32 }
-          - { name: "i3", number: 3, label: LABEL_REPEATED, type: TYPE_SFIXED32 }
-          - { name: "u1", number: 11, label: LABEL_REPEATED, type: TYPE_INT32 }
-          - { name: "u2", number: 12, label: LABEL_REPEATED, type: TYPE_FIXED32 }
-    extension:
-      - name: "x"
-        number: 1000
-        label: LABEL_OPTIONAL
-        type: TYPE_MESSAGE
-        type_name: ".buf.test.Foo"
-        extendee: ".google.protobuf.FileOptions"
-    options: {}
-    syntax: "proto2"
+- name: "testdata/options/values/int32.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - { name: "i1", number: 1, label: LABEL_REPEATED, type: TYPE_INT32 }
+    - { name: "i2", number: 2, label: LABEL_REPEATED, type: TYPE_INT32 }
+    - { name: "i3", number: 3, label: LABEL_REPEATED, type: TYPE_SFIXED32 }
+    - { name: "u1", number: 11, label: LABEL_REPEATED, type: TYPE_INT32 }
+    - { name: "u2", number: 12, label: LABEL_REPEATED, type: TYPE_FIXED32 }
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+  options: {}
+  syntax: "proto2"

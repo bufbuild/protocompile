@@ -1,82 +1,82 @@
 tables:
   "testdata/options/values/float.proto":
-    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
     symbols:
-      - fqn: "buf.test"
-        kind: KIND_PACKAGE
-        file: "testdata/options/values/float.proto"
-      - fqn: "buf.test.Foo"
-        kind: KIND_MESSAGE
-        file: "testdata/options/values/float.proto"
-        index: 1
-        visible: true
-      - fqn: "buf.test.Foo.f32"
-        kind: KIND_FIELD
-        file: "testdata/options/values/float.proto"
-        index: 1
-        visible: true
-      - fqn: "buf.test.Foo.f64"
-        kind: KIND_FIELD
-        file: "testdata/options/values/float.proto"
-        index: 2
-        visible: true
-      - fqn: "buf.test.x"
-        kind: KIND_EXTENSION
-        file: "testdata/options/values/float.proto"
-        index: 3
-        visible: true
-      - fqn: "buf.test.y"
-        kind: KIND_EXTENSION
-        file: "testdata/options/values/float.proto"
-        index: 4
-        visible: true
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/values/float.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/options/values/float.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.f32"
+      kind: KIND_FIELD
+      file: "testdata/options/values/float.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.f64"
+      kind: KIND_FIELD
+      file: "testdata/options/values/float.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/float.proto"
+      index: 3
+      visible:
+    - fqn: "buf.test.y"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/float.proto"
+      index: 4
+      visible:
     options.message.extns:
       "buf.test.x":
         message.fields:
           "f32":
             repeated.values:
-              - f32: 0
-              - f32: 0
-              - f32: -0
-              - f32: -0
-              - f32: 1e+10
-              - f32: 1e-10
-              - f32: 10
-              - f32: inf
-              - f32: -inf
-              - f32: nan@7fc00000
-              - f32: nan@ffc00000
-              - f32: inf
-              - f32: -inf
-              - f32: nan@7fc00000
-              - f32: nan@ffc00000
-              - f32: 3.1415927
-              - f32: 3.4028235e+38
-              - f32: 1.1754944e-38
-              - f32: 1.1920929e-07
-              - f32: inf
-              - f32: -inf
+            - f32: 0
+            - f32: 0
+            - f32: -0
+            - f32: -0
+            - f32: 1e+10
+            - f32: 1e-10
+            - f32: 10
+            - f32: +Inf
+            - f32: -Inf
+            - f32: NaN
+            - f32: NaN
+            - f32: +Inf
+            - f32: -Inf
+            - f32: NaN
+            - f32: NaN
+            - f32: 3.1415927
+            - f32: 3.4028235e+38
+            - f32: 1.1754944e-38
+            - f32: 1.1920929e-07
+            - f32: +Inf
+            - f32: -Inf
           "f64":
             repeated.values:
-              - f64: 0
-              - f64: 0
-              - f64: -0
-              - f64: -0
-              - f64: 1e+10
-              - f64: 1e-10
-              - f64: 10
-              - f64: inf
-              - f64: -inf
-              - f64: nan@7ff8000000000000
-              - f64: nan@fff8000000000000
-              - f64: inf
-              - f64: -inf
-              - f64: nan@7ff8000000000000
-              - f64: nan@fff8000000000000
-              - f64: 3.141592653589793
-              - f64: 1.7976931348623157e+308
-              - f64: 2.2250738585072014e-308
-              - f64: 2.220446049250313e-16
-              - f64: inf
-              - f64: -inf
-      "buf.test.y": { repeated.values: [{ f32: inf }, { f32: nan@7fc00000 }] }
+            - f64: 0
+            - f64: 0
+            - f64: -0
+            - f64: -0
+            - f64: 1e+10
+            - f64: 1e-10
+            - f64: 10
+            - f64: +Inf
+            - f64: -Inf
+            - f64: NaN
+            - f64: NaN
+            - f64: +Inf
+            - f64: -Inf
+            - f64: NaN
+            - f64: NaN
+            - f64: 3.141592653589793
+            - f64: 1.7976931348623157e+308
+            - f64: 2.2250738585072014e-308
+            - f64: 2.220446049250313e-16
+            - f64: +Inf
+            - f64: -Inf
+      "buf.test.y": { repeated.values: [{ f32: +Inf }, { f32: NaN }] }

@@ -1,23 +1,23 @@
 file:
-  - name: "testdata/options/values/float.proto"
-    package: "buf.test"
-    dependency: ["google/protobuf/descriptor.proto"]
-    message_type:
-      - name: "Foo"
-        field:
-          - { name: "f32", number: 1, label: LABEL_REPEATED, type: TYPE_FLOAT }
-          - { name: "f64", number: 2, label: LABEL_REPEATED, type: TYPE_DOUBLE }
-    extension:
-      - name: "x"
-        number: 1000
-        label: LABEL_OPTIONAL
-        type: TYPE_MESSAGE
-        type_name: ".buf.test.Foo"
-        extendee: ".google.protobuf.FileOptions"
-      - name: "y"
-        number: 1
-        label: LABEL_REPEATED
-        type: TYPE_FLOAT
-        extendee: ".google.protobuf.FileOptions"
-    options: {}
-    syntax: "proto2"
+- name: "testdata/options/values/float.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - { name: "f32", number: 1, label: LABEL_REPEATED, type: TYPE_FLOAT }
+    - { name: "f64", number: 2, label: LABEL_REPEATED, type: TYPE_DOUBLE }
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+  - name: "y"
+    number: 1
+    label: LABEL_REPEATED
+    type: TYPE_FLOAT
+    extendee: ".google.protobuf.FileOptions"
+  options: {}
+  syntax: "proto2"

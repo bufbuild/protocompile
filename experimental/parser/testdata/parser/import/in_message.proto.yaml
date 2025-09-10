@@ -1,15 +1,17 @@
 decls:
-  - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
-  - package.path.components: [{ ident: "test" }]
-  - def:
-      kind: KIND_MESSAGE
-      name.components: [{ ident: "M" }]
-      body.decls:
-        - import.import_path.literal.string_value: "foo.proto"
-        - import:
-            modifier: MODIFIER_PUBLIC
-            import_path.literal.string_value: "foo.proto"
-        - import:
-            modifier: MODIFIER_WEAK
-            import_path.literal.string_value: "foo.proto"
-        - import.import_path.path.components: [{ ident: "foo" }, { ident: "proto", separator: SEPARATOR_DOT }]
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - import.import_path.literal.string_value: "foo.proto"
+    - import:
+        modifier: MODIFIER_PUBLIC
+        import_path.literal.string_value: "foo.proto"
+    - import:
+        modifier: MODIFIER_WEAK
+        import_path.literal.string_value: "foo.proto"
+    - import.import_path.path.components:
+      - ident: "foo"
+      - { ident: "proto", separator: SEPARATOR_DOT }

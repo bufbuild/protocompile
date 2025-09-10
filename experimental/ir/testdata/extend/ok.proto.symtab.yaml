@@ -1,54 +1,54 @@
 tables:
   "testdata/extend/ok.proto":
     symbols:
-      - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/extend/ok.proto" }
-      - fqn: "test.Foo"
-        kind: KIND_MESSAGE
-        file: "testdata/extend/ok.proto"
-        index: 1
-        visible: true
-      - fqn: "test.Foo.Foo"
-        kind: KIND_MESSAGE
-        file: "testdata/extend/ok.proto"
-        index: 2
-        visible: true
-      - fqn: "test.Foo.x1"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 1
-        visible: true
-      - fqn: "test.Foo.x2"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 2
-        visible: true
-      - fqn: "test.Foo.x3"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 3
-        visible: true
-      - fqn: "test.Foo.x4"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 4
-        visible: true
-      - fqn: "test.x5"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 5
-        visible: true
-      - fqn: "test.x6"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 6
-        visible: true
-      - fqn: "test.x7"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 7
-        visible: true
-      - fqn: "test.x8"
-        kind: KIND_EXTENSION
-        file: "testdata/extend/ok.proto"
-        index: 8
-        visible: true
+    - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/extend/ok.proto" }
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/ok.proto"
+      index: 1
+      visible:
+    - fqn: "test.Foo.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/ok.proto"
+      index: 2
+      visible:
+    - fqn: "test.Foo.x1"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 1
+      visible:
+    - fqn: "test.Foo.x2"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 2
+      visible:
+    - fqn: "test.Foo.x3"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 3
+      visible:
+    - fqn: "test.Foo.x4"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 4
+      visible:
+    - fqn: "test.x5"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 5
+      visible:
+    - fqn: "test.x6"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 6
+      visible:
+    - fqn: "test.x7"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 7
+      visible:
+    - fqn: "test.x8"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/ok.proto"
+      index: 8
+      visible:

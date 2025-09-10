@@ -1,20 +1,20 @@
 file:
-  - name: "testdata/options/builtin.proto"
-    package: "buf.test"
-    message_type:
-      - name: "Foo"
-        field:
-          - name: "foo"
-            number: 1
-            label: LABEL_OPTIONAL
-            type: TYPE_MESSAGE
-            type_name: ".buf.test.Foo"
-            options: {}
-          - { name: "bar", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-        options: {}
-    enum_type:
-      - name: "Bar"
-        value: [{ name: "BAR_ZERO", number: 0, options: {} }]
-        options: {}
+- name: "testdata/options/builtin.proto"
+  package: "buf.test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Foo"
+      options: {}
+    - { name: "bar", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     options: {}
-    syntax: "proto2"
+  enum_type:
+  - name: "Bar"
+    value: [{ name: "BAR_ZERO", number: 0, options: {} }]
+    options: {}
+  options: {}
+  syntax: "proto2"

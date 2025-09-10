@@ -1,29 +1,29 @@
 file:
-  - name: "testdata/extend/wrong_kind.proto"
-    package: "test"
-    message_type:
-      - name: "Foo"
-        field:
-          - name: "a"
-            number: 5
-            label: LABEL_OPTIONAL
-            type: TYPE_INT32
-            oneof_index: 0
-        extension:
-          - { name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-          - { name: "y", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-          - name: "z"
-            number: 3
-            label: LABEL_OPTIONAL
-            type: TYPE_INT32
-            extendee: ".test.Foo.Bar"
-          - { name: "w", number: 4, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-          - { name: "b", number: 6, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-          - name: "capacity"
-            number: 7
-            label: LABEL_OPTIONAL
-            type: TYPE_INT32
-            extendee: ".string"
-        enum_type: [{ name: "Bar", value: [{ name: "BAZ", number: 1 }] }]
-        oneof_decl: [{ name: "self" }]
-    syntax: "proto2"
+- name: "testdata/extend/wrong_kind.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "a"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+    extension:
+    - { name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - name: "z"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      extendee: ".test.Foo.Bar"
+    - { name: "w", number: 4, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "b", number: 6, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - name: "capacity"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      extendee: ".string"
+    enum_type: [{ name: "Bar", value: [{ name: "BAZ", number: 1 }] }]
+    oneof_decl: [{ name: "self" }]
+  syntax: "proto2"

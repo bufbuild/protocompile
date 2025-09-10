@@ -1,22 +1,22 @@
 file:
-  - name: "a.proto"
-    package: "foo.bar"
-    message_type: [{ name: "M" }]
-    syntax: "proto3"
-  - name: "b.proto"
-    package: "foo"
-    dependency: ["a.proto"]
-    message_type: [{ name: "M" }]
-    syntax: "proto3"
-  - name: "c.proto"
-    package: "foo.bar.baz"
-    dependency: ["b.proto"]
-    message_type:
-      - name: "N"
-        field:
-          - name: "m"
-            number: 1
-            label: LABEL_OPTIONAL
-            type: TYPE_MESSAGE
-            type_name: ".foo.M"
-    syntax: "proto3"
+- name: "a.proto"
+  package: "foo.bar"
+  message_type: [{ name: "M" }]
+  syntax: "proto3"
+- name: "b.proto"
+  package: "foo"
+  dependency: ["a.proto"]
+  message_type: [{ name: "M" }]
+  syntax: "proto3"
+- name: "c.proto"
+  package: "foo.bar.baz"
+  dependency: ["b.proto"]
+  message_type:
+  - name: "N"
+    field:
+    - name: "m"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".foo.M"
+  syntax: "proto3"

@@ -1,41 +1,41 @@
 tables:
   "testdata/options/values/bool.proto":
-    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
     symbols:
-      - fqn: "buf.test"
-        kind: KIND_PACKAGE
-        file: "testdata/options/values/bool.proto"
-      - fqn: "buf.test.Foo"
-        kind: KIND_MESSAGE
-        file: "testdata/options/values/bool.proto"
-        index: 1
-        visible: true
-      - fqn: "buf.test.Foo.x"
-        kind: KIND_FIELD
-        file: "testdata/options/values/bool.proto"
-        index: 1
-        visible: true
-      - fqn: "buf.test.x"
-        kind: KIND_EXTENSION
-        file: "testdata/options/values/bool.proto"
-        index: 2
-        visible: true
-      - fqn: "buf.test.y"
-        kind: KIND_EXTENSION
-        file: "testdata/options/values/bool.proto"
-        index: 3
-        visible: true
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/values/bool.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/options/values/bool.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.x"
+      kind: KIND_FIELD
+      file: "testdata/options/values/bool.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/bool.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.y"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/bool.proto"
+      index: 3
+      visible:
     options.message.extns:
       "buf.test.x":
         message.fields:
           "x":
             repeated.values:
-              - bool: true
-              - bool: false
-              - bool: true
-              - bool: false
-              - bool: true
-              - bool: false
-              - bool: true
-              - bool: true
-      "buf.test.y": { repeated.values: [{ bool: true }, { bool: false }] }
+            - bool:
+            - bool:
+            - bool:
+            - bool:
+            - bool:
+            - bool:
+            - bool:
+            - bool:
+      "buf.test.y": { repeated.values: [{ bool: }, { bool: }] }

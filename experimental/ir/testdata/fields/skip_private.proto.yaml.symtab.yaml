@@ -1,17 +1,17 @@
 tables:
   "c.proto":
-    imports: [{ path: "a.proto", transitive: true }, { path: "b.proto", visible: true }]
+    imports: [{ path: "a.proto", transitive: }, { path: "b.proto", visible: }]
     symbols:
-      - { fqn: "foo", kind: KIND_PACKAGE, file: "b.proto" }
-      - { fqn: "foo.M", kind: KIND_MESSAGE, file: "b.proto", index: 1, visible: true }
-      - { fqn: "foo.bar.baz", kind: KIND_PACKAGE, file: "c.proto" }
-      - fqn: "foo.bar.baz.N"
-        kind: KIND_MESSAGE
-        file: "c.proto"
-        index: 1
-        visible: true
-      - fqn: "foo.bar.baz.N.m"
-        kind: KIND_FIELD
-        file: "c.proto"
-        index: 1
-        visible: true
+    - { fqn: "foo", kind: KIND_PACKAGE, file: "b.proto" }
+    - { fqn: "foo.M", kind: KIND_MESSAGE, file: "b.proto", index: 1, visible: }
+    - { fqn: "foo.bar.baz", kind: KIND_PACKAGE, file: "c.proto" }
+    - fqn: "foo.bar.baz.N"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible:
+    - fqn: "foo.bar.baz.N.m"
+      kind: KIND_FIELD
+      file: "c.proto"
+      index: 1
+      visible:

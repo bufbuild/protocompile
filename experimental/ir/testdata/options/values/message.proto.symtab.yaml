@@ -1,30 +1,32 @@
 tables:
   "testdata/options/values/message.proto":
-    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
     symbols:
-      - fqn: "buf.test"
-        kind: KIND_PACKAGE
-        file: "testdata/options/values/message.proto"
-      - fqn: "buf.test.Foo"
-        kind: KIND_MESSAGE
-        file: "testdata/options/values/message.proto"
-        index: 1
-        visible: true
-      - fqn: "buf.test.Foo.y"
-        kind: KIND_FIELD
-        file: "testdata/options/values/message.proto"
-        index: 1
-        visible: true
-      - fqn: "buf.test.Foo.z"
-        kind: KIND_EXTENSION
-        file: "testdata/options/values/message.proto"
-        index: 2
-        visible: true
-      - fqn: "buf.test.x"
-        kind: KIND_EXTENSION
-        file: "testdata/options/values/message.proto"
-        index: 3
-        visible: true
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/values/message.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/options/values/message.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.y"
+      kind: KIND_FIELD
+      file: "testdata/options/values/message.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.z"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/message.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/message.proto"
+      index: 3
+      visible:
     options.message.extns:
       "buf.test.x":
-        message: { fields: { "y": { i32: 0 } }, extns: { "buf.test.Foo.z": { i32: 1 } } }
+        message:
+          fields: { "y": { i32: 0 } }
+          extns: { "buf.test.Foo.z": { i32: 1 } }

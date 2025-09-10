@@ -1,11 +1,17 @@
 file:
-  - { name: "a.proto", package: "test", message_type: [{ name: "M" }], syntax: "proto3" }
-  - { name: "b.proto", package: "test", dependency: ["a.proto"], syntax: "proto3" }
-  - name: "c.proto"
-    package: "test"
-    dependency: ["b.proto"]
-    extension:
-      - { name: "a", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "b", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "c", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    syntax: "proto3"
+- name: "a.proto"
+  package: "test"
+  message_type: [{ name: "M" }]
+  syntax: "proto3"
+- name: "b.proto"
+  package: "test"
+  dependency: ["a.proto"]
+  syntax: "proto3"
+- name: "c.proto"
+  package: "test"
+  dependency: ["b.proto"]
+  extension:
+  - { name: "a", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+  - { name: "b", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+  - { name: "c", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+  syntax: "proto3"

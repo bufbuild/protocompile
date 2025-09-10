@@ -1,43 +1,43 @@
 file:
-  - name: "testdata/fields/ok.proto"
-    package: "test"
-    message_type:
-      - name: "Foo"
-        field:
-          - name: "foo"
-            number: 1
-            label: LABEL_OPTIONAL
-            type: TYPE_MESSAGE
-            type_name: ".test.Foo"
-            oneof_index: 1
-            proto3_optional: true
-          - name: "bar"
-            number: 2
-            label: LABEL_OPTIONAL
-            type: TYPE_MESSAGE
-            type_name: ".test.Foo.Bar"
-          - name: "bars"
-            number: 3
-            label: LABEL_REPEATED
-            type: TYPE_MESSAGE
-            type_name: ".test.Foo.Bar"
-          - name: "foos"
-            number: 4
-            label: LABEL_REPEATED
-            type: TYPE_MESSAGE
-            type_name: ".test.Foo"
-          - name: "foo0"
-            number: 5
-            label: LABEL_OPTIONAL
-            type: TYPE_MESSAGE
-            type_name: ".test.Foo"
-            oneof_index: 0
-          - name: "bar0"
-            number: 6
-            label: LABEL_OPTIONAL
-            type: TYPE_MESSAGE
-            type_name: ".test.Foo.Bar"
-            oneof_index: 0
-        nested_type: [{ name: "Bar" }]
-        oneof_decl: [{ name: "baz" }, { name: "_foo" }]
-    syntax: "proto3"
+- name: "testdata/fields/ok.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo"
+      oneof_index: 1
+      proto3_optional:
+    - name: "bar"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.Bar"
+    - name: "bars"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.Bar"
+    - name: "foos"
+      number: 4
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo"
+    - name: "foo0"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo"
+      oneof_index: 0
+    - name: "bar0"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.Bar"
+      oneof_index: 0
+    nested_type: [{ name: "Bar" }]
+    oneof_decl: [{ name: "baz" }, { name: "_foo" }]
+  syntax: "proto3"
