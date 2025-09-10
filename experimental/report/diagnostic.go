@@ -114,6 +114,37 @@ func (d *Diagnostic) Level() Level {
 	return d.level
 }
 
+// Message returns this diagnostic's message.
+func (d *Diagnostic) Message() string {
+	return d.message
+}
+
+// Tag returns this diagnostic's tag.
+func (d *Diagnostic) Tag() string {
+	return d.tag
+}
+
+// InFile returns the path of the file configured to this diagnostic if this diagnostic had
+// no primary span to mention the given file and/or no annotations.
+func (d *Diagnostic) InFile() string {
+	return d.inFile
+}
+
+// Notes returns this diagnostic's notes.
+func (d *Diagnostic) Notes() []string {
+	return d.notes
+}
+
+// Help returns this diagnostic's suggestions.
+func (d *Diagnostic) Help() []string {
+	return d.help
+}
+
+// Debug returns this diagnostic's debugging information.
+func (d *Diagnostic) Debug() []string {
+	return d.debug
+}
+
 // Is checks whether this diagnostic has a particular tag.
 func (d *Diagnostic) Is(tag string) bool {
 	return d.tag == tag
