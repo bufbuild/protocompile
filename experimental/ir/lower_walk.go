@@ -15,14 +15,16 @@
 package ir
 
 import (
-	"path/filepath"
+	"math"
 	"slices"
+	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // walker is the state struct for the AST-walking logic.
@@ -40,14 +42,10 @@ type walker struct {
 func (w *walker) walk() {
 	c := w.Context()
 
-	path := filepath.Clean(w.AST().Span().File.Path())
-	path = filepath.ToSlash(path)
-	c.path = c.session.intern.Intern(path)
-
 	if pkg := w.AST().Package(); !pkg.IsZero() {
 		c.pkg = c.session.intern.Intern(pkg.Path().Canonicalized())
 	}
-	w.pkg = w.Package().ToAbsolute()
+	w.pkg = w.Package()
 
 	if syn := w.AST().Syntax(); !syn.IsZero() {
 		unquoted, _ := syn.Value().AsLiteral().AsString()
@@ -58,8 +56,8 @@ func (w *walker) walk() {
 }
 
 type extend struct {
-	parent Type
-	extend ast.DefExtend
+	parent   Type
+	extendee arena.Pointer[rawExtendee]
 }
 
 type oneof struct {
@@ -89,6 +87,9 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 	case ast.DeclKindRange:
+		if w.Context().File().Path() == DescriptorProtoPath {
+			return
+		}
 		sorry("ranges")
 
 	case ast.DeclKindDef:
@@ -124,8 +125,8 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 
 		case ast.DefKindExtend:
 			w.recurse(def.Body().AsAny(), extend{
-				parent: extractParentType(parent),
-				extend: def.AsExtend(),
+				parent:   extractParentType(parent),
+				extendee: w.newExtendee(def.AsExtend(), parent),
 			})
 
 		case ast.DefKindService:
@@ -135,7 +136,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			sorry("methods")
 
 		case ast.DefKindOption:
-			return // Handled later, after symbol table building.
+			// Options are lowered elsewhere.
 		}
 	}
 }
@@ -147,10 +148,15 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	fqn := w.fullname(parentTy, name)
 
 	raw := c.arenas.types.NewCompressed(rawType{
-		def:  def,
-		name: c.session.intern.Intern(name),
-		fqn:  c.session.intern.Intern(fqn),
+		def:    def,
+		name:   c.session.intern.Intern(name),
+		fqn:    c.session.intern.Intern(fqn),
+		parent: c.arenas.types.Compress(parentTy.raw),
 	})
+
+	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
+	ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
+	ty.raw.memberByNumber = sync.OnceValue(ty.makeMembersByNumber)
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)
@@ -160,44 +166,46 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		c.topLevelTypesEnd++
 	}
 
-	return Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
+	return ty
 }
 
-func (w *walker) newField(def ast.DeclDef, parent any) Field {
+func (w *walker) newField(def ast.DeclDef, parent any) Member {
 	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
-	id := c.arenas.fields.NewCompressed(rawField{
+	id := c.arenas.members.NewCompressed(rawMember{
 		def:    def,
 		name:   c.session.intern.Intern(name),
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
+		oneof:  math.MinInt32,
 	})
-	raw := c.arenas.fields.Deref(id)
+	raw := c.arenas.members.Deref(id)
 
 	switch parent := parent.(type) {
 	case oneof:
-		raw.oneof = int32(parent.index)
-		parent.raw().members = append(parent.raw().members, id)
+		raw.oneof = int32(parent.Index())
+		parent.raw.members = append(parent.raw.members, id)
 	case extend:
-		// TODO: Cram the extension type somewhere so we can resolve it later.
+		raw.extendee = parent.extendee
 	}
 
 	if !parentTy.IsZero() {
-		parentTy.raw.fields = append(parentTy.raw.fields, id)
-
-		if _, ok := parent.(extend); !ok {
+		if _, ok := parent.(extend); ok {
+			parentTy.raw.members = append(parentTy.raw.members, id)
 			c.extns = append(c.extns, id)
-			parentTy.raw.fieldsExtnStart++
+		} else {
+			parentTy.raw.members = slices.Insert(parentTy.raw.members, int(parentTy.raw.extnsStart), id)
+			parentTy.raw.extnsStart++
 		}
-	} else if _, ok := parent.(extend); !ok {
+	} else if _, ok := parent.(extend); ok {
 		c.extns = slices.Insert(c.extns, c.topLevelExtnsEnd, id)
 		c.topLevelExtnsEnd++
 	}
 
-	return Field{internal.NewWith(w.Context()), raw}
+	return Member{internal.NewWith(w.Context()), raw}
 }
 
 func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
@@ -205,17 +213,29 @@ func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 	name := def.Name.Name()
 	fqn := w.fullname(parentTy, name)
 
-	var index int
-	if !parentTy.IsZero() {
-		index = len(parentTy.raw.oneofs)
-		parentTy.raw.oneofs = append(parentTy.raw.oneofs, rawOneof{
-			def:  def.Decl,
-			name: w.Context().session.intern.Intern(name),
-			fqn:  w.Context().session.intern.Intern(fqn),
-		})
+	if parentTy.IsZero() {
+		return Oneof{}
 	}
 
-	return Oneof{internal.NewWith(w.Context()), index, parentTy.raw}
+	raw := w.Context().arenas.oneofs.NewCompressed(rawOneof{
+		def:       def.Decl,
+		name:      w.Context().session.intern.Intern(name),
+		fqn:       w.Context().session.intern.Intern(fqn),
+		index:     uint32(len(parentTy.raw.oneofs)),
+		container: w.Context().arenas.types.Compress(parentTy.raw),
+	})
+
+	parentTy.raw.oneofs = append(parentTy.raw.oneofs, raw)
+	return wrapOneof(w.Context(), raw)
+}
+
+func (w *walker) newExtendee(def ast.DefExtend, parent any) arena.Pointer[rawExtendee] {
+	parentTy := extractParentType(parent)
+
+	return w.Context().arenas.extendees.NewCompressed(rawExtendee{
+		def:    def.Decl,
+		parent: w.Context().arenas.types.Compress(parentTy.raw),
+	})
 }
 
 func (w *walker) fullname(parentTy Type, name string) string {

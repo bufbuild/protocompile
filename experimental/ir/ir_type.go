@@ -20,12 +20,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-// Type is a Protobuf field type.
+// Type is a Protobuf message field type.
 type Type struct {
 	withContext
 
@@ -35,15 +36,20 @@ type Type struct {
 type rawType struct {
 	def             ast.DeclDef
 	nested          []arena.Pointer[rawType]
-	fields          []arena.Pointer[rawField]
+	members         []arena.Pointer[rawMember]
+	memberByName    func() intern.Map[arena.Pointer[rawMember]]
+	memberByNumber  func() map[int32]arena.Pointer[rawMember]
 	ranges          []rawRange
 	reservedNames   []rawReservedName
-	oneofs          []rawOneof
-	options         []arena.Pointer[rawOption]
+	oneofs          []arena.Pointer[rawOneof]
+	options         arena.Pointer[rawValue]
 	fqn, name       intern.ID // 0 for predeclared types.
-	fieldsExtnStart uint32
+	parent          arena.Pointer[rawType]
+	extnsStart      uint32
 	rangesExtnStart uint32
-	isEnum          bool
+
+	isEnum      bool
+	haveNumbers bool
 }
 
 // primitiveCtx represents a special file that defines all of the primitive
@@ -63,9 +69,14 @@ var primitiveCtx = func() *Context {
 
 		for nextPtr != int(n) {
 			_ = ctx.arenas.types.NewCompressed(rawType{})
+			_ = ctx.arenas.symbols.NewCompressed(rawSymbol{})
 			nextPtr++
 		}
 		ptr := ctx.arenas.types.NewCompressed(rawType{})
+		ctx.arenas.symbols.NewCompressed(rawSymbol{
+			kind: SymbolKindScalar,
+			data: ptr.Untyped(),
+		})
 		nextPtr++
 
 		if int(ptr) != int(n) {
@@ -103,14 +114,20 @@ func (t Type) IsPredeclared() bool {
 
 // IsMessage returns whether this is a message type.
 func (t Type) IsMessage() bool {
-	return !t.IsPredeclared() && !t.raw.isEnum
+	return !t.IsZero() && !t.IsPredeclared() && !t.raw.isEnum
 }
 
 // IsMessage returns whether this is an enum type.
 func (t Type) IsEnum() bool {
 	// All of the predeclared types have isEnum set to false, so we don't
 	// need to check for them here.
-	return t.raw.isEnum
+	return !t.IsZero() && t.raw.isEnum
+}
+
+// IsAny returns whether this is the type google.protobuf.Any, which gets special
+// treatment in the language.
+func (t Type) IsAny() bool {
+	return t.InternedFullName() == t.Context().session.langIDs.AnyPath
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
@@ -151,6 +168,14 @@ func (t Type) FullName() FullName {
 	return FullName(t.Context().session.intern.Value(t.raw.fqn))
 }
 
+// Scope returns the scope in which this type is defined.
+func (t Type) Scope() FullName {
+	if t.IsZero() {
+		return ""
+	}
+	return FullName(t.Context().session.intern.Value(t.InternedScope()))
+}
+
 // InternedName returns the intern ID for [Type.FullName]().Name()
 //
 // Predeclared types do not have an interned name.
@@ -171,6 +196,28 @@ func (t Type) InternedFullName() intern.ID {
 	return t.raw.fqn
 }
 
+// InternedScope returns the intern ID for [Type.Scope]
+//
+// Predeclared types do not have an interned name.
+func (t Type) InternedScope() intern.ID {
+	if t.IsZero() {
+		return 0
+	}
+	if parent := t.Parent(); !parent.IsZero() {
+		return parent.InternedFullName()
+	}
+	return t.Context().File().InternedPackage()
+}
+
+// Parent returns the type that this type is declared inside of, if it isn't
+// at the top level.
+func (t Type) Parent() Type {
+	if t.IsZero() || t.raw.parent.Nil() {
+		return Type{}
+	}
+	return wrapType(t.Context(), ref[rawType]{ptr: t.raw.parent})
+}
+
 // Nested returns those types which are nested within this one.
 //
 // Only message types have nested types.
@@ -184,26 +231,82 @@ func (t Type) Nested() seq.Indexer[Type] {
 	)
 }
 
-// Fields returns the fields of this type.
+// Members returns the members of this type.
 //
-// Predeclared types have no fields; message and enum types do. For enums, a
-// field corresponds to an enum value, and will report the zero value for its
-// type.
-func (t Type) Fields() seq.Indexer[Field] {
+// Predeclared types have no members; message and enum types do.
+func (t Type) Members() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		t.raw.fields[:t.raw.fieldsExtnStart],
-		func(_ int, p arena.Pointer[rawField]) Field {
-			return wrapField(t.Context(), ref[rawField]{ptr: p})
+		t.raw.members[:t.raw.extnsStart],
+		func(_ int, p arena.Pointer[rawMember]) Member {
+			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
 
+// MemberByName looks up a member with the given name.
+//
+// Returns a zero member if there is no such member.
+func (t Type) MemberByName(name string) Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	id, ok := t.Context().session.intern.Query(name)
+	if !ok {
+		return Member{}
+	}
+	return t.MemberByInternedName(id)
+}
+
+// MemberByInternedName is like [Type.MemberByName], but takes an interned string.
+func (t Type) MemberByInternedName(name intern.ID) Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
+}
+
+// MemberByNumber looks up a member with the given number.
+//
+// Returns a zero member if there is no such member.
+func (t Type) MemberByNumber(number int32) Member {
+	if t.IsZero() {
+		return Member{}
+	}
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByNumber()[number]})
+}
+
+// membersByNameFunc creates the MemberByName map. This is used to keep
+// construction of this map lazy.
+func (t Type) makeMembersByName() intern.Map[arena.Pointer[rawMember]] {
+	table := make(intern.Map[arena.Pointer[rawMember]], t.Members().Len())
+	for _, ptr := range t.raw.members[:t.raw.extnsStart] {
+		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
+		table[field.InternedName()] = ptr
+	}
+	return table
+}
+
+// membersByNameFunc creates the FieldByName map. This is used to keep
+// construction of this map lazy.
+func (t Type) makeMembersByNumber() map[int32]arena.Pointer[rawMember] {
+	if !t.raw.haveNumbers {
+		panic("called MemberByNumber before numbers were evaluated")
+	}
+
+	table := make(map[int32]arena.Pointer[rawMember], t.Members().Len())
+	for _, ptr := range t.raw.members[:t.raw.extnsStart] {
+		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
+		table[field.Number()] = ptr
+	}
+	return table
+}
+
 // Extensions returns any extensions nested within this type.
-func (t Type) Extensions() seq.Indexer[Field] {
+func (t Type) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		t.raw.fields[t.raw.fieldsExtnStart:],
-		func(_ int, p arena.Pointer[rawField]) Field {
-			return wrapField(t.Context(), ref[rawField]{ptr: p})
+		t.raw.members[t.raw.extnsStart:],
+		func(_ int, p arena.Pointer[rawMember]) Member {
+			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
@@ -240,20 +343,27 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.raw.oneofs,
-		func(i int, _ rawOneof) Oneof {
-			return Oneof{t.withContext, i, t.raw}
+		func(_ int, p arena.Pointer[rawOneof]) Oneof {
+			return wrapOneof(t.Context(), p)
 		},
 	)
 }
 
 // Options returns the options applied to this type.
-func (t Type) Options() seq.Indexer[Option] {
-	return seq.NewFixedSlice(
-		t.raw.options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(t.Context(), p)
-		},
-	)
+func (t Type) Options() MessageValue {
+	return wrapValue(t.Context(), t.raw.options).AsMessage()
+}
+
+// noun returns a [taxa.Noun] for diagnostics.
+func (t Type) noun() taxa.Noun {
+	switch {
+	case t.IsPredeclared():
+		return taxa.ScalarType
+	case t.IsEnum():
+		return taxa.EnumType
+	default:
+		return taxa.MessageType
+	}
 }
 
 func wrapType(c *Context, r ref[rawType]) Type {
@@ -261,18 +371,18 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		return Type{}
 	}
 
-	var ctx *Context
-	switch {
-	case r.file == -1:
-		ctx = primitiveCtx
-	case r.file > 0:
-		ctx = c.imports.files[r.file-1].Context()
-	default:
-		ctx = c.File().Context()
-	}
-
+	c = r.context(c)
 	return Type{
-		withContext: internal.NewWith(ctx),
-		raw:         ctx.arenas.types.Deref(r.ptr),
+		withContext: internal.NewWith(c),
+		raw:         c.arenas.types.Deref(r.ptr),
 	}
+}
+
+func compressType(c *Context, ty Type) ref[rawType] {
+	var ref ref[rawType]
+	if ty.Context() != c {
+		ref.file = int32(c.imports.byPath[ty.Context().File().InternedPath()] + 1)
+	}
+	ref.ptr = ty.Context().arenas.types.Compress(ty.raw)
+	return ref
 }

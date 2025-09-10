@@ -48,19 +48,53 @@ type Context struct {
 	types            []arena.Pointer[rawType]
 	topLevelTypesEnd int // Index of the last top-level type in types.
 
-	extns            []arena.Pointer[rawField]
+	extns            []arena.Pointer[rawMember]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options []arena.Pointer[rawOption]
+	options arena.Pointer[rawValue]
+
+	// Table of all symbols transitively imported by this file. This is all
+	// local symbols plus the imported tables of all direct imports. Importing
+	// everything and checking visibility later allows us to diagnose
+	// missing import errors.
+
+	// This file's symbol tables. Each file has two symbol tables: its imported
+	// symbols and its exported symbols.
+	//
+	// The exported symbols are formed from the file's local symbols, and the
+	// exported symbols of each transitive public import.
+	//
+	// The imported symbols are the exported symbols plus the exported symbols
+	// of each direct import.
+	exported, imported symtab
+
+	langSymbols *langSymbols
 
 	arenas struct {
-		types    arena.Arena[rawType]
-		fields   arena.Arena[rawField]
-		oneofs   arena.Arena[rawOneof]
-		options  arena.Arena[rawOption]
+		types     arena.Arena[rawType]
+		members   arena.Arena[rawMember]
+		extendees arena.Arena[rawExtendee]
+		oneofs    arena.Arena[rawOneof]
+		symbols   arena.Arena[rawSymbol]
+
+		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
-		arrays   arena.Arena[[]rawValue]
+		arrays   arena.Arena[[]rawValueBits]
 	}
+}
+
+// langSymbols contains those symbols that are built into the language, and which the compiler cannot
+// handle not being present. This field is only present in the Context
+// for descriptor.proto.
+//
+// See [resolveLangSymbols] for where they are resolved.
+type langSymbols struct {
+	fileOptions,
+	messageOptions,
+	fieldOptions,
+	oneofOptions,
+	enumOptions,
+	enumValueOptions arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]
@@ -73,6 +107,18 @@ type ref[T any] struct {
 	// import (with its index offset by 1).
 	file int32
 	ptr  arena.Pointer[T]
+}
+
+// context returns the context for this reference relative to a base context.
+func (r ref[T]) context(base *Context) *Context {
+	switch r.file {
+	case 0:
+		return base
+	case -1:
+		return primitiveCtx
+	default:
+		return base.imports.files[r.file-1].Context()
+	}
 }
 
 // File returns the file associated with this context.
@@ -98,11 +144,17 @@ type withContext2 struct{ internal.With[*Context] }
 
 // AST returns the AST this file was parsed from.
 func (f File) AST() ast.File {
+	if f.IsZero() {
+		return ast.File{}
+	}
 	return f.Context().ast
 }
 
 // Syntax returns the syntax pragma that applies to this file.
 func (f File) Syntax() syntax.Syntax {
+	if f.IsZero() {
+		return syntax.Unknown
+	}
 	return f.Context().syntax
 }
 
@@ -110,13 +162,26 @@ func (f File) Syntax() syntax.Syntax {
 //
 // This need not be the same as [File.AST]().Span().Path().
 func (f File) Path() string {
+	if f.IsZero() {
+		return ""
+	}
 	c := f.Context()
 	return c.session.intern.Value(c.path)
 }
 
 // InternedPackage returns the intern ID for the value of [File.Path].
 func (f File) InternedPath() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
 	return f.Context().path
+}
+
+// IsDescriptorProto returns whether this is the special file
+// google/protobuf/descriptor.proto, which is given special treatment in
+// the language.
+func (f File) IsDescriptorProto() bool {
+	return f.InternedPath() == f.Context().session.langIDs.DescriptorFile
 }
 
 // Package returns the package name for this file.
@@ -124,12 +189,18 @@ func (f File) InternedPath() intern.ID {
 // The name will not include a leading dot. It will be empty for the empty
 // package.
 func (f File) Package() FullName {
+	if f.IsZero() {
+		return ""
+	}
 	c := f.Context()
 	return FullName(c.session.intern.Value(c.pkg))
 }
 
 // InternedPackage returns the intern ID for the value of [File.Package].
 func (f File) InternedPackage() intern.ID {
+	if f.IsZero() {
+		return 0
+	}
 	return f.Context().pkg
 }
 
@@ -144,6 +215,16 @@ func (f File) Imports() seq.Indexer[Import] {
 // This function does not report whether those imports are weak or not.
 func (f File) TransitiveImports() seq.Indexer[Import] {
 	return f.Context().imports.Transitive()
+}
+
+// ImportFor returns import metadata for a given file, if this file imports it.
+func (f File) ImportFor(that File) Import {
+	idx, ok := f.Context().imports.byPath[that.InternedPath()]
+	if !ok {
+		return Import{}
+	}
+
+	return f.TransitiveImports().At(int(idx))
 }
 
 // Types returns the top level types of this file.
@@ -170,33 +251,42 @@ func (f File) AllTypes() seq.Indexer[Type] {
 
 // Extensions returns the top level extensions defined in this file (i.e.,
 // the contents of any top-level `extends` blocks).
-func (f File) Extensions() seq.Indexer[Field] {
+func (f File) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns[:f.Context().topLevelExtnsEnd],
-		func(_ int, p arena.Pointer[rawField]) Field {
+		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
-			return wrapField(f.Context(), ref[rawField]{ptr: p})
+			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
 
 // AllExtensions returns all extensions defined in this file.
-func (f File) AllExtensions() seq.Indexer[Field] {
+func (f File) AllExtensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns,
-		func(_ int, p arena.Pointer[rawField]) Field {
+		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
-			return wrapField(f.Context(), ref[rawField]{ptr: p})
+			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
 		},
 	)
 }
 
 // Options returns the top level options applied to this file.
-func (f File) Options() seq.Indexer[Option] {
+func (f File) Options() MessageValue {
+	return wrapValue(f.Context(), f.Context().options).AsMessage()
+}
+
+// Symbols returns this file's symbol table.
+//
+// The symbol table includes both symbols defined in this file, and symbols
+// imported by the file. The symbols are returned in an arbitrary but fixed
+// order.
+func (f File) Symbols() seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
-		f.Context().options,
-		func(_ int, p arena.Pointer[rawOption]) Option {
-			return wrapOption(f.Context(), p)
+		f.Context().imported,
+		func(_ int, r ref[rawSymbol]) Symbol {
+			return wrapSymbol(f.Context(), r)
 		},
 	)
 }

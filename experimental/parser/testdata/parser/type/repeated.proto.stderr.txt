@@ -14,6 +14,14 @@ error: encountered more than one type modifier
    |     |
    |     first one is here
 
+warning: required fields are deprecated and should not be used
+  --> testdata/parser/type/repeated.proto:22:5
+   |
+22 |     required optional M x3 = 3;
+   |     ^^^^^^^^
+   = help: do not attempt to change this to optional if the field is already
+           in-use; doing so is a wire protocol break
+
 error: encountered more than one type modifier
   --> testdata/parser/type/repeated.proto:22:14
    |
@@ -38,11 +46,17 @@ error: encountered more than one type modifier
    |     |
    |     first one is here
 
-error: the `stream` modifier may only appear in a method signature
+error: unexpected `stream`
   --> testdata/parser/type/repeated.proto:25:5
    |
 25 |     stream stream M x6 = 6;
-   |     ^^^^^^
+   |     ^^^^^^ expected `optional`, `repeated`, or `required`
+  help: delete it
+   |
+25 | -     stream stream M x6 = 6;
+25 | +     stream M x6 = 6;
+   |
+   = help: the `stream` modifier may only appear in a method signature
 
 error: encountered more than one type modifier
   --> testdata/parser/type/repeated.proto:25:12
@@ -190,4 +204,4 @@ error: only message types may appear in method return type
 35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
    |                                                  ^^^^^^^^^^
 
-encountered 28 errors
+encountered 28 errors and 1 warning

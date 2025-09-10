@@ -15,7 +15,6 @@
 package protocompile
 
 import (
-	"context"
 	"testing"
 
 	"google.golang.org/protobuf/proto"
@@ -27,7 +26,7 @@ func TestStdImports(t *testing.T) {
 	// make sure we can successfully "compile" all standard imports
 	// (by regurgitating the built-in descriptors)
 	c := Compiler{Resolver: WithStandardImports(&SourceResolver{})}
-	ctx := context.Background()
+	ctx := t.Context()
 	for name, fileProto := range standardImports {
 		t.Log(name)
 		fds, err := c.Compile(ctx, name)

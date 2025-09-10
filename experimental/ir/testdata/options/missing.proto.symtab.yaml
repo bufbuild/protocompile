@@ -1,0 +1,47 @@
+tables:
+  "testdata/options/missing.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/missing.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/options/missing.proto"
+      index: 1
+      visible:
+      options.message: {}
+    - fqn: "buf.test.Bar"
+      kind: KIND_ENUM
+      file: "testdata/options/missing.proto"
+      index: 2
+      visible:
+      options.message: {}
+    - fqn: "buf.test.Foo.foo"
+      kind: KIND_FIELD
+      file: "testdata/options/missing.proto"
+      index: 1
+      visible:
+      options.message: {}
+    - fqn: "buf.test.Foo.bar"
+      kind: KIND_FIELD
+      file: "testdata/options/missing.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.Foo.baz"
+      kind: KIND_FIELD
+      file: "testdata/options/missing.proto"
+      index: 3
+      visible:
+    - fqn: "buf.test.BAR_ZERO"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/options/missing.proto"
+      index: 4
+      visible:
+      options.message: {}
+    - fqn: "buf.test.Foo.x"
+      kind: KIND_ONEOF
+      file: "testdata/options/missing.proto"
+      index: 1
+      visible:
+      options.message: {}
+    options.message: {}

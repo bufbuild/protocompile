@@ -1,0 +1,41 @@
+file:
+- name: "testdata/tags/fields.proto"
+  package: "test"
+  message_type:
+  - name: "M"
+    field:
+    - { name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y2", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z1", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z12", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z2", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z3", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z4", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z5", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z6", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z6", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "r1", number: 19000, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "r2", number: 19001, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "r3", number: 19999, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "k1", number: 18999, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "k2", number: 20000, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "f1", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+    - { name: "f2", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+    - { name: "f3", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+    - { name: "f4", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+    - { name: "f5", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+    - { name: "f6", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+    - { name: "b1", number: 0, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+    - { name: "b2", number: 0, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+    - { name: "b3", number: 0, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+    - { name: "s1", number: 0, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - { name: "s2", number: 0, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - { name: "s3", number: 0, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - { name: "s4", number: 0, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - { name: "m1", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "m2", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "m3", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "m4", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "m5", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+  syntax: "proto2"

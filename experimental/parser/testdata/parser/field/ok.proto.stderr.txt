@@ -1,0 +1,53 @@
+error: unexpected `required`
+  --> testdata/parser/field/ok.proto:22:5
+   |
+22 |     required Type name = 1;
+   |     ^^^^^^^^ expected type name, `optional`, or `repeated`
+  help: delete it
+   |
+22 | -     required Type name = 1;
+22 | +     Type name = 1;
+   |
+   = help: required fields are only permitted in proto2; even then, their use is
+           strongly discouraged
+
+error: unexpected `required`
+  --> testdata/parser/field/ok.proto:27:5
+   |
+27 |     required .Type name = 1;
+   |     ^^^^^^^^ expected type name, `optional`, or `repeated`
+  help: delete it
+   |
+27 | -     required .Type name = 1;
+27 | +     .Type name = 1;
+   |
+   = help: required fields are only permitted in proto2; even then, their use is
+           strongly discouraged
+
+error: unexpected `required`
+  --> testdata/parser/field/ok.proto:32:5
+   |
+32 |     required package.Type name = 1;
+   |     ^^^^^^^^ expected type name, `optional`, or `repeated`
+  help: delete it
+   |
+32 | -     required package.Type name = 1;
+32 | +     package.Type name = 1;
+   |
+   = help: required fields are only permitted in proto2; even then, their use is
+           strongly discouraged
+
+error: unexpected `required`
+  --> testdata/parser/field/ok.proto:37:5
+   |
+37 |     required .package.Type name = 1;
+   |     ^^^^^^^^ expected type name, `optional`, or `repeated`
+  help: delete it
+   |
+37 | -     required .package.Type name = 1;
+37 | +     .package.Type name = 1;
+   |
+   = help: required fields are only permitted in proto2; even then, their use is
+           strongly discouraged
+
+encountered 4 errors

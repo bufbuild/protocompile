@@ -15,7 +15,6 @@
 package incremental_test
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -34,7 +33,7 @@ func TestSum(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		incremental.WithParallelism(4),
 	)
@@ -95,7 +94,7 @@ func TestFatal(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		incremental.WithParallelism(4),
 	)
@@ -118,7 +117,7 @@ func TestUnchanged(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	exec := incremental.New(
 		incremental.WithParallelism(4),
 	)

@@ -92,7 +92,7 @@ func testZero[Node report.Spanner](t *testing.T) {
 				continue // NumIn includes the receiver.
 			}
 			switch m.Name {
-			case "IsZero", "String":
+			case "IsZero", "String", "Next", "Prev":
 				continue
 			}
 			for i, r := range m.Func.Call([]reflect.Value{v}) {

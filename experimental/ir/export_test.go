@@ -14,10 +14,15 @@
 
 package ir
 
+import "github.com/bufbuild/protocompile/internal/arena"
+
 // Exported symbols for test use only. Placing such symbols in a _test.go
 // file avoids them being exported "for real".
 
-type Imports = imports
+type (
+	Imports = imports
+	Symtab  = symtab
+)
 
 func NewFile(s *Session, path string) File {
 	c := &Context{
@@ -29,4 +34,8 @@ func NewFile(s *Session, path string) File {
 
 func GetImports(f File) *Imports {
 	return &f.Context().imports
+}
+
+func (s Symbol) RawData() arena.Untyped {
+	return s.raw.data
 }

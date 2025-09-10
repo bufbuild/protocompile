@@ -237,12 +237,11 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 				sep = "-->"
 			}
 			fmt.Fprintf(r, "%s %s:%d:%d\n", sep, primary.Path(), start.Line, start.Column)
+		} else if len(snippets[0].edits) > 0 {
+			r.WriteString("\n")
 		}
 
 		if len(snippets[0].edits) > 0 {
-			if i > 0 {
-				r.WriteString("\n")
-			}
 			r.suggestion(snippets[0])
 			continue
 		}
@@ -250,6 +249,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		// Add a blank line after the file. This gives the diagnostic window some
 		// visual breathing room.
 		r.WriteSpaces(r.margin)
+		r.WriteString(r.ss.nAccent)
 		r.WriteString(" | ")
 
 		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
@@ -917,6 +917,7 @@ func (r *renderer) suggestion(snip snippet) {
 	// visual breathing room.
 	r.WriteString("\n")
 	r.WriteSpaces(r.margin)
+	r.WriteString(r.ss.nAccent)
 	r.WriteString(" | ")
 
 	// When the suggestion spans multiple lines, we don't bother doing a by-the-rune

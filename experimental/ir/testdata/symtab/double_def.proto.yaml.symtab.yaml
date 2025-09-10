@@ -1,0 +1,56 @@
+tables:
+  "dep/foo.proto":
+    imports: [{ path: "dep/priv.proto", visible: }]
+    symbols:
+    - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
+    - fqn: "dep.foo.Foo"
+      kind: KIND_MESSAGE
+      file: "dep/foo.proto"
+      index: 1
+      visible:
+    - fqn: "dep.foo.Main"
+      kind: KIND_MESSAGE
+      file: "dep/priv.proto"
+      index: 1
+      visible:
+  "dep/priv.proto":
+    symbols:
+    - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/priv.proto" }
+    - fqn: "dep.foo.Main"
+      kind: KIND_MESSAGE
+      file: "dep/priv.proto"
+      index: 1
+      visible:
+  "main.proto":
+    imports:
+    - { path: "dep/foo.proto", visible: }
+    - { path: "dep/priv.proto", transitive: }
+    symbols:
+    - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
+    - fqn: "dep.foo.Foo"
+      kind: KIND_MESSAGE
+      file: "dep/foo.proto"
+      index: 1
+      visible:
+    - fqn: "dep.foo.Main"
+      kind: KIND_MESSAGE
+      file: "main.proto"
+      index: 1
+      visible:
+    - fqn: "dep.foo.Foo.BAR"
+      kind: KIND_ENUM
+      file: "main.proto"
+      index: 4
+      visible:
+    - fqn: "dep.foo.Main.x"
+      kind: KIND_FIELD
+      file: "main.proto"
+      index: 1
+      visible:
+  "main2.proto":
+    imports:
+    - { path: "dep/foo.proto", visible: }
+    - { path: "dep/priv.proto", transitive: }
+    symbols:
+    - { fqn: "dep.foo", kind: KIND_PACKAGE, file: "dep/foo.proto" }
+    - { fqn: "dep.foo.Foo", kind: KIND_PACKAGE, file: "main2.proto" }

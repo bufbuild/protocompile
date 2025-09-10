@@ -1,0 +1,29 @@
+file:
+- name: "testdata/options/values/enum.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "e"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_ENUM
+      type_name: ".buf.test.Bar"
+    - { name: "i", number: 2, label: LABEL_REPEATED, type: TYPE_INT32 }
+  enum_type:
+  - name: "Bar"
+    value:
+    - { name: "BAR_ZERO", number: 0 }
+    - { name: "BAR_E1", number: 1 }
+    - { name: "BAR_E2", number: 2 }
+  - { name: "Baz", value: [{ name: "BAZ_ZERO", number: 0 }] }
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+  options: {}
+  syntax: "proto2"

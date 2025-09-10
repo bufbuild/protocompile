@@ -52,8 +52,11 @@
 
   - {name: Option, string: "option setting"}
   - {name: CustomOption, string: "custom option setting"}
+  - {name: FieldSelector, string: "field selector"}
+  - {name: PseudoOption, string: "pseudo-option"}
 
   - {name: Field, string: "message field"}
+  - {name: Extension, string: "message extension"}
   - {name: EnumValue, string: "enum value"}
   - {name: Method, string: "service method"}
 
@@ -63,6 +66,8 @@
   - {name: Signature, string: "method signature"}
 
   - {name: FieldTag, string: "message field tag"}
+  - {name: FieldNumber, string: "field number"}
+  - {name: MessageSetNumber, string: "`MessageSet` extension number"}
   - {name: FieldName, string: "message field name"}
   - {name: OptionValue, string: "option setting value"}
 
@@ -82,6 +87,10 @@
   - {name: TypeParams, string: "type parameters"}
   - {name: TypePrefix, string: "type modifier"}
 
+  - {name: MessageType, string: "message type"}
+  - {name: EnumType, string: "enum type"}
+  - {name: ScalarType, string: "scalar type"}
+
   - {name: MapKey, string: "map key type"}
   - {name: MapValue, string: "map value type"}
 
@@ -91,6 +100,7 @@
   - {name: String, string: "string literal"}
   - {name: Float, string: "floating-point literal"}
   - {name: Int, string: "integer literal"}
+  - {name: Number, string: "number literal"}
 
   - {name: Semi, string: "`;`"}
   - {name: Comma, string: "`,`"}

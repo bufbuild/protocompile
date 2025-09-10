@@ -1,0 +1,26 @@
+tables:
+  "testdata/fields/invalid_partial.proto":
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/invalid_partial.proto"
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/invalid_partial.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.N"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/invalid_partial.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.M"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/invalid_partial.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.M.n"
+      kind: KIND_FIELD
+      file: "testdata/fields/invalid_partial.proto"
+      index: 1
+      visible:

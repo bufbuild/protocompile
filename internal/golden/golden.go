@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime/debug"
 	"strings"
@@ -51,9 +50,9 @@ type Corpus struct {
 	// mode or not.
 	Refresh string
 
-	// The file extension (without a dot) of files which define a test case,
+	// The file extensions (without a dot) of files which define a test case,
 	// e.g. "proto".
-	Extension string
+	Extensions []string
 
 	// Possible outputs of the test, which are found using Outputs.Extension.
 	// If the file for a particular output is missing, it is implicitly treated
@@ -78,12 +77,17 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 	// Enumerate the tests to run by walking the filesystem.
 	var tests []string
 	err := filepath.Walk(root, func(p string, fi fs.FileInfo, err error) error {
-		if err != nil {
+		if err != nil || fi.IsDir() {
 			return err
 		}
-		if !fi.IsDir() && strings.TrimPrefix(path.Ext(p), ".") == c.Extension {
-			tests = append(tests, p)
+
+		for _, extn := range c.Extensions {
+			if strings.HasSuffix(p, "."+extn) {
+				tests = append(tests, p)
+				break
+			}
 		}
+
 		return err
 	})
 	if err != nil {
@@ -123,10 +127,9 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 			input := string(bytes)
 			results := make([]string, len(c.Outputs))
 
-			//nolint:revive,predeclared // it's fine to use panic as a name here.
-			panic, panicStack := catch(func() { test(t, name, input, results) })
-			if panic != nil {
-				t.Logf("test panicked: %v\n%s", panic, panicStack)
+			panicVal, panicStack := catch(func() { test(t, name, input, results) })
+			if panicVal != nil {
+				t.Logf("test panicked: %v\n%s", panicVal, panicStack)
 				t.Fail()
 			}
 
@@ -136,7 +139,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 
 			refresh, _ := doublestar.Match(refresh, name)
 			for i, output := range c.Outputs {
-				if panic != nil && results[i] == "" {
+				if panicVal != nil && results[i] == "" {
 					// If we panicked and the result is empty, this means there's a good
 					// chance this result was not written to, so we skip doing anything
 					// that would potentially be noisy.

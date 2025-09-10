@@ -52,7 +52,10 @@ const (
 	Group
 	Option
 	CustomOption
+	FieldSelector
+	PseudoOption
 	Field
+	Extension
 	EnumValue
 	Method
 	CompactOptions
@@ -60,6 +63,8 @@ const (
 	MethodOuts
 	Signature
 	FieldTag
+	FieldNumber
+	MessageSetNumber
 	FieldName
 	OptionValue
 	QualifiedName
@@ -75,6 +80,9 @@ const (
 	TypePath
 	TypeParams
 	TypePrefix
+	MessageType
+	EnumType
+	ScalarType
 	MapKey
 	MapValue
 	Whitespace
@@ -83,6 +91,7 @@ const (
 	String
 	Float
 	Int
+	Number
 	Semi
 	Comma
 	Slash
@@ -165,7 +174,10 @@ var _table_Noun_String = [...]string{
 	Group:              "group definition",
 	Option:             "option setting",
 	CustomOption:       "custom option setting",
+	FieldSelector:      "field selector",
+	PseudoOption:       "pseudo-option",
 	Field:              "message field",
+	Extension:          "message extension",
 	EnumValue:          "enum value",
 	Method:             "service method",
 	CompactOptions:     "compact options",
@@ -173,6 +185,8 @@ var _table_Noun_String = [...]string{
 	MethodOuts:         "method return type",
 	Signature:          "method signature",
 	FieldTag:           "message field tag",
+	FieldNumber:        "field number",
+	MessageSetNumber:   "`MessageSet` extension number",
 	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
@@ -188,6 +202,9 @@ var _table_Noun_String = [...]string{
 	TypePath:           "type name",
 	TypeParams:         "type parameters",
 	TypePrefix:         "type modifier",
+	MessageType:        "message type",
+	EnumType:           "enum type",
+	ScalarType:         "scalar type",
 	MapKey:             "map key type",
 	MapValue:           "map value type",
 	Whitespace:         "whitespace",
@@ -196,6 +213,7 @@ var _table_Noun_String = [...]string{
 	String:             "string literal",
 	Float:              "floating-point literal",
 	Int:                "integer literal",
+	Number:             "number literal",
 	Semi:               "`;`",
 	Comma:              "`,`",
 	Slash:              "`/`",
@@ -261,7 +279,10 @@ var _table_Noun_GoString = [...]string{
 	Group:              "Group",
 	Option:             "Option",
 	CustomOption:       "CustomOption",
+	FieldSelector:      "FieldSelector",
+	PseudoOption:       "PseudoOption",
 	Field:              "Field",
+	Extension:          "Extension",
 	EnumValue:          "EnumValue",
 	Method:             "Method",
 	CompactOptions:     "CompactOptions",
@@ -269,6 +290,8 @@ var _table_Noun_GoString = [...]string{
 	MethodOuts:         "MethodOuts",
 	Signature:          "Signature",
 	FieldTag:           "FieldTag",
+	FieldNumber:        "FieldNumber",
+	MessageSetNumber:   "MessageSetNumber",
 	FieldName:          "FieldName",
 	OptionValue:        "OptionValue",
 	QualifiedName:      "QualifiedName",
@@ -284,6 +307,9 @@ var _table_Noun_GoString = [...]string{
 	TypePath:           "TypePath",
 	TypeParams:         "TypeParams",
 	TypePrefix:         "TypePrefix",
+	MessageType:        "MessageType",
+	EnumType:           "EnumType",
+	ScalarType:         "ScalarType",
 	MapKey:             "MapKey",
 	MapValue:           "MapValue",
 	Whitespace:         "Whitespace",
@@ -292,6 +318,7 @@ var _table_Noun_GoString = [...]string{
 	String:             "String",
 	Float:              "Float",
 	Int:                "Int",
+	Number:             "Number",
 	Semi:               "Semi",
 	Comma:              "Comma",
 	Slash:              "Slash",

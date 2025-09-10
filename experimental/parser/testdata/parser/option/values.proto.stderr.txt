@@ -1,27 +1,3 @@
-error: unexpected identifier after `-`
-  --> testdata/parser/option/values.proto:28:13
-   |
-28 | option x = -Infinity;
-   |             ^^^^^^^^ expected floating-point literal or integer literal
-
-error: unexpected qualified name in option setting value
-  --> testdata/parser/option/values.proto:29:12
-   |
-29 | option x = foo.bar;
-   |            ^^^^^^^ expected identifier
-
-error: unexpected qualified name in option setting value
-  --> testdata/parser/option/values.proto:30:12
-   |
-30 | option x = foo.(foo.bar).bar;
-   |            ^^^^^^^^^^^^^^^^^ expected identifier
-
-error: unexpected fully qualified name in option setting value
-  --> testdata/parser/option/values.proto:31:12
-   |
-31 | option x = .foo;
-   |            ^^^^ expected identifier
-
 error: unexpected range expression in option setting value
   --> testdata/parser/option/values.proto:32:12
    |
@@ -104,24 +80,6 @@ error: cannot use `<...>` for message expression here
            expression, but as top-level option values
    = help: `<...>` message expressions are an obscure feature and not
            recommended
-
-error: unexpected qualified name in option setting value
-  --> testdata/parser/option/values.proto:53:8
-   |
-53 |     x: foo.bar
-   |        ^^^^^^^ expected identifier
-
-error: unexpected qualified name in option setting value
-  --> testdata/parser/option/values.proto:54:8
-   |
-54 |     x: foo.(foo.bar).bar
-   |        ^^^^^^^^^^^^^^^^^ expected identifier
-
-error: unexpected fully qualified name in option setting value
-  --> testdata/parser/option/values.proto:55:8
-   |
-55 |     x: .foo
-   |        ^^^^ expected identifier
 
 error: unexpected range expression in option setting value
   --> testdata/parser/option/values.proto:57:8
@@ -235,35 +193,6 @@ warning: using `<...>` for message expression is not recommended
    = help: `<...>` message expressions are an obscure feature and not
            recommended
 
-error: unexpected string literal in message field value
-  --> testdata/parser/option/values.proto:73:5
-   |
-73 |     "ident": 42
-   |     ^^^^^^^ expected message field name, extension name, or `Any` type URL
-  help: remove the quotes
-   |
-73 | -     "ident": 42
-73 | +     ident: 42
-   |
-
-error: unexpected string literal in message field value
-  --> testdata/parser/option/values.proto:74:5
-   |
-74 |     "???": 42
-   |     ^^^^^ expected message field name, extension name, or `Any` type URL
-
-error: unexpected integer literal in message field value
-  --> testdata/parser/option/values.proto:75:5
-   |
-75 |     42: 42
-   |     ^^ expected message field name, extension name, or `Any` type URL
-
-error: unexpected qualified name in message field value
-  --> testdata/parser/option/values.proto:76:5
-   |
-76 |     x.y: 42
-   |     ^^^ expected message field name, extension name, or `Any` type URL
-
 error: cannot name extension field using `(...)` in message expression
   --> testdata/parser/option/values.proto:77:5
    |
@@ -275,17 +204,16 @@ error: cannot name extension field using `(...)` in message expression
 77 | +     [x.y]: 42
    |
 
-error: unexpected fully qualified name in message field value
-  --> testdata/parser/option/values.proto:78:5
-   |
-78 |     .x: 42
-   |     ^^ expected message field name, extension name, or `Any` type URL
-
 error: unexpected absolute path in extension name
   --> testdata/parser/option/values.proto:82:6
    |
 82 |     [.x.y]: 42
    |      ^^^^ expected a path without a leading `.`
+  help: remove the leading `.`
+   |
+82 | -     [.x.y]: 42
+82 | +     [x.y]: 42
+   |
 
 error: unexpected array expression in message field value
   --> testdata/parser/option/values.proto:83:5
@@ -332,4 +260,4 @@ warning: using `<...>` for message expression is not recommended
    = help: `<...>` message expressions are an obscure feature and not
            recommended
 
-encountered 31 errors and 6 warnings
+encountered 19 errors and 6 warnings

@@ -1,0 +1,22 @@
+error: cannot find `M` in this scope
+  --> c.proto:7:3
+   |
+ 7 |   M m1 = 1;
+   |   ^ not found in this scope
+   = help: the full name of this scope is `test.N`
+
+error: cannot find `test.M` in this scope
+  --> c.proto:8:3
+   |
+ 8 |   test.M m2 = 2;
+   |   ^^^^^^ not found in this scope
+   = help: the full name of this scope is `test.N`
+
+error: cannot find `.test.M` in this scope
+  --> c.proto:9:3
+   |
+ 9 |   .test.M m3 = 3;
+   |   ^^^^^^^ not found in this scope
+   = help: the full name of this scope is `test.N`
+
+encountered 3 errors

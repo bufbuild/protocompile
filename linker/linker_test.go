@@ -15,7 +15,6 @@
 package linker_test
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -50,7 +49,7 @@ func TestSimpleLink(t *testing.T) {
 			ImportPaths: []string{"../internal/testdata"},
 		}),
 	}
-	fds, err := compiler.Compile(context.Background(), "desc_test_complex.proto")
+	fds, err := compiler.Compile(t.Context(), "desc_test_complex.proto")
 	require.NoError(t, err)
 
 	res, ok := fds[0].(linker.Result)
@@ -66,7 +65,7 @@ func TestSimpleLink_Editions(t *testing.T) {
 			ImportPaths: []string{"../internal/testdata/editions"},
 		}),
 	}
-	fds, err := compiler.Compile(context.Background(), "all_default_features.proto", "features_with_overrides.proto")
+	fds, err := compiler.Compile(t.Context(), "all_default_features.proto", "features_with_overrides.proto")
 	require.NoError(t, err)
 
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/editions/all.protoset", fds.AsResolver())
@@ -83,7 +82,7 @@ func TestMultiFileLink(t *testing.T) {
 				ImportPaths: []string{"../internal/testdata"},
 			}),
 		}
-		fds, err := compiler.Compile(context.Background(), name)
+		fds, err := compiler.Compile(t.Context(), name)
 		require.NoError(t, err)
 
 		res, ok := fds[0].(linker.Result)
@@ -100,7 +99,7 @@ func TestProto3Optional(t *testing.T) {
 			ImportPaths: []string{"../internal/testdata"},
 		}),
 	}
-	fds, err := compiler.Compile(context.Background(), "desc_test_proto3_optional.proto")
+	fds, err := compiler.Compile(t.Context(), "desc_test_proto3_optional.proto")
 	require.NoError(t, err)
 
 	fdset := prototest.LoadDescriptorSet(t, "../internal/testdata/desc_test_proto3_optional.protoset", fds.AsResolver())
@@ -2251,7 +2250,20 @@ func TestLinkerValidation(t *testing.T) {
 					}
 				`,
 			},
-			expectedErr: `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
+			expectedErr:            `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
+			expectedDiffWithProtoc: true, // protoc v32.0 does support edition 2024
+		},
+		"failure_unknown_edition_distant_future": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "99999";
+					message Foo {
+						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
+						int32 bar = 2 [features.field_presence = IMPLICIT];
+					}
+				`,
+			},
+			expectedErr: `test.proto:1:11: edition value "99999" not recognized; should be one of ["2023"]`,
 		},
 		"failure_unknown_edition_past": {
 			input: map[string]string{
@@ -3988,7 +4000,7 @@ func compile(t *testing.T, input map[string]string) (linker.Files, []error) {
 		Reporter:       rep,
 		SourceInfoMode: protocompile.SourceInfoExtraOptionLocations,
 	}
-	files, err := compiler.Compile(context.Background(), names...)
+	files, err := compiler.Compile(t.Context(), names...)
 	if err != nil && len(errs) == 0 {
 		t.Log("compiler.Compile returned an error but none were reported")
 		return files, []error{err}
@@ -4044,7 +4056,7 @@ func TestProto3Enums(t *testing.T) {
 					Accessor: acc,
 				}),
 			}
-			_, err := compiler.Compile(context.Background(), "f1.proto", "f2.proto")
+			_, err := compiler.Compile(t.Context(), "f1.proto", "f2.proto")
 			if o1 != o2 && o2 == "proto3" {
 				expected := "f2.proto:1:54: cannot use closed enum bar in a field with implicit presence"
 				if err == nil {
@@ -4084,7 +4096,7 @@ func TestLinkerSymbolCollisionNoSource(t *testing.T) {
 	compiler := &protocompile.Compiler{
 		Resolver: resolver,
 	}
-	_, err := compiler.Compile(context.Background(), "foo.proto")
+	_, err := compiler.Compile(t.Context(), "foo.proto")
 	require.ErrorContains(t, err, `foo.proto: symbol "google.protobuf.DescriptorProto" already defined at google/protobuf/descriptor.proto`)
 }
 
@@ -4227,7 +4239,7 @@ func TestSyntheticMapEntryUsageNoSource(t *testing.T) {
 			compiler := &protocompile.Compiler{
 				Resolver: resolver,
 			}
-			_, err := compiler.Compile(context.Background(), "foo.proto")
+			_, err := compiler.Compile(t.Context(), "foo.proto")
 			if tc.expectedErr != "" {
 				require.EqualError(t, err, tc.expectedErr)
 			} else {
@@ -4272,7 +4284,7 @@ func TestSyntheticOneofCollisions(t *testing.T) {
 			return protocompile.SearchResult{Source: strings.NewReader(removePrefixIndent(f))}, nil
 		}),
 	}
-	_, err := compiler.Compile(context.Background(), "foo1.proto", "foo2.proto")
+	_, err := compiler.Compile(t.Context(), "foo1.proto", "foo2.proto")
 
 	assert.Equal(t, reporter.ErrInvalidSource, err)
 
@@ -4444,7 +4456,7 @@ func TestCustomJSONNameWarnings(t *testing.T) {
 			Resolver: resolver,
 			Reporter: reporter.NewReporter(nil, warnFunc),
 		}
-		_, err := compiler.Compile(context.Background(), "test.proto")
+		_, err := compiler.Compile(t.Context(), "test.proto")
 		if err != nil {
 			t.Errorf("case %d: expecting no error; instead got error %q", i, err)
 		}

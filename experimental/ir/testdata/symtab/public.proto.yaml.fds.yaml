@@ -1,0 +1,20 @@
+file:
+- name: "dep/not_public.proto"
+  package: "dep.foo.not_public"
+  message_type: [{ name: "X" }]
+  syntax: "proto2"
+- name: "dep/public.proto"
+  package: "dep.foo.public"
+  message_type: [{ name: "X" }]
+  syntax: "proto2"
+- name: "dep/foo.proto"
+  package: "dep.foo"
+  dependency: ["dep/not_public.proto", "dep/public.proto"]
+  public_dependency: [1]
+  message_type: [{ name: "Foo" }]
+  syntax: "proto2"
+- name: "main.proto"
+  package: "main"
+  dependency: ["dep/foo.proto"]
+  message_type: [{ name: "Main" }]
+  syntax: "proto2"

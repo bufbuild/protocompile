@@ -1,0 +1,21 @@
+file:
+- name: "testdata/options/values/int64.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - { name: "i1", number: 1, label: LABEL_REPEATED, type: TYPE_INT64 }
+    - { name: "i2", number: 2, label: LABEL_REPEATED, type: TYPE_INT64 }
+    - { name: "i3", number: 3, label: LABEL_REPEATED, type: TYPE_SFIXED64 }
+    - { name: "u1", number: 11, label: LABEL_REPEATED, type: TYPE_INT64 }
+    - { name: "u2", number: 12, label: LABEL_REPEATED, type: TYPE_FIXED64 }
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.FileOptions"
+  options: {}
+  syntax: "proto2"

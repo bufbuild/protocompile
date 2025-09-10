@@ -1004,7 +1004,7 @@ func TestPathological(t *testing.T) {
 				allowedDuration = 20 * time.Second
 				t.Logf("allowing %v since race detector is enabled", allowedDuration)
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), allowedDuration)
+			ctx, cancel := context.WithTimeout(t.Context(), allowedDuration)
 			defer func() {
 				if ctx.Err() != nil {
 					t.Errorf("test took too long to execute (> %v)", allowedDuration)

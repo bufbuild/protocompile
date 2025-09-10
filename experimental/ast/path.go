@@ -50,6 +50,11 @@ func (p Path) Absolute() bool {
 	return ok && !first.Separator().IsZero()
 }
 
+// IsSynthetic returns whether this path was created with [Nodes.NewPath].
+func (p Path) IsSynthetic() bool {
+	return p.raw.Start < 0
+}
+
 // ToRelative converts this path into a relative path, by deleting all leading
 // separators. In particular, the path "..foo", which contains empty components,
 // will be converted into "foo".
@@ -104,15 +109,18 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		return
 	}
 
+	var cursor *token.Cursor
 	first := p.raw.Start.In(p.Context())
-	if first.IsSynthetic() {
-		panic("synthetic paths are not implemented yet")
+	if p.IsSynthetic() {
+		cursor = first.SyntheticChildren(p.raw.synthRange())
+	} else {
+		cursor = token.NewCursorAt(first)
 	}
 
 	var sep token.Token
-	var broken bool
-	for tok := range token.NewCursorAt(first).Rest() {
-		if tok.ID() > p.raw.End {
+	var idx uint32
+	for tok := range cursor.Rest() {
+		if !p.IsSynthetic() && tok.ID() > p.raw.End {
 			// We've reached the end of the path.
 			break
 		}
@@ -120,23 +128,23 @@ func (p Path) Components(yield func(PathComponent) bool) {
 		if tok.Text() == "." || tok.Text() == "/" {
 			if !sep.IsZero() {
 				// Uh-oh, empty path component!
-				if !yield(PathComponent{p.withContext, sep.ID(), 0}) {
-					broken = true
-					break
+				if !yield(PathComponent{p.withContext, p.raw, sep.ID(), 0, idx}) {
+					return
 				}
+				idx++
 			}
 			sep = tok
 			continue
 		}
 
-		if !yield(PathComponent{p.withContext, sep.ID(), tok.ID()}) {
-			broken = true
-			break
+		if !yield(PathComponent{p.withContext, p.raw, sep.ID(), tok.ID(), idx}) {
+			return
 		}
+		idx++
 		sep = token.Zero
 	}
-	if !broken && !sep.IsZero() {
-		yield(PathComponent{p.withContext, sep.ID(), 0})
+	if !sep.IsZero() {
+		yield(PathComponent{p.withContext, p.raw, sep.ID(), 0, idx})
 	}
 }
 
@@ -158,22 +166,42 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		return Path{}, p
 	}
 
+	var i int
 	var prev PathComponent
+	var found bool
 	for pc := range p.Components {
 		if n > 0 {
 			prev = pc
 			n--
+			if !pc.Separator().IsZero() {
+				i++
+			}
+			if !pc.Name().IsZero() {
+				i++
+			}
 			continue
 		}
 
-		prefix = p
-		if !pc.name.IsZero() {
+		prefix, suffix = p, p
+		found = true
+
+		if p.IsSynthetic() {
+			a, _ := prefix.raw.synthRange()
+			prefix.raw = prefix.raw.withSynthRange(a, a+i)
+
+			a, b := suffix.raw.synthRange()
+			a += i
+			suffix.raw = suffix.raw.withSynthRange(a, b)
+
+			continue
+		}
+
+		if !prev.name.IsZero() {
 			prefix.raw.End = prev.name
 		} else {
 			prefix.raw.End = prev.separator
 		}
 
-		suffix = p
 		if !pc.separator.IsZero() {
 			suffix.raw.Start = pc.separator
 		} else {
@@ -181,6 +209,10 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		}
 
 		break
+	}
+
+	if !found {
+		return p, Path{}
 	}
 
 	return prefix, suffix
@@ -268,6 +300,24 @@ func (p Path) isCanonical() bool {
 	return true
 }
 
+// trim discards any skippable tokens before and after the start of this path.
+func (p Path) trim() Path {
+	for p.raw.Start < p.raw.End &&
+		p.raw.Start.In(p.Context()).Kind().IsSkippable() {
+		p.raw.Start++
+	}
+	for p.raw.Start < p.raw.End &&
+		p.raw.End.In(p.Context()).Kind().IsSkippable() {
+		p.raw.End--
+	}
+
+	if p.raw.Start <= p.raw.End {
+		return p
+	}
+
+	return Path{}
+}
+
 // TypePath is a simple path reference as a type.
 //
 // # Grammar
@@ -306,7 +356,83 @@ func (e ExprPath) AsAny() ExprAny {
 // (for an extension name).
 type PathComponent struct {
 	withContext
+	path            rawPath
 	separator, name token.ID
+	idx             uint32
+}
+
+// Path returns the path that this component is part of.
+func (p PathComponent) Path() Path {
+	return Path{p.withContext, p.path}
+}
+
+// IsFirst returns whether this is the first component of its path.
+func (p PathComponent) IsFirst() bool {
+	if p.Path().IsSynthetic() {
+		return p.idx == 0
+	}
+	return p.separator == p.path.Start || p.name == p.path.Start
+}
+
+// IsLast returns whether this is the last component of its path.
+func (p PathComponent) IsLast() bool {
+	if p.Path().IsSynthetic() {
+		i, j := p.path.synthRange()
+		return int(p.idx) == j-i
+	}
+	return p.separator == p.path.End || p.name == p.path.End
+}
+
+// SplitBefore splits the path that this component came from around the
+// component boundary before this component.
+//
+// after's first component will be this component.
+//
+// Not currently implemented for synthetic paths.
+func (p PathComponent) SplitBefore() (before, after Path) {
+	if p.IsFirst() {
+		return Path{}, p.Path()
+	}
+
+	if p.Path().IsSynthetic() {
+		panic("protocompile/ast: called PathComponent.SplitBefore with synthetic path")
+	}
+
+	prefix, suffix := p.Path(), p.Path()
+	if p.separator.IsZero() {
+		prefix.raw.End = p.name.In(p.Context()).Prev().ID()
+		suffix.raw.Start = p.name
+	} else {
+		prefix.raw.End = p.separator.In(p.Context()).Prev().ID()
+		suffix.raw.Start = p.separator
+	}
+
+	return prefix.trim(), suffix.trim()
+}
+
+// SplitAfter splits the path that this component came from around the
+// component boundary after this component.
+//
+// before's last component will be this component.
+func (p PathComponent) SplitAfter() (before, after Path) {
+	if p.IsLast() {
+		return p.Path(), Path{}
+	}
+
+	if p.Path().IsSynthetic() {
+		panic("protocompile/ast: called PathComponent.SplitAfter with synthetic path")
+	}
+
+	prefix, suffix := p.Path(), p.Path()
+	if !p.name.IsZero() {
+		prefix.raw.End = p.name
+		suffix.raw.Start = p.name.In(p.Context()).Next().ID()
+	} else {
+		prefix.raw.End = p.separator
+		suffix.raw.Start = p.separator.In(p.Context()).Next().ID()
+	}
+
+	return prefix.trim(), suffix.trim()
 }
 
 // Separator is the token that separates this component from the previous one, if
@@ -325,6 +451,13 @@ func (p PathComponent) Name() token.Token {
 // in the grammar but may occur in invalid inputs nonetheless.
 func (p PathComponent) IsEmpty() bool {
 	return p.Name().IsZero()
+}
+
+// Next returns the next path component after this one, if there is one.
+func (p PathComponent) Next() PathComponent {
+	_, after := p.SplitAfter()
+	next, _ := iterx.First(after.Components)
+	return next
 }
 
 // AsExtension returns the Path inside of this path component, if it is an extension
@@ -368,21 +501,38 @@ func (p PathComponent) AsIdent() token.Token {
 	return token.Zero
 }
 
+// Span implements [report.Spanner].
+func (p PathComponent) Span() report.Span {
+	return report.Join(p.Separator(), p.Name())
+}
+
 // rawPath is the raw contents of a Path without its Context.
 //
 // This has one of the following configurations.
 //
 //  1. Two zero tokens. This is the zero path.
 //
-//  2. Two natural tokens. This means the path is all tokens between them including
-//     the end-point
+//  2. Two natural tokens. This means the path is all tokens between them,
+//     including the end-point.
 //
-//  3. A single synthetic token and a zero token. If this token has children, those are
-//     the path components. Otherwise, the token itself is the sole token.
+//  3. Two synthetic tokens. The former is a an actual token, whose children
+//     are the path tokens. The latter is a packed pair of uint16s representing
+//     the subslice of Start.children that the path uses. This is necessary to
+//     implement Split() for synthetic paths.
 //
-// The case Start < 0 && End != 0 is reserved for use by pathLike.
+// The case Start < 0 && End > 0 is reserved for use by pathLike. The case
+// Start < 0 && End == 0 is currently unused.
 type rawPath struct {
 	Start, End token.ID
+}
+
+func (p rawPath) synthRange() (start, end int) {
+	return int(^uint16(p.End)), int(^uint16(p.End >> 16))
+}
+
+func (p rawPath) withSynthRange(start, end int) rawPath {
+	p.End = token.ID(^uint16(start)) | (token.ID(^uint16(end)) << 16)
+	return p
 }
 
 // With wraps this rawPath with a context to present to the user.

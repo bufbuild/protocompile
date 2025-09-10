@@ -15,6 +15,7 @@
 package report
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	runtimedebug "runtime/debug"
@@ -59,6 +60,10 @@ type Options struct {
 	// If set, [Report.Sort] will not discard duplicate diagnostics, as defined
 	// in that function's contract.
 	KeepDuplicates bool
+
+	// If set, all diagnostics of severity at most Warning (i.e., >= Warning
+	// as integers) are suppressed.
+	SuppressWarnings bool
 }
 
 // Diagnose is a type that can be rendered as a diagnostic.
@@ -87,6 +92,12 @@ func (r *Report) Remark(err Diagnose) *Diagnostic {
 	return d
 }
 
+// Fatalf creates an ad-hoc [ICE] diagnostic with the given message; analogous to
+// [fmt.Errorf].
+func (r *Report) Fatalf(format string, args ...any) *Diagnostic {
+	return r.push(1, ICE).Apply(Message(format, args...))
+}
+
 // Errorf creates an ad-hoc error diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Errorf(format string, args ...any) *Diagnostic {
@@ -103,6 +114,14 @@ func (r *Report) Warnf(format string, args ...any) *Diagnostic {
 // [fmt.Errorf].
 func (r *Report) Remarkf(format string, args ...any) *Diagnostic {
 	return r.push(1, Remark).Apply(Message(format, args...))
+}
+
+// SaveOptions calls the given function and, upon its completion, restores
+// r.Options to the value it had before it was called.
+func (r *Report) SaveOptions(body func()) {
+	prev := r.Options
+	body()
+	r.Options = prev
 }
 
 // CatchICE will recover a panic (an internal compiler error, or ICE) and log it
@@ -123,12 +142,19 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// so that it is always visible.
 	tracing := r.Tracing
 	r.Tracing = 0 // Temporarily disable built-in tracing.
-	diagnostic := r.push(1, Error).Apply(Message("%v", panicked))
+	diagnostic := r.push(1, ICE).Apply(
+		Message("unexpected panic; this is a bug"),
+		Notef("%v", panicked),
+	)
 	r.Tracing = tracing
-	diagnostic.level = ICE
 
 	if diagnose != nil {
 		diagnose(diagnostic)
+	}
+
+	var ice *icePanic
+	if err, _ := panicked.(error); errors.As(err, &ice) {
+		diagnostic.Apply(ice.options...)
 	}
 
 	// Append a stack trace but only after any user-provided diagnostic
@@ -138,12 +164,43 @@ func (r *Report) CatchICE(resume bool, diagnose func(*Diagnostic)) {
 	// Report.CatchICE).
 	stack = stack[5:]
 
-	diagnostic.notes = append(diagnostic.notes, "", "stack trace:")
-	diagnostic.notes = append(diagnostic.notes, stack...)
+	diagnostic.debug = append(diagnostic.debug, "", "stack trace:")
+	diagnostic.debug = append(diagnostic.debug, stack...)
 
 	if resume {
 		panic(panicked)
 	}
+}
+
+type icePanic struct {
+	error
+	options []DiagnosticOption
+}
+
+func (e *icePanic) Unwrap() error { return e.error }
+
+// AnnotatePanic will recover a panic and annotate it such that when [CatchICE]
+// recovers it, it can extract this information and display it in the
+// diagnostic.
+func (r *Report) AnnotateICE(options ...DiagnosticOption) {
+	panicked := recover()
+	if panicked == nil {
+		return
+	}
+
+	err, _ := panicked.(error)
+	if err == nil {
+		err = fmt.Errorf("%v", err)
+	}
+
+	var ice *icePanic
+	if errors.As(err, &ice) {
+		ice.options = append(ice.options, options...)
+	} else {
+		ice = &icePanic{err, options}
+	}
+
+	panic(ice)
 }
 
 // Canonicalize sorts this report's diagnostics according to an specific
@@ -360,6 +417,10 @@ func (r *Report) push(skip int, level Level) *Diagnostic {
 	// that callers of this function within this package can specify
 	// can specify how deeply-nested they are, even if they all have
 	// the same level of nesting right now.
+
+	if level >= Warning && r.SuppressWarnings {
+		return &Diagnostic{}
+	}
 
 	r.Diagnostics = append(r.Diagnostics, Diagnostic{
 		level:     level,

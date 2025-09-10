@@ -1,0 +1,104 @@
+tables:
+  "testdata/options/values/any.proto":
+    imports:
+    - { path: "google/protobuf/any.proto", visible: }
+    - { path: "google/protobuf/descriptor.proto", visible: }
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/values/any.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/options/values/any.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Bar"
+      kind: KIND_ENUM
+      file: "testdata/options/values/any.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.Foo.x1"
+      kind: KIND_FIELD
+      file: "testdata/options/values/any.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.x2"
+      kind: KIND_FIELD
+      file: "testdata/options/values/any.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.Foo.a"
+      kind: KIND_FIELD
+      file: "testdata/options/values/any.proto"
+      index: 3
+      visible:
+    - fqn: "buf.test.BAR_ZERO"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/options/values/any.proto"
+      index: 4
+      visible:
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/any.proto"
+      index: 5
+      visible:
+    - fqn: "buf.test.y"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/any.proto"
+      index: 6
+      visible:
+    options.message.extns:
+      "buf.test.x":
+        any:
+          url: "type.googleapis.com/buf.test.Foo"
+          value.message.fields: { "x1": { i32: 42 }, "x2": { string: "foo" } }
+      "buf.test.y":
+        repeated.values:
+        - any:
+            url: "type.googleprod.com/buf.test.Foo"
+            value.message.fields: { "x1": { i32: 42 }, "x2": { string: "foo" } }
+        - any:
+            url: "buf.build/types/buf.test.Foo"
+            value.message.fields: { "x1": { i32: 42 }, "x2": { string: "foo" } }
+        - any:
+            url: "/buf.test.Foo"
+            value.message.fields: { "x1": { i32: 42 }, "x2": { string: "foo" } }
+        - any:
+            url: "type.googleapis.com/Foo"
+            value.message.fields: { "x1": { i32: 42 }, "x2": { string: "foo" } }
+        - any:
+            url: "type.googleapis.com/google.protobuf.Any"
+            value.any:
+              url: "type.googleapis.com/buf.test.Foo"
+              value.message.fields: { "x1": { i32: 42 }, "x2": { string: "foo" } }
+        - any:
+            url: "type.googleapis.com/google.protobuf.Any"
+            value.any:
+              url: "type.googleapis.com/google.protobuf.Any"
+              value.any:
+                url: "type.googleapis.com/buf.test.Foo"
+                value.message.fields:
+                  "x1": { i32: 42 }
+                  "x2": { string: "foo" }
+        - any:
+            url: "type.googleapis.com/buf.test.Foo"
+            value.message.fields:
+              "a":
+                repeated.values:
+                - any:
+                    url: "type.googleapis.com/buf.test.Foo"
+                    value.message.fields: { "x1": { i32: 42 } }
+                - any:
+                    url: "type.googleapis.com/buf.test.Foo"
+                    value.message.fields: { "x1": { i32: 42 } }
+                - message.fields:
+                    "type_url": { string: "type.googleapis.com/buf.test.Bar" }
+                    "value": { string: "xyz" }
+                - any:
+                    url: "type.googleapis.com/buf.test.Foo"
+                    value.message: {}
+                - any:
+                    url: "type.googleapis.com/buf.test.Bar"
+                    value.message: {}
+                - message: {}
+                - message: {}

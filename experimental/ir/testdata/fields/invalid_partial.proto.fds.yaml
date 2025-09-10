@@ -1,0 +1,15 @@
+file:
+- name: "testdata/fields/invalid_partial.proto"
+  package: "test"
+  message_type:
+  - name: "M"
+    nested_type:
+    - name: "N"
+    - name: "M"
+      field:
+      - name: "n"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: ".test.M.N"
+  syntax: "proto3"

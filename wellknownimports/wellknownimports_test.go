@@ -15,7 +15,6 @@
 package wellknownimports
 
 import (
-	"context"
 	"io"
 	"os"
 	"testing"
@@ -39,6 +38,7 @@ func TestWithStandardImports(t *testing.T) {
 		"google/protobuf/duration.proto",
 		"google/protobuf/empty.proto",
 		"google/protobuf/field_mask.proto",
+		"google/protobuf/go_features.proto",
 		"google/protobuf/java_features.proto",
 		"google/protobuf/source_context.proto",
 		"google/protobuf/struct.proto",
@@ -55,7 +55,7 @@ func TestWithStandardImports(t *testing.T) {
 		}),
 		RetainASTs: true,
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	for _, name := range wellKnownImports {
 		t.Log(name)
 		fds, err := c.Compile(ctx, name)
@@ -108,7 +108,7 @@ func TestCantRedefineWellKnownCustomFeature(t *testing.T) {
 			}),
 		}),
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 	_, err := c.Compile(ctx, "features.proto")
 	require.ErrorContains(t, err, `features.proto:9:56: expected extension with number 1000 to be named pb.cpp, not custom, per declaration at google/protobuf/descriptor.proto`)
 }

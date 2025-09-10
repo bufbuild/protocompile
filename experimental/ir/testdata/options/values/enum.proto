@@ -1,0 +1,56 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+option (x) = {
+    e: [0, 1, 2, 3, 4]
+    e: [BAR_ZERO, BAR_E1, BAR_E2],
+    e: BAR_E3
+    e: BAZ_ZERO
+    e: buf.test.BAR_E1
+    e: Bar.BAR_E1
+    e: -BAR_E1
+
+    i: Foo,
+    i: Foo.i,
+    i: Foo.e,
+    i: BAR_ZERO
+    i: buf.test.BAR_ZERO
+
+    e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+};
+
+message Foo {
+    repeated Bar e = 1;
+    repeated int32 i = 2;
+}
+
+enum Bar {
+    BAR_ZERO = 0;
+    BAR_E1 = 1;
+    BAR_E2 = 2;
+}
+
+enum Baz {
+    BAZ_ZERO = 0;
+}
+
+extend google.protobuf.FileOptions {
+    optional Foo x = 1000;
+}

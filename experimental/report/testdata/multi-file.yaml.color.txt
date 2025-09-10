@@ -1,27 +1,27 @@
 ⟨b.red⟩error: two files
 ⟨blu⟩  --> foo.proto:3:9
-   |
+  ⟨blu⟩ |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨reset⟩        ⟨b.red⟩^^^^^^^⟨reset⟩ ⟨b.red⟩foo
 ⟨blu⟩ 4 | ⟨reset⟩
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩bar
 ⟨blu⟩  ::: bar.proto:3:9
-   |
+  ⟨blu⟩ |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz2;
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩-------⟨reset⟩ ⟨b.blu⟩baz⟨reset⟩
 
 ⟨b.red⟩error: three files
 ⟨blu⟩  --> foo.proto:3:9
-   |
+  ⟨blu⟩ |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨reset⟩        ⟨b.red⟩^^^^^^^⟨reset⟩ ⟨b.red⟩foo
 ⟨blu⟩  ::: bar.proto:3:9
-   |
+  ⟨blu⟩ |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz2;
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩-------⟨reset⟩ ⟨b.blu⟩baz
 ⟨blu⟩  ::: foo.proto:5:9
-   |
+  ⟨blu⟩ |
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
 ⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩bar⟨reset⟩
 

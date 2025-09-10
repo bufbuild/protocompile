@@ -12,52 +12,6 @@ error: unexpected array expression in option setting value
    = note: array expressions can only appear inside of message expressions
    = help: break this option setting into one per element
 
-error: unexpected qualified name in message field value
-  --> testdata/parser/expr.proto:29:5
-   |
-29 |     foo.bar: "x",
-   |     ^^^^^^^ expected message field name, extension name, or `Any` type URL
-
-error: unexpected qualified name in message field value
-  --> testdata/parser/expr.proto:31:5
-   |
-31 |     foo.bar {},
-   |     ^^^^^^^ expected message field name, extension name, or `Any` type URL
-
-error: unexpected integer literal in message field value
-  --> testdata/parser/expr.proto:33:9
-   |
-33 |         1: "x",
-   |         ^ expected message field name, extension name, or `Any` type URL
-
-error: unexpected string literal in message field value
-  --> testdata/parser/expr.proto:34:9
-   |
-34 |         "foo": "x"
-   |         ^^^^^ expected message field name, extension name, or `Any` type URL
-  help: remove the quotes
-   |
-34 | -         "foo": "x"
-34 | +         foo: "x"
-   |
-
-error: unexpected integer literal in message field value
-  --> testdata/parser/expr.proto:35:9
-   |
-35 |         1 {
-   |         ^ expected message field name, extension name, or `Any` type URL
-
-error: unexpected string literal in message field value
-  --> testdata/parser/expr.proto:36:13
-   |
-36 |             "foo" {
-   |             ^^^^^ expected message field name, extension name, or `Any` type URL
-  help: remove the quotes
-   |
-36 | -             "foo" {
-36 | +             foo {
-   |
-
 error: unexpected array expression in option setting value
   --> testdata/parser/expr.proto:44:21
    |
@@ -102,4 +56,4 @@ error: unexpected `;` after `to`
 47 | option (test.bad) = 1 to;
    |                         ^ expected expression
 
-encountered 15 errors
+encountered 9 errors

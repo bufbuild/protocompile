@@ -75,6 +75,18 @@ func All[T any](seq Indexer[T]) iter.Seq2[int, T] {
 	}
 }
 
+// Backward returns an iterator over the elements in seq in reverse,
+// like [slices.Backward].
+func Backward[T any](seq Indexer[T]) iter.Seq2[int, T] {
+	return func(yield func(int, T) bool) {
+		for i := seq.Len() - 1; i >= 0; i-- {
+			if !yield(i, seq.At(i)) {
+				return
+			}
+		}
+	}
+}
+
 // Values returns an iterator over the elements in seq, like [slices.Values].
 func Values[T any](seq Indexer[T]) iter.Seq[T] {
 	return func(yield func(T) bool) {
@@ -97,4 +109,13 @@ func Append[T any](seq Inserter[T], values ...T) {
 	for _, v := range values {
 		seq.Insert(seq.Len(), v)
 	}
+}
+
+// ToSlice copies an [Indexer] into a slice.
+func ToSlice[T any](seq Indexer[T]) []T {
+	out := make([]T, seq.Len())
+	for i := range out {
+		out[i] = seq.At(i)
+	}
+	return out
 }

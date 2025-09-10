@@ -1,0 +1,7 @@
+file:
+- { name: "C:/MyFiles/foo.proto", package: "foo.bar", syntax: "proto2" }
+- { name: "nested/path.proto", package: "foo.bar", syntax: "proto2" }
+- name: "main.proto"
+  package: "foo.bar"
+  dependency: ["C:/MyFiles/foo.proto", "nested/path.proto"]
+  syntax: "proto2"

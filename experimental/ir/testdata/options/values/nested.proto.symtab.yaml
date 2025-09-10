@@ -1,0 +1,57 @@
+tables:
+  "testdata/options/values/nested.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/values/nested.proto"
+    - fqn: "buf.test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/options/values/nested.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.a"
+      kind: KIND_FIELD
+      file: "testdata/options/values/nested.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.Foo.b"
+      kind: KIND_FIELD
+      file: "testdata/options/values/nested.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/nested.proto"
+      index: 3
+      visible:
+    - fqn: "buf.test.y"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/nested.proto"
+      index: 4
+      visible:
+    - fqn: "buf.test.z"
+      kind: KIND_EXTENSION
+      file: "testdata/options/values/nested.proto"
+      index: 5
+      visible:
+    options.message.extns:
+      "buf.test.x":
+        message:
+          fields:
+            "a":
+              message:
+                fields:
+                  "a":
+                    message.fields:
+                      "a": { message: {} }
+                      "b":
+                        repeated.values: [{ message: {} }, { message: {} }]
+                extns:
+                  "buf.test.z":
+                    repeated.values: [{ message: {} }, { message: {} }]
+            "b": { repeated.values: [{ message: {} }, { message: {} }] }
+          extns:
+            "buf.test.y":
+              message.fields:
+                "a": { message.extns: { "buf.test.y": { message: {} } } }

@@ -1,0 +1,56 @@
+tables:
+  "testdata/extend/skip_wrong_kind.proto":
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/extend/skip_wrong_kind.proto"
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.N"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.P"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.Q"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 5
+      visible:
+    - fqn: "test.M.P.X"
+      kind: KIND_ENUM
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 4
+      visible:
+    - fqn: "test.M.Q.N"
+      kind: KIND_ENUM
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 6
+      visible:
+    - fqn: "test.M.P.N"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.Q.Q"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.P.n"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.Q.n"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/skip_wrong_kind.proto"
+      index: 4
+      visible:

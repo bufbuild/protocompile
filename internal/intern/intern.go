@@ -18,11 +18,12 @@ package intern
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // ID is an interned string in a particular [Table].
@@ -164,7 +165,16 @@ func (t *Table) InternBytes(bytes []byte) ID {
 	//
 	// Thus, we can simply turn bytes into a string temporarily to pass to
 	// Intern.
-	return t.Intern(unsafe.String(unsafe.SliceData(bytes), len(bytes)))
+	return t.Intern(unsafex.StringAlias(bytes))
+}
+
+// QueryBytes will query whether bytes has already been interned.
+//
+// This function may be called by multiple goroutines concurrently, but bytes
+// must not be modified until this function returns.
+func (t *Table) QueryBytes(bytes []byte) (ID, bool) {
+	// See InternBytes's comment.
+	return t.Query(unsafex.StringAlias(bytes))
 }
 
 // Value converts an [ID] back into its corresponding string.
@@ -186,6 +196,28 @@ func (t *Table) Value(id ID) string {
 	// fast paths above. This in turn allows decodeChar6 to be inlined, which
 	// allows the returned string to be stack-promoted.
 	return t.getSlow(id)
+}
+
+// Preload takes a pointer to a struct type and initializes [ID]-typed fields
+// with statically-specified strings.
+//
+// Specifically, every exported field whose type is [ID] and which has a struct
+// tag "intern" will be set to t.Intern(...) with that tag's value.
+//
+// Panics if ids is not a pointer to a struct type.
+func (t *Table) Preload(ids any) {
+	r := reflect.ValueOf(ids).Elem()
+	for i := range r.NumField() {
+		f := r.Type().Field(i)
+		if !f.IsExported() || f.Type != reflect.TypeFor[ID]() {
+			continue
+		}
+
+		text, ok := f.Tag.Lookup("intern")
+		if ok {
+			r.Field(i).Set(reflect.ValueOf(t.Intern(text)))
+		}
+	}
 }
 
 func (t *Table) getSlow(id ID) string {
@@ -226,4 +258,28 @@ func (s Set) Add(table *Table, key string) (inserted bool) {
 		s[k] = struct{}{}
 	}
 	return !ok
+}
+
+// Map is a map keyed by intern IDs.
+type Map[T any] map[ID]T
+
+// Get returns the value that key maps to.
+func (m Map[T]) Get(table *Table, key string) (T, bool) {
+	k, ok := table.Query(key)
+	if !ok {
+		var z T
+		return z, false
+	}
+	v, ok := m[k]
+	return v, ok
+}
+
+// AddID adds an ID to m, and returns whether it was added.
+func (m Map[T]) AddID(id ID, v T) (mapped T, inserted bool) {
+	return mapsx.Add(m, id, v)
+}
+
+// Add adds a string to m, and returns whether it was added.
+func (m Map[T]) Add(table *Table, key string, v T) (mapped T, inserted bool) {
+	return m.AddID(table.Intern(key), v)
 }

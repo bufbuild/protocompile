@@ -16,7 +16,6 @@ package options_test
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -92,7 +91,7 @@ func TestCustomOptionsAreKnown(t *testing.T) {
 			compiler := &protocompile.Compiler{
 				Resolver: resolver,
 			}
-			files, err := compiler.Compile(context.Background(), "test.proto")
+			files, err := compiler.Compile(t.Context(), "test.proto")
 			require.NoError(t, err)
 			require.Len(t, files, 1)
 			var knownOptionNames []string
@@ -390,7 +389,7 @@ func TestOptionsEncoding(t *testing.T) {
 					ImportPaths: []string{importPath},
 				}),
 			}
-			fds, err := compiler.Compile(context.Background(), fileToCompile)
+			fds, err := compiler.Compile(t.Context(), fileToCompile)
 			var panicErr protocompile.PanicError
 			if errors.As(err, &panicErr) {
 				t.Logf("panic! %v\n%s", panicErr.Value, panicErr.Stack)
@@ -440,7 +439,7 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 			ImportPaths: []string{"../internal/testdata"},
 		}),
 	}
-	files, err := compiler.Compile(context.Background(), fileNames...)
+	files, err := compiler.Compile(t.Context(), fileNames...)
 	require.NoError(t, err)
 
 	// Now compile without the AST, to make sure we interpret options the same way
@@ -465,7 +464,7 @@ func TestInterpretOptionsWithoutAST(t *testing.T) {
 			},
 		)),
 	}
-	filesFromNoAST, err := compiler.Compile(context.Background(), fileNames...)
+	filesFromNoAST, err := compiler.Compile(t.Context(), fileNames...)
 	require.NoError(t, err)
 
 	for _, file := range files {
@@ -491,7 +490,7 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 			ImportPaths: []string{"../internal/testdata"},
 		}),
 	}
-	files, err := compiler.Compile(context.Background(), fileNames...)
+	files, err := compiler.Compile(t.Context(), fileNames...)
 	require.NoError(t, err)
 
 	// Now compile with just the protos, with options already interpreted, to make
@@ -515,7 +514,7 @@ func TestInterpretOptionsWithoutASTNoOp(t *testing.T) {
 			},
 		)),
 	}
-	filesFromNoAST, err := compiler.Compile(context.Background(), fileNames...)
+	filesFromNoAST, err := compiler.Compile(t.Context(), fileNames...)
 	require.NoError(t, err)
 
 	for _, file := range files {
@@ -624,7 +623,7 @@ func TestInterpretOptionsFeatureLifetimeWarnings(t *testing.T) {
 		}),
 		Reporter: rep,
 	}
-	_, err := compiler.Compile(context.Background(), "test.proto")
+	_, err := compiler.Compile(t.Context(), "test.proto")
 	require.NoError(t, err)
 	expectedWarnings := []string{
 		`test.proto:10:25: field "Custom.deprecated_and_removed" is deprecated as of edition 2023: other custom feature is not to be used either`,

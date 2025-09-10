@@ -61,6 +61,20 @@ func Join[T any](cmps ...Ordering[T]) Ordering[T] {
 	}
 }
 
+// Map is like [Join], but it maps the inputs with the given function first.
+func Map[T any, U any](f func(T) U, cmps ...Ordering[U]) Ordering[T] {
+	return func(x, y T) Result {
+		a, b := f(x), f(y)
+
+		for _, cmp := range cmps {
+			if n := cmp(a, b); n != Equal {
+				return n
+			}
+		}
+		return Equal
+	}
+}
+
 // Reverse returns an ordering which is the reverse of cmp.
 func Reverse[T any](cmp Ordering[T]) Ordering[T] {
 	return func(a, b T) Result { return -cmp(a, b) }

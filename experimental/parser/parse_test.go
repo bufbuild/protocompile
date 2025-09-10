@@ -32,9 +32,9 @@ func TestParse(t *testing.T) {
 	t.Parallel()
 
 	corpus := golden.Corpus{
-		Root:      "testdata/parser",
-		Refresh:   "PROTOCOMPILE_REFRESH",
-		Extension: "proto",
+		Root:       "testdata/parser",
+		Refresh:    "PROTOCOMPILE_REFRESH",
+		Extensions: []string{"proto"},
 		Outputs: []golden.Output{
 			{Extension: "yaml"},
 			{Extension: "stderr.txt"},

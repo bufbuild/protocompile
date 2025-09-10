@@ -22,6 +22,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -43,7 +44,7 @@ func legalizeDecl(p *parser, parent classified, decl ast.DeclAny) {
 	case ast.DeclKindPackage:
 		legalizePackage(p, parent, -1, nil, decl.AsPackage())
 	case ast.DeclKindImport:
-		legalizeImport(p, parent, decl.AsImport(), nil)
+		legalizeImport(p, parent, decl.AsImport())
 
 	case ast.DeclKindRange:
 		legalizeRange(p, parent, decl.AsRange())
@@ -96,6 +97,13 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		return
 	}
 
+	if p.syntax == syntax.Proto3 && in == taxa.Extensions {
+		p.Errorf("%ss are not permitted in %s", in, p.syntax).Apply(
+			report.Snippet(decl),
+			// TODO: suggestions. Can't just suggest Any because Any sucks.
+		)
+	}
+
 	if options := decl.Options(); !options.IsZero() {
 		if in == taxa.Reserved {
 			p.Error(errHasOptions{decl})
@@ -106,7 +114,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 
 	want := taxa.NewSet(taxa.Int, taxa.Range)
 	if in == taxa.Reserved {
-		if p.Mode() == taxa.EditionMode {
+		if p.syntax.IsEdition() {
 			want = want.With(taxa.Ident)
 		} else {
 			want = want.With(taxa.String)
@@ -168,13 +176,12 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 
 			names = append(names, expr)
 
-			m := p.Mode()
-			if m == taxa.EditionMode {
+			if p.syntax.IsEdition() {
 				break
 			}
-			p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, m).Apply(
+			p.Errorf("cannot use %vs in %v in %v", taxa.Ident, in, taxa.SyntaxMode).Apply(
 				report.Snippet(expr),
-				report.Snippetf(p.syntax, "%v is specified here", m),
+				report.Snippetf(p.syntaxNode, "%v is specified here", taxa.SyntaxMode),
 				report.SuggestEdits(
 					expr,
 					fmt.Sprintf("quote it to make it into a %v", taxa.String),
@@ -201,10 +208,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 				}
 
 				names = append(names, expr)
-				if m := p.Mode(); m == taxa.EditionMode {
-					err := p.Errorf("cannot use %vs in %v in %v", taxa.String, in, m).Apply(
+				if p.syntax.IsEdition() {
+					err := p.Errorf("cannot use %vs in %v in %v", taxa.String, in, taxa.EditionMode).Apply(
 						report.Snippet(expr),
-						report.Snippetf(p.syntax, "%v is specified here", m),
+						report.Snippetf(p.syntaxNode, "%v is specified here", taxa.EditionMode),
 					)
 
 					// Only suggest unquoting if it's already an identifier.

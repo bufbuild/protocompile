@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"sync"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -28,6 +30,19 @@ import (
 // A zero [Session] is ready to use.
 type Session struct {
 	intern intern.Table
+
+	once    sync.Once
+	langIDs struct {
+		DescriptorFile intern.ID `intern:"google/protobuf/descriptor.proto"`
+		AnyPath        intern.ID `intern:"google.protobuf.Any"`
+
+		FileOptions      intern.ID `intern:"google.protobuf.FileDescriptorProto.options"`
+		MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
+		FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
+		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
+		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
+		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+	}
 }
 
 // Lower lowers an AST into an IR module.
@@ -35,11 +50,17 @@ type Session struct {
 // The ir package does not provide a mechanism for resolving imports; instead,
 // they must be provided as an argument to this function.
 func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer) (file File, ok bool) {
+	s.init()
+
 	prior := len(errs.Diagnostics)
 	c := &Context{session: s}
 	c.ast = source
+	c.path = c.session.intern.Intern(CanonicalizeFilePath(c.ast.Span().File.Path()))
 
-	lower(c, errs, importer)
+	errs.SaveOptions(func() {
+		errs.SuppressWarnings = errs.SuppressWarnings || c.File().IsDescriptorProto()
+		lower(c, errs, importer)
+	})
 
 	ok = true
 	for _, d := range errs.Diagnostics[prior:] {
@@ -52,6 +73,10 @@ func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer)
 	return c.File(), ok
 }
 
+func (s *Session) init() {
+	s.once.Do(func() { s.intern.Preload(&s.langIDs) })
+}
+
 func lower(c *Context, r *report.Report, importer Importer) {
 	defer r.CatchICE(false, func(d *report.Diagnostic) {
 		d.Apply(report.Notef("while lowering %q", c.File().Path()))
@@ -62,6 +87,25 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Now, resolve all the imports.
 	buildImports(c.File(), r, importer)
+
+	// Next, we can build various symbol tables in preparation for name
+	// resolution.
+	buildLocalSymbols(c.File())
+	mergeImportedSymbolTables(c.File(), r)
+
+	// Perform "early" name resolution, i.e. field names and extension types.
+	resolveNames(c.File(), r)
+
+	// Perform constant evaluation.
+	evaluateFieldNumbers(c.File(), r)
+
+	// Perform "late" name resolution, that is, options.
+	resolveOptions(c.File(), r)
+
+	// Perform more constant evaluation. This is a separate step because we need
+	// to know if an extendee is a MessageSet before checking extension numbers,
+	// since MessageSet field numbers are 32-bit, not 29-bit.
+	evaluateExtensionNumbers(c.File(), r)
 }
 
 // sorry panics with an NYI error, which turns into an ICE inside of the
