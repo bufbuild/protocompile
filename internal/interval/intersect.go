@@ -122,6 +122,7 @@ func (m *Intersect[K, V]) Insert(start, end K, value V) {
 		}
 
 		// Add the value to this overlap.
+		//nolint:gocritic // Slice assignment false positive.
 		entry.Values = append(values, value)
 
 		if prev != nil && prev.End < entry.Start {

@@ -94,7 +94,7 @@ func (p Path) AsKeyword() keyword.Keyword {
 	return p.AsIdent().Keyword()
 }
 
-// IsIdents returns whether p is a sequence of exactly the given identifiers
+// IsIdents returns whether p is a sequence of exactly the given identifiers.
 func (p Path) IsIdents(idents ...string) bool {
 	for i, pc := range iterx.Enumerate(p.Components) {
 		if i >= len(idents) || pc.AsIdent().Text() != idents[i] {

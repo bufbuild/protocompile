@@ -5,8 +5,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/interval"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/interval"
 )
 
 func TestInsert(t *testing.T) {
