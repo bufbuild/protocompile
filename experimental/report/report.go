@@ -321,7 +321,7 @@ func (r *Report) ToProto() proto.Message {
 	return proto
 }
 
-// FromProto appends diagnostics from a Protobuf message to this report.
+// AppendFromProto appends diagnostics from a Protobuf message to this report.
 //
 // deserialize will be called with an empty message that should be deserialized
 // onto, which this function will then convert into [Diagnostic]s to populate the
