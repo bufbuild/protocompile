@@ -16,6 +16,7 @@ package ir
 
 import (
 	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -23,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/interval"
 )
@@ -71,7 +73,7 @@ type rawType struct {
 	members         []arena.Pointer[rawMember]
 	memberByName    func() intern.Map[arena.Pointer[rawMember]]
 	ranges          []arena.Pointer[rawReservedRange]
-	rangesByNumber  interval.Map[int32, rawTagRange]
+	rangesByNumber  interval.Intersect[int32, rawTagRange]
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         arena.Pointer[rawValue]
@@ -314,17 +316,20 @@ func (t Type) MemberByInternedName(name intern.ID) Member {
 	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
 }
 
-// TagRange returns the [TagRange] that contains number.
-func (t Type) TagRange(number int32) TagRange {
-	if t.IsZero() {
-		return TagRange{}
-	}
+// TagRange returns an iterator over [TagRange]s that contain number.
+func (t Type) Ranges(number int32) iter.Seq[TagRange] {
+	return func(yield func(TagRange) bool) {
+		if t.IsZero() {
+			return
+		}
 
-	entry := t.raw.rangesByNumber.Get(number)
-	if entry.Value == nil {
-		return TagRange{}
+		entry := t.raw.rangesByNumber.Get(number)
+		for _, raw := range entry.Values {
+			if !yield(TagRange{t.withContext, raw}) {
+				return
+			}
+		}
 	}
-	return TagRange{t.withContext, *entry.Value}
 }
 
 // MemberByNumber looks up a member with the given number.
@@ -335,7 +340,10 @@ func (t Type) MemberByNumber(number int32) Member {
 		return Member{}
 	}
 
-	return t.TagRange(number).AsMember()
+	_, member := iterx.Find(t.Ranges(number), func(r TagRange) bool {
+		return !r.AsMember().IsZero()
+	})
+	return member.AsMember()
 }
 
 // membersByNameFunc creates the MemberByName map. This is used to keep

@@ -1,174 +1,215 @@
 package interval
 
 import (
-	"cmp"
 	"fmt"
 	"iter"
+	"slices"
 
 	"github.com/tidwall/btree"
+	"golang.org/x/exp/constraints"
 )
 
-// Map is an interval map, which maps closed intervals with endpoints in K
-// to values of type V.
+// Endpoint is a type that may be used as an interval endpoint.
+type Endpoint = constraints.Integer
+
+// Intersection is an interval intersection map: a collection of intervals,
+// such that given a point in K, one can query for the intersection of all
+// intervals in the collection which contain it, along with the values
+// associated with each of those intervals.
 //
 // A zero value is ready to use.
-type Map[K cmp.Ordered, V any] struct {
+type Intersect[K Endpoint, V any] struct {
 	// Keys in this map are the ends of intervals in the map.
-	tree btree.Map[K, *entry[K, V]]
+	tree    btree.Map[K, *Entry[K, V]]
+	pending []*Entry[K, V] // Scratch space for Insert().
 }
 
-// Interval is an entry returned by [Map.Insert].
-type Interval[K cmp.Ordered, V any] struct {
-	// The range for this interval.
-	Start, End K
-
-	// The value associated with it.
-	Value *V
+// Entry is an entry in a [Intersect]. This means that it is the intersection
+// of all intervals which contain a particular point.
+type Entry[K Endpoint, V any] struct {
+	Start, End K   // The interval range.
+	Values     []V // Values associated with the interval.
 }
 
-// Get looks up the interval which contains key, if one exists.
+// Contains returns whether an entry contains a given point.
+func (e Entry[K, V]) Contains(point K) bool {
+	return e.Start <= point && point <= e.End
+}
+
+// Get returns the intersection of all intervals which contain point.
 //
-// If no such interval exists, the Value of the returned [Interval] will be
-// nil.
-func (m *Map[K, V]) Get(key K) Interval[K, V] {
+// If no such interval exists, the [Entry].Values will be nil.
+func (m *Intersect[K, V]) Get(point K) Entry[K, V] {
 	iter := m.tree.Iter()
-	found := iter.Seek(key)
+	found := iter.Seek(point)
 
-	if !found || key < iter.Value().start {
+	if !found || point < iter.Value().Start {
 		// Check that the interval actually contains key. It is implicit
 		// already that key <= end.
-		return Interval[K, V]{}
+		return Entry[K, V]{}
 	}
 
-	return Interval[K, V]{
-		Start: iter.Value().start,
-		End:   iter.Key(),
-		Value: &iter.Value().value,
-	}
+	return *iter.Value()
 }
 
-// Intervals returns an iterator over the intervals in this map.
-func (m *Map[K, V]) Intervals() iter.Seq[Interval[K, V]] {
-	return func(yield func(Interval[K, V]) bool) {
+// Intervals returns an iterator over the entries in this map.
+func (m *Intersect[K, V]) Intervals() iter.Seq[Entry[K, V]] {
+	return func(yield func(Entry[K, V]) bool) {
 		iter := m.tree.Iter()
-		more := iter.First()
-		for more {
-			if !yield(Interval[K, V]{
-				Start: iter.Value().start,
-				End:   iter.Key(),
-				Value: &iter.Value().value,
-			}) {
+		for more := iter.First(); more; more = iter.Next() {
+			if !yield(*iter.Value()) {
 				return
 			}
-			more = iter.Next()
 		}
 	}
 }
 
 // Insert inserts a new interval into this map, with the given associated value.
 // Both endpoints are inclusive.
-//
-// If [start, end] overlaps any interval present in this map, this function will
-// return the interval with the least start that overlaps with it. This case is
-// distinguished by overlap.Value != nil.
-func (m *Map[K, V]) Insert(start, end K, value V) (overlap Interval[K, V]) {
+func (m *Intersect[K, V]) Insert(start, end K, value V) {
 	if start > end {
 		panic(fmt.Sprintf("interval: start (%#v) > end (%#v)", start, end))
 	}
 
-	// We need to deal with five cases. Let start and end be a and b here.
-	//
-	// 1. [a, b] does not overlap any intervals.
-	// 2. [a, b] is a subset of an interval.
-	// 3. [a, b] intersects the greatest interval before it.
-	// 4. [a, b] intersects the least interval after it.
-	// 5. [a, b] contains an interval.
-
-	iter := m.tree.Iter()
-	if !iter.Seek(start) {
-		// Either the map is empty, or there is no interval with a <= d, which
-		// means that c <= d < a <= b for all intervals. This is a degenerate
-		// version of case (1).
-		m.tree.Set(end, &entry[K, V]{
-			start: start,
-			value: value,
-		})
-		return Interval[K, V]{}
-	}
-
-	switch {
-	case end < iter.Value().start:
-		// We have that a <= b < c <= d, where [c, d] is the least interval
-		// with a <= d. his is case (1).
-		m.tree.Set(end, &entry[K, V]{
-			start: start,
-			value: value,
-		})
-		return Interval[K, V]{}
-
-	case end <= iter.Key():
-		// We instead have that c <= a <= b <= d. This is case (2).
-		return Interval[K, V]{
-			Start: iter.Value().start,
-			End:   iter.Key(),
-			Value: &iter.Value().value,
+	var prev *Entry[K, V]
+	for entry := range m.intersect(start, end) {
+		if prev == nil && start < entry.Start {
+			// Need to insert an extra entry for the stuff between start and the
+			// first interval.
+			m.pending = append(m.pending, &Entry[K, V]{
+				Start:  start,
+				End:    entry.Start - 1,
+				Values: []V{value},
+			})
 		}
-	}
 
-	// To check for case (3), we need c <= a <= d <= b, where [c, d) is the
-	// greatest interval with d <= b.
-	iter.Seek(end)
-	notFirst := iter.Prev()
-	// Need to check if start lies within this interval.
-	if notFirst {
-		if start <= iter.Key() {
-			// This is case (3).
-			// This is also case (5), which is a <= c <= d <= b.
-			return Interval[K, V]{
-				Start: iter.Value().start,
-				End:   iter.Key(),
-				Value: &iter.Value().value,
+		values := entry.Values
+
+		// If the entry contains end, we need to split it at end.
+		if entry.Contains(end) && end < entry.End {
+			next := &Entry[K, V]{
+				Start:  entry.Start,
+				End:    end,
+				Values: append(slices.Clip(values), value),
 			}
+
+			// Shorten the existing entry.
+			entry.Start = end + 1
+
+			// Add next to the pending queue and use it as the entry here
+			// onwards.
+			m.pending = append(m.pending, next)
+			entry = next
 		}
+
+		// If the entry contains start, we also need to split it.
+		if entry.Contains(start) && entry.Start < start {
+			next := &Entry[K, V]{
+				Start:  entry.Start,
+				End:    start - 1,
+				Values: values,
+			}
+
+			// Add next to the pending queue, but *don't* use it as entry,
+			// because it does not overlap!
+			m.pending = append(m.pending, next)
+
+			// Shorten the existing entry (this one overlaps [a, b]).
+			entry.Start = start
+		}
+
+		// Add the value to this overlap.
+		entry.Values = append(values, value)
+
+		if prev != nil && prev.End < entry.Start {
+			// Add a new interval in between this one and the previous.
+			m.pending = append(m.pending, &Entry[K, V]{
+				Start:  prev.End + 1,
+				End:    entry.Start - 1,
+				Values: []V{value},
+			})
+		}
+
+		prev = entry
 	}
 
-	// To check for case (4), we need a <= c <= b <= d, where [c, d) is
-	// the least interval with b <= d.
-	if notFirst {
-		iter.Next() // Undo the iter.Prev() above, if it succeeded.
+	if prev != nil && prev.End < end {
+		// Need to insert an extra entry for the stuff between the
+		// last interval and end.
+		m.pending = append(m.pending, &Entry[K, V]{
+			Start:  prev.End + 1,
+			End:    end,
+			Values: []V{value},
+		})
 	}
 
-	// By process of elimination, this must be case (4).
-	return Interval[K, V]{
-		Start: iter.Value().start,
-		End:   iter.Key(),
-		Value: &iter.Value().value,
+	for _, entry := range m.pending {
+		m.tree.Set(entry.End, entry)
+	}
+	m.pending = m.pending[:0]
+
+	if prev == nil {
+		m.tree.Set(end, &Entry[K, V]{
+			Start:  start,
+			End:    end,
+			Values: []V{value},
+		})
 	}
 }
 
 // Format implements [fmt.Formatter].
-func (m *Map[K, V]) Format(s fmt.State, v rune) {
+func (m *Intersect[K, V]) Format(s fmt.State, v rune) {
 	fmt.Fprint(s, "{")
 	first := true
-	m.tree.Scan(func(end K, entry *entry[K, V]) bool {
+	m.tree.Scan(func(end K, entry *Entry[K, V]) bool {
 		if !first {
 			fmt.Fprint(s, ", ")
 		}
 		first = false
 
-		if entry.start == end {
-			fmt.Fprintf(s, "%#v: ", entry.start)
+		if entry.Start == end {
+			fmt.Fprintf(s, "%#v: ", entry.Start)
 		} else {
-			fmt.Fprintf(s, "[%#v, %#v]: ", entry.start, end)
+			fmt.Fprintf(s, "[%#v, %#v]: ", entry.Start, end)
 		}
-		fmt.Fprintf(s, fmt.FormatString(s, v), entry.value)
+		fmt.Fprintf(s, fmt.FormatString(s, v), entry.Values)
 
 		return true
 	})
 	fmt.Fprint(s, "}")
 }
 
-type entry[K cmp.Ordered, V any] struct {
-	start K
-	value V
+// intersect returns an iterator over the intervals that intersect [start, end].
+func (m *Intersect[K, V]) intersect(start, end K) iter.Seq[*Entry[K, V]] {
+	return func(yield func(*Entry[K, V]) bool) {
+		a, b := start, end
+
+		iter := m.tree.Iter()
+		if !iter.Seek(a) || b < iter.Value().Start {
+			// Either the map is empty, or there is no interval with a <= d,
+			// which means that c <= d < a <= b for all intervals.
+			//
+			// Alternatively, we have that a <= b < c <= d, where [c, d] is the
+			// least interval with a <= d.
+			return
+		}
+
+		// Now, we know that [c, d] overlaps with [a, b]. We need to walk the
+		// tree backwards, finding overlapping intervals, until we find an
+		// interval that contains a or we reach the end of the tree.
+		if !yield(iter.Value()) {
+			return
+		}
+
+		for iter.Next() {
+			c, d := iter.Value().Start, iter.Value().End
+
+			if c <= b && !yield(iter.Value()) {
+				return
+			}
+			if d <= b {
+				return
+			}
+		}
+	}
 }

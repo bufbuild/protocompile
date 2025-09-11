@@ -73,6 +73,20 @@ func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
 }
 
+// AsTagRange wraps this member in a TagRange.
+func (m Member) AsTagRange() TagRange {
+	if m.IsZero() {
+		return TagRange{}
+	}
+	return TagRange{
+		m.withContext,
+		rawTagRange{
+			isMember: true,
+			ptr:      arena.Untyped(m.Context().arenas.members.Compress(m.raw)),
+		},
+	}
+}
+
 // AST returns the declaration for this member, if known.
 func (m Member) AST() ast.DeclDef {
 	if m.IsZero() {
@@ -386,9 +400,6 @@ func (r ReservedRange) AST() ast.ExprAny {
 }
 
 // Range returns the start and end of the range.
-//
-// Unlike how it appears in descriptor.proto, this range is exclusive: end is
-// not included.
 func (r ReservedRange) Range() (start, end int32) {
 	if r.IsZero() {
 		return 0, 0
@@ -400,6 +411,20 @@ func (r ReservedRange) Range() (start, end int32) {
 // ForExtensions returns whether this is an extension range.
 func (r ReservedRange) ForExtensions() bool {
 	return !r.IsZero() && r.raw.forExtensions
+}
+
+// AsTagRange wraps this range in a TagRange.
+func (r ReservedRange) AsTagRange() TagRange {
+	if r.IsZero() {
+		return TagRange{}
+	}
+	return TagRange{
+		r.withContext,
+		rawTagRange{
+			isMember: true,
+			ptr:      arena.Untyped(r.Context().arenas.ranges.Compress(r.raw)),
+		},
+	}
 }
 
 // Options returns the options applied to this range.

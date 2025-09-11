@@ -183,12 +183,12 @@ error: mismatched types
    = note: expected: field number
               found: scalar type `bool`
 
-error: `max` outside of range expression
+error: `max` outside of range end
   --> testdata/tags/fields.proto:51:24
    |
 51 |     optional bool b3 = max;
    |                        ^^^
-   = note: the special `max` expression is only allowed in a range expression
+   = note: the special `max` expression can only be used at the end of a range
 
 error: mismatched types
   --> testdata/tags/fields.proto:53:26

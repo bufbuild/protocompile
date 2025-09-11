@@ -937,11 +937,11 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				return messageSetNumberMax, ok
 			}
 		} else {
-			e.Errorf("%s outside of %s", taxa.PredeclaredMax, taxa.Range).Apply(
+			e.Errorf("%s outside of range end", taxa.PredeclaredMax).Apply(
 				report.Snippet(expr),
 				report.Notef(
-					"the special %s expression is only allowed in a %s",
-					taxa.PredeclaredMax, taxa.Range),
+					"the special %s expression can only be used at the end of a range",
+					taxa.PredeclaredMax),
 			)
 			return 0, false
 		}

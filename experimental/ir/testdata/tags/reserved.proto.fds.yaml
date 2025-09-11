@@ -1,0 +1,34 @@
+file:
+- name: "testdata/tags/reserved.proto"
+  package: "test"
+  message_type:
+  - name: "M"
+    field:
+    - { name: "y0", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y1", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y2", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y3", number: 4, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y4", number: 5, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    reserved_range:
+    - { start: 2, end: 2 }
+    - { start: 3, end: 3 }
+    - { start: 5, end: 10 }
+    - { start: 7, end: 7 }
+    - { start: 8, end: 536870911 }
+    - { start: 0, end: 0 }
+  enum_type:
+  - name: "E"
+    value:
+    - { name: "Y0", number: 1 }
+    - { name: "Y1", number: 2 }
+    - { name: "Y2", number: 3 }
+    - { name: "Y3", number: 4 }
+    - { name: "Y4", number: 5 }
+    reserved_range:
+    - { start: 2, end: 2 }
+    - { start: 3, end: 3 }
+    - { start: 5, end: 10 }
+    - { start: 7, end: 7 }
+    - { start: 8, end: 2147483647 }
+    - { start: 0, end: 0 }
+  syntax: "proto2"

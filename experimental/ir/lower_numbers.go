@@ -6,7 +6,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // evaluateFieldNumbers evaluates all non-extension field numbers: that is,
@@ -38,16 +37,16 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 
 			switch tags.AST().Kind() {
 			case ast.ExprKindRange:
-				x, y := tags.AST().AsRange().Bounds()
+				a, b := tags.AST().AsRange().Bounds()
 
-				a, startOk := evaluateMemberNumber(f.Context(), scope, x, kind, false, r)
-				b, endOk := evaluateMemberNumber(f.Context(), scope, y, kind, true, r)
+				start, startOk := evaluateMemberNumber(f.Context(), scope, a, kind, false, r)
+				end, endOk := evaluateMemberNumber(f.Context(), scope, b, kind, true, r)
 
 				if !startOk || !endOk {
 					continue
 				}
 
-				if a >= b {
+				if start > end {
 					what := taxa.Reserved
 					if tags.ForExtensions() {
 						what = taxa.Extensions
@@ -55,13 +54,23 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 
 					r.Errorf("empty %s %v %v", what).Apply(
 						report.Snippet(tags.AST()),
-						report.Notef("range syntax requires that the start be less than the end"),
+						report.Notef("range syntax requires that start <= end"),
 					)
 					continue
 				}
 
-				tags.raw.first = a
-				tags.raw.last = b
+				if start == end {
+					r.Warnf("singleton range can be simplified").Apply(
+						report.Snippet(tags.AST()),
+						report.SuggestEdits(tags.AST(), "replace with a single number", report.Edit{
+							Start: 0, End: tags.AST().Span().Len(),
+							Replace: a.Span().Text(),
+						}),
+					)
+				}
+
+				tags.raw.first = start
+				tags.raw.last = end
 
 			default:
 				n, ok := evaluateMemberNumber(f.Context(), scope, tags.AST(), kind, false, r)
@@ -118,76 +127,66 @@ func evaluateMemberNumber(c *Context, scope FullName, number ast.ExprAny, kind m
 //
 // This also checks for and diagnoses overlaps.
 func buildFieldNumberRanges(f File, r *report.Report) {
+	// First, dump all of the ranges into the intersection set.
 	for ty := range seq.Values(f.AllTypes()) {
-		what := taxa.FieldNumber
-		if ty.IsEnum() {
-			what = taxa.EnumValue
-		}
-
-		ranges := iterx.Chain(
-			seq.Values(ty.ReservedRanges()),
-			seq.Values(ty.ExtensionRanges()),
-		)
-
-		// Do the ranges first, so we can check whether ranges overlap or not.
-		for tagRange := range ranges {
-			a, b := tagRange.Range()
-			if a == 0 || b == 0 {
+		for tagRange := range seq.Values(ty.ReservedRanges()) {
+			lo, hi := tagRange.Range()
+			if lo == 0 || hi == 0 {
 				continue // Diagnosed already.
 			}
-
-			e := ty.raw.rangesByNumber.Insert(a, b, rawTagRange{
+			ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
 				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.raw)),
 			})
-			if e.Value == nil {
-				continue
+		}
+		for tagRange := range seq.Values(ty.ExtensionRanges()) {
+			lo, hi := tagRange.Range()
+			if lo == 0 || hi == 0 {
+				continue // Diagnosed already.
 			}
-
-			// Only ranges inserted so far.
-			tags := TagRange{ty.withContext, *e.Value}.AsReserved()
-
-			c, d := tags.Range()
-			r.Errorf("overlapping %v ranges", what).Apply(
-				report.Snippet(tagRange.AST()),
-				report.Snippetf(tags.AST(), "overlaps with this one"),
-				report.Helpf("they overlap in the range `%v to %v`", max(a, c), min(b, d)),
-			)
+			ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
+				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.raw)),
+			})
 		}
 
+		// Members last, so that if an intersection contains only members, the
+		// first value is a member.
 		for member := range seq.Values(ty.Members()) {
 			n := member.Number()
 			if n == 0 {
 				continue // Diagnosed already.
 			}
-
-			e := ty.raw.rangesByNumber.Insert(n, n, rawTagRange{
+			ty.raw.rangesByNumber.Insert(n, n, rawTagRange{
 				isMember: true,
 				ptr:      arena.Untyped(f.Context().arenas.members.Compress(member.raw)),
 			})
-			if e.Value == nil {
+		}
+
+		// Now, iterate over every entry and diagnose the ones that have more
+		// than one value.
+		for entry := range ty.raw.rangesByNumber.Intervals() {
+			if len(entry.Values) < 2 {
 				continue
 			}
-			tags := TagRange{ty.withContext, *e.Value}
 
-			if reserved := tags.AsReserved(); !reserved.IsZero() {
-				r.Errorf("use of reserved %v `%v`", what, n).Apply(
-					report.Snippetf(member.AST().Value(), "used here"),
-					report.Snippetf(reserved.AST(), "%v reserved here", what),
-				)
-			} else {
-				if ty.AllowsAlias() {
+			first := TagRange{ty.withContext, entry.Values[0]}
+
+			for _, tags := range entry.Values[1:] {
+				tags := TagRange{ty.withContext, tags}
+				if a, b := first.AsMember(), tags.AsMember(); ty.AllowsAlias() && !a.IsZero() && !b.IsZero() {
 					continue
 				}
 
-				prev := tags.AsMember()
-				r.Errorf("%v `%v` used more than once", what, n).Apply(
-					report.Snippetf(member.AST().Value(), "used here"),
-					report.Snippetf(prev.AST().Value(), "previously used here"),
-				)
+				r.Error(errOverlap{
+					ty:     ty,
+					first:  first,
+					second: tags,
+				})
 			}
 		}
 	}
 
+	// Check that every extension has a corresponding extension range.
+extensions:
 	for extn := range seq.Values(f.AllExtensions()) {
 		n := extn.Number()
 		if n == 0 {
@@ -199,35 +198,92 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			continue
 		}
 
-		tags := ty.TagRange(n)
-		if tags.IsZero() {
-			r.Errorf("extension with unreserved number `%v`", n).Apply(
+		var first TagRange
+		for tags := range ty.Ranges(n) {
+			if first.IsZero() {
+				first = tags
+			}
+
+			if tags.AsReserved().ForExtensions() {
+				continue extensions
+			}
+		}
+
+		var d *report.Diagnostic
+		if !first.IsZero() {
+			d = r.Error(errOverlap{
+				ty:     ty,
+				first:  first,
+				second: extn.AsTagRange(),
+			})
+		} else {
+			d = r.Errorf("extension with unreserved number `%v`", n).Apply(
 				report.Snippet(extn.AST().Value()),
-				report.Helpf("the parent message `%s` must have reserved this number with an %s", ty.FullName(), taxa.Extensions),
-			)
-			continue
-		}
-
-		if member := tags.AsMember(); !member.IsZero() {
-			r.Errorf("%v `%v` used more than once", taxa.FieldNumber, n).Apply(
-				report.Snippetf(extn.AST().Value(), "used here"),
-				report.Snippetf(member.AST().Value(), "already used here, in the extendee"),
-			)
-			continue
-		}
-
-		reserved := tags.AsReserved()
-		if !reserved.ForExtensions() {
-			r.Errorf("use of reserved %v `%v`", taxa.FieldNumber, n).Apply(
-				report.Snippetf(extn.AST().Value(), "used here"),
-				report.Snippetf(reserved.AST(), "%v reserved here", taxa.FieldNumber),
-				report.Helpf("the parent message `%s` must have reserved this number with an %s", ty.FullName(), taxa.Extensions),
 			)
 		}
-
-		// By process of elimination, we are in a valid extension range.
+		d.Apply(report.Helpf(
+			"the parent message `%s` must have reserved this number with an %s, e.g. `extensions %v;`",
+			ty.FullName(), taxa.Extensions, extn.Number(),
+		))
 	}
 
 	// NOTE: Can't do extension number overlap checking yet, because we need
 	// a global view of all files to do that.
+}
+
+type errOverlap struct {
+	ty            Type
+	first, second TagRange
+}
+
+func (e errOverlap) Diagnose(d *report.Diagnostic) {
+	what := taxa.FieldNumber
+	if e.ty.IsEnum() {
+		what = taxa.EnumValue
+	}
+
+again:
+	if second := e.second.AsMember(); !second.IsZero() {
+		if first := e.first.AsMember(); !first.IsZero() {
+			d.Apply(
+				report.Message("%v `%v` used more than once", what, second.Number()),
+				report.Snippetf(second.AST().Value(), "used here"),
+				report.Snippetf(first.AST().Value(), "previously used here"),
+			)
+		} else {
+			first := e.first.AsReserved()
+			d.Apply(
+				report.Message("use of reserved %v `%v`", what, second.Number()),
+				report.Snippetf(second.AST().Value(), "used here"),
+				report.Snippetf(first.AST(), "%v reserved here", what),
+			)
+		}
+	} else {
+		if first := e.first.AsMember(); !first.IsZero() {
+			e.second, e.first = e.first, e.second
+			goto again
+		}
+
+		second := e.second.AsReserved()
+		first := e.first.AsReserved()
+
+		lo1, hil := first.Range()
+		lo2, hi2 := second.Range()
+		d.Apply(
+			report.Message("overlapping %v ranges", what),
+			report.Snippetf(second.AST(), "this range"),
+			report.Snippetf(first.AST(), "overlaps with this one"),
+		)
+
+		lo1 = max(lo1, lo2)
+		hil = min(hil, hi2)
+		if lo1 == hil {
+			d.Apply(report.Helpf("they overlap at `%v`", lo1))
+		} else {
+			d.Apply(report.Helpf("they overlap in the range `%v to %v`", lo1, hil))
+		}
+
+		// TODO: Generate a suggestion to split the range, if both ranges are
+		// of the same type.
+	}
 }
