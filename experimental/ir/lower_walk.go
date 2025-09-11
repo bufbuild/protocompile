@@ -24,7 +24,9 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // walker is the state struct for the AST-walking logic.
@@ -101,7 +103,6 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		switch kind := def.Classify(); kind {
 		case ast.DefKindMessage, ast.DefKindEnum:
 			ty := w.newType(def, parent)
-			ty.raw.isEnum = kind == ast.DefKindEnum
 
 			w.recurse(def.Body().AsAny(), ty)
 
@@ -147,16 +148,71 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
+	// Returns whether an option with this FQN (which must be in the matching
+	// *Option message) is present and has true as its value.
+	//
+	// This is necessary because there are options which, unfortunately,
+	// influence field number evaluation. This breaks a dependency for us.
+	searchForBoolOption := func(path ...string) bool {
+		for opt := range seq.Values(def.Options().Entries()) {
+			if opt.Value.AsPath().AsKeyword() != keyword.True {
+				continue
+			}
+
+			pc, ok := iterx.OnlyOne(opt.Path.Components)
+			if !ok {
+				continue
+			}
+
+			// This can either be e.g. message_set_wire_format, but it could also
+			// appear as (google.protobuf.MessageOptions.message_set_wire_format).
+			if pc.AsIdent().Text() == path[len(path)-1] {
+				return true
+			}
+
+			if fqn := pc.AsExtension(); fqn.IsIdents(path...) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	isEnum := def.Keyword() == keyword.Enum
 	raw := c.arenas.types.NewCompressed(rawType{
 		def:    def,
 		name:   c.session.intern.Intern(name),
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
+
+		isEnum:       isEnum,
+		isMessageSet: !isEnum && searchForBoolOption("google", "protobuf", "MessageOptions", "message_set_wire_format"),
+		allowsAlias:  isEnum && searchForBoolOption("google", "protobuf", "EnumOptions", "allow_alias"),
 	})
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
 	ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
-	ty.raw.memberByNumber = sync.OnceValue(ty.makeMembersByNumber)
+
+	for decl := range seq.Values(def.Body().Decls()) {
+		rangeDecl := decl.AsRange()
+		if rangeDecl.IsZero() {
+			continue
+		}
+
+		for v := range seq.Values(rangeDecl.Ranges()) {
+			raw := w.Context().arenas.ranges.NewCompressed(rawReservedRange{
+				ast:           v,
+				forExtensions: rangeDecl.IsExtensions(),
+			})
+
+			if rangeDecl.IsReserved() {
+				ty.raw.ranges = slices.Insert(ty.raw.ranges, int(ty.raw.rangesExtnStart))
+				ty.raw.rangesExtnStart++
+			} else {
+				ty.raw.ranges = append(ty.raw.ranges, raw)
+			}
+		}
+	}
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)

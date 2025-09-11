@@ -359,21 +359,26 @@ func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
 	}
 }
 
-// TagRange is a range of reserved field or enum numbers, either from a reserved
-// or extensions declaration.
-type TagRange struct {
+// ReservedRange is a range of reserved field or enum numbers,
+// either from a reserved or extensions declaration.
+type ReservedRange struct {
 	withContext
-	raw *rawRange
+	raw *rawReservedRange
 }
 
-type rawRange struct {
-	ast         ast.ExprAny
-	first, last int32
-	options     arena.Pointer[rawValue]
+type rawReservedRange struct {
+	ast           ast.ExprAny
+	first, last   int32
+	options       arena.Pointer[rawValue]
+	forExtensions bool
 }
 
 // AST returns the expression that this range was evaluated from, if known.
-func (r TagRange) AST() ast.ExprAny {
+func (r ReservedRange) AST() ast.ExprAny {
+	if r.IsZero() {
+		return ast.ExprAny{}
+	}
+
 	return r.raw.ast
 }
 
@@ -381,14 +386,27 @@ func (r TagRange) AST() ast.ExprAny {
 //
 // Unlike how it appears in descriptor.proto, this range is exclusive: end is
 // not included.
-func (r TagRange) Range() (start, end int32) {
+func (r ReservedRange) Range() (start, end int32) {
+	if r.IsZero() {
+		return 0, 0
+	}
+
 	return r.raw.first, r.raw.last + 1
+}
+
+// ForExtensions returns whether this is an extension range.
+func (r ReservedRange) ForExtensions() bool {
+	return !r.IsZero() && r.raw.forExtensions
 }
 
 // Options returns the options applied to this range.
 //
 // Reserved ranges cannot carry options; only extension ranges do.
-func (r TagRange) Options() MessageValue {
+func (r ReservedRange) Options() MessageValue {
+	if r.IsZero() {
+		return MessageValue{}
+	}
+
 	return wrapValue(r.Context(), r.raw.options).AsMessage()
 }
 

@@ -3,6 +3,7 @@ package interval
 import (
 	"cmp"
 	"fmt"
+	"iter"
 
 	"github.com/tidwall/btree"
 )
@@ -23,6 +24,47 @@ type Interval[K cmp.Ordered, V any] struct {
 
 	// The value associated with it.
 	Value *V
+}
+
+// Get looks up the interval which contains key, if one exists.
+//
+// If no such interval exists, the Value of the returned [Interval] will be
+// nil.
+func (m *Map[K, V]) Get(key K) Interval[K, V] {
+	iter := m.tree.Iter()
+	found := iter.Seek(key)
+
+	if found && key == iter.Key() {
+		// We hit an endpoint exactly, go to the next one.
+		found = iter.Next()
+	}
+	if !found || key < iter.Value().start {
+		return Interval[K, V]{}
+	}
+
+	return Interval[K, V]{
+		Start: iter.Value().start,
+		End:   iter.Key(),
+		Value: &iter.Value().value,
+	}
+}
+
+// Intervals returns an iterator over the intervals in this map.
+func (m *Map[K, V]) Intervals() iter.Seq[Interval[K, V]] {
+	return func(yield func(Interval[K, V]) bool) {
+		iter := m.tree.Iter()
+		more := iter.First()
+		for more {
+			if !yield(Interval[K, V]{
+				Start: iter.Value().start,
+				End:   iter.Key(),
+				Value: &iter.Value().value,
+			}) {
+				return
+			}
+			more = iter.Next()
+		}
+	}
 }
 
 // Insert inserts a new interval into this map, with the given associated value.
