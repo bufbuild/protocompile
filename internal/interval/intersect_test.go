@@ -316,7 +316,7 @@ func TestInsert(t *testing.T) {
 				m.Insert(e.start, e.end, e.value)
 			}
 
-			assert.Equal(t, tt.want, slices.Collect(m.Intervals()))
+			assert.Equal(t, tt.want, slices.Collect(m.Entries()))
 		})
 	}
 }

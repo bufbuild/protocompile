@@ -9,9 +9,6 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// Endpoint is a type that may be used as an interval endpoint.
-type Endpoint = constraints.Integer
-
 // Intersection is an interval intersection map: a collection of intervals,
 // such that given a point in K, one can query for the intersection of all
 // intervals in the collection which contain it, along with the values
@@ -23,6 +20,9 @@ type Intersect[K Endpoint, V any] struct {
 	tree    btree.Map[K, *Entry[K, V]]
 	pending []*Entry[K, V] // Scratch space for Insert().
 }
+
+// Endpoint is a type that may be used as an interval endpoint.
+type Endpoint = constraints.Integer
 
 // Entry is an entry in a [Intersect]. This means that it is the intersection
 // of all intervals which contain a particular point.
@@ -52,8 +52,11 @@ func (m *Intersect[K, V]) Get(point K) Entry[K, V] {
 	return *iter.Value()
 }
 
-// Intervals returns an iterator over the entries in this map.
-func (m *Intersect[K, V]) Intervals() iter.Seq[Entry[K, V]] {
+// Entries returns an iterator over the entries in this map.
+//
+// There exists one entry per maximal subset of the map with non-empty
+// intersection. Entries are yielded in order, and are pairwise disjoint.
+func (m *Intersect[K, V]) Entries() iter.Seq[Entry[K, V]] {
 	return func(yield func(Entry[K, V]) bool) {
 		iter := m.tree.Iter()
 		for more := iter.First(); more; more = iter.Next() {

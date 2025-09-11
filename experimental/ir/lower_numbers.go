@@ -163,7 +163,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 
 		// Now, iterate over every entry and diagnose the ones that have more
 		// than one value.
-		for entry := range ty.raw.rangesByNumber.Intervals() {
+		for entry := range ty.raw.rangesByNumber.Entries() {
 			if len(entry.Values) < 2 {
 				continue
 			}
