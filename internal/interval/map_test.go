@@ -22,60 +22,60 @@ func TestInsert(t *testing.T) {
 	}{
 		{
 			name:   "empty-map",
-			ranges: []r{{0, 10, "foo"}},
+			ranges: []r{{0, 9, "foo"}},
 		},
 		{
 			name: "new-max",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
 			},
 		},
 		{
 			name: "new-min",
 			ranges: []r{
-				{30, 40, "bar"},
-				{0, 10, "foo"},
+				{30, 39, "bar"},
+				{0, 9, "foo"},
 			},
 		},
 
 		{
 			name: "case-1",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
 				{20, 25, "baz"},
 			},
 		},
 		{
 			name: "case-1",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
-				{20, 30, "baz"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
+				{20, 29, "baz"},
 			},
 		},
 		{
 			name: "case-1",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
-				{10, 20, "baz"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
+				{10, 19, "baz"},
 			},
 		},
 		{
 			name: "case-1",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
-				{10, 30, "baz"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
+				{10, 29, "baz"},
 			},
 		},
 
 		{
 			name: "case-2",
 			ranges: []r{
-				{0, 10, "foo"},
+				{0, 9, "foo"},
 				{1, 2, "baz"},
 			},
 			want: "foo",
@@ -83,7 +83,7 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-2",
 			ranges: []r{
-				{0, 10, "foo"},
+				{0, 9, "foo"},
 				{0, 2, "baz"},
 			},
 			want: "foo",
@@ -91,8 +91,8 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-2",
 			ranges: []r{
-				{0, 10, "foo"},
-				{0, 10, "baz"},
+				{0, 9, "foo"},
+				{0, 9, "baz"},
 			},
 			want: "foo",
 		},
@@ -100,7 +100,7 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-3",
 			ranges: []r{
-				{0, 10, "foo"},
+				{0, 9, "foo"},
 				{9, 12, "baz"},
 			},
 			want: "foo",
@@ -108,8 +108,8 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-3",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
 				{9, 12, "baz"},
 			},
 			want: "foo",
@@ -117,35 +117,35 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-3",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
+				{9, 29, "baz"},
+			},
+			want: "foo",
+		},
+		{
+			name: "case-3",
+			ranges: []r{
+				{0, 9, "foo"},
+				{30, 39, "bar"},
 				{9, 30, "baz"},
 			},
 			want: "foo",
 		},
-		{
-			name: "case-3",
-			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
-				{9, 31, "baz"},
-			},
-			want: "foo",
-		},
 
 		{
 			name: "case-4",
 			ranges: []r{
 				{0, 10, "foo"},
-				{-2, 1, "baz"},
+				{-2, 0, "baz"},
 			},
 			want: "foo",
 		},
 		{
 			name: "case-4",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
 				{20, 32, "baz"},
 			},
 			want: "bar",
@@ -153,8 +153,8 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-4",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
 				{10, 32, "baz"},
 			},
 			want: "bar",
@@ -163,7 +163,7 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-5",
 			ranges: []r{
-				{0, 10, "foo"},
+				{0, 9, "foo"},
 				{-2, 12, "baz"},
 			},
 			want: "foo",
@@ -171,18 +171,18 @@ func TestInsert(t *testing.T) {
 		{
 			name: "case-5",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
-				{-2, 30, "baz"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
+				{-2, 29, "baz"},
 			},
 			want: "foo",
 		},
 		{
 			name: "case-5",
 			ranges: []r{
-				{0, 10, "foo"},
-				{30, 40, "bar"},
-				{-2, 31, "baz"},
+				{0, 9, "foo"},
+				{30, 39, "bar"},
+				{-2, 30, "baz"},
 			},
 			want: "foo",
 		},

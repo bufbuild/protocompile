@@ -16,11 +16,11 @@ files:
 - path: "a.proto"
   import: true
   text: |
-    syntax = "proto3";
+    syntax = "proto2";
     package test;
 
     message M {
-      // extensions 1 to max; // Not yet implemented.
+      extensions 1 to max;
     }
 
 - path: "b.proto"

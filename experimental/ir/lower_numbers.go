@@ -27,7 +27,10 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 		}
 
 		for member := range seq.Values(ty.Members()) {
-			member.raw.number, _ = evaluateMemberNumber(f.Context(), scope, member.AST().Value(), kind, false, r)
+			n, ok := evaluateMemberNumber(f.Context(), scope, member.AST().Value(), kind, false, r)
+			if ok {
+				member.raw.number = n
+			}
 		}
 
 		for _, raw := range ty.raw.ranges {
@@ -35,22 +38,24 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 
 			switch tags.AST().Kind() {
 			case ast.ExprKindRange:
-				a, startOk := evaluateMemberNumber(f.Context(), scope, tags.AST(), kind, false, r)
-				b, endOk := evaluateMemberNumber(f.Context(), scope, tags.AST(), kind, true, r)
+				x, y := tags.AST().AsRange().Bounds()
+
+				a, startOk := evaluateMemberNumber(f.Context(), scope, x, kind, false, r)
+				b, endOk := evaluateMemberNumber(f.Context(), scope, y, kind, true, r)
 
 				if !startOk || !endOk {
 					continue
 				}
 
-				if a <= b {
+				if a >= b {
 					what := taxa.Reserved
 					if tags.ForExtensions() {
 						what = taxa.Extensions
 					}
 
-					r.Errorf("empty %s", what).Apply(
+					r.Errorf("empty %s %v %v", what).Apply(
 						report.Snippet(tags.AST()),
-						report.Notef("`a to b` requires that a < b"),
+						report.Notef("range syntax requires that the start be less than the end"),
 					)
 					continue
 				}
@@ -113,7 +118,7 @@ func evaluateMemberNumber(c *Context, scope FullName, number ast.ExprAny, kind m
 //
 // This also checks for and diagnoses overlaps.
 func buildFieldNumberRanges(f File, r *report.Report) {
-	for ty := range seq.Values(f.Types()) {
+	for ty := range seq.Values(f.AllTypes()) {
 		what := taxa.FieldNumber
 		if ty.IsEnum() {
 			what = taxa.EnumValue
@@ -131,7 +136,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 				continue // Diagnosed already.
 			}
 
-			e := ty.raw.rangesByNumber.Insert(int64(a), int64(b)+1, rawTagRange{
+			e := ty.raw.rangesByNumber.Insert(a, b, rawTagRange{
 				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.raw)),
 			})
 			if e.Value == nil {
@@ -155,7 +160,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 				continue // Diagnosed already.
 			}
 
-			e := ty.raw.rangesByNumber.Insert(int64(n), int64(n)+1, rawTagRange{
+			e := ty.raw.rangesByNumber.Insert(n, n, rawTagRange{
 				isMember: true,
 				ptr:      arena.Untyped(f.Context().arenas.members.Compress(member.raw)),
 			})
@@ -164,7 +169,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			}
 			tags := TagRange{ty.withContext, *e.Value}
 
-			if reserved := tags.AsReserved(); reserved.IsZero() {
+			if reserved := tags.AsReserved(); !reserved.IsZero() {
 				r.Errorf("use of reserved %v `%v`", what, n).Apply(
 					report.Snippetf(member.AST().Value(), "used here"),
 					report.Snippetf(reserved.AST(), "%v reserved here", what),
@@ -177,7 +182,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 				prev := tags.AsMember()
 				r.Errorf("%v `%v` used more than once", what, n).Apply(
 					report.Snippetf(member.AST().Value(), "used here"),
-					report.Snippetf(prev.AST().Value(), "but also used here"),
+					report.Snippetf(prev.AST().Value(), "previously used here"),
 				)
 			}
 		}
@@ -190,11 +195,15 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 		}
 
 		ty := extn.Container()
+		if ty.IsZero() || !ty.IsMessage() {
+			continue
+		}
+
 		tags := ty.TagRange(n)
 		if tags.IsZero() {
 			r.Errorf("extension with unreserved number `%v`", n).Apply(
 				report.Snippet(extn.AST().Value()),
-				report.Helpf("the parent message must have reserved this number with an %s", taxa.Extensions),
+				report.Helpf("the parent message `%s` must have reserved this number with an %s", ty.FullName(), taxa.Extensions),
 			)
 			continue
 		}
@@ -202,7 +211,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 		if member := tags.AsMember(); !member.IsZero() {
 			r.Errorf("%v `%v` used more than once", taxa.FieldNumber, n).Apply(
 				report.Snippetf(extn.AST().Value(), "used here"),
-				report.Snippetf(member.AST().Value(), "but also used here"),
+				report.Snippetf(member.AST().Value(), "already used here, in the extendee"),
 			)
 			continue
 		}
@@ -212,7 +221,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			r.Errorf("use of reserved %v `%v`", taxa.FieldNumber, n).Apply(
 				report.Snippetf(extn.AST().Value(), "used here"),
 				report.Snippetf(reserved.AST(), "%v reserved here", taxa.FieldNumber),
-				report.Helpf("the parent message must have reserved this number with an %s", taxa.Extensions),
+				report.Helpf("the parent message `%s` must have reserved this number with an %s", ty.FullName(), taxa.Extensions),
 			)
 		}
 

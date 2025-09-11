@@ -22,13 +22,13 @@ error: encountered more than one message field tag
    |                       |
    |                       first one is here
 
-error: field numbers must be unique
+error: field number `2` used more than once
   --> testdata/tags/fields.proto:22:25
    |
 21 |     optional int32 y = 2;
-   |                        - first used here
+   |                        - previously used here
 22 |     optional int32 y2 = 2;
-   |                         ^ used again here
+   |                         ^ used here
 
 error: field number out of range
   --> testdata/tags/fields.proto:24:25

@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -89,10 +90,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 	case ast.DeclKindRange:
-		if w.Context().File().Path() == DescriptorProtoPath {
-			return
-		}
-		sorry("ranges")
+		// Handled in NewType.
 
 	case ast.DeclKindDef:
 		def := decl.AsDef()
@@ -154,7 +152,16 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	// This is necessary because there are options which, unfortunately,
 	// influence field number evaluation. This breaks a dependency for us.
 	searchForBoolOption := func(path ...string) bool {
-		for opt := range seq.Values(def.Options().Entries()) {
+		for decl := range seq.Values(def.Body().Decls()) {
+			def := decl.AsDef()
+			if def.IsZero() {
+				continue
+			}
+			opt := def.AsOption()
+			if opt.Keyword.IsZero() {
+				continue
+			}
+
 			if opt.Value.AsPath().AsKeyword() != keyword.True {
 				continue
 			}
@@ -200,13 +207,28 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		}
 
 		for v := range seq.Values(rangeDecl.Ranges()) {
+			if !v.AsPath().AsIdent().IsZero() || v.AsLiteral().Kind() == token.String {
+				var name string
+				if id := v.AsPath().AsIdent(); !id.IsZero() {
+					name = id.Text()
+				} else {
+					name, _ = v.AsLiteral().AsString()
+				}
+
+				ty.raw.reservedNames = append(ty.raw.reservedNames, rawReservedName{
+					ast:  v,
+					name: ty.Context().session.intern.Intern(name),
+				})
+				continue
+			}
+
 			raw := w.Context().arenas.ranges.NewCompressed(rawReservedRange{
 				ast:           v,
 				forExtensions: rangeDecl.IsExtensions(),
 			})
 
 			if rangeDecl.IsReserved() {
-				ty.raw.ranges = slices.Insert(ty.raw.ranges, int(ty.raw.rangesExtnStart))
+				ty.raw.ranges = slices.Insert(ty.raw.ranges, int(ty.raw.rangesExtnStart), raw)
 				ty.raw.rangesExtnStart++
 			} else {
 				ty.raw.ranges = append(ty.raw.ranges, raw)

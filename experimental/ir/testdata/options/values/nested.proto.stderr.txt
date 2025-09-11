@@ -30,7 +30,7 @@ error: message extension `buf.test.y` set multiple times
    |        ^^^^^^^ ... also set here
 32 | option (x).(y).a.(y) = {};
 ...
-51 |     optional Foo y = 1000;
+52 |     optional Foo y = 1000;
    |                  - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
@@ -41,8 +41,8 @@ error: expected singular message, found repeated `buf.test.Foo`
    |                 ^^ field selector requires singular message
 38 | option (x).a.(z) = {};
 ...
-51 |     optional Foo y = 1000;
-52 |     repeated Foo z = 1001;
+52 |     optional Foo y = 1000;
+53 |     repeated Foo z = 1001;
    |     ------------ type specified here
 
 encountered 4 errors

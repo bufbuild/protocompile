@@ -11,6 +11,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       extendee: ".buf.test.Foo"
+    extension_range: [{ start: 1000, end: 1000 }]
   extension:
   - name: "x"
     number: 1000

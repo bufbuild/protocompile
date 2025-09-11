@@ -48,8 +48,7 @@ option (x) = {
 message Foo {
     optional int32 y = 1;
 
-    //extensions 1000 to max;
-
+    extensions 1000;
     extend Foo {
         optional int32 z = 1000;
     }

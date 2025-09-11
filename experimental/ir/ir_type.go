@@ -71,7 +71,7 @@ type rawType struct {
 	members         []arena.Pointer[rawMember]
 	memberByName    func() intern.Map[arena.Pointer[rawMember]]
 	ranges          []arena.Pointer[rawReservedRange]
-	rangesByNumber  interval.Map[int64, rawTagRange] // 64 bit to avoid problems with Int32Max.
+	rangesByNumber  interval.Map[int32, rawTagRange]
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         arena.Pointer[rawValue]
@@ -320,7 +320,7 @@ func (t Type) TagRange(number int32) TagRange {
 		return TagRange{}
 	}
 
-	entry := t.raw.rangesByNumber.Get(int64(number))
+	entry := t.raw.rangesByNumber.Get(number)
 	if entry.Value == nil {
 		return TagRange{}
 	}

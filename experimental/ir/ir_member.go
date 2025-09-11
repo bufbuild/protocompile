@@ -75,6 +75,9 @@ func (m Member) IsEnumValue() bool {
 
 // AST returns the declaration for this member, if known.
 func (m Member) AST() ast.DeclDef {
+	if m.IsZero() {
+		return ast.DeclDef{}
+	}
 	return m.raw.def
 }
 
@@ -391,7 +394,7 @@ func (r ReservedRange) Range() (start, end int32) {
 		return 0, 0
 	}
 
-	return r.raw.first, r.raw.last + 1
+	return r.raw.first, r.raw.last
 }
 
 // ForExtensions returns whether this is an extension range.
