@@ -84,6 +84,7 @@ type rawType struct {
 
 	isEnum, isMessageSet bool
 	allowsAlias          bool
+	missingRanges        bool // See lower_numbers.go.
 }
 
 type rawTagRange struct {

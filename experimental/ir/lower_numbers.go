@@ -6,6 +6,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // evaluateFieldNumbers evaluates all non-extension field numbers: that is,
@@ -127,25 +128,51 @@ func evaluateMemberNumber(c *Context, scope FullName, number ast.ExprAny, kind m
 //
 // This also checks for and diagnoses overlaps.
 func buildFieldNumberRanges(f File, r *report.Report) {
+	// overlapLimit sets the maximum number of overlapping ranges we tolerate
+	// before we stop processing overlapping ranges.
+	//
+	// Inserting to an [interval.Intersect] is actually O(k log n), where k is
+	// the number of intersecting intervals. No valid Protobuf file can trigger
+	// this behavior, but pathological files can, such as the fragment
+	//
+	//	reserved 1, 1 to 2, 1 to 3, 1 to 4, ...
+	//
+	// which forces k = n. This can be mitigated by not processing more ranges
+	// after we see N overlaps This ensures k = O(N). For example, in the
+	// example above, we would only have ranges up to 1 to N before stopping,
+	// and so we get at worst performance O(N^2 log n) = O(log n), because N
+	// is a constant. Note processing members still proceeds, and is still
+	// O(n log n) work (because k <= 1 in this case).
+	//
+	// This is that N. In this case, we set missingRanges so that extension
+	// range checks are skipped, to avoid generating incorrect diagnostics (the
+	// file will already be rejected in this case, so not providing precise
+	// diagnostics in is fine).
+	const overlapLimit = 50
+
 	// First, dump all of the ranges into the intersection set.
 	for ty := range seq.Values(f.AllTypes()) {
-		for tagRange := range seq.Values(ty.ReservedRanges()) {
+		var totalOverlaps int
+		for tagRange := range iterx.Chain(
+			seq.Values(ty.ReservedRanges()),
+			seq.Values(ty.ExtensionRanges()),
+		) {
 			lo, hi := tagRange.Range()
 			if lo == 0 || hi == 0 {
 				continue // Diagnosed already.
 			}
-			ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
+			disjoint := ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
 				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.raw)),
 			})
-		}
-		for tagRange := range seq.Values(ty.ExtensionRanges()) {
-			lo, hi := tagRange.Range()
-			if lo == 0 || hi == 0 {
-				continue // Diagnosed already.
+
+			// Avoid quadratic behavior. See overlapLimit's comment above.
+			if !disjoint {
+				totalOverlaps++
+				if totalOverlaps > overlapLimit {
+					ty.raw.missingRanges = true
+					break
+				}
 			}
-			ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
-				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.raw)),
-			})
 		}
 
 		// Members last, so that if an intersection contains only members, the
@@ -217,6 +244,13 @@ extensions:
 				second: extn.AsTagRange(),
 			})
 		} else {
+			// Don't diagnose if we're missing some ranges, because we might
+			// produce false positives. This can only happen for types that have
+			// already generated diagnostics, so it's ok to skip diagnosing.
+			if ty.raw.missingRanges {
+				continue
+			}
+
 			d = r.Errorf("extension with unreserved number `%v`", n).Apply(
 				report.Snippet(extn.AST().Value()),
 			)

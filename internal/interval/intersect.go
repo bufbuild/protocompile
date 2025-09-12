@@ -69,7 +69,9 @@ func (m *Intersect[K, V]) Entries() iter.Seq[Entry[K, V]] {
 
 // Insert inserts a new interval into this map, with the given associated value.
 // Both endpoints are inclusive.
-func (m *Intersect[K, V]) Insert(start, end K, value V) {
+//
+// Returns true if the interval was disjoint from all others in the set.
+func (m *Intersect[K, V]) Insert(start, end K, value V) (disjoint bool) {
 	if start > end {
 		panic(fmt.Sprintf("interval: start (%#v) > end (%#v)", start, end))
 	}
@@ -159,6 +161,8 @@ func (m *Intersect[K, V]) Insert(start, end K, value V) {
 			Values: []V{value},
 		})
 	}
+
+	return prev == nil
 }
 
 // Format implements [fmt.Formatter].
