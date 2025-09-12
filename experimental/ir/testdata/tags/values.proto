@@ -54,3 +54,9 @@ enum E {
     E1 = X;
     E2 = -Y;
 }
+
+enum Aliased {
+    option allow_alias = true;
+    X1 = 1;
+    X2 = 1;
+}

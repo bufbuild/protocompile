@@ -1,0 +1,20 @@
+file:
+- name: "testdata/extend/overlap.proto"
+  package: "test"
+  message_type:
+  - name: "M"
+    field:
+    - { name: "y0", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y1", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y2", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y3", number: 4, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y4", number: 5, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    extension_range:
+    - { start: 2, end: 2 }
+    - { start: 3, end: 3 }
+    - { start: 5, end: 536870911 }
+    - { start: 10, end: 20 }
+    - { start: 0, end: 0 }
+    reserved_range: [{ start: 7, end: 7 }, { start: 8, end: 9 }]
+  enum_type: [{ name: "E" }]
+  syntax: "proto2"

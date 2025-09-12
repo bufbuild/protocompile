@@ -1,0 +1,9 @@
+error: extension with unreserved number `20`
+  --> testdata/extend/in_range.proto:26:24
+   |
+26 |     optional int32 z = 20;
+   |                        ^^
+   = help: the parent message `test.M` must have reserved this number with an
+           extension range, e.g. `extensions 20;`
+
+encountered 1 error

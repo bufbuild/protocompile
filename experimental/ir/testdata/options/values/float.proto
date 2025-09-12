@@ -71,5 +71,5 @@ message Foo {
 
 extend google.protobuf.FileOptions {
     optional Foo x = 1000;
-    repeated float y = 1;
+    repeated float y = 1001;
 }

@@ -1,0 +1,77 @@
+error: unexpected extension range within enum definition
+  --> testdata/extend/overlap.proto:33:5
+   |
+32 | / enum E {
+33 | |     extensions 1; // Not allowed.
+   | |     ^^^^^^^^^^^^^ this extension range...
+34 | | }
+   | \_- ...cannot be declared within this enum definition
+   = help: a extension range can only appear within a message definition
+
+error: use of reserved field number `2`
+  --> testdata/extend/overlap.proto:21:25
+   |
+21 |     optional int32 y1 = 2;
+   |                         ^ used here
+22 |     optional int32 y2 = 3;
+...
+26 |     extensions 2, 3 to 3, 5 to max;
+   |                - field number reserved here
+
+error: use of reserved field number `3`
+  --> testdata/extend/overlap.proto:22:25
+   |
+22 |     optional int32 y2 = 3;
+   |                         ^ used here
+23 |     optional int32 y3 = 4;
+...
+26 |     extensions 2, 3 to 3, 5 to max;
+   |                   ------ field number reserved here
+
+error: use of reserved field number `5`
+  --> testdata/extend/overlap.proto:24:25
+   |
+24 |     optional int32 y4 = 5;
+   |                         ^ used here
+25 |
+26 |     extensions 2, 3 to 3, 5 to max;
+   |                           -------- field number reserved here
+
+warning: singleton range can be simplified
+  --> testdata/extend/overlap.proto:26:19
+   |
+26 |     extensions 2, 3 to 3, 5 to max;
+   |                   ^^^^^^
+  help: replace with a single number
+   |
+26 | -     extensions 2, 3 to 3, 5 to max;
+26 | +     extensions 2, 3, 5 to max;
+   |
+
+error: overlapping field number ranges
+  --> testdata/extend/overlap.proto:26:27
+   |
+26 |     extensions 2, 3 to 3, 5 to max;
+   |                           ^^^^^^^^ this range
+27 |     reserved 7, 8 to 9;     // Overlapping reserved regions.
+   |                 ------ overlaps with this one
+   = help: they overlap in the range `8 to 9`
+
+error: overlapping field number ranges
+  --> testdata/extend/overlap.proto:28:16
+   |
+26 |     extensions 2, 3 to 3, 5 to max;
+   |                           -------- overlaps with this one
+27 |     reserved 7, 8 to 9;     // Overlapping reserved regions.
+28 |     extensions 10 to 20;    // Overlapping extensions.
+   |                ^^^^^^^^ this range
+   = help: they overlap in the range `10 to 20`
+
+error: `max` outside of range end
+  --> testdata/extend/overlap.proto:29:16
+   |
+29 |     extensions max to max;  // Only first can be max.
+   |                ^^^
+   = note: the special `max` expression can only be used at the end of a range
+
+encountered 7 errors and 1 warning

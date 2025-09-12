@@ -17,17 +17,13 @@ package parser
 import (
 	"fmt"
 	"slices"
-	"strings"
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -121,56 +117,11 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 		}
 	}
 
-	legalizeNumber := func(in taxa.Noun, expr ast.ExprAny, allowMax bool) {
-		switch expr.Kind() {
-		case ast.ExprKindPath:
-			if allowMax && expr.AsPath().AsPredeclared() == predeclared.Max {
-				return
-			}
-
-		case ast.ExprKindLiteral:
-			lit := expr.AsLiteral()
-			if lit.Kind() == token.Number && !strings.Contains(lit.Text(), ".") {
-				return
-			}
-		case ast.ExprKindPrefixed:
-			expr := expr.AsPrefixed()
-			if expr.Prefix() == keyword.Minus {
-				lit := expr.Expr().AsLiteral()
-				if lit.Kind() != token.Number || strings.Contains(lit.Text(), ".") {
-					p.Error(errUnexpected{
-						what:  expr.Expr(),
-						where: taxa.Minus.After(),
-						want:  taxa.Int.AsSet(),
-					})
-				}
-				return
-			}
-		}
-
-		want := taxa.Int.AsSet()
-		if allowMax {
-			want = want.With(taxa.PredeclaredMax)
-		}
-
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  want,
-		})
-	}
-
 	var names, tags []ast.ExprAny
 	for expr := range seq.Values(decl.Ranges()) {
 		switch expr.Kind() {
 		case ast.ExprKindPath:
-			path := expr.AsPath()
-			if path.AsIdent().IsZero() || in == taxa.Extensions {
-				p.Error(errUnexpected{
-					what:  expr,
-					where: in.In(),
-					want:  want,
-				})
+			if in != taxa.Reserved {
 				break
 			}
 
@@ -248,14 +199,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 
 			fallthrough
 
-		case ast.ExprKindPrefixed:
-			legalizeNumber(in, expr, false)
-			tags = append(tags, expr)
-
-		case ast.ExprKindRange:
-			lo, hi := expr.AsRange().Bounds()
-			legalizeNumber(in, lo, false)
-			legalizeNumber(in, hi, true)
+		case ast.ExprKindPrefixed, ast.ExprKindRange:
 			tags = append(tags, expr)
 
 		default:

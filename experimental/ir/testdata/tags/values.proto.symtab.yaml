@@ -7,6 +7,12 @@ tables:
       file: "testdata/tags/values.proto"
       index: 1
       visible:
+    - fqn: "test.Aliased"
+      kind: KIND_ENUM
+      file: "testdata/tags/values.proto"
+      index: 2
+      visible:
+      options.message.fields: { "allow_alias": { bool: } }
     - fqn: "test.UNKNOWN"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
@@ -156,4 +162,14 @@ tables:
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 30
+      visible:
+    - fqn: "test.X1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/values.proto"
+      index: 31
+      visible:
+    - fqn: "test.X2"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/values.proto"
+      index: 32
       visible:

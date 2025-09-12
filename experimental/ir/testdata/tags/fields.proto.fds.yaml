@@ -10,14 +10,14 @@ file:
     - { name: "z1", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     - { name: "z12", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     - { name: "z2", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "z3", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "z4", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "z5", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "z6", number: 536870911, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z3", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z4", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z5", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     - { name: "z6", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "r1", number: 19000, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "r2", number: 19001, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "r3", number: 19999, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z6", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "r1", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "r2", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "r3", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     - { name: "k1", number: 18999, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     - { name: "k2", number: 20000, label: LABEL_OPTIONAL, type: TYPE_INT32 }
     - { name: "f1", number: 0, label: LABEL_OPTIONAL, type: TYPE_FLOAT }

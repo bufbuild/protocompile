@@ -1,0 +1,64 @@
+tables:
+  "testdata/tags/reserved.proto":
+    symbols:
+    - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/tags/reserved.proto" }
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/tags/reserved.proto"
+      index: 1
+      visible:
+    - fqn: "test.E"
+      kind: KIND_ENUM
+      file: "testdata/tags/reserved.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.y0"
+      kind: KIND_FIELD
+      file: "testdata/tags/reserved.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.y1"
+      kind: KIND_FIELD
+      file: "testdata/tags/reserved.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.y2"
+      kind: KIND_FIELD
+      file: "testdata/tags/reserved.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.y3"
+      kind: KIND_FIELD
+      file: "testdata/tags/reserved.proto"
+      index: 4
+      visible:
+    - fqn: "test.M.y4"
+      kind: KIND_FIELD
+      file: "testdata/tags/reserved.proto"
+      index: 5
+      visible:
+    - fqn: "test.Y0"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/reserved.proto"
+      index: 6
+      visible:
+    - fqn: "test.Y1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/reserved.proto"
+      index: 7
+      visible:
+    - fqn: "test.Y2"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/reserved.proto"
+      index: 8
+      visible:
+    - fqn: "test.Y3"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/reserved.proto"
+      index: 9
+      visible:
+    - fqn: "test.Y4"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/reserved.proto"
+      index: 10
+      visible:

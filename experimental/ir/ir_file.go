@@ -73,6 +73,7 @@ type Context struct {
 	arenas struct {
 		types     arena.Arena[rawType]
 		members   arena.Arena[rawMember]
+		ranges    arena.Arena[rawReservedRange]
 		extendees arena.Arena[rawExtendee]
 		oneofs    arena.Arena[rawOneof]
 		symbols   arena.Arena[rawSymbol]

@@ -1,0 +1,39 @@
+tables:
+  "testdata/extend/overlap.proto":
+    symbols:
+    - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/extend/overlap.proto" }
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/overlap.proto"
+      index: 1
+      visible:
+    - fqn: "test.E"
+      kind: KIND_ENUM
+      file: "testdata/extend/overlap.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.y0"
+      kind: KIND_FIELD
+      file: "testdata/extend/overlap.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.y1"
+      kind: KIND_FIELD
+      file: "testdata/extend/overlap.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.y2"
+      kind: KIND_FIELD
+      file: "testdata/extend/overlap.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.y3"
+      kind: KIND_FIELD
+      file: "testdata/extend/overlap.proto"
+      index: 4
+      visible:
+    - fqn: "test.M.y4"
+      kind: KIND_FIELD
+      file: "testdata/extend/overlap.proto"
+      index: 5
+      visible:

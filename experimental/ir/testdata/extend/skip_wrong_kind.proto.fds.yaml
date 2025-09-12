@@ -4,7 +4,7 @@ file:
   message_type:
   - name: "M"
     nested_type:
-    - name: "N"
+    - { name: "N", extension_range: [{ start: 1, end: 1 }] }
     - name: "P"
       extension:
       - { name: "n", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
