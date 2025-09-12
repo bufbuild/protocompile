@@ -20,7 +20,7 @@ import (
 	"slices"
 
 	"github.com/tidwall/btree"
-	"golang.org/x/exp/constraints"
+	"golang.org/x/exp/constraints" //nolint:exptostd // Tries to replace w/ cmp.
 )
 
 // Intersection is an interval intersection map: a collection of intervals,
@@ -41,8 +41,8 @@ type Endpoint = constraints.Integer
 // Entry is an entry in a [Intersect]. This means that it is the intersection
 // of all intervals which contain a particular point.
 type Entry[K Endpoint, V any] struct {
-	Start, End K   // The interval range.
-	Values     []V // Values associated with the interval.
+	Start, End K   // The interval range, inclusive.
+	Values     []V // Values from intervals that contain the query point, in insertion order.
 }
 
 // Contains returns whether an entry contains a given point.
@@ -102,14 +102,19 @@ func (m *Intersect[K, V]) Insert(start, end K, value V) (disjoint bool) {
 			})
 		}
 
-		values := entry.Values
+		// Make a copy of entry.Values; entry.Values may get modified in a way
+		// where appending to it results in value appearing twice.
+		//
+		// NB: the values array may be shared across different entries where one
+		// is a prefix of the other.
+		orig := entry.Values
 
 		// If the entry contains end, we need to split it at end.
 		if entry.Contains(end) && end < entry.End {
 			next := &Entry[K, V]{
 				Start:  entry.Start,
 				End:    end,
-				Values: append(slices.Clip(values), value),
+				Values: append(slices.Clip(orig), value),
 			}
 
 			// Shorten the existing entry.
@@ -126,7 +131,7 @@ func (m *Intersect[K, V]) Insert(start, end K, value V) (disjoint bool) {
 			next := &Entry[K, V]{
 				Start:  entry.Start,
 				End:    start - 1,
-				Values: values,
+				Values: orig,
 			}
 
 			// Add next to the pending queue, but *don't* use it as entry,
@@ -139,7 +144,7 @@ func (m *Intersect[K, V]) Insert(start, end K, value V) (disjoint bool) {
 
 		// Add the value to this overlap.
 		//nolint:gocritic // Slice assignment false positive.
-		entry.Values = append(values, value)
+		entry.Values = append(orig, value)
 
 		if prev != nil && prev.End < entry.Start {
 			// Add a new interval in between this one and the previous.
@@ -204,32 +209,28 @@ func (m *Intersect[K, V]) Format(s fmt.State, v rune) {
 // intersect returns an iterator over the intervals that intersect [start, end].
 func (m *Intersect[K, V]) intersect(start, end K) iter.Seq[*Entry[K, V]] {
 	return func(yield func(*Entry[K, V]) bool) {
+		// Here, [a, b] is the query interval, and [c, d] is the current
+		// interval we're looking at.
 		a, b := start, end
-
 		iter := m.tree.Iter()
-		if !iter.Seek(a) || b < iter.Value().Start {
-			// Either the map is empty, or there is no interval with a <= d,
-			// which means that c <= d < a <= b for all intervals.
+
+		// We need to walk the tree forwards, finding overlapping intervals,
+		// until we find an interval that contains b, is greater than b, or we
+		// reach the end of the tree.
+		//
+		// This logic conveniently handles the case where the map is empty,
+		// and when [a, b] is greater than all other intervals, because Seek()
+		// will return false.
+		for more := iter.Seek(a); more; more = iter.Next() {
+			c, _ := iter.Value().Start, iter.Value().End
+
+			// By construction, we already know that a <= d, so if [c, d]
+			// is less than b or contains it, it intersects [a, b].
 			//
-			// Alternatively, we have that a <= b < c <= d, where [c, d] is the
-			// least interval with a <= d.
-			return
-		}
-
-		// Now, we know that [c, d] overlaps with [a, b]. We need to walk the
-		// tree backwards, finding overlapping intervals, until we find an
-		// interval that contains a or we reach the end of the tree.
-		if !yield(iter.Value()) {
-			return
-		}
-
-		for iter.Next() {
-			c, d := iter.Value().Start, iter.Value().End
-
-			if c <= b && !yield(iter.Value()) {
-				return
-			}
-			if d <= b {
+			// If b is less than [c, d], we're already done, so we don't
+			// need to yield this value. yield() is only called when !(b < c),
+			// i.e. c <= b.
+			if b < c || !yield(iter.Value()) {
 				return
 			}
 		}
