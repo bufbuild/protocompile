@@ -11,9 +11,9 @@ file:
     - { name: "Z1", number: -1 }
     - { name: "Z2", number: 2147483647 }
     - { name: "Z3", number: -2147483648 }
-    - { name: "Z4", number: 2147483647 }
-    - { name: "Z5", number: -2147483648 }
-    - { name: "Z6", number: 2147483647 }
+    - { name: "Z4", number: 0 }
+    - { name: "Z5", number: 0 }
+    - { name: "Z6", number: 0 }
     - { name: "F1", number: 0 }
     - { name: "F2", number: 0 }
     - { name: "F3", number: 0 }
@@ -34,4 +34,7 @@ file:
     - { name: "M5", number: 0 }
     - { name: "E1", number: 0 }
     - { name: "E2", number: 0 }
+  - name: "Aliased"
+    value: [{ name: "X1", number: 1 }, { name: "X2", number: 1 }]
+    options: {}
   syntax: "proto2"

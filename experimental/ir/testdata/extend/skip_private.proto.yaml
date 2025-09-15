@@ -29,7 +29,9 @@ files:
 
     import "a.proto";
 
-    message M {}
+    message M {
+      extensions 1;
+    }
 
 - path: "c.proto"
   text: |

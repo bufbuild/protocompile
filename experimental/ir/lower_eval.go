@@ -30,7 +30,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
@@ -66,82 +65,6 @@ const (
 	// historically been an issue, as noted above.
 	nanBits = 0x7ff8000000000000
 )
-
-// evaluateFieldNumbers evaluates all non-extension field numbers: that is,
-// the numbers in reserved ranges and in non-extension field and enum value
-// declarations.
-func evaluateFieldNumbers(f File, r *report.Report) {
-	// TODO: Evaluate reserved ranges.
-
-	for ty := range seq.Values(f.AllTypes()) {
-		tags := make(map[int32]Member, ty.Members().Len())
-		for member := range seq.Values(ty.Members()) {
-			n, ok := evaluateMemberNumber(member, r)
-			member.raw.number = n
-			if !ok {
-				continue
-			}
-
-			// TODO: Need to check allow_alias here.
-			if first, ok := mapsx.Add(tags, n, member); !ok {
-				what := taxa.FieldNumber
-				if ty.IsEnum() {
-					what = taxa.EnumValue
-				}
-				r.Errorf("%ss must be unique", what).Apply(
-					report.Snippetf(member.AST().Value(), "used again here"),
-					report.Snippetf(first.AST().Value(), "first used here"),
-				)
-			}
-		}
-		ty.raw.haveNumbers = true
-
-		// TODO: compare with extension/reserved ranges.
-	}
-}
-
-// evaluateExtensionNumbers evaluates all extension field numbers: that is,
-// the numbers on extension ranges and extension fields.
-func evaluateExtensionNumbers(f File, r *report.Report) {
-	// TODO: Evaluate extension ranges.
-
-	for extn := range seq.Values(f.AllExtensions()) {
-		n, _ := evaluateMemberNumber(extn, r)
-		extn.raw.number = n
-
-		// TODO: compare with extension ranges.
-	}
-}
-
-func evaluateMemberNumber(member Member, r *report.Report) (int32, bool) {
-	if member.AST().Value().IsZero() {
-		return 0, false // Diagnosed for us elsewhere.
-	}
-
-	e := &evaluator{
-		Context: member.Context(),
-		Report:  r,
-		scope:   member.FullName().Parent(),
-	}
-
-	var memberNumber memberNumber
-	switch {
-	case member.IsEnumValue():
-		memberNumber = enumNumber
-	case member.IsMessageField(), member.IsExtension():
-		memberNumber = fieldNumber
-
-		// TODO: MessageSet.
-	}
-
-	// Don't bother allocating a whole Value for this.
-	v, ok := e.evalBits(evalArgs{
-		expr:         member.AST().Value(),
-		memberNumber: memberNumber,
-	})
-
-	return int32(v), ok
-}
 
 // evaluator is the context needed to evaluate an expression.
 type evaluator struct {
@@ -412,6 +335,8 @@ again:
 		if lit.Kind() == token.Number {
 			n, ok := lit.AsInt()
 			if ok && n < math.MaxInt32 {
+				// TODO: There is a dependency issue that needs to
+
 				member = ty.MemberByNumber(int32(n))
 				if !member.IsZero() {
 					isNumber = true
@@ -1012,11 +937,11 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				return messageSetNumberMax, ok
 			}
 		} else {
-			e.Errorf("%s outside of %s", taxa.PredeclaredMax, taxa.Range).Apply(
+			e.Errorf("%s outside of range end", taxa.PredeclaredMax).Apply(
 				report.Snippet(expr),
 				report.Notef(
-					"the special %s expression is only allowed in a %s",
-					taxa.PredeclaredMax, taxa.Range),
+					"the special %s expression can only be used at the end of a range",
+					taxa.PredeclaredMax),
 			)
 			return 0, false
 		}

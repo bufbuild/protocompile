@@ -10,6 +10,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/rivo/uniseg v0.4.7
 	github.com/stretchr/testify v1.11.1
+	github.com/tidwall/btree v1.8.1
 	golang.org/x/sync v0.17.0
 	google.golang.org/protobuf v1.36.8
 	gopkg.in/yaml.v3 v3.0.1
