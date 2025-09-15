@@ -294,15 +294,16 @@ func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 type DeclImport struct{ declImpl[rawDeclImport] }
 
 type rawDeclImport struct {
-	keyword, modifier, semi token.ID
-	importPath              rawExpr
-	options                 arena.Pointer[rawCompactOptions]
+	keyword, semi token.ID
+	modifiers     []token.ID
+	importPath    rawExpr
+	options       arena.Pointer[rawCompactOptions]
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
 type DeclImportArgs struct {
 	Keyword    token.Token
-	Modifier   token.Token
+	Modifiers  []token.Token
 	ImportPath ExprAny
 	Options    CompactOptions
 	Semicolon  token.Token
@@ -323,29 +324,46 @@ func (d DeclImport) KeywordToken() token.Token {
 }
 
 // Modifier returns the modifier keyword for this declaration.
-func (d DeclImport) Modifier() keyword.Keyword {
-	return d.ModifierToken().Keyword()
+func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
+	var slice []token.ID
+	if !d.IsZero() {
+		slice = d.raw.modifiers
+	}
+
+	return seq.NewFixedSlice(slice, func(_ int, t token.ID) keyword.Keyword {
+		return t.In(d.Context()).Keyword()
+	})
 }
 
 // ModifierToken returns the modifier token for this declaration.
 //
 // May be zero if there is no modifier.
-func (d DeclImport) ModifierToken() token.Token {
+func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	if d.IsZero() {
-		return token.Zero
+		return seq.EmptySliceInserter[token.Token, token.ID]()
 	}
 
-	return d.raw.modifier.In(d.Context())
+	return seq.NewSliceInserter(&d.raw.modifiers,
+		func(_ int, e token.ID) token.Token { return e.In(d.Context()) },
+		func(_ int, t token.Token) token.ID {
+			d.Context().Nodes().panicIfNotOurs(t)
+			return t.ID()
+		},
+	)
 }
 
 // IsSyntax checks whether this is an "import public".
 func (d DeclImport) IsPublic() bool {
-	return d.Modifier() == keyword.Public
+	return iterx.Contains(seq.Values(d.Modifiers()), func(k keyword.Keyword) bool {
+		return k == keyword.Public
+	})
 }
 
 // IsEdition checks whether this is an "import weak".
 func (d DeclImport) IsWeak() bool {
-	return d.Modifier() == keyword.Weak
+	return iterx.Contains(seq.Values(d.Modifiers()), func(k keyword.Keyword) bool {
+		return k == keyword.Weak
+	})
 }
 
 // ImportPath returns the file path for this import as a string.
@@ -401,7 +419,7 @@ func (d DeclImport) Span() report.Span {
 		return report.Span{}
 	}
 
-	return report.Join(d.KeywordToken(), d.ModifierToken(), d.ImportPath(), d.Semicolon())
+	return report.Join(d.KeywordToken(), d.ImportPath(), d.Semicolon())
 }
 
 func wrapDeclImport(c Context, ptr arena.Pointer[rawDeclImport]) DeclImport {

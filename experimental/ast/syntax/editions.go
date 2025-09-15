@@ -20,9 +20,21 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
+// LatestImplementedEdition is the most recent edition that the compiler
+// implements.
+const LatestImplementedEdition = Edition2023
+
 // IsEdition returns whether this represents an edition.
 func (s Syntax) IsEdition() bool {
 	return s != Proto2 && s != Proto3
+}
+
+// IsFullyImplemented returns whether this edition is fully implemented by the
+// compiler.
+//
+// Partially-implemented editions will raise a compiler error.
+func (s Syntax) IsFullyImplemented() bool {
+	return s >= Proto2 && s <= LatestImplementedEdition
 }
 
 // Editions returns an iterator over all the editions in this package.

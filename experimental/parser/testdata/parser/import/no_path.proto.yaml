@@ -2,5 +2,5 @@ decls:
 - syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
 - package.path.components: [{ ident: "test" }]
 - import: {}
-- import.modifier: MODIFIER_WEAK
-- import.modifier: MODIFIER_PUBLIC
+- import: { modifier: [MODIFIER_WEAK], modifier_span: [{}] }
+- import: { modifier: [MODIFIER_PUBLIC], modifier_span: [{}] }

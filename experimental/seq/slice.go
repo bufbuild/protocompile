@@ -14,7 +14,11 @@
 
 package seq
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
+)
 
 // TODO: Would this optimize better if Wrap/Unwrap was a single type parameter
 // constrained by interface { Wrap(E) T; Unwrap(T) E }? Indexer values are
@@ -78,6 +82,21 @@ type SliceInserter[T, E any] struct {
 	Slice  *[]E
 	Wrap   func(int, E) T
 	Unwrap func(int, T) E
+}
+
+var empty []uint64 // Maximally aligned.
+
+// EmptySliceInserter returns a [SliceInserter] that is always empty and whose
+// insertion operations panic.
+func EmptySliceInserter[T, E any]() SliceInserter[T, E] {
+	return NewSliceInserter(
+		unsafex.Bitcast[*[]E](&empty),
+		func(_ int, _ E) T {
+			var z T
+			return z
+		},
+		nil,
+	)
 }
 
 // NewSliceInserter constructs a new [SliceInserter].

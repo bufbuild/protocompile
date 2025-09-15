@@ -39,4 +39,5 @@
     - {name: Proto2, string: proto2}
     - {name: Proto3, string: proto3}
     - {name: Edition2023, string: "2023"}
+    - {name: Edition2024, string: "2024"}
   
