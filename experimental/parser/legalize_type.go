@@ -41,19 +41,20 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		prefixed := ty.AsPrefixed()
 		var mod ast.TypePrefixed
 		for {
-			if prefixed.Prefix() != keyword.Stream {
+			switch {
+			case prefixed.Prefix() != keyword.Stream:
 				p.Error(errUnexpectedMod{
 					mod:    prefixed,
 					where:  taxa.Signature.In(),
 					syntax: p.syntax,
 				})
-			} else if !mod.IsZero() {
+			case !mod.IsZero():
 				p.Error(errMoreThanOne{
 					first:  mod.PrefixToken(),
 					second: prefixed.PrefixToken(),
 					what:   taxa.KeywordStream,
 				})
-			} else {
+			default:
 				mod = prefixed
 			}
 
