@@ -15,6 +15,8 @@
 package ast
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -117,23 +119,51 @@ func (d DeclDef) Keyword() keyword.Keyword {
 //
 // See [DeclDef.Type] for details on where this keyword comes from.
 func (d DeclDef) KeywordToken() token.Token {
-	// There is also the special case of `optional group` and similar.
-	if g := d.Type().AsPrefixed().Type().AsPath().AsIdent(); g.Keyword() == keyword.Group {
-		return g
+	// Begin by removing all modifiers. Certain kinds of defs can have
+	// modifiers, such as groups and types. Any modifier that can have a body
+	// is permitted to have modifiers, because that is unambiguous with a field.
+	mods := false
+	ty := d.Type()
+	for ty.Kind() == TypeKindPrefixed {
+		mods = true
+		ty = ty.AsPrefixed().Type()
 	}
 
-	path := d.Type().AsPath()
+	path := ty.AsPath()
 	if path.IsZero() {
 		return token.Zero
 	}
 
 	ident := path.Path.AsIdent()
 	switch ident.Keyword() {
+	case keyword.Option:
+		if mods {
+			// NOTE: Options with modifiers are treated as fields by protoc.
+			return token.Zero
+		}
+		fallthrough
+
 	case keyword.Message, keyword.Enum, keyword.Service, keyword.Extend,
-		keyword.Oneof, keyword.Group, keyword.RPC, keyword.Option:
+		keyword.Oneof, keyword.Group, keyword.RPC:
 		return ident
+
 	default:
 		return token.Zero
+	}
+}
+
+// Prefixes returns an iterator over the modifiers on this def, expressed as
+// [TypePrefixed] nodes.
+func (d DeclDef) Prefixes() iter.Seq[TypePrefixed] {
+	return func(yield func(TypePrefixed) bool) {
+		ty := d.Type()
+		for ty.Kind() == TypeKindPrefixed {
+			prefixed := ty.AsPrefixed()
+			if !yield(prefixed) {
+				break
+			}
+			ty = prefixed.Type()
+		}
 	}
 }
 
@@ -439,36 +469,36 @@ func (d DeclDef) Classify() DefKind {
 		return DefKindInvalid
 	}
 
-	switch d.KeywordToken().Text() {
-	case "message":
+	switch d.Keyword() {
+	case keyword.Message:
 		if !d.Body().IsZero() {
 			return DefKindMessage
 		}
-	case "enum":
+	case keyword.Enum:
 		if !d.Body().IsZero() {
 			return DefKindEnum
 		}
-	case "service":
+	case keyword.Service:
 		if !d.Body().IsZero() {
 			return DefKindService
 		}
-	case "extend":
+	case keyword.Extend:
 		if !d.Body().IsZero() {
 			return DefKindExtend
 		}
-	case "oneof":
+	case keyword.Oneof:
 		if !d.Body().IsZero() {
 			return DefKindOneof
 		}
-	case "group":
+	case keyword.Group:
 		if !d.Body().IsZero() {
 			return DefKindGroup
 		}
-	case "rpc":
+	case keyword.RPC:
 		if !d.Signature().IsZero() {
 			return DefKindMethod
 		}
-	case "option":
+	case keyword.Option:
 		return DefKindOption
 	}
 

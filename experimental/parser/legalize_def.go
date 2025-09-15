@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // Map of a def kind to the valid parents it can have.
@@ -105,6 +106,19 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 			report.Notef("the name of a %s must be a single identifier", what),
 			// TODO: Include a help that says to stick this into a file with
 			// the right package.
+		)
+	}
+
+	for mod := range def.Prefixes() {
+		if what == taxa.Group {
+			switch mod.Prefix() {
+			case keyword.Required, keyword.Optional, keyword.Repeated:
+				continue
+			}
+		}
+
+		p.Errorf("unexpected `%s` modifier on %s", mod.Prefix(), what).Apply(
+			report.Snippetf(mod.PrefixToken(), ""),
 		)
 	}
 
