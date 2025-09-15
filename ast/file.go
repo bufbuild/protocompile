@@ -262,23 +262,27 @@ type ImportNode struct {
 	// Optional; if present indicates this is a public import
 	Public *KeywordNode
 	// Optional; if present indicates this is a weak import
-	Weak      *KeywordNode
+	Weak *KeywordNode
+	// Optional; if present indicates this is an option import (for edition 2024)
+	Option    *KeywordNode
 	Name      StringValueNode
 	Semicolon *RuneNode
 }
 
-// NewImportNode creates a new *ImportNode. The public and weak arguments are optional
-// and only one or the other (or neither) may be specified, not both. When public is
-// non-nil, it indicates the "public" keyword in the import statement and means this is
-// a public import. When weak is non-nil, it indicates the "weak" keyword in the import
-// statement and means this is a weak import. When both are nil, this is a normal import.
+// NewImportNode creates a new *ImportNode. The public, weak, and option arguments are optional and
+// only one may be specified, not multiple. When public is non-nil, it indicates the "public"
+// keyword in the import statement and means this is a public import. When weak is non-nil, it
+// indicates the "weak" keyword in the import statement and means this is a weak import. When option
+// is non-nil, it indicates the "option" keyword in the import statement and means this is an option
+// import (for edition 2024).
 // The other arguments must be non-nil:
 //   - keyword: The token corresponding to the "import" keyword.
 //   - public: The token corresponding to the optional "public" keyword.
 //   - weak: The token corresponding to the optional "weak" keyword.
+//   - option: The token corresponding to the optional "option" keyword.
 //   - name: The actual imported file name.
 //   - semicolon: The token corresponding to the ";" rune that ends the declaration.
-func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode, name StringValueNode, semicolon *RuneNode) *ImportNode {
+func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode, option *KeywordNode, name StringValueNode, semicolon *RuneNode) *ImportNode {
 	if keyword == nil {
 		panic("keyword is nil")
 	}
@@ -289,7 +293,7 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 	if semicolon == nil {
 		numChildren++
 	}
-	if public != nil || weak != nil {
+	if public != nil || weak != nil || option != nil {
 		numChildren++
 	}
 	children := make([]Node, 0, numChildren)
@@ -298,6 +302,8 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 		children = append(children, public)
 	} else if weak != nil {
 		children = append(children, weak)
+	} else if option != nil {
+		children = append(children, option)
 	}
 	children = append(children, name)
 	if semicolon != nil {
@@ -311,6 +317,7 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 		Keyword:   keyword,
 		Public:    public,
 		Weak:      weak,
+		Option:    option,
 		Name:      name,
 		Semicolon: semicolon,
 	}

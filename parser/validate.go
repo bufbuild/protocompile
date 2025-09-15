@@ -91,6 +91,11 @@ func validateImports(res *result, handler *reporter.Handler) error {
 	if fileNode == nil {
 		return nil
 	}
+	supportsImportOption := false
+	if fileNode.Edition != nil {
+		editionStr := fileNode.Edition.Edition.AsString()
+		supportsImportOption = editionStr == "2024"
+	}
 	imports := make(map[string]ast.SourcePos)
 	for _, decl := range fileNode.Decls {
 		imp, ok := decl.(*ast.ImportNode)
@@ -99,6 +104,11 @@ func validateImports(res *result, handler *reporter.Handler) error {
 		}
 		info := fileNode.NodeInfo(decl)
 		name := imp.Name.AsString()
+		// check if "import option" syntax is used and supported
+		if imp.Option != nil && !supportsImportOption {
+			optionInfo := fileNode.NodeInfo(imp.Option)
+			return handler.HandleErrorf(optionInfo, "import option syntax is only allowed in edition 2024")
+		}
 		if prev, ok := imports[name]; ok {
 			return handler.HandleErrorf(info, "%q was already imported at %v", name, prev)
 		}

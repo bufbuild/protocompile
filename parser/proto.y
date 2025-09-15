@@ -243,15 +243,19 @@ editionDecl : _EDITION '=' stringLit ';' {
 
 importDecl : _IMPORT stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, nil, toStringValueNode($2), semi), extra...)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, nil, nil, toStringValueNode($2), semi), extra...)
 	}
 	| _IMPORT _WEAK stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), toStringValueNode($3), semi), extra...)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), nil, toStringValueNode($3), semi), extra...)
 	}
 	| _IMPORT _PUBLIC stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, toStringValueNode($3), semi), extra...)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, nil, toStringValueNode($3), semi), extra...)
+	}
+	| _IMPORT _OPTION stringLit semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, nil, $2.ToKeyword(), toStringValueNode($3), semi), extra...)
 	}
 
 packageDecl : _PACKAGE qualifiedIdentifier semicolons {

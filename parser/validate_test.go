@@ -989,6 +989,44 @@ func TestBasicValidation(t *testing.T) {
 					   `,
 			expectedErr: `test.proto:5:55: method FooService.Do: option 'features' may only be used with editions but file uses proto3 syntax`,
 		},
+		"failure_edition_2024_import_option_not_supported": {
+			contents: `edition = "2024";
+					   import option "google/protobuf/features.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"failure_edition_2024_import_option_with_regular_import_not_supported": {
+			contents: `edition = "2024";
+					   import "google/protobuf/empty.proto";
+					   import option "google/protobuf/features.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"failure_edition_2024_multiple_import_option_not_supported": {
+			contents: `edition = "2024";
+					   import option "google/protobuf/features.proto";
+					   import option "google/protobuf/cpp_features.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"failure_edition_2023_import_option": {
+			contents: `edition = "2023";
+					   import option "google/protobuf/features.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:2:51: import option syntax is only allowed in edition 2024`,
+		},
+		"failure_proto2_import_option": {
+			contents: `syntax = "proto2";
+					   import option "google/protobuf/features.proto";
+					   message Foo { optional string name = 1; }`,
+			expectedErr: `test.proto:2:51: import option syntax is only allowed in edition 2024`,
+		},
+		"failure_proto3_import_option": {
+			contents: `syntax = "proto3";
+					   import option "google/protobuf/features.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:2:51: import option syntax is only allowed in edition 2024`,
+		},
 	}
 
 	for name, tc := range testCases {
