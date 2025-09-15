@@ -16,6 +16,7 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -110,16 +111,26 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	}
 
 	for mod := range def.Prefixes() {
-		if what == taxa.Group {
+		switch what {
+		case taxa.Message, taxa.Enum:
 			switch mod.Prefix() {
-			case keyword.Required, keyword.Optional, keyword.Repeated:
-				continue
+			case keyword.Export, keyword.Local:
+				p.Error(errRequiresEdition{
+					edition: syntax.Edition2024,
+					node:    mod.PrefixToken(),
+					decl:    p.syntaxNode,
+
+					unimplemented: p.syntax >= syntax.Edition2024,
+				})
 			}
+			continue
 		}
 
-		p.Errorf("unexpected `%s` modifier on %s", mod.Prefix(), what).Apply(
-			report.Snippetf(mod.PrefixToken(), ""),
-		)
+		p.Error(errUnexpectedMod{
+			mod:    mod,
+			where:  what.On(),
+			syntax: p.syntax,
+		})
 	}
 
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
@@ -205,12 +216,12 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 		legalizeCompactOptions(p, options)
 	}
 
-	if what == taxa.Field {
+	if what == taxa.Field || what == taxa.Group {
 		var oneof ast.DeclDef
 		if parent.what == taxa.Oneof {
 			oneof, _ = parent.Spanner.(ast.DeclDef)
 		}
-		legalizeFieldType(p, def.Type(), true, oneof)
+		legalizeFieldType(p, what, def.Type(), true, ast.TypePrefixed{}, oneof)
 	}
 }
 
@@ -300,6 +311,14 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		} else {
 			legalizeMethodParams(p, sig.Outputs(), taxa.MethodOuts)
 		}
+	}
+
+	for mod := range def.Prefixes() {
+		p.Error(errUnexpectedMod{
+			mod:    mod,
+			where:  taxa.Method.On(),
+			syntax: p.syntax,
+		})
 	}
 
 	// Methods are unique in that they can end in either a ; or a {}.

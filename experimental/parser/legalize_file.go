@@ -202,12 +202,8 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	if value != syntax.Unknown && !value.IsFullyImplemented() {
 		p.Errorf("sorry, Edition %s is not fully implemented", value).Apply(
 			report.Snippet(expr),
-			report.Helpf("Edition %s will be supported in a future release of the compiler", value),
+			report.Helpf("Edition %s will be implemented in a future release", value),
 		)
-
-		// Use an implemented edition for all followup diagnostics, so we don't
-		// hit any potential ICEs.
-		value = syntax.LatestImplementedEdition
 	}
 
 	if p.syntax == syntax.Unknown {
@@ -349,10 +345,12 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 
 	for i, mod := range seq.All(decl.ModifierTokens()) {
 		if i > 0 {
-			p.Errorf("unexpected `%s` modifier", mod.Text()).Apply(
+			p.Errorf("unexpected `%s` modifier in %s", mod.Text(), in).Apply(
 				report.Snippet(mod),
-				report.Snippetf(decl.ModifierTokens().At(0), "already modified here"),
-				report.Helpf("an %s may only have at most one modifier", taxa.Import),
+				report.Snippetf(report.Join(
+					decl.KeywordToken(),
+					decl.ModifierTokens().At(0),
+				), "already modified here"),
 			)
 			continue
 		}
@@ -364,6 +362,14 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 				report.Helpf("`import weak` is deprecated and not supported correctly "+
 					"in most Protobuf implementations"),
 			)
+		case keyword.Option:
+			p.Error(errRequiresEdition{
+				edition:       syntax.Edition2024,
+				node:          report.Join(decl.KeywordToken(), mod),
+				what:          "`import option`",
+				decl:          p.syntaxNode,
+				unimplemented: p.syntax >= syntax.Edition2024,
+			})
 		}
 	}
 }

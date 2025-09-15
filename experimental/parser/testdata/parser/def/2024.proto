@@ -12,11 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto2";
+edition = "2024";
 
 package test;
 
-import "foo.proto";
-import weak "weak.proto";
-import public "public.proto";
-import option "option.proto";
+export message Foo1 {
+    // These are to check that the suggestion that export/local are
+    // for types only appears in Edition 2024.
+    export int32 x = 1;
+    local int32 y = 1;
+}
+local message Foo2 {}
+
+export enum Foo3 {}
+local enum Foo4 {}
+
+export service S1 {}
+local service S2 {}

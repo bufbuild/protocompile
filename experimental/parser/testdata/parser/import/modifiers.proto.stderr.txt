@@ -1,0 +1,71 @@
+error: unexpected `weak` modifier in public import
+  --> testdata/parser/import/modifiers.proto:19:15
+   |
+19 | import public weak "foo.proto";
+   | ------------- ^^^^
+   | |
+   | already modified here
+
+error: unexpected `option` modifier in public import
+  --> testdata/parser/import/modifiers.proto:20:15
+   |
+20 | import public option "foo.proto";
+   | ------------- ^^^^^^
+   | |
+   | already modified here
+
+warning: use of `import weak`
+  --> testdata/parser/import/modifiers.proto:21:1
+   |
+21 | import weak option "foo.proto";
+   | ^^^^^^^^^^^
+   = help: `import weak` is deprecated and not supported correctly in most
+           Protobuf implementations
+
+error: unexpected `option` modifier in weak import
+  --> testdata/parser/import/modifiers.proto:21:13
+   |
+21 | import weak option "foo.proto";
+   | ----------- ^^^^^^
+   | |
+   | already modified here
+
+error: `import option` requires Edition 2024 or later
+  --> testdata/parser/import/modifiers.proto:22:1
+   |
+22 | import option weak public "foo.proto";
+   | ^^^^^^^^^^^^^
+
+error: unexpected `weak` modifier in option import
+  --> testdata/parser/import/modifiers.proto:22:15
+   |
+22 | import option weak public "foo.proto";
+   | ------------- ^^^^
+   | |
+   | already modified here
+
+error: unexpected `public` modifier in option import
+  --> testdata/parser/import/modifiers.proto:22:20
+   |
+22 | import option weak public "foo.proto";
+   | -------------      ^^^^^^
+   | |
+   | already modified here
+
+warning: use of `import weak`
+  --> testdata/parser/import/modifiers.proto:23:1
+   |
+23 | import weak weak "foo.proto";
+   | ^^^^^^^^^^^
+   = help: `import weak` is deprecated and not supported correctly in most
+           Protobuf implementations
+
+error: unexpected `weak` modifier in weak import
+  --> testdata/parser/import/modifiers.proto:23:13
+   |
+23 | import weak weak "foo.proto";
+   | ----------- ^^^^
+   | |
+   | already modified here
+
+encountered 7 errors and 2 warnings

@@ -21,9 +21,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -200,6 +202,72 @@ func (e errBadNest) Diagnose(d *report.Diagnostic) {
 			"a %s can only appear within one of %s",
 			what, e.validParents.Join("or"),
 		))
+	}
+}
+
+// errRequiresEdition diagnoses that a certain edition is required for a feature.
+type errRequiresEdition struct {
+	edition syntax.Syntax
+	node    report.Spanner
+	what    any
+	decl    ast.DeclSyntax
+
+	// If set, this will report that the feature is not implemented instead.
+	unimplemented bool
+}
+
+func (e errRequiresEdition) Diagnose(d *report.Diagnostic) {
+	what := e.what
+	if what == nil {
+		what = taxa.Classify(e.node)
+	}
+
+	if e.unimplemented {
+		d.Apply(
+			report.Message("sorry, %s is not implemented yet", what),
+			report.Snippet(e.node),
+			report.Helpf("%s is part of Edition %s, which will be implemented in a future release", what, e.edition),
+		)
+		return
+	}
+
+	d.Apply(
+		report.Message("%s requires Edition %s or later", what, e.edition),
+		report.Snippet(e.node),
+	)
+
+	if !e.decl.IsZero() {
+		report.Snippetf(e.decl.Value(), "%s specified here", e.decl.Keyword())
+	}
+}
+
+// errUnexpectedMod diagnoses a modifier placed in the wrong position.
+type errUnexpectedMod struct {
+	mod   ast.TypePrefixed
+	where taxa.Place
+
+	syntax syntax.Syntax
+}
+
+func (e errUnexpectedMod) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("unexpected `%s` modifier %s", e.mod.Prefix(), e.where),
+		report.Snippet(e.mod.PrefixToken()),
+		justify(e.mod.Context().Stream(), e.mod.PrefixToken().Span(), "delete it", justified{
+			Edit:    report.Edit{Start: 0, End: e.mod.PrefixToken().Span().Len()},
+			justify: justifyRight,
+		}),
+	)
+
+	switch e.mod.Prefix() {
+	case keyword.Optional, keyword.Repeated, keyword.Required:
+		d.Apply(report.Helpf("`%s` only applies to a %s", e.mod.Prefix(), taxa.Field))
+	case keyword.Export, keyword.Local:
+		if e.syntax >= syntax.Edition2024 {
+			d.Apply(report.Helpf("`%s` only applies to a type definition", e.mod.Prefix()))
+		}
+	case keyword.Stream:
+		d.Apply(report.Helpf("`%s` only applies to an input or output of a %s", e.mod.Prefix(), taxa.Method))
 	}
 }
 

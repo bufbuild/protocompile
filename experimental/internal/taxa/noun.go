@@ -40,6 +40,7 @@ const (
 	Import
 	WeakImport
 	PublicImport
+	OptionImport
 	Extensions
 	Reserved
 	Body
@@ -126,6 +127,8 @@ const (
 	KeywordRequired
 	KeywordGroup
 	KeywordStream
+	KeywordExport
+	KeywordLocal
 	PredeclaredMap
 	PredeclaredMax
 	total int = iota
@@ -162,6 +165,7 @@ var _table_Noun_String = [...]string{
 	Import:             "import",
 	WeakImport:         "weak import",
 	PublicImport:       "public import",
+	OptionImport:       "option import",
 	Extensions:         "extension range",
 	Reserved:           "reserved range",
 	Body:               "definition body",
@@ -248,6 +252,8 @@ var _table_Noun_String = [...]string{
 	KeywordRequired:    "`required`",
 	KeywordGroup:       "`group`",
 	KeywordStream:      "`stream`",
+	KeywordExport:      "`export`",
+	KeywordLocal:       "`local`",
 	PredeclaredMap:     "`map`",
 	PredeclaredMax:     "`max`",
 }
@@ -267,6 +273,7 @@ var _table_Noun_GoString = [...]string{
 	Import:             "Import",
 	WeakImport:         "WeakImport",
 	PublicImport:       "PublicImport",
+	OptionImport:       "OptionImport",
 	Extensions:         "Extensions",
 	Reserved:           "Reserved",
 	Body:               "Body",
@@ -353,6 +360,8 @@ var _table_Noun_GoString = [...]string{
 	KeywordRequired:    "KeywordRequired",
 	KeywordGroup:       "KeywordGroup",
 	KeywordStream:      "KeywordStream",
+	KeywordExport:      "KeywordExport",
+	KeywordLocal:       "KeywordLocal",
 	PredeclaredMap:     "PredeclaredMap",
 	PredeclaredMax:     "PredeclaredMax",
 }

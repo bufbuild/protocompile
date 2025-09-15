@@ -142,6 +142,14 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			// invalid, because of the missing parentheses, so we don't need to
 			// legalize it.
 			isMod = !isList || rest.IsZero()
+
+		case keyword.Export, keyword.Local:
+			// Do not pick these up if rest is non-zero, because that means
+			// we're in a case like export.Foo x = 1;. The only case where
+			// export/local should be picked up is if the next token is not
+			// .Foo or similar.
+			isMod = rest.IsZero()
+
 		case keyword.Stream:
 			isMod = isInMethod || rest.IsZero()
 		}

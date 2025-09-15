@@ -21,6 +21,8 @@ optional message Foo {
     optional group foo = 10 {}
     stream group foo = 10 {}
 
+    export repeated int32 x = 1;
+
     repeated oneof y {
         int32 k = 2;
     }

@@ -4,3 +4,4 @@ decls:
 - import: {}
 - import: { modifier: [MODIFIER_WEAK], modifier_span: [{}] }
 - import: { modifier: [MODIFIER_PUBLIC], modifier_span: [{}] }
+- import: { modifier: [MODIFIER_UNSPECIFIED], modifier_span: [{}] }

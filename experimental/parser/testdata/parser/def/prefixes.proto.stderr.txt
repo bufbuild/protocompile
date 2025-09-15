@@ -1,37 +1,84 @@
-error: unexpected `optional` modifier on message definition
-  --> testdata/parser/def/prefixes.proto:19:1
+error: unexpected `stream` modifier on group definition
+  --> testdata/parser/def/prefixes.proto:22:5
    |
-19 | optional message Foo {
-   | ^^^^^^^^
+22 |     stream group foo = 10 {}
+   |     ^^^^^^
+  help: delete it
+   |
+22 | -     stream group foo = 10 {}
+22 | +     group foo = 10 {}
+   |
+   = help: `stream` only applies to an input or output of a service method
 
-error: unexpected `repeated` modifier on oneof definition
+error: unexpected `export` modifier on message field
   --> testdata/parser/def/prefixes.proto:24:5
    |
-24 |     repeated oneof y {
-   |     ^^^^^^^^
-
-error: unexpected `repeated` modifier on enum definition
-  --> testdata/parser/def/prefixes.proto:28:1
+24 |     export repeated int32 x = 1;
+   |     ^^^^^^
+  help: delete it
    |
-28 | repeated enum Bar {}
-   | ^^^^^^^^
+24 | -     export repeated int32 x = 1;
+24 | +     repeated int32 x = 1;
+   |
+
+error: unexpected `repeated` modifier on oneof definition
+  --> testdata/parser/def/prefixes.proto:26:5
+   |
+26 |     repeated oneof y {
+   |     ^^^^^^^^
+  help: delete it
+   |
+26 | -     repeated oneof y {
+26 | +     oneof y {
+   |
+   = help: `repeated` only applies to a message field
 
 error: unexpected `stream` modifier on message extension block
-  --> testdata/parser/def/prefixes.proto:30:1
+  --> testdata/parser/def/prefixes.proto:32:1
    |
-30 | stream extend Foo {
+32 | stream extend Foo {
    | ^^^^^^
+  help: delete it
+   |
+32 | - stream extend Foo {
+32 | + extend Foo {
+   |
+   = help: `stream` only applies to an input or output of a service method
 
 error: unexpected `required` modifier on service definition
-  --> testdata/parser/def/prefixes.proto:34:1
+  --> testdata/parser/def/prefixes.proto:36:1
    |
-34 | required repeated service Baz {
+36 | required repeated service Baz {
    | ^^^^^^^^
+  help: delete it
+   |
+36 | - required repeated service Baz {
+36 | + repeated service Baz {
+   |
+   = help: `required` only applies to a message field
 
 error: unexpected `repeated` modifier on service definition
-  --> testdata/parser/def/prefixes.proto:34:10
+  --> testdata/parser/def/prefixes.proto:36:10
    |
-34 | required repeated service Baz {
+36 | required repeated service Baz {
    |          ^^^^^^^^
+  help: delete it
+   |
+36 | - required repeated service Baz {
+36 | + required service Baz {
+   |
+   = help: `repeated` only applies to a message field
 
-encountered 6 errors
+error: unexpected `stream` modifier on service method
+  --> testdata/parser/def/prefixes.proto:37:5
+   |
+37 |     stream rpc X(Foo) returns (stream Bar);
+   |     ^^^^^^
+  help: delete it
+   |
+37 | -     stream rpc X(Foo) returns (stream Bar);
+37 | +     rpc X(Foo) returns (stream Bar);
+   |
+   = help: `stream` only applies to an input or output of a service method
+
+encountered 7 errors

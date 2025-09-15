@@ -39,28 +39,48 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 	case ast.TypeKindPrefixed:
 		prefixed := ty.AsPrefixed()
-		if prefixed.Prefix() != keyword.Stream {
-			p.Errorf("only the %s modifier may appear in %s", taxa.KeywordStream, what).Apply(
-				report.Snippet(prefixed.PrefixToken()),
-			)
-		}
+		var mod ast.TypePrefixed
+		for {
+			if prefixed.Prefix() != keyword.Stream {
+				p.Error(errUnexpectedMod{
+					mod:    prefixed,
+					where:  taxa.Signature.In(),
+					syntax: p.syntax,
+				})
+			} else if !mod.IsZero() {
+				p.Error(errMoreThanOne{
+					first:  mod.PrefixToken(),
+					second: prefixed.PrefixToken(),
+					what:   taxa.KeywordStream,
+				})
+			} else {
+				mod = prefixed
+			}
 
-		if prefixed.Type().Kind() == ast.TypeKindPath {
-			legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
+			switch prefixed.Type().Kind() {
+			case ast.TypeKindPath:
+				legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
+				return
+			case ast.TypeKindPrefixed:
+				prefixed = prefixed.Type().AsPrefixed()
+				continue
+			}
 			break
 		}
 
 		ty = prefixed.Type()
 		fallthrough
 	default:
-		p.Errorf("only message types may appear in %s", what).Apply(
-			report.Snippet(ty),
-		)
+		p.Error(errUnexpected{
+			what:  ty,
+			where: what.In(),
+			want:  taxa.NewSet(taxa.MessageType),
+		})
 	}
 }
 
 // legalizeFieldType legalizes the type of a message field.
-func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclDef) {
+func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool, mod ast.TypePrefixed, oneof ast.DeclDef) {
 	expected := taxa.TypePath.AsSet()
 	if oneof.IsZero() {
 		switch p.syntax {
@@ -90,7 +110,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 			)
 		}
 
-		legalizePath(p, taxa.Field.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
+		legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 
 	case ast.TypeKindPrefixed:
 		ty := ty.AsPrefixed()
@@ -112,11 +132,14 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 					taxa.Oneof))
 			}
 
-			return
+			break
 		}
 
 		switch ty.Prefix() {
 		case keyword.Required:
+			if ty.IsZero() {
+				mod = ty
+			}
 			switch p.syntax {
 			case syntax.Proto2:
 				p.Warnf("required fields are deprecated and should not be used").Apply(
@@ -139,6 +162,9 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 			}
 
 		case keyword.Optional:
+			if ty.IsZero() {
+				mod = ty
+			}
 			if p.syntax.IsEdition() {
 				p.Error(errUnexpected{
 					what: ty.PrefixToken(),
@@ -156,31 +182,24 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 					report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
 				)
 			}
-		case keyword.Stream:
-			p.Error(errUnexpected{
-				what: ty.PrefixToken(),
-				want: expected,
-			}).Apply(
-				report.Snippet(ty.PrefixToken()),
-				justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
-					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-					justify: justifyRight,
-				}),
-				report.Helpf("the %s modifier may only appear in a %s",
-					taxa.KeywordStream, taxa.Signature),
-			)
+
+		case keyword.Repeated:
+			if ty.IsZero() {
+				mod = ty
+			}
+
+		default:
+			p.Error(errUnexpectedMod{
+				mod:    ty,
+				where:  what.On(),
+				syntax: p.syntax,
+			})
 		}
 
 		inner := ty.Type()
 		switch inner.Kind() {
-		case ast.TypeKindPath:
-			legalizeFieldType(p, inner, false, oneof)
-		case ast.TypeKindPrefixed:
-			p.Error(errMoreThanOne{
-				first:  ty.PrefixToken(),
-				second: inner.AsPrefixed().PrefixToken(),
-				what:   taxa.TypePrefix,
-			})
+		case ast.TypeKindPath, ast.TypeKindPrefixed:
+			legalizeFieldType(p, what, inner, false, mod, oneof)
 		default:
 			p.Error(errUnexpected{
 				what:  inner,
@@ -228,7 +247,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 
 			switch v.Kind() {
 			case ast.TypeKindPath:
-				legalizeFieldType(p, v, false, oneof)
+				legalizeFieldType(p, what, v, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
 				p.Error(errUnexpected{
 					what:  v.AsPrefixed().PrefixToken(),

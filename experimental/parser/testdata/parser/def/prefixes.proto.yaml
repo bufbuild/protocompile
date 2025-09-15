@@ -29,6 +29,13 @@ decls:
         value.literal.int_value: 10
         body: {}
     - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.prefixed.type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 1
+    - def:
         kind: KIND_ONEOF
         name.components: [{ ident: "y" }]
         body.decls:

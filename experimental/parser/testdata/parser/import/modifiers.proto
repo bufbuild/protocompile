@@ -16,7 +16,8 @@ syntax = "proto2";
 
 package test;
 
-import "foo.proto";
-import weak "weak.proto";
-import public "public.proto";
-import option "option.proto";
+import public weak "foo.proto";
+import public option "foo.proto";
+import weak option "foo.proto";
+import option weak public "foo.proto";
+import weak weak "foo.proto";

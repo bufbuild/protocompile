@@ -218,34 +218,49 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		in := taxa.Import
 
 		for {
-			switch modifier := path.AsIdent().Keyword(); {
-			case modifier == keyword.Public:
+			switch path.AsIdent().Keyword() {
+			case keyword.Public:
 				if in == taxa.Import {
 					in = taxa.PublicImport
 				}
 
 				args.Modifiers = append(args.Modifiers, path.AsIdent())
+				path = ast.Path{}
 				if canStartPath(c.Peek()) {
 					path = parsePath(p, c)
 					continue
 				}
 
-			case modifier == keyword.Weak:
+			case keyword.Weak:
 				if in == taxa.Import {
 					in = taxa.WeakImport
 				}
 
 				args.Modifiers = append(args.Modifiers, path.AsIdent())
+				path = ast.Path{}
 				if canStartPath(c.Peek()) {
 					path = parsePath(p, c)
 					continue
 				}
 
-			case !path.IsZero():
-				// This will catch someone writing `import foo.bar;` when we legalize.
-				args.ImportPath = ast.ExprPath{Path: path}.AsAny()
+			case keyword.Option:
+				if in == taxa.Import {
+					in = taxa.OptionImport
+				}
+
+				args.Modifiers = append(args.Modifiers, path.AsIdent())
+				path = ast.Path{}
+				if canStartPath(c.Peek()) {
+					path = parsePath(p, c)
+					continue
+				}
 			}
 			break
+		}
+
+		if !path.IsZero() {
+			// This will catch someone writing `import foo.bar;` when we legalize.
+			args.ImportPath = ast.ExprPath{Path: path}.AsAny()
 		}
 
 		if args.ImportPath.IsZero() && canStartExpr(next) {

@@ -103,6 +103,10 @@ func Classify(node report.Spanner) Noun {
 			return WeakImport
 		case keyword.Public:
 			return PublicImport
+		case keyword.Option:
+			return OptionImport
+		default:
+			return Import
 		}
 	case ast.DeclRange:
 		if node.IsExtensions() {
@@ -286,6 +290,8 @@ var kwToNoun = []Noun{
 	keyword.Optional:   KeywordOptional,
 	keyword.Required:   KeywordRequired,
 	keyword.Stream:     KeywordStream,
+	keyword.Export:     KeywordExport,
+	keyword.Local:      KeywordLocal,
 
 	// TODO: Give these taxa if it turns out they wind up in diagnostics.
 	keyword.Int32:    Unknown,
