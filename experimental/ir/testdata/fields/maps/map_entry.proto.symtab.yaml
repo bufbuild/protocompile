@@ -1,0 +1,20 @@
+tables:
+  "testdata/fields/maps/map_entry.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/maps/map_entry.proto"
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/map_entry.proto"
+      index: 1
+      visible:
+      options.message:
+        fields: { "map_entry": { bool: } }
+        extns: { "test.options": { message.fields: { "map_entry": { bool: } } } }
+    - fqn: "test.options"
+      kind: KIND_EXTENSION
+      file: "testdata/fields/maps/map_entry.proto"
+      index: 1
+      visible:

@@ -21,7 +21,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // legalizeMethodParams legalizes part of the signature of a method.
@@ -210,20 +209,21 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 			)
 		default:
 			k, v := ty.AsMap()
-			if !k.AsPath().AsPredeclared().IsMapKey() {
+
+			switch k.Kind() {
+			case ast.TypeKindPath:
+				legalizeFieldType(p, k, false, oneof)
+			case ast.TypeKindPrefixed:
+				p.Error(errUnexpected{
+					what:  k.AsPrefixed().PrefixToken(),
+					where: taxa.MapKey.In(),
+				})
+			default:
 				p.Error(errUnexpected{
 					what:  k,
 					where: taxa.MapKey.In(),
-					got:   "non-comparable type",
-				}).Apply(
-					report.Helpf(
-						"a map key must be one of the following types: %s",
-						iterx.Join(iterx.Filter(
-							predeclared.All(),
-							func(p predeclared.Name) bool { return p.IsMapKey() },
-						), ", "),
-					),
-				)
+					want:  taxa.TypePath.AsSet(),
+				})
 			}
 
 			switch v.Kind() {

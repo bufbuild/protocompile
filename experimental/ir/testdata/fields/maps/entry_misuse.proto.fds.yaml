@@ -1,0 +1,23 @@
+file:
+- name: "testdata/fields/maps/entry_misuse.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foo_bar"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.FooBarEntry"
+    - name: "foo_bars"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.FooBarEntry"
+    nested_type:
+    - name: "FooBarEntry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options: {}
+  syntax: "proto3"

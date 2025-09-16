@@ -1,0 +1,13 @@
+file:
+- name: "testdata/fields/maps/map_entry.proto"
+  package: "test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type: [{ name: "Foo", options: {} }]
+  extension:
+  - name: "options"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".google.protobuf.MessageOptions"
+    extendee: ".google.protobuf.MessageOptions"
+  syntax: "proto3"

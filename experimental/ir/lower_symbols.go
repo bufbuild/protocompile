@@ -331,4 +331,19 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 			v.Name(),
 		))
 	}
+
+	for i := range e.refs {
+		ty := e.symbol(i).AsType()
+		if mf := ty.MapField(); !mf.IsZero() {
+			d.Apply(
+				report.Snippetf(mf.AST().Name(), "implies `repeated %s`", ty.Name()),
+				report.Helpf(
+					"map-typed fields implicitly declare a nested message type: "+
+						"field `%s` produces a map entry type `%s`",
+					mf.Name(), ty.Name(),
+				),
+			)
+			break
+		}
+	}
 }

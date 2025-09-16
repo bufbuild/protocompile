@@ -73,6 +73,12 @@ func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
 }
 
+// IsSynthetic returns whether or not this is a synthetic field, such as the
+// fields of a map entry.
+func (m Member) IsSynthetic() bool {
+	return !m.IsZero() && m.AST().IsZero()
+}
+
 // AsTagRange wraps this member in a TagRange.
 func (m Member) AsTagRange() TagRange {
 	if m.IsZero() {
@@ -93,6 +99,27 @@ func (m Member) AST() ast.DeclDef {
 		return ast.DeclDef{}
 	}
 	return m.raw.def
+}
+
+// TypeAST returns the type AST node for this member, if known.
+func (m Member) TypeAST() ast.TypeAny {
+	decl := m.AST()
+	if !decl.IsZero() {
+		return decl.Type()
+	}
+
+	ty := m.Container()
+	if !ty.MapField().IsZero() {
+		k, v := ty.AST().Type().RemovePrefixes().AsGeneric().AsMap()
+		switch m.Number() {
+		case 1:
+			return k
+		case 2:
+			return v
+		}
+	}
+
+	return ast.TypeAny{}
 }
 
 // FullName returns this members's name.

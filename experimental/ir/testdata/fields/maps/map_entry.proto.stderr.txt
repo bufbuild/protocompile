@@ -1,0 +1,9 @@
+error: `map_entry` cannot be set explicitly
+  --> testdata/fields/maps/map_entry.proto:26:12
+   |
+26 |     option map_entry = true;
+   |            ^^^^^^^^^
+   = help: map_entry is set automatically for synthetic map entry types, and
+           cannot be set with an option setting
+
+encountered 1 error

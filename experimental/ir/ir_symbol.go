@@ -133,7 +133,12 @@ func (s Symbol) Definition() report.Span {
 	case SymbolKindPackage:
 		return s.File().AST().Package().Span()
 	case SymbolKindMessage, SymbolKindEnum:
-		return s.AsType().AST().Name().Span()
+		ty := s.AsType()
+		if mf := ty.MapField(); !mf.IsZero() {
+			return mf.TypeAST().Span()
+		}
+
+		return ty.AST().Name().Span()
 	case SymbolKindField, SymbolKindEnumValue, SymbolKindExtension:
 		return s.AsMember().AST().Name().Span()
 	case SymbolKindOneof:

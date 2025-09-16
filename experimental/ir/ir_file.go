@@ -96,6 +96,8 @@ type langSymbols struct {
 	oneofOptions,
 	enumOptions,
 	enumValueOptions arena.Pointer[rawMember]
+
+	mapEntry arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]

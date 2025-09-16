@@ -28,6 +28,11 @@ import (
 // declarations.
 func evaluateFieldNumbers(f File, r *report.Report) {
 	for ty := range seq.Values(f.AllTypes()) {
+		if !ty.MapField().IsZero() {
+			// Map entry types come with numbers pre-calculated.
+			continue
+		}
+
 		scope := ty.FullName()
 
 		var kind memberNumber

@@ -1,0 +1,48 @@
+error: mismatched types
+  --> testdata/fields/maps/invalid_key.proto:20:9
+   |
+20 |     map<float, int32> m1 = 1;
+   |         ^^^^^ expected comparable type, found `float`
+   = note: expected: comparable type
+              found: scalar type `float`
+   = help: comparable types are integer types, `string`, and `bool`
+
+error: mismatched types
+  --> testdata/fields/maps/invalid_key.proto:21:9
+   |
+21 |     map<double, int32> m2 = 2;
+   |         ^^^^^^ expected comparable type, found `double`
+   = note: expected: comparable type
+              found: scalar type `double`
+   = help: comparable types are integer types, `string`, and `bool`
+
+error: mismatched types
+  --> testdata/fields/maps/invalid_key.proto:22:9
+   |
+22 |     map<bytes, int32> m3 = 3;
+   |         ^^^^^ expected comparable type, found `bytes`
+   = note: expected: comparable type
+              found: scalar type `bytes`
+   = help: comparable types are integer types, `string`, and `bool`
+
+error: mismatched types
+  --> testdata/fields/maps/invalid_key.proto:23:9
+   |
+23 |     map<Foo, int32> m4 = 4;
+   |         ^^^ expected comparable type, found `test.Foo`
+   = note: expected: comparable type
+              found: message type `test.Foo`
+   = help: comparable types are integer types, `string`, and `bool`
+
+error: mismatched types
+  --> testdata/fields/maps/invalid_key.proto:24:9
+   |
+24 |     map<Enum, int32> m5 = 5;
+   |         ^^^^ expected comparable type, found `test.Enum`
+   = note: expected: comparable type
+              found: enum type `test.Enum`
+   = help: comparable types are integer types, `string`, and `bool`
+   = help: counterintuitively, user-defined enum types are not comparable and
+           cannot be used as map keys
+
+encountered 5 errors
