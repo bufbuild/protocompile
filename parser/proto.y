@@ -136,7 +136,7 @@ import (
 %token <id>  _SYNTAX _EDITION _IMPORT _WEAK _PUBLIC _PACKAGE _OPTION _TRUE _FALSE _INF _NAN _REPEATED _OPTIONAL _REQUIRED
 %token <id>  _DOUBLE _FLOAT _INT32 _INT64 _UINT32 _UINT64 _SINT32 _SINT64 _FIXED32 _FIXED64 _SFIXED32 _SFIXED64
 %token <id>  _BOOL _STRING _BYTES _GROUP _ONEOF _MAP _EXTENSIONS _TO _MAX _RESERVED _ENUM _MESSAGE _EXTEND
-%token <id>  _SERVICE _RPC _STREAM _RETURNS
+%token <id>  _SERVICE _RPC _STREAM _RETURNS _EXPORT _LOCAL
 %token <err> _ERROR
 // we define all of these, even ones that aren't used, to improve error messages
 // so it shows the unexpected symbol instead of showing "$unk"
@@ -959,7 +959,13 @@ fieldNameIdents : identifier {
 	}
 
 enumDecl : _ENUM identifier '{' enumBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
+		$$ = newNodeWithRunes(ast.NewEnumNode(nil, nil, $1.ToKeyword(), $2, $3, $4, $5), $6...)
+	}
+	| _EXPORT _ENUM identifier '{' enumBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewEnumNode($1.ToKeyword(), nil, $2.ToKeyword(), $3, $4, $5, $6), $7...)
+	}
+	| _LOCAL _ENUM identifier '{' enumBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewEnumNode(nil, $1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
 	}
 
 enumBody : semicolons {
@@ -999,7 +1005,13 @@ enumValueDecl : enumValueName '=' enumValueNumber semicolons {
 	}
 
 messageDecl : _MESSAGE identifier '{' messageBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
+		$$ = newNodeWithRunes(ast.NewMessageNode(nil, nil, $1.ToKeyword(), $2, $3, $4, $5), $6...)
+	}
+	| _EXPORT _MESSAGE identifier '{' messageBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewMessageNode($1.ToKeyword(), nil, $2.ToKeyword(), $3, $4, $5, $6), $7...)
+	}
+	| _LOCAL _MESSAGE identifier '{' messageBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewMessageNode(nil, $1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
 	}
 
 messageBody : semicolons {

@@ -363,7 +363,7 @@ func asExtensionType(ext protoreflect.ExtensionDescriptor) protoreflect.Extensio
 	return dynamicpb.NewExtensionType(ext)
 }
 
-func computeEditionsRange(minEdition, maxEdition descriptorpb.Edition) map[string]descriptorpb.Edition {
+func computeEditionsRange(minEdition, maxEdition descriptorpb.Edition) map[string]descriptorpb.Edition { //nolint:unparam // minEdition is a parameter that may change
 	supportedEditions := map[string]descriptorpb.Edition{}
 	for editionNum := range descriptorpb.Edition_name {
 		edition := descriptorpb.Edition(editionNum)

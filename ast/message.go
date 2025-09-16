@@ -41,8 +41,17 @@ var _ MessageDeclNode = (*NoSourceNode)(nil)
 //	  repeated string labels = 2;
 //	  bytes extra = 3;
 //	}
+//
+// In edition 2024, messages can have export/local modifiers:
+//
+//	local message LocalMessage { ... }
+//	export message ExportedMessage { ... }
 type MessageNode struct {
 	compositeNode
+	// Optional; if present indicates this is an export declaration (edition 2024)
+	Export *KeywordNode
+	// Optional; if present indicates this is a local declaration (edition 2024)
+	Local   *KeywordNode
 	Keyword *KeywordNode
 	Name    *IdentNode
 	MessageBody
@@ -51,13 +60,16 @@ type MessageNode struct {
 func (*MessageNode) fileElement() {}
 func (*MessageNode) msgElement()  {}
 
-// NewMessageNode creates a new *MessageNode. All arguments must be non-nil.
+// NewMessageNode creates a new *MessageNode. All arguments except export and local must be non-nil.
+// The export and local arguments are optional and only one may be specified, not both.
+//   - export: The token corresponding to the optional "export" keyword (edition 2024).
+//   - local: The token corresponding to the optional "local" keyword (edition 2024).
 //   - keyword: The token corresponding to the "message" keyword.
 //   - name: The token corresponding to the field's name.
 //   - openBrace: The token corresponding to the "{" rune that starts the body.
 //   - decls: All declarations inside the message body.
 //   - closeBrace: The token corresponding to the "}" rune that ends the body.
-func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []MessageElement, closeBrace *RuneNode) *MessageNode {
+func NewMessageNode(export *KeywordNode, local *KeywordNode, keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []MessageElement, closeBrace *RuneNode) *MessageNode {
 	if keyword == nil {
 		panic("keyword is nil")
 	}
@@ -70,7 +82,16 @@ func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, 
 	if closeBrace == nil {
 		panic("closeBrace is nil")
 	}
-	children := make([]Node, 0, 4+len(decls))
+	numChildren := 4 + len(decls) // keyword, name, openBrace, closeBrace + decls
+	if export != nil || local != nil {
+		numChildren++
+	}
+	children := make([]Node, 0, numChildren)
+	if export != nil {
+		children = append(children, export)
+	} else if local != nil {
+		children = append(children, local)
+	}
 	children = append(children, keyword, name, openBrace)
 	for _, decl := range decls {
 		children = append(children, decl)
@@ -81,6 +102,8 @@ func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, 
 		compositeNode: compositeNode{
 			children: children,
 		},
+		Export:  export,
+		Local:   local,
 		Keyword: keyword,
 		Name:    name,
 	}

@@ -45,6 +45,10 @@ func validateBasic(res *result, handler *reporter.Handler) {
 		return
 	}
 
+	if err := validateExportLocal(res, handler); err != nil {
+		return
+	}
+
 	if err := validateNoFeatures(res, syntax, "file options", fd.Options.GetUninterpretedOption(), handler); err != nil {
 		return
 	}
@@ -113,6 +117,63 @@ func validateImports(res *result, handler *reporter.Handler) error {
 			return handler.HandleErrorf(info, "%q was already imported at %v", name, prev)
 		}
 		imports[name] = info.Start()
+	}
+	return nil
+}
+
+func validateExportLocal(res *result, handler *reporter.Handler) error {
+	fileNode := res.file
+	if fileNode == nil {
+		return nil
+	}
+	if fileNode.Edition != nil && fileNode.Edition.Edition.AsString() == "2024" {
+		return nil // export/local modifiers supported
+	}
+	for _, decl := range fileNode.Decls {
+		if err := validateExportLocalNode(res, decl, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateExportLocalInMessageBody(res *result, body *ast.MessageBody, handler *reporter.Handler) error {
+	for _, decl := range body.Decls {
+		if err := validateExportLocalNode(res, decl, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateExportLocalNode(res *result, node ast.Node, handler *reporter.Handler) error {
+	fileNode := res.file
+	if fileNode == nil {
+		return nil
+	}
+	switch node := node.(type) {
+	case *ast.MessageNode:
+		if node.Export != nil {
+			exportInfo := fileNode.NodeInfo(node.Export)
+			return handler.HandleErrorf(exportInfo, "export keyword is only allowed in edition 2024")
+		}
+		if node.Local != nil {
+			localInfo := fileNode.NodeInfo(node.Local)
+			return handler.HandleErrorf(localInfo, "local keyword is only allowed in edition 2024")
+		}
+		// check nested messages and enums recursively
+		if err := validateExportLocalInMessageBody(res, &node.MessageBody, handler); err != nil {
+			return err
+		}
+	case *ast.EnumNode:
+		if node.Export != nil {
+			exportInfo := fileNode.NodeInfo(node.Export)
+			return handler.HandleErrorf(exportInfo, "export keyword is only allowed in edition 2024")
+		}
+		if node.Local != nil {
+			localInfo := fileNode.NodeInfo(node.Local)
+			return handler.HandleErrorf(localInfo, "local keyword is only allowed in edition 2024")
+		}
 	}
 	return nil
 }

@@ -263,7 +263,7 @@ type ImportNode struct {
 	Public *KeywordNode
 	// Optional; if present indicates this is a weak import
 	Weak *KeywordNode
-	// Optional; if present indicates this is an option import (for edition 2024)
+	// Optional; if present indicates this is an option import (edition 2024)
 	Option    *KeywordNode
 	Name      StringValueNode
 	Semicolon *RuneNode
@@ -298,11 +298,12 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 	}
 	children := make([]Node, 0, numChildren)
 	children = append(children, keyword)
-	if public != nil {
+	switch {
+	case public != nil:
 		children = append(children, public)
-	} else if weak != nil {
+	case weak != nil:
 		children = append(children, weak)
-	} else if option != nil {
+	case option != nil:
 		children = append(children, option)
 	}
 	children = append(children, name)
