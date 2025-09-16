@@ -21,3 +21,8 @@ message Foo {
 
     message FooBarEntry {}
 }
+
+message Underscores {
+    map<int32, int32> _ = 1;
+    map<int32, int32> __ = 2;
+}

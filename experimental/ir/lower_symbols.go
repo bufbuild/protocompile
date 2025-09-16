@@ -192,16 +192,23 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
-			// Ignore all refs that are packages except for the first one. This
-			// is because a package can be defined in multiple files.
 			isFirst := true
 			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
-				pkg := wrapSymbol(f.Context(), r).Kind() == SymbolKindPackage
-				if isFirst {
-					isFirst = false
-					return false
+				s := wrapSymbol(f.Context(), r)
+				if !isFirst && !s.AsMember().Container().MapField().IsZero() {
+					// Ignore all symbols that are map entry fields, because those
+					// can only be duplicated when two map entry messages' names
+					// collide, so diagnosing them just creates a mess.
+					return true
 				}
-				return pkg
+				if !isFirst && s.Kind() == SymbolKindPackage {
+					// Ignore all refs that are packages except for the first one. This
+					// is because a package can be defined in multiple files.
+					return true
+				}
+
+				isFirst = false
+				return false
 			})
 
 			// Deduplicate references to the same element.

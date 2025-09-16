@@ -18,7 +18,6 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -41,7 +40,7 @@ func generateMapEntries(f File, r *report.Report) {
 				continue
 			}
 
-			key, value := decl.AsMap()
+			key, _ := decl.AsMap()
 			if key.IsZero() {
 				continue // Legalized in the parser.
 			}
@@ -79,7 +78,7 @@ func generateMapEntries(f File, r *report.Report) {
 			c.types = append(c.types, raw)
 
 			// Construct the fields and att them to ty.
-			makeField := func(name string, number int32, elem ast.TypeAny) {
+			makeField := func(name string, number int32) {
 				fqn := fqn.Append(name)
 
 				id := c.arenas.members.NewCompressed(rawMember{
@@ -94,8 +93,8 @@ func generateMapEntries(f File, r *report.Report) {
 				ty.raw.extnsStart++
 			}
 
-			makeField("key", 1, key)
-			makeField("value", 2, value)
+			makeField("key", 1)
+			makeField("value", 2)
 
 			// Update the field to be a repeated field of the given type.
 			field.raw.elem.ptr = raw
