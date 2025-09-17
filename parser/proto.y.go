@@ -2336,17 +2336,17 @@ protodefault:
 	case 214:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.en = newNodeWithRunes(ast.NewEnumNode(nil, nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].enElements, protoDollar[5].b), protoDollar[6].bs...)
+			protoVAL.en = newNodeWithRunes(ast.NewEnumNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].enElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 215:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
-			protoVAL.en = newNodeWithRunes(ast.NewEnumNode(protoDollar[1].id.ToKeyword(), nil, protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].enElements, protoDollar[6].b), protoDollar[7].bs...)
+			protoVAL.en = newNodeWithRunes(ast.NewEnumNodeWithVisibility(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].enElements, protoDollar[6].b), protoDollar[7].bs...)
 		}
 	case 216:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
-			protoVAL.en = newNodeWithRunes(ast.NewEnumNode(nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].enElements, protoDollar[6].b), protoDollar[7].bs...)
+			protoVAL.en = newNodeWithRunes(ast.NewEnumNodeWithVisibility(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].enElements, protoDollar[6].b), protoDollar[7].bs...)
 		}
 	case 217:
 		protoDollar = protoS[protopt-1 : protopt+1]
@@ -2403,17 +2403,17 @@ protodefault:
 	case 227:
 		protoDollar = protoS[protopt-6 : protopt+1]
 		{
-			protoVAL.msg = newNodeWithRunes(ast.NewMessageNode(nil, nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].msgElements, protoDollar[5].b), protoDollar[6].bs...)
+			protoVAL.msg = newNodeWithRunes(ast.NewMessageNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id, protoDollar[3].b, protoDollar[4].msgElements, protoDollar[5].b), protoDollar[6].bs...)
 		}
 	case 228:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
-			protoVAL.msg = newNodeWithRunes(ast.NewMessageNode(protoDollar[1].id.ToKeyword(), nil, protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].msgElements, protoDollar[6].b), protoDollar[7].bs...)
+			protoVAL.msg = newNodeWithRunes(ast.NewMessageNodeWithVisibility(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].msgElements, protoDollar[6].b), protoDollar[7].bs...)
 		}
 	case 229:
 		protoDollar = protoS[protopt-7 : protopt+1]
 		{
-			protoVAL.msg = newNodeWithRunes(ast.NewMessageNode(nil, protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].msgElements, protoDollar[6].b), protoDollar[7].bs...)
+			protoVAL.msg = newNodeWithRunes(ast.NewMessageNodeWithVisibility(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), protoDollar[3].id, protoDollar[4].b, protoDollar[5].msgElements, protoDollar[6].b), protoDollar[7].bs...)
 		}
 	case 230:
 		protoDollar = protoS[protopt-1 : protopt+1]

@@ -153,26 +153,20 @@ func validateExportLocalNode(res *result, node ast.Node, handler *reporter.Handl
 	}
 	switch node := node.(type) {
 	case *ast.MessageNode:
-		if node.Export != nil {
-			exportInfo := fileNode.NodeInfo(node.Export)
-			return handler.HandleErrorf(exportInfo, "export keyword is only allowed in edition 2024")
-		}
-		if node.Local != nil {
-			localInfo := fileNode.NodeInfo(node.Local)
-			return handler.HandleErrorf(localInfo, "local keyword is only allowed in edition 2024")
+		if node.Visibility != nil {
+			visibilityInfo := fileNode.NodeInfo(node.Visibility)
+			visibilityKeyword := node.Visibility.Val
+			return handler.HandleErrorf(visibilityInfo, "%s keyword is only allowed in edition 2024", visibilityKeyword)
 		}
 		// check nested messages and enums recursively
 		if err := validateExportLocalInMessageBody(res, &node.MessageBody, handler); err != nil {
 			return err
 		}
 	case *ast.EnumNode:
-		if node.Export != nil {
-			exportInfo := fileNode.NodeInfo(node.Export)
-			return handler.HandleErrorf(exportInfo, "export keyword is only allowed in edition 2024")
-		}
-		if node.Local != nil {
-			localInfo := fileNode.NodeInfo(node.Local)
-			return handler.HandleErrorf(localInfo, "local keyword is only allowed in edition 2024")
+		if node.Visibility != nil {
+			visibilityInfo := fileNode.NodeInfo(node.Visibility)
+			visibilityKeyword := node.Visibility.Val
+			return handler.HandleErrorf(visibilityInfo, "%s keyword is only allowed in edition 2024", visibilityKeyword)
 		}
 	}
 	return nil

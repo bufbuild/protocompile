@@ -959,13 +959,13 @@ fieldNameIdents : identifier {
 	}
 
 enumDecl : _ENUM identifier '{' enumBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewEnumNode(nil, nil, $1.ToKeyword(), $2, $3, $4, $5), $6...)
+		$$ = newNodeWithRunes(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 	| _EXPORT _ENUM identifier '{' enumBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewEnumNode($1.ToKeyword(), nil, $2.ToKeyword(), $3, $4, $5, $6), $7...)
+		$$ = newNodeWithRunes(ast.NewEnumNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
 	}
 	| _LOCAL _ENUM identifier '{' enumBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewEnumNode(nil, $1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
+		$$ = newNodeWithRunes(ast.NewEnumNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
 	}
 
 enumBody : semicolons {
@@ -1005,13 +1005,13 @@ enumValueDecl : enumValueName '=' enumValueNumber semicolons {
 	}
 
 messageDecl : _MESSAGE identifier '{' messageBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewMessageNode(nil, nil, $1.ToKeyword(), $2, $3, $4, $5), $6...)
+		$$ = newNodeWithRunes(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
 	| _EXPORT _MESSAGE identifier '{' messageBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewMessageNode($1.ToKeyword(), nil, $2.ToKeyword(), $3, $4, $5, $6), $7...)
+		$$ = newNodeWithRunes(ast.NewMessageNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
 	}
 	| _LOCAL _MESSAGE identifier '{' messageBody '}' semicolons {
-		$$ = newNodeWithRunes(ast.NewMessageNode(nil, $1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
+		$$ = newNodeWithRunes(ast.NewMessageNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
 	}
 
 messageBody : semicolons {
