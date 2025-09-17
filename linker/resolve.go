@@ -160,6 +160,7 @@ func (r *result) createDescendants() {
 		prefix = fd.GetPackage() + "."
 	}
 	r.imports = r.createImports()
+	r.optionImports = fileImports{files: r.createBasicImports(fd.OptionDependency)}
 	r.messages = r.createMessages(prefix, r, fd.MessageType, pool)
 	r.enums = r.createEnums(prefix, r, fd.EnumType, pool)
 	r.extensions = r.createExtensions(prefix, r, fd.Extension, pool)
