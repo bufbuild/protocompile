@@ -1,0 +1,72 @@
+warning: group syntax is deprecated
+  --> testdata/fields/groups/collision.proto:20:14
+   |
+20 |     optional group FooBar = 1 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/collision.proto:25:14
+   |
+25 |     optional group FooBar = 1 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/collision.proto:30:14
+   |
+30 |     optional group foo = 1 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/fields/groups/collision.proto:30:20
+   |
+30 |     optional group foo = 1 {}
+   |                    ^^^
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/collision.proto:32:14
+   |
+32 |     optional group FooBar = 2 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/fields/groups/collision.proto:33:14
+   |
+33 |     optional group foobar = 3 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/fields/groups/collision.proto:33:20
+   |
+33 |     optional group foobar = 3 {}
+   |                    ^^^^^^
+
+error: `FooBar` declared multiple times
+  --> testdata/fields/groups/collision.proto:20:20
+   |
+20 |     optional group FooBar = 1 {}
+   |                    ^^^^^^ first here, as a message type
+21 |     message FooBar {}
+   |             ------ ...also declared here
+
+error: `foobar` declared multiple times
+  --> testdata/fields/groups/collision.proto:25:20
+   |
+25 |     optional group FooBar = 1 {}
+   |                    ^^^^^^ first here, as a message field
+26 |     optional int32 foobar = 2;
+   |                    ------ ...also declared here
+
+error: `foobar` declared multiple times
+  --> testdata/fields/groups/collision.proto:33:20
+   |
+32 |     optional group FooBar = 2 {}
+   |                    ------ ...also declared here, now as a message field
+33 |     optional group foobar = 3 {}
+   |                    ^^^^^^ first here, as a message type
+
+encountered 5 errors and 5 warnings

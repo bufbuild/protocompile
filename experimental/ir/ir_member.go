@@ -56,6 +56,8 @@ type rawMember struct {
 	// If negative, this is the negative of a presence.Kind. Otherwise, it's
 	// a oneof index.
 	oneof int32
+
+	isGroup bool
 }
 
 // Returns whether this is a non-extension message field.
@@ -71,6 +73,11 @@ func (m Member) IsExtension() bool {
 // Returns whether this is an enum value.
 func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
+}
+
+// Returns whether this is a group-encoded field.
+func (m Member) IsGroup() bool {
+	return !m.IsZero() && m.raw.isGroup
 }
 
 // IsSynthetic returns whether or not this is a synthetic field, such as the
@@ -105,6 +112,9 @@ func (m Member) AST() ast.DeclDef {
 func (m Member) TypeAST() ast.TypeAny {
 	decl := m.AST()
 	if !decl.IsZero() {
+		if m.IsGroup() {
+			return ast.TypePath{Path: decl.Name()}.AsAny()
+		}
 		return decl.Type()
 	}
 

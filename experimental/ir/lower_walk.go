@@ -17,6 +17,7 @@ package ir
 import (
 	"math"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -99,16 +100,17 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 		switch kind := def.Classify(); kind {
-		case ast.DefKindMessage, ast.DefKindEnum:
+		case ast.DefKindMessage, ast.DefKindEnum, ast.DefKindGroup:
 			ty := w.newType(def, parent)
+
+			if kind == ast.DefKindGroup {
+				w.newField(def, parent, true)
+			}
 
 			w.recurse(def.Body().AsAny(), ty)
 
 		case ast.DefKindField, ast.DefKindEnumValue:
-			w.newField(def, parent)
-
-		case ast.DefKindGroup:
-			sorry("groups")
+			w.newField(def, parent, false)
 
 		case ast.DefKindOneof:
 			parent := extractParentType(parent)
@@ -143,6 +145,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	c := w.Context()
 	parentTy := extractParentType(parent)
+
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
@@ -247,18 +250,22 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	return ty
 }
 
-func (w *walker) newField(def ast.DeclDef, parent any) Member {
+func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
+	if group {
+		name = strings.ToLower(name)
+	}
 	fqn := w.fullname(parentTy, name)
 
 	id := c.arenas.members.NewCompressed(rawMember{
-		def:    def,
-		name:   c.session.intern.Intern(name),
-		fqn:    c.session.intern.Intern(fqn),
-		parent: c.arenas.types.Compress(parentTy.raw),
-		oneof:  math.MinInt32,
+		def:     def,
+		name:    c.session.intern.Intern(name),
+		fqn:     c.session.intern.Intern(fqn),
+		parent:  c.arenas.types.Compress(parentTy.raw),
+		oneof:   math.MinInt32,
+		isGroup: group,
 	})
 	raw := c.arenas.members.Deref(id)
 
