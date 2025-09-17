@@ -8,39 +8,39 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/wrong_kind.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.Bar"
       kind: KIND_ENUM
       file: "testdata/fields/wrong_kind.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.x"
       kind: KIND_FIELD
       file: "testdata/fields/wrong_kind.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.y"
       kind: KIND_FIELD
       file: "testdata/fields/wrong_kind.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Foo.z"
       kind: KIND_FIELD
       file: "testdata/fields/wrong_kind.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.Foo.a"
       kind: KIND_FIELD
       file: "testdata/fields/wrong_kind.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.Foo.BAZ"
       kind: KIND_ENUM_VALUE
       file: "testdata/fields/wrong_kind.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.self"
       kind: KIND_ONEOF
       file: "testdata/fields/wrong_kind.proto"
       index: 1
-      visible:
+      visible: true

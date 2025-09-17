@@ -171,12 +171,12 @@ type renderArgs struct {
 func (d *doc) render(args renderArgs, push dom.Sink) {
 	value := func(args renderArgs, v any, push dom.Sink) {
 		switch v := v.(type) {
-		case int32, int64, uint32, uint64, float32, float64, protoreflect.Name:
-			push(dom.Text(fmt.Sprint(v)))
 		case string:
 			push(dom.Text(strconv.Quote(v)))
 		case *doc:
 			v.render(args, push)
+		default:
+			push(dom.Text(fmt.Sprint(v)))
 		}
 	}
 

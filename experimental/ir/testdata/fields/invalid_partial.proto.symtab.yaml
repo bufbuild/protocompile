@@ -8,19 +8,19 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/invalid_partial.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.M.N"
       kind: KIND_MESSAGE
       file: "testdata/fields/invalid_partial.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.M.M"
       kind: KIND_MESSAGE
       file: "testdata/fields/invalid_partial.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.M.M.n"
       kind: KIND_FIELD
       file: "testdata/fields/invalid_partial.proto"
       index: 1
-      visible:
+      visible: true

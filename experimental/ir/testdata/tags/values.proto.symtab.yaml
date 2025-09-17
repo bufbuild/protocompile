@@ -6,170 +6,170 @@ tables:
       kind: KIND_ENUM
       file: "testdata/tags/values.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Aliased"
       kind: KIND_ENUM
       file: "testdata/tags/values.proto"
       index: 2
-      visible:
-      options.message.fields: { "allow_alias": { bool: } }
+      visible: true
+      options.message.fields: { "allow_alias": { bool: true } }
     - fqn: "test.UNKNOWN"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.X"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Y"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Y2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.Z1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.Z2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 6
-      visible:
+      visible: true
     - fqn: "test.Z3"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 7
-      visible:
+      visible: true
     - fqn: "test.Z4"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 8
-      visible:
+      visible: true
     - fqn: "test.Z5"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 9
-      visible:
+      visible: true
     - fqn: "test.Z6"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 10
-      visible:
+      visible: true
     - fqn: "test.F1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 11
-      visible:
+      visible: true
     - fqn: "test.F2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 12
-      visible:
+      visible: true
     - fqn: "test.F3"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 13
-      visible:
+      visible: true
     - fqn: "test.F4"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 14
-      visible:
+      visible: true
     - fqn: "test.F5"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 15
-      visible:
+      visible: true
     - fqn: "test.F6"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 16
-      visible:
+      visible: true
     - fqn: "test.B1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 17
-      visible:
+      visible: true
     - fqn: "test.B2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 18
-      visible:
+      visible: true
     - fqn: "test.B3"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 19
-      visible:
+      visible: true
     - fqn: "test.S1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 20
-      visible:
+      visible: true
     - fqn: "test.S2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 21
-      visible:
+      visible: true
     - fqn: "test.S3"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 22
-      visible:
+      visible: true
     - fqn: "test.S4"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 23
-      visible:
+      visible: true
     - fqn: "test.M1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 24
-      visible:
+      visible: true
     - fqn: "test.M2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 25
-      visible:
+      visible: true
     - fqn: "test.M3"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 26
-      visible:
+      visible: true
     - fqn: "test.M4"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 27
-      visible:
+      visible: true
     - fqn: "test.M5"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 28
-      visible:
+      visible: true
     - fqn: "test.E1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 29
-      visible:
+      visible: true
     - fqn: "test.E2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 30
-      visible:
+      visible: true
     - fqn: "test.X1"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 31
-      visible:
+      visible: true
     - fqn: "test.X2"
       kind: KIND_ENUM_VALUE
       file: "testdata/tags/values.proto"
       index: 32
-      visible:
+      visible: true

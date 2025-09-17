@@ -1,6 +1,6 @@
 tables:
   "testdata/options/values/string.proto":
-    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -9,22 +9,22 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/options/values/string.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.s"
       kind: KIND_FIELD
       file: "testdata/options/values/string.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.b"
       kind: KIND_FIELD
       file: "testdata/options/values/string.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "buf.test.x"
       kind: KIND_EXTENSION
       file: "testdata/options/values/string.proto"
       index: 3
-      visible:
+      visible: true
     options.message.extns:
       "buf.test.x":
         message.fields:
