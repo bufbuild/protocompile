@@ -291,7 +291,11 @@ func (e *evaluator) evalKey(args evalArgs, expr ast.ExprField) Member {
 	mapFieldHelp := func(d *report.Diagnostic) {
 		if !ty.MapField().IsZero() {
 			d.Apply(
-				// TODO: Generate a suggestion.
+				// TODO: Generate a suggestion. It would be nice to tell the
+				// user to replace `k: v` with `{ key: k, value: v }`. Doing so
+				// for general expressions is unfortunately quite tricky, in
+				// particular because {k1: v1, k2: v2} needs to turn into
+				// [{key: k1, value: v1}, {key: k2, value: v2}].
 				report.Helpf(
 					"the text format lacks syntax for map-typed fields; instead, the syntax "+
 						"is the same as for a repeated message whose fields are named `key` and `value`",
@@ -353,8 +357,6 @@ again:
 		if lit.Kind() == token.Number {
 			n, ok := lit.AsInt()
 			if ok && n < math.MaxInt32 {
-				// TODO: There is a dependency issue that needs to
-
 				member = ty.MemberByNumber(int32(n))
 				if !member.IsZero() {
 					isNumber = true

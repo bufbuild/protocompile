@@ -77,7 +77,7 @@ func generateMapEntries(f File, r *report.Report) {
 			parent.raw.nested = append(parent.raw.nested, raw)
 			c.types = append(c.types, raw)
 
-			// Construct the fields and att them to ty.
+			// Construct the fields and attach them to ty.
 			makeField := func(name string, number int32) {
 				fqn := fqn.Append(name)
 
