@@ -1427,25 +1427,25 @@ protodefault:
 		protoDollar = protoS[protopt-3 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[3].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, nil, nil, toStringValueNode(protoDollar[2].str), semi), extra...)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNodeWithModifier(protoDollar[1].id.ToKeyword(), nil, toStringValueNode(protoDollar[2].str), semi), extra...)
 		}
 	case 27:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, protoDollar[2].id.ToKeyword(), nil, toStringValueNode(protoDollar[3].str), semi), extra...)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNodeWithModifier(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), toStringValueNode(protoDollar[3].str), semi), extra...)
 		}
 	case 28:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), nil, nil, toStringValueNode(protoDollar[3].str), semi), extra...)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNodeWithModifier(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), toStringValueNode(protoDollar[3].str), semi), extra...)
 		}
 	case 29:
 		protoDollar = protoS[protopt-4 : protopt+1]
 		{
 			semi, extra := protolex.(*protoLex).requireSemicolon(protoDollar[4].bs)
-			protoVAL.imprt = newNodeWithRunes(ast.NewImportNode(protoDollar[1].id.ToKeyword(), nil, nil, protoDollar[2].id.ToKeyword(), toStringValueNode(protoDollar[3].str), semi), extra...)
+			protoVAL.imprt = newNodeWithRunes(ast.NewImportNodeWithModifier(protoDollar[1].id.ToKeyword(), protoDollar[2].id.ToKeyword(), toStringValueNode(protoDollar[3].str), semi), extra...)
 		}
 	case 30:
 		protoDollar = protoS[protopt-3 : protopt+1]

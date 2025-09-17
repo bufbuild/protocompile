@@ -109,8 +109,8 @@ func validateImports(res *result, handler *reporter.Handler) error {
 		info := fileNode.NodeInfo(decl)
 		name := imp.Name.AsString()
 		// check if "import option" syntax is used and supported
-		if imp.Option != nil && !supportsImportOption {
-			optionInfo := fileNode.NodeInfo(imp.Option)
+		if imp.Modifier != nil && imp.Modifier.Val == "option" && !supportsImportOption {
+			optionInfo := fileNode.NodeInfo(imp.Modifier)
 			return handler.HandleErrorf(optionInfo, "import option syntax is only allowed in edition 2024")
 		}
 		if prev, ok := imports[name]; ok {
