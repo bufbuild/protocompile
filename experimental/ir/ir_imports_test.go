@@ -121,7 +121,7 @@ func buildFile(
 		table.AddDirect(imp)
 	}
 	table.Recurse(dedup)
-	table.Insert(ir.Import{File: ir.File{}, Decl: ast.DeclImport{}}, -1, false) // Dummy descriptor.proto.
+	table.Insert(ir.Import{}, -1, false) // Dummy descriptor.proto.
 
 	return file
 }

@@ -63,7 +63,7 @@ type imports struct {
 	//
 	// The last element of this slice is always descriptor.proto, even if it
 	// exists elsewhere as an ordinary import.
-	files []imprt
+	files []imported
 
 	// Which of the above files we are permitted to import from.
 	visible bitset.BitSet
@@ -103,8 +103,8 @@ type imports struct {
 	publicEnd, weakEnd, importEnd, transPublicEnd uint32
 }
 
-// imprt wraps an imported [File] and the import statement declaration [ast.DeclImport].
-type imprt struct {
+// imported wraps an imported [File] and the import statement declaration [ast.DeclImport].
+type imported struct {
 	file File
 	decl ast.DeclImport
 }
@@ -164,30 +164,30 @@ func (i *imports) Insert(imp Import, pos int, visible bool) {
 		i.byPath = make(intern.Map[uint32])
 	}
 
-	i.files = slices.Insert(i.files, pos, imprt{file: imp.File, decl: imp.Decl})
+	i.files = slices.Insert(i.files, pos, imported{file: imp.File, decl: imp.Decl})
 	i.byPath[imp.File.InternedPath()] = uint32(pos)
 	i.visible.SetTo(uint(pos), visible)
 }
 
 // DescriptorProto returns the file for descriptor.proto.
 func (i *imports) DescriptorProto() File {
-	imprt, _ := slicesx.Last(i.files)
-	return imprt.file
+	imported, _ := slicesx.Last(i.files)
+	return imported.file
 }
 
 // Directs returns an indexer over the Directs imports.
 func (i *imports) Directs() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
 		i.files[:i.importEnd],
-		func(j int, imprt imprt) Import {
+		func(j int, imported imported) Import {
 			n := uint32(j)
 			return Import{
-				File:    imprt.file,
+				File:    imported.file,
 				Public:  n < i.publicEnd,
 				Weak:    n >= i.publicEnd && n < i.weakEnd,
 				Direct:  true,
 				Visible: true,
-				Decl:    imprt.decl,
+				Decl:    imported.decl,
 			}
 		},
 	)
@@ -199,15 +199,15 @@ func (i *imports) Directs() seq.Indexer[Import] {
 func (i *imports) Transitive() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
 		i.files[:max(0, len(i.files)-1)], // Exclude the implicit descriptor.proto.
-		func(j int, imprt imprt) Import {
+		func(j int, imported imported) Import {
 			n := uint32(j)
 			return Import{
-				File: imprt.file,
+				File: imported.file,
 				Public: n < i.publicEnd ||
 					(n >= i.importEnd && n < i.transPublicEnd),
 				Direct:  n < i.importEnd,
 				Visible: i.visible.Test(uint(j)),
-				Decl:    imprt.decl,
+				Decl:    imported.decl,
 			}
 		},
 	)
