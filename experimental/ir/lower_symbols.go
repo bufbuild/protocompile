@@ -134,7 +134,7 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 				if i == 0 {
 					return f
 				}
-				return f.Context().imports.files[i-1]
+				return f.Context().imports.files[i-1].file
 			},
 		)
 	}
@@ -157,7 +157,7 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 			if i == 0 {
 				return f
 			}
-			return f.Context().imports.files[i-1]
+			return f.Context().imports.files[i-1].file
 		},
 	)
 
