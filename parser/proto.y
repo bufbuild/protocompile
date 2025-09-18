@@ -1028,6 +1028,7 @@ messageElements : messageElements messageElement {
 		$$ = $1
 	}
 
+
 messageElement : messageFieldDecl {
 		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
 	}
@@ -1248,6 +1249,9 @@ msgElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
+
 
 // excludes group, optional, required, and repeated
 extElementName : _NAME
@@ -1290,6 +1294,8 @@ extElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes reserved, option
 enumValueName : _NAME
@@ -1334,6 +1340,8 @@ enumValueName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes group, option, optional, required, and repeated
 oneofElementName : _NAME
@@ -1375,6 +1383,8 @@ oneofElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes group
 notGroupElementName : _NAME
@@ -1420,6 +1430,8 @@ notGroupElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes stream
 mtdElementName : _NAME
@@ -1465,6 +1477,8 @@ mtdElementName : _NAME
 	| _SERVICE
 	| _RPC
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 identifier : _NAME
 	| _SYNTAX
@@ -1510,5 +1524,7 @@ identifier : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 %%

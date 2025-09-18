@@ -1027,3 +1027,62 @@ func TestPathological(t *testing.T) {
 		})
 	}
 }
+
+func TestExportLocalIdentifier(t *testing.T) {
+	t.Parallel()
+	t.Run("field_names", func(t *testing.T) {
+		t.Parallel()
+		proto3Content := `syntax = "proto3";
+						  message Test {
+						    string export = 1;
+						    string local = 2;
+						  }`
+
+		errHandler := reporter.NewHandler(nil)
+		ast, err := Parse("test.proto", strings.NewReader(proto3Content), errHandler)
+		require.NoError(t, err, "Should be able to parse export/local as field names in proto3")
+
+		result, err := ResultFromAST(ast, true, errHandler)
+		require.NoError(t, err, "Should be able to create result from AST")
+
+		fd := result.FileDescriptorProto()
+		assert.Equal(t, "proto3", fd.GetSyntax())
+		require.Len(t, fd.GetMessageType(), 1)
+
+		msg := fd.GetMessageType()[0]
+		require.Equal(t, "Test", msg.GetName())
+		require.Len(t, msg.GetField(), 2)
+
+		fields := msg.GetField()
+		require.Equal(t, "export", fields[0].GetName())
+		require.Equal(t, "local", fields[1].GetName())
+	})
+	t.Run("type_names", func(t *testing.T) {
+		t.Parallel()
+		proto2Content := `syntax = "proto2";
+						  message Test {
+						    optional export.Message field1 = 1;
+						    optional local.Message field2 = 2;
+						  }`
+
+		errHandler := reporter.NewHandler(nil)
+		ast, err := Parse("test.proto", strings.NewReader(proto2Content), errHandler)
+		require.NoError(t, err, "Should be able to parse export/local as type names in proto2")
+
+		result, err := ResultFromAST(ast, true, errHandler)
+		require.NoError(t, err, "Should be able to create result from AST")
+
+		fd := result.FileDescriptorProto()
+		require.Len(t, fd.GetMessageType(), 1)
+
+		msg := fd.GetMessageType()[0]
+		require.Equal(t, "Test", msg.GetName())
+		require.Len(t, msg.GetField(), 2)
+
+		fields := msg.GetField()
+		require.Equal(t, "field1", fields[0].GetName())
+		require.Equal(t, "export.Message", fields[0].GetTypeName())
+		require.Equal(t, "field2", fields[1].GetName())
+		require.Equal(t, "local.Message", fields[1].GetTypeName())
+	})
+}

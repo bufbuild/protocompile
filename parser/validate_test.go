@@ -1149,6 +1149,68 @@ func TestBasicValidation(t *testing.T) {
 					   }`,
 			expectedErr: `test.proto:3:46: local keyword is only allowed in edition 2024`,
 		},
+		"failure_edition_2024_export_as_type": {
+			contents: `edition = "2024";
+					   package export;
+					   message Message {
+					     export.Message field = 1;
+					   }`,
+			// TODO: Protoc edition 2024 will error on resvered visibility keyword "export".
+			// Since protocompile does not support 2024, we instead error on the edition value.
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"failure_edition_2024_local_as_type": {
+			contents: `edition = "2024";
+					   package local;
+					   message Message {
+					     local.Message field = 1;
+					   }`,
+			// TODO: Protoc edition 2024 will error on resvered visibility keyword "export".
+			// Since protocompile does not support 2024, we instead error on the edition value.
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"success_proto3_export_local_as_field_names": {
+			contents: `syntax = "proto3";
+					   message Test {
+					     string export = 1;
+					     string local = 2;
+					   }`,
+		},
+		"success_proto2_export_local_as_field_names": {
+			contents: `syntax = "proto2";
+					   message Test {
+					     optional string export = 1;
+					     optional string local = 2;
+					   }`,
+		},
+		"success_edition_2023_export_local_as_field_names": {
+			contents: `edition = "2023";
+					   message Test {
+					     string export = 1;
+					     string local = 2;
+					   }`,
+		},
+		"success_proto3_local_as_type_names": {
+			contents: `syntax = "proto3";
+					   package local;
+					   message Message {
+					     local.Message field = 1;
+					   }`,
+		},
+		"success_proto2_export_as_type_names": {
+			contents: `syntax = "proto2";
+					   package export;
+					   message Message {
+					     optional export.Message field = 1;
+					   }`,
+		},
+		"success_edition_2023_export_local_as_type_names": {
+			contents: `edition = "2023";
+					   package local;
+					   message Message {
+					     local.Message field = 1;
+					   }`,
+		},
 	}
 
 	for name, tc := range testCases {
