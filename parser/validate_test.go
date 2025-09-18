@@ -1190,25 +1190,25 @@ func TestBasicValidation(t *testing.T) {
 					     string local = 2;
 					   }`,
 		},
-		"success_proto3_local_as_type_names": {
+		"success_proto3_export_local_as_type_names": {
 			contents: `syntax = "proto3";
 					   package local;
-					   message Message {
-					     local.Message field = 1;
+					   message export {
+					     local.export field = 1;
 					   }`,
 		},
-		"success_proto2_export_as_type_names": {
+		"success_proto2_export_local_as_type_names": {
 			contents: `syntax = "proto2";
 					   package export;
-					   message Message {
-					     optional export.Message field = 1;
+					   message local {
+					     optional export.local field = 1;
 					   }`,
 		},
 		"success_edition_2023_export_local_as_type_names": {
 			contents: `edition = "2023";
 					   package local;
-					   message Message {
-					     local.Message field = 1;
+					   message export {
+					     local.export field = 1;
 					   }`,
 		},
 	}

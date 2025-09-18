@@ -271,12 +271,11 @@ type ImportNode struct {
 	Semicolon *RuneNode
 }
 
-// NewImportNode creates a new *ImportNode. The public, weak, and option arguments are optional and
-// only one may be specified, not multiple. When public is non-nil, it indicates the "public"
-// keyword in the import statement and means this is a public import. When weak is non-nil, it
-// indicates the "weak" keyword in the import statement and means this is a weak import. When option
-// is non-nil, it indicates the "option" keyword in the import statement and means this is an option
-// import (for edition 2024).
+// NewImportNode creates a new *ImportNode. The public and weak arguments are optional
+// and only one or the other (or neither) may be specified, not both. When public is
+// non-nil, it indicates the "public" keyword in the import statement and means this is
+// a public import. When weak is non-nil, it indicates the "weak" keyword in the import
+// statement and means this is a weak import. When both are nil, this is a normal import.
 // The other arguments must be non-nil:
 //   - keyword: The token corresponding to the "import" keyword.
 //   - public: The token corresponding to the optional "public" keyword.
@@ -296,7 +295,7 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 
 // NewImportNodeWithModifier creates a new *ImportNode with a single modifier argument.
 // The modifier argument is optional and represents either "public", "weak", or "option" keyword.
-// For backwards compatibility, the appropriate Public, Weak, or Option field will be populated.
+// For backwards compatibility, the appropriate Public or Weak field will be populated.
 //   - keyword: The token corresponding to the "import" keyword.
 //   - modifier: Optional modifier token ("public", "weak", or "option").
 //   - name: The actual imported file name.
