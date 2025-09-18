@@ -656,6 +656,12 @@ typeName : qualifiedIdentifierDot {
 msgElementTypeIdent : msgElementIdent {
 		$$ = $1.toIdentValueNode(nil)
 	}
+	| _EXPORT '.' msgElementIdent {
+		$$ = $3.toIdentValueNode(nil)
+    }
+	|  _LOCAL '.' msgElementIdent {
+		$$ = $3.toIdentValueNode(nil)
+	}
 	| '.' qualifiedIdentifier {
 		$$ = $2.toIdentValueNode($1)
 	}
@@ -1249,8 +1255,6 @@ msgElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
-	| _EXPORT
-	| _LOCAL
 
 
 // excludes group, optional, required, and repeated
