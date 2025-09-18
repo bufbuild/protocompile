@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	pcinternal "github.com/bufbuild/protocompile/internal"
 )
 
 // generateMapEntries generates map entry types for all map-typed fields.
@@ -45,7 +46,7 @@ func generateMapEntries(f File, r *report.Report) {
 				continue // Legalized in the parser.
 			}
 
-			name := toPascal(field.Name(), true) + "Entry"
+			name := pcinternal.MapEntry(field.Name())
 			fqn := parent.FullName().Append(name)
 
 			// Set option map_entry = true;

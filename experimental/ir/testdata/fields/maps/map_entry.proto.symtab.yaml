@@ -12,9 +12,16 @@ tables:
       visible:
       options.message:
         fields: { "map_entry": { bool: } }
-        extns: { "test.options": { message.fields: { "map_entry": { bool: } } } }
+        extns:
+          "test.map_entry": { i32: 42 }
+          "test.options": { message.fields: { "map_entry": { bool: } } }
     - fqn: "test.options"
       kind: KIND_EXTENSION
       file: "testdata/fields/maps/map_entry.proto"
       index: 1
+      visible:
+    - fqn: "test.map_entry"
+      kind: KIND_EXTENSION
+      file: "testdata/fields/maps/map_entry.proto"
+      index: 2
       visible:

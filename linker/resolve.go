@@ -463,7 +463,7 @@ func isValidMap(mapField protoreflect.FieldDescriptor, mapEntry protoreflect.Mes
 	return !mapField.IsExtension() &&
 		mapEntry.Parent() == mapField.ContainingMessage() &&
 		mapField.Cardinality() == protoreflect.Repeated &&
-		string(mapEntry.Name()) == internal.InitCap(internal.JSONName(string(mapField.Name())))+"Entry"
+		string(mapEntry.Name()) == internal.MapEntry(string(mapField.Name()))
 }
 
 func resolveMethodTypes(m *mtdDescriptor, handler *reporter.Handler, scopes []scope, checkedCache []string) error {

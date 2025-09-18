@@ -257,6 +257,8 @@ func (r optionRef) resolve() {
 			}
 		}
 
+		// TODO: Forbid any of the uninterpreted_option options from being set,
+		// and any of the features options from being set if not in editions mode.
 		if pc.IsFirst() && field.InternedFullName() == r.session.langIDs.MapEntry {
 			r.Errorf("`map_entry` cannot be set explicitly").Apply(
 				report.Snippet(pc),

@@ -17,7 +17,6 @@ package ir
 import (
 	"slices"
 	"strings"
-	"unicode"
 
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
@@ -112,23 +111,4 @@ func (n FullName) appendToBytes(b []byte, names ...string) []byte {
 	}
 
 	return b
-}
-
-// toPascal converts a string to PascalCase, according to the wonky algorithm
-// specified at https://protobuf.com/docs/language-spec#default-json-names.
-func toPascal(snake string, leadingUppercase bool) string {
-	var buf strings.Builder
-	uppercase := leadingUppercase
-	for _, r := range snake {
-		if r == '_' {
-			uppercase = true
-			continue
-		}
-		if uppercase {
-			r = unicode.ToUpper(r)
-			uppercase = false
-		}
-		buf.WriteRune(r)
-	}
-	return buf.String()
 }

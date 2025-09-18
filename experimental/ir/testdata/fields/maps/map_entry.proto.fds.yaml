@@ -10,4 +10,9 @@ file:
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.MessageOptions"
     extendee: ".google.protobuf.MessageOptions"
+  - name: "map_entry"
+    number: 10001
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+    extendee: ".google.protobuf.MessageOptions"
   syntax: "proto3"
