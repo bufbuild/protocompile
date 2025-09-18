@@ -17,5 +17,18 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
-  options: {}
+  options.$unknown: |
+    1000: {
+      1: {
+        `00010203ffffffffffffffffff01feffffffffffffffff01fdffffffffffffffff01fcffffffffff`
+        `ffffff01ffffffffffffffff7f80808080808080808001`
+      }
+      2: {`0002040601030507feffffffffffffffff01ffffffffffffffffff01`}
+      3: {
+        `0000000000000000010000000000000002000000000000000300000000000000ffffffffffffffff`
+        `fefffffffffffffffdfffffffffffffffcffffffffffffffffffffffffffff7f0000000000000080`
+      }
+      11: {`00010203ffffffffffffffffff01`}
+      12: {`0000000000000000010000000000000002000000000000000300000000000000ffffffffffffffff`}
+    }
   syntax: "proto2"

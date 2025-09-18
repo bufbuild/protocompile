@@ -35,5 +35,19 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".buf.test.Foo"
-  options: {}
+  options.$unknown: |
+    1000: {
+      2: {}
+      2: {}
+      1: {
+        1: {
+          1: {}
+          2: {}
+          2: {}
+        }
+        1001: {}
+        1001: {}
+      }
+      1000: {1: {1000: {}}}
+    }
   syntax: "proto2"

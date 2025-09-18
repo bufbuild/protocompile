@@ -9,12 +9,12 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.Foo"
-      options: {}
+      options.lazy: true
     - { name: "bar", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    options: {}
+    options.deprecated: true
   enum_type:
   - name: "Bar"
-    value: [{ name: "BAR_ZERO", number: 0, options: {} }]
-    options: {}
-  options: {}
+    value: [{ name: "BAR_ZERO", number: 0, options.deprecated: true }]
+    options.deprecated: true
+  options: { java_package: "build.buf.protocompile", java_multiple_files: true }
   syntax: "proto2"

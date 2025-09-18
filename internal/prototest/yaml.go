@@ -18,12 +18,14 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
+	"github.com/protocolbuffers/protoscope"
 )
 
 // ToYAMLOptions contains configuration for [ToYAML].
@@ -83,6 +85,15 @@ func (y ToYAMLOptions) message(m protoreflect.Message) *doc {
 			y.value(m.Get(f), f),
 		)
 	}
+
+	unknown := m.GetUnknown()
+	if len(unknown) > 0 {
+		d.pairs = append(d.pairs, [2]any{
+			protoreflect.Name("$unknown"),
+			protoscopeString(protoscope.Write(unknown, protoscope.WriterOptions{})),
+		})
+	}
+
 	return d
 }
 
@@ -168,11 +179,31 @@ type renderArgs struct {
 	inList bool
 }
 
+type protoscopeString string
+
 func (d *doc) render(args renderArgs, push dom.Sink) {
 	value := func(args renderArgs, v any, push dom.Sink) {
 		switch v := v.(type) {
+		case protoscopeString:
+			{
+				v := strings.TrimSpace(string(v))
+				if strings.Contains(v, "\n") {
+					push(
+						dom.Text("|"), dom.Text("\n"),
+						dom.Indent(args.Indent, func(push dom.Sink) {
+							for chunk := range strings.SplitSeq(v, "\n") {
+								push(dom.Text(chunk), dom.Text("\n"))
+							}
+						}),
+					)
+				} else {
+					push(dom.Text(strconv.Quote(v)))
+				}
+			}
 		case string:
 			push(dom.Text(strconv.Quote(v)))
+		case []byte:
+			push(dom.Text(strconv.Quote(string(v))))
 		case *doc:
 			v.render(args, push)
 		default:

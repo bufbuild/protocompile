@@ -15,8 +15,10 @@
 package ir
 
 import (
+	"cmp"
 	"iter"
 	"math"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -28,6 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // Value is an evaluated expression, corresponding to an option in a Protobuf
@@ -246,6 +249,120 @@ func (v Value) slice() *[]rawValueBits {
 	return slice
 }
 
+// Marshal converts this value into a wire format record and appends it to buf.
+//
+// If r is not nil, it will be used to record diagnostics generated during the
+// marshal operation.
+func (v Value) Marshal(buf []byte, r *report.Report) []byte {
+	var ranges [][2]int
+	buf, _ = v.marshal(buf, r, &ranges)
+	return deleteRanges(buf, ranges)
+}
+
+// marshal is the recursive part of [Value.Marshal].
+//
+// See marshalFramed for the meanings of ranges and the int return value.
+func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, int) {
+	if r != nil {
+		defer r.AnnotateICE(report.Snippetf(v.AST(), "while marshalling this value"))
+	}
+
+	scalar := v.Field().Element().Predeclared()
+	if v.Field().Presence() == presence.Repeated && v.Elements().Len() > 1 {
+		// Packed fields.
+		switch {
+		case scalar.IsVarint(), v.Field().Element().IsEnum():
+			var bytes int
+			for v := range seq.Values(v.Elements()) {
+				bits := uint64(v.bits)
+				if scalar.IsZigZag() {
+					bits = protowire.EncodeZigZag(int64(bits))
+				}
+				bytes += protowire.SizeVarint(bits)
+			}
+
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.BytesType)
+			buf = protowire.AppendVarint(buf, uint64(bytes))
+			for v := range seq.Values(v.Elements()) {
+				bits := uint64(v.bits)
+				if scalar.IsZigZag() {
+					bits = protowire.EncodeZigZag(int64(bits))
+				}
+				buf = protowire.AppendVarint(buf, bits)
+			}
+			return buf, 0
+
+		case scalar.IsFixed():
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.BytesType)
+			buf = protowire.AppendVarint(buf, uint64(v.Elements().Len()*scalar.Bits()/8))
+
+			for v := range seq.Values(v.Elements()) {
+				bits := uint64(v.bits)
+				switch {
+				case scalar == predeclared.Float32:
+					f64, _ := v.AsFloat()
+					f32 := math.Float32bits(float32(f64))
+					buf = protowire.AppendFixed32(buf, f32)
+				case scalar.Bits() == 32:
+					buf = protowire.AppendFixed32(buf, uint32(bits))
+				default:
+					buf = protowire.AppendFixed64(buf, bits)
+				}
+			}
+			return buf, 0
+		}
+	}
+
+	var n int
+	for v := range seq.Values(v.Elements()) {
+		switch {
+		case scalar.IsVarint(), v.Field().Element().IsEnum():
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.VarintType)
+			bits := uint64(v.bits)
+			if scalar.IsZigZag() {
+				bits = protowire.EncodeZigZag(int64(bits))
+			}
+			buf = protowire.AppendVarint(buf, bits)
+		case scalar == predeclared.Float32:
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.Fixed32Type)
+			f64, _ := v.AsFloat()
+			f32 := math.Float32bits(float32(f64))
+			buf = protowire.AppendFixed32(buf, f32)
+		case scalar.IsFixed() && scalar.Bits() == 32:
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.Fixed32Type)
+			buf = protowire.AppendFixed32(buf, uint32(v.bits))
+		case scalar.IsFixed():
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.Fixed64Type)
+			buf = protowire.AppendFixed64(buf, uint64(v.bits))
+		case scalar.IsString():
+			s, _ := v.AsString()
+
+			buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.BytesType)
+			buf = protowire.AppendVarint(buf, uint64(len(s)))
+			buf = append(buf, s...)
+
+		default: // Message type.
+			m := v.AsMessage()
+
+			var k int
+			var group bool // TODO: v.Field().IsGroup()
+			if group {
+				buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.StartGroupType)
+				buf, k = m.marshal(buf, r, ranges)
+				buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.EndGroupType)
+			} else {
+				buf = protowire.AppendTag(buf, protowire.Number(v.Field().Number()), protowire.BytesType)
+				buf, k = marshalFramed(buf, r, ranges, func(buf []byte) ([]byte, int) {
+					return m.marshal(buf, r, ranges)
+				})
+			}
+			n += k
+		}
+	}
+
+	return buf, n
+}
+
 func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {
 	if c == nil || p.Nil() {
 		return Value{}
@@ -443,6 +560,104 @@ func (v MessageValue) Fields() iter.Seq[Value] {
 			}
 		}
 	}
+}
+
+// Marshal serializes this message as wire format and appends it to buf.
+//
+// If r is not nil, it will be used to record diagnostics generated during the
+// marshal operation.
+func (v MessageValue) Marshal(buf []byte, r *report.Report) []byte {
+	var ranges [][2]int
+	buf, _ = v.marshal(buf, r, &ranges)
+	return deleteRanges(buf, ranges)
+}
+
+// marshal is the recursive part of [MessageValue.Marshal].
+//
+// See marshalFramed for the meanings of ranges and the int return value.
+func (v MessageValue) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, int) {
+	if v.IsZero() {
+		return buf, 0
+	}
+
+	if m := v.Concrete(); m != v { // Manual handling for Any.
+		url := m.TypeURL()
+		buf = protowire.AppendTag(buf, 1, protowire.BytesType)
+		buf = protowire.AppendVarint(buf, uint64(len(url)))
+		buf = append(buf, url...)
+
+		buf = protowire.AppendTag(buf, 2, protowire.BytesType)
+		return marshalFramed(buf, r, ranges, func(buf []byte) ([]byte, int) {
+			return m.marshal(buf, r, ranges)
+		})
+	}
+
+	var n int
+	for v := range v.Fields() {
+		var k int
+		buf, k = v.marshal(buf, r, ranges)
+		n += k
+	}
+	return buf, n
+}
+
+// marshalFramed marshals arbitrary data, as appended by body, with a leading
+// length prefix.
+//
+// The body function must return the number of bytes that it marked as "extra",
+// by appending them to ranges. This allows the length prefix to be correct
+// after accounting for deletions in deleteRanges. This allows us to marshal
+// minimal length prefixes without quadratic time copying buffers around.
+func marshalFramed(buf []byte, r *report.Report, ranges *[][2]int, body func([]byte) ([]byte, int)) ([]byte, int) {
+	// To avoid being accidentally quadratic, we encode every message
+	// length with five bytes.
+	mark := len(buf)
+	buf = append(buf, make([]byte, 5)...)
+	var n int
+	buf, n = body(buf)
+	bytes := len(buf) - (mark + 5) - n
+	if bytes > math.MaxUint32 {
+		// This is not reachable today, because input files may be
+		// no larger than 4GB. However, that may change at some point,
+		// so keeping an ICE around is better than potentially getting
+		// corrupt output later.
+		//
+		// Later, this should probably become a diagnostic.
+		panic("protocompile/ir: marshalling options value overflowed length prefixes")
+	}
+
+	varint := protowire.AppendVarint(buf[mark:mark], uint64(bytes))
+	if k := len(varint); k < 5 {
+		*ranges = append(*ranges, [2]int{mark + k, mark + 5})
+	}
+	return buf, n + 5 - len(varint)
+}
+
+// deleteRanges deletes the given ranges from a byte array.
+func deleteRanges(buf []byte, ranges [][2]int) []byte {
+	if len(ranges) == 0 {
+		return buf
+	}
+
+	slices.SortFunc(ranges, func(a, b [2]int) int {
+		return cmp.Compare(a[0], b[0])
+	})
+
+	offset := 0
+	for i, r1 := range ranges[:len(ranges)-1] {
+		r2 := ranges[i+1]
+		// Need to delete the interval between r1[0] and r1[1]. We do this
+		// by copying r1[1]..r2[0] to r1[0]..
+		copy(buf[r1[0]-offset:], buf[r1[1]:r2[0]])
+		offset += r1[1] - r1[0]
+	}
+	// Need to delete the last interval. To do this, we do what we did above,
+	// but where r2[0] is the end limit.
+	r1 := ranges[len(ranges)-1]
+	copy(buf[r1[0]-offset:], buf[r1[1]:])
+	offset += r1[1] - r1[0]
+
+	return buf[:len(buf)-offset]
 }
 
 // insert adds a new field to this message value, returning a pointer to the
