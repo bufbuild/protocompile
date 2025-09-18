@@ -659,11 +659,11 @@ msgElementTypeIdent : msgElementIdent {
 	// We have to carve out productions for names that start with
 	// 'export' or 'local' to avoid shift/reduce conflicts in the
 	// generated parser.
-	| _EXPORT '.' msgElementIdent {
+	| _EXPORT '.' qualifiedIdentifier {
 		$3.prefix($1, $2)
 		$$ = $3.toIdentValueNode(nil)
     }
-	|  _LOCAL '.' msgElementIdent {
+	|  _LOCAL '.' qualifiedIdentifier {
 		$3.prefix($1, $2)
 		$$ = $3.toIdentValueNode(nil)
 	}
