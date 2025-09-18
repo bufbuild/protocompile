@@ -855,6 +855,42 @@ func TestSimpleParse(t *testing.T) {
 	protos[fd.GetName()] = res
 }
 
+func TestExportLocalInIdentifiers(t *testing.T) {
+	t.Parallel()
+	// Verifies that for non-edition-2024 sources, we can correctly
+	// handle cases where "export" or "local" appear in the type name.
+	// This is done to verify that the grammar changes to support
+	// decl visibility don't add back-compat issues with how these
+	// keywords could be used in prior editions/syntaxes.
+	source := `
+		syntax = "proto3";
+		message Message {
+			export enum = 1;
+			export.foo exp_foo = 2;
+			local message = 3;
+			local.bar loc_bar = 4;
+        }
+		message export {
+			message foo {}
+		}
+		message local {
+			message bar {}
+		}`
+	ast, err := Parse("test.proto", strings.NewReader(source), reporter.NewHandler(nil))
+	require.NoError(t, err)
+	res, err := ResultFromAST(ast, true, reporter.NewHandler(nil))
+	require.NoError(t, err)
+	msgProto := res.FileDescriptorProto().GetMessageType()[0]
+	assert.Equal(t, "export", msgProto.GetField()[0].GetTypeName())
+	assert.Equal(t, "enum", msgProto.GetField()[0].GetName())
+	assert.Equal(t, "export.foo", msgProto.GetField()[1].GetTypeName())
+	assert.Equal(t, "exp_foo", msgProto.GetField()[1].GetName())
+	assert.Equal(t, "local", msgProto.GetField()[2].GetTypeName())
+	assert.Equal(t, "message", msgProto.GetField()[2].GetName())
+	assert.Equal(t, "local.bar", msgProto.GetField()[3].GetTypeName())
+	assert.Equal(t, "loc_bar", msgProto.GetField()[3].GetName())
+}
+
 func parseFileForTest(filename string) (Result, error) {
 	f, err := os.Open(filename)
 	if err != nil {
