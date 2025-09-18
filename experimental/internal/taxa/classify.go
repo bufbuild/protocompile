@@ -94,20 +94,7 @@ func Classify(node report.Spanner) Noun {
 	case ast.DeclPackage:
 		return Package
 	case ast.DeclImport:
-		mods := node.Modifiers()
-		if mods.Len() == 0 {
-			return Import
-		}
-		switch mods.At(0) {
-		case keyword.Weak:
-			return WeakImport
-		case keyword.Public:
-			return PublicImport
-		case keyword.Option:
-			return OptionImport
-		default:
-			return Import
-		}
+		return Import
 	case ast.DeclRange:
 		if node.IsExtensions() {
 			return Extensions

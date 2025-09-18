@@ -111,26 +111,33 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	}
 
 	for mod := range def.Prefixes() {
-		switch what {
-		case taxa.Message, taxa.Enum:
-			switch mod.Prefix() {
-			case keyword.Export, keyword.Local:
-				p.Error(errRequiresEdition{
-					edition: syntax.Edition2024,
-					node:    mod.PrefixToken(),
-					decl:    p.syntaxNode,
+		isType := what == taxa.Message || what == taxa.Enum
 
-					unimplemented: p.syntax >= syntax.Edition2024,
-				})
-			}
+		if isType && mod.Prefix().IsTypeModifier() {
+			p.Error(errRequiresEdition{
+				edition: syntax.Edition2024,
+				node:    mod.PrefixToken(),
+				decl:    p.syntaxNode,
+
+				unimplemented: p.syntax >= syntax.Edition2024,
+			})
 			continue
 		}
 
-		p.Error(errUnexpectedMod{
-			mod:    mod,
-			where:  what.On(),
-			syntax: p.syntax,
+		suggestExport := isType && mod.Prefix() == keyword.Public
+		d := p.Error(errUnexpectedMod{
+			mod:      mod.PrefixToken(),
+			where:    what.On(),
+			syntax:   p.syntax,
+			noDelete: suggestExport,
 		})
+
+		if suggestExport {
+			d.Apply(report.SuggestEdits(mod, "replace with `export`", report.Edit{
+				Start: 0, End: mod.Span().Len(),
+				Replace: "export",
+			}))
+		}
 	}
 
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
@@ -315,7 +322,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 
 	for mod := range def.Prefixes() {
 		p.Error(errUnexpectedMod{
-			mod:    mod,
+			mod:    mod.PrefixToken(),
 			where:  taxa.Method.On(),
 			syntax: p.syntax,
 		})

@@ -18,6 +18,7 @@ package test;
 
 optional message Foo {
     optional option x = 1;
+    option option y = 2;
     optional group foo = 10 {}
     stream group foo = 10 {}
 
@@ -27,13 +28,13 @@ optional message Foo {
         int32 k = 2;
     }
 }
-repeated enum Bar {}
+public enum Bar {}
 
 stream extend Foo {
-    optional int32 z = 5;
+    weak int32 z = 5;
 }
 
-required repeated service Baz {
+required weak service Baz {
     stream rpc X(Foo) returns (stream Bar);
 }
 

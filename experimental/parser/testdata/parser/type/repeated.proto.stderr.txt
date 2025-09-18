@@ -1,3 +1,29 @@
+error: multiple modifiers on message field type
+  --> testdata/parser/type/repeated.proto:20:14
+   |
+20 |     optional optional M x1 = 1;
+   |     -------- ^^^^^^^^
+   |     |
+   |     previous one is here
+  help: delete it
+   |
+20 | -     optional optional M x1 = 1;
+20 | +     optional M x1 = 1;
+   |
+
+error: multiple modifiers on message field type
+  --> testdata/parser/type/repeated.proto:21:14
+   |
+21 |     repeated optional M x2 = 2;
+   |     -------- ^^^^^^^^
+   |     |
+   |     previous one is here
+  help: delete it
+   |
+21 | -     repeated optional M x2 = 2;
+21 | +     repeated M x2 = 2;
+   |
+
 warning: required fields are deprecated and should not be used
   --> testdata/parser/type/repeated.proto:22:5
    |
@@ -6,17 +32,44 @@ warning: required fields are deprecated and should not be used
    = help: do not attempt to change this to optional if the field is already
            in-use; doing so is a wire protocol break
 
-error: unexpected `stream` modifier on message field
+error: multiple modifiers on message field type
+  --> testdata/parser/type/repeated.proto:22:14
+   |
+22 |     required optional M x3 = 3;
+   |     -------- ^^^^^^^^
+   |     |
+   |     previous one is here
+  help: delete it
+   |
+22 | -     required optional M x3 = 3;
+22 | +     required M x3 = 3;
+   |
+
+error: multiple modifiers on message field type
+  --> testdata/parser/type/repeated.proto:23:14
+   |
+23 |     repeated repeated M x4 = 4;
+   |     -------- ^^^^^^^^
+   |     |
+   |     previous one is here
+  help: delete it
+   |
+23 | -     repeated repeated M x4 = 4;
+23 | +     repeated M x4 = 4;
+   |
+
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:24:14
    |
 24 |     repeated stream M x5 = 5;
-   |              ^^^^^^
+   |     -------- ^^^^^^
+   |     |
+   |     previous one is here
   help: delete it
    |
 24 | -     repeated stream M x5 = 5;
 24 | +     repeated M x5 = 5;
    |
-   = help: `stream` only applies to an input or output of a service method
 
 error: unexpected `stream` modifier on message field
   --> testdata/parser/type/repeated.proto:25:5
@@ -30,17 +83,18 @@ error: unexpected `stream` modifier on message field
    |
    = help: `stream` only applies to an input or output of a service method
 
-error: unexpected `stream` modifier on message field
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:25:12
    |
 25 |     stream stream M x6 = 6;
-   |            ^^^^^^
+   |     ------ ^^^^^^
+   |     |
+   |     previous one is here
   help: delete it
    |
 25 | -     stream stream M x6 = 6;
 25 | +     stream M x6 = 6;
    |
-   = help: `stream` only applies to an input or output of a service method
 
 error: unexpected `required` modifier in method signature
   --> testdata/parser/type/repeated.proto:29:12
@@ -256,4 +310,4 @@ error: unexpected `repeated` modifier in method signature
    |
    = help: `repeated` only applies to a message field
 
-encountered 22 errors and 1 warning
+encountered 26 errors and 1 warning

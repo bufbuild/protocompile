@@ -38,9 +38,6 @@ const (
 	Edition
 	Package
 	Import
-	WeakImport
-	PublicImport
-	OptionImport
 	Extensions
 	Reserved
 	Body
@@ -163,9 +160,6 @@ var _table_Noun_String = [...]string{
 	Edition:            "`edition` declaration",
 	Package:            "`package` declaration",
 	Import:             "import",
-	WeakImport:         "weak import",
-	PublicImport:       "public import",
-	OptionImport:       "option import",
 	Extensions:         "extension range",
 	Reserved:           "reserved range",
 	Body:               "definition body",
@@ -271,9 +265,6 @@ var _table_Noun_GoString = [...]string{
 	Edition:            "Edition",
 	Package:            "Package",
 	Import:             "Import",
-	WeakImport:         "WeakImport",
-	PublicImport:       "PublicImport",
-	OptionImport:       "OptionImport",
 	Extensions:         "Extensions",
 	Reserved:           "Reserved",
 	Body:               "Body",

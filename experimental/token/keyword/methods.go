@@ -30,3 +30,46 @@ func (k Keyword) OpenClose() (string, string, bool) {
 		return "", "", false
 	}
 }
+
+// IsModifier returns whether this keyword is any kind of modifier.
+func (k Keyword) IsModifier() bool {
+	return k.IsMethodTypeModifier() ||
+		k.IsTypeModifier() ||
+		k.IsImportModifier() ||
+		k.IsMethodTypeModifier()
+}
+
+// IsFieldModifier returns whether this is a modifier for a field type.
+func (k Keyword) IsFieldTypeModifier() bool {
+	switch k {
+	case Optional, Required, Repeated:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsTypeModifier returns whether this is a modifier for a type declaration.
+func (k Keyword) IsTypeModifier() bool {
+	switch k {
+	case Export, Local:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsImportModifier returns whether this is a modifier for an import declaration.
+func (k Keyword) IsImportModifier() bool {
+	switch k {
+	case Public, Weak, Option:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsMethodTypeModifier returns whether this is a modifier for a method declaration.
+func (k Keyword) IsMethodTypeModifier() bool {
+	return k == Stream
+}

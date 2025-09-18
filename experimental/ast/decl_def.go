@@ -120,7 +120,7 @@ func (d DeclDef) Keyword() keyword.Keyword {
 // See [DeclDef.Type] for details on where this keyword comes from.
 func (d DeclDef) KeywordToken() token.Token {
 	// Begin by removing all modifiers. Certain kinds of defs can have
-	// modifiers, such as groups and types. Any modifier that can have a body
+	// modifiers, such as groups and types. Any def that can have a body
 	// is permitted to have modifiers, because that is unambiguous with a field.
 	mods := false
 	ty := d.Type()
@@ -137,19 +137,21 @@ func (d DeclDef) KeywordToken() token.Token {
 	ident := path.Path.AsIdent()
 	switch ident.Keyword() {
 	case keyword.Option:
-		if mods {
-			// NOTE: Options with modifiers are treated as fields by protoc.
-			return token.Zero
+		if !mods { // NOTE: Options with modifiers are treated as fields by protoc.
+			return ident
 		}
-		fallthrough
+	case keyword.RPC:
+		if !d.Signature().IsZero() {
+			return ident
+		}
 
 	case keyword.Message, keyword.Enum, keyword.Service, keyword.Extend,
-		keyword.Oneof, keyword.Group, keyword.RPC:
-		return ident
-
-	default:
-		return token.Zero
+		keyword.Oneof, keyword.Group:
+		if !d.Body().IsZero() {
+			return ident
+		}
 	}
+	return token.Zero
 }
 
 // Prefixes returns an iterator over the modifiers on this def, expressed as
@@ -471,33 +473,19 @@ func (d DeclDef) Classify() DefKind {
 
 	switch d.Keyword() {
 	case keyword.Message:
-		if !d.Body().IsZero() {
-			return DefKindMessage
-		}
+		return DefKindMessage
 	case keyword.Enum:
-		if !d.Body().IsZero() {
-			return DefKindEnum
-		}
+		return DefKindEnum
 	case keyword.Service:
-		if !d.Body().IsZero() {
-			return DefKindService
-		}
+		return DefKindService
 	case keyword.Extend:
-		if !d.Body().IsZero() {
-			return DefKindExtend
-		}
+		return DefKindExtend
 	case keyword.Oneof:
-		if !d.Body().IsZero() {
-			return DefKindOneof
-		}
+		return DefKindOneof
 	case keyword.Group:
-		if !d.Body().IsZero() {
-			return DefKindGroup
-		}
+		return DefKindGroup
 	case keyword.RPC:
-		if !d.Signature().IsZero() {
-			return DefKindMethod
-		}
+		return DefKindMethod
 	case keyword.Option:
 		return DefKindOption
 	}

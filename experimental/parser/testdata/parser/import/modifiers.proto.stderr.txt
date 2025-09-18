@@ -1,4 +1,4 @@
-error: unexpected `weak` modifier in public import
+error: unexpected `weak` modifier in import
   --> testdata/parser/import/modifiers.proto:19:15
    |
 19 | import public weak "foo.proto";
@@ -6,7 +6,7 @@ error: unexpected `weak` modifier in public import
    | |
    | already modified here
 
-error: unexpected `option` modifier in public import
+error: unexpected `option` modifier in import
   --> testdata/parser/import/modifiers.proto:20:15
    |
 20 | import public option "foo.proto";
@@ -22,7 +22,7 @@ warning: use of `import weak`
    = help: `import weak` is deprecated and not supported correctly in most
            Protobuf implementations
 
-error: unexpected `option` modifier in weak import
+error: unexpected `option` modifier in import
   --> testdata/parser/import/modifiers.proto:21:13
    |
 21 | import weak option "foo.proto";
@@ -36,7 +36,7 @@ error: `import option` requires Edition 2024 or later
 22 | import option weak public "foo.proto";
    | ^^^^^^^^^^^^^
 
-error: unexpected `weak` modifier in option import
+error: unexpected `weak` modifier in import
   --> testdata/parser/import/modifiers.proto:22:15
    |
 22 | import option weak public "foo.proto";
@@ -44,7 +44,7 @@ error: unexpected `weak` modifier in option import
    | |
    | already modified here
 
-error: unexpected `public` modifier in option import
+error: unexpected `public` modifier in import
   --> testdata/parser/import/modifiers.proto:22:20
    |
 22 | import option weak public "foo.proto";
@@ -60,7 +60,7 @@ warning: use of `import weak`
    = help: `import weak` is deprecated and not supported correctly in most
            Protobuf implementations
 
-error: unexpected `weak` modifier in weak import
+error: unexpected `weak` modifier in import
   --> testdata/parser/import/modifiers.proto:23:13
    |
 23 | import weak weak "foo.proto";
@@ -68,4 +68,16 @@ error: unexpected `weak` modifier in weak import
    | |
    | already modified here
 
-encountered 7 errors and 2 warnings
+error: unexpected `export` modifier in import
+  --> testdata/parser/import/modifiers.proto:24:8
+   |
+24 | import export "foo.proto";
+   |        ^^^^^^
+  help: replace with `public`
+   |
+24 | - import export "foo.proto";
+24 | + import public "foo.proto";
+   |
+   = help: `export` only applies to a type definition
+
+encountered 8 errors and 2 warnings

@@ -240,7 +240,7 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 				mods = append(mods, compilerpb.Decl_Import_MODIFIER_PUBLIC)
 			case keyword.Weak:
 				mods = append(mods, compilerpb.Decl_Import_MODIFIER_WEAK)
-			default:
+			default: // Add support for keyword.Option whenever it gets added to ast.proto.
 				mods = append(mods, compilerpb.Decl_Import_MODIFIER_UNSPECIFIED)
 			}
 

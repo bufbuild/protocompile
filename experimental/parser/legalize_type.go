@@ -42,9 +42,9 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		var mod ast.TypePrefixed
 		for {
 			switch {
-			case prefixed.Prefix() != keyword.Stream:
+			case !prefixed.Prefix().IsMethodTypeModifier():
 				p.Error(errUnexpectedMod{
-					mod:    prefixed,
+					mod:    prefixed.PrefixToken(),
 					where:  taxa.Signature.In(),
 					syntax: p.syntax,
 				})
@@ -115,6 +115,22 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 
 	case ast.TypeKindPrefixed:
 		ty := ty.AsPrefixed()
+		if !mod.IsZero() {
+			p.Errorf("multiple modifiers on %v type", taxa.Field).Apply(
+				report.Snippet(ty.PrefixToken()),
+				report.Snippetf(mod.PrefixToken(), "previous one is here"),
+				justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+					justify: justifyRight,
+				}),
+			)
+			goto recurse
+		}
+
+		if mod.IsZero() {
+			mod = ty
+		}
+
 		if !oneof.IsZero() {
 			d := p.Error(errUnexpected{
 				what: ty.PrefixToken(),
@@ -133,14 +149,11 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 					taxa.Oneof))
 			}
 
-			break
+			goto recurse
 		}
 
-		switch ty.Prefix() {
+		switch k := ty.Prefix(); k {
 		case keyword.Required:
-			if ty.IsZero() {
-				mod = ty
-			}
 			switch p.syntax {
 			case syntax.Proto2:
 				p.Warnf("required fields are deprecated and should not be used").Apply(
@@ -163,9 +176,6 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			}
 
 		case keyword.Optional:
-			if ty.IsZero() {
-				mod = ty
-			}
 			if p.syntax.IsEdition() {
 				p.Error(errUnexpected{
 					what: ty.PrefixToken(),
@@ -185,18 +195,25 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			}
 
 		case keyword.Repeated:
-			if ty.IsZero() {
-				mod = ty
-			}
+			break
 
 		default:
-			p.Error(errUnexpectedMod{
-				mod:    ty,
-				where:  what.On(),
-				syntax: p.syntax,
+			d := p.Error(errUnexpectedMod{
+				mod:      ty.PrefixToken(),
+				where:    what.On(),
+				syntax:   p.syntax,
+				noDelete: k == keyword.Option,
 			})
+
+			if k == keyword.Option {
+				d.Apply(report.SuggestEdits(ty.PrefixToken(), "replace with `optional`", report.Edit{
+					Start: 0, End: ty.PrefixToken().Span().Len(),
+					Replace: "optional",
+				}))
+			}
 		}
 
+	recurse:
 		inner := ty.Type()
 		switch inner.Kind() {
 		case ast.TypeKindPath, ast.TypeKindPrefixed:

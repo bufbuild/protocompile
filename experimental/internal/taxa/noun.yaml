@@ -36,9 +36,6 @@
   - {name: Edition, string: "`edition` declaration"}
   - {name: Package, string: "`package` declaration"}
   - {name: Import, string: "import"}
-  - {name: WeakImport, string: "weak import"}
-  - {name: PublicImport, string: "public import"}
-  - {name: OptionImport, string: "option import"}
   - {name: Extensions, string: "extension range"}
   - {name: Reserved, string: "reserved range"}
   - {name: Body, string: "definition body"}

@@ -25,7 +25,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -193,13 +192,13 @@ func (e errBadNest) Diagnose(d *report.Diagnostic) {
 		if v == taxa.TopLevel {
 			// This case is just to avoid printing "within a top-level scope",
 			// which looks wrong.
-			d.Apply(report.Helpf("a %s can only appear at %s", what, v))
+			d.Apply(report.Helpf("this %s can only appear at %s", what, v))
 		} else {
-			d.Apply(report.Helpf("a %s can only appear within a %s", what, v))
+			d.Apply(report.Helpf("this %s can only appear within a %s", what, v))
 		}
 	} else {
 		d.Apply(report.Helpf(
-			"a %s can only appear within one of %s",
+			"this %s can only appear within one of %s",
 			what, e.validParents.Join("or"),
 		))
 	}
@@ -243,31 +242,38 @@ func (e errRequiresEdition) Diagnose(d *report.Diagnostic) {
 
 // errUnexpectedMod diagnoses a modifier placed in the wrong position.
 type errUnexpectedMod struct {
-	mod   ast.TypePrefixed
+	mod   token.Token
 	where taxa.Place
 
-	syntax syntax.Syntax
+	syntax   syntax.Syntax
+	noDelete bool
 }
 
 func (e errUnexpectedMod) Diagnose(d *report.Diagnostic) {
 	d.Apply(
-		report.Message("unexpected `%s` modifier %s", e.mod.Prefix(), e.where),
-		report.Snippet(e.mod.PrefixToken()),
-		justify(e.mod.Context().Stream(), e.mod.PrefixToken().Span(), "delete it", justified{
-			Edit:    report.Edit{Start: 0, End: e.mod.PrefixToken().Span().Len()},
-			justify: justifyRight,
-		}),
+		report.Message("unexpected `%s` modifier %s", e.mod.Keyword(), e.where),
+		report.Snippet(e.mod),
 	)
 
-	switch e.mod.Prefix() {
-	case keyword.Optional, keyword.Repeated, keyword.Required:
-		d.Apply(report.Helpf("`%s` only applies to a %s", e.mod.Prefix(), taxa.Field))
-	case keyword.Export, keyword.Local:
-		if e.syntax >= syntax.Edition2024 {
-			d.Apply(report.Helpf("`%s` only applies to a type definition", e.mod.Prefix()))
-		}
-	case keyword.Stream:
-		d.Apply(report.Helpf("`%s` only applies to an input or output of a %s", e.mod.Prefix(), taxa.Method))
+	if !e.noDelete {
+		d.Apply(
+			justify(e.mod.Context().Stream(), e.mod.Span(), "delete it", justified{
+				Edit:    report.Edit{Start: 0, End: e.mod.Span().Len()},
+				justify: justifyRight,
+			}))
+	}
+
+	switch k := e.mod.Keyword(); {
+	case k.IsFieldTypeModifier():
+		d.Apply(report.Helpf("`%s` only applies to a %s", k, taxa.Field))
+
+	case k.IsTypeModifier():
+		d.Apply(report.Helpf("`%s` only applies to a type definition", k))
+	case k.IsImportModifier():
+		d.Apply(report.Helpf("`%s` only applies to an %s", k, taxa.Import))
+
+	case k.IsMethodTypeModifier():
+		d.Apply(report.Helpf("`%s` only applies to an input or output of a %s", k, taxa.Method))
 	}
 }
 

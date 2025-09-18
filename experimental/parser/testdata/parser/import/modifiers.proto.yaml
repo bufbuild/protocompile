@@ -21,3 +21,7 @@ decls:
     modifier: [MODIFIER_WEAK, MODIFIER_WEAK]
     import_path.literal.string_value: "foo.proto"
     modifier_span: [{}, {}]
+- import:
+    modifier: [MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}]

@@ -33,8 +33,8 @@ func TestEditions(t *testing.T) {
 		[]syntax.Syntax{syntax.Edition2023, syntax.Edition2024},
 		slices.Collect(syntax.Editions()),
 	)
-	assert.Subset(t,
-		mapsx.CollectSet(iterx.Strings(syntax.Editions())),
+	assert.Equal(t,
+		mapsx.CollectSet(iterx.Strings(iterx.Filter(syntax.Editions(), syntax.Syntax.IsFullyImplemented))),
 		mapsx.KeySet(editions.SupportedEditions),
 	)
 }

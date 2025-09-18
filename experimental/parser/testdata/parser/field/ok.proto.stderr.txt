@@ -60,6 +60,7 @@ error: unexpected `export` modifier on message field
 43 | -     export Type name = 1;
 43 | +     Type name = 1;
    |
+   = help: `export` only applies to a type definition
 
 error: unexpected `local` modifier on message field
   --> testdata/parser/field/ok.proto:44:5
@@ -71,5 +72,6 @@ error: unexpected `local` modifier on message field
 44 | -     local Type name = 1;
 44 | +     Type name = 1;
    |
+   = help: `local` only applies to a type definition
 
 encountered 6 errors

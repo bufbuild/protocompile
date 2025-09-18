@@ -323,7 +323,7 @@ func (d DeclImport) KeywordToken() token.Token {
 	return d.raw.keyword.In(d.Context())
 }
 
-// Modifier returns the modifier keyword for this declaration.
+// Modifier returns the modifiers for this declaration.
 func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	var slice []token.ID
 	if !d.IsZero() {
@@ -335,9 +335,7 @@ func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	})
 }
 
-// ModifierToken returns the modifier token for this declaration.
-//
-// May be zero if there is no modifier.
+// ModifierTokens returns the modifier tokens for this declaration.
 func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	if d.IsZero() {
 		return seq.EmptySliceInserter[token.Token, token.ID]()
@@ -352,17 +350,24 @@ func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	)
 }
 
-// IsSyntax checks whether this is an "import public".
+// IsPublic checks whether this is an "import public".
 func (d DeclImport) IsPublic() bool {
 	return iterx.Contains(seq.Values(d.Modifiers()), func(k keyword.Keyword) bool {
 		return k == keyword.Public
 	})
 }
 
-// IsEdition checks whether this is an "import weak".
+// IsWeak checks whether this is an "import weak".
 func (d DeclImport) IsWeak() bool {
 	return iterx.Contains(seq.Values(d.Modifiers()), func(k keyword.Keyword) bool {
 		return k == keyword.Weak
+	})
+}
+
+// IsOption checks whether this is an "import option".
+func (d DeclImport) IsOption() bool {
+	return iterx.Contains(seq.Values(d.Modifiers()), func(k keyword.Keyword) bool {
+		return k == keyword.Option
 	})
 }
 

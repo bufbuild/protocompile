@@ -217,45 +217,12 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 
 		in := taxa.Import
 
-		for {
-			switch path.AsIdent().Keyword() {
-			case keyword.Public:
-				if in == taxa.Import {
-					in = taxa.PublicImport
-				}
-
-				args.Modifiers = append(args.Modifiers, path.AsIdent())
-				path = ast.Path{}
-				if canStartPath(c.Peek()) {
-					path = parsePath(p, c)
-					continue
-				}
-
-			case keyword.Weak:
-				if in == taxa.Import {
-					in = taxa.WeakImport
-				}
-
-				args.Modifiers = append(args.Modifiers, path.AsIdent())
-				path = ast.Path{}
-				if canStartPath(c.Peek()) {
-					path = parsePath(p, c)
-					continue
-				}
-
-			case keyword.Option:
-				if in == taxa.Import {
-					in = taxa.OptionImport
-				}
-
-				args.Modifiers = append(args.Modifiers, path.AsIdent())
-				path = ast.Path{}
-				if canStartPath(c.Peek()) {
-					path = parsePath(p, c)
-					continue
-				}
+		for path.AsIdent().Keyword().IsModifier() {
+			args.Modifiers = append(args.Modifiers, path.AsIdent())
+			path = ast.Path{}
+			if canStartPath(c.Peek()) {
+				path = parsePath(p, c)
 			}
-			break
 		}
 
 		if !path.IsZero() {

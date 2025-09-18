@@ -13,6 +13,11 @@ decls:
           type.path.components: [{ ident: "option" }]
         value.literal.int_value: 1
     - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "y" }]
+        type.prefixed.type.path.components: [{ ident: "option" }]
+        value.literal.int_value: 2
+    - def:
         kind: KIND_GROUP
         name.components: [{ ident: "foo" }]
         type.prefixed:
@@ -52,9 +57,7 @@ decls:
     - def:
         kind: KIND_FIELD
         name.components: [{ ident: "z" }]
-        type.prefixed:
-          prefix: PREFIX_OPTIONAL
-          type.path.components: [{ ident: "int32" }]
+        type.prefixed.type.path.components: [{ ident: "int32" }]
         value.literal.int_value: 5
 - def:
     kind: KIND_SERVICE
