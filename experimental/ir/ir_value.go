@@ -20,6 +20,8 @@ import (
 	"math"
 	"slices"
 
+	"google.golang.org/protobuf/encoding/protowire"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
@@ -30,7 +32,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
-	"google.golang.org/protobuf/encoding/protowire"
 )
 
 // Value is an evaluated expression, corresponding to an option in a Protobuf
@@ -608,7 +609,7 @@ func (v MessageValue) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([
 // by appending them to ranges. This allows the length prefix to be correct
 // after accounting for deletions in deleteRanges. This allows us to marshal
 // minimal length prefixes without quadratic time copying buffers around.
-func marshalFramed(buf []byte, r *report.Report, ranges *[][2]int, body func([]byte) ([]byte, int)) ([]byte, int) {
+func marshalFramed(buf []byte, _ *report.Report, ranges *[][2]int, body func([]byte) ([]byte, int)) ([]byte, int) {
 	// To avoid being accidentally quadratic, we encode every message
 	// length with five bytes.
 	mark := len(buf)

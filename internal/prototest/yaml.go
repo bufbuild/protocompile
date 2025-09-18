@@ -20,12 +20,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/protocolbuffers/protoscope"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
-	"github.com/protocolbuffers/protoscope"
 )
 
 // ToYAMLOptions contains configuration for [ToYAML].
