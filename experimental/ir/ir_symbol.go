@@ -118,6 +118,28 @@ func (s Symbol) AsOneof() Oneof {
 	return wrapOneof(s.InDefFile().Context(), arena.Pointer[rawOneof](s.raw.data))
 }
 
+// AsService returns the service this symbol refers to, if it is one.
+func (s Symbol) AsService() Service {
+	if s.Kind() != SymbolKindService {
+		return Service{}
+	}
+	return Service{
+		s.withContext,
+		s.Context().arenas.services.Deref(arena.Pointer[rawService](s.raw.data)),
+	}
+}
+
+// AsMethod returns the method this symbol refers to, if it is one.
+func (s Symbol) AsMethod() Method {
+	if s.Kind() != SymbolKindMethod {
+		return Method{}
+	}
+	return Method{
+		s.withContext,
+		s.Context().arenas.methods.Deref(arena.Pointer[rawMethod](s.raw.data)),
+	}
+}
+
 // Visible returns whether or not this symbol is visible according to Protobuf's
 // import semantics, within s.Context().File().
 func (s Symbol) Visible() bool {
@@ -138,6 +160,10 @@ func (s Symbol) Definition() report.Span {
 		return s.AsMember().AST().Name().Span()
 	case SymbolKindOneof:
 		return s.AsOneof().AST().Name().Span()
+	case SymbolKindService:
+		return s.AsService().AST().Name().Span()
+	case SymbolKindMethod:
+		return s.AsMethod().AST().Name().Span()
 	}
 
 	return report.Span{}
@@ -162,6 +188,8 @@ var symbolNouns = [...]taxa.Noun{
 	SymbolKindEnumValue: taxa.EnumValue,
 	SymbolKindExtension: taxa.Extension,
 	SymbolKindOneof:     taxa.Oneof,
+	SymbolKindService:   taxa.Service,
+	SymbolKindMethod:    taxa.Method,
 }
 
 // IsType returns whether this is a type's symbol kind.

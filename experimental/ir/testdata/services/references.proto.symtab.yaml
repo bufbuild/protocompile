@@ -1,0 +1,41 @@
+tables:
+  "testdata/services/references.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/services/references.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/services/references.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.M.s"
+      kind: KIND_FIELD
+      file: "testdata/services/references.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.M.x"
+      kind: KIND_FIELD
+      file: "testdata/services/references.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.S"
+      kind: 9
+      file: "testdata/services/references.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.S2"
+      kind: 9
+      file: "testdata/services/references.proto"
+      index: 2
+      visible:
+    - fqn: "buf.test.S.X"
+      kind: 10
+      file: "testdata/services/references.proto"
+      index: 1
+      visible:
+    - fqn: "buf.test.S2.M"
+      kind: 10
+      file: "testdata/services/references.proto"
+      index: 2
+      visible:

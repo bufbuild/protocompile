@@ -1,0 +1,24 @@
+file:
+- name: "testdata/services/references.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - { name: "s", number: 1, label: LABEL_OPTIONAL }
+    - { name: "x", number: 2, label: LABEL_OPTIONAL }
+  service:
+  - name: "S"
+    method:
+    - name: "X"
+      input_type: "buf.test.M"
+      output_type: "buf.test.M"
+      client_streaming:
+      server_streaming:
+  - name: "S2"
+    method:
+    - name: "M"
+      input_type: ""
+      output_type: "buf.test.M"
+      client_streaming:
+      server_streaming:
+  syntax: "proto2"

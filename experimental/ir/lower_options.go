@@ -38,6 +38,8 @@ func resolveOptions(f File, r *report.Report) {
 	oneofOptions := ref[rawMember]{dpIdx, dp.langSymbols.oneofOptions}
 	enumOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumOptions}
 	enumValueOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumValueOptions}
+	serviceOptions := ref[rawMember]{dpIdx, dp.langSymbols.serviceOptions}
+	methodOptions := ref[rawMember]{dpIdx, dp.langSymbols.methodOptions}
 
 	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
@@ -124,6 +126,35 @@ func resolveOptions(f File, r *report.Report) {
 				field: fieldOptions,
 				raw:   &field.raw.options,
 			}.resolve()
+		}
+	}
+	for service := range seq.Values(f.Services()) {
+		for def := range bodyOptions(service.AST().Body()) {
+			optionRef{
+				Context: f.Context(),
+				Report:  r,
+
+				scope: service.FullName(),
+				def:   def,
+
+				field: serviceOptions,
+				raw:   &service.raw.options,
+			}.resolve()
+		}
+
+		for method := range seq.Values(service.Methods()) {
+			for def := range bodyOptions(method.AST().Body()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: service.FullName(),
+					def:   def,
+
+					field: methodOptions,
+					raw:   &method.raw.options,
+				}.resolve()
+			}
 		}
 	}
 }

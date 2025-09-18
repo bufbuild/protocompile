@@ -42,6 +42,8 @@ type Session struct {
 		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
 		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+		ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
+		MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 	}
 }
 
