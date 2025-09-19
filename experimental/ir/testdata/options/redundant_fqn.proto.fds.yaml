@@ -2,5 +2,5 @@ file:
 - name: "testdata/options/redundant_fqn.proto"
   package: "buf.test"
   dependency: ["google/protobuf/descriptor.proto"]
-  message_type: [{ name: "Foo", options: {} }]
+  message_type: [{ name: "Foo", options.deprecated: true }]
   syntax: "proto2"

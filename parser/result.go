@@ -412,7 +412,7 @@ func (r *result) asMapDescriptors(mapField *ast.MapFieldNode, syntax protoreflec
 	r.putFieldNode(keyFd, mapField.KeyField())
 	valFd := newFieldDescriptor("value", string(mapField.MapType.ValueType.AsIdentifier()), proto.Int32(2), lbl)
 	r.putFieldNode(valFd, mapField.ValueField())
-	entryName := internal.InitCap(internal.JSONName(mapField.Name.Val)) + "Entry"
+	entryName := internal.MapEntry(mapField.Name.Val)
 	fd := newFieldDescriptor(mapField.Name.Val, entryName, tag, descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum())
 	if opts := mapField.Options.GetElements(); len(opts) > 0 {
 		fd.Options = &descriptorpb.FieldOptions{UninterpretedOption: r.asUninterpretedOptions(opts)}

@@ -1,0 +1,42 @@
+file:
+- name: "testdata/fields/maps/collision.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foo_bar"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.FooBarEntry"
+    nested_type:
+    - name: "FooBarEntry"
+    - name: "FooBarEntry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+  - name: "Underscores"
+    field:
+    - name: "_"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Underscores.Entry"
+    - name: "__"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Underscores.Entry"
+    nested_type:
+    - name: "Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+  syntax: "proto3"

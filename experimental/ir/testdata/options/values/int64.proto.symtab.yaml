@@ -1,6 +1,6 @@
 tables:
   "testdata/options/values/int64.proto":
-    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -9,37 +9,37 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/options/values/int64.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.i1"
       kind: KIND_FIELD
       file: "testdata/options/values/int64.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.i2"
       kind: KIND_FIELD
       file: "testdata/options/values/int64.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.i3"
       kind: KIND_FIELD
       file: "testdata/options/values/int64.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.u1"
       kind: KIND_FIELD
       file: "testdata/options/values/int64.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "buf.test.Foo.u2"
       kind: KIND_FIELD
       file: "testdata/options/values/int64.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "buf.test.x"
       kind: KIND_EXTENSION
       file: "testdata/options/values/int64.proto"
       index: 6
-      visible:
+      visible: true
     options.message.extns:
       "buf.test.x":
         message.fields:

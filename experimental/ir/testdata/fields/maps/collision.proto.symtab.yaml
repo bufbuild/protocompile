@@ -1,0 +1,63 @@
+tables:
+  "testdata/fields/maps/collision.proto":
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/maps/collision.proto"
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/collision.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Underscores"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/collision.proto"
+      index: 3
+      visible: true
+    - fqn: "test.Foo.FooBarEntry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/collision.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Underscores.Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/collision.proto"
+      index: 5
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Foo.foo_bar"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Underscores._"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 2
+      visible: true
+    - fqn: "test.Underscores.__"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 3
+      visible: true
+    - fqn: "test.Foo.FooBarEntry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 4
+      visible: true
+    - fqn: "test.Foo.FooBarEntry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 5
+      visible: true
+    - fqn: "test.Underscores.Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 6
+      visible: true
+    - fqn: "test.Underscores.Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/collision.proto"
+      index: 7
+      visible: true

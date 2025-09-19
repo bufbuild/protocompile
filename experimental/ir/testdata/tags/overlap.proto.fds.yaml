@@ -20,5 +20,5 @@ file:
     - { name: "A0", number: 1 }
     - { name: "A1", number: 2 }
     - { name: "A2", number: 2 }
-    options: {}
+    options.allow_alias: true
   syntax: "proto2"

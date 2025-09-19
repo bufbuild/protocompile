@@ -1,0 +1,41 @@
+file:
+- name: "testdata/fields/maps/map_option.proto"
+  package: "test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "map"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.MapEntry"
+    nested_type:
+    - name: "MapEntry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: ".test.Foo"
+      options.map_entry: true
+    options.$unknown: |
+      10000: {
+        1: {
+          1: {"a"}
+          2: {
+            1: {1: {"a"}}
+            1: {1: {"b"}}
+            1: {}
+          }
+        }
+      }
+  extension:
+  - name: "foo"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".test.Foo"
+    extendee: ".google.protobuf.MessageOptions"
+  syntax: "proto3"

@@ -1,0 +1,11 @@
+error: use of synthetic map entry type
+  --> testdata/fields/maps/entry_misuse.proto:21:14
+   |
+20 |     map<int32, int32> foo_bar = 1;
+   |     ----------------- synthesized by this type
+21 |     repeated FooBarEntry foo_bars = 2;
+   |              ^^^^^^^^^^^ referenced here
+   = help: despite having a user-visible symbol, map entry types cannot be used
+           as field types
+
+encountered 1 error

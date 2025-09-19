@@ -100,6 +100,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			File:   file,
 			Public: imp.IsPublic(),
 			Weak:   imp.IsWeak(),
+			Decl:   imp,
 		})
 	}
 
@@ -117,7 +118,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	// If this is descriptor.proto itself, use it. This step is necessary to
 	// avoid cycles.
 	if f.IsDescriptorProto() {
-		c.imports.Insert(f, -1, false)
+		c.imports.Insert(Import{File: f}, -1, false)
 		return
 	}
 
@@ -132,7 +133,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 		panic(fmt.Errorf("importing %q produced an invalid file", DescriptorProtoPath))
 	}
 
-	c.imports.Insert(dproto, -1, false)
+	c.imports.Insert(Import{File: dproto, Decl: ast.DeclImport{}}, -1, false)
 }
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each

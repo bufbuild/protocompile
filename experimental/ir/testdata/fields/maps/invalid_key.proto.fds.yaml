@@ -1,0 +1,67 @@
+file:
+- name: "testdata/fields/maps/invalid_key.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "m1"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.M1Entry"
+    - name: "m2"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.M2Entry"
+    - name: "m3"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.M3Entry"
+    - name: "m4"
+      number: 4
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.M4Entry"
+    - name: "m5"
+      number: 5
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.M5Entry"
+    nested_type:
+    - name: "M1Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "M2Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_DOUBLE }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "M3Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_BYTES }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "M4Entry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: ".test.Foo"
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "M5Entry"
+      field:
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_ENUM
+        type_name: ".test.Enum"
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+  enum_type: [{ name: "Enum", value: [{ name: "Z", number: 0 }] }]
+  syntax: "proto3"

@@ -65,6 +65,11 @@ func resolveOptions(f File, r *report.Report) {
 	}
 
 	for ty := range seq.Values(f.AllTypes()) {
+		if !ty.MapField().IsZero() {
+			// Map entries already come with options pre-calculated.
+			continue
+		}
+
 		for def := range bodyOptions(ty.AST().Body()) {
 			options := messageOptions
 			if ty.IsEnum() {
@@ -281,6 +286,16 @@ func (r optionRef) resolve() {
 				}
 				return
 			}
+		}
+
+		// TODO: Forbid any of the uninterpreted_option options from being set,
+		// and any of the features options from being set if not in editions mode.
+		if pc.IsFirst() && field.InternedFullName() == r.session.langIDs.MapEntry {
+			r.Errorf("`map_entry` cannot be set explicitly").Apply(
+				report.Snippet(pc),
+				report.Helpf("map_entry is set automatically for synthetic map "+
+					"entry types, and cannot be set with an %s", taxa.Option),
+			)
 		}
 
 		path, _ = pc.SplitAfter()

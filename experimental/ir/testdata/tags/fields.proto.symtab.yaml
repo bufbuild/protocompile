@@ -6,169 +6,169 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/tags/fields.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.M.x"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.M.y"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.M.y2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.M.z1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.M.z12"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.M.z2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 6
-      visible:
+      visible: true
     - fqn: "test.M.z3"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 7
-      visible:
+      visible: true
     - fqn: "test.M.z4"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 8
-      visible:
+      visible: true
     - fqn: "test.M.z5"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 9
-      visible:
+      visible: true
     - fqn: "test.M.z6"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 10
-      visible:
+      visible: true
     - fqn: "test.M.r1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 12
-      visible:
+      visible: true
     - fqn: "test.M.r2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 13
-      visible:
+      visible: true
     - fqn: "test.M.r3"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 14
-      visible:
+      visible: true
     - fqn: "test.M.k1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 15
-      visible:
+      visible: true
     - fqn: "test.M.k2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 16
-      visible:
+      visible: true
     - fqn: "test.M.f1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 17
-      visible:
+      visible: true
     - fqn: "test.M.f2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 18
-      visible:
+      visible: true
     - fqn: "test.M.f3"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 19
-      visible:
+      visible: true
     - fqn: "test.M.f4"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 20
-      visible:
+      visible: true
     - fqn: "test.M.f5"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 21
-      visible:
+      visible: true
     - fqn: "test.M.f6"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 22
-      visible:
+      visible: true
     - fqn: "test.M.b1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 23
-      visible:
+      visible: true
     - fqn: "test.M.b2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 24
-      visible:
+      visible: true
     - fqn: "test.M.b3"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 25
-      visible:
+      visible: true
     - fqn: "test.M.s1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 26
-      visible:
+      visible: true
     - fqn: "test.M.s2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 27
-      visible:
+      visible: true
     - fqn: "test.M.s3"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 28
-      visible:
+      visible: true
     - fqn: "test.M.s4"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 29
-      visible:
+      visible: true
     - fqn: "test.M.m1"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 30
-      visible:
+      visible: true
     - fqn: "test.M.m2"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 31
-      visible:
+      visible: true
     - fqn: "test.M.m3"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 32
-      visible:
+      visible: true
     - fqn: "test.M.m4"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 33
-      visible:
+      visible: true
     - fqn: "test.M.m5"
       kind: KIND_FIELD
       file: "testdata/tags/fields.proto"
       index: 34
-      visible:
+      visible: true

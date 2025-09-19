@@ -1,0 +1,52 @@
+tables:
+  "testdata/fields/maps/map_option.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/maps/map_option.proto"
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/map_option.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "test.foo":
+          message.fields:
+            "map":
+              repeated.values:
+              - message.fields:
+                  "key": { string: "a" }
+                  "value":
+                    message.fields:
+                      "map":
+                        repeated.values:
+                        - message.fields: { "key": { string: "a" } }
+                        - message.fields: { "key": { string: "b" } }
+                        - message: {}
+    - fqn: "test.Foo.MapEntry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/map_option.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Foo.map"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/map_option.proto"
+      index: 2
+      visible: true
+    - fqn: "test.Foo.MapEntry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/map_option.proto"
+      index: 3
+      visible: true
+    - fqn: "test.Foo.MapEntry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/map_option.proto"
+      index: 4
+      visible: true
+    - fqn: "test.foo"
+      kind: KIND_EXTENSION
+      file: "testdata/fields/maps/map_option.proto"
+      index: 1
+      visible: true

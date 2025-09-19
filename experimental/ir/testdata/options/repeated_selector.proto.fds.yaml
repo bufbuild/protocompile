@@ -5,7 +5,7 @@ file:
   message_type:
   - name: "Foo"
     field: [{ name: "z", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
-    options: {}
+    options.$unknown: "1002: {1: 42}"
   extension:
   - name: "x"
     number: 1000

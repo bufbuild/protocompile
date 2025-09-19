@@ -286,10 +286,7 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 
 	if options := f.Options(); !options.IsZero() {
 		fdp.Options = new(descriptorpb.FieldOptions)
-		// We pass the FDP directly, because we want to keep it around for
-		// dealing with the pseudo-options. codegen.option has a special case
-		// for this.
-		dg.options(options, fdp)
+		dg.options(options, fdp.Options)
 	}
 }
 
@@ -372,27 +369,8 @@ func (dg *descGenerator) method(m Method, mdp *descriptorpb.MethodDescriptorProt
 	}
 }
 
-func (dg *descGenerator) options(_ MessageValue, target proto.Message) {
-	var fdp *descriptorpb.FieldDescriptorProto
-	if actual, ok := target.(*descriptorpb.FieldDescriptorProto); ok {
-		fdp = actual
-		target = fdp.Options
-	}
-
-	_ = target
-
-	// There are two cases and both are painful.
-	//
-	// 1. For built-in options, we need to match up option.Field() to a
-	//    protoreflect.Field in target, and then set it.
-	//
-	//    If we recognize this field as a pseudo-option, we need to forgo the
-	//    above and set it directly on the non-nil fdp instead.
-	//
-	// 2. For custom options, we need to serialize option (perhaps with an
-	//    Option.Marshal() function?) and append it to the unknown fields.
-
-	// TODO: Implement the above (ow ow ow).
+func (dg *descGenerator) options(v MessageValue, target proto.Message) {
+	target.ProtoReflect().SetUnknown(v.Marshal(nil, nil))
 }
 
 // addr is a helper for creating a pointer out of any type, because Go is
