@@ -29,7 +29,7 @@ file:
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "BarEntry"
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
@@ -38,15 +38,15 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.Foo"
-      options: {}
+      options.map_entry: true
     - name: "Foo2Entry"
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "Foo3Entry"
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
   syntax: "proto3"
