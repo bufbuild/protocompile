@@ -6,49 +6,49 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/extend/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.Foo"
       kind: KIND_MESSAGE
       file: "testdata/extend/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.x1"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.x2"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.x3"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Foo.x4"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.x5"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.x6"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 6
-      visible:
+      visible: true
     - fqn: "test.x7"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 7
-      visible:
+      visible: true
     - fqn: "test.x8"
       kind: KIND_EXTENSION
       file: "testdata/extend/ok.proto"
       index: 8
-      visible:
+      visible: true

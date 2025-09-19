@@ -9,17 +9,19 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_INT32
-      options: {}
+      options.$unknown: "1000: 42"
     - name: "z"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       oneof_index: 0
-      options: {}
-    oneof_decl: [{ name: "y", options: {} }]
-    options: {}
+      options.$unknown: "1000: 42"
+    oneof_decl: [{ name: "y", options.$unknown: "1000: 42" }]
+    options.$unknown: "1000: 42"
   enum_type:
-  - { name: "Bar", value: [{ name: "X", number: 0, options: {} }], options: {} }
+  - name: "Bar"
+    value: [{ name: "X", number: 0, options.$unknown: "1000: 42" }]
+    options.$unknown: "1000: 42"
   extension:
   - name: "a"
     number: 1000
@@ -51,5 +53,5 @@ file:
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.EnumValueOptions"
-  options: {}
+  options.$unknown: "1000: 42"
   syntax: "proto2"

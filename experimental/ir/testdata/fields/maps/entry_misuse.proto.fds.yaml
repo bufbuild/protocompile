@@ -19,5 +19,5 @@ file:
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
   syntax: "proto3"

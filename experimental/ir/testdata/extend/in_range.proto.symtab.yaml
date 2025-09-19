@@ -8,19 +8,19 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/extend/in_range.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.x"
       kind: KIND_EXTENSION
       file: "testdata/extend/in_range.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.y"
       kind: KIND_EXTENSION
       file: "testdata/extend/in_range.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.z"
       kind: KIND_EXTENSION
       file: "testdata/extend/in_range.proto"
       index: 3
-      visible:
+      visible: true

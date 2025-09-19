@@ -36,5 +36,5 @@ file:
     - { name: "E2", number: 0 }
   - name: "Aliased"
     value: [{ name: "X1", number: 1 }, { name: "X2", number: 1 }]
-    options: {}
+    options.allow_alias: true
   syntax: "proto2"

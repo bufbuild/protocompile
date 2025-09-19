@@ -8,30 +8,30 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/entry_misuse.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBarEntry"
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/entry_misuse.proto"
       index: 2
-      visible:
-      options.message.fields: { "map_entry": { bool: } }
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
     - fqn: "test.Foo.foo_bar"
       kind: KIND_FIELD
       file: "testdata/fields/maps/entry_misuse.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.foo_bars"
       kind: KIND_FIELD
       file: "testdata/fields/maps/entry_misuse.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBarEntry.key"
       kind: KIND_FIELD
       file: "testdata/fields/maps/entry_misuse.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBarEntry.value"
       kind: KIND_FIELD
       file: "testdata/fields/maps/entry_misuse.proto"
       index: 4
-      visible:
+      visible: true

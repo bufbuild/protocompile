@@ -6,88 +6,88 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.FooEntry"
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/ok.proto"
       index: 2
-      visible:
-      options.message.fields: { "map_entry": { bool: } }
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
     - fqn: "test.Foo.BarEntry"
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/ok.proto"
       index: 3
-      visible:
-      options.message.fields: { "map_entry": { bool: } }
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
     - fqn: "test.Foo.Foo2Entry"
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/ok.proto"
       index: 4
-      visible:
-      options.message.fields: { "map_entry": { bool: } }
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
     - fqn: "test.Foo.Foo3Entry"
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/ok.proto"
       index: 5
-      visible:
-      options.message.fields: { "map_entry": { bool: } }
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
     - fqn: "test.Foo.foo"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.bar"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.__foo2__"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Foo.__foo_3__"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.Foo.FooEntry.key"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.Foo.FooEntry.value"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 6
-      visible:
+      visible: true
     - fqn: "test.Foo.BarEntry.key"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 7
-      visible:
+      visible: true
     - fqn: "test.Foo.BarEntry.value"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 8
-      visible:
+      visible: true
     - fqn: "test.Foo.Foo2Entry.key"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 9
-      visible:
+      visible: true
     - fqn: "test.Foo.Foo2Entry.value"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 10
-      visible:
+      visible: true
     - fqn: "test.Foo.Foo3Entry.key"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 11
-      visible:
+      visible: true
     - fqn: "test.Foo.Foo3Entry.value"
       kind: KIND_FIELD
       file: "testdata/fields/maps/ok.proto"
       index: 12
-      visible:
+      visible: true
