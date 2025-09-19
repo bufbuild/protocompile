@@ -149,6 +149,9 @@ func PredeclaredType(n predeclared.Name) Type {
 // This need not be an [ast.DefMessage] or [ast.DefEnum]; it may be something
 // else in the case of e.g. a map field's entry type.
 func (t Type) AST() ast.DeclDef {
+	if t.IsZero() {
+		return ast.DeclDef{}
+	}
 	return t.raw.def
 }
 
