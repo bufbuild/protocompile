@@ -1,0 +1,3 @@
+decls:
+- syntax: { kind: KIND_EDITION, value.literal.string_value: "invalid" }
+- package.path.components: [{ ident: "test" }]

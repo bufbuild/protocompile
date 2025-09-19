@@ -5,12 +5,14 @@ decls:
   - ident: "my"
   - { ident: "Proto", separator: SEPARATOR_DOT }
 - import:
-    modifier: MODIFIER_WEAK
+    modifier: [MODIFIER_WEAK]
     import_path.path.components:
     - ident: "my"
     - { ident: "Proto", separator: SEPARATOR_DOT }
+    modifier_span: [{}]
 - import:
-    modifier: MODIFIER_PUBLIC
+    modifier: [MODIFIER_PUBLIC]
     import_path.path.components:
     - ident: "my"
     - { ident: "Proto", separator: SEPARATOR_DOT }
+    modifier_span: [{}]

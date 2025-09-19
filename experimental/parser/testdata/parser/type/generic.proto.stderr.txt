@@ -84,40 +84,40 @@ error: generic types other than `map` are not supported
 38 |     set<optional.Foo> x14 = 14;
    |     ^^^
 
-error: only message types may appear in method parameter list
+error: unexpected type in method parameter list
   --> testdata/parser/type/generic.proto:42:12
    |
 42 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
-   |            ^^^^^^^^^^^^^^^^^^^
+   |            ^^^^^^^^^^^^^^^^^^^ expected message type
 
-error: only message types may appear in method return type
+error: unexpected type in method return type
   --> testdata/parser/type/generic.proto:42:42
    |
 42 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
-   |                                          ^^^^^^^^^^^^^^^^^^^^^
+   |                                          ^^^^^^^^^^^^^^^^^^^^^ expected message type
 
-error: only message types may appear in method parameter list
+error: unexpected type in method parameter list
   --> testdata/parser/type/generic.proto:43:12
    |
 43 |     rpc X2(list<test.M>) returns (stream .void<M>) {}
-   |            ^^^^^^^^^^^^
+   |            ^^^^^^^^^^^^ expected message type
 
-error: only message types may appear in method return type
+error: unexpected type in method return type
   --> testdata/parser/type/generic.proto:43:42
    |
 43 |     rpc X2(list<test.M>) returns (stream .void<M>) {}
-   |                                          ^^^^^^^^
+   |                                          ^^^^^^^^ expected message type
 
-error: only message types may appear in method parameter list
+error: unexpected type in method parameter list
   --> testdata/parser/type/generic.proto:44:12
    |
 44 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected message type
 
-error: only message types may appear in method return type
+error: unexpected type in method return type
   --> testdata/parser/type/generic.proto:44:58
    |
 44 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
-   |                                                          ^^^^^^^^^^^^^^^^^^^
+   |                                                          ^^^^^^^^^^^^^^^^^^^ expected message type
 
 encountered 18 errors and 1 warning

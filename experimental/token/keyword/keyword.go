@@ -51,6 +51,8 @@ const (
 	Optional
 	Required
 	Stream
+	Export
+	Local
 	Int32
 	Int64
 	UInt32
@@ -113,7 +115,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 57; i++ {
+		for i := 0; i < 59; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -145,6 +147,8 @@ var _table_Keyword_String = [...]string{
 	Optional:   "optional",
 	Required:   "required",
 	Stream:     "stream",
+	Export:     "export",
+	Local:      "local",
 	Int32:      "int32",
 	Int64:      "int64",
 	UInt32:     "uint32",
@@ -205,6 +209,8 @@ var _table_Keyword_GoString = [...]string{
 	Optional:   "Optional",
 	Required:   "Required",
 	Stream:     "Stream",
+	Export:     "Export",
+	Local:      "Local",
 	Int32:      "Int32",
 	Int64:      "Int64",
 	UInt32:     "UInt32",
@@ -265,6 +271,8 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"optional":   Optional,
 	"required":   Required,
 	"stream":     Stream,
+	"export":     Export,
+	"local":      Local,
 	"int32":      Int32,
 	"int64":      Int64,
 	"uint32":     UInt32,

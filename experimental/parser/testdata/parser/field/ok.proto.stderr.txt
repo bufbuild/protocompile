@@ -50,4 +50,28 @@ error: unexpected `required`
    = help: required fields are only permitted in proto2; even then, their use is
            strongly discouraged
 
-encountered 4 errors
+error: unexpected `export` modifier on message field
+  --> testdata/parser/field/ok.proto:43:5
+   |
+43 |     export Type name = 1;
+   |     ^^^^^^
+  help: delete it
+   |
+43 | -     export Type name = 1;
+43 | +     Type name = 1;
+   |
+   = help: `export` only applies to a type definition
+
+error: unexpected `local` modifier on message field
+  --> testdata/parser/field/ok.proto:44:5
+   |
+44 |     local Type name = 1;
+   |     ^^^^^
+  help: delete it
+   |
+44 | -     local Type name = 1;
+44 | +     Type name = 1;
+   |
+   = help: `local` only applies to a type definition
+
+encountered 6 errors

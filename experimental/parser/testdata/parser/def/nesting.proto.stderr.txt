@@ -10,7 +10,7 @@ error: unexpected service definition within message definition
 24 | |     oneof O {}
 25 | | }
    | \_- ...cannot be declared within this message definition
-   = help: a service definition can only appear at file scope
+   = help: this service definition can only appear at file scope
 
 error: unexpected message definition within enum definition
   --> testdata/parser/def/nesting.proto:28:5
@@ -22,7 +22,7 @@ error: unexpected message definition within enum definition
 ...  |
 33 | | }
    | \_- ...cannot be declared within this enum definition
-   = help: a message definition can only appear within one of file scope,
+   = help: this message definition can only appear within one of file scope,
            message definition, or group definition
 
 error: unexpected enum definition within enum definition
@@ -36,8 +36,8 @@ error: unexpected enum definition within enum definition
 ...  |
 33 | | }
    | \_- ...cannot be declared within this enum definition
-   = help: a enum definition can only appear within one of file scope, message
-           definition, or group definition
+   = help: this enum definition can only appear within one of file scope,
+           message definition, or group definition
 
 error: unexpected service definition within enum definition
   --> testdata/parser/def/nesting.proto:30:5
@@ -51,7 +51,7 @@ error: unexpected service definition within enum definition
 32 | |     oneof O {}
 33 | | }
    | \_- ...cannot be declared within this enum definition
-   = help: a service definition can only appear at file scope
+   = help: this service definition can only appear at file scope
 
 error: unexpected message extension block within enum definition
   --> testdata/parser/def/nesting.proto:31:5
@@ -64,8 +64,8 @@ error: unexpected message extension block within enum definition
 32 | |     oneof O {}
 33 | | }
    | \_- ...cannot be declared within this enum definition
-   = help: a message extension block can only appear within one of file scope,
-           message definition, or group definition
+   = help: this message extension block can only appear within one of file
+           scope, message definition, or group definition
 
 error: unexpected oneof definition within enum definition
   --> testdata/parser/def/nesting.proto:32:5
@@ -77,8 +77,8 @@ error: unexpected oneof definition within enum definition
    | |     ^^^^^^^^^^ this oneof definition...
 33 | | }
    | \_- ...cannot be declared within this enum definition
-   = help: a oneof definition can only appear within one of message definition
-           or group definition
+   = help: this oneof definition can only appear within one of message
+           definition or group definition
 
 error: unexpected message definition within service definition
   --> testdata/parser/def/nesting.proto:36:5
@@ -90,7 +90,7 @@ error: unexpected message definition within service definition
 ...  |
 41 | | }
    | \_- ...cannot be declared within this service definition
-   = help: a message definition can only appear within one of file scope,
+   = help: this message definition can only appear within one of file scope,
            message definition, or group definition
 
 error: unexpected enum definition within service definition
@@ -104,8 +104,8 @@ error: unexpected enum definition within service definition
 ...  |
 41 | | }
    | \_- ...cannot be declared within this service definition
-   = help: a enum definition can only appear within one of file scope, message
-           definition, or group definition
+   = help: this enum definition can only appear within one of file scope,
+           message definition, or group definition
 
 error: unexpected service definition within service definition
   --> testdata/parser/def/nesting.proto:38:5
@@ -119,7 +119,7 @@ error: unexpected service definition within service definition
 40 | |     oneof O {}
 41 | | }
    | \_- ...cannot be declared within this service definition
-   = help: a service definition can only appear at file scope
+   = help: this service definition can only appear at file scope
 
 error: unexpected message extension block within service definition
   --> testdata/parser/def/nesting.proto:39:5
@@ -132,8 +132,8 @@ error: unexpected message extension block within service definition
 40 | |     oneof O {}
 41 | | }
    | \_- ...cannot be declared within this service definition
-   = help: a message extension block can only appear within one of file scope,
-           message definition, or group definition
+   = help: this message extension block can only appear within one of file
+           scope, message definition, or group definition
 
 error: unexpected oneof definition within service definition
   --> testdata/parser/def/nesting.proto:40:5
@@ -145,8 +145,8 @@ error: unexpected oneof definition within service definition
    | |     ^^^^^^^^^^ this oneof definition...
 41 | | }
    | \_- ...cannot be declared within this service definition
-   = help: a oneof definition can only appear within one of message definition
-           or group definition
+   = help: this oneof definition can only appear within one of message
+           definition or group definition
 
 error: unexpected message definition within message extension block
   --> testdata/parser/def/nesting.proto:44:5
@@ -158,7 +158,7 @@ error: unexpected message definition within message extension block
 ...  |
 49 | | }
    | \_- ...cannot be declared within this message extension block
-   = help: a message definition can only appear within one of file scope,
+   = help: this message definition can only appear within one of file scope,
            message definition, or group definition
 
 error: unexpected enum definition within message extension block
@@ -172,8 +172,8 @@ error: unexpected enum definition within message extension block
 ...  |
 49 | | }
    | \_- ...cannot be declared within this message extension block
-   = help: a enum definition can only appear within one of file scope, message
-           definition, or group definition
+   = help: this enum definition can only appear within one of file scope,
+           message definition, or group definition
 
 error: unexpected service definition within message extension block
   --> testdata/parser/def/nesting.proto:46:5
@@ -187,7 +187,7 @@ error: unexpected service definition within message extension block
 48 | |     oneof O {}
 49 | | }
    | \_- ...cannot be declared within this message extension block
-   = help: a service definition can only appear at file scope
+   = help: this service definition can only appear at file scope
 
 error: unexpected message extension block within message extension block
   --> testdata/parser/def/nesting.proto:47:5
@@ -200,8 +200,8 @@ error: unexpected message extension block within message extension block
 48 | |     oneof O {}
 49 | | }
    | \_- ...cannot be declared within this message extension block
-   = help: a message extension block can only appear within one of file scope,
-           message definition, or group definition
+   = help: this message extension block can only appear within one of file
+           scope, message definition, or group definition
 
 error: unexpected oneof definition within message extension block
   --> testdata/parser/def/nesting.proto:48:5
@@ -213,8 +213,8 @@ error: unexpected oneof definition within message extension block
    | |     ^^^^^^^^^^ this oneof definition...
 49 | | }
    | \_- ...cannot be declared within this message extension block
-   = help: a oneof definition can only appear within one of message definition
-           or group definition
+   = help: this oneof definition can only appear within one of message
+           definition or group definition
 
 error: unexpected oneof definition at file scope
   --> testdata/parser/def/nesting.proto:51:1
@@ -223,8 +223,8 @@ error: unexpected oneof definition at file scope
 ...  |
 57 | | }
    | \_^ this oneof definition cannot be declared here
-   = help: a oneof definition can only appear within one of message definition
-           or group definition
+   = help: this oneof definition can only appear within one of message
+           definition or group definition
 
 error: unexpected message definition within oneof definition
   --> testdata/parser/def/nesting.proto:52:5
@@ -236,7 +236,7 @@ error: unexpected message definition within oneof definition
 ...  |
 57 | | }
    | \_- ...cannot be declared within this oneof definition
-   = help: a message definition can only appear within one of file scope,
+   = help: this message definition can only appear within one of file scope,
            message definition, or group definition
 
 error: unexpected enum definition within oneof definition
@@ -250,8 +250,8 @@ error: unexpected enum definition within oneof definition
 ...  |
 57 | | }
    | \_- ...cannot be declared within this oneof definition
-   = help: a enum definition can only appear within one of file scope, message
-           definition, or group definition
+   = help: this enum definition can only appear within one of file scope,
+           message definition, or group definition
 
 error: unexpected service definition within oneof definition
   --> testdata/parser/def/nesting.proto:54:5
@@ -265,7 +265,7 @@ error: unexpected service definition within oneof definition
 56 | |     oneof O {}
 57 | | }
    | \_- ...cannot be declared within this oneof definition
-   = help: a service definition can only appear at file scope
+   = help: this service definition can only appear at file scope
 
 error: unexpected message extension block within oneof definition
   --> testdata/parser/def/nesting.proto:55:5
@@ -278,8 +278,8 @@ error: unexpected message extension block within oneof definition
 56 | |     oneof O {}
 57 | | }
    | \_- ...cannot be declared within this oneof definition
-   = help: a message extension block can only appear within one of file scope,
-           message definition, or group definition
+   = help: this message extension block can only appear within one of file
+           scope, message definition, or group definition
 
 error: unexpected oneof definition within oneof definition
   --> testdata/parser/def/nesting.proto:56:5
@@ -291,7 +291,7 @@ error: unexpected oneof definition within oneof definition
    | |     ^^^^^^^^^^ this oneof definition...
 57 | | }
    | \_- ...cannot be declared within this oneof definition
-   = help: a oneof definition can only appear within one of message definition
-           or group definition
+   = help: this oneof definition can only appear within one of message
+           definition or group definition
 
 encountered 22 errors

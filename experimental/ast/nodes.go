@@ -17,10 +17,12 @@ package ast
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // Nodes provides storage for the various AST node types, and can be used
@@ -190,11 +192,17 @@ func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 
 // NewDeclImport creates a new DeclImport node.
 func (n *Nodes) NewDeclImport(args DeclImportArgs) DeclImport {
-	n.panicIfNotOurs(args.Keyword, args.Modifier, args.ImportPath, args.Options, args.Semicolon)
+	n.panicIfNotOurs(args.Keyword, args.ImportPath, args.Options, args.Semicolon)
 
 	return wrapDeclImport(n.Context, n.decls.imports.NewCompressed(rawDeclImport{
-		keyword:    args.Keyword.ID(),
-		modifier:   args.Modifier.ID(),
+		keyword: args.Keyword.ID(),
+		modifiers: slices.Collect(iterx.Map(
+			slices.Values(args.Modifiers),
+			func(t token.Token) token.ID {
+				n.panicIfNotOurs(t)
+				return t.ID()
+			}),
+		),
 		importPath: args.ImportPath.raw,
 		options:    n.options.Compress(args.Options.raw),
 		semi:       args.Semicolon.ID(),

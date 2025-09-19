@@ -32,6 +32,7 @@ const (
 	Proto2
 	Proto3
 	Edition2023
+	Edition2024
 )
 
 // String implements [fmt.Stringer].
@@ -60,7 +61,7 @@ func Lookup(s string) Syntax {
 // All returns an iterator over all known [Syntax] values.
 func All() iter.Seq[Syntax] {
 	return func(yield func(Syntax) bool) {
-		for i := 1; i < 4; i++ {
+		for i := 1; i < 5; i++ {
 			if !yield(Syntax(i)) {
 				return
 			}
@@ -73,6 +74,7 @@ var _table_Syntax_String = [...]string{
 	Proto2:      "proto2",
 	Proto3:      "proto3",
 	Edition2023: "2023",
+	Edition2024: "2024",
 }
 
 var _table_Syntax_GoString = [...]string{
@@ -80,11 +82,13 @@ var _table_Syntax_GoString = [...]string{
 	Proto2:      "Proto2",
 	Proto3:      "Proto3",
 	Edition2023: "Edition2023",
+	Edition2024: "Edition2024",
 }
 
 var _table_Syntax_Lookup = map[string]Syntax{
 	"proto2": Proto2,
 	"proto3": Proto3,
 	"2023":   Edition2023,
+	"2024":   Edition2024,
 }
 var _ iter.Seq[int] // Mark iter as used.

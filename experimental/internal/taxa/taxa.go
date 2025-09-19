@@ -40,6 +40,11 @@ func (s Noun) Without() Place {
 	return Place{s, "without"}
 }
 
+// On is a shorthand for the "on" preposition.
+func (s Noun) On() Place {
+	return Place{s, "on"}
+}
+
 // AsSet returns a singleton set containing this What.
 func (s Noun) AsSet() Set {
 	return NewSet(s)

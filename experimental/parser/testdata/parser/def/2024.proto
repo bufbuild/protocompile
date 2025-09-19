@@ -15,3 +15,17 @@
 edition = "2024";
 
 package test;
+
+export message Foo1 {
+    // These are to check that the suggestion that export/local are
+    // for types only appears in Edition 2024.
+    export int32 x = 1;
+    local int32 y = 1;
+}
+local message Foo2 {}
+
+export enum Foo3 {}
+local enum Foo4 {}
+
+export service S1 {}
+local service S2 {}

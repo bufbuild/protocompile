@@ -1,4 +1,4 @@
-// Copyright 2020-2025 Buf Technologies, Inc.
+// Copyright 2020-2024 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package keyword
+syntax = "proto2";
 
-// OpenClose returns the open and close brackets for the four bracket
-// keywords: [Parens], [Brackets], [Braces], and [Angles].
-func (k Keyword) OpenClose() (string, string, bool) {
-	switch k {
-	case Parens:
-		return "(", ")", true
-	case Brackets:
-		return "[", "]", true
-	case Braces:
-		return "{", "}", true
-	case Angles:
-		return "<", ">", true
-	default:
-		return "", "", false
-	}
-}
+package test;
+
+import public weak "foo.proto";
+import public option "foo.proto";
+import weak option "foo.proto";
+import option weak public "foo.proto";
+import weak weak "foo.proto";
+import export "foo.proto";

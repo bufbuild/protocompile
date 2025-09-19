@@ -63,6 +63,8 @@
   - {name: Optional, string: optional}
   - {name: Required, string: required}
   - {name: Stream, string: stream}
+  - {name: Export, string: export}
+  - {name: Local, string: local}
 
   - {name: Int32, string: int32}
   - {name: Int64, string: int64}

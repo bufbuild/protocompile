@@ -120,13 +120,13 @@ message Decl {
       MODIFIER_PUBLIC = 2;
     }
 
-    Modifier modifier = 1;
+    repeated Modifier modifier = 1;
     Expr import_path = 2;
     Options options = 3;
 
     Span span = 10;
     Span keyword_span = 11;
-    Span modifier_span = 12;
+    repeated Span modifier_span = 12;
     Span import_path_span = 13;
     Span semicolon_span = 14;
   }
