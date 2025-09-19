@@ -53,7 +53,7 @@ func resolveNames(f File, r *report.Report) {
 
 // resolveFieldType fully resolves the type of a field (extension or otherwise).
 func resolveFieldType(field Member, r *report.Report) {
-	ty := field.AST().Type()
+	ty := field.TypeAST()
 	var path ast.Path
 	kind := presence.Explicit
 	switch ty.Kind() {
@@ -67,21 +67,6 @@ func resolveFieldType(field Member, r *report.Report) {
 		path = ty.AsPath().Path
 
 	case ast.TypeKindPrefixed:
-		// Unwrap as many prefixed fields as necessary to get to the bottom
-		// of this.
-		inner := ty
-		for {
-			if p := inner.AsPath(); !p.IsZero() {
-				path = p.Path
-				break
-			}
-			if p := inner.AsPrefixed(); !p.IsZero() {
-				inner = p.Type()
-				continue
-			}
-			sorry("map fields")
-		}
-
 		switch ty.AsPrefixed().Prefix() {
 		case keyword.Optional:
 			kind = presence.Explicit
@@ -91,8 +76,19 @@ func resolveFieldType(field Member, r *report.Report) {
 			kind = presence.Repeated
 		}
 
+		// Unwrap as many prefixed fields as necessary to get to the bottom
+		// of this.
+		ty = ty.RemovePrefixes()
+		if p := ty.AsPath().Path; !p.IsZero() {
+			path = p
+			break
+		}
+
+		fallthrough
+
 	case ast.TypeKindGeneric:
-		sorry("map fields")
+		// Resolved elsewhere.
+		return
 	}
 
 	if path.IsZero() {
@@ -123,6 +119,33 @@ func resolveFieldType(field Member, r *report.Report) {
 	if sym.Kind().IsType() {
 		field.raw.elem.file = sym.ref.file
 		field.raw.elem.ptr = arena.Pointer[rawType](sym.raw.data)
+
+		if mf := sym.AsType().MapField(); !mf.IsZero() {
+			r.Errorf("use of synthetic map entry type").Apply(
+				report.Snippetf(path, "referenced here"),
+				report.Snippetf(mf.TypeAST(), "synthesized by this type"),
+				report.Helpf("despite having a user-visible symbol, map entry "+
+					"types cannot be used as field types"),
+			)
+		}
+
+		if !field.Container().MapField().IsZero() && field.Number() == 1 {
+			// Legalize that the key type must be comparable.
+			ty := sym.AsType()
+			if !ty.Predeclared().IsMapKey() {
+				d := r.Errorf("expected map key type, found %s `%s`", sym.Kind().noun(), sym.FullName()).Apply(
+					report.Snippetf(field.TypeAST(), "expected map key type"),
+					report.Snippetf(sym.Definition(), "defined here"),
+					report.Helpf("valid map key types are integer types, `string`, and `bool`"),
+				)
+
+				if ty.IsEnum() {
+					d.Apply(report.Helpf(
+						"counterintuitively, user-defined enum types " +
+							"cannot be used as keys"))
+				}
+			}
+		}
 	}
 }
 
@@ -164,6 +187,8 @@ func resolveLangSymbols(c *Context) {
 
 		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
 		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
+
+		mapEntry: mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
 	}
 }
 

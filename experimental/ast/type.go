@@ -136,6 +136,14 @@ func (t TypeAny) AsGeneric() TypeGeneric {
 	}}
 }
 
+// RemovePrefixes removes all [TypePrefix] values wrapping this type.
+func (t TypeAny) RemovePrefixes() TypeAny {
+	for t.Kind() == TypeKindPrefixed {
+		t = t.AsPrefixed().Type()
+	}
+	return t
+}
+
 // report.Span implements [report.Spanner].
 func (t TypeAny) Span() report.Span {
 	// At most one of the below will produce a non-zero type, and that will be

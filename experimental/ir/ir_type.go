@@ -68,7 +68,8 @@ func (r TagRange) AsReserved() ReservedRange {
 }
 
 type rawType struct {
-	def             ast.DeclDef
+	def ast.DeclDef
+
 	nested          []arena.Pointer[rawType]
 	members         []arena.Pointer[rawMember]
 	memberByName    func() intern.Map[arena.Pointer[rawMember]]
@@ -81,6 +82,7 @@ type rawType struct {
 	parent          arena.Pointer[rawType]
 	extnsStart      uint32
 	rangesExtnStart uint32
+	mapEntryOf      arena.Pointer[rawMember]
 
 	isEnum, isMessageSet bool
 	allowsAlias          bool
@@ -143,6 +145,9 @@ func PredeclaredType(n predeclared.Name) Type {
 }
 
 // AST returns the declaration for this type, if known.
+//
+// This need not be an [ast.DefMessage] or [ast.DefEnum]; it may be something
+// else in the case of e.g. a map field's entry type.
 func (t Type) AST() ast.DeclDef {
 	return t.raw.def
 }
@@ -281,6 +286,14 @@ func (t Type) Nested() seq.Indexer[Type] {
 			return wrapType(t.Context(), ref[rawType]{ptr: p})
 		},
 	)
+}
+
+// MapField returns the map field that generated this type, if any.
+func (t Type) MapField() Member {
+	if t.IsZero() || t.raw.mapEntryOf.Nil() {
+		return Member{}
+	}
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.mapEntryOf})
 }
 
 // Members returns the members of this type.

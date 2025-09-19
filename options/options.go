@@ -324,7 +324,7 @@ func (interp *interpreter) interpretMessageOptions(fqn string, md *descriptorpb.
 
 	// We also copy features for map fields down to their synthesized key and value fields.
 	for _, fld := range md.GetField() {
-		entryName := internal.InitCap(internal.JSONName(fld.GetName())) + "Entry"
+		entryName := internal.MapEntry(fld.GetName())
 		if fld.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_REPEATED ||
 			fld.GetType() != descriptorpb.FieldDescriptorProto_TYPE_MESSAGE &&
 				fld.GetTypeName() != "."+fqn+"."+entryName {
