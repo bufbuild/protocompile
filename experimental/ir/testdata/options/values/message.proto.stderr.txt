@@ -275,7 +275,7 @@ error: cannot resolve message field name for `buf.test.Foo`
   --> testdata/options/values/message.proto:36:5
    |
 36 |     1000: 1,
-   |     ^^^^ field referenced here
+   |     ^^^^^^^ field referenced here
 ...
 58 |     optional Foo x = 1000;
    |     ------------ expected `Foo` field due to this
@@ -284,7 +284,7 @@ error: cannot resolve message field name for `buf.test.Foo`
   --> testdata/options/values/message.proto:38:5
    |
 38 |     [z]: 0,
-   |     ^^^ field referenced here
+   |     ^^^^^^ field referenced here
 39 |     [Foo.z]: 1,
 ...
 58 |     optional Foo x = 1000;

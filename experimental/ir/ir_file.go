@@ -96,6 +96,8 @@ type langSymbols struct {
 	oneofOptions,
 	enumOptions,
 	enumValueOptions arena.Pointer[rawMember]
+
+	mapEntry arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]
@@ -118,7 +120,7 @@ func (r ref[T]) context(base *Context) *Context {
 	case -1:
 		return primitiveCtx
 	default:
-		return base.imports.files[r.file-1].Context()
+		return base.imports.files[r.file-1].file.Context()
 	}
 }
 

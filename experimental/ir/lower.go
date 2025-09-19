@@ -42,6 +42,8 @@ type Session struct {
 		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
 		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+
+		MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 	}
 }
 
@@ -87,6 +89,8 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Now, resolve all the imports.
 	buildImports(c.File(), r, importer)
+
+	generateMapEntries(c.File(), r)
 
 	// Next, we can build various symbol tables in preparation for name
 	// resolution.

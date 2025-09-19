@@ -554,6 +554,10 @@ func (v MessageValue) Concrete() MessageValue {
 // Fields yields the fields within this message literal, in insertion order.
 func (v MessageValue) Fields() iter.Seq[Value] {
 	return func(yield func(Value) bool) {
+		if v.IsZero() {
+			return
+		}
+
 		for _, p := range v.raw.entries {
 			v := wrapValue(v.Context(), p)
 			if !v.IsZero() && !yield(v) {

@@ -269,7 +269,7 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 }
 
 // evalKey evaluates a key in a message literal.
-func (e *evaluator) evalKey(args evalArgs, expr ast.ExprAny) Member {
+func (e *evaluator) evalKey(args evalArgs, expr ast.ExprField) Member {
 	// There are a number of potentially incorrect ways of specifying
 	// a field here, which we want to diagnose.
 	//
@@ -287,17 +287,38 @@ func (e *evaluator) evalKey(args evalArgs, expr ast.ExprAny) Member {
 	//
 	// Everything else is unrecoverable.
 	ty := args.Type()
+
+	mapFieldHelp := func(d *report.Diagnostic) {
+		if !ty.MapField().IsZero() {
+			d.Apply(
+				// TODO: Generate a suggestion. It would be nice to tell the
+				// user to replace `k: v` with `{ key: k, value: v }`. Doing so
+				// for general expressions is unfortunately quite tricky, in
+				// particular because {k1: v1, k2: v2} needs to turn into
+				// [{key: k1, value: v1}, {key: k2, value: v2}].
+				report.Helpf(
+					"the text format lacks syntax for map-typed fields; instead, the syntax "+
+						"is the same as for a repeated message whose fields are named `key` and `value`",
+				),
+				report.Helpf(
+					"for example, `map_field { key: ..., value: ... }`",
+				),
+			)
+		}
+	}
+
 	cannotResolveKey := func() {
-		e.Errorf("cannot resolve %s name for `%s`", taxa.Field, ty.FullName()).Apply(
+		d := e.Errorf("cannot resolve %s name for `%s`", taxa.Field, ty.FullName()).Apply(
 			report.Snippetf(expr, "field referenced here"),
 			report.Snippetf(args.annotation, "expected `%s` field due to this", ty.Name()),
 		)
+		mapFieldHelp(d)
 	}
 
 	var member Member
 	var path string
 	var hasBrackets, isPath, isNumber, isString bool
-	key := expr
+	key := expr.Key()
 again:
 	switch key.Kind() {
 	case ast.ExprKindPath:
@@ -309,11 +330,12 @@ again:
 			}
 
 			// This appears to be an Any type name.
-			e.Errorf("unexpected %s", taxa.TypeURL).Apply(
-				report.Snippet(expr),
+			d := e.Errorf("unexpected %s", taxa.TypeURL).Apply(
+				report.Snippet(expr.Key()),
 				report.Snippetf(args.annotation, "expected this to be `google.protobuf.Any`"),
 				report.Notef("%s may only appear in a `google.protobuf.Any`-typed %s", taxa.Dict),
 			)
+			mapFieldHelp(d)
 			return Member{}
 		}
 
@@ -335,8 +357,6 @@ again:
 		if lit.Kind() == token.Number {
 			n, ok := lit.AsInt()
 			if ok && n < math.MaxInt32 {
-				// TODO: There is a dependency issue that needs to
-
 				member = ty.MemberByNumber(int32(n))
 				if !member.IsZero() {
 					isNumber = true
@@ -375,7 +395,7 @@ again:
 
 			scope: e.scope,
 			name:  FullName(path),
-			span:  expr,
+			span:  expr.Key(),
 		}.resolve()
 
 		if sym.IsZero() {
@@ -388,12 +408,13 @@ again:
 			cannotResolveKey()
 			return Member{}
 		} else if !sym.Kind().IsMessageField() {
-			e.Error(errTypeCheck{
+			d := e.Error(errTypeCheck{
 				want:       fmt.Sprintf("`%s` field", ty.FullName()),
 				got:        sym,
-				expr:       expr,
+				expr:       expr.Key(),
 				annotation: args.annotation,
 			})
+			mapFieldHelp(d)
 			return Member{}
 		}
 		// NOTE: Absolute paths in this position are diagnosed in the parser.
@@ -404,12 +425,13 @@ again:
 validate:
 	// Validate that the member is actually of the correct type.
 	if member.Container() != ty {
-		e.Error(errTypeCheck{
+		d := e.Error(errTypeCheck{
 			want:       fmt.Sprintf("`%s` field", ty.FullName()),
 			got:        fmt.Sprintf("`%s` field", member.Container().FullName()),
-			expr:       expr,
+			expr:       expr.Key(),
 			annotation: args.annotation,
 		})
+		mapFieldHelp(d)
 		return Member{}
 	}
 
@@ -426,9 +448,9 @@ validate:
 		}
 
 		d := e.Errorf("%s `%s` referenced incorrectly", member.noun(), member.FullName()).Apply(
-			report.Snippetf(expr, "referenced here"),
-			report.SuggestEdits(expr, fmt.Sprintf("reference it as `%s`", replace), report.Edit{
-				Start: 0, End: expr.Span().Len(),
+			report.Snippetf(expr.Key(), "referenced here"),
+			report.SuggestEdits(expr.Key(), fmt.Sprintf("reference it as `%s`", replace), report.Edit{
+				Start: 0, End: expr.Key().Span().Len(),
 				Replace: replace,
 			}),
 		)
@@ -453,6 +475,7 @@ validate:
 				d.Apply(report.Notef("due to a parser quirk, `.protoc` rejects quoted strings here, even though textproto does not"))
 			}
 		}
+		mapFieldHelp(d)
 	}
 
 	return member
@@ -612,7 +635,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 	}
 
 	for expr := range seq.Values(expr.Elements()) {
-		field := e.evalKey(args, expr.Key())
+		field := e.evalKey(args, expr)
 		if field.IsZero() {
 			continue
 		}
@@ -621,7 +644,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		copied.textFormat = true
 		copied.isConcreteAny = false
 		copied.expr = expr.Value()
-		copied.annotation = field.AST().Type()
+		copied.annotation = field.TypeAST()
 		copied.field = field
 		copied.rawField = ref[rawMember]{}
 
