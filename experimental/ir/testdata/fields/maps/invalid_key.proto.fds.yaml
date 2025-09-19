@@ -34,17 +34,17 @@ file:
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "M2Entry"
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_DOUBLE }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "M3Entry"
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_BYTES }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "M4Entry"
       field:
       - name: "key"
@@ -53,7 +53,7 @@ file:
         type: TYPE_MESSAGE
         type_name: ".test.Foo"
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "M5Entry"
       field:
       - name: "key"
@@ -62,6 +62,6 @@ file:
         type: TYPE_ENUM
         type_name: ".test.Enum"
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
   enum_type: [{ name: "Enum", value: [{ name: "Z", number: 0 }] }]
   syntax: "proto3"

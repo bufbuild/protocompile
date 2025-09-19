@@ -19,8 +19,18 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.Foo"
-      options: {}
-    options: {}
+      options.map_entry: true
+    options.$unknown: |
+      10000: {
+        1: {
+          1: {"a"}
+          2: {
+            1: {1: {"a"}}
+            1: {1: {"b"}}
+            1: {}
+          }
+        }
+      }
   extension:
   - name: "foo"
     number: 10000

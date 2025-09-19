@@ -8,9 +8,9 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/maps/extension.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.m"
       kind: KIND_EXTENSION
       file: "testdata/fields/maps/extension.proto"
       index: 1
-      visible:
+      visible: true

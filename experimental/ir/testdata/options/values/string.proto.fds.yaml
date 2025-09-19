@@ -14,5 +14,18 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
-  options: {}
+  options.$unknown: |
+    1000: {
+      1: {}
+      1: {"foo"}
+      1: {"foo barbaz"}
+      1: {`f09f9088e2808de2ac9b`}
+      1: {`ff`}
+      1: {"neg"}
+      2: {}
+      2: {"foo"}
+      2: {"foo barbaz"}
+      2: {`f09f9088e2808de2ac9b`}
+      2: {`ff`}
+    }
   syntax: "proto2"

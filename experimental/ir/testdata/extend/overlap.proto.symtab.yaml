@@ -6,34 +6,34 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/extend/overlap.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.E"
       kind: KIND_ENUM
       file: "testdata/extend/overlap.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.M.y0"
       kind: KIND_FIELD
       file: "testdata/extend/overlap.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.M.y1"
       kind: KIND_FIELD
       file: "testdata/extend/overlap.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.M.y2"
       kind: KIND_FIELD
       file: "testdata/extend/overlap.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.M.y3"
       kind: KIND_FIELD
       file: "testdata/extend/overlap.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.M.y4"
       kind: KIND_FIELD
       file: "testdata/extend/overlap.proto"
       index: 5
-      visible:
+      visible: true
