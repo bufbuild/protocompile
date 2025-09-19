@@ -8,49 +8,49 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Message.FooBar"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.field"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.field.FooBar"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.Groups"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 6
-      visible:
+      visible: true
     - fqn: "test.Groups.foo"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 7
-      visible:
+      visible: true
     - fqn: "test.Groups.FooBar"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 8
-      visible:
+      visible: true
     - fqn: "test.Groups.foobar"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/collision.proto"
       index: 9
-      visible:
+      visible: true
     - fqn: "test.Message.foobar"
       kind: KIND_FIELD
       file: "testdata/fields/groups/collision.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.field.foobar"
       kind: KIND_FIELD
       file: "testdata/fields/groups/collision.proto"
       index: 2
-      visible:
+      visible: true

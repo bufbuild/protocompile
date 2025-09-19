@@ -28,7 +28,7 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_GROUP
         type_name: ".test.Foo.FooBar.X_Y_Z"
-        options: {}
+        options.deprecated: true
       nested_type:
       - name: "X_Y_Z"
         field:
@@ -38,5 +38,5 @@ file:
           type: TYPE_GROUP
           type_name: ".test.Foo.FooBar.X_Y_Z.Baz"
         nested_type: [{ name: "Baz" }]
-      options: {}
+      options.deprecated: true
   syntax: "proto2"

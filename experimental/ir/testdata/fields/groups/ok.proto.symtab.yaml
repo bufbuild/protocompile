@@ -8,51 +8,51 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBar"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/ok.proto"
       index: 2
-      visible:
-      options.message.fields: { "deprecated": { bool: } }
+      visible: true
+      options.message.fields: { "deprecated": { bool: true } }
     - fqn: "test.Foo.FooBar.X_Y_Z"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/ok.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBar.X_Y_Z.Baz"
       kind: KIND_MESSAGE
       file: "testdata/fields/groups/ok.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.Foo.foobar"
       kind: KIND_FIELD
       file: "testdata/fields/groups/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBar.x"
       kind: KIND_FIELD
       file: "testdata/fields/groups/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.FooBar.x_y_z"
       kind: KIND_FIELD
       file: "testdata/fields/groups/ok.proto"
       index: 3
-      visible:
-      options.message.fields: { "deprecated": { bool: } }
+      visible: true
+      options.message.fields: { "deprecated": { bool: true } }
     - fqn: "test.Foo.FooBar.X_Y_Z.baz"
       kind: KIND_FIELD
       file: "testdata/fields/groups/ok.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.Foo.x"
       kind: KIND_FIELD
       file: "testdata/fields/groups/ok.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.Foo.y"
       kind: KIND_FIELD
       file: "testdata/fields/groups/ok.proto"
       index: 6
-      visible:
+      visible: true
