@@ -133,19 +133,16 @@ func resolveFieldType(field Member, r *report.Report) {
 			// Legalize that the key type must be comparable.
 			ty := sym.AsType()
 			if !ty.Predeclared().IsMapKey() {
-				d := r.Error(errTypeCheck{
-					want: "map key type",
-					got:  ty,
-					expr: field.TypeAST(),
-				}).Apply(report.Helpf(
-					"valid map key types are integer types, " +
-						"`string`, and `bool`",
-				))
+				d := r.Errorf("expected map key type, found %s `%s`", sym.Kind().noun(), sym.FullName()).Apply(
+					report.Snippetf(field.TypeAST(), "expected map key type"),
+					report.Snippetf(sym.Definition(), "defined here"),
+					report.Helpf("valid map key types are integer types, `string`, and `bool`"),
+				)
 
 				if ty.IsEnum() {
 					d.Apply(report.Helpf(
 						"counterintuitively, user-defined enum types " +
-							"cannot be used as map keys"))
+							"cannot be used as keys"))
 				}
 			}
 		}
