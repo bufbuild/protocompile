@@ -25,5 +25,5 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
-  options: {}
+  options.$unknown: "1000: {1: {`0001020304000102ffffffffffffffffff01`}}"
   syntax: "proto2"

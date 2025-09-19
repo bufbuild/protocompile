@@ -6,44 +6,44 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/fields/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.Bar"
       kind: KIND_MESSAGE
       file: "testdata/fields/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.foo"
       kind: KIND_FIELD
       file: "testdata/fields/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "test.Foo.bar"
       kind: KIND_FIELD
       file: "testdata/fields/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "test.Foo.bars"
       kind: KIND_FIELD
       file: "testdata/fields/ok.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "test.Foo.foos"
       kind: KIND_FIELD
       file: "testdata/fields/ok.proto"
       index: 4
-      visible:
+      visible: true
     - fqn: "test.Foo.foo0"
       kind: KIND_FIELD
       file: "testdata/fields/ok.proto"
       index: 5
-      visible:
+      visible: true
     - fqn: "test.Foo.bar0"
       kind: KIND_FIELD
       file: "testdata/fields/ok.proto"
       index: 6
-      visible:
+      visible: true
     - fqn: "test.Foo.baz"
       kind: KIND_ONEOF
       file: "testdata/fields/ok.proto"
       index: 1
-      visible:
+      visible: true

@@ -15,7 +15,7 @@ file:
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
   - name: "Underscores"
     field:
     - name: "_"
@@ -33,10 +33,10 @@ file:
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
     - name: "Entry"
       field:
       - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
       - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      options: {}
+      options.map_entry: true
   syntax: "proto3"
