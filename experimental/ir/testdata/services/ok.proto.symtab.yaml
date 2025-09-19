@@ -8,34 +8,34 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/services/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.N"
       kind: KIND_MESSAGE
       file: "testdata/services/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "buf.test.S"
       kind: 9
       file: "testdata/services/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.S.M1"
       kind: 10
       file: "testdata/services/ok.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.S.M2"
       kind: 10
       file: "testdata/services/ok.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "buf.test.S.M3"
       kind: 10
       file: "testdata/services/ok.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "buf.test.S.M4"
       kind: 10
       file: "testdata/services/ok.proto"
       index: 4
-      visible:
+      visible: true

@@ -8,19 +8,19 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/services/missing_args.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.S"
       kind: 9
       file: "testdata/services/missing_args.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.S.M1"
       kind: 10
       file: "testdata/services/missing_args.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.S.M2"
       kind: 10
       file: "testdata/services/missing_args.proto"
       index: 2
-      visible:
+      visible: true

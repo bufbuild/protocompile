@@ -8,11 +8,11 @@ file:
     - name: "M1"
       input_type: "buf.test.M"
       output_type: ""
-      client_streaming:
-      server_streaming:
+      client_streaming: false
+      server_streaming: false
     - name: "M2"
       input_type: ""
       output_type: "buf.test.M"
-      client_streaming:
-      server_streaming:
+      client_streaming: false
+      server_streaming: false
   syntax: "proto2"
