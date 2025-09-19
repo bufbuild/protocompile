@@ -262,13 +262,17 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 	if ty := f.Element(); !ty.IsZero() {
 		if kind, _ := slicesx.Get(predeclaredToFDPType, ty.Predeclared()); kind != 0 {
 			fdp.Type = kind.Enum()
-		} else if ty.IsEnum() {
-			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
 		} else {
-			// TODO: Groups
-			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
 			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
+
+			switch {
+			case ty.IsEnum():
+				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
+			case f.IsGroup():
+				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_GROUP.Enum()
+			default:
+				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
+			}
 		}
 	}
 

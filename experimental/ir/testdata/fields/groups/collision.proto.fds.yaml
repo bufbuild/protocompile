@@ -1,0 +1,40 @@
+file:
+- name: "testdata/fields/groups/collision.proto"
+  package: "test"
+  message_type:
+  - name: "Message"
+    field:
+    - name: "foobar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Message.FooBar"
+    nested_type: [{ name: "FooBar" }, { name: "FooBar" }]
+  - name: "field"
+    field:
+    - name: "foobar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.field.FooBar"
+    - { name: "foobar", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    nested_type: [{ name: "FooBar" }]
+  - name: "Groups"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Groups.foo"
+    - name: "foobar"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Groups.FooBar"
+    - name: "foobar"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Groups.foobar"
+    nested_type: [{ name: "foo" }, { name: "FooBar" }, { name: "foobar" }]
+  syntax: "proto2"

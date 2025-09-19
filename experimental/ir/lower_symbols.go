@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -192,6 +193,11 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
+			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r ref[rawSymbol]) (ast.DeclDef, bool) {
+				s := wrapSymbol(f.Context(), r)
+				ty := s.AsType()
+				return ty.AST(), !ty.IsZero()
+			}))
 			isFirst := true
 			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
 				s := wrapSymbol(f.Context(), r)
@@ -199,6 +205,12 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 					// Ignore all symbols that are map entry fields, because those
 					// can only be duplicated when two map entry messages' names
 					// collide, so diagnosing them just creates a mess.
+					return true
+				}
+				if !isFirst && s.AsMember().IsGroup() && mapsx.Contains(types, s.AsMember().AST()) {
+					// If a group field collides with its own message type, remove it;
+					// groups with names that might collide with their fields are already
+					// diagnosed in the parser.
 					return true
 				}
 				if !isFirst && s.Kind() == SymbolKindPackage {
@@ -281,17 +293,23 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 			"...also declared here"))
 	}
 
+	spans := make(map[report.Span]struct{})
 	for i := range e.refs[2:] {
 		s := e.symbol(i + 2)
 		next := s.Kind().noun()
 
+		span := s.Definition()
+		if !mapsx.AddZero(spans, span) && i > 1 {
+			// Avoid overlapping spans.
+			continue
+		}
+
 		if noun != next {
-			d.Apply(report.Snippetf(s.Definition(),
+			d.Apply(report.Snippetf(span,
 				"...and then here as a %s %s", article(next), next))
 			noun = next
 		} else {
-			d.Apply(report.Snippetf(s.Definition(),
-				"...and here"))
+			d.Apply(report.Snippetf(span, "...and here"))
 		}
 	}
 
