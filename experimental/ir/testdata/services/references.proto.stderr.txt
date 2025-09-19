@@ -1,0 +1,26 @@
+error: expected type, found service definition `buf.test.S`
+  --> testdata/services/references.proto:20:14
+   |
+20 |     optional S s = 1;
+   |              ^ expected type
+21 |     optional S.X x = 2;
+...
+24 | service S {
+   |         - defined here
+
+error: cannot find `S.X` in this scope
+  --> testdata/services/references.proto:21:14
+   |
+21 |     optional S.X x = 2;
+   |              ^^^ not found in this scope
+   = help: the full name of this scope is `buf.test.M`
+
+error: expected message type, found service method `buf.test.S2.M`
+  --> testdata/services/references.proto:31:11
+   |
+31 |     rpc M(M) returns (buf.test.M);
+   |         - ^ expected message type
+   |         |
+   |         defined here
+
+encountered 3 errors

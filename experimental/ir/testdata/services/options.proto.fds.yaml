@@ -1,0 +1,27 @@
+file:
+- name: "testdata/services/options.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type: [{ name: "M" }]
+  service:
+  - name: "S"
+    method:
+    - name: "X"
+      input_type: "buf.test.M"
+      output_type: "buf.test.M"
+      options: { deprecated: true, $unknown: "1000: 42" }
+      client_streaming: false
+      server_streaming: false
+    options: { deprecated: true, $unknown: "1000: 42" }
+  extension:
+  - name: "x"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+    extendee: ".google.protobuf.ServiceOptions"
+  - name: "y"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+    extendee: ".google.protobuf.MethodOptions"
+  syntax: "proto2"

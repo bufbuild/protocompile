@@ -1,0 +1,32 @@
+tables:
+  "testdata/services/options.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/services/options.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/services/options.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/services/options.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.y"
+      kind: KIND_EXTENSION
+      file: "testdata/services/options.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.S"
+      kind: 9
+      file: "testdata/services/options.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.S.X"
+      kind: 10
+      file: "testdata/services/options.proto"
+      index: 1
+      visible: true

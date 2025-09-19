@@ -56,6 +56,12 @@ func buildLocalSymbols(f File) {
 	for f := range seq.Values(f.Extensions()) {
 		newFieldSymbol(f)
 	}
+	for s := range seq.Values(f.Services()) {
+		newServiceSymbol(s)
+		for m := range seq.Values(s.Methods()) {
+			newMethodSymbol(m)
+		}
+	}
 
 	c.exported.sort(c)
 }
@@ -96,6 +102,26 @@ func newOneofSymbol(o Oneof) {
 		kind: SymbolKindOneof,
 		fqn:  o.InternedFullName(),
 		data: arena.Untyped(c.arenas.oneofs.Compress(o.raw)),
+	})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+}
+
+func newServiceSymbol(s Service) {
+	c := s.Context()
+	sym := c.arenas.symbols.NewCompressed(rawSymbol{
+		kind: SymbolKindService,
+		fqn:  s.InternedFullName(),
+		data: arena.Untyped(c.arenas.services.Compress(s.raw)),
+	})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+}
+
+func newMethodSymbol(m Method) {
+	c := m.Context()
+	sym := c.arenas.symbols.NewCompressed(rawSymbol{
+		kind: SymbolKindMethod,
+		fqn:  m.InternedFullName(),
+		data: arena.Untyped(c.arenas.methods.Compress(m.raw)),
 	})
 	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }

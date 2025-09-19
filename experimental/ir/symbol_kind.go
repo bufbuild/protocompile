@@ -35,6 +35,8 @@ const (
 	SymbolKindEnumValue
 	SymbolKindExtension
 	SymbolKindOneof
+	SymbolKindService
+	SymbolKindMethod
 )
 
 // String implements [fmt.Stringer].
@@ -63,6 +65,8 @@ var _table_SymbolKind_String = [...]string{
 	SymbolKindEnumValue: "SymbolKindEnumValue",
 	SymbolKindExtension: "SymbolKindExtension",
 	SymbolKindOneof:     "SymbolKindOneof",
+	SymbolKindService:   "SymbolKindService",
+	SymbolKindMethod:    "SymbolKindMethod",
 }
 
 var _table_SymbolKind_GoString = [...]string{
@@ -75,5 +79,7 @@ var _table_SymbolKind_GoString = [...]string{
 	SymbolKindEnumValue: "SymbolKindEnumValue",
 	SymbolKindExtension: "SymbolKindExtension",
 	SymbolKindOneof:     "SymbolKindOneof",
+	SymbolKindService:   "SymbolKindService",
+	SymbolKindMethod:    "SymbolKindMethod",
 }
 var _ iter.Seq[int] // Mark iter as used.

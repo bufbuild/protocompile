@@ -45,4 +45,10 @@ error: expected message type, found oneof definition `test.Foo.self`
 39 |     extend self {
    |            ^^^^ expected message type
 
-encountered 5 errors
+error: expected message type, found scalar type `string`
+  --> testdata/extend/wrong_kind.proto:43:12
+   |
+43 |     extend string {
+   |            ^^^^^^ expected message type
+
+encountered 6 errors

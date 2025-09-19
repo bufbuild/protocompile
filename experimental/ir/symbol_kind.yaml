@@ -30,3 +30,5 @@
   - name: SymbolKindEnumValue
   - name: SymbolKindExtension
   - name: SymbolKindOneof
+  - name: SymbolKindService
+  - name: SymbolKindMethod

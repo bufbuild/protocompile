@@ -1,0 +1,39 @@
+error: expected message type, found enum type `buf.test.E`
+  --> testdata/services/wrong_type.proto:23:24
+   |
+20 | enum E {}
+   |      - defined here
+...
+23 |     rpc M1(M) returns (E);
+   |                        ^ expected message type
+
+error: expected message type, found enum type `buf.test.E`
+  --> testdata/services/wrong_type.proto:24:19
+   |
+20 | enum E {}
+   |      - defined here
+...
+23 |     rpc M1(M) returns (E);
+24 |     rpc M2(stream E) returns (M);
+   |                   ^ expected message type
+
+error: expected message type, found scalar type `int32`
+  --> testdata/services/wrong_type.proto:25:31
+   |
+25 |     rpc M3(M) returns (stream int32);
+   |                               ^^^^^ expected message type
+
+error: expected message type, found scalar type `string`
+  --> testdata/services/wrong_type.proto:26:19
+   |
+26 |     rpc M4(stream string) returns (stream N);
+   |                   ^^^^^^ expected message type
+
+error: cannot find `N` in this scope
+  --> testdata/services/wrong_type.proto:26:43
+   |
+26 |     rpc M4(stream string) returns (stream N);
+   |                                           ^ not found in this scope
+   = help: the full name of this scope is `buf.test.S`
+
+encountered 5 errors

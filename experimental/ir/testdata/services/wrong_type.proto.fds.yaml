@@ -1,0 +1,29 @@
+file:
+- name: "testdata/services/wrong_type.proto"
+  package: "buf.test"
+  message_type: [{ name: "M" }]
+  enum_type: [{ name: "E" }]
+  service:
+  - name: "S"
+    method:
+    - name: "M1"
+      input_type: "buf.test.M"
+      output_type: "buf.test.E"
+      client_streaming: false
+      server_streaming: false
+    - name: "M2"
+      input_type: "buf.test.E"
+      output_type: "buf.test.M"
+      client_streaming: true
+      server_streaming: false
+    - name: "M3"
+      input_type: "buf.test.M"
+      output_type: "int32"
+      client_streaming: false
+      server_streaming: true
+    - name: "M4"
+      input_type: "string"
+      output_type: ""
+      client_streaming: true
+      server_streaming: true
+  syntax: "proto2"
