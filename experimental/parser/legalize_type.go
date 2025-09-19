@@ -249,7 +249,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 
 			switch k.Kind() {
 			case ast.TypeKindPath:
-				legalizeFieldType(p, k, false, oneof)
+				legalizeFieldType(p, what, v, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
 				p.Error(errUnexpected{
 					what:  k.AsPrefixed().PrefixToken(),
