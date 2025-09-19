@@ -27,7 +27,9 @@ file:
       type: TYPE_MESSAGE
       type_name: ".test.Foo"
       extendee: ".test.Foo"
-    nested_type: [{ name: "Foo" }]
+    nested_type:
+    - { name: "Foo", extension_range: [{ start: 1, end: 536870911 }] }
+    extension_range: [{ start: 1, end: 536870911 }]
   extension:
   - name: "x5"
     number: 5

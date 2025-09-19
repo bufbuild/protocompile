@@ -1,0 +1,33 @@
+error: field number `2` used more than once
+  --> testdata/tags/overlap.proto:22:25
+   |
+21 |     optional int32 y1 = 2;
+   |                         - previously used here
+22 |     optional int32 y2 = 2;
+   |                         ^ used here
+
+error: field number out of range
+  --> testdata/tags/overlap.proto:25:25
+   |
+25 |     optional int32 z1 = -1;
+   |                         ^^
+   = note: the range for field numbers is `1 to 536870911`,
+           minus `19000 to 19999`, which is reserved for internal use
+
+error: field number out of range
+  --> testdata/tags/overlap.proto:26:25
+   |
+26 |     optional int32 z2 = -1;
+   |                         ^^
+   = note: the range for field numbers is `1 to 536870911`,
+           minus `19000 to 19999`, which is reserved for internal use
+
+error: enum value `2` used more than once
+  --> testdata/tags/overlap.proto:32:10
+   |
+31 |     Y1 = 2;
+   |          - previously used here
+32 |     Y2 = 2;
+   |          ^ used here
+
+encountered 4 errors

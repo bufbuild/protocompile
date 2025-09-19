@@ -1,0 +1,26 @@
+tables:
+  "testdata/extend/in_range.proto":
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/extend/in_range.proto"
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/in_range.proto"
+      index: 1
+      visible:
+    - fqn: "test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/in_range.proto"
+      index: 1
+      visible:
+    - fqn: "test.y"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/in_range.proto"
+      index: 2
+      visible:
+    - fqn: "test.z"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/in_range.proto"
+      index: 3
+      visible:

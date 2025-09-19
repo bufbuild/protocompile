@@ -484,29 +484,11 @@ error: missing message field tag in declaration
 54 |     map<int, int> x;
    |     ^^^^^^^^^^^^^^^^
 
-error: unexpected non-comparable type in map key type
-  --> testdata/parser/lists.proto:54:9
-   |
-54 |     map<int, int> x;
-   |         ^^^
-   = help: a map key must be one of the following types: int32, int64, uint32,
-           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
-           string
-
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:55:5
    |
 55 |     map<int int> x;
    |     ^^^^^^^^^^^^^^^
-
-error: unexpected non-comparable type in map key type
-  --> testdata/parser/lists.proto:55:9
-   |
-55 |     map<int int> x;
-   |         ^^^
-   = help: a map key must be one of the following types: int32, int64, uint32,
-           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
-           string
 
 error: unexpected type name in type parameters
   --> testdata/parser/lists.proto:55:13
@@ -525,15 +507,6 @@ error: missing message field tag in declaration
    |
 56 |     map<int,, int> x;
    |     ^^^^^^^^^^^^^^^^^
-
-error: unexpected non-comparable type in map key type
-  --> testdata/parser/lists.proto:56:9
-   |
-56 |     map<int,, int> x;
-   |         ^^^
-   = help: a map key must be one of the following types: int32, int64, uint32,
-           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
-           string
 
 error: unexpected extra `,` in type parameters
   --> testdata/parser/lists.proto:56:13
@@ -600,29 +573,11 @@ error: unexpected leading `,` in type parameters
 59 | +     map<int, int> x;
    |
 
-error: unexpected non-comparable type in map key type
-  --> testdata/parser/lists.proto:59:10
-   |
-59 |     map<,int, int> x;
-   |          ^^^
-   = help: a map key must be one of the following types: int32, int64, uint32,
-           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
-           string
-
 error: missing message field tag in declaration
   --> testdata/parser/lists.proto:60:5
    |
 60 |     map<int; int> x;
    |     ^^^^^^^^^^^^^^^^
-
-error: unexpected non-comparable type in map key type
-  --> testdata/parser/lists.proto:60:9
-   |
-60 |     map<int; int> x;
-   |         ^^^
-   = help: a map key must be one of the following types: int32, int64, uint32,
-           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
-           string
 
 error: unexpected `;` in type parameters
   --> testdata/parser/lists.proto:60:12
@@ -637,15 +592,6 @@ error: missing message field tag in declaration
 ...  |
 64 | |     > x;
    | \________^
-
-error: unexpected non-comparable type in map key type
-  --> testdata/parser/lists.proto:62:9
-   |
-62 |         int,
-   |         ^^^
-   = help: a map key must be one of the following types: int32, int64, uint32,
-           uint64, sint32, sint64, fixed32, fixed64, sfixed32, sfixed64, bool,
-           string
 
 error: unexpected trailing `,` in type parameters
   --> testdata/parser/lists.proto:63:12
@@ -887,4 +833,4 @@ error: unexpected `message` after reserved range
 76 |     reserved a, b c;
    |                    +
 
-encountered 94 errors and 2 warnings
+encountered 88 errors and 2 warnings

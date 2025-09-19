@@ -15,7 +15,7 @@ file:
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
   - name: "y"
-    number: 1
+    number: 1001
     label: LABEL_REPEATED
     type: TYPE_FLOAT
     extendee: ".google.protobuf.FileOptions"

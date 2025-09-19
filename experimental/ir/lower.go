@@ -42,6 +42,8 @@ type Session struct {
 		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
 		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+
+		MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 	}
 }
 
@@ -88,6 +90,8 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Now, resolve all the imports.
 	buildImports(c.File(), r, importer)
 
+	generateMapEntries(c.File(), r)
+
 	// Next, we can build various symbol tables in preparation for name
 	// resolution.
 	buildLocalSymbols(c.File())
@@ -99,13 +103,11 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Perform constant evaluation.
 	evaluateFieldNumbers(c.File(), r)
 
+	// Check for number overlaps now that we have numbers loaded.
+	buildFieldNumberRanges(c.File(), r)
+
 	// Perform "late" name resolution, that is, options.
 	resolveOptions(c.File(), r)
-
-	// Perform more constant evaluation. This is a separate step because we need
-	// to know if an extendee is a MessageSet before checking extension numbers,
-	// since MessageSet field numbers are 32-bit, not 29-bit.
-	evaluateExtensionNumbers(c.File(), r)
 }
 
 // sorry panics with an NYI error, which turns into an ICE inside of the

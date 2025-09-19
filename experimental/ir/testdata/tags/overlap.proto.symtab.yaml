@@ -1,0 +1,75 @@
+tables:
+  "testdata/tags/overlap.proto":
+    symbols:
+    - { fqn: "test", kind: KIND_PACKAGE, file: "testdata/tags/overlap.proto" }
+    - fqn: "test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/tags/overlap.proto"
+      index: 1
+      visible:
+    - fqn: "test.E"
+      kind: KIND_ENUM
+      file: "testdata/tags/overlap.proto"
+      index: 2
+      visible:
+    - fqn: "test.Alias"
+      kind: KIND_ENUM
+      file: "testdata/tags/overlap.proto"
+      index: 3
+      visible:
+      options.message.fields: { "allow_alias": { bool: } }
+    - fqn: "test.M.y0"
+      kind: KIND_FIELD
+      file: "testdata/tags/overlap.proto"
+      index: 1
+      visible:
+    - fqn: "test.M.y1"
+      kind: KIND_FIELD
+      file: "testdata/tags/overlap.proto"
+      index: 2
+      visible:
+    - fqn: "test.M.y2"
+      kind: KIND_FIELD
+      file: "testdata/tags/overlap.proto"
+      index: 3
+      visible:
+    - fqn: "test.M.z1"
+      kind: KIND_FIELD
+      file: "testdata/tags/overlap.proto"
+      index: 4
+      visible:
+    - fqn: "test.M.z2"
+      kind: KIND_FIELD
+      file: "testdata/tags/overlap.proto"
+      index: 5
+      visible:
+    - fqn: "test.Y0"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/overlap.proto"
+      index: 6
+      visible:
+    - fqn: "test.Y1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/overlap.proto"
+      index: 7
+      visible:
+    - fqn: "test.Y2"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/overlap.proto"
+      index: 8
+      visible:
+    - fqn: "test.A0"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/overlap.proto"
+      index: 9
+      visible:
+    - fqn: "test.A1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/overlap.proto"
+      index: 10
+      visible:
+    - fqn: "test.A2"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/overlap.proto"
+      index: 11
+      visible:

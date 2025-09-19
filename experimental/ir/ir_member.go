@@ -73,9 +73,53 @@ func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
 }
 
+// IsSynthetic returns whether or not this is a synthetic field, such as the
+// fields of a map entry.
+func (m Member) IsSynthetic() bool {
+	return !m.IsZero() && m.AST().IsZero()
+}
+
+// AsTagRange wraps this member in a TagRange.
+func (m Member) AsTagRange() TagRange {
+	if m.IsZero() {
+		return TagRange{}
+	}
+	return TagRange{
+		m.withContext,
+		rawTagRange{
+			isMember: true,
+			ptr:      arena.Untyped(m.Context().arenas.members.Compress(m.raw)),
+		},
+	}
+}
+
 // AST returns the declaration for this member, if known.
 func (m Member) AST() ast.DeclDef {
+	if m.IsZero() {
+		return ast.DeclDef{}
+	}
 	return m.raw.def
+}
+
+// TypeAST returns the type AST node for this member, if known.
+func (m Member) TypeAST() ast.TypeAny {
+	decl := m.AST()
+	if !decl.IsZero() {
+		return decl.Type()
+	}
+
+	ty := m.Container()
+	if !ty.MapField().IsZero() {
+		k, v := ty.AST().Type().RemovePrefixes().AsGeneric().AsMap()
+		switch m.Number() {
+		case 1:
+			return k
+		case 2:
+			return v
+		}
+	}
+
+	return ast.TypeAny{}
 }
 
 // FullName returns this members's name.
@@ -359,36 +403,65 @@ func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
 	}
 }
 
-// TagRange is a range of reserved field or enum numbers, either from a reserved
-// or extensions declaration.
-type TagRange struct {
+// ReservedRange is a range of reserved field or enum numbers,
+// either from a reserved or extensions declaration.
+type ReservedRange struct {
 	withContext
-	raw *rawRange
+	raw *rawReservedRange
 }
 
-type rawRange struct {
-	ast         ast.ExprAny
-	first, last int32
-	options     arena.Pointer[rawValue]
+type rawReservedRange struct {
+	ast           ast.ExprAny
+	first, last   int32
+	options       arena.Pointer[rawValue]
+	forExtensions bool
 }
 
 // AST returns the expression that this range was evaluated from, if known.
-func (r TagRange) AST() ast.ExprAny {
+func (r ReservedRange) AST() ast.ExprAny {
+	if r.IsZero() {
+		return ast.ExprAny{}
+	}
+
 	return r.raw.ast
 }
 
 // Range returns the start and end of the range.
-//
-// Unlike how it appears in descriptor.proto, this range is exclusive: end is
-// not included.
-func (r TagRange) Range() (start, end int32) {
-	return r.raw.first, r.raw.last + 1
+func (r ReservedRange) Range() (start, end int32) {
+	if r.IsZero() {
+		return 0, 0
+	}
+
+	return r.raw.first, r.raw.last
+}
+
+// ForExtensions returns whether this is an extension range.
+func (r ReservedRange) ForExtensions() bool {
+	return !r.IsZero() && r.raw.forExtensions
+}
+
+// AsTagRange wraps this range in a TagRange.
+func (r ReservedRange) AsTagRange() TagRange {
+	if r.IsZero() {
+		return TagRange{}
+	}
+	return TagRange{
+		r.withContext,
+		rawTagRange{
+			isMember: true,
+			ptr:      arena.Untyped(r.Context().arenas.ranges.Compress(r.raw)),
+		},
+	}
 }
 
 // Options returns the options applied to this range.
 //
 // Reserved ranges cannot carry options; only extension ranges do.
-func (r TagRange) Options() MessageValue {
+func (r ReservedRange) Options() MessageValue {
+	if r.IsZero() {
+		return MessageValue{}
+	}
+
 	return wrapValue(r.Context(), r.raw.options).AsMessage()
 }
 

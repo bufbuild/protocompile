@@ -16,8 +16,8 @@ package internal
 
 import (
 	"bytes"
+	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -27,27 +27,35 @@ import (
 //
 //	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L95
 func JSONName(name string) string {
-	var js []rune
-	nextUpper := false
-	for _, r := range name {
-		if r == '_' {
-			nextUpper = true
-			continue
-		}
-		if nextUpper {
-			nextUpper = false
-			js = append(js, unicode.ToUpper(r))
-		} else {
-			js = append(js, r)
-		}
-	}
-	return string(js)
+	var buf strings.Builder
+	pascalCase(&buf, name, false)
+	return buf.String()
 }
 
-// InitCap returns the given field name, but with the first letter capitalized.
-func InitCap(name string) string {
-	r, sz := utf8.DecodeRuneInString(name)
-	return string(unicode.ToUpper(r)) + name[sz:]
+// MapEntry returns the map entry name for a field with the given name.
+// This mirrors the algorithm in protoc:
+//
+//	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L95
+func MapEntry(name string) string {
+	var buf strings.Builder
+	pascalCase(&buf, name, true)
+	_, _ = buf.WriteString("Entry")
+	return buf.String()
+}
+
+func pascalCase(buf *strings.Builder, name string, capitalized bool) {
+	uppercase := capitalized
+	for _, r := range name {
+		if r == '_' {
+			uppercase = true
+			continue
+		}
+		if uppercase {
+			r = unicode.ToUpper(r)
+			uppercase = false
+		}
+		buf.WriteRune(r)
+	}
 }
 
 // CreatePrefixList returns a list of package prefixes to search when resolving

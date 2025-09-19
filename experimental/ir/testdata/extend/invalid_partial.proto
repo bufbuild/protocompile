@@ -18,7 +18,7 @@ package test;
 
 message M {
     message N {
-        // extensions 1; // Not yet implemented.
+        extensions 1;
     }
     message M {
         extend M.N {

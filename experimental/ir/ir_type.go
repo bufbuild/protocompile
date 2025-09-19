@@ -16,6 +16,7 @@ package ir
 
 import (
 	"fmt"
+	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -23,7 +24,9 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
+	"github.com/bufbuild/protocompile/internal/interval"
 )
 
 // Type is a Protobuf message field type.
@@ -33,13 +36,45 @@ type Type struct {
 	raw *rawType
 }
 
+// TagRange is a range of tag numbers in a [Type].
+//
+// This can represent either a [Member] or a [ReservedRange].
+type TagRange struct {
+	withContext
+	raw rawTagRange
+}
+
+// AsMember returns the [Member] this range points to, or zero if it isn't a
+// member.
+func (r TagRange) AsMember() Member {
+	if r.IsZero() || !r.raw.isMember {
+		return Member{}
+	}
+
+	return wrapMember(r.Context(), ref[rawMember]{ptr: arena.Pointer[rawMember](r.raw.ptr)})
+}
+
+// AsReserved returns the [ReservedRange] this range points to, or zero if it
+// isn't a member.
+func (r TagRange) AsReserved() ReservedRange {
+	if r.IsZero() || r.raw.isMember {
+		return ReservedRange{}
+	}
+
+	return ReservedRange{
+		withContext: r.withContext,
+		raw:         r.Context().arenas.ranges.Deref(arena.Pointer[rawReservedRange](r.raw.ptr)),
+	}
+}
+
 type rawType struct {
-	def             ast.DeclDef
+	def ast.DeclDef
+
 	nested          []arena.Pointer[rawType]
 	members         []arena.Pointer[rawMember]
 	memberByName    func() intern.Map[arena.Pointer[rawMember]]
-	memberByNumber  func() map[int32]arena.Pointer[rawMember]
-	ranges          []rawRange
+	ranges          []arena.Pointer[rawReservedRange]
+	rangesByNumber  interval.Intersect[int32, rawTagRange]
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
 	options         arena.Pointer[rawValue]
@@ -47,9 +82,16 @@ type rawType struct {
 	parent          arena.Pointer[rawType]
 	extnsStart      uint32
 	rangesExtnStart uint32
+	mapEntryOf      arena.Pointer[rawMember]
 
-	isEnum      bool
-	haveNumbers bool
+	isEnum, isMessageSet bool
+	allowsAlias          bool
+	missingRanges        bool // See lower_numbers.go.
+}
+
+type rawTagRange struct {
+	isMember bool
+	ptr      arena.Untyped
 }
 
 // primitiveCtx represents a special file that defines all of the primitive
@@ -103,6 +145,9 @@ func PredeclaredType(n predeclared.Name) Type {
 }
 
 // AST returns the declaration for this type, if known.
+//
+// This need not be an [ast.DefMessage] or [ast.DefEnum]; it may be something
+// else in the case of e.g. a map field's entry type.
 func (t Type) AST() ast.DeclDef {
 	return t.raw.def
 }
@@ -117,11 +162,23 @@ func (t Type) IsMessage() bool {
 	return !t.IsZero() && !t.IsPredeclared() && !t.raw.isEnum
 }
 
+// IsMessageSet returns whether this is a message type using the message set
+// encoding.
+func (t Type) IsMessageSet() bool {
+	return !t.IsZero() && t.raw.isMessageSet
+}
+
 // IsMessage returns whether this is an enum type.
 func (t Type) IsEnum() bool {
 	// All of the predeclared types have isEnum set to false, so we don't
 	// need to check for them here.
 	return !t.IsZero() && t.raw.isEnum
+}
+
+// AllowsAlias returns whether this is an enum type with the allow_alias
+// option set.
+func (t Type) AllowsAlias() bool {
+	return !t.IsZero() && t.raw.allowsAlias
 }
 
 // IsAny returns whether this is the type google.protobuf.Any, which gets special
@@ -231,6 +288,14 @@ func (t Type) Nested() seq.Indexer[Type] {
 	)
 }
 
+// MapField returns the map field that generated this type, if any.
+func (t Type) MapField() Member {
+	if t.IsZero() || t.raw.mapEntryOf.Nil() {
+		return Member{}
+	}
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.mapEntryOf})
+}
+
 // Members returns the members of this type.
 //
 // Predeclared types have no members; message and enum types do.
@@ -265,6 +330,22 @@ func (t Type) MemberByInternedName(name intern.ID) Member {
 	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
 }
 
+// TagRange returns an iterator over [TagRange]s that contain number.
+func (t Type) Ranges(number int32) iter.Seq[TagRange] {
+	return func(yield func(TagRange) bool) {
+		if t.IsZero() {
+			return
+		}
+
+		entry := t.raw.rangesByNumber.Get(number)
+		for _, raw := range entry.Values {
+			if !yield(TagRange{t.withContext, raw}) {
+				return
+			}
+		}
+	}
+}
+
 // MemberByNumber looks up a member with the given number.
 //
 // Returns a zero member if there is no such member.
@@ -272,7 +353,11 @@ func (t Type) MemberByNumber(number int32) Member {
 	if t.IsZero() {
 		return Member{}
 	}
-	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByNumber()[number]})
+
+	_, member := iterx.Find(t.Ranges(number), func(r TagRange) bool {
+		return !r.AsMember().IsZero()
+	})
+	return member.AsMember()
 }
 
 // membersByNameFunc creates the MemberByName map. This is used to keep
@@ -282,21 +367,6 @@ func (t Type) makeMembersByName() intern.Map[arena.Pointer[rawMember]] {
 	for _, ptr := range t.raw.members[:t.raw.extnsStart] {
 		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
 		table[field.InternedName()] = ptr
-	}
-	return table
-}
-
-// membersByNameFunc creates the FieldByName map. This is used to keep
-// construction of this map lazy.
-func (t Type) makeMembersByNumber() map[int32]arena.Pointer[rawMember] {
-	if !t.raw.haveNumbers {
-		panic("called MemberByNumber before numbers were evaluated")
-	}
-
-	table := make(map[int32]arena.Pointer[rawMember], t.Members().Len())
-	for _, ptr := range t.raw.members[:t.raw.extnsStart] {
-		field := wrapMember(t.Context(), ref[rawMember]{ptr: ptr})
-		table[field.Number()] = ptr
 	}
 	return table
 }
@@ -314,18 +384,18 @@ func (t Type) Extensions() seq.Indexer[Member] {
 // ReservedRanges returns the reserved ranges declared in this type.
 //
 // This does not include reserved field names; see [Type.ReservedNames].
-func (t Type) ReservedRanges() seq.Indexer[TagRange] {
+func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
 	slice := t.raw.ranges[:t.raw.rangesExtnStart]
-	return seq.NewFixedSlice(slice, func(i int, _ rawRange) TagRange {
-		return TagRange{t.withContext, &slice[i]}
+	return seq.NewFixedSlice(slice, func(_ int, p arena.Pointer[rawReservedRange]) ReservedRange {
+		return ReservedRange{t.withContext, t.Context().arenas.ranges.Deref(p)}
 	})
 }
 
 // ExtensionRanges returns the extension ranges declared in this type.
-func (t Type) ExtensionRanges() seq.Indexer[TagRange] {
+func (t Type) ExtensionRanges() seq.Indexer[ReservedRange] {
 	slice := t.raw.ranges[t.raw.rangesExtnStart:]
-	return seq.NewFixedSlice(slice, func(i int, _ rawRange) TagRange {
-		return TagRange{t.withContext, &slice[i]}
+	return seq.NewFixedSlice(slice, func(_ int, p arena.Pointer[rawReservedRange]) ReservedRange {
+		return ReservedRange{t.withContext, t.Context().arenas.ranges.Deref(p)}
 	})
 }
 
