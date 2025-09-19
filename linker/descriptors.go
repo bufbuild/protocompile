@@ -168,12 +168,13 @@ type result struct {
 	// are resolved during linking and stored here, to be used to interpret options.
 	optionQualifiedNames map[ast.IdentValueNode]string
 
-	imports      fileImports
-	messages     msgDescriptors
-	enums        enumDescriptors
-	extensions   extDescriptors
-	services     svcDescriptors
-	srcLocations srcLocs
+	imports       fileImports
+	optionImports fileImports
+	messages      msgDescriptors
+	enums         enumDescriptors
+	extensions    extDescriptors
+	services      svcDescriptors
+	srcLocations  srcLocs
 }
 
 var _ protoreflect.FileDescriptor = (*result)(nil)
@@ -226,6 +227,10 @@ func (r *result) Edition() int32 {
 	default:
 		return int32(descriptorpb.Edition_EDITION_UNKNOWN) // ???
 	}
+}
+
+func (r *result) OptionImports() protoreflect.FileImports {
+	return &r.optionImports
 }
 
 func (r *result) Name() protoreflect.Name {
@@ -322,11 +327,7 @@ type fileImports struct {
 
 func (r *result) createImports() fileImports {
 	fd := r.FileDescriptorProto()
-	imps := make([]protoreflect.FileImport, len(fd.Dependency))
-	for i, dep := range fd.Dependency {
-		desc := r.deps.FindFileByPath(dep)
-		imps[i] = protoreflect.FileImport{FileDescriptor: unwrap(desc)}
-	}
+	imps := r.createBasicImports(fd.Dependency)
 	for _, publicIndex := range fd.PublicDependency {
 		imps[int(publicIndex)].IsPublic = true
 	}
@@ -335,6 +336,15 @@ func (r *result) createImports() fileImports {
 		imps[int(weakIndex)].IsWeak = true
 	}
 	return fileImports{files: imps}
+}
+
+func (r *result) createBasicImports(deps []string) []protoreflect.FileImport {
+	imps := make([]protoreflect.FileImport, len(deps))
+	for i, dep := range deps {
+		desc := r.deps.FindFileByPath(dep)
+		imps[i] = protoreflect.FileImport{FileDescriptor: unwrap(desc)}
+	}
+	return imps
 }
 
 func unwrap(descriptor protoreflect.FileDescriptor) protoreflect.FileDescriptor {
@@ -503,6 +513,10 @@ func (m *msgDescriptor) FullName() protoreflect.FullName {
 
 func (m *msgDescriptor) IsPlaceholder() bool {
 	return false
+}
+
+func (m *msgDescriptor) Visibility() int32 {
+	return int32(m.proto.GetVisibility())
 }
 
 func (m *msgDescriptor) Options() protoreflect.ProtoMessage {
@@ -743,6 +757,10 @@ func (e *enumDescriptor) FullName() protoreflect.FullName {
 
 func (e *enumDescriptor) IsPlaceholder() bool {
 	return false
+}
+
+func (e *enumDescriptor) Visibility() int32 {
+	return int32(e.proto.GetVisibility())
 }
 
 func (e *enumDescriptor) Options() protoreflect.ProtoMessage {
