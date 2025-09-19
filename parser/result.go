@@ -116,13 +116,19 @@ func (r *result) createFileDescriptor(filename string, file *ast.FileNode, handl
 		editionEnum, ok := editions.SupportedEditions[edition]
 		if !ok {
 			nodeInfo := file.NodeInfo(file.Edition.Edition)
-			editionStrs := make([]string, 0, len(editions.SupportedEditions))
-			for supportedEdition := range editions.SupportedEditions {
-				editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
-			}
-			sort.Strings(editionStrs)
-			if handler.HandleErrorf(nodeInfo, `edition value %q not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
-				return
+			if _, isKnown := editions.KnownEditions[edition]; isKnown {
+				if handler.HandleErrorf(nodeInfo, `edition %q not yet fully supported; latest supported edition %q`, edition, strings.TrimPrefix(editions.MaxSupportedEdition.String(), "EDITION_")) != nil {
+					return
+				}
+			} else {
+				editionStrs := make([]string, 0, len(editions.SupportedEditions))
+				for supportedEdition := range editions.SupportedEditions {
+					editionStrs = append(editionStrs, fmt.Sprintf("%q", supportedEdition))
+				}
+				sort.Strings(editionStrs)
+				if handler.HandleErrorf(nodeInfo, `edition value %q not recognized; should be one of [%s]`, edition, strings.Join(editionStrs, ",")) != nil {
+					return
+				}
 			}
 		}
 		fd.Edition = editionEnum.Enum()

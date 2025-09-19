@@ -55,13 +55,13 @@ func TestComputeSupportedEditions(t *testing.T) {
 		map[string]descriptorpb.Edition{
 			"2023": descriptorpb.Edition_EDITION_2023,
 		},
-		computeSupportedEditions(descriptorpb.Edition_EDITION_2023, descriptorpb.Edition_EDITION_2023),
+		computeEditionsRange(descriptorpb.Edition_EDITION_2023, descriptorpb.Edition_EDITION_2023),
 	)
 	assert.Equal(t,
 		map[string]descriptorpb.Edition{
 			"2023": descriptorpb.Edition_EDITION_2023,
 			"2024": descriptorpb.Edition_EDITION_2024,
 		},
-		computeSupportedEditions(descriptorpb.Edition_EDITION_2023, descriptorpb.Edition_EDITION_2024),
+		computeEditionsRange(descriptorpb.Edition_EDITION_2023, descriptorpb.Edition_EDITION_2024),
 	)
 }

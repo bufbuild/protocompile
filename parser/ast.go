@@ -60,6 +60,16 @@ type identSlices struct {
 	dots   []*ast.RuneNode
 }
 
+func (s *identSlices) prefix(ident *ast.IdentNode, dot *ast.RuneNode) {
+	s.idents = append(s.idents, nil)
+	copy(s.idents[1:], s.idents)
+	s.idents[0] = ident
+
+	s.dots = append(s.dots, nil)
+	copy(s.dots[1:], s.dots)
+	s.dots[0] = dot
+}
+
 func (s *identSlices) toIdentValueNode(leadingDot *ast.RuneNode) ast.IdentValueNode {
 	if len(s.idents) == 1 && leadingDot == nil {
 		// single simple name

@@ -38,6 +38,9 @@ const (
 
 	// MaxSupportedEdition is the most recent edition supported by this module.
 	MaxSupportedEdition = descriptorpb.Edition_EDITION_2023
+
+	// MaxKnownEdition is the most recent edition known by this module.
+	MaxKnownEdition = descriptorpb.Edition_EDITION_2024
 )
 
 var (
@@ -46,7 +49,11 @@ var (
 	// make sure we don't generate incorrect descriptors, in the event that
 	// a future edition introduces a change or new feature that requires
 	// new logic in the compiler.
-	SupportedEditions = computeSupportedEditions(MinSupportedEdition, MaxSupportedEdition)
+	SupportedEditions = computeEditionsRange(MinSupportedEdition, MaxSupportedEdition)
+	// KnownEditions is the exhaustive set of editions that protocompile
+	// knowns. All known editions may not be supported, but all supported
+	// editions are known.
+	KnownEditions = computeEditionsRange(MinSupportedEdition, MaxKnownEdition)
 
 	// FeatureSetDescriptor is the message descriptor for the compiled-in
 	// version (in the descriptorpb package) of the google.protobuf.FeatureSet
@@ -356,7 +363,7 @@ func asExtensionType(ext protoreflect.ExtensionDescriptor) protoreflect.Extensio
 	return dynamicpb.NewExtensionType(ext)
 }
 
-func computeSupportedEditions(minEdition, maxEdition descriptorpb.Edition) map[string]descriptorpb.Edition {
+func computeEditionsRange(minEdition, maxEdition descriptorpb.Edition) map[string]descriptorpb.Edition { //nolint:unparam // minEdition is a parameter that may change
 	supportedEditions := map[string]descriptorpb.Edition{}
 	for editionNum := range descriptorpb.Edition_name {
 		edition := descriptorpb.Edition(editionNum)
