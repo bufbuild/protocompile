@@ -250,6 +250,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	return ty
 }
 
+//nolint:unparam // Complains about the return value for some reason.
 func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 	c := w.Context()
 	parentTy := extractParentType(parent)
