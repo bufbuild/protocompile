@@ -32,12 +32,12 @@ import (
 func resolveOptions(f File, r *report.Report) {
 	dpIdx := int32(len(f.Context().imports.files))
 	dp := f.Context().imports.DescriptorProto().Context()
-	fileOptions := ref[rawMember]{dpIdx, dp.langSymbols.fileOptions}
-	messageOptions := ref[rawMember]{dpIdx, dp.langSymbols.messageOptions}
-	fieldOptions := ref[rawMember]{dpIdx, dp.langSymbols.fieldOptions}
-	oneofOptions := ref[rawMember]{dpIdx, dp.langSymbols.oneofOptions}
-	enumOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumOptions}
-	enumValueOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumValueOptions}
+	fileOptions := ref[rawMember]{dpIdx, dp.builtins.fileOptions}
+	messageOptions := ref[rawMember]{dpIdx, dp.builtins.messageOptions}
+	fieldOptions := ref[rawMember]{dpIdx, dp.builtins.fieldOptions}
+	oneofOptions := ref[rawMember]{dpIdx, dp.builtins.oneofOptions}
+	enumOptions := ref[rawMember]{dpIdx, dp.builtins.enumOptions}
+	enumValueOptions := ref[rawMember]{dpIdx, dp.builtins.enumValueOptions}
 
 	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
@@ -84,6 +84,7 @@ func resolveOptions(f File, r *report.Report) {
 				raw:   &ty.raw.options,
 			}.resolve()
 		}
+
 		for field := range seq.Values(ty.Members()) {
 			for def := range seq.Values(field.AST().Options().Entries()) {
 				options := fieldOptions
@@ -153,7 +154,8 @@ func (r optionRef) resolve() {
 	// components. The values of pseudo-options are calculated elsewhere; this
 	// is only for diagnostics.
 	dp := r.imports.DescriptorProto().Context()
-	if r.field.ptr == dp.langSymbols.fieldOptions {
+	ids := &r.session.builtinIDs
+	if r.field.ptr == dp.builtins.fieldOptions {
 		var buf [2]ast.PathComponent
 		prefix := slices.AppendSeq(buf[:0], iterx.Take(r.def.Path.Components, 2))
 
@@ -257,14 +259,44 @@ func (r optionRef) resolve() {
 			}
 		}
 
-		// TODO: Forbid any of the uninterpreted_option options from being set,
-		// and any of the features options from being set if not in editions mode.
-		if pc.IsFirst() && field.InternedFullName() == r.session.langIDs.MapEntry {
-			r.Errorf("`map_entry` cannot be set explicitly").Apply(
-				report.Snippet(pc),
-				report.Helpf("map_entry is set automatically for synthetic map "+
-					"entry types, and cannot be set with an %s", taxa.Option),
-			)
+		if pc.IsFirst() {
+			switch field.InternedFullName() {
+			case ids.MapEntry:
+				r.Errorf("`map_entry` cannot be set explicitly").Apply(
+					report.Snippet(pc),
+					report.Helpf("`map_entry` is set automatically for synthetic map "+
+						"entry types, and cannot be set with an %s", taxa.Option),
+				)
+
+			case ids.FileUninterpreted,
+				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted,
+				ids.EnumUninterpreted, ids.EnumValueUninterpreted:
+				if syn := r.File().Syntax(); !syn.IsEdition() {
+					r.Errorf("`uninterpreted_options` cannot be set explicitly").Apply(
+						report.Snippet(pc),
+						report.Helpf("`uninterpreted_options` is an implementation detail of protoc"),
+					)
+				}
+
+			case ids.Packed:
+				if r.File().Syntax().IsEdition() {
+					r.Errorf("`packed` cannot be set in %s", taxa.EditionMode).Apply(
+						report.Snippet(pc),
+						report.Snippetf(r.File().AST().Syntax(), "syntax specified here"),
+						report.Helpf("instead, use `features.repeated_field_encoding`"),
+					)
+				}
+
+			case ids.FileFeatures,
+				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
+				ids.EnumFeatures, ids.EnumValueFeatures:
+				if syn := r.File().Syntax(); !syn.IsEdition() {
+					r.Errorf("`features` cannot be set in `%s`", syn).Apply(
+						report.Snippet(pc),
+						report.Snippetf(r.File().AST().Syntax(), "syntax specified here"),
+					)
+				}
+			}
 		}
 
 		path, _ = pc.SplitAfter()

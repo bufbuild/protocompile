@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"fmt"
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -51,7 +52,8 @@ type Context struct {
 	extns            []arena.Pointer[rawMember]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options arena.Pointer[rawValue]
+	options  arena.Pointer[rawValue]
+	features arena.Pointer[rawFeatureSet]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -67,8 +69,8 @@ type Context struct {
 	// The imported symbols are the exported symbols plus the exported symbols
 	// of each direct import.
 	exported, imported symtab
-
-	langSymbols *langSymbols
+	// This field is only present in the Context for descriptor.proto.
+	builtins *builtins
 
 	arenas struct {
 		types     arena.Arena[rawType]
@@ -81,23 +83,9 @@ type Context struct {
 		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
+
+		features arena.Arena[rawFeatureSet]
 	}
-}
-
-// langSymbols contains those symbols that are built into the language, and which the compiler cannot
-// handle not being present. This field is only present in the Context
-// for descriptor.proto.
-//
-// See [resolveLangSymbols] for where they are resolved.
-type langSymbols struct {
-	fileOptions,
-	messageOptions,
-	fieldOptions,
-	oneofOptions,
-	enumOptions,
-	enumValueOptions arena.Pointer[rawMember]
-
-	mapEntry arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]
@@ -122,6 +110,33 @@ func (r ref[T]) context(base *Context) *Context {
 	default:
 		return base.imports.files[r.file-1].file.Context()
 	}
+}
+
+// changeContext changes the implicit context for this ref to be with respect to
+// the new one given.
+func (r ref[T]) changeContext(prev, next *Context) ref[T] {
+	if prev == next {
+		return r
+	}
+
+	var file File
+	switch r.file {
+	case 0:
+		file = prev.File()
+	case -1:
+		return r // Primitive context is the same everywhere.
+	default:
+		file = prev.imports.files[r.file-1].file
+	}
+
+	// Figure out where file sits in next.
+	idx, ok := next.imports.byPath[file.InternedPath()]
+	if !ok {
+		panic(fmt.Sprintf("could not change contexts %s -> %s", prev.File().Path(), next.File().Path()))
+	}
+
+	r.file = int32(idx) + 1
+	return r
 }
 
 // File returns the file associated with this context.
@@ -184,7 +199,7 @@ func (f File) InternedPath() intern.ID {
 // google/protobuf/descriptor.proto, which is given special treatment in
 // the language.
 func (f File) IsDescriptorProto() bool {
-	return f.InternedPath() == f.Context().session.langIDs.DescriptorFile
+	return f.InternedPath() == f.Context().session.builtinIDs.DescriptorFile
 }
 
 // Package returns the package name for this file.
@@ -278,6 +293,18 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 // Options returns the top level options applied to this file.
 func (f File) Options() MessageValue {
 	return wrapValue(f.Context(), f.Context().options).AsMessage()
+}
+
+// FeatureSet returns the Editions features associated with this file.
+func (f File) FeatureSet() FeatureSet {
+	if f.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(f.Context()),
+		f.Context().arenas.features.Deref(f.Context().features),
+	}
 }
 
 // Symbols returns this file's symbol table.

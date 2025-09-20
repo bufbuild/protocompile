@@ -136,7 +136,7 @@ func (v Value) Field() Member {
 
 	field := v.raw.field
 	if int32(field.ptr) < 0 {
-		field.ptr = -field.ptr
+		field.ptr = ^field.ptr
 	}
 	return wrapMember(v.Context(), field)
 }
@@ -246,7 +246,7 @@ func (v Value) slice() *[]rawValueBits {
 
 	slice := v.Context().arenas.arrays.New([]rawValueBits{v.raw.bits})
 	v.raw.bits = rawValueBits(v.Context().arenas.arrays.Compress(slice))
-	v.raw.field.ptr = -v.raw.field.ptr
+	v.raw.field.ptr = ^v.raw.field.ptr
 	return slice
 }
 
@@ -551,6 +551,25 @@ func (v MessageValue) Concrete() MessageValue {
 	return v
 }
 
+// Field returns the field corresponding with the given member, if it is set.
+func (v MessageValue) Field(field Member) Value {
+	if field.Container() != v.Type() {
+		return Value{}
+	}
+
+	id := field.InternedFullName()
+	if o := field.Oneof(); !o.IsZero() {
+		id = o.InternedFullName()
+	}
+
+	idx, ok := v.raw.byName[id]
+	if !ok {
+		return Value{}
+	}
+
+	return wrapValue(v.Context(), v.raw.entries[idx])
+}
+
 // Fields yields the fields within this message literal, in insertion order.
 func (v MessageValue) Fields() iter.Seq[Value] {
 	return func(yield func(Value) bool) {
@@ -723,7 +742,7 @@ func appendRaw(array Value, bits rawValueBits) {
 func appendMessage(array Value) MessageValue {
 	message := array.Context().arenas.messages.New(rawMessageValue{
 		self:   array.Context().arenas.values.Compress(array.raw),
-		ty:     array.Field().raw.elem,
+		ty:     array.Elements().At(0).AsMessage().raw.ty,
 		byName: make(intern.Map[uint32]),
 	})
 
@@ -739,8 +758,9 @@ func appendMessage(array Value) MessageValue {
 // value. This is used for Any-typed fields. Otherwise, the type of field is
 // used instead.
 func newMessage(c *Context, field ref[rawMember]) MessageValue {
+	member := wrapMember(c, field)
 	msg := c.arenas.messages.New(rawMessageValue{
-		ty:     wrapMember(c, field).raw.elem,
+		ty:     member.raw.elem.changeContext(member.Context(), c),
 		byName: make(intern.Map[uint32]),
 	})
 	v := c.arenas.values.NewCompressed(rawValue{
@@ -763,7 +783,7 @@ func newConcrete(m MessageValue, ty Type, url string) MessageValue {
 
 	field := m.AsValue().raw.field
 	if int32(field.ptr) < 0 {
-		field.ptr = -field.ptr
+		field.ptr = ^field.ptr
 	}
 
 	msg := newMessage(m.Context(), field)

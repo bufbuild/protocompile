@@ -46,12 +46,14 @@ type Member struct {
 type rawMember struct {
 	def ast.DeclDef
 
-	options   arena.Pointer[rawValue]
-	elem      ref[rawType]
-	extendee  arena.Pointer[rawExtendee]
-	fqn, name intern.ID
-	number    int32
-	parent    arena.Pointer[rawType]
+	options     arena.Pointer[rawValue]
+	elem        ref[rawType]
+	extendee    arena.Pointer[rawExtendee]
+	fqn, name   intern.ID
+	number      int32
+	parent      arena.Pointer[rawType]
+	features    arena.Pointer[rawFeatureSet]
+	featureInfo *rawFeatureInfo // Non-nil if this is a feature field.
 
 	// If negative, this is the negative of a presence.Kind. Otherwise, it's
 	// a oneof index.
@@ -252,6 +254,33 @@ func (m Member) Options() MessageValue {
 	return wrapValue(m.Context(), m.raw.options).AsMessage()
 }
 
+// FeatureSet returns the Editions features associated with this member.
+func (m Member) FeatureSet() FeatureSet {
+	if m.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(m.Context()),
+		m.Context().arenas.features.Deref(m.raw.features),
+	}
+}
+
+// FeatureInfo returns feature definition information relating to this field
+// (for when using this field as a feature).
+//
+// Returns a zero value if this information does not exist.
+func (m Member) FeatureInfo() FeatureInfo {
+	if m.IsZero() || m.raw.featureInfo == nil {
+		return FeatureInfo{}
+	}
+
+	return FeatureInfo{
+		internal.NewWith(m.Context()),
+		m.raw.featureInfo,
+	}
+}
+
 // noun returns a [taxa.Noun] for diagnostics.
 func (m Member) noun() taxa.Noun {
 	switch {
@@ -277,12 +306,9 @@ func wrapMember(c *Context, r ref[rawMember]) Member {
 }
 
 func compressMember(c *Context, member Member) ref[rawMember] {
-	var ref ref[rawMember]
-	if member.Context() != c {
-		ref.file = int32(c.imports.byPath[member.Context().File().InternedPath()] + 1)
-	}
-	ref.ptr = member.Context().arenas.members.Compress(member.raw)
-	return ref
+	return ref[rawMember]{
+		ptr: member.Context().arenas.members.Compress(member.raw),
+	}.changeContext(member.Context(), c)
 }
 
 // rawExtendee represents an extends block.
@@ -319,6 +345,7 @@ type rawOneof struct {
 	container arena.Pointer[rawType]
 	members   []arena.Pointer[rawMember]
 	options   arena.Pointer[rawValue]
+	features  arena.Pointer[rawFeatureSet]
 }
 
 // AST returns the declaration for this oneof, if known.
@@ -396,6 +423,18 @@ func (o Oneof) Options() MessageValue {
 	return wrapValue(o.Context(), o.raw.options).AsMessage()
 }
 
+// FeatureSet returns the Editions features associated with this oneof.
+func (o Oneof) FeatureSet() FeatureSet {
+	if o.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(o.Context()),
+		o.Context().arenas.features.Deref(o.raw.features),
+	}
+}
+
 func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
 	return Oneof{
 		withContext: internal.NewWith(c),
@@ -414,6 +453,7 @@ type rawReservedRange struct {
 	ast           ast.ExprAny
 	first, last   int32
 	options       arena.Pointer[rawValue]
+	features      arena.Pointer[rawFeatureSet]
 	forExtensions bool
 }
 
@@ -463,6 +503,18 @@ func (r ReservedRange) Options() MessageValue {
 	}
 
 	return wrapValue(r.Context(), r.raw.options).AsMessage()
+}
+
+// FeatureSet returns the Editions features associated with this file.
+func (r ReservedRange) FeatureSet() FeatureSet {
+	if r.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(r.Context()),
+		r.Context().arenas.features.Deref(r.raw.features),
+	}
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for

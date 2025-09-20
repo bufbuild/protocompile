@@ -83,6 +83,7 @@ type rawType struct {
 	extnsStart      uint32
 	rangesExtnStart uint32
 	mapEntryOf      arena.Pointer[rawMember]
+	features        arena.Pointer[rawFeatureSet]
 
 	isEnum, isMessageSet bool
 	allowsAlias          bool
@@ -184,7 +185,7 @@ func (t Type) AllowsAlias() bool {
 // IsAny returns whether this is the type google.protobuf.Any, which gets special
 // treatment in the language.
 func (t Type) IsAny() bool {
-	return t.InternedFullName() == t.Context().session.langIDs.AnyPath
+	return t.InternedFullName() == t.Context().session.builtinIDs.AnyPath
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
@@ -424,6 +425,18 @@ func (t Type) Options() MessageValue {
 	return wrapValue(t.Context(), t.raw.options).AsMessage()
 }
 
+// FeatureSet returns the Editions features associated with this type.
+func (t Type) FeatureSet() FeatureSet {
+	if t.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(t.Context()),
+		t.Context().arenas.features.Deref(t.raw.features),
+	}
+}
+
 // noun returns a [taxa.Noun] for diagnostics.
 func (t Type) noun() taxa.Noun {
 	switch {
@@ -449,10 +462,7 @@ func wrapType(c *Context, r ref[rawType]) Type {
 }
 
 func compressType(c *Context, ty Type) ref[rawType] {
-	var ref ref[rawType]
-	if ty.Context() != c {
-		ref.file = int32(c.imports.byPath[ty.Context().File().InternedPath()] + 1)
-	}
-	ref.ptr = ty.Context().arenas.types.Compress(ty.raw)
-	return ref
+	return ref[rawType]{
+		ptr: ty.Context().arenas.types.Compress(ty.raw),
+	}.changeContext(ty.Context(), c)
 }
