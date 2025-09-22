@@ -231,7 +231,8 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 			}
 
 			raw := w.Context().arenas.ranges.NewCompressed(rawReservedRange{
-				ast:           v,
+				decl:          rangeDecl,
+				value:         v,
 				forExtensions: rangeDecl.IsExtensions(),
 			})
 

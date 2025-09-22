@@ -1,7 +1,7 @@
 file:
 - name: "testdata/extend/in_range.proto"
   package: "test"
-  message_type: [{ name: "M", extension_range: [{ start: 1, end: 5 }] }]
+  message_type: [{ name: "M", extension_range: [{ start: 1, end: 6 }] }]
   extension:
   - name: "x"
     number: 1

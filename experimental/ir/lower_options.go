@@ -54,6 +54,8 @@ func resolveOptions(f File, r *report.Report) {
 		}.resolve()
 	}
 
+	// Reusable space for duplicating options values between extension ranges.
+	extnOpts := make(map[ast.DeclRange]arena.Pointer[rawValue])
 	for ty := range seq.Values(f.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entries already come with options pre-calculated.
@@ -107,6 +109,30 @@ func resolveOptions(f File, r *report.Report) {
 					raw:   &oneof.raw.options,
 				}.resolve()
 			}
+		}
+
+		clear(extnOpts)
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			decl := extns.DeclAST()
+			if p := extnOpts[decl]; !p.Nil() {
+				extns.raw.options = p
+				continue
+			}
+
+			for def := range seq.Values(extns.DeclAST().Options().Entries()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: ty.Scope(),
+					def:   def,
+
+					field: builtins.RangeOptions,
+					raw:   &extns.raw.options,
+				}.resolve()
+			}
+
+			extnOpts[decl] = extns.raw.options
 		}
 	}
 	for field := range seq.Values(f.AllExtensions()) {
