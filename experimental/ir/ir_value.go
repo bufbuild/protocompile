@@ -221,7 +221,6 @@ func (v Value) Elements() seq.Indexer[Element] {
 			withContext: v.withContext,
 			index:       n,
 			value:       v,
-			field:       v.Field(),
 			bits:        bits,
 		}
 	})
@@ -449,12 +448,28 @@ type Element struct {
 	withContext
 	index int
 	value Value
-	field Member
 	bits  rawValueBits
 }
 
 // AST returns the expression this value was evaluated from.
 func (e Element) AST() ast.ExprAny {
+	expr := e.value.raw.exprs[e.ValueNodeIndex()]
+	if array := expr.AsArray(); !array.IsZero() && e.value.raw.elemIndices != nil {
+		// We need to index into the array expression. The index is going to be
+		// offset by the number of expressions before this one, which we
+		// can get via elemIndices.
+		n := e.index - int(e.value.raw.elemIndices[e.index])
+		expr = array.Elements().At(n)
+	}
+	return expr
+}
+
+// ValueNodeIndex returns the index into [Value.ASTs] for this element's
+// contributing expression. This can be used to obtain other ASTs related to
+// this element, e.g.
+//
+//	key := e.Value().MessageKeys().At(e.ValueNodeIndex())
+func (e Element) ValueNodeIndex() int {
 	// We do O(log n) work here, because this function doesn't get called except
 	// for diagnostics.
 
@@ -472,31 +487,24 @@ func (e Element) AST() ast.ExprAny {
 		// 3 -> 1, false
 		// 4 -> 1, false
 		var exact bool
-		idx, exact := slices.BinarySearch(e.value.raw.elemIndices, uint32(e.index))
+		idx, exact = slices.BinarySearch(e.value.raw.elemIndices, uint32(e.index))
 		if exact {
 			idx++
 		}
 	}
 
-	expr := e.value.raw.exprs[idx]
-	if array := expr.AsArray(); !array.IsZero() && e.value.raw.elemIndices != nil {
-		// We need to index into the array expression. The index is going to be
-		// offset by the number of expressions before this one, which we
-		// can get via elemIndices.
-		n := e.index - int(e.value.raw.elemIndices[e.index])
-		expr = array.Elements().At(n)
-	}
-	return expr
+	return idx
+}
+
+// Value is the [Value] this element came from.
+func (e Element) Value() Value {
+	return e.value
 }
 
 // Field returns the field this value sets, which includes the value's type
 // information.
 func (e Element) Field() Member {
-	if e.IsZero() {
-		return Member{}
-	}
-
-	return e.field
+	return e.Value().Field()
 }
 
 // Type returns the type of this element.
