@@ -88,7 +88,6 @@ func NewMessageNodeWithVisibility(visibility *KeywordNode, keyword *KeywordNode,
 	if closeBrace == nil {
 		panic("closeBrace is nil")
 	}
-
 	numChildren := 4 + len(decls) // keyword, name, openBrace, closeBrace + decls
 	if visibility != nil {
 		numChildren++
