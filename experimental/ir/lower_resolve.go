@@ -31,7 +31,7 @@ import (
 
 // resolveNames resolves all of the names that need resolving in a file.
 func resolveNames(f File, r *report.Report) {
-	resolveLangSymbols(f.Context())
+	resolveBuiltins(f.Context())
 
 	for ty := range seq.Values(f.AllTypes()) {
 		if ty.IsMessage() {

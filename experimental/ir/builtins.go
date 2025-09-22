@@ -47,11 +47,12 @@ type builtinIDs struct {
 	MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 }
 
-func resolveLangSymbols(c *Context) {
+func resolveBuiltins(c *Context) {
 	if !c.File().IsDescriptorProto() {
 		return
 	}
 
+	// If adding a new kind of symbol to resolve, add it to this map.
 	kinds := map[reflect.Type]struct {
 		kind SymbolKind
 		wrap func(arena.Untyped, reflect.Value)
