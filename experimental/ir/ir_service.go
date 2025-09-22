@@ -16,6 +16,7 @@ package ir
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -39,8 +40,9 @@ type rawService struct {
 	def       ast.DeclDef
 	fqn, name intern.ID
 
-	methods []arena.Pointer[rawMethod]
-	options arena.Pointer[rawValue]
+	methods  []arena.Pointer[rawMethod]
+	options  arena.Pointer[rawValue]
+	features arena.Pointer[rawFeatureSet]
 }
 
 type rawMethod struct {
@@ -49,6 +51,7 @@ type rawMethod struct {
 	service       arena.Pointer[rawService]
 	input, output ref[rawType]
 	options       arena.Pointer[rawValue]
+	features      arena.Pointer[rawFeatureSet]
 
 	inputStream, outputStream bool
 }
@@ -97,6 +100,18 @@ func (s Service) Options() MessageValue {
 		return MessageValue{}
 	}
 	return wrapValue(s.Context(), s.raw.options).AsMessage()
+}
+
+// FeatureSet returns the Editions features associated with this service.
+func (s Service) FeatureSet() FeatureSet {
+	if s.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(s.Context()),
+		s.Context().arenas.features.Deref(s.raw.features),
+	}
 }
 
 // Methods returns the methods of this service.
@@ -161,6 +176,18 @@ func (m Method) Options() MessageValue {
 		return MessageValue{}
 	}
 	return wrapValue(m.Context(), m.raw.options).AsMessage()
+}
+
+// FeatureSet returns the Editions features associated with this method.
+func (m Method) FeatureSet() FeatureSet {
+	if m.IsZero() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(m.Context()),
+		m.Context().arenas.features.Deref(m.raw.features),
+	}
 }
 
 // Service returns the service this method is part of.

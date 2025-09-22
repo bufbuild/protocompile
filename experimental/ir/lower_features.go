@@ -211,9 +211,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 func validateAllFeatures(f File, r *report.Report) {
 	builtins := f.Context().builtins()
 
-	validateFeatures(f.Options().Field(builtins.FileFeatures).AsMessage(), r)
+	features := f.Options().Field(builtins.FileFeatures)
+	validateFeatures(features.AsMessage(), r)
 	f.Context().features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-		options: f.Context().options,
+		options: f.Context().arenas.values.Compress(features.raw),
 	})
 
 	for ty := range seq.Values(f.AllTypes()) {
@@ -222,53 +223,82 @@ func validateAllFeatures(f File, r *report.Report) {
 			continue
 		}
 
-		parent := f.Context().File().Context().features
+		parent := f.Context().features
 		if !ty.Parent().IsZero() {
 			parent = ty.Parent().raw.features
 		}
 
+		option := builtins.MessageFeatures
 		if ty.IsEnum() {
-			validateFeatures(ty.Options().Field(builtins.EnumFeatures).AsMessage(), r)
-		} else {
-			validateFeatures(ty.Options().Field(builtins.MessageFeatures).AsMessage(), r)
+			option = builtins.EnumFeatures
 		}
 
+		features := ty.Options().Field(option)
+		validateFeatures(features.AsMessage(), r)
 		ty.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-			options: f.Context().options,
+			options: f.Context().arenas.values.Compress(features.raw),
 			parent:  parent,
 		})
 
-		for field := range seq.Values(ty.Members()) {
-			if field.IsEnumValue() {
-				validateFeatures(field.Options().Field(builtins.EnumValueFeatures).AsMessage(), r)
-			} else {
-				validateFeatures(field.Options().Field(builtins.FieldFeatures).AsMessage(), r)
+		for member := range seq.Values(ty.Members()) {
+			option := builtins.FieldFeatures
+			if member.IsEnumValue() {
+				option = builtins.EnumFeatures
 			}
 
-			field.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-				options: f.Context().options,
+			features := member.Options().Field(option)
+			validateFeatures(features.AsMessage(), r)
+			member.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
+				options: member.Context().arenas.values.Compress(features.raw),
 				parent:  ty.raw.features,
 			})
 		}
 		for oneof := range seq.Values(ty.Oneofs()) {
-			validateFeatures(oneof.Options().Field(builtins.OneofFeatures).AsMessage(), r)
+			features := oneof.Options().Field(builtins.OneofFeatures)
+			validateFeatures(features.AsMessage(), r)
 			oneof.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-				options: f.Context().options,
+				options: f.Context().arenas.values.Compress(features.raw),
+				parent:  ty.raw.features,
+			})
+		}
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			features := extns.Options().Field(builtins.RangeFeatures)
+			validateFeatures(features.AsMessage(), r)
+			extns.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
+				options: f.Context().arenas.values.Compress(features.raw),
 				parent:  ty.raw.features,
 			})
 		}
 	}
 	for field := range seq.Values(f.AllExtensions()) {
-		parent := f.Context().File().Context().features
+		parent := f.Context().features
 		if !field.Parent().IsZero() {
 			parent = field.Parent().raw.features
 		}
 
-		validateFeatures(field.Options().Field(builtins.FieldFeatures).AsMessage(), r)
+		features := field.Options().Field(builtins.FieldFeatures)
+		validateFeatures(features.AsMessage(), r)
 		field.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-			options: f.Context().options,
+			options: f.Context().arenas.values.Compress(features.raw),
 			parent:  parent,
 		})
+	}
+	for service := range seq.Values(f.Services()) {
+		features := service.Options().Field(builtins.ServiceFeatures)
+		validateFeatures(features.AsMessage(), r)
+		service.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
+			options: f.Context().arenas.values.Compress(features.raw),
+			parent:  f.Context().features,
+		})
+
+		for method := range seq.Values(service.Methods()) {
+			features := method.Options().Field(builtins.MethodFeatures)
+			validateFeatures(features.AsMessage(), r)
+			method.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
+				options: f.Context().arenas.values.Compress(features.raw),
+				parent:  service.raw.features,
+			})
+		}
 	}
 }
 
