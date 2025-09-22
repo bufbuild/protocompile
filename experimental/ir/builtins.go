@@ -1,0 +1,106 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ir
+
+import (
+	"fmt"
+	"reflect"
+
+	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/intern"
+)
+
+// builtins contains those symbols that are built into the language, and which the compiler cannot
+// handle not being present. This field is only present in the Context
+// for descriptor.proto.
+//
+// This is resolved using reflection in [resolveLangSymbols]. The names of the
+// fields of this type must match those in builtinIDs that names its symbol.
+type builtins struct {
+	FileOptions      Member
+	MessageOptions   Member
+	FieldOptions     Member
+	OneofOptions     Member
+	RangeOptions     Member
+	EnumOptions      Member
+	EnumValueOptions Member
+	ServiceOptions   Member
+	MethodOptions    Member
+
+	MapEntry Member
+}
+
+// builtinIDs is all of the interning IDs of names in [builtins], plus some
+// others. This lives inside of [Session] and is constructed once.
+type builtinIDs struct {
+	DescriptorFile intern.ID `intern:"google/protobuf/descriptor.proto"`
+	AnyPath        intern.ID `intern:"google.protobuf.Any"`
+
+	FileOptions      intern.ID `intern:"google.protobuf.FileDescriptorProto.options"`
+	MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
+	FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
+	OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
+	RangeOptions     intern.ID `intern:"google.protobuf.DescriptorProto.ExtensionRange.options"`
+	EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
+	EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
+	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
+
+	MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+}
+
+func resolveBuiltins(c *Context) {
+	if !c.File().IsDescriptorProto() {
+		return
+	}
+
+	// If adding a new kind of symbol to resolve, add it to this map.
+	kinds := map[reflect.Type]struct {
+		kind SymbolKind
+		wrap func(arena.Untyped, reflect.Value)
+	}{
+		reflect.TypeFor[Member](): {
+			kind: SymbolKindField,
+			wrap: makeBuiltinWrapper(c, wrapMember),
+		},
+	}
+
+	c.dpBuiltins = new(builtins)
+	v := reflect.ValueOf(c.dpBuiltins).Elem()
+	ids := reflect.ValueOf(c.session.builtins)
+	for i := range v.NumField() {
+		field := v.Field(i)
+		id := ids.FieldByName(v.Type().Field(i).Name).Interface().(intern.ID) //nolint:errcheck
+		kind := kinds[field.Type()]
+
+		ref := c.exported.lookup(c, id)
+		sym := wrapSymbol(c, ref)
+		if sym.Kind() != kind.kind {
+			panic(fmt.Errorf(
+				"missing descriptor.proto symbol: %s `%s`; got kind %s",
+				kind.kind.noun(), c.session.intern.Value(id), sym.Kind(),
+			))
+		}
+		kind.wrap(sym.raw.data, field)
+	}
+}
+
+// makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.
+func makeBuiltinWrapper[T any, Raw any](c *Context, wrap func(*Context, ref[Raw]) T) func(arena.Untyped, reflect.Value) {
+	return func(p arena.Untyped, out reflect.Value) {
+		x := wrap(c, ref[Raw]{ptr: arena.Pointer[Raw](p)})
+		out.Set(reflect.ValueOf(x))
+	}
+}

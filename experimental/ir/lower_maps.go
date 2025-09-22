@@ -50,15 +50,16 @@ func generateMapEntries(f File, r *report.Report) {
 			fqn := parent.FullName().Append(name)
 
 			// Set option map_entry = true;
-			dpIdx := int32(len(f.Context().imports.files))
-			dp := f.Context().imports.DescriptorProto().Context()
-			messageOptions := ref[rawMember]{dpIdx, dp.langSymbols.messageOptions}
-			mapEntry := ref[rawMember]{dpIdx, dp.langSymbols.mapEntry}
-			options := newMessage(c, messageOptions)
-			*options.insert(wrapMember(c, mapEntry)) = c.arenas.values.NewCompressed(rawValue{
-				field: mapEntry,
-				bits:  1,
-			})
+			builtins := c.builtins()
+			messageOptions := builtins.MessageOptions.toRef(c)
+			mapEntry := builtins.MapEntry.toRef(c)
+
+			options := newMessage(c, builtins.MessageOptions.toRef(c))
+			*options.insert(wrapMember(c, mapEntry)) =
+				c.arenas.values.NewCompressed(rawValue{
+					field: mapEntry,
+					bits:  1,
+				})
 
 			// Construct the type itself.
 			raw := c.arenas.types.NewCompressed(rawType{

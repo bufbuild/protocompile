@@ -156,7 +156,7 @@ func (e *evaluator) eval(args evalArgs) Value {
 
 	first := args.target.IsZero()
 	if first && args.rawField.ptr.Nil() {
-		args.rawField = compressMember(e.Context, args.field)
+		args.rawField = args.field.toRef(e.Context)
 	} else if !first {
 		args.rawField = args.target.raw.field
 	}
@@ -196,11 +196,33 @@ func (e *evaluator) eval(args evalArgs) Value {
 	}
 
 	if !args.target.IsZero() {
-		if args.target.AST().IsZero() {
-			args.target.raw.expr = args.expr
+		raw := args.target.raw
+		isArray := args.expr.Kind() == ast.ExprKindArray
+
+		// Only populate elemIndices if we run into an array expression.
+		if raw.elemIndices == nil && isArray {
+			for i := range len(raw.exprs) {
+				// If this is the first array we're seeing, each expression
+				// contributes exactly one element.
+				raw.elemIndices = append(raw.elemIndices, uint32(i+1))
+			}
 		}
-		if args.target.OptionPath().IsZero() {
-			args.target.raw.optionPath = args.optionPath
+
+		raw.exprs = append(raw.exprs, args.expr)
+		raw.optionPaths = append(raw.optionPaths, args.optionPath)
+
+		if raw.elemIndices != nil || isArray {
+			var n uint32
+			if raw.elemIndices != nil {
+				n = raw.elemIndices[len(raw.elemIndices)-1]
+			}
+
+			if isArray {
+				n += uint32(args.expr.AsArray().Elements().Len())
+			} else {
+				n++
+			}
+			raw.elemIndices = append(raw.elemIndices, n)
 		}
 	}
 
@@ -656,24 +678,24 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 
 			switch {
 			case field.Presence() == presence.Repeated:
-				copied.target = wrapValue(e.Context, *slot)
+				copied.target = value
 
 			case value.Field() != field:
 				// A different member of a oneof was set.
 				e.Error(errSetMultipleTimes{
 					member: field.Oneof(),
-					first:  value.key(),
+					first:  value.MessageKeys().At(0),
 					second: expr.Key(),
 				})
 				copied.target = Value{}
 
 			case field.Element().IsMessage():
-				copied.target = wrapValue(e.Context, *slot)
+				copied.target = value
 
 			default:
 				e.Error(errSetMultipleTimes{
 					member: field,
-					first:  value.key(),
+					first:  value.MessageKeys().At(0),
 					second: expr.Key(),
 				})
 				copied.target = Value{}
@@ -682,7 +704,9 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 
 		v := e.eval(copied)
 		if slot.Nil() && !v.IsZero() {
-			v.raw.expr = expr.AsAny()
+			// Overwrite the most recently-added expression with the FieldExpr
+			// so that key lookup works correctly.
+			v.raw.exprs[len(v.raw.exprs)-1] = expr.AsAny()
 
 			// Make sure to pick up a freshly allocated value, if this
 			// was the first iteration.
