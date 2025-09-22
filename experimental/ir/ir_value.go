@@ -767,7 +767,7 @@ func newConcrete(m MessageValue, ty Type, url string) MessageValue {
 	}
 
 	msg := newMessage(m.Context(), field)
-	msg.raw.ty = compressType(m.Context(), ty)
+	msg.raw.ty = ty.toRef(m.Context())
 	msg.raw.url = m.Context().session.intern.Intern(url)
 	m.raw.concrete = m.Context().arenas.messages.Compress(msg.raw)
 	return msg

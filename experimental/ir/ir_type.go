@@ -184,7 +184,7 @@ func (t Type) AllowsAlias() bool {
 // IsAny returns whether this is the type google.protobuf.Any, which gets special
 // treatment in the language.
 func (t Type) IsAny() bool {
-	return t.InternedFullName() == t.Context().session.langIDs.AnyPath
+	return t.InternedFullName() == t.Context().session.builtins.AnyPath
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
@@ -436,6 +436,16 @@ func (t Type) noun() taxa.Noun {
 	}
 }
 
+// toRef returns a ref to this type relative to the given context.
+func (t Type) toRef(c *Context) ref[rawType] {
+	var ref ref[rawType]
+	if t.Context() != c {
+		ref.file = int32(c.imports.byPath[t.Context().File().InternedPath()] + 1)
+	}
+	ref.ptr = t.Context().arenas.types.Compress(t.raw)
+	return ref
+}
+
 func wrapType(c *Context, r ref[rawType]) Type {
 	if r.ptr.Nil() || c == nil {
 		return Type{}
@@ -446,13 +456,4 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		withContext: internal.NewWith(c),
 		raw:         c.arenas.types.Deref(r.ptr),
 	}
-}
-
-func compressType(c *Context, ty Type) ref[rawType] {
-	var ref ref[rawType]
-	if ty.Context() != c {
-		ref.file = int32(c.imports.byPath[ty.Context().File().InternedPath()] + 1)
-	}
-	ref.ptr = ty.Context().arenas.types.Compress(ty.raw)
-	return ref
 }
