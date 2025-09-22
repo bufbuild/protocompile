@@ -1,0 +1,65 @@
+file:
+- name: "testdata/editions/incomplete_feature.proto"
+  package: "buf.test"
+  message_type:
+  - name: "Features"
+    field:
+    - name: "a"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.feature_support: {}
+    - name: "b"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
+    - name: "c"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options:
+        edition_defaults: [{ edition: EDITION_PROTO2, value: "false" }]
+        feature_support: {}
+    - name: "d"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options:
+        edition_defaults: [{ edition: EDITION_2023, value: "false" }]
+        feature_support.edition_introduced: EDITION_2024
+    - name: "e"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options:
+        edition_defaults: [{ edition: EDITION_PROTO2, value: "0" }]
+        feature_support.edition_introduced: EDITION_2024
+    - name: "f"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options:
+        edition_defaults:
+        - { edition: EDITION_PROTO2, value: "true" }
+        - { edition: EDITION_MAX, value: "42" }
+        feature_support:
+          edition_introduced: EDITION_LEGACY
+          edition_deprecated: EDITION_LEGACY
+          edition_removed: EDITION_LEGACY
+    - name: "g"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.Enum"
+      options:
+        edition_defaults:
+        - { edition: EDITION_PROTO2, value: "A" }
+        - { edition: EDITION_PROTO3, value: "B" }
+        - { edition: EDITION_2023, value: "C" }
+        feature_support.edition_introduced: EDITION_2023
+  enum_type:
+  - name: "Enum"
+    value: [{ name: "A", number: 0 }, { name: "B", number: 1 }]
+  syntax: "editions"
+  edition: EDITION_2023

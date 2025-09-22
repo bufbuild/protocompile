@@ -48,8 +48,8 @@ func (s Syntax) LaterThanNumber(enumValue int32) bool {
 		return Proto3 <= s
 	case Edition2023Number:
 		return Edition2023 <= s
-	// case Edition2024Number:
-	// 	return Edition2024 <= s
+	case Edition2024Number:
+		return Edition2024 <= s
 	default:
 		return false
 	}
@@ -67,8 +67,8 @@ func FromEnum(enumValue int32) Syntax {
 		return Proto3
 	case Edition2023Number:
 		return Edition2023
-	// case Edition2024Number:
-	// 	return Edition2024
+	case Edition2024Number:
+		return Edition2024
 	default:
 		return Unknown
 	}

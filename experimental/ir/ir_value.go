@@ -88,7 +88,7 @@ func (v Value) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	if field := v.raw.expr.AsField(); field.IsZero() {
+	if field := v.raw.expr.AsField(); !field.IsZero() {
 		return field.Value()
 	}
 

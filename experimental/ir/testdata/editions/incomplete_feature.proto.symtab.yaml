@@ -1,0 +1,111 @@
+tables:
+  "testdata/editions/incomplete_feature.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/incomplete_feature.proto"
+    - fqn: "buf.test.Features"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Enum"
+      kind: KIND_ENUM
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.Features.a"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "feature_support": { message: {} } }
+    - fqn: "buf.test.Features.b"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+    - fqn: "buf.test.Features.c"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 998 }
+              "value": { string: "false" }
+        "feature_support": { message: {} }
+    - fqn: "buf.test.Features.d"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 4
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 1000 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields: { "edition_introduced": { i32: 1001 } }
+    - fqn: "buf.test.Features.e"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 5
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields: { "edition": { i32: 998 }, "value": { string: "0" } }
+        "feature_support":
+          message.fields: { "edition_introduced": { i32: 1001 } }
+    - fqn: "buf.test.Features.f"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 6
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 998 }
+              "value": { string: "true" }
+          - message.fields:
+              "edition": { i32: 2147483647 }
+              "value": { string: "42" }
+        "feature_support":
+          message.fields:
+            "edition_deprecated": { i32: 900 }
+            "edition_introduced": { i32: 900 }
+            "edition_removed": { i32: 900 }
+    - fqn: "buf.test.Features.g"
+      kind: KIND_FIELD
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 7
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields: { "edition": { i32: 998 }, "value": { string: "A" } }
+          - message.fields: { "edition": { i32: 999 }, "value": { string: "B" } }
+          - message.fields: { "edition": { i32: 1000 }, "value": { string: "C" } }
+        "feature_support":
+          message.fields: { "edition_introduced": { i32: 1000 } }
+    - fqn: "buf.test.A"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 8
+      visible: true
+    - fqn: "buf.test.B"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/incomplete_feature.proto"
+      index: 9
+      visible: true

@@ -129,10 +129,10 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			})
 
 		case ast.DefKindService:
-			sorry("services")
+			//sorry("services")
 
 		case ast.DefKindMethod:
-			sorry("methods")
+			//sorry("methods")
 
 		case ast.DefKindOption:
 			// Options are lowered elsewhere.

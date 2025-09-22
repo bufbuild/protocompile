@@ -1,0 +1,99 @@
+warning: expected feature field to set `edition_defaults`
+  --> testdata/editions/incomplete_feature.proto:20:16
+   |
+20 |     bool a = 1 [feature_support = {}];
+   |                ^^^^^^^^^^^^^^^^^^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: expected `FeatureSupport.edition_introduced` to be set
+  --> testdata/editions/incomplete_feature.proto:20:35
+   |
+20 |     bool a = 1 [feature_support = {}];
+   |                                   ^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: expected feature field to set `feature_support`
+  --> testdata/editions/incomplete_feature.proto:22:16
+   |
+22 |       bool b = 2 [
+   |  _______________^
+23 | /         edition_defaults = {edition: EDITION_LEGACY, value: "false"}
+24 | |     ];
+   | \_____^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: expected `FeatureSupport.edition_introduced` to be set
+  --> testdata/editions/incomplete_feature.proto:28:27
+   |
+28 |         feature_support = {}
+   |                           ^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: `editions_defaults` does not cover all editions
+  --> testdata/editions/incomplete_feature.proto:32:28
+   |
+32 |         edition_defaults = {edition: EDITION_2023, value: "false"},
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+   = help: `editions_defaults` must specify a default for `EDITION_LEGACY` or
+           `EDITION_PROTO2` to cover all editions
+
+warning: expected `bool` or enum typed field for feature
+  --> testdata/editions/incomplete_feature.proto:36:5
+   |
+36 |     int32 e = 5 [
+   |     ^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: unexpected `EDITION_MAX` in `EditionDefault.edition`
+  --> testdata/editions/incomplete_feature.proto:43:38
+   |
+43 |         edition_defaults = {edition: EDITION_MAX, value: "42"},
+   |                                      ^^^^^^^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: expected quoted bool in `EditionDefault.value`
+  --> testdata/editions/incomplete_feature.proto:43:58
+   |
+41 |     bool f = 6 [
+   |     ---- expected due to this
+42 |         edition_defaults = {edition: EDITION_PROTO2, value: "true"},
+43 |         edition_defaults = {edition: EDITION_MAX, value: "42"},
+   |                                                          ^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+   = help: `value` must one of "true" or "false"
+
+warning: unexpected `EDITION_LEGACY` in `edition_introduced`
+  --> testdata/editions/incomplete_feature.proto:44:46
+   |
+44 |         feature_support.edition_introduced = EDITION_LEGACY,
+   |                                              ^^^^^^^^^^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: unexpected `EDITION_LEGACY` in `edition_deprecated`
+  --> testdata/editions/incomplete_feature.proto:45:46
+   |
+45 |         feature_support.edition_deprecated = EDITION_LEGACY,
+   |                                              ^^^^^^^^^^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: unexpected `EDITION_LEGACY` in `edition_removed`
+  --> testdata/editions/incomplete_feature.proto:46:43
+   |
+46 |         feature_support.edition_removed = EDITION_LEGACY
+   |                                           ^^^^^^^^^^^^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+
+warning: expected quoted enum value in `EditionDefault.value`
+  --> testdata/editions/incomplete_feature.proto:52:59
+   |
+49 |     Enum g = 7 [
+   |     ---- expected due to this
+50 |         edition_defaults = {edition: EDITION_PROTO2, value: "A"},
+51 |         edition_defaults = {edition: EDITION_PROTO3, value: "B"},
+52 |         edition_defaults = {edition: EDITION_2023, value: "C"},
+   |                                                           ^^^
+   = note: this is likely a mistake, but it is not rejected by protoc
+   = help: `value` must be the name of a value in `buf.test.Enum`
+
+encountered 12 warnings

@@ -1,0 +1,24 @@
+file:
+- name: "testdata/editions/ok.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.features.field_presence: EXPLICIT
+    - name: "y"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.features.field_presence: IMPLICIT
+    - name: "z"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.features.field_presence: LEGACY_REQUIRED
+  options.features.field_presence: IMPLICIT
+  syntax: "editions"
+  edition: EDITION_2023

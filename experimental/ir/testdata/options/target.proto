@@ -1,0 +1,163 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package buf.test;
+
+import "google/protobuf/descriptor.proto";
+
+option (file).file = true;
+option (file).range = true;
+option (file).message = true;
+option (file).field = true;
+option (file).oneof = true;
+option (file).enum = true;
+option (file).value = true;
+option (file).service = true;
+option (file).method = true;
+
+message M {
+    option (message).file = true;
+    option (message).range = true;
+    option (message).message = true;
+    option (message).field = true;
+    option (message).oneof = true;
+    option (message).enum = true;
+    option (message).value = true;
+    option (message).service = true;
+    option (message).method = true;
+
+    optional int32 x = 1 [(field) = {
+        file: true
+        range: true
+        message: true, field: true, oneof: true
+        enum: true, value: true
+        service: true, method: true
+    }];
+
+    extensions 2 [(range) = {
+        file: true
+        range: true
+        message: true, field: true, oneof: true
+        enum: true, value: true
+        service: true, method: true
+    }];
+    
+    oneof y {
+        option (oneof).file = true;
+        option (oneof).range = true;
+        option (oneof).message = true;
+        option (oneof).field = true;
+        option (oneof).oneof = true;
+        option (oneof).enum = true;
+        option (oneof).value = true;
+        option (oneof).service = true;
+        option (oneof).method = true;
+        int32 z = 3;
+    }
+}
+
+enum E {
+    option (enum).file = true;
+    option (enum).range = true;
+    option (enum).message = true;
+    option (enum).field = true;
+    option (enum).oneof = true;
+    option (enum).enum = true;
+    option (enum).value = true;
+    option (enum).service = true;
+    option (enum).method = true;
+
+    X = 1 [(value) = {
+        file: true
+        range: true
+        message: true, field: true, oneof: true
+        enum: true, value: true
+        service: true, method: true
+    }];
+}
+
+service S {
+    option (service).file = true;
+    option (service).range = true;
+    option (service).message = true;
+    option (service).field = true;
+    option (service).oneof = true;
+    option (service).enum = true;
+    option (service).value = true;
+    option (service).service = true;
+    option (service).method = true;
+
+    rpc X(M) returns (M) {
+        option (method).file = true;
+        option (method).range = true;
+        option (method).message = true;
+        option (method).field = true;
+        option (method).oneof = true;
+        option (method).enum = true;
+        option (method).value = true;
+        option (method).service = true;
+        option (method).method = true;
+    }
+}
+
+message Targets {
+    optional bool file = 1 [targets = TARGET_TYPE_FILE];
+    optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
+    optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
+    optional bool field = 4 [targets = TARGET_TYPE_FIELD];
+    optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
+    optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
+    optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
+    optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
+    optional bool method = 9 [targets = TARGET_TYPE_METHOD];
+}
+
+
+extend google.protobuf.FileOptions {
+    optional Targets file = 10000;
+}
+
+extend google.protobuf.ExtensionRangeOptions {
+    optional Targets range = 10000;
+}
+
+extend google.protobuf.MessageOptions {
+    optional Targets message = 10000;
+}
+
+extend google.protobuf.FieldOptions {
+    optional Targets field = 10000;
+}
+
+extend google.protobuf.OneofOptions {
+    optional Targets oneof = 10000;
+}
+
+extend google.protobuf.EnumOptions {
+    optional Targets enum = 10000;
+}
+
+extend google.protobuf.EnumValueOptions {
+    optional Targets value = 10000;
+}
+
+extend google.protobuf.ServiceOptions {
+    optional Targets service = 10000;
+}
+
+extend google.protobuf.MethodOptions {
+    optional Targets method = 10000;
+}

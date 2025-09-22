@@ -134,6 +134,130 @@ func resolveOptions(f File, r *report.Report) {
 	}
 }
 
+// populateOptionTargets builds option target sets for each field in a file.
+func populateOptionTargets(f File, _ *report.Report) {
+	dp := f.Context().imports.DescriptorProto().Context()
+	targets := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.optionTargets})
+
+	populate := func(m Member) {
+		for target := range seq.Values(m.Options().Field(targets).Elements()) {
+			n, _ := target.AsInt()
+			target := OptionTarget(n)
+			if target == OptionTargetUnknown || target >= optionTargetMax {
+				continue
+			}
+
+			m.raw.optionTargets |= 1 << target
+		}
+	}
+
+	for ty := range seq.Values(f.AllTypes()) {
+		if !ty.IsMessage() {
+			continue
+		}
+
+		for field := range seq.Values(ty.Members()) {
+			populate(field)
+		}
+	}
+
+	for extn := range seq.Values(f.AllExtensions()) {
+		populate(extn)
+	}
+}
+
+func validateOptionTargets(f File, r *report.Report) {
+	validateOptionTargetsInValue(f.Options(), report.Span{}, OptionTargetFile, r)
+
+	for ty := range seq.Values(f.AllTypes()) {
+		tyTarget, memberTarget := OptionTargetMessage, OptionTargetField
+		if ty.IsEnum() {
+			tyTarget, memberTarget = OptionTargetEnum, OptionTargetEnumValue
+		}
+		validateOptionTargetsInValue(ty.Options(), ty.AST().Name().Span(), tyTarget, r)
+		for member := range seq.Values(ty.Members()) {
+			validateOptionTargetsInValue(member.Options(), member.AST().Name().Span(), memberTarget, r)
+		}
+		for oneof := range seq.Values(ty.Oneofs()) {
+			validateOptionTargetsInValue(oneof.Options(), oneof.AST().Name().Span(), OptionTargetOneof, r)
+		}
+	}
+
+	for extn := range seq.Values(f.AllExtensions()) {
+		validateOptionTargetsInValue(extn.Options(), extn.AST().Name().Span(), OptionTargetField, r)
+	}
+}
+
+func validateOptionTargetsInValue(m MessageValue, decl report.Span, target OptionTarget, r *report.Report) {
+	if m.IsZero() {
+		return
+	}
+
+	for value := range m.Fields() {
+		field := value.Field()
+		if !field.CanTarget(target) {
+			var nouns taxa.Set
+			var targets int
+			for target := range field.Targets() {
+				switch target {
+				case OptionTargetFile:
+					nouns = nouns.With(taxa.TopLevel)
+				case OptionTargetRange:
+					nouns = nouns.With(taxa.Extensions)
+				case OptionTargetMessage:
+					nouns = nouns.With(taxa.Message)
+				case OptionTargetEnum:
+					nouns = nouns.With(taxa.Enum)
+				case OptionTargetField:
+					nouns = nouns.With(taxa.Field)
+				case OptionTargetEnumValue:
+					nouns = nouns.With(taxa.EnumValue)
+				case OptionTargetOneof:
+					nouns = nouns.With(taxa.Oneof)
+				case OptionTargetService:
+					nouns = nouns.With(taxa.Service)
+				case OptionTargetMethod:
+					nouns = nouns.With(taxa.Method)
+				}
+				targets++
+			}
+
+			span := value.FieldAST().Key().Span()
+			if span.IsZero() {
+				pc, _ := iterx.Last(value.OptionPath().Components)
+				span = pc.Name().Span()
+			}
+
+			// Pull out the place where this option was set so we can show it to
+			// the user.
+			dp := m.Context().imports.DescriptorProto().Context()
+			constraints := field.Options().Field(wrapMember(dp,
+				ref[rawMember]{ptr: dp.builtins.optionTargets}))
+
+			d := r.Errorf("unsupported option target for `%s`", field.Name()).Apply(
+				report.Snippetf(span, "option set here"),
+				report.Snippetf(decl, "applied to this"),
+				report.Snippetf(constraints.AST(), "targets constrained here"),
+			)
+			if targets == 1 {
+				d.Apply(report.Helpf(
+					"`%s` is constrained to %ss",
+					field.FullName(),
+					nouns.Join("or")))
+			} else {
+				d.Apply(report.Helpf(
+					"`%s` is constrained to one of %s",
+					field.FullName(),
+					nouns.Join("or")))
+			}
+
+			continue // Don't recurse and generate a mess of diagnostics.
+		}
+
+		validateOptionTargetsInValue(value.AsMessage(), decl, target, r)
+	}
+}
+
 // symbolRef is all of the information necessary to resolve an option reference.
 type optionRef struct {
 	*Context
@@ -282,7 +406,7 @@ func (r optionRef) resolve() {
 				if r.File().Syntax().IsEdition() {
 					r.Errorf("`packed` cannot be set in %s", taxa.EditionMode).Apply(
 						report.Snippet(pc),
-						report.Snippetf(r.File().AST().Syntax(), "syntax specified here"),
+						report.Snippetf(r.File().AST().Syntax().Value(), "edition specified here"),
 						report.Helpf("instead, use `features.repeated_field_encoding`"),
 					)
 				}
@@ -293,7 +417,7 @@ func (r optionRef) resolve() {
 				if syn := r.File().Syntax(); !syn.IsEdition() {
 					r.Errorf("`features` cannot be set in `%s`", syn).Apply(
 						report.Snippet(pc),
-						report.Snippetf(r.File().AST().Syntax(), "syntax specified here"),
+						report.Snippetf(r.File().AST().Syntax().Value(), "syntax specified here"),
 					)
 				}
 			}

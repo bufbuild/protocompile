@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -23,6 +25,8 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
+
+//go:generate go run github.com/bufbuild/protocompile/internal/enum option_target.yaml
 
 // Member is a Protobuf message field, enum value, or extension field.
 //
@@ -58,6 +62,9 @@ type rawMember struct {
 	// If negative, this is the negative of a presence.Kind. Otherwise, it's
 	// a oneof index.
 	oneof int32
+
+	// Which entities this option can apply to. If zero, all targets are valid.
+	optionTargets uint32
 }
 
 // Returns whether this is a non-extension message field.
@@ -179,6 +186,9 @@ func (m Member) InternedScope() intern.ID {
 //
 // Defaults to zero if the number is not specified.
 func (m Member) Number() int32 {
+	if m.IsZero() {
+		return 0
+	}
 	return m.raw.number
 }
 
@@ -278,6 +288,43 @@ func (m Member) FeatureInfo() FeatureInfo {
 	return FeatureInfo{
 		internal.NewWith(m.Context()),
 		m.raw.featureInfo,
+	}
+}
+
+// CanTarget returns whether this message field can be set as an option for the
+// given option target type.
+//
+// This is mediated by the option FieldOptions.targets, which controls whether
+// this field can be set (transitively) on the options of a given entity type.
+// This is useful for options which re-use the same message type for different
+// option types, such as FeatureSet.
+func (m Member) CanTarget(target OptionTarget) bool {
+	if m.IsZero() {
+		return false
+	}
+
+	return m.raw.optionTargets == 0 ||
+		(m.raw.optionTargets>>uint(target))&1 != 0 // Check if the target-th bit is set.
+}
+
+// Targets returns an iterator over the valid option targets for this member.
+func (m Member) Targets() iter.Seq[OptionTarget] {
+	return func(yield func(OptionTarget) bool) {
+		if m.IsZero() {
+			return
+		}
+		if m.raw.optionTargets == 0 {
+			OptionTargets()(yield)
+			return
+		}
+
+		bits := m.raw.optionTargets
+		for t := OptionTargetUnknown; bits != 0; t++ {
+			if bits&1 != 0 && !yield(t) {
+				return
+			}
+			bits >>= 1
+		}
 	}
 }
 

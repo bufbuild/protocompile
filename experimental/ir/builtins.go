@@ -1,3 +1,17 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ir
 
 import (
@@ -19,7 +33,7 @@ type builtins struct {
 	enumOptions,
 	enumValueOptions arena.Pointer[rawMember]
 
-	mapEntry, packed arena.Pointer[rawMember]
+	mapEntry, packed, optionTargets arena.Pointer[rawMember]
 
 	editionDefaults,
 	editionDefaultKey,
@@ -58,8 +72,9 @@ type builtinIDs struct {
 	EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 	EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
 
-	MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
-	Packed   intern.ID `intern:"google.protobuf.FieldOptions.packed"`
+	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	Packed        intern.ID `intern:"google.protobuf.FieldOptions.packed"`
+	OptionTargets intern.ID `intern:"google.protobuf.FieldOptions.targets"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_options"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_options"`
@@ -108,8 +123,9 @@ func resolveBuiltins(c *Context) {
 		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
 		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
 
-		mapEntry: mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
-		packed:   mustResolve[rawMember](c, names.Packed, SymbolKindField),
+		mapEntry:      mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
+		packed:        mustResolve[rawMember](c, names.Packed, SymbolKindField),
+		optionTargets: mustResolve[rawMember](c, names.OptionTargets, SymbolKindField),
 
 		editionDefaults:     mustResolve[rawMember](c, names.EditionDefaults, SymbolKindField),
 		editionDefaultKey:   mustResolve[rawMember](c, names.EditionDefaultKey, SymbolKindField),

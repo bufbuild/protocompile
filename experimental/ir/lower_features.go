@@ -65,12 +65,12 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	esw := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupportWarning})
 	esr := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupportRemoved})
 
-	mistake := report.Notef("protoc accepts this, but it is very likely a mistake")
+	mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
 
 	info := new(rawFeatureInfo)
 	if defaults.IsZero() {
 		r.Warnf("expected feature field to set `edition_defaults`").Apply(
-			report.Snippet(field.AST()),
+			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
 		for def := range seq.Values(defaults.Elements()) {
@@ -86,13 +86,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			} else {
 				edition = syntax.FromEnum(int32(key))
 				if edition == syntax.Unknown && key != syntax.EditionLegacyNumber {
-					enum := value.Field().Element().MemberByNumber(int32(key))
-					name := any(enum.Name())
-					if enum.IsZero() {
-						name = key
-					}
-
-					r.Warnf("unexpected value in `EditionDefault.edition`", name).Apply(
+					r.Warnf("unexpected `%s` in `EditionDefault.edition`", value.AST().Span().Text()).Apply(
 						report.Snippet(value.AST()),
 						mistake,
 					)
@@ -138,7 +132,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 					}
 				default:
 					r.Warnf("expected `bool` or enum typed field for feature").Apply(
-						report.Snippet(value.Field().TypeAST()),
+						report.Snippet(field.TypeAST()),
 						mistake,
 					)
 					continue
@@ -172,29 +166,28 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	})
 
 	if len(info.defaults) > 0 && !slicesx.Among(info.defaults[0].edition, syntax.Unknown, syntax.Proto2) {
-		r.Warnf("`editions_default` does not cover all editions").Apply(
+		r.Warnf("`editions_defaults` does not cover all editions").Apply(
 			report.Snippet(defaults.AST()),
-			report.Helpf("`editions_default` must specify a default for `EDITION_LEGACY` or `EDITION_PROTO2` to cover all editions"),
+			report.Helpf("`editions_defaults` must specify a default for `EDITION_LEGACY` or `EDITION_PROTO2` to cover all editions"),
 			mistake,
 		)
 	}
 
 	if support.IsZero() {
 		r.Warnf("expected feature field to set `feature_support`").Apply(
-			report.Snippet(field.AST()),
+			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
 		value := support.Field(esi)
 		n, _ := value.AsInt()
 		info.introduced = syntax.FromEnum(int32(n))
 		if value.IsZero() {
-			r.Warnf("expected `FeatureSupport.introduced` to be set").Apply(
+			r.Warnf("expected `FeatureSupport.edition_introduced` to be set").Apply(
 				report.Snippet(support.AsValue().AST()),
 				mistake,
 			)
-		}
-		if info.introduced == syntax.Unknown {
-			r.Warnf("unexpected value `%s` in `FeatureSupport.introduced`", value.AST().Span().Text()).Apply(
+		} else if info.introduced == syntax.Unknown {
+			r.Warnf("unexpected `%s` in `edition_introduced`", value.AST().Span().Text()).Apply(
 				report.Snippet(value.AST()),
 				mistake,
 			)
@@ -204,7 +197,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		n, _ = value.AsInt()
 		info.deprecated = syntax.FromEnum(int32(n))
 		if !value.IsZero() && info.deprecated == syntax.Unknown {
-			r.Warnf("unexpected value `%s` in `FeatureSupport.deprecated`", value.AST().Span().Text()).Apply(
+			r.Warnf("unexpected `%s` in `edition_deprecated`", value.AST().Span().Text()).Apply(
 				report.Snippet(value.AST()),
 				mistake,
 			)
@@ -214,7 +207,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		n, _ = value.AsInt()
 		info.removed = syntax.FromEnum(int32(n))
 		if !value.IsZero() && info.removed == syntax.Unknown {
-			r.Warnf("unexpected value `%s` in `FeatureSupport.removed`", value.AST().Span().Text()).Apply(
+			r.Warnf("unexpected `%s` in `edition_removed`", value.AST().Span().Text()).Apply(
 				report.Snippet(value.AST()),
 				mistake,
 			)
@@ -312,7 +305,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 	edition := features.Context().File().Syntax()
 	for feature := range features.Fields() {
 		if msg := feature.AsMessage(); !msg.IsZero() {
-			validateFeatures(features, r)
+			validateFeatures(msg, r)
 			continue
 		}
 
@@ -333,19 +326,9 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			return key
 		}
 
-		if intro := info.Introduced(); edition < intro {
-			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), edition.PrettyString()).Apply(
-				report.Snippet(key()),
-			)
-			if intro != syntax.Unknown {
-				d.Apply(report.Helpf(
-					"`%s` requires at least %s",
-					feature.Field().Name(), intro.PrettyString(),
-				))
-			}
-			continue
-		}
-
+		// We check these in reverse order, because the user might have set
+		// introduced == deprecated == removed, and protoc doesn't enforce
+		// any relationship between these.
 		if removed := info.Removed(); removed != syntax.Unknown && removed <= edition {
 			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), edition.PrettyString()).Apply(
 				report.Snippet(key()),
@@ -389,6 +372,19 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			for _, help := range helps {
 				d.Apply(report.Helpf("%v", help))
 			}
+		}
+
+		if intro := info.Introduced(); edition < intro {
+			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), edition.PrettyString()).Apply(
+				report.Snippet(key()),
+			)
+			if intro != syntax.Unknown {
+				d.Apply(report.Helpf(
+					"`%s` requires at least %s",
+					feature.Field().Name(), intro.PrettyString(),
+				))
+			}
+			continue
 		}
 	}
 }

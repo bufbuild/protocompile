@@ -1,0 +1,85 @@
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:21:8
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+21 | option features = {};
+   |        ^^^^^^^^
+
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:24:12
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+24 |     option features = {};
+   |            ^^^^^^^^
+
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:25:27
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+24 |     option features = {};
+25 |     optional int32 x = 1 [features = {}];
+   |                           ^^^^^^^^
+
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:27:16
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+27 |         option features = {};
+   |                ^^^^^^^^
+
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:28:22
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+27 |         option features = {};
+28 |         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
+   |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: redundant custom option setting syntax
+   --> testdata/editions/proto2.proto:28:22
+    |
+ 28 |         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this field is not a message extension
+   ::: google/protobuf/descriptor.proto:801:23
+    |
+801 |   optional FeatureSet features = 21;
+    |                       -------- field declared inside of `google.protobuf.FieldOptions` here
+   ::: testdata/editions/proto2.proto:28:22
+   help: replace `(...)` with a field name
+    |
+ 28 | -         int32 z = 2 [(google.protobuf.FieldOptions.features) = {}];
+ 28 | +         int32 z = 2 [features = {}];
+    |
+    = help: custom option setting syntax should only be used with message
+            extensions
+
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:33:12
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+33 |     option features = {};
+   |            ^^^^^^^^
+
+error: `features` cannot be set in `proto2`
+  --> testdata/editions/proto2.proto:34:12
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+33 |     option features = {};
+34 |     X = 1 [features = {}];
+   |            ^^^^^^^^
+
+encountered 7 errors and 1 warning

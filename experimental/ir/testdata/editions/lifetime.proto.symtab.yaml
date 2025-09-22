@@ -1,0 +1,84 @@
+tables:
+  "testdata/editions/lifetime.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/lifetime.proto"
+    - fqn: "buf.test.Features"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/lifetime.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Features.a"
+      kind: KIND_FIELD
+      file: "testdata/editions/lifetime.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields: { "edition_introduced": { i32: 1000 } }
+    - fqn: "buf.test.Features.b"
+      kind: KIND_FIELD
+      file: "testdata/editions/lifetime.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields:
+            "deprecation_warning":
+              string: "This is a bad feature. Don't use it."
+            "edition_deprecated": { i32: 1000 }
+            "edition_introduced": { i32: 1000 }
+    - fqn: "buf.test.Features.c"
+      kind: KIND_FIELD
+      file: "testdata/editions/lifetime.proto"
+      index: 4
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields:
+            "edition_introduced": { i32: 1000 }
+            "edition_removed": { i32: 1000 }
+    - fqn: "buf.test.Features.d"
+      kind: KIND_FIELD
+      file: "testdata/editions/lifetime.proto"
+      index: 5
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields: { "edition_introduced": { i32: 1001 } }
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/editions/lifetime.proto"
+      index: 1
+      visible: true
+    options.message.fields:
+      "features":
+        message.extns:
+          "buf.test.x":
+            message.fields:
+              "a": { bool: true }
+              "b": { bool: true }
+              "c": { bool: true }
+              "d": { bool: true }
