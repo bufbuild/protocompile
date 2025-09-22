@@ -36,8 +36,14 @@ func resolveOptions(f File, r *report.Report) {
 	messageOptions := ref[rawMember]{dpIdx, dp.langSymbols.messageOptions}
 	fieldOptions := ref[rawMember]{dpIdx, dp.langSymbols.fieldOptions}
 	oneofOptions := ref[rawMember]{dpIdx, dp.langSymbols.oneofOptions}
+	rangeOptions := ref[rawMember]{dpIdx, dp.langSymbols.rangeOptions}
 	enumOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumOptions}
 	enumValueOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumValueOptions}
+
+	// Map re-used for deduplicating values computed from extension options.
+	// When a user writes extensions 1, 2 [a = b];, the options get duplicated
+	// to each range this expands to.
+	extnOpts := make(map[ast.DeclRange]arena.Pointer[rawValue])
 
 	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
@@ -115,6 +121,30 @@ func resolveOptions(f File, r *report.Report) {
 					raw:   &oneof.raw.options,
 				}.resolve()
 			}
+		}
+
+		clear(extnOpts)
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			decl := extns.DeclAST()
+			if p := extnOpts[decl]; !p.Nil() {
+				extns.raw.options = p
+				continue
+			}
+
+			for def := range seq.Values(extns.DeclAST().Options().Entries()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: ty.Scope(),
+					def:   def,
+
+					field: rangeOptions,
+					raw:   &extns.raw.options,
+				}.resolve()
+			}
+
+			extnOpts[decl] = extns.raw.options
 		}
 	}
 	for field := range seq.Values(f.AllExtensions()) {

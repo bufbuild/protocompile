@@ -94,6 +94,7 @@ type langSymbols struct {
 	messageOptions,
 	fieldOptions,
 	oneofOptions,
+	rangeOptions,
 	enumOptions,
 	enumValueOptions arena.Pointer[rawMember]
 

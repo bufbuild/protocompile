@@ -40,6 +40,7 @@ type Session struct {
 		MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
 		FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
 		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
+		RangeOptions     intern.ID `intern:"google.protobuf.DescriptorProto.ExtensionRange.options"`
 		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
 

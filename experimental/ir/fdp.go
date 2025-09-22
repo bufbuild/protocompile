@@ -172,7 +172,7 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 
 		start, end := extensions.Range()
 		er.Start = addr(start)
-		er.End = addr(end)
+		er.End = addr(end + 1) // Exclusive.
 
 		if options := extensions.Options(); !options.IsZero() {
 			er.Options = new(descriptorpb.ExtensionRangeOptions)
@@ -186,7 +186,7 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 
 		start, end := reserved.Range()
 		rr.Start = addr(start)
-		rr.End = addr(end)
+		rr.End = addr(end + 1) // Exclusive.
 	}
 
 	for name := range seq.Values(ty.ReservedNames()) {
@@ -310,7 +310,7 @@ func (dg *descGenerator) enum(ty Type, edp *descriptorpb.EnumDescriptorProto) {
 
 		start, end := reserved.Range()
 		rr.Start = addr(start)
-		rr.End = addr(end)
+		rr.End = addr(end) // Inclusive, not exclusive like the one for messages!
 	}
 
 	for name := range seq.Values(ty.ReservedNames()) {

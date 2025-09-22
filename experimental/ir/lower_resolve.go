@@ -184,6 +184,7 @@ func resolveLangSymbols(c *Context) {
 		messageOptions: mustResolve[rawMember](c, names.MessageOptions, SymbolKindField),
 		fieldOptions:   mustResolve[rawMember](c, names.FieldOptions, SymbolKindField),
 		oneofOptions:   mustResolve[rawMember](c, names.OneofOptions, SymbolKindField),
+		rangeOptions:   mustResolve[rawMember](c, names.RangeOptions, SymbolKindField),
 
 		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
 		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
