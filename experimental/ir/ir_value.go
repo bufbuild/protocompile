@@ -43,13 +43,43 @@ type Value struct {
 
 // rawValue is a [rawValueBits] with field information attached to it.
 type rawValue struct {
-	// The expression that this value was evaluated from.
+	// Expressions that contributes to this value.
 	//
-	// If this is an entry in a [MessageValue], this will be an ast.FieldExpr.
-	expr ast.ExprAny
+	// The representation of this field is quite complicated, to deal with
+	// potentially complicated source ASTs. The worst case is as follows.
+	// Consider:
+	//
+	//   option foo = { a: [1, 2, 3], a: [4, 5] }; // (*)
+	//
+	// Here, two ast.FieldExprs contribute to the value of a, but there are
+	// five subexpressions for the elements of a. We would like to be able to
+	// report both those FieldExprs, *and* report an expression for each value
+	// therein.
+	//
+	// However, there is another potentially subtle case we *do not* have to
+	// deal with (for a singular message field a):
+	//
+	//   option foo = { a { b: 1 }, a { c: 2 } };
+	//
+	// This is an error, because foo.a has already been set when we process
+	// the second value. If a is repeated, each of these produces a separate
+	// element.
+	//
+	// Because case (*) is rare, we adopt a compression strategy here. exprs
+	// refers to all contributing expressions for the value. If any array
+	// expressions occurred, elemIndices will be non-nil, and will be a prefix
+	// sum of the number of values that each expr in exprs contributes. This is
+	// binary-searched by Element.AST to find the AST nodes of each element.
+	//
+	// Specifically, elemIndices[i] will be the number of elements that every
+	// expression, up to an including exprs[i], contributes. This layout is
+	// chosen because it significantly simplifies construction and searching of
+	// this slice.
+	exprs       []ast.ExprAny
+	elemIndices []uint32
 
-	// The AST node for the path of the option (compact or otherwise) that
-	// specifies this value. This is intended for diagnostics.
+	// The AST nodes for the path of the option (compact or otherwise) that
+	// specify this value. This is intended for diagnostics.
 	//
 	// For example, the node
 	//
@@ -57,7 +87,12 @@ type rawValue struct {
 	//
 	// results in a field a: {b: {c: 9}}, which is four rawValues deep.
 	// Each of these will have the same optionPath, for a.b.c.
-	optionPath ast.Path
+	//
+	// There will be one such value for each contributing expression, to deal
+	// with the repeated field case
+	//
+	//   option f = 1; option f = 2;
+	optionPaths []ast.Path
 
 	// The field that this value sets. This is where type information comes
 	// from.
@@ -82,46 +117,72 @@ type rawValue struct {
 //     the repeated message fields that they will ultimately become.
 type rawValueBits uint64
 
-// AST returns the expression that evaluated to this value.
+// AST returns a representative expression that evaluated to this value.
+//
+// For complicated options (such as repeated fields), there may be more than
+// one contributing expression; this will just return *one* of them.
 func (v Value) AST() ast.ExprAny {
-	if v.IsZero() {
+	if v.IsZero() || len(v.raw.exprs) == 0 {
 		return ast.ExprAny{}
 	}
 
-	if field := v.raw.expr.AsField(); field.IsZero() {
+	expr := v.raw.exprs[0]
+	if field := expr.AsField(); field.IsZero() {
+		// Unwrap a FieldExpr if necessary.
 		return field.Value()
 	}
 
-	return v.raw.expr
+	return expr
 }
 
-// OptionPath returns the AST node for the path of the option (compact or not)
-// that caused this value to be set.
-func (v Value) OptionPath() ast.Path {
-	if v.IsZero() {
-		return ast.Path{}
+// ASTs returns all expressions that contributed to evaluating this value.
+//
+// There may be more than one such expression, for repeated fields set more
+// than once.
+func (v Value) ASTs() seq.Indexer[ast.ExprAny] {
+	var slice []ast.ExprAny
+	if !v.IsZero() {
+		slice = v.raw.exprs
 	}
-	return v.raw.optionPath
+
+	return seq.NewFixedSlice(slice, func(_ int, expr ast.ExprAny) ast.ExprAny {
+		if field := expr.AsField(); field.IsZero() {
+			return field.Value()
+		}
+		return expr
+	})
 }
 
-// FieldAST returns the field expression that sets this value in a message
-// expression, if it is such a value.
-func (v Value) FieldAST() ast.ExprField {
-	if v.IsZero() {
-		return ast.ExprField{}
+// Options returns the AST node for the options that set this value.
+//
+// There will be one path per value returned from [Value.ASTs].
+func (v Value) OptionPaths() seq.Indexer[ast.Path] {
+	var slice []ast.Path
+	if !v.IsZero() {
+		slice = v.raw.optionPaths
 	}
 
-	return v.raw.expr.AsField()
+	return seq.NewFixedSlice(slice, func(_ int, e ast.Path) ast.Path { return e })
 }
 
-// key returns an AST node that best approximates where this value's field was
-// set.
-func (v Value) key() report.Spanner {
-	if field := v.FieldAST(); !field.IsZero() {
-		return field.Key()
+// MessageKeys returns the AST nodes for each key associated with a value in
+// [Value.ASTs].
+//
+// This will either be the key value from an [ast.FieldExpr] (which need not be
+// an [ast.PathExpr], in the case of an extension) or the [ast.PathExpr]
+// associated with the left-hand-side of an option setting.
+func (v Value) MessageKeys() seq.Indexer[ast.ExprAny] {
+	var slice []ast.ExprAny
+	if !v.IsZero() {
+		slice = v.raw.exprs
 	}
 
-	return v.OptionPath()
+	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) ast.ExprAny {
+		if field := expr.AsField(); !field.IsZero() {
+			return field.Key()
+		}
+		return ast.ExprPath{Path: v.raw.optionPaths[n]}.AsAny()
+	})
 }
 
 // Field returns the field this value sets, which includes the value's type
@@ -155,8 +216,13 @@ func (v Value) Singular() bool {
 // The indexer will be nonempty except for the zero Value. That is to say, unset
 // fields of [MessageValue]s are not represented as a distinct "empty" Value.
 func (v Value) Elements() seq.Indexer[Element] {
-	return seq.NewFixedSlice(v.getElements(), func(_ int, bits rawValueBits) Element {
-		return Element{v.withContext, v.Field(), bits}
+	return seq.NewFixedSlice(v.getElements(), func(n int, bits rawValueBits) Element {
+		return Element{
+			withContext: v.withContext,
+			index:       n,
+			value:       v,
+			bits:        bits,
+		}
 	})
 }
 
@@ -380,18 +446,65 @@ func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {
 // type provides uniform access to such elements. See [Value.Elements].
 type Element struct {
 	withContext
-	field Member
+	index int
+	value Value
 	bits  rawValueBits
+}
+
+// AST returns the expression this value was evaluated from.
+func (e Element) AST() ast.ExprAny {
+	expr := e.value.raw.exprs[e.ValueNodeIndex()]
+	if array := expr.AsArray(); !array.IsZero() && e.value.raw.elemIndices != nil {
+		// We need to index into the array expression. The index is going to be
+		// offset by the number of expressions before this one, which we
+		// can get via elemIndices.
+		n := e.index - int(e.value.raw.elemIndices[e.index])
+		expr = array.Elements().At(n)
+	}
+	return expr
+}
+
+// ValueNodeIndex returns the index into [Value.ASTs] for this element's
+// contributing expression. This can be used to obtain other ASTs related to
+// this element, e.g.
+//
+//	key := e.Value().MessageKeys().At(e.ValueNodeIndex())
+func (e Element) ValueNodeIndex() int {
+	// We do O(log n) work here, because this function doesn't get called except
+	// for diagnostics.
+
+	idx := e.index
+	if e.value.raw.elemIndices != nil {
+		// Figure out which expression contributes the value for e. We're looking
+		// for the least upper bound.
+		//
+		// For example, if we have expressions [1, 2], [3, 4, 5], elemIndices
+		// will be [2, 5], and we have that BinarySearch returns
+		//
+		// 0 -> 0, false
+		// 1 -> 0, false
+		// 2 -> 0, true
+		// 3 -> 1, false
+		// 4 -> 1, false
+		var exact bool
+		idx, exact = slices.BinarySearch(e.value.raw.elemIndices, uint32(e.index))
+		if exact {
+			idx++
+		}
+	}
+
+	return idx
+}
+
+// Value is the [Value] this element came from.
+func (e Element) Value() Value {
+	return e.value
 }
 
 // Field returns the field this value sets, which includes the value's type
 // information.
 func (e Element) Field() Member {
-	if e.IsZero() {
-		return Member{}
-	}
-
-	return e.field
+	return e.Value().Field()
 }
 
 // Type returns the type of this element.
