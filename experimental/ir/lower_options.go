@@ -194,12 +194,13 @@ type optionRef struct {
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
+	ids := r.session.builtins
 	root := r.field.Element()
 
 	// Check if this is a pseudo-option, and diagnose if it has multiple
 	// components. The values of pseudo-options are calculated elsewhere; this
 	// is only for diagnostics.
-	if r.field.InternedFullName() == r.session.builtins.FieldOptions {
+	if r.field.InternedFullName() == ids.FieldOptions {
 		var buf [2]ast.PathComponent
 		prefix := slices.AppendSeq(buf[:0], iterx.Take(r.def.Path.Components, 2))
 
@@ -302,15 +303,26 @@ func (r optionRef) resolve() {
 				return
 			}
 		}
+		if pc.IsFirst() {
+			switch field.InternedFullName() {
+			case ids.MapEntry:
+				r.Errorf("`map_entry` cannot be set explicitly").Apply(
+					report.Snippet(pc),
+					report.Helpf("`map_entry` is set automatically for synthetic map "+
+						"entry types, and cannot be set with an %s", taxa.Option),
+				)
 
-		// TODO: Forbid any of the uninterpreted_option options from being set,
-		// and any of the features options from being set if not in editions mode.
-		if pc.IsFirst() && field.InternedFullName() == r.session.builtins.MapEntry {
-			r.Errorf("`map_entry` cannot be set explicitly").Apply(
-				report.Snippet(pc),
-				report.Helpf("map_entry is set automatically for synthetic map "+
-					"entry types, and cannot be set with an %s", taxa.Option),
-			)
+			case ids.FileUninterpreted,
+				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted, ids.RangeUninterpreted,
+				ids.EnumUninterpreted, ids.EnumValueUninterpreted,
+				ids.MethodUninterpreted, ids.ServiceUninterpreted:
+				if syn := r.File().Syntax(); !syn.IsEdition() {
+					r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+						report.Snippet(pc),
+						report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+					)
+				}
+			}
 		}
 
 		path, _ = pc.SplitAfter()
