@@ -321,7 +321,7 @@ func (r optionRef) resolve() {
 				// A different member of a oneof was set.
 				r.Error(errSetMultipleTimes{
 					member: field.Oneof(),
-					first:  value.OptionPath(),
+					first:  value.OptionPaths().At(0),
 					second: path,
 					root:   pc.IsFirst(),
 				})
@@ -337,7 +337,7 @@ func (r optionRef) resolve() {
 			default:
 				r.Error(errSetMultipleTimes{
 					member: field,
-					first:  value.OptionPath(),
+					first:  value.OptionPaths().At(0),
 					second: path,
 					root:   pc.IsFirst(),
 				})
@@ -379,9 +379,7 @@ func (r optionRef) resolve() {
 		}
 
 		value := newMessage(r.Context, compressMember(r.Context, field)).AsValue()
-		if value.raw.optionPath.IsZero() {
-			value.raw.optionPath = path
-		}
+		value.raw.optionPaths = append(value.raw.optionPaths, path)
 
 		*raw = r.arenas.values.Compress(value.raw)
 		current = value
