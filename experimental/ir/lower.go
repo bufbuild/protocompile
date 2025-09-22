@@ -42,6 +42,8 @@ type Session struct {
 		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
 		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+		ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
+		MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
 		MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 	}
@@ -108,10 +110,4 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Perform "late" name resolution, that is, options.
 	resolveOptions(c.File(), r)
-}
-
-// sorry panics with an NYI error, which turns into an ICE inside of the
-// lowering logic.
-func sorry(what string) {
-	panic("sorry, not yet implemented: " + what)
 }
