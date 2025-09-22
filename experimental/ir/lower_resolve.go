@@ -49,11 +49,17 @@ func resolveNames(f File, r *report.Report) {
 	for field := range seq.Values(f.AllExtensions()) {
 		resolveFieldType(field, r)
 	}
+
+	for service := range seq.Values(f.Services()) {
+		for method := range seq.Values(service.Methods()) {
+			resolveMethodTypes(method, r)
+		}
+	}
 }
 
 // resolveFieldType fully resolves the type of a field (extension or otherwise).
 func resolveFieldType(field Member, r *report.Report) {
-	ty := field.AST().Type()
+	ty := field.TypeAST()
 	var path ast.Path
 	kind := presence.Explicit
 	switch ty.Kind() {
@@ -67,21 +73,6 @@ func resolveFieldType(field Member, r *report.Report) {
 		path = ty.AsPath().Path
 
 	case ast.TypeKindPrefixed:
-		// Unwrap as many prefixed fields as necessary to get to the bottom
-		// of this.
-		inner := ty
-		for {
-			if p := inner.AsPath(); !p.IsZero() {
-				path = p.Path
-				break
-			}
-			if p := inner.AsPrefixed(); !p.IsZero() {
-				inner = p.Type()
-				continue
-			}
-			sorry("map fields")
-		}
-
 		switch ty.AsPrefixed().Prefix() {
 		case keyword.Optional:
 			kind = presence.Explicit
@@ -91,8 +82,19 @@ func resolveFieldType(field Member, r *report.Report) {
 			kind = presence.Repeated
 		}
 
+		// Unwrap as many prefixed fields as necessary to get to the bottom
+		// of this.
+		ty = ty.RemovePrefixes()
+		if p := ty.AsPath().Path; !p.IsZero() {
+			path = p
+			break
+		}
+
+		fallthrough
+
 	case ast.TypeKindGeneric:
-		sorry("map fields")
+		// Resolved elsewhere.
+		return
 	}
 
 	if path.IsZero() {
@@ -123,6 +125,33 @@ func resolveFieldType(field Member, r *report.Report) {
 	if sym.Kind().IsType() {
 		field.raw.elem.file = sym.ref.file
 		field.raw.elem.ptr = arena.Pointer[rawType](sym.raw.data)
+
+		if mf := sym.AsType().MapField(); !mf.IsZero() {
+			r.Errorf("use of synthetic map entry type").Apply(
+				report.Snippetf(path, "referenced here"),
+				report.Snippetf(mf.TypeAST(), "synthesized by this type"),
+				report.Helpf("despite having a user-visible symbol, map entry "+
+					"types cannot be used as field types"),
+			)
+		}
+
+		if !field.Container().MapField().IsZero() && field.Number() == 1 {
+			// Legalize that the key type must be comparable.
+			ty := sym.AsType()
+			if !ty.Predeclared().IsMapKey() {
+				d := r.Errorf("expected map key type, found %s `%s`", sym.Kind().noun(), sym.FullName()).Apply(
+					report.Snippetf(field.TypeAST(), "expected map key type"),
+					report.Snippetf(sym.Definition(), "defined here"),
+					report.Helpf("valid map key types are integer types, `string`, and `bool`"),
+				)
+
+				if ty.IsEnum() {
+					d.Apply(report.Helpf(
+						"counterintuitively, user-defined enum types " +
+							"cannot be used as keys"))
+				}
+			}
+		}
 	}
 }
 
@@ -149,6 +178,57 @@ func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
 	}
 }
 
+func resolveMethodTypes(m Method, r *report.Report) {
+	resolve := func(ty ast.TypeAny) (out ref[rawType], stream bool) {
+		var path ast.Path
+		for path.IsZero() {
+			switch ty.Kind() {
+			case ast.TypeKindPath:
+				path = ty.AsPath().Path
+			case ast.TypeKindPrefixed:
+				prefixed := ty.AsPrefixed()
+				if prefixed.Prefix() == keyword.Stream {
+					stream = true
+				}
+				ty = prefixed.Type()
+			default:
+				// This is already diagnosed in the parser for us.
+				return out, stream
+			}
+		}
+
+		sym := symbolRef{
+			Context: m.Context(),
+			Report:  r,
+
+			span:  path,
+			scope: m.Service().FullName(),
+			name:  FullName(path.Canonicalized()),
+
+			accept: func(k SymbolKind) bool { return k == SymbolKindMessage },
+			want:   taxa.MessageType,
+
+			allowScalars:  true,
+			suggestImport: true,
+		}.resolve()
+
+		if sym.Kind().IsType() {
+			out.file = sym.ref.file
+			out.ptr = arena.Pointer[rawType](sym.raw.data)
+		}
+
+		return out, stream
+	}
+
+	signature := m.AST().Signature()
+	if signature.Inputs().Len() > 0 {
+		m.raw.input, m.raw.inputStream = resolve(m.AST().Signature().Inputs().At(0))
+	}
+	if signature.Outputs().Len() > 0 {
+		m.raw.output, m.raw.outputStream = resolve(m.AST().Signature().Outputs().At(0))
+	}
+}
+
 func resolveLangSymbols(c *Context) {
 	if !c.File().IsDescriptorProto() {
 		return
@@ -164,6 +244,11 @@ func resolveLangSymbols(c *Context) {
 
 		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
 		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
+
+		serviceOptions: mustResolve[rawMember](c, names.ServiceOptions, SymbolKindField),
+		methodOptions:  mustResolve[rawMember](c, names.MethodOptions, SymbolKindField),
+
+		mapEntry: mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
 	}
 }
 
@@ -223,10 +308,12 @@ func (r symbolRef) resolve() Symbol {
 
 		prim := predeclared.Lookup(string(r.name))
 		if prim.IsScalar() {
-			return wrapSymbol(r.Context, ref[rawSymbol]{
+			sym := wrapSymbol(r.Context, ref[rawSymbol]{
 				file: -1,
 				ptr:  arena.Pointer[rawSymbol](prim),
 			})
+			r.diagnoseLookup(sym, expected)
+			return sym
 		}
 
 		fallthrough

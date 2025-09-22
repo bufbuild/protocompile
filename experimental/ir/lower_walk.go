@@ -17,6 +17,7 @@ package ir
 import (
 	"math"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -24,7 +25,10 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // walker is the state struct for the AST-walking logic.
@@ -87,10 +91,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 	case ast.DeclKindRange:
-		if w.Context().File().Path() == DescriptorProtoPath {
-			return
-		}
-		sorry("ranges")
+		// Handled in NewType.
 
 	case ast.DeclKindDef:
 		def := decl.AsDef()
@@ -99,17 +100,17 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 		switch kind := def.Classify(); kind {
-		case ast.DefKindMessage, ast.DefKindEnum:
+		case ast.DefKindMessage, ast.DefKindEnum, ast.DefKindGroup:
 			ty := w.newType(def, parent)
-			ty.raw.isEnum = kind == ast.DefKindEnum
+
+			if kind == ast.DefKindGroup {
+				w.newField(def, parent, true)
+			}
 
 			w.recurse(def.Body().AsAny(), ty)
 
 		case ast.DefKindField, ast.DefKindEnumValue:
-			w.newField(def, parent)
-
-		case ast.DefKindGroup:
-			sorry("groups")
+			w.newField(def, parent, false)
 
 		case ast.DefKindOneof:
 			parent := extractParentType(parent)
@@ -130,10 +131,15 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			})
 
 		case ast.DefKindService:
-			sorry("services")
+			service := w.newService(def, parent)
+			if service.IsZero() {
+				break
+			}
+
+			w.recurse(def.Body().AsAny(), service)
 
 		case ast.DefKindMethod:
-			sorry("methods")
+			w.newMethod(def, parent)
 
 		case ast.DefKindOption:
 			// Options are lowered elsewhere.
@@ -144,19 +150,99 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	c := w.Context()
 	parentTy := extractParentType(parent)
+
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
+	// Returns whether an option with this FQN (which must be in the matching
+	// *Option message) is present and has true as its value.
+	//
+	// This is necessary because there are options which, unfortunately,
+	// influence field number evaluation. This breaks a dependency for us.
+	searchForBoolOption := func(path ...string) bool {
+		for decl := range seq.Values(def.Body().Decls()) {
+			def := decl.AsDef()
+			if def.IsZero() {
+				continue
+			}
+			opt := def.AsOption()
+			if opt.Keyword.IsZero() {
+				continue
+			}
+
+			if opt.Value.AsPath().AsKeyword() != keyword.True {
+				continue
+			}
+
+			pc, ok := iterx.OnlyOne(opt.Path.Components)
+			if !ok {
+				continue
+			}
+
+			// This can either be e.g. message_set_wire_format, but it could also
+			// appear as (google.protobuf.MessageOptions.message_set_wire_format).
+			if pc.AsIdent().Text() == path[len(path)-1] {
+				return true
+			}
+
+			if fqn := pc.AsExtension(); fqn.IsIdents(path...) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	isEnum := def.Keyword() == keyword.Enum
 	raw := c.arenas.types.NewCompressed(rawType{
 		def:    def,
 		name:   c.session.intern.Intern(name),
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
+
+		isEnum:       isEnum,
+		isMessageSet: !isEnum && searchForBoolOption("google", "protobuf", "MessageOptions", "message_set_wire_format"),
+		allowsAlias:  isEnum && searchForBoolOption("google", "protobuf", "EnumOptions", "allow_alias"),
 	})
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}
 	ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
-	ty.raw.memberByNumber = sync.OnceValue(ty.makeMembersByNumber)
+
+	for decl := range seq.Values(def.Body().Decls()) {
+		rangeDecl := decl.AsRange()
+		if rangeDecl.IsZero() {
+			continue
+		}
+
+		for v := range seq.Values(rangeDecl.Ranges()) {
+			if !v.AsPath().AsIdent().IsZero() || v.AsLiteral().Kind() == token.String {
+				var name string
+				if id := v.AsPath().AsIdent(); !id.IsZero() {
+					name = id.Text()
+				} else {
+					name, _ = v.AsLiteral().AsString()
+				}
+
+				ty.raw.reservedNames = append(ty.raw.reservedNames, rawReservedName{
+					ast:  v,
+					name: ty.Context().session.intern.Intern(name),
+				})
+				continue
+			}
+
+			raw := w.Context().arenas.ranges.NewCompressed(rawReservedRange{
+				ast:           v,
+				forExtensions: rangeDecl.IsExtensions(),
+			})
+
+			if rangeDecl.IsReserved() {
+				ty.raw.ranges = slices.Insert(ty.raw.ranges, int(ty.raw.rangesExtnStart), raw)
+				ty.raw.rangesExtnStart++
+			} else {
+				ty.raw.ranges = append(ty.raw.ranges, raw)
+			}
+		}
+	}
 
 	if !parentTy.IsZero() {
 		parentTy.raw.nested = append(parentTy.raw.nested, raw)
@@ -169,18 +255,23 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	return ty
 }
 
-func (w *walker) newField(def ast.DeclDef, parent any) Member {
+//nolint:unparam // Complains about the return value for some reason.
+func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
+	if group {
+		name = strings.ToLower(name)
+	}
 	fqn := w.fullname(parentTy, name)
 
 	id := c.arenas.members.NewCompressed(rawMember{
-		def:    def,
-		name:   c.session.intern.Intern(name),
-		fqn:    c.session.intern.Intern(fqn),
-		parent: c.arenas.types.Compress(parentTy.raw),
-		oneof:  math.MinInt32,
+		def:     def,
+		name:    c.session.intern.Intern(name),
+		fqn:     c.session.intern.Intern(fqn),
+		parent:  c.arenas.types.Compress(parentTy.raw),
+		oneof:   math.MinInt32,
+		isGroup: group,
 	})
 	raw := c.arenas.members.Deref(id)
 
@@ -236,6 +327,48 @@ func (w *walker) newExtendee(def ast.DefExtend, parent any) arena.Pointer[rawExt
 		def:    def.Decl,
 		parent: w.Context().arenas.types.Compress(parentTy.raw),
 	})
+}
+
+func (w *walker) newService(def ast.DeclDef, parent any) Service {
+	if parent != nil {
+		return Service{}
+	}
+
+	name := def.Name().AsIdent().Name()
+	fqn := w.pkg.Append(name)
+
+	raw := w.Context().arenas.services.NewCompressed(rawService{
+		def:  def,
+		name: w.Context().session.intern.Intern(name),
+		fqn:  w.Context().session.intern.Intern(string(fqn)),
+	})
+	w.Context().services = append(w.Context().services, raw)
+	return Service{
+		internal.NewWith(w.Context()),
+		w.Context().arenas.services.Deref(raw),
+	}
+}
+
+func (w *walker) newMethod(def ast.DeclDef, parent any) Method {
+	service, ok := parent.(Service)
+	if !ok {
+		return Method{}
+	}
+
+	name := def.Name().AsIdent().Name()
+	fqn := service.FullName().Append(name)
+
+	raw := w.Context().arenas.methods.NewCompressed(rawMethod{
+		def:     def,
+		name:    w.Context().session.intern.Intern(name),
+		fqn:     w.Context().session.intern.Intern(string(fqn)),
+		service: w.Context().arenas.services.Compress(service.raw),
+	})
+	service.raw.methods = append(service.raw.methods, raw)
+	return Method{
+		internal.NewWith(w.Context()),
+		w.Context().arenas.methods.Deref(raw),
+	}
 }
 
 func (w *walker) fullname(parentTy Type, name string) string {

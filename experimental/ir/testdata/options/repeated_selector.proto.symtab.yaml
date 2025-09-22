@@ -1,6 +1,6 @@
 tables:
   "testdata/options/repeated_selector.proto":
-    imports: [{ path: "google/protobuf/descriptor.proto", visible: }]
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -9,26 +9,26 @@ tables:
       kind: KIND_MESSAGE
       file: "testdata/options/repeated_selector.proto"
       index: 1
-      visible:
+      visible: true
       options.message.extns:
         "buf.test.z": { message.fields: { "z": { i32: 42 } } }
     - fqn: "buf.test.Foo.z"
       kind: KIND_FIELD
       file: "testdata/options/repeated_selector.proto"
       index: 1
-      visible:
+      visible: true
     - fqn: "buf.test.x"
       kind: KIND_EXTENSION
       file: "testdata/options/repeated_selector.proto"
       index: 2
-      visible:
+      visible: true
     - fqn: "buf.test.y"
       kind: KIND_EXTENSION
       file: "testdata/options/repeated_selector.proto"
       index: 3
-      visible:
+      visible: true
     - fqn: "buf.test.z"
       kind: KIND_EXTENSION
       file: "testdata/options/repeated_selector.proto"
       index: 4
-      visible:
+      visible: true

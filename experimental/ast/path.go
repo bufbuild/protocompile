@@ -94,6 +94,20 @@ func (p Path) AsKeyword() keyword.Keyword {
 	return p.AsIdent().Keyword()
 }
 
+// IsIdents returns whether p is a sequence of exactly the given identifiers.
+func (p Path) IsIdents(idents ...string) bool {
+	for i, pc := range iterx.Enumerate(p.Components) {
+		if i >= len(idents) || pc.AsIdent().Text() != idents[i] {
+			break
+		}
+
+		if i == len(idents)-1 {
+			return true
+		}
+	}
+	return false
+}
+
 // report.Span implements [report.Spanner].
 func (p Path) Span() report.Span {
 	// No need to check for zero here, if p is zero both start and end will be

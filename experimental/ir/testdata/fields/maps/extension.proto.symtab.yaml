@@ -1,0 +1,16 @@
+tables:
+  "testdata/fields/maps/extension.proto":
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/maps/extension.proto"
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/extension.proto"
+      index: 1
+      visible: true
+    - fqn: "test.m"
+      kind: KIND_EXTENSION
+      file: "testdata/fields/maps/extension.proto"
+      index: 1
+      visible: true

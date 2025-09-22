@@ -28,10 +28,11 @@ import (
 
 // Import is an import in a [File].
 type Import struct {
-	File              // The file that is imported.
-	Public, Weak bool // The kind of import this is.
-	Direct       bool // Whether this is a direct or transitive import.
-	Visible      bool // Whether this import's symbols are visible in the current file.
+	File                        // The file that is imported.
+	Public, Weak bool           // The kind of import this is.
+	Direct       bool           // Whether this is a direct or transitive import.
+	Visible      bool           // Whether this import's symbols are visible in the current file.
+	Decl         ast.DeclImport // The import declaration.
 }
 
 // imports is a data structure for compactly classifying the transitive imports
@@ -49,8 +50,8 @@ type Import struct {
 // tables will include all symbols from a and b, because b is a direct import,
 // and a is a transitive public import of a direct import.
 type imports struct {
-	// All transitively-imported files. This slice is divided into the
-	// following segments:
+	// All transitively-imported files and their AST definition. This slice is divided
+	// into the following segments:
 	//
 	// 1. Public imports.
 	// 2. Weak imports.
@@ -62,7 +63,7 @@ type imports struct {
 	//
 	// The last element of this slice is always descriptor.proto, even if it
 	// exists elsewhere as an ordinary import.
-	files []File
+	files []imported
 
 	// Which of the above files we are permitted to import from.
 	visible bitset.BitSet
@@ -102,18 +103,24 @@ type imports struct {
 	publicEnd, weakEnd, importEnd, transPublicEnd uint32
 }
 
+// imported wraps an imported [File] and the import statement declaration [ast.DeclImport].
+type imported struct {
+	file File
+	decl ast.DeclImport
+}
+
 // Append appends a direct import to this imports table.
 func (i *imports) AddDirect(imp Import) {
 	switch {
 	case imp.Public:
-		i.Insert(imp.File, int(i.publicEnd), true)
+		i.Insert(imp, int(i.publicEnd), true)
 		i.publicEnd++
 		i.weakEnd++
 	case imp.Weak:
-		i.Insert(imp.File, int(i.weakEnd), true)
+		i.Insert(imp, int(i.weakEnd), true)
 		i.weakEnd++
 	default:
-		i.Insert(imp.File, int(i.importEnd), true)
+		i.Insert(imp, int(i.importEnd), true)
 	}
 
 	i.importEnd++
@@ -134,13 +141,13 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 			// Transitive imports are public to us if and only if they are
 			// imported through a public import.
 			if file.Public && imp.Public {
-				i.Insert(imp.File, int(i.transPublicEnd), true)
+				i.Insert(imp, int(i.transPublicEnd), true)
 				i.transPublicEnd++
 				continue
 			}
 
 			// Public imports of direct imports are visible in the current file.
-			i.Insert(imp.File, -1, imp.Public)
+			i.Insert(imp, -1, imp.Public)
 		}
 	}
 }
@@ -148,7 +155,7 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 // Insert inserts a new import at the given position.
 //
 // If pos is < 0, appends at the end.
-func (i *imports) Insert(f File, pos int, visible bool) {
+func (i *imports) Insert(imp Import, pos int, visible bool) {
 	if pos < 0 {
 		pos = len(i.files)
 	}
@@ -157,29 +164,30 @@ func (i *imports) Insert(f File, pos int, visible bool) {
 		i.byPath = make(intern.Map[uint32])
 	}
 
-	i.files = slices.Insert(i.files, pos, f)
-	i.byPath[f.InternedPath()] = uint32(pos)
+	i.files = slices.Insert(i.files, pos, imported{file: imp.File, decl: imp.Decl})
+	i.byPath[imp.File.InternedPath()] = uint32(pos)
 	i.visible.SetTo(uint(pos), visible)
 }
 
 // DescriptorProto returns the file for descriptor.proto.
 func (i *imports) DescriptorProto() File {
-	file, _ := slicesx.Last(i.files)
-	return file
+	imported, _ := slicesx.Last(i.files)
+	return imported.file
 }
 
 // Directs returns an indexer over the Directs imports.
 func (i *imports) Directs() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
 		i.files[:i.importEnd],
-		func(j int, f File) Import {
+		func(j int, imported imported) Import {
 			n := uint32(j)
 			return Import{
-				File:    f,
+				File:    imported.file,
 				Public:  n < i.publicEnd,
 				Weak:    n >= i.publicEnd && n < i.weakEnd,
 				Direct:  true,
 				Visible: true,
+				Decl:    imported.decl,
 			}
 		},
 	)
@@ -191,14 +199,15 @@ func (i *imports) Directs() seq.Indexer[Import] {
 func (i *imports) Transitive() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
 		i.files[:max(0, len(i.files)-1)], // Exclude the implicit descriptor.proto.
-		func(j int, f File) Import {
+		func(j int, imported imported) Import {
 			n := uint32(j)
 			return Import{
-				File: f,
+				File: imported.file,
 				Public: n < i.publicEnd ||
 					(n >= i.importEnd && n < i.transPublicEnd),
 				Direct:  n < i.importEnd,
 				Visible: i.visible.Test(uint(j)),
+				Decl:    imported.decl,
 			}
 		},
 	)

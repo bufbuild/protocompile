@@ -17,7 +17,9 @@ syntax = "proto2";
 package test;
 
 message M {
-    message N {}
+    message N {
+        extensions 1;
+    }
     message P {
         enum X { N = 1; }
         extend N {   // Does not skip .test.M.P.N

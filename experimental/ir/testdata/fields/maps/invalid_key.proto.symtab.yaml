@@ -1,0 +1,126 @@
+tables:
+  "testdata/fields/maps/invalid_key.proto":
+    symbols:
+    - fqn: "test"
+      kind: KIND_PACKAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+    - fqn: "test.Foo"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Foo.M1Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 3
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Foo.M2Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Foo.M3Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 5
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Foo.M4Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 6
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Foo.M5Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 7
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.Enum"
+      kind: KIND_ENUM
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 2
+      visible: true
+    - fqn: "test.Foo.m1"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 1
+      visible: true
+    - fqn: "test.Foo.m2"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 2
+      visible: true
+    - fqn: "test.Foo.m3"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 3
+      visible: true
+    - fqn: "test.Foo.m4"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 4
+      visible: true
+    - fqn: "test.Foo.m5"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 5
+      visible: true
+    - fqn: "test.Foo.M1Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 7
+      visible: true
+    - fqn: "test.Foo.M1Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 8
+      visible: true
+    - fqn: "test.Foo.M2Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 9
+      visible: true
+    - fqn: "test.Foo.M2Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 10
+      visible: true
+    - fqn: "test.Foo.M3Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 11
+      visible: true
+    - fqn: "test.Foo.M3Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 12
+      visible: true
+    - fqn: "test.Foo.M4Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 13
+      visible: true
+    - fqn: "test.Foo.M4Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 14
+      visible: true
+    - fqn: "test.Foo.M5Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 15
+      visible: true
+    - fqn: "test.Foo.M5Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 16
+      visible: true
+    - fqn: "test.Z"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/fields/maps/invalid_key.proto"
+      index: 6
+      visible: true

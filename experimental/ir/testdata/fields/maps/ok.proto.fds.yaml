@@ -1,0 +1,52 @@
+file:
+- name: "testdata/fields/maps/ok.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.FooEntry"
+    - name: "bar"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.BarEntry"
+    - name: "__foo2__"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.Foo2Entry"
+    - name: "__foo_3__"
+      number: 4
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.Foo3Entry"
+    nested_type:
+    - name: "FooEntry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "BarEntry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_MESSAGE
+        type_name: ".test.Foo"
+      options.map_entry: true
+    - name: "Foo2Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "Foo3Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+  syntax: "proto3"

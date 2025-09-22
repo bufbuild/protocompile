@@ -1,0 +1,24 @@
+file:
+- name: "testdata/tags/overlap.proto"
+  package: "test"
+  message_type:
+  - name: "M"
+    field:
+    - { name: "y0", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y1", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "y2", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z1", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "z2", number: 0, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+  enum_type:
+  - name: "E"
+    value:
+    - { name: "Y0", number: 1 }
+    - { name: "Y1", number: 2 }
+    - { name: "Y2", number: 2 }
+  - name: "Alias"
+    value:
+    - { name: "A0", number: 1 }
+    - { name: "A1", number: 2 }
+    - { name: "A2", number: 2 }
+    options.allow_alias: true
+  syntax: "proto2"

@@ -10,7 +10,7 @@ file:
       type: TYPE_MESSAGE
       type_name: ".test.Foo"
       oneof_index: 1
-      proto3_optional:
+      proto3_optional: true
     - name: "bar"
       number: 2
       label: LABEL_OPTIONAL

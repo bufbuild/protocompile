@@ -49,7 +49,7 @@ error: mismatched types
    |     ^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
 23 |     [buf.test.x] {}
 ...
-59 |     optional Foo x = 1000;
+58 |     optional Foo x = 1000;
    |     ------------ expected due to this
    = note: expected: `buf.test.Foo` field
               found: `google.protobuf.FileOptions` field
@@ -61,7 +61,7 @@ error: mismatched types
    |     ^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
 24 |     (buf.test.x) {}
 ...
-59 |     optional Foo x = 1000;
+58 |     optional Foo x = 1000;
    |     ------------ expected due to this
    = note: expected: `buf.test.Foo` field
               found: `google.protobuf.FileOptions` field
@@ -73,7 +73,7 @@ error: mismatched types
    |     ^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
 26 |     [.buf.test.x] {}
 ...
-59 |     optional Foo x = 1000;
+58 |     optional Foo x = 1000;
    |     ------------ expected due to this
    = note: expected: `buf.test.Foo` field
               found: `google.protobuf.FileOptions` field
@@ -84,7 +84,7 @@ error: mismatched types
 26 |     [.buf.test.x] {}
    |     ^^^^^^^^^^^^^ expected `buf.test.Foo` field, found `google.protobuf.FileOptions` field
 ...
-59 |     optional Foo x = 1000;
+58 |     optional Foo x = 1000;
    |     ------------ expected due to this
    = note: expected: `buf.test.Foo` field
               found: `google.protobuf.FileOptions` field
@@ -275,19 +275,19 @@ error: cannot resolve message field name for `buf.test.Foo`
   --> testdata/options/values/message.proto:36:5
    |
 36 |     1000: 1,
-   |     ^^^^ field referenced here
+   |     ^^^^^^^ field referenced here
 ...
-59 |     optional Foo x = 1000;
+58 |     optional Foo x = 1000;
    |     ------------ expected `Foo` field due to this
 
 error: cannot resolve message field name for `buf.test.Foo`
   --> testdata/options/values/message.proto:38:5
    |
 38 |     [z]: 0,
-   |     ^^^ field referenced here
+   |     ^^^^^^ field referenced here
 39 |     [Foo.z]: 1,
 ...
-59 |     optional Foo x = 1000;
+58 |     optional Foo x = 1000;
    |     ------------ expected `Foo` field due to this
 
 error: message extension `buf.test.Foo.z` referenced incorrectly
@@ -311,7 +311,7 @@ error: message extension `buf.test.Foo.z` set multiple times
    |     ^^^^^^^^^ ... also set here
 42 |     Foo.z: 1,
 ...
-54 |         optional int32 z = 1000;
+53 |         optional int32 z = 1000;
    |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
@@ -338,7 +338,7 @@ error: message extension `buf.test.Foo.z` set multiple times
    |     ^^^^^ ... also set here
 43 |     "Foo.z": 1,
 ...
-54 |         optional int32 z = 1000;
+53 |         optional int32 z = 1000;
    |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
@@ -368,7 +368,7 @@ error: message extension `buf.test.Foo.z` set multiple times
    |     ^^^^^^^ ... also set here
 44 |     [buf.test.Foo.z]: 2,
 ...
-54 |         optional int32 z = 1000;
+53 |         optional int32 z = 1000;
    |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
@@ -384,7 +384,7 @@ error: message extension `buf.test.Foo.z` set multiple times
    |     ^^^^^^^^^^^^^^^^ ... also set here
 45 |     [.buf.test.Foo.z]: 3,
 ...
-54 |         optional int32 z = 1000;
+53 |         optional int32 z = 1000;
    |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 
@@ -399,7 +399,7 @@ error: message extension `buf.test.Foo.z` set multiple times
 45 |     [.buf.test.Foo.z]: 3,
    |     ^^^^^^^^^^^^^^^^^ ... also set here
 ...
-54 |         optional int32 z = 1000;
+53 |         optional int32 z = 1000;
    |                        - not a repeated field
    = note: a non-`repeated` option may be set at most once
 

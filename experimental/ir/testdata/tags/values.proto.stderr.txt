@@ -22,13 +22,13 @@ error: encountered more than one message field tag
    |        |
    |        first one is here
 
-error: enum values must be unique
+error: enum value `2` used more than once
   --> testdata/tags/values.proto:23:10
    |
 22 |     Y = 2;
-   |         - first used here
+   |         - previously used here
 23 |     Y2 = 2;
-   |          ^ used again here
+   |          ^ used here
 
 error: literal out of range for `int32`
   --> testdata/tags/values.proto:28:10
@@ -115,12 +115,12 @@ error: mismatched types
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
-error: `max` outside of range expression
+error: `max` outside of range end
   --> testdata/tags/values.proto:41:10
    |
 41 |     B3 = max;
    |          ^^^
-   = note: the special `max` expression is only allowed in a range expression
+   = note: the special `max` expression can only be used at the end of a range
 
 error: mismatched types
   --> testdata/tags/values.proto:43:10
@@ -183,14 +183,14 @@ error: cannot find `a` in this scope
    |
 51 |     M4 = a: 2;
    |          ^ not found in this scope
-   = help: the full name of this scope is `test`
+   = help: the full name of this scope is `test.E`
 
 error: cannot find `a` in this scope
   --> testdata/tags/values.proto:52:10
    |
 52 |     M5 = a = 2;
    |          ^ not found in this scope
-   = help: the full name of this scope is `test`
+   = help: the full name of this scope is `test.E`
 
 error: mismatched types
   --> testdata/tags/values.proto:54:10

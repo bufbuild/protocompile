@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -54,6 +55,12 @@ func buildLocalSymbols(f File) {
 	}
 	for f := range seq.Values(f.Extensions()) {
 		newFieldSymbol(f)
+	}
+	for s := range seq.Values(f.Services()) {
+		newServiceSymbol(s)
+		for m := range seq.Values(s.Methods()) {
+			newMethodSymbol(m)
+		}
 	}
 
 	c.exported.sort(c)
@@ -99,6 +106,26 @@ func newOneofSymbol(o Oneof) {
 	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
 }
 
+func newServiceSymbol(s Service) {
+	c := s.Context()
+	sym := c.arenas.symbols.NewCompressed(rawSymbol{
+		kind: SymbolKindService,
+		fqn:  s.InternedFullName(),
+		data: arena.Untyped(c.arenas.services.Compress(s.raw)),
+	})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+}
+
+func newMethodSymbol(m Method) {
+	c := m.Context()
+	sym := c.arenas.symbols.NewCompressed(rawSymbol{
+		kind: SymbolKindMethod,
+		fqn:  m.InternedFullName(),
+		data: arena.Untyped(c.arenas.methods.Compress(m.raw)),
+	})
+	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+}
+
 // mergeImportedSymbolTables builds a symbol table of every imported symbol.
 //
 // It also enhances the exported symbol table with the exported symbols of each
@@ -134,7 +161,7 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 				if i == 0 {
 					return f
 				}
-				return f.Context().imports.files[i-1]
+				return f.Context().imports.files[i-1].file
 			},
 		)
 	}
@@ -157,7 +184,7 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 			if i == 0 {
 				return f
 			}
-			return f.Context().imports.files[i-1]
+			return f.Context().imports.files[i-1].file
 		},
 	)
 
@@ -192,16 +219,34 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
-			// Ignore all refs that are packages except for the first one. This
-			// is because a package can be defined in multiple files.
+			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r ref[rawSymbol]) (ast.DeclDef, bool) {
+				s := wrapSymbol(f.Context(), r)
+				ty := s.AsType()
+				return ty.AST(), !ty.IsZero()
+			}))
 			isFirst := true
 			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
-				pkg := wrapSymbol(f.Context(), r).Kind() == SymbolKindPackage
-				if isFirst {
-					isFirst = false
-					return false
+				s := wrapSymbol(f.Context(), r)
+				if !isFirst && !s.AsMember().Container().MapField().IsZero() {
+					// Ignore all symbols that are map entry fields, because those
+					// can only be duplicated when two map entry messages' names
+					// collide, so diagnosing them just creates a mess.
+					return true
 				}
-				return pkg
+				if !isFirst && s.AsMember().IsGroup() && mapsx.Contains(types, s.AsMember().AST()) {
+					// If a group field collides with its own message type, remove it;
+					// groups with names that might collide with their fields are already
+					// diagnosed in the parser.
+					return true
+				}
+				if !isFirst && s.Kind() == SymbolKindPackage {
+					// Ignore all refs that are packages except for the first one. This
+					// is because a package can be defined in multiple files.
+					return true
+				}
+
+				isFirst = false
+				return false
 			})
 
 			// Deduplicate references to the same element.
@@ -274,17 +319,23 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 			"...also declared here"))
 	}
 
+	spans := make(map[report.Span]struct{})
 	for i := range e.refs[2:] {
 		s := e.symbol(i + 2)
 		next := s.Kind().noun()
 
+		span := s.Definition()
+		if !mapsx.AddZero(spans, span) && i > 1 {
+			// Avoid overlapping spans.
+			continue
+		}
+
 		if noun != next {
-			d.Apply(report.Snippetf(s.Definition(),
+			d.Apply(report.Snippetf(span,
 				"...and then here as a %s %s", article(next), next))
 			noun = next
 		} else {
-			d.Apply(report.Snippetf(s.Definition(),
-				"...and here"))
+			d.Apply(report.Snippetf(span, "...and here"))
 		}
 	}
 
@@ -330,5 +381,20 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 			enum.Name(),
 			v.Name(),
 		))
+	}
+
+	for i := range e.refs {
+		ty := e.symbol(i).AsType()
+		if mf := ty.MapField(); !mf.IsZero() {
+			d.Apply(
+				report.Snippetf(mf.AST().Name(), "implies `repeated %s`", ty.Name()),
+				report.Helpf(
+					"map-typed fields implicitly declare a nested message type: "+
+						"field `%s` produces a map entry type `%s`",
+					mf.Name(), ty.Name(),
+				),
+			)
+			break
+		}
 	}
 }

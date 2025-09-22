@@ -26,5 +26,90 @@ file:
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.Any"
     extendee: ".google.protobuf.FileOptions"
-  options: {}
+  options.$unknown: |
+    1000: {
+      1: {"type.googleapis.com/buf.test.Foo"}
+      2: {
+        1: 42
+        2: {"foo"}
+      }
+    }
+    1001: {
+      1: {"type.googleprod.com/buf.test.Foo"}
+      2: {
+        1: 42
+        2: {"foo"}
+      }
+    }
+    1001: {
+      1: {"buf.build/types/buf.test.Foo"}
+      2: {
+        1: 42
+        2: {"foo"}
+      }
+    }
+    1001: {
+      1: {"/buf.test.Foo"}
+      2: {
+        1: 42
+        2: {"foo"}
+      }
+    }
+    1001: {
+      1: {"type.googleapis.com/Foo"}
+      2: {
+        1: 42
+        2: {"foo"}
+      }
+    }
+    1001: {
+      1: {"type.googleapis.com/google.protobuf.Any"}
+      2: {
+        1: {"type.googleapis.com/buf.test.Foo"}
+        2: {
+          1: 42
+          2: {"foo"}
+        }
+      }
+    }
+    1001: {
+      1: {"type.googleapis.com/google.protobuf.Any"}
+      2: {
+        1: {"type.googleapis.com/google.protobuf.Any"}
+        2: {
+          1: {"type.googleapis.com/buf.test.Foo"}
+          2: {
+            1: 42
+            2: {"foo"}
+          }
+        }
+      }
+    }
+    1001: {
+      1: {"type.googleapis.com/buf.test.Foo"}
+      2: {
+        3: {
+          1: {"type.googleapis.com/buf.test.Foo"}
+          2: {1: 42}
+        }
+        3: {
+          1: {"type.googleapis.com/buf.test.Foo"}
+          2: {1: 42}
+        }
+        3: {
+          1: {"type.googleapis.com/buf.test.Bar"}
+          2: {"xyz"}
+        }
+        3: {
+          1: {"type.googleapis.com/buf.test.Foo"}
+          2: {}
+        }
+        3: {
+          1: {"type.googleapis.com/buf.test.Bar"}
+          2: {}
+        }
+        3: {}
+        3: {}
+      }
+    }
   syntax: "proto2"

@@ -51,7 +51,8 @@ type Context struct {
 	extns            []arena.Pointer[rawMember]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options arena.Pointer[rawValue]
+	options  arena.Pointer[rawValue]
+	services []arena.Pointer[rawService]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -73,6 +74,7 @@ type Context struct {
 	arenas struct {
 		types     arena.Arena[rawType]
 		members   arena.Arena[rawMember]
+		ranges    arena.Arena[rawReservedRange]
 		extendees arena.Arena[rawExtendee]
 		oneofs    arena.Arena[rawOneof]
 		symbols   arena.Arena[rawSymbol]
@@ -80,6 +82,9 @@ type Context struct {
 		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
+
+		services arena.Arena[rawService]
+		methods  arena.Arena[rawMethod]
 	}
 }
 
@@ -94,7 +99,11 @@ type langSymbols struct {
 	fieldOptions,
 	oneofOptions,
 	enumOptions,
-	enumValueOptions arena.Pointer[rawMember]
+	enumValueOptions,
+	serviceOptions,
+	methodOptions arena.Pointer[rawMember]
+
+	mapEntry arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]
@@ -117,7 +126,7 @@ func (r ref[T]) context(base *Context) *Context {
 	case -1:
 		return primitiveCtx
 	default:
-		return base.imports.files[r.file-1].Context()
+		return base.imports.files[r.file-1].file.Context()
 	}
 }
 
@@ -268,6 +277,19 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
 			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		},
+	)
+}
+
+// Services returns all services defined in this file.
+func (f File) Services() seq.Indexer[Service] {
+	return seq.NewFixedSlice(
+		f.Context().services,
+		func(_ int, p arena.Pointer[rawService]) Service {
+			return Service{
+				internal.NewWith(f.Context()),
+				f.Context().arenas.services.Deref(p),
+			}
 		},
 	)
 }

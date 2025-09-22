@@ -15,7 +15,10 @@
 package parser
 
 import (
+	"unicode"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 )
@@ -178,6 +181,31 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 				report.Snippet(def),
 			)
 		}
+
+		name := def.Name().AsIdent().Text()
+		var capitalized bool
+		for _, r := range name {
+			capitalized = unicode.IsUpper(r)
+			break
+		}
+		if !capitalized {
+			p.Errorf("group names must start with an uppercase letter").Apply(
+				report.Snippet(def.Name()),
+			)
+		}
+
+		if p.syntax == syntax.Proto2 {
+			p.Warnf("group syntax is deprecated").Apply(
+				report.Snippet(def.Type().RemovePrefixes()),
+				report.Notef("group syntax is not available in proto3 or editions"),
+			)
+		} else {
+			p.Errorf("groups syntax is not supported").Apply(
+				report.Snippet(def.Type().RemovePrefixes()),
+				report.Notef("group syntax is only available in proto2"),
+			)
+		}
+
 	case taxa.Field, taxa.EnumValue:
 		if body := def.Body(); !body.IsZero() {
 			p.Error(errUnexpected{
