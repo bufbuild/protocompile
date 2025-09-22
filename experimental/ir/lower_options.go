@@ -123,6 +123,35 @@ func resolveOptions(f File, r *report.Report) {
 			}.resolve()
 		}
 	}
+	for service := range seq.Values(f.Services()) {
+		for def := range bodyOptions(service.AST().Body()) {
+			optionRef{
+				Context: f.Context(),
+				Report:  r,
+
+				scope: service.FullName(),
+				def:   def,
+
+				field: builtins.ServiceOptions,
+				raw:   &service.raw.options,
+			}.resolve()
+		}
+
+		for method := range seq.Values(service.Methods()) {
+			for def := range bodyOptions(method.AST().Body()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: service.FullName(),
+					def:   def,
+
+					field: builtins.MethodOptions,
+					raw:   &method.raw.options,
+				}.resolve()
+			}
+		}
+	}
 }
 
 // symbolRef is all of the information necessary to resolve an option reference.

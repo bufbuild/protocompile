@@ -19,8 +19,11 @@ type builtins struct {
 	MessageOptions   Member
 	FieldOptions     Member
 	OneofOptions     Member
+	RangeOptions     Member
 	EnumOptions      Member
 	EnumValueOptions Member
+	ServiceOptions   Member
+	MethodOptions    Member
 
 	MapEntry Member
 }
@@ -35,8 +38,11 @@ type builtinIDs struct {
 	MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
 	FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
 	OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
+	RangeOptions     intern.ID `intern:"google.protobuf.DescriptorProto.ExtensionRange.options"`
 	EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 	EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
+	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
 	MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 }

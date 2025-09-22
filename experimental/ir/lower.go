@@ -97,9 +97,3 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Perform "late" name resolution, that is, options.
 	resolveOptions(c.File(), r)
 }
-
-// sorry panics with an NYI error, which turns into an ICE inside of the
-// lowering logic.
-func sorry(what string) {
-	panic("sorry, not yet implemented: " + what)
-}

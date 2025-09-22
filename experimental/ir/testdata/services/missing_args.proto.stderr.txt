@@ -1,0 +1,13 @@
+error: expected exactly one type in method return type, got 0
+  --> testdata/services/missing_args.proto:21:23
+   |
+21 |     rpc M1(M) returns ();
+   |                       ^^
+
+error: expected exactly one type in method parameter list, got 0
+  --> testdata/services/missing_args.proto:22:11
+   |
+22 |     rpc M2() returns (M);
+   |           ^^
+
+encountered 2 errors
