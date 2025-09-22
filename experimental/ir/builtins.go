@@ -22,6 +22,8 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
+// builtinIDs contains [intern.ID]s for symbols with special meaning in the
+// language.
 // builtins contains those symbols that are built into the language, and which the compiler cannot
 // handle not being present. This field is only present in the Context
 // for descriptor.proto.
@@ -39,7 +41,8 @@ type builtins struct {
 	ServiceOptions   Member
 	MethodOptions    Member
 
-	MapEntry Member
+	MapEntry      Member
+	OptionTargets Member
 }
 
 // builtinIDs is all of the interning IDs of names in [builtins], plus some
@@ -58,7 +61,8 @@ type builtinIDs struct {
 	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
 	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
-	MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	OptionTargets intern.ID `intern:"google.protobuf.FieldOptions.targets"`
 }
 
 func resolveBuiltins(c *Context) {
