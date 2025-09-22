@@ -124,7 +124,11 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		dg.message(ty, mdp)
 	}
 
-	// TODO: Services.
+	for service := range seq.Values(file.Services()) {
+		sdp := new(descriptorpb.ServiceDescriptorProto)
+		fdp.Service = append(fdp.Service, sdp)
+		dg.service(service, sdp)
+	}
 
 	for extn := range seq.Values(file.Extensions()) {
 		fd := new(descriptorpb.FieldDescriptorProto)
@@ -262,13 +266,17 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 	if ty := f.Element(); !ty.IsZero() {
 		if kind, _ := slicesx.Get(predeclaredToFDPType, ty.Predeclared()); kind != 0 {
 			fdp.Type = kind.Enum()
-		} else if ty.IsEnum() {
-			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
-			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
 		} else {
-			// TODO: Groups
-			fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
 			fdp.TypeName = addr(string(ty.FullName().ToAbsolute()))
+
+			switch {
+			case ty.IsEnum():
+				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
+			case f.IsGroup():
+				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_GROUP.Enum()
+			default:
+				fdp.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
+			}
 		}
 	}
 
@@ -330,6 +338,38 @@ func (dg *descGenerator) enumValue(f Member, evdp *descriptorpb.EnumValueDescrip
 	if options := f.Options(); !options.IsZero() {
 		evdp.Options = new(descriptorpb.EnumValueOptions)
 		dg.options(options, evdp.Options)
+	}
+}
+
+func (dg *descGenerator) service(s Service, sdp *descriptorpb.ServiceDescriptorProto) {
+	sdp.Name = addr(s.Name())
+
+	for method := range seq.Values(s.Methods()) {
+		mdp := new(descriptorpb.MethodDescriptorProto)
+		sdp.Method = append(sdp.Method, mdp)
+		dg.method(method, mdp)
+	}
+
+	if options := s.Options(); !options.IsZero() {
+		sdp.Options = new(descriptorpb.ServiceOptions)
+		dg.options(options, sdp.Options)
+	}
+}
+
+func (dg *descGenerator) method(m Method, mdp *descriptorpb.MethodDescriptorProto) {
+	mdp.Name = addr(m.Name())
+
+	in, inStream := m.Input()
+	mdp.InputType = addr(string(in.FullName()))
+	mdp.ClientStreaming = addr(inStream)
+
+	out, outStream := m.Output()
+	mdp.OutputType = addr(string(out.FullName()))
+	mdp.ServerStreaming = addr(outStream)
+
+	if options := m.Options(); !options.IsZero() {
+		mdp.Options = new(descriptorpb.MethodOptions)
+		dg.options(options, mdp.Options)
 	}
 }
 

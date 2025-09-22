@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
 
 syntax = "proto2";
 
-package test;
+package buf.test;
 
-message Foo {
-    optional group Foo = 1 {
-        option Bar = baz;
-        optional Foo foo = 1;
-    }
+message M {}
+enum E {}
 
-    optional group Bar = 2 {
-        optional Foo foo = 1;
-    }
-
-    repeated group X = 3 [bar = 1] {
-        optional Foo foo = 1;
-    }
-
-    required group lowercase = 4 {}
+service S {
+    rpc M1(M) returns (E);
+    rpc M2(stream E) returns (M);
+    rpc M3(M) returns (stream int32);
+    rpc M4(stream string) returns (stream N);
 }
