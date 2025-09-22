@@ -1,5 +1,5 @@
 decls:
-- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto3" }
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
 - package.path.components: [{ ident: "test" }]
 - def:
     kind: KIND_MESSAGE
@@ -7,22 +7,26 @@ decls:
     body.decls:
     - def:
         kind: KIND_GROUP
-        name.components: [{ ident: "foo" }]
-        type.path.components: [{ ident: "group" }]
+        name.components: [{ ident: "Foo" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "group" }]
         value.literal.int_value: 1
         body.decls:
         - def:
             kind: KIND_OPTION
-            name.components: [{ ident: "bar" }]
+            name.components: [{ ident: "Bar" }]
             value.path.components: [{ ident: "baz" }]
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "foo" }]
-            type.path.components: [{ ident: "Foo" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "Foo" }]
             value.literal.int_value: 1
     - def:
         kind: KIND_GROUP
-        name.components: [{ ident: "bar" }]
+        name.components: [{ ident: "Bar" }]
         type.prefixed:
           prefix: PREFIX_OPTIONAL
           type.path.components: [{ ident: "group" }]
@@ -31,12 +35,16 @@ decls:
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "foo" }]
-            type.path.components: [{ ident: "Foo" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "Foo" }]
             value.literal.int_value: 1
     - def:
         kind: KIND_GROUP
-        name.components: [{ ident: "x" }]
-        type.path.components: [{ ident: "group" }]
+        name.components: [{ ident: "X" }]
+        type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components: [{ ident: "group" }]
         value.literal.int_value: 3
         options.entries:
         - { path.components: [{ ident: "bar" }], value.literal.int_value: 1 }
@@ -44,5 +52,15 @@ decls:
         - def:
             kind: KIND_FIELD
             name.components: [{ ident: "foo" }]
-            type.path.components: [{ ident: "Foo" }]
+            type.prefixed:
+              prefix: PREFIX_OPTIONAL
+              type.path.components: [{ ident: "Foo" }]
             value.literal.int_value: 1
+    - def:
+        kind: KIND_GROUP
+        name.components: [{ ident: "lowercase" }]
+        type.prefixed:
+          prefix: PREFIX_REQUIRED
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 4
+        body: {}

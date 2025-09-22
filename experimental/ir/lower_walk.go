@@ -17,6 +17,7 @@ package ir
 import (
 	"math"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -99,16 +100,17 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		}
 
 		switch kind := def.Classify(); kind {
-		case ast.DefKindMessage, ast.DefKindEnum:
+		case ast.DefKindMessage, ast.DefKindEnum, ast.DefKindGroup:
 			ty := w.newType(def, parent)
+
+			if kind == ast.DefKindGroup {
+				w.newField(def, parent, true)
+			}
 
 			w.recurse(def.Body().AsAny(), ty)
 
 		case ast.DefKindField, ast.DefKindEnumValue:
-			w.newField(def, parent)
-
-		case ast.DefKindGroup:
-			sorry("groups")
+			w.newField(def, parent, false)
 
 		case ast.DefKindOneof:
 			parent := extractParentType(parent)
@@ -129,10 +131,15 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 			})
 
 		case ast.DefKindService:
-			//sorry("services")
+			service := w.newService(def, parent)
+			if service.IsZero() {
+				break
+			}
+
+			w.recurse(def.Body().AsAny(), service)
 
 		case ast.DefKindMethod:
-			//sorry("methods")
+			w.newMethod(def, parent)
 
 		case ast.DefKindOption:
 			// Options are lowered elsewhere.
@@ -143,6 +150,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	c := w.Context()
 	parentTy := extractParentType(parent)
+
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
@@ -247,18 +255,23 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	return ty
 }
 
-func (w *walker) newField(def ast.DeclDef, parent any) Member {
+//nolint:unparam // Complains about the return value for some reason.
+func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 	c := w.Context()
 	parentTy := extractParentType(parent)
 	name := def.Name().AsIdent().Name()
+	if group {
+		name = strings.ToLower(name)
+	}
 	fqn := w.fullname(parentTy, name)
 
 	id := c.arenas.members.NewCompressed(rawMember{
-		def:    def,
-		name:   c.session.intern.Intern(name),
-		fqn:    c.session.intern.Intern(fqn),
-		parent: c.arenas.types.Compress(parentTy.raw),
-		oneof:  math.MinInt32,
+		def:     def,
+		name:    c.session.intern.Intern(name),
+		fqn:     c.session.intern.Intern(fqn),
+		parent:  c.arenas.types.Compress(parentTy.raw),
+		oneof:   math.MinInt32,
+		isGroup: group,
 	})
 	raw := c.arenas.members.Deref(id)
 
@@ -314,6 +327,48 @@ func (w *walker) newExtendee(def ast.DefExtend, parent any) arena.Pointer[rawExt
 		def:    def.Decl,
 		parent: w.Context().arenas.types.Compress(parentTy.raw),
 	})
+}
+
+func (w *walker) newService(def ast.DeclDef, parent any) Service {
+	if parent != nil {
+		return Service{}
+	}
+
+	name := def.Name().AsIdent().Name()
+	fqn := w.pkg.Append(name)
+
+	raw := w.Context().arenas.services.NewCompressed(rawService{
+		def:  def,
+		name: w.Context().session.intern.Intern(name),
+		fqn:  w.Context().session.intern.Intern(string(fqn)),
+	})
+	w.Context().services = append(w.Context().services, raw)
+	return Service{
+		internal.NewWith(w.Context()),
+		w.Context().arenas.services.Deref(raw),
+	}
+}
+
+func (w *walker) newMethod(def ast.DeclDef, parent any) Method {
+	service, ok := parent.(Service)
+	if !ok {
+		return Method{}
+	}
+
+	name := def.Name().AsIdent().Name()
+	fqn := service.FullName().Append(name)
+
+	raw := w.Context().arenas.methods.NewCompressed(rawMethod{
+		def:     def,
+		name:    w.Context().session.intern.Intern(name),
+		fqn:     w.Context().session.intern.Intern(string(fqn)),
+		service: w.Context().arenas.services.Compress(service.raw),
+	})
+	service.raw.methods = append(service.raw.methods, raw)
+	return Method{
+		internal.NewWith(w.Context()),
+		w.Context().arenas.methods.Deref(raw),
+	}
 }
 
 func (w *walker) fullname(parentTy Type, name string) string {

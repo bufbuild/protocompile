@@ -46,24 +46,14 @@ func buildAllFeatureInfo(f File, r *report.Report) {
 // A feature field is any field which sets either of the editions_defaults or
 // feature_support fields.
 func buildFeatureInfo(field Member, r *report.Report) {
-	dp := field.Context().imports.DescriptorProto().Context()
-	ed := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionDefaults})
-	es := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupport})
+	builtins := field.Context().builtins()
 
-	defaults := field.Options().Field(ed)
-	support := field.Options().Field(es).AsMessage()
+	defaults := field.Options().Field(builtins.EditionDefaults)
+	support := field.Options().Field(builtins.EditionSupport).AsMessage()
 
 	if defaults.IsZero() && support.IsZero() {
 		return
 	}
-
-	edk := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionDefaultKey})
-	edv := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionDefaultValue})
-
-	esi := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupportIntroduced})
-	esd := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupportDeprecated})
-	esw := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupportWarning})
-	esr := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.editionSupportRemoved})
 
 	mistake := report.Notef("this is likely a mistake, but it is not rejected by protoc")
 
@@ -75,7 +65,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	} else {
 		for def := range seq.Values(defaults.Elements()) {
 			def := def.AsMessage()
-			value := def.Field(edk)
+			value := def.Field(builtins.EditionDefaultsKey)
 			key, _ := value.AsInt()
 			var edition syntax.Syntax
 			if value.IsZero() {
@@ -93,7 +83,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 				}
 			}
 
-			value = def.Field(edv)
+			value = def.Field(builtins.EditionDefaultsValue)
 
 			// We can't use eval() here because we would need to run the whole
 			// parser on the contents of the quoted string.
@@ -145,12 +135,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			}
 
 			// Cook up a value corresponding to the thing we just evaluated.
-			raw := field.Context().arenas.values.NewCompressed(rawValue{
-				expr:       value.AST(),
-				optionPath: def.AsValue().OptionPath(),
-				field:      ref[rawMember]{ptr: field.Context().arenas.members.Compress(field.raw)},
-				bits:       bits,
-			})
+			copy := *value.raw
+			copy.field = field.toRef(field.Context())
+			copy.bits = bits
+			raw := field.Context().arenas.values.NewCompressed(copy)
 
 			// Push this information onto the edition defaults list.
 			info.defaults = append(info.defaults, featureDefault{
@@ -178,7 +166,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
-		value := support.Field(esi)
+		value := support.Field(builtins.EditionSupportIntroduced)
 		n, _ := value.AsInt()
 		info.introduced = syntax.FromEnum(int32(n))
 		if value.IsZero() {
@@ -193,7 +181,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			)
 		}
 
-		value = support.Field(esd)
+		value = support.Field(builtins.EditionSupportDeprecated)
 		n, _ = value.AsInt()
 		info.deprecated = syntax.FromEnum(int32(n))
 		if !value.IsZero() && info.deprecated == syntax.Unknown {
@@ -203,7 +191,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			)
 		}
 
-		value = support.Field(esr)
+		value = support.Field(builtins.EditionSupportRemoved)
 		n, _ = value.AsInt()
 		info.removed = syntax.FromEnum(int32(n))
 		if !value.IsZero() && info.removed == syntax.Unknown {
@@ -213,7 +201,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			)
 		}
 
-		value = support.Field(esw)
+		value = support.Field(builtins.EditionSupportWarning)
 		info.deprecationWarning, _ = value.AsString()
 	}
 
@@ -221,15 +209,9 @@ func buildFeatureInfo(field Member, r *report.Report) {
 }
 
 func validateAllFeatures(f File, r *report.Report) {
-	dp := f.Context().imports.DescriptorProto().Context()
-	fileFeatures := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.fileFeatures})
-	messageFeatures := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.messageFeatures})
-	fieldFeatures := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.fieldFeatures})
-	oneofFeatures := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.oneofFeatures})
-	enumFeatures := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.enumFeatures})
-	enumValueFeatures := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.enumValueFeatures})
+	builtins := f.Context().builtins()
 
-	validateFeatures(f.Options().Field(fileFeatures).AsMessage(), r)
+	validateFeatures(f.Options().Field(builtins.FileFeatures).AsMessage(), r)
 	f.Context().features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
 		options: f.Context().options,
 	})
@@ -246,9 +228,9 @@ func validateAllFeatures(f File, r *report.Report) {
 		}
 
 		if ty.IsEnum() {
-			validateFeatures(ty.Options().Field(enumFeatures).AsMessage(), r)
+			validateFeatures(ty.Options().Field(builtins.EnumFeatures).AsMessage(), r)
 		} else {
-			validateFeatures(ty.Options().Field(messageFeatures).AsMessage(), r)
+			validateFeatures(ty.Options().Field(builtins.MessageFeatures).AsMessage(), r)
 		}
 
 		ty.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
@@ -258,9 +240,9 @@ func validateAllFeatures(f File, r *report.Report) {
 
 		for field := range seq.Values(ty.Members()) {
 			if field.IsEnumValue() {
-				validateFeatures(field.Options().Field(enumValueFeatures).AsMessage(), r)
+				validateFeatures(field.Options().Field(builtins.EnumValueFeatures).AsMessage(), r)
 			} else {
-				validateFeatures(field.Options().Field(fieldFeatures).AsMessage(), r)
+				validateFeatures(field.Options().Field(builtins.FieldFeatures).AsMessage(), r)
 			}
 
 			field.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
@@ -269,7 +251,7 @@ func validateAllFeatures(f File, r *report.Report) {
 			})
 		}
 		for oneof := range seq.Values(ty.Oneofs()) {
-			validateFeatures(oneof.Options().Field(oneofFeatures).AsMessage(), r)
+			validateFeatures(oneof.Options().Field(builtins.OneofFeatures).AsMessage(), r)
 			oneof.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
 				options: f.Context().options,
 				parent:  ty.raw.features,
@@ -282,7 +264,7 @@ func validateAllFeatures(f File, r *report.Report) {
 			parent = field.Parent().raw.features
 		}
 
-		validateFeatures(field.Options().Field(fieldFeatures).AsMessage(), r)
+		validateFeatures(field.Options().Field(builtins.FieldFeatures).AsMessage(), r)
 		field.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
 			options: f.Context().options,
 			parent:  parent,
@@ -318,20 +300,12 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			continue
 		}
 
-		key := func() report.Spanner {
-			key := feature.FieldAST().Key()
-			if key.IsZero() {
-				return feature.OptionPath()
-			}
-			return key
-		}
-
 		// We check these in reverse order, because the user might have set
 		// introduced == deprecated == removed, and protoc doesn't enforce
 		// any relationship between these.
 		if removed := info.Removed(); removed != syntax.Unknown && removed <= edition {
 			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), edition.PrettyString()).Apply(
-				report.Snippet(key()),
+				report.Snippet(feature.MessageKeys().At(0)),
 				report.Helpf(
 					"`%s` ended support in %s",
 					feature.Field().Name(), removed.PrettyString(),
@@ -367,7 +341,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			helps = append(helps, fmt.Sprintf("it has been deprecated since %s", deprecated.PrettyString()))
 
 			d := r.Warnf("`%s` is deprecated", feature.Field().Name()).Apply(
-				report.Snippet(key()),
+				report.Snippet(feature.MessageKeys().At(0)),
 			)
 			for _, help := range helps {
 				d.Apply(report.Helpf("%v", help))
@@ -376,7 +350,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 
 		if intro := info.Introduced(); edition < intro {
 			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), edition.PrettyString()).Apply(
-				report.Snippet(key()),
+				report.Snippet(feature.MessageKeys().At(0)),
 			)
 			if intro != syntax.Unknown {
 				d.Apply(report.Helpf(

@@ -150,6 +150,9 @@ func PredeclaredType(n predeclared.Name) Type {
 // This need not be an [ast.DefMessage] or [ast.DefEnum]; it may be something
 // else in the case of e.g. a map field's entry type.
 func (t Type) AST() ast.DeclDef {
+	if t.IsZero() {
+		return ast.DeclDef{}
+	}
 	return t.raw.def
 }
 
@@ -185,7 +188,7 @@ func (t Type) AllowsAlias() bool {
 // IsAny returns whether this is the type google.protobuf.Any, which gets special
 // treatment in the language.
 func (t Type) IsAny() bool {
-	return t.InternedFullName() == t.Context().session.builtinIDs.AnyPath
+	return t.InternedFullName() == t.Context().session.builtins.AnyPath
 }
 
 // Predeclared returns the predeclared type that this Type corresponds to, if any.
@@ -449,6 +452,13 @@ func (t Type) noun() taxa.Noun {
 	}
 }
 
+// toRef returns a ref to this type relative to the given context.
+func (t Type) toRef(c *Context) ref[rawType] {
+	return ref[rawType]{
+		ptr: t.Context().arenas.types.Compress(t.raw),
+	}.changeContext(t.Context(), c)
+}
+
 func wrapType(c *Context, r ref[rawType]) Type {
 	if r.ptr.Nil() || c == nil {
 		return Type{}
@@ -459,10 +469,4 @@ func wrapType(c *Context, r ref[rawType]) Type {
 		withContext: internal.NewWith(c),
 		raw:         c.arenas.types.Deref(r.ptr),
 	}
-}
-
-func compressType(c *Context, ty Type) ref[rawType] {
-	return ref[rawType]{
-		ptr: ty.Context().arenas.types.Compress(ty.raw),
-	}.changeContext(ty.Context(), c)
 }

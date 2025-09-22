@@ -1,0 +1,35 @@
+warning: group syntax is deprecated
+  --> testdata/parser/field/group.proto:20:14
+   |
+20 |     optional group Foo = 1 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/parser/field/group.proto:25:14
+   |
+25 |     optional group Bar = 2 {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/parser/field/group.proto:29:14
+   |
+29 |     repeated group X = 3 [bar = 1] {
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/parser/field/group.proto:33:14
+   |
+33 |     required group lowercase = 4 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/parser/field/group.proto:33:20
+   |
+33 |     required group lowercase = 4 {}
+   |                    ^^^^^^^^^
+
+encountered 1 error and 4 warnings

@@ -30,15 +30,7 @@ import (
 
 // resolveOptions resolves all of the options in a file.
 func resolveOptions(f File, r *report.Report) {
-	dpIdx := int32(len(f.Context().imports.files))
-	dp := f.Context().imports.DescriptorProto().Context()
-	fileOptions := ref[rawMember]{dpIdx, dp.builtins.fileOptions}
-	messageOptions := ref[rawMember]{dpIdx, dp.builtins.messageOptions}
-	fieldOptions := ref[rawMember]{dpIdx, dp.builtins.fieldOptions}
-	oneofOptions := ref[rawMember]{dpIdx, dp.builtins.oneofOptions}
-	enumOptions := ref[rawMember]{dpIdx, dp.builtins.enumOptions}
-	enumValueOptions := ref[rawMember]{dpIdx, dp.builtins.enumValueOptions}
-
+	builtins := f.Context().builtins()
 	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
 			def := d.AsDef()
@@ -57,7 +49,7 @@ func resolveOptions(f File, r *report.Report) {
 			scope: f.Package(),
 			def:   def,
 
-			field: fileOptions,
+			field: builtins.FileOptions,
 			raw:   &f.Context().options,
 		}.resolve()
 	}
@@ -69,9 +61,9 @@ func resolveOptions(f File, r *report.Report) {
 		}
 
 		for def := range bodyOptions(ty.AST().Body()) {
-			options := messageOptions
+			options := builtins.MessageOptions
 			if ty.IsEnum() {
-				options = enumOptions
+				options = builtins.EnumOptions
 			}
 			optionRef{
 				Context: f.Context(),
@@ -87,9 +79,9 @@ func resolveOptions(f File, r *report.Report) {
 
 		for field := range seq.Values(ty.Members()) {
 			for def := range seq.Values(field.AST().Options().Entries()) {
-				options := fieldOptions
+				options := builtins.FieldOptions
 				if ty.IsEnum() {
-					options = enumValueOptions
+					options = builtins.EnumValueOptions
 				}
 				optionRef{
 					Context: f.Context(),
@@ -112,7 +104,7 @@ func resolveOptions(f File, r *report.Report) {
 					scope: ty.Scope(),
 					def:   def,
 
-					field: oneofOptions,
+					field: builtins.OneofOptions,
 					raw:   &oneof.raw.options,
 				}.resolve()
 			}
@@ -127,18 +119,45 @@ func resolveOptions(f File, r *report.Report) {
 				scope: field.Scope(),
 				def:   def,
 
-				field: fieldOptions,
+				field: builtins.FieldOptions,
 				raw:   &field.raw.options,
 			}.resolve()
+		}
+	}
+	for service := range seq.Values(f.Services()) {
+		for def := range bodyOptions(service.AST().Body()) {
+			optionRef{
+				Context: f.Context(),
+				Report:  r,
+
+				scope: service.FullName(),
+				def:   def,
+
+				field: builtins.ServiceOptions,
+				raw:   &service.raw.options,
+			}.resolve()
+		}
+
+		for method := range seq.Values(service.Methods()) {
+			for def := range bodyOptions(method.AST().Body()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: service.FullName(),
+					def:   def,
+
+					field: builtins.MethodOptions,
+					raw:   &method.raw.options,
+				}.resolve()
+			}
 		}
 	}
 }
 
 // populateOptionTargets builds option target sets for each field in a file.
 func populateOptionTargets(f File, _ *report.Report) {
-	dp := f.Context().imports.DescriptorProto().Context()
-	targets := wrapMember(dp, ref[rawMember]{ptr: dp.builtins.optionTargets})
-
+	targets := f.Context().builtins().OptionTargets
 	populate := func(m Member) {
 		for target := range seq.Values(m.Options().Field(targets).Elements()) {
 			n, _ := target.AsInt()
@@ -193,6 +212,10 @@ func validateOptionTargetsInValue(m MessageValue, decl report.Span, target Optio
 		return
 	}
 
+	if c := m.Concrete(); c != m {
+		validateOptionTargetsInValue(c, decl, target, r)
+	}
+
 	for value := range m.Fields() {
 		field := value.Field()
 		if !field.CanTarget(target) {
@@ -222,17 +245,18 @@ func validateOptionTargetsInValue(m MessageValue, decl report.Span, target Optio
 				targets++
 			}
 
-			span := value.FieldAST().Key().Span()
-			if span.IsZero() {
-				pc, _ := iterx.Last(value.OptionPath().Components)
-				span = pc.Name().Span()
-			}
-
 			// Pull out the place where this option was set so we can show it to
 			// the user.
-			dp := m.Context().imports.DescriptorProto().Context()
-			constraints := field.Options().Field(wrapMember(dp,
-				ref[rawMember]{ptr: dp.builtins.optionTargets}))
+			constraints := field.Options().Field(m.Context().builtins().OptionTargets)
+
+			key := value.MessageKeys().At(0)
+			span := key.Span()
+			if path := key.AsPath(); !path.IsZero() {
+				// Pull out the last component.
+				// TODO: write a function on Path that does this cheaply.
+				last, _ := iterx.Last(path.Components)
+				span = last.Name().Span()
+			}
 
 			d := r.Errorf("unsupported option target for `%s`", field.Name()).Apply(
 				report.Snippetf(span, "option set here"),
@@ -266,20 +290,19 @@ type optionRef struct {
 	scope FullName
 	def   ast.Option
 
-	field ref[rawMember]
+	field Member
 	raw   *arena.Pointer[rawValue]
 }
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
-	root := wrapMember(r.Context, r.field).Element()
+	ids := &r.Context.session.builtins
+	root := r.field.Element()
 
 	// Check if this is a pseudo-option, and diagnose if it has multiple
 	// components. The values of pseudo-options are calculated elsewhere; this
 	// is only for diagnostics.
-	dp := r.imports.DescriptorProto().Context()
-	ids := &r.session.builtinIDs
-	if r.field.ptr == dp.builtins.fieldOptions {
+	if r.field.InternedFullName() == r.session.builtins.FieldOptions {
 		var buf [2]ast.PathComponent
 		prefix := slices.AppendSeq(buf[:0], iterx.Take(r.def.Path.Components, 2))
 
@@ -300,7 +323,7 @@ func (r optionRef) resolve() {
 	}
 
 	if r.raw.Nil() {
-		v := newMessage(r.Context, r.field).AsValue()
+		v := newMessage(r.Context, r.field.toRef(r.Context)).AsValue()
 		*r.raw = r.arenas.values.Compress(v.raw)
 	}
 
@@ -446,7 +469,7 @@ func (r optionRef) resolve() {
 				// A different member of a oneof was set.
 				r.Error(errSetMultipleTimes{
 					member: field.Oneof(),
-					first:  value.OptionPath(),
+					first:  value.OptionPaths().At(0),
 					second: path,
 					root:   pc.IsFirst(),
 				})
@@ -462,7 +485,7 @@ func (r optionRef) resolve() {
 			default:
 				r.Error(errSetMultipleTimes{
 					member: field,
-					first:  value.OptionPath(),
+					first:  value.OptionPaths().At(0),
 					second: path,
 					root:   pc.IsFirst(),
 				})
@@ -503,10 +526,8 @@ func (r optionRef) resolve() {
 			return
 		}
 
-		value := newMessage(r.Context, compressMember(r.Context, field)).AsValue()
-		if value.raw.optionPath.IsZero() {
-			value.raw.optionPath = path
-		}
+		value := newMessage(r.Context, field.toRef(r.Context)).AsValue()
+		value.raw.optionPaths = append(value.raw.optionPaths, path)
 
 		*raw = r.arenas.values.Compress(value.raw)
 		current = value

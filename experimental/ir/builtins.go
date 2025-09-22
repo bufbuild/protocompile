@@ -16,51 +16,62 @@ package ir
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-// builtins contains those symbols that are built into the language, and
-// which the compiler cannot handle not being present.
-//
-// See [resolveLangSymbols] for where they are resolved.
-type builtins struct {
-	fileOptions,
-	messageOptions,
-	fieldOptions,
-	oneofOptions,
-	enumOptions,
-	enumValueOptions arena.Pointer[rawMember]
-
-	mapEntry, packed, optionTargets arena.Pointer[rawMember]
-
-	editionDefaults,
-	editionDefaultKey,
-	editionDefaultValue arena.Pointer[rawMember]
-
-	editionSupport,
-	editionSupportIntroduced,
-	editionSupportDeprecated,
-	editionSupportWarning,
-	editionSupportRemoved arena.Pointer[rawMember]
-
-	featureSet arena.Pointer[rawType]
-	featurePresence,
-	featureEnumType,
-	featurePacked,
-	featureGroup arena.Pointer[rawMember]
-
-	fileFeatures,
-	messageFeatures,
-	fieldFeatures,
-	oneofFeatures,
-	enumFeatures,
-	enumValueFeatures arena.Pointer[rawMember]
-}
-
 // builtinIDs contains [intern.ID]s for symbols with special meaning in the
 // language.
+// builtins contains those symbols that are built into the language, and which the compiler cannot
+// handle not being present. This field is only present in the Context
+// for descriptor.proto.
+//
+// This is resolved using reflection in [resolveLangSymbols]. The names of the
+// fields of this type must match those in builtinIDs that names its symbol.
+type builtins struct {
+	FileOptions      Member
+	MessageOptions   Member
+	FieldOptions     Member
+	OneofOptions     Member
+	RangeOptions     Member
+	EnumOptions      Member
+	EnumValueOptions Member
+	ServiceOptions   Member
+	MethodOptions    Member
+
+	MapEntry      Member
+	Packed        Member
+	OptionTargets Member
+
+	EditionDefaults, EditionDefaultsKey, EditionDefaultsValue Member
+
+	EditionSupport           Member
+	EditionSupportIntroduced Member
+	EditionSupportDeprecated Member
+	EditionSupportWarning    Member
+	EditionSupportRemoved    Member
+
+	FeatureSet      Type
+	FeaturePresence Member
+	FeatureEnumType Member
+	FeaturePacked   Member
+	FeatureGroup    Member
+
+	FileFeatures      Member
+	MessageFeatures   Member
+	FieldFeatures     Member
+	OneofFeatures     Member
+	RangeFeatures     Member
+	EnumFeatures      Member
+	EnumValueFeatures Member
+	ServiceFeatures   Member
+	MethodFeatures    Member
+}
+
+// builtinIDs is all of the interning IDs of names in [builtins], plus some
+// others. This lives inside of [Session] and is constructed once.
 type builtinIDs struct {
 	DescriptorFile intern.ID `intern:"google/protobuf/descriptor.proto"`
 	AnyPath        intern.ID `intern:"google.protobuf.Any"`
@@ -69,8 +80,11 @@ type builtinIDs struct {
 	MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
 	FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
 	OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
+	RangeOptions     intern.ID `intern:"google.protobuf.DescriptorProto.ExtensionRange.options"`
 	EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
 	EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
+	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
+	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
 	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 	Packed        intern.ID `intern:"google.protobuf.FieldOptions.packed"`
@@ -83,9 +97,9 @@ type builtinIDs struct {
 	EnumUninterpreted      intern.ID `intern:"google.protobuf.EnumOptions.uninterpreted_options"`
 	EnumValueUninterpreted intern.ID `intern:"google.protobuf.EnumValueOptions.uninterpreted_options"`
 
-	EditionDefaults     intern.ID `intern:"google.protobuf.FieldOptions.edition_defaults"`
-	EditionDefaultKey   intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.edition"`
-	EditionDefaultValue intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.value"`
+	EditionDefaults      intern.ID `intern:"google.protobuf.FieldOptions.edition_defaults"`
+	EditionDefaultsKey   intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.edition"`
+	EditionDefaultsValue intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.value"`
 
 	EditionSupport           intern.ID `intern:"google.protobuf.FieldOptions.feature_support"`
 	EditionSupportIntroduced intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_introduced"`
@@ -103,8 +117,11 @@ type builtinIDs struct {
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`
 	FieldFeatures     intern.ID `intern:"google.protobuf.FieldOptions.features"`
 	OneofFeatures     intern.ID `intern:"google.protobuf.OneofOptions.features"`
+	RangeFeatures     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.features"`
 	EnumFeatures      intern.ID `intern:"google.protobuf.EnumOptions.features"`
 	EnumValueFeatures intern.ID `intern:"google.protobuf.EnumValueOptions.features"`
+	ServiceFeatures   intern.ID `intern:"google.protobuf.ServiceOptions.features"`
+	MethodFeatures    intern.ID `intern:"google.protobuf.MethodOptions.features"`
 }
 
 func resolveBuiltins(c *Context) {
@@ -112,55 +129,46 @@ func resolveBuiltins(c *Context) {
 		return
 	}
 
-	names := &c.session.builtinIDs
-	c.builtins = &builtins{
-		fileOptions: mustResolve[rawMember](c, names.FileOptions, SymbolKindField),
+	// If adding a new kind of symbol to resolve, add it to this map.
+	kinds := map[reflect.Type]struct {
+		kind SymbolKind
+		wrap func(arena.Untyped, reflect.Value)
+	}{
+		reflect.TypeFor[Member](): {
+			kind: SymbolKindField,
+			wrap: makeBuiltinWrapper(c, wrapMember),
+		},
+		reflect.TypeFor[Type](): {
+			kind: SymbolKindMessage,
+			wrap: makeBuiltinWrapper(c, wrapType),
+		},
+	}
 
-		messageOptions: mustResolve[rawMember](c, names.MessageOptions, SymbolKindField),
-		fieldOptions:   mustResolve[rawMember](c, names.FieldOptions, SymbolKindField),
-		oneofOptions:   mustResolve[rawMember](c, names.OneofOptions, SymbolKindField),
+	c.dpBuiltins = new(builtins)
+	v := reflect.ValueOf(c.dpBuiltins).Elem()
+	ids := reflect.ValueOf(c.session.builtins)
+	for i := range v.NumField() {
+		field := v.Field(i)
+		fmt.Println(v.Type().Field(i).Name)
+		id := ids.FieldByName(v.Type().Field(i).Name).Interface().(intern.ID) //nolint:errcheck
+		kind := kinds[field.Type()]
 
-		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
-		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
-
-		mapEntry:      mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
-		packed:        mustResolve[rawMember](c, names.Packed, SymbolKindField),
-		optionTargets: mustResolve[rawMember](c, names.OptionTargets, SymbolKindField),
-
-		editionDefaults:     mustResolve[rawMember](c, names.EditionDefaults, SymbolKindField),
-		editionDefaultKey:   mustResolve[rawMember](c, names.EditionDefaultKey, SymbolKindField),
-		editionDefaultValue: mustResolve[rawMember](c, names.EditionDefaultValue, SymbolKindField),
-
-		editionSupport:           mustResolve[rawMember](c, names.EditionSupport, SymbolKindField),
-		editionSupportIntroduced: mustResolve[rawMember](c, names.EditionSupportIntroduced, SymbolKindField),
-		editionSupportDeprecated: mustResolve[rawMember](c, names.EditionSupportDeprecated, SymbolKindField),
-		editionSupportWarning:    mustResolve[rawMember](c, names.EditionSupportWarning, SymbolKindField),
-		editionSupportRemoved:    mustResolve[rawMember](c, names.EditionSupportRemoved, SymbolKindField),
-
-		featureSet:      mustResolve[rawType](c, names.FeatureSet, SymbolKindMessage),
-		featurePresence: mustResolve[rawMember](c, names.FeaturePresence, SymbolKindField),
-		featureEnumType: mustResolve[rawMember](c, names.FeatureEnumType, SymbolKindField),
-		featurePacked:   mustResolve[rawMember](c, names.FeaturePacked, SymbolKindField),
-		featureGroup:    mustResolve[rawMember](c, names.FeatureGroup, SymbolKindField),
-
-		fileFeatures:      mustResolve[rawMember](c, names.FileFeatures, SymbolKindField),
-		messageFeatures:   mustResolve[rawMember](c, names.MessageFeatures, SymbolKindField),
-		fieldFeatures:     mustResolve[rawMember](c, names.FieldFeatures, SymbolKindField),
-		oneofFeatures:     mustResolve[rawMember](c, names.OneofFeatures, SymbolKindField),
-		enumFeatures:      mustResolve[rawMember](c, names.EnumFeatures, SymbolKindField),
-		enumValueFeatures: mustResolve[rawMember](c, names.EnumValueFeatures, SymbolKindField),
+		ref := c.exported.lookup(c, id)
+		sym := wrapSymbol(c, ref)
+		if sym.Kind() != kind.kind {
+			panic(fmt.Errorf(
+				"missing descriptor.proto symbol: %s `%s`; got kind %s",
+				kind.kind.noun(), c.session.intern.Value(id), sym.Kind(),
+			))
+		}
+		kind.wrap(sym.raw.data, field)
 	}
 }
 
-// mustResolve resolves a descriptor.proto name, and panics if it's not found.
-func mustResolve[Raw any](c *Context, id intern.ID, kind SymbolKind) arena.Pointer[Raw] {
-	ref := c.exported.lookup(c, id)
-	sym := wrapSymbol(c, ref)
-	if sym.Kind() != kind {
-		panic(fmt.Errorf(
-			"missing descriptor.proto symbol: %s `%s`; got kind %s",
-			kind.noun(), c.session.intern.Value(id), sym.Kind(),
-		))
+// makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.
+func makeBuiltinWrapper[T any, Raw any](c *Context, wrap func(*Context, ref[Raw]) T) func(arena.Untyped, reflect.Value) {
+	return func(p arena.Untyped, out reflect.Value) {
+		x := wrap(c, ref[Raw]{ptr: arena.Pointer[Raw](p)})
+		out.Set(reflect.ValueOf(x))
 	}
-	return arena.Pointer[Raw](sym.raw.data)
 }

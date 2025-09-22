@@ -65,6 +65,7 @@ type rawMember struct {
 
 	// Which entities this option can apply to. If zero, all targets are valid.
 	optionTargets uint32
+	isGroup       bool
 }
 
 // Returns whether this is a non-extension message field.
@@ -80,6 +81,11 @@ func (m Member) IsExtension() bool {
 // Returns whether this is an enum value.
 func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
+}
+
+// Returns whether this is a group-encoded field.
+func (m Member) IsGroup() bool {
+	return !m.IsZero() && m.raw.isGroup
 }
 
 // IsSynthetic returns whether or not this is a synthetic field, such as the
@@ -114,6 +120,9 @@ func (m Member) AST() ast.DeclDef {
 func (m Member) TypeAST() ast.TypeAny {
 	decl := m.AST()
 	if !decl.IsZero() {
+		if m.IsGroup() {
+			return ast.TypePath{Path: decl.Name()}.AsAny()
+		}
 		return decl.Type()
 	}
 
@@ -352,10 +361,11 @@ func wrapMember(c *Context, r ref[rawMember]) Member {
 	}
 }
 
-func compressMember(c *Context, member Member) ref[rawMember] {
+// toRef returns a ref to this member relative to the given context.
+func (m Member) toRef(c *Context) ref[rawMember] {
 	return ref[rawMember]{
-		ptr: member.Context().arenas.members.Compress(member.raw),
-	}.changeContext(member.Context(), c)
+		ptr: m.Context().arenas.members.Compress(m.raw),
+	}.changeContext(m.Context(), c)
 }
 
 // rawExtendee represents an extends block.

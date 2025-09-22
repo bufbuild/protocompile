@@ -31,8 +31,8 @@ import (
 type Session struct {
 	intern intern.Table
 
-	once       sync.Once
-	builtinIDs builtinIDs
+	once     sync.Once
+	builtins builtinIDs
 }
 
 // Lower lowers an AST into an IR module.
@@ -64,7 +64,7 @@ func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer)
 }
 
 func (s *Session) init() {
-	s.once.Do(func() { s.intern.Preload(&s.builtinIDs) })
+	s.once.Do(func() { s.intern.Preload(&s.builtins) })
 }
 
 func lower(c *Context, r *report.Report, importer Importer) {
@@ -107,10 +107,4 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Then validate all feature settings throughout the file.
 	buildAllFeatureInfo(c.File(), r)
 	validateAllFeatures(c.File(), r)
-}
-
-// sorry panics with an NYI error, which turns into an ICE inside of the
-// lowering logic.
-func sorry(what string) {
-	panic("sorry, not yet implemented: " + what)
 }

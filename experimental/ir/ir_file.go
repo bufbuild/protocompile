@@ -53,6 +53,7 @@ type Context struct {
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
 	options  arena.Pointer[rawValue]
+	services []arena.Pointer[rawService]
 	features arena.Pointer[rawFeatureSet]
 
 	// Table of all symbols transitively imported by this file. This is all
@@ -69,8 +70,8 @@ type Context struct {
 	// The imported symbols are the exported symbols plus the exported symbols
 	// of each direct import.
 	exported, imported symtab
-	// This field is only present in the Context for descriptor.proto.
-	builtins *builtins
+
+	dpBuiltins *builtins // Only non-nil for descriptor.proto.
 
 	arenas struct {
 		types     arena.Arena[rawType]
@@ -78,13 +79,16 @@ type Context struct {
 		ranges    arena.Arena[rawReservedRange]
 		extendees arena.Arena[rawExtendee]
 		oneofs    arena.Arena[rawOneof]
-		symbols   arena.Arena[rawSymbol]
+
+		services arena.Arena[rawService]
+		methods  arena.Arena[rawMethod]
 
 		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
-
 		features arena.Arena[rawFeatureSet]
+
+		symbols arena.Arena[rawSymbol]
 	}
 }
 
@@ -147,6 +151,14 @@ func (c *Context) File() File {
 	return File{withContext2{internal.NewWith(c)}}
 }
 
+// builtins returns the builtin descriptor.proto names.
+func (c *Context) builtins() *builtins {
+	if c.dpBuiltins != nil {
+		return c.dpBuiltins
+	}
+	return c.imports.DescriptorProto().Context().dpBuiltins
+}
+
 // File is an IR file, which provides access to the top-level declarations of
 // a Protobuf file.
 type File struct{ withContext2 }
@@ -199,7 +211,7 @@ func (f File) InternedPath() intern.ID {
 // google/protobuf/descriptor.proto, which is given special treatment in
 // the language.
 func (f File) IsDescriptorProto() bool {
-	return f.InternedPath() == f.Context().session.builtinIDs.DescriptorFile
+	return f.InternedPath() == f.Context().session.builtins.DescriptorFile
 }
 
 // Package returns the package name for this file.
@@ -286,6 +298,19 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
 			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		},
+	)
+}
+
+// Services returns all services defined in this file.
+func (f File) Services() seq.Indexer[Service] {
+	return seq.NewFixedSlice(
+		f.Context().services,
+		func(_ int, p arena.Pointer[rawService]) Service {
+			return Service{
+				internal.NewWith(f.Context()),
+				f.Context().arenas.services.Deref(p),
+			}
 		},
 	)
 }
