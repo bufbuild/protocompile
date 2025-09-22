@@ -27,12 +27,11 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 // resolveNames resolves all of the names that need resolving in a file.
 func resolveNames(f File, r *report.Report) {
-	resolveLangSymbols(f.Context())
+	resolveBuiltins(f.Context())
 
 	for ty := range seq.Values(f.AllTypes()) {
 		if ty.IsMessage() {
@@ -227,42 +226,6 @@ func resolveMethodTypes(m Method, r *report.Report) {
 	if signature.Outputs().Len() > 0 {
 		m.raw.output, m.raw.outputStream = resolve(m.AST().Signature().Outputs().At(0))
 	}
-}
-
-func resolveLangSymbols(c *Context) {
-	if !c.File().IsDescriptorProto() {
-		return
-	}
-
-	names := &c.session.langIDs
-	c.langSymbols = &langSymbols{
-		fileOptions: mustResolve[rawMember](c, names.FileOptions, SymbolKindField),
-
-		messageOptions: mustResolve[rawMember](c, names.MessageOptions, SymbolKindField),
-		fieldOptions:   mustResolve[rawMember](c, names.FieldOptions, SymbolKindField),
-		oneofOptions:   mustResolve[rawMember](c, names.OneofOptions, SymbolKindField),
-
-		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
-		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
-
-		serviceOptions: mustResolve[rawMember](c, names.ServiceOptions, SymbolKindField),
-		methodOptions:  mustResolve[rawMember](c, names.MethodOptions, SymbolKindField),
-
-		mapEntry: mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
-	}
-}
-
-// mustResolve resolves a descriptor.proto name, and panics if it's not found.
-func mustResolve[Raw any](c *Context, id intern.ID, kind SymbolKind) arena.Pointer[Raw] {
-	ref := c.exported.lookup(c, id)
-	sym := wrapSymbol(c, ref)
-	if sym.Kind() != kind {
-		panic(fmt.Errorf(
-			"missing descriptor.proto symbol: %s `%s`; got kind %s",
-			kind.noun(), c.session.intern.Value(id), sym.Kind(),
-		))
-	}
-	return arena.Pointer[Raw](sym.raw.data)
 }
 
 // symbolRef is all of the information necessary to resolve a symbol reference.

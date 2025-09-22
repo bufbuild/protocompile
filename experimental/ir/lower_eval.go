@@ -156,7 +156,7 @@ func (e *evaluator) eval(args evalArgs) Value {
 
 	first := args.target.IsZero()
 	if first && args.rawField.ptr.Nil() {
-		args.rawField = compressMember(e.Context, args.field)
+		args.rawField = args.field.toRef(e.Context)
 	} else if !first {
 		args.rawField = args.target.raw.field
 	}
