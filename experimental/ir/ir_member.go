@@ -507,7 +507,8 @@ type ReservedRange struct {
 }
 
 type rawReservedRange struct {
-	ast           ast.ExprAny
+	decl          ast.DeclRange
+	value         ast.ExprAny
 	first, last   int32
 	options       arena.Pointer[rawValue]
 	features      arena.Pointer[rawFeatureSet]
@@ -520,7 +521,17 @@ func (r ReservedRange) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	return r.raw.ast
+	return r.raw.value
+}
+
+// DeclAST returns the declaration this range came from. Multiple ranges may
+// have the same declaration.
+func (r ReservedRange) DeclAST() ast.DeclRange {
+	if r.IsZero() {
+		return ast.DeclRange{}
+	}
+
+	return r.raw.decl
 }
 
 // Range returns the start and end of the range.
