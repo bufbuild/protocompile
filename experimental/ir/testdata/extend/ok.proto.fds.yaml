@@ -28,8 +28,8 @@ file:
       type_name: ".test.Foo"
       extendee: ".test.Foo"
     nested_type:
-    - { name: "Foo", extension_range: [{ start: 1, end: 536870911 }] }
-    extension_range: [{ start: 1, end: 536870911 }]
+    - { name: "Foo", extension_range: [{ start: 1, end: 536870912 }] }
+    extension_range: [{ start: 1, end: 536870912 }]
   extension:
   - name: "x5"
     number: 5

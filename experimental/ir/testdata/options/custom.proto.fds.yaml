@@ -17,9 +17,9 @@ file:
       oneof_index: 0
       options.$unknown: "1000: 42"
     extension_range:
-    - { start: 5, end: 5, options.$unknown: "1000: 42" }
-    - { start: 6, end: 6, options.$unknown: "1000: 42" }
-    - { start: 7, end: 7, options.$unknown: "1000: 42" }
+    - { start: 5, end: 6, options.$unknown: "1000: 42" }
+    - { start: 6, end: 7, options.$unknown: "1000: 42" }
+    - { start: 7, end: 8, options.$unknown: "1000: 42" }
     oneof_decl: [{ name: "y", options.$unknown: "1000: 42" }]
     options.$unknown: "1000: 42"
   enum_type:

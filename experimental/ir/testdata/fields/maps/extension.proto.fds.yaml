@@ -1,6 +1,6 @@
 file:
 - name: "testdata/fields/maps/extension.proto"
   package: "test"
-  message_type: [{ name: "Foo", extension_range: [{ start: 1, end: 1 }] }]
+  message_type: [{ name: "Foo", extension_range: [{ start: 1, end: 2 }] }]
   extension: [{ name: "m", number: 1 }]
   syntax: "proto2"
