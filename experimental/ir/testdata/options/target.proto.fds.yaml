@@ -26,7 +26,21 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       oneof_index: 0
-    extension_range: [{ start: 2, end: 2 }]
+    extension_range:
+    - start: 2
+      end: 3
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
     oneof_decl:
     - name: "y"
       options.$unknown: |
@@ -117,6 +131,38 @@ file:
           8: 1
           9: 1
         }
+    options.$unknown: |
+      10000: {
+        1: 1
+        2: 1
+        3: 1
+        4: 1
+        5: 1
+        6: 1
+        7: 1
+        8: 1
+        9: 1
+      }
+  service:
+  - name: "S"
+    method:
+    - name: "X"
+      input_type: "buf.test.M"
+      output_type: "buf.test.M"
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
+      client_streaming: false
+      server_streaming: false
     options.$unknown: |
       10000: {
         1: 1

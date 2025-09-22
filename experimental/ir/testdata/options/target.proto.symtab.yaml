@@ -199,6 +199,16 @@ tables:
             "range": { bool: true }
             "service": { bool: true }
             "value": { bool: true }
+    - fqn: "buf.test.S"
+      kind: 9
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.S.X"
+      kind: 10
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
     options.message.extns:
       "buf.test.file":
         message.fields:
