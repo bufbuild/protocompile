@@ -27,7 +27,7 @@ import (
 type OptionTarget int32
 
 const (
-	OptionTargetUnknown OptionTarget = iota
+	OptionTargetInvalid OptionTarget = iota
 	OptionTargetFile
 	OptionTargetRange
 	OptionTargetMessage
@@ -57,7 +57,7 @@ func (v OptionTarget) GoString() string {
 }
 
 // OptionTargets returns an iterator over all of the possible valid targets,
-// which excludes [OptionTargetUnknown].
+// which excludes [OptionTargetInvalid].
 func OptionTargets() iter.Seq[OptionTarget] {
 	return func(yield func(OptionTarget) bool) {
 		for i := 1; i < 10; i++ {
@@ -69,7 +69,7 @@ func OptionTargets() iter.Seq[OptionTarget] {
 }
 
 var _table_OptionTarget_String = [...]string{
-	OptionTargetUnknown:   "OptionTargetUnknown",
+	OptionTargetInvalid:   "OptionTargetInvalid",
 	OptionTargetFile:      "OptionTargetFile",
 	OptionTargetRange:     "OptionTargetRange",
 	OptionTargetMessage:   "OptionTargetMessage",
@@ -82,7 +82,7 @@ var _table_OptionTarget_String = [...]string{
 }
 
 var _table_OptionTarget_GoString = [...]string{
-	OptionTargetUnknown:   "OptionTargetUnknown",
+	OptionTargetInvalid:   "OptionTargetInvalid",
 	OptionTargetFile:      "OptionTargetFile",
 	OptionTargetRange:     "OptionTargetRange",
 	OptionTargetMessage:   "OptionTargetMessage",
