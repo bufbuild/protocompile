@@ -304,7 +304,7 @@ func (m Member) Targets() iter.Seq[OptionTarget] {
 				return
 			}
 
-			mask := uint32(1) << bits
+			mask := uint32(1) << t
 			if bits&mask != 0 && !yield(t) {
 				return
 			}

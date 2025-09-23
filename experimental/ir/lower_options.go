@@ -188,7 +188,7 @@ func populateOptionTargets(f File, _ *report.Report) {
 		for target := range seq.Values(m.Options().Field(targets).Elements()) {
 			n, _ := target.AsInt()
 			target := OptionTarget(n)
-			if target == OptionTargetUnknown || target >= optionTargetMax {
+			if target == OptionTargetInvalid || target >= optionTargetMax {
 				continue
 			}
 
