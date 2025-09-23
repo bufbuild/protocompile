@@ -63,6 +63,16 @@ type builtinIDs struct {
 
 	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 	OptionTargets intern.ID `intern:"google.protobuf.FieldOptions.targets"`
+
+	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
+	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`
+	FieldUninterpreted     intern.ID `intern:"google.protobuf.FieldOptions.uninterpreted_option"`
+	OneofUninterpreted     intern.ID `intern:"google.protobuf.OneofOptions.uninterpreted_option"`
+	RangeUninterpreted     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.uninterpreted_option"`
+	EnumUninterpreted      intern.ID `intern:"google.protobuf.EnumOptions.uninterpreted_option"`
+	EnumValueUninterpreted intern.ID `intern:"google.protobuf.EnumValueOptions.uninterpreted_option"`
+	ServiceUninterpreted   intern.ID `intern:"google.protobuf.ServiceOptions.uninterpreted_option"`
+	MethodUninterpreted    intern.ID `intern:"google.protobuf.MethodOptions.uninterpreted_option"`
 }
 
 func resolveBuiltins(c *Context) {

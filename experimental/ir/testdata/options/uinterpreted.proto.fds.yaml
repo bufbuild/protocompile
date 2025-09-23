@@ -1,0 +1,35 @@
+file:
+- name: "testdata/options/uinterpreted.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.uninterpreted_option: [{}]
+    - name: "z"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+    extension_range: [{ start: 2, end: 3, options.uninterpreted_option: [{}] }]
+    oneof_decl: [{ name: "y", options.uninterpreted_option: [{}] }]
+    options.uninterpreted_option: [{}]
+  enum_type:
+  - name: "E"
+    value: [{ name: "Z", number: 0, options.uninterpreted_option: [{}] }]
+    options.uninterpreted_option: [{}]
+  service:
+  - name: "S"
+    method:
+    - name: "X"
+      input_type: "buf.test.M"
+      output_type: "buf.test.M"
+      options.uninterpreted_option: [{}]
+      client_streaming: false
+      server_streaming: false
+    options.uninterpreted_option: [{}]
+  options.uninterpreted_option: [{}]
+  syntax: "proto2"
