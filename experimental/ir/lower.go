@@ -31,22 +31,8 @@ import (
 type Session struct {
 	intern intern.Table
 
-	once    sync.Once
-	langIDs struct {
-		DescriptorFile intern.ID `intern:"google/protobuf/descriptor.proto"`
-		AnyPath        intern.ID `intern:"google.protobuf.Any"`
-
-		FileOptions      intern.ID `intern:"google.protobuf.FileDescriptorProto.options"`
-		MessageOptions   intern.ID `intern:"google.protobuf.DescriptorProto.options"`
-		FieldOptions     intern.ID `intern:"google.protobuf.FieldDescriptorProto.options"`
-		OneofOptions     intern.ID `intern:"google.protobuf.OneofDescriptorProto.options"`
-		EnumOptions      intern.ID `intern:"google.protobuf.EnumDescriptorProto.options"`
-		EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
-		ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
-		MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
-
-		MapEntry intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
-	}
+	once     sync.Once
+	builtins builtinIDs
 }
 
 // Lower lowers an AST into an IR module.
@@ -78,7 +64,7 @@ func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer)
 }
 
 func (s *Session) init() {
-	s.once.Do(func() { s.intern.Preload(&s.langIDs) })
+	s.once.Do(func() { s.intern.Preload(&s.builtins) })
 }
 
 func lower(c *Context, r *report.Report, importer Importer) {
@@ -110,10 +96,4 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Perform "late" name resolution, that is, options.
 	resolveOptions(c.File(), r)
-}
-
-// sorry panics with an NYI error, which turns into an ICE inside of the
-// lowering logic.
-func sorry(what string) {
-	panic("sorry, not yet implemented: " + what)
 }

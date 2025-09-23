@@ -16,6 +16,10 @@ file:
       type: TYPE_INT32
       oneof_index: 0
       options.$unknown: "1000: 42"
+    extension_range:
+    - { start: 5, end: 6, options.$unknown: "1000: 42" }
+    - { start: 6, end: 7, options.$unknown: "1000: 42" }
+    - { start: 7, end: 8, options.$unknown: "1000: 42" }
     oneof_decl: [{ name: "y", options.$unknown: "1000: 42" }]
     options.$unknown: "1000: 42"
   enum_type:
@@ -53,5 +57,10 @@ file:
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.EnumValueOptions"
+  - name: "g"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.ExtensionRangeOptions"
   options.$unknown: "1000: 42"
   syntax: "proto2"

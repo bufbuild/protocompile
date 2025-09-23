@@ -286,12 +286,13 @@ func wrapMember(c *Context, r ref[rawMember]) Member {
 	}
 }
 
-func compressMember(c *Context, member Member) ref[rawMember] {
+// toRef returns a ref to this member relative to the given context.
+func (m Member) toRef(c *Context) ref[rawMember] {
 	var ref ref[rawMember]
-	if member.Context() != c {
-		ref.file = int32(c.imports.byPath[member.Context().File().InternedPath()] + 1)
+	if m.Context() != c {
+		ref.file = int32(c.imports.byPath[m.Context().File().InternedPath()] + 1)
 	}
-	ref.ptr = member.Context().arenas.members.Compress(member.raw)
+	ref.ptr = m.Context().arenas.members.Compress(m.raw)
 	return ref
 }
 
@@ -421,7 +422,8 @@ type ReservedRange struct {
 }
 
 type rawReservedRange struct {
-	ast           ast.ExprAny
+	decl          ast.DeclRange
+	value         ast.ExprAny
 	first, last   int32
 	options       arena.Pointer[rawValue]
 	forExtensions bool
@@ -433,7 +435,17 @@ func (r ReservedRange) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	return r.raw.ast
+	return r.raw.value
+}
+
+// DeclAST returns the declaration this range came from. Multiple ranges may
+// have the same declaration.
+func (r ReservedRange) DeclAST() ast.DeclRange {
+	if r.IsZero() {
+		return ast.DeclRange{}
+	}
+
+	return r.raw.decl
 }
 
 // Range returns the start and end of the range.

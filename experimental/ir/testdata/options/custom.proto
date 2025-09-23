@@ -29,6 +29,8 @@ message Foo {
         option (d) = 42;
         int32 z = 2 [(c) = 42];
     }
+
+    extensions 5, 6, 7 [(g) = 42];
 }
 
 enum Bar {
@@ -58,4 +60,8 @@ extend google.protobuf.EnumOptions {
 
 extend google.protobuf.EnumValueOptions {
     repeated int32 f = 1000;
+}
+
+extend google.protobuf.ExtensionRangeOptions {
+    repeated int32 g = 1000;
 }
