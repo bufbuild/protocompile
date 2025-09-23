@@ -136,15 +136,15 @@ func (v Noun) String() string {
 	if int(v) < 0 || int(v) > len(_table_Noun_String) {
 		return fmt.Sprintf("Noun(%v)", int(v))
 	}
-	return _table_Noun_String[int(v)]
+	return _table_Noun_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v Noun) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_Noun_GoString) {
-		return fmt.Sprintf("taxaNoun(%v)", int(v))
+		return fmt.Sprintf("taxa.Noun(%v)", int(v))
 	}
-	return _table_Noun_GoString[int(v)]
+	return _table_Noun_GoString[v]
 }
 
 var _table_Noun_String = [...]string{

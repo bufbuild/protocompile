@@ -52,6 +52,8 @@ type Enum struct {
 	Total   string   `yaml:"total"` // The name of a "total values" constant.
 	Methods []Method `yaml:"methods"`
 	Values  []Value  `yaml:"values"`
+
+	UseMapsForLookup bool `yaml:"use_maps_for_lookup"`
 }
 
 func (e *Enum) Init() {
@@ -70,6 +72,7 @@ type Value struct {
 	String_ string   `yaml:"string"` // The string representation of this value.
 	Docs    string   `yaml:"docs"`   // Documentation for the value.
 	From    []string `yaml:"from"`   // Names for use in from-string instead of String_.
+	Expr    string   `yaml:"expr"`   // The Go expression to use for this value.
 
 	Parent *Enum `yaml:"-"`
 	Idx    int   `yaml:"-"`

@@ -3,7 +3,7 @@ error: unexpected qualified name in import
    |
 19 | import my.Proto;
    |        ^^^^^^^^ expected string literal
-   = note: Protobuf does not support importing symbols by name, instead, try
+   = help: Protobuf does not support importing symbols by name, instead, try
            importing a file, e.g. `import "google/protobuf/descriptor.proto";`
 
 error: unexpected qualified name in weak import
@@ -11,7 +11,7 @@ error: unexpected qualified name in weak import
    |
 20 | import weak my.Proto;
    |             ^^^^^^^^ expected string literal
-   = note: Protobuf does not support importing symbols by name, instead, try
+   = help: Protobuf does not support importing symbols by name, instead, try
            importing a file, e.g. `import "google/protobuf/descriptor.proto";`
 
 error: unexpected qualified name in public import
@@ -19,7 +19,7 @@ error: unexpected qualified name in public import
    |
 21 | import public my.Proto;
    |               ^^^^^^^^ expected string literal
-   = note: Protobuf does not support importing symbols by name, instead, try
+   = help: Protobuf does not support importing symbols by name, instead, try
            importing a file, e.g. `import "google/protobuf/descriptor.proto";`
 
 encountered 3 errors

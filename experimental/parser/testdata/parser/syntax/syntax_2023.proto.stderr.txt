@@ -3,6 +3,10 @@ error: unexpected edition in `syntax` declaration
    |
 15 | syntax = "2023";
    |          ^^^^^^
-   = note: permitted values: "proto2", "proto3"
+  help: replace with `edition`
+   |
+15 | - syntax = "2023";
+15 | + edition = "2023";
+   |
 
 encountered 1 error

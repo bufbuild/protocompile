@@ -3,6 +3,10 @@ error: unexpected syntax in `edition` declaration
    |
 15 | edition = "proto2";
    |           ^^^^^^^^
-   = note: permitted values: "2023"
+  help: replace with `syntax`
+   |
+15 | - edition = "proto2";
+15 | + syntax = "proto2";
+   |
 
 encountered 1 error

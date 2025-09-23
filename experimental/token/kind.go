@@ -39,15 +39,15 @@ func (v Kind) String() string {
 	if int(v) < 0 || int(v) > len(_table_Kind_String) {
 		return fmt.Sprintf("Kind(%v)", int(v))
 	}
-	return _table_Kind_String[int(v)]
+	return _table_Kind_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v Kind) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_Kind_GoString) {
-		return fmt.Sprintf("tokenKind(%v)", int(v))
+		return fmt.Sprintf("token.Kind(%v)", int(v))
 	}
-	return _table_Kind_GoString[int(v)]
+	return _table_Kind_GoString[v]
 }
 
 var _table_Kind_String = [...]string{

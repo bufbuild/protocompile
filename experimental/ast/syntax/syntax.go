@@ -25,29 +25,42 @@ import (
 //
 // Not only does this include "proto2" and "proto3", but also all of the
 // editions.
-type Syntax int
+//
+// The integer values of the constants correspond to their the values of
+// google.protobuf.Edition.
+type Syntax int32
 
 const (
-	Unknown Syntax = iota
-	Proto2
-	Proto3
-	Edition2023
+	Unknown          Syntax = 0
+	Proto2           Syntax = 998
+	Proto3           Syntax = 999
+	Edition2023      Syntax = 1000
+	Edition2024      Syntax = 1001
+	EditionLegacy    Syntax = 900
+	EditionTest1     Syntax = 1
+	EditionTest2     Syntax = 2
+	EditionTest99997 Syntax = 99997
+	EditionTest99998 Syntax = 99998
+	EditionTest99999 Syntax = 99999
+	EditionMax       Syntax = 0x7fff_ffff
 )
 
 // String implements [fmt.Stringer].
 func (v Syntax) String() string {
-	if int(v) < 0 || int(v) > len(_table_Syntax_String) {
+	s, ok := _table_Syntax_String[v]
+	if !ok {
 		return fmt.Sprintf("Syntax(%v)", int(v))
 	}
-	return _table_Syntax_String[int(v)]
+	return s
 }
 
 // GoString implements [fmt.GoStringer].
 func (v Syntax) GoString() string {
-	if int(v) < 0 || int(v) > len(_table_Syntax_GoString) {
-		return fmt.Sprintf("syntaxSyntax(%v)", int(v))
+	s, ok := _table_Syntax_GoString[v]
+	if !ok {
+		return fmt.Sprintf("syntax.Syntax(%v)", int(v))
 	}
-	return _table_Syntax_GoString[int(v)]
+	return s
 }
 
 // Lookup looks up a syntax pragma by name.
@@ -57,34 +70,47 @@ func Lookup(s string) Syntax {
 	return _table_Syntax_Lookup[s]
 }
 
-// All returns an iterator over all known [Syntax] values.
-func All() iter.Seq[Syntax] {
-	return func(yield func(Syntax) bool) {
-		for i := 1; i < 4; i++ {
-			if !yield(Syntax(i)) {
-				return
-			}
-		}
-	}
+var _table_Syntax_String = map[Syntax]string{
+	Unknown:          "<unknown>",
+	Proto2:           "proto2",
+	Proto3:           "proto3",
+	Edition2023:      "2023",
+	Edition2024:      "2024",
+	EditionLegacy:    "buf/legacy",
+	EditionTest1:     "buf/1",
+	EditionTest2:     "buf/2",
+	EditionTest99997: "buf/99997",
+	EditionTest99998: "buf/99998",
+	EditionTest99999: "buf/99999",
+	EditionMax:       "buf/max",
 }
 
-var _table_Syntax_String = [...]string{
-	Unknown:     "<unknown>",
-	Proto2:      "proto2",
-	Proto3:      "proto3",
-	Edition2023: "2023",
-}
-
-var _table_Syntax_GoString = [...]string{
-	Unknown:     "Unknown",
-	Proto2:      "Proto2",
-	Proto3:      "Proto3",
-	Edition2023: "Edition2023",
+var _table_Syntax_GoString = map[Syntax]string{
+	Unknown:          "Unknown",
+	Proto2:           "Proto2",
+	Proto3:           "Proto3",
+	Edition2023:      "Edition2023",
+	Edition2024:      "Edition2024",
+	EditionLegacy:    "EditionLegacy",
+	EditionTest1:     "EditionTest1",
+	EditionTest2:     "EditionTest2",
+	EditionTest99997: "EditionTest99997",
+	EditionTest99998: "EditionTest99998",
+	EditionTest99999: "EditionTest99999",
+	EditionMax:       "EditionMax",
 }
 
 var _table_Syntax_Lookup = map[string]Syntax{
-	"proto2": Proto2,
-	"proto3": Proto3,
-	"2023":   Edition2023,
+	"proto2":     Proto2,
+	"proto3":     Proto3,
+	"2023":       Edition2023,
+	"2024":       Edition2024,
+	"buf/legacy": EditionLegacy,
+	"buf/1":      EditionTest1,
+	"buf/2":      EditionTest2,
+	"buf/99997":  EditionTest99997,
+	"buf/99998":  EditionTest99998,
+	"buf/99999":  EditionTest99999,
+	"buf/max":    EditionMax,
 }
 var _ iter.Seq[int] // Mark iter as used.
