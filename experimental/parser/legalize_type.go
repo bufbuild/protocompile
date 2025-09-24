@@ -38,28 +38,49 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 	case ast.TypeKindPrefixed:
 		prefixed := ty.AsPrefixed()
-		if prefixed.Prefix() != keyword.Stream {
-			p.Errorf("only the %s modifier may appear in %s", taxa.KeywordStream, what).Apply(
-				report.Snippet(prefixed.PrefixToken()),
-			)
-		}
+		var mod ast.TypePrefixed
+		for {
+			switch {
+			case !prefixed.Prefix().IsMethodTypeModifier():
+				p.Error(errUnexpectedMod{
+					mod:    prefixed.PrefixToken(),
+					where:  taxa.Signature.In(),
+					syntax: p.syntax,
+				})
+			case !mod.IsZero():
+				p.Error(errMoreThanOne{
+					first:  mod.PrefixToken(),
+					second: prefixed.PrefixToken(),
+					what:   taxa.KeywordStream,
+				})
+			default:
+				mod = prefixed
+			}
 
-		if prefixed.Type().Kind() == ast.TypeKindPath {
-			legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
+			switch prefixed.Type().Kind() {
+			case ast.TypeKindPath:
+				legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
+				return
+			case ast.TypeKindPrefixed:
+				prefixed = prefixed.Type().AsPrefixed()
+				continue
+			}
 			break
 		}
 
 		ty = prefixed.Type()
 		fallthrough
 	default:
-		p.Errorf("only message types may appear in %s", what).Apply(
-			report.Snippet(ty),
-		)
+		p.Error(errUnexpected{
+			what:  ty,
+			where: what.In(),
+			want:  taxa.NewSet(taxa.MessageType),
+		})
 	}
 }
 
 // legalizeFieldType legalizes the type of a message field.
-func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclDef) {
+func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool, mod ast.TypePrefixed, oneof ast.DeclDef) {
 	expected := taxa.TypePath.AsSet()
 	if oneof.IsZero() {
 		switch p.syntax {
@@ -89,97 +110,109 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 			)
 		}
 
-		legalizePath(p, taxa.Field.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
+		legalizePath(p, what.In(), ty.AsPath().Path, pathOptions{AllowAbsolute: true})
 
 	case ast.TypeKindPrefixed:
 		ty := ty.AsPrefixed()
-		if !oneof.IsZero() {
-			d := p.Error(errUnexpected{
-				what: ty.PrefixToken(),
-				want: expected,
-			}).Apply(
-				report.Snippetf(oneof, "within this %s", taxa.Oneof),
-				justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
-					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-					justify: justifyRight,
-				}),
-				report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
-			)
-			if ty.Prefix() == keyword.Repeated {
-				d.Apply(report.Helpf(
-					"to emulate a repeated field in a %s, define a local message type with a single repeated field",
-					taxa.Oneof))
-			}
-
-			return
-		}
-
-		switch ty.Prefix() {
-		case keyword.Required:
-			switch p.syntax {
-			case syntax.Proto2:
-				p.Warnf("required fields are deprecated and should not be used").Apply(
-					report.Snippet(ty.PrefixToken()),
-					report.Helpf("do not attempt to change this to %s if the field is already in-use; "+
-						"doing so is a wire protocol break", keyword.Optional),
-				)
-			default:
-				p.Error(errUnexpected{
-					what: ty.PrefixToken(),
-					want: expected,
-				}).Apply(
-					justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
-						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-						justify: justifyRight,
-					}),
-					report.Helpf("required fields are only permitted in %s; even then, their use is strongly discouraged",
-						syntax.Proto2),
-				)
-			}
-
-		case keyword.Optional:
-			if p.syntax.IsEdition() {
-				p.Error(errUnexpected{
-					what: ty.PrefixToken(),
-					want: expected,
-				}).Apply(
-					justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
-						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-						justify: justifyRight,
-					}),
-					report.Helpf(
-						"in %s, the presence behavior of a singular field "+
-							"is controlled with `[feature.field_presence = ...]`, with "+
-							"the default being equivalent to %s %s",
-						taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
-					report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
-				)
-			}
-		case keyword.Stream:
-			p.Error(errUnexpected{
-				what: ty.PrefixToken(),
-				want: expected,
-			}).Apply(
+		if !mod.IsZero() {
+			p.Errorf("multiple modifiers on %v type", taxa.Field).Apply(
 				report.Snippet(ty.PrefixToken()),
+				report.Snippetf(mod.PrefixToken(), "previous one is here"),
 				justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
 					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 					justify: justifyRight,
 				}),
-				report.Helpf("the %s modifier may only appear in a %s",
-					taxa.KeywordStream, taxa.Signature),
 			)
+		} else {
+			if mod.IsZero() {
+				mod = ty
+			}
+
+			if !oneof.IsZero() {
+				d := p.Error(errUnexpected{
+					what: ty.PrefixToken(),
+					want: expected,
+				}).Apply(
+					report.Snippetf(oneof, "within this %s", taxa.Oneof),
+					justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+						justify: justifyRight,
+					}),
+					report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
+				)
+				if ty.Prefix() == keyword.Repeated {
+					d.Apply(report.Helpf(
+						"to emulate a repeated field in a %s, define a local message type with a single repeated field",
+						taxa.Oneof))
+				}
+			} else {
+				switch k := ty.Prefix(); k {
+				case keyword.Required:
+					switch p.syntax {
+					case syntax.Proto2:
+						p.Warnf("required fields are deprecated and should not be used").Apply(
+							report.Snippet(ty.PrefixToken()),
+							report.Helpf("do not attempt to change this to %s if the field is already in-use; "+
+								"doing so is a wire protocol break", keyword.Optional),
+						)
+					default:
+						p.Error(errUnexpected{
+							what: ty.PrefixToken(),
+							want: expected,
+						}).Apply(
+							justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								justify: justifyRight,
+							}),
+							report.Helpf("required fields are only permitted in %s; even then, their use is strongly discouraged",
+								syntax.Proto2),
+						)
+					}
+
+				case keyword.Optional:
+					if p.syntax.IsEdition() {
+						p.Error(errUnexpected{
+							what: ty.PrefixToken(),
+							want: expected,
+						}).Apply(
+							justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								justify: justifyRight,
+							}),
+							report.Helpf(
+								"in %s, the presence behavior of a singular field "+
+									"is controlled with `[feature.field_presence = ...]`, with "+
+									"the default being equivalent to %s %s",
+								taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
+							report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
+						)
+					}
+
+				case keyword.Repeated:
+					break
+
+				default:
+					d := p.Error(errUnexpectedMod{
+						mod:      ty.PrefixToken(),
+						where:    what.On(),
+						syntax:   p.syntax,
+						noDelete: k == keyword.Option,
+					})
+
+					if k == keyword.Option {
+						d.Apply(report.SuggestEdits(ty.PrefixToken(), "replace with `optional`", report.Edit{
+							Start: 0, End: ty.PrefixToken().Span().Len(),
+							Replace: "optional",
+						}))
+					}
+				}
+			}
 		}
 
 		inner := ty.Type()
 		switch inner.Kind() {
-		case ast.TypeKindPath:
-			legalizeFieldType(p, inner, false, oneof)
-		case ast.TypeKindPrefixed:
-			p.Error(errMoreThanOne{
-				first:  ty.PrefixToken(),
-				second: inner.AsPrefixed().PrefixToken(),
-				what:   taxa.TypePrefix,
-			})
+		case ast.TypeKindPath, ast.TypeKindPrefixed:
+			legalizeFieldType(p, what, inner, false, mod, oneof)
 		default:
 			p.Error(errUnexpected{
 				what:  inner,
@@ -212,7 +245,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 
 			switch k.Kind() {
 			case ast.TypeKindPath:
-				legalizeFieldType(p, k, false, oneof)
+				legalizeFieldType(p, what, k, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
 				p.Error(errUnexpected{
 					what:  k.AsPrefixed().PrefixToken(),
@@ -228,7 +261,7 @@ func legalizeFieldType(p *parser, ty ast.TypeAny, topLevel bool, oneof ast.DeclD
 
 			switch v.Kind() {
 			case ast.TypeKindPath:
-				legalizeFieldType(p, v, false, oneof)
+				legalizeFieldType(p, what, v, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
 				p.Error(errUnexpected{
 					what:  v.AsPrefixed().PrefixToken(),

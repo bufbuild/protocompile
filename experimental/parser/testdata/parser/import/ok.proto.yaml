@@ -3,8 +3,14 @@ decls:
 - package.path.components: [{ ident: "test" }]
 - import.import_path.literal.string_value: "foo.proto"
 - import:
-    modifier: MODIFIER_WEAK
+    modifier: [MODIFIER_WEAK]
     import_path.literal.string_value: "weak.proto"
+    modifier_span: [{}]
 - import:
-    modifier: MODIFIER_PUBLIC
+    modifier: [MODIFIER_PUBLIC]
     import_path.literal.string_value: "public.proto"
+    modifier_span: [{}]
+- import:
+    modifier: [MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "option.proto"
+    modifier_span: [{}]

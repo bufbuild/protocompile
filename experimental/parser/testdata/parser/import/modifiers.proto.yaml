@@ -1,0 +1,27 @@
+decls:
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- import:
+    modifier: [MODIFIER_PUBLIC, MODIFIER_WEAK]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}, {}]
+- import:
+    modifier: [MODIFIER_PUBLIC, MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}, {}]
+- import:
+    modifier: [MODIFIER_WEAK, MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}, {}]
+- import:
+    modifier: [MODIFIER_UNSPECIFIED, MODIFIER_WEAK, MODIFIER_PUBLIC]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}, {}, {}]
+- import:
+    modifier: [MODIFIER_WEAK, MODIFIER_WEAK]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}, {}]
+- import:
+    modifier: [MODIFIER_UNSPECIFIED]
+    import_path.literal.string_value: "foo.proto"
+    modifier_span: [{}]

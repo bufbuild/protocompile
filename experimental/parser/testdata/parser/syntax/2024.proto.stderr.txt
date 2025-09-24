@@ -3,6 +3,5 @@ error: sorry, Edition 2024 is not fully implemented
    |
 15 | edition = "2024";
    |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
 
 encountered 1 error

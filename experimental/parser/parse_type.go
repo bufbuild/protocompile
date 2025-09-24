@@ -133,8 +133,8 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		// based on what comes after it.
 		var isMod bool
 		_, rest := tyPath.Split(1)
-		switch ident.Keyword() {
-		case keyword.Optional, keyword.Repeated, keyword.Required:
+		switch k := ident.Keyword(); {
+		case k.IsFieldTypeModifier():
 			// NOTE: We do not need to look at isInMethod here, because it
 			// implies isList (sort of: in the case of writing something
 			// like `returns optional.Foo`, this will be parsed as
@@ -142,7 +142,15 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			// invalid, because of the missing parentheses, so we don't need to
 			// legalize it.
 			isMod = !isList || rest.IsZero()
-		case keyword.Stream:
+
+		case k.IsTypeModifier(), k.IsImportModifier():
+			// Do not pick these up if rest is non-zero, because that means
+			// we're in a case like export.Foo x = 1;. The only case where
+			// export/local should be picked up is if the next token is not
+			// .Foo or similar.
+			isMod = rest.IsZero()
+
+		case k.IsMethodTypeModifier():
 			isMod = isInMethod || rest.IsZero()
 		}
 

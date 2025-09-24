@@ -12,11 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto2";
+edition = "invalid";
 
 package test;
-
-import "foo.proto";
-import weak "weak.proto";
-import public "public.proto";
-import option "option.proto";

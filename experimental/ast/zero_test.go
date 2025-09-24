@@ -100,6 +100,11 @@ func testZero[Node report.Spanner](t *testing.T) {
 					continue
 				}
 
+				if m := r.MethodByName("Len"); m.IsValid() &&
+					m.Type().NumIn() == 0 && m.Type().NumOut() == 1 {
+					r = m.Call(nil)[0]
+				}
+
 				assert.Zero(t, r.Interface(), "non-zero return #%d %#v of %T.%s", i, r, z, m.Name)
 			}
 		}

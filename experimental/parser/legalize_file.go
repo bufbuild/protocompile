@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -353,11 +354,57 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		return
 	}
 
-	if in == taxa.WeakImport {
-		p.Warnf("use of `import weak`").Apply(
-			report.Snippet(report.Join(decl.KeywordToken(), decl.ModifierToken())),
-			report.Notef("`import weak` is deprecated and not supported correctly "+
-				"in most Protobuf implementations"),
-		)
+	for i, mod := range seq.All(decl.ModifierTokens()) {
+		if i > 0 {
+			p.Errorf("unexpected `%s` modifier in %s", mod.Text(), in).Apply(
+				report.Snippet(mod),
+				report.Snippetf(report.Join(
+					decl.KeywordToken(),
+					decl.ModifierTokens().At(0),
+				), "already modified here"),
+			)
+			continue
+		}
+
+		switch k := mod.Keyword(); k {
+		case keyword.Public:
+
+		case keyword.Weak:
+			p.Warnf("use of `import weak`").Apply(
+				report.Snippet(report.Join(decl.KeywordToken(), mod)),
+				report.Helpf("`import weak` is deprecated and not supported correctly "+
+					"in most Protobuf implementations"),
+			)
+
+		case keyword.Option:
+			p.Error(errRequiresEdition{
+				edition:       syntax.Edition2024,
+				node:          report.Join(decl.KeywordToken(), mod),
+				what:          "`import option`",
+				decl:          p.syntaxNode,
+				unimplemented: p.syntax >= syntax.Edition2024,
+			})
+
+		default:
+			d := p.Error(errUnexpectedMod{
+				mod:      mod,
+				where:    taxa.Import.In(),
+				syntax:   p.syntax,
+				noDelete: k == keyword.Export || k == keyword.Optional,
+			})
+			switch k {
+			case keyword.Export:
+				d.Apply(report.SuggestEdits(mod, "replace with `public`", report.Edit{
+					Start: 0, End: mod.Span().Len(),
+					Replace: "public",
+				}))
+
+			case keyword.Optional:
+				d.Apply(report.SuggestEdits(mod, "replace with `option`", report.Edit{
+					Start: 0, End: mod.Span().Len(),
+					Replace: "option",
+				}))
+			}
+		}
 	}
 }

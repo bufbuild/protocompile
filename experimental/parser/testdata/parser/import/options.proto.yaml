@@ -10,7 +10,7 @@ decls:
         - { ident: "allowed", separator: SEPARATOR_DOT }
       value.literal.string_value: "here"
 - import:
-    modifier: MODIFIER_WEAK
+    modifier: [MODIFIER_WEAK]
     import_path.literal.string_value: "weak.proto"
     options.entries:
     - path.components:
@@ -18,8 +18,9 @@ decls:
         - ident: "not"
         - { ident: "allowed", separator: SEPARATOR_DOT }
       value.literal.string_value: "here"
+    modifier_span: [{}]
 - import:
-    modifier: MODIFIER_PUBLIC
+    modifier: [MODIFIER_PUBLIC]
     import_path.literal.string_value: "public.proto"
     options.entries:
     - path.components:
@@ -27,3 +28,4 @@ decls:
         - ident: "not"
         - { ident: "allowed", separator: SEPARATOR_DOT }
       value.literal.string_value: "here"
+    modifier_span: [{}]
