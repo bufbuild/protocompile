@@ -1013,6 +1013,17 @@ func readerForTestdata(t testing.TB, filename string) io.Reader {
 
 func TestPathological(t *testing.T) {
 	t.Parallel()
+	if internal.IsRace {
+		// Note, the combo of race detector and coverage is the real death
+		// knell here. But since there's not an easy way to detect if coverage
+		// instrumentation is enabled, and we currently always run coverage and
+		// race detection together in CI, we can just rely on the race detector.
+		//
+		// In CI, we do run the tests without race detection or coverage
+		// instrumentation, mainly to verify that everything works with the
+		// "protolegacy" build tag. So that's when these tests will actually run.
+		t.Skip("skipping pathological input test cases because race detector is enabled (which slows things down too much)")
+	}
 
 	// This test verifies that the test cases found in fuzz tests have
 	// adequate performance.
@@ -1031,20 +1042,13 @@ func TestPathological(t *testing.T) {
 			// than 60 seconds. We're only running 3 iterations, so this test isn't
 			// too slow. So we can use a much tighter deadline.
 			allowedDuration := 2 * time.Second
-			if internal.IsRace {
-				// We increase that threshold to 20 seconds when the race detector is enabled.
-				// The race detector has been observed to make it take ~8x as long. If coverage
-				// is *also* enabled, the test can take 19x as long(!!). Unfortunately, there
-				// doesn't appear to be a way to easily detect if coverage is enabled, so we
-				// always increase the timeout when race detector is enabled.
-				allowedDuration = 20 * time.Second
-				t.Logf("allowing %v since race detector is enabled", allowedDuration)
-			}
+			start := time.Now()
 			ctx, cancel := context.WithTimeout(t.Context(), allowedDuration)
 			defer func() {
 				if ctx.Err() != nil {
 					t.Errorf("test took too long to execute (> %v)", allowedDuration)
 				}
+				t.Logf("test completed in %v", time.Since(start))
 				cancel()
 			}()
 			for range 3 {
