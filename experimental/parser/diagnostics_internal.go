@@ -205,6 +205,8 @@ func (e errBadNest) Diagnose(d *report.Diagnostic) {
 }
 
 // errRequiresEdition diagnoses that a certain edition is required for a feature.
+//
+//nolint:govet // Irrelevant alignment padding lint.
 type errRequiresEdition struct {
 	edition syntax.Syntax
 	node    report.Spanner
