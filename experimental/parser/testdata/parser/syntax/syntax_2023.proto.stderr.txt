@@ -1,8 +1,9 @@
-error: unexpected edition in `syntax` declaration
-  --> testdata/parser/syntax/syntax_2023.proto:15:10
+error: editions must use the `edition` keyword%!(EXTRA taxa.Noun=`syntax`
+       declaration)
+  --> testdata/parser/syntax/syntax_2023.proto:15:1
    |
 15 | syntax = "2023";
-   |          ^^^^^^
+   | ^^^^^^
   help: replace with `edition`
    |
 15 | - syntax = "2023";

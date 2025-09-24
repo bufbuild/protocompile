@@ -181,8 +181,8 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 
 	if value.IsValid() {
 		if value.IsEdition() && in == taxa.Syntax {
-			p.Errorf("unexpected edition in %s", in).Apply(
-				report.Snippet(expr),
+			p.Errorf("editions must use the `edition` keyword", in).Apply(
+				report.Snippet(decl.KeywordToken()),
 				report.SuggestEdits(decl.KeywordToken(), "replace with `edition`", report.Edit{
 					Start: 0, End: decl.KeywordToken().Span().Len(),
 					Replace: "edition",
@@ -191,8 +191,8 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		}
 
 		if !value.IsEdition() && in == taxa.Edition {
-			p.Errorf("unexpected syntax in %s", in).Apply(
-				report.Snippet(expr),
+			p.Errorf("`%s` must use the `syntax` keyword", value).Apply(
+				report.Snippet(decl.KeywordToken()),
 				report.SuggestEdits(decl.KeywordToken(), "replace with `syntax`", report.Edit{
 					Start: 0, End: decl.KeywordToken().Span().Len(),
 					Replace: "syntax",
