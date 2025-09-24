@@ -6,7 +6,7 @@ file:
 - name: "b.proto"
   package: "foo"
   dependency: ["a.proto"]
-  message_type: [{ name: "M", extension_range: [{ start: 1, end: 1 }] }]
+  message_type: [{ name: "M", extension_range: [{ start: 1, end: 2 }] }]
   syntax: "proto2"
 - name: "c.proto"
   package: "foo.bar.baz"

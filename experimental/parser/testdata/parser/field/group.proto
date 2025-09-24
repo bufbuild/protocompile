@@ -12,21 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+syntax = "proto2";
 
 package test;
 
 message Foo {
-    group foo = 1 {
-        option bar = baz;
-        Foo foo = 1;
+    optional group Foo = 1 {
+        option Bar = baz;
+        optional Foo foo = 1;
     }
 
-    optional group bar = 2 {
-        Foo foo = 1;
+    optional group Bar = 2 {
+        optional Foo foo = 1;
     }
 
-    group x = 3 [bar = 1] {
-        Foo foo = 1;
+    repeated group X = 3 [bar = 1] {
+        optional Foo foo = 1;
     }
+
+    required group lowercase = 4 {}
 }

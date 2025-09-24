@@ -51,7 +51,8 @@ type Context struct {
 	extns            []arena.Pointer[rawMember]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options arena.Pointer[rawValue]
+	options  arena.Pointer[rawValue]
+	services []arena.Pointer[rawService]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -68,7 +69,7 @@ type Context struct {
 	// of each direct import.
 	exported, imported symtab
 
-	langSymbols *langSymbols
+	dpBuiltins *builtins // Only non-nil for descriptor.proto.
 
 	arenas struct {
 		types     arena.Arena[rawType]
@@ -81,23 +82,10 @@ type Context struct {
 		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
+
+		services arena.Arena[rawService]
+		methods  arena.Arena[rawMethod]
 	}
-}
-
-// langSymbols contains those symbols that are built into the language, and which the compiler cannot
-// handle not being present. This field is only present in the Context
-// for descriptor.proto.
-//
-// See [resolveLangSymbols] for where they are resolved.
-type langSymbols struct {
-	fileOptions,
-	messageOptions,
-	fieldOptions,
-	oneofOptions,
-	enumOptions,
-	enumValueOptions arena.Pointer[rawMember]
-
-	mapEntry arena.Pointer[rawMember]
 }
 
 type withContext = internal.With[*Context]
@@ -130,6 +118,14 @@ func (r ref[T]) context(base *Context) *Context {
 // recursively (as is needed for e.g. assembling a FileDescriptorProto).
 func (c *Context) File() File {
 	return File{withContext2{internal.NewWith(c)}}
+}
+
+// builtins returns the builtin descriptor.proto names.
+func (c *Context) builtins() *builtins {
+	if c.dpBuiltins != nil {
+		return c.dpBuiltins
+	}
+	return c.imports.DescriptorProto().Context().dpBuiltins
 }
 
 // File is an IR file, which provides access to the top-level declarations of
@@ -184,7 +180,7 @@ func (f File) InternedPath() intern.ID {
 // google/protobuf/descriptor.proto, which is given special treatment in
 // the language.
 func (f File) IsDescriptorProto() bool {
-	return f.InternedPath() == f.Context().session.langIDs.DescriptorFile
+	return f.InternedPath() == f.Context().session.builtins.DescriptorFile
 }
 
 // Package returns the package name for this file.
@@ -271,6 +267,19 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
 			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		},
+	)
+}
+
+// Services returns all services defined in this file.
+func (f File) Services() seq.Indexer[Service] {
+	return seq.NewFixedSlice(
+		f.Context().services,
+		func(_ int, p arena.Pointer[rawService]) Service {
+			return Service{
+				internal.NewWith(f.Context()),
+				f.Context().arenas.services.Deref(p),
+			}
 		},
 	)
 }

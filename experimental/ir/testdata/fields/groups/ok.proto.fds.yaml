@@ -1,0 +1,42 @@
+file:
+- name: "testdata/fields/groups/ok.proto"
+  package: "test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foobar"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_GROUP
+      type_name: ".test.Foo.FooBar"
+    - name: "x"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.FooBar"
+    - name: "y"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo.FooBar.X_Y_Z"
+    nested_type:
+    - name: "FooBar"
+      field:
+      - { name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "x_y_z"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_GROUP
+        type_name: ".test.Foo.FooBar.X_Y_Z"
+        options.deprecated: true
+      nested_type:
+      - name: "X_Y_Z"
+        field:
+        - name: "baz"
+          number: 3
+          label: LABEL_OPTIONAL
+          type: TYPE_GROUP
+          type_name: ".test.Foo.FooBar.X_Y_Z.Baz"
+        nested_type: [{ name: "Baz" }]
+      options.deprecated: true
+  syntax: "proto2"

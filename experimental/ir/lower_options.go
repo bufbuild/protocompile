@@ -30,15 +30,7 @@ import (
 
 // resolveOptions resolves all of the options in a file.
 func resolveOptions(f File, r *report.Report) {
-	dpIdx := int32(len(f.Context().imports.files))
-	dp := f.Context().imports.DescriptorProto().Context()
-	fileOptions := ref[rawMember]{dpIdx, dp.langSymbols.fileOptions}
-	messageOptions := ref[rawMember]{dpIdx, dp.langSymbols.messageOptions}
-	fieldOptions := ref[rawMember]{dpIdx, dp.langSymbols.fieldOptions}
-	oneofOptions := ref[rawMember]{dpIdx, dp.langSymbols.oneofOptions}
-	enumOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumOptions}
-	enumValueOptions := ref[rawMember]{dpIdx, dp.langSymbols.enumValueOptions}
-
+	builtins := f.Context().builtins()
 	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
 		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
 			def := d.AsDef()
@@ -57,11 +49,13 @@ func resolveOptions(f File, r *report.Report) {
 			scope: f.Package(),
 			def:   def,
 
-			field: fileOptions,
+			field: builtins.FileOptions,
 			raw:   &f.Context().options,
 		}.resolve()
 	}
 
+	// Reusable space for duplicating options values between extension ranges.
+	extnOpts := make(map[ast.DeclRange]arena.Pointer[rawValue])
 	for ty := range seq.Values(f.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entries already come with options pre-calculated.
@@ -69,9 +63,9 @@ func resolveOptions(f File, r *report.Report) {
 		}
 
 		for def := range bodyOptions(ty.AST().Body()) {
-			options := messageOptions
+			options := builtins.MessageOptions
 			if ty.IsEnum() {
-				options = enumOptions
+				options = builtins.EnumOptions
 			}
 			optionRef{
 				Context: f.Context(),
@@ -86,9 +80,9 @@ func resolveOptions(f File, r *report.Report) {
 		}
 		for field := range seq.Values(ty.Members()) {
 			for def := range seq.Values(field.AST().Options().Entries()) {
-				options := fieldOptions
+				options := builtins.FieldOptions
 				if ty.IsEnum() {
-					options = enumValueOptions
+					options = builtins.EnumValueOptions
 				}
 				optionRef{
 					Context: f.Context(),
@@ -111,10 +105,34 @@ func resolveOptions(f File, r *report.Report) {
 					scope: ty.Scope(),
 					def:   def,
 
-					field: oneofOptions,
+					field: builtins.OneofOptions,
 					raw:   &oneof.raw.options,
 				}.resolve()
 			}
+		}
+
+		clear(extnOpts)
+		for extns := range seq.Values(ty.ExtensionRanges()) {
+			decl := extns.DeclAST()
+			if p := extnOpts[decl]; !p.Nil() {
+				extns.raw.options = p
+				continue
+			}
+
+			for def := range seq.Values(extns.DeclAST().Options().Entries()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: ty.Scope(),
+					def:   def,
+
+					field: builtins.RangeOptions,
+					raw:   &extns.raw.options,
+				}.resolve()
+			}
+
+			extnOpts[decl] = extns.raw.options
 		}
 	}
 	for field := range seq.Values(f.AllExtensions()) {
@@ -126,9 +144,38 @@ func resolveOptions(f File, r *report.Report) {
 				scope: field.Scope(),
 				def:   def,
 
-				field: fieldOptions,
+				field: builtins.FieldOptions,
 				raw:   &field.raw.options,
 			}.resolve()
+		}
+	}
+	for service := range seq.Values(f.Services()) {
+		for def := range bodyOptions(service.AST().Body()) {
+			optionRef{
+				Context: f.Context(),
+				Report:  r,
+
+				scope: service.FullName(),
+				def:   def,
+
+				field: builtins.ServiceOptions,
+				raw:   &service.raw.options,
+			}.resolve()
+		}
+
+		for method := range seq.Values(service.Methods()) {
+			for def := range bodyOptions(method.AST().Body()) {
+				optionRef{
+					Context: f.Context(),
+					Report:  r,
+
+					scope: service.FullName(),
+					def:   def,
+
+					field: builtins.MethodOptions,
+					raw:   &method.raw.options,
+				}.resolve()
+			}
 		}
 	}
 }
@@ -141,19 +188,19 @@ type optionRef struct {
 	scope FullName
 	def   ast.Option
 
-	field ref[rawMember]
+	field Member
 	raw   *arena.Pointer[rawValue]
 }
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
-	root := wrapMember(r.Context, r.field).Element()
+	ids := r.session.builtins
+	root := r.field.Element()
 
 	// Check if this is a pseudo-option, and diagnose if it has multiple
 	// components. The values of pseudo-options are calculated elsewhere; this
 	// is only for diagnostics.
-	dp := r.imports.DescriptorProto().Context()
-	if r.field.ptr == dp.langSymbols.fieldOptions {
+	if r.field.InternedFullName() == ids.FieldOptions {
 		var buf [2]ast.PathComponent
 		prefix := slices.AppendSeq(buf[:0], iterx.Take(r.def.Path.Components, 2))
 
@@ -174,7 +221,7 @@ func (r optionRef) resolve() {
 	}
 
 	if r.raw.Nil() {
-		v := newMessage(r.Context, r.field).AsValue()
+		v := newMessage(r.Context, r.field.toRef(r.Context)).AsValue()
 		*r.raw = r.arenas.values.Compress(v.raw)
 	}
 
@@ -256,15 +303,26 @@ func (r optionRef) resolve() {
 				return
 			}
 		}
+		if pc.IsFirst() {
+			switch field.InternedFullName() {
+			case ids.MapEntry:
+				r.Errorf("`map_entry` cannot be set explicitly").Apply(
+					report.Snippet(pc),
+					report.Helpf("`map_entry` is set automatically for synthetic map "+
+						"entry types, and cannot be set with an %s", taxa.Option),
+				)
 
-		// TODO: Forbid any of the uninterpreted_option options from being set,
-		// and any of the features options from being set if not in editions mode.
-		if pc.IsFirst() && field.InternedFullName() == r.session.langIDs.MapEntry {
-			r.Errorf("`map_entry` cannot be set explicitly").Apply(
-				report.Snippet(pc),
-				report.Helpf("map_entry is set automatically for synthetic map "+
-					"entry types, and cannot be set with an %s", taxa.Option),
-			)
+			case ids.FileUninterpreted,
+				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted, ids.RangeUninterpreted,
+				ids.EnumUninterpreted, ids.EnumValueUninterpreted,
+				ids.MethodUninterpreted, ids.ServiceUninterpreted:
+				if syn := r.File().Syntax(); !syn.IsEdition() {
+					r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+						report.Snippet(pc),
+						report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+					)
+				}
+			}
 		}
 
 		path, _ = pc.SplitAfter()
@@ -290,7 +348,7 @@ func (r optionRef) resolve() {
 				// A different member of a oneof was set.
 				r.Error(errSetMultipleTimes{
 					member: field.Oneof(),
-					first:  value.OptionPath(),
+					first:  value.OptionPaths().At(0),
 					second: path,
 					root:   pc.IsFirst(),
 				})
@@ -306,7 +364,7 @@ func (r optionRef) resolve() {
 			default:
 				r.Error(errSetMultipleTimes{
 					member: field,
-					first:  value.OptionPath(),
+					first:  value.OptionPaths().At(0),
 					second: path,
 					root:   pc.IsFirst(),
 				})
@@ -347,10 +405,8 @@ func (r optionRef) resolve() {
 			return
 		}
 
-		value := newMessage(r.Context, compressMember(r.Context, field)).AsValue()
-		if value.raw.optionPath.IsZero() {
-			value.raw.optionPath = path
-		}
+		value := newMessage(r.Context, field.toRef(r.Context)).AsValue()
+		value.raw.optionPaths = append(value.raw.optionPaths, path)
 
 		*raw = r.arenas.values.Compress(value.raw)
 		current = value

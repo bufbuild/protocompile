@@ -65,6 +65,11 @@ tables:
       file: "testdata/options/custom.proto"
       index: 9
       visible: true
+    - fqn: "buf.test.g"
+      kind: KIND_EXTENSION
+      file: "testdata/options/custom.proto"
+      index: 10
+      visible: true
     - fqn: "buf.test.Foo.y"
       kind: KIND_ONEOF
       file: "testdata/options/custom.proto"

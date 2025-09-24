@@ -163,6 +163,8 @@ var keywords = map[string]int{
 	"rpc":        _RPC,
 	"stream":     _STREAM,
 	"returns":    _RETURNS,
+	"export":     _EXPORT,
+	"local":      _LOCAL,
 }
 
 func (l *protoLex) maybeNewLine(r rune) {

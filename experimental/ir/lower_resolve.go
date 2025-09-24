@@ -27,12 +27,11 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 // resolveNames resolves all of the names that need resolving in a file.
 func resolveNames(f File, r *report.Report) {
-	resolveLangSymbols(f.Context())
+	resolveBuiltins(f.Context())
 
 	for ty := range seq.Values(f.AllTypes()) {
 		if ty.IsMessage() {
@@ -48,6 +47,12 @@ func resolveNames(f File, r *report.Report) {
 
 	for field := range seq.Values(f.AllExtensions()) {
 		resolveFieldType(field, r)
+	}
+
+	for service := range seq.Values(f.Services()) {
+		for method := range seq.Values(service.Methods()) {
+			resolveMethodTypes(method, r)
+		}
 	}
 }
 
@@ -172,37 +177,55 @@ func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
 	}
 }
 
-func resolveLangSymbols(c *Context) {
-	if !c.File().IsDescriptorProto() {
-		return
+func resolveMethodTypes(m Method, r *report.Report) {
+	resolve := func(ty ast.TypeAny) (out ref[rawType], stream bool) {
+		var path ast.Path
+		for path.IsZero() {
+			switch ty.Kind() {
+			case ast.TypeKindPath:
+				path = ty.AsPath().Path
+			case ast.TypeKindPrefixed:
+				prefixed := ty.AsPrefixed()
+				if prefixed.Prefix() == keyword.Stream {
+					stream = true
+				}
+				ty = prefixed.Type()
+			default:
+				// This is already diagnosed in the parser for us.
+				return out, stream
+			}
+		}
+
+		sym := symbolRef{
+			Context: m.Context(),
+			Report:  r,
+
+			span:  path,
+			scope: m.Service().FullName(),
+			name:  FullName(path.Canonicalized()),
+
+			accept: func(k SymbolKind) bool { return k == SymbolKindMessage },
+			want:   taxa.MessageType,
+
+			allowScalars:  true,
+			suggestImport: true,
+		}.resolve()
+
+		if sym.Kind().IsType() {
+			out.file = sym.ref.file
+			out.ptr = arena.Pointer[rawType](sym.raw.data)
+		}
+
+		return out, stream
 	}
 
-	names := &c.session.langIDs
-	c.langSymbols = &langSymbols{
-		fileOptions: mustResolve[rawMember](c, names.FileOptions, SymbolKindField),
-
-		messageOptions: mustResolve[rawMember](c, names.MessageOptions, SymbolKindField),
-		fieldOptions:   mustResolve[rawMember](c, names.FieldOptions, SymbolKindField),
-		oneofOptions:   mustResolve[rawMember](c, names.OneofOptions, SymbolKindField),
-
-		enumOptions:      mustResolve[rawMember](c, names.EnumOptions, SymbolKindField),
-		enumValueOptions: mustResolve[rawMember](c, names.EnumValueOptions, SymbolKindField),
-
-		mapEntry: mustResolve[rawMember](c, names.MapEntry, SymbolKindField),
+	signature := m.AST().Signature()
+	if signature.Inputs().Len() > 0 {
+		m.raw.input, m.raw.inputStream = resolve(m.AST().Signature().Inputs().At(0))
 	}
-}
-
-// mustResolve resolves a descriptor.proto name, and panics if it's not found.
-func mustResolve[Raw any](c *Context, id intern.ID, kind SymbolKind) arena.Pointer[Raw] {
-	ref := c.exported.lookup(c, id)
-	sym := wrapSymbol(c, ref)
-	if sym.Kind() != kind {
-		panic(fmt.Errorf(
-			"missing descriptor.proto symbol: %s `%s`; got kind %s",
-			kind.noun(), c.session.intern.Value(id), sym.Kind(),
-		))
+	if signature.Outputs().Len() > 0 {
+		m.raw.output, m.raw.outputStream = resolve(m.AST().Signature().Outputs().At(0))
 	}
-	return arena.Pointer[Raw](sym.raw.data)
 }
 
 // symbolRef is all of the information necessary to resolve a symbol reference.
@@ -248,10 +271,12 @@ func (r symbolRef) resolve() Symbol {
 
 		prim := predeclared.Lookup(string(r.name))
 		if prim.IsScalar() {
-			return wrapSymbol(r.Context, ref[rawSymbol]{
+			sym := wrapSymbol(r.Context, ref[rawSymbol]{
 				file: -1,
 				ptr:  arena.Pointer[rawSymbol](prim),
 			})
+			r.diagnoseLookup(sym, expected)
+			return sym
 		}
 
 		fallthrough
