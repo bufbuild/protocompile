@@ -260,9 +260,15 @@ type ImportNode struct {
 	compositeNode
 	Keyword *KeywordNode
 	// Optional; if present indicates this is a public import
+	// Deprecated: Use Modifier field instead.
 	Public *KeywordNode
 	// Optional; if present indicates this is a weak import
-	Weak      *KeywordNode
+	// Deprecated: Use Modifier field instead.
+	Weak *KeywordNode
+	// Optional; if present indicates modifier (public/weak/option)
+	// If public the Public field will also be populated for backwards compatibility.
+	// If weak the Weak field will also be populated for backward compatibility.
+	Modifier  *KeywordNode
 	Name      StringValueNode
 	Semicolon *RuneNode
 }
@@ -279,31 +285,56 @@ type ImportNode struct {
 //   - name: The actual imported file name.
 //   - semicolon: The token corresponding to the ";" rune that ends the declaration.
 func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode, name StringValueNode, semicolon *RuneNode) *ImportNode {
+	var modifier *KeywordNode
+	switch {
+	case public != nil:
+		modifier = public
+	case weak != nil:
+		modifier = weak
+	}
+	return NewImportNodeWithModifier(keyword, modifier, name, semicolon)
+}
+
+// NewImportNodeWithModifier creates a new *ImportNode with a single modifier argument.
+// The modifier argument is optional and represents either "public", "weak", or "option" keyword.
+// For backwards compatibility, the appropriate Public or Weak field will be populated.
+//   - keyword: The token corresponding to the "import" keyword.
+//   - modifier: Optional modifier token ("public", "weak", or "option").
+//   - name: The actual imported file name.
+//   - semicolon: The token corresponding to the ";" rune that ends the declaration.
+func NewImportNodeWithModifier(keyword *KeywordNode, modifier *KeywordNode, name StringValueNode, semicolon *RuneNode) *ImportNode {
 	if keyword == nil {
 		panic("keyword is nil")
 	}
 	if name == nil {
 		panic("name is nil")
 	}
-	numChildren := 2
-	if semicolon == nil {
+	numChildren := 2 // keyword + name
+	if semicolon != nil {
 		numChildren++
 	}
-	if public != nil || weak != nil {
+	if modifier != nil {
 		numChildren++
 	}
 	children := make([]Node, 0, numChildren)
 	children = append(children, keyword)
-	if public != nil {
-		children = append(children, public)
-	} else if weak != nil {
-		children = append(children, weak)
+	if modifier != nil {
+		children = append(children, modifier)
 	}
 	children = append(children, name)
 	if semicolon != nil {
 		children = append(children, semicolon)
 	}
-
+	// For backwards compatibility, populate the appropriate legacy field.
+	var public, weak *KeywordNode
+	if modifier != nil {
+		switch modifier.Val {
+		case "public":
+			public = modifier
+		case "weak":
+			weak = modifier
+		}
+	}
 	return &ImportNode{
 		compositeNode: compositeNode{
 			children: children,
@@ -311,6 +342,7 @@ func NewImportNode(keyword *KeywordNode, public *KeywordNode, weak *KeywordNode,
 		Keyword:   keyword,
 		Public:    public,
 		Weak:      weak,
+		Modifier:  modifier,
 		Name:      name,
 		Semicolon: semicolon,
 	}

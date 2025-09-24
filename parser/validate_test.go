@@ -989,6 +989,228 @@ func TestBasicValidation(t *testing.T) {
 					   `,
 			expectedErr: `test.proto:5:55: method FooService.Do: option 'features' may only be used with editions but file uses proto3 syntax`,
 		},
+		"failure_edition_2024_import_option_not_supported": {
+			contents: `edition = "2024";
+					   import option "google/protobuf/descriptor.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr:            `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+			expectedDiffWithProtoc: true,
+		},
+		"failure_edition_2024_import_option_with_regular_import_not_supported": {
+			contents: `edition = "2024";
+					   import "google/protobuf/empty.proto";
+					   import option "google/protobuf/descriptor.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr:            `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+			expectedDiffWithProtoc: true,
+		},
+		"failure_edition_2024_multiple_import_option_not_supported": {
+			contents: `edition = "2024";
+					   import option "google/protobuf/descriptor.proto";
+					   import option "google/protobuf/cpp_features.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr:            `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+			expectedDiffWithProtoc: true,
+		},
+		"failure_edition_2023_import_option": {
+			contents: `edition = "2023";
+					   import option "google/protobuf/descriptor.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:2:51: import option syntax is only allowed in edition 2024`,
+		},
+		"failure_proto2_import_option": {
+			contents: `syntax = "proto2";
+					   import option "google/protobuf/descriptor.proto";
+					   message Foo { optional string name = 1; }`,
+			expectedErr: `test.proto:2:51: import option syntax is only allowed in edition 2024`,
+		},
+		"failure_proto3_import_option": {
+			contents: `syntax = "proto3";
+					   import option "google/protobuf/descriptor.proto";
+					   message Foo { string name = 1; }`,
+			expectedErr: `test.proto:2:51: import option syntax is only allowed in edition 2024`,
+		},
+		"failure_edition_2024_export_local_not_supported": {
+			contents: `edition = "2024";
+					   // Top-level symbols are exported by default in Edition 2024
+					   local message LocalMessage {
+					     // Nested symbols are local by default in Edition 2024
+					     export enum ExportedNestedEnum {
+					       UNKNOWN_EXPORTED_NESTED_ENUM_VALUE = 0;
+					     }
+					   }`,
+			expectedErr:            `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+			expectedDiffWithProtoc: true,
+		},
+		"failure_edition_2024_export_local_service_invalid": {
+			contents: `edition = "2024";
+					   local service LocalService {}`,
+			expectedErr: `test.proto:2:50: syntax error: unexpected "service", expecting "enum" or "message"`,
+		},
+		"failure_edition_2023_export_message": {
+			contents: `edition = "2023";
+					   export message ExportedMessage {
+					     string name = 1;
+					   }`,
+			expectedErr: `test.proto:2:44: export keyword is only allowed in edition 2024`,
+		},
+		"failure_edition_2023_local_message": {
+			contents: `edition = "2023";
+					   local message LocalMessage {
+					     string name = 1;
+					   }`,
+			expectedErr: `test.proto:2:44: local keyword is only allowed in edition 2024`,
+		},
+		"failure_edition_2023_export_enum": {
+			contents: `edition = "2023";
+					   export enum ExportedEnum {
+					     UNKNOWN_EXPORTED_ENUM_VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:2:44: export keyword is only allowed in edition 2024`,
+		},
+		"failure_edition_2023_local_enum": {
+			contents: `edition = "2023";
+					   local enum LocalEnum {
+					     UNKNOWN_LOCAL_ENUM_VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:2:44: local keyword is only allowed in edition 2024`,
+		},
+		"failure_proto2_export_message": {
+			contents: `syntax = "proto2";
+					   export message ExportedMessage {
+					     optional string name = 1;
+					   }`,
+			expectedErr: `test.proto:2:44: export keyword is only allowed in edition 2024`,
+		},
+		"failure_proto2_local_message": {
+			contents: `syntax = "proto2";
+					   local message LocalMessage {
+					     optional string name = 1;
+					   }`,
+			expectedErr: `test.proto:2:44: local keyword is only allowed in edition 2024`,
+		},
+		"failure_proto2_export_enum": {
+			contents: `syntax = "proto2";
+					   export enum ExportedEnum {
+					     UNKNOWN_EXPORTED_ENUM_VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:2:44: export keyword is only allowed in edition 2024`,
+		},
+		"failure_proto2_local_enum": {
+			contents: `syntax = "proto2";
+					   local enum LocalEnum {
+					     UNKNOWN_LOCAL_ENUM_VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:2:44: local keyword is only allowed in edition 2024`,
+		},
+		"failure_proto3_export_message": {
+			contents: `syntax = "proto3";
+					   export message ExportedMessage {
+					     string name = 1;
+					   }`,
+			expectedErr: `test.proto:2:44: export keyword is only allowed in edition 2024`,
+		},
+		"failure_proto3_local_message": {
+			contents: `syntax = "proto3";
+					   local message LocalMessage {
+					     string name = 1;
+					   }`,
+			expectedErr: `test.proto:2:44: local keyword is only allowed in edition 2024`,
+		},
+		"failure_proto3_export_enum": {
+			contents: `syntax = "proto3";
+					   export enum ExportedEnum {
+					     UNKNOWN_EXPORTED_ENUM_VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:2:44: export keyword is only allowed in edition 2024`,
+		},
+		"failure_proto3_local_enum": {
+			contents: `syntax = "proto3";
+					   local enum LocalEnum {
+					     UNKNOWN_LOCAL_ENUM_VALUE = 0;
+					   }`,
+			expectedErr: `test.proto:2:44: local keyword is only allowed in edition 2024`,
+		},
+		"failure_proto3_nested_export_enum": {
+			contents: `syntax = "proto3";
+					   message Container {
+					     export enum ExportedNestedEnum {
+					       UNKNOWN_EXPORTED_NESTED_ENUM_VALUE = 0;
+					     }
+					   }`,
+			expectedErr: `test.proto:3:46: export keyword is only allowed in edition 2024`,
+		},
+		"failure_proto3_nested_local_message": {
+			contents: `syntax = "proto3";
+					   message Container {
+					     local message LocalNestedMessage {
+					       string name = 1;
+					     }
+					   }`,
+			expectedErr: `test.proto:3:46: local keyword is only allowed in edition 2024`,
+		},
+		"failure_edition_2024_export_as_type": {
+			contents: `edition = "2024";
+					   package export;
+					   message Message {
+					     export.Message field = 1;
+					   }`,
+			// TODO: Protoc edition 2024 will error on resvered visibility keyword "export".
+			// Since protocompile does not support 2024, we instead error on the edition value.
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"failure_edition_2024_local_as_type": {
+			contents: `edition = "2024";
+					   package local;
+					   message Message {
+					     local.Message field = 1;
+					   }`,
+			// TODO: Protoc edition 2024 will error on resvered visibility keyword "export".
+			// Since protocompile does not support 2024, we instead error on the edition value.
+			expectedErr: `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+		},
+		"success_proto3_export_local_as_field_names": {
+			contents: `syntax = "proto3";
+					   message Test {
+					     string export = 1;
+					     string local = 2;
+					   }`,
+		},
+		"success_proto2_export_local_as_field_names": {
+			contents: `syntax = "proto2";
+					   message Test {
+					     optional string export = 1;
+					     optional string local = 2;
+					   }`,
+		},
+		"success_edition_2023_export_local_as_field_names": {
+			contents: `edition = "2023";
+					   message Test {
+					     string export = 1;
+					     string local = 2;
+					   }`,
+		},
+		"success_proto3_export_local_as_type_names": {
+			contents: `syntax = "proto3";
+					   package local;
+					   message export {
+					     local.export field = 1;
+					   }`,
+		},
+		"success_proto2_export_local_as_type_names": {
+			contents: `syntax = "proto2";
+					   package export;
+					   message local {
+					     optional export.local field = 1;
+					   }`,
+		},
+		"success_edition_2023_export_local_as_type_names": {
+			contents: `edition = "2023";
+					   package local;
+					   message export {
+					     local.export field = 1;
+					   }`,
+		},
 	}
 
 	for name, tc := range testCases {

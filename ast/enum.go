@@ -19,8 +19,15 @@ import "fmt"
 // EnumNode represents an enum declaration. Example:
 //
 //	enum Foo { BAR = 0; BAZ = 1 }
+//
+// In edition 2024, enums can have export/local modifiers:
+//
+//	local enum LocalEnum { ... }
+//	export enum ExportedEnum { ... }
 type EnumNode struct {
 	compositeNode
+	// Optional; if present indicates visibility modifier (export/local) for edition 2024
+	Visibility *KeywordNode
 	Keyword    *KeywordNode
 	Name       *IdentNode
 	OpenBrace  *RuneNode
@@ -40,6 +47,19 @@ func (*EnumNode) msgElement()  {}
 //   - decls: All declarations inside the enum body.
 //   - closeBrace: The token corresponding to the "}" rune that ends the body.
 func NewEnumNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []EnumElement, closeBrace *RuneNode) *EnumNode {
+	return NewEnumNodeWithVisibility(nil, keyword, name, openBrace, decls, closeBrace)
+}
+
+// NewEnumNodeWithVisibility creates a new *EnumNode with optional visibility modifier.
+// While it is technically allowed for decls to be nil or empty, the resulting node
+// will not be a valid enum, which must have at least one value.
+//   - visibility: Optional visibility modifier token ("export" or "local") for edition 2024.
+//   - keyword: The token corresponding to the "enum" keyword.
+//   - name: The token corresponding to the enum's name.
+//   - openBrace: The token corresponding to the "{" rune that starts the body.
+//   - decls: All declarations inside the enum body.
+//   - closeBrace: The token corresponding to the "}" rune that ends the body.
+func NewEnumNodeWithVisibility(visibility *KeywordNode, keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []EnumElement, closeBrace *RuneNode) *EnumNode {
 	if keyword == nil {
 		panic("keyword is nil")
 	}
@@ -52,7 +72,15 @@ func NewEnumNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, dec
 	if closeBrace == nil {
 		panic("closeBrace is nil")
 	}
-	children := make([]Node, 0, 4+len(decls))
+
+	numChildren := 4 + len(decls) // keyword, name, openBrace, closeBrace + decls
+	if visibility != nil {
+		numChildren++
+	}
+	children := make([]Node, 0, numChildren)
+	if visibility != nil {
+		children = append(children, visibility)
+	}
 	children = append(children, keyword, name, openBrace)
 	for _, decl := range decls {
 		switch decl.(type) {
@@ -68,6 +96,7 @@ func NewEnumNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, dec
 		compositeNode: compositeNode{
 			children: children,
 		},
+		Visibility: visibility,
 		Keyword:    keyword,
 		Name:       name,
 		OpenBrace:  openBrace,

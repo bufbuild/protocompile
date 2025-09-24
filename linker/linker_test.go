@@ -2240,18 +2240,34 @@ func TestLinkerValidation(t *testing.T) {
 				`,
 			},
 		},
-		"failure_unknown_edition_future": {
+		"failure_known_not_supported_edition": {
 			input: map[string]string{
 				"test.proto": `
 					edition = "2024";
+					import option "bar.proto";
+				`,
+				"bar.proto": `
+					edition = "2023";
+					import "google/protobuf/descriptor.proto";
+					extend google.protobuf.FileOptions {
+						bool file_opt1 = 5000;
+					}
+				`,
+			},
+			expectedErr:            `test.proto:1:11: edition "2024" not yet fully supported; latest supported edition "2023"`,
+			expectedDiffWithProtoc: true, // protoc v32.0 does support edition 2024
+		},
+		"failure_unknown_edition_future": {
+			input: map[string]string{
+				"test.proto": `
+					edition = "2025";
 					message Foo {
 						string foo = 1 [features.field_presence = LEGACY_REQUIRED];
 						int32 bar = 2 [features.field_presence = IMPLICIT];
 					}
 				`,
 			},
-			expectedErr:            `test.proto:1:11: edition value "2024" not recognized; should be one of ["2023"]`,
-			expectedDiffWithProtoc: true, // protoc v32.0 does support edition 2024
+			expectedErr: `test.proto:1:11: edition value "2025" not recognized; should be one of ["2023"]`,
 		},
 		"failure_unknown_edition_distant_future": {
 			input: map[string]string{

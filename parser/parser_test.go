@@ -855,6 +855,42 @@ func TestSimpleParse(t *testing.T) {
 	protos[fd.GetName()] = res
 }
 
+func TestExportLocalInIdentifiers(t *testing.T) {
+	t.Parallel()
+	// Verifies that for non-edition-2024 sources, we can correctly
+	// handle cases where "export" or "local" appear in the type name.
+	// This is done to verify that the grammar changes to support
+	// decl visibility don't add back-compat issues with how these
+	// keywords could be used in prior editions/syntaxes.
+	source := `
+		syntax = "proto3";
+		message Message {
+			export enum = 1;
+			export.foo exp_foo = 2;
+			local message = 3;
+			local.bar loc_bar = 4;
+        }
+		message export {
+			message foo {}
+		}
+		message local {
+			message bar {}
+		}`
+	ast, err := Parse("test.proto", strings.NewReader(source), reporter.NewHandler(nil))
+	require.NoError(t, err)
+	res, err := ResultFromAST(ast, true, reporter.NewHandler(nil))
+	require.NoError(t, err)
+	msgProto := res.FileDescriptorProto().GetMessageType()[0]
+	assert.Equal(t, "export", msgProto.GetField()[0].GetTypeName())
+	assert.Equal(t, "enum", msgProto.GetField()[0].GetName())
+	assert.Equal(t, "export.foo", msgProto.GetField()[1].GetTypeName())
+	assert.Equal(t, "exp_foo", msgProto.GetField()[1].GetName())
+	assert.Equal(t, "local", msgProto.GetField()[2].GetTypeName())
+	assert.Equal(t, "message", msgProto.GetField()[2].GetName())
+	assert.Equal(t, "local.bar", msgProto.GetField()[3].GetTypeName())
+	assert.Equal(t, "loc_bar", msgProto.GetField()[3].GetName())
+}
+
 func parseFileForTest(filename string) (Result, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -977,6 +1013,17 @@ func readerForTestdata(t testing.TB, filename string) io.Reader {
 
 func TestPathological(t *testing.T) {
 	t.Parallel()
+	if internal.IsRace {
+		// Note, the combo of race detector and coverage is the real death
+		// knell here. But since there's not an easy way to detect if coverage
+		// instrumentation is enabled, and we currently always run coverage and
+		// race detection together in CI, we can just rely on the race detector.
+		//
+		// In CI, we do run the tests without race detection or coverage
+		// instrumentation, mainly to verify that everything works with the
+		// "protolegacy" build tag. So that's when these tests will actually run.
+		t.Skip("skipping pathological input test cases because race detector is enabled (which slows things down too much)")
+	}
 
 	// This test verifies that the test cases found in fuzz tests have
 	// adequate performance.
@@ -995,20 +1042,13 @@ func TestPathological(t *testing.T) {
 			// than 60 seconds. We're only running 3 iterations, so this test isn't
 			// too slow. So we can use a much tighter deadline.
 			allowedDuration := 2 * time.Second
-			if internal.IsRace {
-				// We increase that threshold to 20 seconds when the race detector is enabled.
-				// The race detector has been observed to make it take ~8x as long. If coverage
-				// is *also* enabled, the test can take 19x as long(!!). Unfortunately, there
-				// doesn't appear to be a way to easily detect if coverage is enabled, so we
-				// always increase the timeout when race detector is enabled.
-				allowedDuration = 20 * time.Second
-				t.Logf("allowing %v since race detector is enabled", allowedDuration)
-			}
+			start := time.Now()
 			ctx, cancel := context.WithTimeout(t.Context(), allowedDuration)
 			defer func() {
 				if ctx.Err() != nil {
 					t.Errorf("test took too long to execute (> %v)", allowedDuration)
 				}
+				t.Logf("test completed in %v", time.Since(start))
 				cancel()
 			}()
 			for range 3 {
@@ -1026,4 +1066,63 @@ func TestPathological(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestExportLocalIdentifier(t *testing.T) {
+	t.Parallel()
+	t.Run("field_names", func(t *testing.T) {
+		t.Parallel()
+		proto3Content := `syntax = "proto3";
+						  message Test {
+						    string export = 1;
+						    string local = 2;
+						  }`
+
+		errHandler := reporter.NewHandler(nil)
+		ast, err := Parse("test.proto", strings.NewReader(proto3Content), errHandler)
+		require.NoError(t, err, "Should be able to parse export/local as field names in proto3")
+
+		result, err := ResultFromAST(ast, true, errHandler)
+		require.NoError(t, err, "Should be able to create result from AST")
+
+		fd := result.FileDescriptorProto()
+		assert.Equal(t, "proto3", fd.GetSyntax())
+		require.Len(t, fd.GetMessageType(), 1)
+
+		msg := fd.GetMessageType()[0]
+		require.Equal(t, "Test", msg.GetName())
+		require.Len(t, msg.GetField(), 2)
+
+		fields := msg.GetField()
+		require.Equal(t, "export", fields[0].GetName())
+		require.Equal(t, "local", fields[1].GetName())
+	})
+	t.Run("type_names", func(t *testing.T) {
+		t.Parallel()
+		proto2Content := `syntax = "proto2";
+						  message Test {
+						    optional export.Message field1 = 1;
+						    optional local.Message field2 = 2;
+						  }`
+
+		errHandler := reporter.NewHandler(nil)
+		ast, err := Parse("test.proto", strings.NewReader(proto2Content), errHandler)
+		require.NoError(t, err, "Should be able to parse export/local as type names in proto2")
+
+		result, err := ResultFromAST(ast, true, errHandler)
+		require.NoError(t, err, "Should be able to create result from AST")
+
+		fd := result.FileDescriptorProto()
+		require.Len(t, fd.GetMessageType(), 1)
+
+		msg := fd.GetMessageType()[0]
+		require.Equal(t, "Test", msg.GetName())
+		require.Len(t, msg.GetField(), 2)
+
+		fields := msg.GetField()
+		require.Equal(t, "field1", fields[0].GetName())
+		require.Equal(t, "export.Message", fields[0].GetTypeName())
+		require.Equal(t, "field2", fields[1].GetName())
+		require.Equal(t, "local.Message", fields[1].GetTypeName())
+	})
 }
