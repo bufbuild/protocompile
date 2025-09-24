@@ -85,7 +85,6 @@ type descGenerator struct {
 }
 
 func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet) {
-
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
