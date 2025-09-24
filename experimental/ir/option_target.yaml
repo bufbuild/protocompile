@@ -1,0 +1,42 @@
+# Copyright 2020-2024 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: OptionTarget
+  type: int32
+  docs: |
+    OptionTarget is target for an Editions feature, corresponding to
+    google.protobuf.FieldOptions.OptionTargetType. The values of this enum match
+    those in descriptor.proto one-to-one.
+  methods:
+  - { kind: string, skip: [optionTargetMax] }
+  - { kind: go-string, skip: [optionTargetMax] }
+  - kind: all
+    name: OptionTargets
+    skip: [OptionTargetInvalid, optionTargetMax]
+    docs: |
+      OptionTargets returns an iterator over all of the possible valid targets,
+      which excludes [OptionTargetInvalid]. 
+  values:
+  - name: OptionTargetInvalid
+  - name: OptionTargetFile
+  - name: OptionTargetRange
+  - name: OptionTargetMessage
+  - name: OptionTargetField
+  - name: OptionTargetOneof
+  - name: OptionTargetEnum
+  - name: OptionTargetEnumValue
+  - name: OptionTargetService
+  - name: OptionTargetMethod
+
+  - name: optionTargetMax

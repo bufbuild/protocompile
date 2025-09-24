@@ -45,6 +45,10 @@ func validateBasic(res *result, handler *reporter.Handler) {
 		return
 	}
 
+	if err := validateExportLocal(res, handler); err != nil {
+		return
+	}
+
 	if err := validateNoFeatures(res, syntax, "file options", fd.Options.GetUninterpretedOption(), handler); err != nil {
 		return
 	}
@@ -91,6 +95,11 @@ func validateImports(res *result, handler *reporter.Handler) error {
 	if fileNode == nil {
 		return nil
 	}
+	supportsImportOption := false
+	if fileNode.Edition != nil {
+		editionStr := fileNode.Edition.Edition.AsString()
+		supportsImportOption = editionStr == "2024"
+	}
 	imports := make(map[string]ast.SourcePos)
 	for _, decl := range fileNode.Decls {
 		imp, ok := decl.(*ast.ImportNode)
@@ -99,10 +108,66 @@ func validateImports(res *result, handler *reporter.Handler) error {
 		}
 		info := fileNode.NodeInfo(decl)
 		name := imp.Name.AsString()
+		// check if "import option" syntax is used and supported
+		if imp.Modifier != nil && imp.Modifier.Val == "option" && !supportsImportOption {
+			optionInfo := fileNode.NodeInfo(imp.Modifier)
+			return handler.HandleErrorf(optionInfo, "import option syntax is only allowed in edition 2024")
+		}
 		if prev, ok := imports[name]; ok {
 			return handler.HandleErrorf(info, "%q was already imported at %v", name, prev)
 		}
 		imports[name] = info.Start()
+	}
+	return nil
+}
+
+func validateExportLocal(res *result, handler *reporter.Handler) error {
+	fileNode := res.file
+	if fileNode == nil {
+		return nil
+	}
+	if fileNode.Edition != nil && fileNode.Edition.Edition.AsString() == "2024" {
+		return nil // export/local modifiers supported
+	}
+	for _, decl := range fileNode.Decls {
+		if err := validateExportLocalNode(res, decl, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateExportLocalInMessageBody(res *result, body *ast.MessageBody, handler *reporter.Handler) error {
+	for _, decl := range body.Decls {
+		if err := validateExportLocalNode(res, decl, handler); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateExportLocalNode(res *result, node ast.Node, handler *reporter.Handler) error {
+	fileNode := res.file
+	if fileNode == nil {
+		return nil
+	}
+	switch node := node.(type) {
+	case *ast.MessageNode:
+		if node.Visibility != nil {
+			visibilityInfo := fileNode.NodeInfo(node.Visibility)
+			visibilityKeyword := node.Visibility.Val
+			return handler.HandleErrorf(visibilityInfo, "%s keyword is only allowed in edition 2024", visibilityKeyword)
+		}
+		// check nested messages and enums recursively
+		if err := validateExportLocalInMessageBody(res, &node.MessageBody, handler); err != nil {
+			return err
+		}
+	case *ast.EnumNode:
+		if node.Visibility != nil {
+			visibilityInfo := fileNode.NodeInfo(node.Visibility)
+			visibilityKeyword := node.Visibility.Val
+			return handler.HandleErrorf(visibilityInfo, "%s keyword is only allowed in edition 2024", visibilityKeyword)
+		}
 	}
 	return nil
 }

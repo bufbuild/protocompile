@@ -96,4 +96,10 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Perform "late" name resolution, that is, options.
 	resolveOptions(c.File(), r)
+
+	// Figure out what the option targets of everything is, and validate that
+	// those are respected. This requires options to be resolved, and must be
+	// done in two separate steps.
+	populateOptionTargets(c.File(), r)
+	validateOptionTargets(c.File(), r)
 }
