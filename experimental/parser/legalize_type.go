@@ -123,96 +123,92 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 					justify: justifyRight,
 				}),
 			)
-			goto recurse
-		}
-
-		if mod.IsZero() {
-			mod = ty
-		}
-
-		if !oneof.IsZero() {
-			d := p.Error(errUnexpected{
-				what: ty.PrefixToken(),
-				want: expected,
-			}).Apply(
-				report.Snippetf(oneof, "within this %s", taxa.Oneof),
-				justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
-					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-					justify: justifyRight,
-				}),
-				report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
-			)
-			if ty.Prefix() == keyword.Repeated {
-				d.Apply(report.Helpf(
-					"to emulate a repeated field in a %s, define a local message type with a single repeated field",
-					taxa.Oneof))
+		} else {
+			if mod.IsZero() {
+				mod = ty
 			}
 
-			goto recurse
-		}
-
-		switch k := ty.Prefix(); k {
-		case keyword.Required:
-			switch p.syntax {
-			case syntax.Proto2:
-				p.Warnf("required fields are deprecated and should not be used").Apply(
-					report.Snippet(ty.PrefixToken()),
-					report.Helpf("do not attempt to change this to %s if the field is already in-use; "+
-						"doing so is a wire protocol break", keyword.Optional),
-				)
-			default:
-				p.Error(errUnexpected{
+			if !oneof.IsZero() {
+				d := p.Error(errUnexpected{
 					what: ty.PrefixToken(),
 					want: expected,
 				}).Apply(
+					report.Snippetf(oneof, "within this %s", taxa.Oneof),
 					justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
 						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 						justify: justifyRight,
 					}),
-					report.Helpf("required fields are only permitted in %s; even then, their use is strongly discouraged",
-						syntax.Proto2),
+					report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
 				)
-			}
+				if ty.Prefix() == keyword.Repeated {
+					d.Apply(report.Helpf(
+						"to emulate a repeated field in a %s, define a local message type with a single repeated field",
+						taxa.Oneof))
+				}
+			} else {
+				switch k := ty.Prefix(); k {
+				case keyword.Required:
+					switch p.syntax {
+					case syntax.Proto2:
+						p.Warnf("required fields are deprecated and should not be used").Apply(
+							report.Snippet(ty.PrefixToken()),
+							report.Helpf("do not attempt to change this to %s if the field is already in-use; "+
+								"doing so is a wire protocol break", keyword.Optional),
+						)
+					default:
+						p.Error(errUnexpected{
+							what: ty.PrefixToken(),
+							want: expected,
+						}).Apply(
+							justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								justify: justifyRight,
+							}),
+							report.Helpf("required fields are only permitted in %s; even then, their use is strongly discouraged",
+								syntax.Proto2),
+						)
+					}
 
-		case keyword.Optional:
-			if p.syntax.IsEdition() {
-				p.Error(errUnexpected{
-					what: ty.PrefixToken(),
-					want: expected,
-				}).Apply(
-					justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
-						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-						justify: justifyRight,
-					}),
-					report.Helpf(
-						"in %s, the presence behavior of a singular field "+
-							"is controlled with `[feature.field_presence = ...]`, with "+
-							"the default being equivalent to %s %s",
-						taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
-					report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
-				)
-			}
+				case keyword.Optional:
+					if p.syntax.IsEdition() {
+						p.Error(errUnexpected{
+							what: ty.PrefixToken(),
+							want: expected,
+						}).Apply(
+							justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								justify: justifyRight,
+							}),
+							report.Helpf(
+								"in %s, the presence behavior of a singular field "+
+									"is controlled with `[feature.field_presence = ...]`, with "+
+									"the default being equivalent to %s %s",
+								taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
+							report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
+						)
+					}
 
-		case keyword.Repeated:
-			break
+				case keyword.Repeated:
+					break
 
-		default:
-			d := p.Error(errUnexpectedMod{
-				mod:      ty.PrefixToken(),
-				where:    what.On(),
-				syntax:   p.syntax,
-				noDelete: k == keyword.Option,
-			})
+				default:
+					d := p.Error(errUnexpectedMod{
+						mod:      ty.PrefixToken(),
+						where:    what.On(),
+						syntax:   p.syntax,
+						noDelete: k == keyword.Option,
+					})
 
-			if k == keyword.Option {
-				d.Apply(report.SuggestEdits(ty.PrefixToken(), "replace with `optional`", report.Edit{
-					Start: 0, End: ty.PrefixToken().Span().Len(),
-					Replace: "optional",
-				}))
+					if k == keyword.Option {
+						d.Apply(report.SuggestEdits(ty.PrefixToken(), "replace with `optional`", report.Edit{
+							Start: 0, End: ty.PrefixToken().Span().Len(),
+							Replace: "optional",
+						}))
+					}
+				}
 			}
 		}
 
-	recurse:
 		inner := ty.Type()
 		switch inner.Kind() {
 		case ast.TypeKindPath, ast.TypeKindPrefixed:
