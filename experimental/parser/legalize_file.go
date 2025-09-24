@@ -151,7 +151,10 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		return
 	}
 
-	permitted := func() report.DiagnosticOption {
+	value := syntax.Lookup(name)
+	lit := expr.AsLiteral()
+	switch {
+	case !value.IsValid():
 		values := iterx.FilterMap(syntax.All(), func(s syntax.Syntax) (string, bool) {
 			if s.IsEdition() != (in == taxa.Edition) || !s.IsSupported() {
 				return "", false
@@ -160,16 +163,16 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 			return fmt.Sprintf("%q", s), true
 		})
 
-		return report.Notef("permitted values: %s", iterx.Join(values, ", "))
-	}
+		// NOTE: This matches fallback behavior in ir/lower_walk.go.
+		fallback := `"proto2"`
+		if decl.IsEdition() {
+			fallback = "Edition 2023"
+		}
 
-	value := syntax.Lookup(name)
-	lit := expr.AsLiteral()
-	switch {
-	case !value.IsValid():
 		p.Errorf("unrecognized %s value", in).Apply(
 			report.Snippet(expr),
-			permitted(),
+			report.Notef("treating the file as %s instead", fallback),
+			report.Helpf("permitted values: %s", iterx.Join(values, ", ")),
 		)
 
 	case !value.IsSupported():
@@ -191,12 +194,14 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		}
 
 		if !value.IsEdition() && in == taxa.Edition {
-			p.Errorf("`%s` must use the `syntax` keyword", value).Apply(
+			lit := expr.Span().Text()
+			p.Errorf("%s use the `syntax` keyword", lit).Apply(
 				report.Snippet(decl.KeywordToken()),
 				report.SuggestEdits(decl.KeywordToken(), "replace with `syntax`", report.Edit{
 					Start: 0, End: decl.KeywordToken().Span().Len(),
 					Replace: "syntax",
 				}),
+				report.Helpf("%s is technically an edition, but cannot use `edition`", lit),
 			)
 		}
 

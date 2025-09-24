@@ -1,0 +1,23 @@
+error: proto2 use the `syntax` keyword
+  --> testdata/syntax/proto2_edition.proto:15:1
+   |
+15 | edition = proto2;
+   | ^^^^^^^
+  help: replace with `syntax`
+   |
+15 | - edition = proto2;
+15 | + syntax = proto2;
+   |
+   = help: proto2 is technically an edition, but cannot use `edition`
+
+error: the value of a `edition` declaration must be a string literal
+  --> testdata/syntax/proto2_edition.proto:15:11
+   |
+15 | edition = proto2;
+   |           ^^^^^^
+  help: add quotes to make this a string literal
+   |
+15 | edition = "proto2";
+   |           +      +
+
+encountered 2 errors
