@@ -441,12 +441,9 @@ func (t Type) noun() taxa.Noun {
 
 // toRef returns a ref to this type relative to the given context.
 func (t Type) toRef(c *Context) ref[rawType] {
-	var ref ref[rawType]
-	if t.Context() != c {
-		ref.file = int32(c.imports.byPath[t.Context().File().InternedPath()] + 1)
-	}
-	ref.ptr = t.Context().arenas.types.Compress(t.raw)
-	return ref
+	return ref[rawType]{
+		ptr: t.Context().arenas.types.Compress(t.raw),
+	}.changeContext(t.Context(), c)
 }
 
 func wrapType(c *Context, r ref[rawType]) Type {

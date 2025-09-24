@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"fmt"
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -77,14 +78,15 @@ type Context struct {
 		ranges    arena.Arena[rawReservedRange]
 		extendees arena.Arena[rawExtendee]
 		oneofs    arena.Arena[rawOneof]
-		symbols   arena.Arena[rawSymbol]
+
+		services arena.Arena[rawService]
+		methods  arena.Arena[rawMethod]
 
 		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
 
-		services arena.Arena[rawService]
-		methods  arena.Arena[rawMethod]
+		symbols arena.Arena[rawSymbol]
 	}
 }
 
@@ -110,6 +112,33 @@ func (r ref[T]) context(base *Context) *Context {
 	default:
 		return base.imports.files[r.file-1].file.Context()
 	}
+}
+
+// changeContext changes the implicit context for this ref to be with respect to
+// the new one given.
+func (r ref[T]) changeContext(prev, next *Context) ref[T] {
+	if prev == next {
+		return r
+	}
+
+	var file File
+	switch r.file {
+	case 0:
+		file = prev.File()
+	case -1:
+		return r // Primitive context is the same everywhere.
+	default:
+		file = prev.imports.files[r.file-1].file
+	}
+
+	// Figure out where file sits in next.
+	idx, ok := next.imports.byPath[file.InternedPath()]
+	if !ok {
+		panic(fmt.Sprintf("could not change contexts %s -> %s", prev.File().Path(), next.File().Path()))
+	}
+
+	r.file = int32(idx) + 1
+	return r
 }
 
 // File returns the file associated with this context.

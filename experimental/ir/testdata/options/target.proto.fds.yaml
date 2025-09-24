@@ -1,0 +1,245 @@
+file:
+- name: "testdata/options/target.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "M"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
+    - name: "z"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+    extension_range:
+    - start: 2
+      end: 3
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
+    oneof_decl:
+    - name: "y"
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
+    options.$unknown: |
+      10000: {
+        1: 1
+        2: 1
+        3: 1
+        4: 1
+        5: 1
+        6: 1
+        7: 1
+        8: 1
+        9: 1
+      }
+  - name: "Targets"
+    field:
+    - name: "file"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_FILE]
+    - name: "range"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_EXTENSION_RANGE]
+    - name: "message"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_MESSAGE]
+    - name: "field"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_FIELD]
+    - name: "oneof"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_ONEOF]
+    - name: "enum"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_ENUM]
+    - name: "value"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_ENUM_ENTRY]
+    - name: "service"
+      number: 8
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_SERVICE]
+    - name: "method"
+      number: 9
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.targets: [TARGET_TYPE_METHOD]
+  enum_type:
+  - name: "E"
+    value:
+    - name: "X"
+      number: 1
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
+    options.$unknown: |
+      10000: {
+        1: 1
+        2: 1
+        3: 1
+        4: 1
+        5: 1
+        6: 1
+        7: 1
+        8: 1
+        9: 1
+      }
+  service:
+  - name: "S"
+    method:
+    - name: "X"
+      input_type: "buf.test.M"
+      output_type: "buf.test.M"
+      options.$unknown: |
+        10000: {
+          1: 1
+          2: 1
+          3: 1
+          4: 1
+          5: 1
+          6: 1
+          7: 1
+          8: 1
+          9: 1
+        }
+      client_streaming: false
+      server_streaming: false
+    options.$unknown: |
+      10000: {
+        1: 1
+        2: 1
+        3: 1
+        4: 1
+        5: 1
+        6: 1
+        7: 1
+        8: 1
+        9: 1
+      }
+  extension:
+  - name: "file"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.FileOptions"
+  - name: "range"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.ExtensionRangeOptions"
+  - name: "message"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.MessageOptions"
+  - name: "field"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.FieldOptions"
+  - name: "oneof"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.OneofOptions"
+  - name: "enum"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.EnumOptions"
+  - name: "value"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.EnumValueOptions"
+  - name: "service"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.ServiceOptions"
+  - name: "method"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Targets"
+    extendee: ".google.protobuf.MethodOptions"
+  options.$unknown: |
+    10000: {
+      1: 1
+      2: 1
+      3: 1
+      4: 1
+      5: 1
+      6: 1
+      7: 1
+      8: 1
+      9: 1
+    }
+  syntax: "proto2"

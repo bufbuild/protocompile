@@ -78,6 +78,7 @@ func resolveOptions(f File, r *report.Report) {
 				raw:   &ty.raw.options,
 			}.resolve()
 		}
+
 		for field := range seq.Values(ty.Members()) {
 			for def := range seq.Values(field.AST().Options().Entries()) {
 				options := builtins.FieldOptions
@@ -180,6 +181,133 @@ func resolveOptions(f File, r *report.Report) {
 	}
 }
 
+// populateOptionTargets builds option target sets for each field in a file.
+func populateOptionTargets(f File, _ *report.Report) {
+	targets := f.Context().builtins().OptionTargets
+	populate := func(m Member) {
+		for target := range seq.Values(m.Options().Field(targets).Elements()) {
+			n, _ := target.AsInt()
+			target := OptionTarget(n)
+			if target == OptionTargetInvalid || target >= optionTargetMax {
+				continue
+			}
+
+			m.raw.optionTargets |= 1 << target
+		}
+	}
+
+	for ty := range seq.Values(f.AllTypes()) {
+		if !ty.IsMessage() {
+			continue
+		}
+
+		for field := range seq.Values(ty.Members()) {
+			populate(field)
+		}
+	}
+
+	for extn := range seq.Values(f.AllExtensions()) {
+		populate(extn)
+	}
+}
+
+func validateOptionTargets(f File, r *report.Report) {
+	validateOptionTargetsInValue(f.Options(), report.Span{}, OptionTargetFile, r)
+
+	for ty := range seq.Values(f.AllTypes()) {
+		tyTarget, memberTarget := OptionTargetMessage, OptionTargetField
+		if ty.IsEnum() {
+			tyTarget, memberTarget = OptionTargetEnum, OptionTargetEnumValue
+		}
+		validateOptionTargetsInValue(ty.Options(), ty.AST().Name().Span(), tyTarget, r)
+		for member := range seq.Values(ty.Members()) {
+			validateOptionTargetsInValue(member.Options(), member.AST().Name().Span(), memberTarget, r)
+		}
+		for oneof := range seq.Values(ty.Oneofs()) {
+			validateOptionTargetsInValue(oneof.Options(), oneof.AST().Name().Span(), OptionTargetOneof, r)
+		}
+	}
+
+	for extn := range seq.Values(f.AllExtensions()) {
+		validateOptionTargetsInValue(extn.Options(), extn.AST().Name().Span(), OptionTargetField, r)
+	}
+}
+
+func validateOptionTargetsInValue(m MessageValue, decl report.Span, target OptionTarget, r *report.Report) {
+	if m.IsZero() {
+		return
+	}
+
+	if c := m.Concrete(); c != m {
+		validateOptionTargetsInValue(c, decl, target, r)
+	}
+
+	for value := range m.Fields() {
+		field := value.Field()
+		if !field.CanTarget(target) {
+			var nouns taxa.Set
+			var targets int
+			for target := range field.Targets() {
+				switch target {
+				case OptionTargetFile:
+					nouns = nouns.With(taxa.TopLevel)
+				case OptionTargetRange:
+					nouns = nouns.With(taxa.Extensions)
+				case OptionTargetMessage:
+					nouns = nouns.With(taxa.Message)
+				case OptionTargetEnum:
+					nouns = nouns.With(taxa.Enum)
+				case OptionTargetField:
+					nouns = nouns.With(taxa.Field)
+				case OptionTargetEnumValue:
+					nouns = nouns.With(taxa.EnumValue)
+				case OptionTargetOneof:
+					nouns = nouns.With(taxa.Oneof)
+				case OptionTargetService:
+					nouns = nouns.With(taxa.Service)
+				case OptionTargetMethod:
+					nouns = nouns.With(taxa.Method)
+				}
+				targets++
+			}
+
+			// Pull out the place where this option was set so we can show it to
+			// the user.
+			constraints := field.Options().Field(m.Context().builtins().OptionTargets)
+
+			key := value.MessageKeys().At(0)
+			span := key.Span()
+			if path := key.AsPath(); !path.IsZero() {
+				// Pull out the last component.
+				// TODO: write a function on Path that does this cheaply.
+				last, _ := iterx.Last(path.Components)
+				span = last.Name().Span()
+			}
+
+			d := r.Errorf("unsupported option target for `%s`", field.Name()).Apply(
+				report.Snippetf(span, "option set here"),
+				report.Snippetf(decl, "applied to this"),
+				report.Snippetf(constraints.AST(), "targets constrained here"),
+			)
+			if targets == 1 {
+				d.Apply(report.Helpf(
+					"`%s` is constrained to %ss",
+					field.FullName(),
+					nouns.Join("or")))
+			} else {
+				d.Apply(report.Helpf(
+					"`%s` is constrained to one of %s",
+					field.FullName(),
+					nouns.Join("or")))
+			}
+
+			continue // Don't recurse and generate a mess of diagnostics.
+		}
+
+		validateOptionTargetsInValue(value.AsMessage(), decl, target, r)
+	}
+}
+
 // symbolRef is all of the information necessary to resolve an option reference.
 type optionRef struct {
 	*Context
@@ -194,7 +322,7 @@ type optionRef struct {
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
-	ids := r.session.builtins
+	ids := &r.Context.session.builtins
 	root := r.field.Element()
 
 	// Check if this is a pseudo-option, and diagnose if it has multiple
