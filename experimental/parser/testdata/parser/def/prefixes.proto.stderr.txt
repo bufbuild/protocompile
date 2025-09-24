@@ -22,6 +22,19 @@ error: unexpected `option` modifier on message field
    |
    = help: `option` only applies to an import
 
+warning: group syntax is deprecated
+  --> testdata/parser/def/prefixes.proto:22:14
+   |
+22 |     optional group foo = 10 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/parser/def/prefixes.proto:22:20
+   |
+22 |     optional group foo = 10 {}
+   |                    ^^^
+
 error: unexpected `stream` modifier on group definition
   --> testdata/parser/def/prefixes.proto:23:5
    |
@@ -33,6 +46,19 @@ error: unexpected `stream` modifier on group definition
 23 | +     group foo = 10 {}
    |
    = help: `stream` only applies to an input or output of a service method
+
+warning: group syntax is deprecated
+  --> testdata/parser/def/prefixes.proto:23:12
+   |
+23 |     stream group foo = 10 {}
+   |            ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/parser/def/prefixes.proto:23:18
+   |
+23 |     stream group foo = 10 {}
+   |                  ^^^
 
 error: unexpected `export` modifier on message field
   --> testdata/parser/def/prefixes.proto:25:5
@@ -143,4 +169,4 @@ error: unexpected `stream` modifier on service method
    |
    = help: `stream` only applies to an input or output of a service method
 
-encountered 12 errors
+encountered 14 errors and 2 warnings
