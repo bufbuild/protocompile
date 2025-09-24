@@ -6,4 +6,24 @@ warning: use of `import weak`
    = note: `import weak` is deprecated and not supported correctly in most
            Protobuf implementations
 
-encountered 1 warning
+warning: unused import "main.proto"
+  --> main.proto:4:8
+   |
+ 4 | import "a.proto";
+   |        ^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 4 | - import "a.proto";
+   |
+
+warning: unused import "main.proto"
+  --> main.proto:6:13
+   |
+ 6 | import weak "c.proto";
+   |             ^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 6 | - import weak "c.proto";
+   |
+
+encountered 3 warnings

@@ -55,6 +55,7 @@ type Test struct {
 	Files             []File `yaml:"files"`
 	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
 	OutputWKTs        bool   `yaml:"output_wkts"`
+	SourceCodeInfo    bool   `yaml:"source_code_info"`
 }
 
 type File struct {
@@ -130,7 +131,7 @@ func TestIR(t *testing.T) {
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
-		bytes, err := ir.DescriptorSetBytes(irs)
+		bytes, err := ir.DescriptorSetBytes(irs, ir.IncludeSourceCodeInfo(test.SourceCodeInfo))
 		require.NoError(t, err)
 
 		fds := new(descriptorpb.FileDescriptorSet)
@@ -176,6 +177,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 				Weak:       imp.Weak,
 				Transitive: !imp.Direct,
 				Visible:    imp.Visible,
+				Used:       imp.Used,
 			})
 		}
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))

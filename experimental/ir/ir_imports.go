@@ -17,8 +17,6 @@ package ir
 import (
 	"slices"
 
-	"github.com/bits-and-blooms/bitset"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
@@ -32,6 +30,7 @@ type Import struct {
 	Public, Weak bool           // The kind of import this is.
 	Direct       bool           // Whether this is a direct or transitive import.
 	Visible      bool           // Whether this import's symbols are visible in the current file.
+	Used         bool           // Whether this import has been marked as used.
 	Decl         ast.DeclImport // The import declaration.
 }
 
@@ -57,7 +56,7 @@ type imports struct {
 	// 2. Weak imports.
 	// 3. Regular imports.
 	// 4. Transitive public imports.
-	// 4. Transitive imports.
+	// 5. Transitive imports.
 	//
 	// The fields after this one specify where each of these segments ends.
 	//
@@ -65,12 +64,13 @@ type imports struct {
 	// exists elsewhere as an ordinary import.
 	files []imported
 
-	// Which of the above files we are permitted to import from.
-	visible bitset.BitSet
-
 	// Maps the path of each file to its index in files. This is used for
 	// mapping from one [Context]'s file IDs to another's.
 	byPath intern.Map[uint32]
+
+	// Map of path of each imported file to a direct import which causes it to
+	// be imported. This is used for marking which imports are used.
+	causes intern.Map[uint32]
 
 	// NOTE: public imports always come first. This ensures that when
 	// recursively determining public imports, we consider public imports'
@@ -105,8 +105,9 @@ type imports struct {
 
 // imported wraps an imported [File] and the import statement declaration [ast.DeclImport].
 type imported struct {
-	file File
-	decl ast.DeclImport
+	file          File
+	decl          ast.DeclImport
+	visible, used bool
 }
 
 // Append appends a direct import to this imports table.
@@ -132,7 +133,7 @@ func (i *imports) AddDirect(imp Import) {
 //
 // Must only be called once, after all direct imports are added.
 func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
-	for file := range seq.Values(i.Directs()) {
+	for _, file := range seq.All(i.Directs()) {
 		for imp := range seq.Values(file.TransitiveImports()) {
 			if !mapsx.AddZero(dedup, imp.InternedPath()) {
 				continue
@@ -150,6 +151,20 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 			i.Insert(imp, -1, imp.Public)
 		}
 	}
+
+	// Now, build the path and causes maps.
+	i.byPath = make(intern.Map[uint32])
+	i.causes = make(intern.Map[uint32])
+
+	for n, imp := range i.files {
+		i.byPath[imp.file.InternedPath()] = uint32(n)
+	}
+	for k, file := range seq.All(i.Directs()) {
+		mapsx.Add(i.causes, file.InternedPath(), uint32(k))
+		for imp := range seq.Values(file.TransitiveImports()) {
+			mapsx.Add(i.causes, imp.InternedPath(), uint32(k))
+		}
+	}
 }
 
 // Insert inserts a new import at the given position.
@@ -160,13 +175,19 @@ func (i *imports) Insert(imp Import, pos int, visible bool) {
 		pos = len(i.files)
 	}
 
-	if i.byPath == nil {
-		i.byPath = make(intern.Map[uint32])
-	}
+	i.files = slices.Insert(i.files, pos, imported{
+		file:    imp.File,
+		decl:    imp.Decl,
+		visible: visible,
+	})
+}
 
-	i.files = slices.Insert(i.files, pos, imported{file: imp.File, decl: imp.Decl})
-	i.byPath[imp.File.InternedPath()] = uint32(pos)
-	i.visible.SetTo(uint(pos), visible)
+// MarkUsed records a file as used, which affects the values of [Import].Used.
+func (i *imports) MarkUsed(file File) {
+	idx, ok := i.causes[file.InternedPath()]
+	if ok {
+		i.files[idx].used = true
+	}
 }
 
 // DescriptorProto returns the file for descriptor.proto.
@@ -181,13 +202,17 @@ func (i *imports) Directs() seq.Indexer[Import] {
 		i.files[:i.importEnd],
 		func(j int, imported imported) Import {
 			n := uint32(j)
+			public := n < i.publicEnd
 			return Import{
 				File:    imported.file,
-				Public:  n < i.publicEnd,
-				Weak:    n >= i.publicEnd && n < i.weakEnd,
+				Public:  public,
+				Weak:    !public && n < i.weakEnd,
 				Direct:  true,
 				Visible: true,
 				Decl:    imported.decl,
+
+				// Public imports are implicitly always used.
+				Used: imported.used || public,
 			}
 		},
 	)
@@ -195,7 +220,7 @@ func (i *imports) Directs() seq.Indexer[Import] {
 
 // Transitive returns an indexer over the Transitive imports.
 //
-// This function does not report whether those imports are weak or not.
+// This function does not report whether those imports are weak or used.
 func (i *imports) Transitive() seq.Indexer[Import] {
 	return seq.NewFixedSlice(
 		i.files[:max(0, len(i.files)-1)], // Exclude the implicit descriptor.proto.
@@ -206,7 +231,7 @@ func (i *imports) Transitive() seq.Indexer[Import] {
 				Public: n < i.publicEnd ||
 					(n >= i.importEnd && n < i.transPublicEnd),
 				Direct:  n < i.importEnd,
-				Visible: i.visible.Test(uint(j)),
+				Visible: imported.visible,
 				Decl:    imported.decl,
 			}
 		},

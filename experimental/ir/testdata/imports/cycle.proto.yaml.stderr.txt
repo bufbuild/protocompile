@@ -12,4 +12,24 @@ error: detected cyclic import while importing "b.proto"
  4 | import "a.proto";
    | ----------------- ...which imports "a.proto", completing the cycle
 
-encountered 1 error
+warning: unused import "a.proto"
+  --> a.proto:4:8
+   |
+ 4 | import "b.proto";
+   |        ^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 4 | - import "b.proto";
+   |
+
+warning: unused import "b.proto"
+  --> b.proto:4:8
+   |
+ 4 | import "c.proto";
+   |        ^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 4 | - import "c.proto";
+   |
+
+encountered 1 error and 2 warnings

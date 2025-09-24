@@ -17,6 +17,7 @@ package ir
 import (
 	"slices"
 
+	descriptorv1 "buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go/buf/descriptor/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -66,23 +68,44 @@ func DescriptorProtoBytes(file File, options ...DescriptorOption) ([]byte, error
 // DescriptorOption is an option to pass to [DescriptorSetBytes] or [DescriptorProtoBytes].
 type DescriptorOption func(*descGenerator)
 
+// IncludeDebugInfo sets whether or not to include google.protobuf.SourceCodeInfo in
+// the output.
+func IncludeSourceCodeInfo(flag bool) DescriptorOption {
+	return func(dg *descGenerator) {
+		dg.includeDebugInfo = flag
+	}
+}
+
 type descGenerator struct {
-	currentFile File
+	currentFile      File
+	includeDebugInfo bool
+
+	sourceCodeInfo     *descriptorpb.SourceCodeInfo
+	sourceCodeInfoExtn *descriptorv1.SourceCodeInfoExtension
 }
 
 func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet) {
+
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
 	for file := range topoSort(files) {
 		fdp := new(descriptorpb.FileDescriptorProto)
 		fds.File = append(fds.File, fdp)
+
 		dg.file(file, fdp)
 	}
 }
 
 func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) {
 	dg.currentFile = file
+	if dg.includeDebugInfo {
+		dg.sourceCodeInfo = new(descriptorpb.SourceCodeInfo)
+		fdp.SourceCodeInfo = dg.sourceCodeInfo
+
+		dg.sourceCodeInfoExtn = new(descriptorv1.SourceCodeInfoExtension)
+		proto.SetExtension(dg.sourceCodeInfo, descriptorv1.E_BufSourceCodeInfoExtension, dg.sourceCodeInfoExtn)
+	}
 
 	fdp.Name = addr(file.Path())
 	fdp.Package = addr(string(file.Package()))
@@ -95,12 +118,16 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		fdp.Edition = descriptorpb.Edition_EDITION_2023.Enum()
 	}
 
+	if dg.sourceCodeInfoExtn != nil {
+		dg.sourceCodeInfoExtn.IsSyntaxUnspecified = file.AST().Syntax().IsZero()
+	}
+
 	// Canonicalize import order so that it does not change whenever we refactor
 	// internal structures.
-	// TODO: sort in declaration order to match protoc? Not done currently
-	// since that requires additional book-keeping in [imports].
 	imports := seq.ToSlice(file.Imports())
-	slices.SortFunc(imports, cmpx.Key(Import.Path))
+	slices.SortFunc(imports, cmpx.Key(func(imp Import) int {
+		return imp.Decl.KeywordToken().Span().Start
+	}))
 	for i, imp := range imports {
 		fdp.Dependency = append(fdp.Dependency, imp.Path())
 		if imp.Public {
@@ -108,6 +135,10 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		}
 		if imp.Weak {
 			fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
+		}
+
+		if dg.sourceCodeInfoExtn != nil && !imp.Used {
+			dg.sourceCodeInfoExtn.UnusedDependency = append(dg.sourceCodeInfoExtn.UnusedDependency, int32(i))
 		}
 	}
 
@@ -139,6 +170,10 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 	if options := file.Options(); !options.IsZero() {
 		fdp.Options = new(descriptorpb.FileOptions)
 		dg.options(options, fdp.Options)
+	}
+
+	if dg.sourceCodeInfoExtn != nil && iterx.Empty2(dg.sourceCodeInfoExtn.ProtoReflect().Range) {
+		proto.ClearExtension(dg.sourceCodeInfo, descriptorv1.E_BufSourceCodeInfoExtension)
 	}
 }
 

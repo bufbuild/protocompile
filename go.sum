@@ -1,3 +1,5 @@
+buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.9-20250109164928-1da0de137947.1 h1:EV1whtSWX8jVhER/QEc0TgnhFdQb/RJ1ExPadTl57A8=
+buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.9-20250109164928-1da0de137947.1/go.mod h1:Xp69QnwEDYhl1jj4o8Q3hAL5DjJSbr6TyZjU5/2POYU=
 github.com/bits-and-blooms/bitset v1.24.0 h1:H4x4TuulnokZKvHLfzVRTHJfFfnHEeSYJizujEZvmAM=
 github.com/bits-and-blooms/bitset v1.24.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/bmatcuk/doublestar/v4 v4.9.1 h1:X8jg9rRZmJd4yRy7ZeNDRnM+T3ZfHv15JiBJ/avrEXE=

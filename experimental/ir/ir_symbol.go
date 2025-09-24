@@ -145,7 +145,7 @@ func (s Symbol) AsMethod() Method {
 func (s Symbol) Visible() bool {
 	return s.ref.file <= 0 ||
 		s.Kind() == SymbolKindPackage || // Packages don't get visibility checks.
-		s.Context().imports.visible.Test(uint(s.ref.file)-1)
+		s.Context().imports.files[uint(s.ref.file)-1].visible
 }
 
 // Definition returns a span for the definition site of this symbol;
@@ -482,24 +482,26 @@ again:
 		candidate = slices.Delete(candidate, len(scope), oldLen)
 	}
 
-	if !scopeSearch {
-		// This was a single identifier name so we're done.
-		return found, expected
+	if scopeSearch {
+		// Now search for the full name inside of the scope we found.
+		candidate = append(candidate, name[len(first):]...)
+		found = s.lookupBytes(c, candidate)
+		if found.ptr.Nil() {
+			// Try again, this time using the full candidate name. This happens
+			// expressly for the purpose of diagnostics.
+			scopeSearch = false
+			// Need to clear the found scope, since otherwise we might get a weird
+			// error message where we say that we found the parent scope.
+			found = ref[rawSymbol]{}
+			expected = FullName(candidate)
+			goto again
+		}
 	}
 
-	// Now search for the full name inside of the scope we found.
-	candidate = append(candidate, name[len(first):]...)
-	r := s.lookupBytes(c, candidate)
-	if r.ptr.Nil() {
-		// Try again, this time using the full candidate name. This happens
-		// expressly for the purpose of diagnostics.
-		scopeSearch = false
-		// Need to clear the found scope, since otherwise we might get a weird
-		// error message where we say that we found the parent scope.
-		found = ref[rawSymbol]{}
-		expected = FullName(candidate)
-		goto again
+	file := found.context(c).File()
+	if file != c.File() {
+		c.imports.MarkUsed(file)
 	}
 
-	return r, expected
+	return found, expected
 }

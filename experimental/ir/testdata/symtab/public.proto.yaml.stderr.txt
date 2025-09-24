@@ -1,0 +1,21 @@
+warning: unused import "dep/foo.proto"
+  --> dep/foo.proto:5:8
+   |
+ 5 | import "dep/not_public.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 5 | - import "dep/not_public.proto";
+   |
+
+warning: unused import "main.proto"
+  --> main.proto:4:8
+   |
+ 4 | import "dep/foo.proto";
+   |        ^^^^^^^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 4 | - import "dep/foo.proto";
+   |
+
+encountered 2 warnings

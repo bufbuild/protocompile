@@ -1,0 +1,21 @@
+warning: unused import "main.proto"
+  --> main.proto:4:8
+   |
+ 4 | import "b.proto";
+   |        ^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 4 | - import "b.proto";
+   |
+
+warning: unused import "main.proto"
+  --> main.proto:5:8
+   |
+ 5 | import "c.proto";
+   |        ^^^^^^^^^ no symbol depends on this file
+  help: delete it
+   |
+ 5 | - import "c.proto";
+   |
+
+encountered 2 warnings
