@@ -15,9 +15,10 @@ type {{$e.Name}} {{$e.Type}}
 const (
 {{range $i, $v := $e.Values -}}{{if and (not $v.HasSuffixDocs) (ne $v.Docs "")}}
 {{makeDocs $v.Docs "\t"}}{{end -}}
-{{if eq $i 0}}	{{$v.Name}} {{$e.Name}} = iota
-{{- else if ne $v.Alias ""}}	{{$v.Name}} = {{$v.Alias}}
-{{- else}}	{{$v.Name}}
+	{{$v.Name}}
+{{- if ne $v.Expr ""}} {{$e.Name}} = {{$v.Expr}}
+{{- else if ne $v.Alias ""}} = {{$v.Alias}}
+{{- else if eq $i 0}} {{$e.Name}} = iota
 {{- end}}{{if $v.HasSuffixDocs}} // {{$v.Docs}}{{end}}
 {{end -}}
 {{with $e.Total}}	{{.}} int = iota{{end -}}
@@ -25,19 +26,33 @@ const (
 {{range $_, $m := $e.Methods -}}
 {{- if eq $m.Kind "string"}}
 {{makeDocs $m.Docs "" -}}
-func (v {{$e.Name}}) {{$m.Name}}() string {
+func (v {{$e.Name}}) {{$m.Name}}() string { {{- if not $e.UseMapsForLookup }}
 	if int(v) < 0 || int(v) > len(_table_{{$e.Name}}_{{$m.Name}}) {
 		return fmt.Sprintf("{{$e.Name}}(%v)", int(v))
 	}
-	return _table_{{$e.Name}}_{{$m.Name}}[int(v)]
+	return _table_{{$e.Name}}_{{$m.Name}}[v]
+	{{- else}}
+	s, ok := _table_{{$e.Name}}_{{$m.Name}}[v]
+	if !ok {
+		return fmt.Sprintf("{{$e.Name}}(%v)", int(v))
+	}
+	return s
+	{{- end}}
 }
 {{else if eq $m.Kind "go-string"}}
 {{makeDocs $m.Docs "" -}}
-func (v {{$e.Name}}) {{$m.Name}}() string {
+func (v {{$e.Name}}) {{$m.Name}}() string { {{- if not $e.UseMapsForLookup }}
 	if int(v) < 0 || int(v) > len(_table_{{$e.Name}}_{{$m.Name}}) {
-		return fmt.Sprintf("{{$input.Package}}{{$e.Name}}(%v)", int(v))
+		return fmt.Sprintf("{{$input.Package}}.{{$e.Name}}(%v)", int(v))
 	}
-	return _table_{{$e.Name}}_{{$m.Name}}[int(v)]
+	return _table_{{$e.Name}}_{{$m.Name}}[v]
+	{{- else}}
+	s, ok := _table_{{$e.Name}}_{{$m.Name}}[v]
+	if !ok {
+		return fmt.Sprintf("{{$input.Package}}.{{$e.Name}}(%v)", int(v))
+	}
+	return s
+	{{- end}}
 }
 {{else if eq $m.Kind "from-string"}}
 {{makeDocs $m.Docs "" -}}
@@ -47,8 +62,7 @@ func {{$m.Name}}(s string) {{$e.Name}} {
 {{else if eq $m.Kind "all"}}
 {{makeDocs $m.Docs "" -}}
 func {{$m.Name}}() iter.Seq[{{$e.Name}}] {
-	return func(yield func({{$e.Name}}) bool) {
-		{{range $m.Ranges -}}
+	return func(yield func({{$e.Name}}) bool) { {{- range $m.Ranges}}
 		for i := {{.Start}}; i < {{.End}}; i++ {
 			if !yield({{$e.Name}}(i)) { return }
 		}
@@ -60,14 +74,14 @@ func {{$m.Name}}() iter.Seq[{{$e.Name}}] {
 {{- range $_, $e := . -}}
 {{range $_, $m := $e.Methods -}}
 {{- if eq $m.Kind "string"}}
-var _table_{{$e.Name}}_{{$m.Name}} = [...]string{
+var _table_{{$e.Name}}_{{$m.Name}} = {{if $e.UseMapsForLookup}}map[{{$e.Name}}]{{else}}[...]{{end}}string{
 {{range $e.Values -}}
 {{- with .Alias}}{{continue}}{{end -}}
 {{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}}: {{printf "%q" .String}},
 {{end -}}
 }
 {{else if eq $m.Kind "go-string"}}
-var _table_{{$e.Name}}_{{$m.Name}} = [...]string{
+var _table_{{$e.Name}}_{{$m.Name}} = {{if $e.UseMapsForLookup}}map[{{$e.Name}}]{{else}}[...]{{end}}string{
 {{range $e.Values -}}
 {{- with .Alias}}{{continue}}{{end -}}
 {{- if contains $m.Skip .Name}}{{continue}}{{end}}	{{.Name}}: {{printf "%q" .Name}},

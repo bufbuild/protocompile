@@ -41,15 +41,15 @@ func (v DeclKind) String() string {
 	if int(v) < 0 || int(v) > len(_table_DeclKind_String) {
 		return fmt.Sprintf("DeclKind(%v)", int(v))
 	}
-	return _table_DeclKind_String[int(v)]
+	return _table_DeclKind_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v DeclKind) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_DeclKind_GoString) {
-		return fmt.Sprintf("astDeclKind(%v)", int(v))
+		return fmt.Sprintf("ast.DeclKind(%v)", int(v))
 	}
-	return _table_DeclKind_GoString[int(v)]
+	return _table_DeclKind_GoString[v]
 }
 
 // DefKind is the kind of definition a [DeclDef] contains.
@@ -76,15 +76,15 @@ func (v DefKind) String() string {
 	if int(v) < 0 || int(v) > len(_table_DefKind_String) {
 		return fmt.Sprintf("DefKind(%v)", int(v))
 	}
-	return _table_DefKind_String[int(v)]
+	return _table_DefKind_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v DefKind) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_DefKind_GoString) {
-		return fmt.Sprintf("astDefKind(%v)", int(v))
+		return fmt.Sprintf("ast.DefKind(%v)", int(v))
 	}
-	return _table_DefKind_GoString[int(v)]
+	return _table_DefKind_GoString[v]
 }
 
 // ExprKind is a kind of expression. There is one value of ExprKind for each
@@ -108,15 +108,15 @@ func (v ExprKind) String() string {
 	if int(v) < 0 || int(v) > len(_table_ExprKind_String) {
 		return fmt.Sprintf("ExprKind(%v)", int(v))
 	}
-	return _table_ExprKind_String[int(v)]
+	return _table_ExprKind_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v ExprKind) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_ExprKind_GoString) {
-		return fmt.Sprintf("astExprKind(%v)", int(v))
+		return fmt.Sprintf("ast.ExprKind(%v)", int(v))
 	}
-	return _table_ExprKind_GoString[int(v)]
+	return _table_ExprKind_GoString[v]
 }
 
 // TypeKind is a kind of type. There is one value of TypeKind for each
@@ -136,15 +136,15 @@ func (v TypeKind) String() string {
 	if int(v) < 0 || int(v) > len(_table_TypeKind_String) {
 		return fmt.Sprintf("TypeKind(%v)", int(v))
 	}
-	return _table_TypeKind_String[int(v)]
+	return _table_TypeKind_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v TypeKind) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_TypeKind_GoString) {
-		return fmt.Sprintf("astTypeKind(%v)", int(v))
+		return fmt.Sprintf("ast.TypeKind(%v)", int(v))
 	}
-	return _table_TypeKind_GoString[int(v)]
+	return _table_TypeKind_GoString[v]
 }
 
 var _table_DeclKind_String = [...]string{

@@ -45,15 +45,15 @@ func (v OptionTarget) String() string {
 	if int(v) < 0 || int(v) > len(_table_OptionTarget_String) {
 		return fmt.Sprintf("OptionTarget(%v)", int(v))
 	}
-	return _table_OptionTarget_String[int(v)]
+	return _table_OptionTarget_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v OptionTarget) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_OptionTarget_GoString) {
-		return fmt.Sprintf("irOptionTarget(%v)", int(v))
+		return fmt.Sprintf("ir.OptionTarget(%v)", int(v))
 	}
-	return _table_OptionTarget_GoString[int(v)]
+	return _table_OptionTarget_GoString[v]
 }
 
 // OptionTargets returns an iterator over all of the possible valid targets,

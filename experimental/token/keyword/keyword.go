@@ -92,15 +92,15 @@ func (v Keyword) String() string {
 	if int(v) < 0 || int(v) > len(_table_Keyword_String) {
 		return fmt.Sprintf("Keyword(%v)", int(v))
 	}
-	return _table_Keyword_String[int(v)]
+	return _table_Keyword_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v Keyword) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_Keyword_GoString) {
-		return fmt.Sprintf("keywordKeyword(%v)", int(v))
+		return fmt.Sprintf("keyword.Keyword(%v)", int(v))
 	}
-	return _table_Keyword_GoString[int(v)]
+	return _table_Keyword_GoString[v]
 }
 
 // Lookup looks up a keyword by name.
