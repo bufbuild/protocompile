@@ -44,15 +44,15 @@ func (v SymbolKind) String() string {
 	if int(v) < 0 || int(v) > len(_table_SymbolKind_String) {
 		return fmt.Sprintf("SymbolKind(%v)", int(v))
 	}
-	return _table_SymbolKind_String[int(v)]
+	return _table_SymbolKind_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v SymbolKind) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_SymbolKind_GoString) {
-		return fmt.Sprintf("irSymbolKind(%v)", int(v))
+		return fmt.Sprintf("ir.SymbolKind(%v)", int(v))
 	}
-	return _table_SymbolKind_GoString[int(v)]
+	return _table_SymbolKind_GoString[v]
 }
 
 var _table_SymbolKind_String = [...]string{

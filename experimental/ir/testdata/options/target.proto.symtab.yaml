@@ -1,0 +1,223 @@
+tables:
+  "testdata/options/target.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/target.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "buf.test.message":
+          message.fields:
+            "enum": { bool: true }
+            "field": { bool: true }
+            "file": { bool: true }
+            "message": { bool: true }
+            "method": { bool: true }
+            "oneof": { bool: true }
+            "range": { bool: true }
+            "service": { bool: true }
+            "value": { bool: true }
+    - fqn: "buf.test.Targets"
+      kind: KIND_MESSAGE
+      file: "testdata/options/target.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.E"
+      kind: KIND_ENUM
+      file: "testdata/options/target.proto"
+      index: 2
+      visible: true
+      options.message.extns:
+        "buf.test.enum":
+          message.fields:
+            "enum": { bool: true }
+            "field": { bool: true }
+            "file": { bool: true }
+            "message": { bool: true }
+            "method": { bool: true }
+            "oneof": { bool: true }
+            "range": { bool: true }
+            "service": { bool: true }
+            "value": { bool: true }
+    - fqn: "buf.test.M.x"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "buf.test.field":
+          message.fields:
+            "enum": { bool: true }
+            "field": { bool: true }
+            "file": { bool: true }
+            "message": { bool: true }
+            "method": { bool: true }
+            "oneof": { bool: true }
+            "range": { bool: true }
+            "service": { bool: true }
+            "value": { bool: true }
+    - fqn: "buf.test.M.z"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.Targets.file"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 1 }] } }
+    - fqn: "buf.test.Targets.range"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 5
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 2 }] } }
+    - fqn: "buf.test.Targets.message"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 6
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 3 }] } }
+    - fqn: "buf.test.Targets.field"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 7
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 4 }] } }
+    - fqn: "buf.test.Targets.oneof"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 8
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 5 }] } }
+    - fqn: "buf.test.Targets.enum"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 9
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 6 }] } }
+    - fqn: "buf.test.Targets.value"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 10
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 7 }] } }
+    - fqn: "buf.test.Targets.service"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 11
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 8 }] } }
+    - fqn: "buf.test.Targets.method"
+      kind: KIND_FIELD
+      file: "testdata/options/target.proto"
+      index: 12
+      visible: true
+      options.message.fields: { "targets": { repeated.values: [{ i32: 9 }] } }
+    - fqn: "buf.test.X"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/options/target.proto"
+      index: 3
+      visible: true
+      options.message.extns:
+        "buf.test.value":
+          message.fields:
+            "enum": { bool: true }
+            "field": { bool: true }
+            "file": { bool: true }
+            "message": { bool: true }
+            "method": { bool: true }
+            "oneof": { bool: true }
+            "range": { bool: true }
+            "service": { bool: true }
+            "value": { bool: true }
+    - fqn: "buf.test.file"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 13
+      visible: true
+    - fqn: "buf.test.range"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 14
+      visible: true
+    - fqn: "buf.test.message"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 15
+      visible: true
+    - fqn: "buf.test.field"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 16
+      visible: true
+    - fqn: "buf.test.oneof"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 17
+      visible: true
+    - fqn: "buf.test.enum"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 18
+      visible: true
+    - fqn: "buf.test.value"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 19
+      visible: true
+    - fqn: "buf.test.service"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 20
+      visible: true
+    - fqn: "buf.test.method"
+      kind: KIND_EXTENSION
+      file: "testdata/options/target.proto"
+      index: 21
+      visible: true
+    - fqn: "buf.test.M.y"
+      kind: KIND_ONEOF
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
+      options.message.extns:
+        "buf.test.oneof":
+          message.fields:
+            "enum": { bool: true }
+            "field": { bool: true }
+            "file": { bool: true }
+            "message": { bool: true }
+            "method": { bool: true }
+            "oneof": { bool: true }
+            "range": { bool: true }
+            "service": { bool: true }
+            "value": { bool: true }
+    - fqn: "buf.test.S"
+      kind: 9
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.S.X"
+      kind: 10
+      file: "testdata/options/target.proto"
+      index: 1
+      visible: true
+    options.message.extns:
+      "buf.test.file":
+        message.fields:
+          "enum": { bool: true }
+          "field": { bool: true }
+          "file": { bool: true }
+          "message": { bool: true }
+          "method": { bool: true }
+          "oneof": { bool: true }
+          "range": { bool: true }
+          "service": { bool: true }
+          "value": { bool: true }

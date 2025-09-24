@@ -141,7 +141,6 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		fallthrough
 	case ast.ExprKindPath:
 		name = expr.Span().Text()
-
 	case ast.ExprKindInvalid:
 		return
 	default:
@@ -155,7 +154,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 
 	permitted := func() report.DiagnosticOption {
 		values := iterx.FilterMap(syntax.All(), func(s syntax.Syntax) (string, bool) {
-			if s.IsEdition() != (in == taxa.Edition) || !s.IsFullyImplemented() {
+			if s.IsEdition() != (in == taxa.Edition) || !s.IsSupported() {
 				return "", false
 			}
 
@@ -168,42 +167,54 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	value := syntax.Lookup(name)
 	lit := expr.AsLiteral()
 	switch {
-	case value == syntax.Unknown:
+	case !value.IsValid():
 		p.Errorf("unrecognized %s value", in).Apply(
 			report.Snippet(expr),
 			permitted(),
 		)
-	case value.IsEdition() && in == taxa.Syntax:
-		p.Errorf("unexpected edition in %s", in).Apply(
-			report.Snippet(expr),
-			permitted(),
-		)
-	case !value.IsEdition() && in == taxa.Edition:
-		p.Errorf("unexpected syntax in %s", in).Apply(
-			report.Snippet(expr),
-			permitted(),
-		)
-	case lit.Kind() != token.String:
-		span := expr.Span()
-		p.Errorf("the value of a %s must be a string literal", in).Apply(
-			report.Snippet(span),
-			report.SuggestEdits(
-				span,
-				"add quotes to make this a string literal",
-				report.Edit{Start: 0, End: 0, Replace: `"`},
-				report.Edit{Start: span.Len(), End: span.Len(), Replace: `"`},
-			),
-		)
 
-	case !lit.IsZero() && !lit.IsPureString():
-		p.Warn(errImpureString{lit.Token, in.In()})
-	}
-
-	if value != syntax.Unknown && !value.IsFullyImplemented() {
+	case !value.IsSupported():
 		p.Errorf("sorry, Edition %s is not fully implemented", value).Apply(
 			report.Snippet(expr),
 			report.Helpf("Edition %s will be implemented in a future release", value),
 		)
+	}
+
+	if value.IsValid() {
+		if value.IsEdition() && in == taxa.Syntax {
+			p.Errorf("editions must use the `edition` keyword", in).Apply(
+				report.Snippet(decl.KeywordToken()),
+				report.SuggestEdits(decl.KeywordToken(), "replace with `edition`", report.Edit{
+					Start: 0, End: decl.KeywordToken().Span().Len(),
+					Replace: "edition",
+				}),
+			)
+		}
+
+		if !value.IsEdition() && in == taxa.Edition {
+			p.Errorf("`%s` must use the `syntax` keyword", value).Apply(
+				report.Snippet(decl.KeywordToken()),
+				report.SuggestEdits(decl.KeywordToken(), "replace with `syntax`", report.Edit{
+					Start: 0, End: decl.KeywordToken().Span().Len(),
+					Replace: "syntax",
+				}),
+			)
+		}
+
+		if lit.Kind() != token.String {
+			span := expr.Span()
+			p.Errorf("the value of a %s must be a string literal", in).Apply(
+				report.Snippet(span),
+				report.SuggestEdits(
+					span,
+					"add quotes to make this a string literal",
+					report.Edit{Start: 0, End: 0, Replace: `"`},
+					report.Edit{Start: span.Len(), End: span.Len(), Replace: `"`},
+				),
+			)
+		} else if !lit.IsZero() && !lit.IsPureString() {
+			p.Warn(errImpureString{lit.Token, in.In()})
+		}
 	}
 
 	if p.syntax == syntax.Unknown {

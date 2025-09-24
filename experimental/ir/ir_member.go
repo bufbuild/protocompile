@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -23,6 +25,8 @@ import (
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
+
+//go:generate go run github.com/bufbuild/protocompile/internal/enum option_target.yaml
 
 // Member is a Protobuf message field, enum value, or extension field.
 //
@@ -57,7 +61,9 @@ type rawMember struct {
 	// a oneof index.
 	oneof int32
 
-	isGroup bool
+	// Which entities this option can apply to. If zero, all targets are valid.
+	optionTargets uint32
+	isGroup       bool
 }
 
 // Returns whether this is a non-extension message field.
@@ -187,6 +193,9 @@ func (m Member) InternedScope() intern.ID {
 //
 // Defaults to zero if the number is not specified.
 func (m Member) Number() int32 {
+	if m.IsZero() {
+		return 0
+	}
 	return m.raw.number
 }
 
@@ -262,6 +271,48 @@ func (m Member) Options() MessageValue {
 	return wrapValue(m.Context(), m.raw.options).AsMessage()
 }
 
+// CanTarget returns whether this message field can be set as an option for the
+// given option target type.
+//
+// This is mediated by the option FieldOptions.targets, which controls whether
+// this field can be set (transitively) on the options of a given entity type.
+// This is useful for options which re-use the same message type for different
+// option types, such as FeatureSet.
+func (m Member) CanTarget(target OptionTarget) bool {
+	if m.IsZero() {
+		return false
+	}
+
+	return m.raw.optionTargets == 0 ||
+		(m.raw.optionTargets>>uint(target))&1 != 0 // Check if the target-th bit is set.
+}
+
+// Targets returns an iterator over the valid option targets for this member.
+func (m Member) Targets() iter.Seq[OptionTarget] {
+	return func(yield func(OptionTarget) bool) {
+		if m.IsZero() {
+			return
+		}
+		if m.raw.optionTargets == 0 {
+			OptionTargets()(yield)
+			return
+		}
+
+		bits := m.raw.optionTargets
+		for t := range OptionTargets() {
+			if bits == 0 {
+				return
+			}
+
+			mask := uint32(1) << t
+			if bits&mask != 0 && !yield(t) {
+				return
+			}
+			bits &^= mask
+		}
+	}
+}
+
 // noun returns a [taxa.Noun] for diagnostics.
 func (m Member) noun() taxa.Noun {
 	switch {
@@ -288,12 +339,9 @@ func wrapMember(c *Context, r ref[rawMember]) Member {
 
 // toRef returns a ref to this member relative to the given context.
 func (m Member) toRef(c *Context) ref[rawMember] {
-	var ref ref[rawMember]
-	if m.Context() != c {
-		ref.file = int32(c.imports.byPath[m.Context().File().InternedPath()] + 1)
-	}
-	ref.ptr = m.Context().arenas.members.Compress(m.raw)
-	return ref
+	return ref[rawMember]{
+		ptr: m.Context().arenas.members.Compress(m.raw),
+	}.changeContext(m.Context(), c)
 }
 
 // rawExtendee represents an extends block.

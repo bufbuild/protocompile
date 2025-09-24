@@ -87,12 +87,11 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 	fdp.Name = addr(file.Path())
 	fdp.Package = addr(string(file.Package()))
 
-	switch file.Syntax() {
-	case syntax.Proto2, syntax.Proto3:
-		fdp.Syntax = addr(file.Syntax().String())
-	case syntax.Edition2023:
+	if file.Syntax().IsEdition() {
 		fdp.Syntax = addr("editions")
-		fdp.Edition = descriptorpb.Edition_EDITION_2023.Enum()
+		fdp.Edition = descriptorpb.Edition(file.Syntax()).Enum()
+	} else {
+		fdp.Syntax = addr(file.Syntax().String())
 	}
 
 	// Canonicalize import order so that it does not change whenever we refactor
