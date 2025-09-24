@@ -45,6 +45,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
+//nolint:tagliatelle // Weird opinions on YAML fields.
 type Enum struct {
 	Name    string   `yaml:"name"`  // The name of the new type.
 	Type    string   `yaml:"type"`  // The underlying type.
