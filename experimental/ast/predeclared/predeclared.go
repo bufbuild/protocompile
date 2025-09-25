@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package predeclared provides all of the identifiers with a special meaning
+// Package predeclared provides all of the identifiers with a special meaning
 // in Protobuf.
 //
 // These are a subset of the [keyword.Keyword] enum which are names that are
