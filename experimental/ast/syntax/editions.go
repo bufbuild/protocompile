@@ -18,6 +18,10 @@ import (
 	"iter"
 )
 
+// LatestImplementedEdition is the most recent edition that the compiler
+// implements.
+const LatestImplementedEdition = Edition2023
+
 // All returns an iterator over all known [Syntax] values.
 func All() iter.Seq[Syntax] {
 	return func(yield func(Syntax) bool) {

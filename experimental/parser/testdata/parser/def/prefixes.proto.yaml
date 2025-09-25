@@ -1,0 +1,74 @@
+decls:
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "option" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "y" }]
+        type.prefixed.type.path.components: [{ ident: "option" }]
+        value.literal.int_value: 2
+    - def:
+        kind: KIND_GROUP
+        name.components: [{ ident: "foo" }]
+        type.prefixed:
+          prefix: PREFIX_OPTIONAL
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 10
+        body: {}
+    - def:
+        kind: KIND_GROUP
+        name.components: [{ ident: "foo" }]
+        type.prefixed:
+          prefix: PREFIX_STREAM
+          type.path.components: [{ ident: "group" }]
+        value.literal.int_value: 10
+        body: {}
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.prefixed.type.prefixed:
+          prefix: PREFIX_REPEATED
+          type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_ONEOF
+        name.components: [{ ident: "y" }]
+        body.decls:
+        - def:
+            kind: KIND_FIELD
+            name.components: [{ ident: "k" }]
+            type.path.components: [{ ident: "int32" }]
+            value.literal.int_value: 2
+- def: { kind: KIND_ENUM, name.components: [{ ident: "Bar" }], body: {} }
+- def:
+    kind: KIND_EXTEND
+    name.components: [{ ident: "Foo" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "z" }]
+        type.prefixed.type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 5
+- def:
+    kind: KIND_SERVICE
+    name.components: [{ ident: "Baz" }]
+    body.decls:
+    - def:
+        kind: KIND_METHOD
+        name.components: [{ ident: "X" }]
+        signature:
+          inputs: [{ path.components: [{ ident: "Foo" }] }]
+          outputs:
+          - prefixed:
+              prefix: PREFIX_STREAM
+              type.path.components: [{ ident: "Bar" }]

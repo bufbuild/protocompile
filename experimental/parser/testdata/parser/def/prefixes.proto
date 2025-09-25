@@ -16,7 +16,25 @@ syntax = "proto2";
 
 package test;
 
-import "foo.proto";
-import weak "weak.proto";
-import public "public.proto";
-import option "option.proto";
+optional message Foo {
+    optional option x = 1;
+    option option y = 2;
+    optional group foo = 10 {}
+    stream group foo = 10 {}
+
+    export repeated int32 x = 1;
+
+    repeated oneof y {
+        int32 k = 2;
+    }
+}
+public enum Bar {}
+
+stream extend Foo {
+    weak int32 z = 5;
+}
+
+required weak service Baz {
+    stream rpc X(Foo) returns (stream Bar);
+}
+

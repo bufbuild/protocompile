@@ -1,0 +1,172 @@
+error: unexpected `optional` modifier on message definition
+  --> testdata/parser/def/prefixes.proto:19:1
+   |
+19 | optional message Foo {
+   | ^^^^^^^^
+  help: delete it
+   |
+19 | - optional message Foo {
+19 | + message Foo {
+   |
+   = help: `optional` only applies to a message field
+
+error: unexpected `option` modifier on message field
+  --> testdata/parser/def/prefixes.proto:21:5
+   |
+21 |     option option y = 2;
+   |     ^^^^^^
+  help: replace with `optional`
+   |
+21 | -     option option y = 2;
+21 | +     optional option y = 2;
+   |
+   = help: `option` only applies to an import
+
+warning: group syntax is deprecated
+  --> testdata/parser/def/prefixes.proto:22:14
+   |
+22 |     optional group foo = 10 {}
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/parser/def/prefixes.proto:22:20
+   |
+22 |     optional group foo = 10 {}
+   |                    ^^^
+
+error: unexpected `stream` modifier on group definition
+  --> testdata/parser/def/prefixes.proto:23:5
+   |
+23 |     stream group foo = 10 {}
+   |     ^^^^^^
+  help: delete it
+   |
+23 | -     stream group foo = 10 {}
+23 | +     group foo = 10 {}
+   |
+   = help: `stream` only applies to an input or output of a service method
+
+warning: group syntax is deprecated
+  --> testdata/parser/def/prefixes.proto:23:12
+   |
+23 |     stream group foo = 10 {}
+   |            ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: group names must start with an uppercase letter
+  --> testdata/parser/def/prefixes.proto:23:18
+   |
+23 |     stream group foo = 10 {}
+   |                  ^^^
+
+error: unexpected `export` modifier on message field
+  --> testdata/parser/def/prefixes.proto:25:5
+   |
+25 |     export repeated int32 x = 1;
+   |     ^^^^^^
+  help: delete it
+   |
+25 | -     export repeated int32 x = 1;
+25 | +     repeated int32 x = 1;
+   |
+   = help: `export` only applies to a type definition
+
+error: multiple modifiers on message field type
+  --> testdata/parser/def/prefixes.proto:25:12
+   |
+25 |     export repeated int32 x = 1;
+   |     ------ ^^^^^^^^
+   |     |
+   |     previous one is here
+  help: delete it
+   |
+25 | -     export repeated int32 x = 1;
+25 | +     export int32 x = 1;
+   |
+
+error: unexpected `repeated` modifier on oneof definition
+  --> testdata/parser/def/prefixes.proto:27:5
+   |
+27 |     repeated oneof y {
+   |     ^^^^^^^^
+  help: delete it
+   |
+27 | -     repeated oneof y {
+27 | +     oneof y {
+   |
+   = help: `repeated` only applies to a message field
+
+error: unexpected `public` modifier on enum definition
+  --> testdata/parser/def/prefixes.proto:31:1
+   |
+31 | public enum Bar {}
+   | ^^^^^^
+  help: replace with `export`
+   |
+31 | - public enum Bar {}
+31 | + export Bar {}
+   |
+   = help: `public` only applies to an import
+
+error: unexpected `stream` modifier on message extension block
+  --> testdata/parser/def/prefixes.proto:33:1
+   |
+33 | stream extend Foo {
+   | ^^^^^^
+  help: delete it
+   |
+33 | - stream extend Foo {
+33 | + extend Foo {
+   |
+   = help: `stream` only applies to an input or output of a service method
+
+error: unexpected `weak` modifier on message field
+  --> testdata/parser/def/prefixes.proto:34:5
+   |
+34 |     weak int32 z = 5;
+   |     ^^^^
+  help: delete it
+   |
+34 | -     weak int32 z = 5;
+34 | +     int32 z = 5;
+   |
+   = help: `weak` only applies to an import
+
+error: unexpected `required` modifier on service definition
+  --> testdata/parser/def/prefixes.proto:37:1
+   |
+37 | required weak service Baz {
+   | ^^^^^^^^
+  help: delete it
+   |
+37 | - required weak service Baz {
+37 | + weak service Baz {
+   |
+   = help: `required` only applies to a message field
+
+error: unexpected `weak` modifier on service definition
+  --> testdata/parser/def/prefixes.proto:37:10
+   |
+37 | required weak service Baz {
+   |          ^^^^
+  help: delete it
+   |
+37 | - required weak service Baz {
+37 | + required service Baz {
+   |
+   = help: `weak` only applies to an import
+
+error: unexpected `stream` modifier on service method
+  --> testdata/parser/def/prefixes.proto:38:5
+   |
+38 |     stream rpc X(Foo) returns (stream Bar);
+   |     ^^^^^^
+  help: delete it
+   |
+38 | -     stream rpc X(Foo) returns (stream Bar);
+38 | +     rpc X(Foo) returns (stream Bar);
+   |
+   = help: `stream` only applies to an input or output of a service method
+
+encountered 14 errors and 2 warnings

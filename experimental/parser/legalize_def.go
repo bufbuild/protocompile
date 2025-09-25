@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // Map of a def kind to the valid parents it can have.
@@ -109,6 +110,36 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 			// TODO: Include a help that says to stick this into a file with
 			// the right package.
 		)
+	}
+
+	for mod := range def.Prefixes() {
+		isType := what == taxa.Message || what == taxa.Enum
+
+		if isType && mod.Prefix().IsTypeModifier() {
+			p.Error(errRequiresEdition{
+				edition: syntax.Edition2024,
+				node:    mod.PrefixToken(),
+				decl:    p.syntaxNode,
+
+				unimplemented: p.syntax >= syntax.Edition2024,
+			})
+			continue
+		}
+
+		suggestExport := isType && mod.Prefix() == keyword.Public
+		d := p.Error(errUnexpectedMod{
+			mod:      mod.PrefixToken(),
+			where:    what.On(),
+			syntax:   p.syntax,
+			noDelete: suggestExport,
+		})
+
+		if suggestExport {
+			d.Apply(report.SuggestEdits(mod, "replace with `export`", report.Edit{
+				Start: 0, End: mod.Span().Len(),
+				Replace: "export",
+			}))
+		}
 	}
 
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
@@ -219,12 +250,12 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 		legalizeCompactOptions(p, options)
 	}
 
-	if what == taxa.Field {
+	if what == taxa.Field || what == taxa.Group {
 		var oneof ast.DeclDef
 		if parent.what == taxa.Oneof {
 			oneof, _ = parent.Spanner.(ast.DeclDef)
 		}
-		legalizeFieldType(p, def.Type(), true, oneof)
+		legalizeFieldType(p, what, def.Type(), true, ast.TypePrefixed{}, oneof)
 	}
 }
 
@@ -314,6 +345,14 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		} else {
 			legalizeMethodParams(p, sig.Outputs(), taxa.MethodOuts)
 		}
+	}
+
+	for mod := range def.Prefixes() {
+		p.Error(errUnexpectedMod{
+			mod:    mod.PrefixToken(),
+			where:  taxa.Method.On(),
+			syntax: p.syntax,
+		})
 	}
 
 	// Methods are unique in that they can end in either a ; or a {}.

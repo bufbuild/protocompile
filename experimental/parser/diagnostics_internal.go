@@ -21,6 +21,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -191,15 +192,90 @@ func (e errBadNest) Diagnose(d *report.Diagnostic) {
 		if v == taxa.TopLevel {
 			// This case is just to avoid printing "within a top-level scope",
 			// which looks wrong.
-			d.Apply(report.Helpf("a %s can only appear at %s", what, v))
+			d.Apply(report.Helpf("this %s can only appear at %s", what, v))
 		} else {
-			d.Apply(report.Helpf("a %s can only appear within a %s", what, v))
+			d.Apply(report.Helpf("this %s can only appear within a %s", what, v))
 		}
 	} else {
 		d.Apply(report.Helpf(
-			"a %s can only appear within one of %s",
+			"this %s can only appear within one of %s",
 			what, e.validParents.Join("or"),
 		))
+	}
+}
+
+// errRequiresEdition diagnoses that a certain edition is required for a feature.
+//
+//nolint:govet // Irrelevant alignment padding lint.
+type errRequiresEdition struct {
+	edition syntax.Syntax
+	node    report.Spanner
+	what    any
+	decl    ast.DeclSyntax
+
+	// If set, this will report that the feature is not implemented instead.
+	unimplemented bool
+}
+
+func (e errRequiresEdition) Diagnose(d *report.Diagnostic) {
+	what := e.what
+	if what == nil {
+		what = taxa.Classify(e.node)
+	}
+
+	if e.unimplemented {
+		d.Apply(
+			report.Message("sorry, %s is not implemented yet", what),
+			report.Snippet(e.node),
+			report.Helpf("%s is part of Edition %s, which will be implemented in a future release", what, e.edition),
+		)
+		return
+	}
+
+	d.Apply(
+		report.Message("%s requires Edition %s or later", what, e.edition),
+		report.Snippet(e.node),
+	)
+
+	if !e.decl.IsZero() {
+		report.Snippetf(e.decl.Value(), "%s specified here", e.decl.Keyword())
+	}
+}
+
+// errUnexpectedMod diagnoses a modifier placed in the wrong position.
+type errUnexpectedMod struct {
+	mod   token.Token
+	where taxa.Place
+
+	syntax   syntax.Syntax
+	noDelete bool
+}
+
+func (e errUnexpectedMod) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("unexpected `%s` modifier %s", e.mod.Keyword(), e.where),
+		report.Snippet(e.mod),
+	)
+
+	if !e.noDelete {
+		d.Apply(
+			justify(e.mod.Context().Stream(), e.mod.Span(), "delete it", justified{
+				Edit:    report.Edit{Start: 0, End: e.mod.Span().Len()},
+				justify: justifyRight,
+			}))
+	}
+
+	switch k := e.mod.Keyword(); {
+	case k.IsFieldTypeModifier():
+		d.Apply(report.Helpf("`%s` only applies to a %s", k, taxa.Field))
+
+	case k.IsTypeModifier():
+		d.Apply(report.Helpf("`%s` only applies to a type definition", k))
+	case k.IsImportModifier():
+		d.Apply(report.Helpf("`%s` only applies to an %s", k, taxa.Import))
+
+	case k.IsMethodTypeModifier():
+		d.Apply(report.Helpf("`%s` only applies to an input or output of a %s", k, taxa.Method))
 	}
 }
 
