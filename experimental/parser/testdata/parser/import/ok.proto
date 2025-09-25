@@ -19,3 +19,4 @@ package test;
 import "foo.proto";
 import weak "weak.proto";
 import public "public.proto";
+import option "option.proto";

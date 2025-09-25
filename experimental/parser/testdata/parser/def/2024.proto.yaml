@@ -1,0 +1,22 @@
+decls:
+- syntax: { kind: KIND_EDITION, value.literal.string_value: "2024" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "Foo1" }]
+    body.decls:
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "x" }]
+        type.prefixed.type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 1
+    - def:
+        kind: KIND_FIELD
+        name.components: [{ ident: "y" }]
+        type.prefixed.type.path.components: [{ ident: "int32" }]
+        value.literal.int_value: 1
+- def: { kind: KIND_MESSAGE, name.components: [{ ident: "Foo2" }], body: {} }
+- def: { kind: KIND_ENUM, name.components: [{ ident: "Foo3" }], body: {} }
+- def: { kind: KIND_ENUM, name.components: [{ ident: "Foo4" }], body: {} }
+- def: { kind: KIND_SERVICE, name.components: [{ ident: "S1" }], body: {} }
+- def: { kind: KIND_SERVICE, name.components: [{ ident: "S2" }], body: {} }

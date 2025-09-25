@@ -3,6 +3,7 @@ error: unrecognized `syntax` declaration value
    |
 15 | syntax = invalid;
    |          ^^^^^^^
-   = note: permitted values: "proto2", "proto3"
+   = note: treating the file as "proto2" instead
+   = help: permitted values: "proto2", "proto3"
 
 encountered 1 error

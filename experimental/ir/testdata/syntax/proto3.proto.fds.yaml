@@ -1,0 +1,4 @@
+file:
+- name: "testdata/syntax/proto3.proto"
+  package: "buf.test"
+  syntax: "proto3"

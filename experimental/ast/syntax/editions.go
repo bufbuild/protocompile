@@ -16,24 +16,51 @@ package syntax
 
 import (
 	"iter"
-
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
+
+// LatestImplementedEdition is the most recent edition that the compiler
+// implements.
+const LatestImplementedEdition = Edition2023
+
+// All returns an iterator over all known [Syntax] values.
+func All() iter.Seq[Syntax] {
+	return func(yield func(Syntax) bool) {
+		_ = yield(Proto2) &&
+			yield(Proto3) &&
+			yield(Edition2023) &&
+			yield(Edition2024)
+	}
+}
+
+// Editions returns an iterator over all the editions in this package.
+func Editions() iter.Seq[Syntax] {
+	return func(yield func(Syntax) bool) {
+		_ = yield(Edition2023) &&
+			yield(Edition2024)
+	}
+}
 
 // IsEdition returns whether this represents an edition.
 func (s Syntax) IsEdition() bool {
 	return s != Proto2 && s != Proto3
 }
 
-// Editions returns an iterator over all the editions in this package.
-func Editions() iter.Seq[Syntax] {
-	return func(yield func(Syntax) bool) {
-		for i := range totalEditions {
-			if !yield(Syntax(i + int(Edition2023))) {
-				break
-			}
-		}
+// IsSupported returns whether this syntax is fully supported.
+func (s Syntax) IsSupported() bool {
+	switch s {
+	case Proto2, Proto3, Edition2023:
+		return true
+	default:
+		return false
 	}
 }
 
-var totalEditions = iterx.Count(iterx.Filter(All(), Syntax.IsEdition))
+// IsValid returns whether this syntax is valid.
+func (s Syntax) IsValid() bool {
+	switch s {
+	case Proto2, Proto3, Edition2023, Edition2024:
+		return true
+	default:
+		return false
+	}
+}

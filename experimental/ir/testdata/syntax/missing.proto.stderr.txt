@@ -1,0 +1,6 @@
+warning: missing `syntax` declaration
+ --> testdata/syntax/missing.proto
+   = note: this defaults to "proto2"; not specifying this  explicitly is
+           discouraged
+
+encountered 1 warning

@@ -29,9 +29,13 @@ import (
 func TestEditions(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, []syntax.Syntax{syntax.Edition2023}, slices.Collect(syntax.Editions()))
+	assert.Equal(t, []syntax.Syntax{syntax.Edition2023, syntax.Edition2024}, slices.Collect(syntax.Editions()))
+	assert.Equal(t,
+		[]syntax.Syntax{syntax.Edition2023, syntax.Edition2024},
+		slices.Collect(syntax.Editions()),
+	)
 	assert.Equal(t,
 		mapsx.KeySet(editions.SupportedEditions),
-		mapsx.CollectSet(iterx.Strings(syntax.Editions())),
+		mapsx.CollectSet(iterx.Strings(iterx.Filter(syntax.Editions(), syntax.Syntax.IsSupported))),
 	)
 }

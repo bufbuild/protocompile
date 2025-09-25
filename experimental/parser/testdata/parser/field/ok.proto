@@ -36,4 +36,10 @@ message M {
     repeated .package.Type name = 1;
     required .package.Type name = 1;
     .package.Type name = 1;
+
+    export.Type name = 1;
+    local.Type name = 1;
+
+    export Type name = 1;
+    local Type name = 1;
 }

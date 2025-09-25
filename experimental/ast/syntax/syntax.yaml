@@ -13,12 +13,16 @@
 # limitations under the License.
 
 - name: Syntax
-  type: int
+  type: int32
   docs: |
     Syntax is a known syntax pragma.
 
     Not only does this include "proto2" and "proto3", but also all of the
     editions.
+    
+    The integer values of the constants correspond to their the values of
+    google.protobuf.Edition.
+  use_maps_for_lookup: true
   methods:
   - kind: string
   - kind: go-string
@@ -29,14 +33,19 @@
 
       If name does not name a known pragma, returns [Unknown].
     skip: [Unknown]
-  - kind: all
-    name: All
-    docs: |
-      All returns an iterator over all known [Syntax] values.
-    skip: [Unknown]
   values:
-    - {name: Unknown, string: "<unknown>"}
-    - {name: Proto2, string: proto2}
-    - {name: Proto3, string: proto3}
-    - {name: Edition2023, string: "2023"}
+    - {name: Unknown, string: "<unknown>", expr: "0"}
+    - {name: Proto2, string: proto2, expr: "998"}
+    - {name: Proto3, string: proto3, expr: "999"}
+    
+    - {name: Edition2023, string: "2023", expr: "1000"}
+    - {name: Edition2024, string: "2024", expr: "1001"}
+    
+    - {name: EditionLegacy, string: "buf/legacy", expr: "900"}
+    - {name: EditionTest1, string: "buf/1", expr: "1"}
+    - {name: EditionTest2, string: "buf/2", expr: "2"}
+    - {name: EditionTest99997, string: "buf/99997", expr: "99997"}
+    - {name: EditionTest99998, string: "buf/99998", expr: "99998"}
+    - {name: EditionTest99999, string: "buf/99999", expr: "99999"}
+    - {name: EditionMax, string: "buf/max", expr: "0x7fff_ffff"}
   

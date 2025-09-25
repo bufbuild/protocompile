@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -140,7 +141,6 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		fallthrough
 	case ast.ExprKindPath:
 		name = expr.Span().Text()
-
 	case ast.ExprKindInvalid:
 		return
 	default:
@@ -152,51 +152,74 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		return
 	}
 
-	permitted := func() report.DiagnosticOption {
+	value := syntax.Lookup(name)
+	lit := expr.AsLiteral()
+	switch {
+	case !value.IsValid():
 		values := iterx.FilterMap(syntax.All(), func(s syntax.Syntax) (string, bool) {
-			if s.IsEdition() != (in == taxa.Edition) {
+			if s.IsEdition() != (in == taxa.Edition) || !s.IsSupported() {
 				return "", false
 			}
 
 			return fmt.Sprintf("%q", s), true
 		})
 
-		return report.Notef("permitted values: %s", iterx.Join(values, ", "))
-	}
+		// NOTE: This matches fallback behavior in ir/lower_walk.go.
+		fallback := `"proto2"`
+		if decl.IsEdition() {
+			fallback = "Edition 2023"
+		}
 
-	value := syntax.Lookup(name)
-	lit := expr.AsLiteral()
-	switch {
-	case value == syntax.Unknown:
 		p.Errorf("unrecognized %s value", in).Apply(
 			report.Snippet(expr),
-			permitted(),
-		)
-	case value.IsEdition() && in == taxa.Syntax:
-		p.Errorf("unexpected edition in %s", in).Apply(
-			report.Snippet(expr),
-			permitted(),
-		)
-	case !value.IsEdition() && in == taxa.Edition:
-		p.Errorf("unexpected syntax in %s", in).Apply(
-			report.Snippet(expr),
-			permitted(),
+			report.Notef("treating the file as %s instead", fallback),
+			report.Helpf("permitted values: %s", iterx.Join(values, ", ")),
 		)
 
-	case lit.Kind() != token.String:
-		span := expr.Span()
-		p.Errorf("the value of a %s must be a string literal", in).Apply(
-			report.Snippet(span),
-			report.SuggestEdits(
-				span,
-				"add quotes to make this a string literal",
-				report.Edit{Start: 0, End: 0, Replace: `"`},
-				report.Edit{Start: span.Len(), End: span.Len(), Replace: `"`},
-			),
+	case !value.IsSupported():
+		p.Errorf("sorry, Edition %s is not fully implemented", value).Apply(
+			report.Snippet(expr),
+			report.Helpf("Edition %s will be implemented in a future release", value),
 		)
+	}
 
-	case !lit.IsZero() && !lit.IsPureString():
-		p.Warn(errImpureString{lit.Token, in.In()})
+	if value.IsValid() {
+		if value.IsEdition() && in == taxa.Syntax {
+			p.Errorf("editions must use the `edition` keyword", in).Apply(
+				report.Snippet(decl.KeywordToken()),
+				report.SuggestEdits(decl.KeywordToken(), "replace with `edition`", report.Edit{
+					Start: 0, End: decl.KeywordToken().Span().Len(),
+					Replace: "edition",
+				}),
+			)
+		}
+
+		if !value.IsEdition() && in == taxa.Edition {
+			lit := expr.Span().Text()
+			p.Errorf("%s use the `syntax` keyword", lit).Apply(
+				report.Snippet(decl.KeywordToken()),
+				report.SuggestEdits(decl.KeywordToken(), "replace with `syntax`", report.Edit{
+					Start: 0, End: decl.KeywordToken().Span().Len(),
+					Replace: "syntax",
+				}),
+				report.Helpf("%s is technically an edition, but cannot use `edition`", lit),
+			)
+		}
+
+		if lit.Kind() != token.String {
+			span := expr.Span()
+			p.Errorf("the value of a %s must be a string literal", in).Apply(
+				report.Snippet(span),
+				report.SuggestEdits(
+					span,
+					"add quotes to make this a string literal",
+					report.Edit{Start: 0, End: 0, Replace: `"`},
+					report.Edit{Start: span.Len(), End: span.Len(), Replace: `"`},
+				),
+			)
+		} else if !lit.IsZero() && !lit.IsPureString() {
+			p.Warn(errImpureString{lit.Token, in.In()})
+		}
 	}
 
 	if p.syntax == syntax.Unknown {
@@ -310,7 +333,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 			// TODO: potentially defer this diagnostic to later, when we can
 			// perform symbol lookup and figure out what the correct file to
 			// import is.
-			report.Notef("Protobuf does not support importing symbols by name, instead, " +
+			report.Helpf("Protobuf does not support importing symbols by name, instead, " +
 				"try importing a file, e.g. `import \"google/protobuf/descriptor.proto\";`"),
 		)
 		return
@@ -336,11 +359,57 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		return
 	}
 
-	if in == taxa.WeakImport {
-		p.Warnf("use of `import weak`").Apply(
-			report.Snippet(report.Join(decl.KeywordToken(), decl.ModifierToken())),
-			report.Notef("`import weak` is deprecated and not supported correctly "+
-				"in most Protobuf implementations"),
-		)
+	for i, mod := range seq.All(decl.ModifierTokens()) {
+		if i > 0 {
+			p.Errorf("unexpected `%s` modifier in %s", mod.Text(), in).Apply(
+				report.Snippet(mod),
+				report.Snippetf(report.Join(
+					decl.KeywordToken(),
+					decl.ModifierTokens().At(0),
+				), "already modified here"),
+			)
+			continue
+		}
+
+		switch k := mod.Keyword(); k {
+		case keyword.Public:
+
+		case keyword.Weak:
+			p.Warnf("use of `import weak`").Apply(
+				report.Snippet(report.Join(decl.KeywordToken(), mod)),
+				report.Helpf("`import weak` is deprecated and not supported correctly "+
+					"in most Protobuf implementations"),
+			)
+
+		case keyword.Option:
+			p.Error(errRequiresEdition{
+				edition:       syntax.Edition2024,
+				node:          report.Join(decl.KeywordToken(), mod),
+				what:          "`import option`",
+				decl:          p.syntaxNode,
+				unimplemented: p.syntax >= syntax.Edition2024,
+			})
+
+		default:
+			d := p.Error(errUnexpectedMod{
+				mod:      mod,
+				where:    taxa.Import.In(),
+				syntax:   p.syntax,
+				noDelete: k == keyword.Export || k == keyword.Optional,
+			})
+			switch k {
+			case keyword.Export:
+				d.Apply(report.SuggestEdits(mod, "replace with `public`", report.Edit{
+					Start: 0, End: mod.Span().Len(),
+					Replace: "public",
+				}))
+
+			case keyword.Optional:
+				d.Apply(report.SuggestEdits(mod, "replace with `option`", report.Edit{
+					Start: 0, End: mod.Span().Len(),
+					Replace: "option",
+				}))
+			}
+		}
 	}
 }

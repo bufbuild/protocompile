@@ -231,21 +231,29 @@ func (c *protoEncoder) decl(decl ast.DeclAny) *compilerpb.Decl {
 	case ast.DeclKindImport:
 		decl := decl.AsImport()
 
-		var mod compilerpb.Decl_Import_Modifier
-		switch {
-		case decl.IsWeak():
-			mod = compilerpb.Decl_Import_MODIFIER_WEAK
-		case decl.IsPublic():
-			mod = compilerpb.Decl_Import_MODIFIER_PUBLIC
+		var mods []compilerpb.Decl_Import_Modifier
+		var modSpans []*compilerpb.Span
+
+		for mod := range seq.Values(decl.ModifierTokens()) {
+			switch mod.Keyword() {
+			case keyword.Public:
+				mods = append(mods, compilerpb.Decl_Import_MODIFIER_PUBLIC)
+			case keyword.Weak:
+				mods = append(mods, compilerpb.Decl_Import_MODIFIER_WEAK)
+			default: // Add support for keyword.Option whenever it gets added to ast.proto.
+				mods = append(mods, compilerpb.Decl_Import_MODIFIER_UNSPECIFIED)
+			}
+
+			modSpans = append(modSpans, c.span(mod))
 		}
 
 		return &compilerpb.Decl{Decl: &compilerpb.Decl_Import_{Import: &compilerpb.Decl_Import{
-			Modifier:       mod,
+			Modifier:       mods,
 			ImportPath:     c.expr(decl.ImportPath()),
 			Options:        c.options(decl.Options()),
 			Span:           c.span(decl),
 			KeywordSpan:    c.span(decl.KeywordToken()),
-			ModifierSpan:   c.span(decl.ModifierToken()),
+			ModifierSpan:   modSpans,
 			ImportPathSpan: c.span(decl.ImportPath()),
 			SemicolonSpan:  c.span(decl.Semicolon()),
 		}}}

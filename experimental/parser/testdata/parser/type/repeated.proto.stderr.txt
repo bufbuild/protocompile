@@ -1,18 +1,28 @@
-error: encountered more than one type modifier
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:20:14
    |
 20 |     optional optional M x1 = 1;
-   |     -------- ^^^^^^^^ help: consider removing this
+   |     -------- ^^^^^^^^
    |     |
-   |     first one is here
+   |     previous one is here
+  help: delete it
+   |
+20 | -     optional optional M x1 = 1;
+20 | +     optional M x1 = 1;
+   |
 
-error: encountered more than one type modifier
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:21:14
    |
 21 |     repeated optional M x2 = 2;
-   |     -------- ^^^^^^^^ help: consider removing this
+   |     -------- ^^^^^^^^
    |     |
-   |     first one is here
+   |     previous one is here
+  help: delete it
+   |
+21 | -     repeated optional M x2 = 2;
+21 | +     repeated M x2 = 2;
+   |
 
 warning: required fields are deprecated and should not be used
   --> testdata/parser/type/repeated.proto:22:5
@@ -22,115 +32,185 @@ warning: required fields are deprecated and should not be used
    = help: do not attempt to change this to optional if the field is already
            in-use; doing so is a wire protocol break
 
-error: encountered more than one type modifier
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:22:14
    |
 22 |     required optional M x3 = 3;
-   |     -------- ^^^^^^^^ help: consider removing this
+   |     -------- ^^^^^^^^
    |     |
-   |     first one is here
+   |     previous one is here
+  help: delete it
+   |
+22 | -     required optional M x3 = 3;
+22 | +     required M x3 = 3;
+   |
 
-error: encountered more than one type modifier
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:23:14
    |
 23 |     repeated repeated M x4 = 4;
-   |     -------- ^^^^^^^^ help: consider removing this
+   |     -------- ^^^^^^^^
    |     |
-   |     first one is here
+   |     previous one is here
+  help: delete it
+   |
+23 | -     repeated repeated M x4 = 4;
+23 | +     repeated M x4 = 4;
+   |
 
-error: encountered more than one type modifier
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:24:14
    |
 24 |     repeated stream M x5 = 5;
-   |     -------- ^^^^^^ help: consider removing this
+   |     -------- ^^^^^^
    |     |
-   |     first one is here
+   |     previous one is here
+  help: delete it
+   |
+24 | -     repeated stream M x5 = 5;
+24 | +     repeated M x5 = 5;
+   |
 
-error: unexpected `stream`
+error: unexpected `stream` modifier on message field
   --> testdata/parser/type/repeated.proto:25:5
    |
 25 |     stream stream M x6 = 6;
-   |     ^^^^^^ expected `optional`, `repeated`, or `required`
+   |     ^^^^^^
   help: delete it
    |
 25 | -     stream stream M x6 = 6;
 25 | +     stream M x6 = 6;
    |
-   = help: the `stream` modifier may only appear in a method signature
+   = help: `stream` only applies to an input or output of a service method
 
-error: encountered more than one type modifier
+error: multiple modifiers on message field type
   --> testdata/parser/type/repeated.proto:25:12
    |
 25 |     stream stream M x6 = 6;
-   |     ------ ^^^^^^ help: consider removing this
+   |     ------ ^^^^^^
    |     |
-   |     first one is here
+   |     previous one is here
+  help: delete it
+   |
+25 | -     stream stream M x6 = 6;
+25 | +     stream M x6 = 6;
+   |
 
-error: only the `stream` modifier may appear in method parameter list
+error: unexpected `required` modifier in method signature
   --> testdata/parser/type/repeated.proto:29:12
    |
 29 |     rpc X1(required optional M) returns (stream optional M) {}
    |            ^^^^^^^^
+  help: delete it
+   |
+29 | -     rpc X1(required optional M) returns (stream optional M) {}
+29 | +     rpc X1(optional M) returns (stream optional M) {}
+   |
+   = help: `required` only applies to a message field
 
-error: only message types may appear in method parameter list
+error: unexpected `optional` modifier in method signature
   --> testdata/parser/type/repeated.proto:29:21
    |
 29 |     rpc X1(required optional M) returns (stream optional M) {}
-   |                     ^^^^^^^^^^
+   |                     ^^^^^^^^
+  help: delete it
+   |
+29 | -     rpc X1(required optional M) returns (stream optional M) {}
+29 | +     rpc X1(required M) returns (stream optional M) {}
+   |
+   = help: `optional` only applies to a message field
 
-error: only message types may appear in method return type
+error: unexpected `optional` modifier in method signature
   --> testdata/parser/type/repeated.proto:29:49
    |
 29 |     rpc X1(required optional M) returns (stream optional M) {}
-   |                                                 ^^^^^^^^^^
+   |                                                 ^^^^^^^^
+  help: delete it
+   |
+29 | -     rpc X1(required optional M) returns (stream optional M) {}
+29 | +     rpc X1(required optional M) returns (stream M) {}
+   |
+   = help: `optional` only applies to a message field
 
-error: only the `stream` modifier may appear in method parameter list
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:30:12
    |
 30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
    |            ^^^^^^^^
+  help: delete it
+   |
+30 | -     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+30 | +     rpc X2(repeated test.M) returns (repeated stream .test.M) {}
+   |
+   = help: `repeated` only applies to a message field
 
-error: only message types may appear in method parameter list
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:30:21
    |
 30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
-   |                     ^^^^^^^^^^^^^^^
+   |                     ^^^^^^^^
+  help: delete it
+   |
+30 | -     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+30 | +     rpc X2(repeated test.M) returns (repeated stream .test.M) {}
+   |
+   = help: `repeated` only applies to a message field
 
-error: only the `stream` modifier may appear in method return type
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:30:47
    |
 30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
    |                                               ^^^^^^^^
-
-error: only message types may appear in method return type
-  --> testdata/parser/type/repeated.proto:30:56
+  help: delete it
    |
-30 |     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
-   |                                                        ^^^^^^^^^^^^^^
+30 | -     rpc X2(repeated repeated test.M) returns (repeated stream .test.M) {}
+30 | +     rpc X2(repeated repeated test.M) returns (stream .test.M) {}
+   |
+   = help: `repeated` only applies to a message field
 
-error: only message types may appear in method parameter list
+error: encountered more than one `stream`
   --> testdata/parser/type/repeated.proto:31:19
    |
 31 |     rpc X3(stream stream .test.M) returns (stream repeated M) {}
-   |                   ^^^^^^^^^^^^^^
+   |            ------ ^^^^^^ help: consider removing this
+   |            |
+   |            first one is here
 
-error: only message types may appear in method return type
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:31:51
    |
 31 |     rpc X3(stream stream .test.M) returns (stream repeated M) {}
-   |                                                   ^^^^^^^^^^
+   |                                                   ^^^^^^^^
+  help: delete it
+   |
+31 | -     rpc X3(stream stream .test.M) returns (stream repeated M) {}
+31 | +     rpc X3(stream stream .test.M) returns (stream M) {}
+   |
+   = help: `repeated` only applies to a message field
 
-error: only the `stream` modifier may appear in method parameter list
+error: unexpected `required` modifier in method signature
   --> testdata/parser/type/repeated.proto:33:12
    |
 33 |     rpc X4(required optional M) returns stream optional M {}
    |            ^^^^^^^^
+  help: delete it
+   |
+33 | -     rpc X4(required optional M) returns stream optional M {}
+33 | +     rpc X4(optional M) returns stream optional M {}
+   |
+   = help: `required` only applies to a message field
 
-error: only message types may appear in method parameter list
+error: unexpected `optional` modifier in method signature
   --> testdata/parser/type/repeated.proto:33:21
    |
 33 |     rpc X4(required optional M) returns stream optional M {}
-   |                     ^^^^^^^^^^
+   |                     ^^^^^^^^
+  help: delete it
+   |
+33 | -     rpc X4(required optional M) returns stream optional M {}
+33 | +     rpc X4(required M) returns stream optional M {}
+   |
+   = help: `optional` only applies to a message field
 
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:33:41
@@ -142,29 +222,53 @@ error: missing `(...)` around method return type
 33 |     rpc X4(required optional M) returns (stream optional M) {}
    |                                         +                 +
 
-error: only message types may appear in method return type
+error: unexpected `optional` modifier in method signature
   --> testdata/parser/type/repeated.proto:33:48
    |
 33 |     rpc X4(required optional M) returns stream optional M {}
-   |                                                ^^^^^^^^^^
+   |                                                ^^^^^^^^
+  help: delete it
+   |
+33 | -     rpc X4(required optional M) returns stream optional M {}
+33 | +     rpc X4(required optional M) returns stream M {}
+   |
+   = help: `optional` only applies to a message field
 
-error: only the `stream` modifier may appear in method parameter list
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:34:12
    |
 34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
    |            ^^^^^^^^
+  help: delete it
+   |
+34 | -     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+34 | +     rpc X5(repeated test.M) returns repeated stream .test.M {}
+   |
+   = help: `repeated` only applies to a message field
 
-error: only message types may appear in method parameter list
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:34:21
    |
 34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
-   |                     ^^^^^^^^^^^^^^^
+   |                     ^^^^^^^^
+  help: delete it
+   |
+34 | -     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+34 | +     rpc X5(repeated test.M) returns repeated stream .test.M {}
+   |
+   = help: `repeated` only applies to a message field
 
-error: only the `stream` modifier may appear in method return type
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:34:46
    |
 34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
    |                                              ^^^^^^^^
+  help: delete it
+   |
+34 | -     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
+34 | +     rpc X5(repeated repeated test.M) returns stream .test.M {}
+   |
+   = help: `repeated` only applies to a message field
 
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:34:46
@@ -176,17 +280,13 @@ error: missing `(...)` around method return type
 34 |     rpc X5(repeated repeated test.M) returns (repeated stream .test.M) {}
    |                                              +                       +
 
-error: only message types may appear in method return type
-  --> testdata/parser/type/repeated.proto:34:55
-   |
-34 |     rpc X5(repeated repeated test.M) returns repeated stream .test.M {}
-   |                                                       ^^^^^^^^^^^^^^
-
-error: only message types may appear in method parameter list
+error: encountered more than one `stream`
   --> testdata/parser/type/repeated.proto:35:19
    |
 35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
-   |                   ^^^^^^^^^^^^^^
+   |            ------ ^^^^^^ help: consider removing this
+   |            |
+   |            first one is here
 
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:35:43
@@ -198,10 +298,16 @@ error: missing `(...)` around method return type
 35 |     rpc X6(stream stream .test.M) returns (stream repeated M) {}
    |                                           +                 +
 
-error: only message types may appear in method return type
+error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:35:50
    |
 35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
-   |                                                  ^^^^^^^^^^
+   |                                                  ^^^^^^^^
+  help: delete it
+   |
+35 | -     rpc X6(stream stream .test.M) returns stream repeated M {}
+35 | +     rpc X6(stream stream .test.M) returns stream M {}
+   |
+   = help: `repeated` only applies to a message field
 
-encountered 28 errors and 1 warning
+encountered 26 errors and 1 warning
