@@ -1,4 +1,4 @@
-error: `proto2` must use the `syntax` keyword
+error: "proto2" use the `syntax` keyword
   --> testdata/parser/syntax/edition_proto2.proto:15:1
    |
 15 | edition = "proto2";
@@ -8,5 +8,6 @@ error: `proto2` must use the `syntax` keyword
 15 | - edition = "proto2";
 15 | + syntax = "proto2";
    |
+   = help: "proto2" is technically an edition, but cannot use `edition`
 
 encountered 1 error

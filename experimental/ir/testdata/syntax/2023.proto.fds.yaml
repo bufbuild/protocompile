@@ -1,0 +1,5 @@
+file:
+- name: "testdata/syntax/2023.proto"
+  package: "buf.test"
+  syntax: "editions"
+  edition: EDITION_2023

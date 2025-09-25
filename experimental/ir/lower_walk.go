@@ -51,9 +51,24 @@ func (w *walker) walk() {
 	}
 	w.pkg = w.Package()
 
+	c.syntax = syntax.Proto2
 	if syn := w.AST().Syntax(); !syn.IsZero() {
-		unquoted, _ := syn.Value().AsLiteral().AsString()
+		unquoted, ok := syn.Value().AsLiteral().AsString()
+		if !ok {
+			unquoted = syn.Value().Span().Text()
+		}
+
+		// NOTE: This matches fallback behavior in parser/legalize_file.go.
 		c.syntax = syntax.Lookup(unquoted)
+		if c.syntax == syntax.Unknown {
+			if syn.IsEdition() {
+				// If they wrote edition = "garbage" they probably want *an*
+				// edition, so we pick the oldest one.
+				c.syntax = syntax.Edition2023
+			} else {
+				c.syntax = syntax.Proto2
+			}
+		}
 	}
 
 	w.recurse(w.AST().AsAny(), nil)

@@ -1,0 +1,4 @@
+file:
+- name: "testdata/syntax/proto2_unquoted.proto"
+  package: "buf.test"
+  syntax: "proto2"
