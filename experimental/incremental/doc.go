@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-package incremental implements a query-oriented incremental compilation
+Package incremental implements a query-oriented incremental compilation
 framework.
 
 The primary type of this package is [Executor], which executes [Query] values
