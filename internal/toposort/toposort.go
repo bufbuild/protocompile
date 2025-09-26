@@ -52,7 +52,6 @@ type Sorter[Node any, Key comparable] struct {
 
 	state     map[Key]byte
 	stack     []Node
-	visited   []bool
 	iterating bool
 }
 
@@ -67,7 +66,6 @@ func (s *Sorter[Node, Key]) Sort(
 		clear(s.state)
 	}
 	s.stack = s.stack[0:]
-	s.visited = s.visited[0:]
 
 	return func(yield func(Node) bool) {
 		if s.iterating {
@@ -91,17 +89,12 @@ func (s *Sorter[Node, Key]) Sort(
 				if state == unsorted {
 					s.state[k] = working
 					for child := range dag(node) {
-						if s.state[s.Key(child)] != sorted {
-							s.push(child)
-						}
+						s.push(child)
 					}
 					continue
 				}
 
-				fmt.Println(k, s.state)
-
 				s.stack = s.stack[:len(s.stack)-1]
-				s.visited = s.visited[:len(s.visited)-1]
 				if state != sorted && !yield(node) {
 					return
 				}
@@ -116,7 +109,6 @@ func (s *Sorter[Node, Key]) push(v Node) {
 	switch s.state[k] {
 	case unsorted:
 		s.stack = append(s.stack, v)
-		s.visited = append(s.visited, false)
 
 	case working:
 		prev := slicesx.LastIndexFunc(s.stack, func(n Node) bool {
