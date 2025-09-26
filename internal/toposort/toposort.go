@@ -58,7 +58,7 @@ func (s *Sorter[Node, Key]) Sort(
 	} else {
 		clear(s.state)
 	}
-	clear(s.stack) // Ensure all pointers are cleared.
+	clear(s.stack) // Ensure all pointers are zeroed.
 	s.stack = s.stack[:0]
 
 	return func(yield func(Node) bool) {
@@ -88,6 +88,8 @@ func (s *Sorter[Node, Key]) Sort(
 					continue
 				}
 
+				var zeroNode Node
+				s.stack[len(s.stack)] = zeroNode
 				s.stack = s.stack[:len(s.stack)-1]
 				if !yieled {
 					if !yield(node) {
