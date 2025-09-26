@@ -1,0 +1,221 @@
+tables:
+  "a1.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", visible: true }
+    - { path: "d.proto", visible: true }
+    - { path: "p.proto", transitive: true, visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "a1.proto" }
+    - fqn: "buf.test.A1"
+      kind: KIND_MESSAGE
+      file: "a1.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A1.b"
+      kind: KIND_FIELD
+      file: "a1.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A1.c"
+      kind: KIND_FIELD
+      file: "a1.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.A1.d"
+      kind: KIND_FIELD
+      file: "a1.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.D"
+      kind: KIND_MESSAGE
+      file: "d.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.P"
+      kind: KIND_MESSAGE
+      file: "p.proto"
+      index: 1
+      visible: true
+  "a2.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", visible: true }
+    - { path: "d.proto", visible: true }
+    - { path: "p.proto", transitive: true, visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "a2.proto" }
+    - fqn: "buf.test.A2"
+      kind: KIND_MESSAGE
+      file: "a2.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.D"
+      kind: KIND_MESSAGE
+      file: "d.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.P"
+      kind: KIND_MESSAGE
+      file: "p.proto"
+      index: 1
+      visible: true
+  "a3.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", visible: true }
+    - { path: "d.proto", visible: true }
+    - { path: "p.proto", transitive: true, visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "a3.proto" }
+    - fqn: "buf.test.A3"
+      kind: KIND_MESSAGE
+      file: "a3.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A3.p"
+      kind: KIND_FIELD
+      file: "a3.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A3.d"
+      kind: KIND_FIELD
+      file: "a3.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.D"
+      kind: KIND_MESSAGE
+      file: "d.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.P"
+      kind: KIND_MESSAGE
+      file: "p.proto"
+      index: 1
+      visible: true
+  "a4.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", visible: true }
+    - { path: "d.proto", visible: true }
+    - { path: "p.proto", transitive: true, visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "a4.proto" }
+    - fqn: "buf.test.A4"
+      kind: KIND_MESSAGE
+      file: "a4.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A4.b"
+      kind: KIND_FIELD
+      file: "a4.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A4.p"
+      kind: KIND_FIELD
+      file: "a4.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.A4.d"
+      kind: KIND_FIELD
+      file: "a4.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.D"
+      kind: KIND_MESSAGE
+      file: "d.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.P"
+      kind: KIND_MESSAGE
+      file: "p.proto"
+      index: 1
+      visible: true
+  "a5.proto":
+    imports:
+    - { path: "b.proto", visible: true }
+    - { path: "c.proto", visible: true }
+    - { path: "d.proto", visible: true }
+    - { path: "p.proto", transitive: true, visible: true }
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "a5.proto" }
+    - fqn: "buf.test.A5"
+      kind: KIND_MESSAGE
+      file: "a5.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A5.c"
+      kind: KIND_FIELD
+      file: "a5.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.A5.p"
+      kind: KIND_FIELD
+      file: "a5.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.A5.d"
+      kind: KIND_FIELD
+      file: "a5.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.B"
+      kind: KIND_MESSAGE
+      file: "b.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.C"
+      kind: KIND_MESSAGE
+      file: "c.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.D"
+      kind: KIND_MESSAGE
+      file: "d.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.P"
+      kind: KIND_MESSAGE
+      file: "p.proto"
+      index: 1
+      visible: true

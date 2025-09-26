@@ -21,6 +21,17 @@ error: import path must not contain `.`, `..`, or repeated separators
  4 | + import "nested/path.proto";
    |
 
+warning: unused import "main.proto"
+  --> main.proto:4:8
+   |
+ 4 | import "nested\\path.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "nested\\path.proto";
+   |
+   = help: no symbols from this file are referenced
+
 warning: import path appears to begin with the Windows drive prefix `C:`
   --> main.proto:5:8
    |
@@ -28,6 +39,17 @@ warning: import path appears to begin with the Windows drive prefix `C:`
    |        ^^^^^^^^^^^^^^^^^^^^^^
    = note: this is not an error, because `protoc` accepts it, but may result in
            unexpected behavior on Windows
+
+warning: unused import "main.proto"
+  --> main.proto:5:8
+   |
+ 5 | import "C:/MyFiles/foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "C:/MyFiles/foo.proto";
+   |
+   = help: no symbols from this file are referenced
 
 error: file imported multiple times
   --> main.proto:6:1
@@ -69,4 +91,4 @@ error: import path must not contain `.`, `..`, or repeated separators
  6 | + import "C:/MyFiles/foo.proto";
    |
 
-encountered 5 errors and 2 warnings
+encountered 5 errors and 4 warnings

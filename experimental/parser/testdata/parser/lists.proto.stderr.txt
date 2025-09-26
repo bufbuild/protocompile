@@ -5,7 +5,7 @@ warning: missing `package` declaration
 
 warning: missing `syntax` declaration
  --> testdata/parser/lists.proto
-   = note: this defaults to "proto2"; not specifying this  explicitly is
+   = note: this defaults to "proto2"; not specifying this explicitly is
            discouraged
 
 error: unexpected array expression in option setting value

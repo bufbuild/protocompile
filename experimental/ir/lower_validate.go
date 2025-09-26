@@ -25,6 +25,23 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
+// diagnoseUnusedImports generates diagnostics for each unused import.
+func diagnoseUnusedImports(f File, r *report.Report) {
+	for imp := range seq.Values(f.Imports()) {
+		if imp.Used {
+			continue
+		}
+
+		r.Warnf("unused import \"%s\"", f.Path()).Apply(
+			report.Snippet(imp.Decl.ImportPath()),
+			report.SuggestEdits(imp.Decl, "delete it", report.Edit{
+				Start: 0, End: imp.Decl.Span().Len(),
+			}),
+			report.Helpf("no symbols from this file are referenced"),
+		)
+	}
+}
+
 // validateConstraints validates miscellaneous constraints that depend on the
 // whole IR being constructed properly.
 func validateConstraints(f File, r *report.Report) {

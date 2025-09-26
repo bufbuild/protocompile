@@ -51,7 +51,7 @@ func legalizeFile(p *parser, file ast.File) {
 			p.Warnf("missing %s", taxa.Syntax).Apply(
 				report.InFile(p.Stream().Path()),
 				report.Notef("this defaults to \"proto2\"; not specifying this "+
-					" explicitly is discouraged"),
+					"explicitly is discouraged"),
 				// TODO: suggestion.
 			)
 		}
