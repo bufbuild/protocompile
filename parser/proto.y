@@ -90,7 +90,7 @@ import (
 %type <cmpctOpts>    compactOptions
 %type <v>            fieldValue optionValue scalarValue fieldScalarValue messageLiteralWithBraces messageLiteral numLit specialFloatLit listLiteral listElement listOfMessagesLiteral messageValue
 %type <il>           enumValueNumber
-%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName notGroupElementName mtdElementName enumValueName fieldCardinality
+%type <id>           identifier mapKeyType msgElementName extElementName oneofElementName notGroupElementName mtdElementName enumValueName fieldCardinality declIdent nonDeclIdent
 %type <cidPart>      qualifiedIdentifierEntry qualifiedIdentifierFinal mtdElementIdentEntry mtdElementIdentFinal
 %type <cid>          qualifiedIdentifier msgElementIdent extElementIdent oneofElementIdent notGroupElementIdent mtdElementIdent qualifiedIdentifierDot qualifiedIdentifierLeading mtdElementIdentLeading
 %type <tid>          typeName msgElementTypeIdent extElementTypeIdent oneofElementTypeIdent notGroupElementTypeIdent mtdElementTypeIdent
@@ -136,7 +136,7 @@ import (
 %token <id>  _SYNTAX _EDITION _IMPORT _WEAK _PUBLIC _PACKAGE _OPTION _TRUE _FALSE _INF _NAN _REPEATED _OPTIONAL _REQUIRED
 %token <id>  _DOUBLE _FLOAT _INT32 _INT64 _UINT32 _UINT64 _SINT32 _SINT64 _FIXED32 _FIXED64 _SFIXED32 _SFIXED64
 %token <id>  _BOOL _STRING _BYTES _GROUP _ONEOF _MAP _EXTENSIONS _TO _MAX _RESERVED _ENUM _MESSAGE _EXTEND
-%token <id>  _SERVICE _RPC _STREAM _RETURNS
+%token <id>  _SERVICE _RPC _STREAM _RETURNS _EXPORT _LOCAL
 %token <err> _ERROR
 // we define all of these, even ones that aren't used, to improve error messages
 // so it shows the unexpected symbol instead of showing "$unk"
@@ -243,15 +243,19 @@ editionDecl : _EDITION '=' stringLit ';' {
 
 importDecl : _IMPORT stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($3)
-		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, nil, toStringValueNode($2), semi), extra...)
+		$$ = newNodeWithRunes(ast.NewImportNodeWithModifier($1.ToKeyword(), nil, toStringValueNode($2), semi), extra...)
 	}
 	| _IMPORT _WEAK stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), nil, $2.ToKeyword(), toStringValueNode($3), semi), extra...)
+		$$ = newNodeWithRunes(ast.NewImportNodeWithModifier($1.ToKeyword(), $2.ToKeyword(), toStringValueNode($3), semi), extra...)
 	}
 	| _IMPORT _PUBLIC stringLit semicolons {
 	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
-		$$ = newNodeWithRunes(ast.NewImportNode($1.ToKeyword(), $2.ToKeyword(), nil, toStringValueNode($3), semi), extra...)
+		$$ = newNodeWithRunes(ast.NewImportNodeWithModifier($1.ToKeyword(), $2.ToKeyword(), toStringValueNode($3), semi), extra...)
+	}
+	| _IMPORT _OPTION stringLit semicolons {
+	  semi, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithRunes(ast.NewImportNodeWithModifier($1.ToKeyword(), $2.ToKeyword(), toStringValueNode($3), semi), extra...)
 	}
 
 packageDecl : _PACKAGE qualifiedIdentifier semicolons {
@@ -652,6 +656,17 @@ typeName : qualifiedIdentifierDot {
 msgElementTypeIdent : msgElementIdent {
 		$$ = $1.toIdentValueNode(nil)
 	}
+	// We have to carve out productions for names that start with
+	// 'export' or 'local' to avoid shift/reduce conflicts in the
+	// generated parser.
+	| _EXPORT '.' qualifiedIdentifier {
+		$3.prefix($1, $2)
+		$$ = $3.toIdentValueNode(nil)
+    }
+	|  _LOCAL '.' qualifiedIdentifier {
+		$3.prefix($1, $2)
+		$$ = $3.toIdentValueNode(nil)
+	}
 	| '.' qualifiedIdentifier {
 		$$ = $2.toIdentValueNode($1)
 	}
@@ -957,6 +972,12 @@ fieldNameIdents : identifier {
 enumDecl : _ENUM identifier '{' enumBody '}' semicolons {
 		$$ = newNodeWithRunes(ast.NewEnumNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
+	| _EXPORT _ENUM identifier '{' enumBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewEnumNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
+	}
+	| _LOCAL _ENUM identifier '{' enumBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewEnumNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
+	}
 
 enumBody : semicolons {
 		$$ = prependRunes(toEnumElement, $1, nil)
@@ -997,6 +1018,12 @@ enumValueDecl : enumValueName '=' enumValueNumber semicolons {
 messageDecl : _MESSAGE identifier '{' messageBody '}' semicolons {
 		$$ = newNodeWithRunes(ast.NewMessageNode($1.ToKeyword(), $2, $3, $4, $5), $6...)
 	}
+	| _EXPORT _MESSAGE identifier '{' messageBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewMessageNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
+	}
+	| _LOCAL _MESSAGE identifier '{' messageBody '}' semicolons {
+		$$ = newNodeWithRunes(ast.NewMessageNodeWithVisibility($1.ToKeyword(), $2.ToKeyword(), $3, $4, $5, $6), $7...)
+	}
 
 messageBody : semicolons {
 		$$ = prependRunes(toMessageElement, $1, nil)
@@ -1011,6 +1038,7 @@ messageElements : messageElements messageElement {
 	| messageElement {
 		$$ = $1
 	}
+
 
 messageElement : messageFieldDecl {
 		$$ = toElements[ast.MessageElement](toMessageElement, $1.Node, $1.Runes)
@@ -1077,6 +1105,57 @@ messageFieldDecl : fieldCardinality notGroupElementTypeIdent identifier '=' _INT
 	| msgElementTypeIdent identifier compactOptions semicolons {
 		semis, extra := protolex.(*protoLex).requireSemicolon($4)
 		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, $3, semis), extra...)
+	}
+	// We have to carve out productions for fields without a cardinality
+	// and type name that is 'export' or 'local' to avoid shift/reduce
+	// conflicts in the generated parser.
+	| _EXPORT identifier '=' _INT_LIT semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($5)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, $3, $4, nil, semis), extra...)
+	}
+	| _EXPORT identifier '=' _INT_LIT compactOptions semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($6)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, $3, $4, $5, semis), extra...)
+	}
+	| _EXPORT identifier compactOptions semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, $3, semis), extra...)
+	}
+	| _LOCAL identifier '=' _INT_LIT semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($5)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, $3, $4, nil, semis), extra...)
+	}
+	| _LOCAL identifier '=' _INT_LIT compactOptions semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($6)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, $3, $4, $5, semis), extra...)
+	}
+	| _LOCAL identifier compactOptions semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($4)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, $3, semis), extra...)
+	}
+	// These are for lenient parsing of malformed declarations. The trick here is that
+	// "export enum" is a valid prefix for enums with visibility or for a field named
+	// "enum" in a pre-edition-2024 file where there's a type named "export". Same goes
+	// for "local message" and the other permutations of visibility keyword and decl.
+	// The semicolons production is for lenient parsing of declarations that are missing
+	// semicolons. But we can't accept that for "export enum" -- we require a semicolon
+	// in order to then parse it as a field (vs. an enum declaration). Hence the use of
+	// semicolonList in some places.
+	| _EXPORT nonDeclIdent semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, nil, semis), extra...)
+	}
+	| _EXPORT declIdent semicolonList {
+		semis, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, nil, semis), extra...)
+	}
+	| _LOCAL nonDeclIdent semicolons {
+		semis, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, nil, semis), extra...)
+	}
+	| _LOCAL declIdent semicolonList {
+		semis, extra := protolex.(*protoLex).requireSemicolon($3)
+		$$ = newNodeWithRunes(ast.NewFieldNode(nil, $1, $2, nil, nil, nil, semis), extra...)
 	}
 
 
@@ -1199,6 +1278,9 @@ methodElement : optionDecl {
 
 // excludes message, enum, oneof, extensions, reserved, extend,
 //   option, group, optional, required, and repeated
+// NOTE: also excludes export, local, but not because they aren't
+// allowed but because they require special handling to avoid
+// conflicts in the parser
 msgElementName : _NAME
 	| _SYNTAX
 	| _EDITION
@@ -1232,6 +1314,7 @@ msgElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+
 
 // excludes group, optional, required, and repeated
 extElementName : _NAME
@@ -1274,6 +1357,8 @@ extElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes reserved, option
 enumValueName : _NAME
@@ -1318,6 +1403,8 @@ enumValueName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes group, option, optional, required, and repeated
 oneofElementName : _NAME
@@ -1359,6 +1446,8 @@ oneofElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes group
 notGroupElementName : _NAME
@@ -1404,6 +1493,8 @@ notGroupElementName : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 // excludes stream
 mtdElementName : _NAME
@@ -1449,6 +1540,58 @@ mtdElementName : _NAME
 	| _SERVICE
 	| _RPC
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
+
+declIdent : _ENUM
+	| _MESSAGE
+
+// excludes message and enum, which are keywords that could otherwise
+// follow "export" or "local" and confuse the grammar
+nonDeclIdent : _NAME
+	| _SYNTAX
+	| _EDITION
+	| _IMPORT
+	| _WEAK
+	| _PUBLIC
+	| _PACKAGE
+	| _OPTION
+	| _TRUE
+	| _FALSE
+	| _INF
+	| _NAN
+	| _REPEATED
+	| _OPTIONAL
+	| _REQUIRED
+	| _DOUBLE
+	| _FLOAT
+	| _INT32
+	| _INT64
+	| _UINT32
+	| _UINT64
+	| _SINT32
+	| _SINT64
+	| _FIXED32
+	| _FIXED64
+	| _SFIXED32
+	| _SFIXED64
+	| _BOOL
+	| _STRING
+	| _BYTES
+	| _GROUP
+	| _ONEOF
+	| _MAP
+	| _EXTENSIONS
+	| _TO
+	| _MAX
+	| _RESERVED
+	| _EXTEND
+	| _SERVICE
+	| _RPC
+	| _STREAM
+	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 identifier : _NAME
 	| _SYNTAX
@@ -1494,5 +1637,7 @@ identifier : _NAME
 	| _RPC
 	| _STREAM
 	| _RETURNS
+	| _EXPORT
+	| _LOCAL
 
 %%

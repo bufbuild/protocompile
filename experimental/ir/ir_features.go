@@ -66,7 +66,7 @@ type featureKey struct {
 }
 
 type featureDefault struct {
-	edition syntax.Syntax // Unknown represents EDITION_LEGACY here.
+	edition syntax.Syntax
 	value   arena.Pointer[rawValue]
 }
 

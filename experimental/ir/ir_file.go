@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/toposort"
 )
@@ -300,6 +301,14 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
 		},
 	)
+}
+
+// AllMembers returns all fields defined in this file, including extensions
+// and enum values.
+func (f File) AllMembers() iter.Seq[Member] {
+	return iterx.Map(f.Context().arenas.members.Values(), func(raw *rawMember) Member {
+		return Member{internal.NewWith(f.Context()), raw}
+	})
 }
 
 // Services returns all services defined in this file.

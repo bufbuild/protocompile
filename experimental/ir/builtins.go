@@ -94,8 +94,11 @@ type builtinIDs struct {
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_options"`
 	FieldUninterpreted     intern.ID `intern:"google.protobuf.FieldOptions.uninterpreted_options"`
 	OneofUninterpreted     intern.ID `intern:"google.protobuf.OneofOptions.uninterpreted_options"`
+	RangeUninterpreted     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.uninterpreted_options"`
 	EnumUninterpreted      intern.ID `intern:"google.protobuf.EnumOptions.uninterpreted_options"`
 	EnumValueUninterpreted intern.ID `intern:"google.protobuf.EnumValueOptions.uninterpreted_options"`
+	ServiceUninterpreted   intern.ID `intern:"google.protobuf.ServiceOptions.uninterpreted_options"`
+	MethodUninterpreted    intern.ID `intern:"google.protobuf.MethodOptions.uninterpreted_options"`
 
 	EditionDefaults      intern.ID `intern:"google.protobuf.FieldOptions.edition_defaults"`
 	EditionDefaultsKey   intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.edition"`

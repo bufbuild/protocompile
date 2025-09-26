@@ -27,7 +27,7 @@ import (
 type OptionTarget int32
 
 const (
-	OptionTargetUnknown OptionTarget = iota
+	OptionTargetInvalid OptionTarget = iota
 	OptionTargetFile
 	OptionTargetRange
 	OptionTargetMessage
@@ -45,19 +45,19 @@ func (v OptionTarget) String() string {
 	if int(v) < 0 || int(v) > len(_table_OptionTarget_String) {
 		return fmt.Sprintf("OptionTarget(%v)", int(v))
 	}
-	return _table_OptionTarget_String[int(v)]
+	return _table_OptionTarget_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v OptionTarget) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_OptionTarget_GoString) {
-		return fmt.Sprintf("irOptionTarget(%v)", int(v))
+		return fmt.Sprintf("ir.OptionTarget(%v)", int(v))
 	}
-	return _table_OptionTarget_GoString[int(v)]
+	return _table_OptionTarget_GoString[v]
 }
 
 // OptionTargets returns an iterator over all of the possible valid targets,
-// which excludes [OptionTargetUnknown].
+// which excludes [OptionTargetInvalid].
 func OptionTargets() iter.Seq[OptionTarget] {
 	return func(yield func(OptionTarget) bool) {
 		for i := 1; i < 10; i++ {
@@ -69,7 +69,7 @@ func OptionTargets() iter.Seq[OptionTarget] {
 }
 
 var _table_OptionTarget_String = [...]string{
-	OptionTargetUnknown:   "OptionTargetUnknown",
+	OptionTargetInvalid:   "OptionTargetInvalid",
 	OptionTargetFile:      "OptionTargetFile",
 	OptionTargetRange:     "OptionTargetRange",
 	OptionTargetMessage:   "OptionTargetMessage",
@@ -82,7 +82,7 @@ var _table_OptionTarget_String = [...]string{
 }
 
 var _table_OptionTarget_GoString = [...]string{
-	OptionTargetUnknown:   "OptionTargetUnknown",
+	OptionTargetInvalid:   "OptionTargetInvalid",
 	OptionTargetFile:      "OptionTargetFile",
 	OptionTargetRange:     "OptionTargetRange",
 	OptionTargetMessage:   "OptionTargetMessage",

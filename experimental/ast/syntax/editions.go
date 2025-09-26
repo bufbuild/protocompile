@@ -15,96 +15,108 @@
 package syntax
 
 import (
-	"fmt"
 	"iter"
-
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"strconv"
 )
 
-const (
-	EditionLegacyNumber = 900
-	EditionProto2Number = 998
-	EditionProto3Number = 999
-	Edition2023Number   = 1000
-	Edition2024Number   = 1001
-	EditionMaxNumber    = 0x7fff_ffff
-)
+// LatestImplementedEdition is the most recent edition that the compiler
+// implements.
+const LatestImplementedEdition = Edition2023
 
-// IsEdition returns whether this represents an edition.
-func (s Syntax) IsEdition() bool {
-	return s != Proto2 && s != Proto3
-}
-
-// Greater returns whether this syntax/edition is later than a particular enum
-// number from descriptor.proto.
-func (s Syntax) LaterThanNumber(enumValue int32) bool {
-	switch enumValue {
-	case EditionLegacyNumber:
-		return true
-	case EditionProto2Number:
-		return Proto2 <= s
-	case EditionProto3Number:
-		return Proto3 <= s
-	case Edition2023Number:
-		return Edition2023 <= s
-	case Edition2024Number:
-		return Edition2024 <= s
-	default:
-		return false
-	}
-}
-
-// FromEnum converts a google.protobuf.Edition value into a [Syntax].
-//
-// Returns [Unknown] for numbers that do not correspond to a real syntax or
-// edition.
-func FromEnum(enumValue int32) Syntax {
-	switch enumValue {
-	case EditionProto2Number:
-		return Proto2
-	case EditionProto3Number:
-		return Proto3
-	case Edition2023Number:
-		return Edition2023
-	case Edition2024Number:
-		return Edition2024
-	default:
-		return Unknown
+// All returns an iterator over all known [Syntax] values.
+func All() iter.Seq[Syntax] {
+	return func(yield func(Syntax) bool) {
+		_ = yield(Proto2) &&
+			yield(Proto3) &&
+			yield(Edition2023) &&
+			yield(Edition2024)
 	}
 }
 
 // Editions returns an iterator over all the editions in this package.
 func Editions() iter.Seq[Syntax] {
 	return func(yield func(Syntax) bool) {
-		for i := range totalEditions {
-			if !yield(Syntax(i + int(Edition2023))) {
-				break
-			}
-		}
+		_ = yield(Edition2023) &&
+			yield(Edition2024)
 	}
 }
 
-// PrettyString returns a nice string for this syntax: this is either something
-// like `proto2`, or Edition 2023.
-func (s Syntax) PrettyString() string {
-	v, ok := slicesx.Get(prettyStrings, s)
-	if !ok {
-		return "<unknown>"
-	}
-	return v
+// IsEdition returns whether this represents an edition.
+func (s Syntax) IsEdition() bool {
+	return s != Proto2 && s != Proto3
 }
 
-var totalEditions = iterx.Count(iterx.Filter(All(), Syntax.IsEdition))
-
-var prettyStrings = func() []string {
-	strings := []string{"<unknown>"}
-	for value := range All() {
-		if !value.IsEdition() {
-			strings = append(strings, fmt.Sprintf("`%s`", value))
-		} else {
-			strings = append(strings, fmt.Sprintf("Edition %s", value))
-		}
+// IsSupported returns whether this syntax is fully supported.
+func (s Syntax) IsSupported() bool {
+	switch s {
+	case Proto2, Proto3, Edition2023:
+		return true
+	default:
+		return false
 	}
-	return strings
-}()
+}
+
+// IsValid returns whether this syntax is valid (i.e., it can appear in a
+// syntax/edition declaration).
+func (s Syntax) IsValid() bool {
+	switch s {
+	case Proto2, Proto3, Edition2023, Edition2024:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsKnown returns whether this syntax is a known value in google.protobuf.Edition.
+func (s Syntax) IsKnown() bool {
+	switch s {
+	case Unknown, EditionLegacy,
+		Proto2, Proto3, Edition2023, Edition2024,
+		EditionTest1, EditionTest2, EditionTest99997, EditionTest99998, EditionTest99999,
+		EditionMax:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsConstraint returns whether this syntax can be used as a constraint in
+// google.protobuf.FieldOptions.feature_support.
+func (s Syntax) IsConstraint() bool {
+	switch s {
+	case Proto2, Proto3, Edition2023, Edition2024,
+		EditionLegacy:
+		return true
+	default:
+		return false
+	}
+}
+
+// DescriptorName converts a syntax into the corresponding google.protobuf.Edition name.
+//
+// Returns a stringified digit if it is not a named edition value.
+func (s Syntax) DescriptorName() string {
+	name := descriptorNames[s]
+	if name == "" {
+		return name
+	}
+	return strconv.Itoa(int(s))
+}
+
+var descriptorNames = map[Syntax]string{
+	Unknown:       "EDITION_UNKNOWN",
+	EditionLegacy: "EDITION_LEGACY",
+
+	Proto2:      "EDITION_PROTO2",
+	Proto3:      "EDITION_PROTO3",
+	Edition2023: "EDITION_2023",
+	Edition2024: "EDITION_2024",
+
+	EditionTest1:     "EDITION_1_TEST_ONLY",
+	EditionTest2:     "EDITION_2_TEST_ONLY",
+	EditionTest99997: "EDITION_99997_TEST_ONLY",
+	EditionTest99998: "EDITION_99998_TEST_ONLY",
+	EditionTest99999: "EDITION_99999_TEST_ONLY",
+
+	EditionMax: "EDITION_MAX",
+}

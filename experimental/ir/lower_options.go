@@ -188,7 +188,7 @@ func populateOptionTargets(f File, _ *report.Report) {
 		for target := range seq.Values(m.Options().Field(targets).Elements()) {
 			n, _ := target.AsInt()
 			target := OptionTarget(n)
-			if target == OptionTargetUnknown || target >= optionTargetMax {
+			if target == OptionTargetInvalid || target >= optionTargetMax {
 				continue
 			}
 
@@ -328,7 +328,7 @@ func (r optionRef) resolve() {
 	// Check if this is a pseudo-option, and diagnose if it has multiple
 	// components. The values of pseudo-options are calculated elsewhere; this
 	// is only for diagnostics.
-	if r.field.InternedFullName() == r.session.builtins.FieldOptions {
+	if r.field.InternedFullName() == ids.FieldOptions {
 		var buf [2]ast.PathComponent
 		prefix := slices.AppendSeq(buf[:0], iterx.Take(r.def.Path.Components, 2))
 
@@ -442,21 +442,13 @@ func (r optionRef) resolve() {
 				)
 
 			case ids.FileUninterpreted,
-				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted,
-				ids.EnumUninterpreted, ids.EnumValueUninterpreted:
+				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted, ids.RangeUninterpreted,
+				ids.EnumUninterpreted, ids.EnumValueUninterpreted,
+				ids.MethodUninterpreted, ids.ServiceUninterpreted:
 				if syn := r.File().Syntax(); !syn.IsEdition() {
-					r.Errorf("`uninterpreted_options` cannot be set explicitly").Apply(
+					r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
 						report.Snippet(pc),
-						report.Helpf("`uninterpreted_options` is an implementation detail of protoc"),
-					)
-				}
-
-			case ids.Packed:
-				if r.File().Syntax().IsEdition() {
-					r.Errorf("`packed` cannot be set in %s", taxa.EditionMode).Apply(
-						report.Snippet(pc),
-						report.Snippetf(r.File().AST().Syntax().Value(), "edition specified here"),
-						report.Helpf("instead, use `features.repeated_field_encoding`"),
+						report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
 					)
 				}
 

@@ -1,8 +1,13 @@
-error: unexpected syntax in `edition` declaration
-  --> testdata/parser/syntax/edition_proto2.proto:15:11
+error: "proto2" use the `syntax` keyword
+  --> testdata/parser/syntax/edition_proto2.proto:15:1
    |
 15 | edition = "proto2";
-   |           ^^^^^^^^
-   = note: permitted values: "2023"
+   | ^^^^^^^
+  help: replace with `syntax`
+   |
+15 | - edition = "proto2";
+15 | + syntax = "proto2";
+   |
+   = help: "proto2" is technically an edition, but cannot use `edition`
 
 encountered 1 error

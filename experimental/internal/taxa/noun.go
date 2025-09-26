@@ -38,8 +38,6 @@ const (
 	Edition
 	Package
 	Import
-	WeakImport
-	PublicImport
 	Extensions
 	Reserved
 	Body
@@ -126,6 +124,8 @@ const (
 	KeywordRequired
 	KeywordGroup
 	KeywordStream
+	KeywordExport
+	KeywordLocal
 	PredeclaredMap
 	PredeclaredMax
 	total int = iota
@@ -136,15 +136,15 @@ func (v Noun) String() string {
 	if int(v) < 0 || int(v) > len(_table_Noun_String) {
 		return fmt.Sprintf("Noun(%v)", int(v))
 	}
-	return _table_Noun_String[int(v)]
+	return _table_Noun_String[v]
 }
 
 // GoString implements [fmt.GoStringer].
 func (v Noun) GoString() string {
 	if int(v) < 0 || int(v) > len(_table_Noun_GoString) {
-		return fmt.Sprintf("taxaNoun(%v)", int(v))
+		return fmt.Sprintf("taxa.Noun(%v)", int(v))
 	}
-	return _table_Noun_GoString[int(v)]
+	return _table_Noun_GoString[v]
 }
 
 var _table_Noun_String = [...]string{
@@ -160,8 +160,6 @@ var _table_Noun_String = [...]string{
 	Edition:            "`edition` declaration",
 	Package:            "`package` declaration",
 	Import:             "import",
-	WeakImport:         "weak import",
-	PublicImport:       "public import",
 	Extensions:         "extension range",
 	Reserved:           "reserved range",
 	Body:               "definition body",
@@ -248,6 +246,8 @@ var _table_Noun_String = [...]string{
 	KeywordRequired:    "`required`",
 	KeywordGroup:       "`group`",
 	KeywordStream:      "`stream`",
+	KeywordExport:      "`export`",
+	KeywordLocal:       "`local`",
 	PredeclaredMap:     "`map`",
 	PredeclaredMax:     "`max`",
 }
@@ -265,8 +265,6 @@ var _table_Noun_GoString = [...]string{
 	Edition:            "Edition",
 	Package:            "Package",
 	Import:             "Import",
-	WeakImport:         "WeakImport",
-	PublicImport:       "PublicImport",
 	Extensions:         "Extensions",
 	Reserved:           "Reserved",
 	Body:               "Body",
@@ -353,6 +351,8 @@ var _table_Noun_GoString = [...]string{
 	KeywordRequired:    "KeywordRequired",
 	KeywordGroup:       "KeywordGroup",
 	KeywordStream:      "KeywordStream",
+	KeywordExport:      "KeywordExport",
+	KeywordLocal:       "KeywordLocal",
 	PredeclaredMap:     "PredeclaredMap",
 	PredeclaredMax:     "PredeclaredMax",
 }

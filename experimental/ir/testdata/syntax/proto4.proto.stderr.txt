@@ -1,0 +1,9 @@
+error: unrecognized `syntax` declaration value
+  --> testdata/syntax/proto4.proto:15:10
+   |
+15 | syntax = "proto4";
+   |          ^^^^^^^^
+   = note: treating the file as "proto2" instead
+   = help: permitted values: "proto2", "proto3"
+
+encountered 1 error

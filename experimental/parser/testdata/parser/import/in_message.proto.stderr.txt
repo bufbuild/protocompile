@@ -8,33 +8,33 @@ error: unexpected import within message definition
 ...  |
 25 | | }
    | \_- ...cannot be declared within this message definition
-   = help: a import can only appear at file scope
+   = help: this import can only appear at file scope
 
-error: unexpected public import within message definition
+error: unexpected import within message definition
   --> testdata/parser/import/in_message.proto:21:5
    |
 19 | / message M {
 20 | |     import "foo.proto";
 21 | |     import public "foo.proto";
-   | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ this public import...
+   | |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ this import...
 22 | |     import weak "foo.proto";
 ...  |
 25 | | }
    | \_- ...cannot be declared within this message definition
-   = help: a public import can only appear at file scope
+   = help: this import can only appear at file scope
 
-error: unexpected weak import within message definition
+error: unexpected import within message definition
   --> testdata/parser/import/in_message.proto:22:5
    |
 19 | / message M {
 20 | |     import "foo.proto";
 21 | |     import public "foo.proto";
 22 | |     import weak "foo.proto";
-   | |     ^^^^^^^^^^^^^^^^^^^^^^^^ this weak import...
+   | |     ^^^^^^^^^^^^^^^^^^^^^^^^ this import...
 ...  |
 25 | | }
    | \_- ...cannot be declared within this message definition
-   = help: a weak import can only appear at file scope
+   = help: this import can only appear at file scope
 
 error: unexpected import within message definition
   --> testdata/parser/import/in_message.proto:24:5
@@ -45,6 +45,6 @@ error: unexpected import within message definition
    | |     ^^^^^^^^^^^^^^^^^ this import...
 25 | | }
    | \_- ...cannot be declared within this message definition
-   = help: a import can only appear at file scope
+   = help: this import can only appear at file scope
 
 encountered 4 errors

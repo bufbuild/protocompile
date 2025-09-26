@@ -41,10 +41,17 @@ var _ MessageDeclNode = (*NoSourceNode)(nil)
 //	  repeated string labels = 2;
 //	  bytes extra = 3;
 //	}
+//
+// In edition 2024, messages can have export/local modifiers:
+//
+//	local message LocalMessage { ... }
+//	export message ExportedMessage { ... }
 type MessageNode struct {
 	compositeNode
-	Keyword *KeywordNode
-	Name    *IdentNode
+	// Optional; if present indicates visibility modifier ("export" or "local") for edition 2024
+	Visibility *KeywordNode
+	Keyword    *KeywordNode
+	Name       *IdentNode
 	MessageBody
 }
 
@@ -53,11 +60,22 @@ func (*MessageNode) msgElement()  {}
 
 // NewMessageNode creates a new *MessageNode. All arguments must be non-nil.
 //   - keyword: The token corresponding to the "message" keyword.
-//   - name: The token corresponding to the field's name.
+//   - name: The token corresponding to the message's name.
 //   - openBrace: The token corresponding to the "{" rune that starts the body.
 //   - decls: All declarations inside the message body.
 //   - closeBrace: The token corresponding to the "}" rune that ends the body.
 func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []MessageElement, closeBrace *RuneNode) *MessageNode {
+	return NewMessageNodeWithVisibility(nil, keyword, name, openBrace, decls, closeBrace)
+}
+
+// NewMessageNodeWithVisibility creates a new *MessageNode with optional visibility modifier.
+//   - visibility: Optional visibility modifier token ("export" or "local") for edition 2024.
+//   - keyword: The token corresponding to the "message" keyword.
+//   - name: The token corresponding to the message's name.
+//   - openBrace: The token corresponding to the "{" rune that starts the body.
+//   - decls: All declarations inside the message body.
+//   - closeBrace: The token corresponding to the "}" rune that ends the body.
+func NewMessageNodeWithVisibility(visibility *KeywordNode, keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, decls []MessageElement, closeBrace *RuneNode) *MessageNode {
 	if keyword == nil {
 		panic("keyword is nil")
 	}
@@ -70,7 +88,14 @@ func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, 
 	if closeBrace == nil {
 		panic("closeBrace is nil")
 	}
-	children := make([]Node, 0, 4+len(decls))
+	numChildren := 4 + len(decls) // keyword, name, openBrace, closeBrace + decls
+	if visibility != nil {
+		numChildren++
+	}
+	children := make([]Node, 0, numChildren)
+	if visibility != nil {
+		children = append(children, visibility)
+	}
 	children = append(children, keyword, name, openBrace)
 	for _, decl := range decls {
 		children = append(children, decl)
@@ -81,8 +106,9 @@ func NewMessageNode(keyword *KeywordNode, name *IdentNode, openBrace *RuneNode, 
 		compositeNode: compositeNode{
 			children: children,
 		},
-		Keyword: keyword,
-		Name:    name,
+		Visibility: visibility,
+		Keyword:    keyword,
+		Name:       name,
 	}
 	populateMessageBody(&ret.MessageBody, openBrace, decls, closeBrace)
 	return ret

@@ -239,6 +239,25 @@ func (k SymbolKind) IsScope() bool {
 	}
 }
 
+// OptionTarget returns the OptionTarget type for a symbol of this kind.
+//
+// Returns [OptionTargetInvalid] if there is no corresponding target for this
+// type of symbol.
+func (k SymbolKind) OptionTarget() OptionTarget {
+	return optionTargets[k]
+}
+
+var optionTargets = [...]OptionTarget{
+	SymbolKindMessage:   OptionTargetMessage,
+	SymbolKindEnum:      OptionTargetEnum,
+	SymbolKindField:     OptionTargetField,
+	SymbolKindEnumValue: OptionTargetEnumValue,
+	SymbolKindExtension: OptionTargetField,
+	SymbolKindOneof:     OptionTargetOneof,
+	SymbolKindService:   OptionTargetService,
+	SymbolKindMethod:    OptionTargetMethod,
+}
+
 func wrapSymbol(c *Context, r ref[rawSymbol]) Symbol {
 	if r.ptr.Nil() || c == nil {
 		return Symbol{}

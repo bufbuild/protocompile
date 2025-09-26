@@ -6,7 +6,7 @@ error: unexpected extension range within enum definition
    | |     ^^^^^^^^^^^^^ this extension range...
 34 | | }
    | \_- ...cannot be declared within this enum definition
-   = help: a extension range can only appear within a message definition
+   = help: this extension range can only appear within a message definition
 
 error: use of reserved field number `2`
   --> testdata/extend/overlap.proto:21:25

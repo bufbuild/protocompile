@@ -1,8 +1,7 @@
-error: unrecognized `edition` declaration value
+error: sorry, Edition 2024 is not fully implemented
   --> testdata/parser/syntax/2024.proto:15:11
    |
 15 | edition = "2024";
    |           ^^^^^^
-   = note: permitted values: "2023"
 
 encountered 1 error

@@ -1,0 +1,9 @@
+error: unrecognized `edition` declaration value
+  --> testdata/syntax/1999.proto:15:11
+   |
+15 | edition = "1999";
+   |           ^^^^^^
+   = note: treating the file as Edition 2023 instead
+   = help: permitted values: "2023"
+
+encountered 1 error

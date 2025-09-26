@@ -328,11 +328,16 @@ func (m Member) Targets() iter.Seq[OptionTarget] {
 		}
 
 		bits := m.raw.optionTargets
-		for t := OptionTargetUnknown; bits != 0; t++ {
-			if bits&1 != 0 && !yield(t) {
+		for t := range OptionTargets() {
+			if bits == 0 {
 				return
 			}
-			bits >>= 1
+
+			mask := uint32(1) << t
+			if bits&mask != 0 && !yield(t) {
+				return
+			}
+			bits &^= mask
 		}
 	}
 }

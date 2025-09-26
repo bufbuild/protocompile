@@ -23,12 +23,12 @@
   - { kind: go-string, skip: [optionTargetMax] }
   - kind: all
     name: OptionTargets
-    skip: [OptionTargetUnknown, optionTargetMax]
+    skip: [OptionTargetInvalid, optionTargetMax]
     docs: |
       OptionTargets returns an iterator over all of the possible valid targets,
-      which excludes [OptionTargetUnknown]. 
+      which excludes [OptionTargetInvalid]. 
   values:
-  - name: OptionTargetUnknown
+  - name: OptionTargetInvalid
   - name: OptionTargetFile
   - name: OptionTargetRange
   - name: OptionTargetMessage
