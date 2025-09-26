@@ -21,6 +21,22 @@ import (
 	"slices"
 )
 
+// Empty returns whether an iterator yields any elements.
+func Empty[T any](seq iter.Seq[T]) bool {
+	for range seq {
+		return false
+	}
+	return true
+}
+
+// Empty2 returns whether an iterator yields any elements.
+func Empty2[T, U any](seq iter.Seq2[T, U]) bool {
+	for range seq {
+		return false
+	}
+	return true
+}
+
 // Take returns an iterator over the first n elements of a sequence.
 func Take[T any](seq iter.Seq[T], n int) iter.Seq[T] {
 	return func(yield func(T) bool) {

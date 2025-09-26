@@ -109,7 +109,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	c.imports.Recurse(dedup)
 
 	// Check if descriptor.proto was transitively imported. If not, import it.
-	if idx, ok := c.imports.byPath.Get(&f.Context().session.intern, DescriptorProtoPath); ok {
+	if idx, ok := c.imports.byPath[f.Context().session.builtins.DescriptorFile]; ok {
 		// Copy it to the end so that it's easy to find.
 		c.imports.files = append(c.imports.files, c.imports.files[idx])
 		return
@@ -119,6 +119,8 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	// avoid cycles.
 	if f.IsDescriptorProto() {
 		c.imports.Insert(Import{File: f}, -1, false)
+		c.imports.byPath[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
+		c.imports.causes[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
 		return
 	}
 
@@ -134,6 +136,8 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	}
 
 	c.imports.Insert(Import{File: dproto, Decl: ast.DeclImport{}}, -1, false)
+	c.imports.byPath[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
+	c.imports.causes[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
 }
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each

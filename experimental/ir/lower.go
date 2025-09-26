@@ -107,4 +107,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Then validate all feature settings throughout the file.
 	buildAllFeatureInfo(c.File(), r)
 	validateAllFeatures(c.File(), r)
+
+	// Diagnose unused imports now that we're done resolving everything.
+	diagnoseUnusedImports(c.File(), r)
 }

@@ -48,22 +48,17 @@ type Member struct {
 }
 
 type rawMember struct {
-	def ast.DeclDef
-
-	options     arena.Pointer[rawValue]
-	elem        ref[rawType]
-	extendee    arena.Pointer[rawExtendee]
-	fqn, name   intern.ID
-	number      int32
-	parent      arena.Pointer[rawType]
-	features    arena.Pointer[rawFeatureSet]
-	featureInfo *rawFeatureInfo // Non-nil if this is a feature field.
-
-	// If negative, this is the negative of a presence.Kind. Otherwise, it's
-	// a oneof index.
-	oneof int32
-
-	// Which entities this option can apply to. If zero, all targets are valid.
+	def           ast.DeclDef
+	featureInfo   *rawFeatureInfo
+	elem          ref[rawType]
+	extendee      arena.Pointer[rawExtendee]
+	fqn           intern.ID
+	name          intern.ID
+	number        int32
+	parent        arena.Pointer[rawType]
+	features      arena.Pointer[rawFeatureSet]
+	options       arena.Pointer[rawValue]
+	oneof         int32
 	optionTargets uint32
 	isGroup       bool
 }

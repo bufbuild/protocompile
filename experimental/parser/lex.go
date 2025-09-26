@@ -196,6 +196,10 @@ func lex(ctx token.Context, errs *report.Report) {
 // lexPrelude performs various file-prelude checks, such as size and encoding
 // verification. Returns whether lexing should proceed.
 func lexPrelude(l *lexer) bool {
+	if l.Text() == "" {
+		return true
+	}
+
 	// Check that the file isn't too big. We give up immediately if that's
 	// the case.
 	if len(l.Text()) > maxFileSize {

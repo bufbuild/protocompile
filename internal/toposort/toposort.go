@@ -25,6 +25,7 @@ import (
 const (
 	unsorted byte = iota
 	working
+	walking
 	sorted
 )
 
@@ -51,7 +52,6 @@ type Sorter[Node any, Key comparable] struct {
 
 	state     map[Key]byte
 	stack     []Node
-	visited   []bool
 	iterating bool
 }
 
@@ -66,7 +66,6 @@ func (s *Sorter[Node, Key]) Sort(
 		clear(s.state)
 	}
 	s.stack = s.stack[0:]
-	s.visited = s.visited[0:]
 
 	return func(yield func(Node) bool) {
 		if s.iterating {
@@ -84,23 +83,22 @@ func (s *Sorter[Node, Key]) Sort(
 			// loop.
 			for len(s.stack) > 0 {
 				node, _ := slicesx.Last(s.stack)
-				visit := slicesx.LastPointer(s.visited)
+				k := s.Key(node)
+				state := s.state[k]
 
-				if !*visit {
+				if state == unsorted {
+					s.state[k] = working
 					for child := range dag(node) {
 						s.push(child)
 					}
-
-					*visit = true
 					continue
 				}
 
 				s.stack = s.stack[:len(s.stack)-1]
-				s.visited = s.visited[:len(s.visited)-1]
-				s.state[s.Key(node)] = sorted
-				if !yield(node) {
+				if state != sorted && !yield(node) {
 					return
 				}
+				s.state[k] = sorted
 			}
 		}
 	}
@@ -110,15 +108,15 @@ func (s *Sorter[Node, Key]) push(v Node) {
 	k := s.Key(v)
 	switch s.state[k] {
 	case unsorted:
-		s.state[k] = working
 		s.stack = append(s.stack, v)
-		s.visited = append(s.visited, false)
+
 	case working:
 		prev := slicesx.LastIndexFunc(s.stack, func(n Node) bool {
 			return s.Key(n) == k
 		})
 		suffix := s.stack[prev:]
 		panic(fmt.Sprintf("protocompile/internal: cycle detected: %v -> %v", slicesx.Join(suffix, "->"), v))
+
 	case sorted:
 		return
 	}

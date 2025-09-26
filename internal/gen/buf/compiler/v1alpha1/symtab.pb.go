@@ -225,6 +225,7 @@ type Import struct {
 	Weak          bool                   `protobuf:"varint,3,opt,name=weak,proto3" json:"weak,omitempty"`
 	Transitive    bool                   `protobuf:"varint,4,opt,name=transitive,proto3" json:"transitive,omitempty"`
 	Visible       bool                   `protobuf:"varint,5,opt,name=visible,proto3" json:"visible,omitempty"`
+	Used          bool                   `protobuf:"varint,6,opt,name=used,proto3" json:"used,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -290,6 +291,13 @@ func (x *Import) GetTransitive() bool {
 func (x *Import) GetVisible() bool {
 	if x != nil {
 		return x.Visible
+	}
+	return false
+}
+
+func (x *Import) GetUsed() bool {
+	if x != nil {
+		return x.Used
 	}
 	return false
 }
@@ -867,7 +875,7 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\aimports\x18\x01 \x03(\v2\x1d.buf.compiler.v1alpha1.ImportR\aimports\x12:\n" +
 	"\bfeatures\x18\x04 \x03(\v2\x1e.buf.compiler.v1alpha1.FeatureR\bfeatures\x127\n" +
 	"\asymbols\x18\x02 \x03(\v2\x1d.buf.compiler.v1alpha1.SymbolR\asymbols\x126\n" +
-	"\aoptions\x18\x03 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\aoptions\"\x82\x01\n" +
+	"\aoptions\x18\x03 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\aoptions\"\x96\x01\n" +
 	"\x06Import\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x16\n" +
 	"\x06public\x18\x02 \x01(\bR\x06public\x12\x12\n" +
@@ -875,7 +883,8 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\n" +
 	"transitive\x18\x04 \x01(\bR\n" +
 	"transitive\x12\x18\n" +
-	"\avisible\x18\x05 \x01(\bR\avisible\"c\n" +
+	"\avisible\x18\x05 \x01(\bR\avisible\x12\x12\n" +
+	"\x04used\x18\x06 \x01(\bR\x04used\"c\n" +
 	"\aFeature\x12\x12\n" +
 	"\x04extn\x18\x01 \x01(\tR\x04extn\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +

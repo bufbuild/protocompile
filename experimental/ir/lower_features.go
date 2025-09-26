@@ -73,19 +73,17 @@ func buildFeatureInfo(field Member, r *report.Report) {
 					report.Snippet(def.AsValue().AST()),
 					mistake,
 				)
-			} else {
-				if !edition.IsConstraint() {
-					r.Warnf("unexpected `%s` in `%s.%s`",
-						syntax.EditionLegacy.DescriptorName(),
-						builtins.EditionDefaultsKey.Container().Name(),
-						builtins.EditionDefaultsKey.Name(),
-					).Apply(
-						report.Snippet(value.AST()),
-						mistake,
-						report.Helpf("this should be a released edition or `%s`",
-							syntax.EditionLegacy.DescriptorName()),
-					)
-				}
+			} else if !edition.IsConstraint() {
+				r.Warnf("unexpected `%s` in `%s.%s`",
+					syntax.EditionLegacy.DescriptorName(),
+					builtins.EditionDefaultsKey.Container().Name(),
+					builtins.EditionDefaultsKey.Name(),
+				).Apply(
+					report.Snippet(value.AST()),
+					mistake,
+					report.Helpf("this should be a released edition or `%s`",
+						syntax.EditionLegacy.DescriptorName()),
+				)
 			}
 
 			value = def.Field(builtins.EditionDefaultsValue)
@@ -144,10 +142,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			}
 
 			// Cook up a value corresponding to the thing we just evaluated.
-			copy := *value.raw
-			copy.field = field.toRef(field.Context())
-			copy.bits = bits
-			raw := field.Context().arenas.values.NewCompressed(copy)
+			copied := *value.raw
+			copied.field = field.toRef(field.Context())
+			copied.bits = bits
+			raw := field.Context().arenas.values.NewCompressed(copied)
 
 			// Push this information onto the edition defaults list.
 			info.defaults = append(info.defaults, featureDefault{
@@ -422,7 +420,6 @@ func validateFeatures(features MessageValue, r *report.Report) {
 func prettyEdition(s syntax.Syntax) string {
 	if !s.IsValid() || !s.IsEdition() {
 		return fmt.Sprintf("\"%s\"", s)
-	} else {
-		return fmt.Sprintf("Edition %s", s)
 	}
+	return fmt.Sprintf("Edition %s", s)
 }

@@ -37,6 +37,7 @@ message Import {
     bool weak = 3;
     bool transitive = 4;
     bool visible = 5;
+    bool used = 6;
 }
 
 // A feature associated with a symbol.

@@ -1,3 +1,25 @@
+warning: unused import "b.proto"
+  --> b.proto:4:8
+   |
+ 4 | import "a.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "a.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "c.proto"
+  --> c.proto:4:8
+   |
+ 4 | import "b.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "b.proto";
+   |
+   = help: no symbols from this file are referenced
+
 error: cannot find `M` in this scope
   --> c.proto:7:3
    |
@@ -19,4 +41,4 @@ error: cannot find `.test.M` in this scope
    |   ^^^^^^^ not found in this scope
    = help: the full name of this scope is `test.N`
 
-encountered 3 errors
+encountered 3 errors and 2 warnings
