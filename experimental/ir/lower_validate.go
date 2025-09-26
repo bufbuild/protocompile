@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
+// diagnoseUnusedImports generates diagnostics for each unused import.
 func diagnoseUnusedImports(f File, r *report.Report) {
 	for imp := range seq.Values(f.Imports()) {
 		if imp.Used {
@@ -26,10 +27,11 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 		}
 
 		r.Warnf("unused import \"%s\"", f.Path()).Apply(
-			report.Snippetf(imp.Decl.ImportPath(), "no symbol depends on this file"),
+			report.Snippet(imp.Decl.ImportPath()),
 			report.SuggestEdits(imp.Decl, "delete it", report.Edit{
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
+			report.Helpf("no symbols from this file are referenced"),
 		)
 	}
 }
