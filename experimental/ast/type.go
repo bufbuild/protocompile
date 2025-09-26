@@ -16,6 +16,7 @@
 package ast
 
 import (
+	"iter"
 	"reflect"
 
 	"github.com/bufbuild/protocompile/experimental/internal"
@@ -134,6 +135,19 @@ func (t TypeAny) AsGeneric() TypeGeneric {
 		t.withContext,
 		t.Context().Nodes().types.generics.Deref(ptr),
 	}}
+}
+
+// Prefixes is an iterator over all [TypePrefix]es wrapping this type.
+func (t TypeAny) Prefixes() iter.Seq[TypePrefixed] {
+	return func(yield func(TypePrefixed) bool) {
+		for t.Kind() == TypeKindPrefixed {
+			prefixed := t.AsPrefixed()
+			if !yield(prefixed) {
+				return
+			}
+			t = prefixed.Type()
+		}
+	}
 }
 
 // RemovePrefixes removes all [TypePrefix] values wrapping this type.

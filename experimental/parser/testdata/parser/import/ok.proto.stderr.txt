@@ -1,10 +1,10 @@
-warning: use of `import weak`
+warning: `import weak` is deprecated
   --> testdata/parser/import/ok.proto:20:1
    |
 20 | import weak "weak.proto";
    | ^^^^^^^^^^^
-   = help: `import weak` is deprecated and not supported correctly in most
-           Protobuf implementations
+   = help: `import weak` is not implemented correctly in most Protobuf
+           implementations
 
 error: `import option` requires Edition 2024 or later
   --> testdata/parser/import/ok.proto:22:1

@@ -14,13 +14,13 @@ error: unexpected `option` modifier in import
    | |
    | already modified here
 
-warning: use of `import weak`
+warning: `import weak` is deprecated
   --> testdata/parser/import/modifiers.proto:21:1
    |
 21 | import weak option "foo.proto";
    | ^^^^^^^^^^^
-   = help: `import weak` is deprecated and not supported correctly in most
-           Protobuf implementations
+   = help: `import weak` is not implemented correctly in most Protobuf
+           implementations
 
 error: unexpected `option` modifier in import
   --> testdata/parser/import/modifiers.proto:21:13
@@ -52,13 +52,13 @@ error: unexpected `public` modifier in import
    | |
    | already modified here
 
-warning: use of `import weak`
+warning: `import weak` is deprecated
   --> testdata/parser/import/modifiers.proto:23:1
    |
 23 | import weak weak "foo.proto";
    | ^^^^^^^^^^^
-   = help: `import weak` is deprecated and not supported correctly in most
-           Protobuf implementations
+   = help: `import weak` is not implemented correctly in most Protobuf
+           implementations
 
 error: unexpected `weak` modifier in import
   --> testdata/parser/import/modifiers.proto:23:13

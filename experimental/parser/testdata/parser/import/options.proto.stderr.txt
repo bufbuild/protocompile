@@ -4,13 +4,13 @@ error: import cannot specify compact options
 19 | import "foo.proto" [(not.allowed) = "here"];
    |                    ^^^^^^^^^^^^^^^^^^^^^^^^ help: remove this
 
-warning: use of `import weak`
+warning: `import weak` is deprecated
   --> testdata/parser/import/options.proto:20:1
    |
 20 | import weak "weak.proto" [(not.allowed) = "here"];
    | ^^^^^^^^^^^
-   = help: `import weak` is deprecated and not supported correctly in most
-           Protobuf implementations
+   = help: `import weak` is not implemented correctly in most Protobuf
+           implementations
 
 error: import cannot specify compact options
   --> testdata/parser/import/options.proto:20:26

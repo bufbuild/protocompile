@@ -231,7 +231,7 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 				report.Notef("group syntax is not available in proto3 or editions"),
 			)
 		} else {
-			p.Errorf("groups syntax is not supported").Apply(
+			p.Errorf("group syntax is not supported").Apply(
 				report.Snippet(def.Type().RemovePrefixes()),
 				report.Notef("group syntax is only available in proto2"),
 			)

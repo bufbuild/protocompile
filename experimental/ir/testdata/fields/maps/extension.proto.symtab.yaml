@@ -9,6 +9,22 @@ tables:
       file: "testdata/fields/maps/extension.proto"
       index: 1
       visible: true
+    - fqn: "test.MEntry"
+      kind: KIND_MESSAGE
+      file: "testdata/fields/maps/extension.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "test.MEntry.key"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/extension.proto"
+      index: 2
+      visible: true
+    - fqn: "test.MEntry.value"
+      kind: KIND_FIELD
+      file: "testdata/fields/maps/extension.proto"
+      index: 3
+      visible: true
     - fqn: "test.m"
       kind: KIND_EXTENSION
       file: "testdata/fields/maps/extension.proto"

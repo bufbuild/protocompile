@@ -41,7 +41,7 @@ const (
 	lastReserved    = 19999
 
 	messageSetNumberBits = 31
-	messageSetNumberMax  = 1<<messageSetNumberBits - 1
+	messageSetNumberMax  = 1<<messageSetNumberBits - 2 // Int32Max is not valid!
 
 	enumNumberBits = 32
 	enumNumberMax  = math.MaxInt32
@@ -101,7 +101,7 @@ type memberNumber byte
 const (
 	enumNumber       memberNumber = iota + 1 // int32
 	fieldNumber                              // uint29
-	messageSetNumber                         // uint31
+	messageSetNumber                         // uint31-ish, 0x7fff_ffff is not allowed.
 )
 
 // Type returns the type that evaluation is targeting.
@@ -910,6 +910,10 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 		}
 
 		hi := (uint64(1) << bits) - 1
+		if bits == messageSetNumberBits {
+			hi = messageSetNumberMax
+		}
+
 		if tooLarge || v > hi {
 			err()
 			return rawValueBits(hi), false
@@ -1237,6 +1241,9 @@ func (e errLiteralRange) Diagnose(d *report.Diagnostic) {
 		hi = lo - 1
 	} else {
 		hi = (uint64(1) << e.bits) - 1
+		if e.bits == messageSetNumberBits {
+			hi = messageSetNumberMax
+		}
 	}
 
 	var base int
