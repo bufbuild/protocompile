@@ -15,10 +15,12 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       options.features.field_presence: LEGACY_REQUIRED
-  enum_type:
-  - name: "E"
-    value: [{ name: "X", number: 1 }]
-    options.features.json_format: LEGACY_BEST_EFFORT
+    - name: "z"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.E"
+  enum_type: [{ name: "E", value: [{ name: "Z", number: 0 }] }]
   options.features: { field_presence: IMPLICIT, $unknown: "1000: {1: 0}" }
   syntax: "editions"
   edition: EDITION_2023

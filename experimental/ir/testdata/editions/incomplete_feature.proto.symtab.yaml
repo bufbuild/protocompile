@@ -21,14 +21,6 @@ tables:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
       file: "testdata/editions/incomplete_feature.proto"
-      features:
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
-      - { extn: "buf.test.f", value: "<no default>", explicit: true }
     - fqn: "buf.test.Features"
       kind: KIND_MESSAGE
       file: "testdata/editions/incomplete_feature.proto"

@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/toposort"
 )
@@ -353,6 +354,14 @@ func (f File) Symbols() seq.Indexer[Symbol] {
 			return wrapSymbol(f.Context(), r)
 		},
 	)
+}
+
+// FindSymbol finds a symbol among [File.Symbols] with the given fully-qualified
+// name.
+func (f File) FindSymbol(fqn FullName) Symbol {
+	return wrapSymbol(f.Context(),
+		f.Context().imported.lookupBytes(f.Context(),
+			unsafex.BytesAlias[[]byte](string(fqn))))
 }
 
 // topoSort sorts a graph of [File]s according to their dependency graph,

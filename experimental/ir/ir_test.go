@@ -200,7 +200,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 					var valueString string
 					switch {
 					case feature.IsZero():
-						valueString = "<no default>"
+						continue
 					case ty.IsEnum():
 						n, _ := feature.Value().AsInt()
 						ev := ty.MemberByNumber(int32(n))
@@ -222,11 +222,10 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 						Value:    valueString,
 						Explicit: !feature.IsInherited(),
 					})
-
 				}
 			}
 
-			dumpMessage(ir.Member{}, features.Options().Type())
+			dumpMessage(ir.Member{}, file.FindSymbol("google.protobuf.FeatureSet").AsType())
 			for extn := range featureExtns {
 				dumpMessage(extn, extn.Element())
 			}
