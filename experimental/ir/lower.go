@@ -87,6 +87,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Perform "early" name resolution, i.e. field names and extension types.
 	resolveNames(c.File(), r)
+	resolveEarlyOptions(c.File())
 
 	// Perform constant evaluation.
 	evaluateFieldNumbers(c.File(), r)
@@ -102,4 +103,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// done in two separate steps.
 	populateOptionTargets(c.File(), r)
 	validateOptionTargets(c.File(), r)
+
+	// Validate all the little constraint details that didn't get caught above.
+	validateConstraints(c.File(), r)
 }
