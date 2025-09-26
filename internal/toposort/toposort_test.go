@@ -81,6 +81,12 @@ func TestSort(t *testing.T) {
 			want:  []int{4, 2, 3, 1},
 		},
 		{
+			name:  "diamond",
+			dag:   dag{1: {3, 2}, 2: {3}, 3: {}},
+			roots: []int{1},
+			want:  []int{3, 2, 1},
+		},
+		{
 			name:  "y",
 			dag:   dag{1: {2}, 2: {4}, 3: {4}, 4: {}},
 			roots: []int{1},
