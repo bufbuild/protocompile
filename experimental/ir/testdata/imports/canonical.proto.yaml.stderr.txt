@@ -2,11 +2,12 @@ warning: unused import "main.proto"
   --> main.proto:4:8
    |
  4 | import "nested/path.proto";
-   |        ^^^^^^^^^^^^^^^^^^^ no symbol depends on this file
+   |        ^^^^^^^^^^^^^^^^^^^
   help: delete it
    |
  4 | - import "nested/path.proto";
    |
+   = help: no symbols from this file are referenced
 
 error: file imported multiple times
   --> main.proto:5:1
@@ -43,11 +44,12 @@ warning: unused import "main.proto"
   --> main.proto:6:8
    |
  6 | import "./local.proto";
-   |        ^^^^^^^^^^^^^^^ no symbol depends on this file
+   |        ^^^^^^^^^^^^^^^
   help: delete it
    |
  6 | - import "./local.proto";
    |
+   = help: no symbols from this file are referenced
 
 error: file imported multiple times
   --> main.proto:7:1
