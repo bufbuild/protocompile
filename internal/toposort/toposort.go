@@ -22,13 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
-const (
-	unsorted byte = iota
-	working
-	walking
-	sorted
-)
-
 // Sort sorts a DAG topologically.
 //
 // Roots are the nodes whose dependencies we are querying. key returns a
@@ -50,7 +43,7 @@ type Sorter[Node any, Key comparable] struct {
 	// A function to extract a unique key from each node, for marking.
 	Key func(Node) Key
 
-	state     map[Key]byte
+	state     map[Key]bool
 	stack     []Node
 	iterating bool
 }
@@ -61,11 +54,12 @@ func (s *Sorter[Node, Key]) Sort(
 	dag func(Node) iter.Seq[Node],
 ) iter.Seq[Node] {
 	if s.state == nil {
-		s.state = make(map[Key]byte)
+		s.state = make(map[Key]bool)
 	} else {
 		clear(s.state)
 	}
-	s.stack = s.stack[0:]
+	clear(s.stack) // Ensure all pointers are zeroed.
+	s.stack = s.stack[:0]
 
 	return func(yield func(Node) bool) {
 		if s.iterating {
@@ -78,27 +72,31 @@ func (s *Sorter[Node, Key]) Sort(
 			s.push(root)
 			// This algorithm is DFS that has been tail-call-optimized into a loop.
 			// Each node is visited twice in the loop: once to add its children to
-			// the stack, and once to pop it and add it to the output. The visited
-			// stack tracks whether this is the first or second visit through the
-			// loop.
+			// the stack, and once to pop it and add it to the output. The state
+			// tracks whether this Node has been visisted and if its the first
+			// or second visit through the loop.
 			for len(s.stack) > 0 {
 				node, _ := slicesx.Last(s.stack)
 				k := s.Key(node)
-				state := s.state[k]
+				yielded, visited := s.state[k]
 
-				if state == unsorted {
-					s.state[k] = working
+				if !visited {
+					s.state[k] = false
 					for child := range dag(node) {
 						s.push(child)
 					}
 					continue
 				}
 
+				var zeroNode Node
+				s.stack[len(s.stack)-1] = zeroNode
 				s.stack = s.stack[:len(s.stack)-1]
-				if state != sorted && !yield(node) {
-					return
+				if !yielded {
+					if !yield(node) {
+						return
+					}
+					s.state[k] = true
 				}
-				s.state[k] = sorted
 			}
 		}
 	}
@@ -106,18 +104,15 @@ func (s *Sorter[Node, Key]) Sort(
 
 func (s *Sorter[Node, Key]) push(v Node) {
 	k := s.Key(v)
-	switch s.state[k] {
-	case unsorted:
+	switch yielded, visited := s.state[k]; {
+	case !visited:
 		s.stack = append(s.stack, v)
 
-	case working:
+	case !yielded && visited:
 		prev := slicesx.LastIndexFunc(s.stack, func(n Node) bool {
 			return s.Key(n) == k
 		})
 		suffix := s.stack[prev:]
 		panic(fmt.Sprintf("protocompile/internal: cycle detected: %v -> %v", slicesx.Join(suffix, "->"), v))
-
-	case sorted:
-		return
 	}
 }
