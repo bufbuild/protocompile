@@ -78,7 +78,7 @@ func (s *Sorter[Node, Key]) Sort(
 			for len(s.stack) > 0 {
 				node, _ := slicesx.Last(s.stack)
 				k := s.Key(node)
-				yieled, visited := s.state[k]
+				yielded, visited := s.state[k]
 
 				if !visited {
 					s.state[k] = false
@@ -91,7 +91,7 @@ func (s *Sorter[Node, Key]) Sort(
 				var zeroNode Node
 				s.stack[len(s.stack)-1] = zeroNode
 				s.stack = s.stack[:len(s.stack)-1]
-				if !yieled {
+				if !yielded {
 					if !yield(node) {
 						return
 					}
@@ -104,18 +104,15 @@ func (s *Sorter[Node, Key]) Sort(
 
 func (s *Sorter[Node, Key]) push(v Node) {
 	k := s.Key(v)
-	switch yieled, visited := s.state[k]; {
+	switch yielded, visited := s.state[k]; {
 	case !visited:
 		s.stack = append(s.stack, v)
 
-	case !yieled && visited:
+	case !yielded && visited:
 		prev := slicesx.LastIndexFunc(s.stack, func(n Node) bool {
 			return s.Key(n) == k
 		})
 		suffix := s.stack[prev:]
 		panic(fmt.Sprintf("protocompile/internal: cycle detected: %v -> %v", slicesx.Join(suffix, "->"), v))
-
-	case yieled:
-		return
 	}
 }
