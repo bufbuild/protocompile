@@ -1,4 +1,4 @@
-warning: `b` is deprecated
+warning: `b` is deprecated in Edition 2023
   --> testdata/editions/lifetime.proto:21:33
    |
 21 | option features.(x) = {a: true, b: true, c: true, d: true};

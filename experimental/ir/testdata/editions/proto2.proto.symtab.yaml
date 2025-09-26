@@ -38,10 +38,11 @@ tables:
       file: "testdata/editions/proto2.proto"
       index: 1
       visible: true
-      options.message.fields: { "features": { message: {} } }
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 2 } } }
       features:
+      - { name: "field_presence", value: "IMPLICIT", explicit: true }
       - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
       - { name: "message_encoding", value: "LENGTH_PREFIXED" }
       - { name: "repeated_field_encoding", value: "EXPANDED" }
       - { name: "utf8_validation", value: "NONE" }
@@ -63,6 +64,7 @@ tables:
       index: 3
       visible: true
       options.message.fields: { "features": { message: {} } }
+      features: [{ name: "enforce_naming_style", value: "STYLE_LEGACY" }]
     - fqn: "buf.test.Message.y"
       kind: KIND_ONEOF
       file: "testdata/editions/proto2.proto"

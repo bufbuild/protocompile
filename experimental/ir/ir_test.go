@@ -188,6 +188,9 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 		}
 		dumpFeatures := func(features ir.FeatureSet, target ir.OptionTarget) []*compilerpb.Feature {
 			var out []*compilerpb.Feature
+			if !t.Features {
+				return out
+			}
 
 			dumpMessage := func(extn ir.Member, ty ir.Type) {
 				for field := range seq.Values(ty.Members()) {

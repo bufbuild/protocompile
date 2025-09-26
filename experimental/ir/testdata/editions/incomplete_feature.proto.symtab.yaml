@@ -27,6 +27,8 @@ tables:
       index: 1
       visible: true
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "json_format", value: "ALLOW" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -40,6 +42,9 @@ tables:
       index: 2
       visible: true
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enum_type", value: "OPEN" }
+      - { name: "json_format", value: "ALLOW" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -54,6 +59,11 @@ tables:
       visible: true
       options.message.fields: { "feature_support": { message: {} } }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -73,6 +83,11 @@ tables:
               "edition": { i32: 900 }
               "value": { string: "false" }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -93,6 +108,11 @@ tables:
               "value": { string: "false" }
         "feature_support": { message: {} }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -114,6 +134,11 @@ tables:
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1001 } }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -133,6 +158,11 @@ tables:
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1001 } }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -160,6 +190,11 @@ tables:
             "edition_introduced": { i32: 900 }
             "edition_removed": { i32: 900 }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -181,6 +216,11 @@ tables:
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1000 } }
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -194,6 +234,7 @@ tables:
       index: 8
       visible: true
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -207,6 +248,7 @@ tables:
       index: 9
       visible: true
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }
@@ -220,6 +262,11 @@ tables:
       index: 10
       visible: true
       features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
       - { extn: "buf.test.f", name: "a", value: "false" }
       - { extn: "buf.test.f", name: "b", value: "false" }
       - { extn: "buf.test.f", name: "c", value: "false" }

@@ -399,7 +399,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		}
 
 		if deprecated := info.Deprecated(); deprecated != syntax.Unknown && deprecated <= edition {
-			r.Warnf("`%s` is deprecated", feature.Field().Name()).Apply(
+			r.Warnf("`%s` is deprecated in %s", feature.Field().Name(), prettyEdition(edition)).Apply(
 				report.Snippet(feature.MessageKeys().At(0)),
 			).Apply(deprecation()...)
 		}
