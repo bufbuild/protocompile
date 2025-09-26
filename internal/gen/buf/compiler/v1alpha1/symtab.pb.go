@@ -100,7 +100,7 @@ func (x Symbol_Kind) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Symbol_Kind.Descriptor instead.
 func (Symbol_Kind) EnumDescriptor() ([]byte, []int) {
-	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{3, 0}
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4, 0}
 }
 
 // A set of symbol tables.
@@ -152,6 +152,7 @@ func (x *SymbolSet) GetTables() map[string]*SymbolTable {
 type SymbolTable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Imports       []*Import              `protobuf:"bytes,1,rep,name=imports,proto3" json:"imports,omitempty"`
+	Features      []*Feature             `protobuf:"bytes,4,rep,name=features,proto3" json:"features,omitempty"`
 	Symbols       []*Symbol              `protobuf:"bytes,2,rep,name=symbols,proto3" json:"symbols,omitempty"`
 	Options       *Value                 `protobuf:"bytes,3,opt,name=options,proto3" json:"options,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -191,6 +192,13 @@ func (*SymbolTable) Descriptor() ([]byte, []int) {
 func (x *SymbolTable) GetImports() []*Import {
 	if x != nil {
 		return x.Imports
+	}
+	return nil
+}
+
+func (x *SymbolTable) GetFeatures() []*Feature {
+	if x != nil {
+		return x.Features
 	}
 	return nil
 }
@@ -286,6 +294,77 @@ func (x *Import) GetVisible() bool {
 	return false
 }
 
+// A feature associated with a symbol.
+type Feature struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Extn  string                 `protobuf:"bytes,1,opt,name=extn,proto3" json:"extn,omitempty"`
+	Name  string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The value as a textproto string.
+	Value string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
+	// Whether this feature is set explicitly.
+	Explicit      bool `protobuf:"varint,4,opt,name=explicit,proto3" json:"explicit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Feature) Reset() {
+	*x = Feature{}
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Feature) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Feature) ProtoMessage() {}
+
+func (x *Feature) ProtoReflect() protoreflect.Message {
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Feature.ProtoReflect.Descriptor instead.
+func (*Feature) Descriptor() ([]byte, []int) {
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Feature) GetExtn() string {
+	if x != nil {
+		return x.Extn
+	}
+	return ""
+}
+
+func (x *Feature) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Feature) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+func (x *Feature) GetExplicit() bool {
+	if x != nil {
+		return x.Explicit
+	}
+	return false
+}
+
 // A symbol in a file.
 type Symbol struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -296,15 +375,16 @@ type Symbol struct {
 	// The index of this kind of entity in that file.
 	Index uint32 `protobuf:"varint,4,opt,name=index,proto3" json:"index,omitempty"`
 	// Whether this symbol can be validly referenced in the current file.
-	Visible       bool   `protobuf:"varint,5,opt,name=visible,proto3" json:"visible,omitempty"`
-	Options       *Value `protobuf:"bytes,6,opt,name=options,proto3" json:"options,omitempty"`
+	Visible       bool       `protobuf:"varint,5,opt,name=visible,proto3" json:"visible,omitempty"`
+	Options       *Value     `protobuf:"bytes,6,opt,name=options,proto3" json:"options,omitempty"`
+	Features      []*Feature `protobuf:"bytes,7,rep,name=features,proto3" json:"features,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Symbol) Reset() {
 	*x = Symbol{}
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[3]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -316,7 +396,7 @@ func (x *Symbol) String() string {
 func (*Symbol) ProtoMessage() {}
 
 func (x *Symbol) ProtoReflect() protoreflect.Message {
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[3]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -329,7 +409,7 @@ func (x *Symbol) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Symbol.ProtoReflect.Descriptor instead.
 func (*Symbol) Descriptor() ([]byte, []int) {
-	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{3}
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Symbol) GetFqn() string {
@@ -374,6 +454,13 @@ func (x *Symbol) GetOptions() *Value {
 	return nil
 }
 
+func (x *Symbol) GetFeatures() []*Feature {
+	if x != nil {
+		return x.Features
+	}
+	return nil
+}
+
 // An option value attached to a symbol.
 type Value struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -398,7 +485,7 @@ type Value struct {
 
 func (x *Value) Reset() {
 	*x = Value{}
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[4]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -410,7 +497,7 @@ func (x *Value) String() string {
 func (*Value) ProtoMessage() {}
 
 func (x *Value) ProtoReflect() protoreflect.Message {
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[4]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -423,7 +510,7 @@ func (x *Value) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value.ProtoReflect.Descriptor instead.
 func (*Value) Descriptor() ([]byte, []int) {
-	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4}
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Value) GetValue() isValue_Value {
@@ -628,7 +715,7 @@ type Value_Message struct {
 
 func (x *Value_Message) Reset() {
 	*x = Value_Message{}
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[6]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +727,7 @@ func (x *Value_Message) String() string {
 func (*Value_Message) ProtoMessage() {}
 
 func (x *Value_Message) ProtoReflect() protoreflect.Message {
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[6]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +740,7 @@ func (x *Value_Message) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value_Message.ProtoReflect.Descriptor instead.
 func (*Value_Message) Descriptor() ([]byte, []int) {
-	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4, 0}
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{5, 0}
 }
 
 func (x *Value_Message) GetFields() map[string]*Value {
@@ -679,7 +766,7 @@ type Value_Repeated struct {
 
 func (x *Value_Repeated) Reset() {
 	*x = Value_Repeated{}
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[7]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -691,7 +778,7 @@ func (x *Value_Repeated) String() string {
 func (*Value_Repeated) ProtoMessage() {}
 
 func (x *Value_Repeated) ProtoReflect() protoreflect.Message {
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[7]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -704,7 +791,7 @@ func (x *Value_Repeated) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value_Repeated.ProtoReflect.Descriptor instead.
 func (*Value_Repeated) Descriptor() ([]byte, []int) {
-	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4, 1}
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{5, 1}
 }
 
 func (x *Value_Repeated) GetValues() []*Value {
@@ -724,7 +811,7 @@ type Value_Any struct {
 
 func (x *Value_Any) Reset() {
 	*x = Value_Any{}
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[8]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -736,7 +823,7 @@ func (x *Value_Any) String() string {
 func (*Value_Any) ProtoMessage() {}
 
 func (x *Value_Any) ProtoReflect() protoreflect.Message {
-	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[8]
+	mi := &file_buf_compiler_v1alpha1_symtab_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -749,7 +836,7 @@ func (x *Value_Any) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value_Any.ProtoReflect.Descriptor instead.
 func (*Value_Any) Descriptor() ([]byte, []int) {
-	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{4, 2}
+	return file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP(), []int{5, 2}
 }
 
 func (x *Value_Any) GetUrl() string {
@@ -775,9 +862,10 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\x06tables\x18\x01 \x03(\v2,.buf.compiler.v1alpha1.SymbolSet.TablesEntryR\x06tables\x1a]\n" +
 	"\vTablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x128\n" +
-	"\x05value\x18\x02 \x01(\v2\".buf.compiler.v1alpha1.SymbolTableR\x05value:\x028\x01\"\xb7\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\".buf.compiler.v1alpha1.SymbolTableR\x05value:\x028\x01\"\xf3\x01\n" +
 	"\vSymbolTable\x127\n" +
-	"\aimports\x18\x01 \x03(\v2\x1d.buf.compiler.v1alpha1.ImportR\aimports\x127\n" +
+	"\aimports\x18\x01 \x03(\v2\x1d.buf.compiler.v1alpha1.ImportR\aimports\x12:\n" +
+	"\bfeatures\x18\x04 \x03(\v2\x1e.buf.compiler.v1alpha1.FeatureR\bfeatures\x127\n" +
 	"\asymbols\x18\x02 \x03(\v2\x1d.buf.compiler.v1alpha1.SymbolR\asymbols\x126\n" +
 	"\aoptions\x18\x03 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\aoptions\"\x82\x01\n" +
 	"\x06Import\x12\x12\n" +
@@ -787,14 +875,20 @@ const file_buf_compiler_v1alpha1_symtab_proto_rawDesc = "" +
 	"\n" +
 	"transitive\x18\x04 \x01(\bR\n" +
 	"transitive\x12\x18\n" +
-	"\avisible\x18\x05 \x01(\bR\avisible\"\xfa\x02\n" +
+	"\avisible\x18\x05 \x01(\bR\avisible\"c\n" +
+	"\aFeature\x12\x12\n" +
+	"\x04extn\x18\x01 \x01(\tR\x04extn\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
+	"\x05value\x18\x03 \x01(\tR\x05value\x12\x1a\n" +
+	"\bexplicit\x18\x04 \x01(\bR\bexplicit\"\xb6\x03\n" +
 	"\x06Symbol\x12\x10\n" +
 	"\x03fqn\x18\x01 \x01(\tR\x03fqn\x126\n" +
 	"\x04kind\x18\x02 \x01(\x0e2\".buf.compiler.v1alpha1.Symbol.KindR\x04kind\x12\x12\n" +
 	"\x04file\x18\x03 \x01(\tR\x04file\x12\x14\n" +
 	"\x05index\x18\x04 \x01(\rR\x05index\x12\x18\n" +
 	"\avisible\x18\x05 \x01(\bR\avisible\x126\n" +
-	"\aoptions\x18\x06 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\aoptions\"\xa9\x01\n" +
+	"\aoptions\x18\x06 \x01(\v2\x1c.buf.compiler.v1alpha1.ValueR\aoptions\x12:\n" +
+	"\bfeatures\x18\a \x03(\v2\x1e.buf.compiler.v1alpha1.FeatureR\bfeatures\"\xa9\x01\n" +
 	"\x04Kind\x12\x14\n" +
 	"\x10KIND_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fKIND_PACKAGE\x10\x01\x12\x0f\n" +
@@ -852,43 +946,46 @@ func file_buf_compiler_v1alpha1_symtab_proto_rawDescGZIP() []byte {
 }
 
 var file_buf_compiler_v1alpha1_symtab_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_buf_compiler_v1alpha1_symtab_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_buf_compiler_v1alpha1_symtab_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_buf_compiler_v1alpha1_symtab_proto_goTypes = []any{
 	(Symbol_Kind)(0),       // 0: buf.compiler.v1alpha1.Symbol.Kind
 	(*SymbolSet)(nil),      // 1: buf.compiler.v1alpha1.SymbolSet
 	(*SymbolTable)(nil),    // 2: buf.compiler.v1alpha1.SymbolTable
 	(*Import)(nil),         // 3: buf.compiler.v1alpha1.Import
-	(*Symbol)(nil),         // 4: buf.compiler.v1alpha1.Symbol
-	(*Value)(nil),          // 5: buf.compiler.v1alpha1.Value
-	nil,                    // 6: buf.compiler.v1alpha1.SymbolSet.TablesEntry
-	(*Value_Message)(nil),  // 7: buf.compiler.v1alpha1.Value.Message
-	(*Value_Repeated)(nil), // 8: buf.compiler.v1alpha1.Value.Repeated
-	(*Value_Any)(nil),      // 9: buf.compiler.v1alpha1.Value.Any
-	nil,                    // 10: buf.compiler.v1alpha1.Value.Message.FieldsEntry
-	nil,                    // 11: buf.compiler.v1alpha1.Value.Message.ExtnsEntry
+	(*Feature)(nil),        // 4: buf.compiler.v1alpha1.Feature
+	(*Symbol)(nil),         // 5: buf.compiler.v1alpha1.Symbol
+	(*Value)(nil),          // 6: buf.compiler.v1alpha1.Value
+	nil,                    // 7: buf.compiler.v1alpha1.SymbolSet.TablesEntry
+	(*Value_Message)(nil),  // 8: buf.compiler.v1alpha1.Value.Message
+	(*Value_Repeated)(nil), // 9: buf.compiler.v1alpha1.Value.Repeated
+	(*Value_Any)(nil),      // 10: buf.compiler.v1alpha1.Value.Any
+	nil,                    // 11: buf.compiler.v1alpha1.Value.Message.FieldsEntry
+	nil,                    // 12: buf.compiler.v1alpha1.Value.Message.ExtnsEntry
 }
 var file_buf_compiler_v1alpha1_symtab_proto_depIdxs = []int32{
-	6,  // 0: buf.compiler.v1alpha1.SymbolSet.tables:type_name -> buf.compiler.v1alpha1.SymbolSet.TablesEntry
+	7,  // 0: buf.compiler.v1alpha1.SymbolSet.tables:type_name -> buf.compiler.v1alpha1.SymbolSet.TablesEntry
 	3,  // 1: buf.compiler.v1alpha1.SymbolTable.imports:type_name -> buf.compiler.v1alpha1.Import
-	4,  // 2: buf.compiler.v1alpha1.SymbolTable.symbols:type_name -> buf.compiler.v1alpha1.Symbol
-	5,  // 3: buf.compiler.v1alpha1.SymbolTable.options:type_name -> buf.compiler.v1alpha1.Value
-	0,  // 4: buf.compiler.v1alpha1.Symbol.kind:type_name -> buf.compiler.v1alpha1.Symbol.Kind
-	5,  // 5: buf.compiler.v1alpha1.Symbol.options:type_name -> buf.compiler.v1alpha1.Value
-	8,  // 6: buf.compiler.v1alpha1.Value.repeated:type_name -> buf.compiler.v1alpha1.Value.Repeated
-	7,  // 7: buf.compiler.v1alpha1.Value.message:type_name -> buf.compiler.v1alpha1.Value.Message
-	9,  // 8: buf.compiler.v1alpha1.Value.any:type_name -> buf.compiler.v1alpha1.Value.Any
-	2,  // 9: buf.compiler.v1alpha1.SymbolSet.TablesEntry.value:type_name -> buf.compiler.v1alpha1.SymbolTable
-	10, // 10: buf.compiler.v1alpha1.Value.Message.fields:type_name -> buf.compiler.v1alpha1.Value.Message.FieldsEntry
-	11, // 11: buf.compiler.v1alpha1.Value.Message.extns:type_name -> buf.compiler.v1alpha1.Value.Message.ExtnsEntry
-	5,  // 12: buf.compiler.v1alpha1.Value.Repeated.values:type_name -> buf.compiler.v1alpha1.Value
-	5,  // 13: buf.compiler.v1alpha1.Value.Any.value:type_name -> buf.compiler.v1alpha1.Value
-	5,  // 14: buf.compiler.v1alpha1.Value.Message.FieldsEntry.value:type_name -> buf.compiler.v1alpha1.Value
-	5,  // 15: buf.compiler.v1alpha1.Value.Message.ExtnsEntry.value:type_name -> buf.compiler.v1alpha1.Value
-	16, // [16:16] is the sub-list for method output_type
-	16, // [16:16] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	4,  // 2: buf.compiler.v1alpha1.SymbolTable.features:type_name -> buf.compiler.v1alpha1.Feature
+	5,  // 3: buf.compiler.v1alpha1.SymbolTable.symbols:type_name -> buf.compiler.v1alpha1.Symbol
+	6,  // 4: buf.compiler.v1alpha1.SymbolTable.options:type_name -> buf.compiler.v1alpha1.Value
+	0,  // 5: buf.compiler.v1alpha1.Symbol.kind:type_name -> buf.compiler.v1alpha1.Symbol.Kind
+	6,  // 6: buf.compiler.v1alpha1.Symbol.options:type_name -> buf.compiler.v1alpha1.Value
+	4,  // 7: buf.compiler.v1alpha1.Symbol.features:type_name -> buf.compiler.v1alpha1.Feature
+	9,  // 8: buf.compiler.v1alpha1.Value.repeated:type_name -> buf.compiler.v1alpha1.Value.Repeated
+	8,  // 9: buf.compiler.v1alpha1.Value.message:type_name -> buf.compiler.v1alpha1.Value.Message
+	10, // 10: buf.compiler.v1alpha1.Value.any:type_name -> buf.compiler.v1alpha1.Value.Any
+	2,  // 11: buf.compiler.v1alpha1.SymbolSet.TablesEntry.value:type_name -> buf.compiler.v1alpha1.SymbolTable
+	11, // 12: buf.compiler.v1alpha1.Value.Message.fields:type_name -> buf.compiler.v1alpha1.Value.Message.FieldsEntry
+	12, // 13: buf.compiler.v1alpha1.Value.Message.extns:type_name -> buf.compiler.v1alpha1.Value.Message.ExtnsEntry
+	6,  // 14: buf.compiler.v1alpha1.Value.Repeated.values:type_name -> buf.compiler.v1alpha1.Value
+	6,  // 15: buf.compiler.v1alpha1.Value.Any.value:type_name -> buf.compiler.v1alpha1.Value
+	6,  // 16: buf.compiler.v1alpha1.Value.Message.FieldsEntry.value:type_name -> buf.compiler.v1alpha1.Value
+	6,  // 17: buf.compiler.v1alpha1.Value.Message.ExtnsEntry.value:type_name -> buf.compiler.v1alpha1.Value
+	18, // [18:18] is the sub-list for method output_type
+	18, // [18:18] is the sub-list for method input_type
+	18, // [18:18] is the sub-list for extension type_name
+	18, // [18:18] is the sub-list for extension extendee
+	0,  // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_buf_compiler_v1alpha1_symtab_proto_init() }
@@ -896,7 +993,7 @@ func file_buf_compiler_v1alpha1_symtab_proto_init() {
 	if File_buf_compiler_v1alpha1_symtab_proto != nil {
 		return
 	}
-	file_buf_compiler_v1alpha1_symtab_proto_msgTypes[4].OneofWrappers = []any{
+	file_buf_compiler_v1alpha1_symtab_proto_msgTypes[5].OneofWrappers = []any{
 		(*Value_I32)(nil),
 		(*Value_U32)(nil),
 		(*Value_F32)(nil),
@@ -916,7 +1013,7 @@ func file_buf_compiler_v1alpha1_symtab_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_buf_compiler_v1alpha1_symtab_proto_rawDesc), len(file_buf_compiler_v1alpha1_symtab_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

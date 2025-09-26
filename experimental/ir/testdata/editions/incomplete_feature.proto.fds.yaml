@@ -1,6 +1,7 @@
 file:
 - name: "testdata/editions/incomplete_feature.proto"
   package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
   message_type:
   - name: "Features"
     field:
@@ -61,5 +62,13 @@ file:
   enum_type:
   - name: "Enum"
     value: [{ name: "A", number: 0 }, { name: "B", number: 1 }]
+  extension:
+  - name: "f"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Features"
+    extendee: ".google.protobuf.FeatureSet"
+  options.features.$unknown: "10000: {}"
   syntax: "editions"
   edition: EDITION_2023

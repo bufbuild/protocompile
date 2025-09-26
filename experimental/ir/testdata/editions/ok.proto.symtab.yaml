@@ -1,5 +1,14 @@
 tables:
   "testdata/editions/ok.proto":
+    features:
+    - { name: "field_presence", value: "IMPLICIT", explicit: true }
+    - { name: "default_symbol_visibility", value: "EXPORT_ALL" }
+    - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+    - { name: "enum_type", value: "OPEN" }
+    - { name: "json_format", value: "ALLOW" }
+    - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+    - { name: "repeated_field_encoding", value: "PACKED" }
+    - { name: "utf8_validation", value: "VERIFY" }
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -16,6 +25,12 @@ tables:
       visible: true
       options.message.fields:
         "features": { message.fields: { "field_presence": { i32: 1 } } }
+      features:
+      - { name: "field_presence", value: "EXPLICIT", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
     - fqn: "buf.test.M.y"
       kind: KIND_FIELD
       file: "testdata/editions/ok.proto"
@@ -23,6 +38,12 @@ tables:
       visible: true
       options.message.fields:
         "features": { message.fields: { "field_presence": { i32: 2 } } }
+      features:
+      - { name: "field_presence", value: "IMPLICIT", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
     - fqn: "buf.test.M.z"
       kind: KIND_FIELD
       file: "testdata/editions/ok.proto"
@@ -30,5 +51,11 @@ tables:
       visible: true
       options.message.fields:
         "features": { message.fields: { "field_presence": { i32: 3 } } }
+      features:
+      - { name: "field_presence", value: "LEGACY_REQUIRED", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
     options.message.fields:
       "features": { message.fields: { "field_presence": { i32: 2 } } }

@@ -24,6 +24,7 @@ message SymbolSet {
 // Symbol information for a particular Protobuf file.
 message SymbolTable {
     repeated Import imports = 1;
+    repeated Feature features = 4;
     repeated Symbol symbols = 2;
     Value options = 3;
 }
@@ -36,6 +37,17 @@ message Import {
     bool weak = 3;
     bool transitive = 4;
     bool visible = 5;
+}
+
+// A feature associated with a symbol.
+message Feature {
+    string extn = 1;
+    string name = 2;
+
+    // The value as a textproto string.
+    string value = 3;
+    // Whether this feature is set explicitly.
+    bool explicit = 4;
 }
 
 // A symbol in a file.
@@ -66,6 +78,8 @@ message Symbol {
     bool visible = 5;
 
     Value options = 6;
+
+    repeated Feature features = 7;
 }
 
 // An option value attached to a symbol.

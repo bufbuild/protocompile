@@ -275,7 +275,7 @@ func (m Member) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this member.
 func (m Member) FeatureSet() FeatureSet {
-	if m.IsZero() {
+	if m.IsZero() || m.raw.features.Nil() {
 		return FeatureSet{}
 	}
 
@@ -487,7 +487,7 @@ func (o Oneof) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this oneof.
 func (o Oneof) FeatureSet() FeatureSet {
-	if o.IsZero() {
+	if o.IsZero() || o.raw.features.Nil() {
 		return FeatureSet{}
 	}
 
@@ -580,7 +580,7 @@ func (r ReservedRange) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this file.
 func (r ReservedRange) FeatureSet() FeatureSet {
-	if r.IsZero() {
+	if r.IsZero() || r.raw.features.Nil() {
 		return FeatureSet{}
 	}
 

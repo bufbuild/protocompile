@@ -283,8 +283,12 @@ func (t Type) Parent() Type {
 //
 // Only message types have nested types.
 func (t Type) Nested() seq.Indexer[Type] {
+	var slice []arena.Pointer[rawType]
+	if !t.IsZero() {
+		slice = t.raw.nested
+	}
 	return seq.NewFixedSlice(
-		t.raw.nested,
+		slice,
 		func(_ int, p arena.Pointer[rawType]) Type {
 			// Nested types are always in the current file.
 			return wrapType(t.Context(), ref[rawType]{ptr: p})
@@ -304,8 +308,12 @@ func (t Type) MapField() Member {
 //
 // Predeclared types have no members; message and enum types do.
 func (t Type) Members() seq.Indexer[Member] {
+	var slice []arena.Pointer[rawMember]
+	if !t.IsZero() {
+		slice = t.raw.members[:t.raw.extnsStart]
+	}
 	return seq.NewFixedSlice(
-		t.raw.members[:t.raw.extnsStart],
+		slice,
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
@@ -377,8 +385,12 @@ func (t Type) makeMembersByName() intern.Map[arena.Pointer[rawMember]] {
 
 // Extensions returns any extensions nested within this type.
 func (t Type) Extensions() seq.Indexer[Member] {
+	var slice []arena.Pointer[rawMember]
+	if !t.IsZero() {
+		slice = t.raw.members[t.raw.extnsStart:]
+	}
 	return seq.NewFixedSlice(
-		t.raw.members[t.raw.extnsStart:],
+		slice,
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
@@ -430,7 +442,7 @@ func (t Type) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this type.
 func (t Type) FeatureSet() FeatureSet {
-	if t.IsZero() {
+	if t.IsZero() || t.raw.features.Nil() {
 		return FeatureSet{}
 	}
 

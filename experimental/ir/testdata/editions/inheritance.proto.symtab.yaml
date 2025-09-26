@@ -1,0 +1,82 @@
+tables:
+  "testdata/editions/inheritance.proto":
+    imports:
+    - { path: "google/protobuf/cpp_features.proto", visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    features:
+    - { name: "field_presence", value: "IMPLICIT", explicit: true }
+    - extn: "pb.cpp"
+      name: "legacy_closed_enum"
+      value: "false"
+      explicit: true
+    - { name: "default_symbol_visibility", value: "EXPORT_ALL" }
+    - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+    - { name: "enum_type", value: "OPEN" }
+    - { name: "json_format", value: "ALLOW" }
+    - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+    - { name: "repeated_field_encoding", value: "PACKED" }
+    - { name: "utf8_validation", value: "VERIFY" }
+    - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+    - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/inheritance.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/inheritance.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.E"
+      kind: KIND_ENUM
+      file: "testdata/editions/inheritance.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "json_format": { i32: 2 } } }
+      features:
+      - { name: "json_format", value: "LEGACY_BEST_EFFORT", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enum_type", value: "OPEN" }
+      - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+    - fqn: "buf.test.M.x"
+      kind: KIND_FIELD
+      file: "testdata/editions/inheritance.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "repeated_field_encoding": { i32: 1 } } }
+      features:
+      - { name: "repeated_field_encoding", value: "PACKED", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "IMPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "utf8_validation", value: "VERIFY" }
+      - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    - fqn: "buf.test.M.y"
+      kind: KIND_FIELD
+      file: "testdata/editions/inheritance.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 3 } } }
+      features:
+      - { name: "field_presence", value: "LEGACY_REQUIRED", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "PACKED" }
+      - { name: "utf8_validation", value: "VERIFY" }
+      - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    - fqn: "buf.test.X"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/inheritance.proto"
+      index: 3
+      visible: true
+    options.message.fields:
+      "features":
+        message:
+          fields: { "field_presence": { i32: 2 } }
+          extns:
+            "pb.cpp": { message.fields: { "legacy_closed_enum": { bool: false } } }

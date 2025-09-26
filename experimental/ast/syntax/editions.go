@@ -97,7 +97,7 @@ func (s Syntax) IsConstraint() bool {
 // Returns a stringified digit if it is not a named edition value.
 func (s Syntax) DescriptorName() string {
 	name := descriptorNames[s]
-	if name == "" {
+	if name != "" {
 		return name
 	}
 	return strconv.Itoa(int(s))

@@ -16,6 +16,10 @@ edition = "2023";
 
 package buf.test;
 
+import "google/protobuf/descriptor.proto";
+
+option features.(f) = {}; // Mention f so the symtab.yaml will show it.
+
 message Features {
     bool a = 1 [feature_support = {}];
 
@@ -57,4 +61,8 @@ message Features {
 enum Enum {
     A = 0;
     B = 1;
+}
+
+extend google.protobuf.FeatureSet {
+    Features f = 10000;
 }

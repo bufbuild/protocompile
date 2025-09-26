@@ -152,7 +152,6 @@ func resolveBuiltins(c *Context) {
 	ids := reflect.ValueOf(c.session.builtins)
 	for i := range v.NumField() {
 		field := v.Field(i)
-		fmt.Println(v.Type().Field(i).Name)
 		id := ids.FieldByName(v.Type().Field(i).Name).Interface().(intern.ID) //nolint:errcheck
 		kind := kinds[field.Type()]
 

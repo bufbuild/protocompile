@@ -3,9 +3,8 @@ warning: `b` is deprecated
    |
 21 | option features.(x) = {a: true, b: true, c: true, d: true};
    |                                 ^
-   = help: this is a bad feature
-   = help: don't use it
    = help: it has been deprecated since Edition 2023
+   = help: reason: This is a bad feature. Don't use it.
 
 error: `c` is not supported in Edition 2023
   --> testdata/editions/lifetime.proto:21:42

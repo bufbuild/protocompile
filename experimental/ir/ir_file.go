@@ -331,7 +331,7 @@ func (f File) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this file.
 func (f File) FeatureSet() FeatureSet {
-	if f.IsZero() {
+	if f.IsZero() || f.Context().features.Nil() {
 		return FeatureSet{}
 	}
 

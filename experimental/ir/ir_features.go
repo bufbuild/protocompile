@@ -86,6 +86,9 @@ func (fs FeatureSet) Parent() FeatureSet {
 // Options returns the value of the google.protobuf.FeatureSet message that
 // this FeatureSet is built from.
 func (fs FeatureSet) Options() MessageValue {
+	if fs.IsZero() {
+		return MessageValue{}
+	}
 	return wrapValue(fs.Context(), fs.raw.options).AsMessage()
 }
 
@@ -130,6 +133,11 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 			raw.isInherited = true
 		}
 	}
+
+	if raw.value.IsZero() {
+		return Feature{}
+	}
+
 	if fs.raw.features == nil {
 		fs.raw.features = make(map[featureKey]rawFeature)
 	}
@@ -152,6 +160,12 @@ func (f Feature) IsInherited() bool {
 	return !f.IsZero() && f.raw.isInherited
 }
 
+// Type returns the type of this feature. May be zero if there is no specified
+// default value for this feature in the current edition.
+func (f Feature) Type() Type {
+	return f.Field().Element()
+}
+
 // Value returns the value of this feature. May be zero if there is no specified
 // value for this feature, given the current edition.
 func (f Feature) Value() Value {
@@ -169,7 +183,7 @@ func (f FeatureInfo) Default(edition syntax.Syntax) Value {
 	})
 	if !ok {
 		if idx == 0 {
-			return Value{} // Not default. :(
+			panic("protocompile/ir: ir.FeatureInfo contained no defaults; this is a bug")
 		}
 		idx-- // We're looking for the greatest lower bound.
 	}

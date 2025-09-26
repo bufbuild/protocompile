@@ -1,0 +1,24 @@
+file:
+- name: "testdata/editions/inheritance.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/cpp_features.proto"]
+  message_type:
+  - name: "M"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      options.features.repeated_field_encoding: PACKED
+    - name: "y"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.features.field_presence: LEGACY_REQUIRED
+  enum_type:
+  - name: "E"
+    value: [{ name: "X", number: 1 }]
+    options.features.json_format: LEGACY_BEST_EFFORT
+  options.features: { field_presence: IMPLICIT, $unknown: "1000: {1: 0}" }
+  syntax: "editions"
+  edition: EDITION_2023

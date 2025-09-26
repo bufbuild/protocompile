@@ -1,0 +1,11 @@
+warning: `legacy_closed_enum` is deprecated
+  --> testdata/editions/inheritance.proto:22:8
+   |
+22 | option features.(pb.cpp).legacy_closed_enum = false;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: it has been deprecated since Edition 2023
+   = help: reason: The legacy closed enum behavior in C++ is deprecated and is
+           scheduled to be removed in edition 2025. See
+           http://protobuf.dev/programming-guides/enum/#cpp for more information
+
+encountered 1 warning

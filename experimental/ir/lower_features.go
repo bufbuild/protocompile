@@ -17,18 +17,17 @@ package ir
 import (
 	"cmp"
 	"fmt"
+	"regexp"
 	"slices"
-	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
+
+var whitespacePattern = regexp.MustCompile(`[ \t\r\n]+`)
 
 func buildAllFeatureInfo(f File, r *report.Report) {
 	for m := range f.AllMembers() {
@@ -56,7 +55,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 
 	info := new(rawFeatureInfo)
 	if defaults.IsZero() {
-		r.Warnf("expected feature field to set `edition_defaults`").Apply(
+		r.Warnf("expected feature field to set `%s`", builtins.EditionDefaults.Name()).Apply(
 			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
@@ -67,13 +66,20 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			edition := syntax.Syntax(key)
 
 			if value.IsZero() {
-				r.Warnf("missing edition key in `edition_defaults`").Apply(
-					report.Snippet(defaults.AST()),
+				r.Warnf("missing `%s.%s`",
+					builtins.EditionDefaultsKey.Container().Name(),
+					builtins.EditionDefaultsKey.Name(),
+				).Apply(
+					report.Snippet(def.AsValue().AST()),
 					mistake,
 				)
 			} else {
 				if !edition.IsConstraint() {
-					r.Warnf("unexpected `%s` in `EditionDefault.edition`", syntax.EditionLegacy.DescriptorName()).Apply(
+					r.Warnf("unexpected `%s` in `%s.%s`",
+						syntax.EditionLegacy.DescriptorName(),
+						builtins.EditionDefaultsKey.Container().Name(),
+						builtins.EditionDefaultsKey.Name(),
+					).Apply(
 						report.Snippet(value.AST()),
 						mistake,
 						report.Helpf("this should be a released edition or `%s`",
@@ -88,8 +94,11 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			// parser on the contents of the quoted string.
 			var bits rawValueBits
 			if value.IsZero() {
-				r.Warnf("missing default value in `edition_defaults`").Apply(
-					report.Snippet(defaults.AST()), mistake,
+				r.Warnf("missing value for `%s.%s`",
+					builtins.EditionDefaultsKey.Container().Name(),
+					builtins.EditionDefaultsKey.Name(),
+				).Apply(
+					report.Snippet(def.AsValue().AST()), mistake,
 				)
 			} else {
 				text, _ := value.AsString()
@@ -97,7 +106,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 				case field.Element().IsEnum():
 					ev := field.Element().MemberByName(text)
 					if ev.IsZero() {
-						r.Warnf("expected quoted enum value in `EditionDefault.value`").Apply(
+						r.Warnf("expected quoted enum value in `%s.%s`",
+							builtins.EditionDefaultsKey.Container().Name(),
+							builtins.EditionDefaultsKey.Name(),
+						).Apply(
 							report.Snippet(value.AST()),
 							report.Snippetf(field.TypeAST(), "expected due to this"),
 							report.Helpf("`value` must be the name of a value in `%s`", field.Element().FullName()),
@@ -112,7 +124,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 					case "true":
 						bits = 1
 					default:
-						r.Warnf("expected quoted bool in `EditionDefault.value`").Apply(
+						r.Warnf("expected quoted bool in `%s.%s`",
+							builtins.EditionDefaultsValue.Container().Name(),
+							builtins.EditionDefaultsValue.Name(),
+						).Apply(
 							report.Snippet(value.AST()),
 							report.Snippetf(field.TypeAST(), "expected due to this"),
 							report.Helpf("`value` must one of \"true\" or \"false\""),
@@ -147,16 +162,29 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		return cmp.Compare(a.edition, b.edition)
 	})
 
-	if len(info.defaults) > 0 && !slicesx.Among(info.defaults[0].edition, syntax.Unknown, syntax.Proto2) {
-		r.Warnf("`editions_defaults` does not cover all editions").Apply(
+	if len(info.defaults) > 0 && !slicesx.Among(info.defaults[0].edition, syntax.EditionLegacy, syntax.Proto2) {
+		r.Warnf("`%s` does not cover all editions", builtins.EditionDefaults.Name()).Apply(
 			report.Snippet(defaults.AST()),
-			report.Helpf("`editions_defaults` must specify a default for `EDITION_LEGACY` or `EDITION_PROTO2` to cover all editions"),
+			report.Helpf(
+				"`%s` must specify a default for `%s` or `%s` to cover all editions",
+				builtins.EditionDefaults.Name(),
+				syntax.Proto2.DescriptorName(),
+				syntax.EditionLegacy.DescriptorName(),
+			),
 			mistake,
 		)
 	}
 
+	// Insert a default value so FeatureSet.Lookup always returns *something*.
+	info.defaults = slices.Insert(info.defaults, 0, featureDefault{
+		edition: syntax.Unknown,
+		value: field.Context().arenas.values.NewCompressed(rawValue{
+			field: field.toRef(field.Context()),
+		}),
+	})
+
 	if support.IsZero() {
-		r.Warnf("expected feature field to set `feature_support`").Apply(
+		r.Warnf("expected feature field to set `%s`", builtins.EditionSupport.Name()).Apply(
 			report.Snippet(field.AST().Options()), mistake,
 		)
 	} else {
@@ -164,12 +192,18 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		n, _ := value.AsInt()
 		info.introduced = syntax.Syntax(n)
 		if value.IsZero() {
-			r.Warnf("expected `FeatureSupport.edition_introduced` to be set").Apply(
+			r.Warnf("expected `%s.%s` to be set",
+				builtins.EditionSupportIntroduced.Container().Name(),
+				builtins.EditionSupportIntroduced.Name(),
+			).Apply(
 				report.Snippet(support.AsValue().AST()),
 				mistake,
 			)
 		} else if info.introduced == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `edition_introduced`", info.introduced.DescriptorName()).Apply(
+			r.Warnf("unexpected `%s` in `%s`",
+				info.introduced.DescriptorName(),
+				builtins.EditionSupportIntroduced.Name(),
+			).Apply(
 				report.Snippet(value.AST()),
 				mistake,
 			)
@@ -179,7 +213,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		n, _ = value.AsInt()
 		info.deprecated = syntax.Syntax(n)
 		if !value.IsZero() && info.deprecated == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `edition_deprecated`", info.deprecated.DescriptorName()).Apply(
+			r.Warnf("unexpected `%s` in `%s`",
+				info.deprecated.DescriptorName(),
+				builtins.EditionSupportDeprecated.Name(),
+			).Apply(
 				report.Snippet(value.AST()),
 				mistake,
 			)
@@ -189,7 +226,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		n, _ = value.AsInt()
 		info.removed = syntax.Syntax(n)
 		if !value.IsZero() && info.removed == syntax.Unknown {
-			r.Warnf("unexpected `%s` in `edition_removed`", info.removed.DescriptorName()).Apply(
+			r.Warnf("unexpected `%s` in `%s`",
+				info.removed.DescriptorName(),
+				builtins.EditionSupportRemoved.Name(),
+			).Apply(
 				report.Snippet(value.AST()),
 				mistake,
 			)
@@ -308,6 +348,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		"while validating this features message",
 	))
 
+	builtins := features.Context().builtins()
 	edition := features.Context().File().Syntax()
 	for feature := range features.Fields() {
 		if msg := feature.AsMessage(); !msg.IsZero() {
@@ -317,11 +358,26 @@ func validateFeatures(features MessageValue, r *report.Report) {
 
 		info := feature.Field().FeatureInfo()
 		if info.IsZero() {
-			r.Warnf("non-feature field set within `features`").Apply(
+			r.Warnf("non-feature field set within `%s`", features.AsValue().Field().Name()).Apply(
 				report.Snippet(feature.AST()),
-				report.Helpf("a feature field is a field which sets the `edition_defaults` and `feature_support` options"),
+				report.Helpf("a feature field is a field which sets the `%s` and `%s` options",
+					builtins.EditionDefaults.Name(),
+					builtins.EditionSupport.Name(),
+				),
 			)
 			continue
+		}
+
+		deprecation := func() []report.DiagnosticOption {
+			text := info.DeprecationWarning()
+			// Canonicalize whitespace. Some built-in deprecation warnings have
+			// double spaces after periods.
+			text = whitespacePattern.ReplaceAllString(text, " ")
+
+			return []report.DiagnosticOption{
+				report.Helpf("it has been deprecated since %s", prettyEdition(info.Deprecated())),
+				report.Helpf("reason: %s", text),
+			}
 		}
 
 		// We check these in reverse order, because the user might have set
@@ -336,40 +392,16 @@ func validateFeatures(features MessageValue, r *report.Report) {
 				),
 			)
 
-			if deprecated := info.Deprecated(); deprecated != syntax.Unknown {
-				d.Apply(report.Helpf(
-					"it has been deprecated since %s", prettyEdition(deprecated),
-				))
+			if deprecated := info.Deprecated(); deprecated != syntax.Unknown && deprecated <= edition {
+				d.Apply(deprecation()...)
 			}
 			continue
 		}
 
 		if deprecated := info.Deprecated(); deprecated != syntax.Unknown && deprecated <= edition {
-			// Transform help text into something that is somewhat compatible
-			// with our diagnostic style.
-			helps := strings.Split(info.DeprecationWarning(), ". ") // Split sentences.
-			for i, help := range helps {
-				help = strings.TrimSpace(help)
-				help = strings.TrimSuffix(help, ".")
-				if help == "" {
-					continue
-				}
-
-				// Lowercase the first rune.
-				r, _ := stringsx.Rune(help, 0)
-				sz := utf8.RuneLen(r)
-				r = unicode.ToLower(r)
-				helps[i] = string(r) + help[sz:]
-			}
-			helps = slices.DeleteFunc(helps, func(s string) bool { return s == "" })
-			helps = append(helps, fmt.Sprintf("it has been deprecated since %s", prettyEdition(deprecated)))
-
-			d := r.Warnf("`%s` is deprecated", feature.Field().Name()).Apply(
+			r.Warnf("`%s` is deprecated", feature.Field().Name()).Apply(
 				report.Snippet(feature.MessageKeys().At(0)),
-			)
-			for _, help := range helps {
-				d.Apply(report.Helpf("%v", help))
-			}
+			).Apply(deprecation()...)
 		}
 
 		if intro := info.Introduced(); edition < intro {

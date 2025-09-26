@@ -104,7 +104,7 @@ func (s Service) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this service.
 func (s Service) FeatureSet() FeatureSet {
-	if s.IsZero() {
+	if s.IsZero() || s.raw.features.Nil() {
 		return FeatureSet{}
 	}
 
@@ -180,7 +180,7 @@ func (m Method) Options() MessageValue {
 
 // FeatureSet returns the Editions features associated with this method.
 func (m Method) FeatureSet() FeatureSet {
-	if m.IsZero() {
+	if m.IsZero() || m.raw.features.Nil() {
 		return FeatureSet{}
 	}
 
