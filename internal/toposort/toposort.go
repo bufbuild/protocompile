@@ -72,15 +72,15 @@ func (s *Sorter[Node, Key]) Sort(
 			s.push(root)
 			// This algorithm is DFS that has been tail-call-optimized into a loop.
 			// Each node is visited twice in the loop: once to add its children to
-			// the stack, and once to pop it and add it to the output. The visited
-			// stack tracks whether this is the first or second visit through the
-			// loop.
+			// the stack, and once to pop it and add it to the output. The state
+			// tracks whether this Node has been visisted and if its the first
+			// or second visit through the loop.
 			for len(s.stack) > 0 {
 				node, _ := slicesx.Last(s.stack)
 				k := s.Key(node)
-				yieled, visisted := s.state[k]
+				yieled, visited := s.state[k]
 
-				if !visisted {
+				if !visited {
 					s.state[k] = false
 					for child := range dag(node) {
 						s.push(child)
