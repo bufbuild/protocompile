@@ -89,7 +89,7 @@ func (s *Sorter[Node, Key]) Sort(
 				}
 
 				var zeroNode Node
-				s.stack[len(s.stack)] = zeroNode
+				s.stack[len(s.stack)-1] = zeroNode
 				s.stack = s.stack[:len(s.stack)-1]
 				if !yieled {
 					if !yield(node) {
