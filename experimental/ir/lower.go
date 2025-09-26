@@ -102,4 +102,6 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// done in two separate steps.
 	populateOptionTargets(c.File(), r)
 	validateOptionTargets(c.File(), r)
+
+	diagnoseUnusedImports(c.File(), r)
 }

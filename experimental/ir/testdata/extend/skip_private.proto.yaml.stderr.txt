@@ -1,0 +1,12 @@
+warning: unused import "b.proto"
+  --> b.proto:4:8
+   |
+ 4 | import "a.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "a.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 1 warning

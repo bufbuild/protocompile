@@ -26,13 +26,11 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // ToYAMLOptions contains configuration for [ToYAML].
 type ToYAMLOptions struct {
-	// If set, zero values of implicit presence fields are set.
-	EmitZeros bool
-
 	// The maximum column width before wrapping starts to occur.
 	MaxWidth int
 
@@ -65,25 +63,21 @@ func ToYAML(m proto.Message, opts ToYAMLOptions) string {
 // intermediate processing stage to help make formatting decisions
 // (such as compressing nested messages).
 func (y ToYAMLOptions) message(m protoreflect.Message) *doc {
-	desc := m.Descriptor()
-	fs := desc.Fields()
-
 	d := new(doc)
-	for i := range fs.Len() {
-		f := fs.Get(i)
+	entries := slices.Collect(iterx.Left(m.Range))
+	slices.SortFunc(entries, cmpx.Join(
+		cmpx.Map(protoreflect.FieldDescriptor.IsExtension, cmpx.Bool),
+		cmpx.Key(protoreflect.FieldDescriptor.Index),
+		cmpx.Key(protoreflect.FieldDescriptor.Number),
+	))
 
-		has := m.Has(f)
-		if y.EmitZeros && !has && !f.HasPresence() {
-			has = true
+	for _, f := range entries {
+		y := y.value(m.Get(f), f)
+		if f.IsExtension() {
+			d.push("("+f.FullName()+")", y)
+		} else {
+			d.push(f.Name(), y)
 		}
-		if !has {
-			continue
-		}
-
-		d.push(
-			f.Name(),
-			y.value(m.Get(f), f),
-		)
 	}
 
 	unknown := m.GetUnknown()

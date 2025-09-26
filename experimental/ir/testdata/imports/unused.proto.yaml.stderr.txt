@@ -1,0 +1,56 @@
+warning: unused import "a2.proto"
+  --> a2.proto:4:8
+   |
+ 4 | import "b.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "b.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "a2.proto"
+  --> a2.proto:5:8
+   |
+ 5 | import "c.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "c.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "a2.proto"
+  --> a2.proto:6:8
+   |
+ 6 | import "d.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 6 | - import "d.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "a3.proto"
+  --> a3.proto:5:8
+   |
+ 5 | import "c.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "c.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "a4.proto"
+  --> a4.proto:5:8
+   |
+ 5 | import "c.proto";
+   |        ^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "c.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 5 warnings

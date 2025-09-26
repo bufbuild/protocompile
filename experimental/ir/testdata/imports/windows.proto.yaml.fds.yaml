@@ -3,5 +3,5 @@ file:
 - { name: "nested/path.proto", package: "foo.bar", syntax: "proto2" }
 - name: "main.proto"
   package: "foo.bar"
-  dependency: ["C:/MyFiles/foo.proto", "nested/path.proto"]
+  dependency: ["nested/path.proto", "C:/MyFiles/foo.proto"]
   syntax: "proto2"

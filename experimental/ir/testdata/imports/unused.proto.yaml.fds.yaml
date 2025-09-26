@@ -1,0 +1,124 @@
+file:
+- name: "d.proto"
+  package: "buf.test"
+  message_type: [{ name: "D" }]
+  source_code_info: {}
+  syntax: "proto3"
+- name: "p.proto"
+  package: "buf.test"
+  message_type: [{ name: "P" }]
+  source_code_info: {}
+  syntax: "proto3"
+- name: "c.proto"
+  package: "buf.test"
+  dependency: ["p.proto"]
+  public_dependency: [0]
+  message_type: [{ name: "C" }]
+  source_code_info: {}
+  syntax: "proto3"
+- name: "b.proto"
+  package: "buf.test"
+  dependency: ["p.proto"]
+  public_dependency: [0]
+  message_type: [{ name: "B" }]
+  source_code_info: {}
+  syntax: "proto3"
+- name: "a1.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type:
+  - name: "A1"
+    field:
+    - name: "b"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.B"
+    - name: "c"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.C"
+    - name: "d"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+  source_code_info: {}
+  syntax: "proto3"
+- name: "a2.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type: [{ name: "A2" }]
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [0, 1, 2]
+  syntax: "proto3"
+- name: "a3.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type:
+  - name: "A3"
+    field:
+    - name: "p"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.P"
+    - name: "d"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [1]
+  syntax: "proto3"
+- name: "a4.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type:
+  - name: "A4"
+    field:
+    - name: "b"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.B"
+    - name: "p"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.P"
+    - name: "d"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [1]
+  syntax: "proto3"
+- name: "a5.proto"
+  package: "buf.test"
+  dependency: ["b.proto", "c.proto", "d.proto"]
+  message_type:
+  - name: "A5"
+    field:
+    - name: "c"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.C"
+    - name: "p"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.P"
+    - name: "d"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+  source_code_info: {}
+  syntax: "proto3"
