@@ -445,12 +445,10 @@ func (r optionRef) resolve() {
 				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted, ids.RangeUninterpreted,
 				ids.EnumUninterpreted, ids.EnumValueUninterpreted,
 				ids.MethodUninterpreted, ids.ServiceUninterpreted:
-				if syn := r.File().Syntax(); !syn.IsEdition() {
-					r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
-						report.Snippet(pc),
-						report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
-					)
-				}
+				r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+					report.Snippet(pc),
+					report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+				)
 
 			case ids.FileFeatures,
 				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
