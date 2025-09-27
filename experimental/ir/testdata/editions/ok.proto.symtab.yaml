@@ -1,0 +1,34 @@
+tables:
+  "testdata/editions/ok.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/ok.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/ok.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M.x"
+      kind: KIND_FIELD
+      file: "testdata/editions/ok.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 1 } } }
+    - fqn: "buf.test.M.y"
+      kind: KIND_FIELD
+      file: "testdata/editions/ok.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 2 } } }
+    - fqn: "buf.test.M.z"
+      kind: KIND_FIELD
+      file: "testdata/editions/ok.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 3 } } }
+    options.message.fields:
+      "features": { message.fields: { "field_presence": { i32: 2 } } }

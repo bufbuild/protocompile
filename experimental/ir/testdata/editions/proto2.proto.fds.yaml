@@ -1,0 +1,26 @@
+file:
+- name: "testdata/editions/proto2.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Message"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.features.field_presence: IMPLICIT
+    - name: "z"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+      options.features: {}
+    oneof_decl: [{ name: "y", options.features: {} }]
+    options.features: {}
+  enum_type:
+  - name: "Enum"
+    value: [{ name: "X", number: 1, options.features: {} }]
+    options.features: {}
+  options.features: {}
+  syntax: "proto2"

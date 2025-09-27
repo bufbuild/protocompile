@@ -23,6 +23,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 	"github.com/bufbuild/protocompile/internal/intern"
 	"github.com/bufbuild/protocompile/internal/toposort"
 )
@@ -54,6 +56,7 @@ type Context struct {
 
 	options  arena.Pointer[rawValue]
 	services []arena.Pointer[rawService]
+	features arena.Pointer[rawFeatureSet]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -85,6 +88,7 @@ type Context struct {
 		values   arena.Arena[rawValue]
 		messages arena.Arena[rawMessageValue]
 		arrays   arena.Arena[[]rawValueBits]
+		features arena.Arena[rawFeatureSet]
 
 		symbols arena.Arena[rawSymbol]
 	}
@@ -300,6 +304,14 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 	)
 }
 
+// AllMembers returns all fields defined in this file, including extensions
+// and enum values.
+func (f File) AllMembers() iter.Seq[Member] {
+	return iterx.Map(f.Context().arenas.members.Values(), func(raw *rawMember) Member {
+		return Member{internal.NewWith(f.Context()), raw}
+	})
+}
+
 // Services returns all services defined in this file.
 func (f File) Services() seq.Indexer[Service] {
 	return seq.NewFixedSlice(
@@ -318,6 +330,18 @@ func (f File) Options() MessageValue {
 	return wrapValue(f.Context(), f.Context().options).AsMessage()
 }
 
+// FeatureSet returns the Editions features associated with this file.
+func (f File) FeatureSet() FeatureSet {
+	if f.IsZero() || f.Context().features.Nil() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(f.Context()),
+		f.Context().arenas.features.Deref(f.Context().features),
+	}
+}
+
 // Symbols returns this file's symbol table.
 //
 // The symbol table includes both symbols defined in this file, and symbols
@@ -330,6 +354,14 @@ func (f File) Symbols() seq.Indexer[Symbol] {
 			return wrapSymbol(f.Context(), r)
 		},
 	)
+}
+
+// FindSymbol finds a symbol among [File.Symbols] with the given fully-qualified
+// name.
+func (f File) FindSymbol(fqn FullName) Symbol {
+	return wrapSymbol(f.Context(),
+		f.Context().imported.lookupBytes(f.Context(),
+			unsafex.BytesAlias[[]byte](string(fqn))))
 }
 
 // topoSort sorts a graph of [File]s according to their dependency graph,

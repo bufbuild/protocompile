@@ -140,6 +140,24 @@ func (s Symbol) AsMethod() Method {
 	}
 }
 
+// FeatureSet returns the features associated with this symbol.
+func (s Symbol) FeatureSet() FeatureSet {
+	switch s.Kind() {
+	case SymbolKindMessage, SymbolKindEnum:
+		return s.AsType().FeatureSet()
+	case SymbolKindField, SymbolKindEnumValue, SymbolKindExtension:
+		return s.AsMember().FeatureSet()
+	case SymbolKindOneof:
+		return s.AsOneof().FeatureSet()
+	case SymbolKindService:
+		return s.AsService().FeatureSet()
+	case SymbolKindMethod:
+		return s.AsMethod().FeatureSet()
+	default:
+		return FeatureSet{}
+	}
+}
+
 // Visible returns whether or not this symbol is visible according to Protobuf's
 // import semantics, within s.Context().File().
 func (s Symbol) Visible() bool {

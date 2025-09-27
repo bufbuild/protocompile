@@ -19,6 +19,7 @@ import (
 	"maps"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -55,6 +56,7 @@ type Test struct {
 	Files             []File `yaml:"files"`
 	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
 	OutputWKTs        bool   `yaml:"output_wkts"`
+	Features          bool   `yaml:"features"`
 	SourceCodeInfo    bool   `yaml:"source_code_info"`
 }
 
@@ -85,6 +87,10 @@ func TestIR(t *testing.T) {
 			test.Files = []File{{Path: path, Text: text}}
 		case ".yaml":
 			require.NoError(t, yaml.Unmarshal([]byte(text), &test))
+		}
+
+		if strings.Contains(path, "editions") {
+			test.Features = true
 		}
 
 		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
@@ -153,6 +159,89 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 	set.Tables = make(map[string]*compilerpb.SymbolTable)
 
 	for _, file := range files {
+		// All features relevant to this file.
+		featureExtns := make(map[ir.Member]struct{})
+		dumpFeatureExtns := func(options ir.MessageValue) {
+			for value := range options.Fields() {
+				if value.Field().IsExtension() {
+					featureExtns[value.Field()] = struct{}{}
+				}
+			}
+		}
+		if t.Features {
+			dumpFeatureExtns(file.FeatureSet().Options())
+			for ty := range seq.Values(file.AllTypes()) {
+				dumpFeatureExtns(ty.FeatureSet().Options())
+
+				for v := range seq.Values(ty.Members()) {
+					dumpFeatureExtns(v.FeatureSet().Options())
+				}
+				for v := range seq.Values(ty.Oneofs()) {
+					dumpFeatureExtns(v.FeatureSet().Options())
+				}
+				for v := range seq.Values(ty.ExtensionRanges()) {
+					dumpFeatureExtns(v.FeatureSet().Options())
+				}
+			}
+			for v := range seq.Values(file.AllExtensions()) {
+				dumpFeatureExtns(v.FeatureSet().Options())
+			}
+		}
+		dumpFeatures := func(features ir.FeatureSet, target ir.OptionTarget) []*compilerpb.Feature {
+			var out []*compilerpb.Feature
+			if !t.Features {
+				return out
+			}
+
+			dumpMessage := func(extn ir.Member, ty ir.Type) {
+				for field := range seq.Values(ty.Members()) {
+					if field.FeatureInfo().IsZero() || !field.CanTarget(target) {
+						continue
+					}
+
+					feature := features.LookupCustom(extn, field)
+					ty := feature.Type()
+					var valueString string
+					switch {
+					case feature.IsZero():
+						continue
+					case ty.IsEnum():
+						n, _ := feature.Value().AsInt()
+						ev := ty.MemberByNumber(int32(n))
+						if !ev.IsZero() {
+							valueString = ev.Name()
+						} else {
+							valueString = strconv.Itoa(int(n))
+						}
+					case ty.Predeclared() == predeclared.Bool:
+						b, _ := feature.Value().AsBool()
+						valueString = strconv.FormatBool(b)
+					default:
+						valueString = "<invalid type>"
+					}
+
+					out = append(out, &compilerpb.Feature{
+						Name:     feature.Field().Name(),
+						Extn:     string(extn.FullName()),
+						Value:    valueString,
+						Explicit: !feature.IsInherited(),
+					})
+				}
+			}
+
+			dumpMessage(ir.Member{}, file.FindSymbol("google.protobuf.FeatureSet").AsType())
+			for extn := range featureExtns {
+				dumpMessage(extn, extn.Element())
+			}
+
+			slices.SortStableFunc(out, cmpx.Join(
+				cmpx.Map(func(f *compilerpb.Feature) bool { return !f.Explicit }, cmpx.Bool),
+				cmpx.Key((*compilerpb.Feature).GetExtn),
+				cmpx.Key((*compilerpb.Feature).GetName),
+			))
+			return out
+		}
+
 		// Don't bother if the file only has a single symbol for its
 		// package, and no options.
 		if file.Options().IsZero() {
@@ -167,7 +256,8 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 		}
 
 		symtab := &compilerpb.SymbolTable{
-			Options: new(optionWalker).message(file.Options()),
+			Options:  new(optionWalker).message(file.Options()),
+			Features: dumpFeatures(file.FeatureSet(), ir.OptionTargetFile),
 		}
 
 		for imp := range seq.Values(file.TransitiveImports()) {
@@ -198,12 +288,13 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 			}
 
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
-				Fqn:     string(sym.FullName()),
-				Kind:    compilerpb.Symbol_Kind(sym.Kind()),
-				File:    sym.File().Path(),
-				Index:   uint32(sym.RawData()),
-				Visible: sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
-				Options: new(optionWalker).message(options),
+				Fqn:      string(sym.FullName()),
+				Kind:     compilerpb.Symbol_Kind(sym.Kind()),
+				File:     sym.File().Path(),
+				Index:    uint32(sym.RawData()),
+				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
+				Options:  new(optionWalker).message(options),
+				Features: dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
 			})
 		}
 		slices.SortFunc(symtab.Symbols,

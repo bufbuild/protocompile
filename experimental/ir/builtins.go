@@ -42,7 +42,32 @@ type builtins struct {
 	MethodOptions    Member
 
 	MapEntry      Member
+	Packed        Member
 	OptionTargets Member
+
+	EditionDefaults, EditionDefaultsKey, EditionDefaultsValue Member
+
+	EditionSupport           Member
+	EditionSupportIntroduced Member
+	EditionSupportDeprecated Member
+	EditionSupportWarning    Member
+	EditionSupportRemoved    Member
+
+	FeatureSet      Type
+	FeaturePresence Member
+	FeatureEnumType Member
+	FeaturePacked   Member
+	FeatureGroup    Member
+
+	FileFeatures      Member
+	MessageFeatures   Member
+	FieldFeatures     Member
+	OneofFeatures     Member
+	RangeFeatures     Member
+	EnumFeatures      Member
+	EnumValueFeatures Member
+	ServiceFeatures   Member
+	MethodFeatures    Member
 }
 
 // builtinIDs is all of the interning IDs of names in [builtins], plus some
@@ -62,6 +87,7 @@ type builtinIDs struct {
 	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
 	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	Packed        intern.ID `intern:"google.protobuf.FieldOptions.packed"`
 	OptionTargets intern.ID `intern:"google.protobuf.FieldOptions.targets"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
@@ -73,6 +99,32 @@ type builtinIDs struct {
 	EnumValueUninterpreted intern.ID `intern:"google.protobuf.EnumValueOptions.uninterpreted_option"`
 	ServiceUninterpreted   intern.ID `intern:"google.protobuf.ServiceOptions.uninterpreted_option"`
 	MethodUninterpreted    intern.ID `intern:"google.protobuf.MethodOptions.uninterpreted_option"`
+
+	EditionDefaults      intern.ID `intern:"google.protobuf.FieldOptions.edition_defaults"`
+	EditionDefaultsKey   intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.edition"`
+	EditionDefaultsValue intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.value"`
+
+	EditionSupport           intern.ID `intern:"google.protobuf.FieldOptions.feature_support"`
+	EditionSupportIntroduced intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_introduced"`
+	EditionSupportDeprecated intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_deprecated"`
+	EditionSupportWarning    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.deprecation_warning"`
+	EditionSupportRemoved    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_removed"`
+
+	FeatureSet      intern.ID `intern:"google.protobuf.FeatureSet"`
+	FeaturePresence intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`
+	FeatureEnumType intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
+	FeaturePacked   intern.ID `intern:"google.protobuf.FeatureSet.repeated_field_encoding"`
+	FeatureGroup    intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
+
+	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
+	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`
+	FieldFeatures     intern.ID `intern:"google.protobuf.FieldOptions.features"`
+	OneofFeatures     intern.ID `intern:"google.protobuf.OneofOptions.features"`
+	RangeFeatures     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.features"`
+	EnumFeatures      intern.ID `intern:"google.protobuf.EnumOptions.features"`
+	EnumValueFeatures intern.ID `intern:"google.protobuf.EnumValueOptions.features"`
+	ServiceFeatures   intern.ID `intern:"google.protobuf.ServiceOptions.features"`
+	MethodFeatures    intern.ID `intern:"google.protobuf.MethodOptions.features"`
 }
 
 func resolveBuiltins(c *Context) {
@@ -88,6 +140,10 @@ func resolveBuiltins(c *Context) {
 		reflect.TypeFor[Member](): {
 			kind: SymbolKindField,
 			wrap: makeBuiltinWrapper(c, wrapMember),
+		},
+		reflect.TypeFor[Type](): {
+			kind: SymbolKindMessage,
+			wrap: makeBuiltinWrapper(c, wrapType),
 		},
 	}
 
