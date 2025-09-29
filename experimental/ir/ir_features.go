@@ -181,10 +181,7 @@ func (f FeatureInfo) Default(edition syntax.Syntax) Value {
 	idx, ok := slices.BinarySearchFunc(f.raw.defaults, edition, func(a featureDefault, b syntax.Syntax) int {
 		return cmp.Compare(a.edition, b)
 	})
-	if !ok {
-		if idx == 0 {
-			panic("protocompile/ir: ir.FeatureInfo contained no defaults; this is a bug")
-		}
+	if !ok && idx > 0 {
 		idx-- // We're looking for the greatest lower bound.
 	}
 	return wrapValue(f.Context(), f.raw.defaults[idx].value)
