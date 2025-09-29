@@ -125,7 +125,7 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 	if raw.value.IsZero() {
 		if parent := fs.Parent(); !parent.IsZero() {
 			// If parent is non-nil, recurse.
-			raw.value = fs.Parent().LookupCustom(extension, field).Value()
+			raw = fs.Parent().LookupCustom(extension, field).raw
 			raw.isInherited = true
 		} else {
 			// Otherwise, we need to look for the edition default.
@@ -166,9 +166,10 @@ func (f Feature) IsExplicit() bool {
 	return !f.IsZero() && !f.raw.isInherited
 }
 
-// IsDefault returns whether this is the default value for the feature.
+// IsDefault returns whether this feature was inherited from edition defaults.
+// An explicit setting to the default will return false for this method.
 func (f Feature) IsDefault() bool {
-	return !f.IsZero() && !f.raw.isDefault
+	return !f.IsZero() && f.raw.isDefault
 }
 
 // Type returns the type of this feature. May be zero if there is no specified

@@ -407,8 +407,8 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 
 	slices.SortFunc(w.underlines, cmpx.Join(
 		cmpx.Key(func(u underline) int { return u.line }),
-		cmpx.Key(func(u underline) Level { return u.level }),
 		cmpx.Key(func(u underline) int { return u.Len() }),
+		cmpx.Key(func(u underline) Level { return u.level }),
 		cmpx.Key(func(u underline) int { return u.start }),
 	))
 	slices.SortFunc(w.multilines, cmpx.Join(
@@ -503,13 +503,15 @@ func (r *renderer) window(w *window) {
 		//
 		// We use a slice instead of a strings.Builder so we can overwrite parts
 		// as we render different "layers".
+		//
+		// TODO: It might be nice to deal with a case where underlines overlap by
+		// putting them on separate lines, but that requires quite a bit more
+		// processing and gets knapsack-ey very quickly.
 		var buf []byte
 		for i := len(part) - 1; i >= 0; i-- {
 			element := part[i]
 			if len(buf) < element.end {
-				newBuf := make([]byte, element.end)
-				copy(newBuf, buf)
-				buf = newBuf
+				buf = append(buf, make([]byte, element.end-len(buf))...)
 			}
 
 			// Note that start/end are 1-indexed.

@@ -1,0 +1,54 @@
+file:
+- name: "testdata/options/validate/presence.proto"
+  package: "buf.test"
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      options.features.field_presence: EXPLICIT
+    - name: "y"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Foo.YEntry"
+      options.features.field_presence: EXPLICIT
+    - name: "z"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+      options.features.field_presence: EXPLICIT
+    - name: "m"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Foo"
+      options.features.field_presence: IMPLICIT
+    - name: "r"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.features.field_presence: LEGACY_REQUIRED
+    - { name: "a1", number: 10, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "a1", number: 11, label: LABEL_REQUIRED, type: TYPE_INT32 }
+    nested_type:
+    - name: "YEntry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    extension_range: [{ start: 4, end: 5 }]
+    oneof_decl: [{ name: "o" }]
+  extension:
+  - name: "e"
+    number: 4
+    label: LABEL_OPTIONAL
+    type: TYPE_INT32
+    extendee: ".buf.test.Foo"
+    options.features.field_presence: EXPLICIT
+  options.features.field_presence: LEGACY_REQUIRED
+  syntax: "editions"
+  edition: EDITION_2023

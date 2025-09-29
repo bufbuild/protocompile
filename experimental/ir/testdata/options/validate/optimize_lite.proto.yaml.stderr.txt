@@ -1,0 +1,14 @@
+error: `LITE_RUNTIME` file imported in non-`LITE_RUNTIME` file
+  --> heavy2.proto:5:8
+   |
+ 5 | import "lite1.proto";
+   |        ^^^^^^^^^^^^^
+  ::: lite1.proto:4:23
+   |
+ 4 | option optimize_for = LITE_RUNTIME;
+   |                       ------------ `lite1.proto` set as `LITE_RUNTIME` here
+   = help: files using `LITE_RUNTIME` compile to types that use `MessageLite` or
+           equivalent in some runtimes, which ordinary message types cannot
+           depend on
+
+encountered 1 error

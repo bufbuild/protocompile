@@ -15,9 +15,11 @@
 package ir_test
 
 import (
+	"bytes"
 	"flag"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -52,11 +54,14 @@ var (
 //
 //nolint:tagliatelle
 type Test struct {
-	Files             []File `yaml:"files"`
-	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
-	OutputWKTs        bool   `yaml:"output_wkts"`
-	Features          bool   `yaml:"features"`
-	SourceCodeInfo    bool   `yaml:"source_code_info"`
+	Files             []File   `yaml:"files"`
+	ExcludeWKTSources bool     `yaml:"exclude_wkt_sources"`
+	OutputWKTs        bool     `yaml:"output_wkts"`
+	Features          bool     `yaml:"features"`
+	SourceCodeInfo    bool     `yaml:"source_code_info"`
+	ErrorsOnly        bool     `yaml:"errors_only"`
+	NoSymtab          bool     `yaml:"no_symtab"`
+	Filters           []string `yaml:"filters"`
 }
 
 type File struct {
@@ -73,9 +78,9 @@ func TestIR(t *testing.T) {
 		Refresh:    "PROTOCOMPILE_REFRESH",
 		Extensions: []string{"proto", "proto.yaml"},
 		Outputs: []golden.Output{
+			{Extension: "stderr.txt"},
 			{Extension: "fds.yaml"},
 			{Extension: "symtab.yaml"},
-			{Extension: "stderr.txt"},
 		},
 	}
 
@@ -83,10 +88,22 @@ func TestIR(t *testing.T) {
 		var test Test
 		switch filepath.Ext(path) {
 		case ".proto":
-			test.Files = []File{{Path: path, Text: text}}
+			// Parse test options out of comments starting with //!
+			config := new(bytes.Buffer)
+			for line := range strings.Lines(text) {
+				if line, ok := strings.CutPrefix(line, "//! "); ok {
+					config.WriteString(line)
+				}
+			}
+			require.NoError(t, yaml.Unmarshal(config.Bytes(), &test))
+
+			test.Files = append(test.Files, File{Path: path, Text: text})
+
 		case ".yaml":
 			require.NoError(t, yaml.Unmarshal([]byte(text), &test))
 		}
+
+		filter := slices.Collect(iterx.Map(slices.Values(test.Filters), regexp.MustCompile))
 
 		if strings.Contains(path, "editions") {
 			test.Features = true
@@ -126,13 +143,23 @@ func TestIR(t *testing.T) {
 		results, r, err := incremental.Run(t.Context(), exec, queries...)
 		require.NoError(t, err)
 
+		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
+			return slices.ContainsFunc(filter, func(r *regexp.Regexp) bool {
+				return r.MatchString(d.Message())
+			})
+		})
+
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,
 			ShowDebug: true,
 		}.RenderString(r)
 		t.Log(stderr)
-		outputs[2], _, _ = report.Renderer{}.RenderString(r)
-		assert.NotContains(t, outputs[1], "unexpected panic; this is a bug")
+		outputs[0], _, _ = report.Renderer{}.RenderString(r)
+		assert.NotContains(t, outputs[0], "unexpected panic; this is a bug")
+		if test.ErrorsOnly {
+			require.NotEmpty(t, outputs[0], "errors_only test must emit diagnostics")
+			return
+		}
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
@@ -148,8 +175,11 @@ func TestIR(t *testing.T) {
 			})
 		}
 
-		outputs[0] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
-		outputs[1] = prototest.ToYAML(symtabProto(irs, &test), prototest.ToYAMLOptions{})
+		outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
+
+		if !test.NoSymtab {
+			outputs[2] = prototest.ToYAML(symtabProto(irs, &test), prototest.ToYAMLOptions{})
+		}
 	})
 }
 

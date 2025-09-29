@@ -50,15 +50,21 @@ func validateConstraints(f File, r *report.Report) {
 	// https://protobuf.com/docs/language-spec#option-validation
 	javaUTF8 := f.Options().Field(builtins.JavaUTF8)
 	if !javaUTF8.IsZero() && f.Syntax().IsEdition() {
+		want := "DEFAULT"
+		if b, _ := javaUTF8.AsBool(); b {
+			want = "VERIFY"
+		}
+
 		r.Errorf("cannot set `%s` in %s", javaUTF8.Field().Name(), taxa.EditionMode).Apply(
 			report.Snippet(javaUTF8.MessageKeys().At(0)),
+			javaUTF8.suggestEdit("features.(pb.java).utf8_validation", want, "replace with `features.(pb.java).utf8_validation`"),
 		)
 	}
 	optimize := f.Options().Field(builtins.OptimizeFor)
 	if v, _ := optimize.AsInt(); v != 3 { // google.protobuf.FileOptions.LITE_RUNTIME
 		for imp := range seq.Values(f.Imports()) {
 			impOptimize := imp.Options().Field(builtins.OptimizeFor)
-			if v, _ := impOptimize.AsInt(); v == 3 {
+			if v, _ := impOptimize.AsInt(); v == 3 { // google.protobuf.FileOptions.LITE_RUNTIME
 				r.Errorf("`LITE_RUNTIME` file imported in non-`LITE_RUNTIME` file").Apply(
 					report.Snippet(imp.Decl.ImportPath()),
 					report.Snippetf(optimize.AST(), "optimization level set here"),
@@ -94,9 +100,9 @@ func validateConstraints(f File, r *report.Report) {
 					why = f.AST().Syntax().Value().Span()
 				}
 
-				r.Errorf("first %s must be `0`", taxa.EnumValue).Apply(
+				r.Errorf("first value of open enum must be `0`").Apply(
 					report.Snippet(first.AST().Value()),
-					report.Snippetf(why, "`%s` specified as an open enum here", ty.FullName()),
+					report.Snippetf(why, "`%s` specified as open here", ty.FullName()),
 					report.Helpf("open enums must define a zero value, and it must be the first one"),
 				)
 			}
@@ -107,7 +113,7 @@ func validateConstraints(f File, r *report.Report) {
 		for oneof := range seq.Values(ty.Oneofs()) {
 			if oneof.Members().Len() == 0 {
 				r.Errorf("oneof must define at least one member").Apply(
-					report.Snippet(ty.AST()),
+					report.Snippet(oneof.AST()),
 				)
 			}
 		}
