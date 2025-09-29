@@ -10,12 +10,12 @@ error: unexpected qualified name in message field
 21 |     repeated Type path.name = 1;
    |                   ^^^^^^^^^ expected identifier
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/field/bad-path.proto:22:5
    |
 22 |     required Type path.name = 1;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected qualified name in message field
@@ -70,12 +70,12 @@ error: unexpected qualified name in message field
 27 |     repeated package.Type path.name = 1;
    |                           ^^^^^^^^^ expected identifier
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/field/bad-path.proto:28:5
    |
 28 |     required package.Type path.name = 1;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected qualified name in message field
@@ -136,12 +136,12 @@ error: unexpected nested extension path in message field
 34 |     repeated (foo.bar).Type name = 1;
    |              ^^^^^^^^^
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/field/bad-path.proto:35:5
    |
 35 |     required (foo.bar).Type name = 1;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected nested extension path in message field
@@ -179,12 +179,12 @@ error: unexpected qualified name in message field
 39 |     repeated package.Type (foo.bar).name = 1;
    |                           ^^^^^^^^^^^^^^ expected identifier
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/field/bad-path.proto:40:5
    |
 40 |     required package.Type (foo.bar).name = 1;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected qualified name in message field

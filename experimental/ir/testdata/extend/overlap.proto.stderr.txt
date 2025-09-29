@@ -4,7 +4,8 @@ error: unexpected extension range within enum definition
 32 | / enum E {
 33 | |     extensions 1; // Not allowed.
    | |     ^^^^^^^^^^^^^ this extension range...
-34 | | }
+34 | |     X = 0;
+35 | | }
    | \_- ...cannot be declared within this enum definition
    = help: this extension range can only appear within a message definition
 

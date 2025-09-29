@@ -8,4 +8,12 @@ warning: `legacy_closed_enum` is deprecated in Edition 2023
            scheduled to be removed in edition 2025. See
            http://protobuf.dev/programming-guides/enum/#cpp for more information
 
-encountered 1 warning
+warning: required fields are deprecated
+  --> testdata/editions/inheritance.proto:26:44
+   |
+26 |     int32 y = 2 [features.field_presence = LEGACY_REQUIRED];
+   |                                            ^^^^^^^^^^^^^^^
+   = help: do not attempt to change this to `EXPLICIT` if the field is already
+           in-use; doing so is a wire protocol break
+
+encountered 2 warnings

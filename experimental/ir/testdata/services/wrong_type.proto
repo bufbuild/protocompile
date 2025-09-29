@@ -17,7 +17,7 @@ syntax = "proto2";
 package buf.test;
 
 message M {}
-enum E {}
+enum E { Z = 0; }
 
 service S {
     rpc M1(M) returns (E);

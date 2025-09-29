@@ -38,7 +38,7 @@ warning: `edition_defaults` does not cover all editions
    = help: `edition_defaults` must specify a default for `EDITION_PROTO2` or
            `EDITION_LEGACY` to cover all editions
 
-warning: expected `bool` or enum typed field for feature
+warning: expected `bool` or enum type, found scalar type `int32`
   --> testdata/editions/incomplete_feature.proto:40:5
    |
 40 |     int32 e = 5 [

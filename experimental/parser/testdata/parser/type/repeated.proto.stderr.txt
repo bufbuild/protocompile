@@ -24,12 +24,12 @@ error: multiple modifiers on message field type
 21 | +     repeated M x2 = 2;
    |
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/type/repeated.proto:22:5
    |
 22 |     required optional M x3 = 3;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: multiple modifiers on message field type

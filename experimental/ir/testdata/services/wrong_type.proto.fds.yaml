@@ -2,7 +2,7 @@ file:
 - name: "testdata/services/wrong_type.proto"
   package: "buf.test"
   message_type: [{ name: "M" }]
-  enum_type: [{ name: "E" }]
+  enum_type: [{ name: "E", value: [{ name: "Z", number: 0 }] }]
   service:
   - name: "S"
     method:
