@@ -28,7 +28,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // walker is the state struct for the AST-walking logic.
@@ -169,45 +168,6 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
-	// Returns whether an option with this FQN (which must be in the matching
-	// *Option message) is present and has true as its value.
-	//
-	// This is necessary because there are options which, unfortunately,
-	// influence field number evaluation. This breaks a dependency for us.
-	searchForBoolOption := func(path ...string) bool {
-		for decl := range seq.Values(def.Body().Decls()) {
-			def := decl.AsDef()
-			if def.IsZero() {
-				continue
-			}
-			opt := def.AsOption()
-			if opt.Keyword.IsZero() {
-				continue
-			}
-
-			if opt.Value.AsPath().AsKeyword() != keyword.True {
-				continue
-			}
-
-			pc, ok := iterx.OnlyOne(opt.Path.Components)
-			if !ok {
-				continue
-			}
-
-			// This can either be e.g. message_set_wire_format, but it could also
-			// appear as (google.protobuf.MessageOptions.message_set_wire_format).
-			if pc.AsIdent().Text() == path[len(path)-1] {
-				return true
-			}
-
-			if fqn := pc.AsExtension(); fqn.IsIdents(path...) {
-				return true
-			}
-		}
-
-		return false
-	}
-
 	isEnum := def.Keyword() == keyword.Enum
 	raw := c.arenas.types.NewCompressed(rawType{
 		def:    def,
@@ -215,9 +175,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
 
-		isEnum:       isEnum,
-		isMessageSet: !isEnum && searchForBoolOption("google", "protobuf", "MessageOptions", "message_set_wire_format"),
-		allowsAlias:  isEnum && searchForBoolOption("google", "protobuf", "EnumOptions", "allow_alias"),
+		isEnum: isEnum,
 	})
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}

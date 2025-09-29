@@ -87,6 +87,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Perform "early" name resolution, i.e. field names and extension types.
 	resolveNames(c.File(), r)
+	resolveEarlyOptions(c.File())
 
 	// Perform constant evaluation.
 	evaluateFieldNumbers(c.File(), r)
@@ -108,6 +109,7 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	buildAllFeatureInfo(c.File(), r)
 	validateAllFeatures(c.File(), r)
 
-	// Diagnose unused imports now that we're done resolving everything.
+	// Validate all the little constraint details that didn't get caught above.
 	diagnoseUnusedImports(c.File(), r)
+	validateConstraints(c.File(), r)
 }

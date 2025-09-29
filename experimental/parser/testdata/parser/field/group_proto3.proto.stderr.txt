@@ -1,4 +1,4 @@
-error: groups syntax is not supported
+error: group syntax is not supported
   --> testdata/parser/field/group_proto3.proto:20:5
    |
 20 |     group G = 1 {}

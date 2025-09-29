@@ -41,6 +41,8 @@ type builtins struct {
 	ServiceOptions   Member
 	MethodOptions    Member
 
+	MessageSet Member
+
 	MapEntry      Member
 	Packed        Member
 	OptionTargets Member
@@ -85,6 +87,9 @@ type builtinIDs struct {
 	EnumValueOptions intern.ID `intern:"google.protobuf.EnumValueDescriptorProto.options"`
 	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
 	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
+
+	MessageSet intern.ID `intern:"google.protobuf.MessageOptions.message_set_wire_format"`
+	AllowAlias intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
 
 	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
 	Packed        intern.ID `intern:"google.protobuf.FieldOptions.packed"`

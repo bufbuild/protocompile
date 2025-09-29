@@ -375,10 +375,9 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		case keyword.Public:
 
 		case keyword.Weak:
-			p.Warnf("use of `import weak`").Apply(
+			p.Warnf("`import weak` is deprecated").Apply(
 				report.Snippet(report.Join(decl.KeywordToken(), mod)),
-				report.Helpf("`import weak` is deprecated and not supported correctly "+
-					"in most Protobuf implementations"),
+				report.Helpf("`import weak` is not implemented correctly in most Protobuf implementations"),
 			)
 
 		case keyword.Option:
