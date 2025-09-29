@@ -3,6 +3,7 @@ error: unexpected end-of-file after `package` declaration
    |
 17 | package test
    |             ^ expected `;`
+   |
   help: consider inserting a `;`
    |
 17 | package test;

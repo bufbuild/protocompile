@@ -8,7 +8,9 @@ error: unexpected message expression in reserved range
   --> testdata/parser/range/invalid_exprs.proto:21:14
    |
 21 |     reserved {};
-   |              ^^ expected range expression, string literal, or integer literal
+   |              ^^
+   |              |
+   |              expected range expression, string literal, or integer literal
 
 error: unexpected string literal in extension range
   --> testdata/parser/range/invalid_exprs.proto:23:16

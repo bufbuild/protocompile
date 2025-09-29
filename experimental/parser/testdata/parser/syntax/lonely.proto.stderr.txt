@@ -8,6 +8,7 @@ error: unexpected `;` in `edition` declaration
    |
 15 | edition;
    |        ^ expected `=`
+   |
   help: consider inserting a `=`
    |
 15 | edition = ;

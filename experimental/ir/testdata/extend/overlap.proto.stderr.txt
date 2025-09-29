@@ -6,6 +6,7 @@ error: unexpected extension range within enum definition
    | |     ^^^^^^^^^^^^^ this extension range...
 34 | | }
    | \_- ...cannot be declared within this enum definition
+   |
    = help: this extension range can only appear within a message definition
 
 error: use of reserved field number `2`
@@ -46,7 +47,6 @@ warning: singleton range can be simplified
    |
 26 | -     extensions 2, 3 to 3, 5 to max;
 26 | +     extensions 2, 3, 5 to max;
-   |
 
 error: overlapping field number ranges
   --> testdata/extend/overlap.proto:26:27
@@ -55,6 +55,7 @@ error: overlapping field number ranges
    |                           ^^^^^^^^ this range
 27 |     reserved 7, 8 to 9;     // Overlapping reserved regions.
    |                 ------ overlaps with this one
+   |
    = help: they overlap in the range `8 to 9`
 
 error: overlapping field number ranges
@@ -65,6 +66,7 @@ error: overlapping field number ranges
 27 |     reserved 7, 8 to 9;     // Overlapping reserved regions.
 28 |     extensions 10 to 20;    // Overlapping extensions.
    |                ^^^^^^^^ this range
+   |
    = help: they overlap in the range `10 to 20`
 
 error: `max` outside of range end

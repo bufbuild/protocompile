@@ -52,8 +52,8 @@ error: unexpected integer literal in array expression
    |
 20 | option foo = [1, 2 3];
    |                    ^ expected `,`
-   |                    |
-   |                    note: assuming a missing `,` here
+   |                    - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 20 | option foo = [1, 2, 3];
@@ -74,6 +74,7 @@ error: unexpected extra `,` in array expression
    |                   -^ expected expression
    |                   |
    |                   first delimiter is here
+   |
   help: delete this `,`
    |
 21 | - option foo = [1, 2,, 3];
@@ -95,6 +96,7 @@ error: unexpected extra `,` in array expression
    |                   -^ expected expression
    |                   |
    |                   first delimiter is here
+   |
   help: delete this `,`
    |
 22 | - option foo = [1, 2,, 3,];
@@ -125,6 +127,7 @@ error: unexpected leading `,` in array expression
    |
 23 | option foo = [,1 2,, 3,];
    |               ^ expected expression
+   |
   help: delete this `,`
    |
 23 | - option foo = [,1 2,, 3,];
@@ -136,8 +139,8 @@ error: unexpected integer literal in array expression
    |
 23 | option foo = [,1 2,, 3,];
    |                  ^ expected `,`
-   |                  |
-   |                  note: assuming a missing `,` here
+   |                  - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 23 | option foo = [,1, 2,, 3,];
@@ -150,6 +153,7 @@ error: unexpected extra `,` in array expression
    |                   -^ expected expression
    |                   |
    |                   first delimiter is here
+   |
   help: delete this `,`
    |
 23 | - option foo = [,1 2,, 3,];
@@ -200,8 +204,8 @@ error: unexpected message expression in array expression
    |
 25 | option foo = [a {}];
    |                 ^^ expected `,`
-   |                 |
-   |                 note: assuming a missing `,` here
+   |                 - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 25 | option foo = [a, {}];
@@ -223,6 +227,7 @@ error: unexpected leading `,` in array expression
    |
 26 | option foo = [,];
    |               ^ expected expression
+   |
   help: delete this `,`
    |
 26 | - option foo = [,];
@@ -236,6 +241,7 @@ error: unexpected extra `;` in message expression
    |               -^ expected message field value
    |               |
    |               first delimiter is here
+   |
   help: delete this `;`
    |
 31 | -         bar: 2;;
@@ -247,6 +253,7 @@ error: unexpected leading `;` in message expression
    |
 34 | option foo = {;bar: 1};
    |               ^ expected message field value
+   |
   help: delete this `;`
    |
 34 | - option foo = {;bar: 1};
@@ -260,6 +267,7 @@ error: unexpected extra `;` in message expression
    |                     -^ expected message field value
    |                     |
    |                     first delimiter is here
+   |
   help: delete this `;`
    |
 35 | - option foo = {baz: 1;; baz: 1};
@@ -273,6 +281,7 @@ error: unexpected extra `;` in message expression
    |                     -^ expected message field value
    |                     |
    |                     first delimiter is here
+   |
   help: delete this `;`
    |
 36 | - option foo = {baz: 1,; baz: 1;};
@@ -284,6 +293,7 @@ error: unexpected leading `;` in message expression
    |
 38 |     bar {;}
    |          ^ expected message field value
+   |
   help: delete this `;`
    |
 38 | -     bar {;}
@@ -295,6 +305,7 @@ error: unexpected leading `,` in message expression
    |
 39 |     bar {,}
    |          ^ expected message field value
+   |
   help: delete this `,`
    |
 39 | -     bar {,}
@@ -324,8 +335,8 @@ error: unexpected type name in method parameter list
    |
 45 |     rpc Foo(int int) returns (int int);
    |                 ^^^ expected `,`
-   |                 |
-   |                 note: assuming a missing `,` here
+   |                 - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 45 |     rpc Foo(int, int) returns (int int);
@@ -342,8 +353,8 @@ error: unexpected type name in method return type
    |
 45 |     rpc Foo(int int) returns (int int);
    |                                   ^^^ expected `,`
-   |                                   |
-   |                                   note: assuming a missing `,` here
+   |                                   - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 45 |     rpc Foo(int int) returns (int, int);
@@ -389,6 +400,7 @@ error: unexpected leading `,` in method parameter list
    |
 47 |     rpc Foo(, int, int) returns (int,, int,);
    |             ^ expected type
+   |
   help: delete this `,`
    |
 47 | -     rpc Foo(, int, int) returns (int,, int,);
@@ -408,6 +420,7 @@ error: unexpected extra `,` in method return type
    |                                     -^ expected type
    |                                     |
    |                                     first delimiter is here
+   |
   help: delete this `,`
    |
 47 | -     rpc Foo(, int, int) returns (int,, int,);
@@ -448,6 +461,7 @@ error: unexpected leading `,` in method return type
    |
 48 |     rpc Foo(;) returns (,);
    |                         ^ expected type
+   |
   help: delete this `,`
    |
 48 | -     rpc Foo(;) returns (,);
@@ -495,8 +509,8 @@ error: unexpected type name in type parameters
    |
 55 |     map<int int> x;
    |             ^^^ expected `,`
-   |             |
-   |             note: assuming a missing `,` here
+   |             - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 55 |     map<int, int> x;
@@ -515,6 +529,7 @@ error: unexpected extra `,` in type parameters
    |            -^ expected type
    |            |
    |            first delimiter is here
+   |
   help: delete this `,`
    |
 56 | -     map<int,, int> x;
@@ -538,6 +553,7 @@ error: unexpected leading `,` in type parameters
    |
 57 |     map<,> x;
    |         ^ expected type
+   |
   help: delete this `,`
    |
 57 | -     map<,> x;
@@ -567,6 +583,7 @@ error: unexpected leading `,` in type parameters
    |
 59 |     map<,int, int> x;
    |         ^ expected type
+   |
   help: delete this `,`
    |
 59 | -     map<,int, int> x;
@@ -609,8 +626,8 @@ error: unexpected integer literal in reserved range
    |
 68 |     reserved 1, 2 3;
    |                   ^ expected `,`
-   |                   |
-   |                   note: assuming a missing `,` here
+   |                   - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 68 |     reserved 1, 2, 3;
@@ -623,6 +640,7 @@ error: unexpected extra `,` in reserved range
    |                  -^ expected expression
    |                  |
    |                  first delimiter is here
+   |
   help: delete this `,`
    |
 69 | -     reserved 1, 2,, 3;
@@ -636,6 +654,7 @@ error: unexpected extra `,` in reserved range
    |                  -^ expected expression
    |                  |
    |                  first delimiter is here
+   |
   help: delete this `,`
    |
 70 | -     reserved 1, 2,, 3,;
@@ -658,6 +677,7 @@ error: unexpected leading `,` in reserved range
    |
 71 |     reserved ,1 2,, 3,;
    |              ^ expected expression
+   |
   help: delete this `,`
    |
 71 | -     reserved ,1 2,, 3,;
@@ -669,8 +689,8 @@ error: unexpected integer literal in reserved range
    |
 71 |     reserved ,1 2,, 3,;
    |                 ^ expected `,`
-   |                 |
-   |                 note: assuming a missing `,` here
+   |                 - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 71 |     reserved ,1, 2,, 3,;
@@ -683,6 +703,7 @@ error: unexpected extra `,` in reserved range
    |                  -^ expected expression
    |                  |
    |                  first delimiter is here
+   |
   help: delete this `,`
    |
 71 | -     reserved ,1 2,, 3,;
@@ -714,15 +735,17 @@ error: unexpected message expression in reserved range
   --> testdata/parser/lists.proto:72:16
    |
 72 |     reserved a {};
-   |                ^^ expected range expression, string literal, or integer literal
+   |                ^^
+   |                |
+   |                expected range expression, string literal, or integer literal
 
 error: unexpected message expression in reserved range
   --> testdata/parser/lists.proto:72:16
    |
 72 |     reserved a {};
    |                ^^ expected `,`
-   |                |
-   |                note: assuming a missing `,` here
+   |                - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 72 |     reserved a, {};
@@ -733,6 +756,7 @@ error: unexpected leading `,` in reserved range
    |
 73 |     reserved ,;
    |              ^ expected expression
+   |
   help: delete this `,`
    |
 73 | -     reserved ,;
@@ -774,8 +798,8 @@ error: unexpected identifier in reserved range
    |
 75 |     reserved a, b c;
    |                   ^ expected `,`
-   |                   |
-   |                   note: assuming a missing `,` here
+   |                   - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 75 |     reserved a, b, c;
@@ -816,8 +840,8 @@ error: unexpected identifier in reserved range
    |
 76 |     reserved a, b c
    |                   ^ expected `,`
-   |                   |
-   |                   note: assuming a missing `,` here
+   |                   - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 76 |     reserved a, b, c
@@ -828,6 +852,7 @@ error: unexpected `message` after reserved range
    |
 77 |     message Foo {}
    |     ^^^^^^^ expected `;`
+   |
   help: consider inserting a `;`
    |
 76 |     reserved a, b c;

@@ -11,6 +11,7 @@ error: unexpected integer literal after `package` declaration
    |
 21 | package 42;
    |         ^^ expected `;`
+   |
   help: consider inserting a `;`
    |
 21 | package; 42;

@@ -55,6 +55,7 @@ error: unexpected `:` after definition
    |
 38 | option x = <>:
    |              ^ expected `;`
+   |
   help: consider inserting a `;`
    |
 38 | option x = <>;:
@@ -108,9 +109,8 @@ error: nested array expressions are not allowed
   --> testdata/parser/option/values.proto:64:18
    |
 64 |     x: [1, 2, 3, [4, 5, [6]]]
-   |        ----------^^^^^^^^^^^- ...within this array expression
-   |                  |
-   |                  cannot nest this array expression...
+   |        ---------------------- ...within this array expression
+   |                  ^^^^^^^^^^^ cannot nest this array expression...
 
 error: nested array expressions are not allowed
   --> testdata/parser/option/values.proto:66:9
@@ -198,6 +198,7 @@ error: cannot name extension field using `(...)` in message expression
    |
 77 |     (x.y): 42
    |     ^^^^^ expected this to be wrapped in `[...]` instead
+   |
   help: replace the `(...)` with `[...]`
    |
 77 | -     (x.y): 42
@@ -209,6 +210,7 @@ error: unexpected absolute path in extension name
    |
 82 |     [.x.y]: 42
    |      ^^^^ expected a path without a leading `.`
+   |
   help: remove the leading `.`
    |
 82 | -     [.x.y]: 42
@@ -242,6 +244,7 @@ error: unexpected integer literal in array expression
    |     -          ^ expected message expression
    |     |
    |     because this message field value is missing a `:`
+   |
    = note: the `:` can be omitted in a message field value, but only if the
            value is a message expression or a array expression of them
 

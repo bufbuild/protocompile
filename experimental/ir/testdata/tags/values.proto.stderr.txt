@@ -3,6 +3,7 @@ error: unexpected `:` after definition
    |
 51 |     M4 = a: 2;
    |           ^ expected `;`
+   |
   help: consider inserting a `;`
    |
 51 |     M4 = a;: 2;
@@ -56,6 +57,7 @@ error: mismatched types
    |
 32 |     F1 = 1.0;
    |          ^^^ expected `int32`, found floating-point literal
+   |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -64,6 +66,7 @@ error: mismatched types
    |
 33 |     F2 = -1.0;
    |          ^^^^ expected `int32`, found floating-point literal
+   |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -72,6 +75,7 @@ error: mismatched types
    |
 34 |     F3 = inf;
    |          ^^^ expected `int32`, found floating-point literal
+   |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -80,6 +84,7 @@ error: mismatched types
    |
 35 |     F4 = -inf;
    |          ^^^^ expected `int32`, found floating-point literal
+   |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -88,6 +93,7 @@ error: mismatched types
    |
 36 |     F5 = nan;
    |          ^^^ expected `int32`, found floating-point literal
+   |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -96,6 +102,7 @@ error: mismatched types
    |
 37 |     F6 = -nan;
    |          ^^^^ expected `int32`, found floating-point literal
+   |
    = note: expected: scalar type `int32`
               found: floating-point literal
 
@@ -104,6 +111,7 @@ error: mismatched types
    |
 39 |     B1 = false;
    |          ^^^^^ expected `int32`, found `bool`
+   |
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
@@ -112,6 +120,7 @@ error: mismatched types
    |
 40 |     B2 = true;
    |          ^^^^ expected `int32`, found `bool`
+   |
    = note: expected: scalar type `int32`
               found: scalar type `bool`
 
@@ -127,6 +136,7 @@ error: mismatched types
    |
 43 |     S1 = "";
    |          ^^ expected `int32`, found `string`
+   |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
@@ -135,6 +145,7 @@ error: mismatched types
    |
 44 |     S2 = '';
    |          ^^ expected `int32`, found `string`
+   |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
@@ -143,6 +154,7 @@ error: mismatched types
    |
 45 |     S3 = "abc";
    |          ^^^^^ expected `int32`, found `string`
+   |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
@@ -151,6 +163,7 @@ error: mismatched types
    |
 46 |     S4 = '\xff\xff\xff';
    |          ^^^^^^^^^^^^^^ expected `int32`, found `string`
+   |
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
@@ -159,6 +172,7 @@ error: mismatched types
    |
 48 |     M1 = {};
    |          ^^ expected `int32`, found message expression
+   |
    = note: expected: scalar type `int32`
               found: message expression
 
@@ -167,6 +181,7 @@ error: mismatched types
    |
 49 |     M2 = [];
    |          ^^ expected `int32`, found array expression
+   |
    = note: expected: scalar type `int32`
               found: array expression
 
@@ -175,6 +190,7 @@ error: mismatched types
    |
 50 |     M3 = 1 to 2;
    |          ^^^^^^ expected `int32`, found range expression
+   |
    = note: expected: scalar type `int32`
               found: range expression
 
@@ -183,6 +199,7 @@ error: cannot find `a` in this scope
    |
 51 |     M4 = a: 2;
    |          ^ not found in this scope
+   |
    = help: the full name of this scope is `test.E`
 
 error: cannot find `a` in this scope
@@ -190,6 +207,7 @@ error: cannot find `a` in this scope
    |
 52 |     M5 = a = 2;
    |          ^ not found in this scope
+   |
    = help: the full name of this scope is `test.E`
 
 error: mismatched types
@@ -197,6 +215,7 @@ error: mismatched types
    |
 54 |     E1 = X;
    |          ^ expected `int32`, found `test.E`
+   |
    = note: expected: scalar type `int32`
               found: enum type `test.E`
 
@@ -205,6 +224,7 @@ error: mismatched types
    |
 55 |     E2 = -Y;
    |          ^^ expected `int32`, found `test.E`
+   |
    = note: expected: scalar type `int32`
               found: enum type `test.E`
 

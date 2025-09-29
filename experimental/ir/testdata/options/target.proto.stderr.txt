@@ -7,7 +7,10 @@ error: unsupported option target for `range`
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
-    |                                        --------------------------- targets constrained here
+    |                                        ---------------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.range` is constrained to extension ranges
 
 error: unsupported option target for `message`
@@ -19,7 +22,10 @@ error: unsupported option target for `message`
  ...
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.message` is constrained to message definitions
 
 error: unsupported option target for `field`
@@ -31,7 +37,10 @@ error: unsupported option target for `field`
  ...
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.field` is constrained to message fields
 
 error: unsupported option target for `oneof`
@@ -43,7 +52,10 @@ error: unsupported option target for `oneof`
  ...
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.oneof` is constrained to oneof definitions
 
 error: unsupported option target for `enum`
@@ -55,7 +67,10 @@ error: unsupported option target for `enum`
  ...
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.enum` is constrained to enum definitions
 
 error: unsupported option target for `value`
@@ -67,7 +82,10 @@ error: unsupported option target for `value`
  ...
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
-    |                                        ---------------------- targets constrained here
+    |                                        ----------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.value` is constrained to enum values
 
 error: unsupported option target for `service`
@@ -79,7 +97,10 @@ error: unsupported option target for `service`
  ...
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.service` is constrained to service definitions
 
 error: unsupported option target for `method`
@@ -90,7 +111,10 @@ error: unsupported option target for `method`
  ...
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
 125 |     optional bool method = 9 [targets = TARGET_TYPE_METHOD];
-    |                                         ------------------ targets constrained here
+    |                                         ------------------
+    |                                          |
+    |                                          targets constrained here
+    |
     = help: `buf.test.Targets.method` is constrained to service methods
 
 error: unsupported option target for `file`
@@ -103,7 +127,10 @@ error: unsupported option target for `file`
  33 |     option (message).range = true;
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.file` is constrained to file scopes
 
 error: unsupported option target for `range`
@@ -118,7 +145,10 @@ error: unsupported option target for `range`
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
-    |                                        --------------------------- targets constrained here
+    |                                        ---------------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.range` is constrained to extension ranges
 
 error: unsupported option target for `field`
@@ -134,7 +164,10 @@ error: unsupported option target for `field`
  ...
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.field` is constrained to message fields
 
 error: unsupported option target for `oneof`
@@ -150,7 +183,10 @@ error: unsupported option target for `oneof`
  ...
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.oneof` is constrained to oneof definitions
 
 error: unsupported option target for `enum`
@@ -166,7 +202,10 @@ error: unsupported option target for `enum`
  ...
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.enum` is constrained to enum definitions
 
 error: unsupported option target for `value`
@@ -182,7 +221,10 @@ error: unsupported option target for `value`
  ...
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
-    |                                        ---------------------- targets constrained here
+    |                                        ----------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.value` is constrained to enum values
 
 error: unsupported option target for `service`
@@ -198,7 +240,10 @@ error: unsupported option target for `service`
  ...
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.service` is constrained to service definitions
 
 error: unsupported option target for `method`
@@ -213,7 +258,10 @@ error: unsupported option target for `method`
  ...
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
 125 |     optional bool method = 9 [targets = TARGET_TYPE_METHOD];
-    |                                         ------------------ targets constrained here
+    |                                         ------------------
+    |                                          |
+    |                                          targets constrained here
+    |
     = help: `buf.test.Targets.method` is constrained to service methods
 
 error: unsupported option target for `file`
@@ -226,7 +274,10 @@ error: unsupported option target for `file`
  44 |         range: true
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.file` is constrained to file scopes
 
 error: unsupported option target for `range`
@@ -241,7 +292,10 @@ error: unsupported option target for `range`
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
-    |                                        --------------------------- targets constrained here
+    |                                        ---------------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.range` is constrained to extension ranges
 
 error: unsupported option target for `message`
@@ -257,7 +311,10 @@ error: unsupported option target for `message`
  ...
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.message` is constrained to message definitions
 
 error: unsupported option target for `oneof`
@@ -273,7 +330,10 @@ error: unsupported option target for `oneof`
  ...
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.oneof` is constrained to oneof definitions
 
 error: unsupported option target for `enum`
@@ -289,7 +349,10 @@ error: unsupported option target for `enum`
  ...
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.enum` is constrained to enum definitions
 
 error: unsupported option target for `value`
@@ -305,7 +368,10 @@ error: unsupported option target for `value`
  ...
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
-    |                                        ---------------------- targets constrained here
+    |                                        ----------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.value` is constrained to enum values
 
 error: unsupported option target for `service`
@@ -320,7 +386,10 @@ error: unsupported option target for `service`
  ...
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.service` is constrained to service definitions
 
 error: unsupported option target for `method`
@@ -335,7 +404,10 @@ error: unsupported option target for `method`
  ...
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
 125 |     optional bool method = 9 [targets = TARGET_TYPE_METHOD];
-    |                                         ------------------ targets constrained here
+    |                                         ------------------
+    |                                          |
+    |                                          targets constrained here
+    |
     = help: `buf.test.Targets.method` is constrained to service methods
 
 error: unsupported option target for `file`
@@ -348,7 +420,10 @@ error: unsupported option target for `file`
  60 |         option (oneof).range = true;
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.file` is constrained to file scopes
 
 error: unsupported option target for `range`
@@ -363,7 +438,10 @@ error: unsupported option target for `range`
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
-    |                                        --------------------------- targets constrained here
+    |                                        ---------------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.range` is constrained to extension ranges
 
 error: unsupported option target for `message`
@@ -379,7 +457,10 @@ error: unsupported option target for `message`
  ...
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.message` is constrained to message definitions
 
 error: unsupported option target for `field`
@@ -395,7 +476,10 @@ error: unsupported option target for `field`
  ...
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.field` is constrained to message fields
 
 error: unsupported option target for `enum`
@@ -411,7 +495,10 @@ error: unsupported option target for `enum`
  ...
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.enum` is constrained to enum definitions
 
 error: unsupported option target for `value`
@@ -427,7 +514,10 @@ error: unsupported option target for `value`
  ...
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
-    |                                        ---------------------- targets constrained here
+    |                                        ----------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.value` is constrained to enum values
 
 error: unsupported option target for `service`
@@ -443,7 +533,10 @@ error: unsupported option target for `service`
  ...
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.service` is constrained to service definitions
 
 error: unsupported option target for `method`
@@ -459,7 +552,10 @@ error: unsupported option target for `method`
  ...
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
 125 |     optional bool method = 9 [targets = TARGET_TYPE_METHOD];
-    |                                         ------------------ targets constrained here
+    |                                         ------------------
+    |                                          |
+    |                                          targets constrained here
+    |
     = help: `buf.test.Targets.method` is constrained to service methods
 
 error: unsupported option target for `file`
@@ -472,7 +568,10 @@ error: unsupported option target for `file`
  74 |     option (enum).range = true;
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.file` is constrained to file scopes
 
 error: unsupported option target for `range`
@@ -487,7 +586,10 @@ error: unsupported option target for `range`
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
-    |                                        --------------------------- targets constrained here
+    |                                        ---------------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.range` is constrained to extension ranges
 
 error: unsupported option target for `message`
@@ -503,7 +605,10 @@ error: unsupported option target for `message`
  ...
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.message` is constrained to message definitions
 
 error: unsupported option target for `field`
@@ -519,7 +624,10 @@ error: unsupported option target for `field`
  ...
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.field` is constrained to message fields
 
 error: unsupported option target for `oneof`
@@ -535,7 +643,10 @@ error: unsupported option target for `oneof`
  ...
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.oneof` is constrained to oneof definitions
 
 error: unsupported option target for `value`
@@ -551,7 +662,10 @@ error: unsupported option target for `value`
  ...
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
-    |                                        ---------------------- targets constrained here
+    |                                        ----------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.value` is constrained to enum values
 
 error: unsupported option target for `service`
@@ -567,7 +681,10 @@ error: unsupported option target for `service`
  ...
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.service` is constrained to service definitions
 
 error: unsupported option target for `method`
@@ -582,7 +699,10 @@ error: unsupported option target for `method`
  ...
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
 125 |     optional bool method = 9 [targets = TARGET_TYPE_METHOD];
-    |                                         ------------------ targets constrained here
+    |                                         ------------------
+    |                                          |
+    |                                          targets constrained here
+    |
     = help: `buf.test.Targets.method` is constrained to service methods
 
 error: unsupported option target for `file`
@@ -595,7 +715,10 @@ error: unsupported option target for `file`
  85 |         range: true
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.file` is constrained to file scopes
 
 error: unsupported option target for `range`
@@ -610,7 +733,10 @@ error: unsupported option target for `range`
  ...
 117 |     optional bool file = 1 [targets = TARGET_TYPE_FILE];
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
-    |                                        --------------------------- targets constrained here
+    |                                        ---------------------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.range` is constrained to extension ranges
 
 error: unsupported option target for `message`
@@ -626,7 +752,10 @@ error: unsupported option target for `message`
  ...
 118 |     optional bool range = 2 [targets = TARGET_TYPE_EXTENSION_RANGE];
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.message` is constrained to message definitions
 
 error: unsupported option target for `field`
@@ -642,7 +771,10 @@ error: unsupported option target for `field`
  ...
 119 |     optional bool message = 3 [targets = TARGET_TYPE_MESSAGE];
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.field` is constrained to message fields
 
 error: unsupported option target for `oneof`
@@ -658,7 +790,10 @@ error: unsupported option target for `oneof`
  ...
 120 |     optional bool field = 4 [targets = TARGET_TYPE_FIELD];
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
-    |                                        ----------------- targets constrained here
+    |                                        -----------------
+    |                                         |
+    |                                         targets constrained here
+    |
     = help: `buf.test.Targets.oneof` is constrained to oneof definitions
 
 error: unsupported option target for `enum`
@@ -674,7 +809,10 @@ error: unsupported option target for `enum`
  ...
 121 |     optional bool oneof = 5 [targets = TARGET_TYPE_ONEOF];
 122 |     optional bool enum = 6 [targets = TARGET_TYPE_ENUM];
-    |                                       ---------------- targets constrained here
+    |                                       ----------------
+    |                                        |
+    |                                        targets constrained here
+    |
     = help: `buf.test.Targets.enum` is constrained to enum definitions
 
 error: unsupported option target for `service`
@@ -689,7 +827,10 @@ error: unsupported option target for `service`
  ...
 123 |     optional bool value = 7 [targets = TARGET_TYPE_ENUM_ENTRY]; // Why is it called this.
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
-    |                                          ------------------- targets constrained here
+    |                                          -------------------
+    |                                           |
+    |                                           targets constrained here
+    |
     = help: `buf.test.Targets.service` is constrained to service definitions
 
 error: unsupported option target for `method`
@@ -704,7 +845,10 @@ error: unsupported option target for `method`
  ...
 124 |     optional bool service = 8 [targets = TARGET_TYPE_SERVICE];
 125 |     optional bool method = 9 [targets = TARGET_TYPE_METHOD];
-    |                                         ------------------ targets constrained here
+    |                                         ------------------
+    |                                          |
+    |                                          targets constrained here
+    |
     = help: `buf.test.Targets.method` is constrained to service methods
 
 encountered 48 errors

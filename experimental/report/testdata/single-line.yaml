@@ -63,6 +63,14 @@ diagnostics:
         start: 34
         end: 35
 
+  - message: package
+    level: LEVEL_ERROR
+    annotations:
+      - message: unreasonably long error message that needs to wrap for it to look good
+        file: 0
+        start: 19
+        end: 26
+
   - message: this is an overlapping error
     level: LEVEL_ERROR
     annotations:
@@ -90,6 +98,26 @@ diagnostics:
         file: 0
         start: 24
         end: 26
+
+  - message: P A C K A G E
+    level: LEVEL_ERROR
+    annotations:
+      - message: "help: p"
+        file: 0
+        start: 19
+        end: 20
+      - message: "help: ck"
+        file: 0
+        start: 21
+        end: 23
+      - message: "help: ge"
+        file: 0
+        start: 25
+        end: 26
+      - message: decl
+        file: 0
+        start: 24
+        end: 35
 
   - message: P A C K A G E (different order)
     level: LEVEL_ERROR

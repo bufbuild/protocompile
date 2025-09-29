@@ -23,7 +23,9 @@ error: message set type `google.protobuf.test.M2` declares no extension ranges
    |
 25 | / message M2 {
 26 | |     option (MessageOptions.message_set_wire_format) = true;
-   | |            ---------------------------------------- declared as message set here
+   | |            ----------------------------------------
+   | |             |
+   | |             declared as message set here
 27 | |     optional int32 x = 1;
 28 | | }
    | \_^
@@ -33,7 +35,9 @@ warning: message set types are deprecated
    |
 25 | / message M2 {
 26 | |     option (MessageOptions.message_set_wire_format) = true;
-   | |            ---------------------------------------- declared as message set here
+   | |            ----------------------------------------
+   | |             |
+   | |             declared as message set here
 27 | |     optional int32 x = 1;
 28 | | }
    | \_^
@@ -44,16 +48,23 @@ warning: redundant custom option setting syntax
    --> testdata/extend/message_set.proto:26:12
     |
  26 |     option (MessageOptions.message_set_wire_format) = true;
-    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this field is not a message extension
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |             |
+    |             this field is not a message extension
+    |
    ::: google/protobuf/descriptor.proto:600:17
     |
 600 |   optional bool message_set_wire_format = 1 [default = false];
-    |                 ----------------------- field declared inside of `google.protobuf.MessageOptions` here
+    |                 -----------------------
+    |                  |
+    |                  field declared inside of `google.protobuf.MessageOptions` here
+    |
    ::: testdata/extend/message_set.proto:26:12
    help: replace `(...)` with a field name
     |
  26 | -     option (MessageOptions.message_set_wire_format) = true;
  26 | +     option message_set_wire_format = true;
+    |
     |
     = help: custom option setting syntax should only be used with message
             extensions
@@ -62,7 +73,9 @@ error: field declared in message set type `google.protobuf.test.M2`
   --> testdata/extend/message_set.proto:27:5
    |
 26 |     option (MessageOptions.message_set_wire_format) = true;
-   |            ---------------------------------------- declared as message set here
+   |            ----------------------------------------
+   |             |
+   |             declared as message set here
 27 |     optional int32 x = 1;
    |     ^^^^^^^^^^^^^^^^^^^^^
    = help: message set types may only declare extension ranges
@@ -72,7 +85,9 @@ warning: message set types are deprecated
    |
 30 | / message M3 {
 31 | |     option (protobuf.MessageOptions.message_set_wire_format) = true;
-   | |            ------------------------------------------------- declared as message set here
+   | |            -------------------------------------------------
+   | |             |
+   | |             declared as message set here
 32 | |     extensions 1 to max;
 33 | |     extensions 0x7fffffff;
 34 | | }
@@ -84,16 +99,23 @@ warning: redundant custom option setting syntax
    --> testdata/extend/message_set.proto:31:12
     |
  31 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
-    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this field is not a message extension
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |             |
+    |             this field is not a message extension
+    |
    ::: google/protobuf/descriptor.proto:600:17
     |
 600 |   optional bool message_set_wire_format = 1 [default = false];
-    |                 ----------------------- field declared inside of `google.protobuf.MessageOptions` here
+    |                 -----------------------
+    |                  |
+    |                  field declared inside of `google.protobuf.MessageOptions` here
+    |
    ::: testdata/extend/message_set.proto:31:12
    help: replace `(...)` with a field name
     |
  31 | -     option (protobuf.MessageOptions.message_set_wire_format) = true;
  31 | +     option message_set_wire_format = true;
+    |
     |
     = help: custom option setting syntax should only be used with message
             extensions
@@ -109,7 +131,9 @@ error: repeated message set extension
   --> testdata/extend/message_set.proto:38:5
    |
 31 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
-   |            ------------------------------------------------- declared as message set here
+   |            -------------------------------------------------
+   |             |
+   |             declared as message set here
 32 |     extensions 1 to max;
 ...
 37 |     optional M1 m1 = 1;
@@ -121,7 +145,9 @@ error: non-message message set extension
   --> testdata/extend/message_set.proto:39:14
    |
 31 |     option (protobuf.MessageOptions.message_set_wire_format) = true;
-   |            ------------------------------------------------- declared as message set here
+   |            -------------------------------------------------
+   |             |
+   |             declared as message set here
 32 |     extensions 1 to max;
 ...
 38 |     repeated M2 m2 = 2;
@@ -134,6 +160,7 @@ error: unsupported map-typed extension
    |
 41 |     map<string, string> m4 = 4;
    |     ^^^^^^^^^^^^^^^^^^^ declared here
+   |
    = help: extensions cannot be map-typed; instead, define a message type with a
            map-typed field
 

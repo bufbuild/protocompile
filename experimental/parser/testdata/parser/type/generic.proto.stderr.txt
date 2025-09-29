@@ -71,8 +71,8 @@ error: unexpected type name in type parameters
    |
 37 |     set<Foo bar> x13 = 13;
    |             ^^^ expected `,`
-   |             |
-   |             note: assuming a missing `,` here
+   |             - note: assuming a missing `,` here
+   |
   help: add a `,` here
    |
 37 |     set<Foo, bar> x13 = 13;
@@ -94,7 +94,9 @@ error: unexpected type in method return type
   --> testdata/parser/type/generic.proto:42:42
    |
 42 |     rpc X1(map<string, string>) returns (map<string, stream M>) {}
-   |                                          ^^^^^^^^^^^^^^^^^^^^^ expected message type
+   |                                          ^^^^^^^^^^^^^^^^^^^^^
+   |                                           |
+   |                                           expected message type
 
 error: unexpected type in method parameter list
   --> testdata/parser/type/generic.proto:43:12
@@ -118,6 +120,8 @@ error: unexpected type in method return type
   --> testdata/parser/type/generic.proto:44:58
    |
 44 |     rpc X3(map<string, repeated string>) returns (stream map<string, string>) {}
-   |                                                          ^^^^^^^^^^^^^^^^^^^ expected message type
+   |                                                          ^^^^^^^^^^^^^^^^^^^
+   |                                                           |
+   |                                                           expected message type
 
 encountered 18 errors and 1 warning

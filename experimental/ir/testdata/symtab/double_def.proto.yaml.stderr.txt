@@ -14,6 +14,7 @@ error: `Foo` declared multiple times
    |
  6 | message Foo {}
    |         ^^^ first here, as a message type
+   |
   ::: main.proto:11:9
    |
 11 | message Foo {
@@ -57,6 +58,7 @@ error: `BAR` declared multiple times
    |        ^^^ first here, as an enum type
 13 |     BAR = 0;
    |     --- ...also declared here, now as an enum value
+   |
    = help: the fully-qualified names of enum values do not include the name of
            the enum; `BAR` defined inside of enum `Foo.BAR` has the name
            `Foo.BAR`, not `Foo.BAR.BAR`
@@ -66,6 +68,7 @@ error: `dep.foo.Foo` declared multiple times
    |
  2 | package dep.foo.Foo;
    | ^^^^^^^^^^^^^^^^^^^^ first here, as a `package` declaration
+   |
   ::: dep/foo.proto:6:9
    |
  6 | message Foo {}

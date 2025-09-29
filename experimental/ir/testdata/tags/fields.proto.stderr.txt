@@ -3,6 +3,7 @@ error: unexpected `:` after definition
    |
 61 |     optional int32 m4 = a: 2;
    |                          ^ expected `;`
+   |
   help: consider inserting a `;`
    |
 61 |     optional int32 m4 = a;: 2;
@@ -12,7 +13,9 @@ error: unexpected tokens in message definition
   --> testdata/tags/fields.proto:61:26
    |
 61 |     optional int32 m4 = a: 2;
-   |                          ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+   |                          ^^^
+   |                          |
+   |                          expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: encountered more than one message field tag
   --> testdata/tags/fields.proto:62:27
@@ -123,7 +126,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:42:25
    |
 42 |     optional float f1 = 1.0;
-   |                         ^^^ expected field number, found floating-point literal
+   |                         ^^^
+   |                         |
+   |                         expected field number, found floating-point literal
+   |
    = note: expected: field number
               found: floating-point literal
 
@@ -131,7 +137,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:43:25
    |
 43 |     optional float f2 = -1.0;
-   |                         ^^^^ expected field number, found floating-point literal
+   |                         ^^^^
+   |                          |
+   |                          expected field number, found floating-point literal
+   |
    = note: expected: field number
               found: floating-point literal
 
@@ -139,7 +148,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:44:25
    |
 44 |     optional float f3 = inf;
-   |                         ^^^ expected field number, found floating-point literal
+   |                         ^^^
+   |                         |
+   |                         expected field number, found floating-point literal
+   |
    = note: expected: field number
               found: floating-point literal
 
@@ -147,7 +159,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:45:25
    |
 45 |     optional float f4 = -inf;
-   |                         ^^^^ expected field number, found floating-point literal
+   |                         ^^^^
+   |                          |
+   |                          expected field number, found floating-point literal
+   |
    = note: expected: field number
               found: floating-point literal
 
@@ -155,7 +170,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:46:25
    |
 46 |     optional float f5 = nan;
-   |                         ^^^ expected field number, found floating-point literal
+   |                         ^^^
+   |                         |
+   |                         expected field number, found floating-point literal
+   |
    = note: expected: field number
               found: floating-point literal
 
@@ -163,7 +181,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:47:25
    |
 47 |     optional float f6 = -nan;
-   |                         ^^^^ expected field number, found floating-point literal
+   |                         ^^^^
+   |                          |
+   |                          expected field number, found floating-point literal
+   |
    = note: expected: field number
               found: floating-point literal
 
@@ -172,6 +193,7 @@ error: mismatched types
    |
 49 |     optional bool b1 = false;
    |                        ^^^^^ expected field number, found `bool`
+   |
    = note: expected: field number
               found: scalar type `bool`
 
@@ -180,6 +202,7 @@ error: mismatched types
    |
 50 |     optional bool b2 = true;
    |                        ^^^^ expected field number, found `bool`
+   |
    = note: expected: field number
               found: scalar type `bool`
 
@@ -195,6 +218,7 @@ error: mismatched types
    |
 53 |     optional string s1 = "";
    |                          ^^ expected field number, found `string`
+   |
    = note: expected: field number
               found: scalar type `string`
 
@@ -203,6 +227,7 @@ error: mismatched types
    |
 54 |     optional string s2 = '';
    |                          ^^ expected field number, found `string`
+   |
    = note: expected: field number
               found: scalar type `string`
 
@@ -211,6 +236,7 @@ error: mismatched types
    |
 55 |     optional string s3 = "abc";
    |                          ^^^^^ expected field number, found `string`
+   |
    = note: expected: field number
               found: scalar type `string`
 
@@ -218,7 +244,10 @@ error: mismatched types
   --> testdata/tags/fields.proto:56:26
    |
 56 |     optional string s4 = '\xff\xff\xff';
-   |                          ^^^^^^^^^^^^^^ expected field number, found `string`
+   |                          ^^^^^^^^^^^^^^
+   |                           |
+   |                           expected field number, found `string`
+   |
    = note: expected: field number
               found: scalar type `string`
 
@@ -227,6 +256,7 @@ error: mismatched types
    |
 58 |     optional int32 m1 = {};
    |                         ^^ expected field number, found message expression
+   |
    = note: expected: field number
               found: message expression
 
@@ -235,6 +265,7 @@ error: mismatched types
    |
 59 |     optional int32 m2 = [];
    |                         ^^ expected field number, found array expression
+   |
    = note: expected: field number
               found: array expression
 
@@ -243,6 +274,7 @@ error: mismatched types
    |
 60 |     optional int32 m3 = 1 to 2;
    |                         ^^^^^^ expected field number, found range expression
+   |
    = note: expected: field number
               found: range expression
 
@@ -251,6 +283,7 @@ error: cannot find `a` in this scope
    |
 61 |     optional int32 m4 = a: 2;
    |                         ^ not found in this scope
+   |
    = help: the full name of this scope is `test.M`
 
 error: cannot find `a` in this scope
@@ -258,6 +291,7 @@ error: cannot find `a` in this scope
    |
 62 |     optional int32 m5 = a = 2;
    |                         ^ not found in this scope
+   |
    = help: the full name of this scope is `test.M`
 
 encountered 33 errors

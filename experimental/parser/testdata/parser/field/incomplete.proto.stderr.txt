@@ -15,6 +15,7 @@ error: unexpected identifier after definition
    |
 24 |     foo.Bar name;
    |     ^^^ expected `;`
+   |
   help: consider inserting a `;`
    |
 23 |     foo.bar name = 1;
@@ -31,6 +32,7 @@ error: unexpected integer literal in definition
    |
 25 |     foo.Bar name 1;
    |                  ^ expected `=`
+   |
   help: consider inserting a `=`
    |
 25 |     foo.Bar name = 1;
@@ -41,6 +43,7 @@ error: unexpected identifier after definition
    |
 28 |     foo..bar name = 1;
    |     ^^^ expected `;`
+   |
   help: consider inserting a `;`
    |
 26 |     foo.bar name = 1;  // Comment
@@ -69,6 +72,7 @@ error: unexpected `=` after qualified name
    |
 30 |     foo.bar name. = 1;
    |                   ^ expected identifier or `(...)`
+   |
   help: delete the extra `.`
    |
 30 | -     foo.bar name. = 1;

@@ -3,10 +3,12 @@ error: unexpected `required`
    |
 20 |     required int32 a = 1;
    |     ^^^^^^^^ expected type name or `repeated`
+   |
   help: delete it
    |
 20 | -     required int32 a = 1;
 20 | +     int32 a = 1;
+   |
    |
    = help: required fields are only permitted in proto2; even then, their use is
            strongly discouraged
@@ -16,10 +18,12 @@ error: unexpected `optional`
    |
 21 |     optional int32 a = 1;
    |     ^^^^^^^^ expected type name or `repeated`
+   |
   help: delete it
    |
 21 | -     optional int32 a = 1;
 21 | +     int32 a = 1;
+   |
    |
    = help: in editions mode, the presence behavior of a singular field is
            controlled with `[feature.field_presence = ...]`, with the default
@@ -36,10 +40,12 @@ error: unexpected `required`
 ...  |
 32 | |     }
    | \_____- within this oneof definition
+   |
   help: delete it
    |
 27 | -         required int32 a = 1;
 27 | +         int32 a = 1;
+   |
    |
    = note: fields defined as part of a oneof definition may not have modifiers
            applied to them
@@ -55,10 +61,12 @@ error: unexpected `optional`
 ...  |
 32 | |     }
    | \_____- within this oneof definition
+   |
   help: delete it
    |
 28 | -         optional int32 a = 1;
 28 | +         int32 a = 1;
+   |
    |
    = note: fields defined as part of a oneof definition may not have modifiers
            applied to them
@@ -75,10 +83,12 @@ error: unexpected `repeated`
 31 | |         map<int32, int32> a = 1;
 32 | |     }
    | \_____- within this oneof definition
+   |
   help: delete it
    |
 29 | -         repeated int32 a = 1;
 29 | +         int32 a = 1;
+   |
    |
    = note: fields defined as part of a oneof definition may not have modifiers
            applied to them

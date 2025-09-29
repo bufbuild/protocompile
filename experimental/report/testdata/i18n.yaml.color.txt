@@ -1,20 +1,21 @@
 ⟨b.red⟩error: emoji, CJK, bidi
 ⟨blu⟩  --> foo.proto:5:9
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 5 | ⟨reset⟩message 🐈<U+200D>⬛ {
-⟨blu⟩   | ⟨reset⟩        ⟨b.red⟩^^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
+⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.red⟩^^^^^^^^^^^^ ⟨b.red⟩
 ⟨blu⟩ 6 | ⟨reset⟩  string 黑猫 = 1;
-⟨blu⟩   | ⟨reset⟩         ⟨b.blu⟩----⟨reset⟩ ⟨b.blu⟩note: some surfaces render CJK as sub-two-column
+⟨blu⟩   | ⟨reset⟩⟨reset⟩     ⟨b.blu⟩---- ⟨b.blu⟩note: some surfaces render CJK as sub-two-column
+⟨blu⟩   |
 ⟨blu⟩  ::: bar.proto:1:9
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 1 | ⟨reset⟩import "חתול שחור.proto";
-⟨blu⟩   | ⟨reset⟩        ⟨b.blu⟩---------------⟨reset⟩ ⟨b.blu⟩bidi works if it's quoted, at least⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩--------------- ⟨b.blu⟩bidi works if it's quoted, at least
+⟨reset⟩
 ⟨b.red⟩error: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
 ⟨blu⟩  --> foo.proto:7:10
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 7 | ⟨reset⟩  string القطة السوداء = 2;
-⟨blu⟩   | ⟨reset⟩         ⟨b.red⟩^^^^^^^^⟨reset⟩ ⟨b.red⟩⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩⟨reset⟩     ⟨b.red⟩^^^^^^^^ ⟨b.red⟩
+⟨reset⟩
 ⟨b.red⟩encountered 2 errors
 ⟨reset⟩
