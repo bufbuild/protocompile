@@ -1,0 +1,23 @@
+warning: `b` is deprecated in Edition 2023
+  --> testdata/editions/lifetime.proto:21:33
+   |
+21 | option features.(x) = {a: true, b: true, c: true, d: true};
+   |                                 ^
+   = help: it has been deprecated since Edition 2023
+   = help: reason: This is a bad feature. Don't use it.
+
+error: `c` is not supported in Edition 2023
+  --> testdata/editions/lifetime.proto:21:42
+   |
+21 | option features.(x) = {a: true, b: true, c: true, d: true};
+   |                                          ^
+   = help: `c` ended support in Edition 2023
+
+error: `d` is not supported in Edition 2023
+  --> testdata/editions/lifetime.proto:21:51
+   |
+21 | option features.(x) = {a: true, b: true, c: true, d: true};
+   |                                                   ^
+   = help: `d` requires at least Edition 2024
+
+encountered 2 errors and 1 warning

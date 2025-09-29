@@ -1,6 +1,18 @@
 file:
 - name: "testdata/fields/maps/extension.proto"
   package: "test"
-  message_type: [{ name: "Foo", extension_range: [{ start: 1, end: 2 }] }]
-  extension: [{ name: "m", number: 1 }]
+  message_type:
+  - { name: "Foo", extension_range: [{ start: 1, end: 2 }] }
+  - name: "MEntry"
+    field:
+    - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    options.map_entry: true
+  extension:
+  - name: "m"
+    number: 1
+    label: LABEL_REPEATED
+    type: TYPE_MESSAGE
+    type_name: ".test.MEntry"
+    extendee: ".test.Foo"
   syntax: "proto2"

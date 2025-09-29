@@ -24,9 +24,65 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/intern"
 )
+
+// resolveEarlyOptions resolves options whose values must be discovered very
+// early during compilation. This does not create option values, nor does it
+// generate diagnostics; it simply records this information to special fields
+// in [Type].
+func resolveEarlyOptions(f File) {
+	builtins := &f.Context().session.builtins
+	for ty := range seq.Values(f.AllTypes()) {
+		for decl := range seq.Values(ty.AST().Body().Decls()) {
+			def := decl.AsDef()
+			if def.IsZero() || def.Classify() != ast.DefKindOption {
+				continue
+			}
+			option := def.AsOption().Option
+
+			// If this option's path has more than one component, skip.
+			first, ok := iterx.OnlyOne(option.Path.Components)
+			if !ok || !first.Separator().IsZero() {
+				continue
+			}
+
+			// Resolve the name of this option.
+			var name intern.ID
+			if ident := first.AsIdent(); !ident.IsZero() {
+				switch ident.Text() {
+				case "message_set_wire_format":
+					name = builtins.MessageSet
+				case "allow_alias":
+					name = builtins.AllowAlias
+				}
+			} else if extn := first.AsExtension(); !extn.IsZero() {
+				sym, _ := f.Context().imported.resolve(
+					f.Context(),
+					ty.Scope(),
+					FullName(extn.Canonicalized()),
+					nil,
+					nil,
+				)
+				name = wrapSymbol(f.Context(), sym).AsMember().InternedFullName()
+			}
+
+			// Get the value of this option. We only care about a value of
+			// "true" for both options.
+			value := option.Value.AsPath().AsKeyword() == keyword.True
+
+			switch name {
+			case builtins.MessageSet:
+				ty.raw.isMessageSet = ty.IsMessage() && value
+			case builtins.AllowAlias:
+				ty.raw.allowsAlias = ty.IsEnum() && value
+			}
+		}
+	}
+}
 
 // resolveOptions resolves all of the options in a file.
 func resolveOptions(f File, r *report.Report) {
@@ -431,6 +487,7 @@ func (r optionRef) resolve() {
 				return
 			}
 		}
+
 		if pc.IsFirst() {
 			switch field.InternedFullName() {
 			case ids.MapEntry:
@@ -444,10 +501,18 @@ func (r optionRef) resolve() {
 				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted, ids.RangeUninterpreted,
 				ids.EnumUninterpreted, ids.EnumValueUninterpreted,
 				ids.MethodUninterpreted, ids.ServiceUninterpreted:
+				r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+					report.Snippet(pc),
+					report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+				)
+
+			case ids.FileFeatures,
+				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
+				ids.EnumFeatures, ids.EnumValueFeatures:
 				if syn := r.File().Syntax(); !syn.IsEdition() {
-					r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+					r.Errorf("`features` cannot be set in %s", prettyEdition(syn)).Apply(
 						report.Snippet(pc),
-						report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+						report.Snippetf(r.File().AST().Syntax().Value(), "syntax specified here"),
 					)
 				}
 			}

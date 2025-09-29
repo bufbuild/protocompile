@@ -83,6 +83,7 @@ type rawType struct {
 	extnsStart      uint32
 	rangesExtnStart uint32
 	mapEntryOf      arena.Pointer[rawMember]
+	features        arena.Pointer[rawFeatureSet]
 
 	isEnum, isMessageSet bool
 	allowsAlias          bool
@@ -282,8 +283,12 @@ func (t Type) Parent() Type {
 //
 // Only message types have nested types.
 func (t Type) Nested() seq.Indexer[Type] {
+	var slice []arena.Pointer[rawType]
+	if !t.IsZero() {
+		slice = t.raw.nested
+	}
 	return seq.NewFixedSlice(
-		t.raw.nested,
+		slice,
 		func(_ int, p arena.Pointer[rawType]) Type {
 			// Nested types are always in the current file.
 			return wrapType(t.Context(), ref[rawType]{ptr: p})
@@ -303,8 +308,12 @@ func (t Type) MapField() Member {
 //
 // Predeclared types have no members; message and enum types do.
 func (t Type) Members() seq.Indexer[Member] {
+	var slice []arena.Pointer[rawMember]
+	if !t.IsZero() {
+		slice = t.raw.members[:t.raw.extnsStart]
+	}
 	return seq.NewFixedSlice(
-		t.raw.members[:t.raw.extnsStart],
+		slice,
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
@@ -376,8 +385,12 @@ func (t Type) makeMembersByName() intern.Map[arena.Pointer[rawMember]] {
 
 // Extensions returns any extensions nested within this type.
 func (t Type) Extensions() seq.Indexer[Member] {
+	var slice []arena.Pointer[rawMember]
+	if !t.IsZero() {
+		slice = t.raw.members[t.raw.extnsStart:]
+	}
 	return seq.NewFixedSlice(
-		t.raw.members[t.raw.extnsStart:],
+		slice,
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			return wrapMember(t.Context(), ref[rawMember]{ptr: p})
 		},
@@ -425,6 +438,18 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 // Options returns the options applied to this type.
 func (t Type) Options() MessageValue {
 	return wrapValue(t.Context(), t.raw.options).AsMessage()
+}
+
+// FeatureSet returns the Editions features associated with this type.
+func (t Type) FeatureSet() FeatureSet {
+	if t.IsZero() || t.raw.features.Nil() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(t.Context()),
+		t.Context().arenas.features.Deref(t.raw.features),
+	}
 }
 
 // noun returns a [taxa.Noun] for diagnostics.

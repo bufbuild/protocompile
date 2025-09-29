@@ -48,42 +48,44 @@ type Member struct {
 }
 
 type rawMember struct {
-	def ast.DeclDef
-
-	options   arena.Pointer[rawValue]
-	elem      ref[rawType]
-	extendee  arena.Pointer[rawExtendee]
-	fqn, name intern.ID
-	number    int32
-	parent    arena.Pointer[rawType]
-
-	// If negative, this is the negative of a presence.Kind. Otherwise, it's
-	// a oneof index.
-	oneof int32
-
-	// Which entities this option can apply to. If zero, all targets are valid.
+	def           ast.DeclDef
+	featureInfo   *rawFeatureInfo
+	elem          ref[rawType]
+	extendee      arena.Pointer[rawExtendee]
+	fqn           intern.ID
+	name          intern.ID
+	number        int32
+	parent        arena.Pointer[rawType]
+	features      arena.Pointer[rawFeatureSet]
+	options       arena.Pointer[rawValue]
+	oneof         int32
 	optionTargets uint32
 	isGroup       bool
 }
 
-// Returns whether this is a non-extension message field.
+// IsMessageField returns whether this is a non-extension message field.
 func (m Member) IsMessageField() bool {
 	return !m.IsZero() && !m.raw.elem.ptr.Nil() && m.raw.extendee.Nil()
 }
 
-// Returns whether this is a extension message field.
+// IsExtension returns whether this is a extension message field.
 func (m Member) IsExtension() bool {
 	return !m.IsZero() && !m.raw.elem.ptr.Nil() && !m.raw.extendee.Nil()
 }
 
-// Returns whether this is an enum value.
+// IsEnumValue returns whether this is an enum value.
 func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
 }
 
-// Returns whether this is a group-encoded field.
+// IsGroup returns whether this is a group-encoded field.
 func (m Member) IsGroup() bool {
 	return !m.IsZero() && m.raw.isGroup
+}
+
+// IsMap returns whether this is a map field.
+func (m Member) IsMap() bool {
+	return !m.IsZero() && m == m.Element().MapField()
 }
 
 // IsSynthetic returns whether or not this is a synthetic field, such as the
@@ -271,6 +273,33 @@ func (m Member) Options() MessageValue {
 	return wrapValue(m.Context(), m.raw.options).AsMessage()
 }
 
+// FeatureSet returns the Editions features associated with this member.
+func (m Member) FeatureSet() FeatureSet {
+	if m.IsZero() || m.raw.features.Nil() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(m.Context()),
+		m.Context().arenas.features.Deref(m.raw.features),
+	}
+}
+
+// FeatureInfo returns feature definition information relating to this field
+// (for when using this field as a feature).
+//
+// Returns a zero value if this information does not exist.
+func (m Member) FeatureInfo() FeatureInfo {
+	if m.IsZero() || m.raw.featureInfo == nil {
+		return FeatureInfo{}
+	}
+
+	return FeatureInfo{
+		internal.NewWith(m.Context()),
+		m.raw.featureInfo,
+	}
+}
+
 // CanTarget returns whether this message field can be set as an option for the
 // given option target type.
 //
@@ -378,6 +407,7 @@ type rawOneof struct {
 	container arena.Pointer[rawType]
 	members   []arena.Pointer[rawMember]
 	options   arena.Pointer[rawValue]
+	features  arena.Pointer[rawFeatureSet]
 }
 
 // AST returns the declaration for this oneof, if known.
@@ -455,6 +485,18 @@ func (o Oneof) Options() MessageValue {
 	return wrapValue(o.Context(), o.raw.options).AsMessage()
 }
 
+// FeatureSet returns the Editions features associated with this oneof.
+func (o Oneof) FeatureSet() FeatureSet {
+	if o.IsZero() || o.raw.features.Nil() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(o.Context()),
+		o.Context().arenas.features.Deref(o.raw.features),
+	}
+}
+
 func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
 	return Oneof{
 		withContext: internal.NewWith(c),
@@ -474,6 +516,7 @@ type rawReservedRange struct {
 	value         ast.ExprAny
 	first, last   int32
 	options       arena.Pointer[rawValue]
+	features      arena.Pointer[rawFeatureSet]
 	forExtensions bool
 }
 
@@ -533,6 +576,18 @@ func (r ReservedRange) Options() MessageValue {
 	}
 
 	return wrapValue(r.Context(), r.raw.options).AsMessage()
+}
+
+// FeatureSet returns the Editions features associated with this file.
+func (r ReservedRange) FeatureSet() FeatureSet {
+	if r.IsZero() || r.raw.features.Nil() {
+		return FeatureSet{}
+	}
+
+	return FeatureSet{
+		internal.NewWith(r.Context()),
+		r.Context().arenas.features.Deref(r.raw.features),
+	}
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for
