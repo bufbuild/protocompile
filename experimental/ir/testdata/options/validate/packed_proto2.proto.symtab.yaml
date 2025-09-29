@@ -1,0 +1,69 @@
+tables:
+  "testdata/options/validate/packed_proto2.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/packed_proto2.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M.E"
+      kind: KIND_ENUM
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.M.o1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "packed": { bool: true } }
+    - fqn: "buf.test.M.o2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 3
+      visible: true
+      options.message.fields: { "packed": { bool: false } }
+    - fqn: "buf.test.M.m1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "packed": { bool: true } }
+    - fqn: "buf.test.M.m2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 5
+      visible: true
+      options.message.fields: { "packed": { bool: false } }
+    - fqn: "buf.test.M.e1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 6
+      visible: true
+      options.message.fields: { "packed": { bool: true } }
+    - fqn: "buf.test.M.e2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 7
+      visible: true
+      options.message.fields: { "packed": { bool: false } }
+    - fqn: "buf.test.M.f1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 8
+      visible: true
+      options.message.fields: { "packed": { bool: true } }
+    - fqn: "buf.test.M.f2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 9
+      visible: true
+      options.message.fields: { "packed": { bool: false } }
+    - fqn: "buf.test.M.Z"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/options/validate/packed_proto2.proto"
+      index: 1
+      visible: true

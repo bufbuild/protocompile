@@ -1,0 +1,6 @@
+file:
+- name: "testdata/fields/empty_oneof.proto"
+  package: "buf.test"
+  message_type: [{ name: "M", oneof_decl: [{ name: "empty" }] }]
+  syntax: "editions"
+  edition: EDITION_2023

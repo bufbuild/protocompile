@@ -1,0 +1,53 @@
+tables:
+  "testdata/tags/enum.proto":
+    symbols:
+    - { fqn: "buf.test", kind: KIND_PACKAGE, file: "testdata/tags/enum.proto" }
+    - fqn: "buf.test.Empty"
+      kind: KIND_ENUM
+      file: "testdata/tags/enum.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Open"
+      kind: KIND_ENUM
+      file: "testdata/tags/enum.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.Closed"
+      kind: KIND_ENUM
+      file: "testdata/tags/enum.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enum_type": { i32: 2 } } }
+    - fqn: "buf.test.Open1"
+      kind: KIND_ENUM
+      file: "testdata/tags/enum.proto"
+      index: 4
+      visible: true
+    - fqn: "buf.test.Open2"
+      kind: KIND_ENUM
+      file: "testdata/tags/enum.proto"
+      index: 5
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enum_type": { i32: 1 } } }
+    - fqn: "buf.test.Z1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/enum.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.Z2"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/enum.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.Z3"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/enum.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.Z4"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/tags/enum.proto"
+      index: 4
+      visible: true

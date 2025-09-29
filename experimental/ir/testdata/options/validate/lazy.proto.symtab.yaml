@@ -1,0 +1,130 @@
+tables:
+  "testdata/options/validate/lazy.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/lazy.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/lazy.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M2"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/lazy.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.M.m1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "lazy": { bool: true } }
+    - fqn: "buf.test.M.m2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "unverified_lazy": { bool: true } }
+    - fqn: "buf.test.M.m3"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+        "lazy": { bool: true }
+    - fqn: "buf.test.M.m4"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 4
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+        "unverified_lazy": { bool: true }
+    - fqn: "buf.test.M.m5"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 5
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 1 } } }
+        "lazy": { bool: true }
+    - fqn: "buf.test.M.m6"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 6
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 1 } } }
+        "unverified_lazy": { bool: true }
+    - fqn: "buf.test.M.x1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 7
+      visible: true
+      options.message.fields: { "lazy": { bool: true } }
+    - fqn: "buf.test.M.x2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 8
+      visible: true
+      options.message.fields: { "unverified_lazy": { bool: true } }
+    - fqn: "buf.test.M2.m1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 9
+      visible: true
+      options.message.fields: { "lazy": { bool: false } }
+    - fqn: "buf.test.M2.m2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 10
+      visible: true
+      options.message.fields: { "unverified_lazy": { bool: false } }
+    - fqn: "buf.test.M2.m3"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 11
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+        "lazy": { bool: false }
+    - fqn: "buf.test.M2.m4"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 12
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+        "unverified_lazy": { bool: false }
+    - fqn: "buf.test.M2.m5"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 13
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 1 } } }
+        "lazy": { bool: false }
+    - fqn: "buf.test.M2.m6"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 14
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 1 } } }
+        "unverified_lazy": { bool: false }
+    - fqn: "buf.test.M2.x1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 15
+      visible: true
+      options.message.fields: { "lazy": { bool: false } }
+    - fqn: "buf.test.M2.x2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy.proto"
+      index: 16
+      visible: true
+      options.message.fields: { "unverified_lazy": { bool: false } }
+    options.message.fields:
+      "features": { message.fields: { "message_encoding": { i32: 2 } } }

@@ -1,0 +1,107 @@
+file:
+- name: "testdata/options/validate/lazy.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "m1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options.lazy: true
+    - name: "m2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options.unverified_lazy: true
+    - name: "m3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options: { lazy: true, features.message_encoding: DELIMITED }
+    - name: "m4"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options: { unverified_lazy: true, features.message_encoding: DELIMITED }
+    - name: "m5"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options: { lazy: true, features.message_encoding: LENGTH_PREFIXED }
+    - name: "m6"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options:
+        unverified_lazy: true
+        features.message_encoding: LENGTH_PREFIXED
+    - name: "x1"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.lazy: true
+    - name: "x2"
+      number: 8
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.unverified_lazy: true
+  - name: "M2"
+    field:
+    - name: "m1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options.lazy: false
+    - name: "m2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options.unverified_lazy: false
+    - name: "m3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options: { lazy: false, features.message_encoding: DELIMITED }
+    - name: "m4"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options: { unverified_lazy: false, features.message_encoding: DELIMITED }
+    - name: "m5"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options: { lazy: false, features.message_encoding: LENGTH_PREFIXED }
+    - name: "m6"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options:
+        unverified_lazy: false
+        features.message_encoding: LENGTH_PREFIXED
+    - name: "x1"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.lazy: false
+    - name: "x2"
+      number: 8
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.unverified_lazy: false
+  options.features.message_encoding: DELIMITED
+  syntax: "editions"
+  edition: EDITION_2023

@@ -165,7 +165,6 @@ func validateConstraints(f File, r *report.Report) {
 }
 
 func validateMessageSet(ty Type, r *report.Report) {
-
 	if !ty.IsMessageSet() {
 		return
 	}
@@ -290,23 +289,22 @@ func validatePacked(m Member, r *report.Report) {
 	}
 
 	builtins := m.Context().builtins()
-	validate := func(v Value) {
-		name := v.Field().Name()
+	validate := func(v Value, span report.Span) {
 		switch {
 		case m.IsSingular() || m.IsMap():
 			r.Errorf("expected repeated field, found singular field").Apply(
 				report.Snippet(m.TypeAST()),
-				report.Snippetf(v.MessageKeys().At(0), "`%s` set here", name),
-				report.Helpf("`%s` encoding can only be set on repeated fields of `string`, `bytes`, or message type", name),
+				report.Snippetf(span, "packed encoding set here"),
+				report.Helpf("packed encoding encoding can only be set on repeated fields of integer, float, `bool`, or enum type"),
 			)
-		case m.Element().IsPackable():
+		case !m.Element().IsPackable():
 			r.Error(errTypeConstraint{
 				want: "packable type",
 				got:  m.Element(),
 				decl: m.TypeAST(),
 			}).Apply(
-				report.Snippetf(v.MessageKeys().At(0), "`%s` set here", name),
-				report.Helpf("`%s` can only be set on repeated fields of `string`, `bytes`, or message type", name),
+				report.Snippetf(span, "packed encoding set here"),
+				report.Helpf("packed encoding encoding can only be set on repeated fields of integer, float, `bool`, or enum type"),
 			)
 		}
 	}
@@ -325,14 +323,15 @@ func validatePacked(m Member, r *report.Report) {
 				report.Snippetf(m.Context().File().AST().Syntax().Value(), "edition set here"),
 				option.suggestEdit(builtins.FeaturePacked.Name(), want, "replace with `%s`", builtins.FeaturePacked.Name()),
 			)
-		} else {
-			validate(option)
+		} else if v, _ := option.AsBool(); v {
+			// Don't validate [packed = false], protoc accepts that.
+			validate(option, option.AST().Span())
 		}
 	}
 
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
 	if feature.IsExplicit() {
-		validate(feature.Value())
+		validate(feature.Value(), feature.Value().MessageKeys().At(0).Span())
 	}
 }
 
@@ -344,10 +343,11 @@ func validateLazy(m Member, r *report.Report) {
 		if lazy.IsZero() {
 			return
 		}
+		set, _ := lazy.AsBool()
 
 		if !m.Element().IsMessage() {
-			r.Error(errTypeConstraint{
-				want: "`string`",
+			r.SoftError(set, errTypeConstraint{
+				want: "message type",
 				got:  m.Element(),
 				decl: m.TypeAST(),
 			}).Apply(
@@ -357,7 +357,7 @@ func validateLazy(m Member, r *report.Report) {
 		}
 
 		if m.IsGroup() {
-			r.Errorf("expected length-prefixed field").Apply(
+			r.SoftErrorf(set, "expected length-prefixed field").Apply(
 				report.Snippet(m.AST()),
 				report.Snippetf(m.AST().KeywordToken(), "groups are not length-prefixed"),
 				report.Snippetf(lazy.MessageKeys().At(0), "`%s` set here", lazy.Field().Name()),
@@ -368,7 +368,7 @@ func validateLazy(m Member, r *report.Report) {
 		group := m.FeatureSet().Lookup(builtins.FeatureGroup)
 		groupValue, _ := group.Value().AsInt()
 		if groupValue == 2 { // FeatureSet.DELIMITED
-			r.Errorf("expected length-prefixed field").Apply(
+			r.SoftErrorf(set, "expected length-prefixed field").Apply(
 				report.Snippet(m.AST()),
 				report.Snippetf(group.Value().AST(), "set to use delimited encoding here"),
 				report.Snippetf(lazy.MessageKeys().At(0), "`%s` set here", lazy.Field().Name()),

@@ -1,12 +1,12 @@
 error: cannot set `java_string_check_utf8` in editions mode
-  --> testdata/options/validate/java_utf8.proto:20:8
+  --> testdata/options/validate/java_utf8.proto:19:8
    |
-20 | option java_string_check_utf8 = true;
+19 | option java_string_check_utf8 = true;
    |        ^^^^^^^^^^^^^^^^^^^^^^
   help: replace with `features.(pb.java).utf8_validation`
    |
-20 | - option java_string_check_utf8 = true;
-20 | + option features.(pb.java).utf8_validation = VERIFY;
+19 | - option java_string_check_utf8 = true;
+19 | + option features.(pb.java).utf8_validation = VERIFY;
    |
 
 encountered 1 error

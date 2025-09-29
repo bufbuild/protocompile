@@ -1,0 +1,16 @@
+file:
+- { name: "heavy1.proto", package: "test", syntax: "proto2" }
+- name: "lite1.proto"
+  package: "test"
+  dependency: ["heavy1.proto"]
+  options.optimize_for: LITE_RUNTIME
+  syntax: "proto2"
+- name: "lite2.proto"
+  package: "test"
+  dependency: ["lite1.proto"]
+  options.optimize_for: LITE_RUNTIME
+  syntax: "proto2"
+- name: "heavy2.proto"
+  package: "test"
+  dependency: ["heavy1.proto", "lite1.proto"]
+  syntax: "proto2"

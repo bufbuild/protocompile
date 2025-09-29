@@ -15,13 +15,10 @@
 package ir_test
 
 import (
-	"bytes"
 	"flag"
 	"maps"
 	"path/filepath"
-	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -35,6 +32,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
+	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -54,14 +52,9 @@ var (
 //
 //nolint:tagliatelle
 type Test struct {
-	Files             []File   `yaml:"files"`
-	ExcludeWKTSources bool     `yaml:"exclude_wkt_sources"`
-	OutputWKTs        bool     `yaml:"output_wkts"`
-	Features          bool     `yaml:"features"`
-	SourceCodeInfo    bool     `yaml:"source_code_info"`
-	ErrorsOnly        bool     `yaml:"errors_only"`
-	NoSymtab          bool     `yaml:"no_symtab"`
-	Filters           []string `yaml:"filters"`
+	Files             []File `yaml:"files"`
+	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
+	OutputWKTs        bool   `yaml:"output_wkts"`
 }
 
 type File struct {
@@ -78,9 +71,9 @@ func TestIR(t *testing.T) {
 		Refresh:    "PROTOCOMPILE_REFRESH",
 		Extensions: []string{"proto", "proto.yaml"},
 		Outputs: []golden.Output{
-			{Extension: "stderr.txt"},
 			{Extension: "fds.yaml"},
 			{Extension: "symtab.yaml"},
+			{Extension: "stderr.txt"},
 		},
 	}
 
@@ -88,25 +81,9 @@ func TestIR(t *testing.T) {
 		var test Test
 		switch filepath.Ext(path) {
 		case ".proto":
-			// Parse test options out of comments starting with //!
-			config := new(bytes.Buffer)
-			for line := range strings.Lines(text) {
-				if line, ok := strings.CutPrefix(line, "//! "); ok {
-					config.WriteString(line)
-				}
-			}
-			require.NoError(t, yaml.Unmarshal(config.Bytes(), &test))
-
-			test.Files = append(test.Files, File{Path: path, Text: text})
-
+			test.Files = []File{{Path: path, Text: text}}
 		case ".yaml":
 			require.NoError(t, yaml.Unmarshal([]byte(text), &test))
-		}
-
-		filter := slices.Collect(iterx.Map(slices.Values(test.Filters), regexp.MustCompile))
-
-		if strings.Contains(path, "editions") {
-			test.Features = true
 		}
 
 		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
@@ -143,27 +120,17 @@ func TestIR(t *testing.T) {
 		results, r, err := incremental.Run(t.Context(), exec, queries...)
 		require.NoError(t, err)
 
-		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
-			return slices.ContainsFunc(filter, func(r *regexp.Regexp) bool {
-				return r.MatchString(d.Message())
-			})
-		})
-
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,
 			ShowDebug: true,
 		}.RenderString(r)
 		t.Log(stderr)
-		outputs[0], _, _ = report.Renderer{}.RenderString(r)
-		assert.NotContains(t, outputs[0], "unexpected panic; this is a bug")
-		if test.ErrorsOnly {
-			require.NotEmpty(t, outputs[0], "errors_only test must emit diagnostics")
-			return
-		}
+		outputs[2], _, _ = report.Renderer{}.RenderString(r)
+		assert.NotContains(t, outputs[1], "unexpected panic; this is a bug")
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
-		bytes, err := ir.DescriptorSetBytes(irs, ir.IncludeSourceCodeInfo(test.SourceCodeInfo))
+		bytes, err := ir.DescriptorSetBytes(irs)
 		require.NoError(t, err)
 
 		fds := new(descriptorpb.FileDescriptorSet)
@@ -175,11 +142,8 @@ func TestIR(t *testing.T) {
 			})
 		}
 
-		outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
-
-		if !test.NoSymtab {
-			outputs[2] = prototest.ToYAML(symtabProto(irs, &test), prototest.ToYAMLOptions{})
-		}
+		outputs[0] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
+		outputs[1] = prototest.ToYAML(symtabProto(irs, &test), prototest.ToYAMLOptions{})
 	})
 }
 
@@ -188,89 +152,6 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 	set.Tables = make(map[string]*compilerpb.SymbolTable)
 
 	for _, file := range files {
-		// All features relevant to this file.
-		featureExtns := make(map[ir.Member]struct{})
-		dumpFeatureExtns := func(options ir.MessageValue) {
-			for value := range options.Fields() {
-				if value.Field().IsExtension() {
-					featureExtns[value.Field()] = struct{}{}
-				}
-			}
-		}
-		if t.Features {
-			dumpFeatureExtns(file.FeatureSet().Options())
-			for ty := range seq.Values(file.AllTypes()) {
-				dumpFeatureExtns(ty.FeatureSet().Options())
-
-				for v := range seq.Values(ty.Members()) {
-					dumpFeatureExtns(v.FeatureSet().Options())
-				}
-				for v := range seq.Values(ty.Oneofs()) {
-					dumpFeatureExtns(v.FeatureSet().Options())
-				}
-				for v := range seq.Values(ty.ExtensionRanges()) {
-					dumpFeatureExtns(v.FeatureSet().Options())
-				}
-			}
-			for v := range seq.Values(file.AllExtensions()) {
-				dumpFeatureExtns(v.FeatureSet().Options())
-			}
-		}
-		dumpFeatures := func(features ir.FeatureSet, target ir.OptionTarget) []*compilerpb.Feature {
-			var out []*compilerpb.Feature
-			if !t.Features {
-				return out
-			}
-
-			dumpMessage := func(extn ir.Member, ty ir.Type) {
-				for field := range seq.Values(ty.Members()) {
-					if field.FeatureInfo().IsZero() || !field.CanTarget(target) {
-						continue
-					}
-
-					feature := features.LookupCustom(extn, field)
-					ty := feature.Type()
-					var valueString string
-					switch {
-					case feature.IsZero():
-						continue
-					case ty.IsEnum():
-						n, _ := feature.Value().AsInt()
-						ev := ty.MemberByNumber(int32(n))
-						if !ev.IsZero() {
-							valueString = ev.Name()
-						} else {
-							valueString = strconv.Itoa(int(n))
-						}
-					case ty.Predeclared() == predeclared.Bool:
-						b, _ := feature.Value().AsBool()
-						valueString = strconv.FormatBool(b)
-					default:
-						valueString = "<invalid type>"
-					}
-
-					out = append(out, &compilerpb.Feature{
-						Name:     feature.Field().Name(),
-						Extn:     string(extn.FullName()),
-						Value:    valueString,
-						Explicit: !feature.IsInherited(),
-					})
-				}
-			}
-
-			dumpMessage(ir.Member{}, file.FindSymbol("google.protobuf.FeatureSet").AsType())
-			for extn := range featureExtns {
-				dumpMessage(extn, extn.Element())
-			}
-
-			slices.SortStableFunc(out, cmpx.Join(
-				cmpx.Map(func(f *compilerpb.Feature) bool { return !f.Explicit }, cmpx.Bool),
-				cmpx.Key((*compilerpb.Feature).GetExtn),
-				cmpx.Key((*compilerpb.Feature).GetName),
-			))
-			return out
-		}
-
 		// Don't bother if the file only has a single symbol for its
 		// package, and no options.
 		if file.Options().IsZero() {
@@ -285,8 +166,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 		}
 
 		symtab := &compilerpb.SymbolTable{
-			Options:  new(optionWalker).message(file.Options()),
-			Features: dumpFeatures(file.FeatureSet(), ir.OptionTargetFile),
+			Options: new(optionWalker).message(file.Options()),
 		}
 
 		for imp := range seq.Values(file.TransitiveImports()) {
@@ -296,7 +176,6 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 				Weak:       imp.Weak,
 				Transitive: !imp.Direct,
 				Visible:    imp.Visible,
-				Used:       imp.Used,
 			})
 		}
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
@@ -317,13 +196,12 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 			}
 
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
-				Fqn:      string(sym.FullName()),
-				Kind:     compilerpb.Symbol_Kind(sym.Kind()),
-				File:     sym.File().Path(),
-				Index:    uint32(sym.RawData()),
-				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
-				Options:  new(optionWalker).message(options),
-				Features: dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
+				Fqn:     string(sym.FullName()),
+				Kind:    compilerpb.Symbol_Kind(sym.Kind()),
+				File:    sym.File().Path(),
+				Index:   uint32(sym.RawData()),
+				Visible: sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
+				Options: new(optionWalker).message(options),
 			})
 		}
 		slices.SortFunc(symtab.Symbols,
@@ -432,7 +310,7 @@ func (ow *optionWalker) value(v ir.Value) *compilerpb.Value {
 		return ow.message(v.AsMessage())
 	}
 
-	if v.AsMessage().TypeURL() == "" && v.Field().IsRepeated() {
+	if v.AsMessage().TypeURL() == "" && v.Field().Presence() == presence.Repeated {
 		r := new(compilerpb.Value_Repeated)
 		for elem := range seq.Values(v.Elements()) {
 			r.Values = append(r.Values, element(elem))

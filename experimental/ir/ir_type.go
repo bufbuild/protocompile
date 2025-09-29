@@ -197,9 +197,7 @@ func (t Type) IsClosedEnum() bool {
 // IsPackable returns whether this type can be the element of a packed repeated
 // field.
 func (t Type) IsPackable() bool {
-	// All of the predeclared types have isEnum set to false, so we don't
-	// need to check for them here.
-	return !t.IsZero() && t.raw.isEnum
+	return t.IsEnum() || t.Predeclared().IsPackable()
 }
 
 // AllowsAlias returns whether this is an enum type with the allow_alias

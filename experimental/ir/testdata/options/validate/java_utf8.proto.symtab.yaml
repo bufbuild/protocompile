@@ -1,0 +1,7 @@
+tables:
+  "testdata/options/validate/java_utf8.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/java_utf8.proto"
+    options.message.fields: { "java_string_check_utf8": { bool: true } }
