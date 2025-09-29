@@ -603,7 +603,7 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 				int(math.Log10(float64(w.start+len(lines)))) + // Approximation.
 				len(sidebar) + sublines[i].Len()
 
-			if stringWidth(int(startCol), ul.message, true, nil) > MaxMessageWidth {
+			if stringWidth(startCol, ul.message, true, nil) > MaxMessageWidth {
 				// Move rightmost into the normal underlines, because it causes wrapping.
 				rightmost[i] = nil
 			}
