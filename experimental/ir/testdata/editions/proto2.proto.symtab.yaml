@@ -1,0 +1,75 @@
+tables:
+  "testdata/editions/proto2.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    features:
+    - { name: "default_symbol_visibility", value: "EXPORT_ALL" }
+    - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+    - { name: "enum_type", value: "CLOSED" }
+    - { name: "field_presence", value: "EXPLICIT" }
+    - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
+    - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+    - { name: "repeated_field_encoding", value: "EXPANDED" }
+    - { name: "utf8_validation", value: "NONE" }
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/proto2.proto"
+    - fqn: "buf.test.Message"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/proto2.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "features": { message: {} } }
+      features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
+    - fqn: "buf.test.Enum"
+      kind: KIND_ENUM
+      file: "testdata/editions/proto2.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "features": { message: {} } }
+      features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "enum_type", value: "CLOSED" }
+      - { name: "json_format", value: "LEGACY_BEST_EFFORT" }
+    - fqn: "buf.test.Message.x"
+      kind: KIND_FIELD
+      file: "testdata/editions/proto2.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 2 } } }
+      features:
+      - { name: "field_presence", value: "IMPLICIT", explicit: true }
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "EXPANDED" }
+      - { name: "utf8_validation", value: "NONE" }
+    - fqn: "buf.test.Message.z"
+      kind: KIND_FIELD
+      file: "testdata/editions/proto2.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "features": { message: {} } }
+      features:
+      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
+      - { name: "field_presence", value: "EXPLICIT" }
+      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
+      - { name: "repeated_field_encoding", value: "EXPANDED" }
+      - { name: "utf8_validation", value: "NONE" }
+    - fqn: "buf.test.X"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/proto2.proto"
+      index: 3
+      visible: true
+      options.message.fields: { "features": { message: {} } }
+      features: [{ name: "enforce_naming_style", value: "STYLE_LEGACY" }]
+    - fqn: "buf.test.Message.y"
+      kind: KIND_ONEOF
+      file: "testdata/editions/proto2.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "features": { message: {} } }
+      features: [{ name: "enforce_naming_style", value: "STYLE_LEGACY" }]
+    options.message.fields: { "features": { message: {} } }

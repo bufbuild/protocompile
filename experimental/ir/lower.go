@@ -104,6 +104,11 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	populateOptionTargets(c.File(), r)
 	validateOptionTargets(c.File(), r)
 
+	// Build feature info for validating features after they are constructed.
+	// Then validate all feature settings throughout the file.
+	buildAllFeatureInfo(c.File(), r)
+	validateAllFeatures(c.File(), r)
+
 	// Validate all the little constraint details that didn't get caught above.
 	diagnoseUnusedImports(c.File(), r)
 	validateConstraints(c.File(), r)

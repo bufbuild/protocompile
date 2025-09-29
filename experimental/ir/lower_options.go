@@ -487,6 +487,7 @@ func (r optionRef) resolve() {
 				return
 			}
 		}
+
 		if pc.IsFirst() {
 			switch field.InternedFullName() {
 			case ids.MapEntry:
@@ -500,10 +501,18 @@ func (r optionRef) resolve() {
 				ids.MessageUninterpreted, ids.FieldUninterpreted, ids.OneofUninterpreted, ids.RangeUninterpreted,
 				ids.EnumUninterpreted, ids.EnumValueUninterpreted,
 				ids.MethodUninterpreted, ids.ServiceUninterpreted:
+				r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+					report.Snippet(pc),
+					report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+				)
+
+			case ids.FileFeatures,
+				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
+				ids.EnumFeatures, ids.EnumValueFeatures:
 				if syn := r.File().Syntax(); !syn.IsEdition() {
-					r.Errorf("`uninterpreted_option` cannot be set explicitly").Apply(
+					r.Errorf("`features` cannot be set in %s", prettyEdition(syn)).Apply(
 						report.Snippet(pc),
-						report.Helpf("`uninterpreted_option` is an implementation detail of protoc"),
+						report.Snippetf(r.File().AST().Syntax().Value(), "syntax specified here"),
 					)
 				}
 			}
