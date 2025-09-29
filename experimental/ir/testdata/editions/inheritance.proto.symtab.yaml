@@ -1,0 +1,67 @@
+tables:
+  "testdata/editions/inheritance.proto":
+    imports:
+    - { path: "google/protobuf/cpp_features.proto", visible: true }
+    - { path: "google/protobuf/descriptor.proto", transitive: true }
+    features:
+    - extn: "pb.cpp"
+      name: "legacy_closed_enum"
+      value: "false"
+      explicit: true
+    - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+    - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/inheritance.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/inheritance.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.E"
+      kind: KIND_ENUM
+      file: "testdata/editions/inheritance.proto"
+      index: 2
+      visible: true
+      features:
+      - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+    - fqn: "buf.test.M.x"
+      kind: KIND_FIELD
+      file: "testdata/editions/inheritance.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "repeated_field_encoding": { i32: 1 } } }
+      features:
+      - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    - fqn: "buf.test.M.y"
+      kind: KIND_FIELD
+      file: "testdata/editions/inheritance.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "field_presence": { i32: 3 } } }
+      features:
+      - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    - fqn: "buf.test.M.z"
+      kind: KIND_FIELD
+      file: "testdata/editions/inheritance.proto"
+      index: 3
+      visible: true
+      features:
+      - { extn: "pb.cpp", name: "legacy_closed_enum", value: "false" }
+      - { extn: "pb.cpp", name: "string_type", value: "STRING" }
+    - fqn: "buf.test.Z"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/inheritance.proto"
+      index: 4
+      visible: true
+    options.message.fields:
+      "features":
+        message:
+          fields: { "field_presence": { i32: 2 } }
+          extns:
+            "pb.cpp": { message.fields: { "legacy_closed_enum": { bool: false } } }
