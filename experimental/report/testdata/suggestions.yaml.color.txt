@@ -3,49 +3,54 @@
 ⟨blu⟩  help: delete this
   ⟨blu⟩ |
 ⟨blu⟩ 1 | ⟨b.red⟩-⟨red⟩ syntax = "proto3";
-⟨blu⟩   | ⟨reset⟩
-
+⟨blu⟩   |
+⟨reset⟩
 ⟨b.cyn⟩remark: let protocompile pick a syntax for you
 ⟨blu⟩  --> foo.proto:1:10
 ⟨blu⟩  help: delete this
   ⟨blu⟩ |
 ⟨blu⟩ 1 | ⟨b.red⟩-⟨red⟩ syntax = "proto3";
 ⟨blu⟩ 1 | ⟨b.grn⟩+⟨grn⟩ syntax = ;
-⟨blu⟩   | ⟨reset⟩
-
+⟨blu⟩   |
+⟨reset⟩
 ⟨b.ylw⟩warning: services should have a `Service` suffix
 ⟨blu⟩  --> foo.proto:5:9
   ⟨blu⟩ |
 ⟨blu⟩ 5 | ⟨reset⟩service Foo {
-⟨blu⟩   | ⟨reset⟩        ⟨b.ylw⟩^^^⟨reset⟩ ⟨b.ylw⟩
+⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.ylw⟩^^^ ⟨b.ylw⟩
+⟨blu⟩   |
 ⟨blu⟩  help: change the name to `FooService`
   ⟨blu⟩ |
 ⟨blu⟩ 5 | ⟨reset⟩service Foo⟨grn⟩Service⟨reset⟩ {
-⟨blu⟩   | ⟨reset⟩           ⟨b.grn⟩+++++++⟨reset⟩  ⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩           ⟨b.grn⟩+++++++⟨reset⟩
+⟨reset⟩
 ⟨b.red⟩error: missing (...) around return type
 ⟨blu⟩  --> foo.proto:6:31
   ⟨blu⟩ |
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse
-⟨blu⟩   | ⟨reset⟩                              ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩
+⟨blu⟩   | ⟨reset⟩⟨reset⟩                          ⟨b.red⟩^^^^^^^^^^^ ⟨b.red⟩
+⟨blu⟩   |
 ⟨blu⟩  help: add `(...)` around the type
   ⟨blu⟩ |
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns ⟨grn⟩(⟨reset⟩GetResponse⟨grn⟩)
-⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩                              ⟨b.grn⟩+⟨reset⟩           ⟨b.grn⟩+
+⟨reset⟩
 ⟨b.red⟩error: method options must go in a block
 ⟨blu⟩  --> foo.proto:7:45
   ⟨blu⟩ |
 ⟨blu⟩ 7 | ⟨reset⟩  rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-⟨blu⟩   | ⟨reset⟩                                            ⟨b.red⟩^^^^^^^^^^^⟨reset⟩ ⟨b.red⟩compact options not allowed here
+⟨blu⟩   | ⟨reset⟩⟨reset⟩                                        ⟨b.red⟩^^^^^^^^^^^
+⟨blu⟩   |                                              ⟨b.red⟩|
+⟨blu⟩   |                                              ⟨b.red⟩compact options not allowed here
+⟨blu⟩   |
 ⟨blu⟩  help: use `option` settings inside of the method body
   ⟨blu⟩ |
 ⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
 ⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩   rpc Put(PutRequest) returns (PutResponse) {
 ⟨blu⟩ 8 | ⟨b.grn⟩+⟨grn⟩     option foo = bar;
 ⟨blu⟩ 9 | ⟨b.grn⟩+⟨grn⟩   }
-⟨blu⟩   | ⟨reset⟩
-
+⟨blu⟩   |
+⟨reset⟩
 ⟨b.red⟩error: delete some stuff
 ⟨blu⟩  --> foo.proto:5:1
 ⟨blu⟩  help:
@@ -56,8 +61,8 @@
 ⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
 ⟨blu⟩ 9 | ⟨b.red⟩-⟨red⟩
 ⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩ }
-⟨blu⟩   | ⟨reset⟩
-
+⟨blu⟩   |
+⟨reset⟩
 ⟨b.red⟩error: delete this method
 ⟨blu⟩  --> foo.proto:5:1
 ⟨blu⟩  help:
@@ -65,7 +70,7 @@
 ⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
 ⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
 ⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩   r}
-⟨blu⟩   | ⟨reset⟩
-
+⟨blu⟩   |
+⟨reset⟩
 ⟨b.red⟩encountered 4 errors and 1 warning
 ⟨reset⟩

@@ -5,10 +5,12 @@ error: emoji, CJK, bidi
    |         ^^^^^^^^^^^^
  6 |   string 黑猫 = 1;
    |          ---- note: some surfaces render CJK as sub-two-column
+   |
   ::: bar.proto:1:9
    |
  1 | import "חתול שחור.proto";
    |         --------------- bidi works if it's quoted, at least
+   |
 
 error: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
   --> foo.proto:7:10

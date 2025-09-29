@@ -37,7 +37,10 @@ error: method options must go in a block
   --> foo.proto:7:45
    |
  7 |   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-   |                                             ^^^^^^^^^^^ compact options not allowed here
+   |                                             ^^^^^^^^^^^
+   |                                              |
+   |                                              compact options not allowed here
+   |
   help: use `option` settings inside of the method body
    |
  7 | -   rpc Put(PutRequest) returns (PutResponse) [foo = bar];

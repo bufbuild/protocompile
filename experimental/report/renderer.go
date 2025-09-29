@@ -224,7 +224,15 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		return snip.Path()
 	})
 
+	var needsTrailingBreak bool
 	for i, snippets := range parts {
+		if needsTrailingBreak {
+			r.WriteString("\n")
+			r.WriteSpaces(r.margin)
+			r.WriteString(r.ss.nAccent)
+			r.WriteString(" | ")
+		}
+
 		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
@@ -253,7 +261,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		r.WriteString(" | ")
 
 		window := buildWindow(d.level, locations[i:i+len(snippets)], snippets)
-		r.window(window)
+		needsTrailingBreak = r.window(window)
 	}
 
 	// Render a remedial file name for spanless errors.
@@ -265,6 +273,13 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		fmt.Fprintf(r, "--> %s", d.inFile)
 	}
 
+	if needsTrailingBreak && !(d.notes == nil && d.help == nil && (!r.ShowDebug || d.debug == nil)) {
+		r.WriteString("\n")
+		r.WriteSpaces(r.margin)
+		r.WriteString(r.ss.nAccent)
+		r.WriteString(" | ")
+	}
+
 	type footer struct {
 		color, label, text string
 	}
@@ -274,7 +289,10 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		slicesx.Map(d.debug, func(s string) footer { return footer{r.ss.bError, "debug", s} }),
 	)
 
+	var haveFooter bool
 	for f := range footers {
+		haveFooter = true
+
 		isDebug := f.label == "debug"
 		if isDebug && !r.ShowDebug {
 			continue
@@ -291,8 +309,16 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		}
 	}
 
+	if !haveFooter && bytes.Equal(bytes.TrimSpace(r.buf), []byte("|")) {
+		r.buf = r.buf[:0]
+		r.WriteString(r.ss.reset)
+		r.WriteString("\n")
+		return
+	}
+
+	r.WriteString("\n")
 	r.WriteString(r.ss.reset)
-	r.WriteString("\n\n")
+	r.WriteString("\n")
 }
 
 const maxMultilinesPerWindow = 8
@@ -376,6 +402,7 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 			end:     locations[i][1].Column,
 			level:   noteLevel,
 			message: snippet.message,
+			subline: -1,
 		})
 
 		ul := &w.underlines[len(w.underlines)-1]
@@ -407,9 +434,8 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 
 	slices.SortFunc(w.underlines, cmpx.Join(
 		cmpx.Key(func(u underline) int { return u.line }),
-		cmpx.Key(func(u underline) Level { return u.level }),
-		cmpx.Key(func(u underline) int { return u.Len() }),
 		cmpx.Key(func(u underline) int { return u.start }),
+		cmpx.Key(func(u underline) Level { return u.level }),
 	))
 	slices.SortFunc(w.multilines, cmpx.Join(
 		cmpx.Key(func(m multiline) int { return m.start }),
@@ -418,7 +444,7 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 	return w
 }
 
-func (r *renderer) window(w *window) {
+func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 	// lineInfo is layout information for a single line of this window. There
 	// is one lineInfo for each line of w.file.Text we intend to render, as
 	// given by w.offsets.
@@ -498,62 +524,95 @@ func (r *renderer) window(w *window) {
 		// active on this line, even if they end on it.
 		sidebar := r.sidebar(sidebarLen, -1, -1, cur.sidebar)
 
-		// Lay out the physical underlines in reverse order. This will cause longer lines to be
-		// laid out first, which will be overwritten by shorter ones.
+		// Lay out the physical underlines. We use a cubic (oops) algorithm
+		// to pack the underlines in such a way that none of them overlap.
+		// To do so, we loop over the underlines several times until all of them
+		// are laid out.
 		//
-		// We use a slice instead of a strings.Builder so we can overwrite parts
-		// as we render different "layers".
-		var buf []byte
-		for i := len(part) - 1; i >= 0; i-- {
-			element := part[i]
-			if len(buf) < element.end {
-				newBuf := make([]byte, element.end)
-				copy(newBuf, buf)
-				buf = newBuf
-			}
+		// This algorithm is O(n^3) where n is the number of underlines in a
+		// line, meaning that n can't really get out of hand for normal
+		// inputs.
 
-			// Note that start/end are 1-indexed.
-			for j := element.start - 1; j < element.end-1; j++ {
-				// This comparison ensures that we do not overwrite an error
-				// underline with a note underline, regardless of ordering.
-				if buf[j] == 0 || buf[j] > byte(element.level) {
-					buf[j] = byte(element.level)
+		level := Level(-1)
+		var sublines []bytes.Buffer
+		left := len(part)
+		for left > 0 {
+			for i := range part {
+				element := &part[i]
+				if element.subline != -1 {
+					continue
 				}
+
+				// Find a buffer that can fit element.
+				var sub *bytes.Buffer
+				var j int
+				for j = range sublines {
+					if sublines[j].Len() <= element.start-1 {
+						sub = &sublines[j]
+						break
+					}
+				}
+
+				if sub == nil {
+					sublines = append(sublines, bytes.Buffer{})
+					sub = slicesx.LastPointer(sublines)
+					j = len(sublines) - 1
+				}
+
+				if sub.Len() < element.start-1 {
+					sub.WriteString(r.ss.reset)
+					for sub.Len() < element.start-1 {
+						sub.WriteByte(' ')
+					}
+				}
+
+				var b byte = '^'
+				if element.level == noteLevel {
+					b = '-'
+				} else if level == -1 {
+					level = element.level
+				}
+				for range element.Len() {
+					sub.WriteByte(b)
+				}
+
+				// Mark which subline this element got put onto.
+				element.subline = j
+				left--
 			}
 		}
 
-		// Now, convert the buffer into a proper string.
-		var out strings.Builder
-		for _, line := range slicesx.Partition(buf) {
-			level := Level(line[0])
-			if line[0] == 0 {
-				out.WriteString(r.ss.reset)
-			} else {
-				out.WriteString(r.ss.BoldForLevel(level))
-			}
-			for range line {
-				switch level {
-				case 0:
-					out.WriteByte(' ')
-				case noteLevel:
-					out.WriteByte('-')
-				default:
-					out.WriteByte('^')
-				}
-			}
-		}
-
-		// Next we need to find the message that goes inline with the underlines. This will be
-		// the message belonging to the rightmost underline.
-		var rightmost *underline
+		// Convert the underlines into strings. Collect the rightmost underlines
+		// in a slice.
+		rightmost := make([]*underline, len(sublines))
 		for i := range part {
 			ul := &part[i]
-			if rightmost == nil || ul.end > rightmost.end {
-				rightmost = ul
+			rightmost := &rightmost[ul.subline]
+			if *rightmost == nil || ul.end > (*rightmost).end {
+				*rightmost = ul
 			}
 		}
-		underlines := strings.TrimRight(out.String(), " ")
-		cur.underlines = []string{sidebar + underlines + " " + r.ss.BoldForLevel(rightmost.level) + rightmost.message}
+
+		cur.underlines = make([]string, len(sublines))
+		for i, ul := range rightmost {
+			if ul == nil {
+				continue
+			}
+
+			startCol := 4 +
+				int(math.Log10(float64(w.start+len(lines)))) + // Approximation.
+				len(sidebar) + sublines[i].Len()
+
+			if stringWidth(int(startCol), ul.message, true, nil) > MaxMessageWidth {
+				// Move rightmost into the normal underlines, because it causes wrapping.
+				rightmost[i] = nil
+			}
+		}
+
+		var sublineLens []int
+		for _, sub := range sublines {
+			sublineLens = append(sublineLens, sub.Len())
+		}
 
 		// Now, do all the other messages, one per line. For each message, we also
 		// need to draw pipes (|) above each one to connect it to its underline.
@@ -563,12 +622,13 @@ func (r *renderer) window(w *window) {
 		var rest []*underline
 		for i := range part {
 			ul := &part[i]
-			if ul == rightmost || ul.message == "" {
+			if slices.Contains(rightmost, ul) || ul.message == "" {
 				continue
 			}
 			rest = append(rest, ul)
 		}
 
+		var buf []byte
 		for idx := range rest {
 			buf = buf[:0] // Clear the temp buffer.
 
@@ -586,6 +646,10 @@ func (r *renderer) window(w *window) {
 			var nonColorLen int
 			for _, ul := range restSorted {
 				col := ul.start - 1
+				if ul.Len() > 3 {
+					col++ // Move the pipe a little forward for long underlines.
+				}
+
 				for nonColorLen < col {
 					buf = append(buf, ' ')
 					nonColorLen++
@@ -597,6 +661,25 @@ func (r *renderer) window(w *window) {
 					buf = append(buf, r.ss.BoldForLevel(ul.level)...)
 					buf = append(buf, '|')
 					nonColorLen++
+
+					if idx == 0 {
+						// Apply this pipe to all of the sublines. We use
+						// ^'|' to denote a note pipe.
+						for i := range sublines {
+							sub := &sublines[i]
+							for sub.Len() < col+1 {
+								sub.WriteByte(' ')
+							}
+
+							b := byte('|')
+							if ul.level == noteLevel {
+								b = ^b
+							}
+							if sub.Bytes()[col] == ' ' {
+								sub.Bytes()[col] = b
+							}
+						}
+					}
 				}
 			}
 
@@ -609,6 +692,10 @@ func (r *renderer) window(w *window) {
 				ul := rest[idx]
 
 				actualStart := ul.start - 1
+				if ul.Len() > 3 {
+					actualStart++ // Move the pipe a little forward for long underlines.
+				}
+
 				for _, other := range rest[idx:] {
 					if other.start <= ul.start {
 						actualStart += len(r.ss.BoldForLevel(ul.level))
@@ -637,6 +724,61 @@ func (r *renderer) window(w *window) {
 				copy(buf[actualStart:], ul.message)
 			}
 			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
+		}
+
+		// Finally, build the underlines.
+		var out strings.Builder
+		for i, sub := range sublines {
+			out.WriteString(sidebar)
+			n := sublineLens[i]
+			prev := byte(' ')
+			writeByte := func(b byte) {
+				if prev != b {
+					switch b {
+					case '^', '|':
+						out.WriteString(r.ss.BoldForLevel(level))
+					case '-', ^byte('|'):
+						out.WriteString(r.ss.BoldForLevel(noteLevel))
+					case ' ':
+						out.WriteString(r.ss.reset)
+					}
+				}
+
+				if int8(b) < 0 {
+					b = ^b
+				}
+				out.WriteByte(b)
+				prev = b
+			}
+
+			for j, b := range sub.Bytes() {
+				writeByte(b)
+				if j == n+1 {
+					break
+				}
+			}
+
+			// Append the message for this subline, if any.
+			ul := rightmost[i]
+			if ul != nil {
+				if sub.Len() == n {
+					out.WriteString(" ")
+				}
+				out.WriteString(r.ss.BoldForLevel(ul.level))
+				out.WriteString(ul.message)
+
+				n += 1 + len(ul.message)
+			}
+
+			if sub.Len() > n {
+				prev = ' '
+				for _, b := range sub.Bytes()[n:] {
+					writeByte(b)
+				}
+			}
+
+			cur.underlines[i] = out.String()
+			out.Reset()
 		}
 	}
 
@@ -848,6 +990,7 @@ func (r *renderer) window(w *window) {
 		// Re-use the logic from width calculation to correctly format a line for
 		// showing in a terminal.
 		stringWidth(0, line, false, &r.writer)
+		needsTrailingBreak = true
 
 		// If this happens to be an annotated line, this is when it gets annotated.
 		for _, line := range cur.underlines {
@@ -856,8 +999,14 @@ func (r *renderer) window(w *window) {
 			r.WriteSpaces(r.margin)
 			r.WriteString(" | ")
 			r.WriteString(line)
+
+			// Gross hack to pick up whether a trailing break is necessary; we
+			// only add one if the underline contains text.
+			needsTrailingBreak = strings.ContainsFunc(line, unicode.IsLetter)
 		}
 	}
+
+	return needsTrailingBreak
 }
 
 type underline struct {
@@ -865,6 +1014,7 @@ type underline struct {
 	start, end int
 	level      Level
 	message    string
+	subline    int
 }
 
 func (u underline) Len() int {
