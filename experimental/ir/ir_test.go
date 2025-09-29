@@ -207,12 +207,16 @@ func TestIR(t *testing.T) {
 
 			fds := new(descriptorpb.FileDescriptorSet)
 			require.NoError(t, proto.Unmarshal(bytes, fds))
+			assert.False(t, iterx.Empty2(fds.ProtoReflect().Range), "empty descriptor")
 
 			outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
 		}
 
 		if test.Symtab {
-			outputs[2] = prototest.ToYAML(symtabProto(irs, test), prototest.ToYAMLOptions{})
+			symtab := symtabProto(irs, test)
+			assert.False(t, iterx.Empty2(symtab.ProtoReflect().Range), "empty symtab")
+
+			outputs[2] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
 		}
 	})
 }
