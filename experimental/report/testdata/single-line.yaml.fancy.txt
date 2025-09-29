@@ -48,9 +48,9 @@ error: P A C K A G E (different order)
  3 | package abc.xyz;
    | - ^^ -- help: ge
    | | |
-   | | help: ck
-   | |
    | help: p
+   |   |
+   |   help: ck
 
 error: P A C K A G E (single letters)
   --> foo.proto:3:1

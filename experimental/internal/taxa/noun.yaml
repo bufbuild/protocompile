@@ -65,7 +65,7 @@
 
   - {name: FieldTag, string: "message field tag"}
   - {name: FieldNumber, string: "field number"}
-  - {name: MessageSetNumber, string: "`MessageSet` extension number"}
+  - {name: MessageSetNumber, string: "message set extension number"}
   - {name: FieldName, string: "message field name"}
   - {name: OptionValue, string: "option setting value"}
 
@@ -86,6 +86,7 @@
   - {name: TypePrefix, string: "type modifier"}
 
   - {name: MessageType, string: "message type"}
+  - {name: MessageSet, string: "message set type"}
   - {name: EnumType, string: "enum type"}
   - {name: ScalarType, string: "scalar type"}
   - {name: EntryType, string: "map entry type"}

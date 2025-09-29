@@ -79,6 +79,7 @@ const (
 	TypeParams
 	TypePrefix
 	MessageType
+	MessageSet
 	EnumType
 	ScalarType
 	EntryType
@@ -185,7 +186,7 @@ var _table_Noun_String = [...]string{
 	Signature:          "method signature",
 	FieldTag:           "message field tag",
 	FieldNumber:        "field number",
-	MessageSetNumber:   "`MessageSet` extension number",
+	MessageSetNumber:   "message set extension number",
 	FieldName:          "message field name",
 	OptionValue:        "option setting value",
 	QualifiedName:      "qualified name",
@@ -202,6 +203,7 @@ var _table_Noun_String = [...]string{
 	TypeParams:         "type parameters",
 	TypePrefix:         "type modifier",
 	MessageType:        "message type",
+	MessageSet:         "message set type",
 	EnumType:           "enum type",
 	ScalarType:         "scalar type",
 	EntryType:          "map entry type",
@@ -308,6 +310,7 @@ var _table_Noun_GoString = [...]string{
 	TypeParams:         "TypeParams",
 	TypePrefix:         "TypePrefix",
 	MessageType:        "MessageType",
+	MessageSet:         "MessageSet",
 	EnumType:           "EnumType",
 	ScalarType:         "ScalarType",
 	EntryType:          "EntryType",

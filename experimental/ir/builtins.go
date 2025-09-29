@@ -48,6 +48,7 @@ type builtins struct {
 	OptionTargets        Member
 	CType, JSType        Member
 	Lazy, UnverifiedLazy Member
+	MessageSet           Member
 
 	EditionDefaults, EditionDefaultsKey, EditionDefaultsValue Member
 
@@ -95,12 +96,14 @@ type builtinIDs struct {
 	JavaUTF8       intern.ID `intern:"google.protobuf.FileOptions.java_string_check_utf8"`
 	OptimizeFor    intern.ID `intern:"google.protobuf.FileOptions.optimize_for"`
 	MapEntry       intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	MessageSet     intern.ID `intern:"google.protobuf.MessageOptions.message_set_wire_format"`
 	Packed         intern.ID `intern:"google.protobuf.FieldOptions.packed"`
 	OptionTargets  intern.ID `intern:"google.protobuf.FieldOptions.targets"`
 	CType          intern.ID `intern:"google.protobuf.FieldOptions.ctype"`
 	JSType         intern.ID `intern:"google.protobuf.FieldOptions.jstype"`
 	Lazy           intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
 	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
+	AllowAlias     intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`

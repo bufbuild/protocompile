@@ -48,9 +48,9 @@
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
 ⟨blu⟩   | ⟨b.blu⟩-⟨reset⟩ ⟨b.red⟩^^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩help: ge
 ⟨blu⟩   | ⟨b.blu⟩| ⟨b.red⟩|
-⟨blu⟩   | ⟨b.blu⟩| ⟨b.red⟩help: ck
-⟨blu⟩   | ⟨b.blu⟩|
-⟨blu⟩   | ⟨b.blu⟩help: p⟨reset⟩
+⟨blu⟩   | ⟨b.blu⟩help: p⟨b.red⟩|
+⟨blu⟩   |   ⟨b.red⟩|
+⟨blu⟩   |   ⟨b.red⟩help: ck⟨reset⟩
 
 ⟨b.red⟩error: P A C K A G E (single letters)
 ⟨blu⟩  --> foo.proto:3:1

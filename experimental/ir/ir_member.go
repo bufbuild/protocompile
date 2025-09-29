@@ -63,22 +63,22 @@ type rawMember struct {
 	isGroup       bool
 }
 
-// Returns whether this is a non-extension message field.
+// IsMessageField returns whether this is a non-extension message field.
 func (m Member) IsMessageField() bool {
 	return !m.IsZero() && !m.raw.elem.ptr.Nil() && m.raw.extendee.Nil()
 }
 
-// Returns whether this is a extension message field.
+// IsExtension returns whether this is a extension message field.
 func (m Member) IsExtension() bool {
 	return !m.IsZero() && !m.raw.elem.ptr.Nil() && !m.raw.extendee.Nil()
 }
 
-// Returns whether this is an enum value.
+// IsEnumValue returns whether this is an enum value.
 func (m Member) IsEnumValue() bool {
 	return !m.IsZero() && m.raw.elem.ptr.Nil()
 }
 
-// Returns whether this is a group-encoded field.
+// IsGroup returns whether this is a group-encoded field.
 func (m Member) IsGroup() bool {
 	return !m.IsZero() && m.raw.isGroup
 }

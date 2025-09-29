@@ -17,12 +17,15 @@ package ir
 import (
 	"path"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // diagnoseUnusedImports generates diagnostics for each unused import.
@@ -110,6 +113,8 @@ func validateConstraints(f File, r *report.Report) {
 			continue
 		}
 
+		validateMessageSet(ty, r)
+
 		for oneof := range seq.Values(ty.Oneofs()) {
 			if oneof.Members().Len() == 0 {
 				r.Errorf("oneof must define at least one member").Apply(
@@ -129,6 +134,74 @@ func validateConstraints(f File, r *report.Report) {
 		validatePresence(m, r)
 		validateUTF8(m, r)
 		validateMessageEncoding(m, r)
+
+		// NOTE: extensions already cannot be map fields, so we don't need to
+		// validate them.
+		if m.IsExtension() && !m.IsMap() {
+			extendee := m.Container()
+
+			if extendee.IsMessageSet() {
+				if m.IsRepeated() {
+					_, repeated := iterx.Find(m.AST().Type().Prefixes(), func(ty ast.TypePrefixed) bool {
+						return ty.Prefix() == keyword.Repeated
+					})
+
+					r.Errorf("repeated message set extension").Apply(
+						report.Snippet(repeated.PrefixToken()),
+						report.Snippetf(extendee.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+						report.Helpf("message set extensions must be singular message fields"),
+					)
+				}
+				if !m.Element().IsMessage() {
+					r.Errorf("non-message message set extension").Apply(
+						report.Snippet(m.AST().Type().RemovePrefixes()),
+						report.Snippetf(extendee.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+						report.Helpf("message set extensions must be singular message fields"),
+					)
+				}
+			}
+		}
+	}
+}
+
+func validateMessageSet(ty Type, r *report.Report) {
+
+	if !ty.IsMessageSet() {
+		return
+	}
+
+	f := ty.Context().File()
+	builtins := ty.Context().builtins()
+	if f.Syntax() == syntax.Proto3 {
+		r.Errorf("%s are not supported", taxa.MessageSet).Apply(
+			report.Snippet(ty.AST()),
+			report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+			report.Snippetf(f.AST().Syntax().Value(), "\"proto3\" specified here"),
+			report.Helpf("%ss cannot be defined in \"proto3\"", taxa.MessageSet),
+			report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
+		)
+		return
+	}
+
+	r.Warnf("%ss are deprecated", taxa.MessageSet).Apply(
+		report.Snippet(ty.AST()),
+		report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+		report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
+	)
+
+	for member := range seq.Values(ty.Members()) {
+		r.Errorf("field declared in %s `%s`", taxa.MessageSet, ty.FullName()).Apply(
+			report.Snippet(member.AST()),
+			report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+			report.Helpf("message set types may only declare extension ranges"),
+		)
+	}
+
+	if ty.ExtensionRanges().Len() == 0 {
+		r.Errorf("%s `%s` declares no %ss", taxa.MessageSet, ty.FullName(), taxa.Extensions).Apply(
+			report.Snippet(ty.AST()),
+			report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+		)
 	}
 }
 

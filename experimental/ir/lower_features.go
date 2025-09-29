@@ -137,7 +137,11 @@ func buildFeatureInfo(field Member, r *report.Report) {
 						want: "`bool` or enum type",
 						got:  field.Element(),
 						decl: field.TypeAST(),
-					}).Apply(mistake)
+					}).Apply(
+						report.Snippetf(defaults.MessageKeys().At(0), "expected because this makes `%s` into a feature", field.Name()),
+						report.Helpf("features should have `bool` or enum type"),
+						mistake,
+					)
 					continue
 				}
 			}

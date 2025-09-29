@@ -1,0 +1,76 @@
+tables:
+  "testdata/extend/message_set.proto":
+    imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
+    symbols:
+    - fqn: "google.protobuf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/extend/message_set.proto"
+    - fqn: "google.protobuf.test.M1"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/message_set.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "message_set_wire_format": { bool: true } }
+    - fqn: "google.protobuf.test.M2"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/message_set.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "message_set_wire_format": { bool: true } }
+    - fqn: "google.protobuf.test.M3"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/message_set.proto"
+      index: 3
+      visible: true
+      options.message.fields: { "message_set_wire_format": { bool: true } }
+    - fqn: "google.protobuf.test.M4Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/extend/message_set.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "google.protobuf.test.M2.x"
+      kind: KIND_FIELD
+      file: "testdata/extend/message_set.proto"
+      index: 1
+      visible: true
+    - fqn: "google.protobuf.test.M4Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/extend/message_set.proto"
+      index: 8
+      visible: true
+    - fqn: "google.protobuf.test.M4Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/extend/message_set.proto"
+      index: 9
+      visible: true
+    - fqn: "google.protobuf.test.m1"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/message_set.proto"
+      index: 2
+      visible: true
+    - fqn: "google.protobuf.test.m2"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/message_set.proto"
+      index: 3
+      visible: true
+    - fqn: "google.protobuf.test.m3"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/message_set.proto"
+      index: 4
+      visible: true
+    - fqn: "google.protobuf.test.m4"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/message_set.proto"
+      index: 5
+      visible: true
+    - fqn: "google.protobuf.test.m5"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/message_set.proto"
+      index: 6
+      visible: true
+    - fqn: "google.protobuf.test.m6"
+      kind: KIND_EXTENSION
+      file: "testdata/extend/message_set.proto"
+      index: 7
+      visible: true
