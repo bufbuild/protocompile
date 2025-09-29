@@ -15,9 +15,11 @@
 package ir_test
 
 import (
+	"bytes"
 	"flag"
 	"maps"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -51,19 +53,76 @@ var (
 
 // Test is the type that a test case for the compiler is deserialized from.
 //
+// If the test is defined as a .yaml file, that file is expected to conform to
+// this type. If the test is defined as a .proto file, all comments starting
+// with the string '//% ' will be concatenated to form configuration for the
+// test, and the .proto file itself will be added to Files.
+//
 //nolint:tagliatelle
 type Test struct {
-	Files             []File `yaml:"files"`
-	ExcludeWKTSources bool   `yaml:"exclude_wkt_sources"`
-	OutputWKTs        bool   `yaml:"output_wkts"`
-	Features          bool   `yaml:"features"`
-	SourceCodeInfo    bool   `yaml:"source_code_info"`
+	// The files under test.
+	Files []File `yaml:"files"`
+
+	// Regular expressions that the messages of diagnostics we're interested in
+	// must match. If empty, all diagnostics are accepted.
+	Filters List[*regexp.Regexp] `yaml:"filters"`
+	Exclude List[*regexp.Regexp] `yaml:"exclude"`
+
+	// Whether to exclude the WKT sources in the default opener, and whether to
+	// output WKT
+	ExcludeWKTSources bool `yaml:"exclude_wkt_sources"`
+
+	// Whether to output a FileDescriptorSet.
+	Descriptor bool `yaml:"descriptor"`
+	// Whether the descriptor should include SourceCodeInfo
+	SourceCodeInfo bool `yaml:"source_code_info"`
+
+	// Whether to output a symbol table. Useful for tests that build symbol
+	// tables.
+	Symtab bool `yaml:"symtab"`
+}
+
+func (t *Test) Unmarshal(path string, text string) error {
+	switch filepath.Ext(path) {
+	case ".proto":
+		config := new(bytes.Buffer)
+		for line := range strings.Lines(text) {
+			if line, ok := strings.CutPrefix(line, "//% "); ok {
+				config.WriteString(line)
+			}
+		}
+
+		if err := yaml.Unmarshal(config.Bytes(), &t); err != nil {
+			return err
+		}
+
+		t.Files = append(t.Files, File{Path: path, Text: text})
+
+	case ".yaml":
+		return yaml.Unmarshal([]byte(text), &t)
+	}
+
+	return nil
 }
 
 type File struct {
-	Path   string `yaml:"path"`
-	Text   string `yaml:"text"`
-	Import bool   `yaml:"import"`
+	Path string `yaml:"path"`
+	Text string `yaml:"text"`
+
+	// Whether this file should be treated as an import-only file.
+	Import bool `yaml:"import"`
+}
+
+// List is a YAML deserializable type that can be deserialized either
+// as a YAML array, or as a single value.
+type List[T any] []T
+
+func (l *List[T]) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind&yaml.SequenceNode == 0 {
+		*l = make([]T, 1)
+		return value.Decode(&(*l)[0])
+	}
+	return value.Decode((*[]T)(l))
 }
 
 func TestIR(t *testing.T) {
@@ -74,24 +133,15 @@ func TestIR(t *testing.T) {
 		Refresh:    "PROTOCOMPILE_REFRESH",
 		Extensions: []string{"proto", "proto.yaml"},
 		Outputs: []golden.Output{
+			{Extension: "stderr.txt"},
 			{Extension: "fds.yaml"},
 			{Extension: "symtab.yaml"},
-			{Extension: "stderr.txt"},
 		},
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
-		var test Test
-		switch filepath.Ext(path) {
-		case ".proto":
-			test.Files = []File{{Path: path, Text: text}}
-		case ".yaml":
-			require.NoError(t, yaml.Unmarshal([]byte(text), &test))
-		}
-
-		if strings.Contains(path, "editions") {
-			test.Features = true
-		}
+		test := new(Test)
+		require.NoError(t, test.Unmarshal(path, text))
 
 		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
 			slices.Values(test.Files),
@@ -127,30 +177,43 @@ func TestIR(t *testing.T) {
 		results, r, err := incremental.Run(t.Context(), exec, queries...)
 		require.NoError(t, err)
 
+		r.Diagnostics = slices.DeleteFunc(r.Diagnostics, func(d report.Diagnostic) bool {
+			matches := func(r *regexp.Regexp) bool {
+				return r.MatchString(d.Message())
+			}
+
+			return slices.ContainsFunc(test.Exclude, matches) ||
+				(test.Filters != nil && !slices.ContainsFunc(test.Filters, matches))
+		})
+
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,
 			ShowDebug: true,
 		}.RenderString(r)
 		t.Log(stderr)
-		outputs[2], _, _ = report.Renderer{}.RenderString(r)
-		assert.NotContains(t, outputs[1], "unexpected panic; this is a bug")
+		outputs[0], _, _ = report.Renderer{}.RenderString(r)
+		assert.NotContains(t, outputs[0], "unexpected panic; this is a bug")
+		if !test.Descriptor && !test.Symtab {
+			require.NotEmpty(t, outputs[0], "test must emit diagnostics")
+			return
+		}
 
 		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
-		bytes, err := ir.DescriptorSetBytes(irs, ir.IncludeSourceCodeInfo(test.SourceCodeInfo))
-		require.NoError(t, err)
 
-		fds := new(descriptorpb.FileDescriptorSet)
-		require.NoError(t, proto.Unmarshal(bytes, fds))
+		if test.Descriptor {
+			bytes, err := ir.DescriptorSetBytes(irs, ir.IncludeSourceCodeInfo(test.SourceCodeInfo))
+			require.NoError(t, err)
 
-		if !test.OutputWKTs {
-			fds.File = slices.DeleteFunc(fds.File, func(fdp *descriptorpb.FileDescriptorProto) bool {
-				return strings.HasPrefix(*fdp.Name, "google/protobuf/")
-			})
+			fds := new(descriptorpb.FileDescriptorSet)
+			require.NoError(t, proto.Unmarshal(bytes, fds))
+
+			outputs[1] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
 		}
 
-		outputs[0] = prototest.ToYAML(fds, prototest.ToYAMLOptions{})
-		outputs[1] = prototest.ToYAML(symtabProto(irs, &test), prototest.ToYAMLOptions{})
+		if test.Symtab {
+			outputs[2] = prototest.ToYAML(symtabProto(irs, test), prototest.ToYAMLOptions{})
+		}
 	})
 }
 
@@ -168,31 +231,26 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 				}
 			}
 		}
-		if t.Features {
-			dumpFeatureExtns(file.FeatureSet().Options())
-			for ty := range seq.Values(file.AllTypes()) {
-				dumpFeatureExtns(ty.FeatureSet().Options())
+		dumpFeatureExtns(file.FeatureSet().Options())
+		for ty := range seq.Values(file.AllTypes()) {
+			dumpFeatureExtns(ty.FeatureSet().Options())
 
-				for v := range seq.Values(ty.Members()) {
-					dumpFeatureExtns(v.FeatureSet().Options())
-				}
-				for v := range seq.Values(ty.Oneofs()) {
-					dumpFeatureExtns(v.FeatureSet().Options())
-				}
-				for v := range seq.Values(ty.ExtensionRanges()) {
-					dumpFeatureExtns(v.FeatureSet().Options())
-				}
+			for v := range seq.Values(ty.Members()) {
+				dumpFeatureExtns(v.FeatureSet().Options())
 			}
-			for v := range seq.Values(file.AllExtensions()) {
+			for v := range seq.Values(ty.Oneofs()) {
+				dumpFeatureExtns(v.FeatureSet().Options())
+			}
+			for v := range seq.Values(ty.ExtensionRanges()) {
 				dumpFeatureExtns(v.FeatureSet().Options())
 			}
 		}
+		for v := range seq.Values(file.AllExtensions()) {
+			dumpFeatureExtns(v.FeatureSet().Options())
+		}
+
 		dumpFeatures := func(features ir.FeatureSet, target ir.OptionTarget) []*compilerpb.Feature {
 			var out []*compilerpb.Feature
-			if !t.Features {
-				return out
-			}
-
 			dumpMessage := func(extn ir.Member, ty ir.Type) {
 				for field := range seq.Values(ty.Members()) {
 					if field.FeatureInfo().IsZero() || !field.CanTarget(target) {
@@ -273,7 +331,7 @@ func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
 
 		for sym := range seq.Values(file.Symbols()) {
-			if !t.OutputWKTs && strings.HasPrefix(sym.File().Path(), "google/protobuf/") {
+			if strings.HasPrefix(sym.File().Path(), "google/protobuf/") {
 				continue
 			}
 
