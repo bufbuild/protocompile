@@ -25,6 +25,7 @@ error: cannot find `M` in this scope
    |
  7 |   M m1 = 1;
    |   ^ not found in this scope
+   |
    = help: the full name of this scope is `test.N`
 
 error: cannot find `test.M` in this scope
@@ -32,6 +33,7 @@ error: cannot find `test.M` in this scope
    |
  8 |   test.M m2 = 2;
    |   ^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `test.N`
 
 error: cannot find `.test.M` in this scope
@@ -39,6 +41,7 @@ error: cannot find `.test.M` in this scope
    |
  9 |   .test.M m3 = 3;
    |   ^^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `test.N`
 
 encountered 3 errors and 2 warnings

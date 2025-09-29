@@ -29,10 +29,12 @@ error: unexpected type name
    |
 23 |     Type path.name = 1;
    |     ^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 23 |     optional Type path.name = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
@@ -46,10 +48,12 @@ error: unexpected type name
    |
 24 |     Type path/name = 1;
    |     ^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 24 |     optional Type path/name = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
@@ -89,10 +93,12 @@ error: unexpected type name
    |
 29 |     package.Type name = 1;
    |     ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 29 |     optional package.Type name = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected type name
@@ -100,10 +106,12 @@ error: unexpected type name
    |
 30 |     package/Type name = 1;
    |     ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 30 |     optional package/Type name = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected `/` in path in message field
@@ -161,10 +169,12 @@ error: unexpected type name
    |
 36 |     (foo.bar).Type name = 1;
    |     ^^^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 36 |     optional (foo.bar).Type name = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
@@ -198,10 +208,12 @@ error: unexpected type name
    |
 41 |     package.Type (foo.bar).name = 1;
    |     ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 41 |     optional package.Type (foo.bar).name = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected qualified name in message field
@@ -221,10 +233,12 @@ error: unexpected type name
    |
 43 |     (foo) (bar) = 1;
    |     ^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 43 |     optional (foo) (bar) = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected extension name in message field

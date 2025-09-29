@@ -3,6 +3,7 @@ error: expected repeated field, found singular field
    |
 22 |     int32 o1 = 1 [features.repeated_field_encoding = PACKED];
    |     ^^^^^         -------------------------------- packed encoding set here
+   |
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 
@@ -11,6 +12,7 @@ error: expected repeated field, found singular field
    |
 23 |     int32 o2 = 2 [features.repeated_field_encoding = EXPANDED];
    |     ^^^^^         -------------------------------- packed encoding set here
+   |
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 
@@ -18,7 +20,10 @@ error: expected packable type, found message type `buf.test.M`
   --> testdata/options/validate/packed_2023.proto:25:14
    |
 25 |     repeated M m1 = 3 [features.repeated_field_encoding = PACKED];
-   |              ^         -------------------------------- packed encoding set here
+   |              ^         --------------------------------
+   |                         |
+   |                         packed encoding set here
+   |
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 
@@ -26,7 +31,10 @@ error: expected packable type, found message type `buf.test.M`
   --> testdata/options/validate/packed_2023.proto:26:14
    |
 26 |     repeated M m2 = 4 [features.repeated_field_encoding = EXPANDED];
-   |              ^         -------------------------------- packed encoding set here
+   |              ^         --------------------------------
+   |                         |
+   |                         packed encoding set here
+   |
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 
@@ -38,11 +46,11 @@ error: `packed` cannot be set in editions mode
 ...
 34 |     repeated float f3 = 9 [packed = true];
    |                            ^^^^^^ `packed` set here
+   |
   help: replace with `repeated_field_encoding`
    |
 34 | -     repeated float f3 = 9 [packed = true];
 34 | +     repeated float f3 = 9 [repeated_field_encoding = PACKED];
-   |
 
 error: `packed` cannot be set in editions mode
   --> testdata/options/validate/packed_2023.proto:35:29
@@ -53,10 +61,10 @@ error: `packed` cannot be set in editions mode
 34 |     repeated float f3 = 9 [packed = true];
 35 |     repeated float f4 = 10 [packed = false];
    |                             ^^^^^^ `packed` set here
+   |
   help: replace with `repeated_field_encoding`
    |
 35 | -     repeated float f4 = 10 [packed = false];
 35 | +     repeated float f4 = 10 [repeated_field_encoding = EXPANDED];
-   |
 
 encountered 6 errors

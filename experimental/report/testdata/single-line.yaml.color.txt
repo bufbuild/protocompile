@@ -1,66 +1,80 @@
 ⟨b.cyn⟩remark: "proto4" isn't real, it can't hurt you
 ⟨blu⟩  --> foo.proto:1:10
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
-⟨blu⟩   | ⟨reset⟩         ⟨b.cyn⟩^^^^^^^^^⟨reset⟩ ⟨b.cyn⟩help: change this to "proto5"⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩⟨reset⟩     ⟨b.cyn⟩^^^^^^^^^ ⟨b.cyn⟩help: change this to "proto5"
+⟨reset⟩
 ⟨b.red⟩error: missing `;`
 ⟨blu⟩  --> foo.proto:1:18
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 1 | ⟨reset⟩syntax = "proto4"
-⟨blu⟩   | ⟨reset⟩                 ⟨b.red⟩^⟨reset⟩ ⟨b.red⟩here⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩⟨reset⟩             ⟨b.red⟩^ ⟨b.red⟩here
+⟨reset⟩
 ⟨b.cyn⟩remark: EOF
 ⟨blu⟩  --> foo.proto:7:2
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 7 | ⟨reset⟩}
-⟨blu⟩   | ⟨reset⟩ ⟨b.cyn⟩^⟨reset⟩ ⟨b.cyn⟩here⟨reset⟩
-
+⟨blu⟩   | ⟨reset⟩⟨b.cyn⟩^ ⟨b.cyn⟩here
+⟨reset⟩
 ⟨b.red⟩error: package
 ⟨blu⟩  --> foo.proto:3:1
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨b.red⟩^^^^^^^⟨reset⟩        ⟨b.blu⟩-⟨reset⟩ ⟨b.blu⟩semicolon
-⟨blu⟩   | ⟨b.red⟩|
-⟨blu⟩   | ⟨b.red⟩package⟨reset⟩
-
+⟨blu⟩   | ⟨b.red⟩^^^^^^^⟨reset⟩⟨reset⟩    ⟨b.blu⟩- ⟨b.blu⟩semicolon
+⟨blu⟩   |  ⟨b.red⟩|
+⟨blu⟩   |  ⟨b.red⟩package
+⟨reset⟩
+⟨b.red⟩error: package
+⟨blu⟩  --> foo.proto:3:1
+⟨blu⟩   |
+⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
+⟨blu⟩   | ⟨b.red⟩^^^^^^^
+⟨blu⟩   |  ⟨b.red⟩|
+⟨blu⟩   |  ⟨b.red⟩unreasonably long error message that needs to wrap for it to look good
+⟨reset⟩
 ⟨b.red⟩error: this is an overlapping error
 ⟨blu⟩  --> foo.proto:3:1
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨b.red⟩^^^^^^^⟨b.blu⟩---------⟨reset⟩ ⟨b.blu⟩package decl
-⟨blu⟩   | ⟨b.red⟩|
-⟨blu⟩   | ⟨b.red⟩package⟨reset⟩
-
+⟨blu⟩   | ⟨b.red⟩^^^^^^^ ⟨b.red⟩package
+⟨blu⟩   | ⟨b.blu⟩---------------- ⟨b.blu⟩package decl
+⟨reset⟩
 ⟨b.red⟩error: P A C K A G E
 ⟨blu⟩  --> foo.proto:3:1
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨b.red⟩^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩help: ge
-⟨blu⟩   | ⟨b.red⟩| ⟨b.blu⟩|
-⟨blu⟩   | ⟨b.red⟩help: p⟨b.blu⟩|
-⟨blu⟩   |   ⟨b.blu⟩|
-⟨blu⟩   |   ⟨b.blu⟩help: ck⟨reset⟩
-
+⟨blu⟩   | ⟨b.red⟩^⟨reset⟩⟨b.blu⟩-- ⟨b.blu⟩help: ck
+⟨blu⟩   | ⟨reset⟩⟨reset⟩ ⟨b.blu⟩-- ⟨b.blu⟩help: ge
+⟨blu⟩   | ⟨b.red⟩|
+⟨blu⟩   | ⟨b.red⟩help: p
+⟨reset⟩
+⟨b.red⟩error: P A C K A G E
+⟨blu⟩  --> foo.proto:3:1
+⟨blu⟩   |
+⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
+⟨blu⟩   | ⟨b.red⟩^⟨reset⟩⟨b.blu⟩-- ⟨b.blu⟩help: ck
+⟨blu⟩   | ⟨reset⟩⟨reset⟩ ⟨b.blu⟩----------- ⟨b.blu⟩decl
+⟨blu⟩   | ⟨reset⟩⟨reset⟩  ⟨b.blu⟩- ⟨b.blu⟩help: ge
+⟨blu⟩   | ⟨b.red⟩|
+⟨blu⟩   | ⟨b.red⟩help: p
+⟨reset⟩
 ⟨b.red⟩error: P A C K A G E (different order)
 ⟨blu⟩  --> foo.proto:3:3
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨b.blu⟩-⟨reset⟩ ⟨b.red⟩^^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩help: ge
-⟨blu⟩   | ⟨b.blu⟩| ⟨b.red⟩|
-⟨blu⟩   | ⟨b.blu⟩help: p⟨b.red⟩|
-⟨blu⟩   |   ⟨b.red⟩|
-⟨blu⟩   |   ⟨b.red⟩help: ck⟨reset⟩
-
+⟨blu⟩   | ⟨b.blu⟩-⟨reset⟩⟨b.red⟩^^ ⟨b.red⟩help: ck
+⟨blu⟩   | ⟨reset⟩⟨reset⟩ ⟨b.blu⟩-- ⟨b.blu⟩help: ge
+⟨blu⟩   | ⟨b.blu⟩|
+⟨blu⟩   | ⟨b.blu⟩help: p
+⟨reset⟩
 ⟨b.red⟩error: P A C K A G E (single letters)
 ⟨blu⟩  --> foo.proto:3:1
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨b.red⟩^⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩--⟨reset⟩ ⟨b.blu⟩g
-⟨blu⟩   | ⟨b.red⟩| ⟨b.blu⟩|
-⟨blu⟩   | ⟨b.red⟩p ⟨b.blu⟩|
-⟨blu⟩   |   ⟨b.blu⟩|
-⟨blu⟩   |   ⟨b.blu⟩k⟨reset⟩
-
-⟨b.red⟩encountered 6 errors
+⟨blu⟩   | ⟨b.red⟩^⟨reset⟩⟨b.blu⟩-- ⟨b.blu⟩k
+⟨blu⟩   | ⟨reset⟩⟨reset⟩ ⟨b.blu⟩-- ⟨b.blu⟩g
+⟨blu⟩   | ⟨b.red⟩|
+⟨blu⟩   | ⟨b.red⟩p
+⟨reset⟩
+⟨b.red⟩encountered 8 errors
 ⟨reset⟩

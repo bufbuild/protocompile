@@ -9,6 +9,7 @@ error: expected singular message, found scalar type `string`
     |
  20 | option go_package.x = 42;
     |                  ^^ field selector requires singular message
+    |
    ::: google/protobuf/descriptor.proto:504:3
     |
 504 |   optional string go_package = 11;
@@ -25,6 +26,7 @@ error: expected singular message, found scalar type `bool`
     |
  24 |     option deprecated.x = 42;
     |                      ^^ field selector requires singular message
+    |
    ::: google/protobuf/descriptor.proto:611:3
     |
 611 |   optional bool deprecated = 3 [default = false];
@@ -40,7 +42,10 @@ error: expected singular message, found scalar type `bool`
    --> testdata/options/missing.proto:25:45
     |
  25 |     optional Foo foo = 1 [unknown = 42, lazy.x = 42];
-    |                                             ^^ field selector requires singular message
+    |                                             ^^
+    |                                             |
+    |                                             field selector requires singular message
+    |
    ::: google/protobuf/descriptor.proto:743:3
     |
 743 |   optional bool lazy = 5 [default = false];
@@ -50,7 +55,10 @@ error: expected singular message, found pseudo-option `default`
   --> testdata/options/missing.proto:26:36
    |
 26 |     optional int32 bar = 2 [default.x = 42];
-   |                                    ^^ field selector requires singular message
+   |                                    ^^
+   |                                    |
+   |                                    field selector requires singular message
+   |
    = note: `default` is a pseudo-option and does not correspond to a field in
            `google.protobuf.FieldOptions`
 
@@ -71,6 +79,7 @@ error: expected singular message, found scalar type `bool`
     |
  36 |     option deprecated.x = 42;
     |                      ^^ field selector requires singular message
+    |
    ::: google/protobuf/descriptor.proto:859:3
     |
 859 |   optional bool deprecated = 3 [default = false];
@@ -86,7 +95,10 @@ error: expected singular message, found scalar type `bool`
    --> testdata/options/missing.proto:37:43
     |
  37 |     BAR_ZERO = 0 [unknown = 42, deprecated.x = 42];
-    |                                           ^^ field selector requires singular message
+    |                                           ^^
+    |                                           |
+    |                                           field selector requires singular message
+    |
    ::: google/protobuf/descriptor.proto:889:3
     |
 889 |   optional bool deprecated = 1 [default = false];

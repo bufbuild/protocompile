@@ -3,6 +3,7 @@ error: unexpected `import` after import
    |
 20 | import "bar.proto"
    | ^^^^^^ expected `;`
+   |
   help: consider inserting a `;`
    |
 19 | import "foo.proto";
@@ -13,6 +14,7 @@ error: unexpected end-of-file after import
    |
 20 | import "bar.proto"
    |                   ^ expected `;`
+   |
   help: consider inserting a `;`
    |
 20 | import "bar.proto";

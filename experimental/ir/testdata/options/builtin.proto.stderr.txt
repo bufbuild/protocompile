@@ -5,10 +5,12 @@ error: option `deprecated` set multiple times
     |            ---------- first set here...
  24 |     option deprecated = true;
     |            ^^^^^^^^^^ ... also set here
+    |
    ::: google/protobuf/descriptor.proto:611:17
     |
 611 |   optional bool deprecated = 3 [default = false];
     |                 ---------- not a repeated field
+    |
     = note: a non-`repeated` option may be set at most once
 
 encountered 1 error

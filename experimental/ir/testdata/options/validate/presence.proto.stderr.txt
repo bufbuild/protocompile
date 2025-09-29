@@ -3,10 +3,12 @@ error: unexpected `optional`
    |
 35 |     optional int32 a1 = 10;
    |     ^^^^^^^^ expected type name or `repeated`
+   |
   help: delete it
    |
 35 | -     optional int32 a1 = 10;
 35 | +     int32 a1 = 10;
+   |
    |
    = help: in editions mode, the presence behavior of a singular field is
            controlled with `[feature.field_presence = ...]`, with the default
@@ -18,10 +20,12 @@ error: unexpected `required`
    |
 36 |     required int32 a1 = 11;
    |     ^^^^^^^^ expected type name or `repeated`
+   |
   help: delete it
    |
 36 | -     required int32 a1 = 11;
 36 | +     int32 a1 = 11;
+   |
    |
    = help: required fields are only permitted in proto2; even then, their use is
            strongly discouraged
@@ -37,13 +41,17 @@ error: expected singular field, found repeated field
    |
 22 |     repeated int32 x = 1 [features.field_presence = EXPLICIT];
    |     ^^^^^^^^^^^^^^        ----------------------- `field_presence` set here
+   |
    = help: `field_presence` can only be set on singular fields
 
 error: expected singular field, found map field
   --> testdata/options/validate/presence.proto:23:5
    |
 23 |     map<int32, int32> y = 2 [features.field_presence = EXPLICIT];
-   |     ^^^^^^^^^^^^^^^^^        ----------------------- `field_presence` set here
+   |     ^^^^^^^^^^^^^^^^^        -----------------------
+   |                               |
+   |                               `field_presence` set here
+   |
    = help: `field_presence` can only be set on singular fields
 
 error: expected singular field, found oneof member
@@ -52,10 +60,10 @@ error: expected singular field, found oneof member
 25 | /     oneof o {
 26 | |         int32 z = 3 [features.field_presence = EXPLICIT];
    | |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   | |                      |
-   | |                      `field_presence` set here
+   | |                      ----------------------- `field_presence` set here
 27 | |     }
    | \_____- defined in this oneof
+   |
    = help: `field_presence` cannot be set on oneof members
    = help: all oneof members have explicit presence
 
@@ -64,6 +72,7 @@ error: expected message type, found message type `buf.test.Foo`
    |
 31 |     Foo m = 5 [features.field_presence = IMPLICIT];
    |     ^^^                                  -------- implicit presence set here
+   |     ---
    = help: all message-typed fields explicit presence
 
 warning: required fields are deprecated
@@ -87,8 +96,8 @@ error: expected singular field, found extension
    |
 40 |     int32 e = 4 [features.field_presence = EXPLICIT];
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |                  |
-   |                  `field_presence` set here
+   |                  ----------------------- `field_presence` set here
+   |
    = help: `field_presence` cannot be set on extensions
    = help: all singular extensions have explicit presence
 

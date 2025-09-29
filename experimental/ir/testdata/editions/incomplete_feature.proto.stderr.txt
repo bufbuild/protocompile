@@ -45,6 +45,7 @@ warning: expected `bool` or enum type, found scalar type `int32`
    |     ^^^^^
 41 |         edition_defaults = {edition: EDITION_PROTO2, value: "0"},
    |         ---------------- expected because this makes `e` into a feature
+   |
    = note: this is likely a mistake, but it is not rejected by protoc
    = help: features should have `bool` or enum type
 

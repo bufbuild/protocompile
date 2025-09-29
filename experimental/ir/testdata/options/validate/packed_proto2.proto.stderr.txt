@@ -3,6 +3,7 @@ error: expected repeated field, found singular field
    |
 22 |     optional int32 o1 = 1 [packed = true];
    |     ^^^^^^^^^^^^^^                  ---- packed encoding set here
+   |
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 
@@ -11,6 +12,7 @@ error: expected packable type, found message type `buf.test.M`
    |
 25 |     repeated M m1 = 3 [packed = true];
    |              ^                  ---- packed encoding set here
+   |
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 

@@ -8,6 +8,7 @@ error: unexpected import within message definition
 ...  |
 25 | | }
    | \_- ...cannot be declared within this message definition
+   |
    = help: this import can only appear at file scope
 
 error: unexpected import within message definition
@@ -21,6 +22,7 @@ error: unexpected import within message definition
 ...  |
 25 | | }
    | \_- ...cannot be declared within this message definition
+   |
    = help: this import can only appear at file scope
 
 error: unexpected import within message definition
@@ -34,6 +36,7 @@ error: unexpected import within message definition
 ...  |
 25 | | }
    | \_- ...cannot be declared within this message definition
+   |
    = help: this import can only appear at file scope
 
 error: unexpected import within message definition
@@ -45,6 +48,7 @@ error: unexpected import within message definition
    | |     ^^^^^^^^^^^^^^^^^ this import...
 25 | | }
    | \_- ...cannot be declared within this message definition
+   |
    = help: this import can only appear at file scope
 
 encountered 4 errors

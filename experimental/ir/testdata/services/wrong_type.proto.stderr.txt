@@ -34,6 +34,7 @@ error: cannot find `N` in this scope
    |
 26 |     rpc M4(stream string) returns (stream N);
    |                                           ^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test.S`
 
 encountered 5 errors

@@ -3,10 +3,12 @@ error: unexpected type name
    |
 20 |     M x (T) (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 20 |     optional M x (T) (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -34,10 +36,12 @@ error: unexpected type name
    |
 21 |     M x returns (T) (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 21 |     optional M x returns (T) (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -57,18 +61,20 @@ error: unexpected method parameter list after method return type
    |
 21 |     M x returns (T) (T);
    |         ----------- ^^^
-   |         |
-   |         previous method return type is here
+   |          |
+   |          previous method return type is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:22:5
    |
 22 |     M x returns T (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 22 |     optional M x returns T (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -98,18 +104,20 @@ error: unexpected method parameter list after method return type
    |
 22 |     M x returns T (T);
    |         --------- ^^^
-   |         |
-   |         previous method return type is here
+   |          |
+   |          previous method return type is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:23:5
    |
 23 |     M x [foo = bar] (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 23 |     optional M x [foo = bar] (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -129,18 +137,20 @@ error: unexpected method parameter list after compact options
    |
 23 |     M x [foo = bar] (T);
    |         ----------- ^^^
-   |         |
-   |         previous compact options is here
+   |          |
+   |          previous compact options is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:24:5
    |
 24 |     M x { /* ... */ } (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 24 |     optional M x { /* ... */ } (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -166,10 +176,12 @@ error: unexpected type name
    |
 24 |     M x { /* ... */ } (T);
    |                       ^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 24 |     M x { /* ... */ } optional (T);
    |                       +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -189,10 +201,12 @@ error: unexpected type name
    |
 26 |     M x returns (T) returns (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 26 |     optional M x returns (T) returns (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -212,18 +226,20 @@ error: encountered more than one method return type
    |
 26 |     M x returns (T) returns (T);
    |         ----------- ^^^^^^^^^^^ help: consider removing this
-   |         |
-   |         first one is here
+   |          |
+   |          first one is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:27:5
    |
 27 |     M x [foo = bar] returns (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 27 |     optional M x [foo = bar] returns (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -243,18 +259,20 @@ error: unexpected method return type after compact options
    |
 27 |     M x [foo = bar] returns (T);
    |         ----------- ^^^^^^^^^^^
-   |         |
-   |         previous compact options is here
+   |          |
+   |          previous compact options is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:28:5
    |
 28 |     M x { /* ... */ } returns (T);
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 28 |     optional M x { /* ... */ } returns (T);
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -274,10 +292,12 @@ error: unexpected type name
    |
 28 |     M x { /* ... */ } returns (T);
    |                       ^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 28 |     M x { /* ... */ } optional returns (T);
    |                       +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -297,10 +317,12 @@ error: unexpected type name
    |
 30 |     M x returns T returns T;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 30 |     optional M x returns T returns T;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -330,18 +352,20 @@ error: encountered more than one method return type
    |
 30 |     M x returns T returns T;
    |         --------- ^^^^^^^^^ help: consider removing this
-   |         |
-   |         first one is here
+   |          |
+   |          first one is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:31:5
    |
 31 |     M x returns T [] returns T;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 31 |     optional M x returns T [] returns T;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -385,10 +409,12 @@ error: unexpected type name
    |
 32 |     M x [foo = bar] returns T;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 32 |     optional M x [foo = bar] returns T;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -408,8 +434,8 @@ error: unexpected method return type after compact options
    |
 32 |     M x [foo = bar] returns T;
    |         ----------- ^^^^^^^^^
-   |         |
-   |         previous compact options is here
+   |          |
+   |          previous compact options is here
 
 error: missing `(...)` around method return type
   --> testdata/parser/def/ordering.proto:32:29
@@ -426,10 +452,12 @@ error: unexpected type name
    |
 33 |     M x { /* ... */ } returns T;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 33 |     optional M x { /* ... */ } returns T;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -449,10 +477,12 @@ error: unexpected type name
    |
 33 |     M x { /* ... */ } returns T;
    |                       ^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 33 |     M x { /* ... */ } optional returns T;
    |                       +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -466,10 +496,12 @@ error: unexpected type name
    |
 35 |     M x = 1 = 1;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 35 |     optional M x = 1 = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: encountered more than one message field tag
@@ -485,10 +517,12 @@ error: unexpected type name
    |
 36 |     M x [foo = bar] = 1;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 36 |     optional M x [foo = bar] = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: unexpected message field tag after compact options
@@ -496,18 +530,20 @@ error: unexpected message field tag after compact options
    |
 36 |     M x [foo = bar] = 1;
    |         ----------- ^^^
-   |         |
-   |         previous compact options is here
+   |          |
+   |          previous compact options is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:37:5
    |
 37 |     M x { /* ... */ } = 1;
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 37 |     optional M x { /* ... */ } = 1;
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -533,10 +569,12 @@ error: unexpected type name
    |
 39 |     M x [foo = bar] [foo = bar];
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 39 |     optional M x [foo = bar] [foo = bar];
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -550,18 +588,20 @@ error: encountered more than one compact options
    |
 39 |     M x [foo = bar] [foo = bar];
    |         ----------- ^^^^^^^^^^^ help: consider removing this
-   |         |
-   |         first one is here
+   |          |
+   |          first one is here
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:40:5
    |
 40 |     M x { /* ... */ } [foo = bar];
    |     ^ expected `optional`, `repeated`, or `required`
+   |
   help: use the `optional` modifier
    |
 40 |     optional M x { /* ... */ } [foo = bar];
    |     +++++++++
+   |
    = note: modifiers are required in proto2
 
 error: missing message field tag in declaration
@@ -580,6 +620,8 @@ error: unexpected `[...]` in message definition
   --> testdata/parser/def/ordering.proto:40:23
    |
 40 |     M x { /* ... */ } [foo = bar];
-   |                       ^^^^^^^^^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+   |                       ^^^^^^^^^^^
+   |                        |
+   |                        expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 encountered 74 errors
