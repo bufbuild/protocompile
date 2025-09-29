@@ -5,7 +5,6 @@ warning: whole block
 ...  |
 12 | | }
    | \_^ this block
-   |
 
 warning: nested blocks
   --> foo.proto:5:1
@@ -18,7 +17,6 @@ warning: nested blocks
    | | \___- and this block
 12 | |   }
    | \___^ this block
-   |
 
 warning: parallel blocks
   --> foo.proto:5:1
@@ -32,7 +30,6 @@ warning: parallel blocks
    |  ___-
 12 | / }
    | \_- and this block
-   |
 
 warning: nested blocks same start
   --> foo.proto:5:1
@@ -43,7 +40,6 @@ warning: nested blocks same start
    | | \___- and this block
 12 | |   }
    | \___^ this block
-   |
 
 warning: nested blocks same end
   --> foo.proto:5:1
@@ -55,7 +51,6 @@ warning: nested blocks same end
 12 | | | }
    | \___^ this block
    |   \_- and this block
-   |
 
 warning: nested overlap
   --> foo.proto:5:1
@@ -68,7 +63,6 @@ warning: nested overlap
    | \_____^ this block
 12 |   | }
    |   \_- and this block
-   |
 
 warning: nesting just the braces
   --> foo.proto:5:15
@@ -83,7 +77,6 @@ warning: nesting just the braces
    | | \___- and this block
 12 | |   }
    | \___^ this block
-   |
 
 warning: nesting just the braces same start
   --> foo.proto:5:15
@@ -96,7 +89,6 @@ warning: nesting just the braces same start
    | | \___- and this block
 12 | |   }
    | \___^ this block
-   |
 
 warning: nesting just the braces same start (2)
   --> foo.proto:5:15
@@ -109,7 +101,6 @@ warning: nesting just the braces same start (2)
    | | \___^ and this block
 12 | |   }
    | \___- this block
-   |
 
 warning: braces nesting overlap
   --> foo.proto:5:15
@@ -124,7 +115,6 @@ warning: braces nesting overlap
    | \_____^ this block
 12 |   | }
    |   \_- and this block
-   |
 
 warning: braces nesting overlap (2)
   --> foo.proto:7:17
@@ -139,6 +129,5 @@ warning: braces nesting overlap (2)
    | \_____- this block
 12 |   | }
    |   \_^ and this block
-   |
 
 encountered 11 warnings

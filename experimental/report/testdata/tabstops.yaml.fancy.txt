@@ -5,7 +5,6 @@ warning: tabstop
    | --------^^^^^ this is in front of some tabstops
    |  |
    |  specifically these
-   |
 
 warning: partial tabstop
   --> foo.proto:7:2
@@ -14,6 +13,5 @@ warning: partial tabstop
    | -^^^ tabstop
    | |
    | spaces
-   |
 
 encountered 2 warnings

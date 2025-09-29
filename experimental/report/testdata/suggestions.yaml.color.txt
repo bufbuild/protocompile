@@ -15,7 +15,7 @@
 ⟨reset⟩
 ⟨b.ylw⟩warning: services should have a `Service` suffix
 ⟨blu⟩  --> foo.proto:5:9
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 5 | ⟨reset⟩service Foo {
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.ylw⟩^^^ ⟨b.ylw⟩
 ⟨blu⟩   |
@@ -26,7 +26,7 @@
 ⟨reset⟩
 ⟨b.red⟩error: missing (...) around return type
 ⟨blu⟩  --> foo.proto:6:31
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩                          ⟨b.red⟩^^^^^^^^^^^ ⟨b.red⟩
 ⟨blu⟩   |
@@ -37,7 +37,7 @@
 ⟨reset⟩
 ⟨b.red⟩error: method options must go in a block
 ⟨blu⟩  --> foo.proto:7:45
-  ⟨blu⟩ |
+⟨blu⟩   |
 ⟨blu⟩ 7 | ⟨reset⟩  rpc Put(PutRequest) returns (PutResponse) [foo = bar];
 ⟨blu⟩   | ⟨reset⟩⟨reset⟩                                        ⟨b.red⟩^^^^^^^^^^^
 ⟨blu⟩   |                                              ⟨b.red⟩|

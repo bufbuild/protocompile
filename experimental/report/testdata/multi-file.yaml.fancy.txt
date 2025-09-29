@@ -11,7 +11,6 @@ error: two files
    |
  3 | package abc.xyz2;
    |         ------- baz
-   |
 
 error: three files
   --> foo.proto:3:9
@@ -28,6 +27,5 @@ error: three files
    |
  5 | message Blah {
    |         ---- bar
-   |
 
 encountered 2 errors

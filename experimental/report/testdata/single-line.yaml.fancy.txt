@@ -3,21 +3,18 @@ remark: "proto4" isn't real, it can't hurt you
    |
  1 | syntax = "proto4"
    |          ^^^^^^^^^ help: change this to "proto5"
-   |
 
 error: missing `;`
   --> foo.proto:1:18
    |
  1 | syntax = "proto4"
    |                  ^ here
-   |
 
 remark: EOF
   --> foo.proto:7:2
    |
  7 | }
    |  ^ here
-   |
 
 error: package
   --> foo.proto:3:1
@@ -26,7 +23,6 @@ error: package
    | ^^^^^^^        - semicolon
    |  |
    |  package
-   |
 
 error: package
   --> foo.proto:3:1
@@ -35,7 +31,6 @@ error: package
    | ^^^^^^^
    |  |
    |  unreasonably long error message that needs to wrap for it to look good
-   |
 
 error: this is an overlapping error
   --> foo.proto:3:1
@@ -43,7 +38,6 @@ error: this is an overlapping error
  3 | package abc.xyz;
    | ^^^^^^^ package
    | ---------------- package decl
-   |
 
 error: P A C K A G E
   --> foo.proto:3:1
@@ -54,7 +48,6 @@ error: P A C K A G E
    | help: p
    |   |
    |   help: ck
-   |
 
 error: P A C K A G E
   --> foo.proto:3:1
@@ -66,7 +59,6 @@ error: P A C K A G E
    | help: p
    |   |
    |   help: ck
-   |
 
 error: P A C K A G E (different order)
   --> foo.proto:3:3
@@ -77,7 +69,6 @@ error: P A C K A G E (different order)
    | help: p
    |   |
    |   help: ck
-   |
 
 error: P A C K A G E (single letters)
   --> foo.proto:3:1
@@ -88,6 +79,5 @@ error: P A C K A G E (single letters)
    | p |
    |   |
    |   k
-   |
 
 encountered 8 errors

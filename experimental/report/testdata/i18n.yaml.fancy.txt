@@ -10,7 +10,6 @@ error: emoji, CJK, bidi
    |
  1 | import "חתול שחור.proto";
    |         --------------- bidi works if it's quoted, at least
-   |
 
 error: bidi (Arabic, Hebrew, Farsi, etc) is broken in some contexts
   --> foo.proto:7:10
