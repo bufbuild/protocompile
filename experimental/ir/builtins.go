@@ -41,9 +41,13 @@ type builtins struct {
 	ServiceOptions   Member
 	MethodOptions    Member
 
-	MapEntry      Member
-	Packed        Member
-	OptionTargets Member
+	JavaUTF8             Member
+	OptimizeFor          Member
+	MapEntry             Member
+	Packed               Member
+	OptionTargets        Member
+	CType, JSType        Member
+	Lazy, UnverifiedLazy Member
 
 	EditionDefaults, EditionDefaultsKey, EditionDefaultsValue Member
 
@@ -57,7 +61,9 @@ type builtins struct {
 	FeaturePresence Member
 	FeatureEnumType Member
 	FeaturePacked   Member
+	FeatureUTF8     Member
 	FeatureGroup    Member
+	FeatureEnum     Member
 
 	FileFeatures      Member
 	MessageFeatures   Member
@@ -86,9 +92,15 @@ type builtinIDs struct {
 	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
 	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
-	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
-	Packed        intern.ID `intern:"google.protobuf.FieldOptions.packed"`
-	OptionTargets intern.ID `intern:"google.protobuf.FieldOptions.targets"`
+	JavaUTF8       intern.ID `intern:"google.protobuf.FileOptions.java_string_check_utf8"`
+	OptimizeFor    intern.ID `intern:"google.protobuf.FileOptions.optimize_for"`
+	MapEntry       intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	Packed         intern.ID `intern:"google.protobuf.FieldOptions.packed"`
+	OptionTargets  intern.ID `intern:"google.protobuf.FieldOptions.targets"`
+	CType          intern.ID `intern:"google.protobuf.FieldOptions.ctype"`
+	JSType         intern.ID `intern:"google.protobuf.FieldOptions.jstype"`
+	Lazy           intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
+	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`
@@ -114,7 +126,9 @@ type builtinIDs struct {
 	FeaturePresence intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`
 	FeatureEnumType intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
 	FeaturePacked   intern.ID `intern:"google.protobuf.FeatureSet.repeated_field_encoding"`
+	FeatureUTF8     intern.ID `intern:"google.protobuf.FeatureSet.utf8_validation"`
 	FeatureGroup    intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
+	FeatureEnum     intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
 
 	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`

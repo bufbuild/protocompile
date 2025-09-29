@@ -89,6 +89,40 @@ func (m Member) IsSynthetic() bool {
 	return !m.IsZero() && m.AST().IsZero()
 }
 
+// IsSingular returns whether this is a singular field; this includes oneof
+// members.
+func (m Member) IsSingular() bool {
+	return m.Presence() != presence.Unknown && m.Presence() != presence.Repeated
+}
+
+// IsRepeated returns whether this is a repeated field; this includes map
+// fields.
+func (m Member) IsRepeated() bool {
+	return m.Presence() == presence.Repeated
+}
+
+// IsMap returns whether this is a map field.
+func (m Member) IsMap() bool {
+	return !m.IsZero() && m == m.Element().MapField()
+}
+
+// IsPacked returns whether this is a packed message field.
+func (m Member) IsPacked() bool {
+	if !m.IsRepeated() {
+		return false
+	}
+
+	builtins := m.Context().builtins()
+	option := m.Options().Field(builtins.Packed)
+	if packed, ok := option.AsBool(); ok {
+		return packed
+	}
+
+	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
+	value, _ := feature.AsInt()
+	return value == 1 // google.protobuf.FeatureSet.PACKED
+}
+
 // AsTagRange wraps this member in a TagRange.
 func (m Member) AsTagRange() TagRange {
 	if m.IsZero() {

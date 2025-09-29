@@ -133,10 +133,11 @@ func buildFeatureInfo(field Member, r *report.Report) {
 						)
 					}
 				default:
-					r.Warnf("expected `bool` or enum typed field for feature").Apply(
-						report.Snippet(field.TypeAST()),
-						mistake,
-					)
+					r.Warn(errTypeConstraint{
+						want: "`bool` or enum type",
+						got:  field.Element(),
+						decl: field.TypeAST(),
+					}).Apply(mistake)
 					continue
 				}
 			}

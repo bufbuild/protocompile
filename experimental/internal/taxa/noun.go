@@ -81,6 +81,7 @@ const (
 	MessageType
 	EnumType
 	ScalarType
+	EntryType
 	MapKey
 	MapValue
 	Whitespace
@@ -203,6 +204,7 @@ var _table_Noun_String = [...]string{
 	MessageType:        "message type",
 	EnumType:           "enum type",
 	ScalarType:         "scalar type",
+	EntryType:          "map entry type",
 	MapKey:             "map key type",
 	MapValue:           "map value type",
 	Whitespace:         "whitespace",
@@ -308,6 +310,7 @@ var _table_Noun_GoString = [...]string{
 	MessageType:        "MessageType",
 	EnumType:           "EnumType",
 	ScalarType:         "ScalarType",
+	EntryType:          "EntryType",
 	MapKey:             "MapKey",
 	MapValue:           "MapValue",
 	Whitespace:         "Whitespace",

@@ -16,6 +16,7 @@ package ir
 
 import (
 	"cmp"
+	"fmt"
 	"iter"
 	"math"
 	"slices"
@@ -25,7 +26,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
-	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -202,12 +202,6 @@ func (v Value) Field() Member {
 	return wrapMember(v.Context(), field)
 }
 
-// Singular returns whether this value is singular, i.e., [Value.Elements] will
-// contain exactly one value.
-func (v Value) Singular() bool {
-	return v.Field().Presence() != presence.Repeated
-}
-
 // Elements returns an indexer over the elements within this value.
 //
 // If the value is not an array, it contains the singular element within;
@@ -242,7 +236,7 @@ func (v Value) getElements() []rawValueBits {
 
 // AsBool is a shortcut for [Element.AsBool], if this value is singular.
 func (v Value) AsBool() (value, ok bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return false, false
 	}
 	return v.Elements().At(0).AsBool()
@@ -250,7 +244,7 @@ func (v Value) AsBool() (value, ok bool) {
 
 // AsUInt is a shortcut for [Element.AsUInt], if this value is singular.
 func (v Value) AsUInt() (uint64, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return 0, false
 	}
 	return v.Elements().At(0).AsUInt()
@@ -258,7 +252,7 @@ func (v Value) AsUInt() (uint64, bool) {
 
 // AsInt is a shortcut for [Element.AsUnt], if this value is singular.
 func (v Value) AsInt() (int64, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return 0, false
 	}
 	return v.Elements().At(0).AsInt()
@@ -266,7 +260,7 @@ func (v Value) AsInt() (int64, bool) {
 
 // AsFloat is a shortcut for [Element.AsFloat], if this value is singular.
 func (v Value) AsFloat() (float64, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return 0, false
 	}
 	return v.Elements().At(0).AsFloat()
@@ -274,7 +268,7 @@ func (v Value) AsFloat() (float64, bool) {
 
 // AsString is a shortcut for [Element.AsString], if this value is singular.
 func (v Value) AsString() (string, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return "", false
 	}
 	return v.Elements().At(0).AsString()
@@ -296,7 +290,7 @@ func (v Value) AsMessage() MessageValue {
 		return m
 	}
 
-	if v.Field().Presence() == presence.Repeated {
+	if v.Field().IsRepeated() {
 		return MessageValue{}
 	}
 	return m
@@ -335,7 +329,7 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 	}
 
 	scalar := v.Field().Element().Predeclared()
-	if v.Field().Presence() == presence.Repeated && v.Elements().Len() > 1 {
+	if v.Field().IsRepeated() && v.Elements().Len() > 1 {
 		// Packed fields.
 		switch {
 		case scalar.IsVarint(), v.Field().Element().IsEnum():
@@ -428,6 +422,26 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 	}
 
 	return buf, n
+}
+
+func (v Value) suggestEdit(path, expr string, format string, args ...any) report.DiagnosticOption {
+	key := v.MessageKeys().At(0)
+	value := v.ASTs().At(0)
+	joined := report.Join(key, value)
+
+	return report.SuggestEdits(
+		joined,
+		fmt.Sprintf(format, args...),
+		report.Edit{
+			Start: 0, End: key.Span().Len(),
+			Replace: path,
+		},
+		report.Edit{
+			Start:   value.Span().Start - joined.Start,
+			End:     value.Span().End - joined.Start,
+			Replace: expr,
+		},
+	)
 }
 
 func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {

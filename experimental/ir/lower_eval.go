@@ -163,7 +163,7 @@ func (e *evaluator) eval(args evalArgs) Value {
 
 	switch args.expr.Kind() {
 	case ast.ExprKindArray:
-		if args.field.Presence() != presence.Repeated {
+		if args.field.IsSingular() {
 			e.Error(args.mismatch(taxa.Array))
 		}
 
@@ -677,7 +677,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			value := wrapValue(e.Context, *slot)
 
 			switch {
-			case field.Presence() == presence.Repeated:
+			case field.IsRepeated():
 				copied.target = value
 
 			case value.Field() != field:
@@ -1212,6 +1212,22 @@ func (e errTypeCheck) Diagnose(d *report.Diagnostic) {
 	if e.annotation != nil {
 		d.Apply(report.Snippetf(e.annotation, "expected due to this"))
 	}
+}
+
+// errTypeConstraint is like errTypeCheck, but intended for dealing with a case
+// where a type does not satisfy a constraint, e.g., expecting a message type.
+type errTypeConstraint struct {
+	want any
+	got  Type
+	decl ast.TypeAny
+}
+
+// Diagnose implements [report.Diagnose].
+func (e errTypeConstraint) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("expected %s, found %s `%s`", e.want, e.got.noun(), e.got.FullName()),
+		report.Snippet(e.decl.RemovePrefixes()),
+	)
 }
 
 // errLiteralRange is like [errTypeCheck], but is specifically about integer

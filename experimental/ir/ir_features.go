@@ -51,8 +51,8 @@ type rawFeatureSet struct {
 
 type rawFeature struct {
 	// Can't be a ref because it might not be imported by this file at all.
-	value                 Value
-	isCustom, isInherited bool
+	value                            Value
+	isCustom, isInherited, isDefault bool
 }
 
 type rawFeatureInfo struct {
@@ -131,6 +131,7 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 			// Otherwise, we need to look for the edition default.
 			raw.value = field.FeatureInfo().Default(fs.Context().File().Syntax())
 			raw.isInherited = true
+			raw.isDefault = true
 		}
 	}
 
@@ -158,6 +159,16 @@ func (f Feature) IsCustom() bool {
 // IsInherited returns whether this feature value was inherited from its parent.
 func (f Feature) IsInherited() bool {
 	return !f.IsZero() && f.raw.isInherited
+}
+
+// IsExplicit returns whether this feature was set explicitly.
+func (f Feature) IsExplicit() bool {
+	return !f.IsZero() && !f.raw.isInherited
+}
+
+// IsDefault returns whether this is the default value for the feature.
+func (f Feature) IsDefault() bool {
+	return !f.IsZero() && !f.raw.isDefault
 }
 
 // Type returns the type of this feature. May be zero if there is no specified

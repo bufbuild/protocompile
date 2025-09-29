@@ -21,7 +21,6 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
-	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -478,7 +477,7 @@ func (r optionRef) resolve() {
 		if !raw.Nil() {
 			value := wrapValue(r.Context, *raw)
 			switch {
-			case field.Presence() == presence.Repeated:
+			case field.IsRepeated():
 				break // Handled below.
 
 			case value.Field() != field:
@@ -532,7 +531,7 @@ func (r optionRef) resolve() {
 
 		// This diagnoses that people do not write option a.b.c where b is
 		// a repeated field.
-		if field.Presence() == presence.Repeated {
+		if field.IsRepeated() {
 			r.Error(errOptionMustBeMessage{
 				selector: pc.Next(),
 				got:      "repeated",

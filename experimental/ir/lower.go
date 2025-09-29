@@ -110,4 +110,5 @@ func lower(c *Context, r *report.Report, importer Importer) {
 
 	// Diagnose unused imports now that we're done resolving everything.
 	diagnoseUnusedImports(c.File(), r)
+	validateConstraints(c.File(), r)
 }

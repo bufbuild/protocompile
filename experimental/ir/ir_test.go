@@ -33,7 +33,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
-	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -403,7 +402,7 @@ func (ow *optionWalker) value(v ir.Value) *compilerpb.Value {
 		return ow.message(v.AsMessage())
 	}
 
-	if v.AsMessage().TypeURL() == "" && v.Field().Presence() == presence.Repeated {
+	if v.AsMessage().TypeURL() == "" && v.Field().IsRepeated() {
 		r := new(compilerpb.Value_Repeated)
 		for elem := range seq.Values(v.Elements()) {
 			r.Values = append(r.Values, element(elem))
