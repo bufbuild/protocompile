@@ -3,6 +3,7 @@ error: unterminated string literal
    |
  1 | """
    |   ^ expected to be terminated by `"`
+   |
    = note: this string consists of a single orphaned quote
 
 encountered 1 error

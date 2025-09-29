@@ -3,16 +3,16 @@ error: unexpected `weak` modifier in import
    |
 19 | import public weak "foo.proto";
    | ------------- ^^^^
-   | |
-   | already modified here
+   |  |
+   |  already modified here
 
 error: unexpected `option` modifier in import
   --> testdata/parser/import/modifiers.proto:20:15
    |
 20 | import public option "foo.proto";
    | ------------- ^^^^^^
-   | |
-   | already modified here
+   |  |
+   |  already modified here
 
 warning: use of `import weak`
   --> testdata/parser/import/modifiers.proto:21:1
@@ -27,8 +27,8 @@ error: unexpected `option` modifier in import
    |
 21 | import weak option "foo.proto";
    | ----------- ^^^^^^
-   | |
-   | already modified here
+   |  |
+   |  already modified here
 
 error: `import option` requires Edition 2024 or later
   --> testdata/parser/import/modifiers.proto:22:1
@@ -41,16 +41,16 @@ error: unexpected `weak` modifier in import
    |
 22 | import option weak public "foo.proto";
    | ------------- ^^^^
-   | |
-   | already modified here
+   |  |
+   |  already modified here
 
 error: unexpected `public` modifier in import
   --> testdata/parser/import/modifiers.proto:22:20
    |
 22 | import option weak public "foo.proto";
    | -------------      ^^^^^^
-   | |
-   | already modified here
+   |  |
+   |  already modified here
 
 warning: use of `import weak`
   --> testdata/parser/import/modifiers.proto:23:1
@@ -65,8 +65,8 @@ error: unexpected `weak` modifier in import
    |
 23 | import weak weak "foo.proto";
    | ----------- ^^^^
-   | |
-   | already modified here
+   |  |
+   |  already modified here
 
 error: unexpected `export` modifier in import
   --> testdata/parser/import/modifiers.proto:24:8

@@ -3,10 +3,12 @@ error: import path cannot use `\` as a path separator
    |
  4 | import "nested\\path.proto";
    |        ^^^^^^^^^^^^^^^^^^^^ this path begins with a `n`
+   |
   help: use `/` as the separator instead
    |
  4 | - import "nested\\path.proto";
  4 | + import "nested/path.proto";
+   |
    |
    = note: this restriction also applies when compiling on a non-Windows system
 
@@ -15,11 +17,11 @@ error: import path must not contain `.`, `..`, or repeated separators
    |
  4 | import "nested\\path.proto";
    |        ^^^^^^^^^^^^^^^^^^^^ imported here
+   |
   help: canonicalize this path
    |
  4 | - import "nested\\path.proto";
  4 | + import "nested/path.proto";
-   |
 
 warning: unused import "main.proto"
   --> main.proto:4:8
@@ -73,10 +75,12 @@ error: import path cannot use `\` as a path separator
    |
  6 | import "C:\\MyFiles\\foo.proto";
    |        ^^^^^^^^^^^^^^^^^^^^^^^^ this path begins with a `C`
+   |
   help: use `/` as the separator instead
    |
  6 | - import "C:\\MyFiles\\foo.proto";
  6 | + import "C:/MyFiles/foo.proto";
+   |
    |
    = note: this restriction also applies when compiling on a non-Windows system
 
@@ -85,10 +89,10 @@ error: import path must not contain `.`, `..`, or repeated separators
    |
  6 | import "C:\\MyFiles\\foo.proto";
    |        ^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+   |
   help: canonicalize this path
    |
  6 | - import "C:\\MyFiles\\foo.proto";
  6 | + import "C:/MyFiles/foo.proto";
-   |
 
 encountered 5 errors and 4 warnings

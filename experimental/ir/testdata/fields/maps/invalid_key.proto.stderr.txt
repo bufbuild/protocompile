@@ -3,6 +3,7 @@ error: expected map key type, found scalar type `float`
    |
 20 |     map<float, int32> m1 = 1;
    |         ^^^^^ expected map key type
+   |
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found scalar type `double`
@@ -10,6 +11,7 @@ error: expected map key type, found scalar type `double`
    |
 21 |     map<double, int32> m2 = 2;
    |         ^^^^^^ expected map key type
+   |
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found scalar type `bytes`
@@ -17,6 +19,7 @@ error: expected map key type, found scalar type `bytes`
    |
 22 |     map<bytes, int32> m3 = 3;
    |         ^^^^^ expected map key type
+   |
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found message type `test.Foo`
@@ -28,6 +31,7 @@ error: expected map key type, found message type `test.Foo`
 22 |     map<bytes, int32> m3 = 3;
 23 |     map<Foo, int32> m4 = 4;
    |         ^^^ expected map key type
+   |
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found enum type `test.Enum`
@@ -38,6 +42,7 @@ error: expected map key type, found enum type `test.Enum`
 ...
 27 | enum Enum {
    |      ---- defined here
+   |
    = help: valid map key types are integer types, `string`, and `bool`
    = help: counterintuitively, user-defined enum types cannot be used as keys
 

@@ -8,7 +8,6 @@ error: editions must use the `edition` keyword%!(EXTRA taxa.Noun=`syntax`
    |
 15 | - syntax = 2023;
 15 | + edition = 2023;
-   |
 
 error: the value of a `syntax` declaration must be a string literal
   --> testdata/syntax/2023_syntax.proto:15:10

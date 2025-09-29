@@ -36,7 +36,6 @@ warning: singleton range can be simplified
    |
 26 | -     reserved 2, 3 to 3, 5 to 10;
 26 | +     reserved 2, 3, 5 to 10;
-   |
 
 error: overlapping field number ranges
   --> testdata/tags/reserved.proto:27:14
@@ -45,6 +44,7 @@ error: overlapping field number ranges
    |                         ------- overlaps with this one
 27 |     reserved 7, 8 to max;   // Overlapping reserved regions.
    |              ^ this range
+   |
    = help: they overlap at `7`
 
 error: overlapping field number ranges
@@ -54,6 +54,7 @@ error: overlapping field number ranges
    |                         ------- overlaps with this one
 27 |     reserved 7, 8 to max;   // Overlapping reserved regions.
    |                 ^^^^^^^^ this range
+   |
    = help: they overlap in the range `8 to 10`
 
 error: `max` outside of range end
@@ -101,7 +102,6 @@ warning: singleton range can be simplified
    |
 38 | -     reserved 2, 3 to 3, 5 to 10;
 38 | +     reserved 2, 3, 5 to 10;
-   |
 
 error: overlapping enum value ranges
   --> testdata/tags/reserved.proto:39:14
@@ -110,6 +110,7 @@ error: overlapping enum value ranges
    |                         ------- overlaps with this one
 39 |     reserved 7, 8 to max;
    |              ^ this range
+   |
    = help: they overlap at `7`
 
 error: overlapping enum value ranges
@@ -119,6 +120,7 @@ error: overlapping enum value ranges
    |                         ------- overlaps with this one
 39 |     reserved 7, 8 to max;
    |                 ^^^^^^^^ this range
+   |
    = help: they overlap in the range `8 to 10`
 
 error: `max` outside of range end

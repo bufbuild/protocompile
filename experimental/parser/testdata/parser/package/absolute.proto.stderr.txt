@@ -3,6 +3,7 @@ error: unexpected absolute path in `package` declaration
    |
 17 | package .test.test2;
    |         ^^^^^^^^^^^ expected a path without a leading `.`
+   |
   help: remove the leading `.`
    |
 17 | - package .test.test2;

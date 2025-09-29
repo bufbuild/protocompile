@@ -3,6 +3,7 @@ error: unexpected `.` in identifier
    |
 19 | message foo.Bar {
    |            ^ unexpected `.` in identifier
+   |
    = note: the name of a message definition must be a single identifier
 
 error: unexpected `.` in identifier
@@ -10,6 +11,7 @@ error: unexpected `.` in identifier
    |
 20 |     oneof foo.Bar {}
    |              ^ unexpected `.` in identifier
+   |
    = note: the name of a oneof definition must be a single identifier
 
 error: unexpected `.` in identifier
@@ -17,6 +19,7 @@ error: unexpected `.` in identifier
    |
 21 |     oneof foo.(bar.baz).Bar {}
    |              ^ unexpected `.` in identifier
+   |
    = note: the name of a oneof definition must be a single identifier
 
 error: unexpected `.` in identifier
@@ -24,6 +27,7 @@ error: unexpected `.` in identifier
    |
 23 | message foo.(bar.baz).Bar {}
    |            ^ unexpected `.` in identifier
+   |
    = note: the name of a message definition must be a single identifier
 
 error: unexpected `.` in identifier
@@ -31,6 +35,7 @@ error: unexpected `.` in identifier
    |
 25 | enum foo.Bar {}
    |         ^ unexpected `.` in identifier
+   |
    = note: the name of a enum definition must be a single identifier
 
 error: unexpected `.` in identifier
@@ -38,6 +43,7 @@ error: unexpected `.` in identifier
    |
 26 | enum foo.(bar.baz).Bar {}
    |         ^ unexpected `.` in identifier
+   |
    = note: the name of a enum definition must be a single identifier
 
 error: unexpected nested extension path in message extension block
@@ -51,6 +57,7 @@ error: unexpected `.` in identifier
    |
 31 | service foo.Bar {}
    |            ^ unexpected `.` in identifier
+   |
    = note: the name of a service definition must be a single identifier
 
 error: unexpected `.` in identifier
@@ -58,6 +65,7 @@ error: unexpected `.` in identifier
    |
 32 | service foo.(bar.baz).Bar {}
    |            ^ unexpected `.` in identifier
+   |
    = note: the name of a service definition must be a single identifier
 
 encountered 9 errors
