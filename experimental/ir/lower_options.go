@@ -600,6 +600,7 @@ func (r optionRef) resolve() {
 
 		value := newMessage(r.Context, field.toRef(r.Context)).AsValue()
 		value.raw.optionPaths = append(value.raw.optionPaths, path)
+		value.raw.exprs = append(value.raw.exprs, ast.ExprPath{Path: path}.AsAny())
 
 		*raw = r.arenas.values.Compress(value.raw)
 		current = value
