@@ -1,0 +1,33 @@
+tables:
+  "testdata/options/validate/lazy_group.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/lazy_group.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/lazy_group.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M.G1"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/lazy_group.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.M.G2"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/lazy_group.proto"
+      index: 3
+      visible: true
+    - fqn: "buf.test.M.g1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy_group.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "lazy": { bool: true } }
+    - fqn: "buf.test.M.g2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/lazy_group.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "lazy": { bool: false } }

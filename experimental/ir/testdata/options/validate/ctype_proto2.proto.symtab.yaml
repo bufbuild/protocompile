@@ -1,0 +1,41 @@
+tables:
+  "testdata/options/validate/ctype_proto2.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/ctype_proto2.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/ctype_proto2.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M.foo"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/ctype_proto2.proto"
+      index: 1
+      visible: true
+      options.message.fields: { "ctype": { i32: 0 } }
+    - fqn: "buf.test.M.bar"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/ctype_proto2.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "ctype": { i32: 1 } }
+    - fqn: "buf.test.M.baz"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/ctype_proto2.proto"
+      index: 3
+      visible: true
+      options.message.fields: { "ctype": { i32: 2 } }
+    - fqn: "buf.test.M.i"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/ctype_proto2.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "ctype": { i32: 1 } }
+    - fqn: "buf.test.x"
+      kind: KIND_EXTENSION
+      file: "testdata/options/validate/ctype_proto2.proto"
+      index: 5
+      visible: true
+      options.message.fields: { "ctype": { i32: 1 } }

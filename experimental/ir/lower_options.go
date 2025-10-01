@@ -330,7 +330,7 @@ func validateOptionTargetsInValue(m MessageValue, decl report.Span, target Optio
 			// the user.
 			constraints := field.Options().Field(m.Context().builtins().OptionTargets)
 
-			key := value.MessageKeys().At(0)
+			key := value.KeyAST()
 			span := key.Span()
 			if path := key.AsPath(); !path.IsZero() {
 				// Pull out the last component.
@@ -342,7 +342,7 @@ func validateOptionTargetsInValue(m MessageValue, decl report.Span, target Optio
 			d := r.Errorf("unsupported option target for `%s`", field.Name()).Apply(
 				report.Snippetf(span, "option set here"),
 				report.Snippetf(decl, "applied to this"),
-				report.Snippetf(constraints.AST(), "targets constrained here"),
+				report.Snippetf(constraints.ValueAST(), "targets constrained here"),
 			)
 			if targets == 1 {
 				d.Apply(report.Helpf(
@@ -390,7 +390,8 @@ func (r optionRef) resolve() {
 		if kw := buf[0].AsIdent().Keyword(); kw.IsPseudoOption() {
 			if len(prefix) > 1 {
 				r.Error(errOptionMustBeMessage{
-					selector: buf[1],
+					selector: buf[1].Name(),
+					prev:     buf[0].Name(),
 					got:      taxa.PseudoOption,
 					gotName:  kw,
 				}).Apply(report.Notef(
@@ -574,31 +575,34 @@ func (r optionRef) resolve() {
 		message = field.Element()
 
 		// This diagnoses that people do not write option a.b.c where b is
-		// not a message field.
-		if !message.IsZero() && !message.IsMessage() {
+		// a repeated field.
+		if field.IsRepeated() {
 			r.Error(errOptionMustBeMessage{
-				selector: pc.Next(),
-				got:      message.noun(),
+				selector: pc.Next().Name(),
+				prev:     pc.Name(),
+				got:      "repeated",
 				gotName:  message.FullName(),
-				spec:     field.AST().Type(),
+				spec:     field.TypeAST(),
 			})
 			return
 		}
 
 		// This diagnoses that people do not write option a.b.c where b is
-		// a repeated field.
-		if field.IsRepeated() {
+		// not a message field.
+		if !message.IsZero() && !message.IsMessage() {
 			r.Error(errOptionMustBeMessage{
-				selector: pc.Next(),
-				got:      "repeated",
+				selector: pc.Next().Name(),
+				prev:     pc.Name(),
+				got:      message.noun(),
 				gotName:  message.FullName(),
-				spec:     field.AST().Type(),
+				spec:     field.TypeAST().RemovePrefixes(),
 			})
 			return
 		}
 
 		value := newMessage(r.Context, field.toRef(r.Context)).AsValue()
 		value.raw.optionPaths = append(value.raw.optionPaths, path)
+		value.raw.exprs = append(value.raw.exprs, ast.ExprPath{Path: path}.AsAny())
 
 		*raw = r.arenas.values.Compress(value.raw)
 		current = value
@@ -670,8 +674,8 @@ func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
 }
 
 type errOptionMustBeMessage struct {
-	selector, spec report.Spanner
-	got, gotName   any
+	selector, prev, spec report.Spanner
+	got, gotName         any
 }
 
 func (e errOptionMustBeMessage) Diagnose(d *report.Diagnostic) {
@@ -683,6 +687,7 @@ func (e errOptionMustBeMessage) Diagnose(d *report.Diagnostic) {
 	d.Apply(
 		report.Message("expected singular message, found %s", got),
 		report.Snippetf(e.selector, "%s requires singular message", taxa.FieldSelector),
+		report.Snippetf(e.prev, "found %s", got),
 	)
 
 	if e.spec != nil {

@@ -83,8 +83,9 @@ type evalArgs struct {
 	field      Member
 	optionPath ast.Path
 
-	rawField      ref[rawMember]
-	isConcreteAny bool
+	rawField       ref[rawMember]
+	isConcreteAny  bool
+	isArrayElement bool
 
 	// A span for whatever caused the above field to be selected.
 	annotation report.Spanner
@@ -171,6 +172,7 @@ func (e *evaluator) eval(args evalArgs) Value {
 		for elem := range seq.Values(expr.Elements()) {
 			copied := args // Copy.
 			copied.expr = elem
+			copied.isArrayElement = true
 
 			v := e.eval(copied)
 			if args.target.IsZero() {
@@ -208,21 +210,23 @@ func (e *evaluator) eval(args evalArgs) Value {
 			}
 		}
 
-		raw.exprs = append(raw.exprs, args.expr)
-		raw.optionPaths = append(raw.optionPaths, args.optionPath)
+		if !args.isArrayElement {
+			raw.exprs = append(raw.exprs, args.expr)
+			raw.optionPaths = append(raw.optionPaths, args.optionPath)
 
-		if raw.elemIndices != nil || isArray {
-			var n uint32
-			if raw.elemIndices != nil {
-				n = raw.elemIndices[len(raw.elemIndices)-1]
-			}
+			if raw.elemIndices != nil || isArray {
+				var n uint32
+				if raw.elemIndices != nil {
+					n = raw.elemIndices[len(raw.elemIndices)-1]
+				}
 
-			if isArray {
-				n += uint32(args.expr.AsArray().Elements().Len())
-			} else {
-				n++
+				if isArray {
+					n += uint32(args.expr.AsArray().Elements().Len())
+				} else {
+					n++
+				}
+				raw.elemIndices = append(raw.elemIndices, n)
 			}
-			raw.elemIndices = append(raw.elemIndices, n)
 		}
 	}
 
@@ -670,6 +674,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		copied.field = field
 		copied.rawField = ref[rawMember]{}
 
+		var exprCount int
 		slot := message.insert(field)
 		if slot.Nil() {
 			copied.target = Value{}
@@ -679,23 +684,25 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			switch {
 			case field.IsRepeated():
 				copied.target = value
+				exprCount = len(value.raw.exprs)
 
 			case value.Field() != field:
 				// A different member of a oneof was set.
 				e.Error(errSetMultipleTimes{
 					member: field.Oneof(),
-					first:  value.MessageKeys().At(0),
+					first:  value.KeyAST(),
 					second: expr.Key(),
 				})
 				copied.target = Value{}
 
 			case field.Element().IsMessage():
 				copied.target = value
+				exprCount = len(value.raw.exprs)
 
 			default:
 				e.Error(errSetMultipleTimes{
 					member: field,
-					first:  value.MessageKeys().At(0),
+					first:  value.KeyAST(),
 					second: expr.Key(),
 				})
 				copied.target = Value{}
@@ -703,14 +710,18 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		}
 
 		v := e.eval(copied)
-		if slot.Nil() && !v.IsZero() {
+		if !v.IsZero() {
 			// Overwrite the most recently-added expression with the FieldExpr
 			// so that key lookup works correctly.
-			v.raw.exprs[len(v.raw.exprs)-1] = expr.AsAny()
+			for i := range len(v.raw.exprs) - exprCount {
+				v.raw.exprs[exprCount+i] = expr.AsAny()
+			}
 
-			// Make sure to pick up a freshly allocated value, if this
-			// was the first iteration.
-			*slot = e.arenas.values.Compress(v.raw)
+			if slot.Nil() {
+				// Make sure to pick up a freshly allocated value, if this
+				// was the first iteration.
+				*slot = e.arenas.values.Compress(v.raw)
+			}
 		}
 	}
 

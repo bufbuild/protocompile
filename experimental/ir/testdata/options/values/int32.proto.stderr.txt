@@ -1,3 +1,7 @@
+internal compiler error: unexpected panic; this is a bug
+   = note: runtime error: index out of range [-1]
+   = note: while lowering "testdata/options/values/int32.proto"
+
 error: nested array expressions are not allowed
   --> testdata/options/values/int32.proto:57:42
    |
@@ -749,4 +753,4 @@ error: mismatched types
    = note: expected: scalar type `fixed32`
               found: message expression
 
-encountered 59 errors
+encountered 60 errors

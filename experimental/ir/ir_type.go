@@ -483,6 +483,24 @@ func (t Type) FeatureSet() FeatureSet {
 	}
 }
 
+// Deprecated returns whether this type is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (t Type) Deprecated() Value {
+	if t.IsZero() || t.IsPredeclared() {
+		return Value{}
+	}
+	builtins := t.Context().builtins()
+	field := builtins.MessageDeprecated
+	if t.IsEnum() {
+		field = builtins.EnumDeprecated
+	}
+	d := t.Options().Field(field)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
+}
+
 // noun returns a [taxa.Noun] for diagnostics.
 func (t Type) noun() taxa.Noun {
 	switch {

@@ -1,0 +1,55 @@
+tables:
+  "testdata/options/validate/groups.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/groups.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/groups.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M.X4Entry"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/groups.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "map_entry": { bool: true } }
+    - fqn: "buf.test.M.x1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/groups.proto"
+      index: 1
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+    - fqn: "buf.test.M.x2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/groups.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+    - fqn: "buf.test.M.x3"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/groups.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+    - fqn: "buf.test.M.x4"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/groups.proto"
+      index: 4
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "message_encoding": { i32: 2 } } }
+    - fqn: "buf.test.M.X4Entry.key"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/groups.proto"
+      index: 5
+      visible: true
+    - fqn: "buf.test.M.X4Entry.value"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/groups.proto"
+      index: 6
+      visible: true

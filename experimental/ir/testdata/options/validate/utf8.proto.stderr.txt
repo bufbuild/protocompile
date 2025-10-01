@@ -1,0 +1,43 @@
+error: expected `string`, found scalar type `bytes`
+  --> testdata/options/validate/utf8.proto:25:5
+   |
+25 |     bytes y1 = 11 [features.utf8_validation = VERIFY];
+   |     ^^^^^          ------------------------ `utf8_validation` set here
+   |
+   = help: `utf8_validation` can only be set on `string` typed fields, or map
+           fields whose key or value is `string`
+
+error: expected `string`, found scalar type `bytes`
+  --> testdata/options/validate/utf8.proto:26:14
+   |
+26 |     repeated bytes y2 = 12 [features.utf8_validation = VERIFY];
+   |              ^^^^^          ------------------------
+   |                              |
+   |                              `utf8_validation` set here
+   |
+   = help: `utf8_validation` can only be set on `string` typed fields, or map
+           fields whose key or value is `string`
+
+error: expected `string`, found map entry type `buf.test.M.Y3Entry`
+  --> testdata/options/validate/utf8.proto:27:5
+   |
+27 |     map<int32, int32> y3 = 13 [features.utf8_validation = VERIFY];
+   |     ^^^^^^^^^^^^^^^^^          ------------------------
+   |                                 |
+   |                                 `utf8_validation` set here
+   |
+   = help: `utf8_validation` can only be set on `string` typed fields, or map
+           fields whose key or value is `string`
+
+error: expected `string`, found map entry type `buf.test.M.Y4Entry`
+  --> testdata/options/validate/utf8.proto:28:5
+   |
+28 |     map<int32, bytes> y4 = 14 [features.utf8_validation = VERIFY];
+   |     ^^^^^^^^^^^^^^^^^          ------------------------
+   |                                 |
+   |                                 `utf8_validation` set here
+   |
+   = help: `utf8_validation` can only be set on `string` typed fields, or map
+           fields whose key or value is `string`
+
+encountered 4 errors

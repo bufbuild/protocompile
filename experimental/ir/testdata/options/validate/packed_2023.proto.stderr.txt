@@ -38,33 +38,35 @@ error: expected packable type, found message type `buf.test.M`
    = help: packed encoding encoding can only be set on repeated fields of
            integer, float, `bool`, or enum type
 
-error: `packed` cannot be set in editions mode
+error: `packed` is not supported in Edition 2023
   --> testdata/options/validate/packed_2023.proto:34:28
    |
 15 | edition = "2023";
-   |           ------ edition set here
+   |           ------ edition specified here
 ...
 34 |     repeated float f3 = 9 [packed = true];
-   |                            ^^^^^^ `packed` set here
-   |
+   |                            ^^^^^^
   help: replace with `repeated_field_encoding`
    |
 34 | -     repeated float f3 = 9 [packed = true];
 34 | +     repeated float f3 = 9 [repeated_field_encoding = PACKED];
+   |
+   = help: deprecated since "<unknown>", removed in Edition 2023
 
-error: `packed` cannot be set in editions mode
+error: `packed` is not supported in Edition 2023
   --> testdata/options/validate/packed_2023.proto:35:29
    |
 15 | edition = "2023";
-   |           ------ edition set here
+   |           ------ edition specified here
 ...
 34 |     repeated float f3 = 9 [packed = true];
 35 |     repeated float f4 = 10 [packed = false];
-   |                             ^^^^^^ `packed` set here
-   |
+   |                             ^^^^^^
   help: replace with `repeated_field_encoding`
    |
 35 | -     repeated float f4 = 10 [packed = false];
 35 | +     repeated float f4 = 10 [repeated_field_encoding = EXPANDED];
+   |
+   = help: deprecated since "<unknown>", removed in Edition 2023
 
 encountered 6 errors

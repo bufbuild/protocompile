@@ -1,0 +1,72 @@
+file:
+- name: "deprecated.proto"
+  package: "test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo"
+      options.deprecated: true
+    - name: "bar"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_ENUM
+      type_name: ".test.Bar"
+      options.deprecated: true
+    options.deprecated: true
+  enum_type:
+  - name: "Bar"
+    value:
+    - { name: "Z", number: 0 }
+    - { name: "X", number: 1, options.deprecated: true }
+  service:
+  - name: "S"
+    method:
+    - name: "X"
+      input_type: "test.Foo"
+      output_type: "test.Foo"
+      client_streaming: false
+      server_streaming: false
+  extension:
+  - name: "ext"
+    number: 10000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".test.Foo"
+    extendee: ".google.protobuf.FieldOptions"
+  options.deprecated: true
+  syntax: "proto3"
+- name: "test.proto"
+  package: "test"
+  dependency: ["deprecated.proto"]
+  message_type:
+  - name: "M"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.Foo"
+      options.$unknown: |
+        10000: {
+          1: {
+            1: {
+              1: {}
+              2: {`00010101`}
+            }
+            2: {`0101`}
+          }
+        }
+  service:
+  - name: "S2"
+    method:
+    - name: "X2"
+      input_type: "test.Foo"
+      output_type: "test.Foo"
+      client_streaming: false
+      server_streaming: false
+  syntax: "proto3"

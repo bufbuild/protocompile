@@ -1,0 +1,73 @@
+file:
+- name: "testdata/options/validate/utf8.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "x1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      options.features.utf8_validation: VERIFY
+    - name: "x2"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_STRING
+      options.features.utf8_validation: VERIFY
+    - name: "x3"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M.X3Entry"
+      options.features.utf8_validation: VERIFY
+    - name: "x4"
+      number: 4
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M.X4Entry"
+      options.features.utf8_validation: VERIFY
+    - name: "y1"
+      number: 11
+      label: LABEL_OPTIONAL
+      type: TYPE_BYTES
+      options.features.utf8_validation: VERIFY
+    - name: "y2"
+      number: 12
+      label: LABEL_REPEATED
+      type: TYPE_BYTES
+      options.features.utf8_validation: VERIFY
+    - name: "y3"
+      number: 13
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M.Y3Entry"
+      options.features.utf8_validation: VERIFY
+    - name: "y4"
+      number: 14
+      label: LABEL_REPEATED
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M.Y4Entry"
+      options.features.utf8_validation: VERIFY
+    nested_type:
+    - name: "X3Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "X4Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      options.map_entry: true
+    - name: "Y3Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      options.map_entry: true
+    - name: "Y4Entry"
+      field:
+      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_BYTES }
+      options.map_entry: true
+  syntax: "editions"
+  edition: EDITION_2023

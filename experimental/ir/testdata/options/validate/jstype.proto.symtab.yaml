@@ -1,0 +1,123 @@
+tables:
+  "testdata/options/validate/jstype.proto":
+    symbols:
+    - fqn: "buf.test"
+      kind: KIND_PACKAGE
+      file: "testdata/options/validate/jstype.proto"
+    - fqn: "buf.test.M"
+      kind: KIND_MESSAGE
+      file: "testdata/options/validate/jstype.proto"
+      index: 1
+      visible: true
+    - fqn: "buf.test.M.E"
+      kind: KIND_ENUM
+      file: "testdata/options/validate/jstype.proto"
+      index: 2
+      visible: true
+    - fqn: "buf.test.M.x1"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 2
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x2"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 3
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x3"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 4
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x4"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 5
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x5"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 6
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x6"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 7
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x7"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 8
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x8"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 9
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x9"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 10
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x10"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 11
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x11"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 12
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x12"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 13
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x13"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 14
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x14"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 15
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x15"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 16
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x16"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 17
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.x17"
+      kind: KIND_FIELD
+      file: "testdata/options/validate/jstype.proto"
+      index: 18
+      visible: true
+      options.message.fields: { "jstype": { i32: 2 } }
+    - fqn: "buf.test.M.Z"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/options/validate/jstype.proto"
+      index: 1
+      visible: true

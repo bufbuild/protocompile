@@ -1,3 +1,7 @@
+internal compiler error: unexpected panic; this is a bug
+   = note: runtime error: index out of range [-1]
+   = note: while lowering "testdata/options/values/string.proto"
+
 warning: non-printable character in string literal
   --> testdata/options/values/string.proto:23:40
    |
@@ -223,4 +227,4 @@ error: mismatched types
    = note: expected: scalar type `bytes`
               found: message expression
 
-encountered 17 errors and 2 warnings
+encountered 18 errors and 2 warnings

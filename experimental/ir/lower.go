@@ -112,4 +112,5 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	// Validate all the little constraint details that didn't get caught above.
 	diagnoseUnusedImports(c.File(), r)
 	validateConstraints(c.File(), r)
+	diagnoseDeprecation(c.File(), r)
 }

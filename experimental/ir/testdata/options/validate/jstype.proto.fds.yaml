@@ -1,0 +1,96 @@
+file:
+- name: "testdata/options/validate/jstype.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "x1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.jstype: JS_NUMBER
+    - name: "x2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+      options.jstype: JS_NUMBER
+    - name: "x3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.jstype: JS_NUMBER
+    - name: "x4"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+      options.jstype: JS_NUMBER
+    - name: "x5"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.jstype: JS_NUMBER
+    - name: "x6"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_INT64
+      options.jstype: JS_NUMBER
+    - name: "x7"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_FIXED32
+      options.jstype: JS_NUMBER
+    - name: "x8"
+      number: 8
+      label: LABEL_OPTIONAL
+      type: TYPE_FIXED64
+      options.jstype: JS_NUMBER
+    - name: "x9"
+      number: 9
+      label: LABEL_OPTIONAL
+      type: TYPE_SFIXED32
+      options.jstype: JS_NUMBER
+    - name: "x10"
+      number: 10
+      label: LABEL_OPTIONAL
+      type: TYPE_SFIXED64
+      options.jstype: JS_NUMBER
+    - name: "x11"
+      number: 11
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      options.jstype: JS_NUMBER
+    - name: "x12"
+      number: 12
+      label: LABEL_OPTIONAL
+      type: TYPE_DOUBLE
+      options.jstype: JS_NUMBER
+    - name: "x13"
+      number: 13
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      options.jstype: JS_NUMBER
+    - name: "x14"
+      number: 14
+      label: LABEL_OPTIONAL
+      type: TYPE_BYTES
+      options.jstype: JS_NUMBER
+    - name: "x15"
+      number: 15
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options.jstype: JS_NUMBER
+    - name: "x16"
+      number: 16
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.M.E"
+      options.jstype: JS_NUMBER
+    - name: "x17"
+      number: 17
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      options.jstype: JS_NUMBER
+    enum_type: [{ name: "E", value: [{ name: "Z", number: 0 }] }]
+  syntax: "editions"
+  edition: EDITION_2023

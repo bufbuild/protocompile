@@ -1,0 +1,35 @@
+file:
+- name: "testdata/options/validate/ctype_proto2.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "foo"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      options.ctype: STRING
+    - name: "bar"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      options.ctype: CORD
+    - name: "baz"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      options.ctype: STRING_PIECE
+    - name: "i"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      options.ctype: CORD
+    extension_range: [{ start: 5, end: 6 }]
+  extension:
+  - name: "x"
+    number: 5
+    label: LABEL_OPTIONAL
+    type: TYPE_STRING
+    extendee: ".buf.test.M"
+    options.ctype: CORD
+  syntax: "proto2"

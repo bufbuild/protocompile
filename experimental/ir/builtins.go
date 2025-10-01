@@ -50,6 +50,14 @@ type builtins struct {
 	Lazy, UnverifiedLazy Member
 	MessageSet           Member
 
+	FileDeprecated      Member
+	MessageDeprecated   Member
+	FieldDeprecated     Member
+	EnumDeprecated      Member
+	EnumValueDeprecated Member
+	ServiceDeprecated   Member
+	MethodDeprecated    Member
+
 	EditionDefaults, EditionDefaultsKey, EditionDefaultsValue Member
 
 	EditionSupport           Member
@@ -114,6 +122,14 @@ type builtinIDs struct {
 	EnumValueUninterpreted intern.ID `intern:"google.protobuf.EnumValueOptions.uninterpreted_option"`
 	ServiceUninterpreted   intern.ID `intern:"google.protobuf.ServiceOptions.uninterpreted_option"`
 	MethodUninterpreted    intern.ID `intern:"google.protobuf.MethodOptions.uninterpreted_option"`
+
+	FileDeprecated      intern.ID `intern:"google.protobuf.FileOptions.deprecated"`
+	MessageDeprecated   intern.ID `intern:"google.protobuf.MessageOptions.deprecated"`
+	FieldDeprecated     intern.ID `intern:"google.protobuf.FieldOptions.deprecated"`
+	EnumDeprecated      intern.ID `intern:"google.protobuf.EnumOptions.deprecated"`
+	EnumValueDeprecated intern.ID `intern:"google.protobuf.EnumValueOptions.deprecated"`
+	ServiceDeprecated   intern.ID `intern:"google.protobuf.ServiceOptions.deprecated"`
+	MethodDeprecated    intern.ID `intern:"google.protobuf.MethodOptions.deprecated"`
 
 	EditionDefaults      intern.ID `intern:"google.protobuf.FieldOptions.edition_defaults"`
 	EditionDefaultsKey   intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.edition"`

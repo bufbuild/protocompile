@@ -1,3 +1,7 @@
+internal compiler error: unexpected panic; this is a bug
+   = note: runtime error: index out of range [-1]
+   = note: while lowering "testdata/options/values/singular.proto"
+
 error: message field `buf.test.Foo.x1` set multiple times
   --> testdata/options/values/singular.proto:23:5
    |
@@ -64,4 +68,4 @@ error: mismatched types
    = note: expected: scalar type `int32`
               found: scalar type `string`
 
-encountered 5 errors
+encountered 6 errors

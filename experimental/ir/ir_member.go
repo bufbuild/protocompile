@@ -329,6 +329,24 @@ func (m Member) FeatureInfo() FeatureInfo {
 	}
 }
 
+// Deprecated returns whether this member is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (m Member) Deprecated() Value {
+	if m.IsZero() {
+		return Value{}
+	}
+	builtins := m.Context().builtins()
+	field := builtins.FieldDeprecated
+	if m.IsEnumValue() {
+		field = builtins.EnumValueDeprecated
+	}
+	d := m.Options().Field(field)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
+}
+
 // CanTarget returns whether this message field can be set as an option for the
 // given option target type.
 //

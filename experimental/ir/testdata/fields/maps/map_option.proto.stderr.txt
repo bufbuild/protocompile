@@ -1,3 +1,7 @@
+internal compiler error: unexpected panic; this is a bug
+   = note: runtime error: index out of range [-1]
+   = note: while lowering "testdata/fields/maps/map_option.proto"
+
 error: cannot resolve message field name for `test.Foo.MapEntry`
   --> testdata/fields/maps/map_option.proto:34:17
    |
@@ -12,4 +16,4 @@ error: cannot resolve message field name for `test.Foo.MapEntry`
            `key` and `value`
    = help: for example, `map_field { key: ..., value: ... }`
 
-encountered 1 error
+encountered 2 errors

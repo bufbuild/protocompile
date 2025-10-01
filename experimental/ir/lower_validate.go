@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"fmt"
 	"path"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -59,7 +60,7 @@ func validateConstraints(f File, r *report.Report) {
 		}
 
 		r.Errorf("cannot set `%s` in %s", javaUTF8.Field().Name(), taxa.EditionMode).Apply(
-			report.Snippet(javaUTF8.MessageKeys().At(0)),
+			report.Snippet(javaUTF8.KeyAST()),
 			javaUTF8.suggestEdit("features.(pb.java).utf8_validation", want, "replace with `features.(pb.java).utf8_validation`"),
 		)
 	}
@@ -70,8 +71,8 @@ func validateConstraints(f File, r *report.Report) {
 			if v, _ := impOptimize.AsInt(); v == 3 { // google.protobuf.FileOptions.LITE_RUNTIME
 				r.Errorf("`LITE_RUNTIME` file imported in non-`LITE_RUNTIME` file").Apply(
 					report.Snippet(imp.Decl.ImportPath()),
-					report.Snippetf(optimize.AST(), "optimization level set here"),
-					report.Snippetf(impOptimize.AST(), "`%s` set as `LITE_RUNTIME` here", path.Base(imp.Path())),
+					report.Snippetf(optimize.ValueAST(), "optimization level set here"),
+					report.Snippetf(impOptimize.ValueAST(), "`%s` set as `LITE_RUNTIME` here", path.Base(imp.Path())),
 					report.Helpf("files using `LITE_RUNTIME` compile to types that use `MessageLite` or "+
 						"equivalent in some runtimes, which ordinary message types cannot depend on"),
 				)
@@ -81,7 +82,7 @@ func validateConstraints(f File, r *report.Report) {
 	defaultPresence := f.FeatureSet().Lookup(builtins.FeaturePresence).Value()
 	if v, _ := defaultPresence.AsInt(); v == 3 { // google.protobuf.FeatureSet.LEGACY_REQUIRED
 		r.Errorf("cannot set `LEGACY_REQUIRED` at the file level").Apply(
-			report.Snippet(defaultPresence.AST()),
+			report.Snippet(defaultPresence.ValueAST()),
 		)
 	}
 
@@ -98,7 +99,7 @@ func validateConstraints(f File, r *report.Report) {
 			if first.Number() != 0 && !ty.IsClosedEnum() {
 				// Figure out why this enum is open.
 				feature := ty.FeatureSet().Lookup(builtins.FeatureEnum)
-				why := feature.Value().AST().Span()
+				why := feature.Value().ValueAST().Span()
 				if feature.IsDefault() {
 					why = f.AST().Syntax().Value().Span()
 				}
@@ -148,14 +149,14 @@ func validateConstraints(f File, r *report.Report) {
 
 					r.Errorf("repeated message set extension").Apply(
 						report.Snippet(repeated.PrefixToken()),
-						report.Snippetf(extendee.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+						report.Snippetf(extendee.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 						report.Helpf("message set extensions must be singular message fields"),
 					)
 				}
 				if !m.Element().IsMessage() {
 					r.Errorf("non-message message set extension").Apply(
 						report.Snippet(m.AST().Type().RemovePrefixes()),
-						report.Snippetf(extendee.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+						report.Snippetf(extendee.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 						report.Helpf("message set extensions must be singular message fields"),
 					)
 				}
@@ -171,27 +172,21 @@ func validateMessageSet(ty Type, r *report.Report) {
 
 	f := ty.Context().File()
 	builtins := ty.Context().builtins()
+
 	if f.Syntax() == syntax.Proto3 {
-		r.Errorf("%s are not supported", taxa.MessageSet).Apply(
-			report.Snippet(ty.AST()),
-			report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
-			report.Snippetf(f.AST().Syntax().Value(), "\"proto3\" specified here"),
-			report.Helpf("%ss cannot be defined in \"proto3\"", taxa.MessageSet),
-			report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
-		)
 		return
 	}
 
 	r.Warnf("%ss are deprecated", taxa.MessageSet).Apply(
 		report.Snippet(ty.AST()),
-		report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+		report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 		report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
 	)
 
 	for member := range seq.Values(ty.Members()) {
 		r.Errorf("field declared in %s `%s`", taxa.MessageSet, ty.FullName()).Apply(
 			report.Snippet(member.AST()),
-			report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+			report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 			report.Helpf("message set types may only declare extension ranges"),
 		)
 	}
@@ -199,7 +194,7 @@ func validateMessageSet(ty Type, r *report.Report) {
 	if ty.ExtensionRanges().Len() == 0 {
 		r.Errorf("%s `%s` declares no %ss", taxa.MessageSet, ty.FullName(), taxa.Extensions).Apply(
 			report.Snippet(ty.AST()),
-			report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+			report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 		)
 	}
 }
@@ -225,7 +220,7 @@ func validatePresence(m Member, r *report.Report) {
 		r.Errorf("expected singular field, found %s field", what).Apply(
 			report.Snippet(m.TypeAST()),
 			report.Snippetf(
-				feature.Value().MessageKeys().At(0),
+				feature.Value().KeyAST(),
 				"`%s` set here", feature.Field().Name(),
 			),
 			report.Helpf("`%s` can only be set on singular fields", feature.Field().Name()),
@@ -236,7 +231,7 @@ func validatePresence(m Member, r *report.Report) {
 			report.Snippet(m.AST()),
 			report.Snippetf(m.Oneof().AST(), "defined in this oneof"),
 			report.Snippetf(
-				feature.Value().MessageKeys().At(0),
+				feature.Value().KeyAST(),
 				"`%s` set here", feature.Field().Name(),
 			),
 			report.Helpf("`%s` cannot be set on oneof members", feature.Field().Name()),
@@ -247,7 +242,7 @@ func validatePresence(m Member, r *report.Report) {
 		r.Errorf("expected singular field, found extension").Apply(
 			report.Snippet(m.AST()),
 			report.Snippetf(
-				feature.Value().MessageKeys().At(0),
+				feature.Value().KeyAST(),
 				"`%s` set here", feature.Field().Name(),
 			),
 			report.Helpf("`%s` cannot be set on extensions", feature.Field().Name()),
@@ -266,7 +261,7 @@ func validatePresence(m Member, r *report.Report) {
 			}).Apply(
 				report.Snippet(m.TypeAST()),
 				report.Snippetf(
-					feature.Value().AST(),
+					feature.Value().ValueAST(),
 					"implicit presence set here",
 				),
 				report.Helpf("all message-typed fields explicit presence"),
@@ -274,7 +269,7 @@ func validatePresence(m Member, r *report.Report) {
 		}
 	case 3: // LEGACY_REQUIRED
 		r.Warnf("required fields are deprecated").Apply(
-			report.Snippet(feature.Value().AST()),
+			report.Snippet(feature.Value().ValueAST()),
 			report.Helpf(
 				"do not attempt to change this to `EXPLICIT` if the field is "+
 					"already in-use; doing so is a wire protocol break"),
@@ -317,21 +312,25 @@ func validatePacked(m Member, r *report.Report) {
 			if !packed {
 				want = "EXPANDED"
 			}
+			r.Error(errEditionTooNew{
+				file:    m.Context().File(),
+				removed: syntax.Edition2023,
 
-			r.Errorf("`packed` cannot be set in %s", taxa.EditionMode).Apply(
-				report.Snippetf(option.MessageKeys().At(0), "`packed` set here"),
-				report.Snippetf(m.Context().File().AST().Syntax().Value(), "edition set here"),
-				option.suggestEdit(builtins.FeaturePacked.Name(), want, "replace with `%s`", builtins.FeaturePacked.Name()),
-			)
+				what:  option.Field().Name(),
+				where: option.KeyAST(),
+			}).Apply(option.suggestEdit(
+				builtins.FeaturePacked.Name(), want,
+				"replace with `%s`", builtins.FeaturePacked.Name(),
+			))
 		} else if v, _ := option.AsBool(); v {
 			// Don't validate [packed = false], protoc accepts that.
-			validate(option, option.AST().Span())
+			validate(option, option.ValueAST().Span())
 		}
 	}
 
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
 	if feature.IsExplicit() {
-		validate(feature.Value(), feature.Value().MessageKeys().At(0).Span())
+		validate(feature.Value(), feature.Value().KeyAST().Span())
 	}
 }
 
@@ -351,7 +350,7 @@ func validateLazy(m Member, r *report.Report) {
 				got:  m.Element(),
 				decl: m.TypeAST(),
 			}).Apply(
-				report.Snippetf(lazy.MessageKeys().At(0), "`%s` set here", lazy.Field().Name()),
+				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
 				report.Helpf("`%s` can only be set on message-typed fields", lazy.Field().Name()),
 			)
 		}
@@ -360,7 +359,7 @@ func validateLazy(m Member, r *report.Report) {
 			r.SoftErrorf(set, "expected length-prefixed field").Apply(
 				report.Snippet(m.AST()),
 				report.Snippetf(m.AST().KeywordToken(), "groups are not length-prefixed"),
-				report.Snippetf(lazy.MessageKeys().At(0), "`%s` set here", lazy.Field().Name()),
+				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
 				report.Helpf("`%s` only makes sense for length-prefixed messages", lazy.Field().Name()),
 			)
 		}
@@ -370,8 +369,8 @@ func validateLazy(m Member, r *report.Report) {
 		if groupValue == 2 { // FeatureSet.DELIMITED
 			r.SoftErrorf(set, "expected length-prefixed field").Apply(
 				report.Snippet(m.AST()),
-				report.Snippetf(group.Value().AST(), "set to use delimited encoding here"),
-				report.Snippetf(lazy.MessageKeys().At(0), "`%s` set here", lazy.Field().Name()),
+				report.Snippetf(group.Value().ValueAST(), "set to use delimited encoding here"),
+				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
 				report.Helpf("`%s` only makes sense for length-prefixed messages", lazy.Field().Name()),
 			)
 		}
@@ -396,7 +395,7 @@ func validateJSType(m Member, r *report.Report) {
 			got:  m.Element(),
 			decl: m.TypeAST(),
 		}).Apply(
-			report.Snippetf(option.MessageKeys().At(0), "`%s` set here", option.Field().Name()),
+			report.Snippetf(option.KeyAST(), "`%s` set here", option.Field().Name()),
 			report.Helpf("`%s` is specifically for controlling the formatting of large integer types, "+
 				"which lose precision when JavaScript converts them into 64-bit IEEE 754 floats", option.Field().Name()),
 		)
@@ -424,7 +423,7 @@ func validateUTF8(m Member, r *report.Report) {
 		decl: m.TypeAST(),
 	}).Apply(
 		report.Snippetf(
-			feature.Value().MessageKeys().At(0),
+			feature.Value().KeyAST(),
 			"`%s` set here", feature.Field().Name(),
 		),
 		report.Helpf(
@@ -452,7 +451,7 @@ func validateMessageEncoding(m Member, r *report.Report) {
 		decl: m.TypeAST(),
 	}).Apply(
 		report.Snippetf(
-			feature.Value().MessageKeys().At(0),
+			feature.Value().KeyAST(),
 			"`%s` set here", feature.Field().Name(),
 		),
 		report.Helpf(
@@ -482,23 +481,28 @@ func validateCType(m Member, r *report.Report) {
 
 	var want string
 	switch ctypeValue {
-	case 1: // FieldOptions.STRING
+	case 0: // FieldOptions.STRING
 		want = "STRING"
-	case 2: // FieldOptions.CORD
+	case 1: // FieldOptions.CORD
 		want = "CORD"
-	case 3: // FieldOptions.STRING_PIECE
+	case 2: // FieldOptions.STRING_PIECE
 		want = "VIEW"
 	}
 
 	is2023 := f.Syntax() == syntax.Edition2023
 	switch {
 	case f.Syntax() > syntax.Edition2023:
-		r.Errorf("`%s` is not supported after %s",
-			ctype.Field().Name(), prettyEdition(syntax.Edition2023)).Apply(
-			report.Snippet(ctype.MessageKeys().At(0)),
-			report.Snippetf(f.AST().Syntax().Value(), "edition declared here"),
-			ctype.suggestEdit("features.(pb.cpp).string_type", want, "replace with `features.(pb.cpp).string_type`"),
-		)
+		r.Error(errEditionTooNew{
+			file:       f,
+			deprecated: syntax.Edition2023,
+			removed:    syntax.Edition2024,
+
+			what:  ctype.Field().Name(),
+			where: ctype.KeyAST(),
+		}).Apply(ctype.suggestEdit(
+			"features.(pb.cpp).string_type", want,
+			"replace with `features.(pb.cpp).string_type`",
+		))
 
 	case !m.Element().Predeclared().IsString():
 		d := r.SoftError(is2023, errTypeConstraint{
@@ -506,29 +510,220 @@ func validateCType(m Member, r *report.Report) {
 			got:  m.Element(),
 			decl: m.TypeAST(),
 		}).Apply(
-			report.Snippetf(ctype.MessageKeys().At(0), "`%s` set here", ctype.Field().Name()),
+			report.Snippetf(ctype.KeyAST(), "`%s` set here", ctype.Field().Name()),
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this was previously accepted; it becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
 		}
 
 	case m.IsExtension() && ctypeValue == 1: // google.protobuf.FieldOptions.CORD
 		d := r.SoftErrorf(is2023, "cannot use `CORD` on an extension field").Apply(
 			report.Snippet(m.AST()),
-			report.Snippetf(ctype.AST(), "`CORD` set here"),
+			report.Snippetf(ctype.ValueAST(), "`CORD` set here"),
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this was previously accepted; it becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
 		}
 
 	case is2023:
-		r.Warnf("`%s` is not supported after %s",
-			ctype.Field().Name(), prettyEdition(syntax.Edition2023)).Apply(
-			report.Snippet(ctype.MessageKeys().At(0)),
-			report.Snippetf(f.AST().Syntax().Value(), "edition declared here"),
-			ctype.suggestEdit("features.(pb.cpp).string_type", want, "replace with `features.(pb.cpp).string_type`"),
-		)
+		r.Warn(errEditionTooNew{
+			file:       f,
+			deprecated: syntax.Edition2023,
+			removed:    syntax.Edition2024,
+
+			what:  ctype.Field().Name(),
+			where: ctype.KeyAST(),
+		}).Apply(ctype.suggestEdit(
+			"features.(pb.cpp).string_type", want,
+			"replace with `features.(pb.cpp).string_type`",
+		))
 	}
+}
+
+type errEditionTooOld struct {
+	file  File
+	intro syntax.Syntax
+
+	what  any
+	where report.Spanner
+}
+
+func (e errEditionTooOld) Diagnose(d *report.Diagnostic) {
+	kind := "syntax"
+	if e.file.Syntax().IsEdition() {
+		kind = "edition"
+	}
+
+	d.Apply(
+		report.Message("`%s` is not supported in %s", e.what, prettyEdition(e.file.Syntax())),
+		report.Snippet(e.where),
+		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
+	)
+
+	if e.intro != syntax.Unknown {
+		d.Apply(report.Helpf("`%s` requires at least %s", e.what, prettyEdition(e.intro)))
+	}
+}
+
+type errEditionTooNew struct {
+	file                File
+	deprecated, removed syntax.Syntax
+	warning             string
+
+	what  any
+	where report.Spanner
+}
+
+func (e errEditionTooNew) Diagnose(d *report.Diagnostic) {
+	kind := "syntax"
+	if e.file.Syntax().IsEdition() {
+		kind = "edition"
+	}
+
+	err := "not supported"
+	if e.file.Syntax() < e.removed {
+		err = "deprecated"
+	}
+
+	d.Apply(
+		report.Message("`%s` is %s in %s", e.what, err, prettyEdition(e.file.Syntax())),
+		report.Snippet(e.where),
+		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
+	)
+
+	if e.removed <= e.file.Syntax() {
+		if e.deprecated <= e.file.Syntax() {
+			d.Apply(report.Helpf("deprecated since %s, removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
+		} else {
+			d.Apply(report.Helpf("removed in %s", e.what, prettyEdition(e.removed)))
+		}
+	} else if e.deprecated <= e.file.Syntax() {
+		if e.removed > e.file.Syntax() {
+			d.Apply(report.Helpf("deprecated since %s, to be removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
+		} else {
+			d.Apply(report.Helpf("deprecated since %s", prettyEdition(e.deprecated)))
+		}
+	}
+
+	if e.warning != "" {
+		// Canonicalize whitespace. Some built-in deprecation warnings have
+		// double spaces after periods.
+		text := whitespacePattern.ReplaceAllString(e.warning, " ")
+		d.Apply(report.Helpf("deprecated: %s", text))
+	}
+}
+
+func diagnoseDeprecation(f File, r *report.Report) {
+	for imp := range seq.Values(f.Imports()) {
+		if d := imp.Deprecated(); !d.IsZero() {
+			r.Warn(errDeprecated{
+				ref:        imp.Decl.ImportPath(),
+				name:       imp.Path(),
+				deprecated: d,
+			})
+		}
+	}
+
+	diagnoseDeprecationForOptions(f.Options(), r)
+
+	for ty := range seq.Values(f.AllTypes()) {
+		diagnoseDeprecationForOptions(ty.Options(), r)
+		for o := range seq.Values(ty.Oneofs()) {
+			diagnoseDeprecationForOptions(o.Options(), r)
+		}
+	}
+
+	for m := range f.AllMembers() {
+		diagnoseDeprecationForOptions(m.Options(), r)
+
+		ty := m.Element()
+		// We do not emit deprecation warnings for references to a type
+		// defined in the same file, because this is a relatively common case.
+		if m.Context() != ty.Context() {
+			if d := ty.Deprecated(); !d.IsZero() {
+				r.Warn(errDeprecated{
+					ref:        m.TypeAST().RemovePrefixes(),
+					name:       string(ty.FullName()),
+					deprecated: d,
+				})
+			}
+		}
+	}
+
+	for s := range seq.Values(f.Services()) {
+		diagnoseDeprecationForOptions(s.Options(), r)
+
+		for m := range seq.Values(s.Methods()) {
+			diagnoseDeprecationForOptions(m.Options(), r)
+
+			in, _ := m.Input()
+			if m.Context() != in.Context() {
+				if d := in.Deprecated(); !d.IsZero() {
+					r.Warn(errDeprecated{
+						ref:        m.AST().Signature().Inputs().At(0).RemovePrefixes(),
+						name:       string(in.FullName()),
+						deprecated: d,
+					})
+				}
+			}
+
+			out, _ := m.Input()
+			if m.Context() != out.Context() {
+				if d := out.Deprecated(); !d.IsZero() {
+					r.Warn(errDeprecated{
+						ref:        m.AST().Signature().Outputs().At(0).RemovePrefixes(),
+						name:       string(out.FullName()),
+						deprecated: d,
+					})
+				}
+			}
+		}
+	}
+
+}
+
+func diagnoseDeprecationForOptions(value MessageValue, r *report.Report) {
+	for field := range value.Fields() {
+		if d := field.Field().Deprecated(); !d.IsZero() {
+			for key := range seq.Values(field.KeyASTs()) {
+				r.Warn(errDeprecated{
+					ref:        key,
+					name:       string(field.Field().FullName()),
+					deprecated: d,
+				})
+			}
+		}
+
+		fmt.Println(field.getElements(), field.Elements().Len(), field.raw.exprs, field.raw.elemIndices)
+		for elem := range seq.Values(field.Elements()) {
+			fmt.Println(elem.Field().Name(), elem.AST().Span().Text())
+			if enum := elem.AsEnum(); !enum.IsZero() {
+				if d := enum.Deprecated(); !d.IsZero() {
+					r.Warn(errDeprecated{
+						ref:        elem.AST(),
+						name:       string(enum.FullName()),
+						deprecated: d,
+					})
+				}
+			} else if msg := elem.AsMessage(); !msg.IsZero() {
+				diagnoseDeprecationForOptions(msg, r)
+			}
+		}
+	}
+}
+
+type errDeprecated struct {
+	ref        report.Spanner
+	name       string
+	deprecated Value
+}
+
+func (e errDeprecated) Diagnose(d *report.Diagnostic) {
+	d.Apply(
+		report.Message("`%s` is deprecated", e.name),
+		report.Snippet(e.ref),
+		report.Snippetf(e.deprecated.OptionSpan(), "deprecated here"),
+	)
 }

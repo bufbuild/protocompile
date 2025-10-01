@@ -1,3 +1,7 @@
+internal compiler error: unexpected panic; this is a bug
+   = note: runtime error: index out of range [-1]
+   = note: while lowering "testdata/options/values/enum.proto"
+
 error: nested array expressions are not allowed
   --> testdata/options/values/enum.proto:36:41
    |
@@ -221,4 +225,4 @@ error: mismatched types
    = note: expected: enum type `buf.test.Bar`
               found: message expression
 
-encountered 18 errors
+encountered 19 errors
