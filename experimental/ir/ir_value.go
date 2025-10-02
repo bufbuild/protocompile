@@ -130,7 +130,6 @@ func (v Value) OptionSpan() report.Spanner {
 		return field
 	}
 	return report.Join(ast.ExprPath{Path: v.raw.optionPaths[0]}, expr)
-
 }
 
 // OptionSpans returns an indexer over spans for the option that set this value.
@@ -142,7 +141,7 @@ func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
 		slice = v.raw.exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) report.Spanner {
+	return seq.NewFixedSlice(slice, func(_ int, expr ast.ExprAny) report.Spanner {
 		if field := expr.AsField(); !field.IsZero() {
 			return field
 		}
@@ -476,26 +475,6 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 	}
 
 	return buf, n
-}
-
-func (v Value) suggestEdit(path, expr string, format string, args ...any) report.DiagnosticOption {
-	key := v.KeyAST()
-	value := v.ValueASTs().At(0)
-	joined := report.Join(key, value)
-
-	return report.SuggestEdits(
-		joined,
-		fmt.Sprintf(format, args...),
-		report.Edit{
-			Start: 0, End: key.Span().Len(),
-			Replace: path,
-		},
-		report.Edit{
-			Start:   value.Span().Start - joined.Start,
-			End:     value.Span().End - joined.Start,
-			Replace: expr,
-		},
-	)
 }
 
 func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {

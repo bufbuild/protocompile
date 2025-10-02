@@ -31,6 +31,6 @@ func (s Func[T]) At(idx int) T {
 }
 
 // SetAt implements [Setter] by panicking.
-func (s Func[T]) SetAt(idx int, value T) {
+func (s Func[T]) SetAt(_ int, value T) {
 	panic("seq: called Func[...].SetAt")
 }
