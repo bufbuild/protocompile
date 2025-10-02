@@ -375,9 +375,8 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		// introduced == deprecated == removed, and protoc doesn't enforce
 		// any relationship between these.
 		switch {
-		case info.Removed() != syntax.Unknown && info.Removed() <= edition,
-			info.Deprecated() != syntax.Unknown && info.Deprecated() <= edition:
-			r.Error(errEditionTooNew{
+		case info.IsRemoved(edition), info.IsDeprecated(edition):
+			r.SoftError(info.IsRemoved(edition), errEditionTooNew{
 				file:       features.Context().File(),
 				removed:    info.Removed(),
 				deprecated: info.Deprecated(),
@@ -386,7 +385,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 				where:      feature.KeyAST(),
 			})
 
-		case edition < info.Introduced():
+		case info.IsIntroduced(edition):
 			r.Error(errEditionTooOld{
 				file:  features.Context().File(),
 				intro: info.Introduced(),
