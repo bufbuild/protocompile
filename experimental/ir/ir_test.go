@@ -213,7 +213,7 @@ func TestIR(t *testing.T) {
 		}
 
 		if test.Symtab {
-			symtab := symtabProto(irs, test)
+			symtab := symtabProto(irs)
 			assert.False(t, iterx.Empty2(symtab.ProtoReflect().Range), "empty symtab")
 
 			outputs[2] = prototest.ToYAML(symtab, prototest.ToYAMLOptions{})
@@ -221,7 +221,7 @@ func TestIR(t *testing.T) {
 	})
 }
 
-func symtabProto(files []ir.File, t *Test) *compilerpb.SymbolSet {
+func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 	set := new(compilerpb.SymbolSet)
 	set.Tables = make(map[string]*compilerpb.SymbolTable)
 
