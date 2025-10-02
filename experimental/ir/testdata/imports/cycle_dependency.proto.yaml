@@ -13,32 +13,26 @@
 # limitations under the License.
 
 files:
-- path: "a1.proto"
+- path: "foo/v1/foo.proto"
   text: |
     syntax = "proto3";
-    package a;
+    package foo.v1;
 
-    import "a2.proto";
-    import "b.proto";
-    message A1 {
-      a.A2 a1 = 1;
-      b.B b = 2;
-    }
+    import "foo/v1/bar.proto";
+    import "foo/v2/foo.proto";
 
-- path: "a2.proto"
+- path: "foo/v1/bar.proto"
   import: true
   text: |
     syntax = "proto3";
-    package a;
-    message A2 {};
+    package foo.v1;
 
-- path: "b.proto"
+    import "foo/v2/foo.proto";
+
+- path: "foo/v2/foo.proto"
   import: true
   text: |
     syntax = "proto3";
-    package b;
+    package foo.v2;
 
-    import "a2.proto";
-    message B {
-      a.A2 a2 = 1;
-    }
+    import "foo/v1/bar.proto";

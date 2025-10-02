@@ -1,0 +1,45 @@
+warning: unused import "foo/v1/bar.proto"
+  --> foo/v1/bar.proto:4:8
+   |
+ 4 | import "foo/v2/foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "foo/v2/foo.proto";
+   |
+   = help: no symbols from this file are referenced
+
+error: detected cyclic import while importing "foo/v1/bar.proto"
+  --> foo/v1/foo.proto:4:1
+   |
+ 4 | import "foo/v1/bar.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+   | --------------------------
+   |  |
+   |  ...which imports "foo/v1/bar.proto", completing the cycle
+ 5 | import "foo/v2/foo.proto";
+   | -------------------------- ...which imports "foo/v2/foo.proto"...
+
+warning: unused import "foo/v1/foo.proto"
+  --> foo/v1/foo.proto:4:8
+   |
+ 4 | import "foo/v1/bar.proto";
+   |        ^^^^^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "foo/v1/bar.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "foo/v1/foo.proto"
+  --> foo/v1/foo.proto:5:8
+   |
+ 5 | import "foo/v2/foo.proto";
+   |        ^^^^^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "foo/v2/foo.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 1 error and 3 warnings

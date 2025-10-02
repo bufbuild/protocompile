@@ -17,6 +17,7 @@ package incremental
 import (
 	"context"
 	"fmt"
+	"iter"
 	"runtime"
 	"slices"
 	"sync"
@@ -32,13 +33,11 @@ import (
 // See [New], [Run], and [Invalidate].
 type Executor struct {
 	reportOptions report.Options
-	dirty         sync.RWMutex
 
-	// TODO: Evaluate alternatives. sync.Map is pretty bad at having predictable
-	// performance, and we may want to add eviction to keep memoization costs
-	// in a long-running process (like, say, a language server) down.
-	// See https://github.com/dgraph-io/ristretto as a potential alternative.
-	tasks sync.Map // [any, *task]
+	mu      sync.Mutex
+	tasks   map[any]*task
+	deps    map[*task]map[*task]struct{}
+	parents map[*task]map[*task]struct{}
 
 	sema *semaphore.Weighted
 
@@ -78,16 +77,12 @@ func WithReportOptions(options report.Options) ExecutorOption {
 //
 // The returned slice is sorted.
 func (e *Executor) Keys() (keys []string) {
-	e.tasks.Range(func(k, t any) bool {
-		task := t.(*task) //nolint:errcheck // All values in this map are tasks.
-		result := task.result.Load()
-		if result == nil || !closed(result.done) {
-			return true
-		}
-		keys = append(keys, fmt.Sprintf("%#v", k))
-		return true
-	})
-
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	keys = make([]string, 0, len(e.tasks))
+	for key := range e.tasks {
+		keys = append(keys, fmt.Sprintf("%#v", key))
+	}
 	slices.Sort(keys)
 	return
 }
@@ -110,9 +105,6 @@ var runExecutorKey byte
 // Note: this function really wants to be a method of [Executor], but it isn't
 // because it's generic.
 func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result[T], *report.Report, error) {
-	e.dirty.RLock()
-	defer e.dirty.RUnlock()
-
 	// Verify we haven't reëntrantly called Run.
 	if callers, ok := ctx.Value(&runExecutorKey).(*[]*Executor); ok {
 		if slices.Contains(*callers, e) {
@@ -130,7 +122,6 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		ctx:             ctx,
 		cancel:          cancel,
 		exec:            e,
-		result:          &result{done: make(chan struct{})},
 		runID:           generation,
 		onRootGoroutine: true,
 	}
@@ -142,34 +133,32 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	}
 	defer root.release()
 
-	results, expired := Resolve(root, queries...)
+	results, tasks, expired := resolve(root, queries...)
 	if expired != nil {
 		if _, aborted := expired.(*errAbort); aborted {
 			panic(expired)
 		}
 		return nil, nil, expired
 	}
-
 	// Record all diagnostics generates by the queries.
 	report := &report.Report{Options: e.reportOptions}
 	dedup := make(map[*task]struct{})
-	record := func(t *task) {
-		if _, ok := dedup[t]; ok {
-			return
+	for len(tasks) > 0 {
+		dep := tasks[len(tasks)-1]
+		if dep == nil {
+			continue // Can happend due to an abort.
 		}
-
-		dedup[t] = struct{}{}
-		report.Diagnostics = append(report.Diagnostics, t.report.Diagnostics...)
-	}
-	for _, query := range queries {
-		task := e.getTask(query.Key())
-		record(task) // NOTE: task.deps does not contain task.
-		for dep := range task.deps {
-			record(dep)
+		tasks = tasks[:len(tasks)-1]
+		if _, ok := dedup[dep]; ok {
+			continue
+		}
+		dedup[dep] = struct{}{}
+		report.Diagnostics = append(report.Diagnostics, dep.report.Diagnostics...)
+		for dep := range e.deps[dep] {
+			tasks = append(tasks, dep)
 		}
 	}
 	report.Canonicalize()
-
 	return results, report, nil
 }
 
@@ -179,54 +168,71 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 // This function cannot execute in parallel with calls to [Run], and will take
 // an exclusive lock (note that [Run] calls themselves can be run in parallel).
 func (e *Executor) Evict(keys ...any) {
-	e.EvictWithCleanup(keys, nil)
-}
-
-// EvictWithCleanup is like [Executor.Evict], but it executes the given cleanup
-// function atomically with the eviction action.
-//
-// This function can be used to clean up after a query, or modify the result of
-// the evicted query by writing to a variable, without risking concurrent calls
-// to [Run] seeing inconsistent or stale state across multiple queries.
-func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
-	var queue []*task
-	for _, key := range keys {
-		if t, ok := e.tasks.Load(key); ok {
-			queue = append(queue, t.(*task)) //nolint:errcheck
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	for len(keys) > 0 {
+		key := keys[len(keys)-1]
+		keys = keys[:len(keys)-1]
+		if t, ok := e.tasks[key]; ok {
+			for parent := range e.parents[t] {
+				keys = append(keys, parent.query.Key())
+			}
+			delete(e.tasks, key)
+			delete(e.deps, t)
+			delete(e.parents, t)
 		}
 	}
-	if len(queue) == 0 && cleanup == nil {
-		return
-	}
-
-	e.dirty.Lock()
-	defer e.dirty.Unlock()
-	for len(queue) > 0 {
-		next := queue[0]
-		queue = queue[1:]
-
-		next.downstream.Range(func(k, _ any) bool {
-			queue = append(queue, k.(*task)) //nolint:errcheck
-			return true
-		})
-
-		// Clear everything. We don't need to synchronize here because we have
-		// unique ownership of the task.
-		*next = task{}
-	}
-
-	if cleanup != nil {
-		cleanup()
-	}
 }
 
-// getTask returns (and creates if necessary) a task pointer for the given key.
-func (e *Executor) getTask(key any) *task {
-	// Avoid allocating a new task object in the common case.
-	if t, ok := e.tasks.Load(key); ok {
-		return t.(*task) //nolint:errcheck
+func (e *Executor) addDependencyWithLock(parent *task, child *task) {
+	if parent == nil {
+		return // Root task.
 	}
+	if parent == child {
+		// TODO: THIS IS A BUG SOMEHOW?
+		fmt.Println("ADDING SELF????", "\n", parent.query.Underlying(), "\n", child.query.Underlying())
+	}
+	parentDeps, ok := e.deps[parent]
+	if !ok {
+		parentDeps = make(map[*task]struct{}, 1)
+		if e.deps == nil {
+			e.deps = make(map[*task]map[*task]struct{})
+			e.parents = make(map[*task]map[*task]struct{})
+		}
+		e.deps[parent] = parentDeps
+	}
+	childParents, ok := e.parents[child]
+	if !ok {
+		childParents = make(map[*task]struct{}, 1)
+		e.parents[child] = childParents
+	}
+	parentDeps[child] = struct{}{}
+	childParents[parent] = struct{}{}
+}
 
-	t, _ := e.tasks.LoadOrStore(key, &task{report: report.Report{Options: e.reportOptions}})
-	return t.(*task) //nolint:errcheck
+func (e *Executor) walkDeps(target *task) iter.Seq2[*task, *task] {
+	type elem struct {
+		parent *task
+		child  *task
+	}
+	q := queue[elem]{}
+	for dep := range e.deps[target] {
+		q.push(elem{
+			parent: target,
+			child:  dep,
+		})
+	}
+	return func(yield func(parent *task, child *task) bool) {
+		for item := range q.items() {
+			if !yield(item.parent, item.child) {
+				return
+			}
+			for dep := range e.deps[item.child] {
+				q.push(elem{
+					parent: item.child,
+					child:  dep,
+				})
+			}
+		}
+	}
 }
