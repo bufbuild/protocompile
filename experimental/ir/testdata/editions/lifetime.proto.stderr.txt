@@ -1,51 +1,51 @@
 error: `b` is deprecated in Edition 2023
-  --> testdata/editions/lifetime.proto:21:33
+  --> testdata/editions/lifetime.proto:23:33
    |
-15 | edition = "2023";
+17 | edition = "2023";
    |           ------ edition specified here
 ...
-21 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                 ^
    = help: deprecated since Edition 2023
    = help: deprecated: This is a bad feature. Don't use it.
 
 error: `c` is not supported in Edition 2023
-  --> testdata/editions/lifetime.proto:21:42
+  --> testdata/editions/lifetime.proto:23:42
    |
-15 | edition = "2023";
+17 | edition = "2023";
    |           ------ edition specified here
 ...
-21 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                          ^
    = help: removed in Edition 2023
 
 error: `d` is not supported in Edition 2023
-  --> testdata/editions/lifetime.proto:21:51
+  --> testdata/editions/lifetime.proto:23:51
    |
-15 | edition = "2023";
+17 | edition = "2023";
    |           ------ edition specified here
 ...
-21 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                                   ^
    = help: `d` requires at least Edition 2024
 
 error: `e` is deprecated in Edition 2023
-  --> testdata/editions/lifetime.proto:21:60
+  --> testdata/editions/lifetime.proto:23:60
    |
-15 | edition = "2023";
+17 | edition = "2023";
    |           ------ edition specified here
 ...
-21 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                                            ^
    = help: deprecated since Edition 2023, to be removed in Edition 2024
 
 error: `f` is not supported in Edition 2023
-  --> testdata/editions/lifetime.proto:21:69
+  --> testdata/editions/lifetime.proto:23:69
    |
-15 | edition = "2023";
+17 | edition = "2023";
    |           ------ edition specified here
 ...
-21 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                                                     ^
    = help: deprecated since "proto3", removed in Edition 2023
 

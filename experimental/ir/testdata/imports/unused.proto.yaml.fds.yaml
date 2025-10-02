@@ -2,22 +2,26 @@ file:
 - name: "d.proto"
   package: "buf.test"
   message_type: [{ name: "D" }]
+  source_code_info: {}
   syntax: "proto3"
 - name: "p.proto"
   package: "buf.test"
   message_type: [{ name: "P" }]
+  source_code_info: {}
   syntax: "proto3"
 - name: "c.proto"
   package: "buf.test"
   dependency: ["p.proto"]
   public_dependency: [0]
   message_type: [{ name: "C" }]
+  source_code_info: {}
   syntax: "proto3"
 - name: "b.proto"
   package: "buf.test"
   dependency: ["p.proto"]
   public_dependency: [0]
   message_type: [{ name: "B" }]
+  source_code_info: {}
   syntax: "proto3"
 - name: "a1.proto"
   package: "buf.test"
@@ -40,11 +44,15 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+  source_code_info: {}
   syntax: "proto3"
 - name: "a2.proto"
   package: "buf.test"
   dependency: ["b.proto", "c.proto", "d.proto"]
   message_type: [{ name: "A2" }]
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [0, 1, 2]
   syntax: "proto3"
 - name: "a3.proto"
   package: "buf.test"
@@ -62,6 +70,9 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [1]
   syntax: "proto3"
 - name: "a4.proto"
   package: "buf.test"
@@ -84,6 +95,9 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      unused_dependency: [1]
   syntax: "proto3"
 - name: "a5.proto"
   package: "buf.test"
@@ -106,4 +120,5 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+  source_code_info: {}
   syntax: "proto3"

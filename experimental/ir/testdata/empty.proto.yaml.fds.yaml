@@ -1,1 +1,7 @@
-file: [{ name: "", package: "", syntax: "proto2" }]
+file:
+- name: ""
+  package: ""
+  source_code_info:
+    (buf.descriptor.v1.buf_source_code_info_extension):
+      is_syntax_unspecified: true
+  syntax: "proto2"

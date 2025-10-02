@@ -1,10 +1,10 @@
 error: cannot find `M.N` in this scope
-  --> testdata/fields/invalid_partial.proto:22:9
+  --> testdata/fields/invalid_partial.proto:23:9
    |
-20 |     message N {}
+21 |     message N {}
    |             - found possibly related symbol `test.M.N`
-21 |     message M {
-22 |         M.N n = 1;
+22 |     message M {
+23 |         M.N n = 1;
    |         ^^^ not found in this scope
    |
    = note: Protobuf's name lookup rules expected a symbol `test.M.M.N`, rather

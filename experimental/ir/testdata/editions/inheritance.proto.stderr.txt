@@ -1,11 +1,11 @@
 error: `legacy_closed_enum` is deprecated in Edition 2023
-  --> testdata/editions/inheritance.proto:22:8
+  --> testdata/editions/inheritance.proto:24:8
    |
-15 | edition = "2023";
+17 | edition = "2023";
    |           ------ edition specified here
 ...
-21 | option features.field_presence = IMPLICIT;
-22 | option features.(pb.cpp).legacy_closed_enum = false;
+23 | option features.field_presence = IMPLICIT;
+24 | option features.(pb.cpp).legacy_closed_enum = false;
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = help: deprecated since Edition 2023
    = help: deprecated: The legacy closed enum behavior in C++ is deprecated and

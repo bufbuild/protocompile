@@ -1,42 +1,27 @@
 warning: non-printable character in string literal
-  --> testdata/options/values/string.proto:23:40
-   |
-23 |     s: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
-   |                                        ^^^^^^^^
-  help: consider escaping it
-   |
-23 | -     s: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
-23 | +     s: ["", "foo", "foo bar" 'baz', '🐈\u200d⬛', "\xff"]
-
-warning: non-printable character in string literal
   --> testdata/options/values/string.proto:24:40
    |
-24 |     b: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
+24 |     s: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
    |                                        ^^^^^^^^
   help: consider escaping it
    |
-24 | -     b: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
-24 | +     b: ["", "foo", "foo bar" 'baz', '🐈\u200d⬛', "\xff"]
+24 | -     s: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
+24 | +     s: ["", "foo", "foo bar" 'baz', '🐈\u200d⬛', "\xff"]
 
-error: nested array expressions are not allowed
-  --> testdata/options/values/string.proto:29:37
+warning: non-printable character in string literal
+  --> testdata/options/values/string.proto:25:40
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
-   |        ----------------------------------------
-   |         |                           ^^ cannot nest this array expression...
-   |         |
-   |         ...within this array expression
-
-error: unexpected range expression in option setting value
-  --> testdata/options/values/string.proto:29:41
+25 |     b: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
+   |                                        ^^^^^^^^
+  help: consider escaping it
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
-   |                                         ^^^^^^
+25 | -     b: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
+25 | +     b: ["", "foo", "foo bar" 'baz', '🐈\u200d⬛', "\xff"]
 
 error: nested array expressions are not allowed
   --> testdata/options/values/string.proto:30:37
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |        ----------------------------------------
    |         |                           ^^ cannot nest this array expression...
    |         |
@@ -45,13 +30,28 @@ error: nested array expressions are not allowed
 error: unexpected range expression in option setting value
   --> testdata/options/values/string.proto:30:41
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+   |                                         ^^^^^^
+
+error: nested array expressions are not allowed
+  --> testdata/options/values/string.proto:31:37
+   |
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+   |        ----------------------------------------
+   |         |                           ^^ cannot nest this array expression...
+   |         |
+   |         ...within this array expression
+
+error: unexpected range expression in option setting value
+  --> testdata/options/values/string.proto:31:41
+   |
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                                         ^^^^^^
 
 error: mismatched types
-  --> testdata/options/values/string.proto:26:9
+  --> testdata/options/values/string.proto:27:9
    |
-26 |     s: -"neg"
+27 |     s: -"neg"
    |        -^^^^^ expected number, found `string`
    |        |
    |        expected due to this
@@ -60,164 +60,164 @@ error: mismatched types
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/options/values/string.proto:29:9
+  --> testdata/options/values/string.proto:30:9
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |         ^ expected `string`, found integer literal
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
 ...
-34 |     repeated string s = 1;
+35 |     repeated string s = 1;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `string`
               found: integer literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:29:12
+  --> testdata/options/values/string.proto:30:12
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |            ^^^ expected `string`, found floating-point literal
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
 ...
-34 |     repeated string s = 1;
+35 |     repeated string s = 1;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `string`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:29:17
+  --> testdata/options/values/string.proto:30:17
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                 ^^^^ expected `string`, found `bool`
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
 ...
-34 |     repeated string s = 1;
+35 |     repeated string s = 1;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `string`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/options/values/string.proto:29:23
+  --> testdata/options/values/string.proto:30:23
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                       ^^^ expected `string`, found floating-point literal
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
 ...
-34 |     repeated string s = 1;
+35 |     repeated string s = 1;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `string`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:29:28
+  --> testdata/options/values/string.proto:30:28
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                            ^^^
    |                            |
    |                            expected `string`, found floating-point literal
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
 ...
-34 |     repeated string s = 1;
+35 |     repeated string s = 1;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `string`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:29:33
+  --> testdata/options/values/string.proto:30:33
    |
-29 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                                 ^^
    |                                 |
    |                                 expected `string`, found message expression
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
 ...
-34 |     repeated string s = 1;
+35 |     repeated string s = 1;
    |     --------------- expected due to this
    |
    = note: expected: scalar type `string`
               found: message expression
 
 error: mismatched types
-  --> testdata/options/values/string.proto:30:9
+  --> testdata/options/values/string.proto:31:9
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |         ^ expected `bytes`, found integer literal
 ...
-34 |     repeated string s = 1;
-35 |     repeated bytes b = 2;
+35 |     repeated string s = 1;
+36 |     repeated bytes b = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `bytes`
               found: integer literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:30:12
+  --> testdata/options/values/string.proto:31:12
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |            ^^^ expected `bytes`, found floating-point literal
 ...
-34 |     repeated string s = 1;
-35 |     repeated bytes b = 2;
+35 |     repeated string s = 1;
+36 |     repeated bytes b = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `bytes`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:30:17
+  --> testdata/options/values/string.proto:31:17
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                 ^^^^ expected `bytes`, found `bool`
 ...
-34 |     repeated string s = 1;
-35 |     repeated bytes b = 2;
+35 |     repeated string s = 1;
+36 |     repeated bytes b = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `bytes`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/options/values/string.proto:30:23
+  --> testdata/options/values/string.proto:31:23
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                       ^^^ expected `bytes`, found floating-point literal
 ...
-34 |     repeated string s = 1;
-35 |     repeated bytes b = 2;
+35 |     repeated string s = 1;
+36 |     repeated bytes b = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `bytes`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:30:28
+  --> testdata/options/values/string.proto:31:28
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                            ^^^
    |                            |
    |                            expected `bytes`, found floating-point literal
 ...
-34 |     repeated string s = 1;
-35 |     repeated bytes b = 2;
+35 |     repeated string s = 1;
+36 |     repeated bytes b = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `bytes`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/string.proto:30:33
+  --> testdata/options/values/string.proto:31:33
    |
-30 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
+31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
    |                                 ^^
    |                                 |
    |                                 expected `bytes`, found message expression
 ...
-34 |     repeated string s = 1;
-35 |     repeated bytes b = 2;
+35 |     repeated string s = 1;
+36 |     repeated bytes b = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `bytes`
