@@ -1,50 +1,50 @@
 error: expected singular message, found repeated `buf.test.Foo`
-  --> testdata/options/values/nested.proto:24:13
+  --> testdata/options/values/nested.proto:25:13
    |
-24 | option (x).b.a = {};
+25 | option (x).b.a = {};
    |             ^^ field selector requires singular message
 ...
-42 |     optional Foo a = 1;
-43 |     repeated Foo b = 2;
+43 |     optional Foo a = 1;
+44 |     repeated Foo b = 2;
    |     ------------ type specified here
 
 error: message field `buf.test.Foo.a` set multiple times
-  --> testdata/options/values/nested.proto:27:8
+  --> testdata/options/values/nested.proto:28:8
    |
-26 | option (x).a.a = {};
+27 | option (x).a.a = {};
    |        ----- first set here...
-27 | option (x).a = {};
+28 | option (x).a = {};
    |        ^^^^^ ... also set here
-28 | option (x).a.a.a = {};
+29 | option (x).a.a.a = {};
 ...
-42 |     optional Foo a = 1;
+43 |     optional Foo a = 1;
    |                  - not a repeated field
    |
    = note: a non-`repeated` option may be set at most once
 
 error: message extension `buf.test.y` set multiple times
-  --> testdata/options/values/nested.proto:31:8
+  --> testdata/options/values/nested.proto:32:8
    |
-30 | option (x).(y).a = {};
+31 | option (x).(y).a = {};
    |        ------- first set here...
-31 | option (x).(y) = {};
+32 | option (x).(y) = {};
    |        ^^^^^^^ ... also set here
-32 | option (x).(y).a.(y) = {};
+33 | option (x).(y).a.(y) = {};
 ...
-52 |     optional Foo y = 1000;
+53 |     optional Foo y = 1000;
    |                  - not a repeated field
    |
    = note: a non-`repeated` option may be set at most once
 
 error: expected singular message, found repeated `buf.test.Foo`
-  --> testdata/options/values/nested.proto:37:17
+  --> testdata/options/values/nested.proto:38:17
    |
-37 | option (x).a.(z).a = {};
+38 | option (x).a.(z).a = {};
    |                 ^^ field selector requires singular message
-38 | option (x).a.(z) = {};
+39 | option (x).a.(z) = {};
 ...
-52 |     optional Foo y = 1000;
-53 |     repeated Foo z = 1001;
+53 |     optional Foo y = 1000;
+54 |     repeated Foo z = 1001;
    |     ------------ type specified here
 
 encountered 4 errors

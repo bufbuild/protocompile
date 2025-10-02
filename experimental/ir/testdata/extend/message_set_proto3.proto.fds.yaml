@@ -1,8 +1,0 @@
-file:
-- name: "testdata/extend/message_set_proto3.proto"
-  package: "test"
-  message_type:
-  - name: "M1"
-    extension_range: [{ start: 1, end: 2147483647 }]
-    options.message_set_wire_format: true
-  syntax: "proto3"

@@ -185,7 +185,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 
 	if value.IsValid() {
 		if value.IsEdition() && in == taxa.Syntax {
-			p.Errorf("editions must use the `edition` keyword", in).Apply(
+			p.Errorf("editions must use the `edition` keyword").Apply(
 				report.Snippet(decl.KeywordToken()),
 				report.SuggestEdits(decl.KeywordToken(), "replace with `edition`", report.Edit{
 					Start: 0, End: decl.KeywordToken().Span().Len(),

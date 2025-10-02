@@ -1,7 +1,7 @@
 warning: redundant custom option setting syntax
-   --> testdata/options/redundant_fqn.proto:22:12
+   --> testdata/options/redundant_fqn.proto:23:12
     |
- 22 |     option (google.protobuf.MessageOptions.deprecated) = true;
+ 23 |     option (google.protobuf.MessageOptions.deprecated) = true;
     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     |             |
     |             this field is not a message extension
@@ -13,11 +13,11 @@ warning: redundant custom option setting syntax
     |                  |
     |                  field declared inside of `google.protobuf.MessageOptions` here
     |
-   ::: testdata/options/redundant_fqn.proto:22:12
+   ::: testdata/options/redundant_fqn.proto:23:12
    help: replace `(...)` with a field name
     |
- 22 | -     option (google.protobuf.MessageOptions.deprecated) = true;
- 22 | +     option deprecated = true;
+ 23 | -     option (google.protobuf.MessageOptions.deprecated) = true;
+ 23 | +     option deprecated = true;
     |
     |
     = help: custom option setting syntax should only be used with message

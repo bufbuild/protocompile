@@ -1,9 +1,9 @@
 error: option `deprecated` set multiple times
-   --> testdata/options/builtin.proto:24:12
+   --> testdata/options/builtin.proto:25:12
     |
- 23 |     option deprecated = true;
-    |            ---------- first set here...
  24 |     option deprecated = true;
+    |            ---------- first set here...
+ 25 |     option deprecated = true;
     |            ^^^^^^^^^^ ... also set here
     |
    ::: google/protobuf/descriptor.proto:611:17
