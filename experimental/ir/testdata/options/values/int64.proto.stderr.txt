@@ -2,7 +2,10 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:58:42
    |
 58 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         ---------------------------------^^--------- ...within this array expression
+   |         --------------------------------------------
+   |          |                               ^^
+   |          |                               |
+   |          ...within this array expression |
    |                                          |
    |                                          cannot nest this array expression...
 
@@ -16,7 +19,10 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:59:42
    |
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         ---------------------------------^^--------- ...within this array expression
+   |         --------------------------------------------
+   |          |                               ^^
+   |          |                               |
+   |          ...within this array expression |
    |                                          |
    |                                          cannot nest this array expression...
 
@@ -30,7 +36,10 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:60:42
    |
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         ---------------------------------^^--------- ...within this array expression
+   |         --------------------------------------------
+   |          |                               ^^
+   |          |                               |
+   |          ...within this array expression |
    |                                          |
    |                                          cannot nest this array expression...
 
@@ -44,7 +53,10 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:61:42
    |
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         ---------------------------------^^--------- ...within this array expression
+   |         --------------------------------------------
+   |          |                               ^^
+   |          |                               |
+   |          ...within this array expression |
    |                                          |
    |                                          cannot nest this array expression...
 
@@ -58,7 +70,10 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:62:42
    |
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         ---------------------------------^^--------- ...within this array expression
+   |         --------------------------------------------
+   |          |                               ^^
+   |          |                               |
+   |          ...within this array expression |
    |                                          |
    |                                          cannot nest this array expression...
 
@@ -77,6 +92,7 @@ error: literal out of range for `int64`
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: the range for `int64` is `-0x8000000000000000 to 0x7fffffffffffffff`
 
 error: literal out of range for `int64`
@@ -88,6 +104,7 @@ error: literal out of range for `int64`
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: the range for `int64` is `-0x8000000000000000 to 0x7fffffffffffffff`
 
 error: literal out of range for `int64`
@@ -98,6 +115,7 @@ error: literal out of range for `int64`
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: the range for `int64` is `-0x8000000000000000 to 0x7fffffffffffffff`
 
 error: literal out of range for `sint64`
@@ -110,6 +128,7 @@ error: literal out of range for `sint64`
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: the range for `sint64` is `-0x8000000000000000 to 0x7fffffffffffffff`
 
 error: literal out of range for `sint64`
@@ -122,6 +141,7 @@ error: literal out of range for `sint64`
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: the range for `sint64` is `-0x8000000000000000 to 0x7fffffffffffffff`
 
 error: literal out of range for `sint64`
@@ -133,6 +153,7 @@ error: literal out of range for `sint64`
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: the range for `sint64` is `-0x8000000000000000 to 0x7fffffffffffffff`
 
 error: literal out of range for `sfixed64`
@@ -145,6 +166,7 @@ error: literal out of range for `sfixed64`
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: the range for `sfixed64` is `-0x8000000000000000 to
            0x7fffffffffffffff`
 
@@ -158,6 +180,7 @@ error: literal out of range for `sfixed64`
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: the range for `sfixed64` is `-0x8000000000000000 to
            0x7fffffffffffffff`
 
@@ -170,6 +193,7 @@ error: literal out of range for `sfixed64`
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: the range for `sfixed64` is `-0x8000000000000000 to
            0x7fffffffffffffff`
 
@@ -182,6 +206,7 @@ error: literal out of range for `uint64`
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: the range for `uint64` is `0 to 18446744073709551615`
 
 error: literal out of range for `uint64`
@@ -193,6 +218,7 @@ error: literal out of range for `uint64`
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: the range for `uint64` is `0 to 18446744073709551615`
 
 error: literal out of range for `uint64`
@@ -204,6 +230,7 @@ error: literal out of range for `uint64`
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: the range for `uint64` is `0x0 to 0xffffffffffffffff`
 
 error: literal out of range for `uint64`
@@ -215,6 +242,7 @@ error: literal out of range for `uint64`
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: the range for `uint64` is `0x0 to 0xffffffffffffffff`
 
 error: literal out of range for `uint64`
@@ -225,6 +253,7 @@ error: literal out of range for `uint64`
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: the range for `uint64` is `0x0 to 0xffffffffffffffff`
 
 error: literal out of range for `fixed64`
@@ -237,6 +266,7 @@ error: literal out of range for `fixed64`
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: the range for `fixed64` is `0 to 18446744073709551615`
 
 error: literal out of range for `fixed64`
@@ -249,6 +279,7 @@ error: literal out of range for `fixed64`
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: the range for `fixed64` is `0 to 18446744073709551615`
 
 error: literal out of range for `fixed64`
@@ -261,6 +292,7 @@ error: literal out of range for `fixed64`
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: the range for `fixed64` is `0x0 to 0xffffffffffffffff`
 
 error: literal out of range for `fixed64`
@@ -273,6 +305,7 @@ error: literal out of range for `fixed64`
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: the range for `fixed64` is `0x0 to 0xffffffffffffffff`
 
 error: literal out of range for `fixed64`
@@ -284,6 +317,7 @@ error: literal out of range for `fixed64`
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: the range for `fixed64` is `0x0 to 0xffffffffffffffff`
 
 error: mismatched types
@@ -295,6 +329,7 @@ error: mismatched types
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int64`
               found: floating-point literal
 
@@ -307,6 +342,7 @@ error: mismatched types
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int64`
               found: scalar type `string`
 
@@ -319,6 +355,7 @@ error: mismatched types
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int64`
               found: scalar type `bool`
 
@@ -326,11 +363,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:58:28
    |
 58 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                            ^^^ expected `int64`, found floating-point literal
+   |                            ^^^
+   |                            |
+   |                            expected `int64`, found floating-point literal
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int64`
               found: floating-point literal
 
@@ -338,11 +378,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:58:33
    |
 58 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                 ^^^ expected `int64`, found floating-point literal
+   |                                 ^^^
+   |                                 |
+   |                                 expected `int64`, found floating-point literal
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int64`
               found: floating-point literal
 
@@ -350,11 +393,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:58:38
    |
 58 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                      ^^ expected `int64`, found message expression
+   |                                      ^^
+   |                                      |
+   |                                      expected `int64`, found message expression
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 66 |     repeated int64 i1 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int64`
               found: message expression
 
@@ -368,6 +414,7 @@ error: mismatched types
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `sint64`
               found: floating-point literal
 
@@ -381,6 +428,7 @@ error: mismatched types
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `sint64`
               found: scalar type `string`
 
@@ -394,6 +442,7 @@ error: mismatched types
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `sint64`
               found: scalar type `bool`
 
@@ -401,12 +450,15 @@ error: mismatched types
   --> testdata/options/values/int64.proto:59:28
    |
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                            ^^^ expected `sint64`, found floating-point literal
+   |                            ^^^
+   |                            |
+   |                            expected `sint64`, found floating-point literal
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `sint64`
               found: floating-point literal
 
@@ -414,12 +466,15 @@ error: mismatched types
   --> testdata/options/values/int64.proto:59:33
    |
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                 ^^^ expected `sint64`, found floating-point literal
+   |                                 ^^^
+   |                                 |
+   |                                 expected `sint64`, found floating-point literal
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `sint64`
               found: floating-point literal
 
@@ -427,12 +482,15 @@ error: mismatched types
   --> testdata/options/values/int64.proto:59:38
    |
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                      ^^ expected `sint64`, found message expression
+   |                                      ^^
+   |                                      |
+   |                                      expected `sint64`, found message expression
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 66 |     repeated int64 i1 = 1;
 67 |     repeated sint64 i2 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `sint64`
               found: message expression
 
@@ -446,6 +504,7 @@ error: mismatched types
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: expected: scalar type `sfixed64`
               found: floating-point literal
 
@@ -459,6 +518,7 @@ error: mismatched types
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: expected: scalar type `sfixed64`
               found: scalar type `string`
 
@@ -472,6 +532,7 @@ error: mismatched types
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: expected: scalar type `sfixed64`
               found: scalar type `bool`
 
@@ -479,12 +540,15 @@ error: mismatched types
   --> testdata/options/values/int64.proto:60:28
    |
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                            ^^^ expected `sfixed64`, found floating-point literal
+   |                            ^^^
+   |                            |
+   |                            expected `sfixed64`, found floating-point literal
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: expected: scalar type `sfixed64`
               found: floating-point literal
 
@@ -492,12 +556,15 @@ error: mismatched types
   --> testdata/options/values/int64.proto:60:33
    |
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                 ^^^ expected `sfixed64`, found floating-point literal
+   |                                 ^^^
+   |                                 |
+   |                                 expected `sfixed64`, found floating-point literal
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: expected: scalar type `sfixed64`
               found: floating-point literal
 
@@ -505,12 +572,15 @@ error: mismatched types
   --> testdata/options/values/int64.proto:60:38
    |
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                      ^^ expected `sfixed64`, found message expression
+   |                                      ^^
+   |                                      |
+   |                                      expected `sfixed64`, found message expression
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 67 |     repeated sint64 i2 = 2;
 68 |     repeated sfixed64 i3 = 3;
    |     ----------------- expected due to this
+   |
    = note: expected: scalar type `sfixed64`
               found: message expression
 
@@ -523,6 +593,7 @@ error: mismatched types
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `uint64`
               found: floating-point literal
 
@@ -535,6 +606,7 @@ error: mismatched types
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `uint64`
               found: scalar type `string`
 
@@ -547,6 +619,7 @@ error: mismatched types
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `uint64`
               found: scalar type `bool`
 
@@ -554,11 +627,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:61:28
    |
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                            ^^^ expected `uint64`, found floating-point literal
+   |                            ^^^
+   |                            |
+   |                            expected `uint64`, found floating-point literal
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `uint64`
               found: floating-point literal
 
@@ -566,11 +642,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:61:33
    |
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                 ^^^ expected `uint64`, found floating-point literal
+   |                                 ^^^
+   |                                 |
+   |                                 expected `uint64`, found floating-point literal
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `uint64`
               found: floating-point literal
 
@@ -578,11 +657,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:61:38
    |
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                      ^^ expected `uint64`, found message expression
+   |                                      ^^
+   |                                      |
+   |                                      expected `uint64`, found message expression
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
 ...
 70 |     repeated uint64 u1 = 11;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `uint64`
               found: message expression
 
@@ -595,6 +677,7 @@ error: mismatched types
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: expected: scalar type `fixed64`
               found: floating-point literal
 
@@ -607,6 +690,7 @@ error: mismatched types
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: expected: scalar type `fixed64`
               found: scalar type `string`
 
@@ -619,6 +703,7 @@ error: mismatched types
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: expected: scalar type `fixed64`
               found: scalar type `bool`
 
@@ -626,11 +711,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:62:28
    |
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                            ^^^ expected `fixed64`, found floating-point literal
+   |                            ^^^
+   |                            |
+   |                            expected `fixed64`, found floating-point literal
 ...
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: expected: scalar type `fixed64`
               found: floating-point literal
 
@@ -638,11 +726,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:62:33
    |
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                 ^^^ expected `fixed64`, found floating-point literal
+   |                                 ^^^
+   |                                 |
+   |                                 expected `fixed64`, found floating-point literal
 ...
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: expected: scalar type `fixed64`
               found: floating-point literal
 
@@ -650,11 +741,14 @@ error: mismatched types
   --> testdata/options/values/int64.proto:62:38
    |
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |                                      ^^ expected `fixed64`, found message expression
+   |                                      ^^
+   |                                      |
+   |                                      expected `fixed64`, found message expression
 ...
 70 |     repeated uint64 u1 = 11;
 71 |     repeated fixed64 u2 = 12;
    |     ---------------- expected due to this
+   |
    = note: expected: scalar type `fixed64`
               found: message expression
 

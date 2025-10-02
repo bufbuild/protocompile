@@ -3,8 +3,9 @@ error: multiple modifiers on message field type
    |
 20 |     optional optional M x1 = 1;
    |     -------- ^^^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 20 | -     optional optional M x1 = 1;
@@ -16,8 +17,9 @@ error: multiple modifiers on message field type
    |
 21 |     repeated optional M x2 = 2;
    |     -------- ^^^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 21 | -     repeated optional M x2 = 2;
@@ -37,8 +39,9 @@ error: multiple modifiers on message field type
    |
 22 |     required optional M x3 = 3;
    |     -------- ^^^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 22 | -     required optional M x3 = 3;
@@ -50,8 +53,9 @@ error: multiple modifiers on message field type
    |
 23 |     repeated repeated M x4 = 4;
    |     -------- ^^^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 23 | -     repeated repeated M x4 = 4;
@@ -63,8 +67,9 @@ error: multiple modifiers on message field type
    |
 24 |     repeated stream M x5 = 5;
    |     -------- ^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 24 | -     repeated stream M x5 = 5;
@@ -88,8 +93,9 @@ error: multiple modifiers on message field type
    |
 25 |     stream stream M x6 = 6;
    |     ------ ^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 25 | -     stream stream M x6 = 6;
@@ -173,8 +179,8 @@ error: encountered more than one `stream`
    |
 31 |     rpc X3(stream stream .test.M) returns (stream repeated M) {}
    |            ------ ^^^^^^ help: consider removing this
-   |            |
-   |            first one is here
+   |             |
+   |             first one is here
 
 error: unexpected `repeated` modifier in method signature
   --> testdata/parser/type/repeated.proto:31:51
@@ -285,8 +291,8 @@ error: encountered more than one `stream`
    |
 35 |     rpc X6(stream stream .test.M) returns stream repeated M {}
    |            ------ ^^^^^^ help: consider removing this
-   |            |
-   |            first one is here
+   |             |
+   |             first one is here
 
 error: missing `(...)` around method return type
   --> testdata/parser/type/repeated.proto:35:43

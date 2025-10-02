@@ -2,9 +2,8 @@ error: nested array expressions are not allowed
   --> testdata/options/values/bool.proto:41:31
    |
 41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
-   |        -----------------------^^--------- ...within this array expression
-   |                               |
-   |                               cannot nest this array expression...
+   |        ---------------------------------- ...within this array expression
+   |                               ^^ cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/bool.proto:41:35
@@ -69,6 +68,7 @@ error: cannot find `TRUE` in this scope
    |
 32 |     x: TRUE
    |        ^^^^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: cannot find `FALSE` in this scope
@@ -76,6 +76,7 @@ error: cannot find `FALSE` in this scope
    |
 33 |     x: FALSE
    |        ^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: cannot find `T` in this scope
@@ -83,6 +84,7 @@ error: cannot find `T` in this scope
    |
 34 |     x: T
    |        ^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: cannot find `F` in this scope
@@ -90,6 +92,7 @@ error: cannot find `F` in this scope
    |
 35 |     x: F
    |        ^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
@@ -99,6 +102,7 @@ error: mismatched types
    |        -^^^^ expected number, found `bool`
    |        |
    |        expected due to this
+   |
    = note: expected: number
               found: scalar type `bool`
 
@@ -109,6 +113,7 @@ error: mismatched types
    |        -^^^^ expected number, found `bool`
    |        |
    |        expected due to this
+   |
    = note: expected: number
               found: scalar type `bool`
 
@@ -133,6 +138,7 @@ error: mismatched types
 ...
 53 |     repeated bool x = 1;
    |     ------------- expected due to this
+   |
    = note: expected: scalar type `bool`
               found: integer literal
 
@@ -144,6 +150,7 @@ error: mismatched types
 ...
 53 |     repeated bool x = 1;
    |     ------------- expected due to this
+   |
    = note: expected: scalar type `bool`
               found: floating-point literal
 
@@ -155,6 +162,7 @@ error: mismatched types
 ...
 53 |     repeated bool x = 1;
    |     ------------- expected due to this
+   |
    = note: expected: scalar type `bool`
               found: floating-point literal
 
@@ -166,6 +174,7 @@ error: mismatched types
 ...
 53 |     repeated bool x = 1;
    |     ------------- expected due to this
+   |
    = note: expected: scalar type `bool`
               found: floating-point literal
 
@@ -177,6 +186,7 @@ error: mismatched types
 ...
 53 |     repeated bool x = 1;
    |     ------------- expected due to this
+   |
    = note: expected: scalar type `bool`
               found: message expression
 

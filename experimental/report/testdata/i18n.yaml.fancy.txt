@@ -5,6 +5,7 @@ error: emoji, CJK, bidi
    |         ^^^^^^^^^^^^
  6 |   string 黑猫 = 1;
    |          ---- note: some surfaces render CJK as sub-two-column
+   |
   ::: bar.proto:1:9
    |
  1 | import "חתול שחור.proto";

@@ -3,10 +3,12 @@ error: detected cyclic import while importing "b.proto"
    |
  4 | import "b.proto";
    | ^^^^^^^^^^^^^^^^^ imported here
+   |
   ::: b.proto:4:1
    |
  4 | import "c.proto";
    | ----------------- ...which imports "c.proto"...
+   |
   ::: c.proto:4:1
    |
  4 | import "a.proto";

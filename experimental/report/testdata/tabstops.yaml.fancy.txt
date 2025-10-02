@@ -3,8 +3,8 @@ warning: tabstop
    |
  6 |         field
    | --------^^^^^ this is in front of some tabstops
-   | |
-   | specifically these
+   |  |
+   |  specifically these
 
 warning: partial tabstop
   --> foo.proto:7:2

@@ -2,9 +2,8 @@ error: nested array expressions are not allowed
   --> testdata/options/values/float.proto:56:28
    |
 56 |     f32: ["foo", true, {}, [], 0 to 1]
-   |          ------------------^^--------- ...within this array expression
-   |                            |
-   |                            cannot nest this array expression...
+   |          ----------------------------- ...within this array expression
+   |                            ^^ cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/float.proto:56:32
@@ -16,9 +15,8 @@ error: nested array expressions are not allowed
   --> testdata/options/values/float.proto:57:28
    |
 57 |     f64: ["foo", true, {}, [], 0 to 1]
-   |          ------------------^^--------- ...within this array expression
-   |                            |
-   |                            cannot nest this array expression...
+   |          ----------------------------- ...within this array expression
+   |                            ^^ cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/float.proto:57:32
@@ -82,11 +80,15 @@ warning: floating-point literal rounds to infinity
   --> testdata/options/values/float.proto:37:9
    |
 37 |         1234567890123456789012345678901234567890,
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this value is beyond the dynamic range of `float`
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |          |
+   |          this value is beyond the dynamic range of `float`
+   |
   help: replace with `inf`
    |
 37 | -         1234567890123456789012345678901234567890,
 37 | +         inf,
+   |
    |
    = note: this value is of order 1e39; `float` can only represent around 1e38
 
@@ -94,11 +96,15 @@ warning: floating-point literal rounds to infinity
   --> testdata/options/values/float.proto:38:10
    |
 38 |         -1234567890123456789012345678901234567890
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this value is beyond the dynamic range of `float`
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |           |
+   |           this value is beyond the dynamic range of `float`
+   |
   help: replace with `inf`
    |
 38 | -         -1234567890123456789012345678901234567890
 38 | +         -inf
+   |
    |
    = note: this value is of order 1e39; `float` can only represent around 1e38
 
@@ -159,10 +165,12 @@ warning: floating-point literal rounds to infinity
    |
 53 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
    |           ^^^^^^ this value is beyond the dynamic range of `double`
+   |
   help: replace with `inf`
    |
 53 | -     f64: [1e1000, -1e1000],       // Snap to Infinity.
 53 | +     f64: [inf, -1e1000],       // Snap to Infinity.
+   |
    |
    = note: this value is of order 1e1000; `double` can only represent around
            1e308
@@ -172,10 +180,12 @@ warning: floating-point literal rounds to infinity
    |
 53 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
    |                    ^^^^^^ this value is beyond the dynamic range of `double`
+   |
   help: replace with `inf`
    |
 53 | -     f64: [1e1000, -1e1000],       // Snap to Infinity.
 53 | +     f64: [1e1000, -inf],       // Snap to Infinity.
+   |
    |
    = note: this value is of order 1e1000; `double` can only represent around
            1e308
@@ -189,6 +199,7 @@ error: mismatched types
 ...
 69 |     repeated float f32 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `float`
               found: scalar type `string`
 
@@ -201,6 +212,7 @@ error: mismatched types
 ...
 69 |     repeated float f32 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `float`
               found: scalar type `bool`
 
@@ -213,6 +225,7 @@ error: mismatched types
 ...
 69 |     repeated float f32 = 1;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `float`
               found: message expression
 
@@ -225,6 +238,7 @@ error: mismatched types
 69 |     repeated float f32 = 1;
 70 |     repeated double f64 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `double`
               found: scalar type `string`
 
@@ -237,6 +251,7 @@ error: mismatched types
 69 |     repeated float f32 = 1;
 70 |     repeated double f64 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `double`
               found: scalar type `bool`
 
@@ -249,6 +264,7 @@ error: mismatched types
 69 |     repeated float f32 = 1;
 70 |     repeated double f64 = 2;
    |     --------------- expected due to this
+   |
    = note: expected: scalar type `double`
               found: message expression
 

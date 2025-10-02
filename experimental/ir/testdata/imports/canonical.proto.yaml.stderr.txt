@@ -12,22 +12,22 @@ error: import path must not contain `.`, `..`, or repeated separators
    |
  5 | import "nested//path.proto";
    |        ^^^^^^^^^^^^^^^^^^^^ imported here
+   |
   help: canonicalize this path
    |
  5 | - import "nested//path.proto";
  5 | + import "nested/path.proto";
-   |
 
 error: import path must not contain `.`, `..`, or repeated separators
   --> main.proto:6:8
    |
  6 | import "./local.proto";
    |        ^^^^^^^^^^^^^^^ imported here
+   |
   help: canonicalize this path
    |
  6 | - import "./local.proto";
  6 | + import "local.proto";
-   |
 
 error: file imported multiple times
   --> main.proto:7:1
@@ -53,11 +53,11 @@ error: import path must not contain `.`, `..`, or repeated separators
    |
  8 | import "fake/../local.proto";
    |        ^^^^^^^^^^^^^^^^^^^^^ imported here
+   |
   help: canonicalize this path
    |
  8 | - import "fake/../local.proto";
  8 | + import "local.proto";
-   |
 
 error: import path must not refer to parent directory
   --> main.proto:9:8

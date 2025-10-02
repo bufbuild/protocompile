@@ -21,16 +21,23 @@ error: package
    |
  3 | package abc.xyz;
    | ^^^^^^^        - semicolon
-   | |
-   | package
+   |  |
+   |  package
+
+error: package
+  --> foo.proto:3:1
+   |
+ 3 | package abc.xyz;
+   | ^^^^^^^
+   |  |
+   |  unreasonably long error message that needs to wrap for it to look good
 
 error: this is an overlapping error
   --> foo.proto:3:1
    |
  3 | package abc.xyz;
-   | ^^^^^^^--------- package decl
-   | |
-   | package
+   | ^^^^^^^ package
+   | ---------------- package decl
 
 error: P A C K A G E
   --> foo.proto:3:1
@@ -42,15 +49,26 @@ error: P A C K A G E
    |   |
    |   help: ck
 
+error: P A C K A G E
+  --> foo.proto:3:1
+   |
+ 3 | package abc.xyz;
+   | ^ -- ----------- decl
+   | | |   - help: ge
+   | | |
+   | help: p
+   |   |
+   |   help: ck
+
 error: P A C K A G E (different order)
   --> foo.proto:3:3
    |
  3 | package abc.xyz;
    | - ^^ -- help: ge
    | | |
-   | | help: ck
-   | |
    | help: p
+   |   |
+   |   help: ck
 
 error: P A C K A G E (single letters)
   --> foo.proto:3:1
@@ -62,4 +80,4 @@ error: P A C K A G E (single letters)
    |   |
    |   k
 
-encountered 6 errors
+encountered 8 errors

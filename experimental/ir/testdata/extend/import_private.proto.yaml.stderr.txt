@@ -3,6 +3,7 @@ error: cannot find `M` in this scope
    |
  6 | extend M {
    |        ^ not found in this scope
+   |
    = help: the full name of this scope is `test`
 
 error: cannot find `test.M` in this scope
@@ -10,6 +11,7 @@ error: cannot find `test.M` in this scope
    |
 10 | extend test.M {
    |        ^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `test`
 
 error: cannot find `.test.M` in this scope
@@ -17,6 +19,7 @@ error: cannot find `.test.M` in this scope
    |
 14 | extend .test.M {
    |        ^^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `test`
 
 encountered 3 errors

@@ -9,6 +9,7 @@ error: oneof `buf.test.Foo.o` set multiple times
 ...
 28 |     oneof o {
    |           - not a repeated field
+   |
    = note: at most one member of a oneof may be set by an option
 
 error: oneof `buf.test.Foo.o` set multiple times
@@ -22,6 +23,7 @@ error: oneof `buf.test.Foo.o` set multiple times
 ...
 28 |     oneof o {
    |           - not a repeated field
+   |
    = note: at most one member of a oneof may be set by an option
 
 error: oneof `buf.test.Foo.o` set multiple times
@@ -35,6 +37,7 @@ error: oneof `buf.test.Foo.o` set multiple times
 ...
 28 |     oneof o {
    |           - not a repeated field
+   |
    = note: at most one member of a oneof may be set by an option
 
 encountered 3 errors

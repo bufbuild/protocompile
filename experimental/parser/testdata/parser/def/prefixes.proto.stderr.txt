@@ -77,8 +77,9 @@ error: multiple modifiers on message field type
    |
 25 |     export repeated int32 x = 1;
    |     ------ ^^^^^^^^
-   |     |
-   |     previous one is here
+   |      |
+   |      previous one is here
+   |
   help: delete it
    |
 25 | -     export repeated int32 x = 1;

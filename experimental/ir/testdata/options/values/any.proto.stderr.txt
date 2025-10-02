@@ -29,10 +29,12 @@ error: partly-qualified name in `Any` type URL
    |
 40 | option (y) = { [type.googleapis.com/Foo] {
    |                                     ^^^ type referenced here
+   |
   help: replace with fully qualified name
    |
 40 | - option (y) = { [type.googleapis.com/Foo] {
 40 | + option (y) = { [type.googleapis.com/buf.test.Foo] {
+   |
    |
    = note: `Any` type URL require fully qualified names
 
@@ -40,7 +42,9 @@ error: unexpected field in `Any` expression
   --> testdata/options/values/any.proto:67:13
    |
 66 |             [type.googleapis.com/buf.test.Foo]: { x1: 42 }
-   |             ---------------------------------- expected this to be the only field
+   |             ----------------------------------
+   |              |
+   |              expected this to be the only field
 67 |             [type.googleapis.com/google.protobuf.FileOptions]: {}
    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    = note: the `Any` type URL must be the only field
@@ -51,7 +55,10 @@ error: unexpected field in `Any` expression
 70 |             type_url: "type.googleapis.com/buf.test.Bar"
    |             ^^^^^^^^
 71 |             [type.googleapis.com/buf.test.Foo]: { x1: 42 }
-   |             ---------------------------------- expected this to be the only field
+   |             ----------------------------------
+   |              |
+   |              expected this to be the only field
+   |
    = note: the `Any` type URL must be the only field
 
 error: unexpected field in `Any` expression
@@ -65,9 +72,12 @@ error: mismatched types
   --> testdata/options/values/any.proto:78:47
    |
 78 |         { [type.googleapis.com/buf.test.Foo]: 42 },
-   |           ----------------------------------  ^^ expected `buf.test.Foo`, found integer literal
-   |           |
-   |           expected due to this
+   |           ----------------------------------  ^^
+   |            |                                  |
+   |            expected due to this               |
+   |                                               |
+   |                                               expected `buf.test.Foo`, found integer literal
+   |
    = note: expected: message type `buf.test.Foo`
               found: integer literal
 
@@ -86,6 +96,7 @@ error: cannot find `buf.test.NotReal` in this scope
    |
 80 |         { [type.googleapis.com/buf.test.NotReal]: {} },
    |                                ^^^^^^^^^^^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: expected message type, found message field `buf.test.Foo.a`

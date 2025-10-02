@@ -24,7 +24,6 @@ import (
 
 const (
 	unsorted byte = iota
-	working
 	walking
 	sorted
 )
@@ -62,32 +61,34 @@ func (s *Sorter[Node, Key]) Sort(
 ) iter.Seq[Node] {
 	if s.state == nil {
 		s.state = make(map[Key]byte)
-	} else {
-		clear(s.state)
 	}
-	s.stack = s.stack[0:]
 
 	return func(yield func(Node) bool) {
 		if s.iterating {
 			panic("internal/toposort: Sort() called reëntrantly")
 		}
 		s.iterating = true
-		defer func() { s.iterating = false }()
+		defer func() {
+			clear(s.state)
+			clear(s.stack)
+			s.stack = s.stack[:0]
+			s.iterating = false
+		}()
 
 		for _, root := range roots {
 			s.push(root)
 			// This algorithm is DFS that has been tail-call-optimized into a loop.
 			// Each node is visited twice in the loop: once to add its children to
-			// the stack, and once to pop it and add it to the output. The visited
-			// stack tracks whether this is the first or second visit through the
-			// loop.
+			// the stack, and once to pop it and add it to the output. The state
+			// tracks whether this node has been visisted and if its the first
+			// or second visit through the loop.
 			for len(s.stack) > 0 {
 				node, _ := slicesx.Last(s.stack)
 				k := s.Key(node)
 				state := s.state[k]
 
 				if state == unsorted {
-					s.state[k] = working
+					s.state[k] = walking
 					for child := range dag(node) {
 						s.push(child)
 					}
@@ -95,10 +96,12 @@ func (s *Sorter[Node, Key]) Sort(
 				}
 
 				s.stack = s.stack[:len(s.stack)-1]
-				if state != sorted && !yield(node) {
-					return
+				if state != sorted {
+					if !yield(node) {
+						return
+					}
+					s.state[k] = sorted
 				}
-				s.state[k] = sorted
 			}
 		}
 	}
@@ -110,7 +113,7 @@ func (s *Sorter[Node, Key]) push(v Node) {
 	case unsorted:
 		s.stack = append(s.stack, v)
 
-	case working:
+	case walking:
 		prev := slicesx.LastIndexFunc(s.stack, func(n Node) bool {
 			return s.Key(n) == k
 		})

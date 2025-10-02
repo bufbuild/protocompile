@@ -7,6 +7,7 @@ error: unexpected extension range within service definition
 21 | |     reserved 1;
 22 | | }
    | \_- ...cannot be declared within this service definition
+   |
    = help: this extension range can only appear within a message definition
 
 error: unexpected reserved range within service definition
@@ -18,6 +19,7 @@ error: unexpected reserved range within service definition
    | |     ^^^^^^^^^^^ this reserved range...
 22 | | }
    | \_- ...cannot be declared within this service definition
+   |
    = help: this reserved range can only appear within one of message definition
            or enum definition
 
@@ -30,6 +32,7 @@ error: unexpected extension range within message extension block
 26 | |     reserved 1;
 27 | | }
    | \_- ...cannot be declared within this message extension block
+   |
    = help: this extension range can only appear within a message definition
 
 error: unexpected reserved range within message extension block
@@ -41,6 +44,7 @@ error: unexpected reserved range within message extension block
    | |     ^^^^^^^^^^^ this reserved range...
 27 | | }
    | \_- ...cannot be declared within this message extension block
+   |
    = help: this reserved range can only appear within one of message definition
            or enum definition
 
@@ -52,6 +56,7 @@ error: unexpected extension range within enum definition
    | |     ^^^^^^^^^^^^^ this extension range...
 31 | | }
    | \_- ...cannot be declared within this enum definition
+   |
    = help: this extension range can only appear within a message definition
 
 encountered 5 errors

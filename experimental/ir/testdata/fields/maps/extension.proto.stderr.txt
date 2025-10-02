@@ -3,6 +3,7 @@ error: unsupported map-typed extension
    |
 24 |     map<int32, int32> m = 1;
    |     ^^^^^^^^^^^^^^^^^ declared here
+   |
    = help: extensions cannot be map-typed; instead, define a message type with a
            map-typed field
 

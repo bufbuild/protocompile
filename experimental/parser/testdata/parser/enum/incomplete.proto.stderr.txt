@@ -15,6 +15,7 @@ error: unexpected `}` after definition
    |
 22 | }
    | ^ expected `;`
+   |
   help: consider inserting a `;`
    |
 21 |     NO_TAG2;

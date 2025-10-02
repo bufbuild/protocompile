@@ -13,6 +13,7 @@ error: cannot find `S.X` in this scope
    |
 21 |     optional S.X x = 2;
    |              ^^^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test.M`
 
 error: expected message type, found service method `buf.test.S2.M`

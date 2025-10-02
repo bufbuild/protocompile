@@ -2,7 +2,10 @@ error: nested array expressions are not allowed
   --> testdata/options/values/enum.proto:37:41
    |
 37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
-   |        ---------------------------------^^--------- ...within this array expression
+   |        --------------------------------------------
+   |         |                               ^^
+   |         |                               |
+   |         ...within this array expression |
    |                                         |
    |                                         cannot nest this array expression...
 
@@ -17,6 +20,7 @@ error: cannot find `BAR_E3` in this scope
    |
 25 |     e: BAR_E3
    |        ^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
@@ -28,6 +32,7 @@ error: mismatched types
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: enum type `buf.test.Baz`
 
@@ -49,6 +54,7 @@ error: cannot find `Bar.BAR_E1` in this scope
    |
 28 |     e: Bar.BAR_E1
    |        ^^^^^^^^^^ not found in this scope
+   |
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
@@ -58,10 +64,12 @@ error: mismatched types
    |        -^^^^^^ expected number, found `buf.test.Bar`
    |        |
    |        expected due to this
+   |
   help: replace it with a literal value
    |
 29 | -     e: -BAR_E1
 29 | +     e: -1
+   |
    |
    = note: expected: number
               found: enum type `buf.test.Bar`
@@ -76,6 +84,7 @@ error: mismatched types
 41 |     repeated Bar e = 1;
 42 |     repeated int32 i = 2;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int32`
               found: type reference `buf.test.Foo`
 
@@ -89,6 +98,7 @@ error: mismatched types
 41 |     repeated Bar e = 1;
 42 |     repeated int32 i = 2;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int32`
               found: message field `buf.test.Foo.i`
 
@@ -102,6 +112,7 @@ error: mismatched types
 41 |     repeated Bar e = 1;
 42 |     repeated int32 i = 2;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int32`
               found: message field `buf.test.Foo.e`
 
@@ -115,6 +126,7 @@ error: mismatched types
 41 |     repeated Bar e = 1;
 42 |     repeated int32 i = 2;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int32`
               found: enum type `buf.test.Bar`
 
@@ -127,6 +139,7 @@ error: mismatched types
 41 |     repeated Bar e = 1;
 42 |     repeated int32 i = 2;
    |     -------------- expected due to this
+   |
    = note: expected: scalar type `int32`
               found: enum type `buf.test.Bar`
 
@@ -138,6 +151,7 @@ error: mismatched types
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: floating-point literal
 
@@ -149,6 +163,7 @@ error: mismatched types
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: scalar type `bool`
 
@@ -160,6 +175,7 @@ error: mismatched types
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: scalar type `string`
 
@@ -167,10 +183,13 @@ error: mismatched types
   --> testdata/options/values/enum.proto:37:27
    |
 37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
-   |                           ^^^ expected `buf.test.Bar`, found floating-point literal
+   |                           ^^^
+   |                           |
+   |                           expected `buf.test.Bar`, found floating-point literal
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: floating-point literal
 
@@ -178,10 +197,13 @@ error: mismatched types
   --> testdata/options/values/enum.proto:37:32
    |
 37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
-   |                                ^^^ expected `buf.test.Bar`, found floating-point literal
+   |                                ^^^
+   |                                |
+   |                                expected `buf.test.Bar`, found floating-point literal
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: floating-point literal
 
@@ -189,10 +211,13 @@ error: mismatched types
   --> testdata/options/values/enum.proto:37:37
    |
 37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
-   |                                     ^^ expected `buf.test.Bar`, found message expression
+   |                                     ^^
+   |                                     |
+   |                                     expected `buf.test.Bar`, found message expression
 ...
 41 |     repeated Bar e = 1;
    |     ------------ expected due to this
+   |
    = note: expected: enum type `buf.test.Bar`
               found: message expression
 

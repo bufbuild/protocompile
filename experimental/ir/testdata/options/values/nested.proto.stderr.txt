@@ -19,6 +19,7 @@ error: message field `buf.test.Foo.a` set multiple times
 ...
 43 |     optional Foo a = 1;
    |                  - not a repeated field
+   |
    = note: a non-`repeated` option may be set at most once
 
 error: message extension `buf.test.y` set multiple times
@@ -32,6 +33,7 @@ error: message extension `buf.test.y` set multiple times
 ...
 53 |     optional Foo y = 1000;
    |                  - not a repeated field
+   |
    = note: a non-`repeated` option may be set at most once
 
 error: expected singular message, found repeated `buf.test.Foo`
