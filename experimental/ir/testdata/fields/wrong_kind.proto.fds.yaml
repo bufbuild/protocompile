@@ -8,6 +8,6 @@ file:
     - { name: "y", number: 2, label: LABEL_OPTIONAL }
     - { name: "z", number: 3, label: LABEL_OPTIONAL }
     - { name: "a", number: 4, label: LABEL_OPTIONAL, oneof_index: 0 }
-    enum_type: [{ name: "Bar", value: [{ name: "BAZ", number: 1 }] }]
+    enum_type: [{ name: "Bar", value: [{ name: "BAZ", number: 0 }] }]
     oneof_decl: [{ name: "self" }]
   syntax: "proto3"

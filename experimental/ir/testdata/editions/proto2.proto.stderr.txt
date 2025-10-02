@@ -29,6 +29,10 @@ error: `features` cannot be set in "proto2"
 error: `field_presence` is not supported in "proto2"
   --> testdata/editions/proto2.proto:25:27
    |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+24 |     option features = {};
 25 |     optional int32 x = 1 [features.field_presence = IMPLICIT];
    |                           ^^^^^^^^^^^^^^^^^^^^^^^
    = help: `field_presence` requires at least Edition 2023

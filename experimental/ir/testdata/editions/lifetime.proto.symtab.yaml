@@ -1,19 +1,6 @@
 tables:
   "testdata/editions/lifetime.proto":
     imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
-    features:
-    - { extn: "buf.test.x", name: "a", value: "true", explicit: true }
-    - { extn: "buf.test.x", name: "b", value: "true", explicit: true }
-    - { extn: "buf.test.x", name: "c", value: "true", explicit: true }
-    - { extn: "buf.test.x", name: "d", value: "true", explicit: true }
-    - { name: "default_symbol_visibility", value: "EXPORT_ALL" }
-    - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-    - { name: "enum_type", value: "OPEN" }
-    - { name: "field_presence", value: "EXPLICIT" }
-    - { name: "json_format", value: "ALLOW" }
-    - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-    - { name: "repeated_field_encoding", value: "PACKED" }
-    - { name: "utf8_validation", value: "VERIFY" }
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -23,13 +10,6 @@ tables:
       file: "testdata/editions/lifetime.proto"
       index: 1
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "json_format", value: "ALLOW" }
-      - { extn: "buf.test.x", name: "a", value: "true" }
-      - { extn: "buf.test.x", name: "b", value: "true" }
-      - { extn: "buf.test.x", name: "c", value: "true" }
-      - { extn: "buf.test.x", name: "d", value: "true" }
     - fqn: "buf.test.Features.a"
       kind: KIND_FIELD
       file: "testdata/editions/lifetime.proto"
@@ -43,16 +23,6 @@ tables:
               "value": { string: "false" }
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1000 } }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.x", name: "a", value: "true" }
-      - { extn: "buf.test.x", name: "b", value: "true" }
-      - { extn: "buf.test.x", name: "c", value: "true" }
-      - { extn: "buf.test.x", name: "d", value: "true" }
     - fqn: "buf.test.Features.b"
       kind: KIND_FIELD
       file: "testdata/editions/lifetime.proto"
@@ -70,16 +40,6 @@ tables:
               string: "This is a bad feature. Don't use it."
             "edition_deprecated": { i32: 1000 }
             "edition_introduced": { i32: 1000 }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.x", name: "a", value: "true" }
-      - { extn: "buf.test.x", name: "b", value: "true" }
-      - { extn: "buf.test.x", name: "c", value: "true" }
-      - { extn: "buf.test.x", name: "d", value: "true" }
     - fqn: "buf.test.Features.c"
       kind: KIND_FIELD
       file: "testdata/editions/lifetime.proto"
@@ -95,16 +55,6 @@ tables:
           message.fields:
             "edition_introduced": { i32: 1000 }
             "edition_removed": { i32: 1000 }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.x", name: "a", value: "true" }
-      - { extn: "buf.test.x", name: "b", value: "true" }
-      - { extn: "buf.test.x", name: "c", value: "true" }
-      - { extn: "buf.test.x", name: "d", value: "true" }
     - fqn: "buf.test.Features.d"
       kind: KIND_FIELD
       file: "testdata/editions/lifetime.proto"
@@ -118,31 +68,43 @@ tables:
               "value": { string: "false" }
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1001 } }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.x", name: "a", value: "true" }
-      - { extn: "buf.test.x", name: "b", value: "true" }
-      - { extn: "buf.test.x", name: "c", value: "true" }
-      - { extn: "buf.test.x", name: "d", value: "true" }
+    - fqn: "buf.test.Features.e"
+      kind: KIND_FIELD
+      file: "testdata/editions/lifetime.proto"
+      index: 6
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields:
+            "edition_deprecated": { i32: 1000 }
+            "edition_introduced": { i32: 1000 }
+            "edition_removed": { i32: 1001 }
+    - fqn: "buf.test.Features.f"
+      kind: KIND_FIELD
+      file: "testdata/editions/lifetime.proto"
+      index: 7
+      visible: true
+      options.message.fields:
+        "edition_defaults":
+          repeated.values:
+          - message.fields:
+              "edition": { i32: 900 }
+              "value": { string: "false" }
+        "feature_support":
+          message.fields:
+            "edition_deprecated": { i32: 999 }
+            "edition_introduced": { i32: 999 }
+            "edition_removed": { i32: 1000 }
     - fqn: "buf.test.x"
       kind: KIND_EXTENSION
       file: "testdata/editions/lifetime.proto"
       index: 1
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.x", name: "a", value: "true" }
-      - { extn: "buf.test.x", name: "b", value: "true" }
-      - { extn: "buf.test.x", name: "c", value: "true" }
-      - { extn: "buf.test.x", name: "d", value: "true" }
     options.message.fields:
       "features":
         message.extns:
@@ -152,3 +114,5 @@ tables:
               "b": { bool: true }
               "c": { bool: true }
               "d": { bool: true }
+              "e": { bool: true }
+              "f": { bool: true }

@@ -14,6 +14,11 @@ tables:
       file: "testdata/services/wrong_type.proto"
       index: 2
       visible: true
+    - fqn: "buf.test.Z"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/services/wrong_type.proto"
+      index: 1
+      visible: true
     - fqn: "buf.test.S"
       kind: 9
       file: "testdata/services/wrong_type.proto"

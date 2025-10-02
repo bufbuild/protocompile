@@ -1,22 +1,6 @@
 tables:
   "testdata/editions/incomplete_feature.proto":
     imports: [{ path: "google/protobuf/descriptor.proto", visible: true }]
-    features:
-    - { name: "default_symbol_visibility", value: "EXPORT_ALL" }
-    - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-    - { name: "enum_type", value: "OPEN" }
-    - { name: "field_presence", value: "EXPLICIT" }
-    - { name: "json_format", value: "ALLOW" }
-    - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-    - { name: "repeated_field_encoding", value: "PACKED" }
-    - { name: "utf8_validation", value: "VERIFY" }
-    - { extn: "buf.test.f", name: "a", value: "false" }
-    - { extn: "buf.test.f", name: "b", value: "false" }
-    - { extn: "buf.test.f", name: "c", value: "false" }
-    - { extn: "buf.test.f", name: "d", value: "false" }
-    - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-    - { extn: "buf.test.f", name: "f", value: "true" }
-    - { extn: "buf.test.f", name: "g", value: "0" }
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -26,51 +10,17 @@ tables:
       file: "testdata/editions/incomplete_feature.proto"
       index: 1
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "json_format", value: "ALLOW" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Enum"
       kind: KIND_ENUM
       file: "testdata/editions/incomplete_feature.proto"
       index: 2
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "enum_type", value: "OPEN" }
-      - { name: "json_format", value: "ALLOW" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.a"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
       index: 1
       visible: true
       options.message.fields: { "feature_support": { message: {} } }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.b"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -82,19 +32,6 @@ tables:
           - message.fields:
               "edition": { i32: 900 }
               "value": { string: "false" }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.c"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -107,19 +44,6 @@ tables:
               "edition": { i32: 998 }
               "value": { string: "false" }
         "feature_support": { message: {} }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.d"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -133,19 +57,6 @@ tables:
               "value": { string: "false" }
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1001 } }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.e"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -157,19 +68,6 @@ tables:
           - message.fields: { "edition": { i32: 998 }, "value": { string: "0" } }
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1001 } }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.f"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -189,19 +87,6 @@ tables:
             "edition_deprecated": { i32: 900 }
             "edition_introduced": { i32: 900 }
             "edition_removed": { i32: 900 }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.Features.g"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -215,64 +100,20 @@ tables:
           - message.fields: { "edition": { i32: 1000 }, "value": { string: "C" } }
         "feature_support":
           message.fields: { "edition_introduced": { i32: 1000 } }
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.A"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/incomplete_feature.proto"
       index: 8
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.B"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/incomplete_feature.proto"
       index: 9
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     - fqn: "buf.test.f"
       kind: KIND_EXTENSION
       file: "testdata/editions/incomplete_feature.proto"
       index: 10
       visible: true
-      features:
-      - { name: "enforce_naming_style", value: "STYLE_LEGACY" }
-      - { name: "field_presence", value: "EXPLICIT" }
-      - { name: "message_encoding", value: "LENGTH_PREFIXED" }
-      - { name: "repeated_field_encoding", value: "PACKED" }
-      - { name: "utf8_validation", value: "VERIFY" }
-      - { extn: "buf.test.f", name: "a", value: "false" }
-      - { extn: "buf.test.f", name: "b", value: "false" }
-      - { extn: "buf.test.f", name: "c", value: "false" }
-      - { extn: "buf.test.f", name: "d", value: "false" }
-      - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
-      - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
     options.message.fields:
       "features": { message.extns: { "buf.test.f": { message: {} } } }

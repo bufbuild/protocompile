@@ -37,3 +37,8 @@ tables:
       file: "testdata/extend/overlap.proto"
       index: 5
       visible: true
+    - fqn: "test.X"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/extend/overlap.proto"
+      index: 6
+      visible: true

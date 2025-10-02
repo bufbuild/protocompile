@@ -52,7 +52,7 @@ func validateConstraints(f File, r *report.Report) {
 			if ty.IsMessageSet() {
 				r.Errorf("field declared in %s `%s`", taxa.MessageSet, ty.FullName()).Apply(
 					report.Snippet(member.AST()),
-					report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+					report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 					report.Helpf("message set types may only declare extension ranges"),
 				)
 			}
@@ -62,7 +62,7 @@ func validateConstraints(f File, r *report.Report) {
 			if f.Syntax() == syntax.Proto3 {
 				r.Errorf("%s are not supported", taxa.MessageSet).Apply(
 					report.Snippet(ty.AST()),
-					report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+					report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 					report.Snippetf(f.AST().Syntax().Value(), "\"proto3\" specified here"),
 					report.Helpf("%ss cannot be defined in \"proto3\" only", taxa.MessageSet),
 					report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
@@ -70,7 +70,7 @@ func validateConstraints(f File, r *report.Report) {
 			} else {
 				r.Warnf("%ss are deprecated", taxa.MessageSet).Apply(
 					report.Snippet(ty.AST()),
-					report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+					report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 					report.Helpf("%ss are not implemented correctly in most Protobuf implementations", taxa.MessageSet),
 				)
 			}
@@ -78,7 +78,7 @@ func validateConstraints(f File, r *report.Report) {
 			if ty.ExtensionRanges().Len() == 0 {
 				r.Errorf("%s `%s` declares no %ss", taxa.MessageSet, ty.FullName(), taxa.Extensions).Apply(
 					report.Snippet(ty.AST()),
-					report.Snippetf(ty.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+					report.Snippetf(ty.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 				)
 			}
 		}
@@ -96,14 +96,14 @@ func validateConstraints(f File, r *report.Report) {
 
 				r.Errorf("repeated message set extension").Apply(
 					report.Snippet(repeated.PrefixToken()),
-					report.Snippetf(extendee.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+					report.Snippetf(extendee.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 					report.Helpf("message set extensions must be singular message fields"),
 				)
 			}
 			if !extn.Element().IsMessage() {
 				r.Errorf("non-message message set extension").Apply(
 					report.Snippet(extn.AST().Type().RemovePrefixes()),
-					report.Snippetf(extendee.Options().Field(builtins.MessageSet).MessageKeys().At(0), "declared as message set here"),
+					report.Snippetf(extendee.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 					report.Helpf("message set extensions must be singular message fields"),
 				)
 			}

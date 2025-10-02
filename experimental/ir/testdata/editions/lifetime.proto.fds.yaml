@@ -38,6 +38,26 @@ file:
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support.edition_introduced: EDITION_2024
+    - name: "e"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options:
+        edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
+        feature_support:
+          edition_introduced: EDITION_2023
+          edition_deprecated: EDITION_2023
+          edition_removed: EDITION_2024
+    - name: "f"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      options:
+        edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
+        feature_support:
+          edition_introduced: EDITION_PROTO3
+          edition_deprecated: EDITION_PROTO3
+          edition_removed: EDITION_2023
   extension:
   - name: "x"
     number: 9995
@@ -51,6 +71,8 @@ file:
       2: 1
       3: 1
       4: 1
+      5: 1
+      6: 1
     }
   syntax: "editions"
   edition: EDITION_2023
