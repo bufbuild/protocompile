@@ -1,9 +1,9 @@
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/field/modifiers/proto2.proto:20:5
    |
 20 |     required int32 a = 1;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected type name

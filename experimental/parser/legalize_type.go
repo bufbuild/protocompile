@@ -150,10 +150,11 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 				case keyword.Required:
 					switch p.syntax {
 					case syntax.Proto2:
-						p.Warnf("required fields are deprecated and should not be used").Apply(
+						p.Warnf("required fields are deprecated").Apply(
 							report.Snippet(ty.PrefixToken()),
-							report.Helpf("do not attempt to change this to %s if the field is already in-use; "+
-								"doing so is a wire protocol break", keyword.Optional),
+							report.Helpf(
+								"do not attempt to change this to `optional` if the field is "+
+									"already in-use; doing so is a wire protocol break"),
 						)
 					default:
 						p.Error(errUnexpected{

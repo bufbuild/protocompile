@@ -20,7 +20,7 @@ package buf.test;
 
 import "google/protobuf/descriptor.proto";
 
-option features.(x) = {a: true, b: true, c: true, d: true};
+option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
 
 extend google.protobuf.FeatureSet {
     Features x = 9995;
@@ -48,5 +48,19 @@ message Features {
     bool d = 4 [
         edition_defaults = {edition: EDITION_LEGACY, value: "false"},
         feature_support.edition_introduced = EDITION_2024
+    ];
+
+    bool e = 5 [
+        edition_defaults = {edition: EDITION_LEGACY, value: "false"},
+        feature_support.edition_introduced = EDITION_2023,
+        feature_support.edition_deprecated = EDITION_2023,
+        feature_support.edition_removed = EDITION_2024
+    ];
+
+    bool f = 6 [
+        edition_defaults = {edition: EDITION_LEGACY, value: "false"},
+        feature_support.edition_introduced = EDITION_PROTO3,
+        feature_support.edition_deprecated = EDITION_PROTO3,
+        feature_support.edition_removed = EDITION_2023
     ];
 }

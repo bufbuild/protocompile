@@ -158,6 +158,26 @@ func (s Symbol) FeatureSet() FeatureSet {
 	}
 }
 
+// Deprecated returns whether this symbol is deprecated, but returning the
+// relevant option value for setting deprecation.
+//
+// Note that although files can be marked as deprecated, packages cannot,
+// so package symbols never show up as deprecated.
+func (s Symbol) Deprecated() Value {
+	switch s.Kind() {
+	case SymbolKindMessage, SymbolKindEnum:
+		return s.AsType().Deprecated()
+	case SymbolKindField, SymbolKindExtension, SymbolKindEnumValue:
+		return s.AsType().Deprecated()
+	case SymbolKindService:
+		return s.AsService().Deprecated()
+	case SymbolKindMethod:
+		return s.AsMethod().Deprecated()
+	default:
+		return Value{}
+	}
+}
+
 // Visible returns whether or not this symbol is visible according to Protobuf's
 // import semantics, within s.Context().File().
 func (s Symbol) Visible() bool {

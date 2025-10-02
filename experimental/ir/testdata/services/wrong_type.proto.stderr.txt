@@ -1,7 +1,7 @@
 error: expected message type, found enum type `buf.test.E`
   --> testdata/services/wrong_type.proto:23:24
    |
-20 | enum E {}
+20 | enum E { Z = 0; }
    |      - defined here
 ...
 23 |     rpc M1(M) returns (E);
@@ -10,7 +10,7 @@ error: expected message type, found enum type `buf.test.E`
 error: expected message type, found enum type `buf.test.E`
   --> testdata/services/wrong_type.proto:24:19
    |
-20 | enum E {}
+20 | enum E { Z = 0; }
    |      - defined here
 ...
 23 |     rpc M1(M) returns (E);

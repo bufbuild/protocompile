@@ -31,4 +31,5 @@ message M {
 
 enum E {
     extensions 1; // Not allowed.
+    X = 0;
 }

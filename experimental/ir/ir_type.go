@@ -172,11 +172,32 @@ func (t Type) IsMessageSet() bool {
 	return !t.IsZero() && t.raw.isMessageSet
 }
 
+// IsMap returns whether this is a map type's entry.
+func (t Type) IsMapEntry() bool {
+	return !t.MapField().IsZero()
+}
+
 // IsMessage returns whether this is an enum type.
 func (t Type) IsEnum() bool {
 	// All of the predeclared types have isEnum set to false, so we don't
 	// need to check for them here.
 	return !t.IsZero() && t.raw.isEnum
+}
+
+func (t Type) IsClosedEnum() bool {
+	if !t.IsEnum() {
+		return false
+	}
+
+	builtins := t.Context().builtins()
+	n, _ := t.FeatureSet().Lookup(builtins.FeatureEnum).Value().AsInt()
+	return n == 2 // FeatureSet.CLOSED
+}
+
+// IsPackable returns whether this type can be the element of a packed repeated
+// field.
+func (t Type) IsPackable() bool {
+	return t.IsEnum() || t.Predeclared().IsPackable()
 }
 
 // AllowsAlias returns whether this is an enum type with the allow_alias
@@ -302,6 +323,16 @@ func (t Type) MapField() Member {
 		return Member{}
 	}
 	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.mapEntryOf})
+}
+
+// EntryFields returns the key and value fields for this map entry type.
+func (t Type) EntryFields() (key, value Member) {
+	if !t.IsMapEntry() {
+		return Member{}, Member{}
+	}
+
+	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.members[0]}),
+		wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.members[1]})
 }
 
 // Members returns the members of this type.
@@ -452,6 +483,24 @@ func (t Type) FeatureSet() FeatureSet {
 	}
 }
 
+// Deprecated returns whether this type is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (t Type) Deprecated() Value {
+	if t.IsZero() || t.IsPredeclared() {
+		return Value{}
+	}
+	builtins := t.Context().builtins()
+	field := builtins.MessageDeprecated
+	if t.IsEnum() {
+		field = builtins.EnumDeprecated
+	}
+	d := t.Options().Field(field)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
+}
+
 // noun returns a [taxa.Noun] for diagnostics.
 func (t Type) noun() taxa.Noun {
 	switch {
@@ -459,6 +508,8 @@ func (t Type) noun() taxa.Noun {
 		return taxa.ScalarType
 	case t.IsEnum():
 		return taxa.EnumType
+	case t.IsMapEntry():
+		return taxa.EntryType
 	default:
 		return taxa.MessageType
 	}

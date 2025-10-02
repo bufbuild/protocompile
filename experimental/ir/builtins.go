@@ -41,11 +41,22 @@ type builtins struct {
 	ServiceOptions   Member
 	MethodOptions    Member
 
-	MessageSet Member
+	JavaUTF8             Member
+	OptimizeFor          Member
+	MapEntry             Member
+	Packed               Member
+	OptionTargets        Member
+	CType, JSType        Member
+	Lazy, UnverifiedLazy Member
+	MessageSet           Member
 
-	MapEntry      Member
-	Packed        Member
-	OptionTargets Member
+	FileDeprecated      Member
+	MessageDeprecated   Member
+	FieldDeprecated     Member
+	EnumDeprecated      Member
+	EnumValueDeprecated Member
+	ServiceDeprecated   Member
+	MethodDeprecated    Member
 
 	EditionDefaults, EditionDefaultsKey, EditionDefaultsValue Member
 
@@ -59,7 +70,9 @@ type builtins struct {
 	FeaturePresence Member
 	FeatureEnumType Member
 	FeaturePacked   Member
+	FeatureUTF8     Member
 	FeatureGroup    Member
+	FeatureEnum     Member
 
 	FileFeatures      Member
 	MessageFeatures   Member
@@ -88,12 +101,17 @@ type builtinIDs struct {
 	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
 	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
-	MessageSet intern.ID `intern:"google.protobuf.MessageOptions.message_set_wire_format"`
-	AllowAlias intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
-
-	MapEntry      intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
-	Packed        intern.ID `intern:"google.protobuf.FieldOptions.packed"`
-	OptionTargets intern.ID `intern:"google.protobuf.FieldOptions.targets"`
+	JavaUTF8       intern.ID `intern:"google.protobuf.FileOptions.java_string_check_utf8"`
+	OptimizeFor    intern.ID `intern:"google.protobuf.FileOptions.optimize_for"`
+	MapEntry       intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	MessageSet     intern.ID `intern:"google.protobuf.MessageOptions.message_set_wire_format"`
+	Packed         intern.ID `intern:"google.protobuf.FieldOptions.packed"`
+	OptionTargets  intern.ID `intern:"google.protobuf.FieldOptions.targets"`
+	CType          intern.ID `intern:"google.protobuf.FieldOptions.ctype"`
+	JSType         intern.ID `intern:"google.protobuf.FieldOptions.jstype"`
+	Lazy           intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
+	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
+	AllowAlias     intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`
@@ -104,6 +122,14 @@ type builtinIDs struct {
 	EnumValueUninterpreted intern.ID `intern:"google.protobuf.EnumValueOptions.uninterpreted_option"`
 	ServiceUninterpreted   intern.ID `intern:"google.protobuf.ServiceOptions.uninterpreted_option"`
 	MethodUninterpreted    intern.ID `intern:"google.protobuf.MethodOptions.uninterpreted_option"`
+
+	FileDeprecated      intern.ID `intern:"google.protobuf.FileOptions.deprecated"`
+	MessageDeprecated   intern.ID `intern:"google.protobuf.MessageOptions.deprecated"`
+	FieldDeprecated     intern.ID `intern:"google.protobuf.FieldOptions.deprecated"`
+	EnumDeprecated      intern.ID `intern:"google.protobuf.EnumOptions.deprecated"`
+	EnumValueDeprecated intern.ID `intern:"google.protobuf.EnumValueOptions.deprecated"`
+	ServiceDeprecated   intern.ID `intern:"google.protobuf.ServiceOptions.deprecated"`
+	MethodDeprecated    intern.ID `intern:"google.protobuf.MethodOptions.deprecated"`
 
 	EditionDefaults      intern.ID `intern:"google.protobuf.FieldOptions.edition_defaults"`
 	EditionDefaultsKey   intern.ID `intern:"google.protobuf.FieldOptions.EditionDefault.edition"`
@@ -119,7 +145,9 @@ type builtinIDs struct {
 	FeaturePresence intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`
 	FeatureEnumType intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
 	FeaturePacked   intern.ID `intern:"google.protobuf.FeatureSet.repeated_field_encoding"`
+	FeatureUTF8     intern.ID `intern:"google.protobuf.FeatureSet.utf8_validation"`
 	FeatureGroup    intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
+	FeatureEnum     intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
 
 	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`

@@ -9,7 +9,7 @@ error: expected type, found message field `test.Foo.x`
 error: expected type, found enum value `test.Foo.BAZ`
   --> testdata/fields/wrong_kind.proto:23:5
    |
-20 |     enum Bar { BAZ = 1; }
+20 |     enum Bar { BAZ = 0; }
    |                --- defined here
 21 |
 22 |     x x = 1;

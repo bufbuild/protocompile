@@ -38,12 +38,16 @@ warning: `edition_defaults` does not cover all editions
    = help: `edition_defaults` must specify a default for `EDITION_PROTO2` or
            `EDITION_LEGACY` to cover all editions
 
-warning: expected `bool` or enum typed field for feature
+warning: expected `bool` or enum type, found scalar type `int32`
   --> testdata/editions/incomplete_feature.proto:42:5
    |
 42 |     int32 e = 5 [
    |     ^^^^^
+43 |         edition_defaults = {edition: EDITION_PROTO2, value: "0"},
+   |         ---------------- expected because this makes `e` into a feature
+   |
    = note: this is likely a mistake, but it is not rejected by protoc
+   = help: features should have `bool` or enum type
 
 warning: unexpected `EDITION_LEGACY` in `EditionDefault.edition`
   --> testdata/editions/incomplete_feature.proto:49:38

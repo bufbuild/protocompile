@@ -1,0 +1,43 @@
+error: `field_presence` is not supported in Edition 2023
+  --> testdata/editions/ok.proto:21:8
+   |
+17 | edition = "2023";
+   |           ------ edition specified here
+...
+21 | option features.field_presence = IMPLICIT;
+   |        ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `field_presence` requires at least Edition 2023
+
+error: `field_presence` is not supported in Edition 2023
+  --> testdata/editions/ok.proto:24:18
+   |
+17 | edition = "2023";
+   |           ------ edition specified here
+...
+24 |     int32 x = 1 [features.field_presence = EXPLICIT];
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `field_presence` requires at least Edition 2023
+
+error: `field_presence` is not supported in Edition 2023
+  --> testdata/editions/ok.proto:25:18
+   |
+17 | edition = "2023";
+   |           ------ edition specified here
+...
+24 |     int32 x = 1 [features.field_presence = EXPLICIT];
+25 |     int32 y = 2 [features.field_presence = IMPLICIT];
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `field_presence` requires at least Edition 2023
+
+error: `field_presence` is not supported in Edition 2023
+  --> testdata/editions/ok.proto:26:18
+   |
+17 | edition = "2023";
+   |           ------ edition specified here
+...
+25 |     int32 y = 2 [features.field_presence = IMPLICIT];
+26 |     int32 z = 3 [features.field_presence = LEGACY_REQUIRED];
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `field_presence` requires at least Edition 2023
+
+encountered 4 errors

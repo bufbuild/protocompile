@@ -83,15 +83,44 @@ func (m Member) IsGroup() bool {
 	return !m.IsZero() && m.raw.isGroup
 }
 
+// IsSynthetic returns whether or not this is a synthetic field, such as the
+// fields of a map entry.
+func (m Member) IsSynthetic() bool {
+	return !m.IsZero() && m.AST().IsZero()
+}
+
+// IsSingular returns whether this is a singular field; this includes oneof
+// members.
+func (m Member) IsSingular() bool {
+	return m.Presence() != presence.Unknown && m.Presence() != presence.Repeated
+}
+
+// IsRepeated returns whether this is a repeated field; this includes map
+// fields.
+func (m Member) IsRepeated() bool {
+	return m.Presence() == presence.Repeated
+}
+
 // IsMap returns whether this is a map field.
 func (m Member) IsMap() bool {
 	return !m.IsZero() && m == m.Element().MapField()
 }
 
-// IsSynthetic returns whether or not this is a synthetic field, such as the
-// fields of a map entry.
-func (m Member) IsSynthetic() bool {
-	return !m.IsZero() && m.AST().IsZero()
+// IsPacked returns whether this is a packed message field.
+func (m Member) IsPacked() bool {
+	if !m.IsRepeated() {
+		return false
+	}
+
+	builtins := m.Context().builtins()
+	option := m.Options().Field(builtins.Packed)
+	if packed, ok := option.AsBool(); ok {
+		return packed
+	}
+
+	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
+	value, _ := feature.AsInt()
+	return value == 1 // google.protobuf.FeatureSet.PACKED
 }
 
 // AsTagRange wraps this member in a TagRange.
@@ -298,6 +327,24 @@ func (m Member) FeatureInfo() FeatureInfo {
 		internal.NewWith(m.Context()),
 		m.raw.featureInfo,
 	}
+}
+
+// Deprecated returns whether this member is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (m Member) Deprecated() Value {
+	if m.IsZero() {
+		return Value{}
+	}
+	builtins := m.Context().builtins()
+	field := builtins.FieldDeprecated
+	if m.IsEnumValue() {
+		field = builtins.EnumValueDeprecated
+	}
+	d := m.Options().Field(field)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
 }
 
 // CanTarget returns whether this message field can be set as an option for the

@@ -1,8 +1,10 @@
 error: expected singular message, found repeated `buf.test.Foo`
-  --> testdata/options/values/nested.proto:25:13
+  --> testdata/options/values/nested.proto:25:14
    |
 25 | option (x).b.a = {};
-   |             ^^ field selector requires singular message
+   |            - ^ field selector requires singular message
+   |            |
+   |            found repeated `buf.test.Foo`
 ...
 43 |     optional Foo a = 1;
 44 |     repeated Foo b = 2;
@@ -37,10 +39,12 @@ error: message extension `buf.test.y` set multiple times
    = note: a non-`repeated` option may be set at most once
 
 error: expected singular message, found repeated `buf.test.Foo`
-  --> testdata/options/values/nested.proto:38:17
+  --> testdata/options/values/nested.proto:38:18
    |
 38 | option (x).a.(z).a = {};
-   |                 ^^ field selector requires singular message
+   |              --- ^ field selector requires singular message
+   |              |
+   |              found repeated `buf.test.Foo`
 39 | option (x).a.(z) = {};
 ...
 53 |     optional Foo y = 1000;

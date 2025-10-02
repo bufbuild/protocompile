@@ -34,12 +34,12 @@ error: unexpected type after `repeated`
 31 |     repeated map<string, string> x9 = 9;
    |              ^^^^^^^^^^^^^^^^^^^ expected type name
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/type/generic.proto:32:5
    |
 32 |     required map<string, string> x10 = 10;
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 error: unexpected type after `required`

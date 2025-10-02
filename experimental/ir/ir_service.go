@@ -114,6 +114,20 @@ func (s Service) FeatureSet() FeatureSet {
 	}
 }
 
+// Deprecated returns whether this service is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (s Service) Deprecated() Value {
+	if s.IsZero() {
+		return Value{}
+	}
+	builtins := s.Context().builtins()
+	d := s.Options().Field(builtins.ServiceDeprecated)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
+}
+
 // Methods returns the methods of this service.
 func (s Service) Methods() seq.Indexer[Method] {
 	var methods []arena.Pointer[rawMethod]
@@ -188,6 +202,20 @@ func (m Method) FeatureSet() FeatureSet {
 		internal.NewWith(m.Context()),
 		m.Context().arenas.features.Deref(m.raw.features),
 	}
+}
+
+// Deprecated returns whether this service is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (m Method) Deprecated() Value {
+	if m.IsZero() {
+		return Value{}
+	}
+	builtins := m.Context().builtins()
+	d := m.Options().Field(builtins.MethodDeprecated)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
 }
 
 // Service returns the service this method is part of.

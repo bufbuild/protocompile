@@ -19,12 +19,12 @@ warning: group syntax is deprecated
    |              ^^^^^
    = note: group syntax is not available in proto3 or editions
 
-warning: required fields are deprecated and should not be used
+warning: required fields are deprecated
   --> testdata/parser/field/group.proto:33:5
    |
 33 |     required group lowercase = 4 {}
    |     ^^^^^^^^
-   = help: do not attempt to change this to optional if the field is already
+   = help: do not attempt to change this to `optional` if the field is already
            in-use; doing so is a wire protocol break
 
 warning: group syntax is deprecated

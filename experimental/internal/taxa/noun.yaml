@@ -89,6 +89,7 @@
   - {name: MessageSet, string: "message set type"}
   - {name: EnumType, string: "enum type"}
   - {name: ScalarType, string: "scalar type"}
+  - {name: EntryType, string: "map entry type"}
 
   - {name: MapKey, string: "map key type"}
   - {name: MapValue, string: "map value type"}
