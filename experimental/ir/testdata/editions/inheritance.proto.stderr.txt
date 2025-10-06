@@ -1,13 +1,3 @@
-error: `field_presence` is not supported in Edition 2023
-  --> testdata/editions/inheritance.proto:23:8
-   |
-17 | edition = "2023";
-   |           ------ edition specified here
-...
-23 | option features.field_presence = IMPLICIT;
-   |        ^^^^^^^^^^^^^^^^^^^^^^^
-   = help: `field_presence` requires at least Edition 2023
-
 warning: `legacy_closed_enum` is deprecated in Edition 2023
   --> testdata/editions/inheritance.proto:24:8
    |
@@ -22,25 +12,4 @@ warning: `legacy_closed_enum` is deprecated in Edition 2023
            is scheduled to be removed in edition 2025. See
            http://protobuf.dev/programming-guides/enum/#cpp for more information
 
-error: `repeated_field_encoding` is not supported in Edition 2023
-  --> testdata/editions/inheritance.proto:27:27
-   |
-17 | edition = "2023";
-   |           ------ edition specified here
-...
-27 |     repeated int32 x = 1 [features.repeated_field_encoding = PACKED];
-   |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   = help: `repeated_field_encoding` requires at least Edition 2023
-
-error: `field_presence` is not supported in Edition 2023
-  --> testdata/editions/inheritance.proto:28:18
-   |
-17 | edition = "2023";
-   |           ------ edition specified here
-...
-27 |     repeated int32 x = 1 [features.repeated_field_encoding = PACKED];
-28 |     int32 y = 2 [features.field_presence = LEGACY_REQUIRED];
-   |                  ^^^^^^^^^^^^^^^^^^^^^^^
-   = help: `field_presence` requires at least Edition 2023
-
-encountered 3 errors and 1 warning
+encountered 1 warning

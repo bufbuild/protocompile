@@ -385,7 +385,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 				where:      feature.KeyAST(),
 			})
 
-		case info.IsIntroduced(edition):
+		case !info.IsIntroduced(edition):
 			r.Error(errEditionTooOld{
 				file:  features.Context().File(),
 				intro: info.Introduced(),

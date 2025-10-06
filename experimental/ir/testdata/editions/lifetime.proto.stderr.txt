@@ -1,13 +1,3 @@
-error: `a` is not supported in Edition 2023
-  --> testdata/editions/lifetime.proto:23:24
-   |
-17 | edition = "2023";
-   |           ------ edition specified here
-...
-23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
-   |                        ^
-   = help: `a` requires at least Edition 2023
-
 warning: `b` is deprecated in Edition 2023
   --> testdata/editions/lifetime.proto:23:33
    |
@@ -28,6 +18,16 @@ error: `c` is not supported in Edition 2023
 23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
    |                                          ^
    = help: removed in Edition 2023
+
+error: `d` is not supported in Edition 2023
+  --> testdata/editions/lifetime.proto:23:51
+   |
+17 | edition = "2023";
+   |           ------ edition specified here
+...
+23 | option features.(x) = {a: true, b: true, c: true, d: true, e: true, f: true};
+   |                                                   ^
+   = help: `d` requires at least Edition 2024
 
 warning: `e` is deprecated in Edition 2023
   --> testdata/editions/lifetime.proto:23:60
