@@ -214,6 +214,8 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	return results, err
 }
 
+// resolve executes the tasks returning the results plus the tasks for report
+// generation.
 func resolve[T any](caller *Task, queries ...Query[T]) ([]Result[T], []*task, error) {
 	if len(queries) == 0 {
 		return nil, nil, nil
@@ -299,7 +301,13 @@ type task struct {
 	// runID are synchronized-after the done channel being closed.
 	runID uint64
 
-	// The wait group protects the results. All clients must wait but they
+	// The deps and parents are protected by the executor.lock.
+	// deps is used for cycle detection and transitive error collection.
+	// parents is used for cache invalidation to transitively evict dependent tasks.
+	deps    map[*task]struct{}
+	parents map[*task]struct{}
+
+	// The wait group protects the results. All readers must wait but they
 	// may optionally check done to avoid blocking.
 	wg     sync.WaitGroup
 	value  any
@@ -348,7 +356,7 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 	}
 	key := query.Key()
 	if c, ok := t.exec.tasks[key]; ok {
-		t.exec.addDependencyWithLock(t.task, c)
+		t.addDependencyWithLock(c)
 		if c.done.Load() {
 			t.exec.lock.Unlock()
 			t.log("cache hit fast", "%T/%v", query.Underlying(), query.Underlying())
@@ -381,7 +389,7 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 	c.runID = t.runID
 	c.wg.Add(1)
 	t.exec.tasks[key] = c
-	t.exec.addDependencyWithLock(t.task, c)
+	t.addDependencyWithLock(c)
 	t.exec.lock.Unlock()
 
 	if !sync {
@@ -396,8 +404,25 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 	return false
 }
 
+// addDependencyWithLock links the callee task to the parent caller.
+// Must be called with t.exec.lock held.
+func (t *Task) addDependencyWithLock(child *task) {
+	parent := t.task
+	if parent == nil {
+		return // Root task.
+	}
+	if child.parents == nil {
+		child.parents = make(map[*task]struct{})
+	}
+	if parent.deps == nil {
+		parent.deps = make(map[*task]struct{})
+	}
+	parent.deps[child] = struct{}{}
+	child.parents[parent] = struct{}{}
+}
+
 // hasCycleWithLock checks if waiting on target would create a cycle.
-// Must be called with t.exec.mu held.
+// Must be called with t.exec.lock held.
 // targetQuery is the query being resolved (with import info), which may differ from target.query.
 func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 	if t.task == nil || target == nil {
@@ -416,7 +441,7 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 			hasCycle = true
 			break
 		}
-		for dep := range t.exec.deps[current] {
+		for dep := range current.deps {
 			if _, ok := parent[dep]; !ok {
 				parent[dep] = current
 				dependencies.push(dep)
@@ -446,6 +471,7 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 	return &ErrCycle{Cycle: cycle}
 }
 
+// wait on the query results of the task. The run func is called by another Task.
 func (t *Task) wait(c *task, sync bool) {
 	// If this task is being executed synchronously with its caller, we need to
 	// drop our semaphore hold, otherwise we will deadlock: this caller will
@@ -464,8 +490,7 @@ func (t *Task) wait(c *task, sync bool) {
 	c.wg.Wait()
 }
 
-// run actually executes the query passed to start. It is called on its own
-// goroutine.
+// run actually executes the query passed to start.
 func (t *Task) run(c *task, sync bool) {
 	callee := &Task{
 		ctx:             t.ctx,

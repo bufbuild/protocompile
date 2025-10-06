@@ -25,6 +25,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 )
 
 // Executor is a caching executor for incremental queries.
@@ -33,13 +34,11 @@ import (
 type Executor struct {
 	reportOptions report.Options
 
-	// The lock implements singleflight for task execution and dependency tracking.
-	// deps is used for cycle detection and transitive error collection.
-	// parents is used for cache invalidation to transitively evict dependent tasks.
-	lock    sync.Mutex
-	tasks   map[any]*task
-	deps    map[*task]map[*task]struct{}
-	parents map[*task]map[*task]struct{}
+	// The lock ensures only one goroutine creates and executes a task for each unique
+	// query key, while other concurrent requests for the same key wait and share the result.
+	// It also protects access to tasks and their dependency relationships during updates.
+	lock  sync.Mutex
+	tasks map[any]*task
 
 	sema *semaphore.Weighted
 
@@ -143,24 +142,7 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		return nil, nil, expired
 	}
 	// Record all diagnostics generates by the queries.
-	report := &report.Report{Options: e.reportOptions}
-	dedup := make(map[*task]struct{})
-	for len(tasks) > 0 {
-		dep := tasks[len(tasks)-1]
-		if dep == nil {
-			continue // Can happen due to an abort.
-		}
-		tasks = tasks[:len(tasks)-1]
-		if _, ok := dedup[dep]; ok {
-			continue
-		}
-		dedup[dep] = struct{}{}
-		report.Diagnostics = append(report.Diagnostics, dep.report.Diagnostics...)
-		for dep := range e.deps[dep] {
-			tasks = append(tasks, dep)
-		}
-	}
-	report.Canonicalize()
+	report := e.generateReport(tasks)
 	return results, report, nil
 }
 
@@ -176,34 +158,33 @@ func (e *Executor) Evict(keys ...any) {
 		key := keys[len(keys)-1]
 		keys = keys[:len(keys)-1]
 		if t, ok := e.tasks[key]; ok {
-			for parent := range e.parents[t] {
+			delete(e.tasks, key)
+			for parent := range t.parents {
 				keys = append(keys, parent.query.Key())
 			}
-			delete(e.tasks, key)
-			delete(e.deps, t)
-			delete(e.parents, t)
 		}
 	}
 }
 
-func (e *Executor) addDependencyWithLock(parent *task, child *task) {
-	if parent == nil {
-		return // Root task.
-	}
-	parentDeps, ok := e.deps[parent]
-	if !ok {
-		parentDeps = make(map[*task]struct{}, 1)
-		if e.deps == nil {
-			e.deps = make(map[*task]map[*task]struct{})
-			e.parents = make(map[*task]map[*task]struct{})
+func (e *Executor) generateReport(tasks []*task) *report.Report {
+	report := &report.Report{Options: e.reportOptions}
+	defer report.Canonicalize()
+	e.lock.Lock()
+	defer e.lock.Unlock()
+	dedup := make(map[*task]struct{})
+	for len(tasks) > 0 {
+		dep := tasks[len(tasks)-1]
+		if dep == nil {
+			continue // Can happen due to an abort.
 		}
-		e.deps[parent] = parentDeps
+		tasks = tasks[:len(tasks)-1]
+		if !mapsx.AddZero(dedup, dep) {
+			continue
+		}
+		report.Diagnostics = append(report.Diagnostics, dep.report.Diagnostics...)
+		for dep := range dep.deps {
+			tasks = append(tasks, dep)
+		}
 	}
-	childParents, ok := e.parents[child]
-	if !ok {
-		childParents = make(map[*task]struct{}, 1)
-		e.parents[child] = childParents
-	}
-	parentDeps[child] = struct{}{}
-	childParents[parent] = struct{}{}
+	return report
 }
