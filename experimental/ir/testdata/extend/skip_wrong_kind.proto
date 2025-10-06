@@ -22,7 +22,7 @@ message M {
     }
     message P {
         enum X { N = 1; }
-        extend N {   // Does not skip .test.M.P.N
+        extend N {  // Does not skip .test.M.P.N
             optional int32 n = 1;  
         }
     }

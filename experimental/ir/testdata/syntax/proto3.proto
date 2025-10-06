@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//% descriptor: true
 syntax = "proto3";
 
 package buf.test;
