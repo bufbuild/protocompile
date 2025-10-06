@@ -14,4 +14,10 @@ error: detected cyclic import while importing "b.proto"
  4 | import "a.proto";
    | ----------------- ...which imports "a.proto", completing the cycle
 
-encountered 1 error
+error: detected cyclic import while importing "d.proto"
+  --> d.proto:4:1
+   |
+ 4 | import "d.proto";
+   | ^^^^^^^^^^^^^^^^^ imported here
+
+encountered 2 errors
