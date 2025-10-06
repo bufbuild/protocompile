@@ -17,7 +17,6 @@ package incremental
 import (
 	"context"
 	"fmt"
-	"iter"
 	"runtime"
 	"slices"
 	"sync"
@@ -34,7 +33,10 @@ import (
 type Executor struct {
 	reportOptions report.Options
 
-	mu      sync.Mutex
+	// The lock implements singleflight for task execution and dependency tracking.
+	// deps is used for cycle detection and transitive error collection.
+	// parents is used for cache invalidation to transitively evict dependent tasks.
+	lock    sync.Mutex
 	tasks   map[any]*task
 	deps    map[*task]map[*task]struct{}
 	parents map[*task]map[*task]struct{}
@@ -77,8 +79,8 @@ func WithReportOptions(options report.Options) ExecutorOption {
 //
 // The returned slice is sorted.
 func (e *Executor) Keys() (keys []string) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	keys = make([]string, 0, len(e.tasks))
 	for key := range e.tasks {
 		keys = append(keys, fmt.Sprintf("%#v", key))
@@ -168,8 +170,8 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 // This function cannot execute in parallel with calls to [Run], and will take
 // an exclusive lock (note that [Run] calls themselves can be run in parallel).
 func (e *Executor) Evict(keys ...any) {
-	e.mu.Lock()
-	defer e.mu.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 	for len(keys) > 0 {
 		key := keys[len(keys)-1]
 		keys = keys[:len(keys)-1]
@@ -204,31 +206,4 @@ func (e *Executor) addDependencyWithLock(parent *task, child *task) {
 	}
 	parentDeps[child] = struct{}{}
 	childParents[parent] = struct{}{}
-}
-
-func (e *Executor) walkDeps(target *task) iter.Seq2[*task, *task] {
-	type elem struct {
-		parent *task
-		child  *task
-	}
-	q := queue[elem]{}
-	for dep := range e.deps[target] {
-		q.push(elem{
-			parent: target,
-			child:  dep,
-		})
-	}
-	return func(yield func(parent *task, child *task) bool) {
-		for item := range q.items() {
-			if !yield(item.parent, item.child) {
-				return
-			}
-			for dep := range e.deps[item.child] {
-				q.push(elem{
-					parent: item.child,
-					child:  dep,
-				})
-			}
-		}
-	}
 }

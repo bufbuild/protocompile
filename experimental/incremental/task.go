@@ -61,11 +61,13 @@ type Task struct {
 
 // Context returns the cancellation context for this task.
 func (t *Task) Context() context.Context {
+	t.checkDone()
 	return t.ctx
 }
 
 // Report returns the diagnostic report for this task.
 func (t *Task) Report() *report.Report {
+	t.checkDone()
 	return &t.task.report
 }
 
@@ -223,6 +225,7 @@ func resolve[T any](caller *Task, queries ...Query[T]) ([]Result[T], []*task, er
 	join := semaphore.NewWeighted(int64(len(queries)))
 	join.TryAcquire(int64(len(queries))) // Always succeeds because there are no waiters.
 
+	// Schedule all but the first query to run asynchronously.
 	var needWait bool
 	for i := len(queries) - 1; i >= 0; i-- {
 		query := AsAny(queries[i]) // This will also cache the result of q.Key() for us.
@@ -266,8 +269,17 @@ func resolve[T any](caller *Task, queries ...Query[T]) ([]Result[T], []*task, er
 	return results, tasks, context.Cause(caller.ctx)
 }
 
+// checkDone returns an error if this task is completed. This is to avoid shenanigans with
+// tasks that escape their scope.
+func (t *Task) checkDone() {
+	if t.task.done.Load() {
+		panic("protocompile/incremental: use of Task after the associated Query.Execute call returned")
+	}
+}
+
 // task is book-keeping information for a memoized Task in an Executor.
 type task struct {
+	// The query that executed this task.
 	query *AnyQuery
 
 	// This is the sequence ID of the Run call that caused this result to be
@@ -286,6 +298,8 @@ type task struct {
 	// runID are synchronized-after the done channel being closed.
 	runID uint64
 
+	// The wait group protects the results. All clients must wait but they
+	// may optionally check done to avoid blocking.
 	wg     sync.WaitGroup
 	value  any
 	fatal  error
@@ -327,7 +341,7 @@ type Result[T any] struct {
 // If sync is false, the computation will occur asynchronously. Returns whether
 // the computation is in fact executing asynchronously as a result.
 func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) {
-	t.exec.mu.Lock()
+	t.exec.lock.Lock()
 	if t.exec.tasks == nil {
 		t.exec.tasks = make(map[any]*task)
 	}
@@ -335,7 +349,7 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 	if c, ok := t.exec.tasks[key]; ok {
 		t.exec.addDependencyWithLock(t.task, c)
 		if c.done.Load() {
-			t.exec.mu.Unlock()
+			t.exec.lock.Unlock()
 			t.log("cache hit fast", "%T/%v", query.Underlying(), query.Underlying())
 			done(c) // fast path
 			return false
@@ -343,13 +357,14 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 		t.log("cache hit slow", "%T/%v", query.Underlying(), query.Underlying())
 		if err := t.hasCycleWithLock(c, query); err != nil {
 			// Safe to modify the task as run is waiting for this dependency to complete.
+			// Although there is a chance we race with another cycle check.
 			c.fatal = err
-			t.exec.mu.Unlock()
+			t.exec.lock.Unlock()
 			done(c)
 			// Cyclic key is evixted by the run task.
 			return false
 		}
-		t.exec.mu.Unlock()
+		t.exec.lock.Unlock()
 		if !sync {
 			go func() {
 				t.wait(c, sync)
@@ -367,7 +382,7 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 	c.wg.Add(1)
 	t.exec.tasks[key] = c
 	t.exec.addDependencyWithLock(t.task, c)
-	t.exec.mu.Unlock()
+	t.exec.lock.Unlock()
 
 	if !sync {
 		go func() {
@@ -421,11 +436,11 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 	}
 	cycle = append(cycle, target.query)
 
-	// Reverse to get the correct dependency order (target -> ... -> t.task)
+	// Reverse to get the correct dependency order (target -> ... -> t.task).
 	slices.Reverse(cycle)
 
-	// Add targetQuery at the end to complete the cycle (target -> ... -> t.task -> targetQuery)
-	// We use targetQuery instead of target.query because it has the import request info
+	// Add targetQuery at the end to complete the cycle (target -> ... -> t.task -> targetQuery).
+	// We use targetQuery instead of target.query because it has the import request info.
 	cycle = append(cycle, targetQuery)
 
 	return &ErrCycle{Cycle: cycle}

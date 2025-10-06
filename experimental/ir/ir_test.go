@@ -15,7 +15,6 @@
 package ir_test
 
 import (
-	"context"
 	"flag"
 	"maps"
 	"path/filepath"
@@ -23,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -126,10 +124,7 @@ func TestIR(t *testing.T) {
 			},
 		))
 
-		ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
-		t.Cleanup(cancel)
-		results, r, err := incremental.Run(ctx, exec, queries...)
-		exec.PrintDeps(t)
+		results, r, err := incremental.Run(t.Context(), exec, queries...)
 		require.NoError(t, err)
 
 		stderr, _, _ := report.Renderer{
