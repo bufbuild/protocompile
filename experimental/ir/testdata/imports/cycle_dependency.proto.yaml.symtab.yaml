@@ -1,8 +1,0 @@
-tables:
-  "foo/v1/foo.proto":
-    imports:
-    - { path: "foo/v1/bar.proto", visible: true }
-    - { path: "foo/v2/foo.proto", visible: true }
-    symbols:
-    - { fqn: "foo.v1", kind: KIND_PACKAGE, file: "foo/v1/bar.proto" }
-    - { fqn: "foo.v2", kind: KIND_PACKAGE, file: "foo/v2/foo.proto" }
