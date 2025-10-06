@@ -209,6 +209,7 @@ func (t *Task) aborted() error {
 // Note: this function really wants to be a method of [Task], but it isn't
 // because it's generic.
 func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], expired error) {
+	caller.checkDone()
 	results, _, err := resolve(caller, queries...)
 	return results, err
 }
