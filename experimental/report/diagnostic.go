@@ -271,6 +271,10 @@ func Debugf(format string, args ...any) DiagnosticOption {
 	return debug{format, args}
 }
 
+// PageBreak is a DiagnosticOption that inserts a "page break", separating
+// diagnostic snippets before and after it into separate windows.
+var PageBreak pageBreak
+
 // snippet is an annotated source code snippet within a [Diagnostic].
 //
 // Snippets will render as annotated source code spans that show the context
@@ -291,6 +295,11 @@ type snippet struct {
 	// Whether this is a "primary" snippet, which is used for deciding whether or not
 	// to mark the snippet with the same color as the overall diagnostic.
 	primary bool
+
+	// Whether this snippet ends in a page break, i.e., it should not be
+	// rendered together with following snippets, even if they're in the same
+	// file.
+	pageBreak bool
 
 	// Edits to include in this snippet. This causes this snippet to be rendered
 	// in its own window when it is non-empty, and no underline will appear for
@@ -325,6 +334,8 @@ type note lazySprintf
 type help lazySprintf
 type debug lazySprintf
 
+type pageBreak struct{}
+
 func (t tag) apply(d *Diagnostic) {
 	if d.tag != "" {
 		panic("protocompile/report: set diagnostic tag more than once")
@@ -352,3 +363,10 @@ func (m message) apply(d *Diagnostic) {
 func (n note) apply(d *Diagnostic)  { d.notes = append(d.notes, lazySprintf(n).String()) }
 func (n help) apply(d *Diagnostic)  { d.help = append(d.help, lazySprintf(n).String()) }
 func (n debug) apply(d *Diagnostic) { d.debug = append(d.debug, lazySprintf(n).String()) }
+
+func (pageBreak) apply(d *Diagnostic) {
+	if len(d.snippets) == 0 {
+		return
+	}
+	d.snippets[len(d.snippets)-1].pageBreak = true
+}

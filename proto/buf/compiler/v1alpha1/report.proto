@@ -69,6 +69,10 @@ message Diagnostic {
     // to mark the snippet with the same color as the overall diagnostic.
     bool primary = 2;
 
+    // Whether this annotation wants to be on its own window, separate from
+    // annotations that follow.
+    bool page_break = 7;
+
     // The index of `Report.files` of the file this annotation is for.
     //
     // This is not a whole `Report.File` to help keep serialized reports slim. This

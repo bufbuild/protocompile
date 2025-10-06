@@ -36,3 +36,10 @@ files:
     package buf.test;
 
     import "a.proto";
+
+- path: "d.proto"
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "d.proto";
