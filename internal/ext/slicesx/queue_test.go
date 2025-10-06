@@ -32,6 +32,14 @@ func TestQueue(t *testing.T) {
 	pack := func(v int, ok bool) p { return p{v, ok} }
 
 	var q slicesx.Queue[int]
+	q.PushBack(1)
+	assert.Equal(t, []int{1}, slices.Collect(q.Values()))
+	x, ok := q.PopFront()
+	assert.True(t, ok)
+	assert.Equal(t, 1, x)
+	_, ok = q.PopFront()
+	assert.False(t, ok)
+
 	q.PushBack(1, 2, 3)
 	assert.Equal(t, []int{1, 2, 3}, slices.Collect(q.Values()))
 	assert.Equal(t, 3, *q.Back())

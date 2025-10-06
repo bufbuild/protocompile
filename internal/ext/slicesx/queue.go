@@ -43,8 +43,9 @@ func NewRing[E any](capacity int) *Queue[E] {
 		return &Queue[E]{}
 	}
 
-	capacity = int(bitsx.MakePowerOfTwo(uint(capacity)))
-	return &Queue[E]{buf: make([]E, capacity)}
+	// Buffer length must be capacity + 1 (one slot kept empty) and power of 2.
+	bufLen := int(bitsx.MakePowerOfTwo(uint(capacity + 1)))
+	return &Queue[E]{buf: make([]E, bufLen)}
 }
 
 // Len returns the number of elements currently in the buffer.
@@ -85,7 +86,9 @@ func (r *Queue[E]) Reserve(n int) {
 	if r.Len()+n <= r.Cap() {
 		return
 	}
-	r.resize(int(bitsx.MakePowerOfTwo(uint(r.Cap() + n))))
+	// Buffer length must be capacity + 1 (one slot kept empty) and power of 2.
+	newCap := r.Len() + n
+	r.resize(int(bitsx.MakePowerOfTwo(uint(newCap + 1))))
 }
 
 // Front returns a pointer to the element at the front of the queue.
@@ -229,6 +232,12 @@ func (r Queue[E]) Format(out fmt.State, verb rune) {
 	} else {
 		fmt.Fprint(out, "]")
 	}
+}
+
+// Clear clears the queue.
+func (r *Queue[_]) Clear() {
+	clear(r.buf)
+	r.start, r.end = 0, 0
 }
 
 func (r *Queue[E]) resize(n int) {
