@@ -386,23 +386,23 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 		done(c)
 		return false
 	}
-	c := new(task)
-	c.query = query
-	c.runID = t.runID
-	c.wg.Add(1)
-	t.exec.tasks[key] = c
-	t.addDependencyWithLock(c)
+	task := new(task)
+	task.query = query
+	task.runID = t.runID
+	task.wg.Add(1)
+	t.exec.tasks[key] = task
+	t.addDependencyWithLock(task)
 	t.exec.lock.Unlock()
 
 	if !sync {
 		go func() {
-			defer done(c)
-			t.run(c, sync)
+			defer done(task)
+			t.run(task, sync)
 		}()
 		return true
 	}
-	defer done(c)
-	t.run(c, sync)
+	defer done(task)
+	t.run(task, sync)
 	return false
 }
 
@@ -474,7 +474,7 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 }
 
 // wait on the query results of the task. The run func is called by another Task.
-func (t *Task) wait(c *task, sync bool) {
+func (t *Task) wait(task *task, sync bool) {
 	// If this task is being executed synchronously with its caller, we need to
 	// drop our semaphore hold, otherwise we will deadlock: this caller will
 	// be waiting for the leader of this task to complete, but that one
@@ -488,46 +488,46 @@ func (t *Task) wait(c *task, sync bool) {
 		t.release()
 		defer t.acquire()
 	}
-	t.log("waiting", "%[1]T/%[1]v", c.query.Underlying())
-	c.wg.Wait()
+	t.log("waiting", "%[1]T/%[1]v", task.query.Underlying())
+	task.wg.Wait()
 }
 
 // run actually executes the query passed to start.
-func (t *Task) run(c *task, sync bool) {
+func (t *Task) run(task *task, sync bool) {
 	callee := &Task{
 		ctx:             t.ctx,
 		cancel:          t.cancel,
 		exec:            t.exec,
-		task:            c,
+		task:            task,
 		runID:           t.runID,
 		onRootGoroutine: t.onRootGoroutine && sync,
 	}
 	defer func() {
-		c.wg.Done()
-		c.done.Store(true)
+		task.wg.Done()
+		task.done.Store(true)
 		if t.aborted() != nil {
-			t.log("aborted", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), t.aborted())
+			t.log("aborted", "%[1]T/%[1]v, %[2]v", task.query.Underlying(), t.aborted())
 			if !callee.onRootGoroutine {
 				_ = recover()
 				runtime.Goexit()
 			}
-			t.exec.Evict(c.query.Key())
+			t.exec.Evict(task.query.Key())
 			return
 		}
 		if panicked := recover(); panicked != nil {
-			t.log("panic", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), panicked)
+			t.log("panic", "%[1]T/%[1]v, %[2]v", task.query.Underlying(), panicked)
 			t.cancel(&ErrPanic{
-				Query:     c.query,
+				Query:     task.query,
 				Panic:     panicked,
 				Backtrace: string(debug.Stack()),
 			})
-			t.exec.Evict(c.query.Key())
+			t.exec.Evict(task.query.Key())
 			return
 		}
 		if t.ctx.Err() != nil {
-			t.exec.Evict(c.query.Key())
+			t.exec.Evict(task.query.Key())
 		} else {
-			callee.log("done", "%[1]T/%[1]v", c.query.Underlying())
+			callee.log("done", "%[1]T/%[1]v", task.query.Underlying())
 		}
 	}()
 
@@ -543,9 +543,9 @@ func (t *Task) run(c *task, sync bool) {
 		defer t.transferFrom(callee)
 	}
 
-	callee.log("executing", "%[1]T/%[1]v", c.query.Underlying())
-	c.value, c.fatal = c.query.Execute(callee)
-	callee.log("returning", "%[1]T/%[1]v", c.query.Underlying())
+	callee.log("executing", "%[1]T/%[1]v", task.query.Underlying())
+	task.value, task.fatal = task.query.Execute(callee)
+	callee.log("returning", "%[1]T/%[1]v", task.query.Underlying())
 }
 
 type queue[T any] struct {
