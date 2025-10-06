@@ -307,8 +307,10 @@ type task struct {
 	deps    map[*task]struct{}
 	parents map[*task]struct{}
 
-	// The wait group protects the results. All readers must wait but they
-	// may optionally check done to avoid blocking.
+	// The wait group protects the results. All readers must wait on wg.
+	// The done atomic provides a fast-path check to avoid blocking on wg.Wait()
+	// when the result is not required. It is set immediately after wg.Done()
+	// by the executing goroutine.
 	wg     sync.WaitGroup
 	value  any
 	fatal  error
