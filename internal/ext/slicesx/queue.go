@@ -37,8 +37,8 @@ type Queue[E any] struct {
 	start, end int
 }
 
-// NewRing returns a [Queue] with the given capacity.
-func NewRing[E any](capacity int) *Queue[E] {
+// NewQueue returns a [Queue] with the given capacity.
+func NewQueue[E any](capacity int) *Queue[E] {
 	if capacity == 0 {
 		return &Queue[E]{}
 	}
