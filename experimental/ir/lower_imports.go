@@ -159,7 +159,10 @@ func diagnoseCycle(r *report.Report, cycle *ErrCycle) {
 				message = fmt.Sprintf("...which imports %q...", path)
 			}
 		}
-		err.Apply(report.Snippetf(imp, "%v", message))
+		err.Apply(
+			report.PageBreak,
+			report.Snippetf(imp, "%v", message),
+		)
 	}
 }
 

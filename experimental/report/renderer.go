@@ -214,14 +214,20 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	r.margin = max(2, len(strconv.Itoa(greatestLine))) // Easier than messing with math.Log10()
 
 	// Render all the diagnostic windows.
-	parts := slicesx.PartitionKey(d.snippets, func(snip snippet) any {
-		if len(snip.edits) > 0 {
-			// Suggestions are always rendered in their own windows.
-			// Return a fresh pointer, since that will always compare as
-			// distinct.
-			return new(int)
+	parts := slicesx.PartitionFunc(d.snippets, func(a, b snippet) bool {
+		if len(a.edits) > 0 || len(b.edits) > 0 {
+			// Suggestions are always rendered in their own windows, so they
+			// always split.
+			return true
 		}
-		return snip.Path()
+
+		// If a has a page break, we split.
+		if a.pageBreak {
+			return true
+		}
+
+		// Otherwise, split if the paths are distinct.
+		return a.Path() != b.Path()
 	})
 
 	var needsTrailingBreak bool
@@ -233,7 +239,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 			r.WriteString(" | ")
 		}
 
-		if i == 0 || d.snippets[i-1].Path() != d.snippets[i].Path() {
+		if i == 0 || d.snippets[i-1].pageBreak || d.snippets[i-1].Path() != d.snippets[i].Path() {
 			r.WriteString("\n")
 			r.WriteString(r.ss.nAccent)
 			r.WriteSpaces(r.margin)
