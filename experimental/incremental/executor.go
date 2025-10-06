@@ -26,6 +26,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // Executor is a caching executor for incremental queries.
@@ -39,6 +40,7 @@ type Executor struct {
 	// It also protects access to tasks and their dependency relationships during updates.
 	lock  sync.Mutex
 	tasks map[any]*task
+	queue slicesx.Queue[*task] // queue is scratch space for cycle detection.
 
 	sema *semaphore.Weighted
 
