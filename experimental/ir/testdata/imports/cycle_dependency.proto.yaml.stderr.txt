@@ -3,6 +3,9 @@ error: detected cyclic import while importing "foo/v1/bar.proto"
    |
  4 | import "foo/v1/bar.proto";
    | ^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+   |
+  ::: foo/v1/foo.proto:5:1
+   |
  5 | import "foo/v2/foo.proto";
    | -------------------------- ...which imports "foo/v2/foo.proto"...
    |
