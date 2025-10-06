@@ -446,7 +446,7 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 	return &ErrCycle{Cycle: cycle}
 }
 
-func (caller *Task) wait(c *task, sync bool) {
+func (t *Task) wait(c *task, sync bool) {
 	// If this task is being executed synchronously with its caller, we need to
 	// drop our semaphore hold, otherwise we will deadlock: this caller will
 	// be waiting for the leader of this task to complete, but that one
@@ -457,48 +457,48 @@ func (caller *Task) wait(c *task, sync bool) {
 	// called while the semaphore is being held, which avoids the above
 	// deadlock scenario.
 	if sync {
-		caller.release()
-		defer caller.acquire()
+		t.release()
+		defer t.acquire()
 	}
-	caller.log("waiting", "%[1]T/%[1]v", c.query.Underlying())
+	t.log("waiting", "%[1]T/%[1]v", c.query.Underlying())
 	c.wg.Wait()
 }
 
 // run actually executes the query passed to start. It is called on its own
 // goroutine.
-func (caller *Task) run(c *task, sync bool) {
+func (t *Task) run(c *task, sync bool) {
 	callee := &Task{
-		ctx:             caller.ctx,
-		cancel:          caller.cancel,
-		exec:            caller.exec,
+		ctx:             t.ctx,
+		cancel:          t.cancel,
+		exec:            t.exec,
 		task:            c,
-		runID:           caller.runID,
-		onRootGoroutine: caller.onRootGoroutine && sync,
+		runID:           t.runID,
+		onRootGoroutine: t.onRootGoroutine && sync,
 	}
 	defer func() {
 		c.wg.Done()
 		c.done.Store(true)
-		if caller.aborted() != nil {
-			caller.log("aborted", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), caller.aborted())
+		if t.aborted() != nil {
+			t.log("aborted", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), t.aborted())
 			if !callee.onRootGoroutine {
 				_ = recover()
 				runtime.Goexit()
 			}
-			caller.exec.Evict(c.query.Key())
+			t.exec.Evict(c.query.Key())
 			return
 		}
 		if panicked := recover(); panicked != nil {
-			caller.log("panic", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), panicked)
-			caller.cancel(&ErrPanic{
+			t.log("panic", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), panicked)
+			t.cancel(&ErrPanic{
 				Query:     c.query,
 				Panic:     panicked,
 				Backtrace: string(debug.Stack()),
 			})
-			caller.exec.Evict(c.query.Key())
+			t.exec.Evict(c.query.Key())
 			return
 		}
-		if caller.ctx.Err() != nil {
-			caller.exec.Evict(c.query.Key())
+		if t.ctx.Err() != nil {
+			t.exec.Evict(c.query.Key())
 		} else {
 			callee.log("done", "%[1]T/%[1]v", c.query.Underlying())
 		}
@@ -512,8 +512,8 @@ func (caller *Task) run(c *task, sync bool) {
 		defer callee.release()
 	} else {
 		// Steal our caller's semaphore hold.
-		callee.transferFrom(caller)
-		defer caller.transferFrom(callee)
+		callee.transferFrom(t)
+		defer t.transferFrom(callee)
 	}
 
 	callee.log("executing", "%[1]T/%[1]v", c.query.Underlying())

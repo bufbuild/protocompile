@@ -148,7 +148,7 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	for len(tasks) > 0 {
 		dep := tasks[len(tasks)-1]
 		if dep == nil {
-			continue // Can happend due to an abort.
+			continue // Can happen due to an abort.
 		}
 		tasks = tasks[:len(tasks)-1]
 		if _, ok := dedup[dep]; ok {
