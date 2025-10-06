@@ -358,7 +358,6 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 		t.log("cache hit slow", "%T/%v", query.Underlying(), query.Underlying())
 		if err := t.hasCycleWithLock(c, query); err != nil {
 			// Safe to modify the task as run is waiting for this dependency to complete.
-			// Although there is a chance we race with another cycle check.
 			c.fatal = err
 			t.exec.lock.Unlock()
 			done(c)
