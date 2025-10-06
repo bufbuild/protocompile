@@ -341,7 +341,7 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 			return false
 		}
 		t.log("cache hit slow", "%T/%v", query.Underlying(), query.Underlying())
-		if err := t.hasCycleWithLock(c); err != nil {
+		if err := t.hasCycleWithLock(c, query); err != nil {
 			// Safe to modify the task as run is waiting for this dependency to complete.
 			c.fatal = err
 			t.exec.mu.Unlock()
@@ -383,7 +383,8 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 
 // hasCycleWithLock checks if waiting on target would create a cycle.
 // Must be called with t.exec.mu held.
-func (t *Task) hasCycleWithLock(target *task) error {
+// targetQuery is the query being resolved (with import info), which may differ from target.query.
+func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 	if t.task == nil || target == nil {
 		return nil
 	}
@@ -423,8 +424,9 @@ func (t *Task) hasCycleWithLock(target *task) error {
 	// Reverse to get the correct dependency order (target -> ... -> t.task)
 	slices.Reverse(cycle)
 
-	// Add target again at the end to complete the cycle (target -> ... -> t.task -> target)
-	cycle = append(cycle, target.query)
+	// Add targetQuery at the end to complete the cycle (target -> ... -> t.task -> targetQuery)
+	// We use targetQuery instead of target.query because it has the import request info
+	cycle = append(cycle, targetQuery)
 
 	return &ErrCycle{Cycle: cycle}
 }
@@ -463,11 +465,8 @@ func (caller *Task) run(c *task, sync bool) {
 		c.done.Store(true)
 		if caller.aborted() != nil {
 			caller.log("aborted", "%[1]T/%[1]v, %[2]v", c.query.Underlying(), caller.aborted())
-			fmt.Println("aborted", caller.ctx.Err())
 			if !callee.onRootGoroutine {
-				fmt.Println("RECOVERING FROM ABORT")
 				_ = recover()
-				fmt.Println("EXIT")
 				runtime.Goexit()
 			}
 			caller.exec.Evict(c.query.Key())

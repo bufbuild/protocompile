@@ -188,10 +188,6 @@ func (e *Executor) addDependencyWithLock(parent *task, child *task) {
 	if parent == nil {
 		return // Root task.
 	}
-	if parent == child {
-		// TODO: THIS IS A BUG SOMEHOW?
-		fmt.Println("ADDING SELF????", "\n", parent.query.Underlying(), "\n", child.query.Underlying())
-	}
 	parentDeps, ok := e.deps[parent]
 	if !ok {
 		parentDeps = make(map[*task]struct{}, 1)
