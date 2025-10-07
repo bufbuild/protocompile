@@ -1,0 +1,33 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package buf.test;
+
+message M {
+    enum E { Z = 0; }
+
+    optional int32 o1 = 1 [packed = true];
+    optional int32 o2 = 2 [packed = false];
+    
+    repeated M m1 = 3 [packed = true];
+    repeated M m2 = 4 [packed = false];
+
+    repeated E e1 = 5 [packed = true];
+    repeated E e2 = 6 [packed = false];
+
+    repeated float f1 = 7 [packed = true];
+    repeated float f2 = 8 [packed = false];
+}

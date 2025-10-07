@@ -51,6 +51,9 @@ func validateConstraints(f File, r *report.Report) {
 	}
 
 	for m := range f.AllMembers() {
+		// https://protobuf.com/docs/language-spec#field-option-validation
+		validatePacked(m, r)
+
 		// NOTE: extensions already cannot be map fields, so we don't need to
 		// validate them.
 		if m.IsExtension() && !m.IsMap() {
@@ -148,5 +151,62 @@ func validateMessageSetExtension(extn Member, r *report.Report) {
 			report.Snippet(extendee.AST().Stem()),
 			report.Helpf("message set extensions must be singular message fields"),
 		)
+	}
+}
+
+// validatePacked validates constraints on the packed option and feature.
+func validatePacked(m Member, r *report.Report) {
+	if m.IsEnumValue() {
+		return
+	}
+
+	builtins := m.Context().builtins()
+	validate := func(v Value, span report.Span) {
+		switch {
+		case m.IsSingular() || m.IsMap():
+			r.Errorf("expected repeated field, found singular field").Apply(
+				report.Snippet(m.TypeAST()),
+				report.Snippetf(span, "packed encoding set here"),
+				report.Helpf("packed encoding encoding can only be set on repeated fields of integer, float, `bool`, or enum type"),
+			)
+		case !m.Element().IsPackable():
+			r.Error(errTypeConstraint{
+				want: "packable type",
+				got:  m.Element(),
+				decl: m.TypeAST(),
+			}).Apply(
+				report.Snippetf(span, "packed encoding set here"),
+				report.Helpf("packed encoding encoding can only be set on repeated fields of integer, float, `bool`, or enum type"),
+			)
+		}
+	}
+
+	option := m.Options().Field(builtins.Packed)
+	if !option.IsZero() {
+		if m.Context().File().Syntax().IsEdition() {
+			packed, _ := option.AsBool()
+			want := "PACKED"
+			if !packed {
+				want = "EXPANDED"
+			}
+			r.Error(errEditionTooNew{
+				file:    m.Context().File(),
+				removed: syntax.Edition2023,
+
+				what:  option.Field().Name(),
+				where: option.KeyAST(),
+			}).Apply(option.suggestEdit(
+				builtins.FeaturePacked.Name(), want,
+				"replace with `%s`", builtins.FeaturePacked.Name(),
+			))
+		} else if v, _ := option.AsBool(); v {
+			// Don't validate [packed = false], protoc accepts that.
+			validate(option, option.ValueAST().Span())
+		}
+	}
+
+	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
+	if feature.IsExplicit() {
+		validate(feature.Value(), feature.Value().KeyAST().Span())
 	}
 }
