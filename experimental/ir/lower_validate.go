@@ -45,8 +45,17 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 // whole IR being constructed properly.
 func validateConstraints(f File, r *report.Report) {
 	for ty := range seq.Values(f.AllTypes()) {
-		if ty.IsMessageSet() {
+		switch {
+		case ty.IsEnum():
+			validateEnum(ty, r)
+
+		case ty.IsMessageSet():
 			validateMessageSet(ty, r)
+
+		case ty.IsMessage():
+			for oneof := range seq.Values(ty.Oneofs()) {
+				validateOneof(oneof, r)
+			}
 		}
 	}
 
@@ -62,11 +71,43 @@ func validateConstraints(f File, r *report.Report) {
 	}
 }
 
-func validateMessageSet(ty Type, r *report.Report) {
-	if !ty.IsMessageSet() {
+func validateEnum(ty Type, r *report.Report) {
+	builtins := ty.Context().builtins()
+
+	if ty.Members().Len() == 0 {
+		r.Errorf("%s must define at least one value", taxa.EnumType).Apply(
+			report.Snippet(ty.AST()),
+		)
 		return
 	}
 
+	first := ty.Members().At(0)
+	if first.Number() != 0 && !ty.IsClosedEnum() {
+		// Figure out why this enum is open.
+		feature := ty.FeatureSet().Lookup(builtins.FeatureEnum)
+		why := feature.Value().ValueAST().Span()
+		if feature.IsDefault() {
+			why = ty.Context().File().AST().Syntax().Value().Span()
+		}
+
+		r.Errorf("first value of open enum must be zero").Apply(
+			report.Snippet(first.AST().Value()),
+			report.PageBreak,
+			report.Snippetf(why, "this makes `%s` an open enum", ty.FullName()),
+			report.Helpf("open enums must define a zero value, and it must be the first one"),
+		)
+	}
+}
+
+func validateOneof(oneof Oneof, r *report.Report) {
+	if oneof.Members().Len() == 0 {
+		r.Errorf("oneof must define at least one member").Apply(
+			report.Snippet(oneof.AST()),
+		)
+	}
+}
+
+func validateMessageSet(ty Type, r *report.Report) {
 	f := ty.Context().File()
 	builtins := ty.Context().builtins()
 

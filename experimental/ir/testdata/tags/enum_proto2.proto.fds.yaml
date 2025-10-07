@@ -1,0 +1,5 @@
+file:
+- name: "testdata/tags/enum_proto2.proto"
+  package: "buf.test"
+  enum_type: [{ name: "Closed", value: [{ name: "Z1", number: 1 }] }]
+  syntax: "proto2"
