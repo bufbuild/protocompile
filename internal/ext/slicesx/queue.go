@@ -104,7 +104,7 @@ func (r *Queue[E]) Back() *E {
 	if r.start == r.end {
 		return nil
 	}
-	return &r.buf[r.end-1]
+	return &r.buf[(r.end-1)&(len(r.buf)-1)]
 }
 
 // PushFront pushes elements to the front of the queue.
@@ -238,6 +238,7 @@ func (r Queue[E]) Format(out fmt.State, verb rune) {
 func (r *Queue[_]) Clear() {
 	clear(r.buf)
 	r.start, r.end = 0, 0
+	r.buf = r.buf[:0]
 }
 
 func (r *Queue[E]) resize(n int) {
