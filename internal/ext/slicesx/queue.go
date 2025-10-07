@@ -116,8 +116,8 @@ func (r *Queue[E]) PushFront(v ...E) {
 	r.start = start & (len(r.buf) - 1)
 	if start < r.start {
 		// We overflowed, so we need to do two copies.
-		copy(r.buf[r.start:], v)
-		copy(r.buf, v[len(r.buf[r.start:]):])
+		count := copy(r.buf[r.start:], v)
+		copy(r.buf, v[count:])
 	} else {
 		copy(r.buf[r.start:end], v)
 	}
@@ -132,8 +132,8 @@ func (r *Queue[E]) PushBack(v ...E) {
 	r.end = end & (len(r.buf) - 1)
 	if r.end < end {
 		// We overflowed, so we need to do two copies.
-		copy(r.buf[start:], v)
-		copy(r.buf, v[len(r.buf[start:]):])
+		count := copy(r.buf[start:], v)
+		copy(r.buf, v[count:])
 	} else {
 		copy(r.buf[start:r.end], v)
 	}
