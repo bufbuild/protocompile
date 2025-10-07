@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"runtime"
 	"runtime/debug"
 	"slices"
@@ -398,7 +399,7 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 			c.fatal = err
 			t.exec.lock.Unlock()
 			done(c)
-			// Cyclic key is evicted by the run task.
+			// Cyclic key is evixted by the run task.
 			return false
 		}
 		t.exec.lock.Unlock()
@@ -482,14 +483,12 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 
 	// Check if a cycle exists using BFS to find if target depends on t.task.
 	// We use BFS to find the shortest path for better error messages.
-	queue := t.exec.queue
-	queue.Clear()
-	queue.PushBack(target)
+	dependencies := queue[*task]{}
+	dependencies.push(target)
 	parent := make(map[*task]*task)
 	hasCycle := false
 
-	for queue.Len() > 0 {
-		current, _ := queue.PopFront()
+	for current := range dependencies.items() {
 		if current == t.task {
 			hasCycle = true
 			break
@@ -497,7 +496,7 @@ func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 		for dep := range current.deps {
 			if _, ok := parent[dep]; !ok {
 				parent[dep] = current
-				queue.PushBack(dep)
+				dependencies.push(dep)
 			}
 		}
 	}
@@ -597,4 +596,34 @@ func (t *Task) run(task *task, sync bool) {
 	callee.log("executing", "%[1]T/%[1]v", task.query.Underlying())
 	task.value, task.fatal = task.query.Execute(callee)
 	callee.log("returning", "%[1]T/%[1]v", task.query.Underlying())
+}
+
+type queue[T any] struct {
+	head, tail []T
+}
+
+func (q *queue[_]) len() int {
+	return len(q.head) + len(q.tail)
+}
+func (q *queue[T]) push(value T) {
+	q.head = append(q.head, value)
+}
+func (q *queue[T]) pop() T {
+	if len(q.tail) == 0 {
+		q.head, q.tail = q.tail, q.head
+		slices.Reverse(q.tail)
+	}
+	value := q.tail[len(q.tail)-1]
+	q.tail = q.tail[:len(q.tail)-1]
+	return value
+}
+func (q *queue[T]) items() iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for q.len() > 0 {
+			value := q.pop()
+			if !yield(value) {
+				return
+			}
+		}
+	}
 }

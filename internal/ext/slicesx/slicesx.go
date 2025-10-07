@@ -102,20 +102,6 @@ func LastIndexFunc[S ~[]E, E any](s S, p func(E) bool) int {
 	return -1
 }
 
-// Take is like Get, but zeros s[i] before returning.
-//
-// This is useful for cases where we are popping from a slice and we want
-// the popped value to be garbage collected once the caller drops it on the
-// ground.
-func Take[S ~[]E, E any, I SliceIndex](s S, i I) (element E, ok bool) {
-	p := GetPointer(s, i)
-	if p == nil {
-		return element, false
-	}
-	element, *p = *p, element
-	return element, true
-}
-
 // BoundsCheck performs a generic bounds check as efficiently as possible.
 //
 // This function assumes that len is the length of a slice, i.e, it is
