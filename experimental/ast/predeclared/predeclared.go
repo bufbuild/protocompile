@@ -111,6 +111,12 @@ func (n Name) IsNumber() bool {
 	return n >= Int32 && n <= Double
 }
 
+// IsPackable returns whether this is a type that can go in a packed repeated
+// field.
+func (n Name) IsPackable() bool {
+	return n >= Int32 && n <= Bool
+}
+
 // IsVarint returns whether this is a varint-encoded type.
 func (n Name) IsVarint() bool {
 	return n >= Int32 && n <= SInt64 || n == Bool

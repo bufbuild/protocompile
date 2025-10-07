@@ -70,7 +70,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 					builtins.EditionDefaultsKey.Container().Name(),
 					builtins.EditionDefaultsKey.Name(),
 				).Apply(
-					report.Snippet(def.AsValue().AST()),
+					report.Snippet(def.AsValue().ValueAST()),
 					mistake,
 				)
 			} else if !edition.IsConstraint() {
@@ -79,7 +79,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 					builtins.EditionDefaultsKey.Container().Name(),
 					builtins.EditionDefaultsKey.Name(),
 				).Apply(
-					report.Snippet(value.AST()),
+					report.Snippet(value.ValueAST()),
 					mistake,
 					report.Helpf("this should be a released edition or `%s`",
 						syntax.EditionLegacy.DescriptorName()),
@@ -96,7 +96,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 					builtins.EditionDefaultsKey.Container().Name(),
 					builtins.EditionDefaultsKey.Name(),
 				).Apply(
-					report.Snippet(def.AsValue().AST()), mistake,
+					report.Snippet(def.AsValue().ValueAST()), mistake,
 				)
 			} else {
 				text, _ := value.AsString()
@@ -108,7 +108,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 							builtins.EditionDefaultsKey.Container().Name(),
 							builtins.EditionDefaultsKey.Name(),
 						).Apply(
-							report.Snippet(value.AST()),
+							report.Snippet(value.ValueAST()),
 							report.Snippetf(field.TypeAST(), "expected due to this"),
 							report.Helpf("`value` must be the name of a value in `%s`", field.Element().FullName()),
 							mistake,
@@ -126,15 +126,20 @@ func buildFeatureInfo(field Member, r *report.Report) {
 							builtins.EditionDefaultsValue.Container().Name(),
 							builtins.EditionDefaultsValue.Name(),
 						).Apply(
-							report.Snippet(value.AST()),
+							report.Snippet(value.ValueAST()),
 							report.Snippetf(field.TypeAST(), "expected due to this"),
 							report.Helpf("`value` must one of \"true\" or \"false\""),
 							mistake,
 						)
 					}
 				default:
-					r.Warnf("expected `bool` or enum typed field for feature").Apply(
-						report.Snippet(field.TypeAST()),
+					r.Warn(errTypeConstraint{
+						want: "`bool` or enum type",
+						got:  field.Element(),
+						decl: field.TypeAST(),
+					}).Apply(
+						report.Snippetf(defaults.KeyAST(), "expected because this makes `%s` into a feature", field.Name()),
+						report.Helpf("features should have `bool` or enum type"),
 						mistake,
 					)
 					continue
@@ -162,7 +167,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 
 	if len(info.defaults) > 0 && !slicesx.Among(info.defaults[0].edition, syntax.EditionLegacy, syntax.Proto2) {
 		r.Warnf("`%s` does not cover all editions", builtins.EditionDefaults.Name()).Apply(
-			report.Snippet(defaults.AST()),
+			report.Snippet(defaults.ValueAST()),
 			report.Helpf(
 				"`%s` must specify a default for `%s` or `%s` to cover all editions",
 				builtins.EditionDefaults.Name(),
@@ -194,7 +199,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 				builtins.EditionSupportIntroduced.Container().Name(),
 				builtins.EditionSupportIntroduced.Name(),
 			).Apply(
-				report.Snippet(support.AsValue().AST()),
+				report.Snippet(support.AsValue().ValueAST()),
 				mistake,
 			)
 		} else if info.introduced == syntax.Unknown {
@@ -202,7 +207,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 				info.introduced.DescriptorName(),
 				builtins.EditionSupportIntroduced.Name(),
 			).Apply(
-				report.Snippet(value.AST()),
+				report.Snippet(value.ValueAST()),
 				mistake,
 			)
 		}
@@ -215,7 +220,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 				info.deprecated.DescriptorName(),
 				builtins.EditionSupportDeprecated.Name(),
 			).Apply(
-				report.Snippet(value.AST()),
+				report.Snippet(value.ValueAST()),
 				mistake,
 			)
 		}
@@ -228,7 +233,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 				info.removed.DescriptorName(),
 				builtins.EditionSupportRemoved.Name(),
 			).Apply(
-				report.Snippet(value.AST()),
+				report.Snippet(value.ValueAST()),
 				mistake,
 			)
 		}
@@ -342,7 +347,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 	}
 
 	defer r.AnnotateICE(report.Snippetf(
-		features.AsValue().AST(),
+		features.AsValue().ValueAST(),
 		"while validating this features message",
 	))
 
@@ -357,7 +362,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		info := feature.Field().FeatureInfo()
 		if info.IsZero() {
 			r.Warnf("non-feature field set within `%s`", features.AsValue().Field().Name()).Apply(
-				report.Snippet(feature.AST()),
+				report.Snippet(feature.ValueAST()),
 				report.Helpf("a feature field is a field which sets the `%s` and `%s` options",
 					builtins.EditionDefaults.Name(),
 					builtins.EditionSupport.Name(),
@@ -366,53 +371,27 @@ func validateFeatures(features MessageValue, r *report.Report) {
 			continue
 		}
 
-		deprecation := func() []report.DiagnosticOption {
-			text := info.DeprecationWarning()
-			// Canonicalize whitespace. Some built-in deprecation warnings have
-			// double spaces after periods.
-			text = whitespacePattern.ReplaceAllString(text, " ")
-
-			return []report.DiagnosticOption{
-				report.Helpf("it has been deprecated since %s", prettyEdition(info.Deprecated())),
-				report.Helpf("reason: %s", text),
-			}
-		}
-
 		// We check these in reverse order, because the user might have set
 		// introduced == deprecated == removed, and protoc doesn't enforce
 		// any relationship between these.
-		if removed := info.Removed(); removed != syntax.Unknown && removed <= edition {
-			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), prettyEdition(edition)).Apply(
-				report.Snippet(feature.MessageKeys().At(0)),
-				report.Helpf(
-					"`%s` ended support in %s",
-					feature.Field().Name(), prettyEdition(removed),
-				),
-			)
+		switch {
+		case info.IsRemoved(edition), info.IsDeprecated(edition):
+			r.SoftError(info.IsRemoved(edition), errEditionTooNew{
+				file:       features.Context().File(),
+				removed:    info.Removed(),
+				deprecated: info.Deprecated(),
+				warning:    info.DeprecationWarning(),
+				what:       feature.Field().Name(),
+				where:      feature.KeyAST(),
+			})
 
-			if deprecated := info.Deprecated(); deprecated != syntax.Unknown && deprecated <= edition {
-				d.Apply(deprecation()...)
-			}
-			continue
-		}
-
-		if deprecated := info.Deprecated(); deprecated != syntax.Unknown && deprecated <= edition {
-			r.Warnf("`%s` is deprecated in %s", feature.Field().Name(), prettyEdition(edition)).Apply(
-				report.Snippet(feature.MessageKeys().At(0)),
-			).Apply(deprecation()...)
-		}
-
-		if intro := info.Introduced(); edition < intro {
-			d := r.Errorf("`%s` is not supported in %s", feature.Field().Name(), prettyEdition(edition)).Apply(
-				report.Snippet(feature.MessageKeys().At(0)),
-			)
-			if intro != syntax.Unknown {
-				d.Apply(report.Helpf(
-					"`%s` requires at least %s",
-					feature.Field().Name(), prettyEdition(intro),
-				))
-			}
-			continue
+		case !info.IsIntroduced(edition):
+			r.Error(errEditionTooOld{
+				file:  features.Context().File(),
+				intro: info.Introduced(),
+				what:  feature.Field().Name(),
+				where: feature.KeyAST(),
+			})
 		}
 	}
 }
@@ -422,4 +401,84 @@ func prettyEdition(s syntax.Syntax) string {
 		return fmt.Sprintf("\"%s\"", s)
 	}
 	return fmt.Sprintf("Edition %s", s)
+}
+
+type errEditionTooOld struct {
+	file  File
+	intro syntax.Syntax
+
+	what  any
+	where report.Spanner
+}
+
+func (e errEditionTooOld) Diagnose(d *report.Diagnostic) {
+	kind := "syntax"
+	if e.file.Syntax().IsEdition() {
+		kind = "edition"
+	}
+
+	d.Apply(
+		report.Message("`%s` is not supported in %s", e.what, prettyEdition(e.file.Syntax())),
+		report.Snippet(e.where),
+		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
+	)
+
+	if e.intro != syntax.Unknown {
+		d.Apply(report.Helpf("`%s` requires at least %s", e.what, prettyEdition(e.intro)))
+	}
+}
+
+type errEditionTooNew struct {
+	file                File
+	deprecated, removed syntax.Syntax
+	warning             string
+
+	what  any
+	where report.Spanner
+}
+
+func (e errEditionTooNew) Diagnose(d *report.Diagnostic) {
+	kind := "syntax"
+	if e.file.Syntax().IsEdition() {
+		kind = "edition"
+	}
+
+	err := "not supported"
+	if !e.isRemoved() {
+		err = "deprecated"
+	}
+
+	d.Apply(
+		report.Message("`%s` is %s in %s", e.what, err, prettyEdition(e.file.Syntax())),
+		report.Snippet(e.where),
+		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
+	)
+
+	if e.isRemoved() {
+		if e.isDeprecated() {
+			d.Apply(report.Helpf("deprecated since %s, removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
+		} else {
+			d.Apply(report.Helpf("removed in %s", prettyEdition(e.removed)))
+		}
+	} else if e.isDeprecated() {
+		if e.removed != syntax.Unknown {
+			d.Apply(report.Helpf("deprecated since %s, to be removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
+		} else {
+			d.Apply(report.Helpf("deprecated since %s", prettyEdition(e.deprecated)))
+		}
+	}
+
+	if e.warning != "" {
+		// Canonicalize whitespace. Some built-in deprecation warnings have
+		// double spaces after periods.
+		text := whitespacePattern.ReplaceAllString(e.warning, " ")
+		d.Apply(report.Helpf("deprecated: %s", text))
+	}
+}
+
+func (e errEditionTooNew) isDeprecated() bool {
+	return e.deprecated != syntax.Unknown && e.deprecated <= e.file.Syntax()
+}
+func (e errEditionTooNew) isRemoved() bool {
+	return e.removed != syntax.Unknown && e.removed <= e.file.Syntax()
 }

@@ -342,6 +342,20 @@ func (f File) FeatureSet() FeatureSet {
 	}
 }
 
+// Deprecated returns whether this file is deprecated, by returning the
+// relevant option value for setting deprecation.
+func (f File) Deprecated() Value {
+	if f.IsZero() {
+		return Value{}
+	}
+	builtins := f.Context().builtins()
+	d := f.Options().Field(builtins.FileDeprecated)
+	if b, _ := d.AsBool(); b {
+		return d
+	}
+	return Value{}
+}
+
 // Symbols returns this file's symbol table.
 //
 // The symbol table includes both symbols defined in this file, and symbols
