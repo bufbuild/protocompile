@@ -209,7 +209,6 @@ func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 	}
 
 	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) ast.ExprAny {
-		fmt.Println(expr.Kind(), expr.Span().Text())
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Key()
 		}
@@ -475,6 +474,26 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 	}
 
 	return buf, n
+}
+
+func (v Value) suggestEdit(path, expr string, format string, args ...any) report.DiagnosticOption {
+	key := v.KeyAST()
+	value := v.ValueASTs().At(0)
+	joined := report.Join(key, value)
+
+	return report.SuggestEdits(
+		joined,
+		fmt.Sprintf(format, args...),
+		report.Edit{
+			Start: 0, End: key.Span().Len(),
+			Replace: path,
+		},
+		report.Edit{
+			Start:   value.Span().Start - joined.Start,
+			End:     value.Span().End - joined.Start,
+			Replace: expr,
+		},
+	)
 }
 
 func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {
