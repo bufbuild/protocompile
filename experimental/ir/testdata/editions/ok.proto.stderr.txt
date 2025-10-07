@@ -1,7 +1,7 @@
 warning: required fields are deprecated
-  --> testdata/editions/ok.proto:24:44
+  --> testdata/editions/ok.proto:26:44
    |
-24 |     int32 z = 3 [features.field_presence = LEGACY_REQUIRED];
+26 |     int32 z = 3 [features.field_presence = LEGACY_REQUIRED];
    |                                            ^^^^^^^^^^^^^^^
    = help: do not attempt to change this to `EXPLICIT` if the field is already
            in-use; doing so is a wire protocol break

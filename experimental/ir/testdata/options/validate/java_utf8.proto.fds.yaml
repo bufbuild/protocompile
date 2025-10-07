@@ -1,6 +1,0 @@
-file:
-- name: "testdata/options/validate/java_utf8.proto"
-  package: "buf.test"
-  options.java_string_check_utf8: true
-  syntax: "editions"
-  edition: EDITION_2023

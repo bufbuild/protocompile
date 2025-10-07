@@ -72,7 +72,7 @@ type Corpus struct {
 func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, outputs []string)) {
 	testDir := prototest.CallerDirWithSkip(t, 1)
 	root := filepath.Join(testDir, c.Root)
-	t.Logf("corpora: searching for files in %q", root)
+	t.Logf("protocompile/golden: searching for files in %q", root)
 
 	// Enumerate the tests to run by walking the filesystem.
 	var tests []string
@@ -91,7 +91,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 		return err
 	})
 	if err != nil {
-		t.Fatal("corpora: error while stating testdata FS:", err)
+		t.Fatal("protocompile/golden: error while stating testdata FS:", err)
 	}
 
 	// Check if a refresh has been requested.
@@ -103,12 +103,8 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 		}
 	}
 
-	if refresh != "" {
-		t.Logf("corpora: refreshing test data because %s=%s", c.Refresh, refresh)
-		t.Fail()
-	}
-
 	// Execute the tests.
+	outer := t
 	for _, path := range tests {
 		// Make sure the path is normalized regardless of platform. This
 		// is necessary to avoid breakages on Windows.
@@ -121,7 +117,7 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 
 			bytes, err := os.ReadFile(path)
 			if err != nil {
-				t.Fatalf("corpora: error while loading input file %q: %v", path, err)
+				t.Fatalf("protocompile/golden: error while loading input file %q: %v", path, err)
 			}
 
 			input := string(bytes)
@@ -147,38 +143,43 @@ func (c Corpus) Run(t *testing.T, test func(t *testing.T, path, text string, out
 				}
 
 				path := fmt.Sprint(path, ".", output.Extension)
+				relPath := fmt.Sprint(testName, ".", output.Extension)
+				cmp := output.Compare
+				if cmp == nil {
+					cmp = CompareAndDiff
+				}
+
+				bytes, err := os.ReadFile(path)
+				if err != nil && !errors.Is(err, os.ErrNotExist) {
+					t.Logf("protocompile/golden: error while loading output file %q: %v", path, err)
+					t.Fail()
+					continue
+				}
+
+				result := cmp(results[i], string(bytes))
+				if result == "" {
+					continue
+				}
 
 				if !refresh {
-					bytes, err := os.ReadFile(path)
+					t.Logf("output mismatch for %q:\n%s", path, result)
+					t.Fail()
+					continue
+				}
 
+				outer.Logf("regenerating: %s", relPath)
+				outer.Fail()
+				if results[i] == "" {
+					err := os.Remove(path)
 					if err != nil && !errors.Is(err, os.ErrNotExist) {
-						t.Logf("corpora: error while loading output file %q: %v", path, err)
-						t.Fail()
-						continue
-					}
-
-					cmp := output.Compare
-					if cmp == nil {
-						cmp = CompareAndDiff
-					}
-					if err := cmp(results[i], string(bytes)); err != "" {
-						t.Logf("output mismatch for %q:\n%s", path, err)
-						t.Fail()
-						continue
+						outer.Logf("protocompile/golden: error while deleting output file %q: %v", path, err)
+						outer.Fail()
 					}
 				} else {
-					if results[i] == "" {
-						err := os.Remove(path)
-						if err != nil && !errors.Is(err, os.ErrNotExist) {
-							t.Logf("corpora: error while deleting output file %q: %v", path, err)
-							t.Fail()
-						}
-					} else {
-						err := os.WriteFile(path, []byte(results[i]), 0600)
-						if err != nil {
-							t.Logf("corpora: error while writing output file %q: %v", path, err)
-							t.Fail()
-						}
+					err := os.WriteFile(path, []byte(results[i]), 0600)
+					if err != nil {
+						outer.Logf("protocompile/golden: error while writing output file %q: %v", path, err)
+						outer.Fail()
 					}
 				}
 			}

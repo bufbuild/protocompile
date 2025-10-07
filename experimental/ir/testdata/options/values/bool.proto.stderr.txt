@@ -1,104 +1,104 @@
 error: nested array expressions are not allowed
-  --> testdata/options/values/bool.proto:40:31
+  --> testdata/options/values/bool.proto:41:31
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |        ---------------------------------- ...within this array expression
    |                               ^^ cannot nest this array expression...
 
 error: unexpected range expression in option setting value
-  --> testdata/options/values/bool.proto:40:35
+  --> testdata/options/values/bool.proto:41:35
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                                   ^^^^^^
 
 warning: non-canonical `bool` literal
-  --> testdata/options/values/bool.proto:25:8
+  --> testdata/options/values/bool.proto:26:8
    |
-25 |     x: True
+26 |     x: True
    |        ^^^^
   help: replace with `true`
    |
-25 | -     x: True
-25 | +     x: true
+26 | -     x: True
+26 | +     x: true
    |
    = note: within message expressions only, `True` is permitted as a `bool`, but
            should be avoided
 
 warning: non-canonical `bool` literal
-  --> testdata/options/values/bool.proto:26:8
+  --> testdata/options/values/bool.proto:27:8
    |
-26 |     x: False
+27 |     x: False
    |        ^^^^^
   help: replace with `false`
    |
-26 | -     x: False
-26 | +     x: false
+27 | -     x: False
+27 | +     x: false
    |
    = note: within message expressions only, `False` is permitted as a `bool`,
            but should be avoided
 
 warning: non-canonical `bool` literal
-  --> testdata/options/values/bool.proto:27:8
+  --> testdata/options/values/bool.proto:28:8
    |
-27 |     x: t
+28 |     x: t
    |        ^
   help: replace with `true`
    |
-27 | -     x: t
-27 | +     x: true
+28 | -     x: t
+28 | +     x: true
    |
    = note: within message expressions only, `t` is permitted as a `bool`, but
            should be avoided
 
 warning: non-canonical `bool` literal
-  --> testdata/options/values/bool.proto:28:8
+  --> testdata/options/values/bool.proto:29:8
    |
-28 |     x: f
+29 |     x: f
    |        ^
   help: replace with `false`
    |
-28 | -     x: f
-28 | +     x: false
+29 | -     x: f
+29 | +     x: false
    |
    = note: within message expressions only, `f` is permitted as a `bool`, but
            should be avoided
 
 error: cannot find `TRUE` in this scope
-  --> testdata/options/values/bool.proto:31:8
+  --> testdata/options/values/bool.proto:32:8
    |
-31 |     x: TRUE
+32 |     x: TRUE
    |        ^^^^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: cannot find `FALSE` in this scope
-  --> testdata/options/values/bool.proto:32:8
+  --> testdata/options/values/bool.proto:33:8
    |
-32 |     x: FALSE
+33 |     x: FALSE
    |        ^^^^^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: cannot find `T` in this scope
-  --> testdata/options/values/bool.proto:33:8
+  --> testdata/options/values/bool.proto:34:8
    |
-33 |     x: T
+34 |     x: T
    |        ^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: cannot find `F` in this scope
-  --> testdata/options/values/bool.proto:34:8
+  --> testdata/options/values/bool.proto:35:8
    |
-34 |     x: F
+35 |     x: F
    |        ^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:36:9
+  --> testdata/options/values/bool.proto:37:9
    |
-36 |     x: -true
+37 |     x: -true
    |        -^^^^ expected number, found `bool`
    |        |
    |        expected due to this
@@ -107,9 +107,9 @@ error: mismatched types
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:37:9
+  --> testdata/options/values/bool.proto:38:9
    |
-37 |     x: -True
+38 |     x: -True
    |        -^^^^ expected number, found `bool`
    |        |
    |        expected due to this
@@ -118,126 +118,126 @@ error: mismatched types
               found: scalar type `bool`
 
 warning: non-canonical `bool` literal
-  --> testdata/options/values/bool.proto:37:9
+  --> testdata/options/values/bool.proto:38:9
    |
-37 |     x: -True
+38 |     x: -True
    |         ^^^^
   help: replace with `true`
    |
-37 | -     x: -True
-37 | +     x: -true
+38 | -     x: -True
+38 | +     x: -true
    |
    = note: within message expressions only, `True` is permitted as a `bool`, but
            should be avoided
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:40:9
+  --> testdata/options/values/bool.proto:41:9
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |         ^ expected `bool`, found integer literal
 ...
-52 |     repeated bool x = 1;
+53 |     repeated bool x = 1;
    |     ------------- expected due to this
    |
    = note: expected: scalar type `bool`
               found: integer literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:40:12
+  --> testdata/options/values/bool.proto:41:12
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |            ^^^ expected `bool`, found floating-point literal
 ...
-52 |     repeated bool x = 1;
+53 |     repeated bool x = 1;
    |     ------------- expected due to this
    |
    = note: expected: scalar type `bool`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:40:17
+  --> testdata/options/values/bool.proto:41:17
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                 ^^^ expected `bool`, found floating-point literal
 ...
-52 |     repeated bool x = 1;
+53 |     repeated bool x = 1;
    |     ------------- expected due to this
    |
    = note: expected: scalar type `bool`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:40:22
+  --> testdata/options/values/bool.proto:41:22
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                      ^^^ expected `bool`, found floating-point literal
 ...
-52 |     repeated bool x = 1;
+53 |     repeated bool x = 1;
    |     ------------- expected due to this
    |
    = note: expected: scalar type `bool`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/bool.proto:40:27
+  --> testdata/options/values/bool.proto:41:27
    |
-40 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
+41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
    |                           ^^ expected `bool`, found message expression
 ...
-52 |     repeated bool x = 1;
+53 |     repeated bool x = 1;
    |     ------------- expected due to this
    |
    = note: expected: scalar type `bool`
               found: message expression
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:46:14
+  --> testdata/options/values/bool.proto:47:14
    |
-46 | option (y) = True;
+47 | option (y) = True;
    |              ^^^^
   help: replace with `true`
    |
-46 | - option (y) = True;
-46 | + option (y) = true;
+47 | - option (y) = True;
+47 | + option (y) = true;
    |
    = note: within message expressions only, `True` is permitted as a `bool`, but
            should be avoided
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:47:14
+  --> testdata/options/values/bool.proto:48:14
    |
-47 | option (y) = False;
+48 | option (y) = False;
    |              ^^^^^
   help: replace with `false`
    |
-47 | - option (y) = False;
-47 | + option (y) = false;
+48 | - option (y) = False;
+48 | + option (y) = false;
    |
    = note: within message expressions only, `False` is permitted as a `bool`,
            but should be avoided
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:48:14
+  --> testdata/options/values/bool.proto:49:14
    |
-48 | option (y) = t;
+49 | option (y) = t;
    |              ^
   help: replace with `true`
    |
-48 | - option (y) = t;
-48 | + option (y) = true;
+49 | - option (y) = t;
+49 | + option (y) = true;
    |
    = note: within message expressions only, `t` is permitted as a `bool`, but
            should be avoided
 
 error: non-canonical `bool` literal outside of message expression
-  --> testdata/options/values/bool.proto:49:14
+  --> testdata/options/values/bool.proto:50:14
    |
-49 | option (y) = f;
+50 | option (y) = f;
    |              ^
   help: replace with `false`
    |
-49 | - option (y) = f;
-49 | + option (y) = false;
+50 | - option (y) = f;
+50 | + option (y) = false;
    |
    = note: within message expressions only, `f` is permitted as a `bool`, but
            should be avoided

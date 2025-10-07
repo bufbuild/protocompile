@@ -207,6 +207,11 @@ func (f FeatureInfo) Introduced() syntax.Syntax {
 	return f.raw.introduced
 }
 
+// IsIntroduced returns whether this feature has been introduced yet.
+func (f FeatureInfo) IsIntroduced(in syntax.Syntax) bool {
+	return f.Introduced() <= in
+}
+
 // Deprecated returns whether this feature has been deprecated, and in which
 // edition.
 func (f FeatureInfo) Deprecated() syntax.Syntax {
@@ -216,6 +221,11 @@ func (f FeatureInfo) Deprecated() syntax.Syntax {
 	return f.raw.deprecated
 }
 
+// IsDeprecated returns whether this feature has been deprecated yet.
+func (f FeatureInfo) IsDeprecated(in syntax.Syntax) bool {
+	return f.Deprecated() != syntax.Unknown && f.Deprecated() <= in
+}
+
 // Removed returns whether this feature has been removed, and in which
 // edition.
 func (f FeatureInfo) Removed() syntax.Syntax {
@@ -223,6 +233,11 @@ func (f FeatureInfo) Removed() syntax.Syntax {
 		return syntax.Unknown
 	}
 	return f.raw.removed
+}
+
+// IsRemoved returns whether this feature has been removed yet.
+func (f FeatureInfo) IsRemoved(in syntax.Syntax) bool {
+	return f.Removed() != syntax.Unknown && f.Removed() <= in
 }
 
 // DeprecationWarning returns the literal text of the deprecation warning for

@@ -3,7 +3,7 @@ error: expected message type, found enum value `test.M.P.N`
    |
 24 |         enum X { N = 1; }
    |                  - defined here
-25 |         extend N {   // Does not skip .test.M.P.N
+25 |         extend N {  // Does not skip .test.M.P.N
    |                ^ expected message type
 
 error: expected message type, found enum type `test.M.Q.N`

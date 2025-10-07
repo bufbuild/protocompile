@@ -1,11 +1,7 @@
-internal compiler error: unexpected panic; this is a bug
-   = note: runtime error: index out of range [-1]
-   = note: while lowering "testdata/options/values/enum.proto"
-
 error: nested array expressions are not allowed
-  --> testdata/options/values/enum.proto:36:41
+  --> testdata/options/values/enum.proto:37:41
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |        --------------------------------------------
    |         |                               ^^
    |         |                               |
@@ -14,215 +10,215 @@ error: nested array expressions are not allowed
    |                                         cannot nest this array expression...
 
 error: unexpected range expression in option setting value
-  --> testdata/options/values/enum.proto:36:45
+  --> testdata/options/values/enum.proto:37:45
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |                                             ^^^^^^
 
 error: cannot find `BAR_E3` in this scope
-  --> testdata/options/values/enum.proto:24:8
+  --> testdata/options/values/enum.proto:25:8
    |
-24 |     e: BAR_E3
+25 |     e: BAR_E3
    |        ^^^^^^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:25:8
+  --> testdata/options/values/enum.proto:26:8
    |
-25 |     e: BAZ_ZERO
+26 |     e: BAZ_ZERO
    |        ^^^^^^^^ expected `buf.test.Bar`, found `buf.test.Baz`
-26 |     e: buf.test.BAR_E1
+27 |     e: buf.test.BAR_E1
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: enum type `buf.test.Baz`
 
 error: qualified enum value reference
-  --> testdata/options/values/enum.proto:26:8
+  --> testdata/options/values/enum.proto:27:8
    |
-26 |     e: buf.test.BAR_E1
+27 |     e: buf.test.BAR_E1
    |        ^^^^^^^^^^^^^^^
   help: replace it with the value's name
    |
-26 | -     e: buf.test.BAR_E1
-26 | +     e: BAR_E1
+27 | -     e: buf.test.BAR_E1
+27 | +     e: BAR_E1
    |
    = note: Protobuf requires single identifiers when referencing to the names of
            enum values
 
 error: cannot find `Bar.BAR_E1` in this scope
-  --> testdata/options/values/enum.proto:27:8
+  --> testdata/options/values/enum.proto:28:8
    |
-27 |     e: Bar.BAR_E1
+28 |     e: Bar.BAR_E1
    |        ^^^^^^^^^^ not found in this scope
    |
    = help: the full name of this scope is `buf.test`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:28:9
+  --> testdata/options/values/enum.proto:29:9
    |
-28 |     e: -BAR_E1
+29 |     e: -BAR_E1
    |        -^^^^^^ expected number, found `buf.test.Bar`
    |        |
    |        expected due to this
    |
   help: replace it with a literal value
    |
-28 | -     e: -BAR_E1
-28 | +     e: -1
+29 | -     e: -BAR_E1
+29 | +     e: -1
    |
    |
    = note: expected: number
               found: enum type `buf.test.Bar`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:30:8
+  --> testdata/options/values/enum.proto:31:8
    |
-30 |     i: Foo,
+31 |     i: Foo,
    |        ^^^ expected `int32`, found type reference `buf.test.Foo`
-31 |     i: Foo.i,
+32 |     i: Foo.i,
 ...
-40 |     repeated Bar e = 1;
-41 |     repeated int32 i = 2;
+41 |     repeated Bar e = 1;
+42 |     repeated int32 i = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`
               found: type reference `buf.test.Foo`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:31:8
+  --> testdata/options/values/enum.proto:32:8
    |
-31 |     i: Foo.i,
+32 |     i: Foo.i,
    |        ^^^^^ expected `int32`, found `buf.test.Foo.i`
-32 |     i: Foo.e,
+33 |     i: Foo.e,
 ...
-40 |     repeated Bar e = 1;
-41 |     repeated int32 i = 2;
+41 |     repeated Bar e = 1;
+42 |     repeated int32 i = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`
               found: message field `buf.test.Foo.i`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:32:8
+  --> testdata/options/values/enum.proto:33:8
    |
-32 |     i: Foo.e,
+33 |     i: Foo.e,
    |        ^^^^^ expected `int32`, found `buf.test.Foo.e`
-33 |     i: BAR_ZERO
+34 |     i: BAR_ZERO
 ...
-40 |     repeated Bar e = 1;
-41 |     repeated int32 i = 2;
+41 |     repeated Bar e = 1;
+42 |     repeated int32 i = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`
               found: message field `buf.test.Foo.e`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:33:8
-   |
-33 |     i: BAR_ZERO
-   |        ^^^^^^^^ expected `int32`, found `buf.test.Bar`
-34 |     i: buf.test.BAR_ZERO
-...
-40 |     repeated Bar e = 1;
-41 |     repeated int32 i = 2;
-   |     -------------- expected due to this
-   |
-   = note: expected: scalar type `int32`
-              found: enum type `buf.test.Bar`
-
-error: mismatched types
   --> testdata/options/values/enum.proto:34:8
    |
-34 |     i: buf.test.BAR_ZERO
-   |        ^^^^^^^^^^^^^^^^^ expected `int32`, found `buf.test.Bar`
+34 |     i: BAR_ZERO
+   |        ^^^^^^^^ expected `int32`, found `buf.test.Bar`
+35 |     i: buf.test.BAR_ZERO
 ...
-40 |     repeated Bar e = 1;
-41 |     repeated int32 i = 2;
+41 |     repeated Bar e = 1;
+42 |     repeated int32 i = 2;
    |     -------------- expected due to this
    |
    = note: expected: scalar type `int32`
               found: enum type `buf.test.Bar`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:36:9
+  --> testdata/options/values/enum.proto:35:8
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+35 |     i: buf.test.BAR_ZERO
+   |        ^^^^^^^^^^^^^^^^^ expected `int32`, found `buf.test.Bar`
+...
+41 |     repeated Bar e = 1;
+42 |     repeated int32 i = 2;
+   |     -------------- expected due to this
+   |
+   = note: expected: scalar type `int32`
+              found: enum type `buf.test.Bar`
+
+error: mismatched types
+  --> testdata/options/values/enum.proto:37:9
+   |
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |         ^^^ expected `buf.test.Bar`, found floating-point literal
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:36:14
+  --> testdata/options/values/enum.proto:37:14
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |              ^^^^ expected `buf.test.Bar`, found `bool`
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: scalar type `bool`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:36:20
+  --> testdata/options/values/enum.proto:37:20
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |                    ^^^^^ expected `buf.test.Bar`, found `string`
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: scalar type `string`
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:36:27
+  --> testdata/options/values/enum.proto:37:27
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |                           ^^^
    |                           |
    |                           expected `buf.test.Bar`, found floating-point literal
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:36:32
+  --> testdata/options/values/enum.proto:37:32
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |                                ^^^
    |                                |
    |                                expected `buf.test.Bar`, found floating-point literal
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: floating-point literal
 
 error: mismatched types
-  --> testdata/options/values/enum.proto:36:37
+  --> testdata/options/values/enum.proto:37:37
    |
-36 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
+37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
    |                                     ^^
    |                                     |
    |                                     expected `buf.test.Bar`, found message expression
 ...
-40 |     repeated Bar e = 1;
+41 |     repeated Bar e = 1;
    |     ------------ expected due to this
    |
    = note: expected: enum type `buf.test.Bar`
               found: message expression
 
-encountered 19 errors
+encountered 18 errors

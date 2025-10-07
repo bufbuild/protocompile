@@ -334,11 +334,12 @@ func (r *Report) ToProto() proto.Message {
 			}
 
 			snippet := &compilerpb.Diagnostic_Annotation{
-				File:    file,
-				Start:   uint32(snip.Start),
-				End:     uint32(snip.End),
-				Message: snip.message,
-				Primary: snip.primary,
+				File:      file,
+				Start:     uint32(snip.Start),
+				End:       uint32(snip.End),
+				Message:   snip.message,
+				Primary:   snip.primary,
+				PageBreak: snip.pageBreak,
 			}
 			for _, edit := range snip.edits {
 				snippet.Edits = append(snippet.Edits, &compilerpb.Diagnostic_Edit{
@@ -419,8 +420,9 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 					Start: int(snip.Start),
 					End:   int(snip.End),
 				},
-				message: snip.Message,
-				primary: snip.Primary,
+				message:   snip.Message,
+				primary:   snip.Primary,
+				pageBreak: snip.PageBreak,
 			}
 			for _, edit := range snip.Edits {
 				snippet.edits = append(snippet.edits, Edit{

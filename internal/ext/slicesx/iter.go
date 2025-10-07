@@ -89,3 +89,36 @@ func PartitionKey[S ~[]E, E any, K comparable](s S, key func(E) K) iter.Seq2[int
 		}
 	}
 }
+
+// PartitionFunc is like [Partition], but instead the subslices are split
+// whenever split returns true for adjacent elements.
+//
+// [Partition] is PartitionFunc with != as the splitting function.
+func PartitionFunc[S ~[]E, E any](s S, split func(E, E) bool) iter.Seq2[int, S] {
+	return func(yield func(int, S) bool) {
+		var start int
+		var prev E
+		for i, next := range s {
+			if i == 0 {
+				prev = next
+				continue
+			}
+
+			if !split(prev, next) {
+				prev = next
+				continue
+			}
+
+			if !yield(start, s[start:i]) {
+				return
+			}
+
+			start = i
+			prev = next
+		}
+
+		if start < len(s) {
+			yield(start, s[start:])
+		}
+	}
+}

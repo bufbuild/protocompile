@@ -92,7 +92,11 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 		path, ok := decl.ImportPath().AsLiteral().AsString()
 		path = ir.CanonicalizeFilePath(path)
 
-		if !ok { // Already legalized in parser.legalizeImport()
+		if !ok {
+			// The import path is already legalized in [parser.legalizeImport()], if it is not
+			// a valid path, we just set a [incremental.ZeroQuery] so that we don't get a nil
+			// query for index j.
+			queries[j] = incremental.ZeroQuery[ir.File]{}
 			continue
 		}
 

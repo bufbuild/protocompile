@@ -1,35 +1,35 @@
 error: expected map key type, found scalar type `float`
-  --> testdata/fields/maps/invalid_key.proto:20:9
+  --> testdata/fields/maps/invalid_key.proto:21:9
    |
-20 |     map<float, int32> m1 = 1;
+21 |     map<float, int32> m1 = 1;
    |         ^^^^^
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found scalar type `double`
-  --> testdata/fields/maps/invalid_key.proto:21:9
+  --> testdata/fields/maps/invalid_key.proto:22:9
    |
-21 |     map<double, int32> m2 = 2;
+22 |     map<double, int32> m2 = 2;
    |         ^^^^^^
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found scalar type `bytes`
-  --> testdata/fields/maps/invalid_key.proto:22:9
+  --> testdata/fields/maps/invalid_key.proto:23:9
    |
-22 |     map<bytes, int32> m3 = 3;
+23 |     map<bytes, int32> m3 = 3;
    |         ^^^^^
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found message type `test.Foo`
-  --> testdata/fields/maps/invalid_key.proto:23:9
+  --> testdata/fields/maps/invalid_key.proto:24:9
    |
-23 |     map<Foo, int32> m4 = 4;
+24 |     map<Foo, int32> m4 = 4;
    |         ^^^
    = help: valid map key types are integer types, `string`, and `bool`
 
 error: expected map key type, found enum type `test.Enum`
-  --> testdata/fields/maps/invalid_key.proto:24:9
+  --> testdata/fields/maps/invalid_key.proto:25:9
    |
-24 |     map<Enum, int32> m5 = 5;
+25 |     map<Enum, int32> m5 = 5;
    |         ^^^^
    = help: valid map key types are integer types, `string`, and `bool`
    = help: counterintuitively, user-defined enum types cannot be used as keys

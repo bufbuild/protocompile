@@ -1,25 +1,25 @@
 error: `FooBarEntry` declared multiple times
-  --> testdata/fields/maps/collision.proto:20:5
+  --> testdata/fields/maps/collision.proto:21:5
    |
-20 |     map<int32, int32> foo_bar = 1;
+21 |     map<int32, int32> foo_bar = 1;
    |     ^^^^^^^^^^^^^^^^^ ------- implies `repeated FooBarEntry`
    |      |
    |      first here, as a message type
-21 |
-22 |     message FooBarEntry {}
+22 |
+23 |     message FooBarEntry {}
    |             ----------- ...also declared here
    |
    = help: map-typed fields implicitly declare a nested message type: field
            `foo_bar` produces a map entry type `FooBarEntry`
 
 error: `Entry` declared multiple times
-  --> testdata/fields/maps/collision.proto:26:5
+  --> testdata/fields/maps/collision.proto:27:5
    |
-26 |     map<int32, int32> _ = 1;
+27 |     map<int32, int32> _ = 1;
    |     ^^^^^^^^^^^^^^^^^ - implies `repeated Entry`
    |      |
    |      first here, as a message type
-27 |     map<int32, int32> __ = 2;
+28 |     map<int32, int32> __ = 2;
    |     ----------------- ...also declared here
    |
    = help: map-typed fields implicitly declare a nested message type: field `_`

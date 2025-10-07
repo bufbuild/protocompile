@@ -1,5 +1,4 @@
-error: editions must use the `edition` keyword%!(EXTRA taxa.Noun=`syntax`
-       declaration)
+error: editions must use the `edition` keyword
   --> testdata/parser/syntax/syntax_2023.proto:15:1
    |
 15 | syntax = "2023";

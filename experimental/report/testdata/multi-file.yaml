@@ -51,6 +51,23 @@ diagnostics:
         start: 27
         end: 34
 
+  - message: two files with page break
+    level: LEVEL_ERROR
+    annotations:
+      - message: foo
+        file: 0
+        start: 27
+        end: 34
+        page_break: true
+      - message: bar
+        file: 0
+        start: 45
+        end: 49
+      - message: baz
+        file: 1
+        start: 27
+        end: 34
+
   - message: three files
     level: LEVEL_ERROR
     annotations:

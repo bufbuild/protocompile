@@ -130,7 +130,6 @@ func (v Value) OptionSpan() report.Spanner {
 		return field
 	}
 	return report.Join(ast.ExprPath{Path: v.raw.optionPaths[0]}, expr)
-
 }
 
 // OptionSpans returns an indexer over spans for the option that set this value.
@@ -142,7 +141,7 @@ func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
 		slice = v.raw.exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) report.Spanner {
+	return seq.NewFixedSlice(slice, func(_ int, expr ast.ExprAny) report.Spanner {
 		if field := expr.AsField(); !field.IsZero() {
 			return field
 		}
@@ -210,7 +209,6 @@ func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 	}
 
 	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) ast.ExprAny {
-		fmt.Println(expr.Kind(), expr.Span().Text())
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Key()
 		}

@@ -15,7 +15,6 @@
 package ir
 
 import (
-	"fmt"
 	"path"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
@@ -542,79 +541,6 @@ func validateCType(m Member, r *report.Report) {
 	}
 }
 
-type errEditionTooOld struct {
-	file  File
-	intro syntax.Syntax
-
-	what  any
-	where report.Spanner
-}
-
-func (e errEditionTooOld) Diagnose(d *report.Diagnostic) {
-	kind := "syntax"
-	if e.file.Syntax().IsEdition() {
-		kind = "edition"
-	}
-
-	d.Apply(
-		report.Message("`%s` is not supported in %s", e.what, prettyEdition(e.file.Syntax())),
-		report.Snippet(e.where),
-		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
-	)
-
-	if e.intro != syntax.Unknown {
-		d.Apply(report.Helpf("`%s` requires at least %s", e.what, prettyEdition(e.intro)))
-	}
-}
-
-type errEditionTooNew struct {
-	file                File
-	deprecated, removed syntax.Syntax
-	warning             string
-
-	what  any
-	where report.Spanner
-}
-
-func (e errEditionTooNew) Diagnose(d *report.Diagnostic) {
-	kind := "syntax"
-	if e.file.Syntax().IsEdition() {
-		kind = "edition"
-	}
-
-	err := "not supported"
-	if e.file.Syntax() < e.removed {
-		err = "deprecated"
-	}
-
-	d.Apply(
-		report.Message("`%s` is %s in %s", e.what, err, prettyEdition(e.file.Syntax())),
-		report.Snippet(e.where),
-		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
-	)
-
-	if e.removed <= e.file.Syntax() {
-		if e.deprecated <= e.file.Syntax() {
-			d.Apply(report.Helpf("deprecated since %s, removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
-		} else {
-			d.Apply(report.Helpf("removed in %s", e.what, prettyEdition(e.removed)))
-		}
-	} else if e.deprecated <= e.file.Syntax() {
-		if e.removed > e.file.Syntax() {
-			d.Apply(report.Helpf("deprecated since %s, to be removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
-		} else {
-			d.Apply(report.Helpf("deprecated since %s", prettyEdition(e.deprecated)))
-		}
-	}
-
-	if e.warning != "" {
-		// Canonicalize whitespace. Some built-in deprecation warnings have
-		// double spaces after periods.
-		text := whitespacePattern.ReplaceAllString(e.warning, " ")
-		d.Apply(report.Helpf("deprecated: %s", text))
-	}
-}
-
 func diagnoseDeprecation(f File, r *report.Report) {
 	for imp := range seq.Values(f.Imports()) {
 		if d := imp.Deprecated(); !d.IsZero() {
@@ -696,9 +622,7 @@ func diagnoseDeprecationForOptions(value MessageValue, r *report.Report) {
 			}
 		}
 
-		fmt.Println(field.getElements(), field.Elements().Len(), field.raw.exprs, field.raw.elemIndices)
 		for elem := range seq.Values(field.Elements()) {
-			fmt.Println(elem.Field().Name(), elem.AST().Span().Text())
 			if enum := elem.AsEnum(); !enum.IsZero() {
 				if d := enum.Deprecated(); !d.IsZero() {
 					r.Warn(errDeprecated{

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+exclude: "unused import"
 files:
 - path: "a.proto"
   text: |
@@ -35,3 +36,10 @@ files:
     package buf.test;
 
     import "a.proto";
+
+- path: "d.proto"
+  text: |
+    syntax = "proto2";
+    package buf.test;
+
+    import "d.proto";
