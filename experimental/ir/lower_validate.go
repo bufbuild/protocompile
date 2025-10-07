@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"path"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -44,6 +46,8 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 // validateConstraints validates miscellaneous constraints that depend on the
 // whole IR being constructed properly.
 func validateConstraints(f File, r *report.Report) {
+	validateFileOptions(f, r)
+
 	for ty := range seq.Values(f.AllTypes()) {
 		if ty.IsMessageSet() {
 			validateMessageSet(ty, r)
@@ -59,6 +63,47 @@ func validateConstraints(f File, r *report.Report) {
 				validateMessageSetExtension(m, r)
 			}
 		}
+	}
+}
+
+func validateFileOptions(f File, r *report.Report) {
+	builtins := f.Context().builtins()
+
+	// https://protobuf.com/docs/language-spec#option-validation
+	javaUTF8 := f.Options().Field(builtins.JavaUTF8)
+	if !javaUTF8.IsZero() && f.Syntax().IsEdition() {
+		want := "DEFAULT"
+		if b, _ := javaUTF8.AsBool(); b {
+			want = "VERIFY"
+		}
+
+		r.Errorf("cannot set `%s` in %s", javaUTF8.Field().Name(), taxa.EditionMode).Apply(
+			report.Snippet(javaUTF8.KeyAST()),
+			javaUTF8.suggestEdit("features.(pb.java).utf8_validation", want, "replace with `features.(pb.java).utf8_validation`"),
+		)
+	}
+
+	optimize := f.Options().Field(builtins.OptimizeFor)
+	if v, _ := optimize.AsInt(); v != 3 { // google.protobuf.FileOptions.LITE_RUNTIME
+		for imp := range seq.Values(f.Imports()) {
+			impOptimize := imp.Options().Field(builtins.OptimizeFor)
+			if v, _ := impOptimize.AsInt(); v == 3 { // google.protobuf.FileOptions.LITE_RUNTIME
+				r.Errorf("`LITE_RUNTIME` file imported in non-`LITE_RUNTIME` file").Apply(
+					report.Snippet(imp.Decl.ImportPath()),
+					report.Snippetf(optimize.ValueAST(), "optimization level set here"),
+					report.Snippetf(impOptimize.ValueAST(), "`%s` set as `LITE_RUNTIME` here", path.Base(imp.Path())),
+					report.Helpf("files using `LITE_RUNTIME` compile to types that use `MessageLite` or "+
+						"equivalent in some runtimes, which ordinary message types cannot depend on"),
+				)
+			}
+		}
+	}
+
+	defaultPresence := f.FeatureSet().Lookup(builtins.FeaturePresence).Value()
+	if v, _ := defaultPresence.AsInt(); v == 3 { // google.protobuf.FeatureSet.LEGACY_REQUIRED
+		r.Errorf("cannot set `LEGACY_REQUIRED` at the file level").Apply(
+			report.Snippet(defaultPresence.ValueAST()),
+		)
 	}
 }
 

@@ -1,0 +1,45 @@
+warning: unused import "heavy2.proto"
+  --> heavy2.proto:4:8
+   |
+ 4 | import "heavy1.proto";
+   |        ^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "heavy1.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "heavy2.proto"
+  --> heavy2.proto:5:8
+   |
+ 5 | import "lite1.proto";
+   |        ^^^^^^^^^^^^^
+  help: delete it
+   |
+ 5 | - import "lite1.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "lite1.proto"
+  --> lite1.proto:6:8
+   |
+ 6 | import "heavy1.proto";
+   |        ^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 6 | - import "heavy1.proto";
+   |
+   = help: no symbols from this file are referenced
+
+warning: unused import "lite2.proto"
+  --> lite2.proto:6:8
+   |
+ 6 | import "lite1.proto";
+   |        ^^^^^^^^^^^^^
+  help: delete it
+   |
+ 6 | - import "lite1.proto";
+   |
+   = help: no symbols from this file are referenced
+
+encountered 4 warnings
