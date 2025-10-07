@@ -160,7 +160,11 @@ func (i *imports) Recurse(dedup intern.Map[ast.DeclImport]) {
 		i.byPath[imp.file.InternedPath()] = uint32(n)
 	}
 	for k, file := range seq.All(i.Directs()) {
-		mapsx.Add(i.causes, file.InternedPath(), uint32(k))
+		// In the case of direct imports, we always add the path and key rather than using
+		// [mapsx.Add], which checks if a key already exists. This is because a direct import
+		// may also be shared with a transitive import, and we always want the direct import
+		// to be checked as a cause.
+		i.causes[file.InternedPath()] = uint32(k)
 		for imp := range seq.Values(file.TransitiveImports()) {
 			mapsx.Add(i.causes, imp.InternedPath(), uint32(k))
 		}
