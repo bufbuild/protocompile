@@ -401,11 +401,18 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 		}
 		t.log("cache hit slow", "%T/%v", query.Underlying(), query.Underlying())
 		if err := t.hasCycleWithLock(c, query); err != nil {
-			// Safe to modify the task as run is waiting for this dependency to complete.
-			c.fatal = err
+			// Create a new task for this cyclic dependency to avoid data race with the parent.
+			// The parent cyclic key is evicted by the run task.
+			c := &task{
+				query:   query,
+				runID:   t.runID,
+				parents: c.parents,
+				deps:    c.deps,
+				fatal:   err,
+			}
 			t.exec.lock.Unlock()
+			t.log("cycle", "%T/%v", query.Underlying(), query.Underlying())
 			done(c)
-			// Cyclic key is evixted by the run task.
 			return false
 		}
 		t.exec.lock.Unlock()
@@ -480,8 +487,9 @@ func (t *Task) addDependencyWithLock(child *task) {
 }
 
 // hasCycleWithLock checks if waiting on target would create a cycle.
-// Must be called with t.exec.lock held.
 // targetQuery is the query being resolved (with import info), which may differ from target.query.
+//
+// Must be called with t.exec.lock held.
 func (t *Task) hasCycleWithLock(target *task, targetQuery *AnyQuery) error {
 	if t.task == nil || target == nil {
 		return nil
