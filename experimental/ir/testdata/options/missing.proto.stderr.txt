@@ -5,15 +5,17 @@ error: cannot find message field `unknown` in `google.protobuf.FileOptions`
    |        ^^^^^^^ because of this field selector
 
 error: expected singular message, found scalar type `string`
-   --> testdata/options/missing.proto:20:18
+   --> testdata/options/missing.proto:20:19
     |
  20 | option go_package.x = 42;
-    |                  ^^ field selector requires singular message
+    |        ---------- ^ field selector requires singular message
+    |         |
+    |         found scalar type `string`
     |
-   ::: google/protobuf/descriptor.proto:504:3
+   ::: google/protobuf/descriptor.proto:504:12
     |
 504 |   optional string go_package = 11;
-    |   --------------- type specified here
+    |            ------ type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.MessageOptions`
   --> testdata/options/missing.proto:23:12
@@ -22,15 +24,17 @@ error: cannot find message field `unknown` in `google.protobuf.MessageOptions`
    |            ^^^^^^^ because of this field selector
 
 error: expected singular message, found scalar type `bool`
-   --> testdata/options/missing.proto:24:22
+   --> testdata/options/missing.proto:24:23
     |
  24 |     option deprecated.x = 42;
-    |                      ^^ field selector requires singular message
+    |            ---------- ^ field selector requires singular message
+    |             |
+    |             found scalar type `bool`
     |
-   ::: google/protobuf/descriptor.proto:611:3
+   ::: google/protobuf/descriptor.proto:611:12
     |
 611 |   optional bool deprecated = 3 [default = false];
-    |   ------------- type specified here
+    |            ---- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.FieldOptions`
   --> testdata/options/missing.proto:25:27
@@ -39,25 +43,29 @@ error: cannot find message field `unknown` in `google.protobuf.FieldOptions`
    |                           ^^^^^^^ because of this field selector
 
 error: expected singular message, found scalar type `bool`
-   --> testdata/options/missing.proto:25:45
+   --> testdata/options/missing.proto:25:46
     |
  25 |     optional Foo foo = 1 [unknown = 42, lazy.x = 42];
-    |                                             ^^
-    |                                             |
-    |                                             field selector requires singular message
+    |                                         ---- ^
+    |                                          |   |
+    |                                          found scalar type `bool`
+    |                                              |
+    |                                              field selector requires singular message
     |
-   ::: google/protobuf/descriptor.proto:743:3
+   ::: google/protobuf/descriptor.proto:743:12
     |
 743 |   optional bool lazy = 5 [default = false];
-    |   ------------- type specified here
+    |            ---- type specified here
 
 error: expected singular message, found pseudo-option `default`
-  --> testdata/options/missing.proto:26:36
+  --> testdata/options/missing.proto:26:37
    |
 26 |     optional int32 bar = 2 [default.x = 42];
-   |                                    ^^
-   |                                    |
-   |                                    field selector requires singular message
+   |                             ------- ^
+   |                              |      |
+   |                              found pseudo-option `default`
+   |                                     |
+   |                                     field selector requires singular message
    |
    = note: `default` is a pseudo-option and does not correspond to a field in
            `google.protobuf.FieldOptions`
@@ -75,15 +83,17 @@ error: cannot find message field `unknown` in `google.protobuf.EnumOptions`
    |            ^^^^^^^ because of this field selector
 
 error: expected singular message, found scalar type `bool`
-   --> testdata/options/missing.proto:36:22
+   --> testdata/options/missing.proto:36:23
     |
  36 |     option deprecated.x = 42;
-    |                      ^^ field selector requires singular message
+    |            ---------- ^ field selector requires singular message
+    |             |
+    |             found scalar type `bool`
     |
-   ::: google/protobuf/descriptor.proto:859:3
+   ::: google/protobuf/descriptor.proto:859:12
     |
 859 |   optional bool deprecated = 3 [default = false];
-    |   ------------- type specified here
+    |            ---- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.EnumValueOptions`
   --> testdata/options/missing.proto:37:19
@@ -92,16 +102,18 @@ error: cannot find message field `unknown` in `google.protobuf.EnumValueOptions`
    |                   ^^^^^^^ because of this field selector
 
 error: expected singular message, found scalar type `bool`
-   --> testdata/options/missing.proto:37:43
+   --> testdata/options/missing.proto:37:44
     |
  37 |     BAR_ZERO = 0 [unknown = 42, deprecated.x = 42];
-    |                                           ^^
-    |                                           |
-    |                                           field selector requires singular message
+    |                                 ---------- ^
+    |                                  |         |
+    |                                  found scalar type `bool`
+    |                                            |
+    |                                            field selector requires singular message
     |
-   ::: google/protobuf/descriptor.proto:889:3
+   ::: google/protobuf/descriptor.proto:889:12
     |
 889 |   optional bool deprecated = 1 [default = false];
-    |   ------------- type specified here
+    |            ---- type specified here
 
 encountered 12 errors

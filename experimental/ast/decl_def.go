@@ -178,6 +178,13 @@ func (d DeclDef) Name() Path {
 	return d.raw.name.With(d.Context())
 }
 
+// Stem returns a span that contains both this definition's type and name.
+//
+// For e.g. a message, this is the "message Foo" part.
+func (d DeclDef) Stem() report.Span {
+	return report.Join(d.Type(), d.Name())
+}
+
 // Signature returns this definition's type signature, if it has one.
 //
 // Note that this is distinct from the type returned by [DeclDef.Type], which
