@@ -150,6 +150,8 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 				case keyword.Required:
 					switch p.syntax {
 					case syntax.Proto2:
+						// TODO: This appears verbatim in lower_validate. Move this check
+						// into IR lowering?
 						p.Warnf("required fields are deprecated").Apply(
 							report.Snippet(ty.PrefixToken()),
 							report.Helpf(
