@@ -433,8 +433,30 @@ func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) 
 	return false
 }
 
-// addDependencyWithLock links the callee task to the parent caller.
+// addDependencyWithLock links the callee task to the parent caller, building
+// the dependency graph used for cycle detection and cache invalidation.
+//
 // Must be called with t.exec.lock held.
+//
+// The dependency graph (task.deps and task.parents) is shared mutable state
+// that grows as queries are resolved. Multiple goroutines concurrently resolving
+// different queries will race to:
+//
+//  1. Initialize the deps/parents maps (lazy initialization on first use)
+//  2. Insert edges into these maps
+//  3. Read the graph during cycle detection (hasCycleWithLock)
+//  4. Read the graph during cache eviction (Executor.Evict)
+//  5. Read the graph during report generation (Executor.generateReport)
+//
+// Without the lock, these concurrent map operations would cause data races.
+// The exec.lock ensures that:
+//
+//   - Map initialization is atomic (no lost edges from concurrent nil checks)
+//   - Map insertions are serialized (no concurrent writes)
+//   - Readers see a consistent snapshot of the dependency graph
+//
+// The dependency graph is built incrementally as queries discover dependencies,
+// so edges are added from start() each time a query resolves a sub-query.
 func (t *Task) addDependencyWithLock(child *task) {
 	parent := t.task
 	if parent == nil {
