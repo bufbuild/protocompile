@@ -214,7 +214,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	return results, err
 }
 
-// resolve executes the tasks returning the results plus the tasks for report
+// resolve executes the queries returning the results plus the tasks for report
 // generation.
 func resolve[T any](caller *Task, queries ...Query[T]) ([]Result[T], []*task, error) {
 	if len(queries) == 0 {
@@ -232,8 +232,14 @@ func resolve[T any](caller *Task, queries ...Query[T]) ([]Result[T], []*task, er
 	var needWait bool
 	for i := len(queries) - 1; i >= 0; i-- {
 		query := AsAny(queries[i]) // This will also cache the result of q.Key() for us.
+		if query == nil {
+			var underlying any
+			if caller.task != nil {
+				underlying = caller.task.query.Underlying()
+			}
+			return nil, nil, fmt.Errorf("protocompile/incremental: nil query at index %d while resolving from %T/%v", i, underlying, underlying)
+		}
 		sync := i == 0
-
 		async := caller.start(query, sync, func(t *task) {
 			tasks[i] = t
 			var value T
