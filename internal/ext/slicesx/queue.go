@@ -242,15 +242,14 @@ func (r *Queue[_]) Clear() {
 }
 
 func (r *Queue[E]) resize(n int) {
-	count := r.Len()
-
+	var count int
 	old := r.buf
 	r.buf = make([]E, n)
 	if r.start > r.end {
-		copy(r.buf, old[r.start:])
-		copy(r.buf[r.start:], old[:r.end])
+		count = copy(r.buf, old[r.start:])
+		count += copy(r.buf[count:], old[:r.end])
 	} else {
-		copy(r.buf, old[r.start:r.end])
+		count = copy(r.buf, old[r.start:r.end])
 	}
 	r.start = 0
 	r.end = count
