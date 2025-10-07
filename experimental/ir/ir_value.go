@@ -16,7 +16,6 @@ package ir
 
 import (
 	"cmp"
-	"fmt"
 	"iter"
 	"math"
 	"slices"
@@ -209,7 +208,6 @@ func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 	}
 
 	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) ast.ExprAny {
-		fmt.Println(expr.Kind(), expr.Span().Text())
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Key()
 		}
