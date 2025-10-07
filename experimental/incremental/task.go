@@ -350,6 +350,34 @@ type Result[T any] struct {
 //
 // If sync is false, the computation will occur asynchronously. Returns whether
 // the computation is in fact executing asynchronously as a result.
+//
+// # Leader Selection
+//
+// This function implements leader selection for query execution. When multiple
+// goroutines race to execute the same query (by key), the first to acquire
+// exec.lock becomes the "leader" that executes the query, while others become
+// "waiters" that block on the leader's task.wg until completion.
+//
+// The critical section protected by exec.lock includes:
+//   - Checking and updating the tasks map
+//   - Adding dependency edges between tasks
+//   - Cycle detection via dependency BFS traversal
+//
+// Query execution (the actual expensive work) happens OUTSIDE the lock, making
+// the critical section very short (~100ns). This is why a simple mutex was
+// chosen over more complex lock-free approaches like sync.Map.LoadOrStore.
+// Zero allocations for the common case.
+//
+// # Execution Paths
+//
+// Three paths exist based on the tasks map state:
+//
+//  1. Cache hit (done): Task completed, return cached result immediately
+//  2. Cache hit (in progress): Task executing, wait on task.wg for completion
+//  3. Cache miss: Become leader, create task, execute query
+//
+// Path 2 also performs cycle detection. If a cycle is detected, the task is
+// marked with ErrCycle and waiters return the error without blocking.
 func (t *Task) start(query *AnyQuery, sync bool, done func(*task)) (async bool) {
 	t.exec.lock.Lock()
 	if t.exec.tasks == nil {
