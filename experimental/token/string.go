@@ -70,6 +70,8 @@ func (s StringToken) Prefix() report.Span {
 
 // Quotes returns the opening and closing delimiters for this string literal,
 // not including the sigil.
+//
+//nolint:revive,predeclared
 func (s StringToken) Quotes() (open, close report.Span) {
 	if s.IsZero() {
 		return report.Span{}, report.Span{}
@@ -114,7 +116,7 @@ func (s StringToken) Quotes() (open, close report.Span) {
 
 // RawContent returns the unprocessed contents of the string.
 func (s StringToken) RawContent() report.Span {
-	open, close := s.Quotes()
+	open, close := s.Quotes() //nolint:revive,predeclared
 	open.Start = open.End
 	open.End = close.Start
 	return open

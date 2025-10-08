@@ -28,7 +28,7 @@ import (
 // lexString lexes a string starting at the current cursor.
 //
 // The cursor position should be just before the string's first quote character.
-func lexString(l *lexer, sigil string) token.Token {
+func lexString(l *lexer, sigil string) {
 	start := l.cursor
 	l.cursor += len(sigil)
 
@@ -103,8 +103,6 @@ func lexString(l *lexer, sigil string) token.Token {
 			note,
 		)
 	}
-
-	return tok
 }
 
 type stringContent struct {

@@ -30,10 +30,6 @@ import (
 // maxFileSize is the maximum file size Protocompile supports.
 const maxFileSize int = math.MaxInt32 // 2GB
 
-type lexOptions struct {
-	FusedAngles bool
-}
-
 // lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
 //
