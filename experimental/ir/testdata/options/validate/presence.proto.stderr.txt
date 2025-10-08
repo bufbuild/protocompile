@@ -1,0 +1,7 @@
+error: cannot set `LEGACY_REQUIRED` at the file level
+  --> testdata/options/validate/presence.proto:19:34
+   |
+19 | option features.field_presence = LEGACY_REQUIRED;
+   |                                  ^^^^^^^^^^^^^^^
+
+encountered 1 error
