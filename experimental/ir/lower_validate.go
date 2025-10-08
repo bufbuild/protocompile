@@ -15,9 +15,12 @@
 package ir
 
 import (
+	"path"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -44,15 +47,27 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 // validateConstraints validates miscellaneous constraints that depend on the
 // whole IR being constructed properly.
 func validateConstraints(f File, r *report.Report) {
+	validateFileOptions(f, r)
+
 	for ty := range seq.Values(f.AllTypes()) {
-		if ty.IsMessageSet() {
+		switch {
+		case ty.IsEnum():
+			validateEnum(ty, r)
+
+		case ty.IsMessageSet():
 			validateMessageSet(ty, r)
+
+		case ty.IsMessage():
+			for oneof := range seq.Values(ty.Oneofs()) {
+				validateOneof(oneof, r)
+			}
 		}
 	}
 
 	for m := range f.AllMembers() {
 		// https://protobuf.com/docs/language-spec#field-option-validation
 		validatePacked(m, r)
+		validatePresence(m, r)
 
 		// NOTE: extensions already cannot be map fields, so we don't need to
 		// validate them.
@@ -65,11 +80,84 @@ func validateConstraints(f File, r *report.Report) {
 	}
 }
 
-func validateMessageSet(ty Type, r *report.Report) {
-	if !ty.IsMessageSet() {
+func validateEnum(ty Type, r *report.Report) {
+	builtins := ty.Context().builtins()
+
+	if ty.Members().Len() == 0 {
+		r.Errorf("%s must define at least one value", taxa.EnumType).Apply(
+			report.Snippet(ty.AST()),
+		)
 		return
 	}
 
+	first := ty.Members().At(0)
+	if first.Number() != 0 && !ty.IsClosedEnum() {
+		// Figure out why this enum is open.
+		feature := ty.FeatureSet().Lookup(builtins.FeatureEnum)
+		why := feature.Value().ValueAST().Span()
+		if feature.IsDefault() {
+			why = ty.Context().File().AST().Syntax().Value().Span()
+		}
+
+		r.Errorf("first value of open enum must be zero").Apply(
+			report.Snippet(first.AST().Value()),
+			report.PageBreak,
+			report.Snippetf(why, "this makes `%s` an open enum", ty.FullName()),
+			report.Helpf("open enums must define a zero value, and it must be the first one"),
+		)
+	}
+}
+
+func validateFileOptions(f File, r *report.Report) {
+	builtins := f.Context().builtins()
+
+	// https://protobuf.com/docs/language-spec#option-validation
+	javaUTF8 := f.Options().Field(builtins.JavaUTF8)
+	if !javaUTF8.IsZero() && f.Syntax().IsEdition() {
+		want := "DEFAULT"
+		if b, _ := javaUTF8.AsBool(); b {
+			want = "VERIFY"
+		}
+
+		r.Errorf("cannot set `%s` in %s", javaUTF8.Field().Name(), taxa.EditionMode).Apply(
+			report.Snippet(javaUTF8.KeyAST()),
+			javaUTF8.suggestEdit("features.(pb.java).utf8_validation", want, "replace with `features.(pb.java).utf8_validation`"),
+		)
+	}
+
+	optimize := f.Options().Field(builtins.OptimizeFor)
+	if v, _ := optimize.AsInt(); v != 3 { // google.protobuf.FileOptions.LITE_RUNTIME
+		for imp := range seq.Values(f.Imports()) {
+			impOptimize := imp.Options().Field(builtins.OptimizeFor)
+			if v, _ := impOptimize.AsInt(); v == 3 { // google.protobuf.FileOptions.LITE_RUNTIME
+				r.Errorf("`LITE_RUNTIME` file imported in non-`LITE_RUNTIME` file").Apply(
+					report.Snippet(imp.Decl.ImportPath()),
+					report.Snippetf(optimize.ValueAST(), "optimization level set here"),
+					report.Snippetf(impOptimize.ValueAST(), "`%s` set as `LITE_RUNTIME` here", path.Base(imp.Path())),
+					report.Helpf("files using `LITE_RUNTIME` compile to types that use `MessageLite` or "+
+						"equivalent in some runtimes, which ordinary message types cannot depend on"),
+				)
+			}
+		}
+	}
+
+	defaultPresence := f.FeatureSet().Lookup(builtins.FeaturePresence).Value()
+	if v, _ := defaultPresence.AsInt(); v == 3 { // google.protobuf.FeatureSet.LEGACY_REQUIRED
+		r.Errorf("cannot set `LEGACY_REQUIRED` at the file level").Apply(
+			report.Snippet(defaultPresence.ValueAST()),
+		)
+	}
+}
+
+func validateOneof(oneof Oneof, r *report.Report) {
+	if oneof.Members().Len() == 0 {
+		r.Errorf("oneof must define at least one member").Apply(
+			report.Snippet(oneof.AST()),
+		)
+	}
+}
+
+func validateMessageSet(ty Type, r *report.Report) {
 	f := ty.Context().File()
 	builtins := ty.Context().builtins()
 
@@ -154,13 +242,18 @@ func validateMessageSetExtension(extn Member, r *report.Report) {
 	}
 }
 
+<<<<<<< HEAD
 // validatePacked validates constraints on the packed option and feature.
 func validatePacked(m Member, r *report.Report) {
+=======
+func validatePresence(m Member, r *report.Report) {
+>>>>>>> origin/main
 	if m.IsEnumValue() {
 		return
 	}
 
 	builtins := m.Context().builtins()
+<<<<<<< HEAD
 	validate := func(span report.Span) {
 		switch {
 		case m.IsSingular() || m.IsMap():
@@ -208,5 +301,76 @@ func validatePacked(m Member, r *report.Report) {
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
 	if feature.IsExplicit() {
 		validate(feature.Value().KeyAST().Span())
+=======
+	feature := m.FeatureSet().Lookup(builtins.FeaturePresence)
+	if !feature.IsExplicit() {
+		return
+	}
+
+	switch {
+	case !m.IsSingular():
+		what := "repeated"
+		if m.IsMap() {
+			what = "map"
+		}
+
+		r.Errorf("expected singular field, found %s field", what).Apply(
+			report.Snippet(m.TypeAST()),
+			report.Snippetf(
+				feature.Value().KeyAST(),
+				"`%s` set here", feature.Field().Name(),
+			),
+			report.Helpf("`%s` can only be set on singular fields", feature.Field().Name()),
+		)
+
+	case m.Presence() == presence.Shared:
+		r.Errorf("expected singular field, found oneof member").Apply(
+			report.Snippet(m.AST()),
+			report.Snippetf(m.Oneof().AST(), "defined in this oneof"),
+			report.Snippetf(
+				feature.Value().KeyAST(),
+				"`%s` set here", feature.Field().Name(),
+			),
+			report.Helpf("`%s` cannot be set on oneof members", feature.Field().Name()),
+			report.Helpf("all oneof members have explicit presence"),
+		)
+
+	case m.IsExtension():
+		r.Errorf("expected singular field, found extension").Apply(
+			report.Snippet(m.AST()),
+			report.Snippetf(
+				feature.Value().KeyAST(),
+				"`%s` set here", feature.Field().Name(),
+			),
+			report.Helpf("`%s` cannot be set on extensions", feature.Field().Name()),
+			report.Helpf("all singular extensions have explicit presence"),
+		)
+	}
+
+	switch v, _ := feature.Value().AsInt(); v {
+	case 1: // EXPLICIT
+	case 2: // IMPLICIT
+		if m.Element().IsMessage() {
+			r.Error(errTypeConstraint{
+				want: taxa.MessageType,
+				got:  m.Element(),
+				decl: m.TypeAST(),
+			}).Apply(
+				report.Snippet(m.TypeAST()),
+				report.Snippetf(
+					feature.Value().ValueAST(),
+					"implicit presence set here",
+				),
+				report.Helpf("all message-typed fields explicit presence"),
+			)
+		}
+	case 3: // LEGACY_REQUIRED
+		r.Warnf("required fields are deprecated").Apply(
+			report.Snippet(feature.Value().ValueAST()),
+			report.Helpf(
+				"do not attempt to change this to `EXPLICIT` if the field is "+
+					"already in-use; doing so is a wire protocol break"),
+		)
+>>>>>>> origin/main
 	}
 }
