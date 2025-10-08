@@ -212,6 +212,29 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	join := semaphore.NewWeighted(int64(len(queries)))
 	join.TryAcquire(int64(len(queries))) // Always succeeds because there are no waiters.
 
+	// Update dependency links for each of our dependencies. This occurs in a
+	// defer block so that it happens regardless of panicking.
+	defer func() {
+		if caller.task == nil {
+			return
+		}
+		for _, dep := range deps {
+			if dep == nil {
+				continue
+			}
+
+			if caller.task.deps == nil {
+				caller.task.deps = map[*task]struct{}{}
+			}
+
+			caller.task.deps[dep] = struct{}{}
+			for dep := range dep.deps {
+				caller.task.deps[dep] = struct{}{}
+			}
+			dep.downstream.Store(caller.task, struct{}{})
+		}
+	}()
+
 	// Schedule all but the first query to run asynchronously.
 	var needWait bool
 	for i, qt := range slices.Backward(queries) {
@@ -246,29 +269,6 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 
 		needWait = needWait || async
 	}
-
-	// Update dependency links for each of our dependencies. This occurs in a
-	// defer block so that it happens regardless of panicking.
-	defer func() {
-		if caller.task == nil {
-			return
-		}
-		for _, dep := range deps {
-			if dep == nil {
-				continue
-			}
-
-			if caller.task.deps == nil {
-				caller.task.deps = map[*task]struct{}{}
-			}
-
-			caller.task.deps[dep] = struct{}{}
-			for dep := range dep.deps {
-				caller.task.deps[dep] = struct{}{}
-			}
-			dep.downstream.Store(caller.task, struct{}{})
-		}
-	}()
 
 	if needWait {
 		// Release our current hold on the global semaphore, since we're about to
