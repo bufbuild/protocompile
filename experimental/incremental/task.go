@@ -294,8 +294,8 @@ func (t *Task) checkDone() {
 
 // task is book-keeping information for a memoized Task in an Executor.
 type task struct {
-	// Direct dependencies, tasks that this task depends on.
-	// Only written during Resolve.
+	// Direct dependencies. Tasks that this task depends on.
+	// Only written during setup in Resolve.
 	deps map[*task]struct{}
 	// Inverse of deps. Contains all tasks that directly depend on this task.
 	// Written by multiple tasks concurrently.
