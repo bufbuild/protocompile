@@ -455,7 +455,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		// until it's done.
 		output := t.result.Load()
 		if output == nil {
-			return nil // Leader panic'ed but we did see a result.
+			return nil // Leader panicked but we did see a result.
 		}
 		return t.waitUntilDone(caller, output, async)
 	}
