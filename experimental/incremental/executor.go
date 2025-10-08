@@ -153,20 +153,25 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	// Record all diagnostics generates by the queries.
 	report := &report.Report{Options: e.reportOptions}
 	dedup := make(map[*task]struct{})
-	record := func(t *task) {
-		if _, ok := dedup[t]; ok {
-			return
-		}
-
-		dedup[t] = struct{}{}
-		report.Diagnostics = append(report.Diagnostics, t.report.Diagnostics...)
-	}
+	tasks := make([]*task, 0, len(queries))
 	for _, query := range queries {
 		task := e.getTask(query.Key())
-		record(task) // NOTE: task.deps does not contain task.
-		for dep := range task.deps {
-			record(dep)
+		if task == nil {
+			continue // Can happen due to an abort.
 		}
+		tasks = append(tasks, task)
+	}
+	for n := len(tasks); n > 0; n = len(tasks) {
+		task := tasks[n-1]
+		tasks = tasks[:n-1]
+		if _, ok := dedup[task]; ok {
+			continue
+		}
+		for dep := range task.deps {
+			tasks = append(tasks, dep)
+		}
+		dedup[task] = struct{}{}
+		report.Diagnostics = append(report.Diagnostics, task.report.Diagnostics...)
 	}
 	report.Canonicalize()
 
@@ -189,24 +194,24 @@ func (e *Executor) Evict(keys ...any) {
 // the evicted query by writing to a variable, without risking concurrent calls
 // to [Run] seeing inconsistent or stale state across multiple queries.
 func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
-	var queue []*task
+	var tasks []*task
 	for _, key := range keys {
 		if t, ok := e.tasks.Load(key); ok {
-			queue = append(queue, t.(*task)) //nolint:errcheck
+			tasks = append(tasks, t.(*task)) //nolint:errcheck
 		}
 	}
-	if len(queue) == 0 && cleanup == nil {
+	if len(tasks) == 0 && cleanup == nil {
 		return
 	}
 
 	e.dirty.Lock()
 	defer e.dirty.Unlock()
-	for len(queue) > 0 {
-		next := queue[0]
-		queue = queue[1:]
+	for n := len(tasks); n > 0; n = len(tasks) {
+		next := tasks[n-1]
+		tasks = tasks[:n-1]
 
-		next.downstream.Range(func(k, _ any) bool {
-			queue = append(queue, k.(*task)) //nolint:errcheck
+		next.parents.Range(func(k, _ any) bool {
+			tasks = append(tasks, k.(*task)) //nolint:errcheck
 			return true
 		})
 
