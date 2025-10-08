@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -64,6 +65,9 @@ func validateConstraints(f File, r *report.Report) {
 	}
 
 	for m := range f.AllMembers() {
+		// https://protobuf.com/docs/language-spec#field-option-validation
+		validatePresence(m, r)
+
 		// NOTE: extensions already cannot be map fields, so we don't need to
 		// validate them.
 		if m.IsExtension() && !m.IsMap() {
@@ -233,6 +237,84 @@ func validateMessageSetExtension(extn Member, r *report.Report) {
 			report.Snippetf(extendee.Options().Field(builtins.MessageSet).KeyAST(), "declared as message set here"),
 			report.Snippet(extendee.AST().Stem()),
 			report.Helpf("message set extensions must be singular message fields"),
+		)
+	}
+}
+
+func validatePresence(m Member, r *report.Report) {
+	if m.IsEnumValue() {
+		return
+	}
+
+	builtins := m.Context().builtins()
+	feature := m.FeatureSet().Lookup(builtins.FeaturePresence)
+	if !feature.IsExplicit() {
+		return
+	}
+
+	switch {
+	case !m.IsSingular():
+		what := "repeated"
+		if m.IsMap() {
+			what = "map"
+		}
+
+		r.Errorf("expected singular field, found %s field", what).Apply(
+			report.Snippet(m.TypeAST()),
+			report.Snippetf(
+				feature.Value().KeyAST(),
+				"`%s` set here", feature.Field().Name(),
+			),
+			report.Helpf("`%s` can only be set on singular fields", feature.Field().Name()),
+		)
+
+	case m.Presence() == presence.Shared:
+		r.Errorf("expected singular field, found oneof member").Apply(
+			report.Snippet(m.AST()),
+			report.Snippetf(m.Oneof().AST(), "defined in this oneof"),
+			report.Snippetf(
+				feature.Value().KeyAST(),
+				"`%s` set here", feature.Field().Name(),
+			),
+			report.Helpf("`%s` cannot be set on oneof members", feature.Field().Name()),
+			report.Helpf("all oneof members have explicit presence"),
+		)
+
+	case m.IsExtension():
+		r.Errorf("expected singular field, found extension").Apply(
+			report.Snippet(m.AST()),
+			report.Snippetf(
+				feature.Value().KeyAST(),
+				"`%s` set here", feature.Field().Name(),
+			),
+			report.Helpf("`%s` cannot be set on extensions", feature.Field().Name()),
+			report.Helpf("all singular extensions have explicit presence"),
+		)
+	}
+
+	switch v, _ := feature.Value().AsInt(); v {
+	case 1: // EXPLICIT
+	case 2: // IMPLICIT
+		if m.Element().IsMessage() {
+			r.Error(errTypeConstraint{
+				want: taxa.MessageType,
+				got:  m.Element(),
+				decl: m.TypeAST(),
+			}).Apply(
+				report.Snippet(m.TypeAST()),
+				report.Snippetf(
+					feature.Value().ValueAST(),
+					"implicit presence set here",
+				),
+				report.Helpf("all message-typed fields explicit presence"),
+			)
+		}
+	case 3: // LEGACY_REQUIRED
+		r.Warnf("required fields are deprecated").Apply(
+			report.Snippet(feature.Value().ValueAST()),
+			report.Helpf(
+				"do not attempt to change this to `EXPLICIT` if the field is "+
+					"already in-use; doing so is a wire protocol break"),
 		)
 	}
 }
