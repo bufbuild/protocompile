@@ -1,0 +1,19 @@
+error: expected repeated field, found singular field
+  --> testdata/options/validate/packed_proto2.proto:22:5
+   |
+22 |     optional int32 o1 = 1 [packed = true];
+   |     ^^^^^^^^^^^^^^                  ---- packed encoding set here
+   |
+   = help: packed encoding can only be set on repeated fields of integer, float,
+           `bool`, or enum type
+
+error: expected packable type, found message type `buf.test.M`
+  --> testdata/options/validate/packed_proto2.proto:25:14
+   |
+25 |     repeated M m1 = 3 [packed = true];
+   |              ^                  ---- packed encoding set here
+   |
+   = help: packed encoding can only be set on repeated fields of integer, float,
+           `bool`, or enum type
+
+encountered 2 errors
