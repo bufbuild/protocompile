@@ -41,7 +41,7 @@ func canStartPath(tok token.Token) bool {
 func canStartExpr(tok token.Token) bool {
 	return canStartPath(tok) ||
 		tok.Kind() == token.Number || tok.Kind() == token.String ||
-		slicesx.Among(tok.Keyword(), keyword.Minus, keyword.Braces, keyword.Brackets, keyword.Angles)
+		slicesx.Among(tok.Keyword(), keyword.Minus, keyword.Braces, keyword.Brackets, keyword.Lt)
 }
 
 func canStartOptions(tok token.Token) bool {

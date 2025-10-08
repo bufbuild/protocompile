@@ -286,7 +286,7 @@ func (defValue) canStart(p *defParser) bool {
 		// If the next "expression" looks like a path, this likelier to be
 		// due to a missing semicolon than a missing =.
 		return false
-	case slicesx.Among(next.Keyword(), keyword.Brackets, keyword.Braces, keyword.Angles):
+	case slicesx.Among(next.Keyword(), keyword.Brackets, keyword.Braces):
 		// Exclude the two followers after this one.
 		return false
 	case canStartExpr(next):

@@ -70,12 +70,12 @@ func TestLexer(t *testing.T) {
 				tok.Text(),
 			)
 
-			if v := tok.AsBigInt(); v != nil {
+			if v, exact := tok.AsNumber().AsBig(); exact {
 				fmt.Fprintf(&tsv, "\t\tint:%d", v)
-			} else if v, ok := tok.AsFloat(); ok {
+			} else if v, exact := tok.AsNumber().AsFloat(); exact {
 				fmt.Fprintf(&tsv, "\t\tfloat:%g", v)
-			} else if v, ok := tok.AsString(); ok {
-				fmt.Fprintf(&tsv, "\t\tstring:%q", v)
+			} else if str := tok.AsString(); !str.IsZero() {
+				fmt.Fprintf(&tsv, "\t\tstring:%q", str.Text())
 			}
 
 			if a, b := tok.StartEnd(); a != b {

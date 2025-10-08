@@ -55,7 +55,6 @@ func lex(ctx token.Context, errs *report.Report) {
 			report.Notef("cursor: %d, count: %d", l.cursor, l.count),
 		)
 	})
-	defer l.Freeze()
 
 	if !lexPrelude(l) {
 		return
@@ -117,11 +116,11 @@ func lex(ctx token.Context, errs *report.Report) {
 			tok := l.Push(len("*/"), token.Unrecognized)
 			l.Error(errUnmatched{Span: tok.Span()})
 
-		case strings.ContainsRune(";,/:=-", r): // . is handled elsewhere.
+		case strings.ContainsRune(";,/:=-<>", r): // . is handled elsewhere.
 			// Random punctuation that doesn't require special handling.
 			l.Push(utf8.RuneLen(r), token.Punct)
 
-		case strings.ContainsRune("()[]{}<>", r):
+		case strings.ContainsRune("()[]{}", r):
 			tok := l.Push(utf8.RuneLen(r), token.Punct)
 			l.braces = append(l.braces, tok.ID())
 

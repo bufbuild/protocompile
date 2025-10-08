@@ -23,5 +23,5 @@
 21		Space		Unknown		292:293		011:036		"\n"
 22		String		Unknown		293:357		012:001		"\"A unicode right arrow can use unicode escape \\u2192 or not →\""		string:"A unicode right arrow can use unicode escape \\u2192 or not →"
 23		Space		Unknown		357:358		012:063		"\n"
-24		String		Unknown		000:437		001:001		"'Long unicode escape can represent emojis \\U0001F389 but isn\\'t necessary 🎉'"		string:"Long unicode escape can represent emojis \\U0001F389 but isn\\'t necessary 🎉"		open:Token(0)
+24		String		Unknown		000:437		001:001		"'Long unicode escape can represent emojis \\U0001F389 but isn\\'t necessary 🎉'"		string:"\"\n''\n\"foo\"\n'bar'\n\"A string with \\\"nested quotes\\\" in it\"\n'Another with \\'nested quotes\\' inside'\n\"Some whitespace:\\n\\r\\t\\v\"\n'Hex escaped bytes: \\x01\\x2\\X03\\X4'\n'A string with a literal back-slash \\\\ in it'\n\"A string that has a NULL character in hex: \\x00\"\n\"Another with a NULL in octal: \\00\"\n\"A unicode right arrow can use unicode escape \\u2192 or not →\"\n'Long unicode escape can represent emojis \\U0001F389 but isn\\'t necessary 🎉"		open:Token(0)
 25		Space		Unknown		437:438		013:078		"\n"

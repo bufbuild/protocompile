@@ -53,11 +53,17 @@ func lexNumber(l *lexer) token.Token {
 		base = 16
 	default:
 		if strings.HasPrefix(digits, "0") {
+			prefix = digits[:1]
 			base = 8
 			legacyOctal = true
 		} else {
+			prefix = ""
 			base = 10
 		}
+	}
+
+	if prefix != "" {
+		token.MutateMeta[tokenmeta.Number](tok).Prefix = uint32(len(prefix))
 	}
 
 	what := taxa.Int
@@ -67,7 +73,7 @@ func lexNumber(l *lexer) token.Token {
 		if !taxa.IsFloatText(digits) {
 			l.Error(errInvalidNumber{Token: tok})
 			// Need to set a value to avoid parse errors in Token.AsInt.
-			token.SetMeta(tok, uint64(0))
+			token.MutateMeta[tokenmeta.Number](tok)
 			return tok
 		}
 
@@ -76,12 +82,14 @@ func lexNumber(l *lexer) token.Token {
 			base = 10
 		}
 
+		meta := token.MutateMeta[tokenmeta.Number](tok)
+		meta.FloatSyntax = true
 		if base != 10 {
 			// TODO: We should return ErrInvalidBase here but that requires
 			// validating the syntax of the float to distinguish it from
 			// cases where we want tor return ErrInvalidNumber instead.
 			l.Error(errInvalidNumber{Token: tok})
-			token.MutateMeta[tokenmeta.Number](tok).Float = math.NaN()
+			meta.Float = math.NaN()
 			return tok
 		}
 
@@ -97,14 +105,13 @@ func lexNumber(l *lexer) token.Token {
 		//nolint:errcheck // The strconv package guarantees this assertion.
 		if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
 			l.Error(errInvalidNumber{Token: tok})
-			token.MutateMeta[tokenmeta.Number](tok).Float = math.NaN()
+			meta.Float = math.NaN()
 		} else {
-			token.MutateMeta[tokenmeta.Number](tok).Float = value
+			meta.Float = value
 		}
 
 	case result.big != nil:
-		token.MutateMeta[tokenmeta.Number](tok).big = result.big
-		token.SetMeta(tok, result.big)
+		token.MutateMeta[tokenmeta.Number](tok).Big = result.big
 
 	case base == 10 && !result.hasThousands:
 		// We explicitly do not call SetValue for the most common case of base
@@ -112,7 +119,7 @@ func lexNumber(l *lexer) token.Token {
 		// is a memory consumption optimization.
 
 	default:
-		token.SetMeta(tok, result.small)
+		token.MutateMeta[tokenmeta.Number](tok).Word = result.small
 	}
 
 	var validBase bool
@@ -149,17 +156,17 @@ func lexNumber(l *lexer) token.Token {
 	if what == taxa.Int {
 		switch base {
 		case 2:
-			if value := tok.AsBigInt(); value != nil {
-				err.Apply(
-					report.SuggestEdits(tok, "use a hexadecimal literal instead", report.Edit{
-						Start:   0,
-						End:     len(tok.Text()),
-						Replace: fmt.Sprintf("%#x", value),
-					}),
-					report.Notef("Protobuf does not support binary literals"),
-				)
-				return tok
-			}
+			value, _ := tok.AsNumber().AsBig()
+			err.Apply(
+				report.SuggestEdits(tok, "use a hexadecimal literal instead", report.Edit{
+					Start:   0,
+					End:     len(tok.Text()),
+					Replace: fmt.Sprintf("%#x", value),
+				}),
+				report.Notef("Protobuf does not support binary literals"),
+			)
+			return tok
+
 		case 8:
 			err.Apply(
 				report.SuggestEdits(tok, "remove the `o`", report.Edit{Start: 1, End: 2}),

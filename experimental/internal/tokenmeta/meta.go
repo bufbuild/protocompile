@@ -32,6 +32,7 @@ type Number struct {
 	// The prefix is the base prefix; the suffix is any identifier
 	// characters that follow the last digit.
 	Prefix, Suffix uint32
+	FloatSyntax    bool
 }
 
 type String struct {

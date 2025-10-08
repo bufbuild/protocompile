@@ -384,12 +384,12 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 		proto := &compilerpb.Expr_Literal{
 			Span: c.span(expr),
 		}
-		if v, ok := expr.Token.AsInt(); ok {
+		if v, exact := expr.Token.AsNumber().AsInt(); exact {
 			proto.Value = &compilerpb.Expr_Literal_IntValue{IntValue: v}
-		} else if v, ok := expr.Token.AsFloat(); ok {
+		} else if v, exact := expr.Token.AsNumber().AsFloat(); exact {
 			proto.Value = &compilerpb.Expr_Literal_FloatValue{FloatValue: v}
-		} else if v, ok := expr.Token.AsString(); ok {
-			proto.Value = &compilerpb.Expr_Literal_StringValue{StringValue: v}
+		} else if v := expr.Token.AsString(); !v.IsZero() {
+			proto.Value = &compilerpb.Expr_Literal_StringValue{StringValue: v.Text()}
 		} else {
 			panic(fmt.Sprintf("protocompile/ast: ExprLiteral contains neither string nor int: %v", expr.Token))
 		}

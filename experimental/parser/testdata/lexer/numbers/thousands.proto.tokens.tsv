@@ -9,4 +9,4 @@
 7		Space		Unknown		045:046		004:012		"\n"
 8		Number		Unknown		046:056		005:001		"01_000_000"		int:262144
 9		Space		Unknown		056:057		005:011		"\n"
-10		Number		Unknown		057:069		006:001		"1_000_000.00"		float:1e+06
+10		Number		Unknown		057:069		006:001		"1_000_000.00"		int:1000000

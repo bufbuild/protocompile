@@ -5,11 +5,11 @@
 3		Space		Unknown		009:010		001:010		" "
 4		String		Unknown		010:014		001:011		"\"\\9\""		string:"\\9"
 5		Space		Unknown		014:015		001:015		" "
-6		String		Unknown		000:019		001:001		"\"\\u\""		string:"\\u"		open:Token(0)
+6		String		Unknown		000:019		001:001		"\"\\u\""		string:"\\k\" \"\\x\" \"\\9\" \"\\u"		open:Token(0)
 7		Punct		Comma		019:020		001:020		","
 8		Space		Unknown		020:021		001:021		" "
 9		String		Unknown		021:045		001:022		"\"\\U\""		string:"\x00\x00\x00"		close:Token(13)
 10		Space		Unknown		025:026		001:026		"\n"
 11		String		Unknown		026:033		002:001		"\"\\u000\""		string:"\\u000"
 12		Space		Unknown		033:034		002:008		" "
-13		String		Unknown		021:045		001:022		"\"\\U0000000\""		string:"\\U0000000"		open:Token(9)
+13		String		Unknown		021:045		001:022		"\"\\U0000000\""		string:"\\U\"\n\"\\u000\" \"\\U0000000"		open:Token(9)

@@ -176,7 +176,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 
 	// Next, look for some angle brackets. We need to do this before draining
 	// mods, because angle brackets bind more tightly than modifiers.
-	if angles := c.Peek(); angles.Keyword() == keyword.Angles {
+	if angles := c.Peek(); angles.Keyword() == keyword.Lt {
 		c.Next() // Consume the angle brackets.
 		generic := p.NewTypeGeneric(ast.TypeGenericArgs{
 			Path:          tyPath,
@@ -185,18 +185,24 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 
 		delimited[ast.TypeAny]{
 			p:    p,
-			c:    angles.Children(),
+			c:    c,
 			what: taxa.Type,
 			in:   taxa.TypeParams,
 
 			required: true,
-			exhaust:  true,
+			exhaust:  false,
 			parse: func(c *token.Cursor) (ast.TypeAny, bool) {
 				ty := parseType(p, c, taxa.TypeParams.In())
 				return ty, !ty.IsZero()
 			},
 			start: canStartPath,
+			stop: func(t token.Token) bool {
+				return t.Keyword() == keyword.Gt
+			},
 		}.appendTo(generic.Args())
+
+		// Need to fuse the angle brackets, because the lexer won't do it.
+		token.Fuse(angles, c.Next())
 
 		ty = generic.AsAny()
 	}

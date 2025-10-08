@@ -101,6 +101,7 @@ const (
 	Parens
 	Brackets
 	Braces
+	Angles
 )
 
 // String implements [fmt.Stringer].
@@ -129,7 +130,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 73; i++ {
+		for i := 0; i < 74; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -211,6 +212,7 @@ var _table_Keyword_String = [...]string{
 	Parens:     "(...)",
 	Brackets:   "[...]",
 	Braces:     "{...}",
+	Angles:     "<...>",
 }
 
 var _table_Keyword_GoString = [...]string{
@@ -287,6 +289,7 @@ var _table_Keyword_GoString = [...]string{
 	Parens:     "Parens",
 	Brackets:   "Brackets",
 	Braces:     "Braces",
+	Angles:     "Angles",
 }
 
 var _table_Keyword_Lookup = map[string]Keyword{
@@ -366,5 +369,6 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"]":          Brackets,
 	"{":          Braces,
 	"}":          Braces,
+	"<...>":      Angles,
 }
 var _ iter.Seq[int] // Mark iter as used.

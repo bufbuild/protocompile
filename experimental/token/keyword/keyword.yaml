@@ -126,3 +126,4 @@
   - {name: Parens, string: "(...)", from: ["(", ")"]}
   - {name: Brackets, string: "[...]", from: ["[", "]"]}
   - {name: Braces, string: "{...}", from: ["{", "}"]}
+  - {name: Angles, string: "<...>", from: []}

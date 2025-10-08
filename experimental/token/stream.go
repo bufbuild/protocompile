@@ -133,7 +133,9 @@ func (s *Stream) AssertEmpty() {
 // Freezing cannot be checked for or undone; callers must assume any token
 // stream they did not create has already been frozen.
 func (s *Stream) Freeze() {
-	s.frozen = true
+	if s != nil {
+		s.frozen = true
+	}
 }
 
 // Push mints the next token referring to a piece of the input source.

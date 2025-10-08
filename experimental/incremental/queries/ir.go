@@ -89,10 +89,11 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 		iterx.Count(file.Imports())+1)
 	errors := make([]error, len(queries))
 	for j, decl := range iterx.Enumerate(file.Imports()) {
-		path, ok := decl.ImportPath().AsLiteral().AsString()
+		lit := decl.ImportPath().AsLiteral().AsString()
+		path := lit.Text()
 		path = ir.CanonicalizeFilePath(path)
 
-		if !ok {
+		if lit.IsZero() {
 			// The import path is already legalized in [parser.legalizeImport()], if it is not
 			// a valid path, we just set a [incremental.ZeroQuery] so that we don't get a nil
 			// query for index j.

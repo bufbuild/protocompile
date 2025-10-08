@@ -63,7 +63,9 @@ func lexString(l *lexer) token.Token {
 
 	tok := l.Push(l.cursor-start, token.String)
 	if haveEsc {
-		token.MutateMeta[tokenmeta.String](tok).Text = buf.String()
+		meta := token.MutateMeta[tokenmeta.String](tok)
+		meta.Escaped = true
+		meta.Text = buf.String()
 	}
 
 	if !terminated {
