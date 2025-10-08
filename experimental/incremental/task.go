@@ -53,7 +53,7 @@ type Task struct {
 	runID  uint64
 
 	// Intrusive linked list node for cycle detection.
-	path path
+	prev *Task
 
 	// Set if we're currently holding the executor's semaphore. This exists to
 	// ensure that we do not violate concurrency assumptions, and is never
@@ -84,16 +84,14 @@ func (t *Task) acquire() bool {
 	}
 
 	t.holding = t.exec.sema.Acquire(t.ctx, 1) == nil
-	t.log("acquire", "%v %T/%v",
-		t.holding, t.path.Query.Underlying(), t.path.Query.Underlying())
+	t.log("acquire", "%[1]v %[2]T/%[2]v", t.holding, t.task.getUnderlying())
 
 	return t.holding
 }
 
 // release releases a hold on the global semaphore.
 func (t *Task) release() {
-	t.log("release", "%T/%v",
-		t.path.Query.Underlying(), t.path.Query.Underlying())
+	t.log("release", "%[1]T/%[1]v", t.task.getUnderlying())
 
 	if !t.holding {
 		if context.Cause(t.ctx) != nil {
@@ -117,9 +115,9 @@ func (t *Task) transferFrom(that *Task) {
 
 	t.holding, that.holding = that.holding, t.holding
 
-	t.log("acquireFrom", "%T/%v -> %T/%v",
-		that.path.Query.Underlying(), that.path.Query.Underlying(),
-		t.path.Query.Underlying(), t.path.Query.Underlying())
+	t.log("acquireFrom", "%[1]T/%[1]v -> %[2]T/%[2]v",
+		that.task.getUnderlying(),
+		t.task.getUnderlying())
 }
 
 // log is used for printf debugging in the task scheduling code.
@@ -147,8 +145,7 @@ func (e *errAbort) Error() string {
 //
 // This will cause the outer call to Run() to immediately wake up and panic.
 func (t *Task) abort(err error) {
-	t.log("abort", "%T/%v, %v",
-		t.path.Query.Underlying(), t.path.Query.Underlying(), err)
+	t.log("abort", "%[1]T/%[1]v, %[2]v", t.task.getUnderlying(), err)
 
 	if prev := t.aborted(); prev != nil {
 		// Prevent multiple errors from cascading and getting spammed all over
@@ -250,7 +247,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		// Run the zeroth query synchronously, inheriting this task's semaphore hold.
 		runNow := i == 0
 
-		deps[i] = caller.exec.getTask(q.Key())
+		deps[i] = caller.exec.getOrCreateTask(q)
 		async := deps[i].start(caller, q, runNow, func(r *result) {
 			if r != nil {
 				if r.Value != nil {
@@ -299,6 +296,9 @@ func (t *Task) checkDone() {
 
 // task is book-keeping information for a memoized Task in an Executor.
 type task struct {
+	// The query that executed this task.
+	query *AnyQuery
+
 	deps map[*task]struct{} // Transitive.
 
 	// TODO: See the comment on Executor.tasks.
@@ -359,16 +359,10 @@ type result struct {
 	done  chan struct{}
 }
 
-// path is a linked list node for tracking cycles in query dependencies.
-type path struct {
-	Query *AnyQuery
-	Prev  *path
-}
-
-// Walk returns an iterator over the linked list.
-func (p *path) Walk() iter.Seq[*path] {
-	return func(yield func(*path) bool) {
-		for node := p; node.Query != nil; node = node.Prev {
+// walk returns an iterator over the linked list.
+func (t *Task) walk() iter.Seq[*Task] {
+	return func(yield func(*Task) bool) {
+		for node := t; node != nil && node.task != nil; node = node.prev {
 			if !yield(node) {
 				return
 			}
@@ -385,7 +379,7 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
-		caller.log("cache hit", "%T/%v", q.Underlying(), q.Underlying())
+		caller.log("cache hit", "%[1]T/%[1]v", q.Underlying())
 		done(r)
 		return false
 	}
@@ -414,16 +408,16 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		// Check for a potential cycle. This is only possible if output is
 		// pending; if it isn't, it can't be in our history path.
 		var cycle *ErrCycle
-		for node := range caller.path.Walk() {
-			if node.Query.Key() != q.Key() {
+		for node := range caller.walk() {
+			if node.task.query.Key() != q.Key() {
 				continue
 			}
 
 			cycle = new(ErrCycle)
 
 			// Re-walk the list to collect the cycle itself.
-			for node2 := range caller.path.Walk() {
-				cycle.Cycle = append(cycle.Cycle, node2.Query)
+			for node2 := range caller.walk() {
+				cycle.Cycle = append(cycle.Cycle, node2.task.query)
 				if node2 == node {
 					break
 				}
@@ -460,10 +454,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		runID:  caller.runID,
 		task:   t,
 		result: output,
-		path: path{
-			Query: q,
-			Prev:  &caller.path,
-		},
+		prev:   caller,
 
 		onRootGoroutine: caller.onRootGoroutine && !async,
 	}
@@ -471,7 +462,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	defer func() {
 		if caller.aborted() == nil {
 			if panicked := recover(); panicked != nil {
-				caller.log("panic", "%T/%v, %v", q.Underlying(), q.Underlying(), panicked)
+				caller.log("panic", "%[1]T/%[1]v, %[2]v", q.Underlying(), panicked)
 
 				t.result.CompareAndSwap(output, nil)
 				output = nil
@@ -499,7 +490,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		}
 
 		if output != nil && !closed(output.done) {
-			callee.log("done", "%T/%v", q.Underlying(), q.Underlying())
+			callee.log("done", "%[1]T/%[1]v", q.Underlying())
 			close(output.done)
 		}
 	}()
@@ -516,10 +507,10 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		defer caller.transferFrom(callee)
 	}
 
-	callee.log("executing", "%T/%v", q.Underlying(), q.Underlying())
+	callee.log("executing", "%[1]T/%[1]v", q.Underlying())
 	output.Value, output.Fatal = q.Execute(callee)
 	output.runID = callee.runID
-	callee.log("returning", "%T/%v", q.Underlying(), q.Underlying())
+	callee.log("returning", "%[1]T/%[1]v", q.Underlying())
 
 	return output
 }
@@ -551,6 +542,14 @@ func (t *task) waitUntilDone(caller *Task, async bool) *result {
 	// Reload the result pointer. This is needed if the leader panics,
 	// because the result will be set to nil.
 	return t.result.Load()
+}
+
+// getUnderlying gets the tasks query underlying key.
+func (t *task) getUnderlying() any {
+	if t != nil {
+		return t.query.Underlying()
+	}
+	return nil
 }
 
 // closed checks if ch is closed. This may return false negatives, in that it

@@ -162,7 +162,10 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		report.Diagnostics = append(report.Diagnostics, t.report.Diagnostics...)
 	}
 	for _, query := range queries {
-		task := e.getTask(query.Key())
+		task, ok := e.getTask(query.Key())
+		if !ok {
+			continue // Uncompleted query.
+		}
 		record(task) // NOTE: task.deps does not contain task.
 		for dep := range task.deps {
 			record(dep)
@@ -191,8 +194,8 @@ func (e *Executor) Evict(keys ...any) {
 func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	var queue []*task
 	for _, key := range keys {
-		if t, ok := e.tasks.Load(key); ok {
-			queue = append(queue, t.(*task)) //nolint:errcheck
+		if t, ok := e.getTask(key); ok {
+			queue = append(queue, t)
 		}
 	}
 	if len(queue) == 0 && cleanup == nil {
@@ -220,13 +223,24 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	}
 }
 
-// getTask returns (and creates if necessary) a task pointer for the given key.
-func (e *Executor) getTask(key any) *task {
+// getTask returns a task pointer for the given key.
+func (e *Executor) getTask(key any) (*task, bool) {
+	if t, ok := e.tasks.Load(key); ok {
+		return t.(*task), true //nolint:errcheck
+	}
+	return nil, false
+}
+
+// getOrCreateTask returns (and creates if necessary) a task pointer for the given query.
+func (e *Executor) getOrCreateTask(query *AnyQuery) *task {
 	// Avoid allocating a new task object in the common case.
+	key := query.Key()
 	if t, ok := e.tasks.Load(key); ok {
 		return t.(*task) //nolint:errcheck
 	}
-
-	t, _ := e.tasks.LoadOrStore(key, &task{report: report.Report{Options: e.reportOptions}})
+	t, _ := e.tasks.LoadOrStore(key, &task{
+		query:  query,
+		report: report.Report{Options: e.reportOptions},
+	})
 	return t.(*task) //nolint:errcheck
 }
