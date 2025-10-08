@@ -22,6 +22,7 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -66,7 +67,7 @@ func lexNumber(l *lexer) token.Token {
 		if !taxa.IsFloatText(digits) {
 			l.Error(errInvalidNumber{Token: tok})
 			// Need to set a value to avoid parse errors in Token.AsInt.
-			token.SetValue(tok, uint64(0))
+			token.SetMeta(tok, uint64(0))
 			return tok
 		}
 
@@ -80,7 +81,7 @@ func lexNumber(l *lexer) token.Token {
 			// validating the syntax of the float to distinguish it from
 			// cases where we want tor return ErrInvalidNumber instead.
 			l.Error(errInvalidNumber{Token: tok})
-			token.SetValue(tok, math.NaN())
+			token.MutateMeta[tokenmeta.Number](tok).Float = math.NaN()
 			return tok
 		}
 
@@ -96,13 +97,14 @@ func lexNumber(l *lexer) token.Token {
 		//nolint:errcheck // The strconv package guarantees this assertion.
 		if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
 			l.Error(errInvalidNumber{Token: tok})
-			token.SetValue(tok, math.NaN())
+			token.MutateMeta[tokenmeta.Number](tok).Float = math.NaN()
 		} else {
-			token.SetValue(tok, value)
+			token.MutateMeta[tokenmeta.Number](tok).Float = value
 		}
 
 	case result.big != nil:
-		token.SetValue(tok, result.big)
+		token.MutateMeta[tokenmeta.Number](tok).big = result.big
+		token.SetMeta(tok, result.big)
 
 	case base == 10 && !result.hasThousands:
 		// We explicitly do not call SetValue for the most common case of base
@@ -110,7 +112,7 @@ func lexNumber(l *lexer) token.Token {
 		// is a memory consumption optimization.
 
 	default:
-		token.SetValue(tok, result.small)
+		token.SetMeta(tok, result.small)
 	}
 
 	var validBase bool

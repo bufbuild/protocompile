@@ -21,6 +21,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -28,6 +29,10 @@ import (
 
 // maxFileSize is the maximum file size Protocompile supports.
 const maxFileSize int = math.MaxInt32 // 2GB
+
+type lexOptions struct {
+	FusedAngles bool
+}
 
 // lex performs lexical analysis on the file contained in ctx, and appends any
 // diagnostics that results in to l.
@@ -378,13 +383,16 @@ func fuseStrings(l *lexer) {
 		var buf strings.Builder
 		for i := start.ID(); i <= end.ID(); i++ {
 			tok := i.In(l.Context)
-			if s, ok := tok.AsString(); ok {
-				buf.WriteString(s)
-				token.ClearValue(tok)
+			if s := tok.AsString(); !s.IsZero() {
+				buf.WriteString(s.Text())
+				token.ClearMeta[tokenmeta.String](tok)
 			}
 		}
 
-		token.SetValue(start, buf.String())
+		meta := token.MutateMeta[tokenmeta.String](start)
+		meta.Text = buf.String()
+		meta.Concatenated = true
+
 		token.Fuse(start, end)
 	}
 

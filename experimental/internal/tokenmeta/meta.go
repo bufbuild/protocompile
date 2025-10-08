@@ -1,0 +1,49 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package meta defines internal metadata types shared between the token package
+// and the lexer.
+package tokenmeta
+
+import "math/big"
+
+// Meta is a type defined in this package.
+type Meta interface{ meta() }
+
+type Number struct {
+	// The "used" value is whichever one of these is
+	// non-zero. If they're all zero, this is a zero-valued number.
+	Word  uint64
+	Float float64
+	Big   *big.Int
+
+	// Length of a prefix or suffix on this integer.
+	// The prefix is the base prefix; the suffix is any identifier
+	// characters that follow the last digit.
+	Prefix, Suffix uint32
+}
+
+type String struct {
+	// Post-processed string contents.
+	Text string
+
+	// Lengths of the sigil and quotes for this string
+	Sigil, Quote uint32
+
+	// Whether escaping or concatenation took place.
+	Escaped, Concatenated bool
+}
+
+func (Number) meta() {}
+func (String) meta() {}

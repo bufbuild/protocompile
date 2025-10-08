@@ -20,6 +20,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -62,7 +63,7 @@ func lexString(l *lexer) token.Token {
 
 	tok := l.Push(l.cursor-start, token.String)
 	if haveEsc {
-		token.SetValue(tok, buf.String())
+		token.MutateMeta[tokenmeta.String](tok).Text = buf.String()
 	}
 
 	if !terminated {
