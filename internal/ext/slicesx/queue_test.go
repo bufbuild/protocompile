@@ -178,11 +178,11 @@ func TestQueueLargeSequence(t *testing.T) {
 
 	var q slicesx.Queue[int]
 
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		q.PushBack(i)
 	}
 
-	for i := 0; i < 500; i++ {
+	for i := range 500 {
 		v, ok := q.PopFront()
 		assert.True(t, ok)
 		assert.Equal(t, i, v)
@@ -193,7 +193,7 @@ func TestQueueLargeSequence(t *testing.T) {
 	}
 
 	expected := make([]int, 1000)
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		expected[i] = 500 + i
 	}
 	assert.Equal(t, expected, slices.Collect(q.Values()))
@@ -306,7 +306,7 @@ func TestQueueStressTest(t *testing.T) {
 	var q slicesx.Queue[int]
 	var expected []int
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		switch i % 7 {
 		case 0, 1:
 			q.PushBack(i)
