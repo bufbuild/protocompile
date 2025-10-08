@@ -212,9 +212,43 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	join := semaphore.NewWeighted(int64(len(queries)))
 	join.TryAcquire(int64(len(queries))) // Always succeeds because there are no waiters.
 
+	// Update dependency links for each of our dependencies. This occurs in a
+	// defer block so that it happens regardless of panicking.
+	defer func() {
+		if caller.task == nil {
+			return
+		}
+		for _, dep := range deps {
+			if dep == nil {
+				continue
+			}
+
+			if caller.task.deps == nil {
+				caller.task.deps = map[*task]struct{}{}
+			}
+
+			caller.task.deps[dep] = struct{}{}
+			for dep := range dep.deps {
+				caller.task.deps[dep] = struct{}{}
+			}
+			dep.downstream.Store(caller.task, struct{}{})
+		}
+	}()
+
+	// Schedule all but the first query to run asynchronously.
 	var needWait bool
-	schedule := func(i int, runNow bool) {
-		q := AsAny(queries[i]) // This will also cache the result of q.Key() for us.
+	for i, qt := range slices.Backward(queries) {
+		q := AsAny(qt) // This will also cache the result of q.Key() for us.
+		if q == nil {
+			var underlying any
+			if caller.task != nil {
+				underlying = caller.path.Query.Underlying()
+			}
+			return nil, fmt.Errorf("protocompile/incremental: nil query at index %d while resolving from %T/%v", i, underlying, underlying)
+		}
+
+		// Run the zeroth query synchronously, inheriting this task's semaphore hold.
+		runNow := i == 0
 
 		deps[i] = caller.exec.getTask(q.Key())
 		async := deps[i].start(caller, q, runNow, func(r *result) {
@@ -235,42 +269,6 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 
 		needWait = needWait || async
 	}
-
-	// Schedule all but the first query to run asynchronously.
-	for i := range queries {
-		if i > 0 {
-			schedule(i, false)
-		}
-	}
-
-	// Update dependency links for each of our dependencies. This occurs in a
-	// defer block so that it happens regardless of panicking.
-	defer func() {
-		if caller.task == nil {
-			return
-		}
-		for _, dep := range deps {
-			if dep == nil {
-				continue
-			}
-
-			if caller.task.deps == nil {
-				caller.task.deps = map[*task]struct{}{}
-			}
-
-			caller.task.deps[dep] = struct{}{}
-			for dep := range dep.deps {
-				caller.task.deps[dep] = struct{}{}
-			}
-			if caller.task != nil {
-				dep.downstream.Store(caller.task, struct{}{})
-			}
-		}
-	}()
-
-	// Run the zeroth query synchronously, inheriting this task's semaphore
-	// hold.
-	schedule(0, true)
 
 	if needWait {
 		// Release our current hold on the global semaphore, since we're about to
