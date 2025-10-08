@@ -228,7 +228,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		dep := caller.exec.getTask(q.Key())
 		deps[i] = dep
 
-		// Update dependency links for each of our dependencies.
+		// Update dependency graph.
 		parent := caller.task
 		if parent == nil {
 			continue
