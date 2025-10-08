@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"runtime"
 	"runtime/debug"
 	"slices"
