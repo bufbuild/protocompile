@@ -86,6 +86,19 @@ files:
       D d = 3;
     }
 
+- path: "a6.proto"
+  text: |
+    syntax = "proto3";
+    package buf.test;
+
+    import "e.proto";
+    import "d.proto";
+
+    message A6 {
+      D d = 1;
+      E e = 2;
+    }
+
 - path: "b.proto"
   import: true
   text: |
@@ -113,6 +126,18 @@ files:
     package buf.test;
 
     message D {}
+
+- path: "e.proto"
+  import: true
+  text: |
+    syntax = "proto3";
+    package buf.test;
+
+    import "d.proto";
+
+    message E {
+      D d = 1;
+    }
 
 - path: "p.proto"
   import: true
