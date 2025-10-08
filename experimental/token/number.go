@@ -35,6 +35,20 @@ func (n NumberToken) Token() Token {
 	return n.token.In(n.Context())
 }
 
+// Base returns this number's base.
+func (n NumberToken) Base() byte {
+	switch n.Prefix().Text() {
+	case "0b", "0B":
+		return 2
+	case "0", "0o", "0O":
+		return 8
+	case "0x", "0X":
+		return 16
+	default:
+		return 10
+	}
+}
+
 // Prefix returns this number's base prefix (e.g. 0x).
 func (n NumberToken) Prefix() report.Span {
 	if n.meta == nil {
@@ -62,6 +76,17 @@ func (n NumberToken) Suffix() report.Span {
 // (decimal periods or scientific notation).
 func (n NumberToken) HasFloatSyntax() bool {
 	return n.meta != nil && n.meta.FloatSyntax
+}
+
+// HasSeparators returns whether this token contains thousands separator
+// runes.
+func (n NumberToken) HasSeparators() bool {
+	return n.meta != nil && n.meta.ThousandsSep
+}
+
+// IsValid returns whether this token was able to parse properly at all.
+func (n NumberToken) IsValid() bool {
+	return n.meta == nil || !n.meta.SyntaxError
 }
 
 // AsInt converts this value into a 64-bit unsigned integer.

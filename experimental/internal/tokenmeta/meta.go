@@ -33,6 +33,9 @@ type Number struct {
 	// characters that follow the last digit.
 	Prefix, Suffix uint32
 	FloatSyntax    bool
+	ThousandsSep   bool
+
+	SyntaxError bool // Whether parsing a concrete value failed.
 }
 
 type String struct {
@@ -40,7 +43,7 @@ type String struct {
 	Text string
 
 	// Lengths of the sigil and quotes for this string
-	Sigil, Quote uint32
+	Prefix, Quote uint32
 
 	// Whether escaping or concatenation took place.
 	Escaped, Concatenated bool

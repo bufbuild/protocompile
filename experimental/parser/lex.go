@@ -116,7 +116,12 @@ func lex(ctx token.Context, errs *report.Report) {
 			tok := l.Push(len("*/"), token.Unrecognized)
 			l.Error(errUnmatched{Span: tok.Span()})
 
-		case strings.ContainsRune(";,/:=-<>", r): // . is handled elsewhere.
+		case r == '&' && l.Peek() == '&':
+			l.Push(2, token.Punct)
+		case r == '|' && l.Peek() == '|':
+			l.Push(2, token.Punct)
+
+		case strings.ContainsRune(";,:=+-*/%!?<>", r): // . is handled elsewhere.
 			// Random punctuation that doesn't require special handling.
 			l.Push(utf8.RuneLen(r), token.Punct)
 
@@ -126,7 +131,7 @@ func lex(ctx token.Context, errs *report.Report) {
 
 		case r == '"', r == '\'':
 			l.cursor-- // Back up to behind the quote before resuming.
-			lexString(l)
+			lexString(l, "")
 
 		case r == '.':
 			// A . is normally a single token, unless followed by a digit, which
@@ -161,7 +166,16 @@ func lex(ctx token.Context, errs *report.Report) {
 				continue
 			}
 
+			// Figure out if we should be doing a raw string instead.
+			next := l.Peek()
+			if len(rawIdent) <= 2 && isASCIIIdent(rawIdent) && (next == '"' || next == '\'') {
+				l.cursor -= len(rawIdent)
+				lexString(l, rawIdent)
+				continue
+			}
+
 			l.cursor -= len(rawIdent) - len(id)
+
 			tok := l.Push(len(id), token.Ident)
 
 			// Legalize non-ASCII runes.
@@ -176,7 +190,7 @@ func lex(ctx token.Context, errs *report.Report) {
 			l.cursor -= utf8.RuneLen(r)
 
 			unknown := l.TakeWhile(func(r rune) bool {
-				return !strings.ContainsRune(";,/:=-.([{<>}])_\"'", r) &&
+				return !strings.ContainsRune(";,:=+-*/%!?<>([{}])_\"'", r) &&
 					!xidStart(r) &&
 					!unicode.IsDigit(r) &&
 					!unicode.In(r, unicode.Pattern_White_Space)
@@ -403,6 +417,16 @@ func fuseStrings(l *lexer) {
 		case token.String:
 			if start.IsZero() {
 				start = tok
+			} else {
+				overall := start.AsString().Prefix()
+				prefix := tok.AsString().Prefix()
+
+				if !prefix.IsZero() && overall.Text() != prefix.Text() {
+					l.Errorf("implicitly-concatenated string has incompatible prefix").Apply(
+						report.Snippet(prefix),
+						report.Snippetf(overall, "must match this prefix"),
+					)
+				}
 			}
 			end = tok
 
