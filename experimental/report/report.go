@@ -78,6 +78,19 @@ func (r *Report) Error(err Diagnose) *Diagnostic {
 	return d
 }
 
+// SoftError pushes a diagnostic with the onto this report, making it a warning
+// if hard is false.
+func (r *Report) SoftError(hard bool, err Diagnose) *Diagnostic {
+	level := Warning
+	if hard {
+		level = Error
+	}
+
+	d := r.push(1, level)
+	err.Diagnose(d)
+	return d
+}
+
 // Warn pushes a warning diagnostic onto this report.
 func (r *Report) Warn(err Diagnose) *Diagnostic {
 	d := r.push(1, Warning)
@@ -88,6 +101,13 @@ func (r *Report) Warn(err Diagnose) *Diagnostic {
 // Remark pushes a remark diagnostic onto this report.
 func (r *Report) Remark(err Diagnose) *Diagnostic {
 	d := r.push(1, Remark)
+	err.Diagnose(d)
+	return d
+}
+
+// Level pushes a diagnostic with the given level onto this report.
+func (r *Report) Level(level Level, err Diagnose) *Diagnostic {
+	d := r.push(1, level)
 	err.Diagnose(d)
 	return d
 }
@@ -104,16 +124,32 @@ func (r *Report) Errorf(format string, args ...any) *Diagnostic {
 	return r.push(1, Error).Apply(Message(format, args...))
 }
 
+// SoftError pushes an ad-hoc soft error diagnostic with the given message; analogous to
+// [fmt.Errorf].
+func (r *Report) SoftErrorf(hard bool, format string, args ...any) *Diagnostic {
+	level := Warning
+	if hard {
+		level = Error
+	}
+	return r.push(1, level).Apply(Message(format, args...))
+}
+
 // Warnf creates an ad-hoc warning diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Warnf(format string, args ...any) *Diagnostic {
 	return r.push(1, Warning).Apply(Message(format, args...))
 }
 
-// Remarkf creates an ad-hoc remark diagnostic with an the given message; analogous to
+// Remarkf creates an ad-hoc remark diagnostic with the given message; analogous to
 // [fmt.Errorf].
 func (r *Report) Remarkf(format string, args ...any) *Diagnostic {
 	return r.push(1, Remark).Apply(Message(format, args...))
+}
+
+// Levelf creates an ad-hoc diagnostic with the given level and message; analogous to
+// [fmt.Errorf].
+func (r *Report) Levelf(level Level, format string, args ...any) *Diagnostic {
+	return r.push(1, level).Apply(Message(format, args...))
 }
 
 // SaveOptions calls the given function and, upon its completion, restores

@@ -12,16 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto2";
+edition = "2023";
 
 package buf.test;
 
-message M {}
-enum E { Z = 0; }
+enum Empty {}
 
-service S {
-    rpc M1(M) returns (E);
-    rpc M2(stream E) returns (M);
-    rpc M3(M) returns (stream int32);
-    rpc M4(stream string) returns (stream N);
+enum Open {
+    Z1 = 0;
+}
+
+enum Closed {
+    option features.enum_type = CLOSED;
+    Z2 = 1;
+}
+
+enum Open1 {
+    Z3 = 1;
+}
+
+enum Open2 {
+    option features.enum_type = OPEN;
+    Z4 = 1;
 }

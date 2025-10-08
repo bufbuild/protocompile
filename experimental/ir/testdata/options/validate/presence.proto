@@ -12,16 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto2";
+edition = "2023";
 
 package buf.test;
 
-message M {}
-enum E { Z = 0; }
-
-service S {
-    rpc M1(M) returns (E);
-    rpc M2(stream E) returns (M);
-    rpc M3(M) returns (stream int32);
-    rpc M4(stream string) returns (stream N);
-}
+option features.field_presence = LEGACY_REQUIRED;

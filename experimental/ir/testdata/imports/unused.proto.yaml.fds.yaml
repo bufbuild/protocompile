@@ -122,3 +122,34 @@ file:
       type_name: ".buf.test.D"
   source_code_info: {}
   syntax: "proto3"
+- name: "e.proto"
+  package: "buf.test"
+  dependency: ["d.proto"]
+  message_type:
+  - name: "E"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+  source_code_info: {}
+  syntax: "proto3"
+- name: "a6.proto"
+  package: "buf.test"
+  dependency: ["e.proto", "d.proto"]
+  message_type:
+  - name: "A6"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.D"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.E"
+  source_code_info: {}
+  syntax: "proto3"

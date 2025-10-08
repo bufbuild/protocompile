@@ -329,7 +329,6 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 				Weak:       imp.Weak,
 				Transitive: !imp.Direct,
 				Visible:    imp.Visible,
-				Used:       imp.Used,
 			})
 		}
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))

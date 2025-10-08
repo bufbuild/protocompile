@@ -16,6 +16,7 @@ package ir
 
 import (
 	"cmp"
+	"fmt"
 	"iter"
 	"math"
 	"slices"
@@ -25,7 +26,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
-	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -117,29 +117,60 @@ type rawValue struct {
 //     the repeated message fields that they will ultimately become.
 type rawValueBits uint64
 
-// AST returns a representative expression that evaluated to this value.
+// OptionSpan returns a representative span for the option that set this value.
+//
+// The Spanner will be an [ast.ExprField], if it is set in an [ast.ExprDict].
+func (v Value) OptionSpan() report.Spanner {
+	if v.IsZero() || len(v.raw.exprs) == 0 {
+		return nil
+	}
+
+	expr := v.raw.exprs[0]
+	if field := expr.AsField(); !field.IsZero() {
+		return field
+	}
+	return report.Join(ast.ExprPath{Path: v.raw.optionPaths[0]}, expr)
+}
+
+// OptionSpans returns an indexer over spans for the option that set this value.
+//
+// The Spanner will be an [ast.ExprField], if it is set in an [ast.ExprDict].
+func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
+	var slice []ast.ExprAny
+	if !v.IsZero() {
+		slice = v.raw.exprs
+	}
+
+	return seq.NewFixedSlice(slice, func(_ int, expr ast.ExprAny) report.Spanner {
+		if field := expr.AsField(); !field.IsZero() {
+			return field
+		}
+		return report.Join(ast.ExprPath{Path: v.raw.optionPaths[0]}, expr)
+	})
+}
+
+// ValueAST returns a representative expression that evaluated to this value.
 //
 // For complicated options (such as repeated fields), there may be more than
 // one contributing expression; this will just return *one* of them.
-func (v Value) AST() ast.ExprAny {
+func (v Value) ValueAST() ast.ExprAny {
 	if v.IsZero() || len(v.raw.exprs) == 0 {
 		return ast.ExprAny{}
 	}
 
 	expr := v.raw.exprs[0]
 	if field := expr.AsField(); !field.IsZero() {
-		// Unwrap a FieldExpr if necessary.
 		return field.Value()
 	}
 
 	return expr
 }
 
-// ASTs returns all expressions that contributed to evaluating this value.
+// ValueASTs returns all expressions that contributed to evaluating this value.
 //
 // There may be more than one such expression, for repeated fields set more
 // than once.
-func (v Value) ASTs() seq.Indexer[ast.ExprAny] {
+func (v Value) ValueASTs() seq.Indexer[ast.ExprAny] {
 	var slice []ast.ExprAny
 	if !v.IsZero() {
 		slice = v.raw.exprs
@@ -153,25 +184,25 @@ func (v Value) ASTs() seq.Indexer[ast.ExprAny] {
 	})
 }
 
-// Options returns the AST node for the options that set this value.
-//
-// There will be one path per value returned from [Value.ASTs].
-func (v Value) OptionPaths() seq.Indexer[ast.Path] {
-	var slice []ast.Path
-	if !v.IsZero() {
-		slice = v.raw.optionPaths
+// KeyAST returns a representative AST node for the message key that evaluated
+// from this value.
+func (v Value) KeyAST() ast.ExprAny {
+	if v.IsZero() || len(v.raw.exprs) == 0 {
+		return ast.ExprAny{}
 	}
-
-	return seq.NewFixedSlice(slice, func(_ int, e ast.Path) ast.Path { return e })
+	if field := v.raw.exprs[0].AsField(); !field.IsZero() {
+		return field.Key()
+	}
+	return ast.ExprPath{Path: v.raw.optionPaths[0]}.AsAny()
 }
 
-// MessageKeys returns the AST nodes for each key associated with a value in
-// [Value.ASTs].
+// KeyASTs returns the AST nodes for each key associated with a value in
+// [Value.ValueASTs].
 //
 // This will either be the key value from an [ast.FieldExpr] (which need not be
 // an [ast.PathExpr], in the case of an extension) or the [ast.PathExpr]
 // associated with the left-hand-side of an option setting.
-func (v Value) MessageKeys() seq.Indexer[ast.ExprAny] {
+func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 	var slice []ast.ExprAny
 	if !v.IsZero() {
 		slice = v.raw.exprs
@@ -183,6 +214,19 @@ func (v Value) MessageKeys() seq.Indexer[ast.ExprAny] {
 		}
 		return ast.ExprPath{Path: v.raw.optionPaths[n]}.AsAny()
 	})
+}
+
+// OptionPaths returns the AST nodes for option paths that set this node.
+//
+// There will be one path per value returned from [Value.ValueASTs]. Generally,
+// you'll want to use [Value.KeyASTs] instead.
+func (v Value) OptionPaths() seq.Indexer[ast.Path] {
+	var slice []ast.Path
+	if !v.IsZero() {
+		slice = v.raw.optionPaths
+	}
+
+	return seq.NewFixedSlice(slice, func(_ int, e ast.Path) ast.Path { return e })
 }
 
 // Field returns the field this value sets, which includes the value's type
@@ -200,12 +244,6 @@ func (v Value) Field() Member {
 		field.ptr = ^field.ptr
 	}
 	return wrapMember(v.Context(), field)
-}
-
-// Singular returns whether this value is singular, i.e., [Value.Elements] will
-// contain exactly one value.
-func (v Value) Singular() bool {
-	return v.Field().Presence() != presence.Repeated
 }
 
 // Elements returns an indexer over the elements within this value.
@@ -242,7 +280,7 @@ func (v Value) getElements() []rawValueBits {
 
 // AsBool is a shortcut for [Element.AsBool], if this value is singular.
 func (v Value) AsBool() (value, ok bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return false, false
 	}
 	return v.Elements().At(0).AsBool()
@@ -250,23 +288,31 @@ func (v Value) AsBool() (value, ok bool) {
 
 // AsUInt is a shortcut for [Element.AsUInt], if this value is singular.
 func (v Value) AsUInt() (uint64, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return 0, false
 	}
 	return v.Elements().At(0).AsUInt()
 }
 
-// AsInt is a shortcut for [Element.AsUnt], if this value is singular.
+// AsInt is a shortcut for [Element.AsInt], if this value is singular.
 func (v Value) AsInt() (int64, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return 0, false
 	}
 	return v.Elements().At(0).AsInt()
 }
 
+// AsEnum is a shortcut for [Element.AsEnum], if this value is singular.
+func (v Value) AsEnum() Member {
+	if v.IsZero() || v.Field().IsRepeated() {
+		return Member{}
+	}
+	return v.Elements().At(0).AsEnum()
+}
+
 // AsFloat is a shortcut for [Element.AsFloat], if this value is singular.
 func (v Value) AsFloat() (float64, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return 0, false
 	}
 	return v.Elements().At(0).AsFloat()
@@ -274,7 +320,7 @@ func (v Value) AsFloat() (float64, bool) {
 
 // AsString is a shortcut for [Element.AsString], if this value is singular.
 func (v Value) AsString() (string, bool) {
-	if v.IsZero() || v.Field().Presence() == presence.Repeated {
+	if v.IsZero() || v.Field().IsRepeated() {
 		return "", false
 	}
 	return v.Elements().At(0).AsString()
@@ -296,7 +342,7 @@ func (v Value) AsMessage() MessageValue {
 		return m
 	}
 
-	if v.Field().Presence() == presence.Repeated {
+	if v.Field().IsRepeated() {
 		return MessageValue{}
 	}
 	return m
@@ -331,11 +377,11 @@ func (v Value) Marshal(buf []byte, r *report.Report) []byte {
 // See marshalFramed for the meanings of ranges and the int return value.
 func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, int) {
 	if r != nil {
-		defer r.AnnotateICE(report.Snippetf(v.AST(), "while marshalling this value"))
+		defer r.AnnotateICE(report.Snippetf(v.ValueAST(), "while marshalling this value"))
 	}
 
 	scalar := v.Field().Element().Predeclared()
-	if v.Field().Presence() == presence.Repeated && v.Elements().Len() > 1 {
+	if v.Field().IsRepeated() && v.Elements().Len() > 1 {
 		// Packed fields.
 		switch {
 		case scalar.IsVarint(), v.Field().Element().IsEnum():
@@ -430,6 +476,26 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 	return buf, n
 }
 
+func (v Value) suggestEdit(path, expr string, format string, args ...any) report.DiagnosticOption {
+	key := v.KeyAST()
+	value := v.ValueASTs().At(0)
+	joined := report.Join(key, value)
+
+	return report.SuggestEdits(
+		joined,
+		fmt.Sprintf(format, args...),
+		report.Edit{
+			Start: 0, End: key.Span().Len(),
+			Replace: path,
+		},
+		report.Edit{
+			Start:   value.Span().Start - joined.Start,
+			End:     value.Span().End - joined.Start,
+			Replace: expr,
+		},
+	)
+}
+
 func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {
 	if c == nil || p.Nil() {
 		return Value{}
@@ -453,18 +519,27 @@ type Element struct {
 
 // AST returns the expression this value was evaluated from.
 func (e Element) AST() ast.ExprAny {
-	expr := e.value.raw.exprs[e.ValueNodeIndex()]
+	if e.IsZero() || e.value.raw.exprs == nil {
+		return ast.ExprAny{}
+	}
+
+	idx := e.ValueNodeIndex()
+	expr := e.value.raw.exprs[idx]
+	if field := expr.AsField(); !field.IsZero() {
+		expr = field.Value()
+	}
+
 	if array := expr.AsArray(); !array.IsZero() && e.value.raw.elemIndices != nil {
 		// We need to index into the array expression. The index is going to be
 		// offset by the number of expressions before this one, which we
 		// can get via elemIndices.
-		n := e.index - int(e.value.raw.elemIndices[e.index])
+		n := int(e.value.raw.elemIndices[idx]) - e.index - 1
 		expr = array.Elements().At(n)
 	}
 	return expr
 }
 
-// ValueNodeIndex returns the index into [Value.ASTs] for this element's
+// ValueNodeIndex returns the index into [Value.ValueASTs] for this element's
 // contributing expression. This can be used to obtain other ASTs related to
 // this element, e.g.
 //
@@ -552,6 +627,17 @@ func (e Element) AsInt() (int64, bool) {
 		return 0, false
 	}
 	return int64(e.bits), true
+}
+
+// AsEnum returns the value of this element as a known enum value.
+//
+// Returns zero if this is not an enum or if the enum value is out of range.
+func (e Element) AsEnum() Member {
+	ty := e.Type()
+	if !ty.IsEnum() {
+		return Member{}
+	}
+	return ty.MemberByNumber(int32(e.bits))
 }
 
 // AsFloat returns the value of this element as a floating-point number.

@@ -51,8 +51,8 @@ type rawFeatureSet struct {
 
 type rawFeature struct {
 	// Can't be a ref because it might not be imported by this file at all.
-	value                 Value
-	isCustom, isInherited bool
+	value                            Value
+	isCustom, isInherited, isDefault bool
 }
 
 type rawFeatureInfo struct {
@@ -125,12 +125,13 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 	if raw.value.IsZero() {
 		if parent := fs.Parent(); !parent.IsZero() {
 			// If parent is non-nil, recurse.
-			raw.value = fs.Parent().LookupCustom(extension, field).Value()
+			raw = fs.Parent().LookupCustom(extension, field).raw
 			raw.isInherited = true
 		} else {
 			// Otherwise, we need to look for the edition default.
 			raw.value = field.FeatureInfo().Default(fs.Context().File().Syntax())
 			raw.isInherited = true
+			raw.isDefault = true
 		}
 	}
 
@@ -158,6 +159,17 @@ func (f Feature) IsCustom() bool {
 // IsInherited returns whether this feature value was inherited from its parent.
 func (f Feature) IsInherited() bool {
 	return !f.IsZero() && f.raw.isInherited
+}
+
+// IsExplicit returns whether this feature was set explicitly.
+func (f Feature) IsExplicit() bool {
+	return !f.IsZero() && !f.raw.isInherited
+}
+
+// IsDefault returns whether this feature was inherited from edition defaults.
+// An explicit setting to the default will return false for this method.
+func (f Feature) IsDefault() bool {
+	return !f.IsZero() && f.raw.isDefault
 }
 
 // Type returns the type of this feature. May be zero if there is no specified
@@ -195,6 +207,11 @@ func (f FeatureInfo) Introduced() syntax.Syntax {
 	return f.raw.introduced
 }
 
+// IsIntroduced returns whether this feature has been introduced yet.
+func (f FeatureInfo) IsIntroduced(in syntax.Syntax) bool {
+	return f.Introduced() <= in
+}
+
 // Deprecated returns whether this feature has been deprecated, and in which
 // edition.
 func (f FeatureInfo) Deprecated() syntax.Syntax {
@@ -204,6 +221,11 @@ func (f FeatureInfo) Deprecated() syntax.Syntax {
 	return f.raw.deprecated
 }
 
+// IsDeprecated returns whether this feature has been deprecated yet.
+func (f FeatureInfo) IsDeprecated(in syntax.Syntax) bool {
+	return f.Deprecated() != syntax.Unknown && f.Deprecated() <= in
+}
+
 // Removed returns whether this feature has been removed, and in which
 // edition.
 func (f FeatureInfo) Removed() syntax.Syntax {
@@ -211,6 +233,11 @@ func (f FeatureInfo) Removed() syntax.Syntax {
 		return syntax.Unknown
 	}
 	return f.raw.removed
+}
+
+// IsRemoved returns whether this feature has been removed yet.
+func (f FeatureInfo) IsRemoved(in syntax.Syntax) bool {
+	return f.Removed() != syntax.Unknown && f.Removed() <= in
 }
 
 // DeprecationWarning returns the literal text of the deprecation warning for
