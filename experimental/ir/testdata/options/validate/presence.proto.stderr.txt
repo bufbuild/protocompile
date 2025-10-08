@@ -1,13 +1,13 @@
 error: unexpected `optional`
-  --> testdata/options/validate/presence.proto:33:5
+  --> testdata/options/validate/presence.proto:35:5
    |
-33 |     optional int32 a1 = 10;
+35 |     optional int32 a1 = 10;
    |     ^^^^^^^^ expected type name or `repeated`
    |
   help: delete it
    |
-33 | -     optional int32 a1 = 10;
-33 | +     int32 a1 = 10;
+35 | -     optional int32 a1 = 10;
+35 | +     int32 a1 = 10;
    |
    |
    = help: in editions mode, the presence behavior of a singular field is
@@ -16,32 +16,38 @@ error: unexpected `optional`
    = help: see <https://protobuf.com/docs/language-spec#field-presence>
 
 error: unexpected `required`
-  --> testdata/options/validate/presence.proto:34:5
+  --> testdata/options/validate/presence.proto:36:5
    |
-34 |     required int32 a1 = 11;
+36 |     required int32 a1 = 11;
    |     ^^^^^^^^ expected type name or `repeated`
    |
   help: delete it
    |
-34 | -     required int32 a1 = 11;
-34 | +     int32 a1 = 11;
+36 | -     required int32 a1 = 11;
+36 | +     int32 a1 = 11;
    |
    |
    = help: required fields are only permitted in proto2; even then, their use is
            strongly discouraged
 
-error: expected singular field, found repeated field
-  --> testdata/options/validate/presence.proto:20:5
+error: cannot set `LEGACY_REQUIRED` at the file level
+  --> testdata/options/validate/presence.proto:19:34
    |
-20 |     repeated int32 x = 1 [features.field_presence = EXPLICIT];
+19 | option features.field_presence = LEGACY_REQUIRED;
+   |                                  ^^^^^^^^^^^^^^^
+
+error: expected singular field, found repeated field
+  --> testdata/options/validate/presence.proto:22:5
+   |
+22 |     repeated int32 x = 1 [features.field_presence = EXPLICIT];
    |     ^^^^^^^^^^^^^^        ----------------------- `field_presence` set here
    |
    = help: `field_presence` can only be set on singular fields
 
 error: expected singular field, found map field
-  --> testdata/options/validate/presence.proto:21:5
+  --> testdata/options/validate/presence.proto:23:5
    |
-21 |     map<int32, int32> y = 2 [features.field_presence = EXPLICIT];
+23 |     map<int32, int32> y = 2 [features.field_presence = EXPLICIT];
    |     ^^^^^^^^^^^^^^^^^        -----------------------
    |                               |
    |                               `field_presence` set here
@@ -49,50 +55,50 @@ error: expected singular field, found map field
    = help: `field_presence` can only be set on singular fields
 
 error: expected singular field, found oneof member
-  --> testdata/options/validate/presence.proto:24:9
+  --> testdata/options/validate/presence.proto:26:9
    |
-23 | /     oneof o {
-24 | |         int32 z = 3 [features.field_presence = EXPLICIT];
+25 | /     oneof o {
+26 | |         int32 z = 3 [features.field_presence = EXPLICIT];
    | |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    | |                      ----------------------- `field_presence` set here
-25 | |     }
+27 | |     }
    | \_____- defined in this oneof
    |
    = help: `field_presence` cannot be set on oneof members
    = help: all oneof members have explicit presence
 
 error: expected message type, found message type `buf.test.Foo`
-  --> testdata/options/validate/presence.proto:29:5
+  --> testdata/options/validate/presence.proto:31:5
    |
-29 |     Foo m = 5 [features.field_presence = IMPLICIT];
+31 |     Foo m = 5 [features.field_presence = IMPLICIT];
    |     ^^^                                  -------- implicit presence set here
    |     ---
    = help: all message-typed fields explicit presence
 
 warning: required fields are deprecated
-  --> testdata/options/validate/presence.proto:31:44
+  --> testdata/options/validate/presence.proto:33:44
    |
-31 |     int32 r = 6 [features.field_presence = LEGACY_REQUIRED];
+33 |     int32 r = 6 [features.field_presence = LEGACY_REQUIRED];
    |                                            ^^^^^^^^^^^^^^^
    = help: do not attempt to change this to `EXPLICIT` if the field is already
            in-use; doing so is a wire protocol break
 
 error: `a1` declared multiple times
-  --> testdata/options/validate/presence.proto:33:20
+  --> testdata/options/validate/presence.proto:35:20
    |
-33 |     optional int32 a1 = 10;
+35 |     optional int32 a1 = 10;
    |                    ^^ first here, as a message field
-34 |     required int32 a1 = 11;
+36 |     required int32 a1 = 11;
    |                    -- ...also declared here
 
 error: expected singular field, found extension
-  --> testdata/options/validate/presence.proto:38:5
+  --> testdata/options/validate/presence.proto:40:5
    |
-38 |     int32 e = 4 [features.field_presence = EXPLICIT];
+40 |     int32 e = 4 [features.field_presence = EXPLICIT];
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    |                  ----------------------- `field_presence` set here
    |
    = help: `field_presence` cannot be set on extensions
    = help: all singular extensions have explicit presence
 
-encountered 8 errors and 1 warning
+encountered 9 errors and 1 warning
