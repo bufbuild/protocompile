@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-<<<<<<< HEAD
-=======
-//! errors_only: true
->>>>>>> mcy/editions-validation
 edition = "2023";
 
 package buf.test;
