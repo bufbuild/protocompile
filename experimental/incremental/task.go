@@ -288,7 +288,8 @@ type task struct {
 	query *AnyQuery
 
 	// Direct dependencies. Tasks that this task depends on.
-	// Only written during setup in Resolve.
+	// Written on setup in Resolve. May be concurrent on invalid cyclic structures.
+	// TODO: See the comment on Executor.tasks.
 	deps sync.Map // map[*task]struct{}
 	// Inverse of deps. Contains all tasks that directly depend on this task.
 	// Written by multiple tasks concurrently.
