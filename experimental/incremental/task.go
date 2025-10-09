@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"iter"
 	"runtime"
 	"runtime/debug"
 	"slices"
@@ -52,9 +51,6 @@ type Task struct {
 	task   *task
 	result *result
 	runID  uint64
-
-	// Intrusive linked list node for cycle detection.
-	prev *Task
 
 	// Set if we're currently holding the executor's semaphore. This exists to
 	// ensure that we do not violate concurrency assumptions, and is never
@@ -354,20 +350,6 @@ type result struct {
 	done  chan struct{}
 }
 
-// walkParents returns an iterator over the parent chain of this task.
-//
-// The iterator walks from the current task up through its ancestors via the
-// prev pointer, stopping at the root task (which has task == nil).
-func (t *Task) walkParents() iter.Seq[*Task] {
-	return func(yield func(*Task) bool) {
-		for node := t; node != nil && node.task != nil; node = node.prev {
-			if !yield(node) {
-				return
-			}
-		}
-	}
-}
-
 // start executes a query in the context of some task and records the result by
 // calling done.
 //
@@ -470,7 +452,6 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		runID:  caller.runID,
 		task:   t,
 		result: output,
-		prev:   caller,
 
 		onRootGoroutine: caller.onRootGoroutine && !async,
 	}
