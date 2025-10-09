@@ -102,7 +102,7 @@
   - {name: Comma, string: ","}
   - {name: Dot, string: "."}
   - {name: Colon, string: ":"}
-  - {name: Equals, string: "="}
+  - {name: Eq, string: "="}
   - {name: Plus, string: "+"}
   - {name: Minus, string: "-"}
   - {name: Star, string: "*"}
@@ -111,12 +111,12 @@
   - {name: Bang, string: "!"}
   - {name: Ask, string: "?"}
 
-  - {name: "Lt", string: "<"}
-  - {name: "Gt", string: ">"}
-  - {name: "Lte", string: "<="}
-  - {name: "Gte", string: ">="}
+  - {name: "Less", string: "<"}
+  - {name: "Greater", string: ">"}
+  - {name: "LessEq", string: "<="}
+  - {name: "GreaterEq", string: ">="}
   - {name: "EqEq", string: "=="}
-  - {name: "NotEq", string: "!="}
+  - {name: "BangEq", string: "!="}
 
   - {name: "AndAnd", string: "&&"}
   - {name: "OrOr", string: "||"}

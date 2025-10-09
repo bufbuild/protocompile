@@ -280,7 +280,7 @@ func (defValue) canStart(p *defParser) bool {
 	// However, if we've already seen {}, [], or another value, we break
 	// instead, since this suggests we're peeking the next def.
 	switch {
-	case next.Keyword() == keyword.Equals:
+	case next.Keyword() == keyword.Eq:
 		return true
 	case canStartPath(next):
 		// If the next "expression" looks like a path, this likelier to be
@@ -301,7 +301,7 @@ func (defValue) canStart(p *defParser) bool {
 func (defValue) parse(p *defParser) report.Span {
 	eq, err := punctParser{
 		parser: p.parser, c: p.c,
-		want:   keyword.Equals,
+		want:   keyword.Eq,
 		where:  taxa.Def.In(),
 		insert: justifyBetween,
 	}.parse()

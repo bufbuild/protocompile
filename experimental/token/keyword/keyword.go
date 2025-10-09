@@ -82,7 +82,7 @@ const (
 	Comma
 	Dot
 	Colon
-	Equals
+	Eq
 	Plus
 	Minus
 	Star
@@ -90,12 +90,12 @@ const (
 	Percent
 	Bang
 	Ask
-	Lt
-	Gt
-	Lte
-	Gte
+	Less
+	Greater
+	LessEq
+	GreaterEq
 	EqEq
-	NotEq
+	BangEq
 	AndAnd
 	OrOr
 	Parens
@@ -193,7 +193,7 @@ var _table_Keyword_String = [...]string{
 	Comma:      ",",
 	Dot:        ".",
 	Colon:      ":",
-	Equals:     "=",
+	Eq:         "=",
 	Plus:       "+",
 	Minus:      "-",
 	Star:       "*",
@@ -201,12 +201,12 @@ var _table_Keyword_String = [...]string{
 	Percent:    "%",
 	Bang:       "!",
 	Ask:        "?",
-	Lt:         "<",
-	Gt:         ">",
-	Lte:        "<=",
-	Gte:        ">=",
+	Less:       "<",
+	Greater:    ">",
+	LessEq:     "<=",
+	GreaterEq:  ">=",
 	EqEq:       "==",
-	NotEq:      "!=",
+	BangEq:     "!=",
 	AndAnd:     "&&",
 	OrOr:       "||",
 	Parens:     "(...)",
@@ -270,7 +270,7 @@ var _table_Keyword_GoString = [...]string{
 	Comma:      "Comma",
 	Dot:        "Dot",
 	Colon:      "Colon",
-	Equals:     "Equals",
+	Eq:         "Eq",
 	Plus:       "Plus",
 	Minus:      "Minus",
 	Star:       "Star",
@@ -278,12 +278,12 @@ var _table_Keyword_GoString = [...]string{
 	Percent:    "Percent",
 	Bang:       "Bang",
 	Ask:        "Ask",
-	Lt:         "Lt",
-	Gt:         "Gt",
-	Lte:        "Lte",
-	Gte:        "Gte",
+	Less:       "Less",
+	Greater:    "Greater",
+	LessEq:     "LessEq",
+	GreaterEq:  "GreaterEq",
 	EqEq:       "EqEq",
-	NotEq:      "NotEq",
+	BangEq:     "BangEq",
 	AndAnd:     "AndAnd",
 	OrOr:       "OrOr",
 	Parens:     "Parens",
@@ -347,7 +347,7 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	",":          Comma,
 	".":          Dot,
 	":":          Colon,
-	"=":          Equals,
+	"=":          Eq,
 	"+":          Plus,
 	"-":          Minus,
 	"*":          Star,
@@ -355,12 +355,12 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"%":          Percent,
 	"!":          Bang,
 	"?":          Ask,
-	"<":          Lt,
-	">":          Gt,
-	"<=":         Lte,
-	">=":         Gte,
+	"<":          Less,
+	">":          Greater,
+	"<=":         LessEq,
+	">=":         GreaterEq,
 	"==":         EqEq,
-	"!=":         NotEq,
+	"!=":         BangEq,
 	"&&":         AndAnd,
 	"||":         OrOr,
 	"(":          Parens,

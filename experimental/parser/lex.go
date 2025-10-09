@@ -117,7 +117,15 @@ func lex(ctx token.Context, errs *report.Report) {
 		case r == '|' && l.Peek() == '|':
 			l.Push(2, token.Punct)
 
-		case strings.ContainsRune(";,:=+-*/%!?<>", r): // . is handled elsewhere.
+		case strings.ContainsRune("=!<>", r):
+			if l.Peek() == '=' {
+				l.Pop()
+				l.Push(2, token.Punct)
+			} else {
+				l.Push(1, token.Punct)
+			}
+
+		case strings.ContainsRune(";,:+-*/%?", r): // . is handled elsewhere.
 			// Random punctuation that doesn't require special handling.
 			l.Push(utf8.RuneLen(r), token.Punct)
 

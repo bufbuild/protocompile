@@ -311,7 +311,7 @@ var kwToNoun = []Noun{
 	keyword.Dot:      Dot,
 	keyword.Slash:    Slash,
 	keyword.Colon:    Colon,
-	keyword.Equals:   Equals,
+	keyword.Eq:       Equals,
 	keyword.Minus:    Minus,
 	keyword.Parens:   Parens,
 	keyword.Brackets: Brackets,
