@@ -508,7 +508,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	}
 
 	callee.log("executing", "%[1]T/%[1]v", q.Underlying())
-	output.Value, output.Fatal = q.Execute(callee)
+	output.Value, output.Fatal = t.query.Execute(callee)
 	output.runID = callee.runID
 	callee.log("returning", "%[1]T/%[1]v", q.Underlying())
 

@@ -213,9 +213,8 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 			return true
 		})
 
-		// Clear everything. We don't need to synchronize here because we have
-		// unique ownership of the task.
-		*next = task{}
+		// Remove the task from the map. Syncronized by the dirty lock.
+		e.tasks.Delete(next.query.Key())
 	}
 
 	if cleanup != nil {
