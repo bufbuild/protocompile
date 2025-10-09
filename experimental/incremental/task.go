@@ -228,12 +228,9 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		// Update dependency graph.
 		parent := caller.task
 		if parent == nil {
-			continue
+			continue // Root.
 		}
-		if parent.deps == nil {
-			parent.deps = map[*task]struct{}{}
-		}
-		parent.deps[dep] = struct{}{}
+		parent.deps.Store(dep, struct{}{})
 		dep.parents.Store(parent, struct{}{})
 	}
 
@@ -296,7 +293,7 @@ type task struct {
 
 	// Direct dependencies. Tasks that this task depends on.
 	// Only written during setup in Resolve.
-	deps map[*task]struct{}
+	deps sync.Map // map[*task]struct{}
 	// Inverse of deps. Contains all tasks that directly depend on this task.
 	// Written by multiple tasks concurrently.
 	// TODO: See the comment on Executor.tasks.
@@ -401,7 +398,7 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 // pending; if it isn't, it can't be in our history path.
 func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
 
-	deps := slicesx.NewQueue[*task](len(t.deps))
+	deps := slicesx.Queue[*task]{}
 	deps.PushFront(t)
 	parent := make(map[*task]*task)
 	hasCycle := false
@@ -411,13 +408,14 @@ func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
 			hasCycle = true
 			break
 		}
-		for dep := range node.deps {
+		node.deps.Range(func(depAny any, _ any) bool {
+			dep := depAny.(*task) //nolint:errcheck
 			if _, ok := parent[dep]; !ok {
 				parent[dep] = node
 				deps.PushBack(dep)
 			}
-		}
-
+			return true
+		})
 	}
 
 	if !hasCycle {
