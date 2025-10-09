@@ -12,7 +12,7 @@
 10		Punct		Minus		010:011		001:011		"-"
 11		Space		Unknown		011:012		001:012		" "
 12		Punct		Minus		012:013		001:013		"-"
-13		Number		Unknown		013:015		001:014		"10"		int:10
+13		Number		Unknown		013:015		001:014		"10"		num:10
 14		Space		Unknown		015:016		001:016		" "
 15		Ident		Unknown		016:017		001:017		"a"
 16		Punct		Dot		017:018		001:018		"."

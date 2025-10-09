@@ -381,7 +381,7 @@ again:
 	case ast.ExprKindLiteral:
 		lit := key.AsLiteral()
 		if lit.Kind() == token.Number {
-			n, exact := lit.AsNumber().AsInt()
+			n, exact := lit.AsNumber().Int()
 			if exact && n < math.MaxInt32 {
 				member = ty.MemberByNumber(int32(n))
 				if !member.IsZero() {
@@ -740,7 +740,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 		lit := expr.AsNumber()
 		// Handle floats first, since all number formats can be used as floats.
 		if scalar.IsFloat() {
-			n, _ := lit.AsFloat()
+			n, _ := lit.Float()
 
 			// If the number contains no decimal point, check that it has no
 			// 0x prefix. Hex literals are not permitted for float-typed
@@ -799,7 +799,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 			return rawValueBits(math.Float64bits(n)), true
 		}
 
-		if n, exact := lit.AsInt(); exact && !lit.HasFloatSyntax() {
+		if n, exact := lit.Int(); exact && !lit.IsFloat() {
 			switch args.memberNumber {
 			case enumNumber:
 				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
@@ -817,7 +817,9 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), !neg.IsZero(), n)
 		}
 
-		if n, exact := lit.AsBig(); exact && !lit.HasFloatSyntax() {
+		if !lit.IsFloat() {
+			n := lit.Value()
+
 			switch args.memberNumber {
 			case enumNumber:
 				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
@@ -882,8 +884,8 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 	switch n := got.(type) {
 	case uint64:
 		v = n
-	case *big.Int:
-		// We assume that a big.Int is always larger than a uint64.
+	case *big.Float:
+		// We assume that a big.Float is always larger than a uint64.
 		tooLarge = true
 	default:
 		panic("unreachable")

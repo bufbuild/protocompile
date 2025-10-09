@@ -23,6 +23,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
@@ -70,12 +71,31 @@ func TestLexer(t *testing.T) {
 				tok.Text(),
 			)
 
-			if v, exact := tok.AsNumber().AsBig(); exact {
-				fmt.Fprintf(&tsv, "\t\tint:%d", v)
-			} else if v, exact := tok.AsNumber().AsFloat(); exact {
-				fmt.Fprintf(&tsv, "\t\tfloat:%g", v)
-			} else if str := tok.AsString(); !str.IsZero() {
-				fmt.Fprintf(&tsv, "\t\tstring:%q", str.Text())
+			switch tok.Kind() {
+			case token.Number:
+				n := tok.AsNumber()
+				v := n.Value()
+				if v.IsInt() {
+					fmt.Fprintf(&tsv, "\t\tnum:%.0f", n.Value())
+				} else {
+					fmt.Fprintf(&tsv, "\t\tnum:%g", n.Value())
+				}
+
+				if prefix := n.Prefix().Text(); prefix != "" {
+					fmt.Fprintf(&tsv, "\t\tpre:%q", prefix)
+				}
+
+				if suffix := n.Suffix().Text(); suffix != "" {
+					fmt.Fprintf(&tsv, "\t\tsuf:%q", suffix)
+				}
+
+			case token.String:
+				s := tok.AsString()
+				fmt.Fprintf(&tsv, "\t\tstring:%q", s.Text())
+
+				if prefix := s.Prefix().Text(); prefix != "" {
+					fmt.Fprintf(&tsv, "\t\tpre:%q", prefix)
+				}
 			}
 
 			if a, b := tok.StartEnd(); a != b {

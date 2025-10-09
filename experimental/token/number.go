@@ -72,10 +72,10 @@ func (n NumberToken) Suffix() report.Span {
 	return span
 }
 
-// HasFloatSyntax returns whether this token uses any floating-point syntax
-// (decimal periods or scientific notation).
-func (n NumberToken) HasFloatSyntax() bool {
-	return n.meta != nil && n.meta.FloatSyntax
+// IsFloat returns whether this token can only be used as a float literal (even
+// if it has integer value).
+func (n NumberToken) IsFloat() bool {
+	return n.meta != nil && n.meta.IsFloat
 }
 
 // HasSeparators returns whether this token contains thousands separator
@@ -89,20 +89,22 @@ func (n NumberToken) IsValid() bool {
 	return n.meta == nil || !n.meta.SyntaxError
 }
 
-// AsInt converts this value into a 64-bit unsigned integer.
+// Int converts this value into a 64-bit unsigned integer.
 //
 // Returns whether the conversion was exact.
-func (n NumberToken) AsInt() (v uint64, exact bool) {
+func (n NumberToken) Int() (v uint64, exact bool) {
 	if n.meta == nil {
 		// This is a decimal integer, so we just parse on the fly.
 		v, err := strconv.ParseUint(n.Token().Text(), 10, 64)
 		return v, err == nil
 	}
+
 	switch {
 	case n.meta.Big != nil:
-		return n.meta.Big.Uint64(), n.meta.Big.IsUint64()
-	case n.meta.Float != 0:
-		f := n.meta.Float
+		v, acc := n.meta.Big.Uint64()
+		return v, acc == big.Exact
+	case n.meta.IsFloat:
+		f := math.Float64frombits(n.meta.Word)
 		n := uint64(f)
 		return n, f == float64(n)
 	default:
@@ -110,10 +112,10 @@ func (n NumberToken) AsInt() (v uint64, exact bool) {
 	}
 }
 
-// AsFloat converts this value into a 64-bit float.
+// Float converts this value into a 64-bit float.
 //
 // Returns whether the conversion was exact.
-func (n NumberToken) AsFloat() (v float64, exact bool) {
+func (n NumberToken) Float() (v float64, exact bool) {
 	if n.meta == nil {
 		// This is a decimal integer, so we just parse on the fly.
 		v, err := strconv.ParseUint(n.Token().Text(), 10, 64)
@@ -122,38 +124,33 @@ func (n NumberToken) AsFloat() (v float64, exact bool) {
 
 	switch {
 	case n.meta.Big != nil:
-		v, acc := new(big.Float).SetInt(n.meta.Big).Float64()
+		v, acc := n.meta.Big.Float64()
 		return v, acc == big.Exact
-	case n.meta.Float != 0:
-		return n.meta.Float, true
+	case n.meta.IsFloat:
+		f := math.Float64frombits(n.meta.Word)
+		return f, true
 	default:
 		v := n.meta.Word
 		return float64(v), uint64(float64(v)) == v
 	}
 }
 
-// AsBig converts this value into a big integer.
-//
-// Returns whether the conversion was exact.
-func (n NumberToken) AsBig() (v *big.Int, exact bool) {
+// Value returns the underlying arbitrary-precision numeric value.
+func (n NumberToken) Value() *big.Float {
 	if n.meta == nil {
 		// This is a decimal integer, so we just parse on the fly.
-		v, err := strconv.ParseUint(n.Token().Text(), 10, 64)
-		return new(big.Int).SetUint64(v), err == nil
+		v, _ := strconv.ParseUint(n.Token().Text(), 10, 64)
+		return new(big.Float).SetUint64(v)
 	}
 
 	switch {
 	case n.meta.Big != nil:
-		return n.meta.Big, true
-	case n.meta.Float != 0:
-		if math.IsNaN(n.meta.Float) {
-			// SetFloat64() panics on NaN input.
-			return new(big.Int), false
-		}
-
-		v, acc := new(big.Float).SetFloat64(n.meta.Float).Int(nil)
-		return v, acc == big.Exact
+		return n.meta.Big
+	case n.meta.IsFloat:
+		f := math.Float64frombits(n.meta.Word)
+		return new(big.Float).SetFloat64(f)
 	default:
-		return new(big.Int).SetUint64(n.meta.Word), true
+		v := n.meta.Word
+		return new(big.Float).SetUint64(v)
 	}
 }

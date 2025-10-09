@@ -15,7 +15,9 @@
 package parser
 
 import (
+	"errors"
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 	"unicode"
@@ -114,13 +116,12 @@ func lexNumber(l *lexer) token.Token {
 		}
 
 		meta := token.MutateMeta[tokenmeta.Number](tok)
-		meta.FloatSyntax = true
+		meta.IsFloat = true
 		if base != 10 {
 			// TODO: We should return ErrInvalidBase here but that requires
 			// validating the syntax of the float to distinguish it from
 			// cases where we want tor return ErrInvalidNumber instead.
 			l.Error(errInvalidNumber{Token: tok})
-			meta.Float = math.NaN()
 			meta.SyntaxError = true
 			return tok
 		}
@@ -132,15 +133,30 @@ func lexNumber(l *lexer) token.Token {
 		// ParseFloat itself says it "returns the nearest floating-point
 		// number rounded using IEEE754 unbiased rounding", which is just a
 		// weird, non-standard way to say "ties-to-even".
-		value, err := strconv.ParseFloat(strings.ReplaceAll(digits, "_", ""), 64)
+		input := strings.ReplaceAll(digits, "_", "")
+		value, err := strconv.ParseFloat(input, 64)
+		if err != nil {
+			err = err.(*strconv.NumError).Err //nolint:errcheck // The strconv package guarantees this assertion.
+		}
 
-		//nolint:errcheck // The strconv package guarantees this assertion.
-		if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
+		switch {
+		case errors.Is(err, strconv.ErrRange):
+			// Too precise, parse as big float.
+			value, _, err := new(big.Float).Parse(input, 0)
+			if err != nil {
+				l.Error(errInvalidNumber{Token: tok})
+				meta.SyntaxError = true
+			} else {
+				meta.Big = value
+			}
+
+		case errors.Is(err, strconv.ErrSyntax):
+
 			l.Error(errInvalidNumber{Token: tok})
-			meta.Float = math.NaN()
 			meta.SyntaxError = true
-		} else {
-			meta.Float = value
+
+		default:
+			meta.Word = math.Float64bits(value)
 		}
 
 	case result.big != nil:

@@ -384,9 +384,9 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 		proto := &compilerpb.Expr_Literal{
 			Span: c.span(expr),
 		}
-		if v, exact := expr.Token.AsNumber().AsInt(); exact {
+		if v, exact := expr.Token.AsNumber().Int(); exact {
 			proto.Value = &compilerpb.Expr_Literal_IntValue{IntValue: v}
-		} else if v, exact := expr.Token.AsNumber().AsFloat(); exact {
+		} else if v, exact := expr.Token.AsNumber().Float(); exact {
 			proto.Value = &compilerpb.Expr_Literal_FloatValue{FloatValue: v}
 		} else if v := expr.Token.AsString(); !v.IsZero() {
 			proto.Value = &compilerpb.Expr_Literal_StringValue{StringValue: v.Text()}

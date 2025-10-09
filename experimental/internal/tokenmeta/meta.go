@@ -22,17 +22,18 @@ import "math/big"
 type Meta interface{ meta() }
 
 type Number struct {
-	// The "used" value is whichever one of these is
-	// non-zero. If they're all zero, this is a zero-valued number.
-	Word  uint64
-	Float float64
-	Big   *big.Int
+	// Inlined storage for small int/float values.
+	Word uint64
+
+	// big.Float can represent any uint64 or float64 (except NaN), and any
+	// *big.Int, too.
+	Big *big.Float
 
 	// Length of a prefix or suffix on this integer.
 	// The prefix is the base prefix; the suffix is any identifier
 	// characters that follow the last digit.
 	Prefix, Suffix uint32
-	FloatSyntax    bool
+	IsFloat        bool
 	ThousandsSep   bool
 
 	SyntaxError bool // Whether parsing a concrete value failed.

@@ -27,7 +27,7 @@ import (
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
 func IsFloat(tok token.Token) bool {
-	return tok.AsNumber().HasFloatSyntax()
+	return tok.AsNumber().IsFloat()
 }
 
 // IsFloatText checks whether or not the given number text is intended to be
