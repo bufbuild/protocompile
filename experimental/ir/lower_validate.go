@@ -68,6 +68,7 @@ func validateConstraints(f File, r *report.Report) {
 	for m := range f.AllMembers() {
 		// https://protobuf.com/docs/language-spec#field-option-validation
 		validatePacked(m, r)
+		validateCType(m, r)
 		validateLazy(m, r)
 		validateJSType(m, r)
 
@@ -449,6 +450,80 @@ func validateJSType(m Member, r *report.Report) {
 			report.Helpf("`%s` is specifically for controlling the formatting of large integer types, "+
 				"which lose precision when JavaScript converts them into 64-bit IEEE 754 floats", option.Field().Name()),
 		)
+	}
+}
+
+func validateCType(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+	f := m.Context().File()
+
+	ctype := m.Options().Field(builtins.CType)
+	if ctype.IsZero() {
+		return
+	}
+
+	ctypeValue, _ := ctype.AsInt()
+
+	var want string
+	switch ctypeValue {
+	case 0: // FieldOptions.STRING
+		want = "STRING"
+	case 1: // FieldOptions.CORD
+		want = "CORD"
+	case 2: // FieldOptions.STRING_PIECE
+		want = "VIEW"
+	}
+
+	is2023 := f.Syntax() == syntax.Edition2023
+	switch {
+	case f.Syntax() > syntax.Edition2023:
+		r.Error(errEditionTooNew{
+			file:       f,
+			deprecated: syntax.Edition2023,
+			removed:    syntax.Edition2024,
+
+			what:  ctype.Field().Name(),
+			where: ctype.KeyAST(),
+		}).Apply(ctype.suggestEdit(
+			"features.(pb.cpp).string_type", want,
+			"replace with `features.(pb.cpp).string_type`",
+		))
+
+	case !m.Element().Predeclared().IsString():
+		d := r.SoftError(is2023, errTypeConstraint{
+			want: "`string` or `bytes`",
+			got:  m.Element(),
+			decl: m.TypeAST(),
+		}).Apply(
+			report.Snippetf(ctype.KeyAST(), "`%s` set here", ctype.Field().Name()),
+		)
+
+		if !is2023 {
+			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+		}
+
+	case m.IsExtension() && ctypeValue == 1: // google.protobuf.FieldOptions.CORD
+		d := r.SoftErrorf(is2023, "cannot use `CORD` on an extension field").Apply(
+			report.Snippet(m.AST()),
+			report.Snippetf(ctype.ValueAST(), "`CORD` set here"),
+		)
+
+		if !is2023 {
+			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+		}
+
+	case is2023:
+		r.Warn(errEditionTooNew{
+			file:       f,
+			deprecated: syntax.Edition2023,
+			removed:    syntax.Edition2024,
+
+			what:  ctype.Field().Name(),
+			where: ctype.KeyAST(),
+		}).Apply(ctype.suggestEdit(
+			"features.(pb.cpp).string_type", want,
+			"replace with `features.(pb.cpp).string_type`",
+		))
 	}
 }
 
