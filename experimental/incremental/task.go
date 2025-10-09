@@ -237,11 +237,10 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	for i, qt := range slices.Backward(queries) {
 		q := AsAny(qt) // This will also cache the result of q.Key() for us.
 		if q == nil {
-			var underlying any
-			if caller.task != nil {
-				underlying = caller.path.Query.Underlying()
-			}
-			return nil, fmt.Errorf("protocompile/incremental: nil query at index %d while resolving from %T/%v", i, underlying, underlying)
+			return nil, fmt.Errorf(
+				"protocompile/incremental: nil query at index %[1]d while resolving from %[2]T/%[2]v",
+				i, caller.task.getUnderlying(),
+			)
 		}
 
 		// Run the zeroth query synchronously, inheriting this task's semaphore hold.
@@ -359,8 +358,11 @@ type result struct {
 	done  chan struct{}
 }
 
-// walk returns an iterator over the linked list.
-func (t *Task) walk() iter.Seq[*Task] {
+// walkParents returns an iterator over the parent chain of this task.
+//
+// The iterator walks from the current task up through its ancestors via the
+// prev pointer, stopping at the root task (which has task == nil).
+func (t *Task) walkParents() iter.Seq[*Task] {
 	return func(yield func(*Task) bool) {
 		for node := t; node != nil && node.task != nil; node = node.prev {
 			if !yield(node) {
@@ -408,7 +410,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		// Check for a potential cycle. This is only possible if output is
 		// pending; if it isn't, it can't be in our history path.
 		var cycle *ErrCycle
-		for node := range caller.walk() {
+		for node := range caller.walkParents() {
 			if node.task.query.Key() != q.Key() {
 				continue
 			}
@@ -416,7 +418,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 			cycle = new(ErrCycle)
 
 			// Re-walk the list to collect the cycle itself.
-			for node2 := range caller.walk() {
+			for node2 := range caller.walkParents() {
 				cycle.Cycle = append(cycle.Cycle, node2.task.query)
 				if node2 == node {
 					break
