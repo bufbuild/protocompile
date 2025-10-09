@@ -1,0 +1,121 @@
+error: expected 64-bit integer type, found scalar type `int32`
+  --> testdata/options/validate/jstype.proto:22:5
+   |
+22 |     int32 x1 = 1 [jstype = JS_NUMBER];
+   |     ^^^^^         ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `uint32`
+  --> testdata/options/validate/jstype.proto:24:5
+   |
+24 |     uint32 x3 = 3 [jstype = JS_NUMBER];
+   |     ^^^^^^         ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `sint32`
+  --> testdata/options/validate/jstype.proto:26:5
+   |
+26 |     sint32 x5 = 5 [jstype = JS_NUMBER];
+   |     ^^^^^^         ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `fixed32`
+  --> testdata/options/validate/jstype.proto:28:5
+   |
+28 |     fixed32 x7 = 7 [jstype = JS_NUMBER];
+   |     ^^^^^^^         ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `sfixed32`
+  --> testdata/options/validate/jstype.proto:30:5
+   |
+30 |     sfixed32 x9 = 9 [jstype = JS_NUMBER];
+   |     ^^^^^^^^         ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `float`
+  --> testdata/options/validate/jstype.proto:32:5
+   |
+32 |     float x11 = 11 [jstype = JS_NUMBER];
+   |     ^^^^^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `double`
+  --> testdata/options/validate/jstype.proto:33:5
+   |
+33 |     double x12 = 12 [jstype = JS_NUMBER];
+   |     ^^^^^^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `string`
+  --> testdata/options/validate/jstype.proto:34:5
+   |
+34 |     string x13 = 13 [jstype = JS_NUMBER];
+   |     ^^^^^^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `bytes`
+  --> testdata/options/validate/jstype.proto:35:5
+   |
+35 |     bytes x14 = 14 [jstype = JS_NUMBER];
+   |     ^^^^^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found scalar type `bool`
+  --> testdata/options/validate/jstype.proto:36:5
+   |
+36 |     bool x15 = 15 [jstype = JS_NUMBER];
+   |     ^^^^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found enum type `buf.test.M.E`
+  --> testdata/options/validate/jstype.proto:37:5
+   |
+37 |     E x16 = 16 [jstype = JS_NUMBER];
+   |     ^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+error: expected 64-bit integer type, found message type `buf.test.M`
+  --> testdata/options/validate/jstype.proto:38:5
+   |
+38 |     M x17 = 17 [jstype = JS_NUMBER];
+   |     ^           ------ `jstype` set here
+   |
+   = help: `jstype` is specifically for controlling the formatting of large
+           integer types, which lose precision when JavaScript converts them
+           into 64-bit IEEE 754 floats
+
+encountered 12 errors

@@ -68,6 +68,8 @@ func validateConstraints(f File, r *report.Report) {
 	for m := range f.AllMembers() {
 		// https://protobuf.com/docs/language-spec#field-option-validation
 		validatePacked(m, r)
+		validateLazy(m, r)
+		validateJSType(m, r)
 
 		validatePresence(m, r)
 		validateUTF8(m, r)
@@ -375,6 +377,78 @@ func validatePacked(m Member, r *report.Report) {
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked)
 	if feature.IsExplicit() {
 		validate(feature.Value().KeyAST().Span())
+	}
+}
+
+func validateLazy(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+
+	validate := func(key Member) {
+		lazy := m.Options().Field(key)
+		if lazy.IsZero() {
+			return
+		}
+		set, _ := lazy.AsBool()
+
+		if !m.Element().IsMessage() {
+			r.SoftError(set, errTypeConstraint{
+				want: "message type",
+				got:  m.Element(),
+				decl: m.TypeAST(),
+			}).Apply(
+				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
+				report.Helpf("`%s` can only be set on message-typed fields", lazy.Field().Name()),
+			)
+		}
+
+		if m.IsGroup() {
+			r.SoftErrorf(set, "expected length-prefixed field").Apply(
+				report.Snippet(m.AST()),
+				report.Snippetf(m.AST().KeywordToken(), "groups are not length-prefixed"),
+				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
+				report.Helpf("`%s` only makes sense for length-prefixed messages", lazy.Field().Name()),
+			)
+		}
+
+		group := m.FeatureSet().Lookup(builtins.FeatureGroup)
+		groupValue, _ := group.Value().AsInt()
+		if groupValue == 2 { // FeatureSet.DELIMITED
+			d := r.SoftErrorf(set, "expected length-prefixed field").Apply(
+				report.Snippet(m.AST()),
+				report.Snippetf(lazy.KeyAST(), "`%s` set here", lazy.Field().Name()),
+				report.Helpf("`%s` only makes sense for length-prefixed messages", lazy.Field().Name()),
+			)
+
+			if group.IsInherited() {
+				d.Apply(report.PageBreak)
+			}
+			d.Apply(report.Snippetf(group.Value().ValueAST(), "set to use delimited encoding here"))
+		}
+	}
+
+	validate(builtins.Lazy)
+	validate(builtins.UnverifiedLazy)
+}
+
+func validateJSType(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+
+	option := m.Options().Field(builtins.JSType)
+	if option.IsZero() {
+		return
+	}
+
+	ty := m.Element().Predeclared()
+	if !ty.IsInt() || ty.Bits() != 64 {
+		r.Error(errTypeConstraint{
+			want: "64-bit integer type",
+			got:  m.Element(),
+			decl: m.TypeAST(),
+		}).Apply(
+			report.Snippetf(option.KeyAST(), "`%s` set here", option.Field().Name()),
+			report.Helpf("`%s` is specifically for controlling the formatting of large integer types, "+
+				"which lose precision when JavaScript converts them into 64-bit IEEE 754 floats", option.Field().Name()),
+		)
 	}
 }
 
