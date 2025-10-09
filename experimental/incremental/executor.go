@@ -222,8 +222,9 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	}
 }
 
-// getTask returns a task pointer for the given key.
-func (e *Executor) getTask(key any) (*task, bool) {
+// getTask returns a task pointer for the given key and whether it was found.
+// The returned task is nil if found is false.
+func (e *Executor) getTask(key any) (_ *task, found bool) {
 	if t, ok := e.tasks.Load(key); ok {
 		return t.(*task), true //nolint:errcheck
 	}
@@ -231,6 +232,7 @@ func (e *Executor) getTask(key any) (*task, bool) {
 }
 
 // getOrCreateTask returns (and creates if necessary) a task pointer for the given query.
+// The returned task is never nil.
 func (e *Executor) getOrCreateTask(query *AnyQuery) *task {
 	// Avoid allocating a new task object in the common case.
 	key := query.Key()

@@ -84,14 +84,14 @@ func (t *Task) acquire() bool {
 	}
 
 	t.holding = t.exec.sema.Acquire(t.ctx, 1) == nil
-	t.log("acquire", "%[1]v %[2]T/%[2]v", t.holding, t.task.getUnderlying())
+	t.log("acquire", "%[1]v %[2]T/%[2]v", t.holding, t.task.underlying())
 
 	return t.holding
 }
 
 // release releases a hold on the global semaphore.
 func (t *Task) release() {
-	t.log("release", "%[1]T/%[1]v", t.task.getUnderlying())
+	t.log("release", "%[1]T/%[1]v", t.task.underlying())
 
 	if !t.holding {
 		if context.Cause(t.ctx) != nil {
@@ -116,8 +116,8 @@ func (t *Task) transferFrom(that *Task) {
 	t.holding, that.holding = that.holding, t.holding
 
 	t.log("acquireFrom", "%[1]T/%[1]v -> %[2]T/%[2]v",
-		that.task.getUnderlying(),
-		t.task.getUnderlying())
+		that.task.underlying(),
+		t.task.underlying())
 }
 
 // log is used for printf debugging in the task scheduling code.
@@ -145,7 +145,7 @@ func (e *errAbort) Error() string {
 //
 // This will cause the outer call to Run() to immediately wake up and panic.
 func (t *Task) abort(err error) {
-	t.log("abort", "%[1]T/%[1]v, %[2]v", t.task.getUnderlying(), err)
+	t.log("abort", "%[1]T/%[1]v, %[2]v", t.task.underlying(), err)
 
 	if prev := t.aborted(); prev != nil {
 		// Prevent multiple errors from cascading and getting spammed all over
@@ -239,7 +239,7 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 		if q == nil {
 			return nil, fmt.Errorf(
 				"protocompile/incremental: nil query at index %[1]d while resolving from %[2]T/%[2]v",
-				i, caller.task.getUnderlying(),
+				i, caller.task.underlying(),
 			)
 		}
 
@@ -546,8 +546,8 @@ func (t *task) waitUntilDone(caller *Task, async bool) *result {
 	return t.result.Load()
 }
 
-// getUnderlying gets the tasks query underlying key.
-func (t *task) getUnderlying() any {
+// underlying returns the tasks query underlying key.
+func (t *task) underlying() any {
 	if t != nil {
 		return t.query.Underlying()
 	}
