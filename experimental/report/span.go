@@ -22,7 +22,18 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+	"unicode/utf16"
 	"unicode/utf8"
+)
+
+// LengthUnit represents units of measurement for the length of a string.
+type LengthUnit int
+
+const (
+	Runes    LengthUnit = iota + 1 // The length in Unicode scalar values.
+	UTF8                           // The length in UTF8 code units (bytes).
+	UTF16                          // The length in UTF16 code units (uint16s).
+	Terminal                       // The length in approximate terminal columns.
 )
 
 // Spanner is any type with a [Span].
@@ -112,12 +123,12 @@ func (s Span) Len() int {
 
 // StartLoc returns the start location for this span.
 func (s Span) StartLoc() Location {
-	return s.Location(s.Start)
+	return s.Location(s.Start, Terminal)
 }
 
 // EndLoc returns the end location for this span.
 func (s Span) EndLoc() Location {
-	return s.Location(s.End)
+	return s.Location(s.End, Terminal)
 }
 
 // Span implements [Spanner].
@@ -290,12 +301,12 @@ func (f *File) Text() string {
 // byte offset.
 //
 // This operation is O(log n).
-func (f *File) Location(offset int) Location {
+func (f *File) Location(offset int, units LengthUnit) Location {
 	if f == nil && offset == 0 {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
-	return f.location(offset, true)
+	return f.location(offset, units, true)
 }
 
 // Indentation calculates the indentation some offset.
@@ -336,7 +347,7 @@ func (f *File) EOF() Span {
 	return f.Span(eof+1, eof+1)
 }
 
-func (f *File) location(offset int, allowNonPrint bool) Location {
+func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Location {
 	// Compute the prefix sum on-demand.
 	f.once.Do(func() {
 		var next int
@@ -365,7 +376,23 @@ func (f *File) location(offset int, allowNonPrint bool) Location {
 		line--
 	}
 
-	column := stringWidth(0, f.Text()[f.lines[line]:offset], allowNonPrint, nil)
+	chunk := f.Text()[f.lines[line]:offset]
+	var column int
+	switch units {
+	case Runes:
+		for range chunk {
+			column++
+		}
+	case UTF8:
+		column = len(chunk)
+	case UTF16:
+		for _, r := range chunk {
+			column += utf16.RuneLen(r)
+		}
+	case Terminal:
+		column = stringWidth(0, chunk, allowNonPrint, nil)
+	}
+
 	return Location{
 		Offset: offset,
 		Line:   line + 1,

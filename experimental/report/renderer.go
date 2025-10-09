@@ -194,14 +194,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 	locations := make([][2]Location, len(d.snippets))
 	for i, snip := range d.snippets {
-		locations[i][0] = snip.location(snip.Start, false)
+		locations[i][0] = snip.location(snip.Start, Terminal, false)
 		if strings.HasSuffix(snip.Text(), "\n") {
 			// If the snippet ends in a newline, don't include the newline in the
 			// printed span.
-			locations[i][1] = snip.location(snip.End-1, false)
+			locations[i][1] = snip.location(snip.End-1, Terminal, false)
 			locations[i][1].Column++
 		} else {
-			locations[i][1] = snip.location(snip.End, false)
+			locations[i][1] = snip.location(snip.End, Terminal, false)
 		}
 	}
 
