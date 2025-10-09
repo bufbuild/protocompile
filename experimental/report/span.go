@@ -39,9 +39,9 @@ import (
 type LengthUnit int
 
 const (
-	Runes    LengthUnit = iota + 1 // The length in Unicode scalar values.
-	UTF8                           // The length in UTF8 code units (bytes).
-	UTF16                          // The length in UTF16 code units (uint16s).
+	Bytes    LengthUnit = iota + 1 // The length in UTF-8 code units (bytes).
+	UTF16                          // The length in UTF-16 code units (uint16s).
+	Runes                          // The length in UTF-32 code units (runes).
 	Terminal                       // The length in approximate terminal columns.
 )
 
@@ -389,7 +389,7 @@ func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Locati
 		for range chunk {
 			column++
 		}
-	case UTF8:
+	case Bytes:
 		column = len(chunk)
 	case UTF16:
 		for _, r := range chunk {
