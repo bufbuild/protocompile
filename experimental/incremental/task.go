@@ -53,7 +53,7 @@ type Task struct {
 	runID  uint64
 
 	// Intrusive linked list node for cycle detection.
-	path path
+	prev *Task
 
 	// Set if we're currently holding the executor's semaphore. This exists to
 	// ensure that we do not violate concurrency assumptions, and is never
@@ -84,16 +84,14 @@ func (t *Task) acquire() bool {
 	}
 
 	t.holding = t.exec.sema.Acquire(t.ctx, 1) == nil
-	t.log("acquire", "%v %T/%v",
-		t.holding, t.path.Query.Underlying(), t.path.Query.Underlying())
+	t.log("acquire", "%[1]v %[2]T/%[2]v", t.holding, t.task.underlying())
 
 	return t.holding
 }
 
 // release releases a hold on the global semaphore.
 func (t *Task) release() {
-	t.log("release", "%T/%v",
-		t.path.Query.Underlying(), t.path.Query.Underlying())
+	t.log("release", "%[1]T/%[1]v", t.task.underlying())
 
 	if !t.holding {
 		if context.Cause(t.ctx) != nil {
@@ -117,9 +115,9 @@ func (t *Task) transferFrom(that *Task) {
 
 	t.holding, that.holding = that.holding, t.holding
 
-	t.log("acquireFrom", "%T/%v -> %T/%v",
-		that.path.Query.Underlying(), that.path.Query.Underlying(),
-		t.path.Query.Underlying(), t.path.Query.Underlying())
+	t.log("acquireFrom", "%[1]T/%[1]v -> %[2]T/%[2]v",
+		that.task.underlying(),
+		t.task.underlying())
 }
 
 // log is used for printf debugging in the task scheduling code.
@@ -147,8 +145,7 @@ func (e *errAbort) Error() string {
 //
 // This will cause the outer call to Run() to immediately wake up and panic.
 func (t *Task) abort(err error) {
-	t.log("abort", "%T/%v, %v",
-		t.path.Query.Underlying(), t.path.Query.Underlying(), err)
+	t.log("abort", "%[1]T/%[1]v, %[2]v", t.task.underlying(), err)
 
 	if prev := t.aborted(); prev != nil {
 		// Prevent multiple errors from cascading and getting spammed all over
@@ -217,15 +214,14 @@ func Resolve[T any](caller *Task, queries ...Query[T]) (results []Result[T], exp
 	for i, qt := range queries {
 		q := AsAny(qt) // This will also cache the result of q.Key() for us.
 		if q == nil {
-			var underlying any
-			if caller.task != nil {
-				underlying = caller.path.Query.Underlying()
-			}
-			return nil, fmt.Errorf("protocompile/incremental: nil query at index %d while resolving from %T/%v", i, underlying, underlying)
+			return nil, fmt.Errorf(
+				"protocompile/incremental: nil query at index %[1]d while resolving from %[2]T/%[2]v",
+				i, caller.task.underlying(),
+			)
 		}
 
 		anyQueries[i] = q
-		dep := caller.exec.getTask(q.Key())
+		dep := caller.exec.getOrCreateTask(q)
 		deps[i] = dep
 
 		// Update dependency graph.
@@ -294,6 +290,9 @@ func (t *Task) checkDone() {
 
 // task is book-keeping information for a memoized Task in an Executor.
 type task struct {
+	// The query that executed this task.
+	query *AnyQuery
+
 	// Direct dependencies. Tasks that this task depends on.
 	// Only written during setup in Resolve.
 	deps map[*task]struct{}
@@ -357,16 +356,13 @@ type result struct {
 	done  chan struct{}
 }
 
-// path is a linked list node for tracking cycles in query dependencies.
-type path struct {
-	Query *AnyQuery
-	Prev  *path
-}
-
-// Walk returns an iterator over the linked list.
-func (p *path) Walk() iter.Seq[*path] {
-	return func(yield func(*path) bool) {
-		for node := p; node.Query != nil; node = node.Prev {
+// walkParents returns an iterator over the parent chain of this task.
+//
+// The iterator walks from the current task up through its ancestors via the
+// prev pointer, stopping at the root task (which has task == nil).
+func (t *Task) walkParents() iter.Seq[*Task] {
+	return func(yield func(*Task) bool) {
+		for node := t; node != nil && node.task != nil; node = node.prev {
 			if !yield(node) {
 				return
 			}
@@ -383,7 +379,7 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	// Common case for cached values; no need to spawn a separate goroutine.
 	r := t.result.Load()
 	if r != nil && closed(r.done) {
-		caller.log("cache hit", "%T/%v", q.Underlying(), q.Underlying())
+		caller.log("cache hit", "%[1]T/%[1]v", q.Underlying())
 		done(r)
 		return false
 	}
@@ -403,16 +399,16 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 // checkCycle checks for a potential cycle. This is only possible if output is
 // pending; if it isn't, it can't be in our history path.
 func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
-	for node := range caller.path.Walk() {
-		if node.Query.Key() != q.Key() {
+	for node := range caller.walkParents() {
+		if node.task.query.Key() != q.Key() {
 			continue
 		}
 
 		cycle := new(ErrCycle)
 
 		// Re-walk the list to collect the cycle itself.
-		for node2 := range caller.path.Walk() {
-			cycle.Cycle = append(cycle.Cycle, node2.Query)
+		for node2 := range caller.walkParents() {
+			cycle.Cycle = append(cycle.Cycle, node2.task.query)
 			if node2 == node {
 				break
 			}
@@ -463,10 +459,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		runID:  caller.runID,
 		task:   t,
 		result: output,
-		path: path{
-			Query: q,
-			Prev:  &caller.path,
-		},
+		prev:   caller,
 
 		onRootGoroutine: caller.onRootGoroutine && !async,
 	}
@@ -474,7 +467,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	defer func() {
 		if caller.aborted() == nil {
 			if panicked := recover(); panicked != nil {
-				caller.log("panic", "%T/%v, %v", q.Underlying(), q.Underlying(), panicked)
+				caller.log("panic", "%[1]T/%[1]v, %[2]v", q.Underlying(), panicked)
 
 				t.result.CompareAndSwap(output, nil)
 				output = nil
@@ -502,7 +495,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		}
 
 		if output != nil && !closed(output.done) {
-			callee.log("done", "%T/%v", q.Underlying(), q.Underlying())
+			callee.log("done", "%[1]T/%[1]v", q.Underlying())
 			close(output.done)
 		}
 	}()
@@ -519,10 +512,10 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		defer caller.transferFrom(callee)
 	}
 
-	callee.log("executing", "%T/%v", q.Underlying(), q.Underlying())
-	output.Value, output.Fatal = q.Execute(callee)
+	callee.log("executing", "%[1]T/%[1]v", q.Underlying())
+	output.Value, output.Fatal = t.query.Execute(callee)
 	output.runID = callee.runID
-	callee.log("returning", "%T/%v", q.Underlying(), q.Underlying())
+	callee.log("returning", "%[1]T/%[1]v", q.Underlying())
 
 	return output
 }
@@ -554,6 +547,14 @@ func (t *task) waitUntilDone(caller *Task, output *result, async bool) *result {
 	// Reload the result pointer. This is needed if the leader panics,
 	// because the result will be set to nil.
 	return t.result.Load()
+}
+
+// underlying returns the tasks query underlying key.
+func (t *task) underlying() any {
+	if t != nil {
+		return t.query.Underlying()
+	}
+	return nil
 }
 
 // closed checks if ch is closed. This may return false negatives, in that it

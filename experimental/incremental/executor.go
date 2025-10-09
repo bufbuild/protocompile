@@ -155,9 +155,9 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 	dedup := make(map[*task]struct{})
 	tasks := make([]*task, 0, len(queries))
 	for _, query := range queries {
-		task := e.getTask(query.Key())
-		if task == nil {
-			continue // Can happen due to an abort.
+		task, ok := e.getTask(query.Key())
+		if !ok {
+			continue // Uncompleted query, can happen due to an abort.
 		}
 		tasks = append(tasks, task)
 	}
@@ -196,8 +196,8 @@ func (e *Executor) Evict(keys ...any) {
 func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	var tasks []*task
 	for _, key := range keys {
-		if t, ok := e.tasks.Load(key); ok {
-			tasks = append(tasks, t.(*task)) //nolint:errcheck
+		if t, ok := e.getTask(key); ok {
+			tasks = append(tasks, t)
 		}
 	}
 	if len(tasks) == 0 && cleanup == nil {
@@ -215,9 +215,8 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 			return true
 		})
 
-		// Clear everything. We don't need to synchronize here because we have
-		// unique ownership of the task.
-		*next = task{}
+		// Remove the task from the map. Syncronized by the dirty lock.
+		e.tasks.Delete(next.query.Key())
 	}
 
 	if cleanup != nil {
@@ -225,13 +224,26 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	}
 }
 
-// getTask returns (and creates if necessary) a task pointer for the given key.
-func (e *Executor) getTask(key any) *task {
+// getTask returns a task pointer for the given key and whether it was found.
+// The returned task is nil if found is false.
+func (e *Executor) getTask(key any) (_ *task, found bool) {
+	if t, ok := e.tasks.Load(key); ok {
+		return t.(*task), true //nolint:errcheck
+	}
+	return nil, false
+}
+
+// getOrCreateTask returns (and creates if necessary) a task pointer for the given query.
+// The returned task is never nil.
+func (e *Executor) getOrCreateTask(query *AnyQuery) *task {
 	// Avoid allocating a new task object in the common case.
+	key := query.Key()
 	if t, ok := e.tasks.Load(key); ok {
 		return t.(*task) //nolint:errcheck
 	}
-
-	t, _ := e.tasks.LoadOrStore(key, &task{report: report.Report{Options: e.reportOptions}})
+	t, _ := e.tasks.LoadOrStore(key, &task{
+		query:  query,
+		report: report.Report{Options: e.reportOptions},
+	})
 	return t.(*task) //nolint:errcheck
 }
