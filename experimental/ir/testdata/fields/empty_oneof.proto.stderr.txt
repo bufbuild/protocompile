@@ -1,7 +1,97 @@
-error: oneof must define at least one member
-  --> testdata/fields/empty_oneof.proto:20:5
+warning: missing `package` declaration
+ --> testdata/fields/empty_oneof.proto
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
+
+error: unexpected `<...>` in file scope
+  --> testdata/fields/empty_oneof.proto:15:1
    |
-20 |     oneof empty {}
+15 | / <<<<<<< HEAD
+16 | | =======
+17 | | //! errors_only: true
+18 | | >>>>>>> mcy/editions-validation
+   | \_______^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+
+error: unexpected type name
+  --> testdata/fields/empty_oneof.proto:18:9
+   |
+18 | >>>>>>> mcy/editions-validation
+   |         ^^^^^^^^^^^^ expected `optional`, `repeated`, or `required`
+   |
+  help: use the `optional` modifier
+   |
+18 | >>>>>>> optional mcy/editions-validation
+   |         +++++++++
+   |
+   = note: modifiers are required in proto2
+
+error: missing name in message field
+  --> testdata/fields/empty_oneof.proto:18:9
+   |
+18 | >>>>>>> mcy/editions-validation
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+error: unexpected message field at file scope
+  --> testdata/fields/empty_oneof.proto:18:9
+   |
+18 | >>>>>>> mcy/editions-validation
+   |         ^^^^^^^^^^^^^^^^^^^^^^^ this message field cannot be declared here
+   |
+   = help: this message field can only appear within one of message definition,
+           message extension block, oneof definition, or group definition
+
+error: unexpected `/` in path in message field
+  --> testdata/fields/empty_oneof.proto:18:12
+   |
+18 | >>>>>>> mcy/editions-validation
+   |            ^ help: replace this with a `.`
+
+error: unexpected `-` in definition
+  --> testdata/fields/empty_oneof.proto:18:21
+   |
+18 | >>>>>>> mcy/editions-validation
+   |                     ^ expected `=`
+   |
+  help: consider inserting a `=`
+   |
+18 | >>>>>>> mcy/editions = -validation
+   |                     +++
+
+error: unexpected `edition` after definition
+  --> testdata/fields/empty_oneof.proto:19:1
+   |
+19 | edition = "2023";
+   | ^^^^^^^ expected `;`
+   |
+  help: consider inserting a `;`
+   |
+18 | >>>>>>> mcy/editions-validation;
+   |                                +
+
+error: unexpected `edition` declaration
+  --> testdata/fields/empty_oneof.proto:19:1
+   |
+18 | >>>>>>> mcy/editions-validation
+   |         ----------------------- previous declaration is here
+19 | edition = "2023";
+   | ^^^^^^^^^^^^^^^^^
+   = note: a `edition` declaration must be the first declaration in a file
+
+warning: the `package` declaration should be placed at the top of the file
+  --> testdata/fields/empty_oneof.proto:21:1
+   |
+19 | edition = "2023";
+   | ----------------- previous declaration is here
+20 |
+21 | package buf.test;
+   | ^^^^^^^^^^^^^^^^^
+   = help: a file's `package` declaration should immediately follow the `syntax`
+           or `edition` declaration
+
+error: oneof must define at least one member
+  --> testdata/fields/empty_oneof.proto:24:5
+   |
+24 |     oneof empty {}
    |     ^^^^^^^^^^^^^^
 
-encountered 1 error
+encountered 9 errors and 2 warnings
