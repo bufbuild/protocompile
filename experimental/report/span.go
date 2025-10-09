@@ -27,6 +27,15 @@ import (
 )
 
 // LengthUnit represents units of measurement for the length of a string.
+//
+// The most commonly used [LengthUnit] in protocompile is [Terminal], which
+// approximates columns in a terminal emulator. This takes into account the
+// Unicode width of runes, and tabstops. The rune A is one column wide, the rune
+// 貓 is two columns wide, and the multi-rune emoji presentation sequence 🐈‍⬛ is
+// also two columns wide.
+//
+// Other units of length can be used to cope with the needs of other rendering
+// contexts, such as the Language Server Protocol.
 type LengthUnit int
 
 const (
@@ -243,11 +252,8 @@ type Location struct {
 
 	// The line and column for this location, 1-indexed.
 	//
-	// Note that Column is not Offset with the length of all
-	// previous lines subtracted off; it takes into account the
-	// Unicode width. The rune A is one column wide, the rune
-	// 貓 is two columns wide, and the multi-rune emoji presentation
-	// sequence 🐈‍⬛ is also two columns wide.
+	// The units of measurement for column depend on the [LengthUnit] used when
+	// constructing it.
 	//
 	// Because these are 1-indexed, a zero Line can be used as a sentinel.
 	Line, Column int
