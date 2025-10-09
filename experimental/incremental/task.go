@@ -400,6 +400,35 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 	return true
 }
 
+// checkCycle checks for a potential cycle. This is only possible if output is
+// pending; if it isn't, it can't be in our history path.
+func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
+	for node := range caller.path.Walk() {
+		if node.Query.Key() != q.Key() {
+			continue
+		}
+
+		cycle := new(ErrCycle)
+
+		// Re-walk the list to collect the cycle itself.
+		for node2 := range caller.path.Walk() {
+			cycle.Cycle = append(cycle.Cycle, node2.Query)
+			if node2 == node {
+				break
+			}
+		}
+
+		// Reverse the list so that dependency arrows point to the
+		// right (i.e., Cycle[n] depends on Cycle[n+1]).
+		slices.Reverse(cycle.Cycle)
+
+		// Insert a copy of the current query to complete the cycle.
+		cycle.Cycle = append(cycle.Cycle, AsAny(q))
+		return cycle
+	}
+	return nil
+}
+
 // run actually executes the query passed to start. It is called on its own
 // goroutine.
 func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
@@ -408,39 +437,11 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		if closed(output.done) {
 			return output
 		}
-
-		// Check for a potential cycle. This is only possible if output is
-		// pending; if it isn't, it can't be in our history path.
-		var cycle *ErrCycle
-		for node := range caller.path.Walk() {
-			if node.Query.Key() != q.Key() {
-				continue
-			}
-
-			cycle = new(ErrCycle)
-
-			// Re-walk the list to collect the cycle itself.
-			for node2 := range caller.path.Walk() {
-				cycle.Cycle = append(cycle.Cycle, node2.Query)
-				if node2 == node {
-					break
-				}
-			}
-
-			// Reverse the list so that dependency arrows point to the
-			// right (i.e., Cycle[n] depends on Cycle[n+1]).
-			slices.Reverse(cycle.Cycle)
-
-			// Insert a copy of the current query to complete the cycle.
-			cycle.Cycle = append(cycle.Cycle, AsAny(q))
-			break
-		}
-		if cycle != nil {
-			output.Fatal = cycle
+		if err := t.checkCycle(caller, q); err != nil {
+			output.Fatal = err
 			return output
 		}
-
-		return t.waitUntilDone(caller, async)
+		return t.waitUntilDone(caller, output, async)
 	}
 
 	// Try to become the leader (the task responsible for computing the result).
@@ -448,7 +449,11 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 	if !t.result.CompareAndSwap(nil, output) {
 		// We failed to become the executor, so we're gonna go to sleep
 		// until it's done.
-		return t.waitUntilDone(caller, async)
+		output := t.result.Load()
+		if output == nil {
+			return nil // Leader panicked but we did see a result.
+		}
+		return t.waitUntilDone(caller, output, async)
 	}
 
 	callee := &Task{
@@ -523,7 +528,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 }
 
 // waitUntilDone waits for this task to be completed by another goroutine.
-func (t *task) waitUntilDone(caller *Task, async bool) *result {
+func (t *task) waitUntilDone(caller *Task, output *result, async bool) *result {
 	// If this task is being executed synchronously with its caller, we need to
 	// drop our semaphore hold, otherwise we will deadlock: this caller will
 	// be waiting for the leader of this task to complete, but that one
@@ -538,7 +543,7 @@ func (t *task) waitUntilDone(caller *Task, async bool) *result {
 	}
 
 	select {
-	case <-t.result.Load().done:
+	case <-output.done:
 	case <-caller.ctx.Done():
 	}
 
