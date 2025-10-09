@@ -1,0 +1,37 @@
+warning: group syntax is deprecated
+  --> testdata/options/validate/lazy_group.proto:20:14
+   |
+20 |     optional group G1 = 1 [lazy = true] {};
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+warning: group syntax is deprecated
+  --> testdata/options/validate/lazy_group.proto:21:14
+   |
+21 |     optional group G2 = 2 [lazy = false] {};
+   |              ^^^^^
+   = note: group syntax is not available in proto3 or editions
+
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy_group.proto:20:5
+   |
+20 |     optional group G1 = 1 [lazy = true] {};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |              -----         ---- `lazy` set here
+   |               |
+   |               groups are not length-prefixed
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy_group.proto:21:5
+   |
+21 |     optional group G2 = 2 [lazy = false] {};
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |              -----         ---- `lazy` set here
+   |               |
+   |               groups are not length-prefixed
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+encountered 1 error and 3 warnings

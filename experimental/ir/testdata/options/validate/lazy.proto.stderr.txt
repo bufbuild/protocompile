@@ -1,0 +1,213 @@
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:22:5
+   |
+22 |     M m1 = 1 [lazy = true];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^
+   |               ---- `lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:23:5
+   |
+23 |     M m2 = 2 [unverified_lazy = true];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               --------------- `unverified_lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `unverified_lazy` only makes sense for length-prefixed messages
+
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:25:5
+   |
+25 |     M m3 = 3 [lazy = true, features.message_encoding = DELIMITED];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               ----                                     ---------
+   |                |                                        |
+   |                `lazy` set here                          |
+   |                                                         |
+   |                                                         set to use delimited encoding here
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:26:5
+   |
+26 |     M m4 = 4 [unverified_lazy = true, features.message_encoding = DELIMITED];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               ---------------                                     ---------
+   |                |                                                   |
+   |                `unverified_lazy` set here                          |
+   |                                                                    |
+   |                                                                    set to use delimited encoding here
+   |
+   = help: `unverified_lazy` only makes sense for length-prefixed messages
+
+error: expected message type, found scalar type `int32`
+  --> testdata/options/validate/lazy.proto:31:5
+   |
+31 |     int32 x1 = 7 [lazy = true];
+   |     ^^^^^         ---- `lazy` set here
+   |
+   = help: `lazy` can only be set on message-typed fields
+
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:31:5
+   |
+31 |     int32 x1 = 7 [lazy = true];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                   ---- `lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+error: expected message type, found scalar type `int32`
+  --> testdata/options/validate/lazy.proto:32:5
+   |
+32 |     int32 x2 = 8 [unverified_lazy = true];
+   |     ^^^^^         --------------- `unverified_lazy` set here
+   |
+   = help: `unverified_lazy` can only be set on message-typed fields
+
+error: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:32:5
+   |
+32 |     int32 x2 = 8 [unverified_lazy = true];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                   --------------- `unverified_lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `unverified_lazy` only makes sense for length-prefixed messages
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:36:5
+   |
+36 |     M m1 = 1 [lazy = false];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+   |               ---- `lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:37:5
+   |
+37 |     M m2 = 2 [unverified_lazy = false];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               --------------- `unverified_lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `unverified_lazy` only makes sense for length-prefixed messages
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:39:5
+   |
+39 |     M m3 = 3 [lazy = false, features.message_encoding = DELIMITED];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               ----                                      ---------
+   |                |                                         |
+   |                `lazy` set here                           |
+   |                                                          |
+   |                                                          set to use delimited encoding here
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:40:5
+   |
+40 |     M m4 = 4 [unverified_lazy = false, features.message_encoding = DELIMITED];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |               ---------------                                      ---------
+   |                |                                                    |
+   |                `unverified_lazy` set here                           |
+   |                                                                     |
+   |                                                                     set to use delimited encoding here
+   |
+   = help: `unverified_lazy` only makes sense for length-prefixed messages
+
+warning: expected message type, found scalar type `int32`
+  --> testdata/options/validate/lazy.proto:45:5
+   |
+45 |     int32 x1 = 7 [lazy = false];
+   |     ^^^^^         ---- `lazy` set here
+   |
+   = help: `lazy` can only be set on message-typed fields
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:45:5
+   |
+45 |     int32 x1 = 7 [lazy = false];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                   ---- `lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `lazy` only makes sense for length-prefixed messages
+
+warning: expected message type, found scalar type `int32`
+  --> testdata/options/validate/lazy.proto:46:5
+   |
+46 |     int32 x2 = 8 [unverified_lazy = false];
+   |     ^^^^^         --------------- `unverified_lazy` set here
+   |
+   = help: `unverified_lazy` can only be set on message-typed fields
+
+warning: expected length-prefixed field
+  --> testdata/options/validate/lazy.proto:46:5
+   |
+46 |     int32 x2 = 8 [unverified_lazy = false];
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |                   --------------- `unverified_lazy` set here
+   |
+  ::: testdata/options/validate/lazy.proto:19:36
+   |
+19 | option features.message_encoding = DELIMITED;
+   |                                    ---------
+   |                                     |
+   |                                     set to use delimited encoding here
+   |
+   = help: `unverified_lazy` only makes sense for length-prefixed messages
+
+encountered 8 errors and 8 warnings
