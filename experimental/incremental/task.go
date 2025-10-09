@@ -29,6 +29,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 var (
@@ -399,30 +400,46 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 // checkCycle checks for a potential cycle. This is only possible if output is
 // pending; if it isn't, it can't be in our history path.
 func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
-	for node := range caller.walkParents() {
-		if node.task.query.Key() != q.Key() {
-			continue
+
+	deps := slicesx.NewQueue[*task](len(t.deps))
+	deps.PushFront(t)
+	parent := make(map[*task]*task)
+	hasCycle := false
+
+	for node, ok := deps.PopFront(); ok; node, ok = deps.PopFront() {
+		if node == caller.task {
+			hasCycle = true
+			break
 		}
-
-		cycle := new(ErrCycle)
-
-		// Re-walk the list to collect the cycle itself.
-		for node2 := range caller.walkParents() {
-			cycle.Cycle = append(cycle.Cycle, node2.task.query)
-			if node2 == node {
-				break
+		for dep := range node.deps {
+			if _, ok := parent[dep]; !ok {
+				parent[dep] = node
+				deps.PushBack(dep)
 			}
 		}
 
-		// Reverse the list so that dependency arrows point to the
-		// right (i.e., Cycle[n] depends on Cycle[n+1]).
-		slices.Reverse(cycle.Cycle)
-
-		// Insert a copy of the current query to complete the cycle.
-		cycle.Cycle = append(cycle.Cycle, AsAny(q))
-		return cycle
 	}
-	return nil
+
+	if !hasCycle {
+		return nil
+	}
+
+	// Reconstruct the cycle path from t.task back to target.
+	var cycle []*AnyQuery
+	cycle = append(cycle, caller.task.query)
+	for current := parent[caller.task]; current != nil && current != t; current = parent[current] {
+		cycle = append(cycle, current.query)
+	}
+	cycle = append(cycle, t.query)
+
+	// Reverse to get the correct dependency order (target -> ... -> t.task).
+	slices.Reverse(cycle)
+
+	// Add q at the end to complete the cycle (target -> ... -> t.task -> targetQuery).
+	// We use q instead of t.query because it has the import request info.
+	cycle = append(cycle, q)
+
+	return &ErrCycle{Cycle: cycle}
 }
 
 // run actually executes the query passed to start. It is called on its own
@@ -433,11 +450,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		if closed(output.done) {
 			return output
 		}
-		if err := t.checkCycle(caller, q); err != nil {
-			output.Fatal = err
-			return output
-		}
-		return t.waitUntilDone(caller, output, async)
+		return t.waitUntilDone(caller, output, q, async)
 	}
 
 	// Try to become the leader (the task responsible for computing the result).
@@ -449,7 +462,7 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 		if output == nil {
 			return nil // Leader panicked but we did see a result.
 		}
-		return t.waitUntilDone(caller, output, async)
+		return t.waitUntilDone(caller, output, q, async)
 	}
 
 	callee := &Task{
@@ -521,7 +534,12 @@ func (t *task) run(caller *Task, q *AnyQuery, async bool) (output *result) {
 }
 
 // waitUntilDone waits for this task to be completed by another goroutine.
-func (t *task) waitUntilDone(caller *Task, output *result, async bool) *result {
+func (t *task) waitUntilDone(caller *Task, output *result, q *AnyQuery, async bool) *result {
+	if err := t.checkCycle(caller, q); err != nil {
+		output.Fatal = err
+		return output
+	}
+
 	// If this task is being executed synchronously with its caller, we need to
 	// drop our semaphore hold, otherwise we will deadlock: this caller will
 	// be waiting for the leader of this task to complete, but that one
