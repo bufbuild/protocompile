@@ -8,8 +8,8 @@
 6		Punct		Parens		006:008		001:007		"("		close:Token(7)
 7		Punct		Parens		006:008		001:007		")"		open:Token(6)
 8		Space		Unknown		008:009		001:009		" "
-9		Punct		Lt		009:010		001:010		"<"
-10		Punct		Gt		010:011		001:011		">"
+9		Punct		Less		009:010		001:010		"<"
+10		Punct		Greater		010:011		001:011		">"
 11		Space		Unknown		011:012		001:012		"\n"
 12		Punct		Braces		012:076		002:001		"{"		close:Token(26)
 13		Space		Unknown		013:018		002:002		"\n    "
@@ -17,9 +17,9 @@
 15		Space		Unknown		019:028		003:006		"\n        "
 16		Punct		Brackets		028:068		004:009		"["		close:Token(22)
 17		Space		Unknown		029:042		004:010		"\n            "
-18		Punct		Lt		042:043		005:013		"<"
+18		Punct		Less		042:043		005:013		"<"
 19		Space		Unknown		043:057		005:014		"\n\n            "
-20		Punct		Gt		057:058		007:013		">"
+20		Punct		Greater		057:058		007:013		">"
 21		Space		Unknown		058:067		007:014		"\n        "
 22		Punct		Brackets		028:068		004:009		"]"		open:Token(16)
 23		Space		Unknown		068:073		008:010		"\n    "
@@ -27,17 +27,17 @@
 25		Space		Unknown		074:075		009:006		"\n"
 26		Punct		Braces		012:076		002:001		"}"		open:Token(12)
 27		Space		Unknown		076:077		010:002		"\n"
-28		Punct		Lt		077:078		011:001		"<"
-29		Punct		Lt		078:079		011:002		"<"
-30		Punct		Lt		079:080		011:003		"<"
-31		Punct		Lt		080:081		011:004		"<"
+28		Punct		Less		077:078		011:001		"<"
+29		Punct		Less		078:079		011:002		"<"
+30		Punct		Less		079:080		011:003		"<"
+31		Punct		Less		080:081		011:004		"<"
 32		Punct		Parens		081:087		011:005		"("		close:Token(37)
 33		Punct		Parens		082:086		011:006		"("		close:Token(36)
 34		Punct		Parens		083:085		011:007		"("		close:Token(35)
 35		Punct		Parens		083:085		011:007		")"		open:Token(34)
 36		Punct		Parens		082:086		011:006		")"		open:Token(33)
 37		Punct		Parens		081:087		011:005		")"		open:Token(32)
-38		Punct		Gt		087:088		011:011		">"
-39		Punct		Gt		088:089		011:012		">"
-40		Punct		Gt		089:090		011:013		">"
-41		Punct		Gt		090:091		011:014		">"
+38		Punct		Greater		087:088		011:011		">"
+39		Punct		Greater		088:089		011:012		">"
+40		Punct		Greater		089:090		011:013		">"
+41		Punct		Greater		090:091		011:014		">"

@@ -7,7 +7,7 @@
 5		Space		Unknown		005:006		001:006		" "
 6		Punct		Colon		006:007		001:007		":"
 7		Space		Unknown		007:008		001:008		" "
-8		Punct		Equals		008:009		001:009		"="
+8		Punct		Eq		008:009		001:009		"="
 9		Space		Unknown		009:010		001:010		" "
 10		Punct		Minus		010:011		001:011		"-"
 11		Space		Unknown		011:012		001:012		" "

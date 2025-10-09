@@ -63,7 +63,7 @@ func (s StringToken) Prefix() report.Span {
 		return report.Span{}
 	}
 
-	span := s.Token().Span()
+	span := s.Token().LeafSpan()
 	span.End = span.Start + int(s.meta.Prefix)
 	return span
 }
@@ -77,7 +77,7 @@ func (s StringToken) Quotes() (open, close report.Span) {
 		return report.Span{}, report.Span{}
 	}
 
-	open = s.Token().Span()
+	open = s.Token().LeafSpan()
 	close = open
 
 	if s.meta == nil {

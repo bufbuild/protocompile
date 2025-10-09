@@ -13,4 +13,4 @@
 11		Space		Unknown		180:182		011:003		"\n\n"
 12		String		Unknown		182:240		013:001		"\"this string contains some other non-graphic character: \x01\""		string:"this string contains some other non-graphic character: \x01"
 13		Space		Unknown		240:241		013:058		"\n"
-14		String		Unknown		000:282		001:001		"\"this is graphic but non-ASCII space: \u00a0\""		string:"this string\ncontains a newline\"\n\"\n\"\n\n    \"this is an indented string\n    that contains a newline\"\n\n\"this string contains a nul: \x00\"\n\"this string contains a nul \x00 in the middle\"\n\"\x00\"\n\n\"this string contains some other non-graphic character: \x01\"\n\"this is graphic but non-ASCII space: \u00a0"		open:Token(0)
+14		String		Unknown		000:282		001:001		"\"this is graphic but non-ASCII space: \u00a0\""		string:"this is graphic but non-ASCII space: \u00a0"		open:Token(0)
