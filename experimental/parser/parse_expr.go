@@ -228,8 +228,9 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 
 		// If this is a pair of angle brackets, we need to fuse them.
 		if angles {
-			end := c.Next()
-			token.Fuse(body, end)
+			if c.Peek().Keyword() == keyword.Greater {
+				token.Fuse(body, c.Next())
+			}
 		}
 
 		return dict.AsAny()

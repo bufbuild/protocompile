@@ -197,12 +197,16 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			},
 			start: canStartPath,
 			stop: func(t token.Token) bool {
-				return t.Keyword() == keyword.Greater
+				kw := t.Keyword()
+				return kw == keyword.Greater ||
+					kw == keyword.Eq // Heuristic for stopping reasonably early in the case of map<K, V m = 1;
 			},
 		}.appendTo(generic.Args())
 
 		// Need to fuse the angle brackets, because the lexer won't do it.
-		token.Fuse(angles, c.Next())
+		if c.Peek().Keyword() == keyword.Greater {
+			token.Fuse(angles, c.Next())
+		}
 
 		ty = generic.AsAny()
 	}
