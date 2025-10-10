@@ -380,7 +380,7 @@ func (t *task) start(caller *Task, q *AnyQuery, sync bool, done func(*result)) (
 // checkCycle checks for a potential cycle. This is only possible if output is
 // pending; if it isn't, it can't be in our history path.
 func (t *task) checkCycle(caller *Task, q *AnyQuery) error {
-	deps := slicesx.Queue[*task]{}
+	deps := slicesx.NewQueue[*task](1)
 	deps.PushFront(t)
 	parent := make(map[*task]*task)
 	hasCycle := false
