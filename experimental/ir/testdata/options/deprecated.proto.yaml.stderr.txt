@@ -1,0 +1,171 @@
+warning: `deprecated.proto` is deprecated
+  --> test.proto:4:8
+   |
+ 4 | import "deprecated.proto";
+   |        ^^^^^^^^^^^^^^^^^^
+  ::: deprecated.proto:6:8
+   |
+ 6 | option deprecated = true;
+   |        ----------------- deprecated here
+
+warning: `test.Foo` is deprecated
+  --> test.proto:7:3
+   |
+ 7 |   Foo foo = 1 [
+   |   ^^^
+  ::: deprecated.proto:9:10
+   |
+ 9 |   option deprecated = true;
+   |          ----------------- deprecated here
+
+warning: `test.Foo.foo` is deprecated
+  --> test.proto:8:5
+   |
+ 8 |     (ext).foo.foo = {
+   |     ^^^^^^^^^
+  ::: deprecated.proto:11:16
+   |
+11 |   Foo foo = 1 [deprecated = true];
+   |                ----------------- deprecated here
+
+warning: `test.Foo.foo` is deprecated
+  --> test.proto:8:5
+   |
+ 8 |     (ext).foo.foo = {
+   |     ^^^^^^^^^^^^^
+  ::: deprecated.proto:11:16
+   |
+11 |   Foo foo = 1 [deprecated = true];
+   |                ----------------- deprecated here
+
+warning: `test.Foo.foo` is deprecated
+  --> test.proto:9:7
+   |
+ 9 |       foo {}
+   |       ^^^
+  ::: deprecated.proto:11:16
+   |
+11 |   Foo foo = 1 [deprecated = true];
+   |                ----------------- deprecated here
+
+warning: `test.Foo.bar` is deprecated
+  --> test.proto:10:7
+   |
+10 |       bar: Z
+   |       ^^^
+  ::: deprecated.proto:12:25
+   |
+12 |   repeated Bar bar = 2 [deprecated = true];
+   |                         ----------------- deprecated here
+
+warning: `test.Foo.bar` is deprecated
+  --> test.proto:11:7
+   |
+11 |       bar: X
+   |       ^^^
+  ::: deprecated.proto:12:25
+   |
+12 |   repeated Bar bar = 2 [deprecated = true];
+   |                         ----------------- deprecated here
+
+warning: `test.X` is deprecated
+  --> test.proto:11:12
+   |
+11 |       bar: X
+   |            ^
+  ::: deprecated.proto:17:10
+   |
+17 |   X = 1 [deprecated = true];
+   |          ----------------- deprecated here
+
+warning: `test.Foo.bar` is deprecated
+  --> test.proto:12:7
+   |
+12 |       bar: [X, X]
+   |       ^^^
+  ::: deprecated.proto:12:25
+   |
+12 |   repeated Bar bar = 2 [deprecated = true];
+   |                         ----------------- deprecated here
+
+warning: `test.X` is deprecated
+  --> test.proto:12:13
+   |
+12 |       bar: [X, X]
+   |             ^
+  ::: deprecated.proto:17:10
+   |
+17 |   X = 1 [deprecated = true];
+   |          ----------------- deprecated here
+
+warning: `test.X` is deprecated
+  --> test.proto:12:16
+   |
+12 |       bar: [X, X]
+   |                ^
+  ::: deprecated.proto:17:10
+   |
+17 |   X = 1 [deprecated = true];
+   |          ----------------- deprecated here
+
+warning: `test.Foo.bar` is deprecated
+  --> test.proto:14:5
+   |
+14 |     (ext).foo.bar = X,
+   |     ^^^^^^^^^^^^^
+  ::: deprecated.proto:12:25
+   |
+12 |   repeated Bar bar = 2 [deprecated = true];
+   |                         ----------------- deprecated here
+
+warning: `test.X` is deprecated
+  --> test.proto:14:21
+   |
+14 |     (ext).foo.bar = X,
+   |                     ^
+  ::: deprecated.proto:17:10
+   |
+17 |   X = 1 [deprecated = true];
+   |          ----------------- deprecated here
+
+warning: `test.Foo.bar` is deprecated
+  --> test.proto:15:5
+   |
+15 |     (ext).foo.bar = X
+   |     ^^^^^^^^^^^^^
+  ::: deprecated.proto:12:25
+   |
+12 |   repeated Bar bar = 2 [deprecated = true];
+   |                         ----------------- deprecated here
+
+warning: `test.X` is deprecated
+  --> test.proto:15:21
+   |
+15 |     (ext).foo.bar = X
+   |                     ^
+  ::: deprecated.proto:17:10
+   |
+17 |   X = 1 [deprecated = true];
+   |          ----------------- deprecated here
+
+warning: `test.Foo` is deprecated
+  --> test.proto:20:10
+   |
+20 |   rpc X2(Foo) returns (Foo);
+   |          ^^^
+  ::: deprecated.proto:9:10
+   |
+ 9 |   option deprecated = true;
+   |          ----------------- deprecated here
+
+warning: `test.Foo` is deprecated
+  --> test.proto:20:24
+   |
+20 |   rpc X2(Foo) returns (Foo);
+   |                        ^^^
+  ::: deprecated.proto:9:10
+   |
+ 9 |   option deprecated = true;
+   |          ----------------- deprecated here
+
+encountered 17 warnings
