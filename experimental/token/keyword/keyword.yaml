@@ -58,6 +58,7 @@
 
   - {name: Returns, string: returns}
   - {name: To, string: to}
+  - {name: In, string: in}
 
   - {name: Repeated, string: repeated}
   - {name: Optional, string: optional}
@@ -86,6 +87,7 @@
   - {name: NAN, string: nan}
   - {name: 'True', string: 'true'}
   - {name: 'False', string: 'false'}
+  - {name: 'Null', string: 'null'}
   - {name: Map, string: map}
   - {name: Max, string: max}
 
@@ -99,14 +101,29 @@
   - {name: Semi, string: ";"}
   - {name: Comma, string: ","}
   - {name: Dot, string: "."}
-  - {name: Slash, string: "/"}
   - {name: Colon, string: ":"}
-  - {name: Equals, string: "="}
+  - {name: Eq, string: "="}
+  - {name: Plus, string: "+"}
   - {name: Minus, string: "-"}
+  - {name: Star, string: "*"}
+  - {name: Slash, string: "/"}
+  - {name: Percent, string: "%"}
+  - {name: Bang, string: "!"}
+  - {name: Ask, string: "?"}
 
-  # These four must be declared together, since this is used for layout
+  - {name: "Less", string: "<"}
+  - {name: "Greater", string: ">"}
+  - {name: "LessEq", string: "<="}
+  - {name: "GreaterEq", string: ">="}
+  - {name: "EqEq", string: "=="}
+  - {name: "BangEq", string: "!="}
+
+  - {name: "AndAnd", string: "&&"}
+  - {name: "OrOr", string: "||"}
+
+  # These three must be declared together, since this is used for layout
   # compression in token.nat.
   - {name: Parens, string: "(...)", from: ["(", ")"]}
   - {name: Brackets, string: "[...]", from: ["[", "]"]}
   - {name: Braces, string: "{...}", from: ["{", "}"]}
-  - {name: Angles, string: "<...>", from: ["<", ">"]}
+  - {name: Angles, string: "<...>", from: []}

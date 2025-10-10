@@ -184,12 +184,12 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 			want:  taxa.Ident.AsSet(),
 		})
 	}
+	tag := taxa.FieldTag
+	if def.Classify() == ast.DefKindEnumValue {
+		tag = taxa.EnumValue
+	}
 	if def.Value().IsZero() {
-		what := taxa.FieldTag
-		if def.Classify() == ast.DefKindEnumValue {
-			what = taxa.EnumValue
-		}
-		p.Errorf("missing %v in declaration", what).Apply(
+		p.Errorf("missing %v in declaration", tag).Apply(
 			report.Snippet(def),
 			// TODO: We do not currently provide a suggested field number for
 			// cases where that is permitted, such as for non-extension-fields.
@@ -199,6 +199,8 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 			// diagnostic can be overridden by a later one, probably using
 			// diagnostic tags.
 		)
+	} else {
+		legalizeValue(p, def.Span(), ast.ExprAny{}, def.Value(), tag.In())
 	}
 
 	if sig := def.Signature(); !sig.IsZero() {

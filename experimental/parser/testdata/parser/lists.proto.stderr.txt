@@ -37,7 +37,6 @@ error: unexpected array expression in option setting value
 19 | option foo = [1, 2];
    |              ^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected array expression in option setting value
   --> testdata/parser/lists.proto:20:14
@@ -45,7 +44,6 @@ error: unexpected array expression in option setting value
 20 | option foo = [1, 2 3];
    |              ^^^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected integer literal in array expression
   --> testdata/parser/lists.proto:20:20
@@ -65,7 +63,6 @@ error: unexpected array expression in option setting value
 21 | option foo = [1, 2,, 3];
    |              ^^^^^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected extra `,` in array expression
   --> testdata/parser/lists.proto:21:20
@@ -87,7 +84,6 @@ error: unexpected array expression in option setting value
 22 | option foo = [1, 2,, 3,];
    |              ^^^^^^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected extra `,` in array expression
   --> testdata/parser/lists.proto:22:20
@@ -120,7 +116,6 @@ error: unexpected array expression in option setting value
 23 | option foo = [,1 2,, 3,];
    |              ^^^^^^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected leading `,` in array expression
   --> testdata/parser/lists.proto:23:15
@@ -177,7 +172,6 @@ error: unexpected array expression in option setting value
 24 | option foo = [1; 2; 3];
    |              ^^^^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected `;` in array expression
   --> testdata/parser/lists.proto:24:16
@@ -197,7 +191,6 @@ error: unexpected array expression in option setting value
 25 | option foo = [a {}];
    |              ^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected message expression in array expression
   --> testdata/parser/lists.proto:25:17

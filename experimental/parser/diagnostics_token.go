@@ -79,7 +79,7 @@ type errImpureString struct {
 
 // Diagnose implements [report.Diagnose].
 func (e errImpureString) Diagnose(d *report.Diagnostic) {
-	text, _ := e.lit.AsString()
+	text := e.lit.AsString().Text()
 	quote := e.lit.Text()[0]
 	d.Apply(
 		report.Message("non-canonical string literal %s", e.where.String()),

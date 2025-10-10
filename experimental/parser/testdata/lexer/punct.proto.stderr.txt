@@ -1,10 +1,4 @@
 error: unrecognized token
-  --> testdata/lexer/punct.proto:2:1
-   |
- 2 | ! @ # $ % ^ & * + _
-   | ^
-
-error: unrecognized token
   --> testdata/lexer/punct.proto:2:3
    |
  2 | ! @ # $ % ^ & * + _
@@ -23,12 +17,6 @@ error: unrecognized token
    |       ^
 
 error: unrecognized token
-  --> testdata/lexer/punct.proto:2:9
-   |
- 2 | ! @ # $ % ^ & * + _
-   |         ^
-
-error: unrecognized token
   --> testdata/lexer/punct.proto:2:11
    |
  2 | ! @ # $ % ^ & * + _
@@ -40,16 +28,4 @@ error: unrecognized token
  2 | ! @ # $ % ^ & * + _
    |             ^
 
-error: unrecognized token
-  --> testdata/lexer/punct.proto:2:15
-   |
- 2 | ! @ # $ % ^ & * + _
-   |               ^
-
-error: unrecognized token
-  --> testdata/lexer/punct.proto:2:17
-   |
- 2 | ! @ # $ % ^ & * + _
-   |                 ^
-
-encountered 9 errors
+encountered 5 errors

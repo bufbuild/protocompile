@@ -213,6 +213,18 @@ func (c *Cursor) Peek() Token {
 	return cursor.Next()
 }
 
+// PeekPrev returns the previous token in the sequence, if there is one.
+// This automatically skips past skippable tokens.
+//
+// Returns the zero token if this cursor is at the start of the stream.
+func (c *Cursor) PeekPrev() Token {
+	if c == nil {
+		return Zero
+	}
+	cursor := *c
+	return cursor.Prev()
+}
+
 // Next returns the next token in the sequence, and advances the cursor.
 func (c *Cursor) Next() Token {
 	for {

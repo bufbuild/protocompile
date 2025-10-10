@@ -27,7 +27,7 @@ import (
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
 func IsFloat(tok token.Token) bool {
-	return IsFloatText(tok.Text())
+	return tok.AsNumber().IsFloat()
 }
 
 // IsFloatText checks whether or not the given number text is intended to be
@@ -311,7 +311,7 @@ var kwToNoun = []Noun{
 	keyword.Dot:      Dot,
 	keyword.Slash:    Slash,
 	keyword.Colon:    Colon,
-	keyword.Equals:   Equals,
+	keyword.Eq:       Equals,
 	keyword.Minus:    Minus,
 	keyword.Parens:   Parens,
 	keyword.Brackets: Brackets,

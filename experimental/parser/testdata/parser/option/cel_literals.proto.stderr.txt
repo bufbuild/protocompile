@@ -1,0 +1,49 @@
+error: unrecognized prefix for string literal
+  --> testdata/parser/option/cel_literals.proto:24:8
+  help: delete it
+   |
+24 | -     r: r"""x""",
+24 | +     r: """x""",
+   |
+
+error: unrecognized prefix for string literal
+  --> testdata/parser/option/cel_literals.proto:25:8
+  help: delete it
+   |
+25 | -     b: br"""x""",
+25 | +     b: """x""",
+   |
+
+error: unrecognized prefix for string literal
+  --> testdata/parser/option/cel_literals.proto:26:8
+  help: delete it
+   |
+26 | -     b: bR'''x''',
+26 | +     b: '''x''',
+   |
+
+error: unrecognized prefix for string literal
+  --> testdata/parser/option/cel_literals.proto:29:8
+  help: delete it
+   |
+29 | -     k: r"x",
+29 | +     k: "x",
+   |
+
+error: unrecognized prefix for string literal
+  --> testdata/parser/option/cel_literals.proto:30:8
+  help: delete it
+   |
+30 | -     j: b"",
+30 | +     j: "",
+   |
+
+error: implicitly-concatenated string has incompatible prefix
+  --> testdata/parser/option/cel_literals.proto:32:12
+   |
+32 |     x: r"" b"""""",
+   |        -   ^
+   |        |
+   |        must match this prefix
+
+encountered 6 errors

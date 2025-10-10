@@ -48,7 +48,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 	case 0:
 		if where.Subject() == taxa.Array || where.Subject() == taxa.Dict {
 			switch next.Keyword() {
-			case keyword.Equals: // Allow equals signs, which are usually a mistake.
+			case keyword.Eq: // Allow equals signs, which are usually a mistake.
 				p.Errorf("unexpected `=` in expression").Apply(
 					report.Snippet(next),
 					justify(p.Stream(), next.Span(), "replace this with an `:`", justified{
@@ -65,7 +65,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 					Value: parseExprInfix(p, c, where, ast.ExprAny{}, prec+1),
 				}).AsAny()
 
-			case keyword.Braces, keyword.Angles, keyword.Brackets:
+			case keyword.Braces, keyword.Less, keyword.Brackets:
 				// This is for colon-less, array or dict-valued fields.
 				if next.IsLeaf() {
 					break
@@ -163,28 +163,40 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()
 
-	case slicesx.Among(next.Keyword(), keyword.Braces, keyword.Angles, keyword.Brackets):
+	case slicesx.Among(next.Keyword(), keyword.Braces, keyword.Less, keyword.Brackets):
 		body := c.Next()
 		in := taxa.Dict
-		if next.Keyword() == keyword.Brackets {
+		if body.Keyword() == keyword.Brackets {
 			in = taxa.Array
+		}
+
+		// Due to wanting to not have <...> be a token tree by default in the
+		// lexer, we need to perform rather complicated parsing here to handle
+		// <a: b> syntax messages. (ugh)
+		angles := body.Keyword() == keyword.Less
+		children := c
+		if !angles {
+			children = body.Children()
 		}
 
 		elems := delimited[ast.ExprAny]{
 			p:    p,
-			c:    body.Children(),
+			c:    children,
 			what: taxa.DictField,
 			in:   in,
 
 			delims:   []keyword.Keyword{keyword.Comma, keyword.Semi},
 			required: false,
-			exhaust:  true,
+			exhaust:  !angles,
 			trailing: true,
 			parse: func(c *token.Cursor) (ast.ExprAny, bool) {
 				expr := parseExpr(p, c, in.In())
 				return expr, !expr.IsZero()
 			},
 			start: canStartExpr,
+			stop: func(t token.Token) bool {
+				return angles && t.Keyword() == keyword.Greater
+			},
 		}
 
 		if in == taxa.Array {
@@ -213,6 +225,14 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 
 			dict.Elements().AppendComma(field, comma)
 		}
+
+		// If this is a pair of angle brackets, we need to fuse them.
+		if angles {
+			if c.Peek().Keyword() == keyword.Greater {
+				token.Fuse(body, c.Next())
+			}
+		}
+
 		return dict.AsAny()
 
 	default:

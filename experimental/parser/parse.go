@@ -43,6 +43,8 @@ func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 
 		lex(ctx, errs)
 		parse(ctx, errs)
+
+		defer ctx.Stream().Freeze()
 	})
 
 	ok = true

@@ -16,7 +16,7 @@
 14		Space		Unknown		608:609		014:001		"\n"
 15		Ident		Syntax		609:615		015:001		"syntax"
 16		Space		Unknown		615:616		015:007		" "
-17		Punct		Equals		616:617		015:008		"="
+17		Punct		Eq		616:617		015:008		"="
 18		Space		Unknown		617:618		015:009		" "
 19		String		Unknown		618:626		015:010		"\"proto2\""		string:"proto2"
 20		Punct		Semi		626:627		015:018		";"

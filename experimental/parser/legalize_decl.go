@@ -148,7 +148,8 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 
 		case ast.ExprKindLiteral:
 			lit := expr.AsLiteral()
-			if name, ok := lit.AsString(); ok {
+			if str := lit.AsString(); !str.IsZero() {
+				name := str.Text()
 				if in == taxa.Extensions {
 					p.Error(errUnexpected{
 						what:  expr,
@@ -190,7 +191,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 					break
 				}
 
-				if !lit.IsPureString() {
+				if !str.IsPure() {
 					p.Warn(errImpureString{lit.Token, in.In()})
 				}
 

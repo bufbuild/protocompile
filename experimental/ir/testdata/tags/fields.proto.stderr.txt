@@ -1,3 +1,9 @@
+error: unexpected range expression in message field tag
+  --> testdata/tags/fields.proto:60:25
+   |
+60 |     optional int32 m3 = 1 to 2;
+   |                         ^^^^^^
+
 error: unexpected `:` after definition
   --> testdata/tags/fields.proto:61:26
    |
@@ -294,4 +300,4 @@ error: cannot find `a` in this scope
    |
    = help: the full name of this scope is `test.M`
 
-encountered 33 errors
+encountered 34 errors

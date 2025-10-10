@@ -52,13 +52,13 @@ func (w *walker) walk() {
 
 	c.syntax = syntax.Proto2
 	if syn := w.AST().Syntax(); !syn.IsZero() {
-		unquoted, ok := syn.Value().AsLiteral().AsString()
-		if !ok {
-			unquoted = syn.Value().Span().Text()
+		text := syn.Value().Span().Text()
+		if unquoted := syn.Value().AsLiteral().AsString(); !unquoted.IsZero() {
+			text = unquoted.Text()
 		}
 
 		// NOTE: This matches fallback behavior in parser/legalize_file.go.
-		c.syntax = syntax.Lookup(unquoted)
+		c.syntax = syntax.Lookup(text)
 		if c.syntax == syntax.Unknown {
 			if syn.IsEdition() {
 				// If they wrote edition = "garbage" they probably want *an*
@@ -193,7 +193,7 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 				if id := v.AsPath().AsIdent(); !id.IsZero() {
 					name = id.Text()
 				} else {
-					name, _ = v.AsLiteral().AsString()
+					name = v.AsLiteral().AsString().Text()
 				}
 
 				ty.raw.reservedNames = append(ty.raw.reservedNames, rawReservedName{

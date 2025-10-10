@@ -16,11 +16,13 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -71,12 +73,12 @@ func legalizeOptionEntry(p *parser, opt ast.Option, decl report.Span) {
 			report.Snippet(decl),
 		)
 	} else {
-		legalizeOptionValue(p, decl, ast.ExprAny{}, opt.Value)
+		legalizeValue(p, decl, ast.ExprAny{}, opt.Value, taxa.OptionValue.In())
 	}
 }
 
-// legalizeOptionValue conservatively legalizes an option value.
-func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.ExprAny) {
+// legalizeValue conservatively legalizes a def's value.
+func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.ExprAny, where taxa.Place) {
 	// TODO: Some diagnostics emitted by this function must be suppressed by type
 	// checking, which generates more precise diagnostics.
 
@@ -87,7 +89,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 
 	switch value.Kind() {
 	case ast.ExprKindLiteral:
-		// All literals are allowed.
+		legalizeLiteral(p, value.AsLiteral())
 	case ast.ExprKindPath:
 		// Qualified paths are allowed, since we want to diagnose them once we
 		// have symbol lookup information so that we can suggest a proper
@@ -99,10 +101,10 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 	case ast.ExprKindArray:
 		array := value.AsArray().Elements()
 		switch {
-		case parent.IsZero():
+		case parent.IsZero() && where.Subject() == taxa.OptionValue:
 			err := p.Error(errUnexpected{
 				what:  value,
-				where: taxa.OptionValue.In(),
+				where: where,
 			}).Apply(
 				report.Notef("%ss can only appear inside of %ss", taxa.Array, taxa.Dict),
 			)
@@ -131,7 +133,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 				fallthrough
 			default:
 				// TODO: generate a suggestion for this.
-				err.Apply(report.Helpf("break this %s into one per element", taxa.Option))
+				// err.Apply(report.Helpf("break this %s into one per element", taxa.Option))
 			}
 
 		case parent.Kind() == ast.ExprKindArray:
@@ -142,7 +144,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 
 		default:
 			for e := range seq.Values(array) {
-				legalizeOptionValue(p, decl, value, e)
+				legalizeValue(p, decl, value, e, where)
 			}
 
 			if parent.Kind() == ast.ExprKindField && array.Len() == 0 {
@@ -187,8 +189,7 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 			want := taxa.NewSet(taxa.FieldName, taxa.ExtensionName, taxa.TypeURL)
 			switch kv.Key().Kind() {
 			case ast.ExprKindLiteral:
-				// Literals are allowed here, as they are in textproto; they
-				// are diagnosed in a later stage.
+				legalizeLiteral(p, kv.Key().AsLiteral())
 
 			case ast.ExprKindPath:
 				path := kv.Key().AsPath()
@@ -276,12 +277,117 @@ func legalizeOptionValue(p *parser, decl report.Span, parent ast.ExprAny, value 
 				}
 			}
 
-			legalizeOptionValue(p, decl, kv.AsAny(), kv.Value())
+			legalizeValue(p, decl, kv.AsAny(), kv.Value(), where)
 		}
 	default:
-		p.Error(errUnexpected{
-			what:  value,
-			where: taxa.OptionValue.In(),
-		})
+		p.Error(errUnexpected{what: value, where: where})
+	}
+}
+
+// legalizeLiteral conservatively legalizes a literal.
+func legalizeLiteral(p *parser, value ast.ExprLiteral) {
+	switch value.Kind() {
+	case token.Number:
+		n := value.AsNumber()
+		if !n.IsValid() {
+			return
+		}
+
+		what := taxa.Int
+		if n.IsFloat() {
+			what = taxa.Float
+		}
+
+		base := n.Base()
+		var validBase bool
+		switch base {
+		case 2:
+			validBase = false
+		case 8:
+			validBase = n.Prefix().Text() == "0"
+		case 10:
+			validBase = true
+		case 16:
+			validBase = what == taxa.Int
+		}
+
+		// Diagnose against number literals we currently accept but which are not
+		// part of Protobuf.
+		if !validBase {
+			d := p.Errorf("unsupported base for %s", what)
+			if what == taxa.Int {
+				switch base {
+				case 2:
+					d.Apply(
+						report.SuggestEdits(value, "use a hexadecimal literal instead", report.Edit{
+							Start:   0,
+							End:     len(value.Text()),
+							Replace: fmt.Sprintf("%#.0x%s", n.Value(), n.Suffix().Text()),
+						}),
+						report.Notef("Protobuf does not support binary literals"),
+					)
+					return
+
+				case 8:
+					d.Apply(
+						report.SuggestEdits(value, "remove the `o`", report.Edit{Start: 1, End: 2}),
+						report.Notef("octal literals are prefixed with `0`, not `0o`"),
+					)
+					return
+				}
+			}
+
+			var name string
+			switch base {
+			case 2:
+				name = "binary"
+			case 8:
+				name = "octal"
+			case 16:
+				name = "hexadecimal"
+			}
+
+			d.Apply(
+				report.Snippet(value),
+				report.Notef("Protobuf does not support %s %s", name, what),
+			)
+			return
+		}
+
+		if suffix := n.Suffix(); suffix.Text() != "" {
+			p.Errorf("unrecognized suffix for %s", what).Apply(
+				report.SuggestEdits(suffix, "delete it", report.Edit{
+					Start: 0,
+					End:   len(suffix.Text()),
+				}),
+			)
+			return
+		}
+
+		if n.HasSeparators() {
+			p.Errorf("%s contains underscores", what).Apply(
+				report.SuggestEdits(value, "remove these underscores", report.Edit{
+					Start:   0,
+					End:     len(value.Text()),
+					Replace: strings.ReplaceAll(value.Text(), "_", ""),
+				}),
+				report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
+			)
+			return
+		}
+
+	case token.String:
+		s := value.AsString()
+		if sigil := s.Prefix(); sigil.Text() != "" {
+			p.Errorf("unrecognized prefix for %s", taxa.String).Apply(
+				report.SuggestEdits(sigil, "delete it", report.Edit{
+					Start: 0,
+					End:   len(sigil.Text()),
+				}),
+			)
+		}
+		// NOTE: we do not need to legalize triple-quoted strings:
+		// """a""" is just "" "a" "" without whitespace, which have equivalent
+		// contents.
 	}
 }

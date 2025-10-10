@@ -10,7 +10,6 @@ error: unexpected array expression in option setting value
 22 | option (test.any) = [1, 2, 3];
    |                     ^^^^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected array expression in option setting value
   --> testdata/parser/expr.proto:44:21
@@ -18,7 +17,6 @@ error: unexpected array expression in option setting value
 44 | option (test.bad) = [1: 2];
    |                     ^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: unexpected integer literal in message expression
   --> testdata/parser/expr.proto:45:22

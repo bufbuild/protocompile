@@ -17,10 +17,10 @@ package token
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 	"unicode"
 
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -263,62 +263,6 @@ func (t Token) Prev() Token {
 	return c.Prev()
 }
 
-// SetValue sets the associated literal value with a token. The token must be
-// of the appropriate kind ([Number] or [String]) for the literal.
-//
-// Panics if the given token is zero, or if the token is natural and the stream
-// is frozen.
-//
-// Note: this function wants to be a method of [Token], but cannot because it
-// is generic.
-func SetValue[T Value](token Token, value T) {
-	if token.IsZero() {
-		panic(fmt.Sprintf("protocompile/token: passed zero token to SetValue: %s", token))
-	}
-
-	var wantKind Kind
-	switch any(value).(type) {
-	case uint64, float64, *big.Int:
-		wantKind = Number
-	case string:
-		wantKind = String
-	}
-
-	if token.Kind() != wantKind {
-		panic(fmt.Sprintf("protocompile/token: passed token of invalid kind to SetValue: %s", token))
-	}
-
-	stream := token.Context().Stream()
-	if token.nat() != nil && stream.frozen {
-		panic("protocompile/token: attempted to mutate frozen stream")
-	}
-
-	if stream.literals == nil {
-		stream.literals = map[ID]any{}
-	}
-	stream.literals[token.id] = value
-}
-
-// ClearValue clears the associated literal value of a token.
-//
-// Panics if the given token is zero, or if the token is natural and the stream
-// is frozen.
-//
-// Note: this function wants to be a method of [Token], but is not for symmetry
-// with [SetValue].
-func ClearValue(token Token) {
-	if token.IsZero() {
-		panic(fmt.Sprintf("protocompile/token: passed zero token to ClearValue: %s", token))
-	}
-
-	stream := token.Context().Stream()
-	if token.nat() != nil && stream.frozen {
-		panic("protocompile/token: attempted to mutate frozen stream")
-	}
-
-	delete(stream.literals, token.id)
-}
-
 // Fuse marks a pair of tokens as their respective open and close.
 //
 // If open or close are synthetic or not currently a leaf, have different
@@ -402,119 +346,36 @@ func (t Token) Name() string {
 	return t.Text()
 }
 
-// AsInt converts this token into an unsigned integer if it is an integer token.
-// Returns 0, false if it is not an integer or the result would overflow a uint64.
-func (t Token) AsInt() (uint64, bool) {
+// AsNumber returns number information for this token.
+func (t Token) AsNumber() NumberToken {
 	if t.Kind() != Number {
-		return 0, false
+		return NumberToken{}
 	}
 
-	// Check if this number has already been parsed for us.
-	vAny, present := t.Context().Stream().literals[t.id]
-	if v, ok := vAny.(uint64); present && ok {
-		return v, true
+	nt := NumberToken{
+		withContext: t.withContext,
+		token:       t.ID(),
 	}
-
-	// Otherwise, it's a base 10 integer.
-	v, err := strconv.ParseUint(t.Text(), 10, 64)
-	return v, err == nil
+	if meta, ok := t.Context().Stream().meta[t.id].(*tokenmeta.Number); ok {
+		nt.meta = meta
+	}
+	return nt
 }
 
-// AsBigInt converts this token into a big integer if it is an integer token.
-// Returns nil if it is not an integer.
-func (t Token) AsBigInt() *big.Int {
-	if t.Kind() != Number {
-		return nil
-	}
-
-	// Check if this is a big integer.
-	vAny, present := t.Context().Stream().literals[t.id]
-	if v, ok := vAny.(*big.Int); present && ok {
-		return v
-	}
-
-	// Otherwise, fall back to AsInt.
-	v, ok := t.AsInt()
-	if !ok {
-		return nil
-	}
-
-	n := new(big.Int)
-	n.SetUint64(v)
-	return n
-}
-
-// AsFloat converts this token into float if it is a numeric token. If the value is
-// not precisely representable as a float64, it is clamped to an infinity or
-// rounded (ties-to-even).
-//
-// This function does not handle the special non-finite values inf and nan.
-//
-// Otherwise, returns 0.0, false.
-func (t Token) AsFloat() (float64, bool) {
-	if t.Kind() != Number {
-		return 0, false
-	}
-
-	// Check if this number has already been parsed for us.
-	vAny, present := t.Context().Stream().literals[t.id]
-	if v, ok := vAny.(float64); present && ok {
-		return v, true
-	}
-	if v, ok := vAny.(uint64); present && ok {
-		return float64(v), true
-	}
-	if v, ok := vAny.(*big.Int); present && ok {
-		f, _ := v.Float64()
-		return f, true
-	}
-
-	// Otherwise, it's an base 10 integer.
-	v, err := strconv.ParseUint(t.Text(), 10, 64)
-	return float64(v), err == nil
-}
-
-// AsString converts this token into a Go string if it is in fact a string literal token.
-//
-// Otherwise, returns "", false.
-func (t Token) AsString() (string, bool) {
+// AsNumber returns string information for this token.
+func (t Token) AsString() StringToken {
 	if t.Kind() != String {
-		return "", false
+		return StringToken{}
 	}
 
-	// Synthetic strings don't have quotes around them and don't
-	// contain escapes.
-	if synth := t.synth(); synth != nil {
-		return synth.text, true
+	st := StringToken{
+		withContext: t.withContext,
+		token:       t.ID(),
 	}
-
-	// Check if there's an unescaped version of this string.
-	v, present := t.Context().Stream().literals[t.id]
-	if unescaped, ok := v.(string); present && ok {
-		return unescaped, true
+	if meta, ok := t.Context().Stream().meta[t.id].(*tokenmeta.String); ok {
+		st.meta = meta
 	}
-
-	// If it's not in the map, that means this is a single
-	// leaf string whose quotes we can just pull of off the
-	// token, after removing the quotes.
-	text := t.Text()
-	if len(text) < 2 {
-		// Some kind of invalid, unterminated string token.
-		return "", true
-	}
-	return text[1 : len(text)-1], true
-}
-
-// IsPureString returns whether this token was parsed from a string literal
-// that did not need post-processing after being parsed.
-//
-// Returns false for synthetic tokens.
-func (t Token) IsPureString() bool {
-	if t.IsSynthetic() || t.Kind() != String {
-		return false
-	}
-	_, present := t.Context().Stream().literals[t.id]
-	return !present
+	return st
 }
 
 // String implements [strings.Stringer].
