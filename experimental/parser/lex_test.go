@@ -60,7 +60,7 @@ func TestLexer(t *testing.T) {
 			count++
 
 			sp := tok.Span()
-			start := ctx.Stream().Location(sp.Start, report.Terminal)
+			start := ctx.Stream().Location(sp.Start, report.TermWidth)
 			fmt.Fprintf(
 				&tsv, "%v\t\t%v\t\t%#v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
 				int32(tok.ID())-1,

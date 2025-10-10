@@ -28,7 +28,7 @@ import (
 
 // LengthUnit represents units of measurement for the length of a string.
 //
-// The most commonly used [LengthUnit] in protocompile is [Terminal], which
+// The most commonly used [LengthUnit] in protocompile is [TermWidth], which
 // approximates columns in a terminal emulator. This takes into account the
 // Unicode width of runes, and tabstops. The rune A is one column wide, the rune
 // 貓 is two columns wide, and the multi-rune emoji presentation sequence 🐈‍⬛ is
@@ -39,10 +39,10 @@ import (
 type LengthUnit int
 
 const (
-	Bytes    LengthUnit = iota + 1 // The length in UTF-8 code units (bytes).
-	UTF16                          // The length in UTF-16 code units (uint16s).
-	Runes                          // The length in UTF-32 code units (runes).
-	Terminal                       // The length in approximate terminal columns.
+	ByteLength  LengthUnit = iota + 1 // The length in UTF-8 code units (bytes).
+	UTF16Length                       // The length in UTF-16 code units (uint16s).
+	RuneLength                        // The length in UTF-32 code units (runes).
+	TermWidth                         // The length in approximate terminal columns.
 )
 
 // Spanner is any type with a [Span].
@@ -132,12 +132,12 @@ func (s Span) Len() int {
 
 // StartLoc returns the start location for this span.
 func (s Span) StartLoc() Location {
-	return s.Location(s.Start, Terminal)
+	return s.Location(s.Start, TermWidth)
 }
 
 // EndLoc returns the end location for this span.
 func (s Span) EndLoc() Location {
-	return s.Location(s.End, Terminal)
+	return s.Location(s.End, TermWidth)
 }
 
 // Span implements [Spanner].
@@ -385,17 +385,17 @@ func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Locati
 	chunk := f.Text()[f.lines[line]:offset]
 	var column int
 	switch units {
-	case Runes:
+	case RuneLength:
 		for range chunk {
 			column++
 		}
-	case Bytes:
+	case ByteLength:
 		column = len(chunk)
-	case UTF16:
+	case UTF16Length:
 		for _, r := range chunk {
 			column += utf16.RuneLen(r)
 		}
-	case Terminal:
+	case TermWidth:
 		column = stringWidth(0, chunk, allowNonPrint, nil)
 	}
 
