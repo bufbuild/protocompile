@@ -30,6 +30,74 @@ error: unexpected `required`
    = help: required fields are only permitted in proto2; even then, their use is
            strongly discouraged
 
+error: encountered unmatched `{` delimiter
+  --> testdata/options/validate/presence.proto:39:12
+   |
+39 | extend Foo {
+   |            ^ expected a closing `}`
+
+error: unexpected `<...>` in message extension block
+  --> testdata/options/validate/presence.proto:41:1
+   |
+41 | / <<<<<<< HEAD
+42 | | }
+43 | | =======
+44 | | }
+45 | | >>>>>>> mcy/editions-validation
+   | \_______^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+
+error: encountered unmatched `<` delimiter
+  --> testdata/options/validate/presence.proto:41:7
+   |
+41 | <<<<<<< HEAD
+   |       ^ expected a closing `>`
+42 | }
+43 | =======
+44 | }
+   | - closed by this instead
+45 | >>>>>>> mcy/editions-validation
+   | - help: perhaps it was meant to match this?
+
+error: encountered unmatched `}` delimiter
+  --> testdata/options/validate/presence.proto:42:1
+   |
+42 | }
+   | ^ expected a closing `{`
+
+error: missing name in message field
+  --> testdata/options/validate/presence.proto:45:9
+   |
+45 | >>>>>>> mcy/editions-validation
+   |         ^^^^^^^^^^^^^^^^^^^^^^^
+
+error: unexpected `/` in path in message field
+  --> testdata/options/validate/presence.proto:45:12
+   |
+45 | >>>>>>> mcy/editions-validation
+   |            ^ help: replace this with a `.`
+
+error: unexpected `-` in definition
+  --> testdata/options/validate/presence.proto:45:21
+   |
+45 | >>>>>>> mcy/editions-validation
+   |                     ^ expected `=`
+   |
+  help: consider inserting a `=`
+   |
+45 | >>>>>>> mcy/editions = -validation
+   |                     +++
+
+error: unexpected unrecognized token after definition
+  --> testdata/options/validate/presence.proto:46:1
+   |
+46 |
+   | ^ expected `;`
+   |
+  help: consider inserting a `;`
+   |
+39 | extend Foo; {
+   |           +
+
 error: cannot set `LEGACY_REQUIRED` at the file level
   --> testdata/options/validate/presence.proto:19:34
    |
@@ -101,4 +169,4 @@ error: expected singular field, found extension
    = help: `field_presence` cannot be set on extensions
    = help: all singular extensions have explicit presence
 
-encountered 9 errors and 1 warning
+encountered 17 errors and 1 warning
