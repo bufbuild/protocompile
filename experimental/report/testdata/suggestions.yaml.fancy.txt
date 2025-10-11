@@ -63,6 +63,6 @@ error: delete this method
    |
  7 | -   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
  8 | - }
- 7 | +   r}
+ 7 | +   }
 
 encountered 4 errors and 1 warning

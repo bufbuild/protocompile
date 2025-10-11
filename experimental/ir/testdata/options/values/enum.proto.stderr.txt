@@ -2,12 +2,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/enum.proto:37:41
    |
 37 |     e: [1.0, true, "foo", inf, nan, {}, [], 0 to 1]
-   |        --------------------------------------------
-   |         |                               ^^
+   |        ---------------------------------^^---------
    |         |                               |
-   |         ...within this array expression |
-   |                                         |
-   |                                         cannot nest this array expression...
+   |         ...within this array expression cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/enum.proto:37:45

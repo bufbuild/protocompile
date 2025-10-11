@@ -2,47 +2,47 @@
 ⟨blu⟩  --> foo.proto:3:9
 ⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.red⟩^^^^^^^ ⟨b.red⟩foo
+⟨blu⟩   |         ⟨b.red⟩^^^^^^^ ⟨b.red⟩foo
 ⟨blu⟩ 4 | ⟨reset⟩
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩---- ⟨b.blu⟩bar
+⟨blu⟩   |         ⟨b.blu⟩---- ⟨b.blu⟩bar
 ⟨blu⟩   |
 ⟨blu⟩  ::: bar.proto:3:9
 ⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz2;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩------- ⟨b.blu⟩baz
+⟨blu⟩   |         ⟨b.blu⟩------- ⟨b.blu⟩baz
 ⟨reset⟩
 ⟨b.red⟩error: two files with page break
 ⟨blu⟩  --> foo.proto:3:9
 ⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.red⟩^^^^^^^ ⟨b.red⟩foo
+⟨blu⟩   |         ⟨b.red⟩^^^^^^^ ⟨b.red⟩foo
 ⟨blu⟩   |
 ⟨blu⟩  ::: foo.proto:5:9
 ⟨blu⟩   |
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩---- ⟨b.blu⟩bar
+⟨blu⟩   |         ⟨b.blu⟩---- ⟨b.blu⟩bar
 ⟨blu⟩   |
 ⟨blu⟩  ::: bar.proto:3:9
 ⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz2;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩------- ⟨b.blu⟩baz
+⟨blu⟩   |         ⟨b.blu⟩------- ⟨b.blu⟩baz
 ⟨reset⟩
 ⟨b.red⟩error: three files
 ⟨blu⟩  --> foo.proto:3:9
 ⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.red⟩^^^^^^^ ⟨b.red⟩foo
+⟨blu⟩   |         ⟨b.red⟩^^^^^^^ ⟨b.red⟩foo
 ⟨blu⟩   |
 ⟨blu⟩  ::: bar.proto:3:9
 ⟨blu⟩   |
 ⟨blu⟩ 3 | ⟨reset⟩package abc.xyz2;
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩------- ⟨b.blu⟩baz
+⟨blu⟩   |         ⟨b.blu⟩------- ⟨b.blu⟩baz
 ⟨blu⟩   |
 ⟨blu⟩  ::: foo.proto:5:9
 ⟨blu⟩   |
 ⟨blu⟩ 5 | ⟨reset⟩message Blah {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.blu⟩---- ⟨b.blu⟩bar
+⟨blu⟩   |         ⟨b.blu⟩---- ⟨b.blu⟩bar
 ⟨reset⟩
 ⟨b.red⟩encountered 3 errors
 ⟨reset⟩

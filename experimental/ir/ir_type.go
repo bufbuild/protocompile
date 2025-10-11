@@ -381,7 +381,7 @@ func (t Type) Ranges(number int32) iter.Seq[TagRange] {
 		}
 
 		entry := t.raw.rangesByNumber.Get(number)
-		for _, raw := range entry.Values {
+		for _, raw := range entry.Value {
 			if !yield(TagRange{t.withContext, raw}) {
 				return
 			}
