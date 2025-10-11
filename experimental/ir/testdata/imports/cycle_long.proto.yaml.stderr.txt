@@ -1,0 +1,37 @@
+error: detected cyclic import while importing "b1.proto"
+  --> a1.proto:4:1
+   |
+ 4 | import "b1.proto";
+   | ^^^^^^^^^^^^^^^^^^ imported here
+   |
+  ::: b1.proto:4:1
+   |
+ 4 | import "c1.proto";
+   | ------------------ ...which imports "c1.proto"...
+   |
+  ::: c1.proto:4:1
+   |
+ 4 | import "d1.proto";
+   | ------------------ ...which imports "d1.proto"...
+   |
+  ::: a1.proto:5:1
+   |
+ 5 | import "b2.proto";
+   | ------------------ ...which imports "b2.proto"...
+   |
+  ::: b2.proto:4:1
+   |
+ 4 | import "c2.proto";
+   | ------------------ ...which imports "c2.proto"...
+   |
+  ::: c2.proto:4:1
+   |
+ 4 | import "d2.proto";
+   | ------------------ ...which imports "d2.proto"...
+   |
+  ::: d2.proto:4:1
+   |
+ 4 | import "b1.proto";
+   | ------------------ ...which imports "b1.proto", completing the cycle
+
+encountered 1 error

@@ -162,16 +162,18 @@ func Run[T any](ctx context.Context, e *Executor, queries ...Query[T]) ([]Result
 		tasks = append(tasks, task)
 	}
 	for n := len(tasks); n > 0; n = len(tasks) {
-		task := tasks[n-1]
+		node := tasks[n-1]
 		tasks = tasks[:n-1]
-		if _, ok := dedup[task]; ok {
+		if _, ok := dedup[node]; ok {
 			continue
 		}
-		for dep := range task.deps {
+		node.deps.Range(func(depAny any, _ any) bool {
+			dep := depAny.(*task) //nolint:errcheck
 			tasks = append(tasks, dep)
-		}
-		dedup[task] = struct{}{}
-		report.Diagnostics = append(report.Diagnostics, task.report.Diagnostics...)
+			return true
+		})
+		dedup[node] = struct{}{}
+		report.Diagnostics = append(report.Diagnostics, node.report.Diagnostics...)
 	}
 	report.Canonicalize()
 

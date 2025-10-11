@@ -1,0 +1,19 @@
+error: detected cyclic import while importing "foo/v1/bar.proto"
+  --> foo/v1/foo.proto:4:1
+   |
+ 4 | import "foo/v1/bar.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^ imported here
+   |
+  ::: foo/v1/foo.proto:5:1
+   |
+ 5 | import "foo/v2/foo.proto";
+   | -------------------------- ...which imports "foo/v2/foo.proto"...
+   |
+  ::: foo/v2/foo.proto:4:1
+   |
+ 4 | import "foo/v1/bar.proto";
+   | --------------------------
+   |  |
+   |  ...which imports "foo/v1/bar.proto", completing the cycle
+
+encountered 1 error
