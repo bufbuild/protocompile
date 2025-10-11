@@ -18,9 +18,10 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/interval"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNesting(t *testing.T) {
@@ -71,6 +72,8 @@ func TestNesting(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
 			var nesting interval.Nesting[int, string]
 			for _, r := range test.ranges {
 				nesting.Insert(r.start, r.end, r.value)
