@@ -55,7 +55,8 @@ error: cannot use `CORD` on an extension field
   --> testdata/options/validate/ctype_2023.proto:30:5
    |
 30 |     string x = 5 [ctype = CORD];
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |                           ---- `CORD` set here
+   |     ^^^^^^^^^^^^^^^^^^^^^^----^^
+   |                            |
+   |                            `CORD` set here
 
 encountered 2 errors and 3 warnings

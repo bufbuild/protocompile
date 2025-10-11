@@ -42,6 +42,17 @@ func Transform[S ~[]E, E, U any](s S, f func(E) U) []U {
 	return out
 }
 
+// Pointers returns an iterator over pointers to values in s.
+func Pointers[S ~[]E, E any](s S) iter.Seq2[int, *E] {
+	return func(yield func(int, *E) bool) {
+		for i := range s {
+			if !yield(i, &s[i]) {
+				return
+			}
+		}
+	}
+}
+
 // PartitionFunc returns an iterator of the largest substrings of s of equal
 // elements.
 //

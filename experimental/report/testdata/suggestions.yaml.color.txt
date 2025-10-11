@@ -17,7 +17,7 @@
 ⟨blu⟩  --> foo.proto:5:9
 ⟨blu⟩   |
 ⟨blu⟩ 5 | ⟨reset⟩service Foo {
-⟨blu⟩   | ⟨reset⟩⟨reset⟩    ⟨b.ylw⟩^^^ ⟨b.ylw⟩
+⟨blu⟩   |         ⟨b.ylw⟩^^^
 ⟨blu⟩   |
 ⟨blu⟩  help: change the name to `FooService`
   ⟨blu⟩ |
@@ -28,7 +28,7 @@
 ⟨blu⟩  --> foo.proto:6:31
 ⟨blu⟩   |
 ⟨blu⟩ 6 | ⟨reset⟩  rpc Get(GetRequest) returns GetResponse
-⟨blu⟩   | ⟨reset⟩⟨reset⟩                          ⟨b.red⟩^^^^^^^^^^^ ⟨b.red⟩
+⟨blu⟩   |                               ⟨b.red⟩^^^^^^^^^^^
 ⟨blu⟩   |
 ⟨blu⟩  help: add `(...)` around the type
   ⟨blu⟩ |
@@ -39,7 +39,7 @@
 ⟨blu⟩  --> foo.proto:7:45
 ⟨blu⟩   |
 ⟨blu⟩ 7 | ⟨reset⟩  rpc Put(PutRequest) returns (PutResponse) [foo = bar];
-⟨blu⟩   | ⟨reset⟩⟨reset⟩                                        ⟨b.red⟩^^^^^^^^^^^
+⟨blu⟩   |                                             ⟨b.red⟩^^^^^^^^^^^
 ⟨blu⟩   |                                              ⟨b.red⟩|
 ⟨blu⟩   |                                              ⟨b.red⟩compact options not allowed here
 ⟨blu⟩   |
@@ -69,7 +69,7 @@
   ⟨blu⟩ |
 ⟨blu⟩ 7 | ⟨b.red⟩-⟨red⟩   rpc Put(PutRequest) returns (PutResponse) [foo = bar];
 ⟨blu⟩ 8 | ⟨b.red⟩-⟨red⟩ }
-⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩   r}
+⟨blu⟩ 7 | ⟨b.grn⟩+⟨grn⟩   }
 ⟨blu⟩   |
 ⟨reset⟩
 ⟨b.red⟩encountered 4 errors and 1 warning

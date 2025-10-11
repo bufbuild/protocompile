@@ -291,7 +291,9 @@ error: unexpected type name
   --> testdata/parser/def/ordering.proto:28:23
    |
 28 |     M x { /* ... */ } returns (T);
-   |                       ^^^^^^^ expected `optional`, `repeated`, or `required`
+   |                       ^^^^^^^
+   |                        |
+   |                        expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
@@ -476,7 +478,9 @@ error: unexpected type name
   --> testdata/parser/def/ordering.proto:33:23
    |
 33 |     M x { /* ... */ } returns T;
-   |                       ^^^^^^^ expected `optional`, `repeated`, or `required`
+   |                       ^^^^^^^
+   |                        |
+   |                        expected `optional`, `repeated`, or `required`
    |
   help: use the `optional` modifier
    |
@@ -562,7 +566,9 @@ error: unexpected tokens in message definition
   --> testdata/parser/def/ordering.proto:37:23
    |
 37 |     M x { /* ... */ } = 1;
-   |                       ^^^ expected identifier, `;`, `.`, `(...)`, or `{...}`
+   |                       ^^^
+   |                       |
+   |                       expected identifier, `;`, `.`, `(...)`, or `{...}`
 
 error: unexpected type name
   --> testdata/parser/def/ordering.proto:39:5

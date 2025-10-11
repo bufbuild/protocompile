@@ -116,6 +116,13 @@ func Take[S ~[]E, E any, I SliceIndex](s S, i I) (element E, ok bool) {
 	return element, true
 }
 
+// Fill writes v to every value of s.
+func Fill[S ~[]E, E any](s S, v E) {
+	for i := range s {
+		s[i] = v
+	}
+}
+
 // BoundsCheck performs a generic bounds check as efficiently as possible.
 //
 // This function assumes that len is the length of a slice, i.e, it is

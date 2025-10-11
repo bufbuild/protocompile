@@ -16,10 +16,11 @@ error: expected length-prefixed field
   --> testdata/options/validate/lazy_group.proto:20:5
    |
 20 |     optional group G1 = 1 [lazy = true] {};
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |              -----         ---- `lazy` set here
-   |               |
+   |     ^^^^^^^^^-----^^^^^^^^^----^^^^^^^^^^^
+   |               |             |
    |               groups are not length-prefixed
+   |                             |
+   |                             `lazy` set here
    |
    = help: `lazy` only makes sense for length-prefixed messages
 
@@ -27,10 +28,11 @@ warning: expected length-prefixed field
   --> testdata/options/validate/lazy_group.proto:21:5
    |
 21 |     optional group G2 = 2 [lazy = false] {};
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |              -----         ---- `lazy` set here
-   |               |
+   |     ^^^^^^^^^-----^^^^^^^^^----^^^^^^^^^^^^
+   |               |             |
    |               groups are not length-prefixed
+   |                             |
+   |                             `lazy` set here
    |
    = help: `lazy` only makes sense for length-prefixed messages
 

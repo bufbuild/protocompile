@@ -2,8 +2,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/bool.proto:41:31
    |
 41 |     x: [1, 1.0, inf, nan, {}, [], 0 to 1]
-   |        ---------------------------------- ...within this array expression
-   |                               ^^ cannot nest this array expression...
+   |        -----------------------^^--------- ...within this array expression
+   |                               |
+   |                               cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/bool.proto:41:35

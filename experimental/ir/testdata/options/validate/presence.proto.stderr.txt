@@ -59,8 +59,9 @@ error: expected singular field, found oneof member
    |
 25 | /     oneof o {
 26 | |         int32 z = 3 [features.field_presence = EXPLICIT];
-   | |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   | |                      ----------------------- `field_presence` set here
+   | |         ^^^^^^^^^^^^^-----------------------^^^^^^^^^^^^^
+   | |                       |
+   | |                       `field_presence` set here
 27 | |     }
    | \_____- defined in this oneof
    |
@@ -71,8 +72,11 @@ error: expected message type, found message type `buf.test.Foo`
   --> testdata/options/validate/presence.proto:31:5
    |
 31 |     Foo m = 5 [features.field_presence = IMPLICIT];
-   |     ^^^                                  -------- implicit presence set here
-   |     ---
+   |     ^^^                                  --------
+   |     ---                                   |
+   |                                           |
+   |                                           implicit presence set here
+   |
    = help: all message-typed fields explicit presence
 
 warning: required fields are deprecated
@@ -95,8 +99,9 @@ error: expected singular field, found extension
   --> testdata/options/validate/presence.proto:40:5
    |
 40 |     int32 e = 4 [features.field_presence = EXPLICIT];
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |                  ----------------------- `field_presence` set here
+   |     ^^^^^^^^^^^^^-----------------------^^^^^^^^^^^^^
+   |                   |
+   |                   `field_presence` set here
    |
    = help: `field_presence` cannot be set on extensions
    = help: all singular extensions have explicit presence

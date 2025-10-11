@@ -125,5 +125,5 @@ diagnostics:
         start: 38
         end: 153
         edits:
-          - start: 59
+          - start: 58
             end: 113

@@ -10,8 +10,9 @@ warning: cannot use `CORD` on an extension field
   --> testdata/options/validate/ctype_proto2.proto:30:5
    |
 30 |     optional string x = 5 [ctype = CORD];
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   |                                    ---- `CORD` set here
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^----^^
+   |                                     |
+   |                                     `CORD` set here
    |
    = help: this becomes a hard error in Edition 2023
 

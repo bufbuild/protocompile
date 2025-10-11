@@ -22,10 +22,11 @@ error: nested array expressions are not allowed
   --> testdata/options/values/string.proto:30:37
    |
 30 |     s: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
-   |        ----------------------------------------
-   |         |                           ^^ cannot nest this array expression...
-   |         |
+   |        -----------------------------^^---------
+   |         |                           |
    |         ...within this array expression
+   |                                     |
+   |                                     cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/string.proto:30:41
@@ -37,10 +38,11 @@ error: nested array expressions are not allowed
   --> testdata/options/values/string.proto:31:37
    |
 31 |     b: [1, 1.0, true, inf, nan, {}, [], 0 to 1]
-   |        ----------------------------------------
-   |         |                           ^^ cannot nest this array expression...
-   |         |
+   |        -----------------------------^^---------
+   |         |                           |
    |         ...within this array expression
+   |                                     |
+   |                                     cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/string.proto:31:41
