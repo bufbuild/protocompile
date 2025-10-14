@@ -22,6 +22,7 @@ error: import path must not contain `.`, `..`, or repeated separators
    |
  4 | - import "nested\\path.proto";
  4 | + import "nested/path.proto";
+   |
 
 warning: import path appears to begin with the Windows drive prefix `C:`
   --> main.proto:5:8
@@ -72,5 +73,6 @@ error: import path must not contain `.`, `..`, or repeated separators
    |
  6 | - import "C:\\MyFiles\\foo.proto";
  6 | + import "C:/MyFiles/foo.proto";
+   |
 
 encountered 5 errors and 2 warnings

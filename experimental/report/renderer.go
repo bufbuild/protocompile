@@ -30,6 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/interval"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -87,6 +88,7 @@ func (r Renderer) RenderString(report *Report) (text string, errorCount, warning
 }
 
 func (r *renderer) render(report *Report) (errorCount, warningCount int, err error) {
+
 	for _, diagnostic := range report.Diagnostics {
 		if !r.ShowRemarks && diagnostic.level == Remark {
 			continue
@@ -141,8 +143,11 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		// renderer bugs.
 		defer func() {
 			if panicked := recover(); panicked != nil {
+				proto := report.ToProto()
+				json, _ := protojson.MarshalOptions{Multiline: true, Indent: " "}.Marshal(proto)
+
 				stack := strings.Join(d.debug[:min(report.Tracing, len(d.debug))], "\n")
-				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%s", panicked, stack))
+				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%sreport: %s", panicked, stack, json))
 			}
 		}()
 	}

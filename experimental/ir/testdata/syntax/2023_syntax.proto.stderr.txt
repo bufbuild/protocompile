@@ -7,6 +7,7 @@ error: editions must use the `edition` keyword
    |
 16 | - syntax = 2023;
 16 | + edition = 2023;
+   |
 
 error: the value of a `syntax` declaration must be a string literal
   --> testdata/syntax/2023_syntax.proto:16:10

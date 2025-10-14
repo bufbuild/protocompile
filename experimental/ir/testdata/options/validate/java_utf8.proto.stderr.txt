@@ -7,5 +7,6 @@ error: cannot set `java_string_check_utf8` in editions mode
    |
 19 | - option java_string_check_utf8 = true;
 19 | + option features.(pb.java).utf8_validation = VERIFY;
+   |
 
 encountered 1 error

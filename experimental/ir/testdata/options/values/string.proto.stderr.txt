@@ -7,6 +7,7 @@ warning: non-printable character in string literal
    |
 24 | -     s: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
 24 | +     s: ["", "foo", "foo bar" 'baz', '🐈\u200d⬛', "\xff"]
+   |
 
 warning: non-printable character in string literal
   --> testdata/options/values/string.proto:25:40
@@ -17,6 +18,7 @@ warning: non-printable character in string literal
    |
 25 | -     b: ["", "foo", "foo bar" 'baz', '🐈<U+200D>⬛', "\xff"]
 25 | +     b: ["", "foo", "foo bar" 'baz', '🐈\u200d⬛', "\xff"]
+   |
 
 error: nested array expressions are not allowed
   --> testdata/options/values/string.proto:30:37

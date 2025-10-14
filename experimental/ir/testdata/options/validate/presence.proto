@@ -38,8 +38,4 @@ message Foo {
 
 extend Foo {
     int32 e = 4 [features.field_presence = EXPLICIT];
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> mcy/editions-validation

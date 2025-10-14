@@ -48,6 +48,7 @@ warning: singleton range can be simplified
    |
 26 | -     extensions 2, 3 to 3, 5 to max;
 26 | +     extensions 2, 3, 5 to max;
+   |
 
 error: overlapping field number ranges
   --> testdata/extend/overlap.proto:26:27
