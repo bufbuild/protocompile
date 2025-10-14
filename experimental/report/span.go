@@ -22,7 +22,27 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+	"unicode/utf16"
 	"unicode/utf8"
+)
+
+// LengthUnit represents units of measurement for the length of a string.
+//
+// The most commonly used [LengthUnit] in protocompile is [TermWidth], which
+// approximates columns in a terminal emulator. This takes into account the
+// Unicode width of runes, and tabstops. The rune A is one column wide, the rune
+// 貓 is two columns wide, and the multi-rune emoji presentation sequence 🐈‍⬛ is
+// also two columns wide.
+//
+// Other units of length can be used to cope with the needs of other rendering
+// contexts, such as the Language Server Protocol.
+type LengthUnit int
+
+const (
+	ByteLength  LengthUnit = iota + 1 // The length in UTF-8 code units (bytes).
+	UTF16Length                       // The length in UTF-16 code units (uint16s).
+	RuneLength                        // The length in UTF-32 code units (runes).
+	TermWidth                         // The length in approximate terminal columns.
 )
 
 // Spanner is any type with a [Span].
@@ -112,12 +132,12 @@ func (s Span) Len() int {
 
 // StartLoc returns the start location for this span.
 func (s Span) StartLoc() Location {
-	return s.Location(s.Start)
+	return s.Location(s.Start, TermWidth)
 }
 
 // EndLoc returns the end location for this span.
 func (s Span) EndLoc() Location {
-	return s.Location(s.End)
+	return s.Location(s.End, TermWidth)
 }
 
 // Span implements [Spanner].
@@ -232,11 +252,8 @@ type Location struct {
 
 	// The line and column for this location, 1-indexed.
 	//
-	// Note that Column is not Offset with the length of all
-	// previous lines subtracted off; it takes into account the
-	// Unicode width. The rune A is one column wide, the rune
-	// 貓 is two columns wide, and the multi-rune emoji presentation
-	// sequence 🐈‍⬛ is also two columns wide.
+	// The units of measurement for column depend on the [LengthUnit] used when
+	// constructing it.
 	//
 	// Because these are 1-indexed, a zero Line can be used as a sentinel.
 	Line, Column int
@@ -290,12 +307,12 @@ func (f *File) Text() string {
 // byte offset.
 //
 // This operation is O(log n).
-func (f *File) Location(offset int) Location {
+func (f *File) Location(offset int, units LengthUnit) Location {
 	if f == nil && offset == 0 {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
-	return f.location(offset, true)
+	return f.location(offset, units, true)
 }
 
 // Indentation calculates the indentation some offset.
@@ -336,7 +353,7 @@ func (f *File) EOF() Span {
 	return f.Span(eof+1, eof+1)
 }
 
-func (f *File) location(offset int, allowNonPrint bool) Location {
+func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Location {
 	// Compute the prefix sum on-demand.
 	f.once.Do(func() {
 		var next int
@@ -365,7 +382,23 @@ func (f *File) location(offset int, allowNonPrint bool) Location {
 		line--
 	}
 
-	column := stringWidth(0, f.Text()[f.lines[line]:offset], allowNonPrint, nil)
+	chunk := f.Text()[f.lines[line]:offset]
+	var column int
+	switch units {
+	case RuneLength:
+		for range chunk {
+			column++
+		}
+	case ByteLength:
+		column = len(chunk)
+	case UTF16Length:
+		for _, r := range chunk {
+			column += utf16.RuneLen(r)
+		}
+	case TermWidth:
+		column = stringWidth(0, chunk, allowNonPrint, nil)
+	}
+
 	return Location{
 		Offset: offset,
 		Line:   line + 1,

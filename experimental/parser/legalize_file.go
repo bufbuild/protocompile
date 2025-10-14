@@ -133,8 +133,8 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	var name string
 	switch expr.Kind() {
 	case ast.ExprKindLiteral:
-		if text, ok := expr.AsLiteral().AsString(); ok {
-			name = text
+		if text := expr.AsLiteral().AsString(); !text.IsZero() {
+			name = text.Text()
 			break
 		}
 
@@ -217,7 +217,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 					report.Edit{Start: span.Len(), End: span.Len(), Replace: `"`},
 				),
 			)
-		} else if !lit.IsZero() && !lit.IsPureString() {
+		} else if str := lit.AsString(); !str.IsZero() && !str.IsPure() {
 			p.Warn(errImpureString{lit.Token, in.In()})
 		}
 	}
@@ -306,12 +306,11 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 	expr := decl.ImportPath()
 	switch expr.Kind() {
 	case ast.ExprKindLiteral:
-		lit := expr.AsLiteral()
-		if file, ok := lit.AsString(); ok {
-			if !expr.AsLiteral().IsPureString() {
+		if lit := expr.AsLiteral().AsString(); !lit.IsZero() {
+			if !lit.IsPure() {
 				// Only warn for cases where the import is alphanumeric.
-				if isOrdinaryFilePath.MatchString(file) {
-					p.Warn(errImpureString{lit.Token, in.In()})
+				if isOrdinaryFilePath.MatchString(lit.Text()) {
+					p.Warn(errImpureString{lit.Token(), in.In()})
 				}
 			}
 			break

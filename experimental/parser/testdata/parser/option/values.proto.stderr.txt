@@ -33,7 +33,6 @@ error: unexpected array expression in option setting value
 36 | option x = [1, 2];
    |            ^^^^^^
    = note: array expressions can only appear inside of message expressions
-   = help: break this option setting into one per element
 
 error: cannot use `<...>` for message expression here
   --> testdata/parser/option/values.proto:38:12
@@ -109,8 +108,9 @@ error: nested array expressions are not allowed
   --> testdata/parser/option/values.proto:64:18
    |
 64 |     x: [1, 2, 3, [4, 5, [6]]]
-   |        ---------------------- ...within this array expression
-   |                  ^^^^^^^^^^^ cannot nest this array expression...
+   |        ----------^^^^^^^^^^^- ...within this array expression
+   |                   |
+   |                   cannot nest this array expression...
 
 error: nested array expressions are not allowed
   --> testdata/parser/option/values.proto:66:9
@@ -221,7 +221,9 @@ error: unexpected array expression in message field value
   --> testdata/parser/option/values.proto:83:5
    |
 83 |     [x, y, z]: 42
-   |     ^^^^^^^^^ expected message field name, extension name, or `Any` type URL
+   |     ^^^^^^^^^
+   |      |
+   |      expected message field name, extension name, or `Any` type URL
 
 error: unexpected array expression in message field value
   --> testdata/parser/option/values.proto:84:5

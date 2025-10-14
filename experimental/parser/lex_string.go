@@ -20,6 +20,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -27,23 +28,30 @@ import (
 // lexString lexes a string starting at the current cursor.
 //
 // The cursor position should be just before the string's first quote character.
-func lexString(l *lexer) token.Token {
+func lexString(l *lexer, sigil string) {
 	start := l.cursor
-	quote := l.Pop()
+	l.cursor += len(sigil)
+
+	// Check for a triple quote.
+	quote := l.Rest()[:1]
+	if len(l.Rest()) >= 3 && l.Rest()[1:2] == quote && l.Rest()[2:3] == quote {
+		quote = l.Rest()[:3]
+	}
+	l.cursor += len(quote)
 
 	var (
 		buf                 strings.Builder
 		haveEsc, terminated bool
 	)
 	for !l.Done() {
-		if l.Peek() == quote {
-			l.Pop()
+		if strings.HasPrefix(l.Rest(), quote) {
+			l.cursor += len(quote)
 			terminated = true
 			break
 		}
 
 		cursor := l.cursor
-		sc := lexStringContent(quote, l)
+		sc := lexStringContent(l)
 		if sc.isEscape && !haveEsc {
 			// If we saw our first escape, spill the string into the buffer
 			// up to just before the escape.
@@ -62,31 +70,39 @@ func lexString(l *lexer) token.Token {
 
 	tok := l.Push(l.cursor-start, token.String)
 	if haveEsc {
-		token.SetValue(tok, buf.String())
+		meta := token.MutateMeta[tokenmeta.String](tok)
+		meta.Escaped = true
+		meta.Text = buf.String()
+	}
+
+	if sigil != "" {
+		token.MutateMeta[tokenmeta.String](tok).Prefix = uint32(len(sigil))
+	}
+
+	if len(quote) > 1 {
+		token.MutateMeta[tokenmeta.String](tok).Quote = uint32(len(quote))
 	}
 
 	if !terminated {
 		var note report.DiagnosticOption
 		if len(tok.Text()) == 1 {
 			note = report.Notef("this string consists of a single orphaned quote")
-		} else if strings.HasSuffix(tok.Text(), string(quote)) {
+		} else if strings.HasSuffix(tok.Text(), quote) && len(quote) == 1 {
 			note = report.SuggestEdits(
 				tok,
 				"this string appears to end in an escaped quote",
 				report.Edit{
 					Start: tok.Span().Len() - 2, End: tok.Span().Len(),
-					Replace: fmt.Sprintf(`\\%c%c`, quote, quote),
+					Replace: fmt.Sprintf(`\\%s%s`, quote, quote),
 				},
 			)
 		}
 
 		l.Errorf("unterminated string literal").Apply(
-			report.Snippetf(tok, "expected to be terminated by `%c`", quote),
+			report.Snippetf(tok, "expected to be terminated by `%s`", quote),
 			note,
 		)
 	}
-
-	return tok
 }
 
 type stringContent struct {
@@ -97,7 +113,7 @@ type stringContent struct {
 
 // lexStringContent lexes a single logical rune's worth of content for a quoted
 // string.
-func lexStringContent(_ rune, l *lexer) (sc stringContent) {
+func lexStringContent(l *lexer) (sc stringContent) {
 	start := l.cursor
 	r := l.Pop()
 

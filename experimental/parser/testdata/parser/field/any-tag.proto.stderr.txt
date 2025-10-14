@@ -1,0 +1,7 @@
+error: unexpected range expression in message field tag
+  --> testdata/parser/field/any-tag.proto:24:15
+   |
+24 |     int32 x = 10 to max;
+   |               ^^^^^^^^^
+
+encountered 1 error

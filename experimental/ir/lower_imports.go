@@ -54,11 +54,11 @@ func buildImports(f File, r *report.Report, importer Importer) {
 	dedup := make(intern.Map[ast.DeclImport], iterx.Count(f.AST().Imports()))
 
 	for i, imp := range iterx.Enumerate(f.AST().Imports()) {
-		path, ok := imp.ImportPath().AsLiteral().AsString()
-		if !ok {
+		lit := imp.ImportPath().AsLiteral().AsString()
+		if lit.IsZero() {
 			continue // Already legalized in parser.legalizeImport()
 		}
-		path = canonicalizeImportPath(path, r, imp)
+		path := canonicalizeImportPath(lit.Text(), r, imp)
 		if path == "" {
 			continue
 		}
@@ -143,20 +143,19 @@ func buildImports(f File, r *report.Report, importer Importer) {
 // diagnoseCycle generates a diagnostic for an import cycle, showing each
 // import contributing to the cycle in turn.
 func diagnoseCycle(r *report.Report, cycle *ErrCycle) {
-	path, _ := cycle.Cycle[0].ImportPath().AsLiteral().AsString()
+	path := cycle.Cycle[0].ImportPath().AsLiteral().AsString().Text()
 	err := r.Errorf("detected cyclic import while importing %q", path)
 
 	for i, imp := range cycle.Cycle {
 		var message string
-		path, ok := imp.ImportPath().AsLiteral().AsString()
-		if ok {
+		if path := imp.ImportPath().AsLiteral().AsString(); !path.IsZero() {
 			switch i {
 			case 0:
 				message = "imported here"
 			case len(cycle.Cycle) - 1:
-				message = fmt.Sprintf("...which imports %q, completing the cycle", path)
+				message = fmt.Sprintf("...which imports %q, completing the cycle", path.Text())
 			default:
-				message = fmt.Sprintf("...which imports %q...", path)
+				message = fmt.Sprintf("...which imports %q...", path.Text())
 			}
 		}
 		err.Apply(

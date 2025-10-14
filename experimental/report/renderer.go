@@ -29,6 +29,7 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/interval"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -194,14 +195,14 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 
 	locations := make([][2]Location, len(d.snippets))
 	for i, snip := range d.snippets {
-		locations[i][0] = snip.location(snip.Start, false)
+		locations[i][0] = snip.location(snip.Start, TermWidth, false)
 		if strings.HasSuffix(snip.Text(), "\n") {
 			// If the snippet ends in a newline, don't include the newline in the
 			// printed span.
-			locations[i][1] = snip.location(snip.End-1, false)
+			locations[i][1] = snip.location(snip.End-1, TermWidth, false)
 			locations[i][1].Column++
 		} else {
-			locations[i][1] = snip.location(snip.End, false)
+			locations[i][1] = snip.location(snip.End, TermWidth, false)
 		}
 	}
 
@@ -472,6 +473,8 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 	// Populate ancillary info for each line.
 	info := make([]lineInfo, len(lines))
 
+	nesting := new(interval.Nesting[int, *underline])
+
 	// First, lay out the multilines, and compute how wide the sidebar is.
 	for i := range w.multilines {
 		multi := &w.multilines[i]
@@ -539,67 +542,44 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 		// line, meaning that n can't really get out of hand for normal
 		// inputs.
 
-		level := Level(-1)
-		var sublines []bytes.Buffer
-		left := len(part)
-		for left > 0 {
-			for i := range part {
-				element := &part[i]
-				if element.subline != -1 {
-					continue
-				}
+		slices.SortStableFunc(part, cmpx.Key(func(ul underline) int { return -ul.Len() }))
+		nesting.Clear()
+		for _, ul := range slicesx.Pointers(part) {
+			nesting.Insert(ul.start, ul.end-1, ul)
+		}
 
-				// Find a buffer that can fit element.
-				var sub *bytes.Buffer
-				var j int
-				for j = range sublines {
-					if sublines[j].Len() <= element.start-1 {
-						sub = &sublines[j]
-						break
-					}
-				}
-
-				if sub == nil {
-					sublines = append(sublines, bytes.Buffer{})
-					sub = slicesx.LastPointer(sublines)
-					j = len(sublines) - 1
-				}
-
-				if sub.Len() < element.start-1 {
-					sub.WriteString(r.ss.reset)
-					for sub.Len() < element.start-1 {
-						sub.WriteByte(' ')
-					}
-				}
-
-				var b byte = '^'
-				if element.level == noteLevel {
-					b = '-'
-				} else if level == -1 {
-					level = element.level
-				}
-				for range element.Len() {
-					sub.WriteByte(b)
-				}
-
-				// Mark which subline this element got put onto.
-				element.subline = j
-				left--
+		var sublines [][]*underline
+		for set := range nesting.Sets() {
+			var subline []*underline
+			for entry := range set {
+				subline = append(subline, entry.Value)
 			}
+			slices.SortStableFunc(subline, cmpx.Key(func(ul *underline) int { return ul.start }))
+			sublines = append(sublines, subline)
 		}
 
 		// Convert the underlines into strings. Collect the rightmost underlines
 		// in a slice.
-		rightmost := make([]*underline, len(sublines))
-		for i := range part {
-			ul := &part[i]
-			rightmost := &rightmost[ul.subline]
-			if *rightmost == nil || ul.end > (*rightmost).end {
-				*rightmost = ul
-			}
-		}
+		rightmost := slicesx.Transform(sublines, func(subline []*underline) *underline {
+			var rightmost *underline
+			for _, ul := range subline {
+				if rightmost == nil {
+					rightmost = ul
+					continue
+				}
 
-		cur.underlines = make([]string, len(sublines))
+				if ul.end > rightmost.end {
+					rightmost = ul
+				}
+			}
+			return rightmost
+		})
+
+		sublineLens := slicesx.Transform(rightmost, func(ul *underline) int {
+			return ul.end
+		})
+
+		// Clear rightmost messages that will result in wrapping.
 		for i, ul := range rightmost {
 			if ul == nil {
 				continue
@@ -607,7 +587,7 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 
 			startCol := 4 +
 				int(math.Log10(float64(w.start+len(lines)))) + // Approximation.
-				len(sidebar) + sublines[i].Len()
+				len(sidebar) + ul.end
 
 			if stringWidth(startCol, ul.message, true, nil) > MaxMessageWidth {
 				// Move rightmost into the normal underlines, because it causes wrapping.
@@ -615,176 +595,219 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 			}
 		}
 
-		var sublineLens []int
-		for _, sub := range sublines {
-			sublineLens = append(sublineLens, sub.Len())
+		// *Now*, lay out the underlines, so that we can stick pipes on them.
+		// We will also need to add color later.
+		sublineBufs := make([][]byte, len(sublines))
+		for i, sub := range sublines {
+			buf := bytes.Repeat([]byte(" "), sublineLens[i])
+			for _, ul := range sub {
+				b := byte('^')
+				if ul.level == noteLevel {
+					b = '-'
+				}
+				slicesx.Fill(buf[ul.start-1:ul.end-1], b)
+			}
+			sublineBufs[i] = buf
 		}
 
-		// Now, do all the other messages, one per line. For each message, we also
-		// need to draw pipes (|) above each one to connect it to its underline.
+		// Reserve space for the above, which still need further processing.
+		cur.underlines = make([]string, len(sublines))
+
+		// Now, do all the other messages. We're going to split them such that
+		// no two messages overlap, using an interval nesting collection.
 		//
-		// This is slightly complicated, because there are two layers: the pipes, and
-		// whatever message goes on the pipes.
+		// For each message, we also need to draw pipes (|) above each one to
+		// connect it to its underline.
+		//
+		// This is slightly complicated, because there are two layers: the
+		// pipes, and whatever message goes on the pipes.
 		var rest []*underline
-		for i := range part {
-			ul := &part[i]
+		for _, ul := range slicesx.Pointers(part) {
 			if slices.Contains(rightmost, ul) || ul.message == "" {
 				continue
 			}
 			rest = append(rest, ul)
 		}
 
-		var buf []byte
-		for idx := range rest {
-			buf = buf[:0] // Clear the temp buffer.
+		slices.SortStableFunc(rest, cmpx.Key(func(ul *underline) int {
+			return len(ul.message)
+		}))
+		nesting.Clear()
+		for _, ul := range rest {
+			start := ul.start - 1
+			if ul.Len() > 3 {
+				start++ // Move the pipe a little forward for long underlines.
+			}
 
-			// First, lay out the pipes. Note that rest is not necessarily
-			// ordered from right to left, so we need to sort the pipes first.
-			// To deal with this, we make a copy of rest[idx:], sort it appropriately,
-			// and then lay things out.
-			//
-			// This is quadratic, but no one is going to put more than like, five snippets
-			// in a whole diagnostic, much less five snippets that share a line, so
-			// this shouldn't be an issue.
-			restSorted := slices.Clone(rest[idx:])
-			slices.SortFunc(restSorted, cmpx.Key(func(u *underline) int { return u.start }))
+			nesting.Insert(start, start+len(ul.message)-1, ul)
+		}
 
+		var messages [][]*underline
+		for set := range nesting.Sets() {
+			var s []*underline
+			for entry := range set {
+				s = append(s, entry.Value)
+			}
+			slices.SortStableFunc(s, cmpx.Key(func(ul *underline) int {
+				return ul.start
+			}))
+			messages = append(messages, s)
+		}
+		slices.SortStableFunc(messages, cmpx.Key(func(uls []*underline) int {
+			return uls[0].start
+		}))
+
+		var buf1, buf2 []byte
+		for i, line := range messages {
+			// Clear the temp buffers.
+			buf1 = buf1[:0]
+			buf2 = buf2[:0]
+
+			// First, lay out the pipes for this and all following lines.
 			var nonColorLen int
-			for _, ul := range restSorted {
-				col := ul.start - 1
-				if ul.Len() > 3 {
-					col++ // Move the pipe a little forward for long underlines.
-				}
+			for _, line := range messages[i:] {
+				for _, ul := range line {
+					col := ul.start - 1
+					if ul.Len() > 3 {
+						col++ // Move the pipe a little forward for long underlines.
+					}
 
-				for nonColorLen < col {
-					buf = append(buf, ' ')
-					nonColorLen++
-				}
+					for nonColorLen < col {
+						buf1 = append(buf1, ' ')
+						nonColorLen++
+					}
 
-				if nonColorLen == col {
-					// Two pipes may appear on the same column!
-					// This is why this is in a conditional.
-					buf = append(buf, r.ss.BoldForLevel(ul.level)...)
-					buf = append(buf, '|')
-					nonColorLen++
+					if nonColorLen == col {
+						// Two pipes may appear on the same column!
+						// This is why this is in a conditional. To record the
+						// level, rather than actually using a pipe, we use
+						// the value of level here.
+						buf1 = append(buf1, ^byte(ul.level))
+						nonColorLen++
 
-					if idx == 0 {
-						// Apply this pipe to all of the sublines. We use
-						// ^'|' to denote a note pipe.
-						for i := range sublines {
-							sub := &sublines[i]
-							for sub.Len() < col+1 {
-								sub.WriteByte(' ')
-							}
+						if i == 0 {
+							// Apply this pipe to all of the sublines.
+							for _, sub := range slicesx.Pointers(sublineBufs) {
+								for len(*sub) < col+1 {
+									*sub = append(*sub, ' ')
+								}
 
-							b := byte('|')
-							if ul.level == noteLevel {
-								b = ^b
-							}
-							if sub.Bytes()[col] == ' ' {
-								sub.Bytes()[col] = b
+								if (*sub)[col] == ' ' {
+									(*sub)[col] = ^byte(ul.level)
+								}
 							}
 						}
 					}
 				}
 			}
 
-			// Splat in the one with all the pipes in it as-is.
-			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
-
-			// Then, splat in the message. having two rows like this ensures that
-			// each message has one pipe directly above it.
-			if idx >= 0 {
-				ul := rest[idx]
-
-				actualStart := ul.start - 1
-				if ul.Len() > 3 {
-					actualStart++ // Move the pipe a little forward for long underlines.
+			// Insert the colors for the pipes.
+			buf2 = append(buf2, buf1...)
+			for i := 0; i < len(buf1); i++ {
+				b := buf1[i]
+				if b&0x80 == 0 {
+					continue
 				}
 
-				for _, other := range rest[idx:] {
-					if other.start <= ul.start {
-						actualStart += len(r.ss.BoldForLevel(ul.level))
-					}
-				}
-				for len(buf) < actualStart+len(ul.message)+1 {
-					buf = append(buf, ' ')
-				}
-
-				// Make sure we don't crop *part* of an escape. To do this, we look for
-				// the last ESC in the region we're going to replace. If it is not
-				// followed by an m, we need to insert that many spaces into buf to avoid
-				// overwriting it.
-				writeTo := buf[actualStart:][:len(ul.message)]
-				lastEsc := bytes.LastIndexByte(writeTo, 033)
-				if lastEsc != -1 && !bytes.ContainsRune(writeTo[lastEsc:], 'm') {
-					// If we got here, it means we're going to crop an escape if
-					// we don't do something about it.
-					spaceNeeded := len(writeTo) - lastEsc
-					for range spaceNeeded {
-						buf = append(buf, 0)
-					}
-					copy(buf[actualStart+lastEsc+spaceNeeded:], buf[actualStart+lastEsc:])
-				}
-
-				copy(buf[actualStart:], ul.message)
+				color := r.ss.BoldForLevel(Level(^b))
+				buf1[i] = '|'
+				buf1 = slices.Insert(buf1, i, []byte(color)...)
+				i += len(color)
 			}
-			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf), " "))
+
+			// Splat in the one with all the pipes in it as-is. Having two rows like
+			// this ensures that each message has one pipe directly above it.
+			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf1), " "))
+
+			// Then, splat in the messages for this line.
+			offset := 0
+			for _, ul := range line {
+				start := ul.start - 1 + offset
+				if ul.Len() > 3 {
+					start++ // Move the pipe a little forward for long underlines.
+				}
+
+				for len(buf2) < start+len(ul.message)+1 {
+					buf2 = append(buf2, ' ')
+				}
+
+				color := r.ss.BoldForLevel(ul.level)
+				copy(buf2[start:], ul.message)
+				buf2 = slices.Insert(buf2, start, []byte(color)...)
+				offset += len(color)
+			}
+
+			// Insert the colors for the pipes, again...
+			for i := 0; i < len(buf2); i++ {
+				b := buf2[i]
+				if b&0x80 == 0 {
+					continue
+				}
+
+				color := r.ss.BoldForLevel(Level(^b))
+				buf2[i] = '|'
+				buf2 = slices.Insert(buf2, i, []byte(color)...)
+				i += len(color)
+			}
+
+			cur.underlines = append(cur.underlines, strings.TrimRight(sidebar+string(buf2), " "))
 		}
 
-		// Finally, build the underlines.
-		var out strings.Builder
+		// Finally, finalize the underlines by coloring them!
 		for i, sub := range sublines {
-			out.WriteString(sidebar)
-			n := sublineLens[i]
-			prev := byte(' ')
-			writeByte := func(b byte) {
-				if prev != b {
-					switch b {
-					case '^', '|':
-						out.WriteString(r.ss.BoldForLevel(level))
-					case '-', ^byte('|'):
-						out.WriteString(r.ss.BoldForLevel(noteLevel))
-					case ' ':
-						out.WriteString(r.ss.reset)
-					}
-				}
+			buf := sublineBufs[i]
+			ul := rightmost[i]
 
-				if int8(b) < 0 {
-					b = ^b
-				}
-				out.WriteByte(b)
-				prev = b
-			}
-
-			for j, b := range sub.Bytes() {
-				writeByte(b)
-				if j == n+1 {
+			// Count the number of pipes that come before the end of the
+			// underlines.
+			pipes := 0
+			for i, b := range buf {
+				if ul != nil && ul.end <= i {
 					break
 				}
+				if b&0x80 != 0 {
+					pipes++
+				}
+			}
+
+			offset := 0
+			// First, just the underlines.
+			for _, ul := range sub {
+				color := r.ss.BoldForLevel(ul.level)
+				buf = slices.Insert(buf, ul.start-1+offset, []byte(color)...)
+				offset += len(color)
+			}
+
+			// Now, color the pipes.
+			for i := 0; i < len(buf); i++ {
+				b := buf[i]
+				if b&0x80 == 0 {
+					continue
+				}
+
+				color := r.ss.BoldForLevel(Level(^b))
+				buf[i] = '|'
+				buf = slices.Insert(buf, i, []byte(color)...)
+				i += len(color)
+
+				if pipes > 0 {
+					offset += len(color)
+				}
+				pipes--
 			}
 
 			// Append the message for this subline, if any.
-			ul := rightmost[i]
-			if ul != nil {
-				if sub.Len() == n {
-					out.WriteString(" ")
+			if ul != nil && ul.message != "" {
+				color := r.ss.BoldForLevel(ul.level)
+				end := ul.end + offset + len(color) + len(ul.message)
+				for len(buf) < end {
+					buf = append(buf, ' ')
 				}
-				out.WriteString(r.ss.BoldForLevel(ul.level))
-				out.WriteString(ul.message)
-
-				n += 1 + len(ul.message)
+				copy(buf[ul.end+offset:], color)
+				copy(buf[ul.end+offset+len(color):], ul.message)
 			}
 
-			if sub.Len() > n {
-				prev = ' '
-				for _, b := range sub.Bytes()[n:] {
-					writeByte(b)
-				}
-			}
-
-			cur.underlines[i] = out.String()
-			out.Reset()
+			cur.underlines[i] = sidebar + string(buf)
 		}
 	}
 

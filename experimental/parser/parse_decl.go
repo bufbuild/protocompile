@@ -207,7 +207,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			break
 		}
 		// This is definitely a field.
-		if next.Keyword() == keyword.Equals {
+		if next.Keyword() == keyword.Eq {
 			break
 		}
 
@@ -251,7 +251,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		return p.NewDeclImport(args).AsAny()
 
 	case keyword.Reserved, keyword.Extensions:
-		if next.Keyword() == keyword.Equals {
+		if next.Keyword() == keyword.Eq {
 			// If whatever follows the path is an =, we're going to assume this
 			// is trying to be a field.
 			break
