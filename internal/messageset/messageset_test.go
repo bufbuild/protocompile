@@ -13,7 +13,6 @@
 // limitations under the License.
 
 //go:build !protolegacy
-// +build !protolegacy
 
 package messageset
 
