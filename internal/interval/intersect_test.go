@@ -30,7 +30,7 @@ func TestInsert(t *testing.T) {
 		start, end int
 		value      string
 	}
-	type out = interval.Entry[int, string]
+	type out = interval.Entry[int, []string]
 
 	tests := []struct {
 		name   string

@@ -2,8 +2,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/float.proto:56:28
    |
 56 |     f32: ["foo", true, {}, [], 0 to 1]
-   |          ----------------------------- ...within this array expression
-   |                            ^^ cannot nest this array expression...
+   |          ------------------^^--------- ...within this array expression
+   |                            |
+   |                            cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/float.proto:56:32
@@ -15,8 +16,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/float.proto:57:28
    |
 57 |     f64: ["foo", true, {}, [], 0 to 1]
-   |          ----------------------------- ...within this array expression
-   |                            ^^ cannot nest this array expression...
+   |          ------------------^^--------- ...within this array expression
+   |                            |
+   |                            cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/float.proto:57:32
@@ -179,7 +181,9 @@ warning: floating-point literal rounds to infinity
   --> testdata/options/values/float.proto:53:20
    |
 53 |     f64: [1e1000, -1e1000],       // Snap to Infinity.
-   |                    ^^^^^^ this value is beyond the dynamic range of `double`
+   |                    ^^^^^^
+   |                     |
+   |                     this value is beyond the dynamic range of `double`
    |
   help: replace with `inf`
    |

@@ -2,12 +2,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:58:42
    |
 58 |     i1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         --------------------------------------------
-   |          |                               ^^
+   |         ---------------------------------^^---------
    |          |                               |
-   |          ...within this array expression |
-   |                                          |
-   |                                          cannot nest this array expression...
+   |          ...within this array expression cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/int64.proto:58:46
@@ -19,12 +16,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:59:42
    |
 59 |     i2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         --------------------------------------------
-   |          |                               ^^
+   |         ---------------------------------^^---------
    |          |                               |
-   |          ...within this array expression |
-   |                                          |
-   |                                          cannot nest this array expression...
+   |          ...within this array expression cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/int64.proto:59:46
@@ -36,12 +30,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:60:42
    |
 60 |     i3: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         --------------------------------------------
-   |          |                               ^^
+   |         ---------------------------------^^---------
    |          |                               |
-   |          ...within this array expression |
-   |                                          |
-   |                                          cannot nest this array expression...
+   |          ...within this array expression cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/int64.proto:60:46
@@ -53,12 +44,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:61:42
    |
 61 |     u1: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         --------------------------------------------
-   |          |                               ^^
+   |         ---------------------------------^^---------
    |          |                               |
-   |          ...within this array expression |
-   |                                          |
-   |                                          cannot nest this array expression...
+   |          ...within this array expression cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/int64.proto:61:46
@@ -70,12 +58,9 @@ error: nested array expressions are not allowed
   --> testdata/options/values/int64.proto:62:42
    |
 62 |     u2: [1.5, "foo", true, inf, nan, {}, [], 0 to 1]
-   |         --------------------------------------------
-   |          |                               ^^
+   |         ---------------------------------^^---------
    |          |                               |
-   |          ...within this array expression |
-   |                                          |
-   |                                          cannot nest this array expression...
+   |          ...within this array expression cannot nest this array expression...
 
 error: unexpected range expression in option setting value
   --> testdata/options/values/int64.proto:62:46

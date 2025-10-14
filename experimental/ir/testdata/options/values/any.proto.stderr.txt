@@ -74,9 +74,7 @@ error: mismatched types
 78 |         { [type.googleapis.com/buf.test.Foo]: 42 },
    |           ----------------------------------  ^^
    |            |                                  |
-   |            expected due to this               |
-   |                                               |
-   |                                               expected `buf.test.Foo`, found integer literal
+   |            expected due to this               expected `buf.test.Foo`, found integer literal
    |
    = note: expected: message type `buf.test.Foo`
               found: integer literal
