@@ -36,7 +36,6 @@ warning: singleton range can be simplified
    |
 26 | -     reserved 2, 3 to 3, 5 to 10;
 26 | +     reserved 2, 3, 5 to 10;
-   |
 
 error: overlapping field number ranges
   --> testdata/tags/reserved.proto:27:14
@@ -103,7 +102,6 @@ warning: singleton range can be simplified
    |
 38 | -     reserved 2, 3 to 3, 5 to 10;
 38 | +     reserved 2, 3, 5 to 10;
-   |
 
 error: overlapping enum value ranges
   --> testdata/tags/reserved.proto:39:14

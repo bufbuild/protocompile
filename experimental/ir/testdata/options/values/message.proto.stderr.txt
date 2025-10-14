@@ -8,7 +8,6 @@ error: cannot name extension field using `(...)` in message expression
    |
 25 | -     (buf.test.x) {}
 25 | +     [buf.test.x] {}
-   |
 
 error: unexpected absolute path in extension name
   --> testdata/options/values/message.proto:27:6
@@ -20,7 +19,6 @@ error: unexpected absolute path in extension name
    |
 27 | -     [.buf.test.x] {}
 27 | +     [buf.test.x] {}
-   |
 
 error: cannot name extension field using `(...)` in message expression
   --> testdata/options/values/message.proto:41:5
@@ -32,7 +30,6 @@ error: cannot name extension field using `(...)` in message expression
    |
 41 | -     (Foo.z): 1,
 41 | +     [Foo.z]: 1,
-   |
 
 error: unexpected absolute path in extension name
   --> testdata/options/values/message.proto:46:6
@@ -44,7 +41,6 @@ error: unexpected absolute path in extension name
    |
 46 | -     [.buf.test.Foo.z]: 3,
 46 | +     [buf.test.Foo.z]: 3,
-   |
 
 error: mismatched types
   --> testdata/options/values/message.proto:23:5
@@ -336,7 +332,6 @@ error: message extension `buf.test.Foo.z` referenced incorrectly
    |
 42 | -     ["Foo.z"]: 1,
 42 | +     [buf.test.Foo.z]: 1,
-   |
 
 error: message extension `buf.test.Foo.z` set multiple times
   --> testdata/options/values/message.proto:42:5
