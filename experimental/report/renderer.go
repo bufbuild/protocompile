@@ -25,12 +25,13 @@ import (
 	"strings"
 	"unicode"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 	"github.com/bufbuild/protocompile/internal/interval"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // Renderer configures a diagnostic rendering operation.
@@ -88,7 +89,6 @@ func (r Renderer) RenderString(report *Report) (text string, errorCount, warning
 }
 
 func (r *renderer) render(report *Report) (errorCount, warningCount int, err error) {
-
 	for _, diagnostic := range report.Diagnostics {
 		if !r.ShowRemarks && diagnostic.level == Remark {
 			continue
