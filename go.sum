@@ -1,7 +1,7 @@
 buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.9-20250109164928-1da0de137947.1 h1:EV1whtSWX8jVhER/QEc0TgnhFdQb/RJ1ExPadTl57A8=
 buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.9-20250109164928-1da0de137947.1/go.mod h1:Xp69QnwEDYhl1jj4o8Q3hAL5DjJSbr6TyZjU5/2POYU=
-github.com/bits-and-blooms/bitset v1.24.0 h1:H4x4TuulnokZKvHLfzVRTHJfFfnHEeSYJizujEZvmAM=
-github.com/bits-and-blooms/bitset v1.24.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.9-20240920164238-5a7b106cbb87.1 h1:DT6nm11o9VxAWQJdWWAxiQTpF5MhCQboSW5keeqQuJw=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.9-20240920164238-5a7b106cbb87.1/go.mod h1:aY3zbkNan5F+cGm9lITDP6oxJIwu0dn9KjJuJjWaHkg=
 github.com/bmatcuk/doublestar/v4 v4.9.1 h1:X8jg9rRZmJd4yRy7ZeNDRnM+T3ZfHv15JiBJ/avrEXE=
 github.com/bmatcuk/doublestar/v4 v4.9.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
