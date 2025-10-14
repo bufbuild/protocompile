@@ -1,9 +1,7 @@
 error: unterminated string literal
-  --> testdata/lexer/strings/unclosed1.proto:1:3
+  --> testdata/lexer/strings/unclosed1.proto:1:1
    |
  1 | """
-   |   ^ expected to be terminated by `"`
-   |
-   = note: this string consists of a single orphaned quote
+   | ^^^ expected to be terminated by `"""`
 
 encountered 1 error

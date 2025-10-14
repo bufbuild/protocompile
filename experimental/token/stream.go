@@ -47,9 +47,7 @@ type Stream struct {
 	nats   []nat
 	synths []synth
 
-	// This contains materialized literals for some tokens. For example, given
-	// a token with text 1.5, this map will map that token's ID to the float
-	// value 1.5.
+	// This contains materialized literals for some tokens.
 	//
 	// Not all literal tokens will have an entry here; only those that have
 	// uncommon representations, such as hex literals, floats, and strings with
@@ -60,9 +58,7 @@ type Stream struct {
 	// Specifically, the most common literals (decimal integers and simple
 	// quoted strings) do not generate entries in this map and thus do not
 	// contribute at-rest memory usage.
-	//
-	// All values in this map are string, uint64, or float64.
-	literals map[ID]any
+	meta map[ID]any
 
 	// If true, no further mutations (except for synthetic tokens) are
 	// permitted.
@@ -137,7 +133,9 @@ func (s *Stream) AssertEmpty() {
 // Freezing cannot be checked for or undone; callers must assume any token
 // stream they did not create has already been frozen.
 func (s *Stream) Freeze() {
-	s.frozen = true
+	if s != nil {
+		s.frozen = true
+	}
 }
 
 // Push mints the next token referring to a piece of the input source.

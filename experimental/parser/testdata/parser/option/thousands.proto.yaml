@@ -1,0 +1,27 @@
+decls:
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto3" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 1000000
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 64
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 262144
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 16777216
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 262144
+- def:
+    kind: KIND_OPTION
+    name.components: [{ ident: "x" }]
+    value.literal.int_value: 1000000

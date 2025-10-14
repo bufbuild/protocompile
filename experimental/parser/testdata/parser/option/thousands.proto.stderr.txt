@@ -1,54 +1,54 @@
 error: integer literal contains underscores
-  --> testdata/lexer/numbers/thousands.proto:1:1
+  --> testdata/parser/option/thousands.proto:19:12
   help: remove these underscores
    |
- 1 | - 1_000_000
- 1 | + 1000000
+19 | - option x = 1_000_000;
+19 | + option x = 1000000;
    |
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 error: unsupported base for integer literal
-  --> testdata/lexer/numbers/thousands.proto:2:1
+  --> testdata/parser/option/thousands.proto:20:12
   help: use a hexadecimal literal instead
    |
- 2 | - 0b1_000_000
- 2 | + 0x40
+20 | - option x = 0b1_000_000;
+20 | + option x = 0x1p+06;
    |
    = note: Protobuf does not support binary literals
 
 error: unsupported base for integer literal
-  --> testdata/lexer/numbers/thousands.proto:3:1
+  --> testdata/parser/option/thousands.proto:21:12
   help: remove the `o`
    |
- 3 | - 0o1_000_000
- 3 | + 01_000_000
+21 | - option x = 0o1_000_000;
+21 | + option x = 01_000_000;
    |
    = note: octal literals are prefixed with `0`, not `0o`
 
 error: integer literal contains underscores
-  --> testdata/lexer/numbers/thousands.proto:4:1
+  --> testdata/parser/option/thousands.proto:22:12
   help: remove these underscores
    |
- 4 | - 0x1_000_000
- 4 | + 0x1000000
+22 | - option x = 0x1_000_000;
+22 | + option x = 0x1000000;
    |
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 error: integer literal contains underscores
-  --> testdata/lexer/numbers/thousands.proto:5:1
+  --> testdata/parser/option/thousands.proto:23:12
   help: remove these underscores
    |
- 5 | - 01_000_000
- 5 | + 01000000
+23 | - option x = 01_000_000;
+23 | + option x = 01000000;
    |
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 
 error: floating-point literal contains underscores
-  --> testdata/lexer/numbers/thousands.proto:6:1
+  --> testdata/parser/option/thousands.proto:24:12
   help: remove these underscores
    |
- 6 | - 1_000_000.00
- 6 | + 1000000.00
+24 | - option x = 1_000_000.00;
+24 | + option x = 1000000.00;
    |
    = note: Protobuf does not support Go/Java/Rust-style thousands separators
 

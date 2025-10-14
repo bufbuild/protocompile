@@ -1,3 +1,9 @@
+error: unexpected range expression in enum value
+  --> testdata/tags/values.proto:50:10
+   |
+50 |     M3 = 1 to 2;
+   |          ^^^^^^
+
 error: unexpected `:` after definition
   --> testdata/tags/values.proto:51:11
    |
@@ -228,4 +234,4 @@ error: mismatched types
    = note: expected: scalar type `int32`
               found: enum type `test.E`
 
-encountered 27 errors
+encountered 28 errors

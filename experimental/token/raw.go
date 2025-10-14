@@ -186,6 +186,10 @@ func fuseImpl(diff int32, open, close *nat) {
 	}
 
 	compressKw := func(kw keyword.Keyword) int32 {
+		if kw == keyword.Less || kw == keyword.Greater {
+			kw = keyword.Angles
+		}
+
 		v := int32(kw - keyword.Parens)
 		if v >= 0 && v < 4 {
 			return v << keywordShift

@@ -1,0 +1,15 @@
+decls:
+- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto2" }
+- package.path.components: [{ ident: "test" }]
+- def:
+    kind: KIND_MESSAGE
+    name.components: [{ ident: "M" }]
+    body.decls:
+    - def:
+        type.generic:
+          path.components: [{ ident: "map" }]
+          args:
+          - path.components: [{ ident: "string" }]
+          - path.components: [{ ident: "string" }]
+          - path.components: [{ ident: "x1" }]
+        value.literal.int_value: 1

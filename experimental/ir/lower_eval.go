@@ -381,8 +381,8 @@ again:
 	case ast.ExprKindLiteral:
 		lit := key.AsLiteral()
 		if lit.Kind() == token.Number {
-			n, ok := lit.AsInt()
-			if ok && n < math.MaxInt32 {
+			n, exact := lit.AsNumber().Int()
+			if exact && n < math.MaxInt32 {
 				member = ty.MemberByNumber(int32(n))
 				if !member.IsZero() {
 					isNumber = true
@@ -393,7 +393,7 @@ again:
 			return Member{}
 		}
 
-		path, _ = lit.AsString()
+		path = lit.AsString().Text()
 		isString = true
 
 	default:
@@ -737,68 +737,69 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 
 	switch expr.Kind() {
 	case token.Number:
+		lit := expr.AsNumber()
 		// Handle floats first, since all number formats can be used as floats.
 		if scalar.IsFloat() {
-			if n, ok := expr.AsFloat(); ok {
-				// If the number contains no decimal point, check that it has no
-				// 0x prefix. Hex literals are not permitted for float-typed
-				// values, but we don't know that until here, much later than
-				// all the other base checks in the compiler.
-				text := expr.Text()
-				if !taxa.IsFloatText(text) && (strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X")) {
-					e.Errorf("unsupported base for %s", taxa.Float).Apply(
-						report.SuggestEdits(expr, "use a decimal literal instead", report.Edit{
-							Start: 0, End: len(text),
-							Replace: strconv.FormatFloat(n, 'g', 40, 64),
-						}),
-						report.Notef("Protobuf does not support hexadecimal %s", taxa.Float),
-					)
-				}
+			n, _ := lit.Float()
 
-				if !neg.IsZero() {
-					n = -n
-				}
-				if scalar == predeclared.Float32 {
-					// This will, among other things, snap n to Infinity or zero
-					// if it is in-range for float64 but not float32.
-					n = float64(float32(n))
-				}
+			// If the number contains no decimal point, check that it has no
+			// 0x prefix. Hex literals are not permitted for float-typed
+			// values, but we don't know that until here, much later than
+			// all the other base checks in the compiler.
+			text := expr.Text()
+			if !taxa.IsFloatText(text) && (strings.HasPrefix(text, "0x") || strings.HasPrefix(text, "0X")) {
+				e.Errorf("unsupported base for %s", taxa.Float).Apply(
+					report.SuggestEdits(expr, "use a decimal literal instead", report.Edit{
+						Start: 0, End: len(text),
+						Replace: strconv.FormatFloat(n, 'g', 40, 64),
+					}),
+					report.Notef("Protobuf does not support hexadecimal %s", taxa.Float),
+				)
+			}
 
-				// Emit a diagnostic if the value is snapped to infinity.
-				// TODO: Should we emit a diagnostic when rounding produces
-				// the value 0.0 but expr.Text() contains non-zero digits?
-				if math.IsInf(n, 0) {
-					d := e.Warnf("%s rounds to infinity", taxa.Float).Apply(
-						report.Snippetf(expr, "this value is beyond the dynamic range of `%s`", scalar),
-						report.SuggestEdits(expr, "replace with `inf`", report.Edit{
-							Start: 0, End: len(text),
-							Replace: "inf", // The sign is not part of the expression.
-						}),
-					)
+			if !neg.IsZero() {
+				n = -n
+			}
+			if scalar == predeclared.Float32 {
+				// This will, among other things, snap n to Infinity or zero
+				// if it is in-range for float64 but not float32.
+				n = float64(float32(n))
+			}
 
-					// If possible, show the power-of-10 exponent of the value.
-					f := new(big.Float)
-					if _, _, err := f.Parse(expr.Text(), 0); err == nil {
-						maxExp := 308
-						if scalar == predeclared.Float32 {
-							maxExp = 38
-						}
+			// Emit a diagnostic if the value is snapped to infinity.
+			// TODO: Should we emit a diagnostic when rounding produces
+			// the value 0.0 but expr.Text() contains non-zero digits?
+			if math.IsInf(n, 0) {
+				d := e.Warnf("%s rounds to infinity", taxa.Float).Apply(
+					report.Snippetf(expr, "this value is beyond the dynamic range of `%s`", scalar),
+					report.SuggestEdits(expr, "replace with `inf`", report.Edit{
+						Start: 0, End: len(text),
+						Replace: "inf", // The sign is not part of the expression.
+					}),
+				)
 
-						exp2 := f.MantExp(nil)                      // ~ log2 f
-						exp10 := int(float64(exp2) / math.Log2(10)) // log10 f = log2 f / log2 10
-						d.Apply(report.Notef(
-							"this value is of order 1e%d; `%s` can only represent around 1e%d",
-							exp10, scalar, maxExp))
+				// If possible, show the power-of-10 exponent of the value.
+				f := new(big.Float)
+				if _, _, err := f.Parse(expr.Text(), 0); err == nil {
+					maxExp := 308
+					if scalar == predeclared.Float32 {
+						maxExp = 38
 					}
+
+					exp2 := f.MantExp(nil)                      // ~ log2 f
+					exp10 := int(float64(exp2) / math.Log2(10)) // log10 f = log2 f / log2 10
+					d.Apply(report.Notef(
+						"this value is of order 1e%d; `%s` can only represent around 1e%d",
+						exp10, scalar, maxExp))
 				}
-
-				// 32-bit floats are stored as 64-bit floats; this conversion is
-				// lossless.
-				return rawValueBits(math.Float64bits(n)), true
 			}
+
+			// 32-bit floats are stored as 64-bit floats; this conversion is
+			// lossless.
+			return rawValueBits(math.Float64bits(n)), true
 		}
 
-		if n, ok := expr.AsInt(); ok {
+		if n, exact := lit.Int(); exact && !lit.IsFloat() {
 			switch args.memberNumber {
 			case enumNumber:
 				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
@@ -816,7 +817,9 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), !neg.IsZero(), n)
 		}
 
-		if n := expr.AsBigInt(); n != nil {
+		if !lit.IsFloat() {
+			n := lit.Value()
+
 			switch args.memberNumber {
 			case enumNumber:
 				return e.checkIntBounds(args, true, enumNumberBits, !neg.IsZero(), n)
@@ -833,10 +836,8 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 			return e.checkIntBounds(args, scalar.IsSigned(), scalar.Bits(), !neg.IsZero(), n)
 		}
 
-		if _, ok := expr.AsFloat(); ok {
-			e.Error(args.mismatch(taxa.Float))
-			return 0, false
-		}
+		e.Error(args.mismatch(taxa.Float))
+		return 0, false
 
 	case token.String:
 		if scalar != predeclared.String && scalar != predeclared.Bytes {
@@ -853,7 +854,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 			})
 		}
 
-		data, _ := expr.AsString()
+		data := expr.AsString().Text()
 		return newScalarBits(e.Context, data), true
 	}
 
@@ -883,8 +884,8 @@ func (e *evaluator) checkIntBounds(args evalArgs, signed bool, bits int, neg boo
 	switch n := got.(type) {
 	case uint64:
 		v = n
-	case *big.Int:
-		// We assume that a big.Int is always larger than a uint64.
+	case *big.Float:
+		// We assume that a big.Float is always larger than a uint64.
 		tooLarge = true
 	default:
 		panic("unreachable")

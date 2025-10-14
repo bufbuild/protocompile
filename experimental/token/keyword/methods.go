@@ -15,7 +15,7 @@
 package keyword
 
 // OpenClose returns the open and close brackets for the four bracket
-// keywords: [Parens], [Brackets], [Braces], and [Angles].
+// keywords: [Parens], [Brackets], and [Braces].
 func (k Keyword) OpenClose() (string, string, bool) {
 	switch k {
 	case Parens:
@@ -24,8 +24,6 @@ func (k Keyword) OpenClose() (string, string, bool) {
 		return "[", "]", true
 	case Braces:
 		return "{", "}", true
-	case Angles:
-		return "<", ">", true
 	default:
 		return "", "", false
 	}

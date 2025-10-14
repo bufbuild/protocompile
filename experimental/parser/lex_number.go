@@ -15,13 +15,15 @@
 package parser
 
 import (
-	"fmt"
+	"errors"
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -52,35 +54,75 @@ func lexNumber(l *lexer) token.Token {
 		base = 16
 	default:
 		if strings.HasPrefix(digits, "0") {
+			prefix = digits[:1]
 			base = 8
 			legacyOctal = true
 		} else {
+			prefix = ""
 			base = 10
 		}
 	}
 
-	what := taxa.Int
+	isFloat := taxa.IsFloatText(digits)
+	var hasExp bool
+	if isFloat {
+		switch base {
+		case 16:
+			hasExp = strings.ContainsAny(digits, "pP")
+		default:
+			hasExp = strings.ContainsAny(digits, "eE")
+		}
+	}
+
+	whole := digits
+	suffix := ""
+	// Peel a suffix off of digits consisting of characters not in the
+	// desired base.
+	idx := strings.LastIndexFunc(digits, func(r rune) bool {
+		// This check is quite janky. It will not split e.g. 1.1e1e1 correctly.
+		base := base
+		if hasExp {
+			base = 10
+			if strings.ContainsRune("+-eE", r) {
+				return false
+			}
+		}
+
+		return !strings.ContainsRune("_.", r) && parseDigit(r) >= base
+	})
+	if idx >= 0 {
+		digits = whole[:idx]
+		suffix = whole[idx:]
+	}
+
+	if prefix != "" {
+		token.MutateMeta[tokenmeta.Number](tok).Prefix = uint32(len(prefix))
+	}
+	if suffix != "" {
+		token.MutateMeta[tokenmeta.Number](tok).Prefix = uint32(len(suffix))
+	}
+
 	result, ok := parseInt(digits, base)
 	switch {
 	case !ok:
 		if !taxa.IsFloatText(digits) {
 			l.Error(errInvalidNumber{Token: tok})
-			// Need to set a value to avoid parse errors in Token.AsInt.
-			token.SetValue(tok, uint64(0))
+			token.MutateMeta[tokenmeta.Number](tok).SyntaxError = true
 			return tok
 		}
 
-		what = taxa.Float
 		if legacyOctal {
 			base = 10
 		}
 
+		meta := token.MutateMeta[tokenmeta.Number](tok)
+		meta.IsFloat = true
 		if base != 10 {
 			// TODO: We should return ErrInvalidBase here but that requires
 			// validating the syntax of the float to distinguish it from
 			// cases where we want tor return ErrInvalidNumber instead.
 			l.Error(errInvalidNumber{Token: tok})
-			token.SetValue(tok, math.NaN())
+			meta.SyntaxError = true
 			return tok
 		}
 
@@ -91,18 +133,34 @@ func lexNumber(l *lexer) token.Token {
 		// ParseFloat itself says it "returns the nearest floating-point
 		// number rounded using IEEE754 unbiased rounding", which is just a
 		// weird, non-standard way to say "ties-to-even".
-		value, err := strconv.ParseFloat(strings.ReplaceAll(digits, "_", ""), 64)
+		input := strings.ReplaceAll(digits, "_", "")
+		value, err := strconv.ParseFloat(input, 64)
+		if err != nil {
+			err = err.(*strconv.NumError).Err //nolint:errcheck // The strconv package guarantees this assertion.
+		}
 
-		//nolint:errcheck // The strconv package guarantees this assertion.
-		if err != nil && err.(*strconv.NumError).Err == strconv.ErrSyntax {
+		switch {
+		case errors.Is(err, strconv.ErrRange):
+			// Too precise, parse as big float.
+			value, _, err := new(big.Float).Parse(input, 0)
+			if err != nil {
+				l.Error(errInvalidNumber{Token: tok})
+				meta.SyntaxError = true
+			} else {
+				meta.Big = value
+			}
+
+		case errors.Is(err, strconv.ErrSyntax):
+
 			l.Error(errInvalidNumber{Token: tok})
-			token.SetValue(tok, math.NaN())
-		} else {
-			token.SetValue(tok, value)
+			meta.SyntaxError = true
+
+		default:
+			meta.Word = math.Float64bits(value)
 		}
 
 	case result.big != nil:
-		token.SetValue(tok, result.big)
+		token.MutateMeta[tokenmeta.Number](tok).Big = result.big
 
 	case base == 10 && !result.hasThousands:
 		// We explicitly do not call SetValue for the most common case of base
@@ -110,77 +168,12 @@ func lexNumber(l *lexer) token.Token {
 		// is a memory consumption optimization.
 
 	default:
-		token.SetValue(tok, result.small)
+		token.MutateMeta[tokenmeta.Number](tok).Word = result.small
 	}
 
-	var validBase bool
-	switch base {
-	case 2:
-		validBase = false
-	case 8:
-		validBase = legacyOctal
-	case 10:
-		validBase = true
-	case 16:
-		validBase = what == taxa.Int
+	if result.hasThousands {
+		token.MutateMeta[tokenmeta.Number](tok).ThousandsSep = true
 	}
-
-	if validBase {
-		if result.hasThousands {
-			span := tok.Span()
-			l.Errorf("%s contains underscores", what).Apply(
-				report.SuggestEdits(tok, "remove these underscores", report.Edit{
-					Start:   0,
-					End:     len(span.Text()),
-					Replace: strings.ReplaceAll(span.Text(), "_", ""),
-				}),
-				report.Notef("Protobuf does not support Go/Java/Rust-style thousands separators"),
-			)
-		}
-		return tok
-	}
-
-	// Diagnose against number literals we currently accept but which are not
-	// part of Protobuf.
-	err := l.Errorf("unsupported base for %s", what)
-
-	if what == taxa.Int {
-		switch base {
-		case 2:
-			if value := tok.AsBigInt(); value != nil {
-				err.Apply(
-					report.SuggestEdits(tok, "use a hexadecimal literal instead", report.Edit{
-						Start:   0,
-						End:     len(tok.Text()),
-						Replace: fmt.Sprintf("%#x", value),
-					}),
-					report.Notef("Protobuf does not support binary literals"),
-				)
-				return tok
-			}
-		case 8:
-			err.Apply(
-				report.SuggestEdits(tok, "remove the `o`", report.Edit{Start: 1, End: 2}),
-				report.Notef("octal literals are prefixed with `0`, not `0o`"),
-			)
-			return tok
-		}
-	}
-
-	var name string
-	switch base {
-	case 2:
-		name = "binary"
-	case 8:
-		name = "octal"
-	case 16:
-		name = "hexadecimal"
-	}
-
-	err.Apply(
-		report.Snippet(tok),
-		report.Notef("Protobuf does not support %s %s", name, what),
-	)
 
 	return tok
 }

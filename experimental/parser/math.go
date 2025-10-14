@@ -21,7 +21,7 @@ import (
 
 type parseIntResult struct {
 	small        uint64
-	big          *big.Int
+	big          *big.Float
 	hasThousands bool
 }
 
@@ -29,7 +29,7 @@ type parseIntResult struct {
 //
 // This function ignores any thousands separator underscores in digits.
 func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
-	var bigBase *big.Int
+	var bigBase, bigDigit *big.Float
 	for _, r := range digits {
 		if r == '_' {
 			result.hasThousands = true
@@ -50,15 +50,16 @@ func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
 				continue
 			}
 
-			// We overflowed, so we need to spill into a big.Int.
-			result.big = new(big.Int)
+			// We overflowed, so we need to spill into a big.Float.
+			result.big = new(big.Float)
 			result.big.SetUint64(result.small)
 
-			bigBase = big.NewInt(int64(base)) // Memoize converting the base.
+			bigBase = new(big.Float).SetUint64(uint64(base)) // Memoize converting the base.
+			bigDigit = new(big.Float)
 		}
 
 		result.big.Mul(result.big, bigBase)
-		result.big.Add(result.big, big.NewInt(int64(digit)))
+		result.big.Add(result.big, bigDigit.SetUint64(uint64(digit)))
 	}
 
 	return result, true

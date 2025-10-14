@@ -47,6 +47,7 @@ const (
 	RPC
 	Returns
 	To
+	In
 	Repeated
 	Optional
 	Required
@@ -72,6 +73,7 @@ const (
 	NAN
 	True
 	False
+	Null
 	Map
 	Max
 	Default
@@ -79,10 +81,23 @@ const (
 	Semi
 	Comma
 	Dot
-	Slash
 	Colon
-	Equals
+	Eq
+	Plus
 	Minus
+	Star
+	Slash
+	Percent
+	Bang
+	Ask
+	Less
+	Greater
+	LessEq
+	GreaterEq
+	EqEq
+	BangEq
+	AndAnd
+	OrOr
 	Parens
 	Brackets
 	Braces
@@ -115,7 +130,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 59; i++ {
+		for i := 0; i < 74; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -143,6 +158,7 @@ var _table_Keyword_String = [...]string{
 	RPC:        "rpc",
 	Returns:    "returns",
 	To:         "to",
+	In:         "in",
 	Repeated:   "repeated",
 	Optional:   "optional",
 	Required:   "required",
@@ -168,6 +184,7 @@ var _table_Keyword_String = [...]string{
 	NAN:        "nan",
 	True:       "true",
 	False:      "false",
+	Null:       "null",
 	Map:        "map",
 	Max:        "max",
 	Default:    "default",
@@ -175,10 +192,23 @@ var _table_Keyword_String = [...]string{
 	Semi:       ";",
 	Comma:      ",",
 	Dot:        ".",
-	Slash:      "/",
 	Colon:      ":",
-	Equals:     "=",
+	Eq:         "=",
+	Plus:       "+",
 	Minus:      "-",
+	Star:       "*",
+	Slash:      "/",
+	Percent:    "%",
+	Bang:       "!",
+	Ask:        "?",
+	Less:       "<",
+	Greater:    ">",
+	LessEq:     "<=",
+	GreaterEq:  ">=",
+	EqEq:       "==",
+	BangEq:     "!=",
+	AndAnd:     "&&",
+	OrOr:       "||",
 	Parens:     "(...)",
 	Brackets:   "[...]",
 	Braces:     "{...}",
@@ -205,6 +235,7 @@ var _table_Keyword_GoString = [...]string{
 	RPC:        "RPC",
 	Returns:    "Returns",
 	To:         "To",
+	In:         "In",
 	Repeated:   "Repeated",
 	Optional:   "Optional",
 	Required:   "Required",
@@ -230,6 +261,7 @@ var _table_Keyword_GoString = [...]string{
 	NAN:        "NAN",
 	True:       "True",
 	False:      "False",
+	Null:       "Null",
 	Map:        "Map",
 	Max:        "Max",
 	Default:    "Default",
@@ -237,10 +269,23 @@ var _table_Keyword_GoString = [...]string{
 	Semi:       "Semi",
 	Comma:      "Comma",
 	Dot:        "Dot",
-	Slash:      "Slash",
 	Colon:      "Colon",
-	Equals:     "Equals",
+	Eq:         "Eq",
+	Plus:       "Plus",
 	Minus:      "Minus",
+	Star:       "Star",
+	Slash:      "Slash",
+	Percent:    "Percent",
+	Bang:       "Bang",
+	Ask:        "Ask",
+	Less:       "Less",
+	Greater:    "Greater",
+	LessEq:     "LessEq",
+	GreaterEq:  "GreaterEq",
+	EqEq:       "EqEq",
+	BangEq:     "BangEq",
+	AndAnd:     "AndAnd",
+	OrOr:       "OrOr",
 	Parens:     "Parens",
 	Brackets:   "Brackets",
 	Braces:     "Braces",
@@ -267,6 +312,7 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"rpc":        RPC,
 	"returns":    Returns,
 	"to":         To,
+	"in":         In,
 	"repeated":   Repeated,
 	"optional":   Optional,
 	"required":   Required,
@@ -292,6 +338,7 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"nan":        NAN,
 	"true":       True,
 	"false":      False,
+	"null":       Null,
 	"map":        Map,
 	"max":        Max,
 	"default":    Default,
@@ -299,17 +346,29 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	";":          Semi,
 	",":          Comma,
 	".":          Dot,
-	"/":          Slash,
 	":":          Colon,
-	"=":          Equals,
+	"=":          Eq,
+	"+":          Plus,
 	"-":          Minus,
+	"*":          Star,
+	"/":          Slash,
+	"%":          Percent,
+	"!":          Bang,
+	"?":          Ask,
+	"<":          Less,
+	">":          Greater,
+	"<=":         LessEq,
+	">=":         GreaterEq,
+	"==":         EqEq,
+	"!=":         BangEq,
+	"&&":         AndAnd,
+	"||":         OrOr,
 	"(":          Parens,
 	")":          Parens,
 	"[":          Brackets,
 	"]":          Brackets,
 	"{":          Braces,
 	"}":          Braces,
-	"<":          Angles,
-	">":          Angles,
+	"<...>":      Angles,
 }
 var _ iter.Seq[int] // Mark iter as used.
