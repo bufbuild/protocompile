@@ -9,6 +9,7 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FileDescriptorProto"
+      json_name: "file"
     extension_range:
     - start: 536000000
       end: 536000001
@@ -18,126 +19,180 @@ file:
         type: ".buf.descriptor.v1.FileDescriptorSetExtension"
   - name: "FileDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
-    - { name: "package", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
+    - name: "package"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "package"
     - name: "dependency"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_STRING
+      json_name: "dependency"
     - name: "public_dependency"
       number: 10
       label: LABEL_REPEATED
       type: TYPE_INT32
+      json_name: "publicDependency"
     - name: "weak_dependency"
       number: 11
       label: LABEL_REPEATED
       type: TYPE_INT32
+      json_name: "weakDependency"
     - name: "option_dependency"
       number: 15
       label: LABEL_REPEATED
       type: TYPE_STRING
+      json_name: "optionDependency"
     - name: "message_type"
       number: 4
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.DescriptorProto"
+      json_name: "messageType"
     - name: "enum_type"
       number: 5
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.EnumDescriptorProto"
+      json_name: "enumType"
     - name: "service"
       number: 6
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.ServiceDescriptorProto"
+      json_name: "service"
     - name: "extension"
       number: 7
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldDescriptorProto"
+      json_name: "extension"
     - name: "options"
       number: 8
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FileOptions"
+      json_name: "options"
     - name: "source_code_info"
       number: 9
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.SourceCodeInfo"
-    - { name: "syntax", number: 12, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      json_name: "sourceCodeInfo"
+    - name: "syntax"
+      number: 12
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "syntax"
     - name: "edition"
       number: 14
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.Edition"
+      json_name: "edition"
   - name: "DescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
     - name: "field"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldDescriptorProto"
+      json_name: "field"
     - name: "extension"
       number: 6
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldDescriptorProto"
+      json_name: "extension"
     - name: "nested_type"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.DescriptorProto"
+      json_name: "nestedType"
     - name: "enum_type"
       number: 4
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.EnumDescriptorProto"
+      json_name: "enumType"
     - name: "extension_range"
       number: 5
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.DescriptorProto.ExtensionRange"
+      json_name: "extensionRange"
     - name: "oneof_decl"
       number: 8
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.OneofDescriptorProto"
+      json_name: "oneofDecl"
     - name: "options"
       number: 7
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.MessageOptions"
+      json_name: "options"
     - name: "reserved_range"
       number: 9
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.DescriptorProto.ReservedRange"
+      json_name: "reservedRange"
     - name: "reserved_name"
       number: 10
       label: LABEL_REPEATED
       type: TYPE_STRING
+      json_name: "reservedName"
     - name: "visibility"
       number: 11
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.SymbolVisibility"
+      json_name: "visibility"
     nested_type:
     - name: "ExtensionRange"
       field:
-      - { name: "start", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "end", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "start"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "start"
+      - name: "end"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "end"
       - name: "options"
         number: 3
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".google.protobuf.ExtensionRangeOptions"
+        json_name: "options"
     - name: "ReservedRange"
       field:
-      - { name: "start", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "end", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "start"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "start"
+      - name: "end"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "end"
   - name: "ExtensionRangeOptions"
     field:
     - name: "uninterpreted_option"
@@ -145,34 +200,55 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     - name: "declaration"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.ExtensionRangeOptions.Declaration"
+      json_name: "declaration"
       options.retention: RETENTION_SOURCE
     - name: "features"
       number: 50
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "verification"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.ExtensionRangeOptions.VerificationState"
+      json_name: "verification"
       options.retention: RETENTION_SOURCE
     nested_type:
     - name: "Declaration"
       field:
-      - { name: "number", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "number"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "number"
       - name: "full_name"
         number: 2
         label: LABEL_OPTIONAL
         type: TYPE_STRING
-      - { name: "type", number: 3, label: LABEL_OPTIONAL, type: TYPE_STRING }
-      - { name: "reserved", number: 5, label: LABEL_OPTIONAL, type: TYPE_BOOL }
-      - { name: "repeated", number: 6, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+        json_name: "fullName"
+      - name: "type"
+        number: 3
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "type"
+      - name: "reserved"
+        number: 5
+        label: LABEL_OPTIONAL
+        type: TYPE_BOOL
+        json_name: "reserved"
+      - name: "repeated"
+        number: 6
+        label: LABEL_OPTIONAL
+        type: TYPE_BOOL
+        json_name: "repeated"
       reserved_range: [{ start: 4, end: 5 }]
     enum_type:
     - name: "VerificationState"
@@ -182,41 +258,64 @@ file:
     extension_range: [{ start: 1000, end: 536870912 }]
   - name: "FieldDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
-    - { name: "number", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
+    - name: "number"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "number"
     - name: "label"
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldDescriptorProto.Label"
+      json_name: "label"
     - name: "type"
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldDescriptorProto.Type"
-    - { name: "type_name", number: 6, label: LABEL_OPTIONAL, type: TYPE_STRING }
-    - { name: "extendee", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      json_name: "type"
+    - name: "type_name"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "typeName"
+    - name: "extendee"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "extendee"
     - name: "default_value"
       number: 7
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "defaultValue"
     - name: "oneof_index"
       number: 9
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "oneofIndex"
     - name: "json_name"
       number: 10
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "jsonName"
     - name: "options"
       number: 8
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldOptions"
+      json_name: "options"
     - name: "proto3_optional"
       number: 17
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "proto3Optional"
     enum_type:
     - name: "Type"
       value:
@@ -245,177 +344,247 @@ file:
       - { name: "LABEL_REQUIRED", number: 2 }
   - name: "OneofDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
     - name: "options"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.OneofOptions"
+      json_name: "options"
   - name: "EnumDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
     - name: "value"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.EnumValueDescriptorProto"
+      json_name: "value"
     - name: "options"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.EnumOptions"
+      json_name: "options"
     - name: "reserved_range"
       number: 4
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.EnumDescriptorProto.EnumReservedRange"
+      json_name: "reservedRange"
     - name: "reserved_name"
       number: 5
       label: LABEL_REPEATED
       type: TYPE_STRING
+      json_name: "reservedName"
     - name: "visibility"
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.SymbolVisibility"
+      json_name: "visibility"
     nested_type:
     - name: "EnumReservedRange"
       field:
-      - { name: "start", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "end", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "start"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "start"
+      - name: "end"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "end"
   - name: "EnumValueDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
-    - { name: "number", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
+    - name: "number"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "number"
     - name: "options"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.EnumValueOptions"
+      json_name: "options"
   - name: "ServiceDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
     - name: "method"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.MethodDescriptorProto"
+      json_name: "method"
     - name: "options"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.ServiceOptions"
+      json_name: "options"
   - name: "MethodDescriptorProto"
     field:
-    - { name: "name", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "name"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "name"
     - name: "input_type"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "inputType"
     - name: "output_type"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "outputType"
     - name: "options"
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.MethodOptions"
+      json_name: "options"
     - name: "client_streaming"
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "clientStreaming"
     - name: "server_streaming"
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "serverStreaming"
   - name: "FileOptions"
     field:
     - name: "java_package"
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "javaPackage"
     - name: "java_outer_classname"
       number: 8
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "javaOuterClassname"
     - name: "java_multiple_files"
       number: 10
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "javaMultipleFiles"
     - name: "java_generate_equals_and_hash"
       number: 20
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "javaGenerateEqualsAndHash"
       options.deprecated: true
     - name: "java_string_check_utf8"
       number: 27
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "javaStringCheckUtf8"
     - name: "optimize_for"
       number: 9
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FileOptions.OptimizeMode"
+      json_name: "optimizeFor"
     - name: "go_package"
       number: 11
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "goPackage"
     - name: "cc_generic_services"
       number: 16
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "ccGenericServices"
     - name: "java_generic_services"
       number: 17
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "javaGenericServices"
     - name: "py_generic_services"
       number: 18
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
-    - { name: "deprecated", number: 23, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+      json_name: "pyGenericServices"
+    - name: "deprecated"
+      number: 23
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
     - name: "cc_enable_arenas"
       number: 31
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "ccEnableArenas"
     - name: "objc_class_prefix"
       number: 36
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "objcClassPrefix"
     - name: "csharp_namespace"
       number: 37
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "csharpNamespace"
     - name: "swift_prefix"
       number: 39
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "swiftPrefix"
     - name: "php_class_prefix"
       number: 40
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "phpClassPrefix"
     - name: "php_namespace"
       number: 41
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "phpNamespace"
     - name: "php_metadata_namespace"
       number: 44
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "phpMetadataNamespace"
     - name: "ruby_package"
       number: 45
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "rubyPackage"
     - name: "features"
       number: 50
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     enum_type:
     - name: "OptimizeMode"
       value:
@@ -431,27 +600,40 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "messageSetWireFormat"
     - name: "no_standard_descriptor_accessor"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
-    - { name: "deprecated", number: 3, label: LABEL_OPTIONAL, type: TYPE_BOOL }
-    - { name: "map_entry", number: 7, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+      json_name: "noStandardDescriptorAccessor"
+    - name: "deprecated"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
+    - name: "map_entry"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "mapEntry"
     - name: "deprecated_legacy_json_field_conflicts"
       number: 11
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "deprecatedLegacyJsonFieldConflicts"
       options.deprecated: true
     - name: "features"
       number: 12
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     extension_range: [{ start: 1000, end: 536870912 }]
     reserved_range:
     - { start: 4, end: 5 }
@@ -466,57 +648,80 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldOptions.CType"
-    - { name: "packed", number: 2, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+      json_name: "ctype"
+    - name: "packed"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "packed"
     - name: "jstype"
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldOptions.JSType"
-    - { name: "lazy", number: 5, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+      json_name: "jstype"
+    - name: "lazy"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "lazy"
     - name: "unverified_lazy"
       number: 15
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
-    - { name: "deprecated", number: 3, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+      json_name: "unverifiedLazy"
+    - name: "deprecated"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
     - name: "weak"
       number: 10
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "weak"
       options.deprecated: true
     - name: "debug_redact"
       number: 16
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "debugRedact"
     - name: "retention"
       number: 17
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldOptions.OptionRetention"
+      json_name: "retention"
     - name: "targets"
       number: 19
       label: LABEL_REPEATED
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldOptions.OptionTargetType"
+      json_name: "targets"
     - name: "edition_defaults"
       number: 20
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldOptions.EditionDefault"
+      json_name: "editionDefaults"
     - name: "features"
       number: 21
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "feature_support"
       number: 22
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldOptions.FeatureSupport"
+      json_name: "featureSupport"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     nested_type:
     - name: "EditionDefault"
       field:
@@ -525,7 +730,12 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".google.protobuf.Edition"
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }
+        json_name: "edition"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "value"
     - name: "FeatureSupport"
       field:
       - name: "edition_introduced"
@@ -533,20 +743,24 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".google.protobuf.Edition"
+        json_name: "editionIntroduced"
       - name: "edition_deprecated"
         number: 2
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".google.protobuf.Edition"
+        json_name: "editionDeprecated"
       - name: "deprecation_warning"
         number: 3
         label: LABEL_OPTIONAL
         type: TYPE_STRING
+        json_name: "deprecationWarning"
       - name: "edition_removed"
         number: 4
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".google.protobuf.Edition"
+        json_name: "editionRemoved"
     enum_type:
     - name: "CType"
       value:
@@ -584,55 +798,76 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     extension_range: [{ start: 1000, end: 536870912 }]
   - name: "EnumOptions"
     field:
-    - { name: "allow_alias", number: 2, label: LABEL_OPTIONAL, type: TYPE_BOOL }
-    - { name: "deprecated", number: 3, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+    - name: "allow_alias"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "allowAlias"
+    - name: "deprecated"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
     - name: "deprecated_legacy_json_field_conflicts"
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "deprecatedLegacyJsonFieldConflicts"
       options.deprecated: true
     - name: "features"
       number: 7
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     extension_range: [{ start: 1000, end: 536870912 }]
     reserved_range: [{ start: 5, end: 6 }]
   - name: "EnumValueOptions"
     field:
-    - { name: "deprecated", number: 1, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+    - name: "deprecated"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
     - name: "features"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "debug_redact"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "debugRedact"
     - name: "feature_support"
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FieldOptions.FeatureSupport"
+      json_name: "featureSupport"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     extension_range: [{ start: 1000, end: 536870912 }]
   - name: "ServiceOptions"
     field:
@@ -641,31 +876,44 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
-    - { name: "deprecated", number: 33, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+      json_name: "features"
+    - name: "deprecated"
+      number: 33
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     extension_range: [{ start: 1000, end: 536870912 }]
   - name: "MethodOptions"
     field:
-    - { name: "deprecated", number: 33, label: LABEL_OPTIONAL, type: TYPE_BOOL }
+    - name: "deprecated"
+      number: 33
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "deprecated"
     - name: "idempotency_level"
       number: 34
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.MethodOptions.IdempotencyLevel"
+      json_name: "idempotencyLevel"
     - name: "features"
       number: 35
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSet"
+      json_name: "features"
     - name: "uninterpreted_option"
       number: 999
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption"
+      json_name: "uninterpretedOption"
     enum_type:
     - name: "IdempotencyLevel"
       value:
@@ -680,30 +928,37 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.UninterpretedOption.NamePart"
+      json_name: "name"
     - name: "identifier_value"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "identifierValue"
     - name: "positive_int_value"
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_INT64
+      json_name: "positiveIntValue"
     - name: "negative_int_value"
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_INT64
+      json_name: "negativeIntValue"
     - name: "double_value"
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_DOUBLE
+      json_name: "doubleValue"
     - name: "string_value"
       number: 7
       label: LABEL_OPTIONAL
       type: TYPE_BYTES
+      json_name: "stringValue"
     - name: "aggregate_value"
       number: 8
       label: LABEL_OPTIONAL
       type: TYPE_STRING
+      json_name: "aggregateValue"
     nested_type:
     - name: "NamePart"
       field:
@@ -711,10 +966,12 @@ file:
         number: 1
         label: LABEL_REQUIRED
         type: TYPE_STRING
+        json_name: "namePart"
       - name: "is_extension"
         number: 2
         label: LABEL_REQUIRED
         type: TYPE_BOOL
+        json_name: "isExtension"
   - name: "FeatureSet"
     field:
     - name: "field_presence"
@@ -722,6 +979,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.FieldPresence"
+      json_name: "fieldPresence"
       options:
         retention: RETENTION_RUNTIME
         targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
@@ -735,6 +993,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.EnumType"
+      json_name: "enumType"
       options:
         retention: RETENTION_RUNTIME
         targets: [TARGET_TYPE_ENUM, TARGET_TYPE_FILE]
@@ -747,6 +1006,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.RepeatedFieldEncoding"
+      json_name: "repeatedFieldEncoding"
       options:
         retention: RETENTION_RUNTIME
         targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
@@ -759,6 +1019,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.Utf8Validation"
+      json_name: "utf8Validation"
       options:
         retention: RETENTION_RUNTIME
         targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
@@ -771,6 +1032,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.MessageEncoding"
+      json_name: "messageEncoding"
       options:
         retention: RETENTION_RUNTIME
         targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
@@ -782,6 +1044,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.JsonFormat"
+      json_name: "jsonFormat"
       options:
         retention: RETENTION_RUNTIME
         targets: [TARGET_TYPE_MESSAGE, TARGET_TYPE_ENUM, TARGET_TYPE_FILE]
@@ -794,6 +1057,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.EnforceNamingStyle"
+      json_name: "enforceNamingStyle"
       options:
         retention: RETENTION_SOURCE
         targets:
@@ -815,6 +1079,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FeatureSet.VisibilityFeature.DefaultSymbolVisibility"
+      json_name: "defaultSymbolVisibility"
       options:
         retention: RETENTION_SOURCE
         targets: [TARGET_TYPE_FILE]
@@ -893,16 +1158,19 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.FeatureSetDefaults.FeatureSetEditionDefault"
+      json_name: "defaults"
     - name: "minimum_edition"
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.Edition"
+      json_name: "minimumEdition"
     - name: "maximum_edition"
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.Edition"
+      json_name: "maximumEdition"
     nested_type:
     - name: "FeatureSetEditionDefault"
       field:
@@ -911,16 +1179,19 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".google.protobuf.Edition"
+        json_name: "edition"
       - name: "overridable_features"
         number: 4
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".google.protobuf.FeatureSet"
+        json_name: "overridableFeatures"
       - name: "fixed_features"
         number: 5
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".google.protobuf.FeatureSet"
+        json_name: "fixedFeatures"
       reserved_range: [{ start: 1, end: 2 }, { start: 2, end: 3 }]
       reserved_name: ["features"]
   - name: "SourceCodeInfo"
@@ -930,6 +1201,7 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.SourceCodeInfo.Location"
+      json_name: "location"
     nested_type:
     - name: "Location"
       field:
@@ -937,24 +1209,29 @@ file:
         number: 1
         label: LABEL_REPEATED
         type: TYPE_INT32
+        json_name: "path"
         options.packed: true
       - name: "span"
         number: 2
         label: LABEL_REPEATED
         type: TYPE_INT32
+        json_name: "span"
         options.packed: true
       - name: "leading_comments"
         number: 3
         label: LABEL_OPTIONAL
         type: TYPE_STRING
+        json_name: "leadingComments"
       - name: "trailing_comments"
         number: 4
         label: LABEL_OPTIONAL
         type: TYPE_STRING
+        json_name: "trailingComments"
       - name: "leading_detached_comments"
         number: 6
         label: LABEL_REPEATED
         type: TYPE_STRING
+        json_name: "leadingDetachedComments"
     extension_range:
     - start: 536000000
       end: 536000001
@@ -969,6 +1246,7 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.GeneratedCodeInfo.Annotation"
+      json_name: "annotation"
     nested_type:
     - name: "Annotation"
       field:
@@ -976,18 +1254,29 @@ file:
         number: 1
         label: LABEL_REPEATED
         type: TYPE_INT32
+        json_name: "path"
         options.packed: true
       - name: "source_file"
         number: 2
         label: LABEL_OPTIONAL
         type: TYPE_STRING
-      - { name: "begin", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "end", number: 4, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+        json_name: "sourceFile"
+      - name: "begin"
+        number: 3
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "begin"
+      - name: "end"
+        number: 4
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "end"
       - name: "semantic"
         number: 5
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".google.protobuf.GeneratedCodeInfo.Annotation.Semantic"
+        json_name: "semantic"
       enum_type:
       - name: "Semantic"
         value:
@@ -1029,8 +1318,16 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "f32", number: 1, label: LABEL_REPEATED, type: TYPE_FLOAT }
-    - { name: "f64", number: 2, label: LABEL_REPEATED, type: TYPE_DOUBLE }
+    - name: "f32"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_FLOAT
+      json_name: "f32"
+    - name: "f64"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_DOUBLE
+      json_name: "f64"
   extension:
   - name: "x"
     number: 1000
