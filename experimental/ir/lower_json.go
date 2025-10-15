@@ -91,7 +91,6 @@ func populateJSONNames(f File, r *report.Report) {
 	}
 
 	for extn := range seq.Values(f.AllExtensions()) {
-
 		want := internal.JSONName(extn.Name())
 		option := extn.PseudoOptions().JSONName
 		got, custom := option.AsString()
