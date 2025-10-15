@@ -3,6 +3,7 @@ package ir
 import (
 	"fmt"
 
+	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal"
@@ -14,7 +15,7 @@ func populateJSONNames(f File, r *report.Report) {
 	builtins := f.Context().builtins()
 	names := intern.Map[Member]{}
 
-	for ty := range seq.Values(f.Types()) {
+	for ty := range seq.Values(f.AllTypes()) {
 		clear(names)
 
 		jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
@@ -72,6 +73,16 @@ func populateJSONNames(f File, r *report.Report) {
 					involvesCustomName: true,
 				})
 			}
+		}
+	}
+
+	for extn := range seq.Values(f.AllExtensions()) {
+		option := extn.PseudoOptions().JSONName
+		if !option.IsZero() {
+			r.Errorf("%s cannot specify `json_name`", taxa.Extension).Apply(
+				report.Snippet(option.OptionSpan()),
+				report.Helpf("JSON format for extensions always uses the extension's fully-qualified name"),
+			)
 		}
 	}
 }

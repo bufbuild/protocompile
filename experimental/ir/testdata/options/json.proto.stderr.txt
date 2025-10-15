@@ -43,29 +43,37 @@ warning: message fields have the same (default) JSON name
            erroneously does not account for custom JSON names
 
 error: enum values have the same JSON name
-  --> testdata/options/json.proto:42:5
+  --> testdata/options/json.proto:44:5
    |
-41 |     ZERO = 0;
+43 |     ZERO = 0;
    |     ---- this implies JSON name `ZERO`
-42 |     BAR_ZERO = 1;
+44 |     BAR_ZERO = 1;
    |     ^^^^^^^^ this implies JSON name `ZERO`
 
 error: enum values have the same JSON name
-  --> testdata/options/json.proto:43:5
+  --> testdata/options/json.proto:45:5
    |
-41 |     ZERO = 0;
+43 |     ZERO = 0;
    |     ---- this implies JSON name `ZERO`
-42 |     BAR_ZERO = 1;
-43 |     b_a_r_zero = 2;
+44 |     BAR_ZERO = 1;
+45 |     b_a_r_zero = 2;
    |     ^^^^^^^^^^ this implies JSON name `ZERO`
 
 error: enum values have the same JSON name
-  --> testdata/options/json.proto:47:5
+  --> testdata/options/json.proto:49:5
    |
-45 |     FOO_BAR = 3;
+47 |     FOO_BAR = 3;
    |     ------- this implies JSON name `FOO_BAR`
-46 |     FOOBAR = 4;
-47 |     BarFooBar = 5;
+48 |     FOOBAR = 4;
+49 |     BarFooBar = 5;
    |     ^^^^^^^^^ this implies JSON name `FOO_BAR`
 
-encountered 6 errors and 2 warnings
+error: message extension cannot specify `json_name`
+  --> testdata/options/json.proto:53:20
+   |
+53 |     int32 x = 100 [json_name = "foo"];
+   |                    ^^^^^^^^^^^^^^^^^
+   = help: JSON format for extensions always uses the extension's
+           fully-qualified name
+
+encountered 7 errors and 2 warnings
