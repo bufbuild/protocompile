@@ -91,12 +91,26 @@ func populateJSONNames(f File, r *report.Report) {
 	}
 
 	for extn := range seq.Values(f.AllExtensions()) {
+
+		want := internal.JSONName(extn.Name())
 		option := extn.PseudoOptions().JSONName
-		if !option.IsZero() {
-			r.Errorf("%s cannot specify `json_name`", taxa.Extension).Apply(
+		got, custom := option.AsString()
+
+		name := want
+		if custom {
+			name = got
+		}
+		extn.raw.jsonName = f.Context().session.intern.Intern(name)
+
+		if custom {
+			d := r.SoftErrorf(want != got, "%s cannot specify `json_name`", taxa.Extension).Apply(
 				report.Snippet(option.OptionSpan()),
-				report.Helpf("JSON format for extensions always uses the extension's fully-qualified name"),
+				report.Notef("JSON format for extensions always uses the extension's fully-qualified name"),
 			)
+			if want == got {
+				d.Apply(report.Helpf("protoc erroneously accepts `json_name` on an extension " +
+					"if it happens to match the default JSON name exactly"))
+			}
 		}
 	}
 }

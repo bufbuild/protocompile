@@ -1384,6 +1384,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Features"
     extendee: ".google.protobuf.FeatureSet"
+    json_name: "x"
   options.features.$unknown: |
     9995: {
       1: 1

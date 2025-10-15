@@ -73,7 +73,17 @@ error: message extension cannot specify `json_name`
    |
 53 |     int32 x = 100 [json_name = "foo"];
    |                    ^^^^^^^^^^^^^^^^^
-   = help: JSON format for extensions always uses the extension's
+   = note: JSON format for extensions always uses the extension's
            fully-qualified name
 
-encountered 7 errors and 2 warnings
+warning: message extension cannot specify `json_name`
+  --> testdata/options/json.proto:54:20
+   |
+54 |     int32 y = 101 [json_name = "y"];
+   |                    ^^^^^^^^^^^^^^^
+   = note: JSON format for extensions always uses the extension's
+           fully-qualified name
+   = help: protoc erroneously accepts `json_name` on an extension if it happens
+           to match the default JSON name exactly
+
+encountered 7 errors and 3 warnings

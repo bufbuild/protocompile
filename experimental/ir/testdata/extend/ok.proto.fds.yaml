@@ -9,24 +9,28 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       extendee: ".test.Foo.Foo"
+      json_name: "x1"
     - name: "x2"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".test.Foo.Foo"
       extendee: ".test.Foo.Foo"
+      json_name: "x2"
     - name: "x3"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo"
       extendee: ".test.Foo"
+      json_name: "x3"
     - name: "x4"
       number: 4
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo"
       extendee: ".test.Foo"
+      json_name: "x4"
     nested_type:
     - { name: "Foo", extension_range: [{ start: 1, end: 536870912 }] }
     extension_range: [{ start: 1, end: 536870912 }]
@@ -36,21 +40,25 @@ file:
     label: LABEL_OPTIONAL
     type: TYPE_INT32
     extendee: ".test.Foo"
+    json_name: "x5"
   - name: "x6"
     number: 6
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".test.Foo"
     extendee: ".test.Foo"
+    json_name: "x6"
   - name: "x7"
     number: 7
     label: LABEL_OPTIONAL
     type: TYPE_INT32
     extendee: ".test.Foo.Foo"
+    json_name: "x7"
   - name: "x8"
     number: 8
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".test.Foo"
     extendee: ".test.Foo.Foo"
+    json_name: "x8"
   syntax: "proto2"

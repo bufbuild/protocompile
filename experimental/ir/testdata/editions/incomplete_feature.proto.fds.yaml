@@ -1389,6 +1389,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Features"
     extendee: ".google.protobuf.FeatureSet"
+    json_name: "f"
   options.features.$unknown: "10000: {}"
   syntax: "editions"
   edition: EDITION_2023

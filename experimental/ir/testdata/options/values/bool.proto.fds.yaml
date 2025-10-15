@@ -1330,11 +1330,13 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   - name: "y"
     number: 1001
     label: LABEL_REPEATED
     type: TYPE_BOOL
     extendee: ".google.protobuf.FileOptions"
+    json_name: "y"
   options.$unknown: |
     1000: {1: {`0100010001000101`}}
     1001: {`0100`}

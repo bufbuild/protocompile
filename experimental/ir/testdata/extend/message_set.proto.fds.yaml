@@ -1348,33 +1348,39 @@ file:
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M1"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m1"
   - name: "m2"
     number: 2
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M2"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m2"
   - name: "m3"
     number: 3
     label: LABEL_OPTIONAL
     type: TYPE_INT32
     extendee: ".google.protobuf.test.M3"
+    json_name: "m3"
   - name: "m4"
     number: 4
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M4Entry"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m4"
   - name: "m5"
     number: 2147483646
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M3"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m5"
   - name: "m6"
     number: 2147483646
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M3"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m6"
   syntax: "proto2"

@@ -1329,6 +1329,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       extendee: ".buf.test.Foo"
+      json_name: "z"
     extension_range: [{ start: 1000, end: 1001 }]
   extension:
   - name: "x"
@@ -1337,6 +1338,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   options.$unknown: |
     1000: {
       1: 0

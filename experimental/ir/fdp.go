@@ -326,9 +326,7 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 		dg.options(options, fdp.Options)
 	}
 
-	if !f.IsExtension() {
-		fdp.JsonName = addr(f.JSONName())
-	}
+	fdp.JsonName = addr(f.JSONName())
 }
 
 func (dg *descGenerator) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {

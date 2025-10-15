@@ -1332,9 +1332,11 @@ file:
     label: LABEL_OPTIONAL
     type: TYPE_INT32
     extendee: ".google.protobuf.ServiceOptions"
+    json_name: "x"
   - name: "y"
     number: 1000
     label: LABEL_OPTIONAL
     type: TYPE_INT32
     extendee: ".google.protobuf.MethodOptions"
+    json_name: "y"
   syntax: "proto2"

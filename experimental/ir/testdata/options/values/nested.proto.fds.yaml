@@ -1338,18 +1338,21 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   - name: "y"
     number: 1000
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".buf.test.Foo"
+    json_name: "y"
   - name: "z"
     number: 1001
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".buf.test.Foo"
+    json_name: "z"
   options.$unknown: |
     1000: {
       2: {}

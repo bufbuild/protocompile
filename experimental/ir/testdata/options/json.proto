@@ -34,7 +34,7 @@ message Foo {
     int32 d_c = 9 [json_name = "x"];
     int32 dC = 10;
 
-    extensions 100;
+    extensions 100, 101;
 }
 
 enum Bar {
@@ -51,4 +51,5 @@ enum Bar {
 
 extend Foo {
     int32 x = 100 [json_name = "foo"];
+    int32 y = 101 [json_name = "y"];
 }

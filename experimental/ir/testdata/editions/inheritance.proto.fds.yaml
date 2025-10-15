@@ -1372,6 +1372,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".pb.CppFeatures"
     extendee: ".google.protobuf.FeatureSet"
+    json_name: "cpp"
   syntax: "proto2"
 - name: "testdata/editions/inheritance.proto"
   package: "buf.test"
