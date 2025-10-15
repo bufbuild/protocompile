@@ -67,7 +67,7 @@ warning: message fields have the same JSON name
 25 |     optional group FooBar = 1 {}
    |                    ------ this implies JSON name `foobar`
 26 |     optional int32 foobar = 2;
-   |                    ^^^^^^ this implies JSON name `foobar`
+   |                    ^^^^^^ this also implies that name
 
 error: `foobar` declared multiple times
   --> testdata/fields/groups/collision.proto:33:20
@@ -83,6 +83,6 @@ warning: message fields have the same JSON name
 32 |     optional group FooBar = 2 {}
    |                    ------ this implies JSON name `foobar`
 33 |     optional group foobar = 3 {}
-   |                    ^^^^^^ this implies JSON name `foobar`
+   |                    ^^^^^^ this also implies that name
 
 encountered 5 errors and 7 warnings

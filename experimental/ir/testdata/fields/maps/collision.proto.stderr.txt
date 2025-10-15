@@ -31,6 +31,6 @@ error: message fields have the same JSON name
 27 |     map<int32, int32> _ = 1;
    |                       - this implies JSON name ``
 28 |     map<int32, int32> __ = 2;
-   |                       ^^ this implies JSON name ``
+   |                       ^^ this also implies that name
 
 encountered 3 errors

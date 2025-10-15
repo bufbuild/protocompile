@@ -137,6 +137,11 @@ func (e errJSONConflict) Diagnose(d *report.Diagnostic) {
 			}
 			return report.Snippetf(m.AST().Name(), "this implies (default) JSON name `%s`", m.JSONName())
 		}
+
+		if m == e.second {
+			return report.Snippetf(m.AST().Name(), "this also implies that name")
+		}
+
 		return report.Snippetf(m.AST().Name(), "this implies JSON name `%s`", m.JSONName())
 	}
 	d.Apply(snippet(e.second), snippet(e.first))
