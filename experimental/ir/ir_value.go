@@ -846,7 +846,7 @@ func marshalFramed(buf []byte, _ *report.Report, ranges *[][2]int, body func([]b
 	buf = append(buf, make([]byte, 5)...)
 	var n int
 	buf, n = body(buf)
-	bytes := len(buf) - (mark + 5) - n
+	bytes := uint64(len(buf) - (mark + 5) - n)
 	if bytes > math.MaxUint32 {
 		// This is not reachable today, because input files may be
 		// no larger than 4GB. However, that may change at some point,
@@ -857,7 +857,7 @@ func marshalFramed(buf []byte, _ *report.Report, ranges *[][2]int, body func([]b
 		panic("protocompile/ir: marshalling options value overflowed length prefixes")
 	}
 
-	varint := protowire.AppendVarint(buf[mark:mark], uint64(bytes))
+	varint := protowire.AppendVarint(buf[mark:mark], bytes)
 	if k := len(varint); k < 5 {
 		*ranges = append(*ranges, [2]int{mark + k, mark + 5})
 	}
