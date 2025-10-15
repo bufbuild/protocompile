@@ -380,6 +380,11 @@ func (r optionRef) resolve() {
 	ids := &r.Context.session.builtins
 	root := r.field.Element()
 
+	if r.raw.Nil() {
+		v := newMessage(r.Context, r.field.toRef(r.Context)).AsValue()
+		*r.raw = r.arenas.values.Compress(v.raw)
+	}
+
 	// Check if this is a pseudo-option, and diagnose if it has multiple
 	// components. The values of pseudo-options are calculated elsewhere; this
 	// is only for diagnostics.
@@ -398,15 +403,12 @@ func (r optionRef) resolve() {
 					"`%s` is a %s and does not correspond to a field in `%s`",
 					kw, taxa.PseudoOption, root.FullName(),
 				))
+				return
 			}
 
+			r.resolvePseudo(kw)
 			return
 		}
-	}
-
-	if r.raw.Nil() {
-		v := newMessage(r.Context, r.field.toRef(r.Context)).AsValue()
-		*r.raw = r.arenas.values.Compress(v.raw)
 	}
 
 	current := wrapValue(r.Context, *r.raw)
@@ -628,6 +630,30 @@ func (r optionRef) resolve() {
 	v := evaluator.eval(args)
 	if !v.IsZero() {
 		*raw = r.arenas.values.Compress(v.raw)
+	}
+}
+
+func (r optionRef) resolvePseudo(kw keyword.Keyword) {
+	builtins := r.Context.builtins()
+
+	switch kw {
+	case keyword.JsonName:
+		evaluator := evaluator{
+			Context: r.Context,
+			Report:  r.Report,
+			scope:   r.scope,
+		}
+		args := evalArgs{
+			expr:       r.def.Value,
+			field:      builtins.JSONName,
+			annotation: builtins.JSONName.AST().Type(),
+			optionPath: r.def.Path,
+		}
+
+		v := evaluator.eval(args)
+		if !v.IsZero() {
+			wrapValue(r.Context, *r.raw).AsMessage().raw.pseudo.jsonName = r.arenas.values.Compress(v.raw)
+		}
 	}
 }
 

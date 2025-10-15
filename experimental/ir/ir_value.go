@@ -704,6 +704,17 @@ type rawMessageValue struct {
 	// Which entries are already inserted. These are by interned full name
 	// of either the field or its containing oneof.
 	byName intern.Map[uint32]
+
+	pseudo struct {
+		jsonName arena.Pointer[rawValue]
+	}
+}
+
+// PseudoFields contains pseudo options, which are special option-like syntax
+// for fields which are not real options. They can be accessed via
+// [Message.PseudoFields].
+type PseudoFields struct {
+	JSONName Value
 }
 
 // AsValue returns the [Value] corresponding to this message.
@@ -782,6 +793,21 @@ func (v MessageValue) Fields() iter.Seq[Value] {
 				return
 			}
 		}
+	}
+}
+
+// pseudoFields returns pseudofields set on this message.
+//
+// This feature is used for tracking special options that do not correspond to
+// real fields in an options message. They are not part of the message value
+// and are not returned by Fields().
+func (m MessageValue) pseudoFields() PseudoFields {
+	if m.IsZero() {
+		return PseudoFields{}
+	}
+
+	return PseudoFields{
+		JSONName: wrapValue(m.Context(), m.raw.pseudo.jsonName),
 	}
 }
 

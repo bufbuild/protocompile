@@ -109,6 +109,8 @@ func lower(c *Context, r *report.Report, importer Importer) {
 	buildAllFeatureInfo(c.File(), r)
 	validateAllFeatures(c.File(), r)
 
+	populateJSONNames(c.File(), r)
+
 	// Validate all the little constraint details that didn't get caught above.
 	diagnoseUnusedImports(c.File(), r)
 	validateConstraints(c.File(), r)

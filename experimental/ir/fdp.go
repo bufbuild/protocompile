@@ -165,7 +165,7 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		dg.field(extn, fd)
 	}
 
-	if options := file.Options(); !options.IsZero() {
+	if options := file.Options(); !iterx.Empty(options.Fields()) {
 		fdp.Options = new(descriptorpb.FileOptions)
 		dg.options(options, fdp.Options)
 	}
@@ -211,7 +211,7 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 		er.Start = addr(start)
 		er.End = addr(end + 1) // Exclusive.
 
-		if options := extensions.Options(); !options.IsZero() {
+		if options := extensions.Options(); !iterx.Empty(options.Fields()) {
 			er.Options = new(descriptorpb.ExtensionRangeOptions)
 			dg.options(options, er.Options)
 		}
@@ -256,7 +256,7 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 		}
 	}
 
-	if options := ty.Options(); !options.IsZero() {
+	if options := ty.Options(); !iterx.Empty(options.Fields()) {
 		mdp.Options = new(descriptorpb.MessageOptions)
 		dg.options(options, mdp.Options)
 	}
@@ -321,7 +321,7 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 		fdp.OneofIndex = addr(int32(oneof.Index()))
 	}
 
-	if options := f.Options(); !options.IsZero() {
+	if options := f.Options(); !iterx.Empty(options.Fields()) {
 		fdp.Options = new(descriptorpb.FieldOptions)
 		dg.options(options, fdp.Options)
 	}
@@ -330,7 +330,7 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 func (dg *descGenerator) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {
 	odp.Name = addr(o.Name())
 
-	if options := o.Options(); !options.IsZero() {
+	if options := o.Options(); !iterx.Empty(options.Fields()) {
 		odp.Options = new(descriptorpb.OneofOptions)
 		dg.options(options, odp.Options)
 	}
@@ -358,7 +358,7 @@ func (dg *descGenerator) enum(ty Type, edp *descriptorpb.EnumDescriptorProto) {
 		edp.ReservedName = append(edp.ReservedName, name.Name())
 	}
 
-	if options := ty.Options(); !options.IsZero() {
+	if options := ty.Options(); !iterx.Empty(options.Fields()) {
 		edp.Options = new(descriptorpb.EnumOptions)
 		dg.options(options, edp.Options)
 	}
@@ -368,7 +368,7 @@ func (dg *descGenerator) enumValue(f Member, evdp *descriptorpb.EnumValueDescrip
 	evdp.Name = addr(f.Name())
 	evdp.Number = addr(f.Number())
 
-	if options := f.Options(); !options.IsZero() {
+	if options := f.Options(); !iterx.Empty(options.Fields()) {
 		evdp.Options = new(descriptorpb.EnumValueOptions)
 		dg.options(options, evdp.Options)
 	}
@@ -383,7 +383,7 @@ func (dg *descGenerator) service(s Service, sdp *descriptorpb.ServiceDescriptorP
 		dg.method(method, mdp)
 	}
 
-	if options := s.Options(); !options.IsZero() {
+	if options := s.Options(); !iterx.Empty(options.Fields()) {
 		sdp.Options = new(descriptorpb.ServiceOptions)
 		dg.options(options, sdp.Options)
 	}
@@ -400,7 +400,7 @@ func (dg *descGenerator) method(m Method, mdp *descriptorpb.MethodDescriptorProt
 	mdp.OutputType = addr(string(out.FullName()))
 	mdp.ServerStreaming = addr(outStream)
 
-	if options := m.Options(); !options.IsZero() {
+	if options := m.Options(); !iterx.Empty(options.Fields()) {
 		mdp.Options = new(descriptorpb.MethodOptions)
 		dg.options(options, mdp.Options)
 	}

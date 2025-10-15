@@ -18,13 +18,13 @@ error: unexpected `optional`
 error: unexpected `required`
   --> testdata/options/validate/presence.proto:36:5
    |
-36 |     required int32 a1 = 11;
+36 |     required int32 a2 = 11;
    |     ^^^^^^^^ expected type name or `repeated`
    |
   help: delete it
    |
-36 | -     required int32 a1 = 11;
-36 | +     int32 a1 = 11;
+36 | -     required int32 a2 = 11;
+36 | +     int32 a2 = 11;
    |
    |
    = help: required fields are only permitted in proto2; even then, their use is
@@ -87,14 +87,6 @@ warning: required fields are deprecated
    = help: do not attempt to change this to `EXPLICIT` if the field is already
            in-use; doing so is a wire protocol break
 
-error: `a1` declared multiple times
-  --> testdata/options/validate/presence.proto:35:20
-   |
-35 |     optional int32 a1 = 10;
-   |                    ^^ first here, as a message field
-36 |     required int32 a1 = 11;
-   |                    -- ...also declared here
-
 error: expected singular field, found extension
   --> testdata/options/validate/presence.proto:40:5
    |
@@ -106,4 +98,4 @@ error: expected singular field, found extension
    = help: `field_presence` cannot be set on extensions
    = help: all singular extensions have explicit presence
 
-encountered 9 errors and 1 warning
+encountered 8 errors and 1 warning
