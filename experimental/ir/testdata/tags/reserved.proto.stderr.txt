@@ -130,4 +130,12 @@ error: `max` outside of range end
    |              ^^^
    = note: the special `max` expression can only be used at the end of a range
 
-encountered 12 errors and 2 warnings
+error: use of reserved enum value `0`
+  --> testdata/tags/reserved.proto:44:9
+   |
+44 |     K = 0;
+   |         ^ used here
+45 |     reserved 0;
+   |              - enum value reserved here
+
+encountered 13 errors and 2 warnings

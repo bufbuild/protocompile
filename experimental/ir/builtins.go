@@ -48,6 +48,7 @@ type builtins struct {
 	OptionTargets        Member
 	CType, JSType        Member
 	Lazy, UnverifiedLazy Member
+	AllowAlias           Member
 	MessageSet           Member
 
 	FileDeprecated      Member

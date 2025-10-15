@@ -60,7 +60,9 @@ type rawMember struct {
 	options       arena.Pointer[rawValue]
 	oneof         int32
 	optionTargets uint32
-	isGroup       bool
+
+	isGroup  bool
+	numberOk bool // An error occurred while computing the field number.
 }
 
 // IsMessageField returns whether this is a non-extension message field.
@@ -559,12 +561,14 @@ type ReservedRange struct {
 }
 
 type rawReservedRange struct {
-	decl          ast.DeclRange
-	value         ast.ExprAny
-	first, last   int32
-	options       arena.Pointer[rawValue]
-	features      arena.Pointer[rawFeatureSet]
+	decl        ast.DeclRange
+	value       ast.ExprAny
+	first, last int32
+	options     arena.Pointer[rawValue]
+	features    arena.Pointer[rawFeatureSet]
+
 	forExtensions bool
+	rangeOk       bool
 }
 
 // AST returns the expression that this range was evaluated from, if known.
