@@ -636,7 +636,7 @@ func (r optionRef) resolve() {
 func (r optionRef) resolvePseudo(kw keyword.Keyword) {
 	builtins := r.Context.builtins()
 
-	switch kw {
+	switch kw { //nolint:gocritic // Will add another case in a future change.
 	case keyword.JsonName:
 		evaluator := evaluator{
 			Context: r.Context,

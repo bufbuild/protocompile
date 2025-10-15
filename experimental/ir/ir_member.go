@@ -61,8 +61,7 @@ type rawMember struct {
 	oneof         int32
 	optionTargets uint32
 
-	jsonName       intern.ID
-	jsonNameOption arena.Pointer[rawValue]
+	jsonName intern.ID
 
 	isGroup bool
 }

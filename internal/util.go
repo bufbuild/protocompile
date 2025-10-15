@@ -20,8 +20,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/bufbuild/protocompile/internal/cases"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/bufbuild/protocompile/internal/cases"
 )
 
 // JSONName returns the default JSON name for a field with the given name.

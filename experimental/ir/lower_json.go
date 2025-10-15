@@ -1,3 +1,17 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ir
 
 import (
@@ -107,12 +121,10 @@ func (e errJSONConflict) Diagnose(d *report.Diagnostic) {
 		if _, custom := option.AsString(); custom {
 			if e.involvesCustomName {
 				return report.Snippetf(option.ValueAST(), "`%s` specifies custom name here", m.Name())
-			} else {
-				return report.Snippetf(m.AST().Name(), "this implies (default) JSON name `%s`", m.JSONName())
 			}
-		} else {
-			return report.Snippetf(m.AST().Name(), "this implies JSON name `%s`", m.JSONName())
+			return report.Snippetf(m.AST().Name(), "this implies (default) JSON name `%s`", m.JSONName())
 		}
+		return report.Snippetf(m.AST().Name(), "this implies JSON name `%s`", m.JSONName())
 	}
 	d.Apply(snippet(e.second), snippet(e.first))
 
