@@ -51,7 +51,7 @@ type rawMember struct {
 	def           ast.DeclDef
 	featureInfo   *rawFeatureInfo
 	elem          ref[rawType]
-	extendee      arena.Pointer[rawExtendee]
+	extendee      arena.Pointer[rawExtend]
 	fqn           intern.ID
 	name          intern.ID
 	number        int32
@@ -287,6 +287,17 @@ func (m Member) Container() Type {
 	return wrapType(m.Context(), extends.ty)
 }
 
+// Extend returns the extend block this member is declared in, if any.
+func (m Member) Extend() Extend {
+	if m.IsZero() || m.raw.extendee.Nil() {
+		return Extend{}
+	}
+	return Extend{
+		m.withContext,
+		m.Context().arenas.extendees.Deref(m.raw.extendee),
+	}
+}
+
 // Oneof returns the oneof that this member is a member of.
 //
 // Returns the zero value if this member does not have [presence.Shared].
@@ -420,25 +431,77 @@ func (m Member) toRef(c *Context) ref[rawMember] {
 	}.changeContext(m.Context(), c)
 }
 
-// rawExtendee represents an extends block.
+// Extend represents an extend block associated with some extension field.
+type Extend struct {
+	withContext
+	raw *rawExtend
+}
+
+// rawExtend represents an extends block.
 //
 // Rather than each field carrying a reference to its extends block's AST, we
 // have a level of indirection to amortize symbol lookups.
-type rawExtendee struct {
-	def    ast.DeclDef
-	ty     ref[rawType]
-	parent arena.Pointer[rawType]
+type rawExtend struct {
+	def     ast.DeclDef
+	ty      ref[rawType]
+	parent  arena.Pointer[rawType]
+	members []arena.Pointer[rawMember]
 }
 
-func (e *rawExtendee) Scope(c *Context) FullName {
-	return FullName(c.session.intern.Value(e.InternedScope(c)))
-}
-
-func (e *rawExtendee) InternedScope(c *Context) intern.ID {
-	if !e.parent.Nil() {
-		return wrapType(c, ref[rawType]{ptr: e.parent}).InternedFullName()
+// AST returns the declaration for this extend block, if known.
+func (e Extend) AST() ast.DeclDef {
+	if e.IsZero() {
+		return ast.DeclDef{}
 	}
-	return c.File().InternedPackage()
+	return e.raw.def
+}
+
+// Scope returns the scope that symbol lookups in this block should be performed
+// against.
+func (e Extend) Scope() FullName {
+	if e.IsZero() {
+		return ""
+	}
+
+	return FullName(e.Context().session.intern.Value(e.InternedScope()))
+}
+
+// InternedName returns the intern ID for [Extend.Scope].
+func (e Extend) InternedScope() intern.ID {
+	if e.IsZero() {
+		return 0
+	}
+	if ty := e.Parent(); !ty.IsZero() {
+		return ty.InternedFullName()
+	}
+	return e.Context().File().InternedPackage()
+}
+
+// Extendee returns the extendee type of this extend block.
+func (e Extend) Extendee() Type {
+	if e.IsZero() {
+		return Type{}
+	}
+	return wrapType(e.Context(), e.raw.ty)
+}
+
+// Parent returns the type this extend block is declared in.
+func (e Extend) Parent() Type {
+	if e.IsZero() {
+		return Type{}
+	}
+	return wrapType(e.Context(), ref[rawType]{ptr: e.raw.parent})
+}
+
+// Extensions returns the extensions declared in this block.
+func (e Extend) Extensions() seq.Indexer[Member] {
+	var members []arena.Pointer[rawMember]
+	if !e.IsZero() {
+		members = e.raw.members
+	}
+	return seq.NewFixedSlice(members, func(_ int, p arena.Pointer[rawMember]) Member {
+		return wrapMember(e.Context(), ref[rawMember]{ptr: p})
+	})
 }
 
 // Oneof represents a oneof within a message definition.

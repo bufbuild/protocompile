@@ -1,8 +1,0 @@
-decls:
-- syntax: { kind: KIND_SYNTAX, value.literal.string_value: "proto3" }
-- package.path.components: [{ ident: "test" }]
-- def:
-    kind: KIND_MESSAGE
-    name.components: [{ ident: "F" }]
-    body.decls:
-    - range: { kind: KIND_EXTENSIONS, ranges: [{ literal.int_value: 1 }] }

@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -41,8 +42,8 @@ func resolveNames(f File, r *report.Report) {
 		}
 	}
 
-	for extendee := range f.Context().arenas.extendees.Values() {
-		resolveExtendeeType(f.Context(), extendee, r)
+	for extend := range f.Context().arenas.extendees.Values() {
+		resolveExtendeeType(f.Context(), Extend{internal.NewWith(f.Context()), extend}, r)
 	}
 
 	for field := range seq.Values(f.AllExtensions()) {
@@ -156,14 +157,14 @@ func resolveFieldType(field Member, r *report.Report) {
 	}
 }
 
-func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
-	path := extendee.def.Name()
+func resolveExtendeeType(c *Context, extend Extend, r *report.Report) {
+	path := extend.AST().Name()
 	sym := symbolRef{
 		Context: c,
 		Report:  r,
 
 		span:  path,
-		scope: extendee.Scope(c),
+		scope: extend.Scope(),
 		name:  FullName(path.Canonicalized()),
 
 		accept: func(k SymbolKind) bool { return k == SymbolKindMessage },
@@ -174,8 +175,8 @@ func resolveExtendeeType(c *Context, extendee *rawExtendee, r *report.Report) {
 	}.resolve()
 
 	if sym.Kind().IsType() {
-		extendee.ty.file = sym.ref.file
-		extendee.ty.ptr = arena.Pointer[rawType](sym.raw.data)
+		extend.raw.ty.file = sym.ref.file
+		extend.raw.ty.ptr = arena.Pointer[rawType](sym.raw.data)
 	}
 }
 

@@ -27,14 +27,14 @@ files:
 - path: "b.proto"
   import: true
   text: |
-    syntax = "proto3";
+    syntax = "proto2";
     package test;
 
     import "a.proto";
 
 - path: "c.proto"
   text: |
-    syntax = "proto3";
+    syntax = "proto2";
     package test;
     
     import "b.proto";

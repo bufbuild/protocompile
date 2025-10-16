@@ -77,6 +77,7 @@ type rawType struct {
 	rangesByNumber  interval.Intersect[int32, rawTagRange]
 	reservedNames   []rawReservedName
 	oneofs          []arena.Pointer[rawOneof]
+	extends         []arena.Pointer[rawExtend]
 	options         arena.Pointer[rawValue]
 	fqn, name       intern.ID // 0 for predeclared types.
 	parent          arena.Pointer[rawType]
@@ -462,6 +463,16 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 		t.raw.oneofs,
 		func(_ int, p arena.Pointer[rawOneof]) Oneof {
 			return wrapOneof(t.Context(), p)
+		},
+	)
+}
+
+// Options returns the options applied to this type.
+func (t Type) Extends() seq.Indexer[Extend] {
+	return seq.NewFixedSlice(
+		t.raw.extends,
+		func(_ int, p arena.Pointer[rawExtend]) Extend {
+			return Extend{t.withContext, t.Context().arenas.extendees.Deref(p)}
 		},
 	)
 }
