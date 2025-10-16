@@ -38,6 +38,14 @@ error: unrecognized prefix for string literal
 30 | +     j: "",
    |
 
+error: unrecognized prefix for string literal
+  --> testdata/parser/option/cel_literals.proto:32:8
+  help: delete it
+   |
+32 | -     x: r"" b"""""",
+32 | +     x: "" b"""""",
+   |
+
 error: implicitly-concatenated string has incompatible prefix
   --> testdata/parser/option/cel_literals.proto:32:12
    |
@@ -46,4 +54,4 @@ error: implicitly-concatenated string has incompatible prefix
    |        |
    |        must match this prefix
 
-encountered 6 errors
+encountered 7 errors
