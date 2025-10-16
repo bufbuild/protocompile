@@ -18,6 +18,7 @@ import (
 	"path"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -73,6 +74,8 @@ func validateConstraints(f File, r *report.Report) {
 		validateJSType(m, r)
 
 		validatePresence(m, r)
+		validateUTF8(m, r)
+		validateMessageEncoding(m, r)
 
 		// NOTE: extensions already cannot be map fields, so we don't need to
 		// validate them.
@@ -535,6 +538,72 @@ func validateCType(m Member, r *report.Report) {
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
+		))
+	}
+}
+
+func validateUTF8(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+
+	feature := m.FeatureSet().Lookup(builtins.FeatureUTF8)
+	if !feature.IsExplicit() {
+		return
+	}
+
+	if m.Element().Predeclared() == predeclared.String {
+		return
+	}
+	if k, v := m.Element().EntryFields(); k.Element().Predeclared() == predeclared.String ||
+		v.Element().Predeclared() == predeclared.String {
+		return
+	}
+	r.Error(errTypeConstraint{
+		want: "`string`",
+		got:  m.Element(),
+		decl: m.TypeAST(),
+	}).Apply(
+		report.Snippetf(
+			feature.Value().KeyAST(),
+			"`%s` set here", feature.Field().Name(),
+		),
+		report.Helpf(
+			"`%s` can only be set on `string` typed fields, "+
+				"or map fields whose key or value is `string`",
+			feature.Field().Name(),
+		),
+	)
+}
+
+func validateMessageEncoding(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+	feature := m.FeatureSet().Lookup(builtins.FeatureGroup)
+	if !feature.IsExplicit() {
+		return
+	}
+
+	if m.Element().IsMessage() && !m.IsMap() {
+		return
+	}
+
+	d := r.Error(errTypeConstraint{
+		want: taxa.MessageType,
+		got:  m.Element(),
+		decl: m.TypeAST(),
+	}).Apply(
+		report.Snippetf(
+			feature.Value().KeyAST(),
+			"`%s` set here", feature.Field().Name(),
+		),
+		report.Helpf(
+			"`%s` can only be set on message-typed fields", feature.Field().Name(),
+		),
+	)
+
+	if m.IsMap() {
+		d.Apply(report.Helpf(
+			"even though map fields count as repeated message-typed fields, "+
+				"`%s` cannot be set on them",
+			feature.Field().Name(),
 		))
 	}
 }

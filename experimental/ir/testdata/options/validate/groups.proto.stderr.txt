@@ -1,0 +1,21 @@
+error: expected message type, found scalar type `string`
+  --> testdata/options/validate/groups.proto:20:5
+   |
+20 |     string x1 = 1 [features.message_encoding = DELIMITED];
+   |     ^^^^^^         ------------------------- `message_encoding` set here
+   |
+   = help: `message_encoding` can only be set on message-typed fields
+
+error: expected message type, found map entry type `buf.test.M.X4Entry`
+  --> testdata/options/validate/groups.proto:23:5
+   |
+23 |     map<int32, M> x4 = 4 [features.message_encoding = DELIMITED];
+   |     ^^^^^^^^^^^^^         -------------------------
+   |                            |
+   |                            `message_encoding` set here
+   |
+   = help: `message_encoding` can only be set on message-typed fields
+   = help: even though map fields count as repeated message-typed fields,
+           `message_encoding` cannot be set on them
+
+encountered 2 errors
