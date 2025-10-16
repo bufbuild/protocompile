@@ -26,24 +26,7 @@ import (
 	"unicode/utf8"
 )
 
-// LengthUnit represents units of measurement for the length of a string.
-//
-// The most commonly used [LengthUnit] in protocompile is [TermWidth], which
-// approximates columns in a terminal emulator. This takes into account the
-// Unicode width of runes, and tabstops. The rune A is one column wide, the rune
-// 貓 is two columns wide, and the multi-rune emoji presentation sequence 🐈‍⬛ is
-// also two columns wide.
-//
-// Other units of length can be used to cope with the needs of other rendering
-// contexts, such as the Language Server Protocol.
-type LengthUnit int
-
-const (
-	ByteLength  LengthUnit = iota + 1 // The length in UTF-8 code units (bytes).
-	UTF16Length                       // The length in UTF-16 code units (uint16s).
-	RuneLength                        // The length in UTF-32 code units (runes).
-	TermWidth                         // The length in approximate terminal columns.
-)
+//go:generate go run ../../internal/enum units.yaml
 
 // Spanner is any type with a [Span].
 type Spanner interface {
@@ -274,7 +257,7 @@ type File struct {
 	//
 	// Alternatively, this slice can be interpreted as the index after each \n in the
 	// original file.
-	lines []int
+	lineIndex []int
 }
 
 // NewFile constructs a new source file.
@@ -315,6 +298,22 @@ func (f *File) Location(offset int, units LengthUnit) Location {
 	return f.location(offset, units, true)
 }
 
+// InverseLocation inverts the operation in [File.Location].
+//
+// line and column should be 1-indexed, and units should be the units used to
+// measure the column width. If units is [TermWidth], this function panics,
+// because inverting a [TermWidth] location is not supported.
+func (f *File) InverseLocation(line, column int, units LengthUnit) Location {
+	if f == nil && line == 1 && column == 1 {
+		return Location{Offset: 0, Line: 1, Column: 1}
+	}
+
+	return Location{
+		Line: line, Column: column,
+		Offset: f.inverseLocation(line, column, units, true),
+	}
+}
+
 // Indentation calculates the indentation some offset.
 //
 // Indentation is defined as the substring between the last newline in
@@ -336,6 +335,23 @@ func (f *File) Span(start, end int) Span {
 	return Span{f, start, end}
 }
 
+// LineOffsets returns the given line, including its trailing newline.
+//
+// line is expected to be 1-indexed.
+func (f *File) Line(line int) string {
+	start, end := f.LineOffsets(line)
+	return f.text[start:end]
+}
+
+// LineOffsets returns the offsets for the given line, including its trailing
+// newline.
+//
+// line is expected to be 1-indexed.
+func (f *File) LineOffsets(line int) (start, end int) {
+	lines := f.lines()
+	return lines[line-1], lines[line]
+}
+
 // EOF returns a Span pointing to the end-of-file.
 func (f *File) EOF() Span {
 	if f == nil {
@@ -354,35 +370,15 @@ func (f *File) EOF() Span {
 }
 
 func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Location {
-	// Compute the prefix sum on-demand.
-	f.once.Do(func() {
-		var next int
-
-		// We add 1 to the return value of IndexByte because we want to work
-		// with the index immediately *after* the newline byte.
-		text := f.Text()
-		for {
-			newline := strings.IndexByte(text, '\n') + 1
-			if newline == 0 {
-				break
-			}
-
-			text = text[newline:]
-
-			f.lines = append(f.lines, next)
-			next += newline
-		}
-
-		f.lines = append(f.lines, next)
-	})
+	lines := f.lines()
 
 	// Find the smallest index in c.lines such that lines[line] <= offset.
-	line, exact := slices.BinarySearch(f.lines, offset)
+	line, exact := slices.BinarySearch(lines, offset)
 	if !exact {
 		line--
 	}
 
-	chunk := f.Text()[f.lines[line]:offset]
+	chunk := f.Text()[lines[line]:offset]
 	var column int
 	switch units {
 	case RuneLength:
@@ -404,4 +400,59 @@ func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Locati
 		Line:   line + 1,
 		Column: column + 1,
 	}
+}
+
+func (f *File) inverseLocation(line, column int, units LengthUnit, allowNonPrint bool) int {
+	// Find the start the given line.
+	start, end := f.LineOffsets(line)
+	chunk := f.text[start:end]
+	var offset int
+	switch units {
+	case RuneLength:
+		for offset = range chunk {
+			column--
+			if column <= 0 {
+				break
+			}
+		}
+	case ByteLength:
+		offset = column - 1
+	case UTF16Length:
+		var r rune
+		for offset, r = range chunk {
+			column -= utf16.RuneLen(r)
+			if column <= 0 {
+				break
+			}
+		}
+	case TermWidth:
+		panic("protocompile/report: passed TermWidth to File.InvertLocation")
+	}
+
+	return start + offset
+}
+
+func (f *File) lines() []int {
+	// Compute the prefix sum on-demand.
+	f.once.Do(func() {
+		var next int
+
+		// We add 1 to the return value of IndexByte because we want to work
+		// with the index immediately *after* the newline byte.
+		text := f.Text()
+		for {
+			newline := strings.IndexByte(text, '\n') + 1
+			if newline == 0 {
+				break
+			}
+
+			text = text[newline:]
+
+			f.lineIndex = append(f.lineIndex, next)
+			next += newline
+		}
+
+		f.lineIndex = append(f.lineIndex, next)
+	})
+	return f.lineIndex
 }
