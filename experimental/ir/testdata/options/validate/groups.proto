@@ -12,36 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto2";
+edition = "2023";
 
-package test;
+package buf.test;
 
 message M {
-    optional int32 y0 = 1;
-    optional int32 y1 = 2;
-    optional int32 y2 = 3;
-    optional int32 y3 = 4;
-    optional int32 y4 = 5;
-
-    reserved 2, 3 to 3, 5 to 10;
-    reserved 7, 8 to max;   // Overlapping reserved regions.
-    reserved max to max;    // Only first can be max.
-
-    optional int32 reserved = 100;
-    reserved "reserved", "unused";
-}
-
-enum E {
-    Y0 = 1;
-    Y1 = 2;
-    Y2 = 3;
-    Y3 = 4;
-    Y4 = 5;
-
-    reserved 2, 3 to 3, 5 to 10;
-    reserved 7, 8 to max;
-    reserved max to max;
-
-    reserved = 100;
-    reserved "reserved", "unused";
+    string x1 = 1 [features.message_encoding = DELIMITED];
+    M x2 = 2 [features.message_encoding = DELIMITED];
+    repeated M x3 = 3 [features.message_encoding = DELIMITED];
+    map<int32, M> x4 = 4 [features.message_encoding = DELIMITED];
 }

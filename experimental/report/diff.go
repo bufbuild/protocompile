@@ -116,7 +116,7 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 		var buf strings.Builder
 		prev := 0
 		for _, edit := range edits {
-			buf.WriteString(original[prev : edit.Start-start])
+			buf.WriteString(original[prev:max(prev, edit.Start-start)])
 			buf.WriteString(edit.Replace)
 			prev = edit.End - start
 		}
