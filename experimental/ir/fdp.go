@@ -78,9 +78,17 @@ func IncludeSourceCodeInfo(flag bool) DescriptorOption {
 	}
 }
 
+// ExcludeFiles excludes the given files from the output of [DescriptorSetBytes].
+func ExcludeFiles(exclude func(File) bool) DescriptorOption {
+	return func(dg *descGenerator) {
+		dg.exclude = exclude
+	}
+}
+
 type descGenerator struct {
 	currentFile      File
 	includeDebugInfo bool
+	exclude          func(File) bool
 
 	sourceCodeInfo     *descriptorpb.SourceCodeInfo
 	sourceCodeInfoExtn *descriptorv1.SourceCodeInfoExtension
@@ -91,6 +99,10 @@ func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet
 	// imports for each file because we want the result to be sorted
 	// topologically.
 	for file := range topoSort(files) {
+		if dg.exclude != nil && dg.exclude(file) {
+			continue
+		}
+
 		fdp := new(descriptorpb.FileDescriptorProto)
 		fds.File = append(fds.File, fdp)
 
