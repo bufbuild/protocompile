@@ -202,7 +202,10 @@ func TestIR(t *testing.T) {
 		irs = slices.DeleteFunc(irs, ir.File.IsZero)
 
 		if test.Descriptor {
-			bytes, err := ir.DescriptorSetBytes(irs, ir.IncludeSourceCodeInfo(test.SourceCodeInfo))
+			bytes, err := ir.DescriptorSetBytes(irs,
+				ir.IncludeSourceCodeInfo(test.SourceCodeInfo),
+				ir.ExcludeFiles(ir.File.IsDescriptorProto),
+			)
 			require.NoError(t, err)
 
 			fds := new(descriptorpb.FileDescriptorSet)
