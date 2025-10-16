@@ -15,9 +15,15 @@
 package ir
 
 import (
+	"fmt"
 	"path"
+	"regexp"
+	"slices"
+	"strings"
+	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -25,7 +31,10 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 )
+
+var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
 
 // diagnoseUnusedImports generates diagnostics for each unused import.
 func diagnoseUnusedImports(f File, r *report.Report) {
@@ -56,11 +65,13 @@ func validateConstraints(f File, r *report.Report) {
 
 		case ty.IsMessageSet():
 			validateMessageSet(ty, r)
+			validateExtensionDeclarations(ty, r)
 
 		case ty.IsMessage():
 			for oneof := range seq.Values(ty.Oneofs()) {
 				validateOneof(oneof, r)
 			}
+			validateExtensionDeclarations(ty, r)
 		}
 	}
 
@@ -80,6 +91,8 @@ func validateConstraints(f File, r *report.Report) {
 			if extendee.IsMessageSet() {
 				validateMessageSetExtension(m, r)
 			}
+
+			validateDeclaredExtension(m, r)
 		}
 	}
 }
@@ -243,6 +256,271 @@ func validateMessageSetExtension(extn Member, r *report.Report) {
 			report.Snippet(extendee.AST().Stem()),
 			report.Helpf("message set extensions must be singular message fields"),
 		)
+	}
+}
+
+func validateExtensionDeclarations(ty Type, r *report.Report) {
+	builtins := ty.Context().builtins()
+
+	// First, walk through all of the extension ranges to get their associated
+	// option objects.
+	options := make(map[MessageValue][]ReservedRange)
+	for r := range seq.Values(ty.ExtensionRanges()) {
+		if r.Options().IsZero() {
+			continue
+		}
+		mapsx.Append(options, r.Options(), r)
+	}
+
+	// Now, walk through each grouping of extensions and match up their
+	// declarations.
+	for options, ranges := range options {
+		rangeSpan := func() report.Span {
+			return report.JoinSeq(iterx.Map(slices.Values(ranges), func(r ReservedRange) report.Span {
+				return r.AST().Span()
+			}))
+		}
+
+		decls := options.Field(builtins.ExtnDecls)
+		verification := options.Field(builtins.ExtnVerification)
+		if v, ok := verification.AsInt(); ok && (v == 1) != decls.IsZero() {
+			if decls.IsZero() {
+				r.Errorf("extension range requires declarations, but does not define any").Apply(
+					report.Snippetf(verification.ValueAST(), "required by this option"),
+					report.Snippet(rangeSpan()),
+				)
+			} else {
+				r.Errorf("unverified extension range defines declarations").Apply(
+					report.Snippetf(decls.OptionSpan(), "defined here"),
+					report.Snippetf(verification.ValueAST(), "required by this option"),
+				)
+			}
+		}
+
+		if decls.IsZero() {
+			continue
+		}
+
+		if len(ranges) > 1 {
+			// An extension range with declarations and multiple ranges
+			// is not allowed.
+			r.Errorf("multi-range `extensions` with extension declarations").Apply(
+				report.Snippetf(decls.KeyAST(), "declaration defined here"),
+				report.Snippetf(rangeSpan(), "multiple ranges declared here"),
+				report.Helpf("this is rejected by protoc due to a quirk in its internal representation of extension ranges"),
+			)
+		}
+
+		var haveMissingField bool
+		numbers := make(map[int32]struct{})
+		for elem := range seq.Values(decls.Elements()) {
+			decl := elem.AsMessage()
+
+			number := decl.Field(builtins.ExtnDeclNumber)
+			if n, ok := number.AsInt(); ok {
+				// Find the range that contains n.
+				var found bool
+				for _, r := range ranges {
+					start, end := r.Range()
+					if int64(start) <= n && n <= int64(end) {
+						found = true
+						numbers[int32(n)] = struct{}{}
+						break
+					}
+				}
+
+				if !found {
+					r.Errorf("out-of-range `%s` in extension declaration", number.Field().Name()).Apply(
+						report.Snippet(number.ValueAST()),
+						report.Snippetf(rangeSpan(), "%v must be among one of these ranges", n),
+					)
+				}
+			} else {
+				r.Errorf("extension declaration must specify `%s`", builtins.ExtnDeclNumber.Name()).Apply(
+					report.Snippet(elem.AST()),
+				)
+				haveMissingField = true
+			}
+
+			validatePath := func(v Value, want any) bool {
+				// First, check this is a valid name in the first place.
+				s, _ := v.AsString()
+				name := FullName(s)
+				for component := range name.Components() {
+					if !asciiIdent.MatchString(component) {
+						d := r.Errorf("expected %s in `%s.%s`", want,
+							v.Field().Container().Name(), v.Field().Name(),
+						).Apply(
+							report.Snippet(v.ValueAST()),
+						)
+						if strings.ContainsFunc(component, unicode.IsSpace) {
+							d.Apply(report.Helpf("the name may not contain whitespace"))
+						}
+						return false
+					}
+				}
+
+				if !name.Absolute() {
+					d := r.Errorf("relative name in `%s.%s`",
+						v.Field().Container().Name(), v.Field().Name(),
+					).Apply(
+						report.Snippet(v.ValueAST()),
+					)
+
+					if lit := v.ValueAST().AsLiteral(); !lit.IsZero() {
+						str := lit.AsString()
+						start := lit.Span().Start
+						offset := str.RawContent().Start - start
+						d.Apply(report.SuggestEdits(v.ValueAST(), "add a leading `.`", report.Edit{
+							Start: offset, End: offset,
+							Replace: ".",
+						}))
+					}
+				}
+
+				return true
+			}
+
+			// NOTE: name deduplication needs to wait until global linking,
+			// similar to extension number deduplication.
+			name := decl.Field(builtins.ExtnDeclName)
+			if !name.IsZero() {
+				validatePath(name, "fully-qualified name")
+			} else if !haveMissingField {
+				r.Errorf("extension declaration must specify `%s`", builtins.ExtnDeclName.Name()).Apply(
+					report.Snippet(elem.AST()),
+				)
+				haveMissingField = true
+			}
+
+			tyName := decl.Field(builtins.ExtnDeclType)
+			if !tyName.IsZero() {
+				v, _ := tyName.AsString()
+				if predeclared.Lookup(v) == predeclared.Unknown {
+					ok := validatePath(tyName, "predeclared type or fully-qualified name")
+					if ok {
+						// Check to see whether this is a legit type.
+						sym := ty.Context().File().FindSymbol(FullName(v).ToRelative())
+						if !sym.IsZero() && !sym.Kind().IsType() {
+							r.Warnf("expected type, got %s `%s`", sym.noun(), sym.FullName()).Apply(
+								report.Snippet(tyName.ValueAST()),
+								report.PageBreak,
+								report.Snippetf(sym.Definition(), "`%s` declared here", sym.FullName()),
+								report.Helpf("`%s.%s` must name a (possibly unimported) type", tyName.Field().Container().Name(), tyName.Field().Name()),
+							)
+						}
+					}
+				}
+			} else if !haveMissingField {
+				r.Errorf("extension declaration must specify `%s`", builtins.ExtnDeclType.Name()).Apply(
+					report.Snippet(elem.AST()),
+				)
+				haveMissingField = true
+			}
+		}
+
+		// Generate warnings for each range that is missing at least one value.
+	missingDecls:
+		for _, rr := range ranges {
+			start, end := rr.Range()
+
+			// The complexity of this loop is only O(decls), so `1 to max` will
+			// not need to loop two billion times.
+			for i := start; i <= end; i++ {
+				if !mapsx.Contains(numbers, i) {
+					r.Warnf("missing declaration for extension number `%v`", i).Apply(
+						report.Snippetf(rr.AST(), "required by this range"),
+						report.Notef("this is likely a mistake, but it is not rejected by protoc"),
+					)
+					break missingDecls // Only diagnose the first problematic range.
+				}
+			}
+		}
+	}
+}
+
+func validateDeclaredExtension(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+
+	// First, figure out whether this is a declared extension.
+	extendee := m.Container()
+	var decl MessageValue
+	var elem Element
+declSearch:
+	for r := range extendee.Ranges(m.Number()) {
+		decls := r.AsReserved().Options().Field(builtins.ExtnDecls)
+		for v := range seq.Values(decls.Elements()) {
+			msg := v.AsMessage()
+			number := msg.Field(builtins.ExtnDeclNumber)
+			if n, ok := number.AsInt(); ok && n == int64(m.Number()) {
+				elem = v
+				decl = msg
+				break declSearch
+			}
+		}
+	}
+	if decl.IsZero() {
+		return // Not a declared extension.
+	}
+
+	reserved := decl.Field(builtins.ExtnDeclReserved)
+	if v, _ := reserved.AsBool(); v {
+		r.Errorf("use of reserved extension number").Apply(
+			report.Snippet(m.AST().Value()),
+			report.PageBreak,
+			report.Snippetf(elem.AST(), "extension declared here"),
+			report.Snippetf(reserved.ValueAST(), "... and reserved here"),
+		)
+	}
+
+	name := decl.Field(builtins.ExtnDeclName)
+	if v, ok := name.AsString(); ok && m.FullName() != FullName(v).ToRelative() {
+		r.Errorf("unexpected %s name", taxa.Extension).Apply(
+			report.Snippetf(m.AST().Name(), "expected `%s`", v),
+			report.PageBreak,
+			report.Snippetf(name.ValueAST(), "expected name declared here"),
+		)
+	}
+
+	tyName := decl.Field(builtins.ExtnDeclType)
+	repeated := decl.Field(builtins.ExtnDeclRepeated)
+	wantRepeated, _ := repeated.AsBool()
+
+	if v, ok := tyName.AsString(); ok {
+		ty := PredeclaredType(predeclared.Lookup(v))
+		var sym Symbol
+		if ty.IsZero() {
+			sym = m.Context().File().FindSymbol(FullName(v).ToRelative())
+			ty = sym.AsType()
+		}
+
+		if m.Element() != ty || wantRepeated != m.IsRepeated() {
+			want := any(sym)
+			if sym.IsZero() {
+				if !ty.IsZero() {
+					want = ty
+				} else {
+					want = fmt.Sprintf("unknown type `%s`", FullName(v).ToRelative())
+				}
+			}
+
+			d := r.Error(errTypeCheck{
+				want: want, got: m.Element(),
+				wantRepeated: wantRepeated,
+				gotRepeated:  m.IsRepeated(),
+
+				expr:       m.TypeAST(),
+				annotation: tyName.ValueAST(),
+			})
+
+			if wantRepeated {
+				d.Apply(report.Snippetf(repeated.OptionSpan(), "`repeated` required here"))
+			}
+
+			if !sym.IsZero() && ty.IsZero() {
+				d.Apply(report.Notef("`%s` is not a type; this indicates a bug in the extension declaration", sym.FullName()))
+			}
+		}
 	}
 }
 

@@ -1,0 +1,32 @@
+warning: missing `package` declaration
+ --> testdata/extend/decl_empty_pkg.proto
+   = note: not explicitly specifying a package places the file in the unnamed
+           package; using it strongly is discouraged
+
+error: mismatched types
+  --> testdata/extend/decl_empty_pkg.proto:44:5
+   |
+27 |             type: ".int32"
+   |                   -------- expected due to this
+...
+43 |     optional .int32 x1 = 1;
+44 |     optional int32 x2 = 2;
+   |     ^^^^^^^^^^^^^^ expected `int32`, found `int32`
+   |
+   = note: expected: message type `int32`
+              found: scalar type `int32`
+
+error: mismatched types
+  --> testdata/extend/decl_empty_pkg.proto:45:5
+   |
+32 |             type: "int32"
+   |                   ------- expected due to this
+...
+44 |     optional int32 x2 = 2;
+45 |     optional .int32 y1 = 3;
+   |     ^^^^^^^^^^^^^^^ expected `int32`, found `int32`
+   |
+   = note: expected: scalar type `int32`
+              found: message type `int32`
+
+encountered 2 errors and 1 warning

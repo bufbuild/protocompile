@@ -1198,18 +1198,24 @@ type errTypeCheck struct {
 
 	expr       report.Spanner
 	annotation report.Spanner
+
+	wantRepeated, gotRepeated bool
 }
 
 // Diagnose implements [report.Diagnose].
 func (e errTypeCheck) Diagnose(d *report.Diagnostic) {
-	strings := func(v any) (name, what string) {
+	strings := func(v any, repeated bool) (name, what string) {
 		type symbol interface {
 			FullName() FullName
 			noun() taxa.Noun
 		}
 
 		if sym, ok := v.(symbol); ok {
-			name = "`" + string(sym.FullName()) + "`"
+			r := ""
+			if repeated {
+				r = "repeated "
+			}
+			name = fmt.Sprintf("`%s%s`", r, sym.FullName())
 			return name, sym.noun().String() + " " + name
 		}
 
@@ -1217,8 +1223,8 @@ func (e errTypeCheck) Diagnose(d *report.Diagnostic) {
 		return name, name
 	}
 
-	wantName, wantWhat := strings(e.want)
-	gotName, gotWhat := strings(e.got)
+	wantName, wantWhat := strings(e.want, e.wantRepeated)
+	gotName, gotWhat := strings(e.got, e.gotRepeated)
 
 	d.Apply(
 		report.Message("mismatched types"),
