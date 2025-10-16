@@ -51,6 +51,7 @@ func validateConstraints(f File, r *report.Report) {
 	validateFileOptions(f, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
+		validateReservedNames(ty, r)
 		switch {
 		case ty.IsEnum():
 			validateEnum(ty, r)
@@ -152,6 +153,20 @@ func validateFileOptions(f File, r *report.Report) {
 	if v, _ := defaultPresence.AsInt(); v == 3 { // google.protobuf.FeatureSet.LEGACY_REQUIRED
 		r.Errorf("cannot set `LEGACY_REQUIRED` at the file level").Apply(
 			report.Snippet(defaultPresence.ValueAST()),
+		)
+	}
+}
+
+func validateReservedNames(ty Type, r *report.Report) {
+	for name := range seq.Values(ty.ReservedNames()) {
+		member := ty.MemberByInternedName(name.InternedName())
+		if member.IsZero() {
+			continue
+		}
+
+		r.Errorf("use of reserved %s name", member.noun()).Apply(
+			report.Snippet(member.AST().Name()),
+			report.Snippetf(name.AST(), "`%s` reserved here", member.Name()),
 		)
 	}
 }
