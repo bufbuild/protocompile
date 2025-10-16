@@ -310,7 +310,7 @@ func (w *walker) newExtendee(def ast.DefExtend, parent any) arena.Pointer[rawExt
 		parentTy.raw.extends = append(parentTy.raw.extends, id)
 		c.extends = append(c.extends, id)
 	} else {
-		c.extends = slices.Insert(c.extends, int(c.topLevelExtendsEnd), id)
+		c.extends = slices.Insert(c.extends, c.topLevelExtendsEnd, id)
 		c.topLevelExtendsEnd++
 	}
 
