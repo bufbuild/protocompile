@@ -57,18 +57,15 @@ error: expected singular message, found scalar type `bool`
 743 |   optional bool lazy = 5 [default = false];
     |            ---- type specified here
 
-error: expected singular message, found pseudo-option `default`
+error: expected singular message, found scalar type `int32`
   --> testdata/options/missing.proto:26:37
    |
 26 |     optional int32 bar = 2 [default.x = 42];
-   |                             ------- ^
-   |                              |      |
-   |                              found pseudo-option `default`
-   |                                     |
-   |                                     field selector requires singular message
-   |
-   = note: `default` is a pseudo-option and does not correspond to a field in
-           `google.protobuf.FieldOptions`
+   |              -----          ------- ^
+   |               |                     |
+   |               type specified here   field selector requires singular message
+   |                              |
+   |                              found scalar type `int32`
 
 error: cannot find message field `unknown` in `google.protobuf.OneofOptions`
   --> testdata/options/missing.proto:29:16

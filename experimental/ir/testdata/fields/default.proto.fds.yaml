@@ -1,0 +1,164 @@
+file:
+- name: "testdata/fields/default.proto"
+  package: "buf.test"
+  message_type:
+  - name: "M"
+    field:
+    - name: "i1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      default_value: "-42"
+      json_name: "i1"
+    - name: "i2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      default_value: "4294967295"
+      json_name: "i2"
+    - name: "i3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "i3"
+    - name: "i4"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "i4"
+    - name: "i5"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      default_value: "0"
+      json_name: "i5"
+    - name: "i6"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      default_value: "0"
+      json_name: "i6"
+    - name: "f1"
+      number: 11
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "1"
+      json_name: "f1"
+    - name: "f2"
+      number: 12
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "inf"
+      json_name: "f2"
+    - name: "f3"
+      number: 13
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "-inf"
+      json_name: "f3"
+    - name: "f4"
+      number: 14
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "nan"
+      json_name: "f4"
+    - name: "f5"
+      number: 15
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "-0"
+      json_name: "f5"
+    - name: "f6"
+      number: 16
+      label: LABEL_OPTIONAL
+      type: TYPE_FLOAT
+      default_value: "0"
+      json_name: "f6"
+    - name: "s1"
+      number: 21
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      default_value: "foo"
+      json_name: "s1"
+    - name: "s2"
+      number: 22
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      default_value: "c\xff"
+      json_name: "s2"
+    - name: "s3"
+      number: 23
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      default_value: "c\xff"
+      json_name: "s3"
+      options.features.utf8_validation: NONE
+    - name: "s4"
+      number: 24
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      default_value: ""
+      json_name: "s4"
+    - name: "b1"
+      number: 31
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      default_value: "true"
+      json_name: "b1"
+    - name: "b2"
+      number: 32
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "b2"
+    - name: "b3"
+      number: 33
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      default_value: "false"
+      json_name: "b3"
+    - name: "e1"
+      number: 41
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.M.E"
+      default_value: "1"
+      json_name: "e1"
+    - name: "e2"
+      number: 42
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.M.E"
+      default_value: "1"
+      json_name: "e2"
+    - name: "e3"
+      number: 43
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".buf.test.M.E"
+      default_value: "0"
+      json_name: "e3"
+    - name: "w1"
+      number: 101
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "w1"
+    - name: "w2"
+      number: 102
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      json_name: "w2"
+    - name: "w3"
+      number: 103
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.M"
+      json_name: "w3"
+    enum_type:
+    - name: "E"
+      value:
+      - { name: "E0", number: 0 }
+      - { name: "E1", number: 1 }
+      - { name: "E2", number: 2 }
+  syntax: "editions"
+  edition: EDITION_2023

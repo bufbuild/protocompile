@@ -1,0 +1,30 @@
+error: non-UTF-8 string literal
+  --> testdata/options/utf8.proto:22:51
+   |
+22 | option (e).default = "this is not a valid escape: \xff";
+   |                                                   ^^^^ non-UTF-8 byte
+23 | option (e).verify = "this is not a valid escape: \xff";
+...
+27 |     string default = 1;
+   |     ------------------- this field requires a UTF-8 string
+   |
+  ::: testdata/options/utf8.proto:16:11
+   |
+16 | edition = "2023";
+   |           ------ UTF-8 required here
+
+error: non-UTF-8 string literal
+  --> testdata/options/utf8.proto:23:50
+   |
+23 |   option (e).verify = "this is not a valid escape: \xff";
+   |                                                    ^^^^ non-UTF-8 byte
+24 |   option (e).none = "this one is valid here: \xff";
+...
+27 |       string default = 1;
+28 | /     string verify = 2 [
+29 | |         features.utf8_validation = VERIFY
+   | |                                    ------ UTF-8 required here
+30 | |     ];
+   | \______- this field requires a UTF-8 string
+
+encountered 2 errors

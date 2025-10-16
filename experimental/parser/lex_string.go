@@ -40,8 +40,9 @@ func lexString(l *lexer, sigil string) {
 	l.cursor += len(quote)
 
 	var (
-		buf                 strings.Builder
-		haveEsc, terminated bool
+		buf        strings.Builder
+		terminated bool
+		escapes    []tokenmeta.Escape
 	)
 	for !l.Done() {
 		if strings.HasPrefix(l.Rest(), quote) {
@@ -52,14 +53,26 @@ func lexString(l *lexer, sigil string) {
 
 		cursor := l.cursor
 		sc := lexStringContent(l)
-		if sc.isEscape && !haveEsc {
-			// If we saw our first escape, spill the string into the buffer
-			// up to just before the escape.
-			buf.WriteString(l.Text()[start+1 : cursor])
-			haveEsc = true
+		if !sc.escape.IsZero() {
+			if escapes == nil {
+				// If we saw our first escape, spill the string into the buffer
+				// up to just before the escape.
+				buf.WriteString(l.Text()[start+1 : cursor])
+			}
+
+			escape := tokenmeta.Escape{
+				Start: uint32(sc.escape.Start),
+				End:   uint32(sc.escape.End),
+			}
+			if sc.isRawByte {
+				escape.Byte = byte(sc.rune)
+			} else {
+				escape.Rune = sc.rune
+			}
+			escapes = append(escapes, escape)
 		}
 
-		if haveEsc {
+		if escapes != nil {
 			if sc.isRawByte {
 				buf.WriteByte(byte(sc.rune))
 			} else {
@@ -69,10 +82,10 @@ func lexString(l *lexer, sigil string) {
 	}
 
 	tok := l.Push(l.cursor-start, token.String)
-	if haveEsc {
+	if escapes != nil {
 		meta := token.MutateMeta[tokenmeta.String](tok)
-		meta.Escaped = true
 		meta.Text = buf.String()
+		meta.Escapes = escapes
 	}
 
 	if sigil != "" {
@@ -108,7 +121,8 @@ func lexString(l *lexer, sigil string) {
 type stringContent struct {
 	rune rune
 
-	isEscape, isRawByte bool
+	isRawByte bool
+	escape    report.Span
 }
 
 // lexStringContent lexes a single logical rune's worth of content for a quoted
@@ -176,25 +190,32 @@ func lexStringContent(l *lexer) (sc stringContent) {
 		return stringContent{rune: r}
 	}
 
-	sc.isEscape = true
 	r = l.Pop()
 	switch r {
 	// These are all the simple escapes.
 	case 'a':
 		sc.rune = '\a' // U+0007
+		sc.escape = l.SpanFrom(start)
 	case 'b':
 		sc.rune = '\b' // U+0008
+		sc.escape = l.SpanFrom(start)
 	case 'f':
 		sc.rune = '\f' // U+000C
+		sc.escape = l.SpanFrom(start)
 	case 'n':
 		sc.rune = '\n'
+		sc.escape = l.SpanFrom(start)
 	case 'r':
 		sc.rune = '\r'
+		sc.escape = l.SpanFrom(start)
 	case 't':
 		sc.rune = '\t'
+		sc.escape = l.SpanFrom(start)
 	case 'v':
 		sc.rune = '\v' // U+000B
+		sc.escape = l.SpanFrom(start)
 	case '\\', '\'', '"', '?':
+		sc.escape = l.SpanFrom(start)
 		sc.rune = r
 
 	// Octal escape. Need to eat the next two runes if they're octal.
@@ -213,6 +234,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 			sc.rune *= 8
 			sc.rune += r - '0'
 		}
+		sc.escape = l.SpanFrom(start)
 
 	// Hex escapes. And yes, the 'X' is no mistake: Protobuf is one of the
 	// only language that supports \XNN as an alias for \xNN, something not
@@ -242,19 +264,19 @@ func lexStringContent(l *lexer) (sc stringContent) {
 			consumed++
 		}
 
-		escape := l.SpanFrom(start)
+		sc.escape = l.SpanFrom(start)
 		if consumed == 0 {
-			l.Error(errInvalidEscape{Span: escape})
+			l.Error(errInvalidEscape{Span: sc.escape})
 		} else if !sc.isRawByte {
 			// \u and \U must have exact numbers of digits.
 			if consumed != digits || !utf8.ValidRune(sc.rune) {
-				l.Error(errInvalidEscape{Span: escape})
+				l.Error(errInvalidEscape{Span: sc.escape})
 			}
 		}
 
 	default:
-		escape := l.SpanFrom(start)
-		l.Error(errInvalidEscape{Span: escape})
+		sc.escape = l.SpanFrom(start)
+		l.Error(errInvalidEscape{Span: sc.escape})
 	}
 
 	return sc

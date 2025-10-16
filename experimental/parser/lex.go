@@ -397,18 +397,22 @@ func fuseStrings(l *lexer) {
 			return
 		}
 
+		var escapes []tokenmeta.Escape
 		var buf strings.Builder
 		for i := start.ID(); i <= end.ID(); i++ {
 			tok := i.In(l.Context)
 			if s := tok.AsString(); !s.IsZero() {
 				buf.WriteString(s.Text())
-				token.ClearMeta[tokenmeta.String](tok)
+				if i > start.ID() {
+					token.ClearMeta[tokenmeta.String](tok)
+				}
 			}
 		}
 
 		meta := token.MutateMeta[tokenmeta.String](start)
 		meta.Text = buf.String()
 		meta.Concatenated = true
+		meta.Escapes = escapes
 
 		token.Fuse(start, end)
 	}

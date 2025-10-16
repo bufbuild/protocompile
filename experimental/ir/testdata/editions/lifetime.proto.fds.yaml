@@ -219,6 +219,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.ExtensionRangeOptions.VerificationState"
+      default_value: "1"
       json_name: "verification"
       options.retention: RETENTION_SOURCE
     nested_type:
@@ -468,11 +469,13 @@ file:
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "clientStreaming"
     - name: "server_streaming"
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "serverStreaming"
   - name: "FileOptions"
     field:
@@ -490,6 +493,7 @@ file:
       number: 10
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "javaMultipleFiles"
     - name: "java_generate_equals_and_hash"
       number: 20
@@ -501,12 +505,14 @@ file:
       number: 27
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "javaStringCheckUtf8"
     - name: "optimize_for"
       number: 9
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FileOptions.OptimizeMode"
+      default_value: "1"
       json_name: "optimizeFor"
     - name: "go_package"
       number: 11
@@ -517,26 +523,31 @@ file:
       number: 16
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "ccGenericServices"
     - name: "java_generic_services"
       number: 17
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "javaGenericServices"
     - name: "py_generic_services"
       number: 18
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "pyGenericServices"
     - name: "deprecated"
       number: 23
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "cc_enable_arenas"
       number: 31
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "true"
       json_name: "ccEnableArenas"
     - name: "objc_class_prefix"
       number: 36
@@ -600,16 +611,19 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "messageSetWireFormat"
     - name: "no_standard_descriptor_accessor"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "noStandardDescriptorAccessor"
     - name: "deprecated"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "map_entry"
       number: 7
@@ -648,6 +662,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldOptions.CType"
+      default_value: "0"
       json_name: "ctype"
     - name: "packed"
       number: 2
@@ -659,32 +674,38 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.FieldOptions.JSType"
+      default_value: "0"
       json_name: "jstype"
     - name: "lazy"
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "lazy"
     - name: "unverified_lazy"
       number: 15
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "unverifiedLazy"
     - name: "deprecated"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "weak"
       number: 10
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "weak"
       options.deprecated: true
     - name: "debug_redact"
       number: 16
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "debugRedact"
     - name: "retention"
       number: 17
@@ -817,6 +838,7 @@ file:
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "deprecated_legacy_json_field_conflicts"
       number: 6
@@ -844,6 +866,7 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "features"
       number: 2
@@ -855,6 +878,7 @@ file:
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "debugRedact"
     - name: "feature_support"
       number: 4
@@ -881,6 +905,7 @@ file:
       number: 33
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "uninterpreted_option"
       number: 999
@@ -895,12 +920,14 @@ file:
       number: 33
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      default_value: "false"
       json_name: "deprecated"
     - name: "idempotency_level"
       number: 34
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".google.protobuf.MethodOptions.IdempotencyLevel"
+      default_value: "0"
       json_name: "idempotencyLevel"
     - name: "features"
       number: 35

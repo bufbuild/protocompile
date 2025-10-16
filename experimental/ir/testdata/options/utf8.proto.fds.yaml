@@ -1339,77 +1339,42 @@ file:
     objc_class_prefix: "GPB"
     csharp_namespace: "Google.Protobuf.Reflection"
   syntax: "proto2"
-- name: "testdata/options/custom.proto"
+- name: "testdata/options/utf8.proto"
   package: "buf.test"
   dependency: ["google/protobuf/descriptor.proto"]
   message_type:
-  - name: "Foo"
+  - name: "M"
     field:
-    - name: "x"
+    - name: "default"
       number: 1
       label: LABEL_OPTIONAL
-      type: TYPE_INT32
-      json_name: "x"
-      options.$unknown: "1000: 42"
-    - name: "z"
+      type: TYPE_STRING
+      json_name: "default"
+    - name: "verify"
       number: 2
       label: LABEL_OPTIONAL
-      type: TYPE_INT32
-      oneof_index: 0
-      json_name: "z"
-      options.$unknown: "1000: 42"
-    extension_range:
-    - { start: 5, end: 6, options.$unknown: "1000: 42" }
-    - { start: 6, end: 7, options.$unknown: "1000: 42" }
-    - { start: 7, end: 8, options.$unknown: "1000: 42" }
-    oneof_decl: [{ name: "y", options.$unknown: "1000: 42" }]
-    options.$unknown: "1000: 42"
-  enum_type:
-  - name: "Bar"
-    value: [{ name: "X", number: 0, options.$unknown: "1000: 42" }]
-    options.$unknown: "1000: 42"
+      type: TYPE_STRING
+      json_name: "verify"
+      options.features.utf8_validation: VERIFY
+    - name: "none"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "none"
+      options.features.utf8_validation: NONE
   extension:
-  - name: "a"
-    number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.FileOptions"
-    json_name: "a"
-  - name: "b"
-    number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.MessageOptions"
-    json_name: "b"
-  - name: "c"
-    number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.FieldOptions"
-    json_name: "c"
-  - name: "d"
-    number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.OneofOptions"
-    json_name: "d"
   - name: "e"
     number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.EnumOptions"
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
     json_name: "e"
-  - name: "f"
-    number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.EnumValueOptions"
-    json_name: "f"
-  - name: "g"
-    number: 1000
-    label: LABEL_REPEATED
-    type: TYPE_INT32
-    extendee: ".google.protobuf.ExtensionRangeOptions"
-    json_name: "g"
-  options.$unknown: "1000: 42"
-  syntax: "proto2"
+  options.$unknown: |
+    1000: {
+      1: {`74686973206973206e6f7420612076616c6964206573636170653a20ff`}
+      2: {`74686973206973206e6f7420612076616c6964206573636170653a20ff`}
+      3: {`74686973206f6e652069732076616c696420686572653a20ff`}
+    }
+  syntax: "editions"
+  edition: EDITION_2023

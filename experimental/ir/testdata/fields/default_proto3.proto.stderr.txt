@@ -1,0 +1,13 @@
+error: custom default in "proto3"
+  --> testdata/fields/default_proto3.proto:20:18
+   |
+20 |     int32 x = 1 [default = 42];
+   |                  ^^^^^^^^^^^^
+  ::: testdata/fields/default_proto3.proto:15:10
+   |
+15 | syntax = "proto3";
+   |          -------- "proto3" specified here
+   |
+   = help: custom defaults cannot be defined in "proto3" only
+
+encountered 1 error

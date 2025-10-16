@@ -18,6 +18,7 @@ import (
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
@@ -124,6 +125,18 @@ func (m Member) IsPacked() bool {
 	feature := m.FeatureSet().Lookup(builtins.FeaturePacked).Value()
 	value, _ := feature.AsInt()
 	return value == 1 // google.protobuf.FeatureSet.PACKED
+}
+
+// IsUnicode returns whether this is a string-typed message field that must
+// contain UTF-8 bytes.
+func (m Member) IsUnicode() bool {
+	if m.Element().Predeclared() != predeclared.String {
+		return false
+	}
+
+	builtins := m.Context().builtins()
+	utf8Feature, _ := m.FeatureSet().Lookup(builtins.FeatureUTF8).Value().AsInt()
+	return utf8Feature == 2 // FeatureSet.VERIFY
 }
 
 // AsTagRange wraps this member in a TagRange.
