@@ -51,3 +51,8 @@ func AddZero[M ~map[K]V, K comparable, V any](m M, k K) (inserted bool) {
 	_, inserted = Add(m, k, z)
 	return inserted
 }
+
+// Append appends the given value to the slice in the entry for the given key.
+func Append[M ~map[K][]V, K comparable, V any](m M, k K, v V) {
+	m[k] = append(m[k], v)
+}

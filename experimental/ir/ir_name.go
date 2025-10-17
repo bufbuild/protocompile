@@ -15,6 +15,7 @@
 package ir
 
 import (
+	"iter"
 	"slices"
 	"strings"
 
@@ -58,6 +59,23 @@ func (n FullName) First() string {
 	n = n.ToRelative()
 	name, _, _ := strings.Cut(string(n), ".")
 	return name
+}
+
+// Components returns an iterator over the components of this name.
+//
+// If there are adjacent dots, e.g. foo..bar, this will yield an empty string
+// within the name.
+func (n FullName) Components() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		n = n.ToRelative()
+		for {
+			name, rest, more := strings.Cut(string(n), ".")
+			if !yield(name) || !more {
+				return
+			}
+			n = FullName(rest)
+		}
+	}
 }
 
 // Name returns the last component of this name.

@@ -50,8 +50,15 @@ type builtins struct {
 	Lazy, UnverifiedLazy Member
 	AllowAlias           Member
 	MessageSet           Member
+	JSONName             Member
 
-	JSONName Member
+	ExtnDecls        Member
+	ExtnVerification Member
+	ExtnDeclNumber   Member
+	ExtnDeclName     Member
+	ExtnDeclType     Member
+	ExtnDeclReserved Member
+	ExtnDeclRepeated Member
 
 	FileDeprecated      Member
 	MessageDeprecated   Member
@@ -116,8 +123,15 @@ type builtinIDs struct {
 	Lazy           intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
 	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
 	AllowAlias     intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
+	JSONName       intern.ID `intern:"google.protobuf.FieldDescriptorProto.json_name"`
 
-	JSONName intern.ID `intern:"google.protobuf.FieldDescriptorProto.json_name"`
+	ExtnDecls        intern.ID `intern:"google.protobuf.ExtensionRangeOptions.declaration"`
+	ExtnVerification intern.ID `intern:"google.protobuf.ExtensionRangeOptions.verification"`
+	ExtnDeclNumber   intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.number"`
+	ExtnDeclName     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.full_name"`
+	ExtnDeclType     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.type"`
+	ExtnDeclReserved intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.reserved"`
+	ExtnDeclRepeated intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.repeated"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`
