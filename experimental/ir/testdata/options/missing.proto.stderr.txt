@@ -12,9 +12,9 @@ error: expected singular message, found scalar type `string`
     |         |
     |         found scalar type `string`
     |
-   ::: google/protobuf/descriptor.proto:504:12
+   ::: google/protobuf/descriptor.proto:507:12
     |
-504 |   optional string go_package = 11;
+507 |   optional string go_package = 11;
     |            ------ type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.MessageOptions`
@@ -31,9 +31,9 @@ error: expected singular message, found scalar type `bool`
     |             |
     |             found scalar type `bool`
     |
-   ::: google/protobuf/descriptor.proto:611:12
+   ::: google/protobuf/descriptor.proto:614:12
     |
-611 |   optional bool deprecated = 3 [default = false];
+614 |   optional bool deprecated = 3 [default = false];
     |            ---- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.FieldOptions`
@@ -52,9 +52,9 @@ error: expected singular message, found scalar type `bool`
     |                                              |
     |                                              field selector requires singular message
     |
-   ::: google/protobuf/descriptor.proto:743:12
+   ::: google/protobuf/descriptor.proto:746:12
     |
-743 |   optional bool lazy = 5 [default = false];
+746 |   optional bool lazy = 5 [default = false];
     |            ---- type specified here
 
 error: expected singular message, found scalar type `int32`
@@ -87,9 +87,9 @@ error: expected singular message, found scalar type `bool`
     |             |
     |             found scalar type `bool`
     |
-   ::: google/protobuf/descriptor.proto:859:12
+   ::: google/protobuf/descriptor.proto:866:12
     |
-859 |   optional bool deprecated = 3 [default = false];
+866 |   optional bool deprecated = 3 [default = false];
     |            ---- type specified here
 
 error: cannot find message field `unknown` in `google.protobuf.EnumValueOptions`
@@ -108,9 +108,9 @@ error: expected singular message, found scalar type `bool`
     |                                            |
     |                                            field selector requires singular message
     |
-   ::: google/protobuf/descriptor.proto:889:12
+   ::: google/protobuf/descriptor.proto:896:12
     |
-889 |   optional bool deprecated = 1 [default = false];
+896 |   optional bool deprecated = 1 [default = false];
     |            ---- type specified here
 
 encountered 12 errors
