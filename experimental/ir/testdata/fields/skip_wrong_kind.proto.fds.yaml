@@ -12,5 +12,6 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.M.N"
+        json_name: "n"
       enum_type: [{ name: "X", value: [{ name: "N", number: 0 }] }]
   syntax: "proto3"

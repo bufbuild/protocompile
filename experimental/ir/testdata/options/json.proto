@@ -1,0 +1,55 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+edition = "2023";
+
+package buf.test;
+
+message Foo {
+    option features.json_format = LEGACY_BEST_EFFORT;
+
+    int32 a_ = 1;
+    int32 a = 2;
+
+    int32 ab = 3;
+    int32 a_b = 4 [json_name = "ab"];
+
+    int32 ac = 5 [json_name = "aC"];
+    int32 a_c = 6;
+
+    int32 x = 7 [json_name = "z"];
+    int32 y = 8 [json_name = "z"];
+
+    int32 d_c = 9 [json_name = "x"];
+    int32 dC = 10;
+
+    extensions 100, 101;
+}
+
+enum Bar {
+    option features.json_format = ALLOW;
+
+    ZERO = 0;
+    BAR_ZERO = 1;
+    b_a_r_zero = 2;
+
+    FOO_BAR = 3;
+    FOOBAR = 4;
+    BarFooBar = 5;
+}
+
+extend Foo {
+    int32 x = 100 [json_name = "foo"];
+    int32 y = 101 [json_name = "y"];
+}

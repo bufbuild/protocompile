@@ -33,7 +33,7 @@ message Foo {
     int32 r = 6 [features.field_presence = LEGACY_REQUIRED];
 
     optional int32 a1 = 10;
-    required int32 a1 = 11;
+    required int32 a2 = 11;
 }
 
 extend Foo {

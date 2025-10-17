@@ -18,8 +18,11 @@ import (
 	"bytes"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/bufbuild/protocompile/internal/cases"
 )
 
 // JSONName returns the default JSON name for a field with the given name.
@@ -27,9 +30,11 @@ import (
 //
 //	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L95
 func JSONName(name string) string {
-	var buf strings.Builder
-	pascalCase(&buf, name, false)
-	return buf.String()
+	return cases.Converter{
+		Case:        cases.Camel,
+		NaiveSplit:  true,
+		NoLowercase: true,
+	}.Convert(name)
 }
 
 // MapEntry returns the map entry name for a field with the given name.
@@ -37,25 +42,56 @@ func JSONName(name string) string {
 //
 //	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L95
 func MapEntry(name string) string {
-	var buf strings.Builder
-	pascalCase(&buf, name, true)
+	buf := new(strings.Builder)
+	cases.Converter{
+		Case:        cases.Pascal,
+		NaiveSplit:  true,
+		NoLowercase: true,
+	}.Append(buf, name)
 	_, _ = buf.WriteString("Entry")
 	return buf.String()
 }
 
-func pascalCase(buf *strings.Builder, name string, capitalized bool) {
-	uppercase := capitalized
-	for _, r := range name {
+// TrimPrefix is used to remove the given prefix from the given str. It does not require
+// an exact match and ignores case and underscores. If the all non-underscore characters
+// would be removed from str, str is returned unchanged. If str does not have the given
+// prefix (even with the very lenient matching, in regard to case and underscores), then
+// str is returned unchanged.
+//
+// The algorithm is adapted from the protoc source:
+//
+//	https://github.com/protocolbuffers/protobuf/blob/v21.3/src/google/protobuf/descriptor.cc#L922
+func TrimPrefix(str, prefix string) string {
+	j := 0
+	for i, r := range str {
 		if r == '_' {
-			uppercase = true
+			// skip underscores in the input
 			continue
 		}
-		if uppercase {
-			r = unicode.ToUpper(r)
-			uppercase = false
+
+		p, sz := utf8.DecodeRuneInString(prefix[j:])
+		for p == '_' {
+			j += sz // consume/skip underscore
+			p, sz = utf8.DecodeRuneInString(prefix[j:])
 		}
-		buf.WriteRune(r)
+
+		if j == len(prefix) {
+			// matched entire prefix; return rest of str
+			// but skipping any leading underscores
+			result := strings.TrimLeft(str[i:], "_")
+			if len(result) == 0 {
+				// result can't be empty string
+				return str
+			}
+			return result
+		}
+		if unicode.ToLower(r) != unicode.ToLower(p) {
+			// does not match prefix
+			return str
+		}
+		j += sz // consume matched rune of prefix
 	}
+	return str
 }
 
 // CreatePrefixList returns a list of package prefixes to search when resolving

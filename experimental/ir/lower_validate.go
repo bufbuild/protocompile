@@ -59,6 +59,7 @@ func validateConstraints(f File, r *report.Report) {
 	validateFileOptions(f, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
+		validateReservedNames(ty, r)
 		switch {
 		case ty.IsEnum():
 			validateEnum(ty, r)
@@ -83,6 +84,8 @@ func validateConstraints(f File, r *report.Report) {
 		validateJSType(m, r)
 
 		validatePresence(m, r)
+		validateUTF8(m, r)
+		validateMessageEncoding(m, r)
 
 		// NOTE: extensions already cannot be map fields, so we don't need to
 		// validate them.
@@ -105,6 +108,29 @@ func validateEnum(ty Type, r *report.Report) {
 			report.Snippet(ty.AST()),
 		)
 		return
+	}
+
+	// Check if allow_alias is actually used. This does not happen in
+	// lower_numbers.go because we want to be able to include the allow_alias
+	// option span in the diagnostic.
+	if ty.AllowsAlias() {
+		// Check to see if there are at least two enum values with the same
+		// number.
+		var hasAlias bool
+		numbers := make(map[int32]struct{})
+		for member := range seq.Values(ty.Members()) {
+			if !mapsx.AddZero(numbers, member.Number()) {
+				hasAlias = true
+				break
+			}
+		}
+
+		if !hasAlias {
+			option := ty.Options().Field(builtins.AllowAlias)
+			r.Errorf("`%s` requires at least one aliasing %s", option.Field().Name(), taxa.EnumValue).Apply(
+				report.Snippet(option.OptionSpan()),
+			)
+		}
 	}
 
 	first := ty.Members().At(0)
@@ -162,6 +188,20 @@ func validateFileOptions(f File, r *report.Report) {
 	if v, _ := defaultPresence.AsInt(); v == 3 { // google.protobuf.FeatureSet.LEGACY_REQUIRED
 		r.Errorf("cannot set `LEGACY_REQUIRED` at the file level").Apply(
 			report.Snippet(defaultPresence.ValueAST()),
+		)
+	}
+}
+
+func validateReservedNames(ty Type, r *report.Report) {
+	for name := range seq.Values(ty.ReservedNames()) {
+		member := ty.MemberByInternedName(name.InternedName())
+		if member.IsZero() {
+			continue
+		}
+
+		r.Errorf("use of reserved %s name", member.noun()).Apply(
+			report.Snippet(member.AST().Name()),
+			report.Snippetf(name.AST(), "`%s` reserved here", member.Name()),
 		)
 	}
 }
@@ -798,6 +838,72 @@ func validateCType(m Member, r *report.Report) {
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
+		))
+	}
+}
+
+func validateUTF8(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+
+	feature := m.FeatureSet().Lookup(builtins.FeatureUTF8)
+	if !feature.IsExplicit() {
+		return
+	}
+
+	if m.Element().Predeclared() == predeclared.String {
+		return
+	}
+	if k, v := m.Element().EntryFields(); k.Element().Predeclared() == predeclared.String ||
+		v.Element().Predeclared() == predeclared.String {
+		return
+	}
+	r.Error(errTypeConstraint{
+		want: "`string`",
+		got:  m.Element(),
+		decl: m.TypeAST(),
+	}).Apply(
+		report.Snippetf(
+			feature.Value().KeyAST(),
+			"`%s` set here", feature.Field().Name(),
+		),
+		report.Helpf(
+			"`%s` can only be set on `string` typed fields, "+
+				"or map fields whose key or value is `string`",
+			feature.Field().Name(),
+		),
+	)
+}
+
+func validateMessageEncoding(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+	feature := m.FeatureSet().Lookup(builtins.FeatureGroup)
+	if !feature.IsExplicit() {
+		return
+	}
+
+	if m.Element().IsMessage() && !m.IsMap() {
+		return
+	}
+
+	d := r.Error(errTypeConstraint{
+		want: taxa.MessageType,
+		got:  m.Element(),
+		decl: m.TypeAST(),
+	}).Apply(
+		report.Snippetf(
+			feature.Value().KeyAST(),
+			"`%s` set here", feature.Field().Name(),
+		),
+		report.Helpf(
+			"`%s` can only be set on message-typed fields", feature.Field().Name(),
+		),
+	)
+
+	if m.IsMap() {
+		d.Apply(report.Helpf(
+			"even though map fields count as repeated message-typed fields, "+
+				"`%s` cannot be set on them",
+			feature.Field().Name(),
 		))
 	}
 }

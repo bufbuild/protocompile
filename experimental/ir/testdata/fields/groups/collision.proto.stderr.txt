@@ -61,6 +61,14 @@ error: `foobar` declared multiple times
 26 |     optional int32 foobar = 2;
    |                    ------ ...also declared here
 
+warning: message fields have the same JSON name
+  --> testdata/fields/groups/collision.proto:26:20
+   |
+25 |     optional group FooBar = 1 {}
+   |                    ------ this implies JSON name `foobar`
+26 |     optional int32 foobar = 2;
+   |                    ^^^^^^ this also implies that name
+
 error: `foobar` declared multiple times
   --> testdata/fields/groups/collision.proto:33:20
    |
@@ -69,4 +77,12 @@ error: `foobar` declared multiple times
 33 |     optional group foobar = 3 {}
    |                    ^^^^^^ first here, as a message type
 
-encountered 5 errors and 5 warnings
+warning: message fields have the same JSON name
+  --> testdata/fields/groups/collision.proto:33:20
+   |
+32 |     optional group FooBar = 2 {}
+   |                    ------ this implies JSON name `foobar`
+33 |     optional group foobar = 3 {}
+   |                    ^^^^^^ this also implies that name
+
+encountered 5 errors and 7 warnings

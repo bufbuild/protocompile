@@ -19,4 +19,5 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".foo.M"
+      json_name: "m"
   syntax: "proto3"

@@ -1,0 +1,68 @@
+# Copyright 2020-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+files:
+- path: "test.proto"
+  text: |
+    syntax = "proto3";
+    package test;
+
+    import "deprecated.proto";
+
+    message M {
+      Foo foo = 1 [
+        (ext).foo.foo = {
+          foo {}
+          bar: Z
+          bar: X
+          bar: [X, X]
+        },
+        (ext).foo.bar = X,
+        (ext).foo.bar = X
+      ];
+    }
+
+    service S2 {
+      rpc X2(Foo) returns (Foo);
+    }
+
+- path: "deprecated.proto"
+  import: true
+  text: |
+    syntax = "proto3";
+    package test;
+
+    import "google/protobuf/descriptor.proto";
+
+    option deprecated = true;
+
+    message Foo {
+      option deprecated = true;
+
+      Foo foo = 1 [deprecated = true];
+      repeated Bar bar = 2 [deprecated = true];
+    }
+
+    enum Bar {
+      Z = 0;
+      X = 1 [deprecated = true];
+    }
+
+    service S {
+      rpc X(Foo) returns (Foo); // Should not warn.
+    }
+
+    extend google.protobuf.FieldOptions {
+      Foo ext = 10000;
+    }

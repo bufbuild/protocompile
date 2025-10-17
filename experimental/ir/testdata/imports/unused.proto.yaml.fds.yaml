@@ -34,16 +34,19 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.B"
+      json_name: "b"
     - name: "c"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.C"
+      json_name: "c"
     - name: "d"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+      json_name: "d"
   source_code_info: {}
   syntax: "proto3"
 - name: "a2.proto"
@@ -65,11 +68,13 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.P"
+      json_name: "p"
     - name: "d"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+      json_name: "d"
   source_code_info:
     (buf.descriptor.v1.buf_source_code_info_extension):
       unused_dependency: [1]
@@ -85,16 +90,19 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.B"
+      json_name: "b"
     - name: "p"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.P"
+      json_name: "p"
     - name: "d"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+      json_name: "d"
   source_code_info:
     (buf.descriptor.v1.buf_source_code_info_extension):
       unused_dependency: [1]
@@ -110,16 +118,19 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.C"
+      json_name: "c"
     - name: "p"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.P"
+      json_name: "p"
     - name: "d"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+      json_name: "d"
   source_code_info: {}
   syntax: "proto3"
 - name: "e.proto"
@@ -133,6 +144,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+      json_name: "d"
   source_code_info: {}
   syntax: "proto3"
 - name: "a6.proto"
@@ -146,10 +158,12 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.D"
+      json_name: "d"
     - name: "e"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.E"
+      json_name: "e"
   source_code_info: {}
   syntax: "proto3"
