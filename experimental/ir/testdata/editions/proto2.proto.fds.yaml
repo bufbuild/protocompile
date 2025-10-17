@@ -9,12 +9,14 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "x"
       options.features.field_presence: IMPLICIT
     - name: "z"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       oneof_index: 0
+      json_name: "z"
       options.features: {}
     oneof_decl: [{ name: "y", options.features: {} }]
     options.features: {}

@@ -17,7 +17,6 @@ package ir
 import (
 	"fmt"
 	"iter"
-	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
@@ -147,8 +146,9 @@ func resolveOptions(f File, r *report.Report) {
 					scope: field.Scope(),
 					def:   def,
 
-					field: options,
-					raw:   &field.raw.options,
+					field:  options,
+					raw:    &field.raw.options,
+					target: field,
 				}.resolve()
 			}
 		}
@@ -200,8 +200,9 @@ func resolveOptions(f File, r *report.Report) {
 				scope: field.Scope(),
 				def:   def,
 
-				field: builtins.FieldOptions,
-				raw:   &field.raw.options,
+				field:  builtins.FieldOptions,
+				raw:    &field.raw.options,
+				target: field,
 			}.resolve()
 		}
 	}
@@ -373,36 +374,15 @@ type optionRef struct {
 
 	field Member
 	raw   *arena.Pointer[rawValue]
+
+	// A member being annotated. This is used for pseudo-option resolution.
+	target Member
 }
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
 	ids := &r.Context.session.builtins
 	root := r.field.Element()
-
-	// Check if this is a pseudo-option, and diagnose if it has multiple
-	// components. The values of pseudo-options are calculated elsewhere; this
-	// is only for diagnostics.
-	if r.field.InternedFullName() == ids.FieldOptions {
-		var buf [2]ast.PathComponent
-		prefix := slices.AppendSeq(buf[:0], iterx.Take(r.def.Path.Components, 2))
-
-		if kw := buf[0].AsIdent().Keyword(); kw.IsPseudoOption() {
-			if len(prefix) > 1 {
-				r.Error(errOptionMustBeMessage{
-					selector: buf[1].Name(),
-					prev:     buf[0].Name(),
-					got:      taxa.PseudoOption,
-					gotName:  kw,
-				}).Apply(report.Notef(
-					"`%s` is a %s and does not correspond to a field in `%s`",
-					kw, taxa.PseudoOption, root.FullName(),
-				))
-			}
-
-			return
-		}
-	}
 
 	if r.raw.Nil() {
 		v := newMessage(r.Context, r.field.toRef(r.Context)).AsValue()
@@ -424,7 +404,21 @@ func (r optionRef) resolve() {
 		// Calculate the corresponding member for this path component, which may
 		// be either a simple path or an extension name.
 		prev := field
-		if extn := pc.AsExtension(); !extn.IsZero() {
+		pseudo := pc.IsFirst() &&
+			r.field.InternedFullName() == ids.FieldOptions &&
+			pc.AsIdent().Keyword().IsPseudoOption()
+		if pseudo {
+			// Check if this is a pseudo-option.
+			switch pc.AsIdent().Keyword() {
+			case keyword.Default:
+				field = r.target
+				raw = &current.AsMessage().raw.pseudo.defaultValue
+
+			case keyword.JsonName:
+				field = r.builtins().JSONName
+				raw = &current.AsMessage().raw.pseudo.jsonName
+			}
+		} else if extn := pc.AsExtension(); !extn.IsZero() {
 			sym := symbolRef{
 				Context: r.Context,
 				Report:  r.Report,
@@ -530,7 +524,9 @@ func (r optionRef) resolve() {
 		// 1. The current field is repeated and this is the last component.
 		// 2. The current field is of message type and this is not the last
 		//    component.
-		raw = parent.insert(field)
+		if !pseudo {
+			raw = parent.insert(field)
+		}
 		if !raw.Nil() {
 			value := wrapValue(r.Context, *raw)
 			switch {

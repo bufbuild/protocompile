@@ -15,19 +15,30 @@
 package ir
 
 import (
+	"fmt"
 	"path"
+	"regexp"
+	"slices"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
+
+var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
 
 // diagnoseUnusedImports generates diagnostics for each unused import.
 func diagnoseUnusedImports(f File, r *report.Report) {
@@ -59,11 +70,13 @@ func validateConstraints(f File, r *report.Report) {
 
 		case ty.IsMessageSet():
 			validateMessageSet(ty, r)
+			validateExtensionDeclarations(ty, r)
 
 		case ty.IsMessage():
 			for oneof := range seq.Values(ty.Oneofs()) {
 				validateOneof(oneof, r)
 			}
+			validateExtensionDeclarations(ty, r)
 		}
 
 		for rr := range seq.Values(ty.ExtensionRanges()) {
@@ -77,6 +90,7 @@ func validateConstraints(f File, r *report.Report) {
 		validateCType(m, r)
 		validateLazy(m, r)
 		validateJSType(m, r)
+		validateDefault(m, r)
 
 		validatePresence(m, r)
 		validateUTF8(m, r)
@@ -89,6 +103,18 @@ func validateConstraints(f File, r *report.Report) {
 			if extendee.IsMessageSet() {
 				validateMessageSetExtension(m, r)
 			}
+
+			validateDeclaredExtension(m, r)
+		}
+	}
+
+	for p := range f.Context().arenas.messages.Values() {
+		m := MessageValue{internal.NewWith(f.Context()), p}
+		for v := range m.Fields() {
+			// This is a simple way of picking up all of the option values
+			// without tripping over custom defaults, which we explicitly should
+			// *not* validate.
+			validateUTF8Values(v, r)
 		}
 	}
 
@@ -105,6 +131,29 @@ func validateEnum(ty Type, r *report.Report) {
 			report.Snippet(ty.AST()),
 		)
 		return
+	}
+
+	// Check if allow_alias is actually used. This does not happen in
+	// lower_numbers.go because we want to be able to include the allow_alias
+	// option span in the diagnostic.
+	if ty.AllowsAlias() {
+		// Check to see if there are at least two enum values with the same
+		// number.
+		var hasAlias bool
+		numbers := make(map[int32]struct{})
+		for member := range seq.Values(ty.Members()) {
+			if !mapsx.AddZero(numbers, member.Number()) {
+				hasAlias = true
+				break
+			}
+		}
+
+		if !hasAlias {
+			option := ty.Options().Field(builtins.AllowAlias)
+			r.Errorf("`%s` requires at least one aliasing %s", option.Field().Name(), taxa.EnumValue).Apply(
+				report.Snippet(option.OptionSpan()),
+			)
+		}
 	}
 
 	first := ty.Members().At(0)
@@ -320,6 +369,271 @@ func validateMessageSetExtension(extn Member, r *report.Report) {
 			report.Snippet(extendee.AST().Stem()),
 			report.Helpf("message set extensions must be singular message fields"),
 		)
+	}
+}
+
+func validateExtensionDeclarations(ty Type, r *report.Report) {
+	builtins := ty.Context().builtins()
+
+	// First, walk through all of the extension ranges to get their associated
+	// option objects.
+	options := make(map[MessageValue][]ReservedRange)
+	for r := range seq.Values(ty.ExtensionRanges()) {
+		if r.Options().IsZero() {
+			continue
+		}
+		mapsx.Append(options, r.Options(), r)
+	}
+
+	// Now, walk through each grouping of extensions and match up their
+	// declarations.
+	for options, ranges := range options {
+		rangeSpan := func() report.Span {
+			return report.JoinSeq(iterx.Map(slices.Values(ranges), func(r ReservedRange) report.Span {
+				return r.AST().Span()
+			}))
+		}
+
+		decls := options.Field(builtins.ExtnDecls)
+		verification := options.Field(builtins.ExtnVerification)
+		if v, ok := verification.AsInt(); ok && (v == 1) != decls.IsZero() {
+			if decls.IsZero() {
+				r.Errorf("extension range requires declarations, but does not define any").Apply(
+					report.Snippetf(verification.ValueAST(), "required by this option"),
+					report.Snippet(rangeSpan()),
+				)
+			} else {
+				r.Errorf("unverified extension range defines declarations").Apply(
+					report.Snippetf(decls.OptionSpan(), "defined here"),
+					report.Snippetf(verification.ValueAST(), "required by this option"),
+				)
+			}
+		}
+
+		if decls.IsZero() {
+			continue
+		}
+
+		if len(ranges) > 1 {
+			// An extension range with declarations and multiple ranges
+			// is not allowed.
+			r.Errorf("multi-range `extensions` with extension declarations").Apply(
+				report.Snippetf(decls.KeyAST(), "declaration defined here"),
+				report.Snippetf(rangeSpan(), "multiple ranges declared here"),
+				report.Helpf("this is rejected by protoc due to a quirk in its internal representation of extension ranges"),
+			)
+		}
+
+		var haveMissingField bool
+		numbers := make(map[int32]struct{})
+		for elem := range seq.Values(decls.Elements()) {
+			decl := elem.AsMessage()
+
+			number := decl.Field(builtins.ExtnDeclNumber)
+			if n, ok := number.AsInt(); ok {
+				// Find the range that contains n.
+				var found bool
+				for _, r := range ranges {
+					start, end := r.Range()
+					if int64(start) <= n && n <= int64(end) {
+						found = true
+						numbers[int32(n)] = struct{}{}
+						break
+					}
+				}
+
+				if !found {
+					r.Errorf("out-of-range `%s` in extension declaration", number.Field().Name()).Apply(
+						report.Snippet(number.ValueAST()),
+						report.Snippetf(rangeSpan(), "%v must be among one of these ranges", n),
+					)
+				}
+			} else {
+				r.Errorf("extension declaration must specify `%s`", builtins.ExtnDeclNumber.Name()).Apply(
+					report.Snippet(elem.AST()),
+				)
+				haveMissingField = true
+			}
+
+			validatePath := func(v Value, want any) bool {
+				// First, check this is a valid name in the first place.
+				s, _ := v.AsString()
+				name := FullName(s)
+				for component := range name.Components() {
+					if !asciiIdent.MatchString(component) {
+						d := r.Errorf("expected %s in `%s.%s`", want,
+							v.Field().Container().Name(), v.Field().Name(),
+						).Apply(
+							report.Snippet(v.ValueAST()),
+						)
+						if strings.ContainsFunc(component, unicode.IsSpace) {
+							d.Apply(report.Helpf("the name may not contain whitespace"))
+						}
+						return false
+					}
+				}
+
+				if !name.Absolute() {
+					d := r.Errorf("relative name in `%s.%s`",
+						v.Field().Container().Name(), v.Field().Name(),
+					).Apply(
+						report.Snippet(v.ValueAST()),
+					)
+
+					if lit := v.ValueAST().AsLiteral(); !lit.IsZero() {
+						str := lit.AsString()
+						start := lit.Span().Start
+						offset := str.RawContent().Start - start
+						d.Apply(report.SuggestEdits(v.ValueAST(), "add a leading `.`", report.Edit{
+							Start: offset, End: offset,
+							Replace: ".",
+						}))
+					}
+				}
+
+				return true
+			}
+
+			// NOTE: name deduplication needs to wait until global linking,
+			// similar to extension number deduplication.
+			name := decl.Field(builtins.ExtnDeclName)
+			if !name.IsZero() {
+				validatePath(name, "fully-qualified name")
+			} else if !haveMissingField {
+				r.Errorf("extension declaration must specify `%s`", builtins.ExtnDeclName.Name()).Apply(
+					report.Snippet(elem.AST()),
+				)
+				haveMissingField = true
+			}
+
+			tyName := decl.Field(builtins.ExtnDeclType)
+			if !tyName.IsZero() {
+				v, _ := tyName.AsString()
+				if predeclared.Lookup(v) == predeclared.Unknown {
+					ok := validatePath(tyName, "predeclared type or fully-qualified name")
+					if ok {
+						// Check to see whether this is a legit type.
+						sym := ty.Context().File().FindSymbol(FullName(v).ToRelative())
+						if !sym.IsZero() && !sym.Kind().IsType() {
+							r.Warnf("expected type, got %s `%s`", sym.noun(), sym.FullName()).Apply(
+								report.Snippet(tyName.ValueAST()),
+								report.PageBreak,
+								report.Snippetf(sym.Definition(), "`%s` declared here", sym.FullName()),
+								report.Helpf("`%s.%s` must name a (possibly unimported) type", tyName.Field().Container().Name(), tyName.Field().Name()),
+							)
+						}
+					}
+				}
+			} else if !haveMissingField {
+				r.Errorf("extension declaration must specify `%s`", builtins.ExtnDeclType.Name()).Apply(
+					report.Snippet(elem.AST()),
+				)
+				haveMissingField = true
+			}
+		}
+
+		// Generate warnings for each range that is missing at least one value.
+	missingDecls:
+		for _, rr := range ranges {
+			start, end := rr.Range()
+
+			// The complexity of this loop is only O(decls), so `1 to max` will
+			// not need to loop two billion times.
+			for i := start; i <= end; i++ {
+				if !mapsx.Contains(numbers, i) {
+					r.Warnf("missing declaration for extension number `%v`", i).Apply(
+						report.Snippetf(rr.AST(), "required by this range"),
+						report.Notef("this is likely a mistake, but it is not rejected by protoc"),
+					)
+					break missingDecls // Only diagnose the first problematic range.
+				}
+			}
+		}
+	}
+}
+
+func validateDeclaredExtension(m Member, r *report.Report) {
+	builtins := m.Context().builtins()
+
+	// First, figure out whether this is a declared extension.
+	extendee := m.Container()
+	var decl MessageValue
+	var elem Element
+declSearch:
+	for r := range extendee.Ranges(m.Number()) {
+		decls := r.AsReserved().Options().Field(builtins.ExtnDecls)
+		for v := range seq.Values(decls.Elements()) {
+			msg := v.AsMessage()
+			number := msg.Field(builtins.ExtnDeclNumber)
+			if n, ok := number.AsInt(); ok && n == int64(m.Number()) {
+				elem = v
+				decl = msg
+				break declSearch
+			}
+		}
+	}
+	if decl.IsZero() {
+		return // Not a declared extension.
+	}
+
+	reserved := decl.Field(builtins.ExtnDeclReserved)
+	if v, _ := reserved.AsBool(); v {
+		r.Errorf("use of reserved extension number").Apply(
+			report.Snippet(m.AST().Value()),
+			report.PageBreak,
+			report.Snippetf(elem.AST(), "extension declared here"),
+			report.Snippetf(reserved.ValueAST(), "... and reserved here"),
+		)
+	}
+
+	name := decl.Field(builtins.ExtnDeclName)
+	if v, ok := name.AsString(); ok && m.FullName() != FullName(v).ToRelative() {
+		r.Errorf("unexpected %s name", taxa.Extension).Apply(
+			report.Snippetf(m.AST().Name(), "expected `%s`", v),
+			report.PageBreak,
+			report.Snippetf(name.ValueAST(), "expected name declared here"),
+		)
+	}
+
+	tyName := decl.Field(builtins.ExtnDeclType)
+	repeated := decl.Field(builtins.ExtnDeclRepeated)
+	wantRepeated, _ := repeated.AsBool()
+
+	if v, ok := tyName.AsString(); ok {
+		ty := PredeclaredType(predeclared.Lookup(v))
+		var sym Symbol
+		if ty.IsZero() {
+			sym = m.Context().File().FindSymbol(FullName(v).ToRelative())
+			ty = sym.AsType()
+		}
+
+		if m.Element() != ty || wantRepeated != m.IsRepeated() {
+			want := any(sym)
+			if sym.IsZero() {
+				if !ty.IsZero() {
+					want = ty
+				} else {
+					want = fmt.Sprintf("unknown type `%s`", FullName(v).ToRelative())
+				}
+			}
+
+			d := r.Error(errTypeCheck{
+				want: want, got: m.Element(),
+				wantRepeated: wantRepeated,
+				gotRepeated:  m.IsRepeated(),
+
+				expr:       m.TypeAST(),
+				annotation: tyName.ValueAST(),
+			})
+
+			if wantRepeated {
+				d.Apply(report.Snippetf(repeated.OptionSpan(), "`repeated` required here"))
+			}
+
+			if !sym.IsZero() && ty.IsZero() {
+				d.Apply(report.Notef("`%s` is not a type; this indicates a bug in the extension declaration", sym.FullName()))
+			}
+		}
 	}
 }
 
@@ -664,5 +978,118 @@ func validateMessageEncoding(m Member, r *report.Report) {
 				"`%s` cannot be set on them",
 			feature.Field().Name(),
 		))
+	}
+}
+
+func validateDefault(m Member, r *report.Report) {
+	option := m.PseudoOptions().Default
+	if option.IsZero() {
+		return
+	}
+
+	if file := m.Context().File(); file.Syntax() == syntax.Proto3 {
+		r.Errorf("custom default in \"proto3\"").Apply(
+			report.Snippet(option.OptionSpan()),
+			report.PageBreak,
+			report.Snippetf(file.AST().Syntax().Value(), "\"proto3\" specified here"),
+			report.Helpf("custom defaults cannot be defined in \"proto3\" only"),
+		)
+	}
+
+	if m.IsRepeated() || m.Element().IsMessage() {
+		r.Error(errTypeConstraint{
+			want: "singular scalar- or enum-typed field",
+			got:  m.Element(),
+			decl: m.TypeAST(),
+		}).Apply(
+			report.Snippetf(option.KeyAST(), "custom default specified here"),
+			report.Helpf("custom defaults are only for non-repeated fields that have a non-message type"),
+		)
+	}
+
+	if m.IsUnicode() {
+		if s, _ := option.AsString(); !utf8.ValidString(s) {
+			r.Warn(&errNotUTF8{value: option.Elements().At(0)}).Apply(
+				report.Helpf("protoc erroneously accepts non-UTF-8 defaults for UTF-8 fields; for all other options, UTF-8 validation failure causes protoc to crash"),
+			)
+		}
+	}
+
+	// Warn if the zero value is used, because it's redundant.
+	if option.IsZeroValue() {
+		r.Warnf("redundant custom default").Apply(
+			report.Snippetf(option.ValueAST(), "this is the zero value for `%s`", m.Element().FullName()),
+			report.Helpf("fields without a custom default will default to the zero value, making this option redundant"),
+		)
+	}
+}
+
+// validateUTF8Fields validates that strings in a value are actually UTF-8.
+func validateUTF8Values(v Value, r *report.Report) {
+	for elem := range seq.Values(v.Elements()) {
+		if v.Field().IsUnicode() {
+			if s, _ := elem.AsString(); !utf8.ValidString(s) {
+				r.Error(&errNotUTF8{value: elem})
+			}
+		}
+	}
+}
+
+// errNotUTF8 diagnoses a non-UTF8 value.
+type errNotUTF8 struct {
+	value Element
+}
+
+func (e *errNotUTF8) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("non-UTF-8 string literal"))
+
+	if lit := e.value.AST().AsLiteral().AsString(); !lit.IsZero() {
+		// Figure out the byte offset and the invalid byte. Because this will
+		// necessarily have come from a \xNN escape, we should look for it.
+		text := lit.Text()
+		offset := 0
+		var invalid byte
+		for text != "" {
+			r, n := utf8.DecodeRuneInString(text[offset:])
+			if r == utf8.RuneError {
+				invalid = text[offset]
+				break
+			}
+
+			offset += n
+		}
+
+		// Now, find the invalid escape...
+		var esc token.Escape
+		for escape := range seq.Values(lit.Escapes()) {
+			if escape.Byte == invalid {
+				esc = escape
+				break
+			}
+		}
+
+		d.Apply(report.Snippetf(esc.Span, "non-UTF-8 byte"))
+	} else {
+		// String came from non-literal.
+		d.Apply(report.Snippet(e.value.AST()))
+	}
+
+	d.Apply(
+		report.Snippetf(e.value.Field().AST(), "this field requires a UTF-8 string"),
+	)
+
+	// Figure out where the relevant feature was set.
+	builtins := e.value.Context().builtins()
+	feature := e.value.Field().FeatureSet().Lookup(builtins.FeatureUTF8)
+	if !feature.IsDefault() {
+		if feature.IsInherited() {
+			d.Apply(report.PageBreak)
+		}
+		d.Apply(report.Snippetf(feature.Value().ValueAST(), "UTF-8 required here"))
+	} else {
+		d.Apply(
+			report.PageBreak,
+			report.Snippetf(e.value.Context().File().AST().Syntax().Value(), "UTF-8 required here"),
+		)
 	}
 }

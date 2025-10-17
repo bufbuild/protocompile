@@ -278,6 +278,14 @@ func (v Value) getElements() []rawValueBits {
 	return slice
 }
 
+// IsZeroValue is a shortcut for [Element.IsZeroValue].
+func (v Value) IsZeroValue() bool {
+	if v.IsZero() {
+		return false
+	}
+	return v.Elements().At(0).IsZeroValue()
+}
+
 // AsBool is a shortcut for [Element.AsBool], if this value is singular.
 func (v Value) AsBool() (value, ok bool) {
 	if v.IsZero() || v.Field().IsRepeated() {
@@ -598,6 +606,17 @@ func (e Element) Type() Type {
 	return e.Field().Element()
 }
 
+// Returns whether this element contains the zero value for its type.
+//
+// Always returns false for repeated or message-typed fields.
+func (e Element) IsZeroValue() bool {
+	if e.IsZero() || e.Field().IsRepeated() || e.Field().Element().IsMessage() {
+		return false
+	}
+
+	return e.value.raw.bits == 0
+}
+
 // AsBool returns the bool value of this element.
 //
 // Returns ok == false if this is not a bool.
@@ -683,27 +702,24 @@ type MessageValue struct {
 }
 
 type rawMessageValue struct {
-	// The [Value] this message corresponds to.
-	self arena.Pointer[rawValue]
-
-	// The type of this message. If concrete is not nil, this may be distinct
-	// from AsValue().Field().Element().
-	ty  ref[rawType]
-	url intern.ID // The type URL for the above, if this is an Any.
-
-	// If present, this is the concrete version of this value if it is an Any
-	// constructed from a concrete type. This may itself be an Any with a
-	// non-nil concrete, for the pathological value
-	//
-	//   any: { [types.com/google.protobuf.Any]: { [types.com/my.Type]: { ... } }}
+	byName   intern.Map[uint32]
+	entries  []arena.Pointer[rawValue]
+	ty       ref[rawType]
+	self     arena.Pointer[rawValue]
+	url      intern.ID
 	concrete arena.Pointer[rawMessageValue]
+	pseudo   struct {
+		defaultValue arena.Pointer[rawValue]
+		jsonName     arena.Pointer[rawValue]
+	}
+}
 
-	// Fields set in this message in insertion order.
-	entries []arena.Pointer[rawValue]
-
-	// Which entries are already inserted. These are by interned full name
-	// of either the field or its containing oneof.
-	byName intern.Map[uint32]
+// PseudoFields contains pseudo options, which are special option-like syntax
+// for fields which are not real options. They can be accessed via
+// [Message.PseudoFields].
+type PseudoFields struct {
+	Default  Value
+	JSONName Value
 }
 
 // AsValue returns the [Value] corresponding to this message.
@@ -782,6 +798,22 @@ func (v MessageValue) Fields() iter.Seq[Value] {
 				return
 			}
 		}
+	}
+}
+
+// pseudoFields returns pseudofields set on this message.
+//
+// This feature is used for tracking special options that do not correspond to
+// real fields in an options message. They are not part of the message value
+// and are not returned by Fields().
+func (v MessageValue) pseudoFields() PseudoFields {
+	if v.IsZero() {
+		return PseudoFields{}
+	}
+
+	return PseudoFields{
+		Default:  wrapValue(v.Context(), v.raw.pseudo.defaultValue),
+		JSONName: wrapValue(v.Context(), v.raw.pseudo.jsonName),
 	}
 }
 

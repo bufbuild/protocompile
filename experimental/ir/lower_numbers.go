@@ -46,10 +46,8 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 		}
 
 		for member := range seq.Values(ty.Members()) {
-			n, ok := evaluateMemberNumber(f.Context(), scope, member.AST().Value(), kind, false, r)
-			if ok {
-				member.raw.number = n
-			}
+			member.raw.number, member.raw.numberOk = evaluateMemberNumber(
+				f.Context(), scope, member.AST().Value(), kind, false, r)
 		}
 
 		for _, raw := range ty.raw.ranges {
@@ -91,6 +89,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 
 				tags.raw.first = start
 				tags.raw.last = end
+				tags.raw.rangeOk = startOk && endOk
 
 			default:
 				n, ok := evaluateMemberNumber(f.Context(), scope, tags.AST(), kind, false, r)
@@ -100,6 +99,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 
 				tags.raw.first = n
 				tags.raw.last = n
+				tags.raw.rangeOk = ok
 			}
 		}
 	}
@@ -118,7 +118,8 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 			scope = ty.FullName()
 		}
 
-		extn.raw.number, _ = evaluateMemberNumber(f.Context(), scope, extn.AST().Value(), kind, false, r)
+		extn.raw.number, extn.raw.numberOk = evaluateMemberNumber(
+			f.Context(), scope, extn.AST().Value(), kind, false, r)
 	}
 }
 
@@ -177,7 +178,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			seq.Values(ty.ExtensionRanges()),
 		) {
 			lo, hi := tagRange.Range()
-			if lo == 0 || hi == 0 {
+			if !tagRange.raw.rangeOk {
 				continue // Diagnosed already.
 			}
 			disjoint := ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
@@ -198,7 +199,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 		// first value is a member.
 		for member := range seq.Values(ty.Members()) {
 			n := member.Number()
-			if n == 0 {
+			if !member.raw.numberOk {
 				continue // Diagnosed already.
 			}
 			ty.raw.rangesByNumber.Insert(n, n, rawTagRange{
@@ -215,6 +216,11 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			}
 
 			first := TagRange{ty.withContext, entry.Value[0]}
+			if ty.AllowsAlias() && first.raw.isMember {
+				// If all of the members of the intersections are members,
+				// we don't diagnose.
+				continue
+			}
 
 			for _, tags := range entry.Value[1:] {
 				tags := TagRange{ty.withContext, tags}

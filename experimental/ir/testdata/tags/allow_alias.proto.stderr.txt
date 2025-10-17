@@ -1,0 +1,15 @@
+error: enum value `0` used more than once
+  --> testdata/tags/allow_alias.proto:21:10
+   |
+20 |     A1 = 0;
+   |          - previously used here
+21 |     B1 = 0;
+   |          ^ used here
+
+error: `allow_alias` requires at least one aliasing enum value
+  --> testdata/tags/allow_alias.proto:31:12
+   |
+31 |     option allow_alias = true;
+   |            ^^^^^^^^^^^^^^^^^^
+
+encountered 2 errors

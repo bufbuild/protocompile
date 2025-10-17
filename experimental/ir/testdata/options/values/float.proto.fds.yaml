@@ -5,8 +5,16 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "f32", number: 1, label: LABEL_REPEATED, type: TYPE_FLOAT }
-    - { name: "f64", number: 2, label: LABEL_REPEATED, type: TYPE_DOUBLE }
+    - name: "f32"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_FLOAT
+      json_name: "f32"
+    - name: "f64"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_DOUBLE
+      json_name: "f64"
   extension:
   - name: "x"
     number: 1000
@@ -14,11 +22,13 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   - name: "y"
     number: 1001
     label: LABEL_REPEATED
     type: TYPE_FLOAT
     extendee: ".google.protobuf.FileOptions"
+    json_name: "y"
   options.$unknown: |
     1000: {
       1: {

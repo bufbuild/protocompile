@@ -1,0 +1,89 @@
+warning: message fields have the same JSON name
+  --> testdata/options/json.proto:23:11
+   |
+22 |     int32 a_ = 1;
+   |           -- this implies JSON name `a`
+23 |     int32 a = 2;
+   |           ^ this also implies that name
+
+error: message fields have the same JSON name
+  --> testdata/options/json.proto:26:32
+   |
+25 |     int32 ab = 3;
+   |           -- this implies JSON name `ab`
+26 |     int32 a_b = 4 [json_name = "ab"];
+   |                                ^^^^ `a_b` specifies custom name here
+
+error: message fields have the same JSON name
+  --> testdata/options/json.proto:29:11
+   |
+28 |     int32 ac = 5 [json_name = "aC"];
+   |                               ---- `ac` specifies custom name here
+29 |     int32 a_c = 6;
+   |           ^^^ this also implies that name
+
+error: message fields have the same JSON name
+  --> testdata/options/json.proto:32:30
+   |
+31 |     int32 x = 7 [json_name = "z"];
+   |                              --- `x` specifies custom name here
+32 |     int32 y = 8 [json_name = "z"];
+   |                              ^^^ `y` specifies custom name here
+
+warning: message fields have the same (default) JSON name
+  --> testdata/options/json.proto:35:11
+   |
+34 |     int32 d_c = 9 [json_name = "x"];
+   |           --- this implies (default) JSON name `dC`
+35 |     int32 dC = 10;
+   |           ^^ this also implies that name
+   |
+   = help: even though `d_c` sets `json_name`, their default JSON names must not
+           conflict, because `google.protobuf.FieldMask`'s JSON syntax
+           erroneously does not account for custom JSON names
+
+error: enum values have the same JSON name
+  --> testdata/options/json.proto:44:5
+   |
+43 |     ZERO = 0;
+   |     ---- this implies JSON name `ZERO`
+44 |     BAR_ZERO = 1;
+   |     ^^^^^^^^ this also implies that name
+
+error: enum values have the same JSON name
+  --> testdata/options/json.proto:45:5
+   |
+43 |     ZERO = 0;
+   |     ---- this implies JSON name `ZERO`
+44 |     BAR_ZERO = 1;
+45 |     b_a_r_zero = 2;
+   |     ^^^^^^^^^^ this also implies that name
+
+error: enum values have the same JSON name
+  --> testdata/options/json.proto:49:5
+   |
+47 |     FOO_BAR = 3;
+   |     ------- this implies JSON name `FOO_BAR`
+48 |     FOOBAR = 4;
+49 |     BarFooBar = 5;
+   |     ^^^^^^^^^ this also implies that name
+
+error: message extension cannot specify `json_name`
+  --> testdata/options/json.proto:53:20
+   |
+53 |     int32 x = 100 [json_name = "foo"];
+   |                    ^^^^^^^^^^^^^^^^^
+   = note: JSON format for extensions always uses the extension's
+           fully-qualified name
+
+warning: message extension cannot specify `json_name`
+  --> testdata/options/json.proto:54:20
+   |
+54 |     int32 y = 101 [json_name = "y"];
+   |                    ^^^^^^^^^^^^^^^
+   = note: JSON format for extensions always uses the extension's
+           fully-qualified name
+   = help: protoc erroneously accepts `json_name` on an extension if it happens
+           to match the default JSON name exactly
+
+encountered 7 errors and 3 warnings

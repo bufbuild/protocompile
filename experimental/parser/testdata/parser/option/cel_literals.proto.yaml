@@ -23,5 +23,4 @@ decls:
     - { key.path.components: [{ ident: "w" }], value.literal.string_value: "x" }
     - { key.path.components: [{ ident: "k" }], value.literal.string_value: "x" }
     - { key.path.components: [{ ident: "j" }], value.literal.string_value: "" }
-    - key.path.components: [{ ident: "x" }]
-      value.literal.string_value: "\""
+    - { key.path.components: [{ ident: "x" }], value.literal.string_value: "" }

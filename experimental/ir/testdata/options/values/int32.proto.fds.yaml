@@ -5,11 +5,31 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "i1", number: 1, label: LABEL_REPEATED, type: TYPE_INT32 }
-    - { name: "i2", number: 2, label: LABEL_REPEATED, type: TYPE_INT32 }
-    - { name: "i3", number: 3, label: LABEL_REPEATED, type: TYPE_SFIXED32 }
-    - { name: "u1", number: 11, label: LABEL_REPEATED, type: TYPE_INT32 }
-    - { name: "u2", number: 12, label: LABEL_REPEATED, type: TYPE_FIXED32 }
+    - name: "i1"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "i1"
+    - name: "i2"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "i2"
+    - name: "i3"
+      number: 3
+      label: LABEL_REPEATED
+      type: TYPE_SFIXED32
+      json_name: "i3"
+    - name: "u1"
+      number: 11
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "u1"
+    - name: "u2"
+      number: 12
+      label: LABEL_REPEATED
+      type: TYPE_FIXED32
+      json_name: "u2"
   extension:
   - name: "x"
     number: 1000
@@ -17,6 +37,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   options.$unknown: |
     1000: {
       1: {

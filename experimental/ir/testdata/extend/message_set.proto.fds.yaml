@@ -5,15 +5,28 @@ file:
   message_type:
   - { name: "M1", options.message_set_wire_format: true }
   - name: "M2"
-    field: [{ name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }]
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x"
     options.message_set_wire_format: true
   - name: "M3"
     extension_range: [{ start: 1, end: 2147483647 }, { start: 0, end: 1 }]
     options.message_set_wire_format: true
   - name: "M4Entry"
     field:
-    - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
-    - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "key"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "key"
+    - name: "value"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "value"
     options.map_entry: true
   extension:
   - name: "m1"
@@ -22,33 +35,39 @@ file:
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M1"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m1"
   - name: "m2"
     number: 2
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M2"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m2"
   - name: "m3"
     number: 3
     label: LABEL_OPTIONAL
     type: TYPE_INT32
     extendee: ".google.protobuf.test.M3"
+    json_name: "m3"
   - name: "m4"
     number: 4
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M4Entry"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m4"
   - name: "m5"
     number: 2147483646
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M3"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m5"
   - name: "m6"
     number: 2147483646
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.test.M3"
     extendee: ".google.protobuf.test.M3"
+    json_name: "m6"
   syntax: "proto2"

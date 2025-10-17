@@ -1,0 +1,162 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto2";
+
+package test;
+
+message M {
+    enum E { Z = 0 }
+
+    extensions 1 to 3, 4 to 7 [
+        declaration = {},
+
+        declaration = {
+            number: 1,
+            full_name: "???",
+            type: "int32",
+        },
+        declaration = {
+            number: 2,
+            full_name: "test.x",
+            type: "int32",
+        },
+        declaration = {
+            number: 3,
+            full_name: ".test..x",
+            type: "int32",
+        },
+
+        declaration = {
+            number: 4,
+            full_name: ".test.e1",
+            type: "???",
+        },
+        declaration = {
+            number: 5,
+            full_name: ".test.e2",
+            type: "test.X",
+        },
+        declaration = {
+            number: 6,
+            full_name: ".test.e3",
+            type: ".test..X",
+        }
+    ];
+
+    extensions 10 [declaration = {
+        number: 10,
+        full_name: ".test.extn1",
+        type: "int32",
+    }];
+
+    extensions 11 [declaration = {
+        number: 11,
+        full_name: ".test.wrong",
+        type: "int32",
+    }];
+
+    extensions 12 [declaration = {
+        number: 12,
+        full_name: ".test.extn3",
+        type: "int32",
+        repeated: true
+    }];
+
+    extensions 13 [declaration = {
+        number: 13,
+        full_name: ".test.extn4",
+        type: ".test.M",
+    }];
+
+    extensions 14 [declaration = {
+        number: 14,
+        full_name: ".test.extn5",
+        type: ".test.M",
+        repeated: true
+    }];
+
+    extensions 15 [declaration = {
+        number: 15,
+        full_name: ".test.extn6",
+        type: ".test.M",
+        reserved: true
+    }];
+
+    extensions 20 [declaration = {
+        number: 20,
+        full_name: ".test.ok1",
+        type: "int32",
+    }];
+
+    extensions 21 [declaration = {
+        number: 21,
+        full_name: ".test.ok2",
+        type: "int32",
+        repeated: true
+    }];
+
+    extensions 22 [declaration = {
+        number: 22,
+        full_name: ".test.ok3",
+        type: ".test.M",
+    }];
+
+    extensions 23 [declaration = {
+        number: 23,
+        full_name: "test.ok4",
+        type: "test.M", // Check that non-absolute paths work fine.
+        repeated: true
+    }];
+
+    extensions 30 [declaration = {
+        number: 30,
+        full_name: ".test.enum1",
+        type: ".test.M.E",
+    }];
+
+    extensions 31 [declaration = {
+        number: 31,
+        full_name: ".test.enum2",
+        type: ".test.Idk",
+    }];
+
+    extensions 32 [declaration = {
+        number: 32,
+        full_name: ".test.enum3",
+        type: ".test.extn1",
+    }];
+}
+
+extend M {
+    repeated int32 extn1 = 10;
+    optional int32 extn2 = 11;
+    optional int32 extn3 = 12;
+    repeated M extn4 = 13;
+    optional M extn5 = 14;
+    optional M extn6 = 15;
+}
+
+extend M {
+    optional int32 ok1 = 20;
+    repeated int32 ok2 = 21;
+    optional M ok3 = 22;
+    repeated M ok4 = 23;
+}
+
+extend M {
+    optional int32 enum1 = 30;
+    optional int32 enum2 = 31;
+    optional int32 enum3 = 32;
+}

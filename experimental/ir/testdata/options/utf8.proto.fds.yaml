@@ -1,0 +1,40 @@
+file:
+- name: "testdata/options/utf8.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "M"
+    field:
+    - name: "default"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "default"
+    - name: "verify"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "verify"
+      options.features.utf8_validation: VERIFY
+    - name: "none"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "none"
+      options.features.utf8_validation: NONE
+  extension:
+  - name: "e"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.M"
+    extendee: ".google.protobuf.FileOptions"
+    json_name: "e"
+  options.$unknown: |
+    1000: {
+      1: {`74686973206973206e6f7420612076616c6964206573636170653a20ff`}
+      2: {`74686973206973206e6f7420612076616c6964206573636170653a20ff`}
+      3: {`74686973206f6e652069732076616c696420686572653a20ff`}
+    }
+  syntax: "editions"
+  edition: EDITION_2023

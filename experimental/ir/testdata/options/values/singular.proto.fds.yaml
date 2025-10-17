@@ -5,9 +5,21 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "x1", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "x2", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "x3", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - name: "x1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x1"
+    - name: "x2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x2"
+    - name: "x3"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x3"
   extension:
   - name: "x"
     number: 1000
@@ -15,6 +27,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   options.$unknown: |
     1000: {
       1: 1

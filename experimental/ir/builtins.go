@@ -48,7 +48,17 @@ type builtins struct {
 	OptionTargets        Member
 	CType, JSType        Member
 	Lazy, UnverifiedLazy Member
+	AllowAlias           Member
 	MessageSet           Member
+	JSONName             Member
+
+	ExtnDecls        Member
+	ExtnVerification Member
+	ExtnDeclNumber   Member
+	ExtnDeclName     Member
+	ExtnDeclType     Member
+	ExtnDeclReserved Member
+	ExtnDeclRepeated Member
 
 	FileDeprecated      Member
 	MessageDeprecated   Member
@@ -73,6 +83,7 @@ type builtins struct {
 	FeatureUTF8     Member
 	FeatureGroup    Member
 	FeatureEnum     Member
+	FeatureJSON     Member
 
 	FileFeatures      Member
 	MessageFeatures   Member
@@ -112,6 +123,15 @@ type builtinIDs struct {
 	Lazy           intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
 	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
 	AllowAlias     intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
+	JSONName       intern.ID `intern:"google.protobuf.FieldDescriptorProto.json_name"`
+
+	ExtnDecls        intern.ID `intern:"google.protobuf.ExtensionRangeOptions.declaration"`
+	ExtnVerification intern.ID `intern:"google.protobuf.ExtensionRangeOptions.verification"`
+	ExtnDeclNumber   intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.number"`
+	ExtnDeclName     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.full_name"`
+	ExtnDeclType     intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.type"`
+	ExtnDeclReserved intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.reserved"`
+	ExtnDeclRepeated intern.ID `intern:"google.protobuf.ExtensionRangeOptions.Declaration.repeated"`
 
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`
@@ -148,6 +168,7 @@ type builtinIDs struct {
 	FeatureUTF8     intern.ID `intern:"google.protobuf.FeatureSet.utf8_validation"`
 	FeatureGroup    intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
 	FeatureEnum     intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
+	FeatureJSON     intern.ID `intern:"google.protobuf.FeatureSet.json_format"`
 
 	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`

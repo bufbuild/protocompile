@@ -4,8 +4,16 @@ file:
   message_type:
   - name: "Any"
     field:
-    - { name: "type_url", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
-    - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_BYTES }
+    - name: "type_url"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "typeUrl"
+    - name: "value"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_BYTES
+      json_name: "value"
   options:
     java_package: "com.google.protobuf"
     java_outer_classname: "AnyProto"
@@ -20,13 +28,22 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "x1", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "x2", number: 2, label: LABEL_OPTIONAL, type: TYPE_STRING }
+    - name: "x1"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x1"
+    - name: "x2"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "x2"
     - name: "a"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".google.protobuf.Any"
+      json_name: "a"
   enum_type: [{ name: "Bar", value: [{ name: "BAR_ZERO", number: 0 }] }]
   extension:
   - name: "x"
@@ -35,12 +52,14 @@ file:
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.Any"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   - name: "y"
     number: 1001
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".google.protobuf.Any"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "y"
   options.$unknown: |
     1000: {
       1: {"type.googleapis.com/buf.test.Foo"}

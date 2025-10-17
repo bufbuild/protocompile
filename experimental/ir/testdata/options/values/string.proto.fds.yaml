@@ -5,8 +5,16 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "s", number: 1, label: LABEL_REPEATED, type: TYPE_STRING }
-    - { name: "b", number: 2, label: LABEL_REPEATED, type: TYPE_BYTES }
+    - name: "s"
+      number: 1
+      label: LABEL_REPEATED
+      type: TYPE_STRING
+      json_name: "s"
+    - name: "b"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_BYTES
+      json_name: "b"
   extension:
   - name: "x"
     number: 1000
@@ -14,6 +22,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   options.$unknown: |
     1000: {
       1: {}

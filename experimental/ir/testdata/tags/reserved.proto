@@ -45,3 +45,8 @@ enum E {
     reserved = 100;
     reserved "reserved", "unused";
 }
+
+enum Z {
+    K = 0;
+    reserved 0;
+}

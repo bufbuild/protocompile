@@ -16,7 +16,9 @@
 // and the lexer.
 package tokenmeta
 
-import "math/big"
+import (
+	"math/big"
+)
 
 // Meta is a type defined in this package.
 type Meta interface{ meta() }
@@ -46,8 +48,17 @@ type String struct {
 	// Lengths of the sigil and quotes for this string
 	Prefix, Quote uint32
 
-	// Whether escaping or concatenation took place.
-	Escaped, Concatenated bool
+	// Whether concatenation took place.
+	Concatenated bool
+
+	// Spans at which escapes occur.
+	Escapes []Escape
+}
+
+type Escape struct {
+	Start, End uint32
+	Rune       rune
+	Byte       byte
 }
 
 func (Number) meta() {}

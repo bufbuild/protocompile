@@ -10,11 +10,13 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.Foo"
+      json_name: "a"
     - name: "b"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".buf.test.Foo"
+      json_name: "b"
     extension_range: [{ start: 1000, end: 536870912 }]
   extension:
   - name: "x"
@@ -23,18 +25,21 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   - name: "y"
     number: 1000
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".buf.test.Foo"
+    json_name: "y"
   - name: "z"
     number: 1001
     label: LABEL_REPEATED
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".buf.test.Foo"
+    json_name: "z"
   options.$unknown: |
     1000: {
       2: {}

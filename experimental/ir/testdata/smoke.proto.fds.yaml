@@ -4,9 +4,21 @@ file:
   message_type:
   - name: "Foo"
     field:
-    - { name: "a", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "b", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-    - { name: "c", number: 3, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+    - name: "a"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "a"
+    - name: "b"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "b"
+    - name: "c"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "c"
   enum_type:
   - name: "BAR"
     value:
