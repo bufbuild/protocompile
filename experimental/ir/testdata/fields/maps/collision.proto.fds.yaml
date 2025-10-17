@@ -9,12 +9,21 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.FooBarEntry"
+      json_name: "fooBar"
     nested_type:
     - name: "FooBarEntry"
     - name: "FooBarEntry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
   - name: "Underscores"
     field:
@@ -23,20 +32,38 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Underscores.Entry"
+      json_name: ""
     - name: "__"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Underscores.Entry"
+      json_name: ""
     nested_type:
     - name: "Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
   syntax: "proto3"

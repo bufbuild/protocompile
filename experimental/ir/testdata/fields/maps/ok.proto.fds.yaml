@@ -9,44 +9,77 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.FooEntry"
+      json_name: "foo"
     - name: "bar"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.BarEntry"
+      json_name: "bar"
     - name: "__foo2__"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.Foo2Entry"
+      json_name: "Foo2"
     - name: "__foo_3__"
       number: 4
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.Foo3Entry"
+      json_name: "Foo3"
     nested_type:
     - name: "FooEntry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "BarEntry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_STRING }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "key"
       - name: "value"
         number: 2
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.Foo"
+        json_name: "value"
       options.map_entry: true
     - name: "Foo2Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "Foo3Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
   syntax: "proto3"

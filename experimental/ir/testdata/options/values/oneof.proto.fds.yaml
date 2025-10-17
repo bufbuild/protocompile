@@ -10,12 +10,14 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       oneof_index: 0
+      json_name: "a"
     - name: "b"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_MESSAGE
       type_name: ".buf.test.Foo"
       oneof_index: 0
+      json_name: "b"
     oneof_decl: [{ name: "o" }]
   extension:
   - name: "x"
@@ -24,12 +26,14 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   - name: "y"
     number: 1001
     label: LABEL_OPTIONAL
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "y"
   options.$unknown: |
     1000: {1: 1}
     1001: {2: {1: 1}}

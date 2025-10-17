@@ -50,6 +50,8 @@ type builtins struct {
 	Lazy, UnverifiedLazy Member
 	MessageSet           Member
 
+	JSONName Member
+
 	FileDeprecated      Member
 	MessageDeprecated   Member
 	FieldDeprecated     Member
@@ -73,6 +75,7 @@ type builtins struct {
 	FeatureUTF8     Member
 	FeatureGroup    Member
 	FeatureEnum     Member
+	FeatureJSON     Member
 
 	FileFeatures      Member
 	MessageFeatures   Member
@@ -113,6 +116,8 @@ type builtinIDs struct {
 	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
 	AllowAlias     intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
 
+	JSONName intern.ID `intern:"google.protobuf.FieldDescriptorProto.json_name"`
+
 	FileUninterpreted      intern.ID `intern:"google.protobuf.FileOptions.uninterpreted_option"`
 	MessageUninterpreted   intern.ID `intern:"google.protobuf.MessageOptions.uninterpreted_option"`
 	FieldUninterpreted     intern.ID `intern:"google.protobuf.FieldOptions.uninterpreted_option"`
@@ -148,6 +153,7 @@ type builtinIDs struct {
 	FeatureUTF8     intern.ID `intern:"google.protobuf.FeatureSet.utf8_validation"`
 	FeatureGroup    intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
 	FeatureEnum     intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
+	FeatureJSON     intern.ID `intern:"google.protobuf.FeatureSet.json_format"`
 
 	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`

@@ -60,7 +60,10 @@ type rawMember struct {
 	options       arena.Pointer[rawValue]
 	oneof         int32
 	optionTargets uint32
-	isGroup       bool
+
+	jsonName intern.ID
+
+	isGroup bool
 }
 
 // IsMessageField returns whether this is a non-extension message field.
@@ -169,7 +172,7 @@ func (m Member) TypeAST() ast.TypeAny {
 	return ast.TypeAny{}
 }
 
-// FullName returns this members's name.
+// FullName returns this member's name.
 func (m Member) Name() string {
 	if m.IsZero() {
 		return ""
@@ -177,12 +180,21 @@ func (m Member) Name() string {
 	return m.Context().session.intern.Value(m.raw.name)
 }
 
-// FullName returns this members's fully-qualified name.
+// FullName returns this member's fully-qualified name.
 func (m Member) FullName() FullName {
 	if m.IsZero() {
 		return ""
 	}
 	return FullName(m.Context().session.intern.Value(m.raw.fqn))
+}
+
+// JSONName returns this member's JSON name, either the default-generated one
+// or the one set via the json_name pseudo-option.
+func (m Member) JSONName() string {
+	if m.IsZero() {
+		return ""
+	}
+	return m.Context().session.intern.Value(m.raw.jsonName)
 }
 
 // Scope returns the scope in which this member is defined.
@@ -218,6 +230,14 @@ func (m Member) InternedScope() intern.ID {
 		return parent.InternedFullName()
 	}
 	return m.Context().File().InternedPackage()
+}
+
+// InternedJsonName returns the intern ID for [Member.JSONName].
+func (m Member) InternedJSONName() intern.ID {
+	if m.IsZero() {
+		return 0
+	}
+	return m.raw.jsonName
 }
 
 // Number returns the number for this member after expression evaluation.
@@ -300,6 +320,11 @@ func (m Member) Oneof() Oneof {
 // Options returns the options applied to this member.
 func (m Member) Options() MessageValue {
 	return wrapValue(m.Context(), m.raw.options).AsMessage()
+}
+
+// PseudoOptions returns this member's pseudo options.
+func (m Member) PseudoOptions() PseudoFields {
+	return m.Options().pseudoFields()
 }
 
 // FeatureSet returns the Editions features associated with this member.

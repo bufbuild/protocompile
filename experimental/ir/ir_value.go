@@ -683,27 +683,20 @@ type MessageValue struct {
 }
 
 type rawMessageValue struct {
-	// The [Value] this message corresponds to.
-	self arena.Pointer[rawValue]
-
-	// The type of this message. If concrete is not nil, this may be distinct
-	// from AsValue().Field().Element().
-	ty  ref[rawType]
-	url intern.ID // The type URL for the above, if this is an Any.
-
-	// If present, this is the concrete version of this value if it is an Any
-	// constructed from a concrete type. This may itself be an Any with a
-	// non-nil concrete, for the pathological value
-	//
-	//   any: { [types.com/google.protobuf.Any]: { [types.com/my.Type]: { ... } }}
+	byName   intern.Map[uint32]
+	entries  []arena.Pointer[rawValue]
+	ty       ref[rawType]
+	self     arena.Pointer[rawValue]
+	url      intern.ID
 	concrete arena.Pointer[rawMessageValue]
+	pseudo   struct{ jsonName arena.Pointer[rawValue] }
+}
 
-	// Fields set in this message in insertion order.
-	entries []arena.Pointer[rawValue]
-
-	// Which entries are already inserted. These are by interned full name
-	// of either the field or its containing oneof.
-	byName intern.Map[uint32]
+// PseudoFields contains pseudo options, which are special option-like syntax
+// for fields which are not real options. They can be accessed via
+// [Message.PseudoFields].
+type PseudoFields struct {
+	JSONName Value
 }
 
 // AsValue returns the [Value] corresponding to this message.
@@ -782,6 +775,21 @@ func (v MessageValue) Fields() iter.Seq[Value] {
 				return
 			}
 		}
+	}
+}
+
+// pseudoFields returns pseudofields set on this message.
+//
+// This feature is used for tracking special options that do not correspond to
+// real fields in an options message. They are not part of the message value
+// and are not returned by Fields().
+func (v MessageValue) pseudoFields() PseudoFields {
+	if v.IsZero() {
+		return PseudoFields{}
+	}
+
+	return PseudoFields{
+		JSONName: wrapValue(v.Context(), v.raw.pseudo.jsonName),
 	}
 }
 

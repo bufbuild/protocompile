@@ -16,26 +16,40 @@ edition = "2023";
 
 package buf.test;
 
-option features.field_presence = LEGACY_REQUIRED;
-
 message Foo {
-    repeated int32 x = 1 [features.field_presence = EXPLICIT];
-    map<int32, int32> y = 2 [features.field_presence = EXPLICIT];
+    option features.json_format = LEGACY_BEST_EFFORT;
 
-    oneof o {
-        int32 z = 3 [features.field_presence = EXPLICIT];
-    }
+    int32 a_ = 1;
+    int32 a = 2;
 
-    extensions 4;
-    
-    Foo m = 5 [features.field_presence = IMPLICIT];
+    int32 ab = 3;
+    int32 a_b = 4 [json_name = "ab"];
 
-    int32 r = 6 [features.field_presence = LEGACY_REQUIRED];
+    int32 ac = 5 [json_name = "aC"];
+    int32 a_c = 6;
 
-    optional int32 a1 = 10;
-    required int32 a2 = 11;
+    int32 x = 7 [json_name = "z"];
+    int32 y = 8 [json_name = "z"];
+
+    int32 d_c = 9 [json_name = "x"];
+    int32 dC = 10;
+
+    extensions 100, 101;
+}
+
+enum Bar {
+    option features.json_format = ALLOW;
+
+    ZERO = 0;
+    BAR_ZERO = 1;
+    b_a_r_zero = 2;
+
+    FOO_BAR = 3;
+    FOOBAR = 4;
+    BarFooBar = 5;
 }
 
 extend Foo {
-    int32 e = 4 [features.field_presence = EXPLICIT];
+    int32 x = 100 [json_name = "foo"];
+    int32 y = 101 [json_name = "y"];
 }

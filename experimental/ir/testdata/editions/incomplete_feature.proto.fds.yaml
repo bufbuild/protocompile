@@ -9,16 +9,19 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "a"
       options.feature_support: {}
     - name: "b"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "b"
       options.edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
     - name: "c"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "c"
       options:
         edition_defaults: [{ edition: EDITION_PROTO2, value: "false" }]
         feature_support: {}
@@ -26,6 +29,7 @@ file:
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "d"
       options:
         edition_defaults: [{ edition: EDITION_2023, value: "false" }]
         feature_support.edition_introduced: EDITION_2024
@@ -33,6 +37,7 @@ file:
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "e"
       options:
         edition_defaults: [{ edition: EDITION_PROTO2, value: "0" }]
         feature_support.edition_introduced: EDITION_2024
@@ -40,6 +45,7 @@ file:
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "f"
       options:
         edition_defaults:
         - { edition: EDITION_PROTO2, value: "true" }
@@ -53,6 +59,7 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_ENUM
       type_name: ".buf.test.Enum"
+      json_name: "g"
       options:
         edition_defaults:
         - { edition: EDITION_PROTO2, value: "A" }
@@ -69,6 +76,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Features"
     extendee: ".google.protobuf.FeatureSet"
+    json_name: "f"
   options.features.$unknown: "10000: {}"
   syntax: "editions"
   edition: EDITION_2023

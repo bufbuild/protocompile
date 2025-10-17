@@ -9,12 +9,14 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "x"
       options.$unknown: "1000: 42"
     - name: "z"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_INT32
       oneof_index: 0
+      json_name: "z"
       options.$unknown: "1000: 42"
     extension_range:
     - { start: 5, end: 6, options.$unknown: "1000: 42" }
@@ -32,35 +34,42 @@ file:
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.FileOptions"
+    json_name: "a"
   - name: "b"
     number: 1000
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.MessageOptions"
+    json_name: "b"
   - name: "c"
     number: 1000
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.FieldOptions"
+    json_name: "c"
   - name: "d"
     number: 1000
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.OneofOptions"
+    json_name: "d"
   - name: "e"
     number: 1000
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.EnumOptions"
+    json_name: "e"
   - name: "f"
     number: 1000
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.EnumValueOptions"
+    json_name: "f"
   - name: "g"
     number: 1000
     label: LABEL_REPEATED
     type: TYPE_INT32
     extendee: ".google.protobuf.ExtensionRangeOptions"
+    json_name: "g"
   options.$unknown: "1000: 42"
   syntax: "proto2"

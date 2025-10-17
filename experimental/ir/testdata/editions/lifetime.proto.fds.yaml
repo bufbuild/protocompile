@@ -9,6 +9,7 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "a"
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support.edition_introduced: EDITION_2023
@@ -16,6 +17,7 @@ file:
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "b"
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support:
@@ -26,6 +28,7 @@ file:
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "c"
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support:
@@ -35,6 +38,7 @@ file:
       number: 4
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "d"
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support.edition_introduced: EDITION_2024
@@ -42,6 +46,7 @@ file:
       number: 5
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "e"
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support:
@@ -52,6 +57,7 @@ file:
       number: 6
       label: LABEL_OPTIONAL
       type: TYPE_BOOL
+      json_name: "f"
       options:
         edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
         feature_support:
@@ -65,6 +71,7 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Features"
     extendee: ".google.protobuf.FeatureSet"
+    json_name: "x"
   options.features.$unknown: |
     9995: {
       1: 1

@@ -10,7 +10,12 @@ file:
       label: LABEL_REPEATED
       type: TYPE_ENUM
       type_name: ".buf.test.Bar"
-    - { name: "i", number: 2, label: LABEL_REPEATED, type: TYPE_INT32 }
+      json_name: "e"
+    - name: "i"
+      number: 2
+      label: LABEL_REPEATED
+      type: TYPE_INT32
+      json_name: "i"
   enum_type:
   - name: "Bar"
     value:
@@ -25,5 +30,6 @@ file:
     type: TYPE_MESSAGE
     type_name: ".buf.test.Foo"
     extendee: ".google.protobuf.FileOptions"
+    json_name: "x"
   options.$unknown: "1000: {1: {`0001020304000102ffffffffffffffffff01`}}"
   syntax: "proto2"
