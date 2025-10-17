@@ -9,25 +9,33 @@ file:
       label: LABEL_OPTIONAL
       type: TYPE_GROUP
       type_name: ".test.Foo.FooBar"
+      json_name: "foobar"
     - name: "x"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.FooBar"
+      json_name: "x"
     - name: "y"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.FooBar.X_Y_Z"
+      json_name: "y"
     nested_type:
     - name: "FooBar"
       field:
-      - { name: "x", number: 1, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "x"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "x"
       - name: "x_y_z"
         number: 2
         label: LABEL_OPTIONAL
         type: TYPE_GROUP
         type_name: ".test.Foo.FooBar.X_Y_Z"
+        json_name: "xYZ"
         options.deprecated: true
       nested_type:
       - name: "X_Y_Z"
@@ -37,6 +45,7 @@ file:
           label: LABEL_OPTIONAL
           type: TYPE_GROUP
           type_name: ".test.Foo.FooBar.X_Y_Z.Baz"
+          json_name: "baz"
         nested_type: [{ name: "Baz" }]
       options.deprecated: true
   syntax: "proto2"

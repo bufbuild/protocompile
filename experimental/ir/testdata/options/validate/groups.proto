@@ -16,26 +16,9 @@ edition = "2023";
 
 package buf.test;
 
-option features.field_presence = LEGACY_REQUIRED;
-
-message Foo {
-    repeated int32 x = 1 [features.field_presence = EXPLICIT];
-    map<int32, int32> y = 2 [features.field_presence = EXPLICIT];
-
-    oneof o {
-        int32 z = 3 [features.field_presence = EXPLICIT];
-    }
-
-    extensions 4;
-    
-    Foo m = 5 [features.field_presence = IMPLICIT];
-
-    int32 r = 6 [features.field_presence = LEGACY_REQUIRED];
-
-    optional int32 a1 = 10;
-    required int32 a2 = 11;
-}
-
-extend Foo {
-    int32 e = 4 [features.field_presence = EXPLICIT];
+message M {
+    string x1 = 1 [features.message_encoding = DELIMITED];
+    M x2 = 2 [features.message_encoding = DELIMITED];
+    repeated M x3 = 3 [features.message_encoding = DELIMITED];
+    map<int32, M> x4 = 4 [features.message_encoding = DELIMITED];
 }

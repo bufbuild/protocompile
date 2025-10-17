@@ -26,6 +26,9 @@ message M {
     reserved 2, 3 to 3, 5 to 10;
     reserved 7, 8 to max;   // Overlapping reserved regions.
     reserved max to max;    // Only first can be max.
+
+    optional int32 reserved = 100;
+    reserved "reserved", "unused";
 }
 
 enum E {
@@ -38,6 +41,9 @@ enum E {
     reserved 2, 3 to 3, 5 to 10;
     reserved 7, 8 to max;
     reserved max to max;
+
+    reserved = 100;
+    reserved "reserved", "unused";
 }
 
 enum Z {

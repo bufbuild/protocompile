@@ -12,4 +12,5 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_INT32
         extendee: ".test.M.N"
+        json_name: "x"
   syntax: "proto2"

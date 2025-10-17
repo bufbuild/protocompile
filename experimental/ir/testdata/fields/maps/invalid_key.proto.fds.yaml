@@ -9,41 +9,70 @@ file:
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.M1Entry"
+      json_name: "m1"
     - name: "m2"
       number: 2
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.M2Entry"
+      json_name: "m2"
     - name: "m3"
       number: 3
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.M3Entry"
+      json_name: "m3"
     - name: "m4"
       number: 4
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.M4Entry"
+      json_name: "m4"
     - name: "m5"
       number: 5
       label: LABEL_REPEATED
       type: TYPE_MESSAGE
       type_name: ".test.Foo.M5Entry"
+      json_name: "m5"
     nested_type:
     - name: "M1Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_FLOAT }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_FLOAT
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "M2Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_DOUBLE }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_DOUBLE
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "M3Entry"
       field:
-      - { name: "key", number: 1, label: LABEL_OPTIONAL, type: TYPE_BYTES }
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+      - name: "key"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_BYTES
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "M4Entry"
       field:
@@ -52,7 +81,12 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_MESSAGE
         type_name: ".test.Foo"
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
     - name: "M5Entry"
       field:
@@ -61,7 +95,12 @@ file:
         label: LABEL_OPTIONAL
         type: TYPE_ENUM
         type_name: ".test.Enum"
-      - { name: "value", number: 2, label: LABEL_OPTIONAL, type: TYPE_INT32 }
+        json_name: "key"
+      - name: "value"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_INT32
+        json_name: "value"
       options.map_entry: true
   enum_type: [{ name: "Enum", value: [{ name: "Z", number: 0 }] }]
   syntax: "proto3"

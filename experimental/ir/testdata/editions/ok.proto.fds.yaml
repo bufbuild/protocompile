@@ -8,16 +8,19 @@ file:
       number: 1
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "x"
       options.features.field_presence: EXPLICIT
     - name: "y"
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "y"
       options.features.field_presence: IMPLICIT
     - name: "z"
       number: 3
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      json_name: "z"
       options.features.field_presence: LEGACY_REQUIRED
   options.features.field_presence: IMPLICIT
   syntax: "editions"

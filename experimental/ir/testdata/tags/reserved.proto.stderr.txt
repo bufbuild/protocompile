@@ -64,78 +64,114 @@ error: `max` outside of range end
    |              ^^^
    = note: the special `max` expression can only be used at the end of a range
 
-error: use of reserved enum value `2`
-  --> testdata/tags/reserved.proto:33:10
+error: use of reserved message field name
+  --> testdata/tags/reserved.proto:30:20
    |
-33 |     Y1 = 2;
+30 |     optional int32 reserved = 100;
+   |                    ^^^^^^^^
+31 |     reserved "reserved", "unused";
+   |              ---------- `reserved` reserved here
+
+error: use of reserved field number `100`
+  --> testdata/tags/reserved.proto:30:31
+   |
+27 |     reserved 7, 8 to max;   // Overlapping reserved regions.
+   |                 -------- field number reserved here
+28 |     reserved max to max;    // Only first can be max.
+29 |
+30 |     optional int32 reserved = 100;
+   |                               ^^^ used here
+
+error: use of reserved enum value `2`
+  --> testdata/tags/reserved.proto:36:10
+   |
+36 |     Y1 = 2;
    |          ^ used here
-34 |     Y2 = 3;
+37 |     Y2 = 3;
 ...
-38 |     reserved 2, 3 to 3, 5 to 10;
+41 |     reserved 2, 3 to 3, 5 to 10;
    |              - enum value reserved here
 
 error: use of reserved enum value `3`
-  --> testdata/tags/reserved.proto:34:10
+  --> testdata/tags/reserved.proto:37:10
    |
-34 |     Y2 = 3;
+37 |     Y2 = 3;
    |          ^ used here
-35 |     Y3 = 4;
+38 |     Y3 = 4;
 ...
-38 |     reserved 2, 3 to 3, 5 to 10;
+41 |     reserved 2, 3 to 3, 5 to 10;
    |                 ------ enum value reserved here
 
 error: use of reserved enum value `5`
-  --> testdata/tags/reserved.proto:36:10
+  --> testdata/tags/reserved.proto:39:10
    |
-36 |     Y4 = 5;
+39 |     Y4 = 5;
    |          ^ used here
-37 |
-38 |     reserved 2, 3 to 3, 5 to 10;
+40 |
+41 |     reserved 2, 3 to 3, 5 to 10;
    |                         ------- enum value reserved here
 
 warning: singleton range can be simplified
-  --> testdata/tags/reserved.proto:38:17
+  --> testdata/tags/reserved.proto:41:17
    |
-38 |     reserved 2, 3 to 3, 5 to 10;
+41 |     reserved 2, 3 to 3, 5 to 10;
    |                 ^^^^^^
   help: replace with a single number
    |
-38 | -     reserved 2, 3 to 3, 5 to 10;
-38 | +     reserved 2, 3, 5 to 10;
+41 | -     reserved 2, 3 to 3, 5 to 10;
+41 | +     reserved 2, 3, 5 to 10;
 
 error: overlapping enum value ranges
-  --> testdata/tags/reserved.proto:39:14
+  --> testdata/tags/reserved.proto:42:14
    |
-38 |     reserved 2, 3 to 3, 5 to 10;
+41 |     reserved 2, 3 to 3, 5 to 10;
    |                         ------- overlaps with this one
-39 |     reserved 7, 8 to max;
+42 |     reserved 7, 8 to max;
    |              ^ this range
    |
    = help: they overlap at `7`
 
 error: overlapping enum value ranges
-  --> testdata/tags/reserved.proto:39:17
+  --> testdata/tags/reserved.proto:42:17
    |
-38 |     reserved 2, 3 to 3, 5 to 10;
+41 |     reserved 2, 3 to 3, 5 to 10;
    |                         ------- overlaps with this one
-39 |     reserved 7, 8 to max;
+42 |     reserved 7, 8 to max;
    |                 ^^^^^^^^ this range
    |
    = help: they overlap in the range `8 to 10`
 
 error: `max` outside of range end
-  --> testdata/tags/reserved.proto:40:14
+  --> testdata/tags/reserved.proto:43:14
    |
-40 |     reserved max to max;
+43 |     reserved max to max;
    |              ^^^
    = note: the special `max` expression can only be used at the end of a range
 
-error: use of reserved enum value `0`
-  --> testdata/tags/reserved.proto:44:9
+error: use of reserved enum value name
+  --> testdata/tags/reserved.proto:45:5
    |
-44 |     K = 0;
+45 |     reserved = 100;
+   |     ^^^^^^^^
+46 |     reserved "reserved", "unused";
+   |              ---------- `reserved` reserved here
+
+error: use of reserved enum value `100`
+  --> testdata/tags/reserved.proto:45:16
+   |
+42 |     reserved 7, 8 to max;
+   |                 -------- enum value reserved here
+43 |     reserved max to max;
+44 |
+45 |     reserved = 100;
+   |                ^^^ used here
+
+error: use of reserved enum value `0`
+  --> testdata/tags/reserved.proto:50:9
+   |
+50 |     K = 0;
    |         ^ used here
-45 |     reserved 0;
+51 |     reserved 0;
    |              - enum value reserved here
 
-encountered 13 errors and 2 warnings
+encountered 17 errors and 2 warnings

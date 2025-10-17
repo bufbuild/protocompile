@@ -25,4 +25,12 @@ error: `Entry` declared multiple times
    = help: map-typed fields implicitly declare a nested message type: field `_`
            produces a map entry type `Entry`
 
-encountered 2 errors
+error: message fields have the same JSON name
+  --> testdata/fields/maps/collision.proto:28:23
+   |
+27 |     map<int32, int32> _ = 1;
+   |                       - this implies JSON name ``
+28 |     map<int32, int32> __ = 2;
+   |                       ^^ this also implies that name
+
+encountered 3 errors

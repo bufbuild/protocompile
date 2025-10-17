@@ -25,6 +25,8 @@ import (
 	"strings"
 	"unicode"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -141,8 +143,11 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		// renderer bugs.
 		defer func() {
 			if panicked := recover(); panicked != nil {
+				proto := report.ToProto()
+				json, _ := protojson.MarshalOptions{Multiline: true, Indent: " "}.Marshal(proto)
+
 				stack := strings.Join(d.debug[:min(report.Tracing, len(d.debug))], "\n")
-				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%s", panicked, stack))
+				panic(fmt.Sprintf("protocompile/report: panic in renderer: %v\ndiagnosed at:\n%sreport: %s", panicked, stack, json))
 			}
 		}()
 	}
