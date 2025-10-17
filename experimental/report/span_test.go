@@ -17,8 +17,9 @@ package report_test
 import (
 	"testing"
 
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/experimental/report"
 )
 
 func TestLocation(t *testing.T) {
@@ -56,6 +57,7 @@ func TestLocation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
+			t.Parallel()
 			t.Logf("%q | %q", file.Text()[:test.loc.Offset], file.Text()[test.loc.Offset:])
 			assert.Equal(t, test.loc, file.Location(test.loc.Offset, test.unit), "offset/%s -> line/col", test.unit)
 

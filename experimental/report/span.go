@@ -310,7 +310,7 @@ func (f *File) InverseLocation(line, column int, units LengthUnit) Location {
 
 	return Location{
 		Line: line, Column: column,
-		Offset: f.inverseLocation(line, column, units, true),
+		Offset: f.inverseLocation(line, column, units),
 	}
 }
 
@@ -402,7 +402,7 @@ func (f *File) location(offset int, units LengthUnit, allowNonPrint bool) Locati
 	}
 }
 
-func (f *File) inverseLocation(line, column int, units LengthUnit, allowNonPrint bool) int {
+func (f *File) inverseLocation(line, column int, units LengthUnit) int {
 	// Find the start the given line.
 	start, end := f.LineOffsets(line)
 	chunk := f.text[start:end]
