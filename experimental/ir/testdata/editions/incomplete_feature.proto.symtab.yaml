@@ -16,7 +16,7 @@ tables:
     - { extn: "buf.test.f", name: "d", value: "false" }
     - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
     - { extn: "buf.test.f", name: "f", value: "true" }
-    - { extn: "buf.test.f", name: "g", value: "0" }
+    - { extn: "buf.test.f", name: "g", value: "A" }
     symbols:
     - fqn: "buf.test"
       kind: KIND_PACKAGE
@@ -35,7 +35,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Enum"
       kind: KIND_ENUM
       file: "testdata/editions/incomplete_feature.proto"
@@ -51,7 +51,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.a"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -70,7 +70,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.b"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -94,7 +94,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.c"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -119,7 +119,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.d"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -145,7 +145,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.e"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -169,7 +169,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.f"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -201,7 +201,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.Features.g"
       kind: KIND_FIELD
       file: "testdata/editions/incomplete_feature.proto"
@@ -227,7 +227,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.A"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/incomplete_feature.proto"
@@ -241,7 +241,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.B"
       kind: KIND_ENUM_VALUE
       file: "testdata/editions/incomplete_feature.proto"
@@ -255,7 +255,7 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     - fqn: "buf.test.f"
       kind: KIND_EXTENSION
       file: "testdata/editions/incomplete_feature.proto"
@@ -273,6 +273,6 @@ tables:
       - { extn: "buf.test.f", name: "d", value: "false" }
       - { extn: "buf.test.f", name: "e", value: "<invalid type>" }
       - { extn: "buf.test.f", name: "f", value: "true" }
-      - { extn: "buf.test.f", name: "g", value: "0" }
+      - { extn: "buf.test.f", name: "g", value: "A" }
     options.message.fields:
       "features": { message.extns: { "buf.test.f": { message: {} } } }
