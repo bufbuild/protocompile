@@ -20,6 +20,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -180,10 +181,15 @@ func (s Symbol) Deprecated() Value {
 
 // Visible returns whether or not this symbol is visible according to Protobuf's
 // import semantics, within s.Context().File().
-func (s Symbol) Visible() bool {
-	return s.ref.file <= 0 ||
-		s.Kind() == SymbolKindPackage || // Packages don't get visibility checks.
-		s.Context().imports.files[uint(s.ref.file)-1].visible
+//
+// If allowOptions is true, symbols that were pulled in via import option are
+// accepted.
+func (s Symbol) Visible(allowOptions bool) bool {
+	if s.ref.file <= 0 || s.Kind() == SymbolKindPackage {
+		return true
+	}
+	file := s.Context().imports.files[uint(s.ref.file)-1]
+	return file.visible && (allowOptions || !file.option)
 }
 
 // Definition returns a span for the definition site of this symbol;
@@ -210,6 +216,18 @@ func (s Symbol) Definition() report.Span {
 	}
 
 	return report.Span{}
+}
+
+// Import returns the import declaration that brought this symbol into scope.
+//
+// Returns zero of s is defined in the current file.
+func (s Symbol) Import() ast.DeclImport {
+	if s.ref.file <= 0 {
+		return ast.DeclImport{}
+	}
+
+	file := s.Context().imports.files[uint(s.ref.file)-1]
+	return file.decl
 }
 
 // noun returns a [taxa.Noun] for diagnostic use.
@@ -500,7 +518,7 @@ again:
 		if !r.ptr.Nil() {
 			found = r
 			sym := wrapSymbol(c, r)
-			if sym.Visible() && accept(sym.Kind()) {
+			if sym.Visible(true) && accept(sym.Kind()) {
 				// If the symbol is not visible, keep looking; we may find
 				// another match that is actually visible.
 				break

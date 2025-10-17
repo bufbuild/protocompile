@@ -141,12 +141,16 @@ func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) 
 		return imp.Decl.KeywordToken().Span().Start
 	}))
 	for i, imp := range imports {
-		fdp.Dependency = append(fdp.Dependency, imp.Path())
-		if imp.Public {
-			fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
-		}
-		if imp.Weak {
-			fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
+		if !imp.Option {
+			fdp.Dependency = append(fdp.Dependency, imp.Path())
+			if imp.Public {
+				fdp.PublicDependency = append(fdp.PublicDependency, int32(i))
+			}
+			if imp.Weak {
+				fdp.WeakDependency = append(fdp.WeakDependency, int32(i))
+			}
+		} else if imp.Option {
+			fdp.OptionDependency = append(fdp.OptionDependency, imp.Path())
 		}
 
 		if dg.sourceCodeInfoExtn != nil && !imp.Used {

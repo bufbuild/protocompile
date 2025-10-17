@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -688,12 +689,13 @@ func validatePacked(m Member, r *report.Report) {
 			if !packed {
 				want = "EXPANDED"
 			}
-			r.Error(errEditionTooNew{
-				file:    m.Context().File(),
-				removed: syntax.Edition2023,
+			r.Error(erredition.TooNew{
+				Current: m.Context().File().Syntax(),
+				Decl:    m.Context().File().AST().Syntax(),
+				Removed: syntax.Edition2023,
 
-				what:  option.Field().Name(),
-				where: option.KeyAST(),
+				What:  option.Field().Name(),
+				Where: option.KeyAST(),
 			}).Apply(option.suggestEdit(
 				builtins.FeaturePacked.Name(), want,
 				"replace with `%s`", builtins.FeaturePacked.Name(),
@@ -806,13 +808,14 @@ func validateCType(m Member, r *report.Report) {
 	is2023 := f.Syntax() == syntax.Edition2023
 	switch {
 	case f.Syntax() > syntax.Edition2023:
-		r.Error(errEditionTooNew{
-			file:       f,
-			deprecated: syntax.Edition2023,
-			removed:    syntax.Edition2024,
+		r.Error(erredition.TooNew{
+			Current:    m.Context().File().Syntax(),
+			Decl:       m.Context().File().AST().Syntax(),
+			Deprecated: syntax.Edition2023,
+			Removed:    syntax.Edition2024,
 
-			what:  ctype.Field().Name(),
-			where: ctype.KeyAST(),
+			What:  ctype.Field().Name(),
+			Where: ctype.KeyAST(),
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
@@ -828,7 +831,7 @@ func validateCType(m Member, r *report.Report) {
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
 	case m.IsExtension() && ctypeValue == 1: // google.protobuf.FieldOptions.CORD
@@ -838,17 +841,18 @@ func validateCType(m Member, r *report.Report) {
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
 	case is2023:
-		r.Warn(errEditionTooNew{
-			file:       f,
-			deprecated: syntax.Edition2023,
-			removed:    syntax.Edition2024,
+		r.Warn(erredition.TooNew{
+			Current:    m.Context().File().Syntax(),
+			Decl:       m.Context().File().AST().Syntax(),
+			Deprecated: syntax.Edition2023,
+			Removed:    syntax.Edition2024,
 
-			what:  ctype.Field().Name(),
-			where: ctype.KeyAST(),
+			What:  ctype.Field().Name(),
+			Where: ctype.KeyAST(),
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",

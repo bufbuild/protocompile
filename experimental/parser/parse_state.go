@@ -29,9 +29,10 @@ type parser struct {
 	*ast.Nodes
 	*report.Report
 
-	syntaxNode    ast.DeclSyntax
-	syntax        syntax.Syntax
-	parseComplete bool
+	syntaxNode       ast.DeclSyntax
+	importOptionNode ast.DeclImport
+	syntax           syntax.Syntax
+	parseComplete    bool
 }
 
 // classified is a spanner that has been classified by taxa.

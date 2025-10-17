@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -246,6 +247,9 @@ type symbolRef struct {
 
 	// If true, diagnostics will not suggest adding an import.
 	suggestImport bool
+
+	// Allow pulling in symbols via import option.
+	allowOption bool
 }
 
 // resolve performs symbol resolution.
@@ -328,7 +332,29 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					"rather than the one we found",
 				expectedName),
 		)
-	case !sym.Visible():
+	case !sym.Visible(r.allowOption):
+		if !r.allowOption && sym.Visible(true) {
+			decl := sym.Import()
+			var option token.Token
+			for m := range seq.Values(decl.ModifierTokens()) {
+				if m.Keyword() == keyword.Option {
+					option = m
+				}
+			}
+			span := report.Join(decl.KeywordToken(), option)
+
+			// This symbol is only visible in option position.
+			r.Errorf("`%s` is only imported for use in options", r.name).Apply(
+				report.Snippetf(r.span, "requires non-`option` import"),
+				report.Snippetf(decl, "imported as `option` here"),
+				report.SuggestEdits(span, "delete `option`", report.Edit{
+					Start: 0, End: span.Len(),
+					Replace: "import",
+				}),
+			)
+			break
+		}
+
 		// Complain that we need to import a symbol.
 		d := r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Snippetf(r.span, "not visible in this scope"),

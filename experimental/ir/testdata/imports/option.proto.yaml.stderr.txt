@@ -1,0 +1,55 @@
+error: sorry, Edition 2024 is not fully implemented
+  --> main.proto:1:11
+   |
+ 1 | edition = "2024";
+   |           ^^^^^^
+   = help: Edition 2024 will be implemented in a future release
+
+error: `Foo` is only imported for use in options
+  --> main.proto:8:3
+   |
+ 4 | import option "option.proto";
+   | ----------------------------- imported as `option` here
+...
+ 7 |   option (e).x = 1;
+ 8 |   Foo y = 2;
+   |   ^^^ requires non-`option` import
+   |
+  help: delete `option`
+   |
+ 4 | - import option "option.proto";
+ 4 | + import "option.proto";
+
+error: sorry, Edition 2024 is not fully implemented
+  --> main2.proto:1:11
+   |
+ 1 | edition = "2024";
+   |           ^^^^^^
+   = help: Edition 2024 will be implemented in a future release
+
+warning: unused import "main2.proto"
+  --> main2.proto:4:8
+   |
+ 4 | import "public.proto";
+   |        ^^^^^^^^^^^^^^
+  help: delete it
+   |
+ 4 | - import "public.proto";
+   |
+   = help: no symbols from this file are referenced
+
+error: sorry, Edition 2024 is not fully implemented
+  --> option.proto:1:11
+   |
+ 1 | edition = "2024";
+   |           ^^^^^^
+   = help: Edition 2024 will be implemented in a future release
+
+error: sorry, Edition 2024 is not fully implemented
+  --> public.proto:1:11
+   |
+ 1 | edition = "2024";
+   |           ^^^^^^
+   = help: Edition 2024 will be implemented in a future release
+
+encountered 5 errors and 1 warning

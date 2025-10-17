@@ -100,6 +100,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			File:   file,
 			Public: imp.IsPublic(),
 			Weak:   imp.IsWeak(),
+			Option: imp.IsOption(),
 			Decl:   imp,
 		})
 	}

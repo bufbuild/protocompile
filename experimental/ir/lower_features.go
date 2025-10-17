@@ -16,18 +16,15 @@ package ir
 
 import (
 	"cmp"
-	"fmt"
-	"regexp"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
-
-var whitespacePattern = regexp.MustCompile(`[ \t\r\n]+`)
 
 func buildAllFeatureInfo(f File, r *report.Report) {
 	for m := range f.AllMembers() {
@@ -376,109 +373,24 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		// any relationship between these.
 		switch {
 		case info.IsRemoved(edition), info.IsDeprecated(edition):
-			r.SoftError(info.IsRemoved(edition), errEditionTooNew{
-				file:       features.Context().File(),
-				removed:    info.Removed(),
-				deprecated: info.Deprecated(),
-				warning:    info.DeprecationWarning(),
-				what:       feature.Field().Name(),
-				where:      feature.KeyAST(),
+			r.SoftError(info.IsRemoved(edition), erredition.TooNew{
+				Current:          features.Context().File().Syntax(),
+				Decl:             features.Context().File().AST().Syntax(),
+				Removed:          info.Removed(),
+				Deprecated:       info.Deprecated(),
+				DeprecatedReason: info.DeprecationWarning(),
+				What:             feature.Field().Name(),
+				Where:            feature.KeyAST(),
 			})
 
 		case !info.IsIntroduced(edition):
-			r.Error(errEditionTooOld{
-				file:  features.Context().File(),
-				intro: info.Introduced(),
-				what:  feature.Field().Name(),
-				where: feature.KeyAST(),
+			r.Error(erredition.TooOld{
+				Current: features.Context().File().Syntax(),
+				Decl:    features.Context().File().AST().Syntax(),
+				Intro:   info.Introduced(),
+				What:    feature.Field().Name(),
+				Where:   feature.KeyAST(),
 			})
 		}
 	}
-}
-
-func prettyEdition(s syntax.Syntax) string {
-	if !s.IsValid() || !s.IsEdition() {
-		return fmt.Sprintf("\"%s\"", s)
-	}
-	return fmt.Sprintf("Edition %s", s)
-}
-
-type errEditionTooOld struct {
-	file  File
-	intro syntax.Syntax
-
-	what  any
-	where report.Spanner
-}
-
-func (e errEditionTooOld) Diagnose(d *report.Diagnostic) {
-	kind := "syntax"
-	if e.file.Syntax().IsEdition() {
-		kind = "edition"
-	}
-
-	d.Apply(
-		report.Message("`%s` is not supported in %s", e.what, prettyEdition(e.file.Syntax())),
-		report.Snippet(e.where),
-		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
-	)
-
-	if e.intro != syntax.Unknown {
-		d.Apply(report.Helpf("`%s` requires at least %s", e.what, prettyEdition(e.intro)))
-	}
-}
-
-type errEditionTooNew struct {
-	file                File
-	deprecated, removed syntax.Syntax
-	warning             string
-
-	what  any
-	where report.Spanner
-}
-
-func (e errEditionTooNew) Diagnose(d *report.Diagnostic) {
-	kind := "syntax"
-	if e.file.Syntax().IsEdition() {
-		kind = "edition"
-	}
-
-	err := "not supported"
-	if !e.isRemoved() {
-		err = "deprecated"
-	}
-
-	d.Apply(
-		report.Message("`%s` is %s in %s", e.what, err, prettyEdition(e.file.Syntax())),
-		report.Snippet(e.where),
-		report.Snippetf(e.file.AST().Syntax().Value(), "%s specified here", kind),
-	)
-
-	if e.isRemoved() {
-		if e.isDeprecated() {
-			d.Apply(report.Helpf("deprecated since %s, removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
-		} else {
-			d.Apply(report.Helpf("removed in %s", prettyEdition(e.removed)))
-		}
-	} else if e.isDeprecated() {
-		if e.removed != syntax.Unknown {
-			d.Apply(report.Helpf("deprecated since %s, to be removed in %s", prettyEdition(e.deprecated), prettyEdition(e.removed)))
-		} else {
-			d.Apply(report.Helpf("deprecated since %s", prettyEdition(e.deprecated)))
-		}
-	}
-
-	if e.warning != "" {
-		// Canonicalize whitespace. Some built-in deprecation warnings have
-		// double spaces after periods.
-		text := whitespacePattern.ReplaceAllString(e.warning, " ")
-		d.Apply(report.Helpf("deprecated: %s", text))
-	}
-}
-
-func (e errEditionTooNew) isDeprecated() bool {
-	return e.deprecated != syntax.Unknown && e.deprecated <= e.file.Syntax()
-}
-func (e errEditionTooNew) isRemoved() bool {
-	return e.removed != syntax.Unknown && e.removed <= e.file.Syntax()
 }
