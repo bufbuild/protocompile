@@ -15,7 +15,9 @@
 package ir
 
 import (
+	"math"
 	"slices"
+	"strconv"
 
 	descriptorv1 "buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go/buf/descriptor/v1"
 	"google.golang.org/protobuf/proto"
@@ -339,6 +341,30 @@ func (dg *descGenerator) field(f Member, fdp *descriptorpb.FieldDescriptorProto)
 	}
 
 	fdp.JsonName = addr(f.JSONName())
+
+	d := f.PseudoOptions().Default
+	if !d.IsZero() {
+		if v, ok := d.AsBool(); ok {
+			fdp.DefaultValue = addr(strconv.FormatBool(v))
+		} else if v, ok := d.AsInt(); ok {
+			fdp.DefaultValue = addr(strconv.FormatInt(v, 10))
+		} else if v, ok := d.AsUInt(); ok {
+			fdp.DefaultValue = addr(strconv.FormatUint(v, 10))
+		} else if v, ok := d.AsFloat(); ok {
+			switch {
+			case math.IsInf(v, 1):
+				fdp.DefaultValue = addr("inf")
+			case math.IsInf(v, -1):
+				fdp.DefaultValue = addr("-inf")
+			case math.IsNaN(v):
+				fdp.DefaultValue = addr("nan") // Goodbye NaN payload. :(
+			default:
+				fdp.DefaultValue = addr(strconv.FormatFloat(v, 'g', -1, 64))
+			}
+		} else if v, ok := d.AsString(); ok {
+			fdp.DefaultValue = addr(v)
+		}
+	}
 }
 
 func (dg *descGenerator) oneof(o Oneof, odp *descriptorpb.OneofDescriptorProto) {

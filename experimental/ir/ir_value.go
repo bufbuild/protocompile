@@ -278,6 +278,14 @@ func (v Value) getElements() []rawValueBits {
 	return slice
 }
 
+// IsZeroValue is a shortcut for [Element.IsZeroValue].
+func (v Value) IsZeroValue() bool {
+	if v.IsZero() {
+		return false
+	}
+	return v.Elements().At(0).IsZeroValue()
+}
+
 // AsBool is a shortcut for [Element.AsBool], if this value is singular.
 func (v Value) AsBool() (value, ok bool) {
 	if v.IsZero() || v.Field().IsRepeated() {
@@ -598,6 +606,17 @@ func (e Element) Type() Type {
 	return e.Field().Element()
 }
 
+// Returns whether this element contains the zero value for its type.
+//
+// Always returns false for repeated or message-typed fields.
+func (e Element) IsZeroValue() bool {
+	if e.IsZero() || e.Field().IsRepeated() || e.Field().Element().IsMessage() {
+		return false
+	}
+
+	return e.value.raw.bits == 0
+}
+
 // AsBool returns the bool value of this element.
 //
 // Returns ok == false if this is not a bool.
@@ -689,13 +708,17 @@ type rawMessageValue struct {
 	self     arena.Pointer[rawValue]
 	url      intern.ID
 	concrete arena.Pointer[rawMessageValue]
-	pseudo   struct{ jsonName arena.Pointer[rawValue] }
+	pseudo   struct {
+		defaultValue arena.Pointer[rawValue]
+		jsonName     arena.Pointer[rawValue]
+	}
 }
 
 // PseudoFields contains pseudo options, which are special option-like syntax
 // for fields which are not real options. They can be accessed via
 // [Message.PseudoFields].
 type PseudoFields struct {
+	Default  Value
 	JSONName Value
 }
 
@@ -789,6 +812,7 @@ func (v MessageValue) pseudoFields() PseudoFields {
 	}
 
 	return PseudoFields{
+		Default:  wrapValue(v.Context(), v.raw.pseudo.defaultValue),
 		JSONName: wrapValue(v.Context(), v.raw.pseudo.jsonName),
 	}
 }

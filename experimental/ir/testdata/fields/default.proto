@@ -1,0 +1,64 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//% descriptor: true
+edition = "2023";
+
+package buf.test;
+
+message M {
+    int32 i1 = 1 [default = -42];
+    uint32 i2 = 2 [default = 0xffffffff];
+
+    int32 i3 = 3 [default = 0xffffffff];
+    uint32 i4 = 4 [default = 0x100000000];
+
+    int32 i5 = 5 [default = 0];
+    int32 i6 = 6 [default = 0];
+
+    float f1 = 11 [default = 1.0];
+    float f2 = 12 [default = 1.0e1000];
+    float f3 = 13 [default = -inf];
+    float f4 = 14 [default = nan];
+    float f5 = 15 [default = -0];
+    float f6 = 16 [default = 0];
+
+    string s1 = 21 [default = "foo"];
+    string s2 = 22 [default = "\x63\xff"];
+    string s3 = 23 [default = "\x63\xff", features.utf8_validation = NONE];
+    string s4 = 24 [default = ""];
+
+    bool b1 = 31 [default = true];
+    bool b2 = 32 [default = 1];
+    bool b3 = 33 [default = false];
+
+    enum E {
+        E0 = 0;
+        E1 = 1;
+        E2 = 2;
+    }
+    E e1 = 41 [default = E1];
+    E e2 = 42 [default = 1];
+    E e3 = 43 [default = E0];
+
+    repeated int32 w1 = 101 [default = 1, default = 2];
+    M w2 = 102 [default = {
+        i1: 42,
+        s1: "foobar",
+    }];
+    M w3 = 103 [
+        default.i1 = 42,
+        default.s1 = "foobar"
+    ];
+}

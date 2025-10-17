@@ -21,14 +21,17 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
@@ -82,6 +85,7 @@ func validateConstraints(f File, r *report.Report) {
 		validateCType(m, r)
 		validateLazy(m, r)
 		validateJSType(m, r)
+		validateDefault(m, r)
 
 		validatePresence(m, r)
 		validateUTF8(m, r)
@@ -96,6 +100,16 @@ func validateConstraints(f File, r *report.Report) {
 			}
 
 			validateDeclaredExtension(m, r)
+		}
+	}
+
+	for p := range f.Context().arenas.messages.Values() {
+		m := MessageValue{internal.NewWith(f.Context()), p}
+		for v := range m.Fields() {
+			// This is a simple way of picking up all of the option values
+			// without tripping over custom defaults, which we explicitly should
+			// *not* validate.
+			validateUTF8Values(v, r)
 		}
 	}
 }
@@ -905,5 +919,118 @@ func validateMessageEncoding(m Member, r *report.Report) {
 				"`%s` cannot be set on them",
 			feature.Field().Name(),
 		))
+	}
+}
+
+func validateDefault(m Member, r *report.Report) {
+	option := m.PseudoOptions().Default
+	if option.IsZero() {
+		return
+	}
+
+	if file := m.Context().File(); file.Syntax() == syntax.Proto3 {
+		r.Errorf("custom default in \"proto3\"").Apply(
+			report.Snippet(option.OptionSpan()),
+			report.PageBreak,
+			report.Snippetf(file.AST().Syntax().Value(), "\"proto3\" specified here"),
+			report.Helpf("custom defaults cannot be defined in \"proto3\" only"),
+		)
+	}
+
+	if m.IsRepeated() || m.Element().IsMessage() {
+		r.Error(errTypeConstraint{
+			want: "singular scalar- or enum-typed field",
+			got:  m.Element(),
+			decl: m.TypeAST(),
+		}).Apply(
+			report.Snippetf(option.KeyAST(), "custom default specified here"),
+			report.Helpf("custom defaults are only for non-repeated fields that have a non-message type"),
+		)
+	}
+
+	if m.IsUnicode() {
+		if s, _ := option.AsString(); !utf8.ValidString(s) {
+			r.Warn(&errNotUTF8{value: option.Elements().At(0)}).Apply(
+				report.Helpf("protoc erroneously accepts non-UTF-8 defaults for UTF-8 fields; for all other options, UTF-8 validation failure causes protoc to crash"),
+			)
+		}
+	}
+
+	// Warn if the zero value is used, because it's redundant.
+	if option.IsZeroValue() {
+		r.Warnf("redundant custom default").Apply(
+			report.Snippetf(option.ValueAST(), "this is the zero value for `%s`", m.Element().FullName()),
+			report.Helpf("fields without a custom default will default to the zero value, making this option redundant"),
+		)
+	}
+}
+
+// validateUTF8Fields validates that strings in a value are actually UTF-8.
+func validateUTF8Values(v Value, r *report.Report) {
+	for elem := range seq.Values(v.Elements()) {
+		if v.Field().IsUnicode() {
+			if s, _ := elem.AsString(); !utf8.ValidString(s) {
+				r.Error(&errNotUTF8{value: elem})
+			}
+		}
+	}
+}
+
+// errNotUTF8 diagnoses a non-UTF8 value.
+type errNotUTF8 struct {
+	value Element
+}
+
+func (e *errNotUTF8) Diagnose(d *report.Diagnostic) {
+	d.Apply(report.Message("non-UTF-8 string literal"))
+
+	if lit := e.value.AST().AsLiteral().AsString(); !lit.IsZero() {
+		// Figure out the byte offset and the invalid byte. Because this will
+		// necessarily have come from a \xNN escape, we should look for it.
+		text := lit.Text()
+		offset := 0
+		var invalid byte
+		for text != "" {
+			r, n := utf8.DecodeRuneInString(text[offset:])
+			if r == utf8.RuneError {
+				invalid = text[offset]
+				break
+			}
+
+			offset += n
+		}
+
+		// Now, find the invalid escape...
+		var esc token.Escape
+		for escape := range seq.Values(lit.Escapes()) {
+			if escape.Byte == invalid {
+				esc = escape
+				break
+			}
+		}
+
+		d.Apply(report.Snippetf(esc.Span, "non-UTF-8 byte"))
+	} else {
+		// String came from non-literal.
+		d.Apply(report.Snippet(e.value.AST()))
+	}
+
+	d.Apply(
+		report.Snippetf(e.value.Field().AST(), "this field requires a UTF-8 string"),
+	)
+
+	// Figure out where the relevant feature was set.
+	builtins := e.value.Context().builtins()
+	feature := e.value.Field().FeatureSet().Lookup(builtins.FeatureUTF8)
+	if !feature.IsDefault() {
+		if feature.IsInherited() {
+			d.Apply(report.PageBreak)
+		}
+		d.Apply(report.Snippetf(feature.Value().ValueAST(), "UTF-8 required here"))
+	} else {
+		d.Apply(
+			report.PageBreak,
+			report.Snippetf(e.value.Context().File().AST().Syntax().Value(), "UTF-8 required here"),
+		)
 	}
 }

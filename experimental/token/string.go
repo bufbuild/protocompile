@@ -17,6 +17,7 @@ package token
 import (
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
 // StringToken provides access to detailed information about a [String].
@@ -24,6 +25,16 @@ type StringToken struct {
 	withContext
 	token ID
 	meta  *tokenmeta.String
+}
+
+// Escape is an escape inside of a [StringToken]. See [StringToken.Escapes].
+type Escape struct {
+	report.Span
+
+	// If Rune is zero, this escape represents a raw byte rather than a
+	// Unicode character.
+	Rune rune
+	Byte byte
 }
 
 // Token returns the wrapped token value.
@@ -41,7 +52,23 @@ func (s StringToken) Text() string {
 
 // HasEscapes returns whether the string had escapes which were processed.
 func (s StringToken) HasEscapes() bool {
-	return s.meta != nil && s.meta.Escaped
+	return s.meta != nil && s.meta.Escapes != nil
+}
+
+// Escapes returns the escapes that contribute to the value of this string.
+func (s StringToken) Escapes() seq.Indexer[Escape] {
+	var spans []tokenmeta.Escape
+	if s.meta != nil {
+		spans = s.meta.Escapes
+	}
+
+	return seq.NewFixedSlice(spans, func(_ int, esc tokenmeta.Escape) Escape {
+		return Escape{
+			Span: s.Token().Context().Stream().Span(int(esc.Start), int(esc.End)),
+			Rune: esc.Rune,
+			Byte: esc.Byte,
+		}
+	})
 }
 
 // IsConcatenated returns whether the string was built from
@@ -53,7 +80,7 @@ func (s StringToken) IsConcatenated() bool {
 // IsPure returns whether the string required post-processing (escaping or
 // concatenation) after lexing.
 func (s StringToken) IsPure() bool {
-	return s.meta == nil || !(s.meta.Escaped || s.meta.Concatenated)
+	return s.meta == nil || !(s.meta.Escapes != nil || s.meta.Concatenated)
 }
 
 // Prefix returns an arbitrary prefix attached to this string (the prefix will

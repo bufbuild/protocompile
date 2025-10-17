@@ -15,6 +15,7 @@ file:
       number: 2
       label: LABEL_OPTIONAL
       type: TYPE_INT32
+      default_value: "42"
       json_name: "bar"
     options.deprecated: true
   enum_type:

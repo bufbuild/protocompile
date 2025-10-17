@@ -1,0 +1,151 @@
+error: literal out of range for `int32`
+  --> testdata/fields/default.proto:24:29
+   |
+24 |     int32 i3 = 3 [default = 0xffffffff];
+   |     -----                   ^^^^^^^^^^
+   |      |
+   |      expected due to this
+   |
+   = note: the range for `int32` is `-0x80000000 to 0x7fffffff`
+
+error: literal out of range for `uint32`
+  --> testdata/fields/default.proto:25:30
+   |
+25 |     uint32 i4 = 4 [default = 0x100000000];
+   |     ------                   ^^^^^^^^^^^
+   |      |
+   |      expected due to this
+   |
+   = note: the range for `uint32` is `0x0 to 0xffffffff`
+
+warning: redundant custom default
+  --> testdata/fields/default.proto:27:29
+   |
+27 |     int32 i5 = 5 [default = 0];
+   |                             ^ this is the zero value for `int32`
+   |
+   = help: fields without a custom default will default to the zero value,
+           making this option redundant
+
+warning: redundant custom default
+  --> testdata/fields/default.proto:28:29
+   |
+28 |     int32 i6 = 6 [default = 0];
+   |                             ^ this is the zero value for `int32`
+   |
+   = help: fields without a custom default will default to the zero value,
+           making this option redundant
+
+warning: floating-point literal rounds to infinity
+  --> testdata/fields/default.proto:31:30
+   |
+31 |     float f2 = 12 [default = 1.0e1000];
+   |                              ^^^^^^^^
+   |                               |
+   |                               this value is beyond the dynamic range of `float`
+   |
+  help: replace with `inf`
+   |
+31 | -     float f2 = 12 [default = 1.0e1000];
+31 | +     float f2 = 12 [default = inf];
+   |
+   |
+   = note: this value is of order 1e1000; `float` can only represent around 1e38
+
+warning: redundant custom default
+  --> testdata/fields/default.proto:35:30
+   |
+35 |     float f6 = 16 [default = 0];
+   |                              ^ this is the zero value for `float`
+   |
+   = help: fields without a custom default will default to the zero value,
+           making this option redundant
+
+warning: non-UTF-8 string literal
+  --> testdata/fields/default.proto:38:36
+   |
+38 |     string s2 = 22 [default = "\x63\xff"];
+   |     -------------------------------^^^^---
+   |      |                              |
+   |      this field requires a UTF-8 string
+   |                                     |
+   |                                     non-UTF-8 byte
+   |
+  ::: testdata/fields/default.proto:16:11
+   |
+16 | edition = "2023";
+   |           ------ UTF-8 required here
+   |
+   = help: protoc erroneously accepts non-UTF-8 defaults for UTF-8 fields; for
+           all other options, UTF-8 validation failure causes protoc to crash
+
+warning: redundant custom default
+  --> testdata/fields/default.proto:40:31
+   |
+40 |     string s4 = 24 [default = ""];
+   |                               ^^ this is the zero value for `string`
+   |
+   = help: fields without a custom default will default to the zero value,
+           making this option redundant
+
+error: mismatched types
+  --> testdata/fields/default.proto:43:29
+   |
+43 |     bool b2 = 32 [default = 1];
+   |     ----                    ^ expected `bool`, found integer literal
+   |      |
+   |      expected due to this
+   |
+   = note: expected: scalar type `bool`
+              found: integer literal
+
+warning: redundant custom default
+  --> testdata/fields/default.proto:44:29
+   |
+44 |     bool b3 = 33 [default = false];
+   |                             ^^^^^ this is the zero value for `bool`
+   |
+   = help: fields without a custom default will default to the zero value,
+           making this option redundant
+
+warning: redundant custom default
+  --> testdata/fields/default.proto:53:26
+   |
+53 |     E e3 = 43 [default = E0];
+   |                          ^^ this is the zero value for `buf.test.M.E`
+   |
+   = help: fields without a custom default will default to the zero value,
+           making this option redundant
+
+error: expected singular scalar- or enum-typed field, found scalar type `int32`
+  --> testdata/fields/default.proto:55:14
+   |
+55 |     repeated int32 w1 = 101 [default = 1, default = 2];
+   |              ^^^^^           ------- custom default specified here
+   |
+   = help: custom defaults are only for non-repeated fields that have a
+           non-message type
+
+error: expected singular scalar- or enum-typed field, found message type
+       `buf.test.M`
+  --> testdata/fields/default.proto:56:5
+   |
+56 |     M w2 = 102 [default = {
+   |     ^           ------- custom default specified here
+   |
+   = help: custom defaults are only for non-repeated fields that have a
+           non-message type
+
+error: expected singular scalar- or enum-typed field, found message type
+       `buf.test.M`
+  --> testdata/fields/default.proto:60:5
+   |
+60 |     M w3 = 103 [
+   |     ^
+61 |         default.i1 = 42,
+   |         ------- custom default specified here
+   |
+   = help: custom defaults are only for non-repeated fields that have a
+           non-message type
+
+encountered 6 errors and 8 warnings
