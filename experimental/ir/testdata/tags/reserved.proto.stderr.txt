@@ -166,4 +166,12 @@ error: use of reserved enum value `100`
 45 |     reserved = 100;
    |                ^^^ used here
 
-encountered 16 errors and 2 warnings
+error: use of reserved enum value `0`
+  --> testdata/tags/reserved.proto:50:9
+   |
+50 |     K = 0;
+   |         ^ used here
+51 |     reserved 0;
+   |              - enum value reserved here
+
+encountered 17 errors and 2 warnings

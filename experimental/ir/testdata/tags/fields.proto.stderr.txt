@@ -96,6 +96,15 @@ error: field number out of range
    = note: the range for field numbers is `0x1 to 0x1fffffff`,
            minus `0x4a38 to 0x4e1f`, which is reserved for internal use
 
+warning: message fields have the same JSON name
+  --> testdata/tags/fields.proto:33:20
+   |
+31 |     optional int32 z6 = 0xffffffffffffffffffffffffffffffff;
+   |                    -- this implies JSON name `z6`
+32 |
+33 |     optional int32 z6 = -1;
+   |                    ^^ this also implies that name
+
 error: field number out of range
   --> testdata/tags/fields.proto:33:25
    |
@@ -302,4 +311,4 @@ error: cannot find `a` in this scope
    |
    = help: the full name of this scope is `test.M`
 
-encountered 34 errors
+encountered 34 errors and 1 warning

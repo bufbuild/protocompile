@@ -627,6 +627,30 @@ func (r optionRef) resolve() {
 	}
 }
 
+func (r optionRef) resolvePseudo(kw keyword.Keyword) {
+	builtins := r.Context.builtins()
+
+	switch kw { //nolint:gocritic // Will add another case in a future change.
+	case keyword.JsonName:
+		evaluator := evaluator{
+			Context: r.Context,
+			Report:  r.Report,
+			scope:   r.scope,
+		}
+		args := evalArgs{
+			expr:       r.def.Value,
+			field:      builtins.JSONName,
+			annotation: builtins.JSONName.AST().Type(),
+			optionPath: r.def.Path,
+		}
+
+		v := evaluator.eval(args)
+		if !v.IsZero() {
+			wrapValue(r.Context, *r.raw).AsMessage().raw.pseudo.jsonName = r.arenas.values.Compress(v.raw)
+		}
+	}
+}
+
 type errSetMultipleTimes struct {
 	member        any
 	first, second report.Spanner

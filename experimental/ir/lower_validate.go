@@ -29,6 +29,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 )
 
 // diagnoseUnusedImports generates diagnostics for each unused import.
@@ -110,6 +111,29 @@ func validateEnum(ty Type, r *report.Report) {
 			report.Snippet(ty.AST()),
 		)
 		return
+	}
+
+	// Check if allow_alias is actually used. This does not happen in
+	// lower_numbers.go because we want to be able to include the allow_alias
+	// option span in the diagnostic.
+	if ty.AllowsAlias() {
+		// Check to see if there are at least two enum values with the same
+		// number.
+		var hasAlias bool
+		numbers := make(map[int32]struct{})
+		for member := range seq.Values(ty.Members()) {
+			if !mapsx.AddZero(numbers, member.Number()) {
+				hasAlias = true
+				break
+			}
+		}
+
+		if !hasAlias {
+			option := ty.Options().Field(builtins.AllowAlias)
+			r.Errorf("`%s` requires at least one aliasing %s", option.Field().Name(), taxa.EnumValue).Apply(
+				report.Snippet(option.OptionSpan()),
+			)
+		}
 	}
 
 	first := ty.Members().At(0)
