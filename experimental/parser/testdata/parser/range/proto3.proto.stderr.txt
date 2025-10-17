@@ -1,7 +1,0 @@
-error: extension ranges are not permitted in proto3
-  --> testdata/parser/range/proto3.proto:20:5
-   |
-20 |     extensions 1;
-   |     ^^^^^^^^^^^^^
-
-encountered 1 error

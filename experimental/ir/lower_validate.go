@@ -35,6 +35,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
@@ -77,6 +78,10 @@ func validateConstraints(f File, r *report.Report) {
 			}
 			validateExtensionDeclarations(ty, r)
 		}
+
+		for rr := range seq.Values(ty.ExtensionRanges()) {
+			validateExtensionRange(rr, r)
+		}
 	}
 
 	for m := range f.AllMembers() {
@@ -111,6 +116,10 @@ func validateConstraints(f File, r *report.Report) {
 			// *not* validate.
 			validateUTF8Values(v, r)
 		}
+	}
+
+	for e := range seq.Values(f.AllExtends()) {
+		validateExtend(e, r)
 	}
 }
 
@@ -226,6 +235,56 @@ func validateOneof(oneof Oneof, r *report.Report) {
 			report.Snippet(oneof.AST()),
 		)
 	}
+}
+
+func validateExtensionRange(rr ReservedRange, r *report.Report) {
+	if rr.Context().File().Syntax() != syntax.Proto3 {
+		return
+	}
+
+	r.Errorf("%s in \"proto3\"", taxa.Extensions).Apply(
+		report.Snippet(rr.AST()),
+		report.PageBreak,
+		report.Snippetf(rr.Context().File().AST().Syntax().Value(), "\"proto3\" specified here"),
+		report.Helpf("extension numbers cannot be reserved in \"proto3\""),
+	)
+}
+
+func validateExtend(extend Extend, r *report.Report) {
+	if extend.Extensions().Len() == 0 {
+		r.Errorf("%s must declare at least one %s", taxa.Extend, taxa.Extension).Apply(
+			report.Snippet(extend.AST()),
+		)
+	}
+
+	if extend.Context().File().Syntax() != syntax.Proto3 {
+		return
+	}
+
+	builtins := extend.Context().builtins()
+	if slicesx.Among(extend.Extendee(),
+		builtins.FileOptions.Element(),
+		builtins.MessageOptions.Element(),
+		builtins.FieldOptions.Element(),
+		builtins.RangeOptions.Element(),
+		builtins.OneofOptions.Element(),
+		builtins.EnumOptions.Element(),
+		builtins.EnumValueOptions.Element(),
+		builtins.ServiceOptions.Element(),
+		builtins.MethodOptions.Element(),
+	) {
+		return
+	}
+
+	r.Error(errTypeConstraint{
+		want: "built-in options message",
+		got:  extend.Extendee(),
+		decl: extend.AST().Type(),
+	}).Apply(
+		report.PageBreak,
+		report.Snippetf(extend.Context().File().AST().Syntax().Value(), "\"proto3\" specified here"),
+		report.Helpf("extendees in \"proto3\" files are restricted to an `google.protobuf.*Options` message types", taxa.Extend),
+	)
 }
 
 func validateMessageSet(ty Type, r *report.Report) {

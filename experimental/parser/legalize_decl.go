@@ -20,7 +20,6 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -91,13 +90,6 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 	if !validParents.Has(parent.what) {
 		p.Error(errBadNest{parent: parent, child: decl, validParents: validParents})
 		return
-	}
-
-	if p.syntax == syntax.Proto3 && in == taxa.Extensions {
-		p.Errorf("%ss are not permitted in %s", in, p.syntax).Apply(
-			report.Snippet(decl),
-			// TODO: suggestions. Can't just suggest Any because Any sucks.
-		)
 	}
 
 	if options := decl.Options(); !options.IsZero() {

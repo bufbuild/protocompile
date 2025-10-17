@@ -54,6 +54,9 @@ type Context struct {
 	extns            []arena.Pointer[rawMember]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
+	extends            []arena.Pointer[rawExtend]
+	topLevelExtendsEnd int // Index of last top-level extension in extends.
+
 	options  arena.Pointer[rawValue]
 	services []arena.Pointer[rawService]
 	features arena.Pointer[rawFeatureSet]
@@ -79,7 +82,7 @@ type Context struct {
 		types     arena.Arena[rawType]
 		members   arena.Arena[rawMember]
 		ranges    arena.Arena[rawReservedRange]
-		extendees arena.Arena[rawExtendee]
+		extendees arena.Arena[rawExtend]
 		oneofs    arena.Arena[rawOneof]
 
 		services arena.Arena[rawService]
@@ -300,6 +303,26 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 		func(_ int, p arena.Pointer[rawMember]) Member {
 			// Implicitly in current file.
 			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		},
+	)
+}
+
+// Extends returns the top level extend blocks in this file.
+func (f File) Extends() seq.Indexer[Extend] {
+	return seq.NewFixedSlice(
+		f.Context().extends[:f.Context().topLevelExtendsEnd],
+		func(_ int, p arena.Pointer[rawExtend]) Extend {
+			return Extend{internal.NewWith(f.Context()), f.Context().arenas.extendees.Deref(p)}
+		},
+	)
+}
+
+// AllExtends returns all extend blocks in this file.
+func (f File) AllExtends() seq.Indexer[Extend] {
+	return seq.NewFixedSlice(
+		f.Context().extends,
+		func(_ int, p arena.Pointer[rawExtend]) Extend {
+			return Extend{internal.NewWith(f.Context()), f.Context().arenas.extendees.Deref(p)}
 		},
 	)
 }

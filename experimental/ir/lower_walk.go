@@ -75,7 +75,7 @@ func (w *walker) walk() {
 
 type extend struct {
 	parent   Type
-	extendee arena.Pointer[rawExtendee]
+	extendee arena.Pointer[rawExtend]
 }
 
 type oneof struct {
@@ -255,6 +255,9 @@ func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 		parent.raw.members = append(parent.raw.members, id)
 	case extend:
 		raw.extendee = parent.extendee
+
+		block := c.arenas.extendees.Deref(raw.extendee)
+		block.members = append(block.members, id)
 	}
 
 	if !parentTy.IsZero() {
@@ -294,13 +297,24 @@ func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 	return wrapOneof(w.Context(), raw)
 }
 
-func (w *walker) newExtendee(def ast.DefExtend, parent any) arena.Pointer[rawExtendee] {
+func (w *walker) newExtendee(def ast.DefExtend, parent any) arena.Pointer[rawExtend] {
+	c := w.Context()
 	parentTy := extractParentType(parent)
 
-	return w.Context().arenas.extendees.NewCompressed(rawExtendee{
+	id := w.Context().arenas.extendees.NewCompressed(rawExtend{
 		def:    def.Decl,
 		parent: w.Context().arenas.types.Compress(parentTy.raw),
 	})
+
+	if !parentTy.IsZero() {
+		parentTy.raw.extends = append(parentTy.raw.extends, id)
+		c.extends = append(c.extends, id)
+	} else {
+		c.extends = slices.Insert(c.extends, c.topLevelExtendsEnd, id)
+		c.topLevelExtendsEnd++
+	}
+
+	return id
 }
 
 func (w *walker) newService(def ast.DeclDef, parent any) Service {

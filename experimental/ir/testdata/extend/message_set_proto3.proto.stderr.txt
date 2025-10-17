@@ -1,9 +1,3 @@
-error: extension ranges are not permitted in proto3
-  --> testdata/extend/message_set_proto3.proto:21:5
-   |
-21 |     extensions 1 to max;
-   |     ^^^^^^^^^^^^^^^^^^^^
-
 error: message set type are not supported
   --> testdata/extend/message_set_proto3.proto:20:12
    |
@@ -20,5 +14,17 @@ error: message set type are not supported
    = help: message set types cannot be defined in "proto3" only
    = help: message set types are not implemented correctly in most Protobuf
            implementations
+
+error: extension range in "proto3"
+  --> testdata/extend/message_set_proto3.proto:21:16
+   |
+21 |     extensions 1 to max;
+   |                ^^^^^^^^
+  ::: testdata/extend/message_set_proto3.proto:15:10
+   |
+15 | syntax = "proto3";
+   |          -------- "proto3" specified here
+   |
+   = help: extension numbers cannot be reserved in "proto3"
 
 encountered 2 errors
