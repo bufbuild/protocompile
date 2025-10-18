@@ -1,0 +1,372 @@
+file:
+- name: "strict.proto"
+  package: "test.strict"
+  message_type:
+  - name: "N"
+    nested_type:
+    - name: "D"
+    - { name: "E", visibility: VISIBILITY_EXPORT }
+    - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "D"
+  - { name: "E", visibility: VISIBILITY_EXPORT }
+  - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "U"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.N.L"
+      json_name: "nl"
+  options.features.default_symbol_visibility: STRICT
+  source_code_info: {}
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "top_level.proto"
+  package: "test.top_level"
+  message_type:
+  - name: "N"
+    nested_type:
+    - name: "D"
+    - { name: "E", visibility: VISIBILITY_EXPORT }
+    - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "D"
+  - { name: "E", visibility: VISIBILITY_EXPORT }
+  - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "U"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.N.L"
+      json_name: "nl"
+  options.features.default_symbol_visibility: EXPORT_TOP_LEVEL
+  source_code_info: {}
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "local.proto"
+  package: "test.local"
+  message_type:
+  - name: "N"
+    nested_type:
+    - name: "D"
+    - { name: "E", visibility: VISIBILITY_EXPORT }
+    - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "D"
+  - { name: "E", visibility: VISIBILITY_EXPORT }
+  - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "U"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.N.L"
+      json_name: "nl"
+  options.features.default_symbol_visibility: LOCAL_ALL
+  source_code_info: {}
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "export.proto"
+  package: "test.export"
+  message_type:
+  - name: "N"
+    nested_type:
+    - name: "D"
+    - { name: "E", visibility: VISIBILITY_EXPORT }
+    - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "D"
+  - { name: "E", visibility: VISIBILITY_EXPORT }
+  - { name: "L", visibility: VISIBILITY_LOCAL }
+  - name: "U"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.N.L"
+      json_name: "nl"
+  options.features.default_symbol_visibility: EXPORT_ALL
+  source_code_info: {}
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main.proto"
+  package: "test"
+  dependency: ["export.proto", "local.proto", "top_level.proto", "strict.proto"]
+  message_type:
+  - name: "Export"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.export.N.L"
+      json_name: "nl"
+  - name: "Local"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.local.N.L"
+      json_name: "nl"
+  - name: "TopLevel"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.top_level.N.L"
+      json_name: "nl"
+  - name: "Strict"
+    field:
+    - name: "d"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.D"
+      json_name: "d"
+    - name: "e"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.E"
+      json_name: "e"
+    - name: "l"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.L"
+      json_name: "l"
+    - name: "nd"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.N.D"
+      json_name: "nd"
+    - name: "ne"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.N.E"
+      json_name: "ne"
+    - name: "nl"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".test.strict.N.L"
+      json_name: "nl"
+  source_code_info: {}
+  syntax: "editions"
+  edition: EDITION_2024

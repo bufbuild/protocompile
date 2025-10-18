@@ -334,7 +334,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 		)
 	case !sym.Visible(r.allowOption):
 		if !r.allowOption && sym.Visible(true) {
-			decl := sym.Import()
+			decl := sym.Import().Decl
 			var option token.Token
 			for m := range seq.Values(decl.ModifierTokens()) {
 				if m.Keyword() == keyword.Option {
@@ -344,7 +344,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 			span := report.Join(decl.KeywordToken(), option)
 
 			// This symbol is only visible in option position.
-			r.Errorf("`%s` is only imported for use in options", r.name).Apply(
+			return r.Errorf("`%s` is only imported for use in options", r.name).Apply(
 				report.Snippetf(r.span, "requires non-`option` import"),
 				report.Snippetf(decl, "imported as `option` here"),
 				report.SuggestEdits(span, "delete `option`", report.Edit{
@@ -352,7 +352,43 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					Replace: "import",
 				}),
 			)
-			break
+		}
+
+		// Check to see if the corresponding import is visible. If it is, that
+		// means that this is an unexported type.
+		if imp := sym.Import(); imp.Visible {
+			if ty := sym.AsType(); !ty.IsZero() {
+				d := r.Errorf("found unexported %s `%s`", ty.noun(), ty.FullName()).Apply(
+					report.Snippetf(r.span, "unexported type"),
+				)
+
+				// First, see if local was set explicitly.
+				var local token.Token
+				for prefix := range ty.AST().Type().Prefixes() {
+					if prefix.Prefix() == keyword.Local {
+						local = prefix.PrefixToken()
+						break
+					}
+				}
+
+				if !local.IsZero() {
+					d.Apply(report.Snippetf(local, "marked as local here"))
+				} else {
+					var span report.Span
+					// Otherwise, see if this was set due to a feature.
+					if key := ty.Context().builtins().FeatureVisibility; !key.IsZero() {
+						feature := ty.FeatureSet().Lookup(key)
+						if !feature.IsDefault() {
+							span = feature.Value().ValueAST().Span()
+						} else {
+							span = ty.Context().File().AST().Syntax().Value().Span()
+						}
+					}
+
+					d.Apply(report.Snippetf(span, "this implies `local`"))
+				}
+				return d
+			}
 		}
 
 		// Complain that we need to import a symbol.

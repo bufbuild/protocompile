@@ -168,6 +168,17 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
+	var visibility token.ID
+	for prefix := range def.Type().Prefixes() {
+		switch prefix.Prefix() {
+		case keyword.Local, keyword.Export:
+			visibility = prefix.PrefixToken().ID()
+		default:
+			continue
+		}
+		break
+	}
+
 	isEnum := def.Keyword() == keyword.Enum
 	raw := c.arenas.types.NewCompressed(rawType{
 		def:    def,
@@ -175,7 +186,8 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 		fqn:    c.session.intern.Intern(fqn),
 		parent: c.arenas.types.Compress(parentTy.raw),
 
-		isEnum: isEnum,
+		isEnum:     isEnum,
+		visibility: visibility,
 	})
 
 	ty := Type{internal.NewWith(w.Context()), c.arenas.types.Deref(raw)}

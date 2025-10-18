@@ -20,7 +20,6 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -188,8 +187,18 @@ func (s Symbol) Visible(allowOptions bool) bool {
 	if s.ref.file <= 0 || s.Kind() == SymbolKindPackage {
 		return true
 	}
+
 	file := s.Context().imports.files[uint(s.ref.file)-1]
-	return file.visible && (allowOptions || !file.option)
+	if !file.visible || !(allowOptions || !file.option) {
+		return false
+	}
+
+	if ty := s.AsType(); !ty.IsZero() {
+		exported, _ := ty.IsExported()
+		return exported
+	}
+
+	return true
 }
 
 // Definition returns a span for the definition site of this symbol;
@@ -221,13 +230,12 @@ func (s Symbol) Definition() report.Span {
 // Import returns the import declaration that brought this symbol into scope.
 //
 // Returns zero of s is defined in the current file.
-func (s Symbol) Import() ast.DeclImport {
+func (s Symbol) Import() Import {
 	if s.ref.file <= 0 {
-		return ast.DeclImport{}
+		return Import{}
 	}
 
-	file := s.Context().imports.files[uint(s.ref.file)-1]
-	return file.decl
+	return s.Context().imports.Transitive().At(int(s.ref.file) - 1)
 }
 
 // noun returns a [taxa.Noun] for diagnostic use.

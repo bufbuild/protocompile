@@ -19,6 +19,7 @@ error: `Foo` is only imported for use in options
    |
  4 | - import option "option.proto";
  4 | + import "option.proto";
+   |
 
 error: sorry, Edition 2024 is not fully implemented
   --> main2.proto:1:11
