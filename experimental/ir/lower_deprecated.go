@@ -41,7 +41,7 @@ func checkDeprecated(f File, r *report.Report) {
 	}
 
 	for m := range f.AllMembers() {
-		checkDeprecatedOptions(m.Options(), r)
+		// checkDeprecatedOptions(m.Options(), r)
 
 		ty := m.Element()
 		// We do not emit deprecation warnings for references to a type
