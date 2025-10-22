@@ -47,7 +47,7 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 			continue
 		}
 
-		r.Warnf("unused import \"%s\"", f.Path()).Apply(
+		r.Warnf("unused import \"%s\"", imp.Decl.ImportPath()).Apply(
 			report.Snippet(imp.Decl.ImportPath()),
 			report.SuggestEdits(imp.Decl, "delete it", report.Edit{
 				Start: 0, End: imp.Decl.Span().Len(),
