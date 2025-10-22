@@ -24,7 +24,7 @@ import (
 // checkDeprecated checks for deprecation warnings in the given file.
 func checkDeprecated(f File, r *report.Report) {
 	for imp := range seq.Values(f.Imports()) {
-		slog.Info("have import", "path", imp.Path())
+		slog.Info("have import", "file", f.Path(), "path", imp.Path())
 		if d := imp.Deprecated(); !d.IsZero() {
 			r.Warn(errDeprecated{
 				ref:   imp.Decl.ImportPath(),
