@@ -21,15 +21,15 @@ import (
 
 // checkDeprecated checks for deprecation warnings in the given file.
 func checkDeprecated(f File, r *report.Report) {
-	// for imp := range seq.Values(f.Imports()) {
-	// 	if d := imp.Deprecated(); !d.IsZero() {
-	// 		r.Warn(errDeprecated{
-	// 			ref:   imp.Decl.ImportPath(),
-	// 			name:  imp.Path(),
-	// 			cause: d.OptionSpan(),
-	// 		})
-	// 	}
-	// }
+	for imp := range seq.Values(f.Imports()) {
+		if d := imp.Deprecated(); !d.IsZero() {
+			r.Warn(errDeprecated{
+				ref:   imp.Decl.ImportPath(),
+				name:  imp.Path(),
+				cause: d.OptionSpan(),
+			})
+		}
+	}
 
 	// checkDeprecatedOptions(f.Options(), r)
 
