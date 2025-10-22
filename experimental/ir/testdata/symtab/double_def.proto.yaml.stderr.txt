@@ -1,4 +1,4 @@
-warning: unused import "dep/foo.proto"
+warning: unused import "dep/priv.proto"
   --> dep/foo.proto:4:8
    |
  4 | import "dep/priv.proto";
@@ -20,7 +20,7 @@ error: `Foo` declared multiple times
 11 | message Foo {
    |         --- ...also declared here
 
-warning: unused import "main.proto"
+warning: unused import "dep/foo.proto"
   --> main.proto:4:8
    |
  4 | import "dep/foo.proto";
@@ -74,7 +74,7 @@ error: `dep.foo.Foo` declared multiple times
  6 | message Foo {}
    |         --- ...also declared here, now as a message type
 
-warning: unused import "main2.proto"
+warning: unused import "dep/foo.proto"
   --> main2.proto:4:8
    |
  4 | import "dep/foo.proto";

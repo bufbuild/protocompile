@@ -1,4 +1,4 @@
-warning: unused import "a2.proto"
+warning: unused import "b.proto"
   --> a2.proto:4:8
    |
  4 | import "b.proto";
@@ -9,7 +9,7 @@ warning: unused import "a2.proto"
    |
    = help: no symbols from this file are referenced
 
-warning: unused import "a2.proto"
+warning: unused import "c.proto"
   --> a2.proto:5:8
    |
  5 | import "c.proto";
@@ -20,7 +20,7 @@ warning: unused import "a2.proto"
    |
    = help: no symbols from this file are referenced
 
-warning: unused import "a2.proto"
+warning: unused import "d.proto"
   --> a2.proto:6:8
    |
  6 | import "d.proto";
@@ -31,7 +31,7 @@ warning: unused import "a2.proto"
    |
    = help: no symbols from this file are referenced
 
-warning: unused import "a3.proto"
+warning: unused import "c.proto"
   --> a3.proto:5:8
    |
  5 | import "c.proto";
@@ -42,7 +42,7 @@ warning: unused import "a3.proto"
    |
    = help: no symbols from this file are referenced
 
-warning: unused import "a4.proto"
+warning: unused import "c.proto"
   --> a4.proto:5:8
    |
  5 | import "c.proto";
