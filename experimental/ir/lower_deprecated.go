@@ -25,7 +25,7 @@ import (
 func checkDeprecated(f File, r *report.Report) {
 	for imp := range seq.Values(f.Imports()) {
 		if d := imp.Deprecated(); !d.IsZero() {
-			slog.Info("deprecated import", "importpath", imp.Decl.ImportPath(), "path", imp.Path(), "cause", d.OptionSpan().Span().String())
+			slog.Info("deprecated import", "importpath", imp.Decl.ImportPath().Span().String(), "path", imp.Path(), "cause", d.OptionSpan().Span().String())
 			r.Warn(errDeprecated{
 				ref:   imp.Decl.ImportPath(),
 				name:  imp.Path(),
