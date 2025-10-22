@@ -15,6 +15,8 @@
 package ir
 
 import (
+	"log/slog"
+
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
@@ -22,6 +24,7 @@ import (
 // checkDeprecated checks for deprecation warnings in the given file.
 func checkDeprecated(f File, r *report.Report) {
 	for imp := range seq.Values(f.Imports()) {
+		slog.Info("have import", "path", imp.Path())
 		if d := imp.Deprecated(); !d.IsZero() {
 			r.Warn(errDeprecated{
 				ref:   imp.Decl.ImportPath(),
@@ -31,7 +34,7 @@ func checkDeprecated(f File, r *report.Report) {
 		}
 	}
 
-	// checkDeprecatedOptions(f.Options(), r)
+	checkDeprecatedOptions(f.Options(), r)
 
 	for ty := range seq.Values(f.AllTypes()) {
 		checkDeprecatedOptions(ty.Options(), r)
@@ -41,7 +44,7 @@ func checkDeprecated(f File, r *report.Report) {
 	}
 
 	for m := range f.AllMembers() {
-		// checkDeprecatedOptions(m.Options(), r)
+		checkDeprecatedOptions(m.Options(), r)
 
 		ty := m.Element()
 		// We do not emit deprecation warnings for references to a type
