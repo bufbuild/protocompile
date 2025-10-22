@@ -77,7 +77,7 @@ func (s Span) Before() string {
 	return s.File.Text()[:s.Start]
 }
 
-// Before returns all text after this span.
+// After returns all text after this span.
 func (s Span) After() string {
 	return s.File.Text()[s.End:]
 }
@@ -95,7 +95,7 @@ func (s Span) GrowLeft(p func(r rune) bool) Span {
 	return s
 }
 
-// GrowLeft returns a new span which contains the largest prefix of [Span.After]
+// GrowRight returns a new span which contains the largest prefix of [Span.After]
 // which match p.
 func (s Span) GrowRight(p func(r rune) bool) Span {
 	for {
@@ -335,7 +335,7 @@ func (f *File) Span(start, end int) Span {
 	return Span{f, start, end}
 }
 
-// LineOffsets returns the given line, including its trailing newline.
+// Line returns the given line, including its trailing newline.
 //
 // line is expected to be 1-indexed.
 func (f *File) Line(line int) string {
