@@ -321,7 +321,7 @@ func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 	}}
 }
 
-// NewExprPrefixed creates a new ExprPrefixed node.
+// NewExprField creates a new ExprPrefixed node.
 func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 	n.panicIfNotOurs(args.Key, args.Colon, args.Value)
 

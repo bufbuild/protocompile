@@ -139,7 +139,7 @@ func (r *Queue[E]) PushBack(v ...E) {
 	}
 }
 
-// Front pops the element at the front of the queue.
+// PopFront pops the element at the front of the queue.
 func (r *Queue[E]) PopFront() (E, bool) {
 	if r.start == r.end {
 		var z E
@@ -151,7 +151,7 @@ func (r *Queue[E]) PopFront() (E, bool) {
 	return v, true
 }
 
-// Front pops the element at the back of the queue.
+// PopBack pops the element at the back of the queue.
 func (r *Queue[E]) PopBack() (E, bool) {
 	if r.start == r.end {
 		var z E

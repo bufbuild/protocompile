@@ -46,7 +46,7 @@ func (e ExprPrefixed) Prefix() keyword.Keyword {
 	return e.PrefixToken().Keyword()
 }
 
-// Prefix returns the token representing this expression's prefix.
+// PrefixToken returns the token representing this expression's prefix.
 func (e ExprPrefixed) PrefixToken() token.Token {
 	if e.IsZero() {
 		return token.Zero

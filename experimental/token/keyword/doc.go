@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package keyword provides [Keyword], an enum of all special "grammar particles"
+// Package keyword provides [Keyword], an enum of all special "grammar particles"
 // (i.e., literal tokens with special meaning in the grammar such as identifier
 // keywords and punctuation) recognized by Protocompile.
 package keyword

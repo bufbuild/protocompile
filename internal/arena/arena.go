@@ -226,7 +226,7 @@ func (*Arena[T]) lenOfNthSlice(n int) int {
 	return pointersMinLen << n
 }
 
-// lenOfNthSlice returns the length of the first n slices.
+// lenOfFirstNSlices returns the length of the first n slices.
 func (a *Arena[T]) lenOfFirstNSlices(n int) int {
 	// Note the following identity:
 	//

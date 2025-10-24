@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-package report provides a robust diagnostics framework. It offers diagnostic
+Package report provides a robust diagnostics framework. It offers diagnostic
 construction, interchange, and ASCII art rendering functionality.
 
 Diagnostics are collected into a [Report], which is a helpful builder over

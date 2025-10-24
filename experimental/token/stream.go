@@ -181,7 +181,7 @@ func (s *Stream) NewIdent(name string) Token {
 	})
 }
 
-// NewIdent mints a new synthetic punctuation token with the given text.
+// NewPunct mints a new synthetic punctuation token with the given text.
 func (s *Stream) NewPunct(text string) Token {
 	return s.newSynth(synth{
 		text: text,

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// package predeclared provides all of the identifiers with a special meaning
+// Package predeclared provides all of the identifiers with a special meaning
 // in Protobuf.
 //
 // These are a subset of the [keyword.Keyword] enum which are names that are
@@ -122,12 +122,12 @@ func (n Name) IsVarint() bool {
 	return n >= Int32 && n <= SInt64 || n == Bool
 }
 
-// IsVarint returns whether this is a ZigZag varint-encoded type.
+// IsZigZag returns whether this is a ZigZag varint-encoded type.
 func (n Name) IsZigZag() bool {
 	return n == SInt32 || n == SInt64
 }
 
-// IsVarint returns whether this is a fixed-width type.
+// IsFixed returns whether this is a fixed-width type.
 func (n Name) IsFixed() bool {
 	return n >= Fixed32 && n <= Double
 }
@@ -142,7 +142,7 @@ func (n Name) IsUnsigned() bool {
 	}
 }
 
-// IsUnsigned returns whether this is a signed integer type.
+// IsSigned returns whether this is a signed integer type.
 func (n Name) IsSigned() bool {
 	return n.IsInt() && !n.IsUnsigned()
 }

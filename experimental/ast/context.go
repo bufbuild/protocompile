@@ -33,7 +33,7 @@ type Context interface {
 
 type withContext = internal.With[Context]
 
-// newContext creates a fresh context for a particular file.
+// NewContext creates a fresh context for a particular file.
 func NewContext(file *report.File) Context {
 	c := new(context)
 	c.stream = &token.Stream{

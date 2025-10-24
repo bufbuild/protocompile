@@ -226,12 +226,12 @@ func (t synth) IsLeaf() bool {
 	return t.otherEnd == 0
 }
 
-// IsLeaf checks whether this is a open token with a matching closer.
+// IsOpen checks whether this is a open token with a matching closer.
 func (t synth) IsOpen() bool {
 	return !t.IsLeaf() && t.children != nil
 }
 
-// IsLeaf checks whether this is a closer token with a matching opener.
+// IsClose checks whether this is a closer token with a matching opener.
 func (t synth) IsClose() bool {
 	return !t.IsLeaf() && t.children == nil
 }
