@@ -37,7 +37,7 @@ func (k Keyword) IsModifier() bool {
 		k.IsMethodTypeModifier()
 }
 
-// IsFieldModifier returns whether this is a modifier for a field type.
+// IsFieldTypeModifier returns whether this is a modifier for a field type.
 func (k Keyword) IsFieldTypeModifier() bool {
 	switch k {
 	case Optional, Required, Repeated:

@@ -173,12 +173,12 @@ func (t Type) IsMessageSet() bool {
 	return !t.IsZero() && t.raw.isMessageSet
 }
 
-// IsMap returns whether this is a map type's entry.
+// IsMapEntry returns whether this is a map type's entry.
 func (t Type) IsMapEntry() bool {
 	return !t.MapField().IsZero()
 }
 
-// IsMessage returns whether this is an enum type.
+// IsEnum returns whether this is an enum type.
 func (t Type) IsEnum() bool {
 	// All of the predeclared types have isEnum set to false, so we don't
 	// need to check for them here.
@@ -374,7 +374,7 @@ func (t Type) MemberByInternedName(name intern.ID) Member {
 	return wrapMember(t.Context(), ref[rawMember]{ptr: t.raw.memberByName()[name]})
 }
 
-// TagRange returns an iterator over [TagRange]s that contain number.
+// Ranges returns an iterator over [TagRange]s that contain number.
 func (t Type) Ranges(number int32) iter.Seq[TagRange] {
 	return func(yield func(TagRange) bool) {
 		if t.IsZero() {
@@ -457,7 +457,7 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 	)
 }
 
-// Options returns the options applied to this type.
+// Oneofs returns the options applied to this type.
 func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.raw.oneofs,
@@ -467,7 +467,7 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 	)
 }
 
-// Options returns the options applied to this type.
+// Extends returns the options applied to this type.
 func (t Type) Extends() seq.Indexer[Extend] {
 	return seq.NewFixedSlice(
 		t.raw.extends,

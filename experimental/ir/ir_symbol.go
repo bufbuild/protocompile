@@ -58,7 +58,7 @@ func (s Symbol) FullName() FullName {
 	return FullName(s.Context().session.intern.Value(s.raw.fqn))
 }
 
-// InternedName returns the intern ID for [Symbol.FullName].
+// InternedFullName returns the intern ID for [Symbol.FullName].
 func (s Symbol) InternedFullName() intern.ID {
 	if s.IsZero() {
 		return 0

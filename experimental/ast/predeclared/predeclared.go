@@ -122,12 +122,12 @@ func (n Name) IsVarint() bool {
 	return n >= Int32 && n <= SInt64 || n == Bool
 }
 
-// IsVarint returns whether this is a ZigZag varint-encoded type.
+// IsZigZag returns whether this is a ZigZag varint-encoded type.
 func (n Name) IsZigZag() bool {
 	return n == SInt32 || n == SInt64
 }
 
-// IsVarint returns whether this is a fixed-width type.
+// IsFixed returns whether this is a fixed-width type.
 func (n Name) IsFixed() bool {
 	return n >= Fixed32 && n <= Double
 }
@@ -142,7 +142,7 @@ func (n Name) IsUnsigned() bool {
 	}
 }
 
-// IsUnsigned returns whether this is a signed integer type.
+// IsSigned returns whether this is a signed integer type.
 func (n Name) IsSigned() bool {
 	return n.IsInt() && !n.IsUnsigned()
 }

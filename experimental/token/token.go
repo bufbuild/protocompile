@@ -72,7 +72,7 @@ func (t Token) ID() ID {
 	return t.id
 }
 
-// IsPaired returns whether this is a non-zero leaf token.
+// IsLeaf returns whether this is a non-zero leaf token.
 func (t Token) IsLeaf() bool {
 	if t.IsZero() {
 		return false
@@ -362,7 +362,7 @@ func (t Token) AsNumber() NumberToken {
 	return nt
 }
 
-// AsNumber returns string information for this token.
+// AsString returns string information for this token.
 func (t Token) AsString() StringToken {
 	if t.Kind() != String {
 		return StringToken{}

@@ -110,7 +110,7 @@ type imported struct {
 	visible, used bool
 }
 
-// Append appends a direct import to this imports table.
+// AddDirect appends a direct import to this imports table.
 func (i *imports) AddDirect(imp Import) {
 	switch {
 	case imp.Public:

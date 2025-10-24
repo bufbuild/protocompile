@@ -204,7 +204,7 @@ func (f File) Path() string {
 	return c.session.intern.Value(c.path)
 }
 
-// InternedPackage returns the intern ID for the value of [File.Path].
+// InternedPath returns the intern ID for the value of [File.Path].
 func (f File) InternedPath() intern.ID {
 	if f.IsZero() {
 		return 0

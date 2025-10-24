@@ -1024,7 +1024,7 @@ func validateDefault(m Member, r *report.Report) {
 	}
 }
 
-// validateUTF8Fields validates that strings in a value are actually UTF-8.
+// validateUTF8Values validates that strings in a value are actually UTF-8.
 func validateUTF8Values(v Value, r *report.Report) {
 	for elem := range seq.Values(v.Elements()) {
 		if v.Field().IsUnicode() {
