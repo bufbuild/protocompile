@@ -185,7 +185,7 @@ func (m Member) TypeAST() ast.TypeAny {
 	return ast.TypeAny{}
 }
 
-// FullName returns this member's name.
+// Name returns this member's name.
 func (m Member) Name() string {
 	if m.IsZero() {
 		return ""
@@ -226,7 +226,7 @@ func (m Member) InternedName() intern.ID {
 	return m.raw.name
 }
 
-// InternedName returns the intern ID for [Member.FullName].
+// InternedFullName returns the intern ID for [Member.FullName].
 func (m Member) InternedFullName() intern.ID {
 	if m.IsZero() {
 		return 0
@@ -245,7 +245,7 @@ func (m Member) InternedScope() intern.ID {
 	return m.Context().File().InternedPackage()
 }
 
-// InternedJsonName returns the intern ID for [Member.JSONName].
+// InternedJSONName returns the intern ID for [Member.JSONName].
 func (m Member) InternedJSONName() intern.ID {
 	if m.IsZero() {
 		return 0
@@ -504,7 +504,7 @@ func (e Extend) Scope() FullName {
 	return FullName(e.Context().session.intern.Value(e.InternedScope()))
 }
 
-// InternedName returns the intern ID for [Extend.Scope].
+// InternedScope returns the intern ID for [Extend.Scope].
 func (e Extend) InternedScope() intern.ID {
 	if e.IsZero() {
 		return 0
@@ -587,7 +587,7 @@ func (o Oneof) InternedName() intern.ID {
 	return o.raw.name
 }
 
-// InternedName returns the intern ID for [Oneof.FullName].
+// InternedFullName returns the intern ID for [Oneof.FullName].
 func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
 		return 0

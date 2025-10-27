@@ -323,7 +323,7 @@ func (d DeclImport) KeywordToken() token.Token {
 	return d.raw.keyword.In(d.Context())
 }
 
-// Modifier returns the modifiers for this declaration.
+// Modifiers returns the modifiers for this declaration.
 func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	var slice []token.ID
 	if !d.IsZero() {

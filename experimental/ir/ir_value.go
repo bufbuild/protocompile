@@ -606,7 +606,7 @@ func (e Element) Type() Type {
 	return e.Field().Element()
 }
 
-// Returns whether this element contains the zero value for its type.
+// IsZeroValue returns whether this element contains the zero value for its type.
 //
 // Always returns false for repeated or message-typed fields.
 func (e Element) IsZeroValue() bool {

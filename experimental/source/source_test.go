@@ -31,7 +31,7 @@ func TestFS(t *testing.T) {
 
 	opener := source.FS{FS: os.DirFS(prototest.CallerDir(t))}
 
-	text, err := opener.Open("hello.txt")
+	text, err := opener.Open("testdata/hello.txt")
 	require.NoError(t, err)
 	assert.Equal(t, "hello!\n", text)
 
@@ -64,7 +64,7 @@ func TestOpeners(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "overlaid!\n", text)
 
-	text, err = opener.Open("hello.txt")
+	text, err = opener.Open("testdata/hello.txt")
 	require.NoError(t, err)
 	assert.Equal(t, "hello!\n", text)
 
