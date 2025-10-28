@@ -193,7 +193,7 @@ func (f File) Syntax() syntax.Syntax {
 	return f.Context().syntax
 }
 
-// Path returns the canoniocal path for this file.
+// Path returns the canonical path for this file.
 //
 // This need not be the same as [File.AST]().Span().Path().
 func (f File) Path() string {
