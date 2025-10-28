@@ -67,7 +67,7 @@ func lex(ctx token.Context, errs *report.Report) {
 
 		switch {
 		case unicode.In(r, unicode.Pattern_White_Space):
-			// Whitepace. Consume as much whitespace as possible and mint a
+			// Whitespace. Consume as much whitespace as possible and mint a
 			// whitespace token.
 			l.TakeWhile(func(r rune) bool {
 				return unicode.In(r, unicode.Pattern_White_Space)

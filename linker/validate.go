@@ -711,7 +711,7 @@ func (r *result) validateExtensionDeclarations(md *msgDescriptor, handler *repor
 
 func (r *result) hasCustomJSONName(fdProto *descriptorpb.FieldDescriptorProto) bool {
 	// if we have the AST, we can more precisely determine if there was a custom
-	// JSON named defined, even if it is explicitly configured to tbe the same
+	// JSON named defined, even if it is explicitly configured to the same
 	// as the default JSON name for the field.
 	opts := r.FieldNode(fdProto).GetOptions()
 	if opts == nil {
