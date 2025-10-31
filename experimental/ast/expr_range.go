@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -63,7 +64,7 @@ func (e ExprRange) Keyword() token.Token {
 		return token.Zero
 	}
 
-	return e.raw.to.In(e.Context())
+	return id.Get(token.Context(e.Context()), e.raw.to)
 }
 
 // Span implements [report.Spanner].

@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -55,7 +56,7 @@ func (d DeclRange) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.keyword)
 }
 
 // IsExtensions checks whether this is an extension range.
@@ -114,7 +115,7 @@ func (d DeclRange) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.semi)
 }
 
 // Span implements [report.Spanner].

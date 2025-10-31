@@ -13,17 +13,3 @@
 // limitations under the License.
 
 package token
-
-import (
-	"github.com/bufbuild/protocompile/experimental/internal"
-)
-
-// Context is the owner of a [Stream].
-//
-// Each stream carries its full context with it, which may contain other
-// information, such as arenas for AST nodes.
-type Context interface {
-	Stream() *Stream
-}
-
-type withContext = internal.With[Context]

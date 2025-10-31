@@ -18,6 +18,7 @@ package ast
 import (
 	"reflect"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -107,7 +108,7 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 		return ExprLiteral{}
 	}
 
-	return ExprLiteral{tok.In(e.Context())}
+	return ExprLiteral{id.Get(token.Context(e.Context()), tok)}
 }
 
 // AsPath converts a ExprAny into a ExprPath, if that is the type

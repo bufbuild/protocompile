@@ -18,6 +18,7 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -123,7 +124,7 @@ func (d TypeList) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.brackets.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.brackets)
 }
 
 // SetBrackets sets the token tree for the brackets wrapping the argument list.
@@ -164,7 +165,7 @@ func (d TypeList) Delete(n int) {
 
 // Comma implements [Commas].
 func (d TypeList) Comma(n int) token.Token {
-	return d.raw.args[n].Comma.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.args[n].Comma)
 }
 
 // AppendComma implements [Commas].

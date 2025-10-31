@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -112,7 +113,10 @@ func (p Path) IsIdents(idents ...string) bool {
 func (p Path) Span() report.Span {
 	// No need to check for zero here, if p is zero both start and end will be
 	// zero tokens.
-	return report.Join(p.raw.Start.In(p.Context()), p.raw.End.In(p.Context()))
+	return report.Join(
+		id.Get(token.Context(p.Context()), p.raw.Start),
+		id.Get(token.Context(p.Context()), p.raw.End),
+	)
 }
 
 // Components is an [iter.Seq] that ranges over each component in this path.
@@ -124,7 +128,7 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	}
 
 	var cursor *token.Cursor
-	first := p.raw.Start.In(p.Context())
+	first := id.Get(token.Context(p.Context()), p.raw.Start)
 	if p.IsSynthetic() {
 		cursor = first.SyntheticChildren(p.raw.synthRange())
 	} else {
@@ -317,11 +321,11 @@ func (p Path) isCanonical() bool {
 // trim discards any skippable tokens before and after the start of this path.
 func (p Path) trim() Path {
 	for p.raw.Start < p.raw.End &&
-		p.raw.Start.In(p.Context()).Kind().IsSkippable() {
+		id.Get(token.Context(p.Context()), p.raw.Start).Kind().IsSkippable() {
 		p.raw.Start++
 	}
 	for p.raw.Start < p.raw.End &&
-		p.raw.End.In(p.Context()).Kind().IsSkippable() {
+		id.Get(token.Context(p.Context()), p.raw.End).Kind().IsSkippable() {
 		p.raw.End--
 	}
 
@@ -414,10 +418,10 @@ func (p PathComponent) SplitBefore() (before, after Path) {
 
 	prefix, suffix := p.Path(), p.Path()
 	if p.separator.IsZero() {
-		prefix.raw.End = p.name.In(p.Context()).Prev().ID()
+		prefix.raw.End = id.Get(token.Context(p.Context()), p.name).Prev().ID()
 		suffix.raw.Start = p.name
 	} else {
-		prefix.raw.End = p.separator.In(p.Context()).Prev().ID()
+		prefix.raw.End = id.Get(token.Context(p.Context()), p.separator).Prev().ID()
 		suffix.raw.Start = p.separator
 	}
 
@@ -440,10 +444,10 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 	prefix, suffix := p.Path(), p.Path()
 	if !p.name.IsZero() {
 		prefix.raw.End = p.name
-		suffix.raw.Start = p.name.In(p.Context()).Next().ID()
+		suffix.raw.Start = id.Get(token.Context(p.Context()), p.name).Next().ID()
 	} else {
 		prefix.raw.End = p.separator
-		suffix.raw.Start = p.separator.In(p.Context()).Next().ID()
+		suffix.raw.Start = id.Get(token.Context(p.Context()), p.separator).Next().ID()
 	}
 
 	return prefix.trim(), suffix.trim()
@@ -452,13 +456,13 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 // Separator is the token that separates this component from the previous one, if
 // any. This may be a dot or a slash.
 func (p PathComponent) Separator() token.Token {
-	return p.separator.In(p.Context())
+	return id.Get(token.Context(p.Context()), p.separator)
 }
 
 // Name is the token that represents this component's name. THis is either an
 // identifier or a (...) token containing a path.
 func (p PathComponent) Name() token.Token {
-	return p.name.In(p.Context())
+	return id.Get(token.Context(p.Context()), p.name)
 }
 
 // Returns whether this is an empty path component. Such components are not allowed
@@ -508,7 +512,7 @@ func (p PathComponent) AsExtension() Path {
 //
 // May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
-	tok := p.name.In(p.Context())
+	tok := id.Get(token.Context(p.Context()), p.name)
 	if tok.Kind() == token.Ident {
 		return tok
 	}

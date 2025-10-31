@@ -33,6 +33,10 @@ func (c *Context) Stream() *token.Stream {
 	return c.S
 }
 
+func (c *Context) FromID(id int32, v any) any {
+	return c.S.FromID(id, v)
+}
+
 func NewContext(text string) *Context {
 	ctx := new(Context)
 	ctx.S = &token.Stream{

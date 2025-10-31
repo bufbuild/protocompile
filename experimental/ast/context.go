@@ -60,3 +60,10 @@ func (c *context) Stream() *token.Stream {
 func (c *context) Nodes() *Nodes {
 	return c.nodes
 }
+
+func (c *context) FromID(id int32, want any) any {
+	switch want.(type) {
+	default:
+		return c.stream.FromID(id, want)
+	}
+}

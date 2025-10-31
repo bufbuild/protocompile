@@ -17,6 +17,7 @@ package ast
 import (
 	"iter"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -106,7 +107,7 @@ func (d DeclSyntax) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.keyword)
 }
 
 // IsSyntax checks whether this is an OG syntax declaration.
@@ -127,7 +128,7 @@ func (d DeclSyntax) Equals() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.equals.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.equals)
 }
 
 // Value returns the value expression of this declaration.
@@ -175,7 +176,7 @@ func (d DeclSyntax) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -227,7 +228,7 @@ func (d DeclPackage) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.keyword)
 }
 
 // Path returns this package's path.
@@ -267,7 +268,7 @@ func (d DeclPackage) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -320,7 +321,7 @@ func (d DeclImport) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.keyword)
 }
 
 // Modifiers returns the modifiers for this declaration.
@@ -331,7 +332,7 @@ func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, t token.ID) keyword.Keyword {
-		return t.In(d.Context()).Keyword()
+		return id.Get(token.Context(d.Context()), t).Keyword()
 	})
 }
 
@@ -342,7 +343,7 @@ func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	}
 
 	return seq.NewSliceInserter(&d.raw.modifiers,
-		func(_ int, e token.ID) token.Token { return e.In(d.Context()) },
+		func(_ int, e token.ID) token.Token { return id.Get(token.Context(d.Context()), e) },
 		func(_ int, t token.Token) token.ID {
 			d.Context().Nodes().panicIfNotOurs(t)
 			return t.ID()
@@ -415,7 +416,7 @@ func (d DeclImport) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.semi)
 }
 
 // report.Span implements [report.Spanner].

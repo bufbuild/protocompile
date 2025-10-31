@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -60,7 +61,7 @@ func (d DeclBody) Braces() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.braces.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.braces)
 }
 
 // Span implements [report.Spanner].

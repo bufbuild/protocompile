@@ -17,6 +17,7 @@ package ast
 import (
 	"iter"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -220,7 +221,7 @@ func (d DeclDef) Equals() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.equals.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.equals)
 }
 
 // Value returns this definition's value. For a field, this will be the
@@ -278,7 +279,7 @@ func (d DeclDef) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Get(token.Context(d.Context()), d.raw.semi)
 }
 
 // IsCorrupt reports whether or not some part of the parser decided that this
@@ -547,7 +548,7 @@ func (s Signature) Returns() token.Token {
 		return token.Zero
 	}
 
-	return s.raw.returns.In(s.Context())
+	return id.Get(token.Context(s.Context()), s.raw.returns)
 }
 
 // Inputs returns the input argument list for this signature.

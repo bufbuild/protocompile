@@ -54,10 +54,10 @@ func MutateMeta[M tokenmeta.Meta](token Token) *M {
 		stream.meta = make(map[ID]any)
 	}
 
-	meta, _ := stream.meta[token.id].(*M)
+	meta, _ := stream.meta[token.ID()].(*M)
 	if meta == nil {
 		meta = new(M)
-		stream.meta[token.id] = meta
+		stream.meta[token.ID()] = meta
 	}
 
 	return meta
@@ -80,8 +80,8 @@ func ClearMeta[M tokenmeta.Meta](token Token) {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}
 
-	meta, _ := stream.meta[token.id].(*M)
+	meta, _ := stream.meta[token.ID()].(*M)
 	if meta != nil {
-		delete(stream.meta, token.id)
+		delete(stream.meta, token.ID())
 	}
 }

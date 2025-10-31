@@ -21,11 +21,22 @@ import (
 	"math"
 	"slices"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
+
+// Context is the owner of a [Stream].
+//
+// Each stream carries its full context with it, which may contain other
+// information, such as arenas for AST nodes.
+type Context interface {
+	id.Context
+
+	Stream() *Stream
+}
 
 // Stream is a token stream.
 //
@@ -65,17 +76,33 @@ type Stream struct {
 	frozen bool
 }
 
+// FromID implements [id.Context].
+func (s *Stream) FromID(id int32, want any) any {
+	switch want.(type) {
+	case *rawToken:
+		return rawToken{}
+	case **tokenmeta.String:
+		meta, _ := s.meta[ID(id)].(*tokenmeta.String)
+		return meta
+	case **tokenmeta.Number:
+		meta, _ := s.meta[ID(id)].(*tokenmeta.Number)
+		return meta
+	default:
+		panic(fmt.Sprintf("called FromID with unknown type %T", want))
+	}
+}
+
 // All returns an iterator over all tokens in this stream. First the natural
 // tokens in order of creation, and then the synthetic tokens in the same.
 func (s *Stream) All() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for i := range s.nats {
-			if !yield(ID(i + 1).In(s.Context)) {
+			if !yield(id.Get(s.Context, ID(i+1))) {
 				return
 			}
 		}
 		for i := range s.synths {
-			if !yield(ID(^i).In(s.Context)) {
+			if !yield(id.Get(s.Context, ID(^i))) {
 				return
 			}
 		}
@@ -92,10 +119,10 @@ func (s *Stream) All() iter.Seq[Token] {
 //  4. offset is inside of a token tok. Returns tok, tok.
 func (s *Stream) Around(offset int) (Token, Token) {
 	if offset == 0 {
-		return Zero, ID(1).In(s.Context)
+		return Zero, id.Get(s.Context, ID(1))
 	}
 	if offset == len(s.File.Text()) {
-		return ID(len(s.nats)).In(s.Context), Zero
+		return id.Get(s.Context, ID(len(s.nats))), Zero
 	}
 
 	idx, exact := slices.BinarySearchFunc(s.nats, offset, func(n nat, offset int) int {
@@ -105,18 +132,16 @@ func (s *Stream) Around(offset int) (Token, Token) {
 	if exact {
 		// We landed between two tokens. idx+1 is the ID of the token that ends
 		// at offset.
-		return ID(idx + 1).In(s.Context), ID(idx + 2).In(s.Context)
+		return id.Get(s.Context, ID(idx+1)), id.Get(s.Context, ID(idx+2))
 	}
 
 	// We landed in the middle of a token, specifically idx+1.
-	return ID(idx + 1).In(s.Context), ID(idx + 1).In(s.Context)
+	return id.Get(s.Context, ID(idx+1)), id.Get(s.Context, ID(idx+1))
 }
 
 // Cursor returns a cursor over the natural token stream.
 func (s *Stream) Cursor() *Cursor {
-	return &Cursor{
-		withContext: internal.NewWith(s.Context),
-	}
+	return &Cursor{context: s.Context}
 }
 
 // AssertEmpty asserts that no natural tokens have been created in this stream
@@ -170,7 +195,7 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		metadata: (int32(kind) & kindMask) | (int32(kw) << keywordShift),
 	})
 
-	return Token{internal.NewWith[Context](s), ID(len(s.nats))}
+	return id.Get(s.Context, ID(len(s.nats)))
 }
 
 // NewIdent mints a new synthetic identifier token with the given name.
@@ -209,16 +234,16 @@ func (s *Stream) NewFused(openTok, closeTok Token, children ...Token) {
 	}
 
 	synth := openTok.synth()
-	synth.otherEnd = closeTok.id
+	synth.otherEnd = closeTok.ID()
 	synth.children = make([]ID, len(children))
 	for i, t := range children {
-		synth.children[i] = t.id
+		synth.children[i] = t.ID()
 	}
-	closeTok.synth().otherEnd = openTok.id
+	closeTok.synth().otherEnd = openTok.ID()
 }
 
 func (s *Stream) newSynth(tok synth) Token {
 	raw := ID(^len(s.synths))
 	s.synths = append(s.synths, tok)
-	return raw.In(s.Context)
+	return id.Get(s.Context, raw)
 }

@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -45,7 +46,7 @@ func (e ExprDict) Braces() token.Token {
 		return token.Zero
 	}
 
-	return e.raw.braces.In(e.Context())
+	return id.Get(token.Context(e.Context()), e.raw.braces)
 }
 
 // Elements returns the sequence of expressions in this array.
@@ -135,7 +136,7 @@ func (e ExprField) Colon() token.Token {
 		return token.Zero
 	}
 
-	return e.raw.colon.In(e.Context())
+	return id.Get(token.Context(e.Context()), e.raw.colon)
 }
 
 // Value returns the value for this field.

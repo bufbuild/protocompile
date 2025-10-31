@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -52,7 +53,7 @@ func (e ExprPrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return e.raw.prefix.In(e.Context())
+	return id.Get(token.Context(e.Context()), e.raw.prefix)
 }
 
 // Expr returns the expression the prefix is applied to.

@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -40,7 +41,7 @@ func (e ExprArray) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return e.raw.brackets.In(e.Context())
+	return id.Get(token.Context(e.Context()), e.raw.brackets)
 }
 
 // Elements returns the sequence of expressions in this array.

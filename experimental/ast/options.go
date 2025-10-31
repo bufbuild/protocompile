@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -63,7 +64,7 @@ func (o CompactOptions) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return o.raw.brackets.In(o.Context())
+	return id.Get(token.Context(o.Context()), o.raw.brackets)
 }
 
 // Entries returns the sequence of options in this CompactOptions.
@@ -116,7 +117,7 @@ func (o *rawOption) With(c Context) Option {
 	}
 	return Option{
 		Path:   o.path.With(c),
-		Equals: o.equals.In(c),
+		Equals: id.Get(token.Context(c), o.equals),
 		Value:  newExprAny(c, o.value),
 	}
 }

@@ -17,6 +17,7 @@ package ast
 import (
 	"slices"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
@@ -54,7 +55,7 @@ type commas[T, E any] struct {
 }
 
 func (c commas[T, _]) Comma(n int) token.Token {
-	return (*c.SliceInserter.Slice)[n].Comma.In(c.ctx)
+	return id.Get(token.Context(c.ctx), (*c.SliceInserter.Slice)[n].Comma)
 }
 
 func (c commas[T, _]) AppendComma(value T, comma token.Token) {
