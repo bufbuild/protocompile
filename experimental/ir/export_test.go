@@ -37,5 +37,5 @@ func GetImports(f File) *Imports {
 }
 
 func (s Symbol) RawData() arena.Untyped {
-	return s.raw.data
+	return s.Raw().data
 }

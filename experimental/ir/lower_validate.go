@@ -26,7 +26,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -108,8 +108,10 @@ func validateConstraints(f File, r *report.Report) {
 		}
 	}
 
+	i := 0
 	for p := range f.Context().arenas.messages.Values() {
-		m := MessageValue{internal.NewWith(f.Context()), p}
+		i++
+		m := id.NewValueFromRaw(f.Context(), id.ID[MessageValue](i), p)
 		for v := range m.Fields() {
 			// This is a simple way of picking up all of the option values
 			// without tripping over custom defaults, which we explicitly should

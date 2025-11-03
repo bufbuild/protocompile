@@ -16,6 +16,7 @@ package ir
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -46,13 +47,11 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 		}
 
 		for member := range seq.Values(ty.Members()) {
-			member.raw.number, member.raw.numberOk = evaluateMemberNumber(
+			member.Raw().number, member.Raw().numberOk = evaluateMemberNumber(
 				f.Context(), scope, member.AST().Value(), kind, false, r)
 		}
 
-		for _, raw := range ty.raw.ranges {
-			tags := ReservedRange{ty.withContext, ty.Context().arenas.ranges.Deref(raw)}
-
+		for tags := range seq.Values(ty.AllRanges()) {
 			switch tags.AST().Kind() {
 			case ast.ExprKindRange:
 				a, b := tags.AST().AsRange().Bounds()
@@ -87,9 +86,9 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 					)
 				}
 
-				tags.raw.first = start
-				tags.raw.last = end
-				tags.raw.rangeOk = startOk && endOk
+				tags.Raw().first = start
+				tags.Raw().last = end
+				tags.Raw().rangeOk = startOk && endOk
 
 			default:
 				n, ok := evaluateMemberNumber(f.Context(), scope, tags.AST(), kind, false, r)
@@ -97,9 +96,9 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 					continue
 				}
 
-				tags.raw.first = n
-				tags.raw.last = n
-				tags.raw.rangeOk = ok
+				tags.Raw().first = n
+				tags.Raw().last = n
+				tags.Raw().rangeOk = ok
 			}
 		}
 	}
@@ -118,7 +117,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 			scope = ty.FullName()
 		}
 
-		extn.raw.number, extn.raw.numberOk = evaluateMemberNumber(
+		extn.Raw().number, extn.Raw().numberOk = evaluateMemberNumber(
 			f.Context(), scope, extn.AST().Value(), kind, false, r)
 	}
 }
@@ -178,18 +177,18 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			seq.Values(ty.ExtensionRanges()),
 		) {
 			lo, hi := tagRange.Range()
-			if !tagRange.raw.rangeOk {
+			if !tagRange.Raw().rangeOk {
 				continue // Diagnosed already.
 			}
-			disjoint := ty.raw.rangesByNumber.Insert(lo, hi, rawTagRange{
-				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.raw)),
+			disjoint := ty.Raw().rangesByNumber.Insert(lo, hi, rawTagRange{
+				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.Raw())),
 			})
 
 			// Avoid quadratic behavior. See overlapLimit's comment above.
 			if !disjoint {
 				totalOverlaps++
 				if totalOverlaps > overlapLimit {
-					ty.raw.missingRanges = true
+					ty.Raw().missingRanges = true
 					break
 				}
 			}
@@ -199,23 +198,23 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 		// first value is a member.
 		for member := range seq.Values(ty.Members()) {
 			n := member.Number()
-			if !member.raw.numberOk {
+			if !member.Raw().numberOk {
 				continue // Diagnosed already.
 			}
-			ty.raw.rangesByNumber.Insert(n, n, rawTagRange{
+			ty.Raw().rangesByNumber.Insert(n, n, rawTagRange{
 				isMember: true,
-				ptr:      arena.Untyped(f.Context().arenas.members.Compress(member.raw)),
+				ptr:      arena.Untyped(f.Context().arenas.members.Compress(member.Raw())),
 			})
 		}
 
 		// Now, iterate over every entry and diagnose the ones that have more
 		// than one value.
-		for entry := range ty.raw.rangesByNumber.Entries() {
+		for entry := range ty.Raw().rangesByNumber.Entries() {
 			if len(entry.Value) < 2 {
 				continue
 			}
 
-			first := TagRange{ty.withContext, entry.Value[0]}
+			first := TagRange{id.WrapContext(ty.Context()), entry.Value[0]}
 			if ty.AllowsAlias() && first.raw.isMember {
 				// If all of the members of the intersections are members,
 				// we don't diagnose.
@@ -223,7 +222,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			}
 
 			for _, tags := range entry.Value[1:] {
-				tags := TagRange{ty.withContext, tags}
+				tags := TagRange{id.WrapContext(ty.Context()), tags}
 				if a, b := first.AsMember(), tags.AsMember(); ty.AllowsAlias() && !a.IsZero() && !b.IsZero() {
 					continue
 				}
@@ -272,7 +271,7 @@ extensions:
 			// Don't diagnose if we're missing some ranges, because we might
 			// produce false positives. This can only happen for types that have
 			// already generated diagnostics, so it's ok to skip diagnosing.
-			if ty.raw.missingRanges {
+			if ty.Raw().missingRanges {
 				continue
 			}
 

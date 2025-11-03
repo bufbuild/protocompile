@@ -19,6 +19,7 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -39,7 +40,7 @@ func buildLocalSymbols(f File) {
 		kind: SymbolKindPackage,
 		fqn:  f.InternedPackage(),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 
 	for ty := range seq.Values(f.AllTypes()) {
 		newTypeSymbol(ty)
@@ -75,15 +76,15 @@ func newTypeSymbol(ty Type) {
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
 		kind: kind,
 		fqn:  ty.InternedFullName(),
-		data: arena.Untyped(c.arenas.types.Compress(ty.raw)),
+		data: arena.Untyped(c.arenas.types.Compress(ty.Raw())),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 }
 
 func newFieldSymbol(f Member) {
 	c := f.Context()
 	kind := SymbolKindField
-	if !f.raw.extendee.Nil() {
+	if !f.Extend().IsZero() {
 		kind = SymbolKindExtension
 	} else if f.AST().Classify() == ast.DefKindEnumValue {
 		kind = SymbolKindEnumValue
@@ -91,9 +92,9 @@ func newFieldSymbol(f Member) {
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
 		kind: kind,
 		fqn:  f.InternedFullName(),
-		data: arena.Untyped(c.arenas.members.Compress(f.raw)),
+		data: arena.Untyped(c.arenas.members.Compress(f.Raw())),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 }
 
 func newOneofSymbol(o Oneof) {
@@ -101,9 +102,9 @@ func newOneofSymbol(o Oneof) {
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
 		kind: SymbolKindOneof,
 		fqn:  o.InternedFullName(),
-		data: arena.Untyped(c.arenas.oneofs.Compress(o.raw)),
+		data: arena.Untyped(c.arenas.oneofs.Compress(o.Raw())),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 }
 
 func newServiceSymbol(s Service) {
@@ -111,9 +112,9 @@ func newServiceSymbol(s Service) {
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
 		kind: SymbolKindService,
 		fqn:  s.InternedFullName(),
-		data: arena.Untyped(c.arenas.services.Compress(s.raw)),
+		data: arena.Untyped(c.arenas.services.Compress(s.Raw())),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 }
 
 func newMethodSymbol(m Method) {
@@ -121,9 +122,9 @@ func newMethodSymbol(m Method) {
 	sym := c.arenas.symbols.NewCompressed(rawSymbol{
 		kind: SymbolKindMethod,
 		fqn:  m.InternedFullName(),
-		data: arena.Untyped(c.arenas.methods.Compress(m.raw)),
+		data: arena.Untyped(c.arenas.methods.Compress(m.Raw())),
 	})
-	c.exported = append(c.exported, ref[rawSymbol]{ptr: sym})
+	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 }
 
 // mergeImportedSymbolTables builds a symbol table of every imported symbol.
@@ -201,32 +202,32 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 	*symbols = slicesx.DedupKey(
 		*symbols,
-		func(r ref[rawSymbol]) intern.ID { return wrapSymbol(f.Context(), r).InternedFullName() },
-		func(refs []ref[rawSymbol]) ref[rawSymbol] {
+		func(r Ref[Symbol]) intern.ID { return GetRef(f.Context(), r).InternedFullName() },
+		func(refs []Ref[Symbol]) Ref[Symbol] {
 			if len(refs) == 1 {
 				return refs[0]
 			}
 
 			slices.SortFunc(refs, cmpx.Map(
-				func(r ref[rawSymbol]) Symbol { return wrapSymbol(f.Context(), r) },
+				func(r Ref[Symbol]) Symbol { return GetRef(f.Context(), r) },
 				cmpx.Key(Symbol.Kind), // Packages sort first, reserved names sort last.
 				cmpx.Key(func(s Symbol) string {
 					// NOTE: we do not choose a winner based on the path's intern
 					// ID, because that is non-deterministic!
-					return s.File().Path()
+					return s.Context().File().Path()
 				}),
 				// Break ties with whichever came first in the file.
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
-			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r ref[rawSymbol]) (ast.DeclDef, bool) {
-				s := wrapSymbol(f.Context(), r)
+			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r Ref[Symbol]) (ast.DeclDef, bool) {
+				s := GetRef(f.Context(), r)
 				ty := s.AsType()
 				return ty.AST(), !ty.IsZero()
 			}))
 			isFirst := true
-			refs = slices.DeleteFunc(refs, func(r ref[rawSymbol]) bool {
-				s := wrapSymbol(f.Context(), r)
+			refs = slices.DeleteFunc(refs, func(r Ref[Symbol]) bool {
+				s := GetRef(f.Context(), r)
 				if !isFirst && !s.AsMember().Container().MapField().IsZero() {
 					// Ignore all symbols that are map entry fields, because those
 					// can only be duplicated when two map entry messages' names
@@ -263,11 +264,11 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 // errDuplicates diagnoses duplicate symbols.
 type errDuplicates struct {
 	*Context
-	refs []ref[rawSymbol]
+	refs []Ref[Symbol]
 }
 
 func (e errDuplicates) symbol(n int) Symbol {
-	return wrapSymbol(e.Context, e.refs[n])
+	return GetRef(e.Context, e.refs[n])
 }
 
 func (e errDuplicates) Diagnose(d *report.Diagnostic) {
@@ -343,14 +344,14 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	// that symbol names are global!
 	for i := range e.refs {
 		s := e.symbol(i)
-		if s.Visible() {
+		if s.Visible(e.Context.File()) {
 			continue
 		}
 
 		d.Apply(report.Helpf(
 			"symbol names must be unique across all transitive imports; "+
 				"for example, %q declares `%s` but is not directly imported",
-			s.File().Path(),
+			s.Context().File().Path(),
 			first.FullName(),
 		))
 		break

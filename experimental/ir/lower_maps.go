@@ -18,7 +18,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -55,57 +55,57 @@ func generateMapEntries(f File, r *report.Report) {
 		mapEntry := builtins.MapEntry.toRef(c)
 
 		options := newMessage(c, builtins.MessageOptions.toRef(c))
-		*options.insert(wrapMember(c, mapEntry)) =
-			c.arenas.values.NewCompressed(rawValue{
+		*options.insert(GetRef(c, mapEntry)) =
+			id.ID[Value](c.arenas.values.NewCompressed(rawValue{
 				field: mapEntry,
 				bits:  1,
-			})
+			}))
 
 		// Construct the type itself.
 		raw := c.arenas.types.NewCompressed(rawType{
-			def:    field.AST(),
+			def:    field.AST().ID(),
 			name:   c.session.intern.Intern(name),
 			fqn:    c.session.intern.Intern(string(fqn)),
-			parent: c.arenas.types.Compress(parent.raw),
-			options: c.arenas.values.NewCompressed(rawValue{
+			parent: parent.ID(),
+			options: id.ID[Value](c.arenas.values.NewCompressed(rawValue{
 				field: messageOptions,
-				bits:  rawValueBits(c.arenas.messages.Compress(options.raw)),
-			}),
+				bits:  rawValueBits(c.arenas.messages.Compress(options.Raw())),
+			})),
 
-			mapEntryOf: c.arenas.members.Compress(field.raw),
+			mapEntryOf: field.ID(),
 		})
-		ty := Type{internal.NewWith(c), c.arenas.types.Deref(raw)}
-		ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
+		ty := id.NewValueFromRaw(c, id.ID[Type](raw), c.arenas.types.Deref(raw))
+		ty.Raw().memberByName = sync.OnceValue(ty.makeMembersByName)
 		if parent.IsZero() {
-			c.types = slices.Insert(c.types, c.topLevelTypesEnd, raw)
+			c.types = slices.Insert(c.types, c.topLevelTypesEnd, id.ID[Type](raw))
 			c.topLevelTypesEnd++
 		} else {
-			c.types = append(c.types, raw)
-			parent.raw.nested = append(parent.raw.nested, raw)
+			c.types = append(c.types, id.ID[Type](raw))
+			parent.Raw().nested = append(parent.Raw().nested, id.ID[Type](raw))
 		}
 
 		// Construct the fields and attach them to ty.
 		makeField := func(name string, number int32) {
 			fqn := fqn.Append(name)
 
-			id := c.arenas.members.NewCompressed(rawMember{
+			p := c.arenas.members.NewCompressed(rawMember{
 				name:   c.session.intern.Intern(name),
 				fqn:    c.session.intern.Intern(string(fqn)),
-				parent: c.arenas.types.Compress(ty.raw),
+				parent: ty.ID(),
 				number: number,
 				oneof:  -int32(presence.Explicit),
 			})
 
-			ty.raw.members = slices.Insert(ty.raw.members, int(ty.raw.extnsStart), id)
-			ty.raw.extnsStart++
+			ty.Raw().members = slices.Insert(ty.Raw().members, int(ty.Raw().extnsStart), id.ID[Member](p))
+			ty.Raw().extnsStart++
 		}
 
 		makeField("key", 1)
 		makeField("value", 2)
 
 		// Update the field to be a repeated field of the given type.
-		field.raw.elem.ptr = raw
-		field.raw.oneof = -int32(presence.Repeated)
+		field.Raw().elem.id = id.ID[Type](raw)
+		field.Raw().oneof = -int32(presence.Repeated)
 	}
 
 	for parent := range seq.Values(f.AllTypes()) {

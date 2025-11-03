@@ -46,9 +46,9 @@ func populateJSONNames(f File, r *report.Report) {
 				name = internal.JSONName(field.Name())
 			}
 
-			field.raw.jsonName = f.Context().session.intern.Intern(name)
+			field.Raw().jsonName = f.Context().session.intern.Intern(name)
 
-			prev, ok := names.AddID(field.raw.jsonName, field)
+			prev, ok := names.AddID(field.Raw().jsonName, field)
 			if prev.Number() == field.Number() {
 				// This handles the case where enum numbers coincide in an
 				// allow_alias enum. In all other cases where numbers coincide,
@@ -77,10 +77,10 @@ func populateJSONNames(f File, r *report.Report) {
 
 			name, custom := option.AsString()
 			if custom {
-				field.raw.jsonName = f.Context().session.intern.Intern(name)
+				field.Raw().jsonName = f.Context().session.intern.Intern(name)
 			}
 
-			prev, ok := names.AddID(field.raw.jsonName, field)
+			prev, ok := names.AddID(field.Raw().jsonName, field)
 			if !ok && (custom || !prev.PseudoOptions().JSONName.IsZero()) {
 				r.Error(errJSONConflict{
 					first: prev, second: field,
@@ -99,7 +99,7 @@ func populateJSONNames(f File, r *report.Report) {
 		if custom {
 			name = got
 		}
-		extn.raw.jsonName = f.Context().session.intern.Intern(name)
+		extn.Raw().jsonName = f.Context().session.intern.Intern(name)
 
 		if custom {
 			d := r.SoftErrorf(want != got, "%s cannot specify `json_name`", taxa.Extension).Apply(

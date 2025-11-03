@@ -25,7 +25,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -36,10 +36,7 @@ import (
 
 // Value is an evaluated expression, corresponding to an option in a Protobuf
 // file.
-type Value struct {
-	withContext
-	raw *rawValue
-}
+type Value id.Value[Value, *Context, *rawValue]
 
 // rawValue is a [rawValueBits] with field information attached to it.
 type rawValue struct {
@@ -75,7 +72,7 @@ type rawValue struct {
 	// expression, up to an including exprs[i], contributes. This layout is
 	// chosen because it significantly simplifies construction and searching of
 	// this slice.
-	exprs       []ast.ExprAny
+	exprs       []id.Dyn[ast.ExprAny, ast.ExprKind]
 	elemIndices []uint32
 
 	// The AST nodes for the path of the option (compact or otherwise) that
@@ -92,7 +89,7 @@ type rawValue struct {
 	// with the repeated field case
 	//
 	//   option f = 1; option f = 2;
-	optionPaths []ast.Path
+	optionPaths []ast.PathID
 
 	// The field that this value sets. This is where type information comes
 	// from.
@@ -100,7 +97,7 @@ type rawValue struct {
 	// NOTE: we steal the high bit of the pointer to indicate whether or not
 	// bits refers to a slice. If the pointer part is negative, bits is a
 	// repeated field with multiple elements.
-	field ref[rawMember]
+	field Ref[Member]
 	bits  rawValueBits
 }
 
@@ -108,7 +105,7 @@ type rawValue struct {
 // the following encoding:
 //  1. All numeric types, including bool and enums. This holds the bits.
 //  2. String and bytes. This holds an intern.ID.
-//  3. Messages. This holds an arena.Pointer[rawMessage].
+//  3. Messages. This holds an id.ID[Message].
 //  4. Repeated fields with two or more entries. This holds an
 //     arena.Pointer[[]rawValueBits], where each value is interpreted as a
 //     non-array with this value's type.
@@ -121,31 +118,34 @@ type rawValueBits uint64
 //
 // The Spanner will be an [ast.ExprField], if it is set in an [ast.ExprDict].
 func (v Value) OptionSpan() report.Spanner {
-	if v.IsZero() || len(v.raw.exprs) == 0 {
+	if v.IsZero() || len(v.Raw().exprs) == 0 {
 		return nil
 	}
 
-	expr := v.raw.exprs[0]
+	c := v.Context().File().AST().Context()
+	expr := id.NewDynValue(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field
 	}
-	return report.Join(ast.ExprPath{Path: v.raw.optionPaths[0]}, expr)
+	return report.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
 }
 
 // OptionSpans returns an indexer over spans for the option that set this value.
 //
 // The Spanner will be an [ast.ExprField], if it is set in an [ast.ExprDict].
 func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
-	var slice []ast.ExprAny
+	var slice []id.Dyn[ast.ExprAny, ast.ExprKind]
 	if !v.IsZero() {
-		slice = v.raw.exprs
+		slice = v.Raw().exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(_ int, expr ast.ExprAny) report.Spanner {
+	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) report.Spanner {
+		c := v.Context().File().AST().Context()
+		expr := id.NewDynValue(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field
 		}
-		return report.Join(ast.ExprPath{Path: v.raw.optionPaths[0]}, expr)
+		return report.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
 	})
 }
 
@@ -154,11 +154,12 @@ func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
 // For complicated options (such as repeated fields), there may be more than
 // one contributing expression; this will just return *one* of them.
 func (v Value) ValueAST() ast.ExprAny {
-	if v.IsZero() || len(v.raw.exprs) == 0 {
+	if v.IsZero() || len(v.Raw().exprs) == 0 {
 		return ast.ExprAny{}
 	}
 
-	expr := v.raw.exprs[0]
+	c := v.Context().File().AST().Context()
+	expr := id.NewDynValue(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field.Value()
 	}
@@ -171,12 +172,14 @@ func (v Value) ValueAST() ast.ExprAny {
 // There may be more than one such expression, for repeated fields set more
 // than once.
 func (v Value) ValueASTs() seq.Indexer[ast.ExprAny] {
-	var slice []ast.ExprAny
+	var slice []id.Dyn[ast.ExprAny, ast.ExprKind]
 	if !v.IsZero() {
-		slice = v.raw.exprs
+		slice = v.Raw().exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(_ int, expr ast.ExprAny) ast.ExprAny {
+	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) ast.ExprAny {
+		c := v.Context().File().AST().Context()
+		expr := id.NewDynValue(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Value()
 		}
@@ -187,13 +190,16 @@ func (v Value) ValueASTs() seq.Indexer[ast.ExprAny] {
 // KeyAST returns a representative AST node for the message key that evaluated
 // from this value.
 func (v Value) KeyAST() ast.ExprAny {
-	if v.IsZero() || len(v.raw.exprs) == 0 {
+	if v.IsZero() || len(v.Raw().exprs) == 0 {
 		return ast.ExprAny{}
 	}
-	if field := v.raw.exprs[0].AsField(); !field.IsZero() {
+
+	c := v.Context().File().AST().Context()
+	expr := id.NewDynValue(c, v.Raw().exprs[0])
+	if field := expr.AsField(); !field.IsZero() {
 		return field.Key()
 	}
-	return ast.ExprPath{Path: v.raw.optionPaths[0]}.AsAny()
+	return ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}.AsAny()
 }
 
 // KeyASTs returns the AST nodes for each key associated with a value in
@@ -203,16 +209,18 @@ func (v Value) KeyAST() ast.ExprAny {
 // an [ast.PathExpr], in the case of an extension) or the [ast.PathExpr]
 // associated with the left-hand-side of an option setting.
 func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
-	var slice []ast.ExprAny
+	var slice []id.Dyn[ast.ExprAny, ast.ExprKind]
 	if !v.IsZero() {
-		slice = v.raw.exprs
+		slice = v.Raw().exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(n int, expr ast.ExprAny) ast.ExprAny {
+	return seq.NewFixedSlice(slice, func(n int, p id.Dyn[ast.ExprAny, ast.ExprKind]) ast.ExprAny {
+		c := v.Context().File().AST().Context()
+		expr := id.NewDynValue(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Key()
 		}
-		return ast.ExprPath{Path: v.raw.optionPaths[n]}.AsAny()
+		return ast.ExprPath{Path: v.Raw().optionPaths[n].In(c)}.AsAny()
 	})
 }
 
@@ -221,12 +229,15 @@ func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 // There will be one path per value returned from [Value.ValueASTs]. Generally,
 // you'll want to use [Value.KeyASTs] instead.
 func (v Value) OptionPaths() seq.Indexer[ast.Path] {
-	var slice []ast.Path
+	var slice []ast.PathID
 	if !v.IsZero() {
-		slice = v.raw.optionPaths
+		slice = v.Raw().optionPaths
 	}
 
-	return seq.NewFixedSlice(slice, func(_ int, e ast.Path) ast.Path { return e })
+	return seq.NewFixedSlice(slice, func(_ int, e ast.PathID) ast.Path {
+		c := v.Context().File().AST().Context()
+		return e.In(c)
+	})
 }
 
 // Field returns the field this value sets, which includes the value's type
@@ -239,11 +250,11 @@ func (v Value) Field() Member {
 		return Member{}
 	}
 
-	field := v.raw.field
-	if int32(field.ptr) < 0 {
-		field.ptr = ^field.ptr
+	field := v.Raw().field
+	if int32(field.id) < 0 {
+		field.id ^= -1
 	}
-	return wrapMember(v.Context(), field)
+	return GetRef(v.Context(), field)
 }
 
 // Elements returns an indexer over the elements within this value.
@@ -256,7 +267,7 @@ func (v Value) Field() Member {
 func (v Value) Elements() seq.Indexer[Element] {
 	return seq.NewFixedSlice(v.getElements(), func(n int, bits rawValueBits) Element {
 		return Element{
-			withContext: v.withContext,
+			withContext: id.WrapContext(v.Context()),
 			index:       n,
 			value:       v,
 			bits:        bits,
@@ -270,10 +281,10 @@ func (v Value) getElements() []rawValueBits {
 	switch {
 	case v.IsZero():
 		break
-	case int32(v.raw.field.ptr) < 0:
+	case int32(v.Raw().field.id) < 0:
 		slice = *v.slice()
 	default:
-		slice = slicesx.One(&v.raw.bits)
+		slice = slicesx.One(&v.Raw().bits)
 	}
 	return slice
 }
@@ -360,13 +371,13 @@ func (v Value) AsMessage() MessageValue {
 //
 // If this value isn't already in slice form, this puts it into it.
 func (v Value) slice() *[]rawValueBits {
-	if int32(v.raw.field.ptr) < 0 {
-		return v.Context().arenas.arrays.Deref(arena.Pointer[[]rawValueBits](v.raw.bits))
+	if int32(v.Raw().field.id) < 0 {
+		return v.Context().arenas.arrays.Deref(arena.Pointer[[]rawValueBits](v.Raw().bits))
 	}
 
-	slice := v.Context().arenas.arrays.New([]rawValueBits{v.raw.bits})
-	v.raw.bits = rawValueBits(v.Context().arenas.arrays.Compress(slice))
-	v.raw.field.ptr = ^v.raw.field.ptr
+	slice := v.Context().arenas.arrays.New([]rawValueBits{v.Raw().bits})
+	v.Raw().bits = rawValueBits(v.Context().arenas.arrays.Compress(slice))
+	v.Raw().field.id ^= -1
 	return slice
 }
 
@@ -387,6 +398,8 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 	if r != nil {
 		defer r.AnnotateICE(report.Snippetf(v.ValueAST(), "while marshalling this value"))
 	}
+
+	fmt.Println(v.Field().FullName(), ":", v.Field().Element().FullName())
 
 	scalar := v.Field().Element().Predeclared()
 	if v.Field().IsRepeated() && v.Elements().Len() > 1 {
@@ -504,16 +517,6 @@ func (v Value) suggestEdit(path, expr string, format string, args ...any) report
 	)
 }
 
-func wrapValue(c *Context, p arena.Pointer[rawValue]) Value {
-	if c == nil || p.Nil() {
-		return Value{}
-	}
-	return Value{
-		withContext: internal.NewWith(c),
-		raw:         c.arenas.values.Deref(p),
-	}
-}
-
 // Element is an element within a [Value].
 //
 // This exists because array values contain multiple non-array elements; this
@@ -527,21 +530,22 @@ type Element struct {
 
 // AST returns the expression this value was evaluated from.
 func (e Element) AST() ast.ExprAny {
-	if e.IsZero() || e.value.raw.exprs == nil {
+	if e.IsZero() || e.value.Raw().exprs == nil {
 		return ast.ExprAny{}
 	}
 
 	idx := e.ValueNodeIndex()
-	expr := e.value.raw.exprs[idx]
+	c := e.Context().File().AST().Context()
+	expr := id.NewDynValue(c, e.value.Raw().exprs[idx])
 	if field := expr.AsField(); !field.IsZero() {
 		expr = field.Value()
 	}
 
-	if array := expr.AsArray(); !array.IsZero() && e.value.raw.elemIndices != nil {
+	if array := expr.AsArray(); !array.IsZero() && e.value.Raw().elemIndices != nil {
 		// We need to index into the array expression. The index is going to be
 		// offset by the number of expressions before this one, which we
 		// can get via elemIndices.
-		n := int(e.value.raw.elemIndices[idx]) - e.index - 1
+		n := int(e.value.Raw().elemIndices[idx]) - e.index - 1
 		expr = array.Elements().At(n)
 	}
 	return expr
@@ -557,7 +561,7 @@ func (e Element) ValueNodeIndex() int {
 	// for diagnostics.
 
 	idx := e.index
-	if e.value.raw.elemIndices != nil {
+	if e.value.Raw().elemIndices != nil {
 		// Figure out which expression contributes the value for e. We're looking
 		// for the least upper bound.
 		//
@@ -570,7 +574,7 @@ func (e Element) ValueNodeIndex() int {
 		// 3 -> 1, false
 		// 4 -> 1, false
 		var exact bool
-		idx, exact = slices.BinarySearch(e.value.raw.elemIndices, uint32(e.index))
+		idx, exact = slices.BinarySearch(e.value.Raw().elemIndices, uint32(e.index))
 		if exact {
 			idx++
 		}
@@ -614,7 +618,7 @@ func (e Element) IsZeroValue() bool {
 		return false
 	}
 
-	return e.value.raw.bits == 0
+	return e.value.Raw().bits == 0
 }
 
 // AsBool returns the bool value of this element.
@@ -688,29 +692,23 @@ func (e Element) AsMessage() MessageValue {
 		return MessageValue{}
 	}
 
-	return MessageValue{
-		e.withContext,
-		e.Context().arenas.messages.Deref(arena.Pointer[rawMessageValue](e.bits)),
-	}
+	return id.NewValue(e.Context(), id.ID[MessageValue](e.bits))
 }
 
 // MessageValue is a message literal, represented as a list of ordered
 // key-value pairs.
-type MessageValue struct {
-	withContext
-	raw *rawMessageValue
-}
+type MessageValue id.Value[MessageValue, *Context, *rawMessageValue]
 
 type rawMessageValue struct {
 	byName   intern.Map[uint32]
-	entries  []arena.Pointer[rawValue]
-	ty       ref[rawType]
-	self     arena.Pointer[rawValue]
+	entries  []id.ID[Value]
+	ty       Ref[Type]
+	self     id.ID[Value]
 	url      intern.ID
-	concrete arena.Pointer[rawMessageValue]
+	concrete id.ID[MessageValue]
 	pseudo   struct {
-		defaultValue arena.Pointer[rawValue]
-		jsonName     arena.Pointer[rawValue]
+		defaultValue id.ID[Value]
+		jsonName     id.ID[Value]
 	}
 }
 
@@ -730,7 +728,7 @@ func (v MessageValue) AsValue() Value {
 	if v.IsZero() {
 		return Value{}
 	}
-	return wrapValue(v.Context(), v.raw.self)
+	return id.NewValue(v.Context(), v.Raw().self)
 }
 
 // Type returns this value's message type.
@@ -742,7 +740,7 @@ func (v MessageValue) Type() Type {
 	if v.IsZero() {
 		return Type{}
 	}
-	return wrapType(v.Context(), v.raw.ty)
+	return GetRef(v.Context(), v.Raw().ty)
 }
 
 // TypeURL returns this value's type URL, if it is the concrete value of an
@@ -751,19 +749,19 @@ func (v MessageValue) TypeURL() string {
 	if v.IsZero() {
 		return ""
 	}
-	return v.Context().session.intern.Value(v.raw.url)
+	return v.Context().session.intern.Value(v.Raw().url)
 }
 
 // Concrete returns the concrete version of this value if it is an Any.
 //
-// If it isn't an Any, or a "raw" Any (one not specified with the special type
+// If it isn't an Any, or a .Raw()" Any (one not specified with the special type
 // URL syntax), this returns v.
 func (v MessageValue) Concrete() MessageValue {
-	if v.IsZero() || v.raw.concrete.Nil() {
+	if v.IsZero() || v.Raw().concrete.IsZero() {
 		return v
 	}
-	v.raw = v.Context().arenas.messages.Deref(v.raw.concrete)
-	return v
+
+	return id.NewValue(v.Context(), v.Raw().concrete)
 }
 
 // Field returns the field corresponding with the given member, if it is set.
@@ -772,17 +770,17 @@ func (v MessageValue) Field(field Member) Value {
 		return Value{}
 	}
 
-	id := field.InternedFullName()
+	name := field.InternedFullName()
 	if o := field.Oneof(); !o.IsZero() {
-		id = o.InternedFullName()
+		name = o.InternedFullName()
 	}
 
-	idx, ok := v.raw.byName[id]
+	idx, ok := v.Raw().byName[name]
 	if !ok {
 		return Value{}
 	}
 
-	return wrapValue(v.Context(), v.raw.entries[idx])
+	return id.NewValue(v.Context(), v.Raw().entries[idx])
 }
 
 // Fields yields the fields within this message literal, in insertion order.
@@ -792,8 +790,8 @@ func (v MessageValue) Fields() iter.Seq[Value] {
 			return
 		}
 
-		for _, p := range v.raw.entries {
-			v := wrapValue(v.Context(), p)
+		for _, p := range v.Raw().entries {
+			v := id.NewValue(v.Context(), p)
 			if !v.IsZero() && !yield(v) {
 				return
 			}
@@ -812,8 +810,8 @@ func (v MessageValue) pseudoFields() PseudoFields {
 	}
 
 	return PseudoFields{
-		Default:  wrapValue(v.Context(), v.raw.pseudo.defaultValue),
-		JSONName: wrapValue(v.Context(), v.raw.pseudo.jsonName),
+		Default:  id.NewValue(v.Context(), v.Raw().pseudo.defaultValue),
+		JSONName: id.NewValue(v.Context(), v.Raw().pseudo.jsonName),
 	}
 }
 
@@ -926,19 +924,19 @@ func deleteRanges(buf []byte, ranges [][2]int) []byte {
 // When a conflict occurs, the existing rawValue pointer will be returned,
 // whereas if the value is being inserted for the first time, the returned arena
 // pointer will be nil and can be initialized by the caller.
-func (v MessageValue) insert(field Member) *arena.Pointer[rawValue] {
+func (v MessageValue) insert(field Member) *id.ID[Value] {
 	id := field.InternedFullName()
 	if o := field.Oneof(); !o.IsZero() {
 		id = o.InternedFullName()
 	}
 
-	n := len(v.raw.entries)
-	if actual, ok := mapsx.Add(v.raw.byName, id, uint32(n)); !ok {
-		return &v.raw.entries[actual]
+	n := len(v.Raw().entries)
+	if actual, ok := mapsx.Add(v.Raw().byName, id, uint32(n)); !ok {
+		return &v.Raw().entries[actual]
 	}
 
-	v.raw.entries = append(v.raw.entries, 0)
-	return slicesx.LastPointer(v.raw.entries)
+	v.Raw().entries = append(v.Raw().entries, 0)
+	return slicesx.LastPointer(v.Raw().entries)
 }
 
 // scalar is a type that can be converted into a [rawValueBits].
@@ -950,13 +948,12 @@ type scalar interface {
 }
 
 // newZeroScalar constructs a new scalar value.
-func newZeroScalar(c *Context, field ref[rawMember]) Value {
-	return Value{
-		internal.NewWith(c),
-		c.arenas.values.New(rawValue{
-			field: field,
-		}),
-	}
+func newZeroScalar(c *Context, field Ref[Member]) Value {
+	v := c.arenas.values.NewCompressed(rawValue{
+		field: field,
+	})
+
+	return id.NewValueFromRaw(c, id.ID[Value](v), c.arenas.values.Deref(v))
 }
 
 // appendRaw appends a scalar value to the given array value.
@@ -971,16 +968,16 @@ func appendRaw(array Value, bits rawValueBits) {
 // value. This is used for Any-typed fields. Otherwise, the type of field is
 // used instead.
 func appendMessage(array Value) MessageValue {
-	message := array.Context().arenas.messages.New(rawMessageValue{
-		self:   array.Context().arenas.values.Compress(array.raw),
-		ty:     array.Elements().At(0).AsMessage().raw.ty,
+	v := id.ID[MessageValue](array.Context().arenas.messages.NewCompressed(rawMessageValue{
+		self:   array.ID(),
+		ty:     array.Elements().At(0).AsMessage().Raw().ty,
 		byName: make(intern.Map[uint32]),
-	})
+	}))
 
 	slice := array.slice()
-	*slice = append(*slice, rawValueBits(array.Context().arenas.messages.Compress(message)))
+	*slice = append(*slice, rawValueBits(v))
 
-	return MessageValue{array.withContext, message}
+	return id.NewValue(array.Context(), v)
 }
 
 // newMessage constructs a new message value.
@@ -988,43 +985,45 @@ func appendMessage(array Value) MessageValue {
 // If anyType is not zero, it will be used as the type of the inner message
 // value. This is used for Any-typed fields. Otherwise, the type of field is
 // used instead.
-func newMessage(c *Context, field ref[rawMember]) MessageValue {
-	member := wrapMember(c, field)
-	msg := c.arenas.messages.New(rawMessageValue{
-		ty:     member.raw.elem.changeContext(member.Context(), c),
+func newMessage(c *Context, field Ref[Member]) MessageValue {
+	member := GetRef(c, field)
+	raw := id.ID[MessageValue](c.arenas.messages.NewCompressed(rawMessageValue{
+		ty:     member.Raw().elem.ChangeContext(member.Context(), c),
 		byName: make(intern.Map[uint32]),
-	})
-	v := c.arenas.values.NewCompressed(rawValue{
+	}))
+
+	msg := id.NewValue(c, raw)
+	msg.Raw().self = id.ID[Value](c.arenas.values.NewCompressed(rawValue{
 		field: field,
-		bits:  rawValueBits(c.arenas.messages.Compress(msg)),
-	})
-	msg.self = v
-	return MessageValue{internal.NewWith(c), msg}
+		bits:  rawValueBits(raw),
+	}))
+
+	return msg
 }
 
 // newConcrete constructs a new value to be the concrete representation of
 // v with the given type.
 func newConcrete(m MessageValue, ty Type, url string) MessageValue {
-	if !m.raw.concrete.Nil() {
+	if !m.Raw().concrete.IsZero() {
 		panic("protocompile/ir: set a concrete type more than once")
 	}
 	if !m.Type().IsAny() {
 		panic("protocompile/ir: set concrete type on non-Any")
 	}
 
-	field := m.AsValue().raw.field
-	if int32(field.ptr) < 0 {
-		field.ptr = ^field.ptr
+	field := m.AsValue().Raw().field
+	if int32(field.id) < 0 {
+		field.id ^= -1
 	}
 
 	msg := newMessage(m.Context(), field)
-	msg.raw.ty = ty.toRef(m.Context())
-	msg.raw.url = m.Context().session.intern.Intern(url)
-	m.raw.concrete = m.Context().arenas.messages.Compress(msg.raw)
+	msg.Raw().ty = ty.toRef(m.Context())
+	msg.Raw().url = m.Context().session.intern.Intern(url)
+	m.Raw().concrete = msg.ID()
 	return msg
 }
 
-// newScalarBits converts a scalar into raw bits for storing in a [Value].
+// newScalarBits converts a scalar into.Raw() bits for storing in a [Value].
 func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 	switch v := any(v).(type) {
 	case bool:

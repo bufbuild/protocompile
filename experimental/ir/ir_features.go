@@ -19,15 +19,12 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
-	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/experimental/id"
 )
 
 // FeatureSet represents the Editions-mediated features of a particular
 // declaration.
-type FeatureSet struct {
-	withContext
-	raw *rawFeatureSet
-}
+type FeatureSet id.Value[FeatureSet, *Context, *rawFeatureSet]
 
 // Feature is a feature setting retrieved from a [FeatureSet].
 type Feature struct {
@@ -45,8 +42,8 @@ type FeatureInfo struct {
 
 type rawFeatureSet struct {
 	features map[featureKey]rawFeature
-	parent   arena.Pointer[rawFeatureSet]
-	options  arena.Pointer[rawValue]
+	parent   id.ID[FeatureSet]
+	options  id.ID[Value]
 }
 
 type rawFeature struct {
@@ -67,20 +64,17 @@ type featureKey struct {
 
 type featureDefault struct {
 	edition syntax.Syntax
-	value   arena.Pointer[rawValue]
+	value   id.ID[Value]
 }
 
 // Parent returns the feature set of the parent scope for this feature.
 //
 // Returns zero if this is the feature set for the file.
 func (fs FeatureSet) Parent() FeatureSet {
-	if fs.IsZero() || fs.raw.parent.Nil() {
+	if fs.IsZero() {
 		return FeatureSet{}
 	}
-	return FeatureSet{
-		fs.withContext,
-		fs.Context().arenas.features.Deref(fs.raw.parent),
-	}
+	return id.NewValue(fs.Context(), fs.Raw().parent)
 }
 
 // Options returns the value of the google.protobuf.FeatureSet message that
@@ -89,7 +83,7 @@ func (fs FeatureSet) Options() MessageValue {
 	if fs.IsZero() {
 		return MessageValue{}
 	}
-	return wrapValue(fs.Context(), fs.raw.options).AsMessage()
+	return id.NewValue(fs.Context(), fs.Raw().options).AsMessage()
 }
 
 // Lookup looks up a feature with the given google.protobuf.FeatureSet member.
@@ -103,9 +97,9 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 		return Feature{}
 	}
 	// First, check if this value is cached.
-	key := featureKey{extension.raw, field.raw}
-	if f, ok := fs.raw.features[key]; ok {
-		return Feature{fs.withContext, f}
+	key := featureKey{extension.Raw(), field.Raw()}
+	if f, ok := fs.Raw().features[key]; ok {
+		return Feature{id.WrapContext(fs.Context()), f}
 	}
 
 	raw := rawFeature{isCustom: !extension.IsZero()}
@@ -139,11 +133,11 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 		return Feature{}
 	}
 
-	if fs.raw.features == nil {
-		fs.raw.features = make(map[featureKey]rawFeature)
+	if fs.Raw().features == nil {
+		fs.Raw().features = make(map[featureKey]rawFeature)
 	}
-	fs.raw.features[key] = raw
-	return Feature{fs.withContext, raw}
+	fs.Raw().features[key] = raw
+	return Feature{id.WrapContext(fs.Context()), raw}
 }
 
 // Field returns the field corresponding to this feature value.
@@ -196,7 +190,7 @@ func (f FeatureInfo) Default(edition syntax.Syntax) Value {
 	if !ok && idx > 0 {
 		idx-- // We're looking for the greatest lower bound.
 	}
-	return wrapValue(f.Context(), f.raw.defaults[idx].value)
+	return id.NewValue(f.Context(), f.raw.defaults[idx].value)
 }
 
 // Introduced returns which edition this feature is first allowed in.
