@@ -29,7 +29,7 @@ type NumberToken id.Value[NumberToken, Context, *tokenmeta.Number]
 
 // Token returns the wrapped token value.
 func (n NumberToken) Token() Token {
-	return id.Get(n.Context(), ID(n.ID()))
+	return id.NewValue(n.Context(), ID(n.ID()))
 }
 
 // Base returns this number's base.

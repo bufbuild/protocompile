@@ -27,10 +27,10 @@ import (
 // # Grammar
 //
 //	ExprRange := ExprPrefixed `to` ExprOp
-type ExprRange struct{ exprImpl[rawExprRange] }
+type ExprRange id.Value[ExprRange, Context, *rawExprRange]
 
 type rawExprRange struct {
-	start, end rawExpr
+	start, end id.Dyn[ExprAny, ExprKind]
 	to         token.ID
 }
 
@@ -41,21 +41,32 @@ type ExprRangeArgs struct {
 	End   ExprAny
 }
 
+// AsAny type-erases this expression value.
+//
+// See [ExprAny] for more information.
+func (e ExprRange) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
+	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindRange, id.ID[ExprAny](e.ID())))
+}
+
 // Bounds returns this range's bounds. These are inclusive bounds.
 func (e ExprRange) Bounds() (start, end ExprAny) {
 	if e.IsZero() {
 		return ExprAny{}, ExprAny{}
 	}
 
-	return newExprAny(e.Context(), e.raw.start), newExprAny(e.Context(), e.raw.end)
+	return id.NewDynValue(e.Context(), e.Raw().start), id.NewDynValue(e.Context(), e.Raw().end)
 }
 
 // SetBounds set the expressions for this range's bounds.
 //
 // Clears the respective expressions when passed a zero expression.
 func (e ExprRange) SetBounds(start, end ExprAny) {
-	e.raw.start = start.raw
-	e.raw.end = end.raw
+	e.Raw().start = start.ID()
+	e.Raw().end = end.ID()
 }
 
 // Keyword returns the "to" keyword for this range.
@@ -64,7 +75,7 @@ func (e ExprRange) Keyword() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(e.Context()), e.raw.to)
+	return id.NewValue(token.Context(e.Context()), e.Raw().to)
 }
 
 // Span implements [report.Spanner].

@@ -21,7 +21,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // DeclDef is a general Protobuf definition.
@@ -46,19 +45,19 @@ import (
 //	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
 //
 // Note that this type will only record the first appearance of any follower.
-type DeclDef struct{ declImpl[rawDeclDef] }
+type DeclDef id.Value[DeclDef, Context, *rawDeclDef]
 
 type rawDeclDef struct {
-	ty   rawType // Not present for enum fields.
-	name rawPath
+	ty   id.Dyn[TypeAny, TypeKind] // Not present for enum fields.
+	name PathID
 
 	signature *rawSignature
 
 	equals token.ID
-	value  rawExpr
+	value  id.Dyn[ExprAny, ExprKind]
 
-	options arena.Pointer[rawCompactOptions]
-	body    arena.Pointer[rawDeclBody]
+	options id.ID[CompactOptions]
+	body    id.ID[DeclBody]
 	semi    token.ID
 
 	corrupt bool
@@ -85,6 +84,16 @@ type DeclDefArgs struct {
 	Semicolon token.Token
 }
 
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclDef) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindDef, id.ID[DeclAny](d.ID())))
+}
+
 // Type returns the "prefix" type of this definition.
 //
 // This type may coexist with a [Signature] in this definition.
@@ -99,12 +108,12 @@ func (d DeclDef) Type() TypeAny {
 		return TypeAny{}
 	}
 
-	return newTypeAny(d.Context(), d.raw.ty)
+	return id.NewDynValue(d.Context(), d.Raw().ty)
 }
 
 // SetType sets the "prefix" type of this definition.
 func (d DeclDef) SetType(ty TypeAny) {
-	d.raw.ty = ty.raw
+	d.Raw().ty = ty.ID()
 }
 
 // KeywordToken returns the introducing keyword for this definition, if
@@ -176,7 +185,7 @@ func (d DeclDef) Name() Path {
 		return Path{}
 	}
 
-	return d.raw.name.With(d.Context())
+	return d.Raw().name.In(d.Context())
 }
 
 // Stem returns a span that contains both this definition's type and name.
@@ -195,13 +204,13 @@ func (d DeclDef) Stem() report.Span {
 // Not all defs have a signature, so this function may return a zero Signature.q
 // If you want to add one, use [DeclDef.WithSignature].
 func (d DeclDef) Signature() Signature {
-	if d.IsZero() || d.raw.signature == nil {
+	if d.IsZero() || d.Raw().signature == nil {
 		return Signature{}
 	}
 
 	return Signature{
-		d.withContext,
-		d.raw.signature,
+		id.WrapContext(d.Context()),
+		d.Raw().signature,
 	}
 }
 
@@ -209,7 +218,7 @@ func (d DeclDef) Signature() Signature {
 // return zero.
 func (d DeclDef) WithSignature() Signature {
 	if !d.IsZero() && d.Signature().IsZero() {
-		d.raw.signature = new(rawSignature)
+		d.Raw().signature = new(rawSignature)
 	}
 	return d.Signature()
 }
@@ -221,7 +230,7 @@ func (d DeclDef) Equals() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(d.Context()), d.raw.equals)
+	return id.NewValue(token.Context(d.Context()), d.Raw().equals)
 }
 
 // Value returns this definition's value. For a field, this will be the
@@ -232,14 +241,14 @@ func (d DeclDef) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(d.Context(), d.raw.value)
+	return id.NewDynValue(d.Context(), d.Raw().value)
 }
 
 // SetValue sets the value of this definition.
 //
 // See [DeclDef.Value].
 func (d DeclDef) SetValue(expr ExprAny) {
-	d.raw.value = expr.raw
+	d.Raw().value = expr.ID()
 }
 
 // Options returns the compact options list for this definition.
@@ -248,14 +257,14 @@ func (d DeclDef) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return wrapOptions(d.Context(), d.raw.options)
+	return id.NewValue(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
 // Setting it to a zero Options clears it.
 func (d DeclDef) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.Raw().options = opts.ID()
 }
 
 // Body returns this definition's body, if it has one.
@@ -264,12 +273,12 @@ func (d DeclDef) Body() DeclBody {
 		return DeclBody{}
 	}
 
-	return wrapDeclBody(d.Context(), d.raw.body)
+	return id.NewValue(d.Context(), d.Raw().body)
 }
 
 // SetBody sets the body for this definition.
 func (d DeclDef) SetBody(b DeclBody) {
-	d.raw.body = d.Context().Nodes().decls.bodies.Compress(b.raw)
+	d.Raw().body = b.ID()
 }
 
 // Semicolon returns the ending semicolon token for this definition.
@@ -279,18 +288,18 @@ func (d DeclDef) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(d.Context()), d.raw.semi)
+	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
 }
 
 // IsCorrupt reports whether or not some part of the parser decided that this
 // definition is not interpretable as any specific kind of definition.
 func (d DeclDef) IsCorrupt() bool {
-	return !d.IsZero() && d.raw.corrupt
+	return !d.IsZero() && d.Raw().corrupt
 }
 
 // the compiler to ignore it. See [DeclDef.IsCorrupt].
 func (d DeclDef) MarkCorrupt() {
-	d.raw.corrupt = true
+	d.Raw().corrupt = true
 }
 
 // AsMessage extracts the fields from this definition relevant to interpreting
@@ -523,16 +532,11 @@ func (d DeclDef) Span() report.Span {
 	)
 }
 
-func wrapDeclDef(c Context, ptr arena.Pointer[rawDeclDef]) DeclDef {
-	return DeclDef{wrapDecl(c, ptr)}
-}
-
 // Signature is a type signature of the form (types) returns (types).
 //
 // Signatures may have multiple inputs and outputs.
 type Signature struct {
 	withContext
-
 	raw *rawSignature
 }
 
@@ -548,7 +552,7 @@ func (s Signature) Returns() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(s.Context()), s.raw.returns)
+	return id.NewValue(token.Context(s.Context()), s.raw.returns)
 }
 
 // Inputs returns the input argument list for this signature.
@@ -558,7 +562,7 @@ func (s Signature) Inputs() TypeList {
 	}
 
 	return TypeList{
-		s.withContext,
+		id.WrapContext(s.Context()),
 		&s.raw.input,
 	}
 }
@@ -570,7 +574,7 @@ func (s Signature) Outputs() TypeList {
 	}
 
 	return TypeList{
-		s.withContext,
+		id.WrapContext(s.Context()),
 		&s.raw.output,
 	}
 }

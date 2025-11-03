@@ -20,7 +20,6 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -42,7 +41,44 @@ type Path struct {
 	// The layout of this type is depended on in ast2/path.go
 	withContext
 
-	raw rawPath
+	raw PathID
+}
+
+// PathID identifies a [Path] in a [Context].
+type PathID struct {
+	// This has one of the following configurations.
+	//
+	//  1. Two zero tokens. This is the zero path.
+	//
+	//  2. Two natural tokens. This means the path is all tokens between them,
+	//     including the end-point.
+	//
+	//  3. Two synthetic tokens. The former is a an actual token, whose children
+	//     are the path tokens. The latter is a packed pair of uint16s representing
+	//     the subslice of Start.children that the path uses. This is necessary to
+	//     implement Split() for synthetic paths.
+	//
+	// The case Start < 0 && End > 0 is reserved for use by pathLike. The case
+	// Start < 0 && End == 0 is currently unused.
+	start, end token.ID
+}
+
+// In wraps this ID with a context.
+func (p PathID) In(c Context) Path {
+	if p.start.IsZero() {
+		return Path{}
+	}
+
+	if p.end.IsZero() {
+		panic(fmt.Sprintf("protocompile/ast: invalid ast.Path representation %v; this is a bug in protocompile", p))
+	}
+
+	return Path{id.WrapContext(c), p}
+}
+
+// ID returns this path's ID.
+func (p Path) ID() PathID {
+	return p.raw
 }
 
 // Absolute returns whether this path starts with a dot.
@@ -53,7 +89,7 @@ func (p Path) Absolute() bool {
 
 // IsSynthetic returns whether this path was created with [Nodes.NewPath].
 func (p Path) IsSynthetic() bool {
-	return p.raw.Start < 0
+	return p.raw.start < 0
 }
 
 // ToRelative converts this path into a relative path, by deleting all leading
@@ -64,7 +100,7 @@ func (p Path) IsSynthetic() bool {
 func (p Path) ToRelative() Path {
 	for pc := range p.Components {
 		if !pc.IsEmpty() {
-			p.raw.Start = pc.name
+			p.raw.start = pc.name
 			break
 		}
 	}
@@ -114,8 +150,8 @@ func (p Path) Span() report.Span {
 	// No need to check for zero here, if p is zero both start and end will be
 	// zero tokens.
 	return report.Join(
-		id.Get(token.Context(p.Context()), p.raw.Start),
-		id.Get(token.Context(p.Context()), p.raw.End),
+		id.NewValue(token.Context(p.Context()), p.raw.start),
+		id.NewValue(token.Context(p.Context()), p.raw.end),
 	)
 }
 
@@ -128,7 +164,7 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	}
 
 	var cursor *token.Cursor
-	first := id.Get(token.Context(p.Context()), p.raw.Start)
+	first := id.NewValue(token.Context(p.Context()), p.raw.start)
 	if p.IsSynthetic() {
 		cursor = first.SyntheticChildren(p.raw.synthRange())
 	} else {
@@ -138,7 +174,7 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	var sep token.Token
 	var idx uint32
 	for tok := range cursor.Rest() {
-		if !p.IsSynthetic() && tok.ID() > p.raw.End {
+		if !p.IsSynthetic() && tok.ID() > p.raw.end {
 			// We've reached the end of the path.
 			break
 		}
@@ -215,15 +251,15 @@ func (p Path) Split(n int) (prefix, suffix Path) {
 		}
 
 		if !prev.name.IsZero() {
-			prefix.raw.End = prev.name
+			prefix.raw.end = prev.name
 		} else {
-			prefix.raw.End = prev.separator
+			prefix.raw.end = prev.separator
 		}
 
 		if !pc.separator.IsZero() {
-			suffix.raw.Start = pc.separator
+			suffix.raw.start = pc.separator
 		} else {
-			suffix.raw.Start = pc.name
+			suffix.raw.start = pc.name
 		}
 
 		break
@@ -320,16 +356,16 @@ func (p Path) isCanonical() bool {
 
 // trim discards any skippable tokens before and after the start of this path.
 func (p Path) trim() Path {
-	for p.raw.Start < p.raw.End &&
-		id.Get(token.Context(p.Context()), p.raw.Start).Kind().IsSkippable() {
-		p.raw.Start++
+	for p.raw.start < p.raw.end &&
+		id.NewValue(token.Context(p.Context()), p.raw.start).Kind().IsSkippable() {
+		p.raw.start++
 	}
-	for p.raw.Start < p.raw.End &&
-		id.Get(token.Context(p.Context()), p.raw.End).Kind().IsSkippable() {
-		p.raw.End--
+	for p.raw.start < p.raw.end &&
+		id.NewValue(token.Context(p.Context()), p.raw.end).Kind().IsSkippable() {
+		p.raw.end--
 	}
 
-	if p.raw.Start <= p.raw.End {
+	if p.raw.start <= p.raw.end {
 		return p
 	}
 
@@ -350,7 +386,7 @@ type TypePath struct {
 //
 // See [TypeAny] for more information.
 func (t TypePath) AsAny() TypeAny {
-	return newTypeAny(t.Context(), wrapPath[TypeKind](t.raw))
+	return id.NewDynValue(t.Context(), id.NewDynFromRaw[TypeAny, TypeKind](int32(t.raw.start), int32(t.raw.end)))
 }
 
 // ExprPath is a simple path reference in expression position.
@@ -367,14 +403,14 @@ type ExprPath struct {
 //
 // See [TypeAny] for more information.
 func (e ExprPath) AsAny() ExprAny {
-	return newExprAny(e.Context(), wrapPath[ExprKind](e.raw))
+	return id.NewDynValue(e.Context(), id.NewDynFromRaw[ExprAny, ExprKind](int32(e.raw.start), int32(e.raw.end)))
 }
 
 // PathComponent is a piece of a path. This is either an identifier or a nested path
 // (for an extension name).
 type PathComponent struct {
 	withContext
-	path            rawPath
+	path            PathID
 	separator, name token.ID
 	idx             uint32
 }
@@ -389,7 +425,7 @@ func (p PathComponent) IsFirst() bool {
 	if p.Path().IsSynthetic() {
 		return p.idx == 0
 	}
-	return p.separator == p.path.Start || p.name == p.path.Start
+	return p.separator == p.path.start || p.name == p.path.start
 }
 
 // IsLast returns whether this is the last component of its path.
@@ -398,7 +434,7 @@ func (p PathComponent) IsLast() bool {
 		i, j := p.path.synthRange()
 		return int(p.idx) == j-i
 	}
-	return p.separator == p.path.End || p.name == p.path.End
+	return p.separator == p.path.end || p.name == p.path.end
 }
 
 // SplitBefore splits the path that this component came from around the
@@ -418,11 +454,11 @@ func (p PathComponent) SplitBefore() (before, after Path) {
 
 	prefix, suffix := p.Path(), p.Path()
 	if p.separator.IsZero() {
-		prefix.raw.End = id.Get(token.Context(p.Context()), p.name).Prev().ID()
-		suffix.raw.Start = p.name
+		prefix.raw.end = id.NewValue(token.Context(p.Context()), p.name).Prev().ID()
+		suffix.raw.start = p.name
 	} else {
-		prefix.raw.End = id.Get(token.Context(p.Context()), p.separator).Prev().ID()
-		suffix.raw.Start = p.separator
+		prefix.raw.end = id.NewValue(token.Context(p.Context()), p.separator).Prev().ID()
+		suffix.raw.start = p.separator
 	}
 
 	return prefix.trim(), suffix.trim()
@@ -443,11 +479,11 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 
 	prefix, suffix := p.Path(), p.Path()
 	if !p.name.IsZero() {
-		prefix.raw.End = p.name
-		suffix.raw.Start = id.Get(token.Context(p.Context()), p.name).Next().ID()
+		prefix.raw.end = p.name
+		suffix.raw.start = id.NewValue(token.Context(p.Context()), p.name).Next().ID()
 	} else {
-		prefix.raw.End = p.separator
-		suffix.raw.Start = id.Get(token.Context(p.Context()), p.separator).Next().ID()
+		prefix.raw.end = p.separator
+		suffix.raw.start = id.NewValue(token.Context(p.Context()), p.separator).Next().ID()
 	}
 
 	return prefix.trim(), suffix.trim()
@@ -456,13 +492,13 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 // Separator is the token that separates this component from the previous one, if
 // any. This may be a dot or a slash.
 func (p PathComponent) Separator() token.Token {
-	return id.Get(token.Context(p.Context()), p.separator)
+	return id.NewValue(token.Context(p.Context()), p.separator)
 }
 
 // Name is the token that represents this component's name. THis is either an
 // identifier or a (...) token containing a path.
 func (p PathComponent) Name() token.Token {
-	return id.Get(token.Context(p.Context()), p.name)
+	return id.NewValue(token.Context(p.Context()), p.name)
 }
 
 // Returns whether this is an empty path component. Such components are not allowed
@@ -492,7 +528,7 @@ func (p PathComponent) AsExtension() Path {
 	// If this is a synthetic token, its children are already precisely a path,
 	// so we can use the "synthetic with children" form of Path.
 	if p.Name().IsSynthetic() {
-		return Path{p.withContext, rawPath{p.Name().ID(), 0}}
+		return Path{p.withContext, PathID{p.Name().ID(), 0}}
 	}
 
 	// Find the first and last non-skippable tokens to be the bounds.
@@ -504,7 +540,7 @@ func (p PathComponent) AsExtension() Path {
 		last = tok
 	}
 
-	return rawPath{first.ID(), last.ID()}.With(p.Context())
+	return PathID{first.ID(), last.ID()}.In(p.Context())
 }
 
 // AsIdent returns the single identifier that makes up this path component, if
@@ -512,7 +548,7 @@ func (p PathComponent) AsExtension() Path {
 //
 // May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
-	tok := id.Get(token.Context(p.Context()), p.name)
+	tok := id.NewValue(token.Context(p.Context()), p.name)
 	if tok.Kind() == token.Ident {
 		return tok
 	}
@@ -524,44 +560,11 @@ func (p PathComponent) Span() report.Span {
 	return report.Join(p.Separator(), p.Name())
 }
 
-// rawPath is the raw contents of a Path without its Context.
-//
-// This has one of the following configurations.
-//
-//  1. Two zero tokens. This is the zero path.
-//
-//  2. Two natural tokens. This means the path is all tokens between them,
-//     including the end-point.
-//
-//  3. Two synthetic tokens. The former is a an actual token, whose children
-//     are the path tokens. The latter is a packed pair of uint16s representing
-//     the subslice of Start.children that the path uses. This is necessary to
-//     implement Split() for synthetic paths.
-//
-// The case Start < 0 && End > 0 is reserved for use by pathLike. The case
-// Start < 0 && End == 0 is currently unused.
-type rawPath struct {
-	Start, End token.ID
+func (p PathID) synthRange() (start, end int) {
+	return int(^uint16(p.end)), int(^uint16(p.end >> 16))
 }
 
-func (p rawPath) synthRange() (start, end int) {
-	return int(^uint16(p.End)), int(^uint16(p.End >> 16))
-}
-
-func (p rawPath) withSynthRange(start, end int) rawPath {
-	p.End = token.ID(^uint16(start)) | (token.ID(^uint16(end)) << 16)
+func (p PathID) withSynthRange(start, end int) PathID {
+	p.end = token.ID(^uint16(start)) | (token.ID(^uint16(end)) << 16)
 	return p
-}
-
-// With wraps this rawPath with a context to present to the user.
-func (p rawPath) With(c Context) Path {
-	if p.Start.IsZero() {
-		return Path{}
-	}
-
-	if p.End.IsZero() {
-		panic(fmt.Sprintf("protocompile/ast: invalid ast.Path representation %v; this is a bug in protocompile", p))
-	}
-
-	return Path{internal.NewWith(c), p}
 }

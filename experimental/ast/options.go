@@ -16,11 +16,9 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // CompactOptions represents the collection of options attached to a [DeclAny],
@@ -30,10 +28,7 @@ import (
 //
 //	CompactOptions := `[` (option `,`?)? `]`
 //	option         := Path [:=]? Expr?
-type CompactOptions struct {
-	withContext
-	raw *rawCompactOptions
-}
+type CompactOptions id.Value[CompactOptions, Context, *rawCompactOptions]
 
 type rawCompactOptions struct {
 	brackets token.ID
@@ -53,9 +48,9 @@ func (o Option) Span() report.Span {
 }
 
 type rawOption struct {
-	path   rawPath
+	path   PathID
 	equals token.ID
-	value  rawExpr
+	value  id.Dyn[ExprAny, ExprKind]
 }
 
 // Brackets returns the token tree corresponding to the whole [...].
@@ -64,7 +59,7 @@ func (o CompactOptions) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(o.Context()), o.raw.brackets)
+	return id.NewValue(token.Context(o.Context()), o.Raw().brackets)
 }
 
 // Entries returns the sequence of options in this CompactOptions.
@@ -76,16 +71,16 @@ func (o CompactOptions) Entries() Commas[Option] {
 	return slice{
 		ctx: o.Context(),
 		SliceInserter: seq.NewSliceInserter(
-			&o.raw.options,
+			&o.Raw().options,
 			func(_ int, c withComma[rawOption]) Option {
 				return c.Value.With(o.Context())
 			},
 			func(_ int, v Option) withComma[rawOption] {
 				o.Context().Nodes().panicIfNotOurs(v.Path, v.Equals, v.Value)
 				return withComma[rawOption]{Value: rawOption{
-					path:   v.Path.raw,
+					path:   v.Path.ID(),
 					equals: v.Equals.ID(),
-					value:  v.Value.raw,
+					value:  v.Value.ID(),
 				}}
 			},
 		),
@@ -101,23 +96,13 @@ func (o CompactOptions) Span() report.Span {
 	return o.Brackets().Span()
 }
 
-func wrapOptions(c Context, ptr arena.Pointer[rawCompactOptions]) CompactOptions {
-	if ptr.Nil() {
-		return CompactOptions{}
-	}
-	return CompactOptions{
-		internal.NewWith(c),
-		c.Nodes().options.Deref(ptr),
-	}
-}
-
 func (o *rawOption) With(c Context) Option {
 	if o == nil {
 		return Option{}
 	}
 	return Option{
-		Path:   o.path.With(c),
-		Equals: id.Get(token.Context(c), o.equals),
-		Value:  newExprAny(c, o.value),
+		Path:   o.path.In(c),
+		Equals: id.NewValue(token.Context(c), o.equals),
+		Value:  id.NewDynValue(c, o.value),
 	}
 }

@@ -19,7 +19,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // ExprDict represents a an array of message fields between curly braces.
@@ -31,11 +30,22 @@ import (
 //
 // Note that if a non-[ExprField] occurs as a field of a dict, the parser will
 // rewrite it into an [ExprField] with a missing key.
-type ExprDict struct{ exprImpl[rawExprDict] }
+type ExprDict id.Value[ExprDict, Context, *rawExprDict]
 
 type rawExprDict struct {
 	braces token.ID
-	fields []withComma[arena.Pointer[rawExprField]]
+	fields []withComma[id.ID[ExprField]]
+}
+
+// AsAny type-erases this expression value.
+//
+// See [ExprAny] for more information.
+func (e ExprDict) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
+	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindDict, id.ID[ExprAny](e.ID())))
 }
 
 // Braces returns the token tree corresponding to the whole {...}.
@@ -46,29 +56,25 @@ func (e ExprDict) Braces() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(e.Context()), e.raw.braces)
+	return id.NewValue(token.Context(e.Context()), e.Raw().braces)
 }
 
 // Elements returns the sequence of expressions in this array.
 func (e ExprDict) Elements() Commas[ExprField] {
-	type slice = commas[ExprField, arena.Pointer[rawExprField]]
+	type slice = commas[ExprField, id.ID[ExprField]]
 	if e.IsZero() {
 		return slice{}
 	}
 	return slice{
 		ctx: e.Context(),
 		SliceInserter: seq.NewSliceInserter(
-			&e.raw.fields,
-			func(_ int, c withComma[arena.Pointer[rawExprField]]) ExprField {
-				return ExprField{exprImpl[rawExprField]{
-					e.withContext,
-					e.Context().Nodes().exprs.fields.Deref(c.Value),
-				}}
+			&e.Raw().fields,
+			func(_ int, c withComma[id.ID[ExprField]]) ExprField {
+				return id.NewValue(e.Context(), c.Value)
 			},
-			func(_ int, e ExprField) withComma[arena.Pointer[rawExprField]] {
+			func(_ int, e ExprField) withComma[id.ID[ExprField]] {
 				e.Context().Nodes().panicIfNotOurs(e)
-				ptr := e.Context().Nodes().exprs.fields.Compress(e.raw)
-				return withComma[arena.Pointer[rawExprField]]{Value: ptr}
+				return withComma[id.ID[ExprField]]{Value: e.ID()}
 			},
 		),
 	}
@@ -95,10 +101,10 @@ func (e ExprDict) Span() report.Span {
 //
 // Note: ExprFieldWithColon appears in ExprJuxta, the expression production that
 // is unambiguous when expressions are juxtaposed with each other.
-type ExprField struct{ exprImpl[rawExprField] }
+type ExprField id.Value[ExprField, Context, *rawExprField]
 
 type rawExprField struct {
-	key, value rawExpr
+	key, value id.Dyn[ExprAny, ExprKind]
 	colon      token.ID
 }
 
@@ -109,6 +115,17 @@ type ExprFieldArgs struct {
 	Value ExprAny
 }
 
+// AsAny type-erases this expression value.
+//
+// See [ExprAny] for more information.
+func (e ExprField) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
+	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindField, id.ID[ExprAny](e.ID())))
+}
+
 // Key returns the key for this field.
 //
 // May be zero if the parser encounters a message expression with a missing field, e.g. {foo, bar: baz}.
@@ -117,14 +134,14 @@ func (e ExprField) Key() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(e.Context(), e.raw.key)
+	return id.NewDynValue(e.Context(), e.Raw().key)
 }
 
 // SetKey sets the key for this field.
 //
 // If passed zero, this clears the key.
 func (e ExprField) SetKey(expr ExprAny) {
-	e.raw.key = expr.raw
+	e.Raw().key = expr.ID()
 }
 
 // Colon returns the colon between Key() and Value().
@@ -136,7 +153,7 @@ func (e ExprField) Colon() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(e.Context()), e.raw.colon)
+	return id.NewValue(token.Context(e.Context()), e.Raw().colon)
 }
 
 // Value returns the value for this field.
@@ -145,14 +162,14 @@ func (e ExprField) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(e.Context(), e.raw.value)
+	return id.NewDynValue(e.Context(), e.Raw().value)
 }
 
 // SetValue sets the value for this field.
 //
 // If passed zero, this clears the expression.
 func (e ExprField) SetValue(expr ExprAny) {
-	e.raw.value = expr.raw
+	e.Raw().value = expr.ID()
 }
 
 // Span implements [report.Spanner].

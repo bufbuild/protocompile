@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -40,9 +41,9 @@ func (e ExprLiteral) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(
+	return id.NewDynValue(
 		//nolint:errcheck // This assertion is required in the comment on e.Token.
 		e.Context().(Context),
-		wrapPathLike(ExprKindLiteral, e.ID()),
+		id.NewDyn(ExprKindLiteral, id.ID[ExprAny](e.ID())),
 	)
 }

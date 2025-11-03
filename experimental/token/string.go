@@ -36,7 +36,7 @@ type Escape struct {
 
 // Token returns the wrapped token value.
 func (s StringToken) Token() Token {
-	return id.Get(s.Context(), ID(s.ID()))
+	return id.NewValue(s.Context(), ID(s.ID()))
 }
 
 // Text returns the post-processed contents of this string.

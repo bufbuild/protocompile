@@ -130,14 +130,14 @@ func (c *Cursor) PeekSkippable() Token {
 		if !ok {
 			return Zero
 		}
-		return id.Get(c.Context(), tokenID)
+		return id.NewValue(c.Context(), tokenID)
 	}
 	stream := c.Context().Stream()
 	impl, ok := slicesx.Get(stream.nats, c.idx)
 	if !ok || (!c.isBackwards && impl.IsClose()) {
 		return Zero // Reached the end.
 	}
-	return id.Get(c.Context(), ID(c.idx+1))
+	return id.NewValue(c.Context(), ID(c.idx+1))
 }
 
 // PeekPrevSkippable returns the token before the current token in the sequence, if there is one.
@@ -153,7 +153,7 @@ func (c *Cursor) PeekPrevSkippable() Token {
 		if !ok {
 			return Zero
 		}
-		return id.Get(c.Context(), tokenID)
+		return id.NewValue(c.Context(), tokenID)
 	}
 	stream := c.Context().Stream()
 	idx := c.idx - 1
@@ -167,7 +167,7 @@ func (c *Cursor) PeekPrevSkippable() Token {
 	if !ok || impl.IsOpen() {
 		return Zero // Reached the start.
 	}
-	return id.Get(c.Context(), ID(idx+1))
+	return id.NewValue(c.Context(), ID(idx+1))
 }
 
 // NextSkippable returns the next skippable token in the sequence, and advances the cursor.
@@ -309,6 +309,6 @@ func (c *Cursor) SeekToEnd() (Token, report.Span) {
 		return Zero, stream.EOF()
 	}
 	// Otherwise, return end.
-	tok := id.Get(c.Context(), ID(c.idx+1))
+	tok := id.NewValue(c.Context(), ID(c.idx+1))
 	return tok, stream.Span(tok.offsets())
 }

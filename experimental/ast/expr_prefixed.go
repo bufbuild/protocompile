@@ -26,17 +26,28 @@ import (
 // # Grammar
 //
 //	ExprPrefix := `-` ExprSolo
-type ExprPrefixed struct{ exprImpl[rawExprPrefixed] }
+type ExprPrefixed id.Value[ExprPrefixed, Context, *rawExprPrefixed]
 
 type rawExprPrefixed struct {
 	prefix token.ID
-	expr   rawExpr
+	expr   id.Dyn[ExprAny, ExprKind]
 }
 
 // ExprPrefixedArgs is arguments for [Context.NewExprPrefixed].
 type ExprPrefixedArgs struct {
 	Prefix token.Token
 	Expr   ExprAny
+}
+
+// AsAny type-erases this expression value.
+//
+// See [ExprAny] for more information.
+func (e ExprPrefixed) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
+	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindPrefixed, id.ID[ExprAny](e.ID())))
 }
 
 // Prefix returns this expression's prefix.
@@ -53,7 +64,7 @@ func (e ExprPrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Get(token.Context(e.Context()), e.raw.prefix)
+	return id.NewValue(token.Context(e.Context()), e.Raw().prefix)
 }
 
 // Expr returns the expression the prefix is applied to.
@@ -62,14 +73,14 @@ func (e ExprPrefixed) Expr() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(e.Context(), e.raw.expr)
+	return id.NewDynValue(e.Context(), e.Raw().expr)
 }
 
 // SetExpr sets the expression that the prefix is applied to.
 //
 // If passed zero, this clears the expression.
 func (e ExprPrefixed) SetExpr(expr ExprAny) {
-	e.raw.expr = expr.raw
+	e.Raw().expr = expr.ID()
 }
 
 // report.Span implements [report.Spanner].

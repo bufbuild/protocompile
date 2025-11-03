@@ -55,7 +55,7 @@ type commas[T, E any] struct {
 }
 
 func (c commas[T, _]) Comma(n int) token.Token {
-	return id.Get(token.Context(c.ctx), (*c.SliceInserter.Slice)[n].Comma)
+	return id.NewValue(token.Context(c.ctx), (*c.SliceInserter.Slice)[n].Comma)
 }
 
 func (c commas[T, _]) AppendComma(value T, comma token.Token) {

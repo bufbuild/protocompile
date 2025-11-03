@@ -217,9 +217,9 @@ func (t Token) StartEnd() (start, end Token) {
 			return t, t
 		case synth.IsOpen():
 			start = t
-			end = id.Get(t.Context(), synth.otherEnd)
+			end = id.NewValue(t.Context(), synth.otherEnd)
 		case synth.IsClose():
-			start = id.Get(t.Context(), synth.otherEnd)
+			start = id.NewValue(t.Context(), synth.otherEnd)
 			end = t
 		}
 
@@ -227,9 +227,9 @@ func (t Token) StartEnd() (start, end Token) {
 		return t, t
 	case impl.IsOpen():
 		start = t
-		end = id.Get(t.Context(), t.ID()+ID(impl.Offset()))
+		end = id.NewValue(t.Context(), t.ID()+ID(impl.Offset()))
 	case impl.IsClose():
-		start = id.Get(t.Context(), t.ID()+ID(impl.Offset()))
+		start = id.NewValue(t.Context(), t.ID()+ID(impl.Offset()))
 		end = t
 	}
 
@@ -302,7 +302,7 @@ func (t Token) Children() *Cursor {
 
 	synth := t.synth()
 	if synth.IsClose() {
-		return id.Get(t.Context(), synth.otherEnd).Children()
+		return id.NewValue(t.Context(), synth.otherEnd).Children()
 	}
 	return NewSliceCursor(t.Context(), synth.children)
 }
@@ -317,7 +317,7 @@ func (t Token) SyntheticChildren(i, j int) *Cursor {
 		panic("protocompile/token: called SyntheticChildren() on non-synthetic token")
 	}
 	if synth.IsClose() {
-		return id.Get(t.Context(), synth.otherEnd).SyntheticChildren(i, j)
+		return id.NewValue(t.Context(), synth.otherEnd).SyntheticChildren(i, j)
 	}
 	return NewSliceCursor(t.Context(), synth.children[i:j])
 }
@@ -341,7 +341,7 @@ func (t Token) AsNumber() NumberToken {
 	if t.Kind() != Number {
 		return NumberToken{}
 	}
-	return id.Get(t.Context(), id.ID[NumberToken](t.ID()))
+	return id.NewValue(t.Context(), id.ID[NumberToken](t.ID()))
 }
 
 // AsString returns string information for this token.
@@ -349,7 +349,7 @@ func (t Token) AsString() StringToken {
 	if t.Kind() != String {
 		return StringToken{}
 	}
-	return id.Get(t.Context(), id.ID[StringToken](t.ID()))
+	return id.NewValue(t.Context(), id.ID[StringToken](t.ID()))
 }
 
 // String implements [strings.Stringer].
@@ -380,7 +380,7 @@ func (t Token) offsets() (start, end int) {
 		return 0, end
 	}
 
-	prev := id.Get(t.Context(), t.ID()-1)
+	prev := id.NewValue(t.Context(), t.ID()-1)
 	return int(prev.nat().end), end
 }
 

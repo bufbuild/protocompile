@@ -17,10 +17,10 @@ package ast
 
 import (
 	"iter"
-	"reflect"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -51,48 +51,17 @@ import (
 // Thus, parsing a type is greedy except when the containing production contains
 // "Type Path?" or similar, in which case parsing must be greedy up to the last
 // [Path] it would otherwise consume.
-type TypeAny struct {
-	withContext // Must be nil if raw is nil.
-
-	raw rawType
-}
-
-type rawType = pathLike[TypeKind]
-
-func newTypeAny(ctx Context, t rawType) TypeAny {
-	if ctx == nil || (t == rawType{}) {
-		return TypeAny{}
-	}
-	return TypeAny{internal.NewWith(ctx), t}
-}
-
-// Kind returns the kind of type this is. This is suitable for use
-// in a switch statement.
-func (t TypeAny) Kind() TypeKind {
-	if t.IsZero() {
-		return TypeKindInvalid
-	}
-
-	if kind, ok := t.raw.kind(); ok {
-		return kind
-	}
-	return TypeKindPath
-}
+type TypeAny id.DynValue[TypeAny, TypeKind, Context]
 
 // AsError converts a TypeAny into a TypeError, if that is the type
 // it contains.
 //
 // Otherwise, returns nil.
 func (t TypeAny) AsError() TypeError {
-	ptr := unwrapPathLike[arena.Pointer[rawTypeError]](TypeKindError, t.raw)
-	if ptr.Nil() {
+	if t.Kind() != TypeKindError {
 		return TypeError{}
 	}
-
-	return TypeError{typeImpl[rawTypeError]{
-		t.withContext,
-		t.Context().Nodes().types.errors.Deref(ptr),
-	}}
+	return id.NewValue(t.Context(), id.ID[TypeError](t.ID().Value()))
 }
 
 // AsPath converts a TypeAny into a TypePath, if that is the type
@@ -100,9 +69,12 @@ func (t TypeAny) AsError() TypeError {
 //
 // Otherwise, returns zero.
 func (t TypeAny) AsPath() TypePath {
-	path, _ := t.raw.path(t.Context())
-	// Don't need to check ok; path() returns zero on failure.
-	return TypePath{path}
+	if t.Kind() != TypeKindPath {
+		return TypePath{}
+	}
+
+	start, end := t.ID().Ints()
+	return TypePath{Path: PathID{start: token.ID(start), end: token.ID(end)}.In(t.Context())}
 }
 
 // AsPrefixed converts a TypeAny into a TypePrefix, if that is the type
@@ -110,15 +82,10 @@ func (t TypeAny) AsPath() TypePath {
 //
 // Otherwise, returns zero.
 func (t TypeAny) AsPrefixed() TypePrefixed {
-	ptr := unwrapPathLike[arena.Pointer[rawTypePrefixed]](TypeKindPrefixed, t.raw)
-	if ptr.Nil() {
+	if t.Kind() != TypeKindPrefixed {
 		return TypePrefixed{}
 	}
-
-	return TypePrefixed{typeImpl[rawTypePrefixed]{
-		t.withContext,
-		t.Context().Nodes().types.prefixes.Deref(ptr),
-	}}
+	return id.NewValue(t.Context(), id.ID[TypePrefixed](t.ID().Value()))
 }
 
 // AsGeneric converts a TypeAny into a TypePrefix, if that is the type
@@ -126,15 +93,10 @@ func (t TypeAny) AsPrefixed() TypePrefixed {
 //
 // Otherwise, returns zero.
 func (t TypeAny) AsGeneric() TypeGeneric {
-	ptr := unwrapPathLike[arena.Pointer[rawTypeGeneric]](TypeKindGeneric, t.raw)
-	if ptr.Nil() {
+	if t.Kind() != TypeKindGeneric {
 		return TypeGeneric{}
 	}
-
-	return TypeGeneric{typeImpl[rawTypeGeneric]{
-		t.withContext,
-		t.Context().Nodes().types.generics.Deref(ptr),
-	}}
+	return id.NewValue(t.Context(), id.ID[TypeGeneric](t.ID().Value()))
 }
 
 // Prefixes is an iterator over all [TypePrefix]es wrapping this type.
@@ -174,7 +136,20 @@ func (t TypeAny) Span() report.Span {
 //
 // This type is so named to adhere to package ast's naming convention. It does
 // not represent a "type error" as in "type-checking failure".
-type TypeError struct{ typeImpl[rawTypeError] }
+type TypeError id.Value[TypeError, Context, *rawTypeError]
+
+type rawTypeError report.Span
+
+// AsAny type-erases this type value.
+//
+// See [TypeAny] for more information.
+func (t TypeError) AsAny() TypeAny {
+	if t.IsZero() {
+		return TypeAny{}
+	}
+
+	return id.NewDynValue(t.Context(), id.NewDyn(TypeKindError, id.ID[TypeAny](t.ID())))
+}
 
 // Span implements [report.Spanner].
 func (t TypeError) Span() report.Span {
@@ -182,60 +157,27 @@ func (t TypeError) Span() report.Span {
 		return report.Span{}
 	}
 
-	return report.Span(*t.raw)
+	return report.Span(*t.Raw())
 }
 
-type rawTypeError report.Span
-
-// typeImpl is the common implementation of pointer-like Type* types.
-type typeImpl[Raw any] struct {
-	// NOTE: These fields are sorted by alignment.
-	withContext
-	raw *Raw
-}
-
-// AsAny type-erases this type value.
-//
-// See [TypeAny] for more information.
-func (t typeImpl[Raw]) AsAny() TypeAny {
-	if t.IsZero() {
-		return TypeAny{}
+func (TypeKind) DecodeDynID(lo, hi int32) TypeKind {
+	switch {
+	case lo == 0:
+		return TypeKindInvalid
+	case lo < 0 && hi > 0:
+		return TypeKind(^lo)
+	default:
+		return TypeKindPath
 	}
-
-	kind, arena := typeArena[Raw](&t.Context().Nodes().types)
-	return newTypeAny(t.Context(), wrapPathLike(kind, arena.Compress(t.raw)))
 }
 
-// types is storage for every kind of Type in a Context.raw.
+func (k TypeKind) EncodeDynID(value int32) (int32, int32, bool) {
+	return ^int32(k), value, true
+}
+
+// types is storage for every kind of Type in a Context.Raw().
 type types struct {
 	prefixes arena.Arena[rawTypePrefixed]
 	generics arena.Arena[rawTypeGeneric]
 	errors   arena.Arena[rawTypeError]
-}
-
-func typeArena[Raw any](types *types) (TypeKind, *arena.Arena[Raw]) {
-	var (
-		kind TypeKind
-		raw  Raw
-		// Needs to be an any because Go doesn't know that only the case below
-		// with the correct type for arena_ (if it were *arena.Arena[Raw]) will
-		// be evaluated.
-		arena_ any //nolint:revive // Named arena_ to avoid clashing with package arena.
-	)
-
-	switch any(raw).(type) {
-	case rawTypePrefixed:
-		kind = TypeKindPrefixed
-		arena_ = &types.prefixes
-	case rawTypeGeneric:
-		kind = TypeKindGeneric
-		arena_ = &types.generics
-	case rawTypeError:
-		kind = TypeKindError
-		arena_ = &types.errors
-	default:
-		panic("unknown type type " + reflect.TypeOf(raw).Name())
-	}
-
-	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }

@@ -33,7 +33,7 @@ func (c *Context) Stream() *token.Stream {
 	return c.S
 }
 
-func (c *Context) FromID(id int32, v any) any {
+func (c *Context) FromID(id uint64, v any) any {
 	return c.S.FromID(id, v)
 }
 
