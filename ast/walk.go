@@ -205,7 +205,7 @@ func (t *AncestorTracker) AsWalkOptions() []WalkOption {
 }
 
 // Path returns a slice of nodes that represents the path from the root of the
-// walk operaiton to the currently visited node. The first element in the path
+// walk operation to the currently visited node. The first element in the path
 // is the root supplied to Walk. The last element in the path is the currently
 // visited node.
 //
