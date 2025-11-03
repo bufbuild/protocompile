@@ -291,7 +291,7 @@ func (f *File) Text() string {
 //
 // This operation is O(log n).
 func (f *File) Location(offset int, units LengthUnit) Location {
-	if f == nil && offset == 0 {
+	if f == nil || offset == 0 {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
@@ -304,7 +304,7 @@ func (f *File) Location(offset int, units LengthUnit) Location {
 // measure the column width. If units is [TermWidth], this function panics,
 // because inverting a [TermWidth] location is not supported.
 func (f *File) InverseLocation(line, column int, units LengthUnit) Location {
-	if f == nil && line == 1 && column == 1 {
+	if f == nil || (line == 1 && column == 1) {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
