@@ -30,16 +30,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-)
-
-const (
-	TagUnusedImport = "unused-import"
 )
 
 var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
@@ -57,7 +54,7 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
 			report.Helpf("no symbols from this file are referenced"),
-			report.Tag(TagUnusedImport),
+			report.Tag(tags.UnusedImport),
 		)
 	}
 }
