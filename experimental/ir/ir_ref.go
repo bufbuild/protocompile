@@ -1,3 +1,17 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package ir
 
 import (
@@ -26,8 +40,8 @@ func (r Ref[T]) IsZero() bool {
 }
 
 // Get vets the value that a reference refers to.
-func GetRef[T ~id.Value[T, *Context, Raw], Raw any](base *Context, r Ref[T]) T {
-	return id.NewValue(r.Context(base), r.id)
+func GetRef[T ~id.Node[T, *Context, Raw], Raw any](base *Context, r Ref[T]) T {
+	return id.Wrap(r.Context(base), r.id)
 }
 
 // Context returns the context for this reference relative to a base context.

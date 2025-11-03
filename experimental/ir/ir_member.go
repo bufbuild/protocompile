@@ -43,25 +43,24 @@ import (
 //  3. Its _container_, i.e., the type which it is part of for the purposes of
 //     serialization. Extensions are fields of their container, but are declared
 //     within their parent.
-type Member id.Value[Member, *Context, *rawMember]
+type Member id.Node[Member, *Context, *rawMember]
 
 type rawMember struct {
-	def           id.ID[ast.DeclDef]
 	featureInfo   *rawFeatureInfo
 	elem          Ref[Type]
+	number        int32
 	extendee      id.ID[Extend]
 	fqn           intern.ID
 	name          intern.ID
-	number        int32
+	def           id.ID[ast.DeclDef]
 	parent        id.ID[Type]
 	features      id.ID[FeatureSet]
 	options       id.ID[Value]
 	oneof         int32
 	optionTargets uint32
 	jsonName      intern.ID
-
-	isGroup  bool
-	numberOk bool // An error occurred while computing the field number.
+	isGroup       bool
+	numberOk      bool
 }
 
 // IsMessageField returns whether this is a non-extension message field.
@@ -155,7 +154,7 @@ func (m Member) AST() ast.DeclDef {
 	if m.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.NewValue(m.Context().File().AST().Context(), m.Raw().def)
+	return id.Wrap(m.Context().File().AST().Context(), m.Raw().def)
 }
 
 // TypeAST returns the type AST node for this member, if known.
@@ -284,7 +283,7 @@ func (m Member) Parent() Type {
 	if m.IsZero() {
 		return Type{}
 	}
-	return id.NewValue(m.Context(), m.Raw().parent)
+	return id.Wrap(m.Context(), m.Raw().parent)
 }
 
 // Element returns the this member's element type. This is the type it is
@@ -309,7 +308,7 @@ func (m Member) Container() Type {
 		return Type{}
 	}
 
-	extends := id.NewValue(m.Context(), m.Raw().extendee)
+	extends := id.Wrap(m.Context(), m.Raw().extendee)
 	if extends.IsZero() {
 		return m.Parent()
 	}
@@ -322,7 +321,7 @@ func (m Member) Extend() Extend {
 	if m.IsZero() || m.Raw().extendee.IsZero() {
 		return Extend{}
 	}
-	return id.NewValue(m.Context(), m.Raw().extendee)
+	return id.Wrap(m.Context(), m.Raw().extendee)
 }
 
 // Oneof returns the oneof that this member is a member of.
@@ -337,7 +336,7 @@ func (m Member) Oneof() Oneof {
 
 // Options returns the options applied to this member.
 func (m Member) Options() MessageValue {
-	return id.NewValue(m.Context(), m.Raw().options).AsMessage()
+	return id.Wrap(m.Context(), m.Raw().options).AsMessage()
 }
 
 // PseudoOptions returns this member's pseudo options.
@@ -351,7 +350,7 @@ func (m Member) FeatureSet() FeatureSet {
 		return FeatureSet{}
 	}
 
-	return id.NewValue(m.Context(), m.Raw().features)
+	return id.Wrap(m.Context(), m.Raw().features)
 }
 
 // FeatureInfo returns feature definition information relating to this field
@@ -447,7 +446,7 @@ func (m Member) toRef(c *Context) Ref[Member] {
 }
 
 // Extend represents an extend block associated with some extension field.
-type Extend id.Value[Extend, *Context, *rawExtend]
+type Extend id.Node[Extend, *Context, *rawExtend]
 
 // rawExtend represents an extends block.
 //
@@ -465,7 +464,7 @@ func (e Extend) AST() ast.DeclDef {
 	if e.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.NewValue(e.Context().File().AST().Context(), e.Raw().def)
+	return id.Wrap(e.Context().File().AST().Context(), e.Raw().def)
 }
 
 // Scope returns the scope that symbol lookups in this block should be performed
@@ -502,7 +501,7 @@ func (e Extend) Parent() Type {
 	if e.IsZero() {
 		return Type{}
 	}
-	return id.NewValue(e.Context(), e.Raw().parent)
+	return id.Wrap(e.Context(), e.Raw().parent)
 }
 
 // Extensions returns the extensions declared in this block.
@@ -512,12 +511,12 @@ func (e Extend) Extensions() seq.Indexer[Member] {
 		members = e.Raw().members
 	}
 	return seq.NewFixedSlice(members, func(_ int, p id.ID[Member]) Member {
-		return id.NewValue(e.Context(), p)
+		return id.Wrap(e.Context(), p)
 	})
 }
 
 // Oneof represents a oneof within a message definition.
-type Oneof id.Value[Oneof, *Context, *rawOneof]
+type Oneof id.Node[Oneof, *Context, *rawOneof]
 
 type rawOneof struct {
 	def       id.ID[ast.DeclDef]
@@ -534,7 +533,7 @@ func (o Oneof) AST() ast.DeclDef {
 	if o.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.NewValue(o.Context().File().AST().Context(), o.Raw().def)
+	return id.Wrap(o.Context().File().AST().Context(), o.Raw().def)
 }
 
 // Name returns this oneof's declared name.
@@ -575,7 +574,7 @@ func (o Oneof) Container() Type {
 		return Type{}
 	}
 
-	return id.NewValue(o.Context(), o.Raw().container)
+	return id.Wrap(o.Context(), o.Raw().container)
 }
 
 // Index returns this oneof's index in its containing message.
@@ -591,7 +590,7 @@ func (o Oneof) Members() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		o.Raw().members,
 		func(_ int, p id.ID[Member]) Member {
-			return id.NewValue(o.Context(), p)
+			return id.Wrap(o.Context(), p)
 		},
 	)
 }
@@ -610,7 +609,7 @@ func (o Oneof) Options() MessageValue {
 	if o.IsZero() {
 		return MessageValue{}
 	}
-	return id.NewValue(o.Context(), o.Raw().options).AsMessage()
+	return id.Wrap(o.Context(), o.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this oneof.
@@ -618,20 +617,20 @@ func (o Oneof) FeatureSet() FeatureSet {
 	if o.IsZero() {
 		return FeatureSet{}
 	}
-	return id.NewValue(o.Context(), o.Raw().features)
+	return id.Wrap(o.Context(), o.Raw().features)
 }
 
 // ReservedRange is a range of reserved field or enum numbers,
 // either from a reserved or extensions declaration.
-type ReservedRange id.Value[ReservedRange, *Context, *rawReservedRange]
+type ReservedRange id.Node[ReservedRange, *Context, *rawReservedRange]
 
 type rawReservedRange struct {
-	decl        id.ID[ast.DeclRange]
-	value       id.Dyn[ast.ExprAny, ast.ExprKind]
-	first, last int32
-	options     id.ID[Value]
-	features    id.ID[FeatureSet]
-
+	value         id.Dyn[ast.ExprAny, ast.ExprKind]
+	decl          id.ID[ast.DeclRange]
+	first         int32
+	last          int32
+	options       id.ID[Value]
+	features      id.ID[FeatureSet]
 	forExtensions bool
 	rangeOk       bool
 }
@@ -642,7 +641,7 @@ func (r ReservedRange) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	return id.NewDynValue(r.Context().File().AST().Context(), r.Raw().value)
+	return id.WrapDyn(r.Context().File().AST().Context(), r.Raw().value)
 }
 
 // DeclAST returns the declaration this range came from. Multiple ranges may
@@ -652,7 +651,7 @@ func (r ReservedRange) DeclAST() ast.DeclRange {
 		return ast.DeclRange{}
 	}
 
-	return id.NewValue(r.Context().File().AST().Context(), r.Raw().decl)
+	return id.Wrap(r.Context().File().AST().Context(), r.Raw().decl)
 }
 
 // Range returns the start and end of the range.
@@ -691,7 +690,7 @@ func (r ReservedRange) Options() MessageValue {
 		return MessageValue{}
 	}
 
-	return id.NewValue(r.Context(), r.Raw().options).AsMessage()
+	return id.Wrap(r.Context(), r.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this file.
@@ -699,7 +698,7 @@ func (r ReservedRange) FeatureSet() FeatureSet {
 	if r.IsZero() {
 		return FeatureSet{}
 	}
-	return id.NewValue(r.Context(), r.Raw().features)
+	return id.Wrap(r.Context(), r.Raw().features)
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for

@@ -33,7 +33,7 @@ import (
 //
 // Note that a [File] is simply a DeclBody that is delimited by the bounds of
 // the source file, rather than braces.
-type DeclBody id.Value[DeclBody, Context, *rawDeclBody]
+type DeclBody id.Node[DeclBody, Context, *rawDeclBody]
 
 // HasBody is an AST node that contains a [Body].
 //
@@ -61,7 +61,7 @@ func (d DeclBody) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindBody, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindBody, id.ID[DeclAny](d.ID())))
 }
 
 // Braces returns this body's surrounding braces, if it has any.
@@ -70,7 +70,7 @@ func (d DeclBody) Braces() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().braces)
+	return id.Wrap(token.Context(d.Context()), d.Raw().braces)
 }
 
 // Span implements [report.Spanner].
@@ -102,7 +102,7 @@ func (d DeclBody) Decls() seq.Inserter[DeclAny] {
 		&d.Raw().kinds,
 		&d.Raw().ptrs,
 		func(_ int, k DeclKind, p id.ID[DeclAny]) DeclAny {
-			return id.NewDynValue(d.Context(), id.NewDyn(k, p))
+			return id.WrapDyn(d.Context(), id.NewDyn(k, p))
 		},
 		func(_ int, d DeclAny) (DeclKind, id.ID[DeclAny]) {
 			d.Context().Nodes().panicIfNotOurs(d)

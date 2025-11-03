@@ -36,7 +36,7 @@ import (
 //
 // Note that this grammar is highly ambiguous. TODO: document the rules under
 // which parse DeclSyntax, DeclPackage, DeclImport, and DeclRange.
-type DeclAny id.DynValue[DeclAny, DeclKind, Context]
+type DeclAny id.DynNode[DeclAny, DeclKind, Context]
 
 // AsEmpty converts a DeclAny into a DeclEmpty, if that is the declaration
 // it contains.
@@ -47,7 +47,7 @@ func (d DeclAny) AsEmpty() DeclEmpty {
 		return DeclEmpty{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclEmpty](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclEmpty](d.ID().Value()))
 }
 
 // AsSyntax converts a DeclAny into a DeclSyntax, if that is the declaration
@@ -59,7 +59,7 @@ func (d DeclAny) AsSyntax() DeclSyntax {
 		return DeclSyntax{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclSyntax](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclSyntax](d.ID().Value()))
 }
 
 // AsPackage converts a DeclAny into a DeclPackage, if that is the declaration
@@ -71,7 +71,7 @@ func (d DeclAny) AsPackage() DeclPackage {
 		return DeclPackage{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclPackage](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclPackage](d.ID().Value()))
 }
 
 // AsImport converts a DeclAny into a DeclImport, if that is the declaration
@@ -83,7 +83,7 @@ func (d DeclAny) AsImport() DeclImport {
 		return DeclImport{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclImport](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclImport](d.ID().Value()))
 }
 
 // AsDef converts a DeclAny into a DeclDef, if that is the declaration
@@ -95,7 +95,7 @@ func (d DeclAny) AsDef() DeclDef {
 		return DeclDef{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclDef](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclDef](d.ID().Value()))
 }
 
 // AsBody converts a DeclAny into a DeclBody, if that is the declaration
@@ -107,7 +107,7 @@ func (d DeclAny) AsBody() DeclBody {
 		return DeclBody{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclBody](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclBody](d.ID().Value()))
 }
 
 // AsRange converts a DeclAny into a DeclRange, if that is the declaration
@@ -119,7 +119,7 @@ func (d DeclAny) AsRange() DeclRange {
 		return DeclRange{}
 	}
 
-	return id.NewValue(d.Context(), id.ID[DeclRange](d.ID().Value()))
+	return id.Wrap(d.Context(), id.ID[DeclRange](d.ID().Value()))
 }
 
 // Span implements [report.Spanner].
@@ -138,7 +138,7 @@ func (d DeclAny) Span() report.Span {
 	)
 }
 
-func (DeclKind) DecodeDynID(lo, hi int32) DeclKind {
+func (DeclKind) DecodeDynID(lo, _ int32) DeclKind {
 	return DeclKind(lo)
 }
 

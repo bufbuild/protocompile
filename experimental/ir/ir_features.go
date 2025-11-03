@@ -24,7 +24,7 @@ import (
 
 // FeatureSet represents the Editions-mediated features of a particular
 // declaration.
-type FeatureSet id.Value[FeatureSet, *Context, *rawFeatureSet]
+type FeatureSet id.Node[FeatureSet, *Context, *rawFeatureSet]
 
 // Feature is a feature setting retrieved from a [FeatureSet].
 type Feature struct {
@@ -74,7 +74,7 @@ func (fs FeatureSet) Parent() FeatureSet {
 	if fs.IsZero() {
 		return FeatureSet{}
 	}
-	return id.NewValue(fs.Context(), fs.Raw().parent)
+	return id.Wrap(fs.Context(), fs.Raw().parent)
 }
 
 // Options returns the value of the google.protobuf.FeatureSet message that
@@ -83,7 +83,7 @@ func (fs FeatureSet) Options() MessageValue {
 	if fs.IsZero() {
 		return MessageValue{}
 	}
-	return id.NewValue(fs.Context(), fs.Raw().options).AsMessage()
+	return id.Wrap(fs.Context(), fs.Raw().options).AsMessage()
 }
 
 // Lookup looks up a feature with the given google.protobuf.FeatureSet member.
@@ -190,7 +190,7 @@ func (f FeatureInfo) Default(edition syntax.Syntax) Value {
 	if !ok && idx > 0 {
 		idx-- // We're looking for the greatest lower bound.
 	}
-	return id.NewValue(f.Context(), f.raw.defaults[idx].value)
+	return id.Wrap(f.Context(), f.raw.defaults[idx].value)
 }
 
 // Introduced returns which edition this feature is first allowed in.

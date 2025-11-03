@@ -28,7 +28,7 @@ import (
 //
 //	CompactOptions := `[` (option `,`?)? `]`
 //	option         := Path [:=]? Expr?
-type CompactOptions id.Value[CompactOptions, Context, *rawCompactOptions]
+type CompactOptions id.Node[CompactOptions, Context, *rawCompactOptions]
 
 type rawCompactOptions struct {
 	brackets token.ID
@@ -59,7 +59,7 @@ func (o CompactOptions) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(o.Context()), o.Raw().brackets)
+	return id.Wrap(token.Context(o.Context()), o.Raw().brackets)
 }
 
 // Entries returns the sequence of options in this CompactOptions.
@@ -102,7 +102,7 @@ func (o *rawOption) With(c Context) Option {
 	}
 	return Option{
 		Path:   o.path.In(c),
-		Equals: id.NewValue(token.Context(c), o.equals),
-		Value:  id.NewDynValue(c, o.value),
+		Equals: id.Wrap(token.Context(c), o.equals),
+		Value:  id.WrapDyn(c, o.value),
 	}
 }

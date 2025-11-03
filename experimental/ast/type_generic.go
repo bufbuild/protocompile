@@ -38,7 +38,7 @@ import (
 // # Grammar
 //
 //	TypeGeneric := TypePath `<` (Type `,`?`)* `>`
-type TypeGeneric id.Value[TypeGeneric, Context, *rawTypeGeneric]
+type TypeGeneric id.Node[TypeGeneric, Context, *rawTypeGeneric]
 
 type rawTypeGeneric struct {
 	path PathID
@@ -61,7 +61,7 @@ func (t TypeGeneric) AsAny() TypeAny {
 		return TypeAny{}
 	}
 
-	return id.NewDynValue(t.Context(), id.NewDyn(TypeKindGeneric, id.ID[TypeAny](t.ID())))
+	return id.WrapDyn(t.Context(), id.NewDyn(TypeKindGeneric, id.ID[TypeAny](t.ID())))
 }
 
 // Path returns the path of the "type constructor". For example, for
@@ -134,7 +134,7 @@ func (d TypeList) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.raw.brackets)
+	return id.Wrap(token.Context(d.Context()), d.raw.brackets)
 }
 
 // SetBrackets sets the token tree for the brackets wrapping the argument list.
@@ -154,7 +154,7 @@ func (d TypeList) Len() int {
 
 // At implements [seq.Indexer].
 func (d TypeList) At(n int) TypeAny {
-	return id.NewDynValue(d.Context(), d.raw.args[n].Value)
+	return id.WrapDyn(d.Context(), d.raw.args[n].Value)
 }
 
 // SetAt implements [seq.Setter].
@@ -175,7 +175,7 @@ func (d TypeList) Delete(n int) {
 
 // Comma implements [Commas].
 func (d TypeList) Comma(n int) token.Token {
-	return id.NewValue(token.Context(d.Context()), d.raw.args[n].Comma)
+	return id.Wrap(token.Context(d.Context()), d.raw.args[n].Comma)
 }
 
 // AppendComma implements [Commas].

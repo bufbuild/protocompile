@@ -46,7 +46,7 @@ import (
 // expressions are juxtaposed with each other; i.e., ExprJuxta* does not make
 // e.g. "foo {}" ambiguous between an [ExprField] or an [ExprPath] followed by
 // an [ExprDict].
-type ExprAny id.DynValue[ExprAny, ExprKind, Context]
+type ExprAny id.DynNode[ExprAny, ExprKind, Context]
 
 // AsError converts a ExprAny into a ExprError, if that is the type
 // it contains.
@@ -56,7 +56,7 @@ func (e ExprAny) AsError() ExprError {
 	if e.Kind() != ExprKindError {
 		return ExprError{}
 	}
-	return id.NewValue(e.Context(), id.ID[ExprError](e.ID().Value()))
+	return id.Wrap(e.Context(), id.ID[ExprError](e.ID().Value()))
 }
 
 // AsLiteral converts a ExprAny into a ExprLiteral, if that is the type
@@ -68,7 +68,7 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 		return ExprLiteral{}
 	}
 	return ExprLiteral{
-		Token: id.NewValue(token.Context(e.Context()), id.ID[token.Token](e.ID().Value())),
+		Token: id.Wrap(token.Context(e.Context()), id.ID[token.Token](e.ID().Value())),
 	}
 }
 
@@ -81,7 +81,7 @@ func (e ExprAny) AsPath() ExprPath {
 		return ExprPath{}
 	}
 
-	start, end := e.ID().Ints()
+	start, end := e.ID().Raw()
 	return ExprPath{Path: PathID{start: token.ID(start), end: token.ID(end)}.In(e.Context())}
 }
 
@@ -93,7 +93,7 @@ func (e ExprAny) AsPrefixed() ExprPrefixed {
 	if e.Kind() != ExprKindPrefixed {
 		return ExprPrefixed{}
 	}
-	return id.NewValue(e.Context(), id.ID[ExprPrefixed](e.ID().Value()))
+	return id.Wrap(e.Context(), id.ID[ExprPrefixed](e.ID().Value()))
 }
 
 // AsRange converts a ExprAny into a ExprRange, if that is the type
@@ -104,7 +104,7 @@ func (e ExprAny) AsRange() ExprRange {
 	if e.Kind() != ExprKindRange {
 		return ExprRange{}
 	}
-	return id.NewValue(e.Context(), id.ID[ExprRange](e.ID().Value()))
+	return id.Wrap(e.Context(), id.ID[ExprRange](e.ID().Value()))
 }
 
 // AsArray converts a ExprAny into a ExprArray, if that is the type
@@ -115,7 +115,7 @@ func (e ExprAny) AsArray() ExprArray {
 	if e.Kind() != ExprKindArray {
 		return ExprArray{}
 	}
-	return id.NewValue(e.Context(), id.ID[ExprArray](e.ID().Value()))
+	return id.Wrap(e.Context(), id.ID[ExprArray](e.ID().Value()))
 }
 
 // AsDict converts a ExprAny into a ExprDict, if that is the type
@@ -126,7 +126,7 @@ func (e ExprAny) AsDict() ExprDict {
 	if e.Kind() != ExprKindDict {
 		return ExprDict{}
 	}
-	return id.NewValue(e.Context(), id.ID[ExprDict](e.ID().Value()))
+	return id.Wrap(e.Context(), id.ID[ExprDict](e.ID().Value()))
 }
 
 // AsField converts a ExprAny into a ExprKV, if that is the type
@@ -137,7 +137,7 @@ func (e ExprAny) AsField() ExprField {
 	if e.Kind() != ExprKindField {
 		return ExprField{}
 	}
-	return id.NewValue(e.Context(), id.ID[ExprField](e.ID().Value()))
+	return id.Wrap(e.Context(), id.ID[ExprField](e.ID().Value()))
 }
 
 // Span implements [report.Spanner].
@@ -157,7 +157,7 @@ func (e ExprAny) Span() report.Span {
 }
 
 // ExprError represents an unrecoverable parsing error in an expression context.
-type ExprError id.Value[ExprError, Context, *rawExprError]
+type ExprError id.Node[ExprError, Context, *rawExprError]
 
 type rawExprError report.Span
 
@@ -169,7 +169,7 @@ func (e ExprError) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindError, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindError, id.ID[ExprAny](e.ID())))
 }
 
 // Span implements [report.Spanner].

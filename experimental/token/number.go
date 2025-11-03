@@ -25,11 +25,11 @@ import (
 )
 
 // NumberToken provides access to detailed information about a [Number].
-type NumberToken id.Value[NumberToken, Context, *tokenmeta.Number]
+type NumberToken id.Node[NumberToken, Context, *tokenmeta.Number]
 
 // Token returns the wrapped token value.
 func (n NumberToken) Token() Token {
-	return id.NewValue(n.Context(), ID(n.ID()))
+	return id.Wrap(n.Context(), ID(n.ID()))
 }
 
 // Base returns this number's base.

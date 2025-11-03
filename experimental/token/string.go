@@ -22,7 +22,7 @@ import (
 )
 
 // StringToken provides access to detailed information about a [String].
-type StringToken id.Value[StringToken, Context, *tokenmeta.String]
+type StringToken id.Node[StringToken, Context, *tokenmeta.String]
 
 // Escape is an escape inside of a [StringToken]. See [StringToken.Escapes].
 type Escape struct {
@@ -36,7 +36,7 @@ type Escape struct {
 
 // Token returns the wrapped token value.
 func (s StringToken) Token() Token {
-	return id.NewValue(s.Context(), ID(s.ID()))
+	return id.Wrap(s.Context(), ID(s.ID()))
 }
 
 // Text returns the post-processed contents of this string.

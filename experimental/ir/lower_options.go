@@ -388,7 +388,7 @@ func (r optionRef) resolve() {
 		*r.raw = newMessage(r.Context, r.field.toRef(r.Context)).AsValue().ID()
 	}
 
-	current := id.NewValue(r.Context, *r.raw)
+	current := id.Wrap(r.Context, *r.raw)
 	field := current.Field()
 	var path ast.Path
 	var raw *id.ID[Value]
@@ -526,7 +526,7 @@ func (r optionRef) resolve() {
 			raw = parent.insert(field)
 		}
 		if !raw.IsZero() {
-			value := id.NewValue(r.Context, *raw)
+			value := id.Wrap(r.Context, *raw)
 			switch {
 			case field.IsRepeated():
 				break // Handled below.
@@ -616,7 +616,7 @@ func (r optionRef) resolve() {
 	}
 
 	if !raw.IsZero() {
-		args.target = id.NewValue(r.Context, *raw)
+		args.target = id.Wrap(r.Context, *raw)
 	}
 
 	v := evaluator.eval(args)

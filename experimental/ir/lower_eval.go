@@ -680,7 +680,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		if slot.IsZero() {
 			copied.target = Value{}
 		} else {
-			value := id.NewValue(e.Context, *slot)
+			value := id.Wrap(e.Context, *slot)
 
 			switch {
 			case field.IsRepeated():

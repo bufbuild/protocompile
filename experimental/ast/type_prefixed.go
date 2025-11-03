@@ -35,7 +35,7 @@ import (
 // of a [TypeGeneric]'s brackets or a [Signature]'s method parameters.
 //
 // Also, the `stream` prefix may only occur inside of a [Signature].
-type TypePrefixed id.Value[TypePrefixed, Context, *rawTypePrefixed]
+type TypePrefixed id.Node[TypePrefixed, Context, *rawTypePrefixed]
 
 type rawTypePrefixed struct {
 	prefix token.ID
@@ -56,7 +56,7 @@ func (t TypePrefixed) AsAny() TypeAny {
 		return TypeAny{}
 	}
 
-	return id.NewDynValue(t.Context(), id.NewDyn(TypeKindPrefixed, id.ID[TypeAny](t.ID())))
+	return id.WrapDyn(t.Context(), id.NewDyn(TypeKindPrefixed, id.ID[TypeAny](t.ID())))
 }
 
 // Prefix extracts the modifier out of this type.
@@ -73,7 +73,7 @@ func (t TypePrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(t.Context()), t.Raw().prefix)
+	return id.Wrap(token.Context(t.Context()), t.Raw().prefix)
 }
 
 // Type returns the type that is being prefixed.
@@ -82,7 +82,7 @@ func (t TypePrefixed) Type() TypeAny {
 		return TypeAny{}
 	}
 
-	return id.NewDynValue(t.Context(), t.Raw().ty)
+	return id.WrapDyn(t.Context(), t.Raw().ty)
 }
 
 // SetType sets the expression that is being prefixed.

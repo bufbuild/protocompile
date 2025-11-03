@@ -28,7 +28,7 @@ import (
 // # Grammar
 //
 //	DeclRange := (`extensions` | `reserved`) (Expr `,`)* Expr? CompactOptions? `;`?
-type DeclRange id.Value[DeclRange, Context, *rawDeclRange]
+type DeclRange id.Node[DeclRange, Context, *rawDeclRange]
 
 type rawDeclRange struct {
 	keyword token.ID
@@ -51,7 +51,7 @@ func (d DeclRange) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindRange, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindRange, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this range.
@@ -65,7 +65,7 @@ func (d DeclRange) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // IsExtensions checks whether this is an extension range.
@@ -90,7 +90,7 @@ func (d DeclRange) Ranges() Commas[ExprAny] {
 		SliceInserter: seq.NewSliceInserter(
 			&d.Raw().args,
 			func(_ int, c withComma[id.Dyn[ExprAny, ExprKind]]) ExprAny {
-				return id.NewDynValue(d.Context(), c.Value)
+				return id.WrapDyn(d.Context(), c.Value)
 			},
 			func(_ int, e ExprAny) withComma[id.Dyn[ExprAny, ExprKind]] {
 				d.Context().Nodes().panicIfNotOurs(e)
@@ -106,7 +106,7 @@ func (d DeclRange) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return id.NewValue(d.Context(), d.Raw().options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this definition.
@@ -124,7 +124,7 @@ func (d DeclRange) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // Span implements [report.Spanner].

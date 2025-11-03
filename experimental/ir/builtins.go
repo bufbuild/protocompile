@@ -223,11 +223,11 @@ func resolveBuiltins(c *Context) {
 }
 
 // makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.
-func makeBuiltinWrapper[T ~id.Value[T, *Context, Raw], Raw any](
+func makeBuiltinWrapper[T ~id.Node[T, *Context, Raw], Raw any](
 	c *Context,
 ) func(arena.Untyped, reflect.Value) {
 	return func(p arena.Untyped, out reflect.Value) {
-		x := id.NewValue(c, id.ID[T](p))
+		x := id.Wrap(c, id.ID[T](p))
 		out.Set(reflect.ValueOf(x))
 	}
 }

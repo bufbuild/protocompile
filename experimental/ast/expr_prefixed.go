@@ -26,7 +26,7 @@ import (
 // # Grammar
 //
 //	ExprPrefix := `-` ExprSolo
-type ExprPrefixed id.Value[ExprPrefixed, Context, *rawExprPrefixed]
+type ExprPrefixed id.Node[ExprPrefixed, Context, *rawExprPrefixed]
 
 type rawExprPrefixed struct {
 	prefix token.ID
@@ -47,7 +47,7 @@ func (e ExprPrefixed) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindPrefixed, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindPrefixed, id.ID[ExprAny](e.ID())))
 }
 
 // Prefix returns this expression's prefix.
@@ -64,7 +64,7 @@ func (e ExprPrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(e.Context()), e.Raw().prefix)
+	return id.Wrap(token.Context(e.Context()), e.Raw().prefix)
 }
 
 // Expr returns the expression the prefix is applied to.
@@ -73,7 +73,7 @@ func (e ExprPrefixed) Expr() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), e.Raw().expr)
+	return id.WrapDyn(e.Context(), e.Raw().expr)
 }
 
 // SetExpr sets the expression that the prefix is applied to.

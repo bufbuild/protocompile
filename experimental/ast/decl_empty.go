@@ -25,7 +25,7 @@ import (
 // # Grammar
 //
 //	DeclEmpty := `;`
-type DeclEmpty id.Value[DeclEmpty, Context, *rawDeclEmpty]
+type DeclEmpty id.Node[DeclEmpty, Context, *rawDeclEmpty]
 
 type rawDeclEmpty struct {
 	semi token.ID
@@ -38,7 +38,7 @@ func (d DeclEmpty) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindEmpty, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindEmpty, id.ID[DeclAny](d.ID())))
 }
 
 // Semicolon returns this field's ending semicolon.
@@ -49,7 +49,7 @@ func (d DeclEmpty) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // Span implements [report.Spanner].

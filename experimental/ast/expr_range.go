@@ -27,7 +27,7 @@ import (
 // # Grammar
 //
 //	ExprRange := ExprPrefixed `to` ExprOp
-type ExprRange id.Value[ExprRange, Context, *rawExprRange]
+type ExprRange id.Node[ExprRange, Context, *rawExprRange]
 
 type rawExprRange struct {
 	start, end id.Dyn[ExprAny, ExprKind]
@@ -49,7 +49,7 @@ func (e ExprRange) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindRange, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindRange, id.ID[ExprAny](e.ID())))
 }
 
 // Bounds returns this range's bounds. These are inclusive bounds.
@@ -58,7 +58,7 @@ func (e ExprRange) Bounds() (start, end ExprAny) {
 		return ExprAny{}, ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), e.Raw().start), id.NewDynValue(e.Context(), e.Raw().end)
+	return id.WrapDyn(e.Context(), e.Raw().start), id.WrapDyn(e.Context(), e.Raw().end)
 }
 
 // SetBounds set the expressions for this range's bounds.
@@ -75,7 +75,7 @@ func (e ExprRange) Keyword() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(e.Context()), e.Raw().to)
+	return id.Wrap(token.Context(e.Context()), e.Raw().to)
 }
 
 // Span implements [report.Spanner].

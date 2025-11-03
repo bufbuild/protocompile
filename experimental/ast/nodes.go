@@ -47,7 +47,7 @@ func (n *Nodes) Root() File {
 	// there is always a DeclBody at index 0, which corresponds to the whole
 	// file. We use a 1 here, not a 0, because arena.Arena's indices are
 	// off-by-one to accommodate the zero representation.
-	return File{id.NewValue(n.Context, id.ID[DeclBody](1))}
+	return File{id.Wrap(n.Context, id.ID[DeclBody](1))}
 }
 
 // NewPathComponent returns a new path component with the given separator and
@@ -158,7 +158,7 @@ func (n *Nodes) NewPath(components ...PathComponent) Path {
 func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 	n.panicIfNotOurs(semicolon)
 
-	decl := id.NewValue(n.Context, id.ID[DeclEmpty](n.decls.empties.NewCompressed(rawDeclEmpty{
+	decl := id.Wrap(n.Context, id.ID[DeclEmpty](n.decls.empties.NewCompressed(rawDeclEmpty{
 		semi: semicolon.ID(),
 	})))
 
@@ -169,7 +169,7 @@ func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	n.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Options, args.Semicolon)
 
-	return id.NewValue(n.Context, id.ID[DeclSyntax](n.decls.syntaxes.NewCompressed(rawDeclSyntax{
+	return id.Wrap(n.Context, id.ID[DeclSyntax](n.decls.syntaxes.NewCompressed(rawDeclSyntax{
 		keyword: args.Keyword.ID(),
 		equals:  args.Equals.ID(),
 		value:   args.Value.ID(),
@@ -182,7 +182,7 @@ func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	n.panicIfNotOurs(args.Keyword, args.Path, args.Options, args.Semicolon)
 
-	return id.NewValue(n.Context, id.ID[DeclPackage](n.decls.packages.NewCompressed(rawDeclPackage{
+	return id.Wrap(n.Context, id.ID[DeclPackage](n.decls.packages.NewCompressed(rawDeclPackage{
 		keyword: args.Keyword.ID(),
 		path:    args.Path.raw,
 		options: args.Options.ID(),
@@ -194,7 +194,7 @@ func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 func (n *Nodes) NewDeclImport(args DeclImportArgs) DeclImport {
 	n.panicIfNotOurs(args.Keyword, args.ImportPath, args.Options, args.Semicolon)
 
-	return id.NewValue(n.Context, id.ID[DeclImport](n.decls.imports.NewCompressed(rawDeclImport{
+	return id.Wrap(n.Context, id.ID[DeclImport](n.decls.imports.NewCompressed(rawDeclImport{
 		keyword: args.Keyword.ID(),
 		modifiers: slices.Collect(iterx.Map(
 			slices.Values(args.Modifiers),
@@ -235,7 +235,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 		}
 	}
 
-	return id.NewValue(n.Context, id.ID[DeclDef](n.decls.defs.NewCompressed(raw)))
+	return id.Wrap(n.Context, id.ID[DeclDef](n.decls.defs.NewCompressed(raw)))
 }
 
 // NewDeclBody creates a new DeclBody node.
@@ -244,7 +244,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 func (n *Nodes) NewDeclBody(braces token.Token) DeclBody {
 	n.panicIfNotOurs(braces)
 
-	return id.NewValue(n.Context, id.ID[DeclBody](n.decls.bodies.NewCompressed(rawDeclBody{
+	return id.Wrap(n.Context, id.ID[DeclBody](n.decls.bodies.NewCompressed(rawDeclBody{
 		braces: braces.ID(),
 	})))
 }
@@ -255,7 +255,7 @@ func (n *Nodes) NewDeclBody(braces token.Token) DeclBody {
 func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 	n.panicIfNotOurs(args.Keyword, args.Options, args.Semicolon)
 
-	return id.NewValue(n.Context, id.ID[DeclRange](n.decls.ranges.NewCompressed(rawDeclRange{
+	return id.Wrap(n.Context, id.ID[DeclRange](n.decls.ranges.NewCompressed(rawDeclRange{
 		keyword: args.Keyword.ID(),
 		options: args.Options.ID(),
 		semi:    args.Semicolon.ID(),
@@ -266,7 +266,7 @@ func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 func (n *Nodes) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 	n.panicIfNotOurs(args.Prefix, args.Expr)
 
-	return id.NewValue(n.Context, id.ID[ExprPrefixed](n.exprs.prefixes.NewCompressed(rawExprPrefixed{
+	return id.Wrap(n.Context, id.ID[ExprPrefixed](n.exprs.prefixes.NewCompressed(rawExprPrefixed{
 		prefix: args.Prefix.ID(),
 		expr:   args.Expr.ID(),
 	})))
@@ -276,7 +276,7 @@ func (n *Nodes) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 func (n *Nodes) NewExprRange(args ExprRangeArgs) ExprRange {
 	n.panicIfNotOurs(args.Start, args.To, args.End)
 
-	return id.NewValue(n.Context, id.ID[ExprRange](n.exprs.ranges.NewCompressed(rawExprRange{
+	return id.Wrap(n.Context, id.ID[ExprRange](n.exprs.ranges.NewCompressed(rawExprRange{
 		to:    args.To.ID(),
 		start: args.Start.ID(),
 		end:   args.End.ID(),
@@ -289,7 +289,7 @@ func (n *Nodes) NewExprRange(args ExprRangeArgs) ExprRange {
 func (n *Nodes) NewExprArray(brackets token.Token) ExprArray {
 	n.panicIfNotOurs(brackets)
 
-	return id.NewValue(n.Context, id.ID[ExprArray](n.exprs.arrays.NewCompressed(rawExprArray{
+	return id.Wrap(n.Context, id.ID[ExprArray](n.exprs.arrays.NewCompressed(rawExprArray{
 		brackets: brackets.ID(),
 	})))
 }
@@ -300,7 +300,7 @@ func (n *Nodes) NewExprArray(brackets token.Token) ExprArray {
 func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 	n.panicIfNotOurs(braces)
 
-	return id.NewValue(n.Context, id.ID[ExprDict](n.exprs.dicts.NewCompressed(rawExprDict{
+	return id.Wrap(n.Context, id.ID[ExprDict](n.exprs.dicts.NewCompressed(rawExprDict{
 		braces: braces.ID(),
 	})))
 }
@@ -309,7 +309,7 @@ func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 	n.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
-	return id.NewValue(n.Context, id.ID[ExprField](n.exprs.fields.NewCompressed(rawExprField{
+	return id.Wrap(n.Context, id.ID[ExprField](n.exprs.fields.NewCompressed(rawExprField{
 		key:   args.Key.ID(),
 		colon: args.Colon.ID(),
 		value: args.Value.ID(),
@@ -320,7 +320,7 @@ func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 func (n *Nodes) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 	n.panicIfNotOurs(args.Prefix, args.Type)
 
-	return id.NewValue(n.Context, id.ID[TypePrefixed](n.types.prefixes.NewCompressed(rawTypePrefixed{
+	return id.Wrap(n.Context, id.ID[TypePrefixed](n.types.prefixes.NewCompressed(rawTypePrefixed{
 		prefix: args.Prefix.ID(),
 		ty:     args.Type.ID(),
 	})))
@@ -332,7 +332,7 @@ func (n *Nodes) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	n.panicIfNotOurs(args.Path, args.AngleBrackets)
 
-	return id.NewValue(n.Context, id.ID[TypeGeneric](n.types.generics.NewCompressed(rawTypeGeneric{
+	return id.Wrap(n.Context, id.ID[TypeGeneric](n.types.generics.NewCompressed(rawTypeGeneric{
 		path: args.Path.raw,
 		args: rawTypeList{brackets: args.AngleBrackets.ID()},
 	})))
@@ -342,7 +342,7 @@ func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 	n.panicIfNotOurs(brackets)
 
-	return id.NewValue(n.Context, id.ID[CompactOptions](n.options.NewCompressed(rawCompactOptions{
+	return id.Wrap(n.Context, id.ID[CompactOptions](n.options.NewCompressed(rawCompactOptions{
 		brackets: brackets.ID(),
 	})))
 }

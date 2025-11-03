@@ -36,7 +36,7 @@ import (
 
 // Value is an evaluated expression, corresponding to an option in a Protobuf
 // file.
-type Value id.Value[Value, *Context, *rawValue]
+type Value id.Node[Value, *Context, *rawValue]
 
 // rawValue is a [rawValueBits] with field information attached to it.
 type rawValue struct {
@@ -123,7 +123,7 @@ func (v Value) OptionSpan() report.Spanner {
 	}
 
 	c := v.Context().File().AST().Context()
-	expr := id.NewDynValue(c, v.Raw().exprs[0])
+	expr := id.WrapDyn(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field
 	}
@@ -141,7 +141,7 @@ func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
 
 	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) report.Spanner {
 		c := v.Context().File().AST().Context()
-		expr := id.NewDynValue(c, p)
+		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field
 		}
@@ -159,7 +159,7 @@ func (v Value) ValueAST() ast.ExprAny {
 	}
 
 	c := v.Context().File().AST().Context()
-	expr := id.NewDynValue(c, v.Raw().exprs[0])
+	expr := id.WrapDyn(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field.Value()
 	}
@@ -179,7 +179,7 @@ func (v Value) ValueASTs() seq.Indexer[ast.ExprAny] {
 
 	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) ast.ExprAny {
 		c := v.Context().File().AST().Context()
-		expr := id.NewDynValue(c, p)
+		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Value()
 		}
@@ -195,7 +195,7 @@ func (v Value) KeyAST() ast.ExprAny {
 	}
 
 	c := v.Context().File().AST().Context()
-	expr := id.NewDynValue(c, v.Raw().exprs[0])
+	expr := id.WrapDyn(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field.Key()
 	}
@@ -216,7 +216,7 @@ func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 
 	return seq.NewFixedSlice(slice, func(n int, p id.Dyn[ast.ExprAny, ast.ExprKind]) ast.ExprAny {
 		c := v.Context().File().AST().Context()
-		expr := id.NewDynValue(c, p)
+		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Key()
 		}
@@ -536,7 +536,7 @@ func (e Element) AST() ast.ExprAny {
 
 	idx := e.ValueNodeIndex()
 	c := e.Context().File().AST().Context()
-	expr := id.NewDynValue(c, e.value.Raw().exprs[idx])
+	expr := id.WrapDyn(c, e.value.Raw().exprs[idx])
 	if field := expr.AsField(); !field.IsZero() {
 		expr = field.Value()
 	}
@@ -692,12 +692,12 @@ func (e Element) AsMessage() MessageValue {
 		return MessageValue{}
 	}
 
-	return id.NewValue(e.Context(), id.ID[MessageValue](e.bits))
+	return id.Wrap(e.Context(), id.ID[MessageValue](e.bits))
 }
 
 // MessageValue is a message literal, represented as a list of ordered
 // key-value pairs.
-type MessageValue id.Value[MessageValue, *Context, *rawMessageValue]
+type MessageValue id.Node[MessageValue, *Context, *rawMessageValue]
 
 type rawMessageValue struct {
 	byName   intern.Map[uint32]
@@ -728,7 +728,7 @@ func (v MessageValue) AsValue() Value {
 	if v.IsZero() {
 		return Value{}
 	}
-	return id.NewValue(v.Context(), v.Raw().self)
+	return id.Wrap(v.Context(), v.Raw().self)
 }
 
 // Type returns this value's message type.
@@ -761,7 +761,7 @@ func (v MessageValue) Concrete() MessageValue {
 		return v
 	}
 
-	return id.NewValue(v.Context(), v.Raw().concrete)
+	return id.Wrap(v.Context(), v.Raw().concrete)
 }
 
 // Field returns the field corresponding with the given member, if it is set.
@@ -780,7 +780,7 @@ func (v MessageValue) Field(field Member) Value {
 		return Value{}
 	}
 
-	return id.NewValue(v.Context(), v.Raw().entries[idx])
+	return id.Wrap(v.Context(), v.Raw().entries[idx])
 }
 
 // Fields yields the fields within this message literal, in insertion order.
@@ -791,7 +791,7 @@ func (v MessageValue) Fields() iter.Seq[Value] {
 		}
 
 		for _, p := range v.Raw().entries {
-			v := id.NewValue(v.Context(), p)
+			v := id.Wrap(v.Context(), p)
 			if !v.IsZero() && !yield(v) {
 				return
 			}
@@ -810,8 +810,8 @@ func (v MessageValue) pseudoFields() PseudoFields {
 	}
 
 	return PseudoFields{
-		Default:  id.NewValue(v.Context(), v.Raw().pseudo.defaultValue),
-		JSONName: id.NewValue(v.Context(), v.Raw().pseudo.jsonName),
+		Default:  id.Wrap(v.Context(), v.Raw().pseudo.defaultValue),
+		JSONName: id.Wrap(v.Context(), v.Raw().pseudo.jsonName),
 	}
 }
 
@@ -949,11 +949,9 @@ type scalar interface {
 
 // newZeroScalar constructs a new scalar value.
 func newZeroScalar(c *Context, field Ref[Member]) Value {
-	v := c.arenas.values.NewCompressed(rawValue{
+	return id.Wrap(c, id.ID[Value](c.arenas.values.NewCompressed(rawValue{
 		field: field,
-	})
-
-	return id.NewValueFromRaw(c, id.ID[Value](v), c.arenas.values.Deref(v))
+	})))
 }
 
 // appendRaw appends a scalar value to the given array value.
@@ -977,7 +975,7 @@ func appendMessage(array Value) MessageValue {
 	slice := array.slice()
 	*slice = append(*slice, rawValueBits(v))
 
-	return id.NewValue(array.Context(), v)
+	return id.Wrap(array.Context(), v)
 }
 
 // newMessage constructs a new message value.
@@ -992,7 +990,7 @@ func newMessage(c *Context, field Ref[Member]) MessageValue {
 		byName: make(intern.Map[uint32]),
 	}))
 
-	msg := id.NewValue(c, raw)
+	msg := id.Wrap(c, raw)
 	msg.Raw().self = id.ID[Value](c.arenas.values.NewCompressed(rawValue{
 		field: field,
 		bits:  rawValueBits(raw),

@@ -43,7 +43,7 @@ func (r TagRange) AsMember() Member {
 	if r.IsZero() || !r.raw.isMember {
 		return Member{}
 	}
-	return id.NewValue(r.Context(), id.ID[Member](r.raw.ptr))
+	return id.Wrap(r.Context(), id.ID[Member](r.raw.ptr))
 }
 
 // AsReserved returns the [ReservedRange] this range points to, or zero if it
@@ -52,11 +52,11 @@ func (r TagRange) AsReserved() ReservedRange {
 	if r.IsZero() || r.raw.isMember {
 		return ReservedRange{}
 	}
-	return id.NewValue(r.Context(), id.ID[ReservedRange](r.raw.ptr))
+	return id.Wrap(r.Context(), id.ID[ReservedRange](r.raw.ptr))
 }
 
 // Type is a Protobuf message field type.
-type Type id.Value[Type, *Context, *rawType]
+type Type id.Node[Type, *Context, *rawType]
 
 type rawType struct {
 	nested          []id.ID[Type]
@@ -129,7 +129,7 @@ func PredeclaredType(n predeclared.Name) Type {
 	if !n.IsScalar() {
 		return Type{}
 	}
-	return id.NewValue(primitiveCtx, id.ID[Type](n))
+	return id.Wrap(primitiveCtx, id.ID[Type](n))
 }
 
 // AST returns the declaration for this type, if known.
@@ -140,7 +140,7 @@ func (t Type) AST() ast.DeclDef {
 	if t.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.NewValue(t.Context().File().AST().Context(), t.Raw().def)
+	return id.Wrap(t.Context().File().AST().Context(), t.Raw().def)
 }
 
 // IsPredeclared returns whether this is a predeclared type.
@@ -284,7 +284,7 @@ func (t Type) Parent() Type {
 	if t.IsZero() {
 		return Type{}
 	}
-	return id.NewValue(t.Context(), t.Raw().parent)
+	return id.Wrap(t.Context(), t.Raw().parent)
 }
 
 // Nested returns those types which are nested within this one.
@@ -298,7 +298,7 @@ func (t Type) Nested() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
 		slice,
 		func(_ int, p id.ID[Type]) Type {
-			return id.NewValue(t.Context(), p)
+			return id.Wrap(t.Context(), p)
 		},
 	)
 }
@@ -308,7 +308,7 @@ func (t Type) MapField() Member {
 	if t.IsZero() {
 		return Member{}
 	}
-	return id.NewValue(t.Context(), t.Raw().mapEntryOf)
+	return id.Wrap(t.Context(), t.Raw().mapEntryOf)
 }
 
 // EntryFields returns the key and value fields for this map entry type.
@@ -317,7 +317,7 @@ func (t Type) EntryFields() (key, value Member) {
 		return Member{}, Member{}
 	}
 
-	return id.NewValue(t.Context(), t.Raw().members[0]), id.NewValue(t.Context(), t.Raw().members[1])
+	return id.Wrap(t.Context(), t.Raw().members[0]), id.Wrap(t.Context(), t.Raw().members[1])
 }
 
 // Members returns the members of this type.
@@ -331,7 +331,7 @@ func (t Type) Members() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		slice,
 		func(_ int, p id.ID[Member]) Member {
-			return id.NewValue(t.Context(), p)
+			return id.Wrap(t.Context(), p)
 		},
 	)
 }
@@ -355,7 +355,7 @@ func (t Type) MemberByInternedName(name intern.ID) Member {
 	if t.IsZero() {
 		return Member{}
 	}
-	return id.NewValue(t.Context(), t.Raw().memberByName()[name])
+	return id.Wrap(t.Context(), t.Raw().memberByName()[name])
 }
 
 // Ranges returns an iterator over [TagRange]s that contain number.
@@ -393,7 +393,7 @@ func (t Type) MemberByNumber(number int32) Member {
 func (t Type) makeMembersByName() intern.Map[id.ID[Member]] {
 	table := make(intern.Map[id.ID[Member]], t.Members().Len())
 	for _, p := range t.Raw().members[:t.Raw().extnsStart] {
-		field := id.NewValue(t.Context(), p)
+		field := id.Wrap(t.Context(), p)
 		table[field.InternedName()] = p
 	}
 	return table
@@ -408,7 +408,7 @@ func (t Type) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		slice,
 		func(_ int, p id.ID[Member]) Member {
-			return id.NewValue(t.Context(), p)
+			return id.Wrap(t.Context(), p)
 		},
 	)
 }
@@ -419,7 +419,7 @@ func (t Type) Extensions() seq.Indexer[Member] {
 func (t Type) AllRanges() seq.Indexer[ReservedRange] {
 	slice := t.Raw().ranges
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
-		return id.NewValue(t.Context(), p)
+		return id.Wrap(t.Context(), p)
 	})
 }
 
@@ -429,7 +429,7 @@ func (t Type) AllRanges() seq.Indexer[ReservedRange] {
 func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
 	slice := t.Raw().ranges[:t.Raw().rangesExtnStart]
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
-		return id.NewValue(t.Context(), p)
+		return id.Wrap(t.Context(), p)
 	})
 }
 
@@ -437,7 +437,7 @@ func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
 func (t Type) ExtensionRanges() seq.Indexer[ReservedRange] {
 	slice := t.Raw().ranges[t.Raw().rangesExtnStart:]
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
-		return id.NewValue(t.Context(), p)
+		return id.Wrap(t.Context(), p)
 	})
 }
 
@@ -456,7 +456,7 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 	return seq.NewFixedSlice(
 		t.Raw().oneofs,
 		func(_ int, p id.ID[Oneof]) Oneof {
-			return id.NewValue(t.Context(), p)
+			return id.Wrap(t.Context(), p)
 		},
 	)
 }
@@ -466,14 +466,14 @@ func (t Type) Extends() seq.Indexer[Extend] {
 	return seq.NewFixedSlice(
 		t.Raw().extends,
 		func(_ int, p id.ID[Extend]) Extend {
-			return id.NewValue(t.Context(), p)
+			return id.Wrap(t.Context(), p)
 		},
 	)
 }
 
 // Options returns the options applied to this type.
 func (t Type) Options() MessageValue {
-	return id.NewValue(t.Context(), t.Raw().options).AsMessage()
+	return id.Wrap(t.Context(), t.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this type.
@@ -481,7 +481,7 @@ func (t Type) FeatureSet() FeatureSet {
 	if t.IsZero() {
 		return FeatureSet{}
 	}
-	return id.NewValue(t.Context(), t.Raw().features)
+	return id.Wrap(t.Context(), t.Raw().features)
 }
 
 // Deprecated returns whether this type is deprecated, by returning the

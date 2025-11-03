@@ -111,7 +111,7 @@ func validateConstraints(f File, r *report.Report) {
 	i := 0
 	for p := range f.Context().arenas.messages.Values() {
 		i++
-		m := id.NewValueFromRaw(f.Context(), id.ID[MessageValue](i), p)
+		m := id.WrapRaw(f.Context(), id.ID[MessageValue](i), p)
 		for v := range m.Fields() {
 			// This is a simple way of picking up all of the option values
 			// without tripping over custom defaults, which we explicitly should

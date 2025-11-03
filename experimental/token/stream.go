@@ -97,12 +97,12 @@ func (s *Stream) FromID(id uint64, want any) any {
 func (s *Stream) All() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for i := range s.nats {
-			if !yield(id.NewValue(s.Context, ID(i+1))) {
+			if !yield(id.Wrap(s.Context, ID(i+1))) {
 				return
 			}
 		}
 		for i := range s.synths {
-			if !yield(id.NewValue(s.Context, ID(^i))) {
+			if !yield(id.Wrap(s.Context, ID(^i))) {
 				return
 			}
 		}
@@ -119,10 +119,10 @@ func (s *Stream) All() iter.Seq[Token] {
 //  4. offset is inside of a token tok. Returns tok, tok.
 func (s *Stream) Around(offset int) (Token, Token) {
 	if offset == 0 {
-		return Zero, id.NewValue(s.Context, ID(1))
+		return Zero, id.Wrap(s.Context, ID(1))
 	}
 	if offset == len(s.File.Text()) {
-		return id.NewValue(s.Context, ID(len(s.nats))), Zero
+		return id.Wrap(s.Context, ID(len(s.nats))), Zero
 	}
 
 	idx, exact := slices.BinarySearchFunc(s.nats, offset, func(n nat, offset int) int {
@@ -132,11 +132,11 @@ func (s *Stream) Around(offset int) (Token, Token) {
 	if exact {
 		// We landed between two tokens. idx+1 is the ID of the token that ends
 		// at offset.
-		return id.NewValue(s.Context, ID(idx+1)), id.NewValue(s.Context, ID(idx+2))
+		return id.Wrap(s.Context, ID(idx+1)), id.Wrap(s.Context, ID(idx+2))
 	}
 
 	// We landed in the middle of a token, specifically idx+1.
-	return id.NewValue(s.Context, ID(idx+1)), id.NewValue(s.Context, ID(idx+1))
+	return id.Wrap(s.Context, ID(idx+1)), id.Wrap(s.Context, ID(idx+1))
 }
 
 // Cursor returns a cursor over the natural token stream.
@@ -195,7 +195,7 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		metadata: (int32(kind) & kindMask) | (int32(kw) << keywordShift),
 	})
 
-	return id.NewValue(s.Context, ID(len(s.nats)))
+	return id.Wrap(s.Context, ID(len(s.nats)))
 }
 
 // NewIdent mints a new synthetic identifier token with the given name.
@@ -245,5 +245,5 @@ func (s *Stream) NewFused(openTok, closeTok Token, children ...Token) {
 func (s *Stream) newSynth(tok synth) Token {
 	raw := ID(^len(s.synths))
 	s.synths = append(s.synths, tok)
-	return id.NewValue(s.Context, raw)
+	return id.Wrap(s.Context, raw)
 }

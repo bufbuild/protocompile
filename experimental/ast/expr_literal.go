@@ -41,7 +41,7 @@ func (e ExprLiteral) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(
+	return id.WrapDyn(
 		//nolint:errcheck // This assertion is required in the comment on e.Token.
 		e.Context().(Context),
 		id.NewDyn(ExprKindLiteral, id.ID[ExprAny](e.ID())),

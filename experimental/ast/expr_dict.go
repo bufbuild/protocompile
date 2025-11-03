@@ -30,7 +30,7 @@ import (
 //
 // Note that if a non-[ExprField] occurs as a field of a dict, the parser will
 // rewrite it into an [ExprField] with a missing key.
-type ExprDict id.Value[ExprDict, Context, *rawExprDict]
+type ExprDict id.Node[ExprDict, Context, *rawExprDict]
 
 type rawExprDict struct {
 	braces token.ID
@@ -45,7 +45,7 @@ func (e ExprDict) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindDict, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindDict, id.ID[ExprAny](e.ID())))
 }
 
 // Braces returns the token tree corresponding to the whole {...}.
@@ -56,7 +56,7 @@ func (e ExprDict) Braces() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(e.Context()), e.Raw().braces)
+	return id.Wrap(token.Context(e.Context()), e.Raw().braces)
 }
 
 // Elements returns the sequence of expressions in this array.
@@ -70,7 +70,7 @@ func (e ExprDict) Elements() Commas[ExprField] {
 		SliceInserter: seq.NewSliceInserter(
 			&e.Raw().fields,
 			func(_ int, c withComma[id.ID[ExprField]]) ExprField {
-				return id.NewValue(e.Context(), c.Value)
+				return id.Wrap(e.Context(), c.Value)
 			},
 			func(_ int, e ExprField) withComma[id.ID[ExprField]] {
 				e.Context().Nodes().panicIfNotOurs(e)
@@ -101,7 +101,7 @@ func (e ExprDict) Span() report.Span {
 //
 // Note: ExprFieldWithColon appears in ExprJuxta, the expression production that
 // is unambiguous when expressions are juxtaposed with each other.
-type ExprField id.Value[ExprField, Context, *rawExprField]
+type ExprField id.Node[ExprField, Context, *rawExprField]
 
 type rawExprField struct {
 	key, value id.Dyn[ExprAny, ExprKind]
@@ -123,7 +123,7 @@ func (e ExprField) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindField, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindField, id.ID[ExprAny](e.ID())))
 }
 
 // Key returns the key for this field.
@@ -134,7 +134,7 @@ func (e ExprField) Key() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), e.Raw().key)
+	return id.WrapDyn(e.Context(), e.Raw().key)
 }
 
 // SetKey sets the key for this field.
@@ -153,7 +153,7 @@ func (e ExprField) Colon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(e.Context()), e.Raw().colon)
+	return id.Wrap(token.Context(e.Context()), e.Raw().colon)
 }
 
 // Value returns the value for this field.
@@ -162,7 +162,7 @@ func (e ExprField) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), e.Raw().value)
+	return id.WrapDyn(e.Context(), e.Raw().value)
 }
 
 // SetValue sets the value for this field.

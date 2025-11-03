@@ -45,7 +45,7 @@ import (
 //	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
 //
 // Note that this type will only record the first appearance of any follower.
-type DeclDef id.Value[DeclDef, Context, *rawDeclDef]
+type DeclDef id.Node[DeclDef, Context, *rawDeclDef]
 
 type rawDeclDef struct {
 	ty   id.Dyn[TypeAny, TypeKind] // Not present for enum fields.
@@ -91,7 +91,7 @@ func (d DeclDef) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindDef, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindDef, id.ID[DeclAny](d.ID())))
 }
 
 // Type returns the "prefix" type of this definition.
@@ -108,7 +108,7 @@ func (d DeclDef) Type() TypeAny {
 		return TypeAny{}
 	}
 
-	return id.NewDynValue(d.Context(), d.Raw().ty)
+	return id.WrapDyn(d.Context(), d.Raw().ty)
 }
 
 // SetType sets the "prefix" type of this definition.
@@ -230,7 +230,7 @@ func (d DeclDef) Equals() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().equals)
+	return id.Wrap(token.Context(d.Context()), d.Raw().equals)
 }
 
 // Value returns this definition's value. For a field, this will be the
@@ -241,7 +241,7 @@ func (d DeclDef) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(d.Context(), d.Raw().value)
+	return id.WrapDyn(d.Context(), d.Raw().value)
 }
 
 // SetValue sets the value of this definition.
@@ -257,7 +257,7 @@ func (d DeclDef) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return id.NewValue(d.Context(), d.Raw().options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this definition.
@@ -273,7 +273,7 @@ func (d DeclDef) Body() DeclBody {
 		return DeclBody{}
 	}
 
-	return id.NewValue(d.Context(), d.Raw().body)
+	return id.Wrap(d.Context(), d.Raw().body)
 }
 
 // SetBody sets the body for this definition.
@@ -288,7 +288,7 @@ func (d DeclDef) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // IsCorrupt reports whether or not some part of the parser decided that this
@@ -552,7 +552,7 @@ func (s Signature) Returns() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(s.Context()), s.raw.returns)
+	return id.Wrap(token.Context(s.Context()), s.raw.returns)
 }
 
 // Inputs returns the input argument list for this signature.

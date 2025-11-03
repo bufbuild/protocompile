@@ -22,10 +22,10 @@ import (
 )
 
 // Service is a Protobuf service definition.
-type Service id.Value[Service, *Context, *rawService]
+type Service id.Node[Service, *Context, *rawService]
 
 // Method is a Protobuf service method.
-type Method id.Value[Method, *Context, *rawMethod]
+type Method id.Node[Method, *Context, *rawMethod]
 
 type rawService struct {
 	def       id.ID[ast.DeclDef]
@@ -52,7 +52,7 @@ func (s Service) AST() ast.DeclDef {
 	if s.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.NewValue(s.Context().File().AST().Context(), s.Raw().def)
+	return id.Wrap(s.Context().File().AST().Context(), s.Raw().def)
 }
 
 // Name returns this service's declared name, i.e. the last component of its
@@ -90,7 +90,7 @@ func (s Service) Options() MessageValue {
 	if s.IsZero() {
 		return MessageValue{}
 	}
-	return id.NewValue(s.Context(), s.Raw().options).AsMessage()
+	return id.Wrap(s.Context(), s.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this service.
@@ -98,7 +98,7 @@ func (s Service) FeatureSet() FeatureSet {
 	if s.IsZero() {
 		return FeatureSet{}
 	}
-	return id.NewValue(s.Context(), s.Raw().features)
+	return id.Wrap(s.Context(), s.Raw().features)
 }
 
 // Deprecated returns whether this service is deprecated, by returning the
@@ -125,7 +125,7 @@ func (s Service) Methods() seq.Indexer[Method] {
 	return seq.NewFixedSlice(
 		methods,
 		func(_ int, p id.ID[Method]) Method {
-			return id.NewValue(s.Context(), p)
+			return id.Wrap(s.Context(), p)
 		},
 	)
 }
@@ -135,7 +135,7 @@ func (m Method) AST() ast.DeclDef {
 	if m.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.NewValue(m.Context().File().AST().Context(), m.Raw().def)
+	return id.Wrap(m.Context().File().AST().Context(), m.Raw().def)
 }
 
 // Name returns this method's declared name, i.e. the last component of its
@@ -173,7 +173,7 @@ func (m Method) Options() MessageValue {
 	if m.IsZero() {
 		return MessageValue{}
 	}
-	return id.NewValue(m.Context(), m.Raw().options).AsMessage()
+	return id.Wrap(m.Context(), m.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this method.
@@ -181,7 +181,7 @@ func (m Method) FeatureSet() FeatureSet {
 	if m.IsZero() {
 		return FeatureSet{}
 	}
-	return id.NewValue(m.Context(), m.Raw().features)
+	return id.Wrap(m.Context(), m.Raw().features)
 }
 
 // Deprecated returns whether this service is deprecated, by returning the
@@ -203,7 +203,7 @@ func (m Method) Service() Service {
 	if m.IsZero() {
 		return Service{}
 	}
-	return id.NewValue(m.Context(), m.Raw().service)
+	return id.Wrap(m.Context(), m.Raw().service)
 }
 
 // Input returns the input type for this method, and whether it is a streaming

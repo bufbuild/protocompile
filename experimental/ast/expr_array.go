@@ -26,7 +26,7 @@ import (
 // # Grammar
 //
 //	ExprArray := `[` (ExprJuxta `,`?)*`]`
-type ExprArray id.Value[ExprArray, Context, *rawExprArray]
+type ExprArray id.Node[ExprArray, Context, *rawExprArray]
 
 type rawExprArray struct {
 	brackets token.ID
@@ -41,7 +41,7 @@ func (e ExprArray) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(e.Context(), id.NewDyn(ExprKindArray, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindArray, id.ID[ExprAny](e.ID())))
 }
 
 // Brackets returns the token tree corresponding to the whole [...].
@@ -52,7 +52,7 @@ func (e ExprArray) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(e.Context()), e.Raw().brackets)
+	return id.Wrap(token.Context(e.Context()), e.Raw().brackets)
 }
 
 // Elements returns the sequence of expressions in this array.
@@ -66,7 +66,7 @@ func (e ExprArray) Elements() Commas[ExprAny] {
 		SliceInserter: seq.NewSliceInserter(
 			&e.Raw().args,
 			func(_ int, c withComma[id.Dyn[ExprAny, ExprKind]]) ExprAny {
-				return id.NewDynValue(e.Context(), c.Value)
+				return id.WrapDyn(e.Context(), c.Value)
 			},
 			func(_ int, e ExprAny) withComma[id.Dyn[ExprAny, ExprKind]] {
 				e.Context().Nodes().panicIfNotOurs(e)

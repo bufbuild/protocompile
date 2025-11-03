@@ -77,12 +77,14 @@ func (f File) Imports() iter.Seq[DeclImport] {
 //
 // Note: options are not permitted on syntax declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclSyntax id.Value[DeclSyntax, Context, *rawDeclSyntax]
+type DeclSyntax id.Node[DeclSyntax, Context, *rawDeclSyntax]
 
 type rawDeclSyntax struct {
-	keyword, equals, semi token.ID
-	value                 id.Dyn[ExprAny, ExprKind]
-	options               id.ID[CompactOptions]
+	value   id.Dyn[ExprAny, ExprKind]
+	keyword token.ID
+	equals  token.ID
+	semi    token.ID
+	options id.ID[CompactOptions]
 }
 
 // DeclSyntaxArgs is arguments for [Context.NewDeclSyntax].
@@ -102,7 +104,7 @@ func (d DeclSyntax) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindSyntax, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindSyntax, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this declaration.
@@ -116,7 +118,7 @@ func (d DeclSyntax) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // IsSyntax checks whether this is an OG syntax declaration.
@@ -137,7 +139,7 @@ func (d DeclSyntax) Equals() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().equals)
+	return id.Wrap(token.Context(d.Context()), d.Raw().equals)
 }
 
 // Value returns the value expression of this declaration.
@@ -149,7 +151,7 @@ func (d DeclSyntax) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(d.Context(), d.Raw().value)
+	return id.WrapDyn(d.Context(), d.Raw().value)
 }
 
 // SetValue sets the expression for this declaration's value.
@@ -167,7 +169,7 @@ func (d DeclSyntax) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return id.NewValue(d.Context(), d.Raw().options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this declaration.
@@ -185,7 +187,7 @@ func (d DeclSyntax) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -205,7 +207,7 @@ func (d DeclSyntax) Span() report.Span {
 //
 // Note: options are not permitted on package declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclPackage id.Value[DeclPackage, Context, *rawDeclPackage]
+type DeclPackage id.Node[DeclPackage, Context, *rawDeclPackage]
 
 type rawDeclPackage struct {
 	keyword token.ID
@@ -229,7 +231,7 @@ func (d DeclPackage) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindPackage, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindPackage, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this declaration.
@@ -243,7 +245,7 @@ func (d DeclPackage) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // Path returns this package's path.
@@ -265,7 +267,7 @@ func (d DeclPackage) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return id.NewValue(d.Context(), d.Raw().options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this declaration.
@@ -283,7 +285,7 @@ func (d DeclPackage) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -303,7 +305,7 @@ func (d DeclPackage) Span() report.Span {
 //
 // Note: options are not permitted on import declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclImport id.Value[DeclImport, Context, *rawDeclImport]
+type DeclImport id.Node[DeclImport, Context, *rawDeclImport]
 
 type rawDeclImport struct {
 	keyword, semi token.ID
@@ -328,7 +330,7 @@ func (d DeclImport) AsAny() DeclAny {
 	if d.IsZero() {
 		return DeclAny{}
 	}
-	return id.NewDynValue(d.Context(), id.NewDyn(DeclKindImport, id.ID[DeclAny](d.ID())))
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindImport, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this declaration.
@@ -342,7 +344,7 @@ func (d DeclImport) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // Modifiers returns the modifiers for this declaration.
@@ -353,7 +355,7 @@ func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, t token.ID) keyword.Keyword {
-		return id.NewValue(token.Context(d.Context()), t).Keyword()
+		return id.Wrap(token.Context(d.Context()), t).Keyword()
 	})
 }
 
@@ -364,7 +366,7 @@ func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	}
 
 	return seq.NewSliceInserter(&d.Raw().modifiers,
-		func(_ int, e token.ID) token.Token { return id.NewValue(token.Context(d.Context()), e) },
+		func(_ int, e token.ID) token.Token { return id.Wrap(token.Context(d.Context()), e) },
 		func(_ int, t token.Token) token.ID {
 			d.Context().Nodes().panicIfNotOurs(t)
 			return t.ID()
@@ -401,7 +403,7 @@ func (d DeclImport) ImportPath() ExprAny {
 		return ExprAny{}
 	}
 
-	return id.NewDynValue(d.Context(), d.Raw().importPath)
+	return id.WrapDyn(d.Context(), d.Raw().importPath)
 }
 
 // SetValue sets the expression for this import's file path.
@@ -419,7 +421,7 @@ func (d DeclImport) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return id.NewValue(d.Context(), d.Raw().options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this declaration.
@@ -437,7 +439,7 @@ func (d DeclImport) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.NewValue(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].

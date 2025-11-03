@@ -140,7 +140,7 @@ func (w *walker) recurse(decl ast.DeclAny, parent any) {
 		case ast.DefKindExtend:
 			w.recurse(def.Body().AsAny(), extend{
 				parent:   extractParentType(parent),
-				extendee: w.newExtendee(def.AsExtend(), parent),
+				extendee: w.newExtendee(def.AsExtend(), parent).ID(),
 			})
 
 		case ast.DefKindService:
@@ -167,17 +167,14 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	name := def.Name().AsIdent().Name()
 	fqn := w.fullname(parentTy, name)
 
-	isEnum := def.Keyword() == keyword.Enum
-	raw := id.ID[Type](c.arenas.types.NewCompressed(rawType{
+	ty := id.Wrap(w.Context(), id.ID[Type](c.arenas.types.NewCompressed(rawType{
 		def:    def.ID(),
 		name:   c.session.intern.Intern(name),
 		fqn:    c.session.intern.Intern(fqn),
 		parent: parentTy.ID(),
 
-		isEnum: isEnum,
-	}))
-
-	ty := id.NewValue(w.Context(), raw)
+		isEnum: def.Keyword() == keyword.Enum,
+	})))
 	ty.Raw().memberByName = sync.OnceValue(ty.makeMembersByName)
 
 	for decl := range seq.Values(def.Body().Decls()) {
@@ -218,10 +215,10 @@ func (w *walker) newType(def ast.DeclDef, parent any) Type {
 	}
 
 	if !parentTy.IsZero() {
-		parentTy.Raw().nested = append(parentTy.Raw().nested, raw)
-		c.types = append(c.types, raw)
+		parentTy.Raw().nested = append(parentTy.Raw().nested, ty.ID())
+		c.types = append(c.types, ty.ID())
 	} else {
-		c.types = slices.Insert(c.types, c.topLevelTypesEnd, raw)
+		c.types = slices.Insert(c.types, c.topLevelTypesEnd, ty.ID())
 		c.topLevelTypesEnd++
 	}
 
@@ -238,37 +235,36 @@ func (w *walker) newField(def ast.DeclDef, parent any, group bool) Member {
 	}
 	fqn := w.fullname(parentTy, name)
 
-	raw := id.ID[Member](c.arenas.members.NewCompressed(rawMember{
+	member := id.Wrap(w.Context(), id.ID[Member](c.arenas.members.NewCompressed(rawMember{
 		def:     def.ID(),
 		name:    c.session.intern.Intern(name),
 		fqn:     c.session.intern.Intern(fqn),
 		parent:  parentTy.ID(),
 		oneof:   math.MinInt32,
 		isGroup: group,
-	}))
-	member := id.NewValue(w.Context(), raw)
+	})))
 
 	switch parent := parent.(type) {
 	case oneof:
 		member.Raw().oneof = int32(parent.Index())
-		parent.Raw().members = append(parent.Raw().members, raw)
+		parent.Raw().members = append(parent.Raw().members, member.ID())
 	case extend:
 		member.Raw().extendee = parent.extendee
 
-		block := id.NewValue(c, id.ID[Extend](parent.extendee))
-		block.Raw().members = append(block.Raw().members, raw)
+		block := id.Wrap(c, parent.extendee)
+		block.Raw().members = append(block.Raw().members, member.ID())
 	}
 
 	if !parentTy.IsZero() {
 		if _, ok := parent.(extend); ok {
-			parentTy.Raw().members = append(parentTy.Raw().members, raw)
-			c.extns = append(c.extns, raw)
+			parentTy.Raw().members = append(parentTy.Raw().members, member.ID())
+			c.extns = append(c.extns, member.ID())
 		} else {
-			parentTy.Raw().members = slices.Insert(parentTy.Raw().members, int(parentTy.Raw().extnsStart), raw)
+			parentTy.Raw().members = slices.Insert(parentTy.Raw().members, int(parentTy.Raw().extnsStart), member.ID())
 			parentTy.Raw().extnsStart++
 		}
 	} else if _, ok := parent.(extend); ok {
-		c.extns = slices.Insert(c.extns, c.topLevelExtnsEnd, raw)
+		c.extns = slices.Insert(c.extns, c.topLevelExtnsEnd, member.ID())
 		c.topLevelExtnsEnd++
 	}
 
@@ -284,36 +280,36 @@ func (w *walker) newOneof(def ast.DefOneof, parent any) Oneof {
 		return Oneof{}
 	}
 
-	raw := id.ID[Oneof](w.Context().arenas.oneofs.NewCompressed(rawOneof{
+	oneof := id.Wrap(w.Context(), id.ID[Oneof](w.Context().arenas.oneofs.NewCompressed(rawOneof{
 		def:       def.Decl.ID(),
 		name:      w.Context().session.intern.Intern(name),
 		fqn:       w.Context().session.intern.Intern(fqn),
 		index:     uint32(len(parentTy.Raw().oneofs)),
 		container: parentTy.ID(),
-	}))
+	})))
 
-	parentTy.Raw().oneofs = append(parentTy.Raw().oneofs, raw)
-	return id.NewValue(w.Context(), raw)
+	parentTy.Raw().oneofs = append(parentTy.Raw().oneofs, oneof.ID())
+	return oneof
 }
 
-func (w *walker) newExtendee(def ast.DefExtend, parent any) id.ID[Extend] {
+func (w *walker) newExtendee(def ast.DefExtend, parent any) Extend {
 	c := w.Context()
 	parentTy := extractParentType(parent)
 
-	raw := id.ID[Extend](w.Context().arenas.extendees.NewCompressed(rawExtend{
+	extend := id.Wrap(w.Context(), id.ID[Extend](w.Context().arenas.extendees.NewCompressed(rawExtend{
 		def:    def.Decl.ID(),
 		parent: parentTy.ID(),
-	}))
+	})))
 
 	if !parentTy.IsZero() {
-		parentTy.Raw().extends = append(parentTy.Raw().extends, raw)
-		c.extends = append(c.extends, raw)
+		parentTy.Raw().extends = append(parentTy.Raw().extends, extend.ID())
+		c.extends = append(c.extends, extend.ID())
 	} else {
-		c.extends = slices.Insert(c.extends, c.topLevelExtendsEnd, raw)
+		c.extends = slices.Insert(c.extends, c.topLevelExtendsEnd, extend.ID())
 		c.topLevelExtendsEnd++
 	}
 
-	return raw
+	return extend
 }
 
 func (w *walker) newService(def ast.DeclDef, parent any) Service {
@@ -324,13 +320,14 @@ func (w *walker) newService(def ast.DeclDef, parent any) Service {
 	name := def.Name().AsIdent().Name()
 	fqn := w.pkg.Append(name)
 
-	raw := id.ID[Service](w.Context().arenas.services.NewCompressed(rawService{
+	service := id.Wrap(w.Context(), id.ID[Service](w.Context().arenas.services.NewCompressed(rawService{
 		def:  def.ID(),
 		name: w.Context().session.intern.Intern(name),
 		fqn:  w.Context().session.intern.Intern(string(fqn)),
-	}))
-	w.Context().services = append(w.Context().services, raw)
-	return id.NewValue(w.Context(), raw)
+	})))
+
+	w.Context().services = append(w.Context().services, service.ID())
+	return service
 }
 
 func (w *walker) newMethod(def ast.DeclDef, parent any) Method {
@@ -342,14 +339,15 @@ func (w *walker) newMethod(def ast.DeclDef, parent any) Method {
 	name := def.Name().AsIdent().Name()
 	fqn := service.FullName().Append(name)
 
-	raw := id.ID[Method](w.Context().arenas.methods.NewCompressed(rawMethod{
+	method := id.Wrap(w.Context(), id.ID[Method](w.Context().arenas.methods.NewCompressed(rawMethod{
 		def:     def.ID(),
 		name:    w.Context().session.intern.Intern(name),
 		fqn:     w.Context().session.intern.Intern(string(fqn)),
 		service: service.ID(),
-	}))
-	service.Raw().methods = append(service.Raw().methods, raw)
-	return id.NewValue(w.Context(), raw)
+	})))
+
+	service.Raw().methods = append(service.Raw().methods, method.ID())
+	return method
 }
 
 func (w *walker) fullname(parentTy Type, name string) string {

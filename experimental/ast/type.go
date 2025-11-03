@@ -51,7 +51,7 @@ import (
 // Thus, parsing a type is greedy except when the containing production contains
 // "Type Path?" or similar, in which case parsing must be greedy up to the last
 // [Path] it would otherwise consume.
-type TypeAny id.DynValue[TypeAny, TypeKind, Context]
+type TypeAny id.DynNode[TypeAny, TypeKind, Context]
 
 // AsError converts a TypeAny into a TypeError, if that is the type
 // it contains.
@@ -61,7 +61,7 @@ func (t TypeAny) AsError() TypeError {
 	if t.Kind() != TypeKindError {
 		return TypeError{}
 	}
-	return id.NewValue(t.Context(), id.ID[TypeError](t.ID().Value()))
+	return id.Wrap(t.Context(), id.ID[TypeError](t.ID().Value()))
 }
 
 // AsPath converts a TypeAny into a TypePath, if that is the type
@@ -73,7 +73,7 @@ func (t TypeAny) AsPath() TypePath {
 		return TypePath{}
 	}
 
-	start, end := t.ID().Ints()
+	start, end := t.ID().Raw()
 	return TypePath{Path: PathID{start: token.ID(start), end: token.ID(end)}.In(t.Context())}
 }
 
@@ -85,7 +85,7 @@ func (t TypeAny) AsPrefixed() TypePrefixed {
 	if t.Kind() != TypeKindPrefixed {
 		return TypePrefixed{}
 	}
-	return id.NewValue(t.Context(), id.ID[TypePrefixed](t.ID().Value()))
+	return id.Wrap(t.Context(), id.ID[TypePrefixed](t.ID().Value()))
 }
 
 // AsGeneric converts a TypeAny into a TypePrefix, if that is the type
@@ -96,7 +96,7 @@ func (t TypeAny) AsGeneric() TypeGeneric {
 	if t.Kind() != TypeKindGeneric {
 		return TypeGeneric{}
 	}
-	return id.NewValue(t.Context(), id.ID[TypeGeneric](t.ID().Value()))
+	return id.Wrap(t.Context(), id.ID[TypeGeneric](t.ID().Value()))
 }
 
 // Prefixes is an iterator over all [TypePrefix]es wrapping this type.
@@ -136,7 +136,7 @@ func (t TypeAny) Span() report.Span {
 //
 // This type is so named to adhere to package ast's naming convention. It does
 // not represent a "type error" as in "type-checking failure".
-type TypeError id.Value[TypeError, Context, *rawTypeError]
+type TypeError id.Node[TypeError, Context, *rawTypeError]
 
 type rawTypeError report.Span
 
@@ -148,7 +148,7 @@ func (t TypeError) AsAny() TypeAny {
 		return TypeAny{}
 	}
 
-	return id.NewDynValue(t.Context(), id.NewDyn(TypeKindError, id.ID[TypeAny](t.ID())))
+	return id.WrapDyn(t.Context(), id.NewDyn(TypeKindError, id.ID[TypeAny](t.ID())))
 }
 
 // Span implements [report.Spanner].

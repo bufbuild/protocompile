@@ -224,7 +224,7 @@ func (f File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
 		f.Context().types[:f.Context().topLevelTypesEnd],
 		func(_ int, p id.ID[Type]) Type {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -234,7 +234,7 @@ func (f File) AllTypes() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
 		f.Context().types,
 		func(_ int, p id.ID[Type]) Type {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -245,7 +245,7 @@ func (f File) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns[:f.Context().topLevelExtnsEnd],
 		func(_ int, p id.ID[Member]) Member {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -255,7 +255,7 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns,
 		func(_ int, p id.ID[Member]) Member {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -265,7 +265,7 @@ func (f File) Extends() seq.Indexer[Extend] {
 	return seq.NewFixedSlice(
 		f.Context().extends[:f.Context().topLevelExtendsEnd],
 		func(_ int, p id.ID[Extend]) Extend {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -275,7 +275,7 @@ func (f File) AllExtends() seq.Indexer[Extend] {
 	return seq.NewFixedSlice(
 		f.Context().extends,
 		func(_ int, p id.ID[Extend]) Extend {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -286,7 +286,7 @@ func (f File) AllMembers() iter.Seq[Member] {
 	i := 0
 	return iterx.Map(f.Context().arenas.members.Values(), func(raw *rawMember) Member {
 		i++
-		return id.NewValueFromRaw(f.Context(), id.ID[Member](i), raw)
+		return id.WrapRaw(f.Context(), id.ID[Member](i), raw)
 	})
 }
 
@@ -295,19 +295,19 @@ func (f File) Services() seq.Indexer[Service] {
 	return seq.NewFixedSlice(
 		f.Context().services,
 		func(_ int, p id.ID[Service]) Service {
-			return id.NewValue(f.Context(), p)
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
 
 // Options returns the top level options applied to this file.
 func (f File) Options() MessageValue {
-	return id.NewValue(f.Context(), f.Context().options).AsMessage()
+	return id.Wrap(f.Context(), f.Context().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this file.
 func (f File) FeatureSet() FeatureSet {
-	return id.NewValue(f.Context(), f.Context().features)
+	return id.Wrap(f.Context(), f.Context().features)
 }
 
 // Deprecated returns whether this file is deprecated, by returning the

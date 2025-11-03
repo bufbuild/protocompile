@@ -150,8 +150,8 @@ func (p Path) Span() report.Span {
 	// No need to check for zero here, if p is zero both start and end will be
 	// zero tokens.
 	return report.Join(
-		id.NewValue(token.Context(p.Context()), p.raw.start),
-		id.NewValue(token.Context(p.Context()), p.raw.end),
+		id.Wrap(token.Context(p.Context()), p.raw.start),
+		id.Wrap(token.Context(p.Context()), p.raw.end),
 	)
 }
 
@@ -164,7 +164,7 @@ func (p Path) Components(yield func(PathComponent) bool) {
 	}
 
 	var cursor *token.Cursor
-	first := id.NewValue(token.Context(p.Context()), p.raw.start)
+	first := id.Wrap(token.Context(p.Context()), p.raw.start)
 	if p.IsSynthetic() {
 		cursor = first.SyntheticChildren(p.raw.synthRange())
 	} else {
@@ -357,11 +357,11 @@ func (p Path) isCanonical() bool {
 // trim discards any skippable tokens before and after the start of this path.
 func (p Path) trim() Path {
 	for p.raw.start < p.raw.end &&
-		id.NewValue(token.Context(p.Context()), p.raw.start).Kind().IsSkippable() {
+		id.Wrap(token.Context(p.Context()), p.raw.start).Kind().IsSkippable() {
 		p.raw.start++
 	}
 	for p.raw.start < p.raw.end &&
-		id.NewValue(token.Context(p.Context()), p.raw.end).Kind().IsSkippable() {
+		id.Wrap(token.Context(p.Context()), p.raw.end).Kind().IsSkippable() {
 		p.raw.end--
 	}
 
@@ -386,7 +386,7 @@ type TypePath struct {
 //
 // See [TypeAny] for more information.
 func (t TypePath) AsAny() TypeAny {
-	return id.NewDynValue(t.Context(), id.NewDynFromRaw[TypeAny, TypeKind](int32(t.raw.start), int32(t.raw.end)))
+	return id.WrapDyn(t.Context(), id.NewDynFromRaw[TypeAny, TypeKind](int32(t.raw.start), int32(t.raw.end)))
 }
 
 // ExprPath is a simple path reference in expression position.
@@ -403,7 +403,7 @@ type ExprPath struct {
 //
 // See [TypeAny] for more information.
 func (e ExprPath) AsAny() ExprAny {
-	return id.NewDynValue(e.Context(), id.NewDynFromRaw[ExprAny, ExprKind](int32(e.raw.start), int32(e.raw.end)))
+	return id.WrapDyn(e.Context(), id.NewDynFromRaw[ExprAny, ExprKind](int32(e.raw.start), int32(e.raw.end)))
 }
 
 // PathComponent is a piece of a path. This is either an identifier or a nested path
@@ -454,10 +454,10 @@ func (p PathComponent) SplitBefore() (before, after Path) {
 
 	prefix, suffix := p.Path(), p.Path()
 	if p.separator.IsZero() {
-		prefix.raw.end = id.NewValue(token.Context(p.Context()), p.name).Prev().ID()
+		prefix.raw.end = id.Wrap(token.Context(p.Context()), p.name).Prev().ID()
 		suffix.raw.start = p.name
 	} else {
-		prefix.raw.end = id.NewValue(token.Context(p.Context()), p.separator).Prev().ID()
+		prefix.raw.end = id.Wrap(token.Context(p.Context()), p.separator).Prev().ID()
 		suffix.raw.start = p.separator
 	}
 
@@ -480,10 +480,10 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 	prefix, suffix := p.Path(), p.Path()
 	if !p.name.IsZero() {
 		prefix.raw.end = p.name
-		suffix.raw.start = id.NewValue(token.Context(p.Context()), p.name).Next().ID()
+		suffix.raw.start = id.Wrap(token.Context(p.Context()), p.name).Next().ID()
 	} else {
 		prefix.raw.end = p.separator
-		suffix.raw.start = id.NewValue(token.Context(p.Context()), p.separator).Next().ID()
+		suffix.raw.start = id.Wrap(token.Context(p.Context()), p.separator).Next().ID()
 	}
 
 	return prefix.trim(), suffix.trim()
@@ -492,13 +492,13 @@ func (p PathComponent) SplitAfter() (before, after Path) {
 // Separator is the token that separates this component from the previous one, if
 // any. This may be a dot or a slash.
 func (p PathComponent) Separator() token.Token {
-	return id.NewValue(token.Context(p.Context()), p.separator)
+	return id.Wrap(token.Context(p.Context()), p.separator)
 }
 
 // Name is the token that represents this component's name. THis is either an
 // identifier or a (...) token containing a path.
 func (p PathComponent) Name() token.Token {
-	return id.NewValue(token.Context(p.Context()), p.name)
+	return id.Wrap(token.Context(p.Context()), p.name)
 }
 
 // Returns whether this is an empty path component. Such components are not allowed
@@ -548,7 +548,7 @@ func (p PathComponent) AsExtension() Path {
 //
 // May be zero, in the case of e.g. the second component of foo..bar.
 func (p PathComponent) AsIdent() token.Token {
-	tok := id.NewValue(token.Context(p.Context()), p.name)
+	tok := id.Wrap(token.Context(p.Context()), p.name)
 	if tok.Kind() == token.Ident {
 		return tok
 	}

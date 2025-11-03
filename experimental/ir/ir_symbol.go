@@ -35,7 +35,7 @@ import (
 // [Symbol.Context] returns the context for the file which imported this
 // symbol. To map this to the context in which the symbol was defined, use
 // [Symbol.InDefFile].
-type Symbol id.Value[Symbol, *Context, *rawSymbol]
+type Symbol id.Node[Symbol, *Context, *rawSymbol]
 
 type rawSymbol struct {
 	kind SymbolKind
@@ -75,7 +75,7 @@ func (s Symbol) AsType() Type {
 	if !s.Kind().IsType() {
 		return Type{}
 	}
-	return id.NewValue(s.Context(), id.ID[Type](s.Raw().data))
+	return id.Wrap(s.Context(), id.ID[Type](s.Raw().data))
 }
 
 // AsMember returns the member this symbol refers to, if it is one.
@@ -83,7 +83,7 @@ func (s Symbol) AsMember() Member {
 	if !s.Kind().IsMember() {
 		return Member{}
 	}
-	return id.NewValue(s.Context(), id.ID[Member](s.Raw().data))
+	return id.Wrap(s.Context(), id.ID[Member](s.Raw().data))
 }
 
 // AsOneof returns the oneof this symbol refers to, if it is one.
@@ -91,7 +91,7 @@ func (s Symbol) AsOneof() Oneof {
 	if s.Kind() != SymbolKindOneof {
 		return Oneof{}
 	}
-	return id.NewValue(s.Context(), id.ID[Oneof](s.Raw().data))
+	return id.Wrap(s.Context(), id.ID[Oneof](s.Raw().data))
 }
 
 // AsService returns the service this symbol refers to, if it is one.
@@ -99,7 +99,7 @@ func (s Symbol) AsService() Service {
 	if s.Kind() != SymbolKindService {
 		return Service{}
 	}
-	return id.NewValue(s.Context(), id.ID[Service](s.Raw().data))
+	return id.Wrap(s.Context(), id.ID[Service](s.Raw().data))
 }
 
 // AsMethod returns the method this symbol refers to, if it is one.
@@ -107,7 +107,7 @@ func (s Symbol) AsMethod() Method {
 	if s.Kind() != SymbolKindMethod {
 		return Method{}
 	}
-	return id.NewValue(s.Context(), id.ID[Method](s.Raw().data))
+	return id.Wrap(s.Context(), id.ID[Method](s.Raw().data))
 }
 
 // FeatureSet returns the features associated with this symbol.
@@ -156,7 +156,7 @@ func (s Symbol) Visible(in File) bool {
 		return true
 	}
 
-	//fmt.Println(s.Context().File().Path)
+	// fmt.Println(s.Context().File().Path)
 	idx, imported := in.Context().imports.byPath[s.Context().File().InternedPath()]
 	if !imported {
 		return false
