@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	tagUnusedImport = "unused-import"
+	TagUnusedImport = "unused-import"
 )
 
 var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
@@ -57,7 +57,7 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
 			report.Helpf("no symbols from this file are referenced"),
-			report.Tag(tagUnusedImport),
+			report.Tag(TagUnusedImport),
 		)
 	}
 }
