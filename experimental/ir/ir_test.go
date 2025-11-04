@@ -162,7 +162,7 @@ func TestIR(t *testing.T) {
 		session := new(ir.Session)
 		queries := slices.Collect(iterx.FilterMap(
 			slices.Values(test.Files),
-			func(f File) (incremental.Query[ir.File], bool) {
+			func(f File) (incremental.Query[*ir.File], bool) {
 				if f.Import {
 					return nil, false
 				}
@@ -198,13 +198,13 @@ func TestIR(t *testing.T) {
 			return
 		}
 
-		irs := slicesx.Transform(results, func(r incremental.Result[ir.File]) ir.File { return r.Value })
-		irs = slices.DeleteFunc(irs, ir.File.IsZero)
+		irs := slicesx.Transform(results, func(r incremental.Result[*ir.File]) *ir.File { return r.Value })
+		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		if test.Descriptor {
 			bytes, err := ir.DescriptorSetBytes(irs,
 				ir.IncludeSourceCodeInfo(test.SourceCodeInfo),
-				ir.ExcludeFiles(ir.File.IsDescriptorProto),
+				ir.ExcludeFiles((*ir.File).IsDescriptorProto),
 			)
 			require.NoError(t, err)
 
@@ -224,7 +224,7 @@ func TestIR(t *testing.T) {
 	})
 }
 
-func symtabProto(files []ir.File) *compilerpb.SymbolSet {
+func symtabProto(files []*ir.File) *compilerpb.SymbolSet {
 	set := new(compilerpb.SymbolSet)
 	set.Tables = make(map[string]*compilerpb.SymbolTable)
 
@@ -337,7 +337,7 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
 
 		for sym := range seq.Values(file.Symbols()) {
-			if strings.HasPrefix(sym.Context().File().Path(), "google/protobuf/") {
+			if strings.HasPrefix(sym.Context().Path(), "google/protobuf/") {
 				continue
 			}
 
@@ -354,7 +354,7 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
 				Fqn:      string(sym.FullName()),
 				Kind:     compilerpb.Symbol_Kind(sym.Kind()),
-				File:     sym.Context().File().Path(),
+				File:     sym.Context().Path(),
 				Index:    uint32(sym.RawData()),
 				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(file),
 				Options:  new(optionWalker).message(options),

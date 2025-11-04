@@ -26,17 +26,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
-
-// Context is the owner of a [Stream].
-//
-// Each stream carries its full context with it, which may contain other
-// information, such as arenas for AST nodes.
-type Context interface {
-	id.Context
-
-	Stream() *Stream
-}
 
 // Stream is a token stream.
 //
@@ -48,8 +39,7 @@ type Context interface {
 // meant for is complete, and new tokens cannot be pushed to it. This is used
 // by the Protocompile lexer to prevent re-use of a stream for multiple files.
 type Stream struct {
-	// The context that owns this stream.
-	Context
+	_ unsafex.NoCopy
 
 	// The file this stream is over.
 	*report.File
@@ -76,6 +66,8 @@ type Stream struct {
 	frozen bool
 }
 
+var _ id.Context = (*Stream)(nil)
+
 // FromID implements [id.Context].
 func (s *Stream) FromID(id uint64, want any) any {
 	switch want.(type) {
@@ -97,12 +89,12 @@ func (s *Stream) FromID(id uint64, want any) any {
 func (s *Stream) All() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for i := range s.nats {
-			if !yield(id.Wrap(s.Context, ID(i+1))) {
+			if !yield(id.Wrap(s, ID(i+1))) {
 				return
 			}
 		}
 		for i := range s.synths {
-			if !yield(id.Wrap(s.Context, ID(^i))) {
+			if !yield(id.Wrap(s, ID(^i))) {
 				return
 			}
 		}
@@ -119,10 +111,10 @@ func (s *Stream) All() iter.Seq[Token] {
 //  4. offset is inside of a token tok. Returns tok, tok.
 func (s *Stream) Around(offset int) (Token, Token) {
 	if offset == 0 {
-		return Zero, id.Wrap(s.Context, ID(1))
+		return Zero, id.Wrap(s, ID(1))
 	}
 	if offset == len(s.File.Text()) {
-		return id.Wrap(s.Context, ID(len(s.nats))), Zero
+		return id.Wrap(s, ID(len(s.nats))), Zero
 	}
 
 	idx, exact := slices.BinarySearchFunc(s.nats, offset, func(n nat, offset int) int {
@@ -132,16 +124,16 @@ func (s *Stream) Around(offset int) (Token, Token) {
 	if exact {
 		// We landed between two tokens. idx+1 is the ID of the token that ends
 		// at offset.
-		return id.Wrap(s.Context, ID(idx+1)), id.Wrap(s.Context, ID(idx+2))
+		return id.Wrap(s, ID(idx+1)), id.Wrap(s, ID(idx+2))
 	}
 
 	// We landed in the middle of a token, specifically idx+1.
-	return id.Wrap(s.Context, ID(idx+1)), id.Wrap(s.Context, ID(idx+1))
+	return id.Wrap(s, ID(idx+1)), id.Wrap(s, ID(idx+1))
 }
 
 // Cursor returns a cursor over the natural token stream.
 func (s *Stream) Cursor() *Cursor {
-	return &Cursor{context: s.Context}
+	return &Cursor{context: s}
 }
 
 // AssertEmpty asserts that no natural tokens have been created in this stream
@@ -195,7 +187,7 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		metadata: (int32(kind) & kindMask) | (int32(kw) << keywordShift),
 	})
 
-	return id.Wrap(s.Context, ID(len(s.nats)))
+	return id.Wrap(s, ID(len(s.nats)))
 }
 
 // NewIdent mints a new synthetic identifier token with the given name.
@@ -245,5 +237,5 @@ func (s *Stream) NewFused(openTok, closeTok Token, children ...Token) {
 func (s *Stream) newSynth(tok synth) Token {
 	raw := ID(^len(s.synths))
 	s.synths = append(s.synths, tok)
-	return id.Wrap(s.Context, raw)
+	return id.Wrap(s, raw)
 }

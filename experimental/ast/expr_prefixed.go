@@ -26,7 +26,7 @@ import (
 // # Grammar
 //
 //	ExprPrefix := `-` ExprSolo
-type ExprPrefixed id.Node[ExprPrefixed, Context, *rawExprPrefixed]
+type ExprPrefixed id.Node[ExprPrefixed, *File, *rawExprPrefixed]
 
 type rawExprPrefixed struct {
 	prefix token.ID
@@ -64,7 +64,7 @@ func (e ExprPrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(e.Context()), e.Raw().prefix)
+	return id.Wrap(e.Context().Stream(), e.Raw().prefix)
 }
 
 // Expr returns the expression the prefix is applied to.

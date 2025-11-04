@@ -36,7 +36,7 @@ import (
 //
 // Note that this grammar is highly ambiguous. TODO: document the rules under
 // which parse DeclSyntax, DeclPackage, DeclImport, and DeclRange.
-type DeclAny id.DynNode[DeclAny, DeclKind, Context]
+type DeclAny id.DynNode[DeclAny, DeclKind, *File]
 
 // AsEmpty converts a DeclAny into a DeclEmpty, if that is the declaration
 // it contains.

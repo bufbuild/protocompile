@@ -15,8 +15,6 @@
 package ast
 
 import (
-	"iter"
-
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -24,49 +22,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
-
-// File is the top-level AST node for a Protobuf file.
-//
-// A file is a list of declarations (in other words, it is a [DeclBody]). The
-// File type provides convenience functions for extracting salient elements,
-// such as the [DeclSyntax] and the [DeclPackage].
-//
-// # Grammar
-//
-//	File := DeclAny*
-type File struct {
-	DeclBody
-}
-
-// Syntax returns this file's declaration, if it has one.
-func (f File) Syntax() DeclSyntax {
-	for d := range seq.Values(f.Decls()) {
-		if s := d.AsSyntax(); !s.IsZero() {
-			return s
-		}
-	}
-	return DeclSyntax{}
-}
-
-// Package returns this file's package declaration, if it has one.
-func (f File) Package() DeclPackage {
-	for d := range seq.Values(f.Decls()) {
-		if p := d.AsPackage(); !p.IsZero() {
-			return p
-		}
-	}
-	return DeclPackage{}
-}
-
-// Imports returns an iterator over this file's import declarations.
-func (f File) Imports() iter.Seq[DeclImport] {
-	return iterx.FilterMap(seq.Values(f.Decls()), func(d DeclAny) (DeclImport, bool) {
-		if imp := d.AsImport(); !imp.IsZero() {
-			return imp, true
-		}
-		return DeclImport{}, false
-	})
-}
 
 // DeclSyntax represents a language declaration, such as the syntax or edition
 // keywords.
@@ -77,7 +32,7 @@ func (f File) Imports() iter.Seq[DeclImport] {
 //
 // Note: options are not permitted on syntax declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclSyntax id.Node[DeclSyntax, Context, *rawDeclSyntax]
+type DeclSyntax id.Node[DeclSyntax, *File, *rawDeclSyntax]
 
 type rawDeclSyntax struct {
 	value   id.Dyn[ExprAny, ExprKind]
@@ -118,7 +73,7 @@ func (d DeclSyntax) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(d.Context().Stream(), d.Raw().keyword)
 }
 
 // IsSyntax checks whether this is an OG syntax declaration.
@@ -139,7 +94,7 @@ func (d DeclSyntax) Equals() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().equals)
+	return id.Wrap(d.Context().Stream(), d.Raw().equals)
 }
 
 // Value returns the value expression of this declaration.
@@ -187,7 +142,7 @@ func (d DeclSyntax) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -207,7 +162,7 @@ func (d DeclSyntax) Span() report.Span {
 //
 // Note: options are not permitted on package declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclPackage id.Node[DeclPackage, Context, *rawDeclPackage]
+type DeclPackage id.Node[DeclPackage, *File, *rawDeclPackage]
 
 type rawDeclPackage struct {
 	keyword token.ID
@@ -245,7 +200,7 @@ func (d DeclPackage) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(d.Context().Stream(), d.Raw().keyword)
 }
 
 // Path returns this package's path.
@@ -285,7 +240,7 @@ func (d DeclPackage) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -305,7 +260,7 @@ func (d DeclPackage) Span() report.Span {
 //
 // Note: options are not permitted on import declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclImport id.Node[DeclImport, Context, *rawDeclImport]
+type DeclImport id.Node[DeclImport, *File, *rawDeclImport]
 
 type rawDeclImport struct {
 	keyword, semi token.ID
@@ -344,7 +299,7 @@ func (d DeclImport) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(d.Context().Stream(), d.Raw().keyword)
 }
 
 // Modifiers returns the modifiers for this declaration.
@@ -355,7 +310,7 @@ func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, t token.ID) keyword.Keyword {
-		return id.Wrap(token.Context(d.Context()), t).Keyword()
+		return id.Wrap(d.Context().Stream(), t).Keyword()
 	})
 }
 
@@ -366,7 +321,7 @@ func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 	}
 
 	return seq.NewSliceInserter(&d.Raw().modifiers,
-		func(_ int, e token.ID) token.Token { return id.Wrap(token.Context(d.Context()), e) },
+		func(_ int, e token.ID) token.Token { return id.Wrap(d.Context().Stream(), e) },
 		func(_ int, t token.Token) token.ID {
 			d.Context().Nodes().panicIfNotOurs(t)
 			return t.ID()
@@ -439,7 +394,7 @@ func (d DeclImport) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].

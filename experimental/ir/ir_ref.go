@@ -40,25 +40,25 @@ func (r Ref[T]) IsZero() bool {
 }
 
 // Get vets the value that a reference refers to.
-func GetRef[T ~id.Node[T, *Context, Raw], Raw any](base *Context, r Ref[T]) T {
+func GetRef[T ~id.Node[T, *File, Raw], Raw any](base *File, r Ref[T]) T {
 	return id.Wrap(r.Context(base), r.id)
 }
 
 // Context returns the context for this reference relative to a base context.
-func (r Ref[T]) Context(base *Context) *Context {
+func (r Ref[T]) Context(base *File) *File {
 	switch r.file {
 	case 0:
 		return base
 	case -1:
 		return primitiveCtx
 	default:
-		return base.imports.files[r.file-1].file.Context()
+		return base.imports.files[r.file-1].file
 	}
 }
 
 // ChangeContext changes the implicit context for this ref to be with respect to
 // the new one given.
-func (r Ref[T]) ChangeContext(base, next *Context) Ref[T] {
+func (r Ref[T]) ChangeContext(base, next *File) Ref[T] {
 	if base == next {
 		return r
 	}
@@ -70,9 +70,9 @@ func (r Ref[T]) ChangeContext(base, next *Context) Ref[T] {
 	}
 
 	// Figure out where file sits in next.
-	idx, ok := next.imports.byPath[ctx.File().InternedPath()]
+	idx, ok := next.imports.byPath[ctx.InternedPath()]
 	if !ok {
-		panic(fmt.Sprintf("protocompile/ir: could not change contexts %q -> %q", base.File().Path(), next.File().Path()))
+		panic(fmt.Sprintf("protocompile/ir: could not change contexts %q -> %q", base.Path(), next.Path()))
 	}
 
 	r.file = int32(idx) + 1

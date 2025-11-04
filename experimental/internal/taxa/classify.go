@@ -47,7 +47,7 @@ func Classify(node report.Spanner) Noun {
 	case token.Token:
 		return classifyToken(node)
 
-	case ast.File:
+	case *ast.File:
 		return TopLevel
 	case ast.Path:
 		if first, ok := iterx.OnlyOne(node.Components); ok && first.Separator().IsZero() {

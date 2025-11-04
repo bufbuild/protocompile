@@ -37,7 +37,7 @@ import (
 //
 // The resulting FileDescriptorSet is always fully linked: it contains all dependencies except
 // the WKTs, and all names are fully-qualified.
-func DescriptorSetBytes(files []File, options ...DescriptorOption) ([]byte, error) {
+func DescriptorSetBytes(files []*File, options ...DescriptorOption) ([]byte, error) {
 	var dg descGenerator
 	for _, opt := range options {
 		if opt != nil {
@@ -54,7 +54,7 @@ func DescriptorSetBytes(files []File, options ...DescriptorOption) ([]byte, erro
 // result as an encoded byte slice.
 //
 // The resulting FileDescriptorProto is fully linked: all names are fully-qualified.
-func DescriptorProtoBytes(file File, options ...DescriptorOption) ([]byte, error) {
+func DescriptorProtoBytes(file *File, options ...DescriptorOption) ([]byte, error) {
 	var dg descGenerator
 	for _, opt := range options {
 		if opt != nil {
@@ -79,22 +79,22 @@ func IncludeSourceCodeInfo(flag bool) DescriptorOption {
 }
 
 // ExcludeFiles excludes the given files from the output of [DescriptorSetBytes].
-func ExcludeFiles(exclude func(File) bool) DescriptorOption {
+func ExcludeFiles(exclude func(*File) bool) DescriptorOption {
 	return func(dg *descGenerator) {
 		dg.exclude = exclude
 	}
 }
 
 type descGenerator struct {
-	currentFile      File
+	currentFile      *File
 	includeDebugInfo bool
-	exclude          func(File) bool
+	exclude          func(*File) bool
 
 	sourceCodeInfo     *descriptorpb.SourceCodeInfo
 	sourceCodeInfoExtn *descriptorv1.SourceCodeInfoExtension
 }
 
-func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet) {
+func (dg *descGenerator) files(files []*File, fds *descriptorpb.FileDescriptorSet) {
 	// Build up all of the imported files. We can't just pull out the transitive
 	// imports for each file because we want the result to be sorted
 	// topologically.
@@ -110,7 +110,7 @@ func (dg *descGenerator) files(files []File, fds *descriptorpb.FileDescriptorSet
 	}
 }
 
-func (dg *descGenerator) file(file File, fdp *descriptorpb.FileDescriptorProto) {
+func (dg *descGenerator) file(file *File, fdp *descriptorpb.FileDescriptorProto) {
 	dg.currentFile = file
 	if dg.includeDebugInfo {
 		dg.sourceCodeInfo = new(descriptorpb.SourceCodeInfo)

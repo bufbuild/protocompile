@@ -30,8 +30,8 @@ import (
 
 var whitespacePattern = regexp.MustCompile(`[ \t\r\n]+`)
 
-func buildAllFeatureInfo(f File, r *report.Report) {
-	for m := range f.AllMembers() {
+func buildAllFeatureInfo(file *File, r *report.Report) {
+	for m := range file.AllMembers() {
 		if !m.IsEnumValue() {
 			buildFeatureInfo(m, r)
 		}
@@ -249,22 +249,22 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	field.Raw().featureInfo = info
 }
 
-func validateAllFeatures(f File, r *report.Report) {
-	builtins := f.Context().builtins()
+func validateAllFeatures(file *File, r *report.Report) {
+	builtins := file.builtins()
 
-	features := f.Options().Field(builtins.FileFeatures)
+	features := file.Options().Field(builtins.FileFeatures)
 	validateFeatures(features.AsMessage(), r)
-	f.Context().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+	file.features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 		options: features.ID(),
 	}))
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entries never have features.
 			continue
 		}
 
-		parent := f.Context().features
+		parent := file.features
 		if !ty.Parent().IsZero() {
 			parent = ty.Parent().Raw().features
 		}
@@ -276,7 +276,7 @@ func validateAllFeatures(f File, r *report.Report) {
 
 		features := ty.Options().Field(option)
 		validateFeatures(features.AsMessage(), r)
-		ty.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+		ty.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 			options: features.ID(),
 			parent:  parent,
 		}))
@@ -289,7 +289,7 @@ func validateAllFeatures(f File, r *report.Report) {
 
 			features := member.Options().Field(option)
 			validateFeatures(features.AsMessage(), r)
-			member.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+			member.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 				options: features.ID(),
 				parent:  ty.Raw().features,
 			}))
@@ -297,7 +297,7 @@ func validateAllFeatures(f File, r *report.Report) {
 		for oneof := range seq.Values(ty.Oneofs()) {
 			features := oneof.Options().Field(builtins.OneofFeatures)
 			validateFeatures(features.AsMessage(), r)
-			oneof.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+			oneof.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 				options: features.ID(),
 				parent:  ty.Raw().features,
 			}))
@@ -305,37 +305,37 @@ func validateAllFeatures(f File, r *report.Report) {
 		for extns := range seq.Values(ty.ExtensionRanges()) {
 			features := extns.Options().Field(builtins.RangeFeatures)
 			validateFeatures(features.AsMessage(), r)
-			extns.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+			extns.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 				options: features.ID(),
 				parent:  ty.Raw().features,
 			}))
 		}
 	}
-	for field := range seq.Values(f.AllExtensions()) {
-		parent := f.Context().features
+	for field := range seq.Values(file.AllExtensions()) {
+		parent := file.features
 		if !field.Parent().IsZero() {
 			parent = field.Parent().Raw().features
 		}
 
 		features := field.Options().Field(builtins.FieldFeatures)
 		validateFeatures(features.AsMessage(), r)
-		field.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+		field.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 			options: features.ID(),
 			parent:  parent,
 		}))
 	}
-	for service := range seq.Values(f.Services()) {
+	for service := range seq.Values(file.Services()) {
 		features := service.Options().Field(builtins.ServiceFeatures)
 		validateFeatures(features.AsMessage(), r)
-		service.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+		service.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 			options: features.ID(),
-			parent:  f.Context().features,
+			parent:  file.features,
 		}))
 
 		for method := range seq.Values(service.Methods()) {
 			features := method.Options().Field(builtins.MethodFeatures)
 			validateFeatures(features.AsMessage(), r)
-			method.Raw().features = id.ID[FeatureSet](f.Context().arenas.features.NewCompressed(rawFeatureSet{
+			method.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
 				options: features.ID(),
 				parent:  service.Raw().features,
 			}))
@@ -356,7 +356,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 	))
 
 	builtins := features.Context().builtins()
-	edition := features.Context().File().Syntax()
+	edition := features.Context().Syntax()
 	for feature := range features.Fields() {
 		if msg := feature.AsMessage(); !msg.IsZero() {
 			validateFeatures(msg, r)
@@ -381,7 +381,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		switch {
 		case info.IsRemoved(edition), info.IsDeprecated(edition):
 			r.SoftError(info.IsRemoved(edition), errEditionTooNew{
-				file:       features.Context().File(),
+				file:       features.Context(),
 				removed:    info.Removed(),
 				deprecated: info.Deprecated(),
 				warning:    info.DeprecationWarning(),
@@ -391,7 +391,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 
 		case !info.IsIntroduced(edition):
 			r.Error(errEditionTooOld{
-				file:  features.Context().File(),
+				file:  features.Context(),
 				intro: info.Introduced(),
 				what:  feature.Field().Name(),
 				where: feature.KeyAST(),
@@ -408,7 +408,7 @@ func prettyEdition(s syntax.Syntax) string {
 }
 
 type errEditionTooOld struct {
-	file  File
+	file  *File
 	intro syntax.Syntax
 
 	what  any
@@ -433,7 +433,7 @@ func (e errEditionTooOld) Diagnose(d *report.Diagnostic) {
 }
 
 type errEditionTooNew struct {
-	file                File
+	file                *File
 	deprecated, removed syntax.Syntax
 	warning             string
 

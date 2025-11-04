@@ -45,7 +45,7 @@ import (
 //	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
 //
 // Note that this type will only record the first appearance of any follower.
-type DeclDef id.Node[DeclDef, Context, *rawDeclDef]
+type DeclDef id.Node[DeclDef, *File, *rawDeclDef]
 
 type rawDeclDef struct {
 	ty   id.Dyn[TypeAny, TypeKind] // Not present for enum fields.
@@ -230,7 +230,7 @@ func (d DeclDef) Equals() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().equals)
+	return id.Wrap(d.Context().Stream(), d.Raw().equals)
 }
 
 // Value returns this definition's value. For a field, this will be the
@@ -288,7 +288,7 @@ func (d DeclDef) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // IsCorrupt reports whether or not some part of the parser decided that this
@@ -552,7 +552,7 @@ func (s Signature) Returns() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(s.Context()), s.raw.returns)
+	return id.Wrap(s.Context().Stream(), s.raw.returns)
 }
 
 // Inputs returns the input argument list for this signature.
@@ -614,7 +614,7 @@ type DefMessage struct {
 
 func (DefMessage) isDef()              {}
 func (d DefMessage) Span() report.Span { return d.Decl.Span() }
-func (d DefMessage) Context() Context  { return d.Decl.Context() }
+func (d DefMessage) Context() *File    { return d.Decl.Context() }
 
 // DefEnum is a [DeclDef] projected into an enum definition.
 //
@@ -629,7 +629,7 @@ type DefEnum struct {
 
 func (DefEnum) isDef()              {}
 func (d DefEnum) Span() report.Span { return d.Decl.Span() }
-func (d DefEnum) Context() Context  { return d.Decl.Context() }
+func (d DefEnum) Context() *File    { return d.Decl.Context() }
 
 // DefService is a [DeclDef] projected into a service definition.
 //
@@ -644,7 +644,7 @@ type DefService struct {
 
 func (DefService) isDef()              {}
 func (d DefService) Span() report.Span { return d.Decl.Span() }
-func (d DefService) Context() Context  { return d.Decl.Context() }
+func (d DefService) Context() *File    { return d.Decl.Context() }
 
 // DefExtend is a [DeclDef] projected into an extension definition.
 //
@@ -659,7 +659,7 @@ type DefExtend struct {
 
 func (DefExtend) isDef()              {}
 func (d DefExtend) Span() report.Span { return d.Decl.Span() }
-func (d DefExtend) Context() Context  { return d.Decl.Context() }
+func (d DefExtend) Context() *File    { return d.Decl.Context() }
 
 // DefField is a [DeclDef] projected into a field definition.
 //
@@ -677,7 +677,7 @@ type DefField struct {
 
 func (DefField) isDef()              {}
 func (d DefField) Span() report.Span { return d.Decl.Span() }
-func (d DefField) Context() Context  { return d.Decl.Context() }
+func (d DefField) Context() *File    { return d.Decl.Context() }
 
 // DefEnumValue is a [DeclDef] projected into an enum value definition.
 //
@@ -694,7 +694,7 @@ type DefEnumValue struct {
 
 func (DefEnumValue) isDef()              {}
 func (d DefEnumValue) Span() report.Span { return d.Decl.Span() }
-func (d DefEnumValue) Context() Context  { return d.Decl.Context() }
+func (d DefEnumValue) Context() *File    { return d.Decl.Context() }
 
 // DefEnumValue is a [DeclDef] projected into a oneof definition.
 //
@@ -709,7 +709,7 @@ type DefOneof struct {
 
 func (DefOneof) isDef()              {}
 func (d DefOneof) Span() report.Span { return d.Decl.Span() }
-func (d DefOneof) Context() Context  { return d.Decl.Context() }
+func (d DefOneof) Context() *File    { return d.Decl.Context() }
 
 // DefGroup is a [DeclDef] projected into a group definition.
 //
@@ -727,7 +727,7 @@ type DefGroup struct {
 
 func (DefGroup) isDef()              {}
 func (d DefGroup) Span() report.Span { return d.Decl.Span() }
-func (d DefGroup) Context() Context  { return d.Decl.Context() }
+func (d DefGroup) Context() *File    { return d.Decl.Context() }
 
 // DefMethod is a [DeclDef] projected into a method definition.
 //
@@ -743,7 +743,7 @@ type DefMethod struct {
 
 func (DefMethod) isDef()              {}
 func (d DefMethod) Span() report.Span { return d.Decl.Span() }
-func (d DefMethod) Context() Context  { return d.Decl.Context() }
+func (d DefMethod) Context() *File    { return d.Decl.Context() }
 
 // DefOption is a [DeclDef] projected into a method definition.
 //
@@ -762,4 +762,4 @@ type DefOption struct {
 
 func (DefOption) isDef()              {}
 func (d DefOption) Span() report.Span { return d.Decl.Span() }
-func (d DefOption) Context() Context  { return d.Decl.Context() }
+func (d DefOption) Context() *File    { return d.Decl.Context() }

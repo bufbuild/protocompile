@@ -22,7 +22,7 @@ import (
 )
 
 // StringToken provides access to detailed information about a [String].
-type StringToken id.Node[StringToken, Context, *tokenmeta.String]
+type StringToken id.Node[StringToken, *Stream, *tokenmeta.String]
 
 // Escape is an escape inside of a [StringToken]. See [StringToken.Escapes].
 type Escape struct {
@@ -61,7 +61,7 @@ func (s StringToken) Escapes() seq.Indexer[Escape] {
 
 	return seq.NewFixedSlice(spans, func(_ int, esc tokenmeta.Escape) Escape {
 		return Escape{
-			Span: s.Token().Context().Stream().Span(int(esc.Start), int(esc.End)),
+			Span: s.Token().Context().Span(int(esc.Start), int(esc.End)),
 			Rune: esc.Rune,
 			Byte: esc.Byte,
 		}

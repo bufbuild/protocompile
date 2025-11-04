@@ -25,7 +25,6 @@ import (
 
 // lexer is a Protobuf parser.
 type parser struct {
-	ast.Context
 	*ast.Nodes
 	*report.Report
 
@@ -81,7 +80,7 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 	}
 
 	if p.insert != 0 {
-		err.stream = p.Stream()
+		err.stream = p.File().Stream()
 		err.insert = p.want.String()
 		err.insertAt = err.what.Span().Start
 		err.insertJustify = p.insert

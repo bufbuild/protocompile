@@ -259,7 +259,7 @@ func (e errUnexpectedMod) Diagnose(d *report.Diagnostic) {
 
 	if !e.noDelete {
 		d.Apply(
-			justify(e.mod.Context().Stream(), e.mod.Span(), "delete it", justified{
+			justify(e.mod.Context(), e.mod.Span(), "delete it", justified{
 				Edit:    report.Edit{Start: 0, End: e.mod.Span().Len()},
 				justify: justifyRight,
 			}))

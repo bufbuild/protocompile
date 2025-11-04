@@ -43,7 +43,7 @@ import (
 //  3. Its _container_, i.e., the type which it is part of for the purposes of
 //     serialization. Extensions are fields of their container, but are declared
 //     within their parent.
-type Member id.Node[Member, *Context, *rawMember]
+type Member id.Node[Member, *File, *rawMember]
 
 type rawMember struct {
 	featureInfo   *rawFeatureInfo
@@ -154,7 +154,7 @@ func (m Member) AST() ast.DeclDef {
 	if m.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.Wrap(m.Context().File().AST().Context(), m.Raw().def)
+	return id.Wrap(m.Context().AST(), m.Raw().def)
 }
 
 // TypeAST returns the type AST node for this member, if known.
@@ -238,7 +238,7 @@ func (m Member) InternedScope() intern.ID {
 	if parent := m.Parent(); !parent.IsZero() {
 		return parent.InternedFullName()
 	}
-	return m.Context().File().InternedPackage()
+	return m.Context().InternedPackage()
 }
 
 // InternedJSONName returns the intern ID for [Member.JSONName].
@@ -441,12 +441,12 @@ func (m Member) noun() taxa.Noun {
 }
 
 // toRef returns a ref to this member relative to the given context.
-func (m Member) toRef(c *Context) Ref[Member] {
-	return Ref[Member]{id: m.ID()}.ChangeContext(m.Context(), c)
+func (m Member) toRef(f *File) Ref[Member] {
+	return Ref[Member]{id: m.ID()}.ChangeContext(m.Context(), f)
 }
 
 // Extend represents an extend block associated with some extension field.
-type Extend id.Node[Extend, *Context, *rawExtend]
+type Extend id.Node[Extend, *File, *rawExtend]
 
 // rawExtend represents an extends block.
 //
@@ -464,7 +464,7 @@ func (e Extend) AST() ast.DeclDef {
 	if e.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.Wrap(e.Context().File().AST().Context(), e.Raw().def)
+	return id.Wrap(e.Context().AST(), e.Raw().def)
 }
 
 // Scope returns the scope that symbol lookups in this block should be performed
@@ -485,7 +485,7 @@ func (e Extend) InternedScope() intern.ID {
 	if ty := e.Parent(); !ty.IsZero() {
 		return ty.InternedFullName()
 	}
-	return e.Context().File().InternedPackage()
+	return e.Context().InternedPackage()
 }
 
 // Extendee returns the extendee type of this extend block.
@@ -516,7 +516,7 @@ func (e Extend) Extensions() seq.Indexer[Member] {
 }
 
 // Oneof represents a oneof within a message definition.
-type Oneof id.Node[Oneof, *Context, *rawOneof]
+type Oneof id.Node[Oneof, *File, *rawOneof]
 
 type rawOneof struct {
 	def       id.ID[ast.DeclDef]
@@ -533,7 +533,7 @@ func (o Oneof) AST() ast.DeclDef {
 	if o.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.Wrap(o.Context().File().AST().Context(), o.Raw().def)
+	return id.Wrap(o.Context().AST(), o.Raw().def)
 }
 
 // Name returns this oneof's declared name.
@@ -622,7 +622,7 @@ func (o Oneof) FeatureSet() FeatureSet {
 
 // ReservedRange is a range of reserved field or enum numbers,
 // either from a reserved or extensions declaration.
-type ReservedRange id.Node[ReservedRange, *Context, *rawReservedRange]
+type ReservedRange id.Node[ReservedRange, *File, *rawReservedRange]
 
 type rawReservedRange struct {
 	value         id.Dyn[ast.ExprAny, ast.ExprKind]
@@ -641,7 +641,7 @@ func (r ReservedRange) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	return id.WrapDyn(r.Context().File().AST().Context(), r.Raw().value)
+	return id.WrapDyn(r.Context().AST(), r.Raw().value)
 }
 
 // DeclAST returns the declaration this range came from. Multiple ranges may
@@ -651,7 +651,7 @@ func (r ReservedRange) DeclAST() ast.DeclRange {
 		return ast.DeclRange{}
 	}
 
-	return id.Wrap(r.Context().File().AST().Context(), r.Raw().decl)
+	return id.Wrap(r.Context().AST(), r.Raw().decl)
 }
 
 // Range returns the start and end of the range.

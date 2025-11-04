@@ -25,8 +25,7 @@ import (
 
 // lexer is a Protobuf lexer.
 type lexer struct {
-	token.Context
-	*token.Stream // Embedded so we don't have to call Stream() everywhere.
+	*token.Stream
 	*report.Report
 
 	cursor, count int

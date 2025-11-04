@@ -33,16 +33,14 @@ import (
 
 // buildLocalSymbols allocates new symbols for each definition in this file,
 // and places them in the local symbol table.
-func buildLocalSymbols(f File) {
-	c := f.Context()
-
-	sym := c.arenas.symbols.NewCompressed(rawSymbol{
+func buildLocalSymbols(file *File) {
+	sym := file.arenas.symbols.NewCompressed(rawSymbol{
 		kind: SymbolKindPackage,
-		fqn:  f.InternedPackage(),
+		fqn:  file.InternedPackage(),
 	})
-	c.exported = append(c.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
+	file.exported = append(file.exported, Ref[Symbol]{id: id.ID[Symbol](sym)})
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		newTypeSymbol(ty)
 		for f := range seq.Values(ty.Members()) {
 			newFieldSymbol(f)
@@ -54,17 +52,17 @@ func buildLocalSymbols(f File) {
 			newOneofSymbol(o)
 		}
 	}
-	for f := range seq.Values(f.Extensions()) {
+	for f := range seq.Values(file.Extensions()) {
 		newFieldSymbol(f)
 	}
-	for s := range seq.Values(f.Services()) {
+	for s := range seq.Values(file.Services()) {
 		newServiceSymbol(s)
 		for m := range seq.Values(s.Methods()) {
 			newMethodSymbol(m)
 		}
 	}
 
-	c.exported.sort(c)
+	file.exported.sort(file)
 }
 
 func newTypeSymbol(ty Type) {
@@ -131,8 +129,8 @@ func newMethodSymbol(m Method) {
 //
 // It also enhances the exported symbol table with the exported symbols of each
 // public import.
-func mergeImportedSymbolTables(f File, r *report.Report) {
-	imports := f.Imports()
+func mergeImportedSymbolTables(file *File, r *report.Report) {
+	imports := file.Imports()
 
 	var havePublic bool
 	for sym := range seq.Values(imports) {
@@ -145,52 +143,52 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 	// Form the exported symbol table from the public imports. Not necessary
 	// if there are no public imports.
 	if havePublic {
-		f.Context().exported = symtabMerge(
-			f.Context(),
+		file.exported = symtabMerge(
+			file,
 			iterx.Chain(
-				iterx.Of(f.Context().exported),
+				iterx.Of(file.exported),
 				seq.Map(imports, func(i Import) symtab {
 					if !i.Public {
 						// Return an empty symbol table so that the table to
 						// context mapping can still be an array index.
 						return symtab{}
 					}
-					return i.Context().exported
+					return i.exported
 				}),
 			),
-			func(i int) File {
+			func(i int) *File {
 				if i == 0 {
-					return f
+					return file
 				}
-				return f.Context().imports.files[i-1].file
+				return file.imports.files[i-1].file
 			},
 		)
 	}
 
 	// Form the imported symbol table from the exports list by adding all of
 	// the non-public imports.
-	f.Context().imported = symtabMerge(
-		f.Context(),
+	file.imported = symtabMerge(
+		file,
 		iterx.Chain(
-			iterx.Of(f.Context().exported),
+			iterx.Of(file.exported),
 			seq.Map(imports, func(i Import) symtab {
 				if i.Public {
 					// Already processed in the loop above.
 					return symtab{}
 				}
-				return i.Context().exported
+				return i.exported
 			}),
 		),
-		func(i int) File {
+		func(i int) *File {
 			if i == 0 {
-				return f
+				return file
 			}
-			return f.Context().imports.files[i-1].file
+			return file.imports.files[i-1].file
 		},
 	)
 
-	dedupSymbols(f, &f.Context().exported, nil)
-	dedupSymbols(f, &f.Context().imported, r)
+	dedupSymbols(file, &file.exported, nil)
+	dedupSymbols(file, &file.imported, r)
 }
 
 // dedupSymbols diagnoses duplicate symbols in a sorted symbol table, and
@@ -199,35 +197,35 @@ func mergeImportedSymbolTables(f File, r *report.Report) {
 // Which duplicate is chosen for deletion is deterministic: ties are broken
 // according to file names and span starts, in that order. This avoids
 // non-determinism around how intern IDs are assigned to names.
-func dedupSymbols(f File, symbols *symtab, r *report.Report) {
+func dedupSymbols(file *File, symbols *symtab, r *report.Report) {
 	*symbols = slicesx.DedupKey(
 		*symbols,
-		func(r Ref[Symbol]) intern.ID { return GetRef(f.Context(), r).InternedFullName() },
+		func(r Ref[Symbol]) intern.ID { return GetRef(file, r).InternedFullName() },
 		func(refs []Ref[Symbol]) Ref[Symbol] {
 			if len(refs) == 1 {
 				return refs[0]
 			}
 
 			slices.SortFunc(refs, cmpx.Map(
-				func(r Ref[Symbol]) Symbol { return GetRef(f.Context(), r) },
+				func(r Ref[Symbol]) Symbol { return GetRef(file, r) },
 				cmpx.Key(Symbol.Kind), // Packages sort first, reserved names sort last.
 				cmpx.Key(func(s Symbol) string {
 					// NOTE: we do not choose a winner based on the path's intern
 					// ID, because that is non-deterministic!
-					return s.Context().File().Path()
+					return s.Context().Path()
 				}),
 				// Break ties with whichever came first in the file.
 				cmpx.Key(func(s Symbol) int { return s.Definition().Start }),
 			))
 
 			types := mapsx.CollectSet(iterx.FilterMap(slices.Values(refs), func(r Ref[Symbol]) (ast.DeclDef, bool) {
-				s := GetRef(f.Context(), r)
+				s := GetRef(file, r)
 				ty := s.AsType()
 				return ty.AST(), !ty.IsZero()
 			}))
 			isFirst := true
 			refs = slices.DeleteFunc(refs, func(r Ref[Symbol]) bool {
-				s := GetRef(f.Context(), r)
+				s := GetRef(file, r)
 				if !isFirst && !s.AsMember().Container().MapField().IsZero() {
 					// Ignore all symbols that are map entry fields, because those
 					// can only be duplicated when two map entry messages' names
@@ -253,7 +251,7 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 			// Deduplicate references to the same element.
 			refs = slicesx.Dedup(refs)
 			if len(refs) > 1 && r != nil {
-				r.Error(errDuplicates{f.Context(), refs})
+				r.Error(errDuplicates{file, refs})
 			}
 
 			return refs[0]
@@ -263,12 +261,12 @@ func dedupSymbols(f File, symbols *symtab, r *report.Report) {
 
 // errDuplicates diagnoses duplicate symbols.
 type errDuplicates struct {
-	*Context
+	*File
 	refs []Ref[Symbol]
 }
 
 func (e errDuplicates) symbol(n int) Symbol {
-	return GetRef(e.Context, e.refs[n])
+	return GetRef(e.File, e.refs[n])
 }
 
 func (e errDuplicates) Diagnose(d *report.Diagnostic) {
@@ -344,14 +342,14 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 	// that symbol names are global!
 	for i := range e.refs {
 		s := e.symbol(i)
-		if s.Visible(e.Context.File()) {
+		if s.Visible(e.File) {
 			continue
 		}
 
 		d.Apply(report.Helpf(
 			"symbol names must be unique across all transitive imports; "+
 				"for example, %q declares `%s` but is not directly imported",
-			s.Context().File().Path(),
+			s.Context().Path(),
 			first.FullName(),
 		))
 		break

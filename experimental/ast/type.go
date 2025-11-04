@@ -51,7 +51,7 @@ import (
 // Thus, parsing a type is greedy except when the containing production contains
 // "Type Path?" or similar, in which case parsing must be greedy up to the last
 // [Path] it would otherwise consume.
-type TypeAny id.DynNode[TypeAny, TypeKind, Context]
+type TypeAny id.DynNode[TypeAny, TypeKind, *File]
 
 // AsError converts a TypeAny into a TypeError, if that is the type
 // it contains.
@@ -136,7 +136,7 @@ func (t TypeAny) Span() report.Span {
 //
 // This type is so named to adhere to package ast's naming convention. It does
 // not represent a "type error" as in "type-checking failure".
-type TypeError id.Node[TypeError, Context, *rawTypeError]
+type TypeError id.Node[TypeError, *File, *rawTypeError]
 
 type rawTypeError report.Span
 

@@ -27,8 +27,8 @@ import (
 // evaluateFieldNumbers evaluates all non-extension field numbers: that is,
 // the numbers in reserved ranges and in non-extension field and enum value
 // declarations.
-func evaluateFieldNumbers(f File, r *report.Report) {
-	for ty := range seq.Values(f.AllTypes()) {
+func evaluateFieldNumbers(file *File, r *report.Report) {
+	for ty := range seq.Values(file.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entry types come with numbers pre-calculated.
 			continue
@@ -48,7 +48,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 
 		for member := range seq.Values(ty.Members()) {
 			member.Raw().number, member.Raw().numberOk = evaluateMemberNumber(
-				f.Context(), scope, member.AST().Value(), kind, false, r)
+				file, scope, member.AST().Value(), kind, false, r)
 		}
 
 		for tags := range seq.Values(ty.AllRanges()) {
@@ -56,8 +56,8 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 			case ast.ExprKindRange:
 				a, b := tags.AST().AsRange().Bounds()
 
-				start, startOk := evaluateMemberNumber(f.Context(), scope, a, kind, false, r)
-				end, endOk := evaluateMemberNumber(f.Context(), scope, b, kind, true, r)
+				start, startOk := evaluateMemberNumber(file, scope, a, kind, false, r)
+				end, endOk := evaluateMemberNumber(file, scope, b, kind, true, r)
 
 				if !startOk || !endOk {
 					continue
@@ -91,7 +91,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 				tags.Raw().rangeOk = startOk && endOk
 
 			default:
-				n, ok := evaluateMemberNumber(f.Context(), scope, tags.AST(), kind, false, r)
+				n, ok := evaluateMemberNumber(file, scope, tags.AST(), kind, false, r)
 				if !ok {
 					continue
 				}
@@ -103,7 +103,7 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 		}
 	}
 
-	for extn := range seq.Values(f.AllExtensions()) {
+	for extn := range seq.Values(file.AllExtensions()) {
 		var kind memberNumber
 		switch {
 		case extn.Container().IsMessageSet():
@@ -112,25 +112,25 @@ func evaluateFieldNumbers(f File, r *report.Report) {
 			kind = fieldNumber
 		}
 
-		scope := extn.Context().File().Package()
+		scope := extn.Context().Package()
 		if ty := extn.Parent(); !ty.IsZero() {
 			scope = ty.FullName()
 		}
 
 		extn.Raw().number, extn.Raw().numberOk = evaluateMemberNumber(
-			f.Context(), scope, extn.AST().Value(), kind, false, r)
+			file, scope, extn.AST().Value(), kind, false, r)
 	}
 }
 
-func evaluateMemberNumber(c *Context, scope FullName, number ast.ExprAny, kind memberNumber, allowMax bool, r *report.Report) (int32, bool) {
+func evaluateMemberNumber(file *File, scope FullName, number ast.ExprAny, kind memberNumber, allowMax bool, r *report.Report) (int32, bool) {
 	if number.IsZero() {
 		return 0, false // Diagnosed for us elsewhere.
 	}
 
 	e := &evaluator{
-		Context: c,
-		Report:  r,
-		scope:   scope,
+		File:   file,
+		Report: r,
+		scope:  scope,
 	}
 
 	// Don't bother allocating a whole Value for this.
@@ -146,7 +146,7 @@ func evaluateMemberNumber(c *Context, scope FullName, number ast.ExprAny, kind m
 // buildFieldNumberRanges builds the field number range table for all types.
 //
 // This also checks for and diagnoses overlaps.
-func buildFieldNumberRanges(f File, r *report.Report) {
+func buildFieldNumberRanges(file *File, r *report.Report) {
 	// overlapLimit sets the maximum number of overlapping ranges we tolerate
 	// before we stop processing overlapping ranges.
 	//
@@ -170,7 +170,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 	const overlapLimit = 50
 
 	// First, dump all of the ranges into the intersection set.
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		var totalOverlaps int
 		for tagRange := range iterx.Chain(
 			seq.Values(ty.ReservedRanges()),
@@ -181,7 +181,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 				continue // Diagnosed already.
 			}
 			disjoint := ty.Raw().rangesByNumber.Insert(lo, hi, rawTagRange{
-				ptr: arena.Untyped(f.Context().arenas.ranges.Compress(tagRange.Raw())),
+				ptr: arena.Untyped(file.arenas.ranges.Compress(tagRange.Raw())),
 			})
 
 			// Avoid quadratic behavior. See overlapLimit's comment above.
@@ -203,7 +203,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 			}
 			ty.Raw().rangesByNumber.Insert(n, n, rawTagRange{
 				isMember: true,
-				ptr:      arena.Untyped(f.Context().arenas.members.Compress(member.Raw())),
+				ptr:      arena.Untyped(file.arenas.members.Compress(member.Raw())),
 			})
 		}
 
@@ -238,7 +238,7 @@ func buildFieldNumberRanges(f File, r *report.Report) {
 
 	// Check that every extension has a corresponding extension range.
 extensions:
-	for extn := range seq.Values(f.AllExtensions()) {
+	for extn := range seq.Values(file.AllExtensions()) {
 		n := extn.Number()
 		if n == 0 {
 			continue // Diagnosed already.

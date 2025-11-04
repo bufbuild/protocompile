@@ -35,7 +35,7 @@ import (
 // [Symbol.Context] returns the context for the file which imported this
 // symbol. To map this to the context in which the symbol was defined, use
 // [Symbol.InDefFile].
-type Symbol id.Node[Symbol, *Context, *rawSymbol]
+type Symbol id.Node[Symbol, *File, *rawSymbol]
 
 type rawSymbol struct {
 	kind SymbolKind
@@ -150,19 +150,19 @@ func (s Symbol) Deprecated() Value {
 
 // Visible returns whether or not this symbol is visible according to Protobuf's
 // import semantics, within s.Context().File().
-func (s Symbol) Visible(in File) bool {
-	if s.Context() == in.Context() || s.Context() == primitiveCtx || s.Kind() == SymbolKindPackage {
+func (s Symbol) Visible(in *File) bool {
+	if s.Context() == in || s.Context() == primitiveCtx || s.Kind() == SymbolKindPackage {
 		// Packages don't get visibility checks.
 		return true
 	}
 
 	// fmt.Println(s.Context().File().Path)
-	idx, imported := in.Context().imports.byPath[s.Context().File().InternedPath()]
+	idx, imported := in.imports.byPath[s.Context().InternedPath()]
 	if !imported {
 		return false
 	}
 
-	imp := in.Context().imports.files[idx]
+	imp := in.imports.files[idx]
 	return imp.visible
 }
 
@@ -171,7 +171,7 @@ func (s Symbol) Visible(in File) bool {
 func (s Symbol) Definition() report.Span {
 	switch s.Kind() {
 	case SymbolKindPackage:
-		return s.Context().File().AST().Package().Span()
+		return s.Context().AST().Package().Span()
 	case SymbolKindMessage, SymbolKindEnum:
 		ty := s.AsType()
 		if mf := ty.MapField(); !mf.IsZero() {
@@ -288,21 +288,21 @@ var resolveScratch = sync.Pool{
 }
 
 // symtabMerge merges the given symbol tables in the given context.
-func symtabMerge(c *Context, tables iter.Seq[symtab], fileForTable func(int) File) symtab {
+func symtabMerge(file *File, tables iter.Seq[symtab], fileForTable func(int) *File) symtab {
 	return slicesx.MergeKeySeq(
 		tables,
 
 		func(which int, elem Ref[Symbol]) intern.ID {
 			f := fileForTable(which)
-			return GetRef(f.Context(), elem).InternedFullName()
+			return GetRef(f, elem).InternedFullName()
 		},
 
 		func(which int, elem Ref[Symbol]) Ref[Symbol] {
 			// We need top map the file number from src to the current one.
 			src := fileForTable(which)
-			if src.Context() != c {
-				theirs := GetRef(src.Context(), elem)
-				ours := c.imports.byPath[theirs.Context().File().InternedPath()]
+			if src != file {
+				theirs := GetRef(src, elem)
+				ours := file.imports.byPath[theirs.Context().InternedPath()]
 				elem.file = int32(ours + 1)
 			}
 
@@ -313,18 +313,18 @@ func symtabMerge(c *Context, tables iter.Seq[symtab], fileForTable func(int) Fil
 
 // sort sorts this symbol table according to the value of each intern
 // ID.
-func (s symtab) sort(c *Context) {
+func (s symtab) sort(file *File) {
 	slices.SortFunc(s, func(a, b Ref[Symbol]) int {
-		symA := GetRef(c, a)
-		symB := GetRef(c, b)
+		symA := GetRef(file, a)
+		symB := GetRef(file, b)
 		return cmp.Compare(symA.InternedFullName(), symB.InternedFullName())
 	})
 }
 
 // lookupBytes looks up a symbol with the given fully-qualified name.
-func (s symtab) lookup(c *Context, fqn intern.ID) Ref[Symbol] {
+func (s symtab) lookup(file *File, fqn intern.ID) Ref[Symbol] {
 	idx, ok := slicesx.BinarySearchKey(s, fqn, func(r Ref[Symbol]) intern.ID {
-		return GetRef(c, r).InternedFullName()
+		return GetRef(file, r).InternedFullName()
 	})
 	if !ok {
 		return Ref[Symbol]{}
@@ -334,13 +334,13 @@ func (s symtab) lookup(c *Context, fqn intern.ID) Ref[Symbol] {
 }
 
 // lookupBytes looks up a symbol with the given fully-qualified name.
-func (s symtab) lookupBytes(c *Context, fqn []byte) Ref[Symbol] {
-	id, ok := c.session.intern.QueryBytes(fqn)
+func (s symtab) lookupBytes(file *File, fqn []byte) Ref[Symbol] {
+	id, ok := file.session.intern.QueryBytes(fqn)
 	if !ok {
 		return Ref[Symbol]{}
 	}
 	idx, ok := slicesx.BinarySearchKey(s, id, func(r Ref[Symbol]) intern.ID {
-		return GetRef(c, r).InternedFullName()
+		return GetRef(file, r).InternedFullName()
 	})
 	if !ok {
 		return Ref[Symbol]{}
@@ -363,7 +363,7 @@ func (s symtab) lookupBytes(c *Context, fqn []byte) Ref[Symbol] {
 // If candidates is not nil, debugging remarks will be appended to the
 // diagnostic.
 func (s symtab) resolve(
-	c *Context,
+	file *File,
 	scope, name FullName,
 	skipIfNot func(SymbolKind) bool,
 	remarks *report.Diagnostic,
@@ -462,13 +462,13 @@ func (s symtab) resolve(
 
 again:
 	for {
-		r := s.lookupBytes(c, candidate)
+		r := s.lookupBytes(file, candidate)
 		remarks.Apply(report.Debugf("candidate: `%s`", candidate))
 
 		if !r.IsZero() {
 			found = r
-			sym := GetRef(c, r)
-			if sym.Visible(c.File()) && accept(sym.Kind()) {
+			sym := GetRef(file, r)
+			if sym.Visible(file) && accept(sym.Kind()) {
 				// If the symbol is not visible, keep looking; we may find
 				// another match that is actually visible.
 				break
@@ -491,7 +491,7 @@ again:
 	if scopeSearch {
 		// Now search for the full name inside of the scope we found.
 		candidate = append(candidate, name[len(first):]...)
-		found = s.lookupBytes(c, candidate)
+		found = s.lookupBytes(file, candidate)
 		if found.IsZero() {
 			// Try again, this time using the full candidate name. This happens
 			// expressly for the purpose of diagnostics.
@@ -504,9 +504,9 @@ again:
 		}
 	}
 
-	file := found.Context(c).File()
-	if file != c.File() {
-		c.imports.MarkUsed(file)
+	foundFile := found.Context(file)
+	if foundFile != file {
+		file.imports.MarkUsed(foundFile)
 	}
 
 	return found, expected

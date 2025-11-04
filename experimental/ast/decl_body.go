@@ -33,7 +33,7 @@ import (
 //
 // Note that a [File] is simply a DeclBody that is delimited by the bounds of
 // the source file, rather than braces.
-type DeclBody id.Node[DeclBody, Context, *rawDeclBody]
+type DeclBody id.Node[DeclBody, *File, *rawDeclBody]
 
 // HasBody is an AST node that contains a [Body].
 //
@@ -70,7 +70,7 @@ func (d DeclBody) Braces() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().braces)
+	return id.Wrap(d.Context().Stream(), d.Raw().braces)
 }
 
 // Span implements [report.Spanner].

@@ -58,7 +58,7 @@ type Value interface {
 //
 // The zero value of Token is the so-called "zero token", which is used to denote the
 // absence of a token.
-type Token id.Node[Token, Context, rawToken]
+type Token id.Node[Token, *Stream, rawToken]
 
 type rawToken struct{}
 
@@ -170,7 +170,7 @@ func (t Token) Text() string {
 	}
 
 	start, end := t.offsets()
-	return t.Context().Stream().Text()[start:end]
+	return t.Context().Text()[start:end]
 }
 
 // Span implements [Spanner].
@@ -188,7 +188,7 @@ func (t Token) Span() report.Span {
 		a, b = t.offsets()
 	}
 
-	return t.Context().Stream().Span(a, b)
+	return t.Context().Span(a, b)
 }
 
 // LeafSpan returns the span that this token would have if it was a leaf token.
@@ -197,7 +197,7 @@ func (t Token) LeafSpan() report.Span {
 		return report.Span{}
 	}
 
-	return t.Context().Stream().Span(t.offsets())
+	return t.Context().Span(t.offsets())
 }
 
 // StartEnd returns the open and close tokens for this token.
@@ -258,10 +258,10 @@ func (t Token) Prev() Token {
 // If open or close are synthetic or not currently a leaf, have different
 // contexts, or are part of a frozen [Stream], this function panics.
 func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
-	if open.Context().Stream() != close.Context().Stream() {
+	if open.Context() != close.Context() {
 		panic("protocompile/token: attempted to fuse tokens from different streams")
 	}
-	if open.Context().Stream().frozen {
+	if open.Context().frozen {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}
 
@@ -388,12 +388,12 @@ func (t Token) nat() *nat {
 	if t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().nats[naturalIndex(t.ID())]
+	return &t.Context().nats[naturalIndex(t.ID())]
 }
 
 func (t Token) synth() *synth {
 	if !t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().synths[syntheticIndex(t.ID())]
+	return &t.Context().synths[syntheticIndex(t.ID())]
 }

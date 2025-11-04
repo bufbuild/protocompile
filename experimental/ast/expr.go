@@ -46,7 +46,7 @@ import (
 // expressions are juxtaposed with each other; i.e., ExprJuxta* does not make
 // e.g. "foo {}" ambiguous between an [ExprField] or an [ExprPath] followed by
 // an [ExprDict].
-type ExprAny id.DynNode[ExprAny, ExprKind, Context]
+type ExprAny id.DynNode[ExprAny, ExprKind, *File]
 
 // AsError converts a ExprAny into a ExprError, if that is the type
 // it contains.
@@ -68,7 +68,8 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 		return ExprLiteral{}
 	}
 	return ExprLiteral{
-		Token: id.Wrap(token.Context(e.Context()), id.ID[token.Token](e.ID().Value())),
+		File:  e.Context(),
+		Token: id.Wrap(e.Context().Stream(), id.ID[token.Token](e.ID().Value())),
 	}
 }
 
@@ -157,7 +158,7 @@ func (e ExprAny) Span() report.Span {
 }
 
 // ExprError represents an unrecoverable parsing error in an expression context.
-type ExprError id.Node[ExprError, Context, *rawExprError]
+type ExprError id.Node[ExprError, *File, *rawExprError]
 
 type rawExprError report.Span
 

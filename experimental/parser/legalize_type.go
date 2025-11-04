@@ -118,7 +118,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			p.Errorf("multiple modifiers on %v type", taxa.Field).Apply(
 				report.Snippet(ty.PrefixToken()),
 				report.Snippetf(mod.PrefixToken(), "previous one is here"),
-				justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+				justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
 					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 					justify: justifyRight,
 				}),
@@ -134,7 +134,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 					want: expected,
 				}).Apply(
 					report.Snippetf(oneof, "within this %s", taxa.Oneof),
-					justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+					justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
 						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 						justify: justifyRight,
 					}),
@@ -163,7 +163,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 							what: ty.PrefixToken(),
 							want: expected,
 						}).Apply(
-							justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+							justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
 								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 								justify: justifyRight,
 							}),
@@ -178,7 +178,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 							what: ty.PrefixToken(),
 							want: expected,
 						}).Apply(
-							justify(p.Stream(), ty.PrefixToken().Span(), "delete it", justified{
+							justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
 								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
 								justify: justifyRight,
 							}),

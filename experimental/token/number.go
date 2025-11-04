@@ -25,7 +25,7 @@ import (
 )
 
 // NumberToken provides access to detailed information about a [Number].
-type NumberToken id.Node[NumberToken, Context, *tokenmeta.Number]
+type NumberToken id.Node[NumberToken, *Stream, *tokenmeta.Number]
 
 // Token returns the wrapped token value.
 func (n NumberToken) Token() Token {

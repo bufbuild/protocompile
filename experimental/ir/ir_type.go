@@ -56,7 +56,7 @@ func (r TagRange) AsReserved() ReservedRange {
 }
 
 // Type is a Protobuf message field type.
-type Type id.Node[Type, *Context, *rawType]
+type Type id.Node[Type, *File, *rawType]
 
 type rawType struct {
 	nested          []id.ID[Type]
@@ -88,8 +88,8 @@ type rawTagRange struct {
 
 // primitiveCtx represents a special file that defines all of the primitive
 // types.
-var primitiveCtx = func() *Context {
-	ctx := new(Context)
+var primitiveCtx = func() *File {
+	ctx := new(File)
 
 	nextPtr := 1
 	for n := range predeclared.All() {
@@ -140,7 +140,7 @@ func (t Type) AST() ast.DeclDef {
 	if t.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.Wrap(t.Context().File().AST().Context(), t.Raw().def)
+	return id.Wrap(t.Context().AST(), t.Raw().def)
 }
 
 // IsPredeclared returns whether this is a predeclared type.
@@ -275,7 +275,7 @@ func (t Type) InternedScope() intern.ID {
 	if parent := t.Parent(); !parent.IsZero() {
 		return parent.InternedFullName()
 	}
-	return t.Context().File().InternedPackage()
+	return t.Context().InternedPackage()
 }
 
 // Parent returns the type that this type is declared inside of, if it isn't
@@ -517,6 +517,6 @@ func (t Type) noun() taxa.Noun {
 }
 
 // toRef returns a ref to this type relative to the given context.
-func (t Type) toRef(c *Context) Ref[Type] {
-	return Ref[Type]{id: t.ID()}.ChangeContext(t.Context(), c)
+func (t Type) toRef(file *File) Ref[Type] {
+	return Ref[Type]{id: t.ID()}.ChangeContext(t.Context(), file)
 }

@@ -25,7 +25,7 @@ import (
 // # Grammar
 //
 //	DeclEmpty := `;`
-type DeclEmpty id.Node[DeclEmpty, Context, *rawDeclEmpty]
+type DeclEmpty id.Node[DeclEmpty, *File, *rawDeclEmpty]
 
 type rawDeclEmpty struct {
 	semi token.ID
@@ -49,7 +49,7 @@ func (d DeclEmpty) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // Span implements [report.Spanner].

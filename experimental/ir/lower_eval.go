@@ -69,7 +69,7 @@ const (
 
 // evaluator is the context needed to evaluate an expression.
 type evaluator struct {
-	*Context
+	*File
 	*report.Report
 	scope FullName
 }
@@ -158,7 +158,7 @@ func (e *evaluator) eval(args evalArgs) Value {
 
 	first := args.target.IsZero()
 	if first && args.rawField.IsZero() {
-		args.rawField = args.field.toRef(e.Context)
+		args.rawField = args.field.toRef(e.File)
 	} else if !first {
 		args.rawField = args.target.Raw().field
 	}
@@ -191,7 +191,7 @@ func (e *evaluator) eval(args evalArgs) Value {
 		}
 
 		if first {
-			args.target = newZeroScalar(e.Context, args.rawField)
+			args.target = newZeroScalar(e.File, args.rawField)
 			args.target.Raw().bits = bits
 		} else {
 			appendRaw(args.target, bits)
@@ -417,8 +417,8 @@ again:
 
 		// Otherwise kick off full symbol resolution.
 		sym := symbolRef{
-			Context: e.Context,
-			Report:  nil, // Suppress diagnostics.
+			File:   e.File,
+			Report: nil, // Suppress diagnostics.
 
 			scope: e.scope,
 			name:  FullName(path),
@@ -519,7 +519,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 	case args.isConcreteAny:
 		message = args.target.Elements().At(0).AsMessage()
 	case args.target.IsZero():
-		message = newMessage(e.Context, args.rawField)
+		message = newMessage(e.File, args.rawField)
 		args.target = message.AsValue()
 	default:
 		message = appendMessage(args.target)
@@ -617,8 +617,8 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			// Now try to resolve a concrete type. We do it exactly like
 			// we would for a field type, but *not* including scalar types.
 			ty := symbolRef{
-				Context: e.Context,
-				Report:  e.Report,
+				File:   e.File,
+				Report: e.Report,
 
 				scope: e.scope,
 				name:  FullName(path),
@@ -680,7 +680,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		if slot.IsZero() {
 			copied.target = Value{}
 		} else {
-			value := id.Wrap(e.Context, *slot)
+			value := id.Wrap(e.File, *slot)
 
 			switch {
 			case field.IsRepeated():
@@ -856,7 +856,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 		}
 
 		data := expr.AsString().Text()
-		return newScalarBits(e.Context, data), true
+		return newScalarBits(e.File, data), true
 	}
 
 	return 0, false
@@ -974,7 +974,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				}))
 			}
 
-			return newScalarBits(e.Context, v), true
+			return newScalarBits(e.File, v), true
 		}
 
 		// Allow fall-through, which proceeds to eventually hit full symbol
@@ -1028,7 +1028,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				v = -v
 			}
 
-			return newScalarBits(e.Context, v), ok
+			return newScalarBits(e.File, v), ok
 		}
 
 		n := uint64(1) << scalar.Bits()
@@ -1080,7 +1080,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 			v = -v
 		}
 
-		return newScalarBits(e.Context, v), true
+		return newScalarBits(e.File, v), true
 	}
 
 	// Match the "non standard" symbols for true, false, inf, and nan. Make
@@ -1155,14 +1155,14 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 			report.Notef("within %ss only, some %ss are case-insensitive", taxa.Dict, taxa.Float),
 		)
 
-		return newScalarBits(e.Context, v), args.textFormat
+		return newScalarBits(e.File, v), args.textFormat
 	}
 
 	// Perform symbol lookup in the current scope. This isn't what protoc
 	// does, but it allows us to produce better diagnostics.
 	sym := symbolRef{
-		Context: e.Context,
-		Report:  e.Report,
+		File:   e.File,
+		Report: e.Report,
 
 		scope: e.scope,
 		name:  FullName(expr.Canonicalized()),
@@ -1183,7 +1183,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				}),
 				report.Notef("Protobuf requires single identifiers when referencing to the names of enum values"),
 			)
-			return newScalarBits(e.Context, ev.Number()), false
+			return newScalarBits(e.File, ev.Number()), false
 		}
 
 		e.Error(args.mismatch(ev.Container()))

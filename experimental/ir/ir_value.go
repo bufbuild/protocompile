@@ -36,7 +36,7 @@ import (
 
 // Value is an evaluated expression, corresponding to an option in a Protobuf
 // file.
-type Value id.Node[Value, *Context, *rawValue]
+type Value id.Node[Value, *File, *rawValue]
 
 // rawValue is a [rawValueBits] with field information attached to it.
 type rawValue struct {
@@ -122,7 +122,7 @@ func (v Value) OptionSpan() report.Spanner {
 		return nil
 	}
 
-	c := v.Context().File().AST().Context()
+	c := v.Context().AST()
 	expr := id.WrapDyn(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field
@@ -140,7 +140,7 @@ func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) report.Spanner {
-		c := v.Context().File().AST().Context()
+		c := v.Context().AST()
 		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field
@@ -158,7 +158,7 @@ func (v Value) ValueAST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	c := v.Context().File().AST().Context()
+	c := v.Context().AST()
 	expr := id.WrapDyn(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field.Value()
@@ -178,7 +178,7 @@ func (v Value) ValueASTs() seq.Indexer[ast.ExprAny] {
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) ast.ExprAny {
-		c := v.Context().File().AST().Context()
+		c := v.Context().AST()
 		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Value()
@@ -194,7 +194,7 @@ func (v Value) KeyAST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	c := v.Context().File().AST().Context()
+	c := v.Context().AST()
 	expr := id.WrapDyn(c, v.Raw().exprs[0])
 	if field := expr.AsField(); !field.IsZero() {
 		return field.Key()
@@ -215,7 +215,7 @@ func (v Value) KeyASTs() seq.Indexer[ast.ExprAny] {
 	}
 
 	return seq.NewFixedSlice(slice, func(n int, p id.Dyn[ast.ExprAny, ast.ExprKind]) ast.ExprAny {
-		c := v.Context().File().AST().Context()
+		c := v.Context().AST()
 		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field.Key()
@@ -235,7 +235,7 @@ func (v Value) OptionPaths() seq.Indexer[ast.Path] {
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, e ast.PathID) ast.Path {
-		c := v.Context().File().AST().Context()
+		c := v.Context().AST()
 		return e.In(c)
 	})
 }
@@ -399,8 +399,6 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 		defer r.AnnotateICE(report.Snippetf(v.ValueAST(), "while marshalling this value"))
 	}
 
-	fmt.Println(v.Field().FullName(), ":", v.Field().Element().FullName())
-
 	scalar := v.Field().Element().Predeclared()
 	if v.Field().IsRepeated() && v.Elements().Len() > 1 {
 		// Packed fields.
@@ -535,7 +533,7 @@ func (e Element) AST() ast.ExprAny {
 	}
 
 	idx := e.ValueNodeIndex()
-	c := e.Context().File().AST().Context()
+	c := e.Context().AST()
 	expr := id.WrapDyn(c, e.value.Raw().exprs[idx])
 	if field := expr.AsField(); !field.IsZero() {
 		expr = field.Value()
@@ -697,7 +695,7 @@ func (e Element) AsMessage() MessageValue {
 
 // MessageValue is a message literal, represented as a list of ordered
 // key-value pairs.
-type MessageValue id.Node[MessageValue, *Context, *rawMessageValue]
+type MessageValue id.Node[MessageValue, *File, *rawMessageValue]
 
 type rawMessageValue struct {
 	byName   intern.Map[uint32]
@@ -948,8 +946,8 @@ type scalar interface {
 }
 
 // newZeroScalar constructs a new scalar value.
-func newZeroScalar(c *Context, field Ref[Member]) Value {
-	return id.Wrap(c, id.ID[Value](c.arenas.values.NewCompressed(rawValue{
+func newZeroScalar(file *File, field Ref[Member]) Value {
+	return id.Wrap(file, id.ID[Value](file.arenas.values.NewCompressed(rawValue{
 		field: field,
 	})))
 }
@@ -983,15 +981,15 @@ func appendMessage(array Value) MessageValue {
 // If anyType is not zero, it will be used as the type of the inner message
 // value. This is used for Any-typed fields. Otherwise, the type of field is
 // used instead.
-func newMessage(c *Context, field Ref[Member]) MessageValue {
-	member := GetRef(c, field)
-	raw := id.ID[MessageValue](c.arenas.messages.NewCompressed(rawMessageValue{
-		ty:     member.Raw().elem.ChangeContext(member.Context(), c),
+func newMessage(file *File, field Ref[Member]) MessageValue {
+	member := GetRef(file, field)
+	raw := id.ID[MessageValue](file.arenas.messages.NewCompressed(rawMessageValue{
+		ty:     member.Raw().elem.ChangeContext(member.Context(), file),
 		byName: make(intern.Map[uint32]),
 	}))
 
-	msg := id.Wrap(c, raw)
-	msg.Raw().self = id.ID[Value](c.arenas.values.NewCompressed(rawValue{
+	msg := id.Wrap(file, raw)
+	msg.Raw().self = id.ID[Value](file.arenas.values.NewCompressed(rawValue{
 		field: field,
 		bits:  rawValueBits(raw),
 	}))
@@ -1022,7 +1020,7 @@ func newConcrete(m MessageValue, ty Type, url string) MessageValue {
 }
 
 // newScalarBits converts a scalar into.Raw() bits for storing in a [Value].
-func newScalarBits[T scalar](c *Context, v T) rawValueBits {
+func newScalarBits[T scalar](file *File, v T) rawValueBits {
 	switch v := any(v).(type) {
 	case bool:
 		if v {
@@ -1050,7 +1048,7 @@ func newScalarBits[T scalar](c *Context, v T) rawValueBits {
 	case intern.ID:
 		return rawValueBits(v)
 	case string:
-		return rawValueBits(c.session.intern.Intern(v))
+		return rawValueBits(file.session.intern.Intern(v))
 	default:
 		panic("unreachable")
 	}

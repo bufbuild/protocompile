@@ -182,8 +182,8 @@ type builtinIDs struct {
 	MethodFeatures    intern.ID `intern:"google.protobuf.MethodOptions.features"`
 }
 
-func resolveBuiltins(c *Context) {
-	if !c.File().IsDescriptorProto() {
+func resolveBuiltins(file *File) {
+	if !file.IsDescriptorProto() {
 		return
 	}
 
@@ -194,28 +194,28 @@ func resolveBuiltins(c *Context) {
 	}{
 		reflect.TypeFor[Member](): {
 			kind: SymbolKindField,
-			wrap: makeBuiltinWrapper[Member](c),
+			wrap: makeBuiltinWrapper[Member](file),
 		},
 		reflect.TypeFor[Type](): {
 			kind: SymbolKindMessage,
-			wrap: makeBuiltinWrapper[Type](c),
+			wrap: makeBuiltinWrapper[Type](file),
 		},
 	}
 
-	c.dpBuiltins = new(builtins)
-	v := reflect.ValueOf(c.dpBuiltins).Elem()
-	ids := reflect.ValueOf(c.session.builtins)
+	file.dpBuiltins = new(builtins)
+	v := reflect.ValueOf(file.dpBuiltins).Elem()
+	ids := reflect.ValueOf(file.session.builtins)
 	for i := range v.NumField() {
 		field := v.Field(i)
 		id := ids.FieldByName(v.Type().Field(i).Name).Interface().(intern.ID) //nolint:errcheck
 		kind := kinds[field.Type()]
 
-		ref := c.exported.lookup(c, id)
-		sym := GetRef(c, ref)
+		ref := file.exported.lookup(file, id)
+		sym := GetRef(file, ref)
 		if sym.Kind() != kind.kind {
 			panic(fmt.Errorf(
 				"missing descriptor.proto symbol: %s `%s`; got kind %s",
-				kind.kind.noun(), c.session.intern.Value(id), sym.Kind(),
+				kind.kind.noun(), file.session.intern.Value(id), sym.Kind(),
 			))
 		}
 		kind.wrap(sym.Raw().data, field)
@@ -223,11 +223,11 @@ func resolveBuiltins(c *Context) {
 }
 
 // makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.
-func makeBuiltinWrapper[T ~id.Node[T, *Context, Raw], Raw any](
-	c *Context,
+func makeBuiltinWrapper[T ~id.Node[T, *File, Raw], Raw any](
+	file *File,
 ) func(arena.Untyped, reflect.Value) {
 	return func(p arena.Untyped, out reflect.Value) {
-		x := id.Wrap(c, id.ID[T](p))
+		x := id.Wrap(file, id.ID[T](p))
 		out.Set(reflect.ValueOf(x))
 	}
 }
