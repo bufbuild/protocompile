@@ -12,9 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package tags holds constants for package report to use with report.Tag.
+// Package tags defines publicly-exposed diagnostic tag constants for use with [report.Tag].
 package tags
 
+import _ "github.com/bufbuild/protocompile/experimental/report"
+
 const (
+	// UnusedImport is the tag for an unused import diagnostic.
 	UnusedImport = "protobuf:unused_import"
 )
