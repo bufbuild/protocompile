@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -193,11 +194,11 @@ func resolveBuiltins(c *Context) {
 	}{
 		reflect.TypeFor[Member](): {
 			kind: SymbolKindField,
-			wrap: makeBuiltinWrapper(c, wrapMember),
+			wrap: makeBuiltinWrapper[Member](c),
 		},
 		reflect.TypeFor[Type](): {
 			kind: SymbolKindMessage,
-			wrap: makeBuiltinWrapper(c, wrapType),
+			wrap: makeBuiltinWrapper[Type](c),
 		},
 	}
 
@@ -210,21 +211,23 @@ func resolveBuiltins(c *Context) {
 		kind := kinds[field.Type()]
 
 		ref := c.exported.lookup(c, id)
-		sym := wrapSymbol(c, ref)
+		sym := GetRef(c, ref)
 		if sym.Kind() != kind.kind {
 			panic(fmt.Errorf(
 				"missing descriptor.proto symbol: %s `%s`; got kind %s",
 				kind.kind.noun(), c.session.intern.Value(id), sym.Kind(),
 			))
 		}
-		kind.wrap(sym.raw.data, field)
+		kind.wrap(sym.Raw().data, field)
 	}
 }
 
 // makeBuiltinWrapper helps construct reflection shims for resolveBuiltins.
-func makeBuiltinWrapper[T any, Raw any](c *Context, wrap func(*Context, ref[Raw]) T) func(arena.Untyped, reflect.Value) {
+func makeBuiltinWrapper[T ~id.Node[T, *Context, Raw], Raw any](
+	c *Context,
+) func(arena.Untyped, reflect.Value) {
 	return func(p arena.Untyped, out reflect.Value) {
-		x := wrap(c, ref[Raw]{ptr: arena.Pointer[Raw](p)})
+		x := id.Wrap(c, id.ID[T](p))
 		out.Set(reflect.ValueOf(x))
 	}
 }

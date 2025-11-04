@@ -17,11 +17,11 @@ package ast
 import (
 	"iter"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -77,12 +77,14 @@ func (f File) Imports() iter.Seq[DeclImport] {
 //
 // Note: options are not permitted on syntax declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclSyntax struct{ declImpl[rawDeclSyntax] }
+type DeclSyntax id.Node[DeclSyntax, Context, *rawDeclSyntax]
 
 type rawDeclSyntax struct {
-	keyword, equals, semi token.ID
-	value                 rawExpr
-	options               arena.Pointer[rawCompactOptions]
+	value   id.Dyn[ExprAny, ExprKind]
+	keyword token.ID
+	equals  token.ID
+	semi    token.ID
+	options id.ID[CompactOptions]
 }
 
 // DeclSyntaxArgs is arguments for [Context.NewDeclSyntax].
@@ -93,6 +95,16 @@ type DeclSyntaxArgs struct {
 	Value     ExprAny
 	Options   CompactOptions
 	Semicolon token.Token
+}
+
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclSyntax) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindSyntax, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this declaration.
@@ -106,7 +118,7 @@ func (d DeclSyntax) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // IsSyntax checks whether this is an OG syntax declaration.
@@ -127,7 +139,7 @@ func (d DeclSyntax) Equals() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.equals.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().equals)
 }
 
 // Value returns the value expression of this declaration.
@@ -139,14 +151,14 @@ func (d DeclSyntax) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(d.Context(), d.raw.value)
+	return id.WrapDyn(d.Context(), d.Raw().value)
 }
 
 // SetValue sets the expression for this declaration's value.
 //
 // If passed zero, this clears the value (e.g., for syntax = ;).
 func (d DeclSyntax) SetValue(expr ExprAny) {
-	d.raw.value = expr.raw
+	d.Raw().value = expr.ID()
 }
 
 // Options returns the compact options list for this declaration.
@@ -157,14 +169,14 @@ func (d DeclSyntax) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return wrapOptions(d.Context(), d.raw.options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this declaration.
 //
 // Setting it to a zero Options clears it.
 func (d DeclSyntax) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.Raw().options = opts.ID()
 }
 
 // Semicolon returns this declaration's ending semicolon.
@@ -175,7 +187,7 @@ func (d DeclSyntax) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -187,10 +199,6 @@ func (d DeclSyntax) Span() report.Span {
 	return report.Join(d.KeywordToken(), d.Equals(), d.Value(), d.Semicolon())
 }
 
-func wrapDeclSyntax(c Context, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
-	return DeclSyntax{wrapDecl(c, ptr)}
-}
-
 // DeclPackage is the package declaration for a file.
 //
 // # Grammar
@@ -199,13 +207,13 @@ func wrapDeclSyntax(c Context, ptr arena.Pointer[rawDeclSyntax]) DeclSyntax {
 //
 // Note: options are not permitted on package declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclPackage struct{ declImpl[rawDeclPackage] }
+type DeclPackage id.Node[DeclPackage, Context, *rawDeclPackage]
 
 type rawDeclPackage struct {
 	keyword token.ID
-	path    rawPath
+	path    PathID
 	semi    token.ID
-	options arena.Pointer[rawCompactOptions]
+	options id.ID[CompactOptions]
 }
 
 // DeclPackageArgs is arguments for [Context.NewDeclPackage].
@@ -214,6 +222,16 @@ type DeclPackageArgs struct {
 	Path      Path
 	Options   CompactOptions
 	Semicolon token.Token
+}
+
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclPackage) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindPackage, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this declaration.
@@ -227,7 +245,7 @@ func (d DeclPackage) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // Path returns this package's path.
@@ -238,7 +256,7 @@ func (d DeclPackage) Path() Path {
 		return Path{}
 	}
 
-	return d.raw.path.With(d.Context())
+	return d.Raw().path.In(d.Context())
 }
 
 // Options returns the compact options list for this declaration.
@@ -249,14 +267,14 @@ func (d DeclPackage) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return wrapOptions(d.Context(), d.raw.options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this declaration.
 //
 // Setting it to a zero Options clears it.
 func (d DeclPackage) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.Raw().options = opts.ID()
 }
 
 // Semicolon returns this package's ending semicolon.
@@ -267,7 +285,7 @@ func (d DeclPackage) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -279,10 +297,6 @@ func (d DeclPackage) Span() report.Span {
 	return report.Join(d.KeywordToken(), d.Path(), d.Semicolon())
 }
 
-func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
-	return DeclPackage{wrapDecl(c, ptr)}
-}
-
 // DeclImport is an import declaration within a file.
 //
 // # Grammar
@@ -291,13 +305,13 @@ func wrapDeclPackage(c Context, ptr arena.Pointer[rawDeclPackage]) DeclPackage {
 //
 // Note: options are not permitted on import declarations in Protobuf, but we
 // parse them for diagnosis.
-type DeclImport struct{ declImpl[rawDeclImport] }
+type DeclImport id.Node[DeclImport, Context, *rawDeclImport]
 
 type rawDeclImport struct {
 	keyword, semi token.ID
 	modifiers     []token.ID
-	importPath    rawExpr
-	options       arena.Pointer[rawCompactOptions]
+	importPath    id.Dyn[ExprAny, ExprKind]
+	options       id.ID[CompactOptions]
 }
 
 // DeclImportArgs is arguments for [Context.NewDeclImport].
@@ -307,6 +321,16 @@ type DeclImportArgs struct {
 	ImportPath ExprAny
 	Options    CompactOptions
 	Semicolon  token.Token
+}
+
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclImport) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindImport, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this declaration.
@@ -320,18 +344,18 @@ func (d DeclImport) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // Modifiers returns the modifiers for this declaration.
 func (d DeclImport) Modifiers() seq.Indexer[keyword.Keyword] {
 	var slice []token.ID
 	if !d.IsZero() {
-		slice = d.raw.modifiers
+		slice = d.Raw().modifiers
 	}
 
 	return seq.NewFixedSlice(slice, func(_ int, t token.ID) keyword.Keyword {
-		return t.In(d.Context()).Keyword()
+		return id.Wrap(token.Context(d.Context()), t).Keyword()
 	})
 }
 
@@ -341,8 +365,8 @@ func (d DeclImport) ModifierTokens() seq.Inserter[token.Token] {
 		return seq.EmptySliceInserter[token.Token, token.ID]()
 	}
 
-	return seq.NewSliceInserter(&d.raw.modifiers,
-		func(_ int, e token.ID) token.Token { return e.In(d.Context()) },
+	return seq.NewSliceInserter(&d.Raw().modifiers,
+		func(_ int, e token.ID) token.Token { return id.Wrap(token.Context(d.Context()), e) },
 		func(_ int, t token.Token) token.ID {
 			d.Context().Nodes().panicIfNotOurs(t)
 			return t.ID()
@@ -379,14 +403,14 @@ func (d DeclImport) ImportPath() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(d.Context(), d.raw.importPath)
+	return id.WrapDyn(d.Context(), d.Raw().importPath)
 }
 
 // SetValue sets the expression for this import's file path.
 //
 // If passed zero, this clears the path expression.
 func (d DeclImport) SetImportPath(expr ExprAny) {
-	d.raw.importPath = expr.raw
+	d.Raw().importPath = expr.ID()
 }
 
 // Options returns the compact options list for this declaration.
@@ -397,14 +421,14 @@ func (d DeclImport) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return wrapOptions(d.Context(), d.raw.options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this declaration.
 //
 // Setting it to a zero Options clears it.
 func (d DeclImport) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.Raw().options = opts.ID()
 }
 
 // Semicolon returns this import's ending semicolon.
@@ -415,7 +439,7 @@ func (d DeclImport) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // report.Span implements [report.Spanner].
@@ -425,8 +449,4 @@ func (d DeclImport) Span() report.Span {
 	}
 
 	return report.Join(d.KeywordToken(), d.ImportPath(), d.Semicolon())
-}
-
-func wrapDeclImport(c Context, ptr arena.Pointer[rawDeclImport]) DeclImport {
-	return DeclImport{wrapDecl(c, ptr)}
 }

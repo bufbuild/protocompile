@@ -337,7 +337,7 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 		slices.SortFunc(symtab.Imports, cmpx.Key(func(x *compilerpb.Import) string { return x.Path }))
 
 		for sym := range seq.Values(file.Symbols()) {
-			if strings.HasPrefix(sym.File().Path(), "google/protobuf/") {
+			if strings.HasPrefix(sym.Context().File().Path(), "google/protobuf/") {
 				continue
 			}
 
@@ -354,9 +354,9 @@ func symtabProto(files []ir.File) *compilerpb.SymbolSet {
 			symtab.Symbols = append(symtab.Symbols, &compilerpb.Symbol{
 				Fqn:      string(sym.FullName()),
 				Kind:     compilerpb.Symbol_Kind(sym.Kind()),
-				File:     sym.File().Path(),
+				File:     sym.Context().File().Path(),
 				Index:    uint32(sym.RawData()),
-				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(),
+				Visible:  sym.Kind() != ir.SymbolKindPackage && sym.Visible(file),
 				Options:  new(optionWalker).message(options),
 				Features: dumpFeatures(sym.FeatureSet(), sym.Kind().OptionTarget()),
 			})

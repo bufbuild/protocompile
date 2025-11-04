@@ -19,11 +19,11 @@ import (
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
@@ -65,7 +65,7 @@ func resolveEarlyOptions(f File) {
 					nil,
 					nil,
 				)
-				name = wrapSymbol(f.Context(), sym).AsMember().InternedFullName()
+				name = GetRef(f.Context(), sym).AsMember().InternedFullName()
 			}
 
 			// Get the value of this option. We only care about a value of
@@ -74,9 +74,9 @@ func resolveEarlyOptions(f File) {
 
 			switch name {
 			case builtins.MessageSet:
-				ty.raw.isMessageSet = ty.IsMessage() && value
+				ty.Raw().isMessageSet = ty.IsMessage() && value
 			case builtins.AllowAlias:
-				ty.raw.allowsAlias = ty.IsEnum() && value
+				ty.Raw().allowsAlias = ty.IsEnum() && value
 			}
 		}
 	}
@@ -109,7 +109,7 @@ func resolveOptions(f File, r *report.Report) {
 	}
 
 	// Reusable space for duplicating options values between extension ranges.
-	extnOpts := make(map[ast.DeclRange]arena.Pointer[rawValue])
+	extnOpts := make(map[ast.DeclRange]id.ID[Value])
 	for ty := range seq.Values(f.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entries already come with options pre-calculated.
@@ -129,7 +129,7 @@ func resolveOptions(f File, r *report.Report) {
 				def:   def,
 
 				field: options,
-				raw:   &ty.raw.options,
+				raw:   &ty.Raw().options,
 			}.resolve()
 		}
 
@@ -147,7 +147,7 @@ func resolveOptions(f File, r *report.Report) {
 					def:   def,
 
 					field:  options,
-					raw:    &field.raw.options,
+					raw:    &field.Raw().options,
 					target: field,
 				}.resolve()
 			}
@@ -162,7 +162,7 @@ func resolveOptions(f File, r *report.Report) {
 					def:   def,
 
 					field: builtins.OneofOptions,
-					raw:   &oneof.raw.options,
+					raw:   &oneof.Raw().options,
 				}.resolve()
 			}
 		}
@@ -170,8 +170,8 @@ func resolveOptions(f File, r *report.Report) {
 		clear(extnOpts)
 		for extns := range seq.Values(ty.ExtensionRanges()) {
 			decl := extns.DeclAST()
-			if p := extnOpts[decl]; !p.Nil() {
-				extns.raw.options = p
+			if p := extnOpts[decl]; !p.IsZero() {
+				extns.Raw().options = p
 				continue
 			}
 
@@ -184,11 +184,11 @@ func resolveOptions(f File, r *report.Report) {
 					def:   def,
 
 					field: builtins.RangeOptions,
-					raw:   &extns.raw.options,
+					raw:   &extns.Raw().options,
 				}.resolve()
 			}
 
-			extnOpts[decl] = extns.raw.options
+			extnOpts[decl] = extns.Raw().options
 		}
 	}
 	for field := range seq.Values(f.AllExtensions()) {
@@ -201,7 +201,7 @@ func resolveOptions(f File, r *report.Report) {
 				def:   def,
 
 				field:  builtins.FieldOptions,
-				raw:    &field.raw.options,
+				raw:    &field.Raw().options,
 				target: field,
 			}.resolve()
 		}
@@ -216,7 +216,7 @@ func resolveOptions(f File, r *report.Report) {
 				def:   def,
 
 				field: builtins.ServiceOptions,
-				raw:   &service.raw.options,
+				raw:   &service.Raw().options,
 			}.resolve()
 		}
 
@@ -230,7 +230,7 @@ func resolveOptions(f File, r *report.Report) {
 					def:   def,
 
 					field: builtins.MethodOptions,
-					raw:   &method.raw.options,
+					raw:   &method.Raw().options,
 				}.resolve()
 			}
 		}
@@ -248,7 +248,7 @@ func populateOptionTargets(f File, _ *report.Report) {
 				continue
 			}
 
-			m.raw.optionTargets |= 1 << target
+			m.Raw().optionTargets |= 1 << target
 		}
 	}
 
@@ -373,7 +373,7 @@ type optionRef struct {
 	def   ast.Option
 
 	field Member
-	raw   *arena.Pointer[rawValue]
+	raw   *id.ID[Value]
 
 	// A member being annotated. This is used for pseudo-option resolution.
 	target Member
@@ -384,15 +384,14 @@ func (r optionRef) resolve() {
 	ids := &r.Context.session.builtins
 	root := r.field.Element()
 
-	if r.raw.Nil() {
-		v := newMessage(r.Context, r.field.toRef(r.Context)).AsValue()
-		*r.raw = r.arenas.values.Compress(v.raw)
+	if r.raw.IsZero() {
+		*r.raw = newMessage(r.Context, r.field.toRef(r.Context)).AsValue().ID()
 	}
 
-	current := wrapValue(r.Context, *r.raw)
+	current := id.Wrap(r.Context, *r.raw)
 	field := current.Field()
 	var path ast.Path
-	var raw *arena.Pointer[rawValue]
+	var raw *id.ID[Value]
 	for pc := range r.def.Path.Components {
 		// If this is the first iteration, use the *Options value as the current
 		// message.
@@ -412,11 +411,11 @@ func (r optionRef) resolve() {
 			switch pc.AsIdent().Keyword() {
 			case keyword.Default:
 				field = r.target
-				raw = &current.AsMessage().raw.pseudo.defaultValue
+				raw = &current.AsMessage().Raw().pseudo.defaultValue
 
 			case keyword.JsonName:
 				field = r.builtins().JSONName
-				raw = &current.AsMessage().raw.pseudo.jsonName
+				raw = &current.AsMessage().Raw().pseudo.jsonName
 			}
 		} else if extn := pc.AsExtension(); !extn.IsZero() {
 			sym := symbolRef{
@@ -448,8 +447,7 @@ func (r optionRef) resolve() {
 					report.Snippetf(field.AST().Name(), "`%s` defined here", field.FullName()),
 				)
 				if field.IsExtension() {
-					extendee := r.arenas.extendees.Deref(field.raw.extendee)
-					d.Apply(report.Snippetf(extendee.def, "... within this %s", taxa.Extend))
+					d.Apply(report.Snippetf(field.Extend().AST(), "... within this %s", taxa.Extend))
 				} else {
 					d.Apply(report.Snippetf(field.Container().AST(), "... within this %s", taxa.Message))
 				}
@@ -527,8 +525,8 @@ func (r optionRef) resolve() {
 		if !pseudo {
 			raw = parent.insert(field)
 		}
-		if !raw.Nil() {
-			value := wrapValue(r.Context, *raw)
+		if !raw.IsZero() {
+			value := id.Wrap(r.Context, *raw)
 			switch {
 			case field.IsRepeated():
 				break // Handled below.
@@ -597,10 +595,10 @@ func (r optionRef) resolve() {
 		}
 
 		value := newMessage(r.Context, field.toRef(r.Context)).AsValue()
-		value.raw.optionPaths = append(value.raw.optionPaths, path)
-		value.raw.exprs = append(value.raw.exprs, ast.ExprPath{Path: path}.AsAny())
+		value.Raw().optionPaths = append(value.Raw().optionPaths, path.ID())
+		value.Raw().exprs = append(value.Raw().exprs, ast.ExprPath{Path: path}.AsAny().ID())
 
-		*raw = r.arenas.values.Compress(value.raw)
+		*raw = value.ID()
 		current = value
 	}
 
@@ -617,13 +615,13 @@ func (r optionRef) resolve() {
 		optionPath: path,
 	}
 
-	if !raw.Nil() {
-		args.target = wrapValue(r.Context, *raw)
+	if !raw.IsZero() {
+		args.target = id.Wrap(r.Context, *raw)
 	}
 
 	v := evaluator.eval(args)
 	if !v.IsZero() {
-		*raw = r.arenas.values.Compress(v.raw)
+		*raw = v.ID()
 	}
 }
 

@@ -15,17 +15,14 @@
 package token
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 )
 
 // StringToken provides access to detailed information about a [String].
-type StringToken struct {
-	withContext
-	token ID
-	meta  *tokenmeta.String
-}
+type StringToken id.Node[StringToken, Context, *tokenmeta.String]
 
 // Escape is an escape inside of a [StringToken]. See [StringToken.Escapes].
 type Escape struct {
@@ -39,27 +36,27 @@ type Escape struct {
 
 // Token returns the wrapped token value.
 func (s StringToken) Token() Token {
-	return s.token.In(s.Context())
+	return id.Wrap(s.Context(), ID(s.ID()))
 }
 
 // Text returns the post-processed contents of this string.
 func (s StringToken) Text() string {
-	if s.meta != nil && s.meta.Text != "" {
-		return s.meta.Text
+	if s.Raw() != nil && s.Raw().Text != "" {
+		return s.Raw().Text
 	}
 	return s.RawContent().Text()
 }
 
 // HasEscapes returns whether the string had escapes which were processed.
 func (s StringToken) HasEscapes() bool {
-	return s.meta != nil && s.meta.Escapes != nil
+	return s.Raw() != nil && s.Raw().Escapes != nil
 }
 
 // Escapes returns the escapes that contribute to the value of this string.
 func (s StringToken) Escapes() seq.Indexer[Escape] {
 	var spans []tokenmeta.Escape
-	if s.meta != nil {
-		spans = s.meta.Escapes
+	if s.Raw() != nil {
+		spans = s.Raw().Escapes
 	}
 
 	return seq.NewFixedSlice(spans, func(_ int, esc tokenmeta.Escape) Escape {
@@ -74,24 +71,24 @@ func (s StringToken) Escapes() seq.Indexer[Escape] {
 // IsConcatenated returns whether the string was built from
 // implicitly-concatenated strings.
 func (s StringToken) IsConcatenated() bool {
-	return s.meta != nil && s.meta.Concatenated
+	return s.Raw() != nil && s.Raw().Concatenated
 }
 
 // IsPure returns whether the string required post-processing (escaping or
 // concatenation) after lexing.
 func (s StringToken) IsPure() bool {
-	return s.meta == nil || !(s.meta.Escapes != nil || s.meta.Concatenated)
+	return s.Raw() == nil || !(s.Raw().Escapes != nil || s.Raw().Concatenated)
 }
 
 // Prefix returns an arbitrary prefix attached to this string (the prefix will
 // have no whitespace before the open quote).
 func (s StringToken) Prefix() report.Span {
-	if s.meta == nil {
+	if s.Raw() == nil {
 		return report.Span{}
 	}
 
 	span := s.Token().LeafSpan()
-	span.End = span.Start + int(s.meta.Prefix)
+	span.End = span.Start + int(s.Raw().Prefix)
 	return span
 }
 
@@ -107,7 +104,7 @@ func (s StringToken) Quotes() (open, close report.Span) {
 	open = s.Token().LeafSpan()
 	close = open
 
-	if s.meta == nil {
+	if s.Raw() == nil {
 		if open.Len() < 2 {
 			// Deal with the really degenerate case of a single quote.
 			close.Start = close.End
@@ -121,10 +118,10 @@ func (s StringToken) Quotes() (open, close report.Span) {
 		return open, close
 	}
 
-	open.Start += int(s.meta.Prefix)
-	close.Start += int(s.meta.Prefix)
+	open.Start += int(s.Raw().Prefix)
+	close.Start += int(s.Raw().Prefix)
 
-	quote := int(max(1, s.meta.Quote)) // 1 byte quotes if not set explicitly.
+	quote := int(max(1, s.Raw().Quote)) // 1 byte quotes if not set explicitly.
 
 	// Unterminated?
 	switch {

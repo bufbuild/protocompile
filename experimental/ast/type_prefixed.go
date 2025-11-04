@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -34,17 +35,28 @@ import (
 // of a [TypeGeneric]'s brackets or a [Signature]'s method parameters.
 //
 // Also, the `stream` prefix may only occur inside of a [Signature].
-type TypePrefixed struct{ typeImpl[rawTypePrefixed] }
+type TypePrefixed id.Node[TypePrefixed, Context, *rawTypePrefixed]
 
 type rawTypePrefixed struct {
 	prefix token.ID
-	ty     rawType
+	ty     id.Dyn[TypeAny, TypeKind]
 }
 
 // TypePrefixedArgs is the arguments for [Context.NewTypePrefixed].
 type TypePrefixedArgs struct {
 	Prefix token.Token
 	Type   TypeAny
+}
+
+// AsAny type-erases this type value.
+//
+// See [TypeAny] for more information.
+func (t TypePrefixed) AsAny() TypeAny {
+	if t.IsZero() {
+		return TypeAny{}
+	}
+
+	return id.WrapDyn(t.Context(), id.NewDyn(TypeKindPrefixed, id.ID[TypeAny](t.ID())))
 }
 
 // Prefix extracts the modifier out of this type.
@@ -61,7 +73,7 @@ func (t TypePrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return t.raw.prefix.In(t.Context())
+	return id.Wrap(token.Context(t.Context()), t.Raw().prefix)
 }
 
 // Type returns the type that is being prefixed.
@@ -70,14 +82,14 @@ func (t TypePrefixed) Type() TypeAny {
 		return TypeAny{}
 	}
 
-	return newTypeAny(t.Context(), t.raw.ty)
+	return id.WrapDyn(t.Context(), t.Raw().ty)
 }
 
 // SetType sets the expression that is being prefixed.
 //
 // If passed zero, this clears the type.
 func (t TypePrefixed) SetType(ty TypeAny) {
-	t.raw.ty = ty.raw
+	t.Raw().ty = ty.ID()
 }
 
 // Span implements [report.Spanner].

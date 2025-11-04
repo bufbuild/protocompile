@@ -15,9 +15,9 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // DeclEmpty is an empty declaration, a lone ;.
@@ -25,10 +25,20 @@ import (
 // # Grammar
 //
 //	DeclEmpty := `;`
-type DeclEmpty struct{ declImpl[rawDeclEmpty] }
+type DeclEmpty id.Node[DeclEmpty, Context, *rawDeclEmpty]
 
 type rawDeclEmpty struct {
 	semi token.ID
+}
+
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclEmpty) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindEmpty, id.ID[DeclAny](d.ID())))
 }
 
 // Semicolon returns this field's ending semicolon.
@@ -39,7 +49,7 @@ func (d DeclEmpty) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // Span implements [report.Spanner].
@@ -49,8 +59,4 @@ func (d DeclEmpty) Span() report.Span {
 	}
 
 	return d.Semicolon().Span()
-}
-
-func wrapDeclEmpty(c Context, ptr arena.Pointer[rawDeclEmpty]) DeclEmpty {
-	return DeclEmpty{wrapDecl(c, ptr)}
 }

@@ -16,42 +16,33 @@ package ir
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/seq"
-	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
 // Service is a Protobuf service definition.
-type Service struct {
-	withContext
-
-	raw *rawService
-}
+type Service id.Node[Service, *Context, *rawService]
 
 // Method is a Protobuf service method.
-type Method struct {
-	withContext
-
-	raw *rawMethod
-}
+type Method id.Node[Method, *Context, *rawMethod]
 
 type rawService struct {
-	def       ast.DeclDef
+	def       id.ID[ast.DeclDef]
 	fqn, name intern.ID
 
-	methods  []arena.Pointer[rawMethod]
-	options  arena.Pointer[rawValue]
-	features arena.Pointer[rawFeatureSet]
+	methods  []id.ID[Method]
+	options  id.ID[Value]
+	features id.ID[FeatureSet]
 }
 
 type rawMethod struct {
-	def           ast.DeclDef
+	def           id.ID[ast.DeclDef]
 	fqn, name     intern.ID
-	service       arena.Pointer[rawService]
-	input, output ref[rawType]
-	options       arena.Pointer[rawValue]
-	features      arena.Pointer[rawFeatureSet]
+	service       id.ID[Service]
+	input, output Ref[Type]
+	options       id.ID[Value]
+	features      id.ID[FeatureSet]
 
 	inputStream, outputStream bool
 }
@@ -61,7 +52,7 @@ func (s Service) AST() ast.DeclDef {
 	if s.IsZero() {
 		return ast.DeclDef{}
 	}
-	return s.raw.def
+	return id.Wrap(s.Context().File().AST().Context(), s.Raw().def)
 }
 
 // Name returns this service's declared name, i.e. the last component of its
@@ -75,7 +66,7 @@ func (s Service) FullName() FullName {
 	if s.IsZero() {
 		return ""
 	}
-	return FullName(s.Context().session.intern.Value(s.raw.fqn))
+	return FullName(s.Context().session.intern.Value(s.Raw().fqn))
 }
 
 // InternedName returns the intern ID for [Service.FullName]().Name().
@@ -83,7 +74,7 @@ func (s Service) InternedName() intern.ID {
 	if s.IsZero() {
 		return 0
 	}
-	return s.raw.name
+	return s.Raw().name
 }
 
 // InternedFullName returns the intern ID for [Service.FullName].
@@ -91,7 +82,7 @@ func (s Service) InternedFullName() intern.ID {
 	if s.IsZero() {
 		return 0
 	}
-	return s.raw.fqn
+	return s.Raw().fqn
 }
 
 // Options returns the options applied to this service.
@@ -99,19 +90,15 @@ func (s Service) Options() MessageValue {
 	if s.IsZero() {
 		return MessageValue{}
 	}
-	return wrapValue(s.Context(), s.raw.options).AsMessage()
+	return id.Wrap(s.Context(), s.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this service.
 func (s Service) FeatureSet() FeatureSet {
-	if s.IsZero() || s.raw.features.Nil() {
+	if s.IsZero() {
 		return FeatureSet{}
 	}
-
-	return FeatureSet{
-		internal.NewWith(s.Context()),
-		s.Context().arenas.features.Deref(s.raw.features),
-	}
+	return id.Wrap(s.Context(), s.Raw().features)
 }
 
 // Deprecated returns whether this service is deprecated, by returning the
@@ -130,18 +117,15 @@ func (s Service) Deprecated() Value {
 
 // Methods returns the methods of this service.
 func (s Service) Methods() seq.Indexer[Method] {
-	var methods []arena.Pointer[rawMethod]
+	var methods []id.ID[Method]
 	if !s.IsZero() {
-		methods = s.raw.methods
+		methods = s.Raw().methods
 	}
 
 	return seq.NewFixedSlice(
 		methods,
-		func(_ int, p arena.Pointer[rawMethod]) Method {
-			return Method{
-				s.withContext,
-				s.Context().arenas.methods.Deref(p),
-			}
+		func(_ int, p id.ID[Method]) Method {
+			return id.Wrap(s.Context(), p)
 		},
 	)
 }
@@ -151,7 +135,7 @@ func (m Method) AST() ast.DeclDef {
 	if m.IsZero() {
 		return ast.DeclDef{}
 	}
-	return m.raw.def
+	return id.Wrap(m.Context().File().AST().Context(), m.Raw().def)
 }
 
 // Name returns this method's declared name, i.e. the last component of its
@@ -165,7 +149,7 @@ func (m Method) FullName() FullName {
 	if m.IsZero() {
 		return ""
 	}
-	return FullName(m.Context().session.intern.Value(m.raw.fqn))
+	return FullName(m.Context().session.intern.Value(m.Raw().fqn))
 }
 
 // InternedName returns the intern ID for [Method.FullName]().Name().
@@ -173,7 +157,7 @@ func (m Method) InternedName() intern.ID {
 	if m.IsZero() {
 		return 0
 	}
-	return m.raw.name
+	return m.Raw().name
 }
 
 // InternedFullName returns the intern ID for [Method.FullName].
@@ -181,7 +165,7 @@ func (m Method) InternedFullName() intern.ID {
 	if m.IsZero() {
 		return 0
 	}
-	return m.raw.fqn
+	return m.Raw().fqn
 }
 
 // Options returns the options applied to this method.
@@ -189,19 +173,15 @@ func (m Method) Options() MessageValue {
 	if m.IsZero() {
 		return MessageValue{}
 	}
-	return wrapValue(m.Context(), m.raw.options).AsMessage()
+	return id.Wrap(m.Context(), m.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this method.
 func (m Method) FeatureSet() FeatureSet {
-	if m.IsZero() || m.raw.features.Nil() {
+	if m.IsZero() {
 		return FeatureSet{}
 	}
-
-	return FeatureSet{
-		internal.NewWith(m.Context()),
-		m.Context().arenas.features.Deref(m.raw.features),
-	}
+	return id.Wrap(m.Context(), m.Raw().features)
 }
 
 // Deprecated returns whether this service is deprecated, by returning the
@@ -223,10 +203,7 @@ func (m Method) Service() Service {
 	if m.IsZero() {
 		return Service{}
 	}
-	return Service{
-		m.withContext,
-		m.Context().arenas.services.Deref(m.raw.service),
-	}
+	return id.Wrap(m.Context(), m.Raw().service)
 }
 
 // Input returns the input type for this method, and whether it is a streaming
@@ -236,7 +213,7 @@ func (m Method) Input() (ty Type, stream bool) {
 		return Type{}, false
 	}
 
-	return wrapType(m.Context(), m.raw.input), m.raw.inputStream
+	return GetRef(m.Context(), m.Raw().input), m.Raw().inputStream
 }
 
 // Output returns the output type for this method, and whether it is a streaming
@@ -246,5 +223,5 @@ func (m Method) Output() (ty Type, stream bool) {
 		return Type{}, false
 	}
 
-	return wrapType(m.Context(), m.raw.output), m.raw.outputStream
+	return GetRef(m.Context(), m.Raw().output), m.Raw().outputStream
 }

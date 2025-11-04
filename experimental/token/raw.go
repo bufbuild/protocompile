@@ -17,7 +17,7 @@ package token
 import (
 	"fmt"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -32,38 +32,10 @@ import (
 //
 // The zero value is reserved as a nil representation. All other values are
 // opaque.
-type ID int32
-
-// IsZero returns whether or not this is the nil representation.
-func (t ID) IsZero() bool {
-	return t == 0
-}
-
-// In associates this token ID with a context. This allows token metadata,
-// such as position, text, and kind, to be looked up.
-//
-// No checks are performed to validate that this ID came from this context; the
-// caller is responsible for ensuring that themselves.
-func (t ID) In(c Context) Token {
-	if t == 0 {
-		return Zero
-	}
-	return Token{internal.NewWith(c), t}
-}
-
-// String implements [fmt.Stringer].
-func (t ID) String() string {
-	if t == 0 {
-		return "Token(<nil>)"
-	}
-	if t < 0 {
-		return fmt.Sprintf("Token(%d)", t.syntheticIndex())
-	}
-	return fmt.Sprintf("Token(%d)", t.naturalIndex())
-}
+type ID = id.ID[Token]
 
 // naturalIndex returns the index of this token in the natural stream.
-func (t ID) naturalIndex() int {
+func naturalIndex(t ID) int {
 	if t.IsZero() {
 		panic("protocompile/token: called naturalIndex on zero token")
 	}
@@ -76,7 +48,7 @@ func (t ID) naturalIndex() int {
 }
 
 // syntheticIndex returns the index of this token in the synthetic stream.
-func (t ID) syntheticIndex() int {
+func syntheticIndex(t ID) int {
 	if t.IsZero() {
 		panic("protocompile/token: called syntheticIndex on zero token")
 	}

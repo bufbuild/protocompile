@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -25,17 +26,28 @@ import (
 // # Grammar
 //
 //	ExprPrefix := `-` ExprSolo
-type ExprPrefixed struct{ exprImpl[rawExprPrefixed] }
+type ExprPrefixed id.Node[ExprPrefixed, Context, *rawExprPrefixed]
 
 type rawExprPrefixed struct {
 	prefix token.ID
-	expr   rawExpr
+	expr   id.Dyn[ExprAny, ExprKind]
 }
 
 // ExprPrefixedArgs is arguments for [Context.NewExprPrefixed].
 type ExprPrefixedArgs struct {
 	Prefix token.Token
 	Expr   ExprAny
+}
+
+// AsAny type-erases this expression value.
+//
+// See [ExprAny] for more information.
+func (e ExprPrefixed) AsAny() ExprAny {
+	if e.IsZero() {
+		return ExprAny{}
+	}
+
+	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindPrefixed, id.ID[ExprAny](e.ID())))
 }
 
 // Prefix returns this expression's prefix.
@@ -52,7 +64,7 @@ func (e ExprPrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return e.raw.prefix.In(e.Context())
+	return id.Wrap(token.Context(e.Context()), e.Raw().prefix)
 }
 
 // Expr returns the expression the prefix is applied to.
@@ -61,14 +73,14 @@ func (e ExprPrefixed) Expr() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(e.Context(), e.raw.expr)
+	return id.WrapDyn(e.Context(), e.Raw().expr)
 }
 
 // SetExpr sets the expression that the prefix is applied to.
 //
 // If passed zero, this clears the expression.
 func (e ExprPrefixed) SetExpr(expr ExprAny) {
-	e.raw.expr = expr.raw
+	e.Raw().expr = expr.ID()
 }
 
 // report.Span implements [report.Spanner].

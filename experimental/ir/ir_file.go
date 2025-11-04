@@ -15,11 +15,11 @@
 package ir
 
 import (
-	"fmt"
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
@@ -48,18 +48,18 @@ type Context struct {
 
 	imports imports
 
-	types            []arena.Pointer[rawType]
+	types            []id.ID[Type]
 	topLevelTypesEnd int // Index of the last top-level type in types.
 
-	extns            []arena.Pointer[rawMember]
+	extns            []id.ID[Member]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	extends            []arena.Pointer[rawExtend]
+	extends            []id.ID[Extend]
 	topLevelExtendsEnd int // Index of last top-level extension in extends.
 
-	options  arena.Pointer[rawValue]
-	services []arena.Pointer[rawService]
-	features arena.Pointer[rawFeatureSet]
+	options  id.ID[Value]
+	services []id.ID[Service]
+	features id.ID[FeatureSet]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -97,56 +97,7 @@ type Context struct {
 	}
 }
 
-type withContext = internal.With[*Context]
-
-// ref is an arena.Pointer[T] along with information for retrieving which file
-// it's in, relative to a specific file's imports.
-type ref[T any] struct {
-	// The file this ref is defined in. If zero, it refers to the current file.
-	// If -1, it refers to a predeclared type. Otherwise, it refers to an
-	// import (with its index offset by 1).
-	file int32
-	ptr  arena.Pointer[T]
-}
-
-// context returns the context for this reference relative to a base context.
-func (r ref[T]) context(base *Context) *Context {
-	switch r.file {
-	case 0:
-		return base
-	case -1:
-		return primitiveCtx
-	default:
-		return base.imports.files[r.file-1].file.Context()
-	}
-}
-
-// changeContext changes the implicit context for this ref to be with respect to
-// the new one given.
-func (r ref[T]) changeContext(prev, next *Context) ref[T] {
-	if prev == next {
-		return r
-	}
-
-	var file File
-	switch r.file {
-	case 0:
-		file = prev.File()
-	case -1:
-		return r // Primitive context is the same everywhere.
-	default:
-		file = prev.imports.files[r.file-1].file
-	}
-
-	// Figure out where file sits in next.
-	idx, ok := next.imports.byPath[file.InternedPath()]
-	if !ok {
-		panic(fmt.Sprintf("could not change contexts %s -> %s", prev.File().Path(), next.File().Path()))
-	}
-
-	r.file = int32(idx) + 1
-	return r
-}
+type withContext = id.HasContext[*Context]
 
 // File returns the file associated with this context.
 //
@@ -200,6 +151,9 @@ func (f File) Path() string {
 	if f.IsZero() {
 		return ""
 	}
+	if f.Context() == primitiveCtx {
+		return "<predeclared>"
+	}
 	c := f.Context()
 	return c.session.intern.Value(c.path)
 }
@@ -228,6 +182,9 @@ func (f File) Package() FullName {
 		return ""
 	}
 	c := f.Context()
+	if f.Context() == primitiveCtx {
+		return ""
+	}
 	return FullName(c.session.intern.Value(c.pkg))
 }
 
@@ -266,9 +223,8 @@ func (f File) ImportFor(that File) Import {
 func (f File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
 		f.Context().types[:f.Context().topLevelTypesEnd],
-		func(_ int, p arena.Pointer[rawType]) Type {
-			// Implicitly in current file.
-			return wrapType(f.Context(), ref[rawType]{ptr: p})
+		func(_ int, p id.ID[Type]) Type {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -277,9 +233,8 @@ func (f File) Types() seq.Indexer[Type] {
 func (f File) AllTypes() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
 		f.Context().types,
-		func(_ int, p arena.Pointer[rawType]) Type {
-			// Implicitly in current file.
-			return wrapType(f.Context(), ref[rawType]{ptr: p})
+		func(_ int, p id.ID[Type]) Type {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -289,9 +244,8 @@ func (f File) AllTypes() seq.Indexer[Type] {
 func (f File) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns[:f.Context().topLevelExtnsEnd],
-		func(_ int, p arena.Pointer[rawMember]) Member {
-			// Implicitly in current file.
-			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		func(_ int, p id.ID[Member]) Member {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -300,9 +254,8 @@ func (f File) Extensions() seq.Indexer[Member] {
 func (f File) AllExtensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
 		f.Context().extns,
-		func(_ int, p arena.Pointer[rawMember]) Member {
-			// Implicitly in current file.
-			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		func(_ int, p id.ID[Member]) Member {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -311,8 +264,8 @@ func (f File) AllExtensions() seq.Indexer[Member] {
 func (f File) Extends() seq.Indexer[Extend] {
 	return seq.NewFixedSlice(
 		f.Context().extends[:f.Context().topLevelExtendsEnd],
-		func(_ int, p arena.Pointer[rawExtend]) Extend {
-			return Extend{internal.NewWith(f.Context()), f.Context().arenas.extendees.Deref(p)}
+		func(_ int, p id.ID[Extend]) Extend {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -321,8 +274,8 @@ func (f File) Extends() seq.Indexer[Extend] {
 func (f File) AllExtends() seq.Indexer[Extend] {
 	return seq.NewFixedSlice(
 		f.Context().extends,
-		func(_ int, p arena.Pointer[rawExtend]) Extend {
-			return Extend{internal.NewWith(f.Context()), f.Context().arenas.extendees.Deref(p)}
+		func(_ int, p id.ID[Extend]) Extend {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
@@ -330,8 +283,10 @@ func (f File) AllExtends() seq.Indexer[Extend] {
 // AllMembers returns all fields defined in this file, including extensions
 // and enum values.
 func (f File) AllMembers() iter.Seq[Member] {
+	i := 0
 	return iterx.Map(f.Context().arenas.members.Values(), func(raw *rawMember) Member {
-		return Member{internal.NewWith(f.Context()), raw}
+		i++
+		return id.WrapRaw(f.Context(), id.ID[Member](i), raw)
 	})
 }
 
@@ -339,30 +294,20 @@ func (f File) AllMembers() iter.Seq[Member] {
 func (f File) Services() seq.Indexer[Service] {
 	return seq.NewFixedSlice(
 		f.Context().services,
-		func(_ int, p arena.Pointer[rawService]) Service {
-			return Service{
-				internal.NewWith(f.Context()),
-				f.Context().arenas.services.Deref(p),
-			}
+		func(_ int, p id.ID[Service]) Service {
+			return id.Wrap(f.Context(), p)
 		},
 	)
 }
 
 // Options returns the top level options applied to this file.
 func (f File) Options() MessageValue {
-	return wrapValue(f.Context(), f.Context().options).AsMessage()
+	return id.Wrap(f.Context(), f.Context().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this file.
 func (f File) FeatureSet() FeatureSet {
-	if f.IsZero() || f.Context().features.Nil() {
-		return FeatureSet{}
-	}
-
-	return FeatureSet{
-		internal.NewWith(f.Context()),
-		f.Context().arenas.features.Deref(f.Context().features),
-	}
+	return id.Wrap(f.Context(), f.Context().features)
 }
 
 // Deprecated returns whether this file is deprecated, by returning the
@@ -387,8 +332,8 @@ func (f File) Deprecated() Value {
 func (f File) Symbols() seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
 		f.Context().imported,
-		func(_ int, r ref[rawSymbol]) Symbol {
-			return wrapSymbol(f.Context(), r)
+		func(_ int, r Ref[Symbol]) Symbol {
+			return GetRef(f.Context(), r)
 		},
 	)
 }
@@ -396,7 +341,7 @@ func (f File) Symbols() seq.Indexer[Symbol] {
 // FindSymbol finds a symbol among [File.Symbols] with the given fully-qualified
 // name.
 func (f File) FindSymbol(fqn FullName) Symbol {
-	return wrapSymbol(f.Context(),
+	return GetRef(f.Context(),
 		f.Context().imported.lookupBytes(f.Context(),
 			unsafex.BytesAlias[[]byte](string(fqn))))
 }
@@ -416,4 +361,37 @@ func topoSort(files []File) iter.Seq[File] {
 			)
 		},
 	)
+}
+
+func (c *Context) FromID(id uint64, want any) any {
+	switch want.(type) {
+	case **rawType:
+		return c.arenas.types.Deref(arena.Pointer[rawType](id))
+	case **rawMember:
+		return c.arenas.members.Deref(arena.Pointer[rawMember](id))
+	case **rawReservedRange:
+		return c.arenas.ranges.Deref(arena.Pointer[rawReservedRange](id))
+	case **rawExtend:
+		return c.arenas.extendees.Deref(arena.Pointer[rawExtend](id))
+	case **rawOneof:
+		return c.arenas.oneofs.Deref(arena.Pointer[rawOneof](id))
+
+	case **rawService:
+		return c.arenas.services.Deref(arena.Pointer[rawService](id))
+	case **rawMethod:
+		return c.arenas.methods.Deref(arena.Pointer[rawMethod](id))
+
+	case **rawValue:
+		return c.arenas.values.Deref(arena.Pointer[rawValue](id))
+	case **rawMessageValue:
+		return c.arenas.messages.Deref(arena.Pointer[rawMessageValue](id))
+	case **rawFeatureSet:
+		return c.arenas.features.Deref(arena.Pointer[rawFeatureSet](id))
+
+	case **rawSymbol:
+		return c.arenas.symbols.Deref(arena.Pointer[rawSymbol](id))
+
+	default:
+		return c.File().AST().Context().FromID(id, want)
+	}
 }

@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"iter"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
@@ -26,7 +26,7 @@ import (
 // Cursor is an iterator-like construct for looping over a token tree.
 // Unlike a plain range func, it supports peeking.
 type Cursor struct {
-	withContext
+	context Context
 
 	// This is used if this is a cursor over the children of a synthetic token.
 	// If stream is nil, we know we're in the natural case.
@@ -59,9 +59,9 @@ func NewCursorAt(tok Token) *Cursor {
 	}
 
 	return &Cursor{
-		withContext: tok.withContext,
-		idx:         tok.ID().naturalIndex(), // Convert to 0-based index.
-		isBackwards: tok.nat().IsClose(),     // Set the direction to calculate the offset.
+		context:     tok.Context(),
+		idx:         naturalIndex(tok.ID()), // Convert to 0-based index.
+		isBackwards: tok.nat().IsClose(),    // Set the direction to calculate the offset.
 	}
 }
 
@@ -69,9 +69,14 @@ func NewCursorAt(tok Token) *Cursor {
 // context.
 func NewSliceCursor(ctx Context, slice []ID) *Cursor {
 	return &Cursor{
-		withContext: internal.NewWith(ctx),
-		stream:      slice,
+		context: ctx,
+		stream:  slice,
 	}
+}
+
+// Context returns this Cursor's context.
+func (c *Cursor) Context() Context {
+	return c.context
 }
 
 // Done returns whether or not there are still tokens left to yield.
@@ -125,14 +130,14 @@ func (c *Cursor) PeekSkippable() Token {
 		if !ok {
 			return Zero
 		}
-		return tokenID.In(c.Context())
+		return id.Wrap(c.Context(), tokenID)
 	}
 	stream := c.Context().Stream()
 	impl, ok := slicesx.Get(stream.nats, c.idx)
 	if !ok || (!c.isBackwards && impl.IsClose()) {
 		return Zero // Reached the end.
 	}
-	return ID(c.idx + 1).In(c.Context())
+	return id.Wrap(c.Context(), ID(c.idx+1))
 }
 
 // PeekPrevSkippable returns the token before the current token in the sequence, if there is one.
@@ -148,7 +153,7 @@ func (c *Cursor) PeekPrevSkippable() Token {
 		if !ok {
 			return Zero
 		}
-		return tokenID.In(c.Context())
+		return id.Wrap(c.Context(), tokenID)
 	}
 	stream := c.Context().Stream()
 	idx := c.idx - 1
@@ -162,7 +167,7 @@ func (c *Cursor) PeekPrevSkippable() Token {
 	if !ok || impl.IsOpen() {
 		return Zero // Reached the start.
 	}
-	return ID(idx + 1).In(c.Context())
+	return id.Wrap(c.Context(), ID(idx+1))
 }
 
 // NextSkippable returns the next skippable token in the sequence, and advances the cursor.
@@ -196,7 +201,7 @@ func (c *Cursor) PrevSkippable() Token {
 	if c.IsSynthetic() {
 		c.idx--
 	} else {
-		c.idx = tok.ID().naturalIndex()
+		c.idx = naturalIndex(tok.ID())
 	}
 	return tok
 }
@@ -304,6 +309,6 @@ func (c *Cursor) SeekToEnd() (Token, report.Span) {
 		return Zero, stream.EOF()
 	}
 	// Otherwise, return end.
-	tok := ID(c.idx + 1).In(c.Context())
+	tok := id.Wrap(c.Context(), ID(c.idx+1))
 	return tok, stream.Span(tok.offsets())
 }

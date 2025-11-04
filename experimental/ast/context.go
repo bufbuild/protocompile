@@ -15,9 +15,10 @@
 package ast
 
 import (
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // Context is where all of the book-keeping for the AST of a particular file is kept.
@@ -31,7 +32,7 @@ type Context interface {
 	Nodes() *Nodes
 }
 
-type withContext = internal.With[Context]
+type withContext = id.HasContext[Context]
 
 // NewContext creates a fresh context for a particular file.
 func NewContext(file *report.File) Context {
@@ -59,4 +60,49 @@ func (c *context) Stream() *token.Stream {
 
 func (c *context) Nodes() *Nodes {
 	return c.nodes
+}
+
+func (c *context) FromID(id uint64, want any) any {
+	switch want.(type) {
+	case **rawDeclBody:
+		return c.nodes.decls.bodies.Deref(arena.Pointer[rawDeclBody](id))
+	case **rawDeclDef:
+		return c.nodes.decls.defs.Deref(arena.Pointer[rawDeclDef](id))
+	case **rawDeclEmpty:
+		return c.nodes.decls.empties.Deref(arena.Pointer[rawDeclEmpty](id))
+	case **rawDeclImport:
+		return c.nodes.decls.imports.Deref(arena.Pointer[rawDeclImport](id))
+	case **rawDeclPackage:
+		return c.nodes.decls.packages.Deref(arena.Pointer[rawDeclPackage](id))
+	case **rawDeclRange:
+		return c.nodes.decls.ranges.Deref(arena.Pointer[rawDeclRange](id))
+	case **rawDeclSyntax:
+		return c.nodes.decls.syntaxes.Deref(arena.Pointer[rawDeclSyntax](id))
+
+	case **rawExprError:
+		return c.nodes.exprs.errors.Deref(arena.Pointer[rawExprError](id))
+	case **rawExprArray:
+		return c.nodes.exprs.arrays.Deref(arena.Pointer[rawExprArray](id))
+	case **rawExprDict:
+		return c.nodes.exprs.dicts.Deref(arena.Pointer[rawExprDict](id))
+	case **rawExprField:
+		return c.nodes.exprs.fields.Deref(arena.Pointer[rawExprField](id))
+	case **rawExprPrefixed:
+		return c.nodes.exprs.prefixes.Deref(arena.Pointer[rawExprPrefixed](id))
+	case **rawExprRange:
+		return c.nodes.exprs.ranges.Deref(arena.Pointer[rawExprRange](id))
+
+	case **rawTypeError:
+		return c.nodes.types.errors.Deref(arena.Pointer[rawTypeError](id))
+	case **rawTypeGeneric:
+		return c.nodes.types.generics.Deref(arena.Pointer[rawTypeGeneric](id))
+	case **rawTypePrefixed:
+		return c.nodes.types.prefixes.Deref(arena.Pointer[rawTypePrefixed](id))
+
+	case **rawCompactOptions:
+		return c.nodes.options.Deref(arena.Pointer[rawCompactOptions](id))
+
+	default:
+		return c.stream.FromID(id, want)
+	}
 }

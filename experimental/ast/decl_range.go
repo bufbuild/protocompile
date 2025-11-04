@@ -15,11 +15,11 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // DeclRange represents an extension or reserved range declaration. They are almost identical
@@ -28,12 +28,12 @@ import (
 // # Grammar
 //
 //	DeclRange := (`extensions` | `reserved`) (Expr `,`)* Expr? CompactOptions? `;`?
-type DeclRange struct{ declImpl[rawDeclRange] }
+type DeclRange id.Node[DeclRange, Context, *rawDeclRange]
 
 type rawDeclRange struct {
 	keyword token.ID
-	args    []withComma[rawExpr]
-	options arena.Pointer[rawCompactOptions]
+	args    []withComma[id.Dyn[ExprAny, ExprKind]]
+	options id.ID[CompactOptions]
 	semi    token.ID
 }
 
@@ -42,6 +42,16 @@ type DeclRangeArgs struct {
 	Keyword   token.Token
 	Options   CompactOptions
 	Semicolon token.Token
+}
+
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclRange) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindRange, id.ID[DeclAny](d.ID())))
 }
 
 // Keyword returns the keyword for this range.
@@ -55,7 +65,7 @@ func (d DeclRange) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.keyword.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
 }
 
 // IsExtensions checks whether this is an extension range.
@@ -71,20 +81,20 @@ func (d DeclRange) IsReserved() bool {
 // Ranges returns the sequence of expressions denoting the ranges in this
 // range declaration.
 func (d DeclRange) Ranges() Commas[ExprAny] {
-	type slice = commas[ExprAny, rawExpr]
+	type slice = commas[ExprAny, id.Dyn[ExprAny, ExprKind]]
 	if d.IsZero() {
 		return slice{}
 	}
 	return slice{
 		ctx: d.Context(),
 		SliceInserter: seq.NewSliceInserter(
-			&d.raw.args,
-			func(_ int, c withComma[rawExpr]) ExprAny {
-				return newExprAny(d.Context(), c.Value)
+			&d.Raw().args,
+			func(_ int, c withComma[id.Dyn[ExprAny, ExprKind]]) ExprAny {
+				return id.WrapDyn(d.Context(), c.Value)
 			},
-			func(_ int, e ExprAny) withComma[rawExpr] {
+			func(_ int, e ExprAny) withComma[id.Dyn[ExprAny, ExprKind]] {
 				d.Context().Nodes().panicIfNotOurs(e)
-				return withComma[rawExpr]{Value: e.raw}
+				return withComma[id.Dyn[ExprAny, ExprKind]]{Value: e.ID()}
 			},
 		),
 	}
@@ -96,14 +106,14 @@ func (d DeclRange) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return wrapOptions(d.Context(), d.raw.options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
 // Setting it to a nil Options clears it.
 func (d DeclRange) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.Raw().options = opts.ID()
 }
 
 // Semicolon returns this range's ending semicolon.
@@ -114,7 +124,7 @@ func (d DeclRange) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
 }
 
 // Span implements [report.Spanner].
@@ -132,8 +142,4 @@ func (d DeclRange) Span() report.Span {
 			r.At(r.Len()-1),
 		)
 	}
-}
-
-func wrapDeclRange(c Context, ptr arena.Pointer[rawDeclRange]) DeclRange {
-	return DeclRange{wrapDecl(c, ptr)}
 }

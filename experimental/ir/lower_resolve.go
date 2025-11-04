@@ -20,13 +20,12 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
@@ -42,8 +41,8 @@ func resolveNames(f File, r *report.Report) {
 		}
 	}
 
-	for extend := range f.Context().arenas.extendees.Values() {
-		resolveExtendeeType(f.Context(), Extend{internal.NewWith(f.Context()), extend}, r)
+	for extend := range seq.Values(f.AllExtends()) {
+		resolveExtendeeType(extend, r)
 	}
 
 	for field := range seq.Values(f.AllExtensions()) {
@@ -102,8 +101,8 @@ func resolveFieldType(field Member, r *report.Report) {
 		return
 	}
 
-	if field.raw.oneof < 0 {
-		field.raw.oneof = -int32(kind)
+	if field.Raw().oneof < 0 {
+		field.Raw().oneof = -int32(kind)
 	}
 
 	sym := symbolRef{
@@ -123,8 +122,8 @@ func resolveFieldType(field Member, r *report.Report) {
 	}.resolve()
 
 	if sym.Kind().IsType() {
-		field.raw.elem.file = sym.ref.file
-		field.raw.elem.ptr = arena.Pointer[rawType](sym.raw.data)
+		ty := sym.AsType()
+		field.Raw().elem = ty.toRef(field.Context())
 
 		if mf := sym.AsType().MapField(); !mf.IsZero() {
 			r.Errorf("use of synthetic map entry type").Apply(
@@ -157,10 +156,10 @@ func resolveFieldType(field Member, r *report.Report) {
 	}
 }
 
-func resolveExtendeeType(c *Context, extend Extend, r *report.Report) {
+func resolveExtendeeType(extend Extend, r *report.Report) {
 	path := extend.AST().Name()
 	sym := symbolRef{
-		Context: c,
+		Context: extend.Context(),
 		Report:  r,
 
 		span:  path,
@@ -175,13 +174,12 @@ func resolveExtendeeType(c *Context, extend Extend, r *report.Report) {
 	}.resolve()
 
 	if sym.Kind().IsType() {
-		extend.raw.ty.file = sym.ref.file
-		extend.raw.ty.ptr = arena.Pointer[rawType](sym.raw.data)
+		extend.Raw().ty = sym.AsType().toRef(extend.Context())
 	}
 }
 
 func resolveMethodTypes(m Method, r *report.Report) {
-	resolve := func(ty ast.TypeAny) (out ref[rawType], stream bool) {
+	resolve := func(ty ast.TypeAny) (out Ref[Type], stream bool) {
 		var path ast.Path
 		for path.IsZero() {
 			switch ty.Kind() {
@@ -215,8 +213,7 @@ func resolveMethodTypes(m Method, r *report.Report) {
 		}.resolve()
 
 		if sym.Kind().IsType() {
-			out.file = sym.ref.file
-			out.ptr = arena.Pointer[rawType](sym.raw.data)
+			out = sym.AsType().toRef(m.Context())
 		}
 
 		return out, stream
@@ -224,10 +221,10 @@ func resolveMethodTypes(m Method, r *report.Report) {
 
 	signature := m.AST().Signature()
 	if signature.Inputs().Len() > 0 {
-		m.raw.input, m.raw.inputStream = resolve(m.AST().Signature().Inputs().At(0))
+		m.Raw().input, m.Raw().inputStream = resolve(m.AST().Signature().Inputs().At(0))
 	}
 	if signature.Outputs().Len() > 0 {
-		m.raw.output, m.raw.outputStream = resolve(m.AST().Signature().Outputs().At(0))
+		m.Raw().output, m.Raw().outputStream = resolve(m.AST().Signature().Outputs().At(0))
 	}
 }
 
@@ -252,7 +249,7 @@ type symbolRef struct {
 // resolve performs symbol resolution.
 func (r symbolRef) resolve() Symbol {
 	var (
-		found    ref[rawSymbol]
+		found    Ref[Symbol]
 		expected FullName
 	)
 
@@ -274,9 +271,9 @@ func (r symbolRef) resolve() Symbol {
 
 		prim := predeclared.Lookup(string(r.name))
 		if prim.IsScalar() {
-			sym := wrapSymbol(r.Context, ref[rawSymbol]{
+			sym := GetRef(r.Context, Ref[Symbol]{
 				file: -1,
-				ptr:  arena.Pointer[rawSymbol](prim),
+				id:   id.ID[Symbol](prim),
 			})
 			r.diagnoseLookup(sym, expected)
 			return sym
@@ -288,7 +285,7 @@ func (r symbolRef) resolve() Symbol {
 		found, expected = r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, nil)
 	}
 
-	sym := wrapSymbol(r.Context, found)
+	sym := GetRef(r.Context, found)
 	if r.Report != nil {
 		d := r.diagnoseLookup(sym, expected)
 		if fullResolve && d != nil {
@@ -329,7 +326,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					"rather than the one we found",
 				expectedName),
 		)
-	case !sym.Visible():
+	case !sym.Visible(r.Context.File()):
 		// Complain that we need to import a symbol.
 		d := r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Snippetf(r.span, "not visible in this scope"),
@@ -351,7 +348,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 			offset = imp.Span().End
 		}
 
-		replacement := fmt.Sprintf("\nimport %q;", sym.File().Path())
+		replacement := fmt.Sprintf("\nimport %q;", sym.Context().File().Path())
 		if offset == 0 {
 			replacement = replacement[1:] + "\n"
 		}
