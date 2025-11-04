@@ -30,6 +30,8 @@ import (
 
 // File is an IR file, which provides access to the top-level declarations of
 // a Protobuf *File.
+//
+//nolint:govet // For some reason, this lint mangles the field order on this struct. >:(
 type File struct {
 	_       unsafex.NoCopy
 	session *Session
