@@ -30,6 +30,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -53,6 +54,7 @@ func diagnoseUnusedImports(f File, r *report.Report) {
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
 			report.Helpf("no symbols from this file are referenced"),
+			report.Tag(tags.UnusedImport),
 		)
 	}
 }
