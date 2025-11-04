@@ -54,11 +54,13 @@ func generateMapEntries(file *File, r *report.Report) {
 		mapEntry := builtins.MapEntry.toRef(file)
 
 		options := newMessage(file, builtins.MessageOptions.toRef(file))
-		*options.insert(GetRef(file, mapEntry)) =
+		options.slot(GetRef(file, mapEntry)).Insert(id.Wrap(
+			file,
 			id.ID[Value](file.arenas.values.NewCompressed(rawValue{
 				field: mapEntry,
 				bits:  1,
-			}))
+			})),
+		))
 
 		// Construct the type itself.
 		ty := id.Wrap(file, id.ID[Type](file.arenas.types.NewCompressed(rawType{
