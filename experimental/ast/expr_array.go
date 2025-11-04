@@ -26,7 +26,7 @@ import (
 // # Grammar
 //
 //	ExprArray := `[` (ExprJuxta `,`?)*`]`
-type ExprArray id.Node[ExprArray, Context, *rawExprArray]
+type ExprArray id.Node[ExprArray, *File, *rawExprArray]
 
 type rawExprArray struct {
 	brackets token.ID
@@ -52,7 +52,7 @@ func (e ExprArray) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(e.Context()), e.Raw().brackets)
+	return id.Wrap(e.Context().Stream(), e.Raw().brackets)
 }
 
 // Elements returns the sequence of expressions in this array.
@@ -62,7 +62,7 @@ func (e ExprArray) Elements() Commas[ExprAny] {
 		return slice{}
 	}
 	return slice{
-		ctx: e.Context(),
+		file: e.Context(),
 		SliceInserter: seq.NewSliceInserter(
 			&e.Raw().args,
 			func(_ int, c withComma[id.Dyn[ExprAny, ExprKind]]) ExprAny {

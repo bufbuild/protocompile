@@ -38,7 +38,7 @@ import (
 // # Grammar
 //
 //	TypeGeneric := TypePath `<` (Type `,`?`)* `>`
-type TypeGeneric id.Node[TypeGeneric, Context, *rawTypeGeneric]
+type TypeGeneric id.Node[TypeGeneric, *File, *rawTypeGeneric]
 
 type rawTypeGeneric struct {
 	path PathID
@@ -134,7 +134,7 @@ func (d TypeList) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.raw.brackets)
+	return id.Wrap(d.Context().Stream(), d.raw.brackets)
 }
 
 // SetBrackets sets the token tree for the brackets wrapping the argument list.
@@ -175,7 +175,7 @@ func (d TypeList) Delete(n int) {
 
 // Comma implements [Commas].
 func (d TypeList) Comma(n int) token.Token {
-	return id.Wrap(token.Context(d.Context()), d.raw.args[n].Comma)
+	return id.Wrap(d.Context().Stream(), d.raw.args[n].Comma)
 }
 
 // AppendComma implements [Commas].

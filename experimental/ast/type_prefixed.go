@@ -35,7 +35,7 @@ import (
 // of a [TypeGeneric]'s brackets or a [Signature]'s method parameters.
 //
 // Also, the `stream` prefix may only occur inside of a [Signature].
-type TypePrefixed id.Node[TypePrefixed, Context, *rawTypePrefixed]
+type TypePrefixed id.Node[TypePrefixed, *File, *rawTypePrefixed]
 
 type rawTypePrefixed struct {
 	prefix token.ID
@@ -73,7 +73,7 @@ func (t TypePrefixed) PrefixToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(t.Context()), t.Raw().prefix)
+	return id.Wrap(t.Context().Stream(), t.Raw().prefix)
 }
 
 // Type returns the type that is being prefixed.

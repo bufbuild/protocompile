@@ -30,10 +30,10 @@ import (
 )
 
 // resolveNames resolves all of the names that need resolving in a file.
-func resolveNames(f File, r *report.Report) {
-	resolveBuiltins(f.Context())
+func resolveNames(file *File, r *report.Report) {
+	resolveBuiltins(file)
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		if ty.IsMessage() {
 			for field := range seq.Values(ty.Members()) {
 				resolveFieldType(field, r)
@@ -41,15 +41,15 @@ func resolveNames(f File, r *report.Report) {
 		}
 	}
 
-	for extend := range seq.Values(f.AllExtends()) {
+	for extend := range seq.Values(file.AllExtends()) {
 		resolveExtendeeType(extend, r)
 	}
 
-	for field := range seq.Values(f.AllExtensions()) {
+	for field := range seq.Values(file.AllExtensions()) {
 		resolveFieldType(field, r)
 	}
 
-	for service := range seq.Values(f.Services()) {
+	for service := range seq.Values(file.Services()) {
 		for method := range seq.Values(service.Methods()) {
 			resolveMethodTypes(method, r)
 		}
@@ -63,7 +63,7 @@ func resolveFieldType(field Member, r *report.Report) {
 	kind := presence.Explicit
 	switch ty.Kind() {
 	case ast.TypeKindPath:
-		if field.Context().File().Syntax() == syntax.Proto3 {
+		if field.Context().Syntax() == syntax.Proto3 {
 			kind = presence.Implicit
 		}
 		// NOTE: Editions features are resolved elsewhere, so we default to
@@ -106,8 +106,8 @@ func resolveFieldType(field Member, r *report.Report) {
 	}
 
 	sym := symbolRef{
-		Context: field.Context(),
-		Report:  r,
+		File:   field.Context(),
+		Report: r,
 
 		span:  path,
 		scope: field.Scope(),
@@ -159,8 +159,8 @@ func resolveFieldType(field Member, r *report.Report) {
 func resolveExtendeeType(extend Extend, r *report.Report) {
 	path := extend.AST().Name()
 	sym := symbolRef{
-		Context: extend.Context(),
-		Report:  r,
+		File:   extend.Context(),
+		Report: r,
 
 		span:  path,
 		scope: extend.Scope(),
@@ -198,8 +198,8 @@ func resolveMethodTypes(m Method, r *report.Report) {
 		}
 
 		sym := symbolRef{
-			Context: m.Context(),
-			Report:  r,
+			File:   m.Context(),
+			Report: r,
 
 			span:  path,
 			scope: m.Service().FullName(),
@@ -230,7 +230,7 @@ func resolveMethodTypes(m Method, r *report.Report) {
 
 // symbolRef is all of the information necessary to resolve a symbol reference.
 type symbolRef struct {
-	*Context
+	*File
 	*report.Report
 
 	scope, name FullName
@@ -257,7 +257,7 @@ func (r symbolRef) resolve() Symbol {
 	switch {
 	case r.name.Absolute():
 		if id, ok := r.session.intern.Query(string(r.name.ToRelative())); ok {
-			found = r.imported.lookup(r.Context, id)
+			found = r.imported.lookup(r.File, id)
 		}
 	case r.allowScalars:
 		// TODO: if symbol resolution would provide a different answer for
@@ -271,7 +271,7 @@ func (r symbolRef) resolve() Symbol {
 
 		prim := predeclared.Lookup(string(r.name))
 		if prim.IsScalar() {
-			sym := GetRef(r.Context, Ref[Symbol]{
+			sym := GetRef(r.File, Ref[Symbol]{
 				file: -1,
 				id:   id.ID[Symbol](prim),
 			})
@@ -282,15 +282,15 @@ func (r symbolRef) resolve() Symbol {
 		fallthrough
 	default:
 		fullResolve = true
-		found, expected = r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, nil)
+		found, expected = r.imported.resolve(r.File, r.scope, r.name, r.skipIfNot, nil)
 	}
 
-	sym := GetRef(r.Context, found)
+	sym := GetRef(r.File, found)
 	if r.Report != nil {
 		d := r.diagnoseLookup(sym, expected)
 		if fullResolve && d != nil {
 			// Resolve a second time to add debugging information to the diagnostic.
-			r.imported.resolve(r.Context, r.scope, r.name, r.skipIfNot, d)
+			r.imported.resolve(r.File, r.scope, r.name, r.skipIfNot, d)
 		}
 	}
 
@@ -326,7 +326,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					"rather than the one we found",
 				expectedName),
 		)
-	case !sym.Visible(r.Context.File()):
+	case !sym.Visible(r.File):
 		// Complain that we need to import a symbol.
 		d := r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Snippetf(r.span, "not visible in this scope"),
@@ -338,7 +338,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 		}
 
 		// Find the last import statement and stick the suggestion after it.
-		decls := sym.Context().File().AST().Decls()
+		decls := sym.Context().AST().Decls()
 		_, _, imp := iterx.Find2(seq.Backward(decls), func(_ int, d ast.DeclAny) bool {
 			return d.Kind() == ast.DeclKindImport
 		})
@@ -348,7 +348,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 			offset = imp.Span().End
 		}
 
-		replacement := fmt.Sprintf("\nimport %q;", sym.Context().File().Path())
+		replacement := fmt.Sprintf("\nimport %q;", sym.Context().Path())
 		if offset == 0 {
 			replacement = replacement[1:] + "\n"
 		}

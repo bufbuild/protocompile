@@ -28,7 +28,7 @@ import (
 // # Grammar
 //
 //	DeclRange := (`extensions` | `reserved`) (Expr `,`)* Expr? CompactOptions? `;`?
-type DeclRange id.Node[DeclRange, Context, *rawDeclRange]
+type DeclRange id.Node[DeclRange, *File, *rawDeclRange]
 
 type rawDeclRange struct {
 	keyword token.ID
@@ -65,7 +65,7 @@ func (d DeclRange) KeywordToken() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().keyword)
+	return id.Wrap(d.Context().Stream(), d.Raw().keyword)
 }
 
 // IsExtensions checks whether this is an extension range.
@@ -86,7 +86,7 @@ func (d DeclRange) Ranges() Commas[ExprAny] {
 		return slice{}
 	}
 	return slice{
-		ctx: d.Context(),
+		file: d.Context(),
 		SliceInserter: seq.NewSliceInserter(
 			&d.Raw().args,
 			func(_ int, c withComma[id.Dyn[ExprAny, ExprKind]]) ExprAny {
@@ -124,7 +124,7 @@ func (d DeclRange) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(d.Context()), d.Raw().semi)
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // Span implements [report.Spanner].

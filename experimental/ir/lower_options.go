@@ -32,9 +32,9 @@ import (
 // early during compilation. This does not create option values, nor does it
 // generate diagnostics; it simply records this information to special fields
 // in [Type].
-func resolveEarlyOptions(f File) {
-	builtins := &f.Context().session.builtins
-	for ty := range seq.Values(f.AllTypes()) {
+func resolveEarlyOptions(file *File) {
+	builtins := &file.session.builtins
+	for ty := range seq.Values(file.AllTypes()) {
 		for decl := range seq.Values(ty.AST().Body().Decls()) {
 			def := decl.AsDef()
 			if def.IsZero() || def.Classify() != ast.DefKindOption {
@@ -58,14 +58,14 @@ func resolveEarlyOptions(f File) {
 					name = builtins.AllowAlias
 				}
 			} else if extn := first.AsExtension(); !extn.IsZero() {
-				sym, _ := f.Context().imported.resolve(
-					f.Context(),
+				sym, _ := file.imported.resolve(
+					file,
 					ty.Scope(),
 					FullName(extn.Canonicalized()),
 					nil,
 					nil,
 				)
-				name = GetRef(f.Context(), sym).AsMember().InternedFullName()
+				name = GetRef(file, sym).AsMember().InternedFullName()
 			}
 
 			// Get the value of this option. We only care about a value of
@@ -83,10 +83,10 @@ func resolveEarlyOptions(f File) {
 }
 
 // resolveOptions resolves all of the options in a file.
-func resolveOptions(f File, r *report.Report) {
-	builtins := f.Context().builtins()
-	bodyOptions := func(b ast.DeclBody) iter.Seq[ast.Option] {
-		return iterx.FilterMap(seq.Values(b.Decls()), func(d ast.DeclAny) (ast.Option, bool) {
+func resolveOptions(file *File, r *report.Report) {
+	builtins := file.builtins()
+	bodyOptions := func(decls seq.Inserter[ast.DeclAny]) iter.Seq[ast.Option] {
+		return iterx.FilterMap(seq.Values(decls), func(d ast.DeclAny) (ast.Option, bool) {
 			def := d.AsDef()
 			if def.IsZero() || def.Classify() != ast.DefKindOption {
 				return ast.Option{}, false
@@ -95,35 +95,35 @@ func resolveOptions(f File, r *report.Report) {
 		})
 	}
 
-	for def := range bodyOptions(f.AST().DeclBody) {
+	for def := range bodyOptions(file.AST().Decls()) {
 		optionRef{
-			Context: f.Context(),
-			Report:  r,
+			File:   file,
+			Report: r,
 
-			scope: f.Package(),
+			scope: file.Package(),
 			def:   def,
 
 			field: builtins.FileOptions,
-			raw:   &f.Context().options,
+			raw:   &file.options,
 		}.resolve()
 	}
 
 	// Reusable space for duplicating options values between extension ranges.
 	extnOpts := make(map[ast.DeclRange]id.ID[Value])
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entries already come with options pre-calculated.
 			continue
 		}
 
-		for def := range bodyOptions(ty.AST().Body()) {
+		for def := range bodyOptions(ty.AST().Body().Decls()) {
 			options := builtins.MessageOptions
 			if ty.IsEnum() {
 				options = builtins.EnumOptions
 			}
 			optionRef{
-				Context: f.Context(),
-				Report:  r,
+				File:   file,
+				Report: r,
 
 				scope: ty.Scope(),
 				def:   def,
@@ -140,8 +140,8 @@ func resolveOptions(f File, r *report.Report) {
 					options = builtins.EnumValueOptions
 				}
 				optionRef{
-					Context: f.Context(),
-					Report:  r,
+					File:   file,
+					Report: r,
 
 					scope: field.Scope(),
 					def:   def,
@@ -153,10 +153,10 @@ func resolveOptions(f File, r *report.Report) {
 			}
 		}
 		for oneof := range seq.Values(ty.Oneofs()) {
-			for def := range bodyOptions(oneof.AST().Body()) {
+			for def := range bodyOptions(oneof.AST().Body().Decls()) {
 				optionRef{
-					Context: f.Context(),
-					Report:  r,
+					File:   file,
+					Report: r,
 
 					scope: ty.Scope(),
 					def:   def,
@@ -177,8 +177,8 @@ func resolveOptions(f File, r *report.Report) {
 
 			for def := range seq.Values(extns.DeclAST().Options().Entries()) {
 				optionRef{
-					Context: f.Context(),
-					Report:  r,
+					File:   file,
+					Report: r,
 
 					scope: ty.Scope(),
 					def:   def,
@@ -191,11 +191,11 @@ func resolveOptions(f File, r *report.Report) {
 			extnOpts[decl] = extns.Raw().options
 		}
 	}
-	for field := range seq.Values(f.AllExtensions()) {
+	for field := range seq.Values(file.AllExtensions()) {
 		for def := range seq.Values(field.AST().Options().Entries()) {
 			optionRef{
-				Context: f.Context(),
-				Report:  r,
+				File:   file,
+				Report: r,
 
 				scope: field.Scope(),
 				def:   def,
@@ -206,11 +206,11 @@ func resolveOptions(f File, r *report.Report) {
 			}.resolve()
 		}
 	}
-	for service := range seq.Values(f.Services()) {
-		for def := range bodyOptions(service.AST().Body()) {
+	for service := range seq.Values(file.Services()) {
+		for def := range bodyOptions(service.AST().Body().Decls()) {
 			optionRef{
-				Context: f.Context(),
-				Report:  r,
+				File:   file,
+				Report: r,
 
 				scope: service.FullName(),
 				def:   def,
@@ -221,10 +221,10 @@ func resolveOptions(f File, r *report.Report) {
 		}
 
 		for method := range seq.Values(service.Methods()) {
-			for def := range bodyOptions(method.AST().Body()) {
+			for def := range bodyOptions(method.AST().Body().Decls()) {
 				optionRef{
-					Context: f.Context(),
-					Report:  r,
+					File:   file,
+					Report: r,
 
 					scope: service.FullName(),
 					def:   def,
@@ -238,8 +238,8 @@ func resolveOptions(f File, r *report.Report) {
 }
 
 // populateOptionTargets builds option target sets for each field in a file.
-func populateOptionTargets(f File, _ *report.Report) {
-	targets := f.Context().builtins().OptionTargets
+func populateOptionTargets(file *File, _ *report.Report) {
+	targets := file.builtins().OptionTargets
 	populate := func(m Member) {
 		for target := range seq.Values(m.Options().Field(targets).Elements()) {
 			n, _ := target.AsInt()
@@ -252,7 +252,7 @@ func populateOptionTargets(f File, _ *report.Report) {
 		}
 	}
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		if !ty.IsMessage() {
 			continue
 		}
@@ -262,12 +262,12 @@ func populateOptionTargets(f File, _ *report.Report) {
 		}
 	}
 
-	for extn := range seq.Values(f.AllExtensions()) {
+	for extn := range seq.Values(file.AllExtensions()) {
 		populate(extn)
 	}
 }
 
-func validateOptionTargets(f File, r *report.Report) {
+func validateOptionTargets(f *File, r *report.Report) {
 	validateOptionTargetsInValue(f.Options(), report.Span{}, OptionTargetFile, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
@@ -366,7 +366,7 @@ func validateOptionTargetsInValue(m MessageValue, decl report.Span, target Optio
 
 // symbolRef is all of the information necessary to resolve an option reference.
 type optionRef struct {
-	*Context
+	*File
 	*report.Report
 
 	scope FullName
@@ -381,14 +381,14 @@ type optionRef struct {
 
 // resolve performs symbol resolution.
 func (r optionRef) resolve() {
-	ids := &r.Context.session.builtins
+	ids := &r.session.builtins
 	root := r.field.Element()
 
 	if r.raw.IsZero() {
-		*r.raw = newMessage(r.Context, r.field.toRef(r.Context)).AsValue().ID()
+		*r.raw = newMessage(r.File, r.field.toRef(r.File)).AsValue().ID()
 	}
 
-	current := id.Wrap(r.Context, *r.raw)
+	current := id.Wrap(r.File, *r.raw)
 	field := current.Field()
 	var path ast.Path
 	var raw *id.ID[Value]
@@ -419,8 +419,8 @@ func (r optionRef) resolve() {
 			}
 		} else if extn := pc.AsExtension(); !extn.IsZero() {
 			sym := symbolRef{
-				Context: r.Context,
-				Report:  r.Report,
+				File:   r.File,
+				Report: r.Report,
 
 				span:  extn,
 				scope: r.scope,
@@ -501,10 +501,10 @@ func (r optionRef) resolve() {
 			case ids.FileFeatures,
 				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
 				ids.EnumFeatures, ids.EnumValueFeatures:
-				if syn := r.File().Syntax(); !syn.IsEdition() {
+				if syn := r.Syntax(); !syn.IsEdition() {
 					r.Errorf("`features` cannot be set in %s", prettyEdition(syn)).Apply(
 						report.Snippet(pc),
-						report.Snippetf(r.File().AST().Syntax().Value(), "syntax specified here"),
+						report.Snippetf(r.AST().Syntax().Value(), "syntax specified here"),
 					)
 				}
 			}
@@ -526,7 +526,7 @@ func (r optionRef) resolve() {
 			raw = parent.insert(field)
 		}
 		if !raw.IsZero() {
-			value := id.Wrap(r.Context, *raw)
+			value := id.Wrap(r.File, *raw)
 			switch {
 			case field.IsRepeated():
 				break // Handled below.
@@ -594,7 +594,7 @@ func (r optionRef) resolve() {
 			return
 		}
 
-		value := newMessage(r.Context, field.toRef(r.Context)).AsValue()
+		value := newMessage(r.File, field.toRef(r.File)).AsValue()
 		value.Raw().optionPaths = append(value.Raw().optionPaths, path.ID())
 		value.Raw().exprs = append(value.Raw().exprs, ast.ExprPath{Path: path}.AsAny().ID())
 
@@ -604,9 +604,9 @@ func (r optionRef) resolve() {
 
 	// Now, evaluate the expression and assign it to the field we found.
 	evaluator := evaluator{
-		Context: r.Context,
-		Report:  r.Report,
-		scope:   r.scope,
+		File:   r.File,
+		Report: r.Report,
+		scope:  r.scope,
 	}
 	args := evalArgs{
 		expr:       r.def.Value,
@@ -616,7 +616,7 @@ func (r optionRef) resolve() {
 	}
 
 	if !raw.IsZero() {
-		args.target = id.Wrap(r.Context, *raw)
+		args.target = id.Wrap(r.File, *raw)
 	}
 
 	v := evaluator.eval(args)

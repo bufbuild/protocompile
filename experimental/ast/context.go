@@ -15,94 +15,149 @@
 package ast
 
 import (
+	"iter"
+
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
-// Context is where all of the book-keeping for the AST of a particular file is kept.
+// File is the top-level AST node for a Protobuf file.
 //
-// Virtually all operations inside of package ast involve a Context. However, most of
-// the exported types carry their Context with them, so you don't need to worry about
-// passing it around.
-type Context interface {
-	token.Context
-
-	Nodes() *Nodes
-}
-
-type withContext = id.HasContext[Context]
-
-// NewContext creates a fresh context for a particular file.
-func NewContext(file *report.File) Context {
-	c := new(context)
-	c.stream = &token.Stream{
-		Context: c,
-		File:    file,
-	}
-	c.nodes = &Nodes{
-		Context: c,
-	}
-
-	c.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.
-	return c
-}
-
-type context struct {
+// A file is a list of declarations (in other words, it is a [DeclBody]). The
+// File type provides convenience functions for extracting salient elements,
+// such as the [DeclSyntax] and the [DeclPackage].
+//
+// # Grammar
+//
+//	File := DeclAny*
+type File struct {
+	_      unsafex.NoCopy
 	stream *token.Stream
-	nodes  *Nodes
+
+	decls   decls
+	types   types
+	exprs   exprs
+	options arena.Arena[rawCompactOptions]
+
+	// A cache of raw paths that have been converted into parenthesized
+	// components in NewExtensionComponent.
+	extnPathCache map[PathID]token.ID
 }
 
-func (c *context) Stream() *token.Stream {
-	return c.stream
+type withContext = id.HasContext[*File]
+
+// New creates a fresh context for a file.
+func New(file *report.File) *File {
+	f := new(File)
+	f.stream = &token.Stream{
+		File: file,
+	}
+	_ = f.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.
+
+	return f
 }
 
-func (c *context) Nodes() *Nodes {
-	return c.nodes
+// Syntax returns this file's declaration, if it has one.
+func (f *File) Syntax() DeclSyntax {
+	for d := range seq.Values(f.Decls()) {
+		if s := d.AsSyntax(); !s.IsZero() {
+			return s
+		}
+	}
+	return DeclSyntax{}
 }
 
-func (c *context) FromID(id uint64, want any) any {
+// Package returns this file's package declaration, if it has one.
+func (f *File) Package() DeclPackage {
+	for d := range seq.Values(f.Decls()) {
+		if p := d.AsPackage(); !p.IsZero() {
+			return p
+		}
+	}
+	return DeclPackage{}
+}
+
+// Imports returns an iterator over this file's import declarations.
+func (f *File) Imports() iter.Seq[DeclImport] {
+	return iterx.FilterMap(seq.Values(f.Decls()), func(d DeclAny) (DeclImport, bool) {
+		if imp := d.AsImport(); !imp.IsZero() {
+			return imp, true
+		}
+		return DeclImport{}, false
+	})
+}
+
+// Decls returns all of the top-level declarations in this file.
+func (f *File) Decls() seq.Inserter[DeclAny] {
+	return id.Wrap(f, id.ID[DeclBody](1)).Decls()
+}
+
+// Stream returns the underlying token stream.
+func (f *File) Stream() *token.Stream {
+	if f == nil {
+		return nil
+	}
+	return f.stream
+}
+
+// Nodes returns the node arena for this file, which can be used to allocate
+// new AST nodes.
+func (f *File) Nodes() *Nodes {
+	return (*Nodes)(f)
+}
+
+// Stream returns the underlying token stream.
+func (f *File) Span() report.Span {
+	return id.Wrap(f, id.ID[DeclBody](1)).Span()
+}
+
+// FromID implements [id.Context].
+func (f *File) FromID(id uint64, want any) any {
 	switch want.(type) {
 	case **rawDeclBody:
-		return c.nodes.decls.bodies.Deref(arena.Pointer[rawDeclBody](id))
+		return f.decls.bodies.Deref(arena.Pointer[rawDeclBody](id))
 	case **rawDeclDef:
-		return c.nodes.decls.defs.Deref(arena.Pointer[rawDeclDef](id))
+		return f.decls.defs.Deref(arena.Pointer[rawDeclDef](id))
 	case **rawDeclEmpty:
-		return c.nodes.decls.empties.Deref(arena.Pointer[rawDeclEmpty](id))
+		return f.decls.empties.Deref(arena.Pointer[rawDeclEmpty](id))
 	case **rawDeclImport:
-		return c.nodes.decls.imports.Deref(arena.Pointer[rawDeclImport](id))
+		return f.decls.imports.Deref(arena.Pointer[rawDeclImport](id))
 	case **rawDeclPackage:
-		return c.nodes.decls.packages.Deref(arena.Pointer[rawDeclPackage](id))
+		return f.decls.packages.Deref(arena.Pointer[rawDeclPackage](id))
 	case **rawDeclRange:
-		return c.nodes.decls.ranges.Deref(arena.Pointer[rawDeclRange](id))
+		return f.decls.ranges.Deref(arena.Pointer[rawDeclRange](id))
 	case **rawDeclSyntax:
-		return c.nodes.decls.syntaxes.Deref(arena.Pointer[rawDeclSyntax](id))
+		return f.decls.syntaxes.Deref(arena.Pointer[rawDeclSyntax](id))
 
 	case **rawExprError:
-		return c.nodes.exprs.errors.Deref(arena.Pointer[rawExprError](id))
+		return f.exprs.errors.Deref(arena.Pointer[rawExprError](id))
 	case **rawExprArray:
-		return c.nodes.exprs.arrays.Deref(arena.Pointer[rawExprArray](id))
+		return f.exprs.arrays.Deref(arena.Pointer[rawExprArray](id))
 	case **rawExprDict:
-		return c.nodes.exprs.dicts.Deref(arena.Pointer[rawExprDict](id))
+		return f.exprs.dicts.Deref(arena.Pointer[rawExprDict](id))
 	case **rawExprField:
-		return c.nodes.exprs.fields.Deref(arena.Pointer[rawExprField](id))
+		return f.exprs.fields.Deref(arena.Pointer[rawExprField](id))
 	case **rawExprPrefixed:
-		return c.nodes.exprs.prefixes.Deref(arena.Pointer[rawExprPrefixed](id))
+		return f.exprs.prefixes.Deref(arena.Pointer[rawExprPrefixed](id))
 	case **rawExprRange:
-		return c.nodes.exprs.ranges.Deref(arena.Pointer[rawExprRange](id))
+		return f.exprs.ranges.Deref(arena.Pointer[rawExprRange](id))
 
 	case **rawTypeError:
-		return c.nodes.types.errors.Deref(arena.Pointer[rawTypeError](id))
+		return f.types.errors.Deref(arena.Pointer[rawTypeError](id))
 	case **rawTypeGeneric:
-		return c.nodes.types.generics.Deref(arena.Pointer[rawTypeGeneric](id))
+		return f.types.generics.Deref(arena.Pointer[rawTypeGeneric](id))
 	case **rawTypePrefixed:
-		return c.nodes.types.prefixes.Deref(arena.Pointer[rawTypePrefixed](id))
+		return f.types.prefixes.Deref(arena.Pointer[rawTypePrefixed](id))
 
 	case **rawCompactOptions:
-		return c.nodes.options.Deref(arena.Pointer[rawCompactOptions](id))
+		return f.options.Deref(arena.Pointer[rawCompactOptions](id))
 
 	default:
-		return c.stream.FromID(id, want)
+		return f.stream.FromID(id, want)
 	}
 }

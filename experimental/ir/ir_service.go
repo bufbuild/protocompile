@@ -22,10 +22,10 @@ import (
 )
 
 // Service is a Protobuf service definition.
-type Service id.Node[Service, *Context, *rawService]
+type Service id.Node[Service, *File, *rawService]
 
 // Method is a Protobuf service method.
-type Method id.Node[Method, *Context, *rawMethod]
+type Method id.Node[Method, *File, *rawMethod]
 
 type rawService struct {
 	def       id.ID[ast.DeclDef]
@@ -52,7 +52,7 @@ func (s Service) AST() ast.DeclDef {
 	if s.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.Wrap(s.Context().File().AST().Context(), s.Raw().def)
+	return id.Wrap(s.Context().AST(), s.Raw().def)
 }
 
 // Name returns this service's declared name, i.e. the last component of its
@@ -135,7 +135,7 @@ func (m Method) AST() ast.DeclDef {
 	if m.IsZero() {
 		return ast.DeclDef{}
 	}
-	return id.Wrap(m.Context().File().AST().Context(), m.Raw().def)
+	return id.Wrap(m.Context().AST(), m.Raw().def)
 }
 
 // Name returns this method's declared name, i.e. the last component of its

@@ -36,7 +36,7 @@ type IR struct {
 	request ast.DeclImport
 }
 
-var _ incremental.Query[ir.File] = IR{}
+var _ incremental.Query[*ir.File] = IR{}
 
 // Key implements [incremental.Query].
 func (i IR) Key() any {
@@ -49,7 +49,7 @@ func (i IR) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (i IR) Execute(t *incremental.Task) (ir.File, error) {
+func (i IR) Execute(t *incremental.Task) (*ir.File, error) {
 	t.Report().Options.Stage += stageIR
 
 	r, err := incremental.Resolve(t, AST{
@@ -57,7 +57,7 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 		Path:   i.Path,
 	})
 	if err != nil {
-		return ir.File{}, err
+		return nil, err
 	}
 	file := r[0].Value
 
@@ -69,7 +69,7 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 		ReportError: false,
 	})
 	if err != nil {
-		return ir.File{}, err
+		return nil, err
 	}
 	if dp[0].Fatal != nil {
 		t.Report().Fatalf("could not import `%s`", ir.DescriptorProtoPath).Apply(
@@ -79,11 +79,11 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 				"If you are using protocompile as a library, you may be missing a "+
 				"source.WKTs() in your source.Opener setup."),
 		)
-		return ir.File{}, dp[0].Fatal
+		return nil, dp[0].Fatal
 	}
 
 	// Resolve all of the imports in the AST.
-	queries := make([]incremental.Query[ir.File],
+	queries := make([]incremental.Query[*ir.File],
 		// Preallocate for one extra query here, corresponding to the
 		// descriptor.proto query.
 		iterx.Count(file.Imports())+1)
@@ -97,7 +97,7 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 			// The import path is already legalized in [parser.legalizeImport()], if it is not
 			// a valid path, we just set a [incremental.ZeroQuery] so that we don't get a nil
 			// query for index j.
-			queries[j] = incremental.ZeroQuery[ir.File]{}
+			queries[j] = incremental.ZeroQuery[*ir.File]{}
 			continue
 		}
 
@@ -107,11 +107,11 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 			ReportError: false,
 		})
 		if err != nil {
-			return ir.File{}, err
+			return nil, err
 		}
 
 		if err := r[0].Fatal; err != nil {
-			queries[j] = incremental.ZeroQuery[ir.File]{}
+			queries[j] = incremental.ZeroQuery[*ir.File]{}
 			errors[j] = r[0].Fatal
 			continue
 		}
@@ -132,10 +132,10 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 
 	imports, err := incremental.Resolve(t, queries...)
 	if err != nil {
-		return ir.File{}, err
+		return nil, err
 	}
 
-	importer := func(n int, _ string, _ ast.DeclImport) (ir.File, error) {
+	importer := func(n int, _ string, _ ast.DeclImport) (*ir.File, error) {
 		if n == -1 {
 			// The lowering code will call the importer with n == -1 if it needs
 			// descriptor.proto but it isn't imported (transitively).
@@ -161,10 +161,10 @@ func (i IR) Execute(t *incremental.Task) (ir.File, error) {
 				}
 			}
 
-			return ir.File{}, cyc
+			return nil, cyc
 
 		default:
-			return ir.File{}, err
+			return nil, err
 		}
 	}
 

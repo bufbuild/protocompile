@@ -28,7 +28,7 @@ import (
 //
 //	CompactOptions := `[` (option `,`?)? `]`
 //	option         := Path [:=]? Expr?
-type CompactOptions id.Node[CompactOptions, Context, *rawCompactOptions]
+type CompactOptions id.Node[CompactOptions, *File, *rawCompactOptions]
 
 type rawCompactOptions struct {
 	brackets token.ID
@@ -59,7 +59,7 @@ func (o CompactOptions) Brackets() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(o.Context()), o.Raw().brackets)
+	return id.Wrap(o.Context().Stream(), o.Raw().brackets)
 }
 
 // Entries returns the sequence of options in this CompactOptions.
@@ -69,7 +69,7 @@ func (o CompactOptions) Entries() Commas[Option] {
 		return slice{}
 	}
 	return slice{
-		ctx: o.Context(),
+		file: o.Context(),
 		SliceInserter: seq.NewSliceInserter(
 			&o.Raw().options,
 			func(_ int, c withComma[rawOption]) Option {
@@ -96,13 +96,13 @@ func (o CompactOptions) Span() report.Span {
 	return o.Brackets().Span()
 }
 
-func (o *rawOption) With(c Context) Option {
+func (o *rawOption) With(f *File) Option {
 	if o == nil {
 		return Option{}
 	}
 	return Option{
-		Path:   o.path.In(c),
-		Equals: id.Wrap(token.Context(c), o.equals),
-		Value:  id.WrapDyn(c, o.value),
+		Path:   o.path.In(f),
+		Equals: id.Wrap(f.Stream(), o.equals),
+		Value:  id.WrapDyn(f, o.value),
 	}
 }

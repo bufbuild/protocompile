@@ -21,33 +21,16 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // Nodes provides storage for the various AST node types, and can be used
 // to construct new ones.
-type Nodes struct {
-	// The context for these nodes.
-	Context Context
+type Nodes File
 
-	decls   decls
-	types   types
-	exprs   exprs
-	options arena.Arena[rawCompactOptions]
-
-	// A cache of raw paths that have been converted into parenthesized
-	// components in NewExtensionComponent.
-	extnPathCache map[PathID]token.ID
-}
-
-// Root returns the root AST node for this context.
-func (n *Nodes) Root() File {
-	// NewContext() sticks the root at the beginning of decls.body for us, so
-	// there is always a DeclBody at index 0, which corresponds to the whole
-	// file. We use a 1 here, not a 0, because arena.Arena's indices are
-	// off-by-one to accommodate the zero representation.
-	return File{id.Wrap(n.Context, id.ID[DeclBody](1))}
+// File returns the [File] that this Nodes adds nodes to.
+func (n *Nodes) File() *File {
+	return (*File)(n)
 }
 
 // NewPathComponent returns a new path component with the given separator and
@@ -70,7 +53,7 @@ func (n *Nodes) NewPathComponent(separator, name token.Token) PathComponent {
 	}
 
 	return PathComponent{
-		withContext: id.WrapContext(n.Context),
+		withContext: id.WrapContext(n.File()),
 		separator:   separator.ID(),
 		name:        name.ID(),
 	}
@@ -88,7 +71,7 @@ func (n *Nodes) NewExtensionComponent(separator token.Token, path Path) PathComp
 
 	name, ok := n.extnPathCache[path.raw]
 	if !ok {
-		stream := n.Context.Stream()
+		stream := n.stream
 		start := stream.NewPunct("(")
 		end := stream.NewPunct(")")
 		var children []token.Token
@@ -111,7 +94,7 @@ func (n *Nodes) NewExtensionComponent(separator token.Token, path Path) PathComp
 	}
 
 	return PathComponent{
-		withContext: id.WrapContext(n.Context),
+		withContext: id.WrapContext(n.File()),
 		separator:   separator.ID(),
 		name:        name,
 	}
@@ -127,7 +110,7 @@ func (n *Nodes) NewPath(components ...PathComponent) Path {
 		n.panicIfNotOurs(t)
 	}
 
-	stream := n.Context.Stream()
+	stream := n.stream
 
 	// Every synthetic path looks like a (a.b.c) token tree. Users can't see the
 	// parens here.
@@ -151,14 +134,14 @@ func (n *Nodes) NewPath(components ...PathComponent) Path {
 	}
 	n.extnPathCache[path] = path.start
 
-	return path.In(n.Context)
+	return path.In(n.File())
 }
 
 // NewDeclEmpty creates a new DeclEmpty node.
 func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 	n.panicIfNotOurs(semicolon)
 
-	decl := id.Wrap(n.Context, id.ID[DeclEmpty](n.decls.empties.NewCompressed(rawDeclEmpty{
+	decl := id.Wrap(n.File(), id.ID[DeclEmpty](n.decls.empties.NewCompressed(rawDeclEmpty{
 		semi: semicolon.ID(),
 	})))
 
@@ -169,7 +152,7 @@ func (n *Nodes) NewDeclEmpty(semicolon token.Token) DeclEmpty {
 func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 	n.panicIfNotOurs(args.Keyword, args.Equals, args.Value, args.Options, args.Semicolon)
 
-	return id.Wrap(n.Context, id.ID[DeclSyntax](n.decls.syntaxes.NewCompressed(rawDeclSyntax{
+	return id.Wrap(n.File(), id.ID[DeclSyntax](n.decls.syntaxes.NewCompressed(rawDeclSyntax{
 		keyword: args.Keyword.ID(),
 		equals:  args.Equals.ID(),
 		value:   args.Value.ID(),
@@ -182,7 +165,7 @@ func (n *Nodes) NewDeclSyntax(args DeclSyntaxArgs) DeclSyntax {
 func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 	n.panicIfNotOurs(args.Keyword, args.Path, args.Options, args.Semicolon)
 
-	return id.Wrap(n.Context, id.ID[DeclPackage](n.decls.packages.NewCompressed(rawDeclPackage{
+	return id.Wrap(n.File(), id.ID[DeclPackage](n.decls.packages.NewCompressed(rawDeclPackage{
 		keyword: args.Keyword.ID(),
 		path:    args.Path.raw,
 		options: args.Options.ID(),
@@ -194,7 +177,7 @@ func (n *Nodes) NewDeclPackage(args DeclPackageArgs) DeclPackage {
 func (n *Nodes) NewDeclImport(args DeclImportArgs) DeclImport {
 	n.panicIfNotOurs(args.Keyword, args.ImportPath, args.Options, args.Semicolon)
 
-	return id.Wrap(n.Context, id.ID[DeclImport](n.decls.imports.NewCompressed(rawDeclImport{
+	return id.Wrap(n.File(), id.ID[DeclImport](n.decls.imports.NewCompressed(rawDeclImport{
 		keyword: args.Keyword.ID(),
 		modifiers: slices.Collect(iterx.Map(
 			slices.Values(args.Modifiers),
@@ -226,7 +209,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 	if !args.Type.IsZero() {
 		raw.ty = args.Type.ID()
 	} else {
-		kw := PathID{args.Keyword.ID(), args.Keyword.ID()}.In(n.Context)
+		kw := PathID{args.Keyword.ID(), args.Keyword.ID()}.In(n.File())
 		raw.ty = TypePath{Path: kw}.AsAny().ID()
 	}
 	if !args.Returns.IsZero() {
@@ -235,7 +218,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 		}
 	}
 
-	return id.Wrap(n.Context, id.ID[DeclDef](n.decls.defs.NewCompressed(raw)))
+	return id.Wrap(n.File(), id.ID[DeclDef](n.decls.defs.NewCompressed(raw)))
 }
 
 // NewDeclBody creates a new DeclBody node.
@@ -244,7 +227,7 @@ func (n *Nodes) NewDeclDef(args DeclDefArgs) DeclDef {
 func (n *Nodes) NewDeclBody(braces token.Token) DeclBody {
 	n.panicIfNotOurs(braces)
 
-	return id.Wrap(n.Context, id.ID[DeclBody](n.decls.bodies.NewCompressed(rawDeclBody{
+	return id.Wrap(n.File(), id.ID[DeclBody](n.decls.bodies.NewCompressed(rawDeclBody{
 		braces: braces.ID(),
 	})))
 }
@@ -255,7 +238,7 @@ func (n *Nodes) NewDeclBody(braces token.Token) DeclBody {
 func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 	n.panicIfNotOurs(args.Keyword, args.Options, args.Semicolon)
 
-	return id.Wrap(n.Context, id.ID[DeclRange](n.decls.ranges.NewCompressed(rawDeclRange{
+	return id.Wrap(n.File(), id.ID[DeclRange](n.decls.ranges.NewCompressed(rawDeclRange{
 		keyword: args.Keyword.ID(),
 		options: args.Options.ID(),
 		semi:    args.Semicolon.ID(),
@@ -266,7 +249,7 @@ func (n *Nodes) NewDeclRange(args DeclRangeArgs) DeclRange {
 func (n *Nodes) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 	n.panicIfNotOurs(args.Prefix, args.Expr)
 
-	return id.Wrap(n.Context, id.ID[ExprPrefixed](n.exprs.prefixes.NewCompressed(rawExprPrefixed{
+	return id.Wrap(n.File(), id.ID[ExprPrefixed](n.exprs.prefixes.NewCompressed(rawExprPrefixed{
 		prefix: args.Prefix.ID(),
 		expr:   args.Expr.ID(),
 	})))
@@ -276,7 +259,7 @@ func (n *Nodes) NewExprPrefixed(args ExprPrefixedArgs) ExprPrefixed {
 func (n *Nodes) NewExprRange(args ExprRangeArgs) ExprRange {
 	n.panicIfNotOurs(args.Start, args.To, args.End)
 
-	return id.Wrap(n.Context, id.ID[ExprRange](n.exprs.ranges.NewCompressed(rawExprRange{
+	return id.Wrap(n.File(), id.ID[ExprRange](n.exprs.ranges.NewCompressed(rawExprRange{
 		to:    args.To.ID(),
 		start: args.Start.ID(),
 		end:   args.End.ID(),
@@ -289,7 +272,7 @@ func (n *Nodes) NewExprRange(args ExprRangeArgs) ExprRange {
 func (n *Nodes) NewExprArray(brackets token.Token) ExprArray {
 	n.panicIfNotOurs(brackets)
 
-	return id.Wrap(n.Context, id.ID[ExprArray](n.exprs.arrays.NewCompressed(rawExprArray{
+	return id.Wrap(n.File(), id.ID[ExprArray](n.exprs.arrays.NewCompressed(rawExprArray{
 		brackets: brackets.ID(),
 	})))
 }
@@ -300,7 +283,7 @@ func (n *Nodes) NewExprArray(brackets token.Token) ExprArray {
 func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 	n.panicIfNotOurs(braces)
 
-	return id.Wrap(n.Context, id.ID[ExprDict](n.exprs.dicts.NewCompressed(rawExprDict{
+	return id.Wrap(n.File(), id.ID[ExprDict](n.exprs.dicts.NewCompressed(rawExprDict{
 		braces: braces.ID(),
 	})))
 }
@@ -309,7 +292,7 @@ func (n *Nodes) NewExprDict(braces token.Token) ExprDict {
 func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 	n.panicIfNotOurs(args.Key, args.Colon, args.Value)
 
-	return id.Wrap(n.Context, id.ID[ExprField](n.exprs.fields.NewCompressed(rawExprField{
+	return id.Wrap(n.File(), id.ID[ExprField](n.exprs.fields.NewCompressed(rawExprField{
 		key:   args.Key.ID(),
 		colon: args.Colon.ID(),
 		value: args.Value.ID(),
@@ -320,7 +303,7 @@ func (n *Nodes) NewExprField(args ExprFieldArgs) ExprField {
 func (n *Nodes) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 	n.panicIfNotOurs(args.Prefix, args.Type)
 
-	return id.Wrap(n.Context, id.ID[TypePrefixed](n.types.prefixes.NewCompressed(rawTypePrefixed{
+	return id.Wrap(n.File(), id.ID[TypePrefixed](n.types.prefixes.NewCompressed(rawTypePrefixed{
 		prefix: args.Prefix.ID(),
 		ty:     args.Type.ID(),
 	})))
@@ -332,7 +315,7 @@ func (n *Nodes) NewTypePrefixed(args TypePrefixedArgs) TypePrefixed {
 func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 	n.panicIfNotOurs(args.Path, args.AngleBrackets)
 
-	return id.Wrap(n.Context, id.ID[TypeGeneric](n.types.generics.NewCompressed(rawTypeGeneric{
+	return id.Wrap(n.File(), id.ID[TypeGeneric](n.types.generics.NewCompressed(rawTypeGeneric{
 		path: args.Path.raw,
 		args: rawTypeList{brackets: args.AngleBrackets.ID()},
 	})))
@@ -342,7 +325,7 @@ func (n *Nodes) NewTypeGeneric(args TypeGenericArgs) TypeGeneric {
 func (n *Nodes) NewCompactOptions(brackets token.Token) CompactOptions {
 	n.panicIfNotOurs(brackets)
 
-	return id.Wrap(n.Context, id.ID[CompactOptions](n.options.NewCompressed(rawCompactOptions{
+	return id.Wrap(n.File(), id.ID[CompactOptions](n.options.NewCompressed(rawCompactOptions{
 		brackets: brackets.ID(),
 	})))
 }
@@ -356,26 +339,30 @@ func (n *Nodes) panicIfNotOurs(that ...any) {
 			continue
 		}
 
-		var thatCtx token.Context
+		var path string
 		switch that := that.(type) {
-		case interface{ Context() token.Context }:
-			thatCtx = that.Context()
-			if thatCtx == nil || thatCtx == n.Context {
+		case interface{ Context() *token.Stream }:
+			ctx := that.Context()
+			if ctx == nil || ctx == n.File().Stream() {
 				continue
 			}
-		case interface{ Context() Context }:
-			thatCtx = that.Context()
-			if thatCtx == nil || thatCtx == n.Context {
+			path = ctx.Path()
+
+		case interface{ Context() *File }:
+			ctx := that.Context()
+			if ctx == nil || ctx == n.File() {
 				continue
 			}
+			path = ctx.Stream().Path()
+
 		default:
 			continue
 		}
 
 		panic(fmt.Sprintf(
 			"protocompile/ast: attempt to mix different contexts: %q vs %q",
-			n.Context.Stream().Path(),
-			thatCtx.Stream().Path(),
+			n.stream.Path(),
+			path,
 		))
 	}
 }

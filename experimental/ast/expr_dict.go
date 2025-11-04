@@ -30,7 +30,7 @@ import (
 //
 // Note that if a non-[ExprField] occurs as a field of a dict, the parser will
 // rewrite it into an [ExprField] with a missing key.
-type ExprDict id.Node[ExprDict, Context, *rawExprDict]
+type ExprDict id.Node[ExprDict, *File, *rawExprDict]
 
 type rawExprDict struct {
 	braces token.ID
@@ -56,7 +56,7 @@ func (e ExprDict) Braces() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(e.Context()), e.Raw().braces)
+	return id.Wrap(e.Context().Stream(), e.Raw().braces)
 }
 
 // Elements returns the sequence of expressions in this array.
@@ -66,7 +66,7 @@ func (e ExprDict) Elements() Commas[ExprField] {
 		return slice{}
 	}
 	return slice{
-		ctx: e.Context(),
+		file: e.Context(),
 		SliceInserter: seq.NewSliceInserter(
 			&e.Raw().fields,
 			func(_ int, c withComma[id.ID[ExprField]]) ExprField {
@@ -101,7 +101,7 @@ func (e ExprDict) Span() report.Span {
 //
 // Note: ExprFieldWithColon appears in ExprJuxta, the expression production that
 // is unambiguous when expressions are juxtaposed with each other.
-type ExprField id.Node[ExprField, Context, *rawExprField]
+type ExprField id.Node[ExprField, *File, *rawExprField]
 
 type rawExprField struct {
 	key, value id.Dyn[ExprAny, ExprKind]
@@ -153,7 +153,7 @@ func (e ExprField) Colon() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(e.Context()), e.Raw().colon)
+	return id.Wrap(e.Context().Stream(), e.Raw().colon)
 }
 
 // Value returns the value for this field.

@@ -27,7 +27,7 @@ import (
 // # Grammar
 //
 //	ExprRange := ExprPrefixed `to` ExprOp
-type ExprRange id.Node[ExprRange, Context, *rawExprRange]
+type ExprRange id.Node[ExprRange, *File, *rawExprRange]
 
 type rawExprRange struct {
 	start, end id.Dyn[ExprAny, ExprKind]
@@ -75,7 +75,7 @@ func (e ExprRange) Keyword() token.Token {
 		return token.Zero
 	}
 
-	return id.Wrap(token.Context(e.Context()), e.Raw().to)
+	return id.Wrap(e.Context().Stream(), e.Raw().to)
 }
 
 // Span implements [report.Spanner].

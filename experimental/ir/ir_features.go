@@ -24,7 +24,7 @@ import (
 
 // FeatureSet represents the Editions-mediated features of a particular
 // declaration.
-type FeatureSet id.Node[FeatureSet, *Context, *rawFeatureSet]
+type FeatureSet id.Node[FeatureSet, *File, *rawFeatureSet]
 
 // Feature is a feature setting retrieved from a [FeatureSet].
 type Feature struct {
@@ -123,7 +123,7 @@ func (fs FeatureSet) LookupCustom(extension, field Member) Feature {
 			raw.isInherited = true
 		} else {
 			// Otherwise, we need to look for the edition default.
-			raw.value = field.FeatureInfo().Default(fs.Context().File().Syntax())
+			raw.value = field.FeatureInfo().Default(fs.Context().Syntax())
 			raw.isInherited = true
 			raw.isDefault = true
 		}

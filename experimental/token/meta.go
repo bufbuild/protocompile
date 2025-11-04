@@ -26,7 +26,7 @@ import (
 // Note: this function wants to be a method of [Token], but cannot because it
 // is generic.
 func GetMeta[M tokenmeta.Meta](token Token) *M {
-	stream := token.Context().Stream()
+	stream := token.Context()
 	if meta, ok := stream.meta[token.ID()].(*M); ok {
 		return meta
 	}
@@ -45,7 +45,7 @@ func MutateMeta[M tokenmeta.Meta](token Token) *M {
 		panic(fmt.Sprintf("protocompile/token: passed zero token to MutateMeta: %s", token))
 	}
 
-	stream := token.Context().Stream()
+	stream := token.Context()
 	if token.nat() != nil && stream.frozen {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}
@@ -75,7 +75,7 @@ func ClearMeta[M tokenmeta.Meta](token Token) {
 		panic(fmt.Sprintf("protocompile/token: passed zero token to ClearMeta: %s", token))
 	}
 
-	stream := token.Context().Stream()
+	stream := token.Context()
 	if token.nat() != nil && stream.frozen {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}

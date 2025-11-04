@@ -26,7 +26,7 @@ import (
 // Cursor is an iterator-like construct for looping over a token tree.
 // Unlike a plain range func, it supports peeking.
 type Cursor struct {
-	context Context
+	context *Stream
 
 	// This is used if this is a cursor over the children of a synthetic token.
 	// If stream is nil, we know we're in the natural case.
@@ -67,15 +67,15 @@ func NewCursorAt(tok Token) *Cursor {
 
 // NewSliceCursor returns a new cursor over a slice of token IDs in the given
 // context.
-func NewSliceCursor(ctx Context, slice []ID) *Cursor {
+func NewSliceCursor(stream *Stream, slice []ID) *Cursor {
 	return &Cursor{
-		context: ctx,
+		context: stream,
 		stream:  slice,
 	}
 }
 
 // Context returns this Cursor's context.
-func (c *Cursor) Context() Context {
+func (c *Cursor) Context() *Stream {
 	return c.context
 }
 
@@ -132,7 +132,7 @@ func (c *Cursor) PeekSkippable() Token {
 		}
 		return id.Wrap(c.Context(), tokenID)
 	}
-	stream := c.Context().Stream()
+	stream := c.Context()
 	impl, ok := slicesx.Get(stream.nats, c.idx)
 	if !ok || (!c.isBackwards && impl.IsClose()) {
 		return Zero // Reached the end.
@@ -155,7 +155,7 @@ func (c *Cursor) PeekPrevSkippable() Token {
 		}
 		return id.Wrap(c.Context(), tokenID)
 	}
-	stream := c.Context().Stream()
+	stream := c.Context()
 	idx := c.idx - 1
 	if c.isBackwards {
 		impl, ok := slicesx.Get(stream.nats, c.idx)
@@ -302,7 +302,7 @@ func (c *Cursor) SeekToEnd() (Token, report.Span) {
 		end = c.NextSkippable()
 	}
 
-	stream := c.Context().Stream()
+	stream := c.Context()
 	if c.idx >= len(stream.nats) {
 		// This is the case where this cursor is a Stream.Cursor(). Thus, the
 		// just-after span should be the EOF.

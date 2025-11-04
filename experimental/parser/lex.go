@@ -39,11 +39,10 @@ const maxFileSize int = math.MaxInt32 // 2GB
 // You should almost never need to call this function; [Parse] calls it directly.
 // It is exported so that it is straight forward to build other parsers on top
 // of the Protobuf lexer.
-func lex(ctx token.Context, errs *report.Report) {
+func lex(stream *token.Stream, errs *report.Report) {
 	l := &lexer{
-		Context: ctx,
-		Stream:  ctx.Stream(),
-		Report:  errs,
+		Stream: stream,
+		Report: errs,
 	}
 
 	defer l.CatchICE(false, func(d *report.Diagnostic) {
@@ -300,7 +299,7 @@ func fuseBraces(l *lexer) {
 		// named t0 through t3. The first token we extract is the third in this
 		// sequence and thus is named t2.
 
-		t2 := id.Wrap(l.Context, l.braces[i])
+		t2 := id.Wrap(l.Stream, l.braces[i])
 		open, _ := bracePair(t2.Text())
 		if t2.Text() == open {
 			opens = append(opens, t2.ID())
@@ -313,7 +312,7 @@ func fuseBraces(l *lexer) {
 			continue
 		}
 
-		t1 := id.Wrap(l.Context, opens[len(opens)-1])
+		t1 := id.Wrap(l.Stream, opens[len(opens)-1])
 		if t1.Text() == open {
 			// Common case: the braces match.
 			token.Fuse(t1, t2)
@@ -326,12 +325,12 @@ func fuseBraces(l *lexer) {
 		// braces.
 		var t0, t3 token.Token
 		if len(opens) > 1 {
-			t0 = id.Wrap(l.Context, opens[len(opens)-2])
+			t0 = id.Wrap(l.Stream, opens[len(opens)-2])
 		}
 		// Don't seek for the next unpaired closer; that results in quadratic
 		// behavior. Instead, we just look at i+1.
 		if i+1 < len(l.braces) {
-			t3 = id.Wrap(l.Context, l.braces[i+1])
+			t3 = id.Wrap(l.Stream, l.braces[i+1])
 		}
 
 		nextOpen, _ := bracePair(t3.Text())
@@ -378,7 +377,7 @@ func fuseBraces(l *lexer) {
 
 	// Legalize against unclosed delimiters.
 	for _, open := range opens {
-		open := id.Wrap(l.Context, open)
+		open := id.Wrap(l.Stream, open)
 		l.Error(errUnmatched{Span: open.Span()})
 	}
 
@@ -386,7 +385,7 @@ func fuseBraces(l *lexer) {
 	// the unclosed delimiters.
 	for _, open := range slices.Backward(opens) {
 		empty := l.Push(0, token.Unrecognized)
-		token.Fuse(id.Wrap(l.Context, open), empty)
+		token.Fuse(id.Wrap(l.Stream, open), empty)
 	}
 }
 
@@ -401,7 +400,7 @@ func fuseStrings(l *lexer) {
 		var escapes []tokenmeta.Escape
 		var buf strings.Builder
 		for i := start.ID(); i <= end.ID(); i++ {
-			tok := id.Wrap(l.Context, i)
+			tok := id.Wrap(l.Stream, i)
 			if s := tok.AsString(); !s.IsZero() {
 				buf.WriteString(s.Text())
 				if i > start.ID() {

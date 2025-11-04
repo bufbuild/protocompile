@@ -52,7 +52,7 @@ type ToProtoOptions struct {
 // Panics if the AST contains a cycle (e.g. a message that contains itself as
 // a nested message). Parsed ASTs will never contain cycles, but users may
 // modify them into a cyclic state.
-func ToProto(f ast.File, options ToProtoOptions) proto.Message {
+func ToProto(f *ast.File, options ToProtoOptions) proto.Message {
 	return (&protoEncoder{ToProtoOptions: options}).file(f) // See codec.go
 }
 
@@ -103,14 +103,14 @@ func (c *protoEncoder) checkCycle(v report.Spanner) func() {
 	}
 }
 
-func (c *protoEncoder) file(file ast.File) *compilerpb.File {
+func (c *protoEncoder) file(file *ast.File) *compilerpb.File {
 	proto := &compilerpb.File{
 		Decls: slices.Collect(seq.Map(file.Decls(), c.decl)),
 	}
 	if !c.OmitFile {
 		proto.File = &compilerpb.Report_File{
-			Path: file.Context().Stream().Path(),
-			Text: []byte(file.Context().Stream().Text()),
+			Path: file.Stream().Path(),
+			Text: []byte(file.Stream().Text()),
 		}
 	}
 	return proto

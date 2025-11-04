@@ -51,11 +51,11 @@ type withComma[T any] struct {
 
 type commas[T, E any] struct {
 	seq.SliceInserter[T, withComma[E]]
-	ctx Context
+	file *File
 }
 
 func (c commas[T, _]) Comma(n int) token.Token {
-	return id.Wrap(token.Context(c.ctx), (*c.SliceInserter.Slice)[n].Comma)
+	return id.Wrap(c.file.Stream(), (*c.SliceInserter.Slice)[n].Comma)
 }
 
 func (c commas[T, _]) AppendComma(value T, comma token.Token) {
@@ -63,7 +63,7 @@ func (c commas[T, _]) AppendComma(value T, comma token.Token) {
 }
 
 func (c commas[T, _]) InsertComma(n int, value T, comma token.Token) {
-	c.ctx.Nodes().panicIfNotOurs(comma)
+	c.file.Nodes().panicIfNotOurs(comma)
 	v := c.SliceInserter.Unwrap(n, value)
 	v.Comma = comma.ID()
 

@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -26,9 +27,9 @@ func TestCursor(t *testing.T) {
 	t.Parallel()
 
 	// Create a token tree.
-	text := "abc(def(x), ghi)"
-	ctx := NewContext(text)
-	s := ctx.Stream()
+	s := &token.Stream{
+		File: report.NewFile("test", "abc(def(x), ghi)"),
+	}
 
 	abc := s.Push(3, token.Ident)
 	open := s.Push(1, token.Punct)
@@ -113,8 +114,8 @@ func TestCursor(t *testing.T) {
 		tok, span := cursor.SeekToEnd()
 		t.Log(tok.Text())
 		tokenEq(t, token.Zero, tok)
-		assert.Len(t, text, span.Start)
-		assert.Len(t, text, span.End)
+		assert.Len(t, s.Text(), span.Start)
+		assert.Len(t, s.Text(), span.End)
 	})
 
 	// Test setting the cursor at the open brace
