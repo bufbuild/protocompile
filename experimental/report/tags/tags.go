@@ -15,7 +15,7 @@
 // Package tags defines publicly-exposed diagnostic tag constants for use with [report.Tag].
 package tags
 
-import _ "github.com/bufbuild/protocompile/experimental/report"
+import _ "github.com/bufbuild/protocompile/experimental/report" // Imported for package documentation.
 
 const (
 	// UnusedImport is the tag for an unused import diagnostic.
