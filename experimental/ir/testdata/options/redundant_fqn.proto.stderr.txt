@@ -6,7 +6,7 @@ warning: redundant custom option setting syntax
     |             |
     |             this field is not a message extension
     |
-   ::: google/protobuf/descriptor.proto:611:17
+   ::: <built-in>/google/protobuf/descriptor.proto:611:17
     |
 611 |   optional bool deprecated = 3 [default = false];
     |                 ----------
