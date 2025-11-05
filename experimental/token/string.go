@@ -17,8 +17,8 @@ package token
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 )
 
 // StringToken provides access to detailed information about a [String].
@@ -26,7 +26,7 @@ type StringToken id.Node[StringToken, *Stream, *tokenmeta.String]
 
 // Escape is an escape inside of a [StringToken]. See [StringToken.Escapes].
 type Escape struct {
-	report.Span
+	source.Span
 
 	// If Rune is zero, this escape represents a raw byte rather than a
 	// Unicode character.
@@ -82,9 +82,9 @@ func (s StringToken) IsPure() bool {
 
 // Prefix returns an arbitrary prefix attached to this string (the prefix will
 // have no whitespace before the open quote).
-func (s StringToken) Prefix() report.Span {
+func (s StringToken) Prefix() source.Span {
 	if s.Raw() == nil {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	span := s.Token().LeafSpan()
@@ -96,9 +96,9 @@ func (s StringToken) Prefix() report.Span {
 // not including the sigil.
 //
 //nolint:revive,predeclared
-func (s StringToken) Quotes() (open, close report.Span) {
+func (s StringToken) Quotes() (open, close source.Span) {
 	if s.IsZero() {
-		return report.Span{}, report.Span{}
+		return source.Span{}, source.Span{}
 	}
 
 	open = s.Token().LeafSpan()
@@ -139,7 +139,7 @@ func (s StringToken) Quotes() (open, close report.Span) {
 }
 
 // RawContent returns the unprocessed contents of the string.
-func (s StringToken) RawContent() report.Span {
+func (s StringToken) RawContent() source.Span {
 	open, close := s.Quotes() //nolint:revive,predeclared
 	open.Start = open.End
 	open.End = close.Start

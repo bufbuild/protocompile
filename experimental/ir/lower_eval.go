@@ -28,6 +28,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -89,7 +90,7 @@ type evalArgs struct {
 	isArrayElement bool
 
 	// A span for whatever caused the above field to be selected.
-	annotation report.Spanner
+	annotation source.Spanner
 
 	textFormat   bool         // Whether we're inside of a message literal.
 	allowMax     bool         // Whether the max keyword is to be honored.
@@ -1197,8 +1198,8 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 type errTypeCheck struct {
 	want, got any
 
-	expr       report.Spanner
-	annotation report.Spanner
+	expr       source.Spanner
+	annotation source.Spanner
 
 	wantRepeated, gotRepeated bool
 }

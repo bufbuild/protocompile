@@ -19,20 +19,21 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
 // errUnmatched diagnoses a delimiter for which we found one half of a matched
 // delimiter but not the other.
 type errUnmatched struct {
-	Span report.Span // The offending delimiter.
+	Span source.Span // The offending delimiter.
 
 	// If present, this indicates that we did match with another brace delimiter, but it
 	// was of the wrong kind
-	Mismatch report.Span
+	Mismatch source.Span
 
 	// If present, this is a brace delimiter we think we *should* have matched.
-	ShouldMatch report.Span
+	ShouldMatch source.Span
 }
 
 // openClose returns the expected open/close delimiters for this matched pair.

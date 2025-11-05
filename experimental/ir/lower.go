@@ -44,7 +44,7 @@ func (s *Session) Lower(source *ast.File, errs *report.Report, importer Importer
 
 	prior := len(errs.Diagnostics)
 	file = &File{session: s, ast: source}
-	file.path = file.session.intern.Intern(CanonicalizeFilePath(file.AST().Stream().Path()))
+	file.path = file.session.intern.Intern(CanonicalizeFilePath(source.Path()))
 
 	errs.SaveOptions(func() {
 		errs.SuppressWarnings = errs.SuppressWarnings || file.IsDescriptorProto()

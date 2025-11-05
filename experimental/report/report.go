@@ -24,6 +24,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
 )
@@ -276,7 +277,7 @@ func (r *Report) Canonicalize() {
 	}
 
 	type key struct {
-		span Span
+		span source.Span
 		tag  string
 	}
 	var cur key
@@ -369,9 +370,9 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 		return err
 	}
 
-	files := make([]*File, len(proto.Files))
+	files := make([]*source.File, len(proto.Files))
 	for i, fProto := range proto.Files {
-		files[i] = NewFile(fProto.Path, string(fProto.Text))
+		files[i] = source.NewFile(fProto.Path, string(fProto.Text))
 	}
 
 	for i, dProto := range proto.Diagnostics {
@@ -415,7 +416,7 @@ func (r *Report) AppendFromProto(deserialize func(proto.Message) error) error {
 			}
 
 			snippet := snippet{
-				Span: Span{
+				Span: source.Span{
 					File:  file,
 					Start: int(snip.Start),
 					End:   int(snip.End),

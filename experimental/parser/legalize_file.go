@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -362,7 +363,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		if i > 0 {
 			p.Errorf("unexpected `%s` modifier in %s", mod.Text(), in).Apply(
 				report.Snippet(mod),
-				report.Snippetf(report.Join(
+				report.Snippetf(source.Join(
 					decl.KeywordToken(),
 					decl.ModifierTokens().At(0),
 				), "already modified here"),
@@ -375,14 +376,14 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 
 		case keyword.Weak:
 			p.Warnf("`import weak` is deprecated").Apply(
-				report.Snippet(report.Join(decl.KeywordToken(), mod)),
+				report.Snippet(source.Join(decl.KeywordToken(), mod)),
 				report.Helpf("`import weak` is not implemented correctly in most Protobuf implementations"),
 			)
 
 		case keyword.Option:
 			p.Error(errRequiresEdition{
 				edition:       syntax.Edition2024,
-				node:          report.Join(decl.KeywordToken(), mod),
+				node:          source.Join(decl.KeywordToken(), mod),
 				what:          "`import option`",
 				decl:          p.syntaxNode,
 				unimplemented: p.syntax >= syntax.Edition2024,

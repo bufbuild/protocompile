@@ -42,7 +42,8 @@ func TestFS(t *testing.T) {
 func TestMap(t *testing.T) {
 	t.Parallel()
 
-	opener := source.NewMap(map[string]string{"hello.txt": "hello!\n"})
+	opener := source.NewMap(nil)
+	opener.Add("hello.text", "hello!\n")
 
 	text, err := opener.Open("hello.txt")
 	require.NoError(t, err)
@@ -55,8 +56,11 @@ func TestMap(t *testing.T) {
 func TestOpeners(t *testing.T) {
 	t.Parallel()
 
+	mapped := source.NewMap(nil)
+	mapped.Add("overlaid.txt", "overlaid!\n")
+
 	opener := source.Openers{
-		source.NewMap(map[string]string{"overlaid.txt": "overlaid!\n"}),
+		mapped,
 		&source.FS{FS: os.DirFS(prototest.CallerDir(t))},
 	}
 

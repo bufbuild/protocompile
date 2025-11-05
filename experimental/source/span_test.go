@@ -12,47 +12,47 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package report_test
+package source_test
 
 import (
 	"testing"
 
+	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/bufbuild/protocompile/experimental/report"
 )
 
 func TestLocation(t *testing.T) {
 	t.Parallel()
 
-	file := report.NewFile(
+	file := source.NewFile(
 		"test",
 		"foo\nbar\ncat: 🐈‍⬛\n",
 	)
 
 	tests := []struct {
-		loc  report.Location
-		unit report.LengthUnit
+		loc  source.Location
+		unit length.Unit
 	}{
-		{loc: report.Location{0, 1, 1}, unit: report.ByteLength},
-		{loc: report.Location{0, 1, 1}, unit: report.UTF16Length},
-		{loc: report.Location{0, 1, 1}, unit: report.RuneLength},
-		{loc: report.Location{0, 1, 1}, unit: report.TermWidth},
+		{loc: source.Location{0, 1, 1}, unit: length.Bytes},
+		{loc: source.Location{0, 1, 1}, unit: length.UTF16},
+		{loc: source.Location{0, 1, 1}, unit: length.Runes},
+		{loc: source.Location{0, 1, 1}, unit: length.TermWidth},
 
-		{loc: report.Location{2, 1, 3}, unit: report.ByteLength},
-		{loc: report.Location{2, 1, 3}, unit: report.UTF16Length},
-		{loc: report.Location{2, 1, 3}, unit: report.RuneLength},
-		{loc: report.Location{2, 1, 3}, unit: report.TermWidth},
+		{loc: source.Location{2, 1, 3}, unit: length.Bytes},
+		{loc: source.Location{2, 1, 3}, unit: length.UTF16},
+		{loc: source.Location{2, 1, 3}, unit: length.Runes},
+		{loc: source.Location{2, 1, 3}, unit: length.TermWidth},
 
-		{loc: report.Location{13, 3, 6}, unit: report.ByteLength},
-		{loc: report.Location{13, 3, 6}, unit: report.UTF16Length},
-		{loc: report.Location{13, 3, 6}, unit: report.RuneLength},
-		{loc: report.Location{13, 3, 6}, unit: report.TermWidth},
+		{loc: source.Location{13, 3, 6}, unit: length.Bytes},
+		{loc: source.Location{13, 3, 6}, unit: length.UTF16},
+		{loc: source.Location{13, 3, 6}, unit: length.Runes},
+		{loc: source.Location{13, 3, 6}, unit: length.TermWidth},
 
-		{loc: report.Location{23, 3, 16}, unit: report.ByteLength},
-		{loc: report.Location{23, 3, 10}, unit: report.UTF16Length},
-		{loc: report.Location{23, 3, 9}, unit: report.RuneLength},
-		{loc: report.Location{23, 3, 8}, unit: report.TermWidth},
+		{loc: source.Location{23, 3, 16}, unit: length.Bytes},
+		{loc: source.Location{23, 3, 10}, unit: length.UTF16},
+		{loc: source.Location{23, 3, 9}, unit: length.Runes},
+		{loc: source.Location{23, 3, 8}, unit: length.TermWidth},
 	}
 
 	for _, test := range tests {
@@ -61,7 +61,7 @@ func TestLocation(t *testing.T) {
 			t.Logf("%q | %q", file.Text()[:test.loc.Offset], file.Text()[test.loc.Offset:])
 			assert.Equal(t, test.loc, file.Location(test.loc.Offset, test.unit), "offset/%s -> line/col", test.unit)
 
-			if test.unit != report.TermWidth {
+			if test.unit != length.TermWidth {
 				assert.Equal(t, test.loc, file.InverseLocation(test.loc.Line, test.loc.Column, test.unit), "line/col -> offset/%s", test.unit)
 			}
 		})

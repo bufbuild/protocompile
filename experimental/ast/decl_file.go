@@ -16,8 +16,8 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -145,13 +145,13 @@ func (d DeclSyntax) Semicolon() token.Token {
 	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
-// report.Span implements [report.Spanner].
-func (d DeclSyntax) Span() report.Span {
+// source.Span implements [source.Spanner].
+func (d DeclSyntax) Span() source.Span {
 	if d.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(d.KeywordToken(), d.Equals(), d.Value(), d.Semicolon())
+	return source.Join(d.KeywordToken(), d.Equals(), d.Value(), d.Semicolon())
 }
 
 // DeclPackage is the package declaration for a file.
@@ -243,13 +243,13 @@ func (d DeclPackage) Semicolon() token.Token {
 	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
-// report.Span implements [report.Spanner].
-func (d DeclPackage) Span() report.Span {
+// source.Span implements [source.Spanner].
+func (d DeclPackage) Span() source.Span {
 	if d.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(d.KeywordToken(), d.Path(), d.Semicolon())
+	return source.Join(d.KeywordToken(), d.Path(), d.Semicolon())
 }
 
 // DeclImport is an import declaration within a file.
@@ -397,11 +397,11 @@ func (d DeclImport) Semicolon() token.Token {
 	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
-// report.Span implements [report.Spanner].
-func (d DeclImport) Span() report.Span {
+// source.Span implements [source.Spanner].
+func (d DeclImport) Span() source.Span {
 	if d.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(d.KeywordToken(), d.ImportPath(), d.Semicolon())
+	return source.Join(d.KeywordToken(), d.ImportPath(), d.Semicolon())
 }

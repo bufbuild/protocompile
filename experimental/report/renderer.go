@@ -24,13 +24,17 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	_ "unsafe"
 
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 	"github.com/bufbuild/protocompile/internal/interval"
 )
 
@@ -196,18 +200,18 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 	// https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 
 	fmt.Fprint(r, r.ss.BoldForLevel(d.level), level, ": ")
-	r.WriteWrapped(d.message, MaxMessageWidth)
+	r.WriteWrapped(d.message, unicodex.MaxMessageWidth)
 
-	locations := make([][2]Location, len(d.snippets))
+	locations := make([][2]source.Location, len(d.snippets))
 	for i, snip := range d.snippets {
-		locations[i][0] = snip.location(snip.Start, TermWidth, false)
+		locations[i][0] = fileLocation(snip.File, snip.Start, length.TermWidth, false)
 		if strings.HasSuffix(snip.Text(), "\n") {
 			// If the snippet ends in a newline, don't include the newline in the
 			// printed span.
-			locations[i][1] = snip.location(snip.End-1, TermWidth, false)
+			locations[i][1] = fileLocation(snip.File, snip.End-1, length.TermWidth, false)
 			locations[i][1].Column++
 		} else {
-			locations[i][1] = snip.location(snip.End, TermWidth, false)
+			locations[i][1] = fileLocation(snip.File, snip.End, length.TermWidth, false)
 		}
 	}
 
@@ -317,7 +321,7 @@ func (r *renderer) diagnostic(report *Report, d Diagnostic) {
 		if isDebug {
 			r.WriteWrapped(f.text, math.MaxInt)
 		} else {
-			r.WriteWrapped(f.text, MaxMessageWidth)
+			r.WriteWrapped(f.text, unicodex.MaxMessageWidth)
 		}
 	}
 
@@ -338,7 +342,7 @@ const maxMultilinesPerWindow = 8
 // window is an intermediate structure for rendering an annotated code snippet
 // consisting of multiple spans in the same file.
 type window struct {
-	file *File
+	file *source.File
 	// The line number at which the text starts in the overall source file.
 	start int
 	// The byte offset range this window's text occupies in the containing
@@ -355,7 +359,7 @@ type window struct {
 // This is separate from [window.Render] because it performs certain layout
 // decisions that cannot happen in the middle of actually rendering the source
 // code (well, they could, but the resulting code would be far more complicated).
-func buildWindow(level Level, locations [][2]Location, snippets []snippet) *window {
+func buildWindow(level Level, locations [][2]source.Location, snippets []snippet) *window {
 	w := new(window)
 	w.file = snippets[0].File
 
@@ -435,7 +439,9 @@ func buildWindow(level Level, locations [][2]Location, snippets []snippet) *wind
 			} else {
 				lineEnd += snippet.Start
 			}
-			ul.end = ul.start + stringWidth(ul.start, w.file.Text()[snippet.Start:lineEnd], false, nil)
+			uw := unicodex.Width{Column: ul.start, EscapeNonPrint: true}
+			_, _ = uw.WriteString(w.file.Text()[snippet.Start:lineEnd])
+			ul.end = uw.Column
 		}
 
 		// Make sure no empty underlines exist.
@@ -594,7 +600,9 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 				int(math.Log10(float64(w.start+len(lines)))) + // Approximation.
 				len(sidebar) + ul.end
 
-			if stringWidth(startCol, ul.message, true, nil) > MaxMessageWidth {
+			uw := unicodex.Width{Column: startCol}
+			_, _ = uw.WriteString(ul.message)
+			if uw.Column > unicodex.MaxMessageWidth {
 				// Move rightmost into the normal underlines, because it causes wrapping.
 				rightmost[i] = nil
 			}
@@ -1023,7 +1031,8 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 
 		// Re-use the logic from width calculation to correctly format a line for
 		// showing in a terminal.
-		stringWidth(0, line, false, &r.writer)
+		uw := &unicodex.Width{EscapeNonPrint: true, Out: &r.writer}
+		uw.WriteString(line)
 		needsTrailingBreak = true
 
 		// If this happens to be an annotated line, this is when it gets annotated.
@@ -1095,7 +1104,7 @@ func (r *renderer) suggestion(snip snippet) {
 	r.WriteString(r.ss.nAccent)
 	r.WriteSpaces(r.margin)
 	r.WriteString("help: ")
-	r.WriteWrapped(snip.message, MaxMessageWidth)
+	r.WriteWrapped(snip.message, unicodex.MaxMessageWidth)
 
 	// Add a blank line after the file. This gives the diagnostic window some
 	// visual breathing room.
@@ -1145,7 +1154,8 @@ func (r *renderer) suggestion(snip snippet) {
 					r.ss.nAccent, r.margin, lineno,
 					hunk.bold(&r.ss), hunk.kind, hunk.color(&r.ss),
 				)
-				stringWidth(0, line, false, &r.writer)
+				uw := &unicodex.Width{EscapeNonPrint: true, Out: &r.writer}
+				uw.WriteString(line)
 
 				switch hunk.kind {
 				case hunkUnchanged:
@@ -1168,7 +1178,7 @@ func (r *renderer) suggestion(snip snippet) {
 
 	span, hunks := hunkDiff(snip.Span, snip.edits)
 	fmt.Fprintf(r, "\n%s%*d | ", r.ss.nAccent, r.margin, span.StartLoc().Line)
-	var column int
+	uw := &unicodex.Width{EscapeNonPrint: true, Out: &r.writer}
 	for _, hunk := range hunks {
 		if hunk.content == "" {
 			continue
@@ -1177,7 +1187,7 @@ func (r *renderer) suggestion(snip snippet) {
 		r.WriteString(hunk.color(&r.ss))
 		// Re-use the logic from width calculation to correctly format a line for
 		// showing in a terminal.
-		column = stringWidth(column, hunk.content, false, &r.writer)
+		uw.WriteString(hunk.content)
 	}
 
 	// Draw underlines for each modified segment, using + and - as the
@@ -1186,16 +1196,17 @@ func (r *renderer) suggestion(snip snippet) {
 	r.WriteString(r.ss.nAccent)
 	r.WriteSpaces(r.margin)
 	r.WriteString(" | ")
-	column = 0
+	uw.Column = 0
+	uw.Out = nil
 	for _, hunk := range hunks {
 		if hunk.content == "" {
 			continue
 		}
 
-		prev := column
-		column = stringWidth(column, hunk.content, false, nil)
+		prev := uw.Column
+		uw.WriteString(hunk.content)
 		r.WriteString(hunk.bold(&r.ss))
-		for range column - prev {
+		for range uw.Column - prev {
 			r.WriteString(string(hunk.kind))
 		}
 	}
@@ -1219,3 +1230,12 @@ func padByRune(out *strings.Builder, spaces int, r rune) {
 		out.WriteRune(r)
 	}
 }
+
+// This is an unexported method of source.File which we need in this file. It's
+// simpler to just linkname it than to expose allowNonPrint, which should really
+// not be a public API.
+//
+// The linkname-ing actually happens in source.File.
+//
+//go:linkname fileLocation
+func fileLocation(f *source.File, offset int, units length.Unit, allowNonPrint bool) source.Location

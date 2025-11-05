@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: LengthUnit
+- name: Unit
   type: int
   docs: |
-    LengthUnit represents units of measurement for the length of a string.
+    Unit represents units of measurement for the length of a string.
 
-    The most commonly used [LengthUnit] in protocompile is [TermWidth], which
+    The most commonly used [Unit] in protocompile is [TermWidth], which
     approximates columns in a terminal emulator. This takes into account the
     Unicode width of runes, and tabstops. The rune A is one column wide, the rune
     貓 is two columns wide, and the multi-rune emoji presentation sequence 🐈‍⬛ is
@@ -29,9 +29,9 @@
   - kind: string
   - kind: go-string
   - kind: all
-    name: LengthUnits
+    name: Units
     docs: |
-      LengthUnits returns an iterator over all of the [LengthUnit]s
+      Units returns an iterator over all of the [Unit]s
   values:
   - {name: ByteLength, docs: "The length in UTF-8 code units (bytes)."}
   - {name: UTF16Length, docs: "The length in UTF-16 code units (uint16s)."}

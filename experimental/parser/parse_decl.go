@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -31,7 +32,7 @@ type exprComma struct {
 	comma token.Token
 }
 
-func (e exprComma) Span() report.Span {
+func (e exprComma) Span() source.Span {
 	return e.expr.Span()
 }
 
@@ -59,7 +60,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		})
 	case 2:
 		p.Error(errUnexpected{
-			what:  report.JoinSeq(slices.Values(unexpected)),
+			what:  source.JoinSeq(slices.Values(unexpected)),
 			where: in.In(),
 			want:  startsDecl,
 			got:   "tokens",

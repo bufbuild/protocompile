@@ -28,6 +28,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -117,7 +118,7 @@ type rawValueBits uint64
 // OptionSpan returns a representative span for the option that set this value.
 //
 // The Spanner will be an [ast.ExprField], if it is set in an [ast.ExprDict].
-func (v Value) OptionSpan() report.Spanner {
+func (v Value) OptionSpan() source.Spanner {
 	if v.IsZero() || len(v.Raw().exprs) == 0 {
 		return nil
 	}
@@ -127,25 +128,25 @@ func (v Value) OptionSpan() report.Spanner {
 	if field := expr.AsField(); !field.IsZero() {
 		return field
 	}
-	return report.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
+	return source.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
 }
 
 // OptionSpans returns an indexer over spans for the option that set this value.
 //
 // The Spanner will be an [ast.ExprField], if it is set in an [ast.ExprDict].
-func (v Value) OptionSpans() seq.Indexer[report.Spanner] {
+func (v Value) OptionSpans() seq.Indexer[source.Spanner] {
 	var slice []id.Dyn[ast.ExprAny, ast.ExprKind]
 	if !v.IsZero() {
 		slice = v.Raw().exprs
 	}
 
-	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) report.Spanner {
+	return seq.NewFixedSlice(slice, func(_ int, p id.Dyn[ast.ExprAny, ast.ExprKind]) source.Spanner {
 		c := v.Context().AST()
 		expr := id.WrapDyn(c, p)
 		if field := expr.AsField(); !field.IsZero() {
 			return field
 		}
-		return report.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
+		return source.Join(ast.ExprPath{Path: v.Raw().optionPaths[0].In(c)}, expr)
 	})
 }
 
@@ -498,7 +499,7 @@ func (v Value) marshal(buf []byte, r *report.Report, ranges *[][2]int) ([]byte, 
 func (v Value) suggestEdit(path, expr string, format string, args ...any) report.DiagnosticOption {
 	key := v.KeyAST()
 	value := v.ValueASTs().At(0)
-	joined := report.Join(key, value)
+	joined := source.Join(key, value)
 
 	return report.SuggestEdits(
 		joined,

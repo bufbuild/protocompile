@@ -23,7 +23,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
@@ -42,7 +42,7 @@ type Stream struct {
 	_ unsafex.NoCopy
 
 	// The file this stream is over.
-	*report.File
+	*source.File
 
 	// Storage for tokens.
 	nats   []nat

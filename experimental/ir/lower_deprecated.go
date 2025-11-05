@@ -17,6 +17,7 @@ package ir
 import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 )
 
 // checkDeprecated checks for deprecation warnings in the given file.
@@ -118,7 +119,7 @@ func checkDeprecatedOptions(value MessageValue, r *report.Report) {
 
 // errDeprecated diagnoses a deprecation.
 type errDeprecated struct {
-	ref, cause report.Spanner
+	ref, cause source.Spanner
 	name       string
 }
 

@@ -19,6 +19,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -35,7 +36,7 @@ type parser struct {
 
 // classified is a spanner that has been classified by taxa.
 type classified struct {
-	report.Spanner
+	source.Spanner
 	what taxa.Noun
 }
 

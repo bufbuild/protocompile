@@ -23,6 +23,7 @@ import (
 
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
@@ -50,7 +51,7 @@ func (w *writer) WriteSpaces(n int) {
 	w.buf = append(w.buf, spaces[:n]...)
 }
 
-func (w *writer) WriteString(data string) {
+func (w *writer) WriteString(data string) (int, error) {
 	// Break the input along newlines; each time we're about to append a
 	// newline, discard all trailing whitespace that isn't a newline.
 	for i, line := range iterx.Enumerate(stringsx.Lines(data)) {
@@ -59,6 +60,7 @@ func (w *writer) WriteString(data string) {
 		}
 		w.buf = append(w.buf, line...)
 	}
+	return len(data), nil
 }
 
 var ansiEscapePat = regexp.MustCompile("^\033\\[([\\d;]*)m")
@@ -79,7 +81,8 @@ func (w *writer) WriteWrapped(data string, width int) {
 		margin++
 	}
 
-	for i, line := range iterx.Enumerate(wordWrap(data, width-margin)) {
+	uw := &unicodex.Width{EscapeNonPrint: true}
+	for i, line := range iterx.Enumerate(uw.WordWrap(data, width-margin)) {
 		if i > 0 {
 			w.WriteString("\n")
 			w.WriteSpaces(margin)
