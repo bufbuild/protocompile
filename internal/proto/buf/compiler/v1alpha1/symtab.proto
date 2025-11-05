@@ -77,6 +77,7 @@ message Symbol {
 
     // Whether this symbol can be validly referenced in the current file.
     bool visible = 5;
+    bool option_only = 8;
 
     Value options = 6;
 

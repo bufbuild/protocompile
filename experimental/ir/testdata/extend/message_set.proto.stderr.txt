@@ -24,9 +24,9 @@ warning: redundant custom option setting syntax
     |             |
     |             this field is not a message extension
     |
-   ::: google/protobuf/descriptor.proto:600:17
+   ::: google/protobuf/descriptor.proto:603:17
     |
-600 |   optional bool message_set_wire_format = 1 [default = false];
+603 |   optional bool message_set_wire_format = 1 [default = false];
     |                 -----------------------
     |                  |
     |                  field declared inside of `google.protobuf.MessageOptions` here
@@ -78,9 +78,9 @@ warning: redundant custom option setting syntax
     |             |
     |             this field is not a message extension
     |
-   ::: google/protobuf/descriptor.proto:600:17
+   ::: google/protobuf/descriptor.proto:603:17
     |
-600 |   optional bool message_set_wire_format = 1 [default = false];
+603 |   optional bool message_set_wire_format = 1 [default = false];
     |                 -----------------------
     |                  |
     |                  field declared inside of `google.protobuf.MessageOptions` here

@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/id"
+	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -34,6 +35,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -66,6 +68,7 @@ func validateConstraints(f *File, r *report.Report) {
 
 	for ty := range seq.Values(f.AllTypes()) {
 		validateReservedNames(ty, r)
+		validateVisibility(ty, r)
 		switch {
 		case ty.IsEnum():
 			validateEnum(ty, r)
@@ -751,12 +754,13 @@ func validatePacked(m Member, r *report.Report) {
 			if !packed {
 				want = "EXPANDED"
 			}
-			r.Error(errEditionTooNew{
-				file:    m.Context(),
-				removed: syntax.Edition2023,
+			r.Error(erredition.TooNew{
+				Current: m.Context().Syntax(),
+				Decl:    m.Context().AST().Syntax(),
+				Removed: syntax.Edition2023,
 
-				what:  option.Field().Name(),
-				where: option.KeyAST(),
+				What:  option.Field().Name(),
+				Where: option.KeyAST(),
 			}).Apply(option.suggestEdit(
 				builtins.FeaturePacked.Name(), want,
 				"replace with `%s`", builtins.FeaturePacked.Name(),
@@ -869,13 +873,14 @@ func validateCType(m Member, r *report.Report) {
 	is2023 := f.Syntax() == syntax.Edition2023
 	switch {
 	case f.Syntax() > syntax.Edition2023:
-		r.Error(errEditionTooNew{
-			file:       f,
-			deprecated: syntax.Edition2023,
-			removed:    syntax.Edition2024,
+		r.Error(erredition.TooNew{
+			Current:    m.Context().Syntax(),
+			Decl:       m.Context().AST().Syntax(),
+			Deprecated: syntax.Edition2023,
+			Removed:    syntax.Edition2024,
 
-			what:  ctype.Field().Name(),
-			where: ctype.KeyAST(),
+			What:  ctype.Field().Name(),
+			Where: ctype.KeyAST(),
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
@@ -891,7 +896,7 @@ func validateCType(m Member, r *report.Report) {
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
 	case m.IsExtension() && ctypeValue == 1: // google.protobuf.FieldOptions.CORD
@@ -901,17 +906,18 @@ func validateCType(m Member, r *report.Report) {
 		)
 
 		if !is2023 {
-			d.Apply(report.Helpf("this becomes a hard error in %s", prettyEdition(syntax.Edition2023)))
+			d.Apply(report.Helpf("this becomes a hard error in %s", syntax.Edition2023.Name()))
 		}
 
 	case is2023:
-		r.Warn(errEditionTooNew{
-			file:       f,
-			deprecated: syntax.Edition2023,
-			removed:    syntax.Edition2024,
+		r.Warn(erredition.TooNew{
+			Current:    m.Context().Syntax(),
+			Decl:       m.Context().AST().Syntax(),
+			Deprecated: syntax.Edition2023,
+			Removed:    syntax.Edition2024,
 
-			what:  ctype.Field().Name(),
-			where: ctype.KeyAST(),
+			What:  ctype.Field().Name(),
+			Where: ctype.KeyAST(),
 		}).Apply(ctype.suggestEdit(
 			"features.(pb.cpp).string_type", want,
 			"replace with `features.(pb.cpp).string_type`",
@@ -1036,6 +1042,148 @@ func validateUTF8Values(v Value, r *report.Report) {
 				r.Error(&errNotUTF8{value: elem})
 			}
 		}
+	}
+}
+
+func validateVisibility(ty Type, r *report.Report) {
+	key := ty.Context().builtins().FeatureVisibility
+	if key.IsZero() {
+		return
+	}
+	feature := ty.FeatureSet().Lookup(key)
+	value, _ := feature.Value().AsInt()
+	strict := value == 4 // STRICT
+	var impliedExport bool
+	switch value {
+	case 0, 1: // DEFAULT_SYMBOL_VISIBILITY_UNKNOWN, EXPORT_ALL
+		impliedExport = true
+	case 2: // EXPORT_TOP_LEVEL
+		impliedExport = ty.Parent().IsZero()
+	case 3, 4: // LOCAL_ALL, STRICT
+		impliedExport = false
+	}
+
+	var why report.Span
+	if feature.IsDefault() {
+		why = ty.Context().AST().Syntax().Value().Span()
+	} else {
+		why = feature.Value().ValueAST().Span()
+	}
+
+	vis := id.Wrap(ty.AST().Context().Stream(), ty.Raw().visibility)
+	export := vis.Keyword() == keyword.Export
+	if !ty.Raw().visibility.IsZero() && export == impliedExport {
+		r.Warnf("redundant visibility modifier").Apply(
+			report.Snippetf(vis, "specified here"),
+			report.PageBreak,
+			report.Snippetf(why, "this implies it"),
+		)
+	}
+
+	if !strict || !export { // STRICT
+		return
+	}
+
+	// STRICT requires that we check two things:
+	//
+	// 1. Nested types are not explicitly exported.
+	// 2. Unless they are nested within a message that reserves all of its
+	//    field numbers.
+	parent := ty.Parent()
+	if ty.Parent().IsZero() {
+		return
+	}
+
+	start, end := parent.AbsoluteRange()
+
+	// Find any gaps in the reserved ranges.
+	gap := start
+	ranges := slices.Collect(seq.Values(parent.ReservedRanges()))
+	if len(ranges) > 0 {
+		slices.SortFunc(ranges, cmpx.Join(
+			cmpx.Key(func(r ReservedRange) int32 {
+				start, _ := r.Range()
+				return start
+			}),
+			cmpx.Key(func(r ReservedRange) int32 {
+				start, end := r.Range()
+				return end - start
+			}),
+		))
+
+		// Skip all ranges whose end is less than start.
+		for len(ranges) > 0 {
+			_, end := ranges[0].Range()
+			if end >= start {
+				break
+			}
+			ranges = ranges[1:]
+		}
+
+		for _, rr := range ranges {
+			a, b := rr.Range()
+			if gap < a {
+				// We're done, gap is not reserved.
+				break
+			}
+			gap = b + 1
+		}
+	}
+
+	if end <= gap {
+		// If there are multiple reserved ranges, protoc rejects this, because it
+		// doesn't do the same sophisticated interval sorting we do.
+		switch {
+		case parent.ReservedRanges().Len() != 1:
+			d := r.Errorf("expected exactly one reserved range").Apply(
+				report.Snippetf(vis, "nested type exported here"),
+				report.Snippetf(parent.AST(), "... within this type"),
+			)
+			ranges := parent.ReservedRanges()
+			if ranges.Len() > 0 {
+				d.Apply(
+					report.Snippetf(ranges.At(0).AST(), "one here"),
+					report.Snippetf(ranges.At(1).AST(), "another here"),
+				)
+			}
+			//nolint:dupword
+			d.Apply(
+				report.PageBreak,
+				report.Snippetf(why, "`STRICT` specified here"),
+				report.Helpf("in strict mode, nesting an exported type within another type "+
+					"requires that that type declare `reserved 1 to max;`, even if all of its field "+
+					"numbers are `reserved`"),
+				report.Helpf("protoc erroneously rejects this, despite being equivalent"),
+			)
+		case ty.IsMessage():
+			r.Errorf("nested message type marked as exported").Apply(
+				report.Snippetf(vis, "nested type exported here"),
+				report.Snippetf(parent.AST(), "... within this type"),
+				report.PageBreak,
+				report.Snippetf(why, "`STRICT` specified here"),
+				report.Helpf("in strict mode, nested message types cannot be marked as "+
+					"exported, even if all the field numbers of its parent are reserved"),
+			)
+		}
+
+		return
+	}
+
+	// If this is true, the protoc check is bugged and we emit a warning...
+	bugged := parent.ReservedRanges().Len() == 1
+	//nolint:dupword
+	d := r.SoftErrorf(!bugged, "%s `%s` does not reserve all field numbers", parent.noun(), parent.FullName()).Apply(
+		report.Snippetf(vis, "nested type exported here"),
+		report.Snippetf(parent.AST(), "... within this type"),
+		report.PageBreak,
+		report.Snippetf(why, "`STRICT` specified here"),
+		report.Helpf("in strict mode, nesting an exported type within another type "+
+			`requires that that type reserve every field number (the "C++ namespace exception"), `+
+			"but this type does not reserve the field number %d", gap),
+	)
+	if bugged {
+		d.Apply(report.Helpf("protoc erroneously accepts this code due to a bug: it only " +
+			"checks that there is exactly one reserved range"))
 	}
 }
 
