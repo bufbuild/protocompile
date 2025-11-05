@@ -18,7 +18,7 @@ import "github.com/bufbuild/protocompile/wellknownimports"
 
 var wktFS = FS{FS: wellknownimports.FS()}
 
-// WKTs returns an opener that yields protocompile's built-in WKT sources.
+// WKTs returns an [Opener] that yields in-memory Protobuf well-known type sources.
 func WKTs() Opener {
 	// All openers returned by this function compare equal.
 	return wkts{}

@@ -34,10 +34,10 @@ import (
 type Unit int
 
 const (
-	ByteLength  Unit = iota // The length in UTF-8 code units (bytes).
-	UTF16Length             // The length in UTF-16 code units (uint16s).
-	RuneLength              // The length in UTF-32 code units (runes).
-	TermWidth               // The length in approximate terminal columns.
+	Bytes     Unit = iota // The length in UTF-8 code units (bytes).
+	UTF16                 // The length in UTF-16 code units (uint16s).
+	Runes                 // The length in UTF-32 code units (runes).
+	TermWidth             // The length in approximate terminal columns.
 )
 
 // String implements [fmt.Stringer].
@@ -68,16 +68,16 @@ func Units() iter.Seq[Unit] {
 }
 
 var _table_Unit_String = [...]string{
-	ByteLength:  "ByteLength",
-	UTF16Length: "UTF16Length",
-	RuneLength:  "RuneLength",
-	TermWidth:   "TermWidth",
+	Bytes:     "Bytes",
+	UTF16:     "UTF16",
+	Runes:     "Runes",
+	TermWidth: "TermWidth",
 }
 
 var _table_Unit_GoString = [...]string{
-	ByteLength:  "ByteLength",
-	UTF16Length: "UTF16Length",
-	RuneLength:  "RuneLength",
-	TermWidth:   "TermWidth",
+	Bytes:     "Bytes",
+	UTF16:     "UTF16",
+	Runes:     "Runes",
+	TermWidth: "TermWidth",
 }
 var _ iter.Seq[int] // Mark iter as used.

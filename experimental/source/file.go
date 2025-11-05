@@ -29,6 +29,7 @@ import (
 // File is a source code file involved in a diagnostic.
 //
 // It contains additional book-keeping information for resolving span locations.
+// Files are immutable once created.
 //
 // A nil *File behaves like an empty file with the path name "".
 type File struct {
@@ -238,6 +239,10 @@ func inverseLocation(f *File, line, column int, units length.Unit) int {
 }
 
 func (f *File) lines() []int {
+	if f == nil {
+		return nil
+	}
+
 	// Compute the prefix sum on-demand.
 	f.once.Do(func() {
 		var next int

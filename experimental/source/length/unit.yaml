@@ -33,7 +33,7 @@
     docs: |
       Units returns an iterator over all of the [Unit]s
   values:
-  - {name: ByteLength, docs: "The length in UTF-8 code units (bytes)."}
-  - {name: UTF16Length, docs: "The length in UTF-16 code units (uint16s)."}
-  - {name: RuneLength, docs: "The length in UTF-32 code units (runes)."}
+  - {name: Bytes, docs: "The length in UTF-8 code units (bytes)."}
+  - {name: UTF16, docs: "The length in UTF-16 code units (uint16s)."}
+  - {name: Runes, docs: "The length in UTF-32 code units (runes)."}
   - {name: TermWidth, docs: "The length in approximate terminal columns."}
