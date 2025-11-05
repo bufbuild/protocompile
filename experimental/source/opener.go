@@ -51,7 +51,7 @@ type Map cmpx.MapWrapper[string, *File]
 // If passed nil, this will update the map to be an empty non-nil map.
 func NewMap(m map[string]*File) Map {
 	if m == nil {
-		m = map[string]*File{}
+		m = make(map[string]*File)
 	}
 	return Map(cmpx.NewMapWrapper(m))
 }

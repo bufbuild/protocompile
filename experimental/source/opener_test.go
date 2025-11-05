@@ -31,9 +31,9 @@ func TestFS(t *testing.T) {
 
 	opener := source.FS{FS: os.DirFS(prototest.CallerDir(t))}
 
-	text, err := opener.Open("testdata/hello.txt")
+	file, err := opener.Open("testdata/hello.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "hello!\n", text)
+	assert.Equal(t, "hello!\n", file.Text())
 
 	_, err = opener.Open("missing.txt")
 	require.ErrorIs(t, err, fs.ErrNotExist)
@@ -43,11 +43,11 @@ func TestMap(t *testing.T) {
 	t.Parallel()
 
 	opener := source.NewMap(nil)
-	opener.Add("hello.text", "hello!\n")
+	opener.Add("hello.txt", "hello!\n")
 
-	text, err := opener.Open("hello.txt")
+	file, err := opener.Open("hello.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "hello!\n", text)
+	assert.Equal(t, "hello!\n", file.Text())
 
 	_, err = opener.Open("missing.txt")
 	require.ErrorIs(t, err, fs.ErrNotExist)
@@ -64,13 +64,13 @@ func TestOpeners(t *testing.T) {
 		&source.FS{FS: os.DirFS(prototest.CallerDir(t))},
 	}
 
-	text, err := opener.Open("overlaid.txt")
+	file, err := opener.Open("overlaid.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "overlaid!\n", text)
+	assert.Equal(t, "overlaid!\n", file.Text())
 
-	text, err = opener.Open("testdata/hello.txt")
+	file, err = opener.Open("testdata/hello.txt")
 	require.NoError(t, err)
-	assert.Equal(t, "hello!\n", text)
+	assert.Equal(t, "hello!\n", file.Text())
 
 	_, err = opener.Open("missing.txt")
 	require.ErrorIs(t, err, fs.ErrNotExist)
