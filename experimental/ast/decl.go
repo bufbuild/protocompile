@@ -15,9 +15,7 @@
 package ast
 
 import (
-	"reflect"
-
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
@@ -38,18 +36,7 @@ import (
 //
 // Note that this grammar is highly ambiguous. TODO: document the rules under
 // which parse DeclSyntax, DeclPackage, DeclImport, and DeclRange.
-type DeclAny struct {
-	// NOTE: These fields are sorted by alignment.
-	withContext // Must be nil if raw is nil.
-
-	raw rawDecl
-}
-
-// Kind returns the kind of declaration this is. This is suitable for use
-// in a switch statement.
-func (d DeclAny) Kind() DeclKind {
-	return d.raw.kind
-}
+type DeclAny id.DynNode[DeclAny, DeclKind, *File]
 
 // AsEmpty converts a DeclAny into a DeclEmpty, if that is the declaration
 // it contains.
@@ -60,7 +47,7 @@ func (d DeclAny) AsEmpty() DeclEmpty {
 		return DeclEmpty{}
 	}
 
-	return wrapDeclEmpty(d.Context(), arena.Pointer[rawDeclEmpty](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclEmpty](d.ID().Value()))
 }
 
 // AsSyntax converts a DeclAny into a DeclSyntax, if that is the declaration
@@ -72,7 +59,7 @@ func (d DeclAny) AsSyntax() DeclSyntax {
 		return DeclSyntax{}
 	}
 
-	return wrapDeclSyntax(d.Context(), arena.Pointer[rawDeclSyntax](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclSyntax](d.ID().Value()))
 }
 
 // AsPackage converts a DeclAny into a DeclPackage, if that is the declaration
@@ -84,7 +71,7 @@ func (d DeclAny) AsPackage() DeclPackage {
 		return DeclPackage{}
 	}
 
-	return wrapDeclPackage(d.Context(), arena.Pointer[rawDeclPackage](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclPackage](d.ID().Value()))
 }
 
 // AsImport converts a DeclAny into a DeclImport, if that is the declaration
@@ -96,7 +83,7 @@ func (d DeclAny) AsImport() DeclImport {
 		return DeclImport{}
 	}
 
-	return wrapDeclImport(d.Context(), arena.Pointer[rawDeclImport](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclImport](d.ID().Value()))
 }
 
 // AsDef converts a DeclAny into a DeclDef, if that is the declaration
@@ -108,7 +95,7 @@ func (d DeclAny) AsDef() DeclDef {
 		return DeclDef{}
 	}
 
-	return wrapDeclDef(d.Context(), arena.Pointer[rawDeclDef](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclDef](d.ID().Value()))
 }
 
 // AsBody converts a DeclAny into a DeclBody, if that is the declaration
@@ -120,7 +107,7 @@ func (d DeclAny) AsBody() DeclBody {
 		return DeclBody{}
 	}
 
-	return wrapDeclBody(d.Context(), arena.Pointer[rawDeclBody](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclBody](d.ID().Value()))
 }
 
 // AsRange converts a DeclAny into a DeclRange, if that is the declaration
@@ -132,7 +119,7 @@ func (d DeclAny) AsRange() DeclRange {
 		return DeclRange{}
 	}
 
-	return wrapDeclRange(d.Context(), arena.Pointer[rawDeclRange](d.raw.ptr))
+	return id.Wrap(d.Context(), id.ID[DeclRange](d.ID().Value()))
 }
 
 // Span implements [report.Spanner].
@@ -151,48 +138,12 @@ func (d DeclAny) Span() report.Span {
 	)
 }
 
-// rawDecl is the actual data of a DeclAny.
-type rawDecl struct {
-	ptr  arena.Untyped
-	kind DeclKind
+func (DeclKind) DecodeDynID(lo, _ int32) DeclKind {
+	return DeclKind(lo)
 }
 
-func (d rawDecl) With(c Context) DeclAny {
-	if c == nil || d.ptr.Nil() || d.kind == DeclKindInvalid {
-		return DeclAny{}
-	}
-
-	return DeclAny{internal.NewWith(c), d}
-}
-
-// declImpl is the common implementation of pointer-like Decl* types.
-type declImpl[Raw any] struct {
-	withContext
-	raw *Raw
-}
-
-// AsAny type-erases this declaration value.
-//
-// See [DeclAny] for more information.
-func (d declImpl[Raw]) AsAny() DeclAny {
-	if d.IsZero() {
-		return DeclAny{}
-	}
-
-	kind, arena := declArena[Raw](&d.Context().Nodes().decls)
-	return rawDecl{arena.Compress(d.raw).Untyped(), kind}.With(d.Context())
-}
-
-func wrapDecl[Raw any](ctx Context, ptr arena.Pointer[Raw]) declImpl[Raw] {
-	if ctx == nil || ptr.Nil() {
-		return declImpl[Raw]{}
-	}
-
-	_, arena := declArena[Raw](&ctx.Nodes().decls)
-	return declImpl[Raw]{
-		internal.NewWith(ctx),
-		arena.Deref(ptr),
-	}
+func (k DeclKind) EncodeDynID(value int32) (int32, int32, bool) {
+	return int32(k), value, true
 }
 
 // decls is storage for every kind of Decl in a Context.
@@ -204,43 +155,4 @@ type decls struct {
 	defs     arena.Arena[rawDeclDef]
 	bodies   arena.Arena[rawDeclBody]
 	ranges   arena.Arena[rawDeclRange]
-}
-
-func declArena[Raw any](decls *decls) (DeclKind, *arena.Arena[Raw]) {
-	var (
-		kind DeclKind
-		raw  Raw
-		// Needs to be an any because Go doesn't know that only the case below
-		// with the correct type for arena_ (if it were *arena.Arena[Raw]) will
-		// be evaluated.
-		arena_ any //nolint:revive // Named arena_ to avoid clashing with package arena.
-	)
-
-	switch any(raw).(type) {
-	case rawDeclEmpty:
-		kind = DeclKindEmpty
-		arena_ = &decls.empties
-	case rawDeclSyntax:
-		kind = DeclKindSyntax
-		arena_ = &decls.syntaxes
-	case rawDeclPackage:
-		kind = DeclKindPackage
-		arena_ = &decls.packages
-	case rawDeclImport:
-		kind = DeclKindImport
-		arena_ = &decls.imports
-	case rawDeclDef:
-		kind = DeclKindDef
-		arena_ = &decls.defs
-	case rawDeclBody:
-		kind = DeclKindBody
-		arena_ = &decls.bodies
-	case rawDeclRange:
-		kind = DeclKindRange
-		arena_ = &decls.ranges
-	default:
-		panic("unknown decl type " + reflect.TypeOf(raw).Name())
-	}
-
-	return kind, arena_.(*arena.Arena[Raw]) //nolint:errcheck
 }

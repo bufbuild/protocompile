@@ -77,7 +77,7 @@ func (s Span) Before() string {
 	return s.File.Text()[:s.Start]
 }
 
-// Before returns all text after this span.
+// After returns all text after this span.
 func (s Span) After() string {
 	return s.File.Text()[s.End:]
 }
@@ -95,7 +95,7 @@ func (s Span) GrowLeft(p func(r rune) bool) Span {
 	return s
 }
 
-// GrowLeft returns a new span which contains the largest prefix of [Span.After]
+// GrowRight returns a new span which contains the largest prefix of [Span.After]
 // which match p.
 func (s Span) GrowRight(p func(r rune) bool) Span {
 	for {
@@ -291,7 +291,7 @@ func (f *File) Text() string {
 //
 // This operation is O(log n).
 func (f *File) Location(offset int, units LengthUnit) Location {
-	if f == nil && offset == 0 {
+	if f == nil || offset == 0 {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
@@ -304,7 +304,7 @@ func (f *File) Location(offset int, units LengthUnit) Location {
 // measure the column width. If units is [TermWidth], this function panics,
 // because inverting a [TermWidth] location is not supported.
 func (f *File) InverseLocation(line, column int, units LengthUnit) Location {
-	if f == nil && line == 1 && column == 1 {
+	if f == nil || (line == 1 && column == 1) {
 		return Location{Offset: 0, Line: 1, Column: 1}
 	}
 
@@ -335,7 +335,7 @@ func (f *File) Span(start, end int) Span {
 	return Span{f, start, end}
 }
 
-// LineOffsets returns the given line, including its trailing newline.
+// Line returns the given line, including its trailing newline.
 //
 // line is expected to be 1-indexed.
 func (f *File) Line(line int) string {

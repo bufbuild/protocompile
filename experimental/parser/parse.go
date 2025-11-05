@@ -28,9 +28,9 @@ import (
 // parsing succeeded without errors.
 //
 // Parse will freeze the stream in ctx when it is done.
-func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
+func Parse(source *report.File, errs *report.Report) (file *ast.File, ok bool) {
 	prior := len(errs.Diagnostics)
-	ctx := ast.NewContext(source)
+	file = ast.New(source)
 
 	errs.SaveOptions(func() {
 		if source.Path() == "google/protobuf/descriptor.proto" {
@@ -41,10 +41,10 @@ func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 			errs.SuppressWarnings = true
 		}
 
-		lex(ctx, errs)
-		parse(ctx, errs)
+		lex(file.Stream(), errs)
+		parse(file, errs)
 
-		defer ctx.Stream().Freeze()
+		defer file.Stream().Freeze()
 	})
 
 	ok = true
@@ -55,33 +55,31 @@ func Parse(source *report.File, errs *report.Report) (file ast.File, ok bool) {
 		}
 	}
 
-	return ctx.Nodes().Root(), ok
+	return file, ok
 }
 
 // parse implements the core parser loop.
-func parse(ctx ast.Context, errs *report.Report) {
+func parse(file *ast.File, errs *report.Report) {
 	p := &parser{
-		Context: ctx,
-		Nodes:   ctx.Nodes(),
-		Report:  errs,
+		Nodes:  file.Nodes(),
+		Report: errs,
 	}
 
 	defer p.CatchICE(false, nil)
 
-	c := ctx.Stream().Cursor()
-	root := ctx.Nodes().Root()
+	c := file.Stream().Cursor()
 
 	var mark token.CursorMark
 	for !c.Done() {
 		ensureProgress(c, &mark)
 		node := parseDecl(p, c, taxa.TopLevel)
 		if !node.IsZero() {
-			seq.Append(root.Decls(), node)
+			seq.Append(file.Decls(), node)
 		}
 	}
 
 	p.parseComplete = true
-	legalizeFile(p, root)
+	legalizeFile(p, file)
 }
 
 // ensureProgress is used to make sure that the parser makes progress on each

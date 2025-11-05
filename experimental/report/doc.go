@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /*
-package report provides a robust diagnostics framework. It offers diagnostic
+Package report provides a robust diagnostics framework. It offers diagnostic
 construction, interchange, and ASCII art rendering functionality.
 
 Diagnostics are collected into a [Report], which is a helpful builder over
@@ -31,7 +31,7 @@ be serialized to e.g. JSON as an alternative error output.
 
 The [File] type is a generic utility for converting file offsets into
 text editor coordinates. E.g., given a byte offset, what is the user-visible
-line and column number? package report expects the caller to construct this
+line and column number? Package report expects the caller to construct this
 information themselves, to avoid recomputing it unnecessarily.
 
 # Defining Diagnostics
@@ -52,9 +52,8 @@ Report.Errorf() and friends.
 # Diagnostics Style Guide
 
 Diagnostics created with package report expect to be written in a certain
-way. The following guidelines are taken, mostly verbatim, from the Rust
-Project's diagnostics style guide.
-https:github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
+way. The following guidelines are taken, mostly verbatim, from the [Rust
+Project's diagnostics style guide].
 
 The golden rule: Users will see diagnostics when they are frustrated. Do not
 make them more frustrated. Do not make them feel like your tool does not
@@ -106,5 +105,7 @@ respect their intelligence.
     rather than the compiler's, use that language's name. For example,
     "Go does not support...",  "... is not valid Protobuf", "this is a
     limitation of C++".
+
+[Rust Project's diagnostics style guide]: https://github.com/rust-lang/rustc-dev-guide/blob/master/src/diagnostics.md
 */
 package report

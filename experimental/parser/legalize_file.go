@@ -34,7 +34,7 @@ import (
 var isOrdinaryFilePath = regexp.MustCompile(`^[0-9a-zA-Z./_-]*$`)
 
 // legalizeFile is the entry-point for legalizing a parsed Protobuf file.
-func legalizeFile(p *parser, file ast.File) {
+func legalizeFile(p *parser, file *ast.File) {
 	// Legalize the first syntax node as soon as possible. This is because many
 	// grammar-level things depend on having figured out the file's syntax
 	// setting.
@@ -50,7 +50,7 @@ func legalizeFile(p *parser, file ast.File) {
 
 		if p.syntaxNode.IsZero() { // Don't complain if we found a bad syntax node.
 			p.Warnf("missing %s", taxa.Syntax).Apply(
-				report.InFile(p.Stream().Path()),
+				report.InFile(p.File().Stream().Path()),
 				report.Notef("this defaults to \"proto2\"; not specifying this "+
 					"explicitly is discouraged"),
 				// TODO: suggestion.
@@ -75,7 +75,7 @@ func legalizeFile(p *parser, file ast.File) {
 
 	if pkg.IsZero() {
 		p.Warnf("missing %s", taxa.Package).Apply(
-			report.InFile(p.Stream().Path()),
+			report.InFile(p.File().Stream().Path()),
 			report.Notef(
 				"not explicitly specifying a package places the file in the "+
 					"unnamed package; using it strongly is discouraged"),
@@ -99,7 +99,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 		return
 	}
 
-	file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
+	file := parent.Spanner.(*ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
 	switch {
 	case !first.IsZero():
 		p.Errorf("unexpected %s", in).Apply(
@@ -239,7 +239,7 @@ func legalizePackage(p *parser, parent classified, idx int, first *ast.DeclPacka
 		return
 	}
 
-	file := parent.Spanner.(ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
+	file := parent.Spanner.(*ast.File) //nolint:errcheck // Implied by == taxa.TopLevel.
 	switch {
 	case !first.IsZero():
 		p.Errorf("unexpected %s", taxa.Package).Apply(

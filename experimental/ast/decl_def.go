@@ -17,10 +17,10 @@ package ast
 import (
 	"iter"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // DeclDef is a general Protobuf definition.
@@ -45,19 +45,19 @@ import (
 //	value     := (`=` Expr) | ExprPath | ExprLiteral | ExprRange | ExprField
 //
 // Note that this type will only record the first appearance of any follower.
-type DeclDef struct{ declImpl[rawDeclDef] }
+type DeclDef id.Node[DeclDef, *File, *rawDeclDef]
 
 type rawDeclDef struct {
-	ty   rawType // Not present for enum fields.
-	name rawPath
+	ty   id.Dyn[TypeAny, TypeKind] // Not present for enum fields.
+	name PathID
 
 	signature *rawSignature
 
 	equals token.ID
-	value  rawExpr
+	value  id.Dyn[ExprAny, ExprKind]
 
-	options arena.Pointer[rawCompactOptions]
-	body    arena.Pointer[rawDeclBody]
+	options id.ID[CompactOptions]
+	body    id.ID[DeclBody]
 	semi    token.ID
 
 	corrupt bool
@@ -84,6 +84,16 @@ type DeclDefArgs struct {
 	Semicolon token.Token
 }
 
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclDef) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindDef, id.ID[DeclAny](d.ID())))
+}
+
 // Type returns the "prefix" type of this definition.
 //
 // This type may coexist with a [Signature] in this definition.
@@ -98,12 +108,12 @@ func (d DeclDef) Type() TypeAny {
 		return TypeAny{}
 	}
 
-	return newTypeAny(d.Context(), d.raw.ty)
+	return id.WrapDyn(d.Context(), d.Raw().ty)
 }
 
 // SetType sets the "prefix" type of this definition.
 func (d DeclDef) SetType(ty TypeAny) {
-	d.raw.ty = ty.raw
+	d.Raw().ty = ty.ID()
 }
 
 // KeywordToken returns the introducing keyword for this definition, if
@@ -175,7 +185,7 @@ func (d DeclDef) Name() Path {
 		return Path{}
 	}
 
-	return d.raw.name.With(d.Context())
+	return d.Raw().name.In(d.Context())
 }
 
 // Stem returns a span that contains both this definition's type and name.
@@ -194,13 +204,13 @@ func (d DeclDef) Stem() report.Span {
 // Not all defs have a signature, so this function may return a zero Signature.q
 // If you want to add one, use [DeclDef.WithSignature].
 func (d DeclDef) Signature() Signature {
-	if d.IsZero() || d.raw.signature == nil {
+	if d.IsZero() || d.Raw().signature == nil {
 		return Signature{}
 	}
 
 	return Signature{
-		d.withContext,
-		d.raw.signature,
+		id.WrapContext(d.Context()),
+		d.Raw().signature,
 	}
 }
 
@@ -208,7 +218,7 @@ func (d DeclDef) Signature() Signature {
 // return zero.
 func (d DeclDef) WithSignature() Signature {
 	if !d.IsZero() && d.Signature().IsZero() {
-		d.raw.signature = new(rawSignature)
+		d.Raw().signature = new(rawSignature)
 	}
 	return d.Signature()
 }
@@ -220,7 +230,7 @@ func (d DeclDef) Equals() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.equals.In(d.Context())
+	return id.Wrap(d.Context().Stream(), d.Raw().equals)
 }
 
 // Value returns this definition's value. For a field, this will be the
@@ -231,14 +241,14 @@ func (d DeclDef) Value() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(d.Context(), d.raw.value)
+	return id.WrapDyn(d.Context(), d.Raw().value)
 }
 
 // SetValue sets the value of this definition.
 //
 // See [DeclDef.Value].
 func (d DeclDef) SetValue(expr ExprAny) {
-	d.raw.value = expr.raw
+	d.Raw().value = expr.ID()
 }
 
 // Options returns the compact options list for this definition.
@@ -247,14 +257,14 @@ func (d DeclDef) Options() CompactOptions {
 		return CompactOptions{}
 	}
 
-	return wrapOptions(d.Context(), d.raw.options)
+	return id.Wrap(d.Context(), d.Raw().options)
 }
 
 // SetOptions sets the compact options list for this definition.
 //
 // Setting it to a zero Options clears it.
 func (d DeclDef) SetOptions(opts CompactOptions) {
-	d.raw.options = d.Context().Nodes().options.Compress(opts.raw)
+	d.Raw().options = opts.ID()
 }
 
 // Body returns this definition's body, if it has one.
@@ -263,12 +273,12 @@ func (d DeclDef) Body() DeclBody {
 		return DeclBody{}
 	}
 
-	return wrapDeclBody(d.Context(), d.raw.body)
+	return id.Wrap(d.Context(), d.Raw().body)
 }
 
 // SetBody sets the body for this definition.
 func (d DeclDef) SetBody(b DeclBody) {
-	d.raw.body = d.Context().Nodes().decls.bodies.Compress(b.raw)
+	d.Raw().body = b.ID()
 }
 
 // Semicolon returns the ending semicolon token for this definition.
@@ -278,18 +288,18 @@ func (d DeclDef) Semicolon() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.semi.In(d.Context())
+	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
 // IsCorrupt reports whether or not some part of the parser decided that this
 // definition is not interpretable as any specific kind of definition.
 func (d DeclDef) IsCorrupt() bool {
-	return !d.IsZero() && d.raw.corrupt
+	return !d.IsZero() && d.Raw().corrupt
 }
 
 // the compiler to ignore it. See [DeclDef.IsCorrupt].
 func (d DeclDef) MarkCorrupt() {
-	d.raw.corrupt = true
+	d.Raw().corrupt = true
 }
 
 // AsMessage extracts the fields from this definition relevant to interpreting
@@ -522,16 +532,11 @@ func (d DeclDef) Span() report.Span {
 	)
 }
 
-func wrapDeclDef(c Context, ptr arena.Pointer[rawDeclDef]) DeclDef {
-	return DeclDef{wrapDecl(c, ptr)}
-}
-
 // Signature is a type signature of the form (types) returns (types).
 //
 // Signatures may have multiple inputs and outputs.
 type Signature struct {
 	withContext
-
 	raw *rawSignature
 }
 
@@ -547,7 +552,7 @@ func (s Signature) Returns() token.Token {
 		return token.Zero
 	}
 
-	return s.raw.returns.In(s.Context())
+	return id.Wrap(s.Context().Stream(), s.raw.returns)
 }
 
 // Inputs returns the input argument list for this signature.
@@ -557,7 +562,7 @@ func (s Signature) Inputs() TypeList {
 	}
 
 	return TypeList{
-		s.withContext,
+		id.WrapContext(s.Context()),
 		&s.raw.input,
 	}
 }
@@ -569,7 +574,7 @@ func (s Signature) Outputs() TypeList {
 	}
 
 	return TypeList{
-		s.withContext,
+		id.WrapContext(s.Context()),
 		&s.raw.output,
 	}
 }
@@ -609,7 +614,7 @@ type DefMessage struct {
 
 func (DefMessage) isDef()              {}
 func (d DefMessage) Span() report.Span { return d.Decl.Span() }
-func (d DefMessage) Context() Context  { return d.Decl.Context() }
+func (d DefMessage) Context() *File    { return d.Decl.Context() }
 
 // DefEnum is a [DeclDef] projected into an enum definition.
 //
@@ -624,7 +629,7 @@ type DefEnum struct {
 
 func (DefEnum) isDef()              {}
 func (d DefEnum) Span() report.Span { return d.Decl.Span() }
-func (d DefEnum) Context() Context  { return d.Decl.Context() }
+func (d DefEnum) Context() *File    { return d.Decl.Context() }
 
 // DefService is a [DeclDef] projected into a service definition.
 //
@@ -639,7 +644,7 @@ type DefService struct {
 
 func (DefService) isDef()              {}
 func (d DefService) Span() report.Span { return d.Decl.Span() }
-func (d DefService) Context() Context  { return d.Decl.Context() }
+func (d DefService) Context() *File    { return d.Decl.Context() }
 
 // DefExtend is a [DeclDef] projected into an extension definition.
 //
@@ -654,7 +659,7 @@ type DefExtend struct {
 
 func (DefExtend) isDef()              {}
 func (d DefExtend) Span() report.Span { return d.Decl.Span() }
-func (d DefExtend) Context() Context  { return d.Decl.Context() }
+func (d DefExtend) Context() *File    { return d.Decl.Context() }
 
 // DefField is a [DeclDef] projected into a field definition.
 //
@@ -672,7 +677,7 @@ type DefField struct {
 
 func (DefField) isDef()              {}
 func (d DefField) Span() report.Span { return d.Decl.Span() }
-func (d DefField) Context() Context  { return d.Decl.Context() }
+func (d DefField) Context() *File    { return d.Decl.Context() }
 
 // DefEnumValue is a [DeclDef] projected into an enum value definition.
 //
@@ -689,7 +694,7 @@ type DefEnumValue struct {
 
 func (DefEnumValue) isDef()              {}
 func (d DefEnumValue) Span() report.Span { return d.Decl.Span() }
-func (d DefEnumValue) Context() Context  { return d.Decl.Context() }
+func (d DefEnumValue) Context() *File    { return d.Decl.Context() }
 
 // DefEnumValue is a [DeclDef] projected into a oneof definition.
 //
@@ -704,7 +709,7 @@ type DefOneof struct {
 
 func (DefOneof) isDef()              {}
 func (d DefOneof) Span() report.Span { return d.Decl.Span() }
-func (d DefOneof) Context() Context  { return d.Decl.Context() }
+func (d DefOneof) Context() *File    { return d.Decl.Context() }
 
 // DefGroup is a [DeclDef] projected into a group definition.
 //
@@ -722,7 +727,7 @@ type DefGroup struct {
 
 func (DefGroup) isDef()              {}
 func (d DefGroup) Span() report.Span { return d.Decl.Span() }
-func (d DefGroup) Context() Context  { return d.Decl.Context() }
+func (d DefGroup) Context() *File    { return d.Decl.Context() }
 
 // DefMethod is a [DeclDef] projected into a method definition.
 //
@@ -738,7 +743,7 @@ type DefMethod struct {
 
 func (DefMethod) isDef()              {}
 func (d DefMethod) Span() report.Span { return d.Decl.Span() }
-func (d DefMethod) Context() Context  { return d.Decl.Context() }
+func (d DefMethod) Context() *File    { return d.Decl.Context() }
 
 // DefOption is a [DeclDef] projected into a method definition.
 //
@@ -757,4 +762,4 @@ type DefOption struct {
 
 func (DefOption) isDef()              {}
 func (d DefOption) Span() report.Span { return d.Decl.Span() }
-func (d DefOption) Context() Context  { return d.Decl.Context() }
+func (d DefOption) Context() *File    { return d.Decl.Context() }

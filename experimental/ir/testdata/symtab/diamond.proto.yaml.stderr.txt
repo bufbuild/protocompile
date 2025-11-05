@@ -1,4 +1,4 @@
-warning: unused import "main.proto"
+warning: unused import "b.proto"
   --> main.proto:4:8
    |
  4 | import "b.proto";
@@ -9,7 +9,7 @@ warning: unused import "main.proto"
    |
    = help: no symbols from this file are referenced
 
-warning: unused import "main.proto"
+warning: unused import "c.proto"
   --> main.proto:5:8
    |
  5 | import "c.proto";

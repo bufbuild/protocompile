@@ -15,10 +15,10 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/internal/arena"
 )
 
 // DeclBody is the body of a [DeclBody], or the whole contents of a [File]. The
@@ -33,7 +33,7 @@ import (
 //
 // Note that a [File] is simply a DeclBody that is delimited by the bounds of
 // the source file, rather than braces.
-type DeclBody struct{ declImpl[rawDeclBody] }
+type DeclBody id.Node[DeclBody, *File, *rawDeclBody]
 
 // HasBody is an AST node that contains a [Body].
 //
@@ -51,7 +51,17 @@ type rawDeclBody struct {
 	// three bytes per decl (declKind is 1 byte, but decl is 4; if
 	// they're stored in AOS format, we waste 3 bytes of padding).
 	kinds []DeclKind
-	ptrs  []arena.Untyped
+	ptrs  []id.ID[DeclAny]
+}
+
+// AsAny type-erases this declaration value.
+//
+// See [DeclAny] for more information.
+func (d DeclBody) AsAny() DeclAny {
+	if d.IsZero() {
+		return DeclAny{}
+	}
+	return id.WrapDyn(d.Context(), id.NewDyn(DeclKindBody, id.ID[DeclAny](d.ID())))
 }
 
 // Braces returns this body's surrounding braces, if it has any.
@@ -60,7 +70,7 @@ func (d DeclBody) Braces() token.Token {
 		return token.Zero
 	}
 
-	return d.raw.braces.In(d.Context())
+	return id.Wrap(d.Context().Stream(), d.Raw().braces)
 }
 
 // Span implements [report.Spanner].
@@ -86,21 +96,17 @@ func (d DeclBody) Body() DeclBody {
 // Decls returns a [seq.Inserter] over the declarations in this body.
 func (d DeclBody) Decls() seq.Inserter[DeclAny] {
 	if d.IsZero() {
-		return seq.SliceInserter2[DeclAny, DeclKind, arena.Untyped]{}
+		return seq.SliceInserter2[DeclAny, DeclKind, id.ID[DeclAny]]{}
 	}
 	return seq.NewSliceInserter2(
-		&d.raw.kinds,
-		&d.raw.ptrs,
-		func(_ int, k DeclKind, p arena.Untyped) DeclAny {
-			return rawDecl{p, k}.With(d.Context())
+		&d.Raw().kinds,
+		&d.Raw().ptrs,
+		func(_ int, k DeclKind, p id.ID[DeclAny]) DeclAny {
+			return id.WrapDyn(d.Context(), id.NewDyn(k, p))
 		},
-		func(_ int, d DeclAny) (DeclKind, arena.Untyped) {
+		func(_ int, d DeclAny) (DeclKind, id.ID[DeclAny]) {
 			d.Context().Nodes().panicIfNotOurs(d)
-			return d.raw.kind, d.raw.ptr
+			return d.ID().Kind(), d.ID().Value()
 		},
 	)
-}
-
-func wrapDeclBody(c Context, ptr arena.Pointer[rawDeclBody]) DeclBody {
-	return DeclBody{wrapDecl(c, ptr)}
 }

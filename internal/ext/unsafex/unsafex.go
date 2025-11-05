@@ -19,8 +19,14 @@ package unsafex
 
 import (
 	"fmt"
+	"sync"
 	"unsafe"
 )
+
+// NoCopy can be embedded in a type to trigger go vet's no copy lint.
+type NoCopy struct {
+	_ [0]sync.Mutex
+}
 
 // Int is a constraint for any integer type.
 type Int interface {

@@ -24,18 +24,17 @@ type (
 	Symtab  = symtab
 )
 
-func NewFile(s *Session, path string) File {
-	c := &Context{
+func NewFile(s *Session, path string) *File {
+	return &File{
 		session: s,
 		path:    s.intern.Intern(path),
 	}
-	return c.File()
 }
 
-func GetImports(f File) *Imports {
-	return &f.Context().imports
+func GetImports(f *File) *Imports {
+	return &f.imports
 }
 
 func (s Symbol) RawData() arena.Untyped {
-	return s.raw.data
+	return s.Raw().data
 }

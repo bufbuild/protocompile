@@ -51,7 +51,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 			case keyword.Eq: // Allow equals signs, which are usually a mistake.
 				p.Errorf("unexpected `=` in expression").Apply(
 					report.Snippet(next),
-					justify(p.Stream(), next.Span(), "replace this with an `:`", justified{
+					justify(p.File().Stream(), next.Span(), "replace this with an `:`", justified{
 						report.Edit{Start: 0, End: 1, Replace: ":"},
 						justifyLeft,
 					}),
@@ -158,7 +158,7 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		return ast.ExprAny{}
 
 	case next.Kind() == token.String, next.Kind() == token.Number:
-		return ast.ExprLiteral{Token: c.Next()}.AsAny()
+		return ast.ExprLiteral{File: p.File(), Token: c.Next()}.AsAny()
 
 	case canStartPath(next):
 		return ast.ExprPath{Path: parsePath(p, c)}.AsAny()

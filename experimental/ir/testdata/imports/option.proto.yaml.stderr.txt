@@ -28,7 +28,7 @@ error: sorry, Edition 2024 is not fully implemented
    |           ^^^^^^
    = help: Edition 2024 will be implemented in a future release
 
-warning: unused import "main2.proto"
+warning: unused import "public.proto"
   --> main2.proto:4:8
    |
  4 | import "public.proto";

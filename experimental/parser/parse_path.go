@@ -148,5 +148,5 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 	// NOTE: We do not need to legalize against a single-dot path; that
 	// is already done for us by the if nextDot checks.
 
-	return astx.NewPath(p.Context, start, end)
+	return astx.NewPath(p.File(), start, end)
 }

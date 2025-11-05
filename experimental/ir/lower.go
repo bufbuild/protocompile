@@ -39,17 +39,16 @@ type Session struct {
 //
 // The ir package does not provide a mechanism for resolving imports; instead,
 // they must be provided as an argument to this function.
-func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer) (file File, ok bool) {
+func (s *Session) Lower(source *ast.File, errs *report.Report, importer Importer) (file *File, ok bool) {
 	s.init()
 
 	prior := len(errs.Diagnostics)
-	c := &Context{session: s}
-	c.ast = source
-	c.path = c.session.intern.Intern(CanonicalizeFilePath(c.ast.Span().File.Path()))
+	file = &File{session: s, ast: source}
+	file.path = file.session.intern.Intern(CanonicalizeFilePath(file.AST().Stream().Path()))
 
 	errs.SaveOptions(func() {
-		errs.SuppressWarnings = errs.SuppressWarnings || c.File().IsDescriptorProto()
-		lower(c, errs, importer)
+		errs.SuppressWarnings = errs.SuppressWarnings || file.IsDescriptorProto()
+		lower(file, errs, importer)
 	})
 
 	ok = true
@@ -60,59 +59,59 @@ func (s *Session) Lower(source ast.File, errs *report.Report, importer Importer)
 		}
 	}
 
-	return c.File(), ok
+	return file, ok
 }
 
 func (s *Session) init() {
 	s.once.Do(func() { s.intern.Preload(&s.builtins) })
 }
 
-func lower(c *Context, r *report.Report, importer Importer) {
+func lower(file *File, r *report.Report, importer Importer) {
 	defer r.CatchICE(false, func(d *report.Diagnostic) {
-		d.Apply(report.Notef("while lowering %q", c.File().Path()))
+		d.Apply(report.Notef("while lowering %q", file.Path()))
 	})
 
 	// First, build the Type graph for this file.
-	(&walker{File: c.File(), Report: r}).walk()
+	(&walker{File: file, Report: r}).walk()
 
 	// Now, resolve all the imports.
-	buildImports(c.File(), r, importer)
+	buildImports(file, r, importer)
 
-	generateMapEntries(c.File(), r)
+	generateMapEntries(file, r)
 
 	// Next, we can build various symbol tables in preparation for name
 	// resolution.
-	buildLocalSymbols(c.File())
-	mergeImportedSymbolTables(c.File(), r)
+	buildLocalSymbols(file)
+	mergeImportedSymbolTables(file, r)
 
 	// Perform "early" name resolution, i.e. field names and extension types.
-	resolveNames(c.File(), r)
-	resolveEarlyOptions(c.File())
+	resolveNames(file, r)
+	resolveEarlyOptions(file)
 
 	// Perform constant evaluation.
-	evaluateFieldNumbers(c.File(), r)
+	evaluateFieldNumbers(file, r)
 
 	// Check for number overlaps now that we have numbers loaded.
-	buildFieldNumberRanges(c.File(), r)
+	buildFieldNumberRanges(file, r)
 
 	// Perform "late" name resolution, that is, options.
-	resolveOptions(c.File(), r)
+	resolveOptions(file, r)
 
 	// Figure out what the option targets of everything is, and validate that
 	// those are respected. This requires options to be resolved, and must be
 	// done in two separate steps.
-	populateOptionTargets(c.File(), r)
-	validateOptionTargets(c.File(), r)
+	populateOptionTargets(file, r)
+	validateOptionTargets(file, r)
 
 	// Build feature info for validating features after they are constructed.
 	// Then validate all feature settings throughout the file.
-	buildAllFeatureInfo(c.File(), r)
-	validateAllFeatures(c.File(), r)
+	buildAllFeatureInfo(file, r)
+	validateAllFeatures(file, r)
 
-	populateJSONNames(c.File(), r)
+	populateJSONNames(file, r)
 
 	// Validate all the little constraint details that didn't get caught above.
-	diagnoseUnusedImports(c.File(), r)
-	validateConstraints(c.File(), r)
-	checkDeprecated(c.File(), r)
+	diagnoseUnusedImports(file, r)
+	validateConstraints(file, r)
+	checkDeprecated(file, r)
 }

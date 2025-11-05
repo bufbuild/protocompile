@@ -143,7 +143,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			}).Apply(
 				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
 				justify(
-					d.p.Stream(),
+					d.p.File().Stream(),
 					v.Span(),
 					fmt.Sprintf("add a `%s` here", d.delims[latest]),
 					justified{

@@ -43,17 +43,16 @@ const DescriptorProtoPath = "google/protobuf/descriptor.proto"
 // This function will also be called with [DescriptorProtoPath] if it isn't
 // transitively imported by the lowered file, with an index value of -1.
 // Returning an error or a zero file will trigger an ICE.
-type Importer func(n int, path string, decl ast.DeclImport) (File, error)
+type Importer func(n int, path string, decl ast.DeclImport) (*File, error)
 
 // ErrCycle is returned by an [Importer] when encountering an import cycle.
 type ErrCycle = cycle.Error[ast.DeclImport]
 
 // buildImports builds the transitive imports table.
-func buildImports(f File, r *report.Report, importer Importer) {
-	c := f.Context()
-	dedup := make(intern.Map[ast.DeclImport], iterx.Count(f.AST().Imports()))
+func buildImports(file *File, r *report.Report, importer Importer) {
+	dedup := make(intern.Map[ast.DeclImport], iterx.Count(file.AST().Imports()))
 
-	for i, imp := range iterx.Enumerate(f.AST().Imports()) {
+	for i, imp := range iterx.Enumerate(file.AST().Imports()) {
 		lit := imp.ImportPath().AsLiteral().AsString()
 		if lit.IsZero() {
 			continue // Already legalized in parser.legalizeImport()
@@ -63,7 +62,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		file, err := importer(i, path, imp)
+		imported, err := importer(i, path, imp)
 
 		var cycle *ErrCycle
 		switch {
@@ -84,7 +83,7 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		if prev, ok := dedup.AddID(file.InternedPath(), imp); !ok {
+		if prev, ok := dedup.AddID(imported.InternedPath(), imp); !ok {
 			d := r.Errorf("file imported multiple times").Apply(
 				report.Snippet(imp),
 				report.Snippetf(prev, "first imported here"),
@@ -96,8 +95,8 @@ func buildImports(f File, r *report.Report, importer Importer) {
 			continue
 		}
 
-		c.imports.AddDirect(Import{
-			File:   file,
+		file.imports.AddDirect(Import{
+			File:   imported,
 			Public: imp.IsPublic(),
 			Weak:   imp.IsWeak(),
 			Option: imp.IsOption(),
@@ -107,21 +106,21 @@ func buildImports(f File, r *report.Report, importer Importer) {
 
 	// Having found all of the imports that are not cyclic, we now need to pull
 	// in all of *their* transitive imports.
-	c.imports.Recurse(dedup)
+	file.imports.Recurse(dedup)
 
 	// Check if descriptor.proto was transitively imported. If not, import it.
-	if idx, ok := c.imports.byPath[f.Context().session.builtins.DescriptorFile]; ok {
+	if idx, ok := file.imports.byPath[file.session.builtins.DescriptorFile]; ok {
 		// Copy it to the end so that it's easy to find.
-		c.imports.files = append(c.imports.files, c.imports.files[idx])
+		file.imports.files = append(file.imports.files, file.imports.files[idx])
 		return
 	}
 
 	// If this is descriptor.proto itself, use it. This step is necessary to
 	// avoid cycles.
-	if f.IsDescriptorProto() {
-		c.imports.Insert(Import{File: f}, -1, false)
-		c.imports.byPath[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
-		c.imports.causes[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
+	if file.IsDescriptorProto() {
+		file.imports.Insert(Import{File: file}, -1, false)
+		file.imports.byPath[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
+		file.imports.causes[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
 		return
 	}
 
@@ -132,13 +131,13 @@ func buildImports(f File, r *report.Report, importer Importer) {
 		panic(fmt.Errorf("could not import %q: %w", DescriptorProtoPath, err))
 	}
 
-	if dproto.IsZero() {
+	if dproto == nil {
 		panic(fmt.Errorf("importing %q produced an invalid file", DescriptorProtoPath))
 	}
 
-	c.imports.Insert(Import{File: dproto, Decl: ast.DeclImport{}}, -1, false)
-	c.imports.byPath[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
-	c.imports.causes[f.Context().session.builtins.DescriptorFile] = uint32(len(c.imports.files) - 1)
+	file.imports.Insert(Import{File: dproto, Decl: ast.DeclImport{}}, -1, false)
+	file.imports.byPath[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
+	file.imports.causes[file.session.builtins.DescriptorFile] = uint32(len(file.imports.files) - 1)
 }
 
 // diagnoseCycle generates a diagnostic for an import cycle, showing each

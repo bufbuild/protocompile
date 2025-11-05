@@ -25,23 +25,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
-type Context struct {
-	S *token.Stream
-}
-
-func (c *Context) Stream() *token.Stream {
-	return c.S
-}
-
-func NewContext(text string) *Context {
-	ctx := new(Context)
-	ctx.S = &token.Stream{
-		Context: ctx,
-		File:    report.NewFile("test", text),
-	}
-	return ctx
-}
-
 func TestNilToken(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
@@ -57,8 +40,9 @@ func TestLeafTokens(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := NewContext("abc def ghi")
-	s := ctx.Stream()
+	s := &token.Stream{
+		File: report.NewFile("test", "abc def ghi"),
+	}
 
 	abc := s.Push(3, token.Ident)
 	s.Push(1, token.Space)
@@ -95,8 +79,9 @@ func TestTreeTokens(t *testing.T) {
 	t.Parallel()
 	assert := assert.New(t)
 
-	ctx := NewContext("abc(def(x), message)")
-	s := ctx.Stream()
+	s := &token.Stream{
+		File: report.NewFile("test", "abc(def(x), message)"),
+	}
 
 	_ = s.Push(3, token.Ident)
 	open := s.Push(1, token.Punct)

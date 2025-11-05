@@ -20,7 +20,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -58,21 +58,11 @@ type Value interface {
 //
 // The zero value of Token is the so-called "zero token", which is used to denote the
 // absence of a token.
-type Token struct {
-	withContext
-	id ID
-}
+type Token id.Node[Token, *Stream, rawToken]
 
-// ID returns this token's raw ID, disassociated from its context. This is
-// useful for storing tokens of some ambient context in a compressed manner.
-//
-// Calling t.ID().In(ctx) with any value other than t.Context() will result in
-// unspecified behavior.
-func (t Token) ID() ID {
-	return t.id
-}
+type rawToken struct{}
 
-// IsPaired returns whether this is a non-zero leaf token.
+// IsLeaf returns whether this is a non-zero leaf token.
 func (t Token) IsLeaf() bool {
 	if t.IsZero() {
 		return false
@@ -87,7 +77,7 @@ func (t Token) IsLeaf() bool {
 // IsSynthetic returns whether this is a non-zero synthetic token (i.e., a token that didn't
 // come from a parsing operation.)
 func (t Token) IsSynthetic() bool {
-	return t.id < 0
+	return t.ID() < 0
 }
 
 // Kind returns what kind of token this is.
@@ -180,7 +170,7 @@ func (t Token) Text() string {
 	}
 
 	start, end := t.offsets()
-	return t.Context().Stream().Text()[start:end]
+	return t.Context().Text()[start:end]
 }
 
 // Span implements [Spanner].
@@ -198,7 +188,7 @@ func (t Token) Span() report.Span {
 		a, b = t.offsets()
 	}
 
-	return t.Context().Stream().Span(a, b)
+	return t.Context().Span(a, b)
 }
 
 // LeafSpan returns the span that this token would have if it was a leaf token.
@@ -207,7 +197,7 @@ func (t Token) LeafSpan() report.Span {
 		return report.Span{}
 	}
 
-	return t.Context().Stream().Span(t.offsets())
+	return t.Context().Span(t.offsets())
 }
 
 // StartEnd returns the open and close tokens for this token.
@@ -227,9 +217,9 @@ func (t Token) StartEnd() (start, end Token) {
 			return t, t
 		case synth.IsOpen():
 			start = t
-			end = synth.otherEnd.In(t.Context())
+			end = id.Wrap(t.Context(), synth.otherEnd)
 		case synth.IsClose():
-			start = synth.otherEnd.In(t.Context())
+			start = id.Wrap(t.Context(), synth.otherEnd)
 			end = t
 		}
 
@@ -237,9 +227,9 @@ func (t Token) StartEnd() (start, end Token) {
 		return t, t
 	case impl.IsOpen():
 		start = t
-		end = (t.id + ID(impl.Offset())).In(t.Context())
+		end = id.Wrap(t.Context(), t.ID()+ID(impl.Offset()))
 	case impl.IsClose():
-		start = (t.id + ID(impl.Offset())).In(t.Context())
+		start = id.Wrap(t.Context(), t.ID()+ID(impl.Offset()))
 		end = t
 	}
 
@@ -268,10 +258,10 @@ func (t Token) Prev() Token {
 // If open or close are synthetic or not currently a leaf, have different
 // contexts, or are part of a frozen [Stream], this function panics.
 func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
-	if open.Context().Stream() != close.Context().Stream() {
+	if open.Context() != close.Context() {
 		panic("protocompile/token: attempted to fuse tokens from different streams")
 	}
-	if open.Context().Stream().frozen {
+	if open.Context().frozen {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}
 
@@ -291,7 +281,7 @@ func Fuse(open, close Token) { //nolint:predeclared,revive // For close.
 		panic("protocompile/token: called FuseTokens() with non-leaf as the close token")
 	}
 
-	fuseImpl(int32(close.id-open.id), impl1, impl2)
+	fuseImpl(int32(close.ID()-open.ID()), impl1, impl2)
 }
 
 // Children returns a Cursor over the children of this token.
@@ -305,14 +295,14 @@ func (t Token) Children() *Cursor {
 	if impl := t.nat(); impl != nil {
 		start, _ := t.StartEnd()
 		return &Cursor{
-			withContext: t.withContext,
-			idx:         start.id.naturalIndex() + 1, // Skip the start!
+			context: t.Context(),
+			idx:     naturalIndex(start.ID()) + 1, // Skip the start!
 		}
 	}
 
 	synth := t.synth()
 	if synth.IsClose() {
-		return synth.otherEnd.In(t.Context()).Children()
+		return id.Wrap(t.Context(), synth.otherEnd).Children()
 	}
 	return NewSliceCursor(t.Context(), synth.children)
 }
@@ -327,7 +317,7 @@ func (t Token) SyntheticChildren(i, j int) *Cursor {
 		panic("protocompile/token: called SyntheticChildren() on non-synthetic token")
 	}
 	if synth.IsClose() {
-		return synth.otherEnd.In(t.Context()).SyntheticChildren(i, j)
+		return id.Wrap(t.Context(), synth.otherEnd).SyntheticChildren(i, j)
 	}
 	return NewSliceCursor(t.Context(), synth.children[i:j])
 }
@@ -351,43 +341,27 @@ func (t Token) AsNumber() NumberToken {
 	if t.Kind() != Number {
 		return NumberToken{}
 	}
-
-	nt := NumberToken{
-		withContext: t.withContext,
-		token:       t.ID(),
-	}
-	if meta, ok := t.Context().Stream().meta[t.id].(*tokenmeta.Number); ok {
-		nt.meta = meta
-	}
-	return nt
+	return id.Wrap(t.Context(), id.ID[NumberToken](t.ID()))
 }
 
-// AsNumber returns string information for this token.
+// AsString returns string information for this token.
 func (t Token) AsString() StringToken {
 	if t.Kind() != String {
 		return StringToken{}
 	}
-
-	st := StringToken{
-		withContext: t.withContext,
-		token:       t.ID(),
-	}
-	if meta, ok := t.Context().Stream().meta[t.id].(*tokenmeta.String); ok {
-		st.meta = meta
-	}
-	return st
+	return id.Wrap(t.Context(), id.ID[StringToken](t.ID()))
 }
 
 // String implements [strings.Stringer].
 func (t Token) String() string {
 	if debug && !t.IsZero() {
 		if t.IsSynthetic() {
-			return fmt.Sprintf("{%v %#v}", t.id, t.synth())
+			return fmt.Sprintf("{%v %#v}", t.ID(), t.synth())
 		}
-		return fmt.Sprintf("{%v %#v}", t.id, t.nat())
+		return fmt.Sprintf("{%v %#v}", t.ID(), t.nat())
 	}
 
-	return fmt.Sprintf("{%v %v}", t.id, t.Kind())
+	return fmt.Sprintf("{%v %v}", t.ID(), t.Kind())
 }
 
 // offsets returns the byte offsets of this token within the file it came from.
@@ -402,11 +376,11 @@ func (t Token) offsets() (start, end int) {
 
 	end = int(t.nat().end)
 	// If this is the first token, the start is implicitly zero.
-	if t.id == 1 {
+	if t.ID() == 1 {
 		return 0, end
 	}
 
-	prev := (t.id - 1).In(t.Context())
+	prev := id.Wrap(t.Context(), t.ID()-1)
 	return int(prev.nat().end), end
 }
 
@@ -414,12 +388,12 @@ func (t Token) nat() *nat {
 	if t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().nats[t.id.naturalIndex()]
+	return &t.Context().nats[naturalIndex(t.ID())]
 }
 
 func (t Token) synth() *synth {
 	if !t.IsSynthetic() {
 		return nil
 	}
-	return &t.Context().Stream().synths[t.id.syntheticIndex()]
+	return &t.Context().synths[syntheticIndex(t.ID())]
 }

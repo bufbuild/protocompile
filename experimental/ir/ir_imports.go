@@ -26,7 +26,7 @@ import (
 
 // Import is an import in a [File].
 type Import struct {
-	File // The file that is imported.
+	*File // The file that is imported.
 
 	// The kind of import this is.
 	Public, Weak, Option bool
@@ -108,13 +108,13 @@ type imports struct {
 
 // imported wraps an imported [File] and the import statement declaration [ast.DeclImport].
 type imported struct {
-	file          File
+	file          *File
 	decl          ast.DeclImport
 	weak, option  bool
 	visible, used bool
 }
 
-// Append appends a direct import to this imports table.
+// AddDirect appends a direct import to this imports table.
 func (i *imports) AddDirect(imp Import) {
 	if imp.Public {
 		i.Insert(imp, int(i.publicEnd), true)
@@ -191,7 +191,7 @@ func (i *imports) Insert(imp Import, pos int, visible bool) {
 }
 
 // MarkUsed records a file as used, which affects the values of [Import].Used.
-func (i *imports) MarkUsed(file File) {
+func (i *imports) MarkUsed(file *File) {
 	idx, ok := i.causes[file.InternedPath()]
 	if ok {
 		i.files[idx].used = true
@@ -199,7 +199,7 @@ func (i *imports) MarkUsed(file File) {
 }
 
 // DescriptorProto returns the file for descriptor.proto.
-func (i *imports) DescriptorProto() File {
+func (i *imports) DescriptorProto() *File {
 	imported, _ := slicesx.Last(i.files)
 	return imported.file
 }

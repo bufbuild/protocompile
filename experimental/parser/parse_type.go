@@ -168,7 +168,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 		// Pop the last mod and make that into the type path. This makes
 		// `optional optional` work as a type.
 		last := mods[len(mods)-1]
-		tyPath = astx.NewPath(p.Context, last, last)
+		tyPath = astx.NewPath(p.File(), last, last)
 		mods = mods[:len(mods)-1]
 	}
 
@@ -226,7 +226,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			// Pop the last mod and make that into the type. This makes
 			// `optional optional = 1` work as a proto3 field.
 			last := mods[len(mods)-1]
-			tyPath = astx.NewPath(p.Context, last, last)
+			tyPath = astx.NewPath(p.File(), last, last)
 			mods = mods[:len(mods)-1]
 			ty = ast.TypePath{Path: tyPath}.AsAny()
 		}

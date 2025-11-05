@@ -20,8 +20,8 @@ import (
 )
 
 // checkDeprecated checks for deprecation warnings in the given file.
-func checkDeprecated(f File, r *report.Report) {
-	for imp := range seq.Values(f.Imports()) {
+func checkDeprecated(file *File, r *report.Report) {
+	for imp := range seq.Values(file.Imports()) {
 		if d := imp.Deprecated(); !d.IsZero() {
 			r.Warn(errDeprecated{
 				ref:   imp.Decl.ImportPath(),
@@ -31,16 +31,16 @@ func checkDeprecated(f File, r *report.Report) {
 		}
 	}
 
-	checkDeprecatedOptions(f.Options(), r)
+	checkDeprecatedOptions(file.Options(), r)
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		checkDeprecatedOptions(ty.Options(), r)
 		for o := range seq.Values(ty.Oneofs()) {
 			checkDeprecatedOptions(o.Options(), r)
 		}
 	}
 
-	for m := range f.AllMembers() {
+	for m := range file.AllMembers() {
 		checkDeprecatedOptions(m.Options(), r)
 
 		ty := m.Element()
@@ -57,7 +57,7 @@ func checkDeprecated(f File, r *report.Report) {
 		}
 	}
 
-	for s := range seq.Values(f.Services()) {
+	for s := range seq.Values(file.Services()) {
 		checkDeprecatedOptions(s.Options(), r)
 
 		for m := range seq.Values(s.Methods()) {

@@ -21,10 +21,12 @@ import (
 	"math"
 	"slices"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
+	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
+	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
 // Stream is a token stream.
@@ -37,8 +39,7 @@ import (
 // meant for is complete, and new tokens cannot be pushed to it. This is used
 // by the Protocompile lexer to prevent re-use of a stream for multiple files.
 type Stream struct {
-	// The context that owns this stream.
-	Context
+	_ unsafex.NoCopy
 
 	// The file this stream is over.
 	*report.File
@@ -65,17 +66,35 @@ type Stream struct {
 	frozen bool
 }
 
+var _ id.Context = (*Stream)(nil)
+
+// FromID implements [id.Context].
+func (s *Stream) FromID(id uint64, want any) any {
+	switch want.(type) {
+	case *rawToken:
+		return rawToken{}
+	case **tokenmeta.String:
+		meta, _ := s.meta[ID(id)].(*tokenmeta.String)
+		return meta
+	case **tokenmeta.Number:
+		meta, _ := s.meta[ID(id)].(*tokenmeta.Number)
+		return meta
+	default:
+		panic(fmt.Sprintf("called FromID with unknown type %T", want))
+	}
+}
+
 // All returns an iterator over all tokens in this stream. First the natural
 // tokens in order of creation, and then the synthetic tokens in the same.
 func (s *Stream) All() iter.Seq[Token] {
 	return func(yield func(Token) bool) {
 		for i := range s.nats {
-			if !yield(ID(i + 1).In(s.Context)) {
+			if !yield(id.Wrap(s, ID(i+1))) {
 				return
 			}
 		}
 		for i := range s.synths {
-			if !yield(ID(^i).In(s.Context)) {
+			if !yield(id.Wrap(s, ID(^i))) {
 				return
 			}
 		}
@@ -92,10 +111,10 @@ func (s *Stream) All() iter.Seq[Token] {
 //  4. offset is inside of a token tok. Returns tok, tok.
 func (s *Stream) Around(offset int) (Token, Token) {
 	if offset == 0 {
-		return Zero, ID(1).In(s.Context)
+		return Zero, id.Wrap(s, ID(1))
 	}
 	if offset == len(s.File.Text()) {
-		return ID(len(s.nats)).In(s.Context), Zero
+		return id.Wrap(s, ID(len(s.nats))), Zero
 	}
 
 	idx, exact := slices.BinarySearchFunc(s.nats, offset, func(n nat, offset int) int {
@@ -105,18 +124,16 @@ func (s *Stream) Around(offset int) (Token, Token) {
 	if exact {
 		// We landed between two tokens. idx+1 is the ID of the token that ends
 		// at offset.
-		return ID(idx + 1).In(s.Context), ID(idx + 2).In(s.Context)
+		return id.Wrap(s, ID(idx+1)), id.Wrap(s, ID(idx+2))
 	}
 
 	// We landed in the middle of a token, specifically idx+1.
-	return ID(idx + 1).In(s.Context), ID(idx + 1).In(s.Context)
+	return id.Wrap(s, ID(idx+1)), id.Wrap(s, ID(idx+1))
 }
 
 // Cursor returns a cursor over the natural token stream.
 func (s *Stream) Cursor() *Cursor {
-	return &Cursor{
-		withContext: internal.NewWith(s.Context),
-	}
+	return &Cursor{context: s}
 }
 
 // AssertEmpty asserts that no natural tokens have been created in this stream
@@ -170,7 +187,7 @@ func (s *Stream) Push(length int, kind Kind) Token {
 		metadata: (int32(kind) & kindMask) | (int32(kw) << keywordShift),
 	})
 
-	return Token{internal.NewWith[Context](s), ID(len(s.nats))}
+	return id.Wrap(s, ID(len(s.nats)))
 }
 
 // NewIdent mints a new synthetic identifier token with the given name.
@@ -181,7 +198,7 @@ func (s *Stream) NewIdent(name string) Token {
 	})
 }
 
-// NewIdent mints a new synthetic punctuation token with the given text.
+// NewPunct mints a new synthetic punctuation token with the given text.
 func (s *Stream) NewPunct(text string) Token {
 	return s.newSynth(synth{
 		text: text,
@@ -209,16 +226,16 @@ func (s *Stream) NewFused(openTok, closeTok Token, children ...Token) {
 	}
 
 	synth := openTok.synth()
-	synth.otherEnd = closeTok.id
+	synth.otherEnd = closeTok.ID()
 	synth.children = make([]ID, len(children))
 	for i, t := range children {
-		synth.children[i] = t.id
+		synth.children[i] = t.ID()
 	}
-	closeTok.synth().otherEnd = openTok.id
+	closeTok.synth().otherEnd = openTok.ID()
 }
 
 func (s *Stream) newSynth(tok synth) Token {
 	raw := ID(^len(s.synths))
 	s.synths = append(s.synths, tok)
-	return raw.In(s.Context)
+	return id.Wrap(s, raw)
 }

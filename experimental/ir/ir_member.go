@@ -19,7 +19,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -43,48 +43,44 @@ import (
 //  3. Its _container_, i.e., the type which it is part of for the purposes of
 //     serialization. Extensions are fields of their container, but are declared
 //     within their parent.
-type Member struct {
-	withContext
-	raw *rawMember
-}
+type Member id.Node[Member, *File, *rawMember]
 
 type rawMember struct {
-	def           ast.DeclDef
 	featureInfo   *rawFeatureInfo
-	elem          ref[rawType]
-	extendee      arena.Pointer[rawExtendee]
+	elem          Ref[Type]
+	number        int32
+	extendee      id.ID[Extend]
 	fqn           intern.ID
 	name          intern.ID
-	number        int32
-	parent        arena.Pointer[rawType]
-	features      arena.Pointer[rawFeatureSet]
-	options       arena.Pointer[rawValue]
+	def           id.ID[ast.DeclDef]
+	parent        id.ID[Type]
+	features      id.ID[FeatureSet]
+	options       id.ID[Value]
 	oneof         int32
 	optionTargets uint32
 	jsonName      intern.ID
-
-	isGroup  bool
-	numberOk bool // An error occurred while computing the field number.
+	isGroup       bool
+	numberOk      bool
 }
 
 // IsMessageField returns whether this is a non-extension message field.
 func (m Member) IsMessageField() bool {
-	return !m.IsZero() && !m.raw.elem.ptr.Nil() && m.raw.extendee.Nil()
+	return !m.IsZero() && !m.Raw().elem.IsZero() && m.Raw().extendee.IsZero()
 }
 
 // IsExtension returns whether this is a extension message field.
 func (m Member) IsExtension() bool {
-	return !m.IsZero() && !m.raw.elem.ptr.Nil() && !m.raw.extendee.Nil()
+	return !m.IsZero() && !m.Raw().elem.IsZero() && !m.Raw().extendee.IsZero()
 }
 
 // IsEnumValue returns whether this is an enum value.
 func (m Member) IsEnumValue() bool {
-	return !m.IsZero() && m.raw.elem.ptr.Nil()
+	return !m.IsZero() && m.Raw().elem.IsZero()
 }
 
 // IsGroup returns whether this is a group-encoded field.
 func (m Member) IsGroup() bool {
-	return !m.IsZero() && m.raw.isGroup
+	return !m.IsZero() && m.Raw().isGroup
 }
 
 // IsSynthetic returns whether or not this is a synthetic field, such as the
@@ -145,10 +141,10 @@ func (m Member) AsTagRange() TagRange {
 		return TagRange{}
 	}
 	return TagRange{
-		m.withContext,
+		id.WrapContext(m.Context()),
 		rawTagRange{
 			isMember: true,
-			ptr:      arena.Untyped(m.Context().arenas.members.Compress(m.raw)),
+			ptr:      arena.Untyped(m.Context().arenas.members.Compress(m.Raw())),
 		},
 	}
 }
@@ -158,7 +154,7 @@ func (m Member) AST() ast.DeclDef {
 	if m.IsZero() {
 		return ast.DeclDef{}
 	}
-	return m.raw.def
+	return id.Wrap(m.Context().AST(), m.Raw().def)
 }
 
 // TypeAST returns the type AST node for this member, if known.
@@ -185,12 +181,12 @@ func (m Member) TypeAST() ast.TypeAny {
 	return ast.TypeAny{}
 }
 
-// FullName returns this member's name.
+// Name returns this member's name.
 func (m Member) Name() string {
 	if m.IsZero() {
 		return ""
 	}
-	return m.Context().session.intern.Value(m.raw.name)
+	return m.Context().session.intern.Value(m.Raw().name)
 }
 
 // FullName returns this member's fully-qualified name.
@@ -198,7 +194,7 @@ func (m Member) FullName() FullName {
 	if m.IsZero() {
 		return ""
 	}
-	return FullName(m.Context().session.intern.Value(m.raw.fqn))
+	return FullName(m.Context().session.intern.Value(m.Raw().fqn))
 }
 
 // JSONName returns this member's JSON name, either the default-generated one
@@ -207,7 +203,7 @@ func (m Member) JSONName() string {
 	if m.IsZero() {
 		return ""
 	}
-	return m.Context().session.intern.Value(m.raw.jsonName)
+	return m.Context().session.intern.Value(m.Raw().jsonName)
 }
 
 // Scope returns the scope in which this member is defined.
@@ -223,15 +219,15 @@ func (m Member) InternedName() intern.ID {
 	if m.IsZero() {
 		return 0
 	}
-	return m.raw.name
+	return m.Raw().name
 }
 
-// InternedName returns the intern ID for [Member.FullName].
+// InternedFullName returns the intern ID for [Member.FullName].
 func (m Member) InternedFullName() intern.ID {
 	if m.IsZero() {
 		return 0
 	}
-	return m.raw.fqn
+	return m.Raw().fqn
 }
 
 // InternedScope returns the intern ID for [Member.Scope].
@@ -242,15 +238,15 @@ func (m Member) InternedScope() intern.ID {
 	if parent := m.Parent(); !parent.IsZero() {
 		return parent.InternedFullName()
 	}
-	return m.Context().File().InternedPackage()
+	return m.Context().InternedPackage()
 }
 
-// InternedJsonName returns the intern ID for [Member.JSONName].
+// InternedJSONName returns the intern ID for [Member.JSONName].
 func (m Member) InternedJSONName() intern.ID {
 	if m.IsZero() {
 		return 0
 	}
-	return m.raw.jsonName
+	return m.Raw().jsonName
 }
 
 // Number returns the number for this member after expression evaluation.
@@ -260,7 +256,7 @@ func (m Member) Number() int32 {
 	if m.IsZero() {
 		return 0
 	}
-	return m.raw.number
+	return m.Raw().number
 }
 
 // Presence returns this member's presence kind.
@@ -270,13 +266,13 @@ func (m Member) Presence() presence.Kind {
 	if m.IsZero() {
 		return presence.Unknown
 	}
-	if m.raw.oneof >= 0 {
+	if m.Raw().oneof >= 0 {
 		if m.Parent().IsEnum() {
 			return presence.Unknown
 		}
 		return presence.Shared
 	}
-	return presence.Kind(-m.raw.oneof)
+	return presence.Kind(-m.Raw().oneof)
 }
 
 // Parent returns the type this member is syntactically located in. This is the
@@ -287,7 +283,7 @@ func (m Member) Parent() Type {
 	if m.IsZero() {
 		return Type{}
 	}
-	return wrapType(m.Context(), ref[rawType]{ptr: m.raw.parent})
+	return id.Wrap(m.Context(), m.Raw().parent)
 }
 
 // Element returns the this member's element type. This is the type it is
@@ -301,7 +297,7 @@ func (m Member) Element() Type {
 	if m.IsZero() {
 		return Type{}
 	}
-	return wrapType(m.Context(), m.raw.elem)
+	return GetRef(m.Context(), m.Raw().elem)
 }
 
 // Container returns the type which contains this member: this is either
@@ -312,12 +308,20 @@ func (m Member) Container() Type {
 		return Type{}
 	}
 
-	if m.raw.extendee.Nil() {
+	extends := id.Wrap(m.Context(), m.Raw().extendee)
+	if extends.IsZero() {
 		return m.Parent()
 	}
 
-	extends := m.Context().arenas.extendees.Deref(m.raw.extendee)
-	return wrapType(m.Context(), extends.ty)
+	return extends.Extendee()
+}
+
+// Extend returns the extend block this member is declared in, if any.
+func (m Member) Extend() Extend {
+	if m.IsZero() || m.Raw().extendee.IsZero() {
+		return Extend{}
+	}
+	return id.Wrap(m.Context(), m.Raw().extendee)
 }
 
 // Oneof returns the oneof that this member is a member of.
@@ -327,12 +331,12 @@ func (m Member) Oneof() Oneof {
 	if m.Presence() != presence.Shared {
 		return Oneof{}
 	}
-	return m.Parent().Oneofs().At(int(m.raw.oneof))
+	return m.Parent().Oneofs().At(int(m.Raw().oneof))
 }
 
 // Options returns the options applied to this member.
 func (m Member) Options() MessageValue {
-	return wrapValue(m.Context(), m.raw.options).AsMessage()
+	return id.Wrap(m.Context(), m.Raw().options).AsMessage()
 }
 
 // PseudoOptions returns this member's pseudo options.
@@ -342,14 +346,11 @@ func (m Member) PseudoOptions() PseudoFields {
 
 // FeatureSet returns the Editions features associated with this member.
 func (m Member) FeatureSet() FeatureSet {
-	if m.IsZero() || m.raw.features.Nil() {
+	if m.IsZero() {
 		return FeatureSet{}
 	}
 
-	return FeatureSet{
-		internal.NewWith(m.Context()),
-		m.Context().arenas.features.Deref(m.raw.features),
-	}
+	return id.Wrap(m.Context(), m.Raw().features)
 }
 
 // FeatureInfo returns feature definition information relating to this field
@@ -357,13 +358,13 @@ func (m Member) FeatureSet() FeatureSet {
 //
 // Returns a zero value if this information does not exist.
 func (m Member) FeatureInfo() FeatureInfo {
-	if m.IsZero() || m.raw.featureInfo == nil {
+	if m.IsZero() || m.Raw().featureInfo == nil {
 		return FeatureInfo{}
 	}
 
 	return FeatureInfo{
-		internal.NewWith(m.Context()),
-		m.raw.featureInfo,
+		id.WrapContext(m.Context()),
+		m.Raw().featureInfo,
 	}
 }
 
@@ -397,8 +398,8 @@ func (m Member) CanTarget(target OptionTarget) bool {
 		return false
 	}
 
-	return m.raw.optionTargets == 0 ||
-		(m.raw.optionTargets>>uint(target))&1 != 0 // Check if the target-th bit is set.
+	return m.Raw().optionTargets == 0 ||
+		(m.Raw().optionTargets>>uint(target))&1 != 0 // Check if the target-th bit is set.
 }
 
 // Targets returns an iterator over the valid option targets for this member.
@@ -407,12 +408,12 @@ func (m Member) Targets() iter.Seq[OptionTarget] {
 		if m.IsZero() {
 			return
 		}
-		if m.raw.optionTargets == 0 {
+		if m.Raw().optionTargets == 0 {
 			OptionTargets()(yield)
 			return
 		}
 
-		bits := m.raw.optionTargets
+		bits := m.Raw().optionTargets
 		for t := range OptionTargets() {
 			if bits == 0 {
 				return
@@ -439,65 +440,100 @@ func (m Member) noun() taxa.Noun {
 	}
 }
 
-func wrapMember(c *Context, r ref[rawMember]) Member {
-	if r.ptr.Nil() || c == nil {
-		return Member{}
-	}
-
-	c = r.context(c)
-	return Member{
-		withContext: internal.NewWith(c),
-		raw:         c.arenas.members.Deref(r.ptr),
-	}
-}
-
 // toRef returns a ref to this member relative to the given context.
-func (m Member) toRef(c *Context) ref[rawMember] {
-	return ref[rawMember]{
-		ptr: m.Context().arenas.members.Compress(m.raw),
-	}.changeContext(m.Context(), c)
+func (m Member) toRef(f *File) Ref[Member] {
+	return Ref[Member]{id: m.ID()}.ChangeContext(m.Context(), f)
 }
 
-// rawExtendee represents an extends block.
+// Extend represents an extend block associated with some extension field.
+type Extend id.Node[Extend, *File, *rawExtend]
+
+// rawExtend represents an extends block.
 //
 // Rather than each field carrying a reference to its extends block's AST, we
 // have a level of indirection to amortize symbol lookups.
-type rawExtendee struct {
-	def    ast.DeclDef
-	ty     ref[rawType]
-	parent arena.Pointer[rawType]
+type rawExtend struct {
+	def     id.ID[ast.DeclDef]
+	ty      Ref[Type]
+	parent  id.ID[Type]
+	members []id.ID[Member]
 }
 
-func (e *rawExtendee) Scope(c *Context) FullName {
-	return FullName(c.session.intern.Value(e.InternedScope(c)))
-}
-
-func (e *rawExtendee) InternedScope(c *Context) intern.ID {
-	if !e.parent.Nil() {
-		return wrapType(c, ref[rawType]{ptr: e.parent}).InternedFullName()
+// AST returns the declaration for this extend block, if known.
+func (e Extend) AST() ast.DeclDef {
+	if e.IsZero() {
+		return ast.DeclDef{}
 	}
-	return c.File().InternedPackage()
+	return id.Wrap(e.Context().AST(), e.Raw().def)
+}
+
+// Scope returns the scope that symbol lookups in this block should be performed
+// against.
+func (e Extend) Scope() FullName {
+	if e.IsZero() {
+		return ""
+	}
+
+	return FullName(e.Context().session.intern.Value(e.InternedScope()))
+}
+
+// InternedScope returns the intern ID for [Extend.Scope].
+func (e Extend) InternedScope() intern.ID {
+	if e.IsZero() {
+		return 0
+	}
+	if ty := e.Parent(); !ty.IsZero() {
+		return ty.InternedFullName()
+	}
+	return e.Context().InternedPackage()
+}
+
+// Extendee returns the extendee type of this extend block.
+func (e Extend) Extendee() Type {
+	if e.IsZero() {
+		return Type{}
+	}
+	return GetRef(e.Context(), e.Raw().ty)
+}
+
+// Parent returns the type this extend block is declared in.
+func (e Extend) Parent() Type {
+	if e.IsZero() {
+		return Type{}
+	}
+	return id.Wrap(e.Context(), e.Raw().parent)
+}
+
+// Extensions returns the extensions declared in this block.
+func (e Extend) Extensions() seq.Indexer[Member] {
+	var members []id.ID[Member]
+	if !e.IsZero() {
+		members = e.Raw().members
+	}
+	return seq.NewFixedSlice(members, func(_ int, p id.ID[Member]) Member {
+		return id.Wrap(e.Context(), p)
+	})
 }
 
 // Oneof represents a oneof within a message definition.
-type Oneof struct {
-	withContext
-	raw *rawOneof
-}
+type Oneof id.Node[Oneof, *File, *rawOneof]
 
 type rawOneof struct {
-	def       ast.DeclDef
+	def       id.ID[ast.DeclDef]
 	fqn, name intern.ID
 	index     uint32
-	container arena.Pointer[rawType]
-	members   []arena.Pointer[rawMember]
-	options   arena.Pointer[rawValue]
-	features  arena.Pointer[rawFeatureSet]
+	container id.ID[Type]
+	members   []id.ID[Member]
+	options   id.ID[Value]
+	features  id.ID[FeatureSet]
 }
 
 // AST returns the declaration for this oneof, if known.
 func (o Oneof) AST() ast.DeclDef {
-	return o.raw.def
+	if o.IsZero() {
+		return ast.DeclDef{}
+	}
+	return id.Wrap(o.Context().AST(), o.Raw().def)
 }
 
 // Name returns this oneof's declared name.
@@ -505,7 +541,7 @@ func (o Oneof) Name() string {
 	if o.IsZero() {
 		return ""
 	}
-	return o.Context().session.intern.Value(o.raw.name)
+	return o.Context().session.intern.Value(o.Raw().name)
 }
 
 // FullName returns this oneof's fully-qualified name.
@@ -513,7 +549,7 @@ func (o Oneof) FullName() FullName {
 	if o.IsZero() {
 		return ""
 	}
-	return FullName(o.Context().session.intern.Value(o.raw.fqn))
+	return FullName(o.Context().session.intern.Value(o.Raw().fqn))
 }
 
 // InternedName returns the intern ID for [Oneof.FullName]().Name().
@@ -521,15 +557,15 @@ func (o Oneof) InternedName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw.name
+	return o.Raw().name
 }
 
-// InternedName returns the intern ID for [Oneof.FullName].
+// InternedFullName returns the intern ID for [Oneof.FullName].
 func (o Oneof) InternedFullName() intern.ID {
 	if o.IsZero() {
 		return 0
 	}
-	return o.raw.fqn
+	return o.Raw().fqn
 }
 
 // Container returns the message type which contains it.
@@ -538,7 +574,7 @@ func (o Oneof) Container() Type {
 		return Type{}
 	}
 
-	return wrapType(o.Context(), ref[rawType]{ptr: o.raw.container})
+	return id.Wrap(o.Context(), o.Raw().container)
 }
 
 // Index returns this oneof's index in its containing message.
@@ -546,63 +582,55 @@ func (o Oneof) Index() int {
 	if o.IsZero() {
 		return 0
 	}
-	return int(o.raw.index)
+	return int(o.Raw().index)
 }
 
 // Members returns this oneof's member fields.
 func (o Oneof) Members() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		o.raw.members,
-		func(_ int, p arena.Pointer[rawMember]) Member {
-			return wrapMember(o.Context(), ref[rawMember]{ptr: p})
+		o.Raw().members,
+		func(_ int, p id.ID[Member]) Member {
+			return id.Wrap(o.Context(), p)
 		},
 	)
 }
 
 // Parent returns the type that this oneof is declared within,.
 func (o Oneof) Parent() Type {
+	if o.IsZero() {
+		return Type{}
+	}
 	// Empty oneofs are not permitted, so this will always succeed.
 	return o.Members().At(0).Parent()
 }
 
 // Options returns the options applied to this oneof.
 func (o Oneof) Options() MessageValue {
-	return wrapValue(o.Context(), o.raw.options).AsMessage()
+	if o.IsZero() {
+		return MessageValue{}
+	}
+	return id.Wrap(o.Context(), o.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this oneof.
 func (o Oneof) FeatureSet() FeatureSet {
-	if o.IsZero() || o.raw.features.Nil() {
+	if o.IsZero() {
 		return FeatureSet{}
 	}
-
-	return FeatureSet{
-		internal.NewWith(o.Context()),
-		o.Context().arenas.features.Deref(o.raw.features),
-	}
-}
-
-func wrapOneof(c *Context, raw arena.Pointer[rawOneof]) Oneof {
-	return Oneof{
-		withContext: internal.NewWith(c),
-		raw:         c.arenas.oneofs.Deref(raw),
-	}
+	return id.Wrap(o.Context(), o.Raw().features)
 }
 
 // ReservedRange is a range of reserved field or enum numbers,
 // either from a reserved or extensions declaration.
-type ReservedRange struct {
-	withContext
-	raw *rawReservedRange
-}
+type ReservedRange id.Node[ReservedRange, *File, *rawReservedRange]
 
 type rawReservedRange struct {
-	decl        ast.DeclRange
-	value       ast.ExprAny
-	first, last int32
-	options     arena.Pointer[rawValue]
-	features    arena.Pointer[rawFeatureSet]
-
+	value         id.Dyn[ast.ExprAny, ast.ExprKind]
+	decl          id.ID[ast.DeclRange]
+	first         int32
+	last          int32
+	options       id.ID[Value]
+	features      id.ID[FeatureSet]
 	forExtensions bool
 	rangeOk       bool
 }
@@ -613,7 +641,7 @@ func (r ReservedRange) AST() ast.ExprAny {
 		return ast.ExprAny{}
 	}
 
-	return r.raw.value
+	return id.WrapDyn(r.Context().AST(), r.Raw().value)
 }
 
 // DeclAST returns the declaration this range came from. Multiple ranges may
@@ -623,7 +651,7 @@ func (r ReservedRange) DeclAST() ast.DeclRange {
 		return ast.DeclRange{}
 	}
 
-	return r.raw.decl
+	return id.Wrap(r.Context().AST(), r.Raw().decl)
 }
 
 // Range returns the start and end of the range.
@@ -632,12 +660,12 @@ func (r ReservedRange) Range() (start, end int32) {
 		return 0, 0
 	}
 
-	return r.raw.first, r.raw.last
+	return r.Raw().first, r.Raw().last
 }
 
 // ForExtensions returns whether this is an extension range.
 func (r ReservedRange) ForExtensions() bool {
-	return !r.IsZero() && r.raw.forExtensions
+	return !r.IsZero() && r.Raw().forExtensions
 }
 
 // AsTagRange wraps this range in a TagRange.
@@ -646,10 +674,10 @@ func (r ReservedRange) AsTagRange() TagRange {
 		return TagRange{}
 	}
 	return TagRange{
-		r.withContext,
+		id.WrapContext(r.Context()),
 		rawTagRange{
 			isMember: true,
-			ptr:      arena.Untyped(r.Context().arenas.ranges.Compress(r.raw)),
+			ptr:      arena.Untyped(r.ID()),
 		},
 	}
 }
@@ -662,19 +690,15 @@ func (r ReservedRange) Options() MessageValue {
 		return MessageValue{}
 	}
 
-	return wrapValue(r.Context(), r.raw.options).AsMessage()
+	return id.Wrap(r.Context(), r.Raw().options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this file.
 func (r ReservedRange) FeatureSet() FeatureSet {
-	if r.IsZero() || r.raw.features.Nil() {
+	if r.IsZero() {
 		return FeatureSet{}
 	}
-
-	return FeatureSet{
-		internal.NewWith(r.Context()),
-		r.Context().arenas.features.Deref(r.raw.features),
-	}
+	return id.Wrap(r.Context(), r.Raw().features)
 }
 
 // ReservedName is a name for a field or enum value that has been reserved for

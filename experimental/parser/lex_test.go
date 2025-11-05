@@ -44,8 +44,8 @@ func TestLexer(t *testing.T) {
 		text = unescapeTestCase(text)
 
 		errs := &report.Report{Options: report.Options{Tracing: 10}}
-		ctx := ast.NewContext(report.NewFile(path, text))
-		lex(ctx, errs)
+		ctx := ast.New(report.NewFile(path, text))
+		lex(ctx.Stream(), errs)
 
 		stderr, _, _ := report.Renderer{
 			Colorize:  true,

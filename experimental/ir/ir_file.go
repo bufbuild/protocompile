@@ -15,12 +15,11 @@
 package ir
 
 import (
-	"fmt"
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -29,14 +28,14 @@ import (
 	"github.com/bufbuild/protocompile/internal/toposort"
 )
 
-// Context is where all of the book-keeping for an IR session is kept.
-//
-// Unlike [ast.Context], this Context is shared by many files.
+// File is an IR file, which provides access to the top-level declarations of
+// a Protobuf *File.
 //
 //nolint:govet // For some reason, this lint mangles the field order on this struct. >:(
-type Context struct {
+type File struct {
+	_       unsafex.NoCopy
 	session *Session
-	ast     ast.File
+	ast     *ast.File
 
 	// The path for this file. This need not be what ast.Span() reports, because
 	// it has been passed through filepath.Clean() and filepath.ToSlash() first,
@@ -48,15 +47,18 @@ type Context struct {
 
 	imports imports
 
-	types            []arena.Pointer[rawType]
+	types            []id.ID[Type]
 	topLevelTypesEnd int // Index of the last top-level type in types.
 
-	extns            []arena.Pointer[rawMember]
+	extns            []id.ID[Member]
 	topLevelExtnsEnd int // Index of the last top-level extension in extns.
 
-	options  arena.Pointer[rawValue]
-	services []arena.Pointer[rawService]
-	features arena.Pointer[rawFeatureSet]
+	extends            []id.ID[Extend]
+	topLevelExtendsEnd int // Index of last top-level extension in extends.
+
+	options  id.ID[Value]
+	services []id.ID[Service]
+	features id.ID[FeatureSet]
 
 	// Table of all symbols transitively imported by this file. This is all
 	// local symbols plus the imported tables of all direct imports. Importing
@@ -79,7 +81,7 @@ type Context struct {
 		types     arena.Arena[rawType]
 		members   arena.Arena[rawMember]
 		ranges    arena.Arena[rawReservedRange]
-		extendees arena.Arena[rawExtendee]
+		extendees arena.Arena[rawExtend]
 		oneofs    arena.Arena[rawOneof]
 
 		services arena.Arena[rawService]
@@ -94,164 +96,100 @@ type Context struct {
 	}
 }
 
-type withContext = internal.With[*Context]
-
-// ref is an arena.Pointer[T] along with information for retrieving which file
-// it's in, relative to a specific file's imports.
-type ref[T any] struct {
-	// The file this ref is defined in. If zero, it refers to the current file.
-	// If -1, it refers to a predeclared type. Otherwise, it refers to an
-	// import (with its index offset by 1).
-	file int32
-	ptr  arena.Pointer[T]
-}
-
-// context returns the context for this reference relative to a base context.
-func (r ref[T]) context(base *Context) *Context {
-	switch r.file {
-	case 0:
-		return base
-	case -1:
-		return primitiveCtx
-	default:
-		return base.imports.files[r.file-1].file.Context()
-	}
-}
-
-// changeContext changes the implicit context for this ref to be with respect to
-// the new one given.
-func (r ref[T]) changeContext(prev, next *Context) ref[T] {
-	if prev == next {
-		return r
-	}
-
-	var file File
-	switch r.file {
-	case 0:
-		file = prev.File()
-	case -1:
-		return r // Primitive context is the same everywhere.
-	default:
-		file = prev.imports.files[r.file-1].file
-	}
-
-	// Figure out where file sits in next.
-	idx, ok := next.imports.byPath[file.InternedPath()]
-	if !ok {
-		panic(fmt.Sprintf("could not change contexts %s -> %s", prev.File().Path(), next.File().Path()))
-	}
-
-	r.file = int32(idx) + 1
-	return r
-}
-
-// File returns the file associated with this context.
-//
-// The file can be used to access top-level elements of the IR, for walking it
-// recursively (as is needed for e.g. assembling a FileDescriptorProto).
-func (c *Context) File() File {
-	return File{withContext2{internal.NewWith(c)}}
-}
+type withContext = id.HasContext[*File]
 
 // builtins returns the builtin descriptor.proto names.
-func (c *Context) builtins() *builtins {
-	if c.dpBuiltins != nil {
-		return c.dpBuiltins
+func (f *File) builtins() *builtins {
+	if f.dpBuiltins != nil {
+		return f.dpBuiltins
 	}
-	return c.imports.DescriptorProto().Context().dpBuiltins
+	return f.imports.DescriptorProto().dpBuiltins
 }
 
-// File is an IR file, which provides access to the top-level declarations of
-// a Protobuf file.
-type File struct{ withContext2 }
-
-// withContext2 is a workaround for go.dev/issue/50729, a bug in how Go
-// handles embedded type aliases. In this case, Go incorrectly believes that
-// File is a recursive type of infinite size. This issue is fixed in recent Go
-// versions but not in some of the versions we support.
-//
-// We can't just embed With into File, because then it would be an exported
-// field.
-type withContext2 struct{ internal.With[*Context] }
-
 // AST returns the AST this file was parsed from.
-func (f File) AST() ast.File {
-	if f.IsZero() {
-		return ast.File{}
+func (f *File) AST() *ast.File {
+	if f == nil {
+		return nil
 	}
-	return f.Context().ast
+	return f.ast
 }
 
 // Syntax returns the syntax pragma that applies to this file.
-func (f File) Syntax() syntax.Syntax {
-	if f.IsZero() {
+func (f *File) Syntax() syntax.Syntax {
+	if f == nil {
 		return syntax.Unknown
 	}
-	return f.Context().syntax
+	return f.syntax
 }
 
-// Path returns the canoniocal path for this file.
+// Path returns the canonical path for this file.
 //
 // This need not be the same as [File.AST]().Span().Path().
-func (f File) Path() string {
-	if f.IsZero() {
+func (f *File) Path() string {
+	if f == nil {
 		return ""
 	}
-	c := f.Context()
+	if f == primitiveCtx {
+		return "<predeclared>"
+	}
+	c := f
 	return c.session.intern.Value(c.path)
 }
 
-// InternedPackage returns the intern ID for the value of [File.Path].
-func (f File) InternedPath() intern.ID {
-	if f.IsZero() {
+// InternedPath returns the intern ID for the value of [File.Path].
+func (f *File) InternedPath() intern.ID {
+	if f == nil {
 		return 0
 	}
-	return f.Context().path
+	return f.path
 }
 
 // IsDescriptorProto returns whether this is the special file
 // google/protobuf/descriptor.proto, which is given special treatment in
 // the language.
-func (f File) IsDescriptorProto() bool {
-	return f.InternedPath() == f.Context().session.builtins.DescriptorFile
+func (f *File) IsDescriptorProto() bool {
+	return f.InternedPath() == f.session.builtins.DescriptorFile
 }
 
 // Package returns the package name for this file.
 //
 // The name will not include a leading dot. It will be empty for the empty
 // package.
-func (f File) Package() FullName {
-	if f.IsZero() {
+func (f *File) Package() FullName {
+	if f == nil {
 		return ""
 	}
-	c := f.Context()
+	c := f
+	if f == primitiveCtx {
+		return ""
+	}
 	return FullName(c.session.intern.Value(c.pkg))
 }
 
 // InternedPackage returns the intern ID for the value of [File.Package].
-func (f File) InternedPackage() intern.ID {
-	if f.IsZero() {
+func (f *File) InternedPackage() intern.ID {
+	if f == nil {
 		return 0
 	}
-	return f.Context().pkg
+	return f.pkg
 }
 
 // Imports returns an indexer over the imports declared in this file.
-func (f File) Imports() seq.Indexer[Import] {
-	return f.Context().imports.Directs()
+func (f *File) Imports() seq.Indexer[Import] {
+	return f.imports.Directs()
 }
 
 // TransitiveImports returns an indexer over the transitive imports for this
 // file.
 //
 // This function does not report whether those imports are weak or not.
-func (f File) TransitiveImports() seq.Indexer[Import] {
-	return f.Context().imports.Transitive()
+func (f *File) TransitiveImports() seq.Indexer[Import] {
+	return f.imports.Transitive()
 }
 
 // ImportFor returns import metadata for a given file, if this file imports it.
-func (f File) ImportFor(that File) Import {
-	idx, ok := f.Context().imports.byPath[that.InternedPath()]
+func (f *File) ImportFor(that *File) Import {
+	idx, ok := f.imports.byPath[that.InternedPath()]
 	if !ok {
 		return Import{}
 	}
@@ -260,95 +198,103 @@ func (f File) ImportFor(that File) Import {
 }
 
 // Types returns the top level types of this file.
-func (f File) Types() seq.Indexer[Type] {
+func (f *File) Types() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
-		f.Context().types[:f.Context().topLevelTypesEnd],
-		func(_ int, p arena.Pointer[rawType]) Type {
-			// Implicitly in current file.
-			return wrapType(f.Context(), ref[rawType]{ptr: p})
+		f.types[:f.topLevelTypesEnd],
+		func(_ int, p id.ID[Type]) Type {
+			return id.Wrap(f, p)
 		},
 	)
 }
 
 // AllTypes returns all types defined in this file.
-func (f File) AllTypes() seq.Indexer[Type] {
+func (f *File) AllTypes() seq.Indexer[Type] {
 	return seq.NewFixedSlice(
-		f.Context().types,
-		func(_ int, p arena.Pointer[rawType]) Type {
-			// Implicitly in current file.
-			return wrapType(f.Context(), ref[rawType]{ptr: p})
+		f.types,
+		func(_ int, p id.ID[Type]) Type {
+			return id.Wrap(f, p)
 		},
 	)
 }
 
 // Extensions returns the top level extensions defined in this file (i.e.,
 // the contents of any top-level `extends` blocks).
-func (f File) Extensions() seq.Indexer[Member] {
+func (f *File) Extensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		f.Context().extns[:f.Context().topLevelExtnsEnd],
-		func(_ int, p arena.Pointer[rawMember]) Member {
-			// Implicitly in current file.
-			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		f.extns[:f.topLevelExtnsEnd],
+		func(_ int, p id.ID[Member]) Member {
+			return id.Wrap(f, p)
 		},
 	)
 }
 
 // AllExtensions returns all extensions defined in this file.
-func (f File) AllExtensions() seq.Indexer[Member] {
+func (f *File) AllExtensions() seq.Indexer[Member] {
 	return seq.NewFixedSlice(
-		f.Context().extns,
-		func(_ int, p arena.Pointer[rawMember]) Member {
-			// Implicitly in current file.
-			return wrapMember(f.Context(), ref[rawMember]{ptr: p})
+		f.extns,
+		func(_ int, p id.ID[Member]) Member {
+			return id.Wrap(f, p)
+		},
+	)
+}
+
+// Extends returns the top level extend blocks in this file.
+func (f *File) Extends() seq.Indexer[Extend] {
+	return seq.NewFixedSlice(
+		f.extends[:f.topLevelExtendsEnd],
+		func(_ int, p id.ID[Extend]) Extend {
+			return id.Wrap(f, p)
+		},
+	)
+}
+
+// AllExtends returns all extend blocks in this file.
+func (f *File) AllExtends() seq.Indexer[Extend] {
+	return seq.NewFixedSlice(
+		f.extends,
+		func(_ int, p id.ID[Extend]) Extend {
+			return id.Wrap(f, p)
 		},
 	)
 }
 
 // AllMembers returns all fields defined in this file, including extensions
 // and enum values.
-func (f File) AllMembers() iter.Seq[Member] {
-	return iterx.Map(f.Context().arenas.members.Values(), func(raw *rawMember) Member {
-		return Member{internal.NewWith(f.Context()), raw}
+func (f *File) AllMembers() iter.Seq[Member] {
+	i := 0
+	return iterx.Map(f.arenas.members.Values(), func(raw *rawMember) Member {
+		i++
+		return id.WrapRaw(f, id.ID[Member](i), raw)
 	})
 }
 
 // Services returns all services defined in this file.
-func (f File) Services() seq.Indexer[Service] {
+func (f *File) Services() seq.Indexer[Service] {
 	return seq.NewFixedSlice(
-		f.Context().services,
-		func(_ int, p arena.Pointer[rawService]) Service {
-			return Service{
-				internal.NewWith(f.Context()),
-				f.Context().arenas.services.Deref(p),
-			}
+		f.services,
+		func(_ int, p id.ID[Service]) Service {
+			return id.Wrap(f, p)
 		},
 	)
 }
 
 // Options returns the top level options applied to this file.
-func (f File) Options() MessageValue {
-	return wrapValue(f.Context(), f.Context().options).AsMessage()
+func (f *File) Options() MessageValue {
+	return id.Wrap(f, f.options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this file.
-func (f File) FeatureSet() FeatureSet {
-	if f.IsZero() || f.Context().features.Nil() {
-		return FeatureSet{}
-	}
-
-	return FeatureSet{
-		internal.NewWith(f.Context()),
-		f.Context().arenas.features.Deref(f.Context().features),
-	}
+func (f *File) FeatureSet() FeatureSet {
+	return id.Wrap(f, f.features)
 }
 
 // Deprecated returns whether this file is deprecated, by returning the
 // relevant option value for setting deprecation.
-func (f File) Deprecated() Value {
-	if f.IsZero() {
+func (f *File) Deprecated() Value {
+	if f == nil {
 		return Value{}
 	}
-	builtins := f.Context().builtins()
+	builtins := f.builtins()
 	d := f.Options().Field(builtins.FileDeprecated)
 	if b, _ := d.AsBool(); b {
 		return d
@@ -361,36 +307,69 @@ func (f File) Deprecated() Value {
 // The symbol table includes both symbols defined in this file, and symbols
 // imported by the file. The symbols are returned in an arbitrary but fixed
 // order.
-func (f File) Symbols() seq.Indexer[Symbol] {
+func (f *File) Symbols() seq.Indexer[Symbol] {
 	return seq.NewFixedSlice(
-		f.Context().imported,
-		func(_ int, r ref[rawSymbol]) Symbol {
-			return wrapSymbol(f.Context(), r)
+		f.imported,
+		func(_ int, r Ref[Symbol]) Symbol {
+			return GetRef(f, r)
 		},
 	)
 }
 
 // FindSymbol finds a symbol among [File.Symbols] with the given fully-qualified
 // name.
-func (f File) FindSymbol(fqn FullName) Symbol {
-	return wrapSymbol(f.Context(),
-		f.Context().imported.lookupBytes(f.Context(),
+func (f *File) FindSymbol(fqn FullName) Symbol {
+	return GetRef(f,
+		f.imported.lookupBytes(f,
 			unsafex.BytesAlias[[]byte](string(fqn))))
 }
 
 // topoSort sorts a graph of [File]s according to their dependency graph,
 // in topological order. Files with no dependencies are yielded first.
-func topoSort(files []File) iter.Seq[File] {
+func topoSort(files []*File) iter.Seq[*File] {
 	// NOTE: This cannot panic because Files, by construction, do not contain
 	// graph cycles.
 	return toposort.Sort(
 		files,
-		File.Context,
-		func(f File) iter.Seq[File] {
+		func(f *File) *File { return f },
+		func(f *File) iter.Seq[*File] {
 			return seq.Map(
-				f.Context().imports.Directs(),
-				func(i Import) File { return i.File },
+				f.imports.Directs(),
+				func(i Import) *File { return i.File },
 			)
 		},
 	)
+}
+
+func (f *File) FromID(id uint64, want any) any {
+	switch want.(type) {
+	case **rawType:
+		return f.arenas.types.Deref(arena.Pointer[rawType](id))
+	case **rawMember:
+		return f.arenas.members.Deref(arena.Pointer[rawMember](id))
+	case **rawReservedRange:
+		return f.arenas.ranges.Deref(arena.Pointer[rawReservedRange](id))
+	case **rawExtend:
+		return f.arenas.extendees.Deref(arena.Pointer[rawExtend](id))
+	case **rawOneof:
+		return f.arenas.oneofs.Deref(arena.Pointer[rawOneof](id))
+
+	case **rawService:
+		return f.arenas.services.Deref(arena.Pointer[rawService](id))
+	case **rawMethod:
+		return f.arenas.methods.Deref(arena.Pointer[rawMethod](id))
+
+	case **rawValue:
+		return f.arenas.values.Deref(arena.Pointer[rawValue](id))
+	case **rawMessageValue:
+		return f.arenas.messages.Deref(arena.Pointer[rawMessageValue](id))
+	case **rawFeatureSet:
+		return f.arenas.features.Deref(arena.Pointer[rawFeatureSet](id))
+
+	case **rawSymbol:
+		return f.arenas.symbols.Deref(arena.Pointer[rawSymbol](id))
+
+	default:
+		return f.AST().FromID(id, want)
+	}
 }

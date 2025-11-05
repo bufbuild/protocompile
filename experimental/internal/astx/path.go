@@ -16,7 +16,7 @@ package astx
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
@@ -25,16 +25,16 @@ import (
 //
 // This function should not be used outside of the parser, so it is implemented
 // using unsafe to avoid needing to export it.
-func NewPath(ctx ast.Context, start, end token.Token) ast.Path {
+func NewPath(file *ast.File, start, end token.Token) ast.Path {
 	// fakePath has the same GC shape as ast.Path; there is a test for this in
 	// path_test.go
 	return unsafex.Bitcast[ast.Path](fakePath{
-		with: internal.NewWith(ctx),
+		with: id.WrapContext(file),
 		raw:  struct{ Start, End token.ID }{start.ID(), end.ID()},
 	})
 }
 
 type fakePath struct {
-	with internal.With[ast.Context]
+	with id.HasContext[*ast.File]
 	raw  struct{ Start, End token.ID }
 }

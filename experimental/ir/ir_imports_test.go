@@ -108,7 +108,7 @@ func buildFile(
 	session *ir.Session,
 	path string,
 	imports ...ir.Import,
-) ir.File {
+) *ir.File {
 	file := ir.NewFile(session, path)
 	table := ir.GetImports(file)
 
@@ -131,13 +131,13 @@ type imp struct {
 	public, weak bool
 }
 
-func directs(f ir.File) []imp {
+func directs(f *ir.File) []imp {
 	return slices.Collect(seq.Map(ir.GetImports(f).Directs(), func(i ir.Import) imp {
 		return imp{i.File.Path(), i.Public, i.Weak}
 	}))
 }
 
-func transitive(f ir.File) []imp {
+func transitive(f *ir.File) []imp {
 	return slices.Collect(seq.Map(ir.GetImports(f).Transitive(), func(i ir.Import) imp {
 		return imp{i.File.Path(), i.Public, i.Weak}
 	}))

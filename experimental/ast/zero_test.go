@@ -65,7 +65,6 @@ func TestZero(t *testing.T) {
 	testZero[ast.TypePrefixed](t)
 
 	testZero[ast.CompactOptions](t)
-	testZero[ast.File](t)
 	testZero[ast.Signature](t)
 	testZero[ast.Path](t)
 	testZero[token.Token](t)

@@ -16,18 +16,22 @@ package ir
 
 import (
 	"cmp"
+	"regexp"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
-func buildAllFeatureInfo(f File, r *report.Report) {
-	for m := range f.AllMembers() {
+var whitespacePattern = regexp.MustCompile(`[ \t\r\n]+`)
+
+func buildAllFeatureInfo(file *File, r *report.Report) {
+	for m := range file.AllMembers() {
 		if !m.IsEnumValue() {
 			buildFeatureInfo(m, r)
 		}
@@ -144,7 +148,10 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			}
 
 			// Cook up a value corresponding to the thing we just evaluated.
-			copied := *value.raw
+			var copied rawValue
+			if !value.IsZero() {
+				copied = *value.Raw()
+			}
 			copied.field = field.toRef(field.Context())
 			copied.bits = bits
 			raw := field.Context().arenas.values.NewCompressed(copied)
@@ -152,7 +159,7 @@ func buildFeatureInfo(field Member, r *report.Report) {
 			// Push this information onto the edition defaults list.
 			info.defaults = append(info.defaults, featureDefault{
 				edition: edition,
-				value:   raw,
+				value:   id.ID[Value](raw),
 			})
 		}
 	}
@@ -178,9 +185,9 @@ func buildFeatureInfo(field Member, r *report.Report) {
 	// Insert a default value so FeatureSet.Lookup always returns *something*.
 	info.defaults = slices.Insert(info.defaults, 0, featureDefault{
 		edition: syntax.Unknown,
-		value: field.Context().arenas.values.NewCompressed(rawValue{
+		value: id.ID[Value](field.Context().arenas.values.NewCompressed(rawValue{
 			field: field.toRef(field.Context()),
-		}),
+		})),
 	})
 
 	if support.IsZero() {
@@ -239,27 +246,27 @@ func buildFeatureInfo(field Member, r *report.Report) {
 		info.deprecationWarning, _ = value.AsString()
 	}
 
-	field.raw.featureInfo = info
+	field.Raw().featureInfo = info
 }
 
-func validateAllFeatures(f File, r *report.Report) {
-	builtins := f.Context().builtins()
+func validateAllFeatures(file *File, r *report.Report) {
+	builtins := file.builtins()
 
-	features := f.Options().Field(builtins.FileFeatures)
+	features := file.Options().Field(builtins.FileFeatures)
 	validateFeatures(features.AsMessage(), r)
-	f.Context().features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-		options: f.Context().arenas.values.Compress(features.raw),
-	})
+	file.features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+		options: features.ID(),
+	}))
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		if !ty.MapField().IsZero() {
 			// Map entries never have features.
 			continue
 		}
 
-		parent := f.Context().features
+		parent := file.features
 		if !ty.Parent().IsZero() {
-			parent = ty.Parent().raw.features
+			parent = ty.Parent().Raw().features
 		}
 
 		option := builtins.MessageFeatures
@@ -269,10 +276,10 @@ func validateAllFeatures(f File, r *report.Report) {
 
 		features := ty.Options().Field(option)
 		validateFeatures(features.AsMessage(), r)
-		ty.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-			options: f.Context().arenas.values.Compress(features.raw),
+		ty.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+			options: features.ID(),
 			parent:  parent,
-		})
+		}))
 
 		for member := range seq.Values(ty.Members()) {
 			option := builtins.FieldFeatures
@@ -282,56 +289,56 @@ func validateAllFeatures(f File, r *report.Report) {
 
 			features := member.Options().Field(option)
 			validateFeatures(features.AsMessage(), r)
-			member.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-				options: member.Context().arenas.values.Compress(features.raw),
-				parent:  ty.raw.features,
-			})
+			member.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+				options: features.ID(),
+				parent:  ty.Raw().features,
+			}))
 		}
 		for oneof := range seq.Values(ty.Oneofs()) {
 			features := oneof.Options().Field(builtins.OneofFeatures)
 			validateFeatures(features.AsMessage(), r)
-			oneof.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-				options: f.Context().arenas.values.Compress(features.raw),
-				parent:  ty.raw.features,
-			})
+			oneof.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+				options: features.ID(),
+				parent:  ty.Raw().features,
+			}))
 		}
 		for extns := range seq.Values(ty.ExtensionRanges()) {
 			features := extns.Options().Field(builtins.RangeFeatures)
 			validateFeatures(features.AsMessage(), r)
-			extns.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-				options: f.Context().arenas.values.Compress(features.raw),
-				parent:  ty.raw.features,
-			})
+			extns.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+				options: features.ID(),
+				parent:  ty.Raw().features,
+			}))
 		}
 	}
-	for field := range seq.Values(f.AllExtensions()) {
-		parent := f.Context().features
+	for field := range seq.Values(file.AllExtensions()) {
+		parent := file.features
 		if !field.Parent().IsZero() {
-			parent = field.Parent().raw.features
+			parent = field.Parent().Raw().features
 		}
 
 		features := field.Options().Field(builtins.FieldFeatures)
 		validateFeatures(features.AsMessage(), r)
-		field.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-			options: f.Context().arenas.values.Compress(features.raw),
+		field.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+			options: features.ID(),
 			parent:  parent,
-		})
+		}))
 	}
-	for service := range seq.Values(f.Services()) {
+	for service := range seq.Values(file.Services()) {
 		features := service.Options().Field(builtins.ServiceFeatures)
 		validateFeatures(features.AsMessage(), r)
-		service.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-			options: f.Context().arenas.values.Compress(features.raw),
-			parent:  f.Context().features,
-		})
+		service.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+			options: features.ID(),
+			parent:  file.features,
+		}))
 
 		for method := range seq.Values(service.Methods()) {
 			features := method.Options().Field(builtins.MethodFeatures)
 			validateFeatures(features.AsMessage(), r)
-			method.raw.features = f.Context().arenas.features.NewCompressed(rawFeatureSet{
-				options: f.Context().arenas.values.Compress(features.raw),
-				parent:  service.raw.features,
-			})
+			method.Raw().features = id.ID[FeatureSet](file.arenas.features.NewCompressed(rawFeatureSet{
+				options: features.ID(),
+				parent:  service.Raw().features,
+			}))
 		}
 	}
 }
@@ -349,7 +356,7 @@ func validateFeatures(features MessageValue, r *report.Report) {
 	))
 
 	builtins := features.Context().builtins()
-	edition := features.Context().File().Syntax()
+	edition := features.Context().Syntax()
 	for feature := range features.Fields() {
 		if msg := feature.AsMessage(); !msg.IsZero() {
 			validateFeatures(msg, r)
@@ -374,8 +381,8 @@ func validateFeatures(features MessageValue, r *report.Report) {
 		switch {
 		case info.IsRemoved(edition), info.IsDeprecated(edition):
 			r.SoftError(info.IsRemoved(edition), erredition.TooNew{
-				Current:          features.Context().File().Syntax(),
-				Decl:             features.Context().File().AST().Syntax(),
+				Current:          features.Context().Syntax(),
+				Decl:             features.Context().AST().Syntax(),
 				Removed:          info.Removed(),
 				Deprecated:       info.Deprecated(),
 				DeprecatedReason: info.DeprecationWarning(),
@@ -385,8 +392,8 @@ func validateFeatures(features MessageValue, r *report.Report) {
 
 		case !info.IsIntroduced(edition):
 			r.Error(erredition.TooOld{
-				Current: features.Context().File().Syntax(),
-				Decl:    features.Context().File().AST().Syntax(),
+				Current: features.Context().Syntax(),
+				Decl:    features.Context().AST().Syntax(),
 				Intro:   info.Introduced(),
 				What:    feature.Field().Name(),
 				Where:   feature.KeyAST(),

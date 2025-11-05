@@ -18,7 +18,7 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -26,8 +26,7 @@ import (
 )
 
 // generateMapEntries generates map entry types for all map-typed fields.
-func generateMapEntries(f File, r *report.Report) {
-	c := f.Context()
+func generateMapEntries(file *File, r *report.Report) {
 	lowerField := func(field Member) {
 		// optional, repeated etc. on map types is already legalized in
 		// the parser.
@@ -44,71 +43,72 @@ func generateMapEntries(f File, r *report.Report) {
 		parent := field.Parent()
 		base := parent.FullName()
 		if base == "" {
-			base = f.Package()
+			base = file.Package()
 		}
 		name := pcinternal.MapEntry(field.Name())
 		fqn := base.Append(name)
 
 		// Set option map_entry = true;
-		builtins := c.builtins()
-		messageOptions := builtins.MessageOptions.toRef(c)
-		mapEntry := builtins.MapEntry.toRef(c)
+		builtins := file.builtins()
+		messageOptions := builtins.MessageOptions.toRef(file)
+		mapEntry := builtins.MapEntry.toRef(file)
 
-		options := newMessage(c, builtins.MessageOptions.toRef(c))
-		*options.insert(wrapMember(c, mapEntry)) =
-			c.arenas.values.NewCompressed(rawValue{
+		options := newMessage(file, builtins.MessageOptions.toRef(file))
+		options.slot(GetRef(file, mapEntry)).Insert(id.Wrap(
+			file,
+			id.ID[Value](file.arenas.values.NewCompressed(rawValue{
 				field: mapEntry,
 				bits:  1,
-			})
+			})),
+		))
 
 		// Construct the type itself.
-		raw := c.arenas.types.NewCompressed(rawType{
-			def:    field.AST(),
-			name:   c.session.intern.Intern(name),
-			fqn:    c.session.intern.Intern(string(fqn)),
-			parent: c.arenas.types.Compress(parent.raw),
-			options: c.arenas.values.NewCompressed(rawValue{
+		ty := id.Wrap(file, id.ID[Type](file.arenas.types.NewCompressed(rawType{
+			def:    field.AST().ID(),
+			name:   file.session.intern.Intern(name),
+			fqn:    file.session.intern.Intern(string(fqn)),
+			parent: parent.ID(),
+			options: id.ID[Value](file.arenas.values.NewCompressed(rawValue{
 				field: messageOptions,
-				bits:  rawValueBits(c.arenas.messages.Compress(options.raw)),
-			}),
+				bits:  rawValueBits(file.arenas.messages.Compress(options.Raw())),
+			})),
 
-			mapEntryOf: c.arenas.members.Compress(field.raw),
-		})
-		ty := Type{internal.NewWith(c), c.arenas.types.Deref(raw)}
-		ty.raw.memberByName = sync.OnceValue(ty.makeMembersByName)
+			mapEntryOf: field.ID(),
+		})))
+		ty.Raw().memberByName = sync.OnceValue(ty.makeMembersByName)
 		if parent.IsZero() {
-			c.types = slices.Insert(c.types, c.topLevelTypesEnd, raw)
-			c.topLevelTypesEnd++
+			file.types = slices.Insert(file.types, file.topLevelTypesEnd, ty.ID())
+			file.topLevelTypesEnd++
 		} else {
-			c.types = append(c.types, raw)
-			parent.raw.nested = append(parent.raw.nested, raw)
+			file.types = append(file.types, ty.ID())
+			parent.Raw().nested = append(parent.Raw().nested, ty.ID())
 		}
 
 		// Construct the fields and attach them to ty.
 		makeField := func(name string, number int32) {
 			fqn := fqn.Append(name)
 
-			id := c.arenas.members.NewCompressed(rawMember{
-				name:   c.session.intern.Intern(name),
-				fqn:    c.session.intern.Intern(string(fqn)),
-				parent: c.arenas.types.Compress(ty.raw),
+			p := id.ID[Member](file.arenas.members.NewCompressed(rawMember{
+				name:   file.session.intern.Intern(name),
+				fqn:    file.session.intern.Intern(string(fqn)),
+				parent: ty.ID(),
 				number: number,
 				oneof:  -int32(presence.Explicit),
-			})
+			}))
 
-			ty.raw.members = slices.Insert(ty.raw.members, int(ty.raw.extnsStart), id)
-			ty.raw.extnsStart++
+			ty.Raw().members = slices.Insert(ty.Raw().members, int(ty.Raw().extnsStart), p)
+			ty.Raw().extnsStart++
 		}
 
 		makeField("key", 1)
 		makeField("value", 2)
 
 		// Update the field to be a repeated field of the given type.
-		field.raw.elem.ptr = raw
-		field.raw.oneof = -int32(presence.Repeated)
+		field.Raw().elem = ty.toRef(file)
+		field.Raw().oneof = -int32(presence.Repeated)
 	}
 
-	for parent := range seq.Values(f.AllTypes()) {
+	for parent := range seq.Values(file.AllTypes()) {
 		if !parent.IsMessage() {
 			continue
 		}
@@ -118,7 +118,7 @@ func generateMapEntries(f File, r *report.Report) {
 		}
 	}
 
-	for extn := range seq.Values(f.AllExtensions()) {
+	for extn := range seq.Values(file.AllExtensions()) {
 		k, _ := extn.AST().Type().RemovePrefixes().AsGeneric().AsMap()
 		if k.IsZero() {
 			continue

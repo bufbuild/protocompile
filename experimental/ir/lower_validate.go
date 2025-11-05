@@ -26,41 +26,44 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
-	"github.com/bufbuild/protocompile/experimental/internal"
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/erredition"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/mapsx"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 var asciiIdent = regexp.MustCompile(`^[a-zA-Z_][0-9a-zA-Z_]*$`)
 
 // diagnoseUnusedImports generates diagnostics for each unused import.
-func diagnoseUnusedImports(f File, r *report.Report) {
+func diagnoseUnusedImports(f *File, r *report.Report) {
 	for imp := range seq.Values(f.Imports()) {
 		if imp.Used {
 			continue
 		}
 
-		r.Warnf("unused import \"%s\"", f.Path()).Apply(
+		r.Warnf("unused import %s", imp.Decl.ImportPath().AsLiteral().Text()).Apply(
 			report.Snippet(imp.Decl.ImportPath()),
 			report.SuggestEdits(imp.Decl, "delete it", report.Edit{
 				Start: 0, End: imp.Decl.Span().Len(),
 			}),
 			report.Helpf("no symbols from this file are referenced"),
+			report.Tag(tags.UnusedImport),
 		)
 	}
 }
 
 // validateConstraints validates miscellaneous constraints that depend on the
 // whole IR being constructed properly.
-func validateConstraints(f File, r *report.Report) {
+func validateConstraints(f *File, r *report.Report) {
 	validateFileOptions(f, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
@@ -79,6 +82,10 @@ func validateConstraints(f File, r *report.Report) {
 				validateOneof(oneof, r)
 			}
 			validateExtensionDeclarations(ty, r)
+		}
+
+		for rr := range seq.Values(ty.ExtensionRanges()) {
+			validateExtensionRange(rr, r)
 		}
 	}
 
@@ -106,14 +113,20 @@ func validateConstraints(f File, r *report.Report) {
 		}
 	}
 
-	for p := range f.Context().arenas.messages.Values() {
-		m := MessageValue{internal.NewWith(f.Context()), p}
+	i := 0
+	for p := range f.arenas.messages.Values() {
+		i++
+		m := id.WrapRaw(f, id.ID[MessageValue](i), p)
 		for v := range m.Fields() {
 			// This is a simple way of picking up all of the option values
 			// without tripping over custom defaults, which we explicitly should
 			// *not* validate.
 			validateUTF8Values(v, r)
 		}
+	}
+
+	for e := range seq.Values(f.AllExtends()) {
+		validateExtend(e, r)
 	}
 }
 
@@ -156,7 +169,7 @@ func validateEnum(ty Type, r *report.Report) {
 		feature := ty.FeatureSet().Lookup(builtins.FeatureEnum)
 		why := feature.Value().ValueAST().Span()
 		if feature.IsDefault() {
-			why = ty.Context().File().AST().Syntax().Value().Span()
+			why = ty.Context().AST().Syntax().Value().Span()
 		}
 
 		r.Errorf("first value of open enum must be zero").Apply(
@@ -168,8 +181,8 @@ func validateEnum(ty Type, r *report.Report) {
 	}
 }
 
-func validateFileOptions(f File, r *report.Report) {
-	builtins := f.Context().builtins()
+func validateFileOptions(f *File, r *report.Report) {
+	builtins := f.builtins()
 
 	// https://protobuf.com/docs/language-spec#option-validation
 	javaUTF8 := f.Options().Field(builtins.JavaUTF8)
@@ -231,8 +244,58 @@ func validateOneof(oneof Oneof, r *report.Report) {
 	}
 }
 
+func validateExtensionRange(rr ReservedRange, r *report.Report) {
+	if rr.Context().Syntax() != syntax.Proto3 {
+		return
+	}
+
+	r.Errorf("%s in \"proto3\"", taxa.Extensions).Apply(
+		report.Snippet(rr.AST()),
+		report.PageBreak,
+		report.Snippetf(rr.Context().AST().Syntax().Value(), "\"proto3\" specified here"),
+		report.Helpf("extension numbers cannot be reserved in \"proto3\""),
+	)
+}
+
+func validateExtend(extend Extend, r *report.Report) {
+	if extend.Extensions().Len() == 0 {
+		r.Errorf("%s must declare at least one %s", taxa.Extend, taxa.Extension).Apply(
+			report.Snippet(extend.AST()),
+		)
+	}
+
+	if extend.Context().Syntax() != syntax.Proto3 {
+		return
+	}
+
+	builtins := extend.Context().builtins()
+	if slicesx.Among(extend.Extendee(),
+		builtins.FileOptions.Element(),
+		builtins.MessageOptions.Element(),
+		builtins.FieldOptions.Element(),
+		builtins.RangeOptions.Element(),
+		builtins.OneofOptions.Element(),
+		builtins.EnumOptions.Element(),
+		builtins.EnumValueOptions.Element(),
+		builtins.ServiceOptions.Element(),
+		builtins.MethodOptions.Element(),
+	) {
+		return
+	}
+
+	r.Error(errTypeConstraint{
+		want: "built-in options message",
+		got:  extend.Extendee(),
+		decl: extend.AST().Type(),
+	}).Apply(
+		report.PageBreak,
+		report.Snippetf(extend.Context().AST().Syntax().Value(), "\"proto3\" specified here"),
+		report.Helpf("extendees in \"proto3\" files are restricted to an `google.protobuf.*Options` message types", taxa.Extend),
+	)
+}
+
 func validateMessageSet(ty Type, r *report.Report) {
-	f := ty.Context().File()
+	f := ty.Context()
 	builtins := ty.Context().builtins()
 
 	if f.Syntax() == syntax.Proto3 {
@@ -457,7 +520,7 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 					ok := validatePath(tyName, "predeclared type or fully-qualified name")
 					if ok {
 						// Check to see whether this is a legit type.
-						sym := ty.Context().File().FindSymbol(FullName(v).ToRelative())
+						sym := ty.Context().FindSymbol(FullName(v).ToRelative())
 						if !sym.IsZero() && !sym.Kind().IsType() {
 							r.Warnf("expected type, got %s `%s`", sym.noun(), sym.FullName()).Apply(
 								report.Snippet(tyName.ValueAST()),
@@ -547,7 +610,7 @@ declSearch:
 		ty := PredeclaredType(predeclared.Lookup(v))
 		var sym Symbol
 		if ty.IsZero() {
-			sym = m.Context().File().FindSymbol(FullName(v).ToRelative())
+			sym = m.Context().FindSymbol(FullName(v).ToRelative())
 			ty = sym.AsType()
 		}
 
@@ -685,15 +748,15 @@ func validatePacked(m Member, r *report.Report) {
 
 	option := m.Options().Field(builtins.Packed)
 	if !option.IsZero() {
-		if m.Context().File().Syntax().IsEdition() {
+		if m.Context().Syntax().IsEdition() {
 			packed, _ := option.AsBool()
 			want := "PACKED"
 			if !packed {
 				want = "EXPANDED"
 			}
 			r.Error(erredition.TooNew{
-				Current: m.Context().File().Syntax(),
-				Decl:    m.Context().File().AST().Syntax(),
+				Current: m.Context().Syntax(),
+				Decl:    m.Context().AST().Syntax(),
 				Removed: syntax.Edition2023,
 
 				What:  option.Field().Name(),
@@ -788,7 +851,7 @@ func validateJSType(m Member, r *report.Report) {
 
 func validateCType(m Member, r *report.Report) {
 	builtins := m.Context().builtins()
-	f := m.Context().File()
+	f := m.Context()
 
 	ctype := m.Options().Field(builtins.CType)
 	if ctype.IsZero() {
@@ -811,8 +874,8 @@ func validateCType(m Member, r *report.Report) {
 	switch {
 	case f.Syntax() > syntax.Edition2023:
 		r.Error(erredition.TooNew{
-			Current:    m.Context().File().Syntax(),
-			Decl:       m.Context().File().AST().Syntax(),
+			Current:    m.Context().Syntax(),
+			Decl:       m.Context().AST().Syntax(),
 			Deprecated: syntax.Edition2023,
 			Removed:    syntax.Edition2024,
 
@@ -848,8 +911,8 @@ func validateCType(m Member, r *report.Report) {
 
 	case is2023:
 		r.Warn(erredition.TooNew{
-			Current:    m.Context().File().Syntax(),
-			Decl:       m.Context().File().AST().Syntax(),
+			Current:    m.Context().Syntax(),
+			Decl:       m.Context().AST().Syntax(),
 			Deprecated: syntax.Edition2023,
 			Removed:    syntax.Edition2024,
 
@@ -934,7 +997,7 @@ func validateDefault(m Member, r *report.Report) {
 		return
 	}
 
-	if file := m.Context().File(); file.Syntax() == syntax.Proto3 {
+	if file := m.Context(); file.Syntax() == syntax.Proto3 {
 		r.Errorf("custom default in \"proto3\"").Apply(
 			report.Snippet(option.OptionSpan()),
 			report.PageBreak,
@@ -971,7 +1034,7 @@ func validateDefault(m Member, r *report.Report) {
 	}
 }
 
-// validateUTF8Fields validates that strings in a value are actually UTF-8.
+// validateUTF8Values validates that strings in a value are actually UTF-8.
 func validateUTF8Values(v Value, r *report.Report) {
 	for elem := range seq.Values(v.Elements()) {
 		if v.Field().IsUnicode() {
@@ -1002,14 +1065,14 @@ func validateVisibility(ty Type, r *report.Report) {
 
 	var why report.Span
 	if feature.IsDefault() {
-		why = ty.Context().File().AST().Syntax().Value().Span()
+		why = ty.Context().AST().Syntax().Value().Span()
 	} else {
 		why = feature.Value().ValueAST().Span()
 	}
 
-	vis := ty.raw.visibility.In(ty.AST().Context())
+	vis := id.Wrap(ty.AST().Context().Stream(), ty.Raw().visibility)
 	export := vis.Keyword() == keyword.Export
-	if !ty.raw.visibility.IsZero() && export == impliedExport {
+	if !ty.Raw().visibility.IsZero() && export == impliedExport {
 		r.Warnf("redundant visibility modifier").Apply(
 			report.Snippetf(vis, "specified here"),
 			report.PageBreak,
@@ -1176,7 +1239,7 @@ func (e *errNotUTF8) Diagnose(d *report.Diagnostic) {
 	} else {
 		d.Apply(
 			report.PageBreak,
-			report.Snippetf(e.value.Context().File().AST().Syntax().Value(), "UTF-8 required here"),
+			report.Snippetf(e.value.Context().AST().Syntax().Value(), "UTF-8 required here"),
 		)
 	}
 }

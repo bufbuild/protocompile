@@ -29,7 +29,7 @@ type AST struct {
 	Path          string
 }
 
-var _ incremental.Query[ast.File] = AST{}
+var _ incremental.Query[*ast.File] = AST{}
 
 // Key implements [incremental.Query].
 //
@@ -43,7 +43,7 @@ func (a AST) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (a AST) Execute(t *incremental.Task) (ast.File, error) {
+func (a AST) Execute(t *incremental.Task) (*ast.File, error) {
 	t.Report().Options.Stage += stageAST
 
 	r, err := incremental.Resolve(t, File{
@@ -52,10 +52,10 @@ func (a AST) Execute(t *incremental.Task) (ast.File, error) {
 		ReportError: true,
 	})
 	if err != nil {
-		return ast.File{}, err
+		return nil, err
 	}
 	if r[0].Fatal != nil {
-		return ast.File{}, r[0].Fatal
+		return nil, r[0].Fatal
 	}
 
 	file, _ := parser.Parse(r[0].Value, t.Report())

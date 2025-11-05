@@ -25,11 +25,11 @@ import (
 	"github.com/bufbuild/protocompile/internal/intern"
 )
 
-func populateJSONNames(f File, r *report.Report) {
-	builtins := f.Context().builtins()
+func populateJSONNames(file *File, r *report.Report) {
+	builtins := file.builtins()
 	names := intern.Map[Member]{}
 
-	for ty := range seq.Values(f.AllTypes()) {
+	for ty := range seq.Values(file.AllTypes()) {
 		clear(names)
 
 		jsonFormat, _ := ty.FeatureSet().Lookup(builtins.FeatureJSON).Value().AsInt()
@@ -46,9 +46,9 @@ func populateJSONNames(f File, r *report.Report) {
 				name = internal.JSONName(field.Name())
 			}
 
-			field.raw.jsonName = f.Context().session.intern.Intern(name)
+			field.Raw().jsonName = file.session.intern.Intern(name)
 
-			prev, ok := names.AddID(field.raw.jsonName, field)
+			prev, ok := names.AddID(field.Raw().jsonName, field)
 			if prev.Number() == field.Number() {
 				// This handles the case where enum numbers coincide in an
 				// allow_alias enum. In all other cases where numbers coincide,
@@ -77,10 +77,10 @@ func populateJSONNames(f File, r *report.Report) {
 
 			name, custom := option.AsString()
 			if custom {
-				field.raw.jsonName = f.Context().session.intern.Intern(name)
+				field.Raw().jsonName = file.session.intern.Intern(name)
 			}
 
-			prev, ok := names.AddID(field.raw.jsonName, field)
+			prev, ok := names.AddID(field.Raw().jsonName, field)
 			if !ok && (custom || !prev.PseudoOptions().JSONName.IsZero()) {
 				r.Error(errJSONConflict{
 					first: prev, second: field,
@@ -90,7 +90,7 @@ func populateJSONNames(f File, r *report.Report) {
 		}
 	}
 
-	for extn := range seq.Values(f.AllExtensions()) {
+	for extn := range seq.Values(file.AllExtensions()) {
 		want := internal.JSONName(extn.Name())
 		option := extn.PseudoOptions().JSONName
 		got, custom := option.AsString()
@@ -99,7 +99,7 @@ func populateJSONNames(f File, r *report.Report) {
 		if custom {
 			name = got
 		}
-		extn.raw.jsonName = f.Context().session.intern.Intern(name)
+		extn.Raw().jsonName = file.session.intern.Intern(name)
 
 		if custom {
 			d := r.SoftErrorf(want != got, "%s cannot specify `json_name`", taxa.Extension).Apply(

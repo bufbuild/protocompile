@@ -21,6 +21,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -38,11 +39,10 @@ const maxFileSize int = math.MaxInt32 // 2GB
 // You should almost never need to call this function; [Parse] calls it directly.
 // It is exported so that it is straight forward to build other parsers on top
 // of the Protobuf lexer.
-func lex(ctx token.Context, errs *report.Report) {
+func lex(stream *token.Stream, errs *report.Report) {
 	l := &lexer{
-		Context: ctx,
-		Stream:  ctx.Stream(),
-		Report:  errs,
+		Stream: stream,
+		Report: errs,
 	}
 
 	defer l.CatchICE(false, func(d *report.Diagnostic) {
@@ -67,7 +67,7 @@ func lex(ctx token.Context, errs *report.Report) {
 
 		switch {
 		case unicode.In(r, unicode.Pattern_White_Space):
-			// Whitepace. Consume as much whitespace as possible and mint a
+			// Whitespace. Consume as much whitespace as possible and mint a
 			// whitespace token.
 			l.TakeWhile(func(r rune) bool {
 				return unicode.In(r, unicode.Pattern_White_Space)
@@ -299,7 +299,7 @@ func fuseBraces(l *lexer) {
 		// named t0 through t3. The first token we extract is the third in this
 		// sequence and thus is named t2.
 
-		t2 := l.braces[i].In(l.Context)
+		t2 := id.Wrap(l.Stream, l.braces[i])
 		open, _ := bracePair(t2.Text())
 		if t2.Text() == open {
 			opens = append(opens, t2.ID())
@@ -312,7 +312,7 @@ func fuseBraces(l *lexer) {
 			continue
 		}
 
-		t1 := opens[len(opens)-1].In(l.Context)
+		t1 := id.Wrap(l.Stream, opens[len(opens)-1])
 		if t1.Text() == open {
 			// Common case: the braces match.
 			token.Fuse(t1, t2)
@@ -325,12 +325,12 @@ func fuseBraces(l *lexer) {
 		// braces.
 		var t0, t3 token.Token
 		if len(opens) > 1 {
-			t0 = opens[len(opens)-2].In(l.Context)
+			t0 = id.Wrap(l.Stream, opens[len(opens)-2])
 		}
 		// Don't seek for the next unpaired closer; that results in quadratic
 		// behavior. Instead, we just look at i+1.
 		if i+1 < len(l.braces) {
-			t3 = l.braces[i+1].In(l.Context)
+			t3 = id.Wrap(l.Stream, l.braces[i+1])
 		}
 
 		nextOpen, _ := bracePair(t3.Text())
@@ -377,7 +377,7 @@ func fuseBraces(l *lexer) {
 
 	// Legalize against unclosed delimiters.
 	for _, open := range opens {
-		open := open.In(l.Context)
+		open := id.Wrap(l.Stream, open)
 		l.Error(errUnmatched{Span: open.Span()})
 	}
 
@@ -385,7 +385,7 @@ func fuseBraces(l *lexer) {
 	// the unclosed delimiters.
 	for _, open := range slices.Backward(opens) {
 		empty := l.Push(0, token.Unrecognized)
-		token.Fuse(open.In(l.Context), empty)
+		token.Fuse(id.Wrap(l.Stream, open), empty)
 	}
 }
 
@@ -400,7 +400,7 @@ func fuseStrings(l *lexer) {
 		var escapes []tokenmeta.Escape
 		var buf strings.Builder
 		for i := start.ID(); i <= end.ID(); i++ {
-			tok := i.In(l.Context)
+			tok := id.Wrap(l.Stream, i)
 			if s := tok.AsString(); !s.IsZero() {
 				buf.WriteString(s.Text())
 				if i > start.ID() {

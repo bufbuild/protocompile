@@ -68,7 +68,7 @@ const (
 
 // evaluator is the context needed to evaluate an expression.
 type evaluator struct {
-	*Context
+	*File
 	*report.Report
 	scope FullName
 }
@@ -83,7 +83,7 @@ type evalArgs struct {
 	field      Member
 	optionPath ast.Path
 
-	rawField       ref[rawMember]
+	rawField       Ref[Member]
 	isConcreteAny  bool
 	isArrayElement bool
 
@@ -156,10 +156,10 @@ func (e *evaluator) eval(args evalArgs) Value {
 	}
 
 	first := args.target.IsZero()
-	if first && args.rawField.ptr.Nil() {
-		args.rawField = args.field.toRef(e.Context)
+	if first && args.rawField.IsZero() {
+		args.rawField = args.field.toRef(e.File)
 	} else if !first {
-		args.rawField = args.target.raw.field
+		args.rawField = args.target.Raw().field
 	}
 
 	switch args.expr.Kind() {
@@ -190,15 +190,15 @@ func (e *evaluator) eval(args evalArgs) Value {
 		}
 
 		if first {
-			args.target = newZeroScalar(e.Context, args.rawField)
-			args.target.raw.bits = bits
+			args.target = newZeroScalar(e.File, args.rawField)
+			args.target.Raw().bits = bits
 		} else {
 			appendRaw(args.target, bits)
 		}
 	}
 
 	if !args.target.IsZero() {
-		raw := args.target.raw
+		raw := args.target.Raw()
 		isArray := args.expr.Kind() == ast.ExprKindArray
 
 		// Only populate elemIndices if we run into an array expression.
@@ -211,8 +211,8 @@ func (e *evaluator) eval(args evalArgs) Value {
 		}
 
 		if !args.isArrayElement {
-			raw.exprs = append(raw.exprs, args.expr)
-			raw.optionPaths = append(raw.optionPaths, args.optionPath)
+			raw.exprs = append(raw.exprs, args.expr.ID())
+			raw.optionPaths = append(raw.optionPaths, args.optionPath.ID())
 
 			if raw.elemIndices != nil || isArray {
 				var n uint32
@@ -416,8 +416,8 @@ again:
 
 		// Otherwise kick off full symbol resolution.
 		sym := symbolRef{
-			Context: e.Context,
-			Report:  nil, // Suppress diagnostics.
+			File:   e.File,
+			Report: nil, // Suppress diagnostics.
 
 			scope: e.scope,
 			name:  FullName(path),
@@ -518,7 +518,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 	case args.isConcreteAny:
 		message = args.target.Elements().At(0).AsMessage()
 	case args.target.IsZero():
-		message = newMessage(e.Context, args.rawField)
+		message = newMessage(e.File, args.rawField)
 		args.target = message.AsValue()
 	default:
 		message = appendMessage(args.target)
@@ -616,8 +616,8 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			// Now try to resolve a concrete type. We do it exactly like
 			// we would for a field type, but *not* including scalar types.
 			ty := symbolRef{
-				Context: e.Context,
-				Report:  e.Report,
+				File:   e.File,
+				Report: e.Report,
 
 				scope: e.scope,
 				name:  FullName(path),
@@ -672,19 +672,19 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		copied.expr = expr.Value()
 		copied.annotation = field.TypeAST()
 		copied.field = field
-		copied.rawField = ref[rawMember]{}
+		copied.rawField = Ref[Member]{}
 
 		var exprCount int
-		slot := message.insert(field)
-		if slot.Nil() {
+		slot := message.slot(field)
+		if slot.IsZero() {
 			copied.target = Value{}
 		} else {
-			value := wrapValue(e.Context, *slot)
+			value := slot.Value()
 
 			switch {
 			case field.IsRepeated():
 				copied.target = value
-				exprCount = len(value.raw.exprs)
+				exprCount = len(value.Raw().exprs)
 
 			case value.Field() != field:
 				// A different member of a oneof was set.
@@ -697,7 +697,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 
 			case field.Element().IsMessage():
 				copied.target = value
-				exprCount = len(value.raw.exprs)
+				exprCount = len(value.Raw().exprs)
 
 			default:
 				e.Error(errSetMultipleTimes{
@@ -713,14 +713,14 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		if !v.IsZero() {
 			// Overwrite the most recently-added expression with the FieldExpr
 			// so that key lookup works correctly.
-			for i := range len(v.raw.exprs) - exprCount {
-				v.raw.exprs[exprCount+i] = expr.AsAny()
+			for i := range len(v.Raw().exprs) - exprCount {
+				v.Raw().exprs[exprCount+i] = expr.AsAny().ID()
 			}
 
-			if slot.Nil() {
+			if slot.IsZero() {
 				// Make sure to pick up a freshly allocated value, if this
 				// was the first iteration.
-				*slot = e.arenas.values.Compress(v.raw)
+				slot.Insert(v)
 			}
 		}
 	}
@@ -855,7 +855,7 @@ func (e *evaluator) evalLiteral(args evalArgs, expr ast.ExprLiteral, neg ast.Exp
 		}
 
 		data := expr.AsString().Text()
-		return newScalarBits(e.Context, data), true
+		return newScalarBits(e.File, data), true
 	}
 
 	return 0, false
@@ -973,7 +973,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				}))
 			}
 
-			return newScalarBits(e.Context, v), true
+			return newScalarBits(e.File, v), true
 		}
 
 		// Allow fall-through, which proceeds to eventually hit full symbol
@@ -1027,7 +1027,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				v = -v
 			}
 
-			return newScalarBits(e.Context, v), ok
+			return newScalarBits(e.File, v), ok
 		}
 
 		n := uint64(1) << scalar.Bits()
@@ -1079,7 +1079,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 			v = -v
 		}
 
-		return newScalarBits(e.Context, v), true
+		return newScalarBits(e.File, v), true
 	}
 
 	// Match the "non standard" symbols for true, false, inf, and nan. Make
@@ -1154,14 +1154,14 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 			report.Notef("within %ss only, some %ss are case-insensitive", taxa.Dict, taxa.Float),
 		)
 
-		return newScalarBits(e.Context, v), args.textFormat
+		return newScalarBits(e.File, v), args.textFormat
 	}
 
 	// Perform symbol lookup in the current scope. This isn't what protoc
 	// does, but it allows us to produce better diagnostics.
 	sym := symbolRef{
-		Context: e.Context,
-		Report:  e.Report,
+		File:   e.File,
+		Report: e.Report,
 
 		scope: e.scope,
 		name:  FullName(expr.Canonicalized()),
@@ -1182,7 +1182,7 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				}),
 				report.Notef("Protobuf requires single identifiers when referencing to the names of enum values"),
 			)
-			return newScalarBits(e.Context, ev.Number()), false
+			return newScalarBits(e.File, ev.Number()), false
 		}
 
 		e.Error(args.mismatch(ev.Container()))

@@ -12,10 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-syntax = "proto3";
+// Package tags defines publicly-exposed diagnostic tag constants for use with [report.Tag].
+package tags
 
-package test;
+import _ "github.com/bufbuild/protocompile/experimental/report" // Imported for package documentation.
 
-message F {
-    extensions 1;
-}
+const (
+	// UnusedImport is the tag for an unused import diagnostic.
+	UnusedImport = "protobuf:unused_import"
+)

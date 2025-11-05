@@ -15,6 +15,7 @@
 package ast
 
 import (
+	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -24,12 +25,17 @@ import (
 //
 //	ExprLiteral := token.Number | token.String
 type ExprLiteral struct {
-	// The token backing this expression. Must be [token.String] or [token.Number],
-	// and its Context() must be an ast.Context.
-	//
-	// If this token does not contain an ast.Context, ExprLiteral.AsAny will
-	// panic.
+	File *File
+	// The token backing this expression. Must be [token.String] or [token.Number].
 	token.Token
+}
+
+// Context returns this literal's context.
+//
+// This returns a [File] rather than a [token.Stream], which would otherwise
+// be returned because ExprLiteral embeds [token.Token].
+func (e ExprLiteral) Context() *File {
+	return e.File
 }
 
 // AsAny type-erases this type value.
@@ -40,9 +46,8 @@ func (e ExprLiteral) AsAny() ExprAny {
 		return ExprAny{}
 	}
 
-	return newExprAny(
-		//nolint:errcheck // This assertion is required in the comment on e.Token.
-		e.Context().(Context),
-		wrapPathLike(ExprKindLiteral, e.ID()),
+	return id.WrapDyn(
+		e.File,
+		id.NewDyn(ExprKindLiteral, id.ID[ExprAny](e.ID())),
 	)
 }
