@@ -23,7 +23,6 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
-	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -676,11 +675,11 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		copied.rawField = Ref[Member]{}
 
 		var exprCount int
-		slot := message.insert(field)
+		slot := message.slot(field)
 		if slot.IsZero() {
 			copied.target = Value{}
 		} else {
-			value := id.Wrap(e.File, *slot)
+			value := slot.Value()
 
 			switch {
 			case field.IsRepeated():
@@ -721,7 +720,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			if slot.IsZero() {
 				// Make sure to pick up a freshly allocated value, if this
 				// was the first iteration.
-				*slot = v.ID()
+				slot.Insert(v)
 			}
 		}
 	}
