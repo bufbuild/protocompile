@@ -20,7 +20,7 @@ import (
 	"sync"
 	"unicode"
 	"unicode/utf16"
-	_ "unsafe"
+	_ "unsafe" // For go:linkname.
 
 	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"

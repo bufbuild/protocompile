@@ -17,9 +17,10 @@ package source_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/source/length"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLocation(t *testing.T) {

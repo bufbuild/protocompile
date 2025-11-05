@@ -37,7 +37,7 @@ type writer struct {
 
 // Write implements [io.Writer].
 func (w *writer) Write(data []byte) (int, error) {
-	w.WriteString(unsafex.StringAlias(data))
+	_, _ = w.WriteString(unsafex.StringAlias(data))
 	return len(data), nil
 }
 
@@ -84,10 +84,10 @@ func (w *writer) WriteWrapped(data string, width int) {
 	uw := &unicodex.Width{EscapeNonPrint: true}
 	for i, line := range iterx.Enumerate(uw.WordWrap(data, width-margin)) {
 		if i > 0 {
-			w.WriteString("\n")
+			_, _ = w.WriteString("\n")
 			w.WriteSpaces(margin)
 		}
-		w.WriteString(line)
+		_, _ = w.WriteString(line)
 	}
 }
 

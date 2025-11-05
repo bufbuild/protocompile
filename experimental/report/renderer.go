@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:errcheck // There is a very noisy, unhelpful lint around WriteString().
 package report
 
 import (
@@ -24,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	_ "unsafe"
+	_ "unsafe" // For go:linkname.
 
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -440,7 +441,7 @@ func buildWindow(level Level, locations [][2]source.Location, snippets []snippet
 				lineEnd += snippet.Start
 			}
 			uw := unicodex.Width{Column: ul.start, EscapeNonPrint: true}
-			_, _ = uw.WriteString(w.file.Text()[snippet.Start:lineEnd])
+			uw.WriteString(w.file.Text()[snippet.Start:lineEnd])
 			ul.end = uw.Column
 		}
 
@@ -601,7 +602,7 @@ func (r *renderer) window(w *window) (needsTrailingBreak bool) {
 				len(sidebar) + ul.end
 
 			uw := unicodex.Width{Column: startCol}
-			_, _ = uw.WriteString(ul.message)
+			uw.WriteString(ul.message)
 			if uw.Column > unicodex.MaxMessageWidth {
 				// Move rightmost into the normal underlines, because it causes wrapping.
 				rightmost[i] = nil
