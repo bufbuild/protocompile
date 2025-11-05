@@ -92,19 +92,22 @@ func (m *Intersect[K, V]) Contiguous(values bool) iter.Seq[Entry[K, []V]] {
 		first := true
 		for more := iter.First(); more; more = iter.Next() {
 			entry := iter.Value()
-			if first {
+			switch {
+			case first:
 				current = *entry
 				if !values {
 					current.Value = nil
 				}
 
 				first = false
-			} else if current.End+1 == entry.Start {
+
+			case current.End+1 == entry.Start:
 				current.End = entry.End
 				if values {
 					current.Value = append(current.Value, entry.Value...)
 				}
-			} else {
+
+			default:
 				if !yield(current) {
 					return
 				}

@@ -1097,7 +1097,7 @@ func validateVisibility(ty Type, r *report.Report) {
 	start, end := parent.AbsoluteRange()
 
 	// Find any gaps in the reserved ranges.
-	gap := int32(start)
+	gap := start
 	ranges := slices.Collect(seq.Values(parent.ReservedRanges()))
 	if len(ranges) > 0 {
 		slices.SortFunc(ranges, cmpx.Join(
@@ -1146,6 +1146,7 @@ func validateVisibility(ty Type, r *report.Report) {
 					report.Snippetf(ranges.At(1).AST(), "another here"),
 				)
 			}
+			//nolint:dupword
 			d.Apply(
 				report.PageBreak,
 				report.Snippetf(why, "`STRICT` specified here"),
@@ -1170,6 +1171,7 @@ func validateVisibility(ty Type, r *report.Report) {
 
 	// If this is true, the protoc check is bugged and we emit a warning...
 	bugged := parent.ReservedRanges().Len() == 1
+	//nolint:dupword
 	d := r.SoftErrorf(!bugged, "%s `%s` does not reserve all field numbers", parent.noun(), parent.FullName()).Apply(
 		report.Snippetf(vis, "nested type exported here"),
 		report.Snippetf(parent.AST(), "... within this type"),

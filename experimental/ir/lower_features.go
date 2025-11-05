@@ -16,7 +16,6 @@ package ir
 
 import (
 	"cmp"
-	"regexp"
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
@@ -27,8 +26,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
-
-var whitespacePattern = regexp.MustCompile(`[ \t\r\n]+`)
 
 func buildAllFeatureInfo(file *File, r *report.Report) {
 	for m := range file.AllMembers() {
