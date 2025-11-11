@@ -38,6 +38,8 @@ type Number struct {
 	IsFloat        bool
 	ThousandsSep   bool
 
+	Base, ExpBase byte
+
 	SyntaxError bool // Whether parsing a concrete value failed.
 }
 

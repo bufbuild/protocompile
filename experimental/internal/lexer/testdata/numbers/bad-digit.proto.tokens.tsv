@@ -1,0 +1,10 @@
+#		kind		keyword		offsets		linecol		text
+0		Number		Unknown		000:002		001:001		"0f"		num:0/8/1		pre:"0"
+1		Space		Unknown		002:003		001:003		"\n"
+2		Number		Unknown		003:007		002:001		"0b02"		num:0/2/1		pre:"0"
+3		Space		Unknown		007:008		002:005		"\n"
+4		Number		Unknown		008:012		003:001		"0o08"		num:0/8/1		pre:"0"
+5		Space		Unknown		012:013		003:005		"\n"
+6		Number		Unknown		013:015		004:001		"08"		num:0/8/1		pre:"0"
+7		Space		Unknown		015:016		004:003		"\n"
+8		Number		Unknown		016:020		005:001		"0x0G"		num:0/16/1		pre:"0"

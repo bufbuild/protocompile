@@ -12,4 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser
+package trie
+
+import (
+	"fmt"
+	"strings"
+)
+
+func (t *Trie[V]) Dump() string {
+	buf := new(strings.Builder)
+	t.impl.dump(buf)
+	fmt.Fprintf(buf, "values: %v\n", t.values)
+	return buf.String()
+}

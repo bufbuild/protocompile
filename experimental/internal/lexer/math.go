@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser
+package lexer
 
 import (
 	"math/big"
 	"math/bits"
+
+	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
 
 type parseIntResult struct {
@@ -36,8 +38,8 @@ func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
 			continue
 		}
 
-		digit := parseDigit(r)
-		if digit >= base {
+		digit, ok := unicodex.Digit(r, base)
+		if !ok {
 			return result, false
 		}
 
@@ -63,25 +65,4 @@ func parseInt(digits string, base byte) (result parseIntResult, ok bool) {
 	}
 
 	return result, true
-}
-
-// parseDigit parses a digit up to hexadecimal; returns 0xff if d is not a valid
-// digit rune. This allows checking for the base of the digit, or if it is
-// a valid digit at all, in one comparison.
-//
-// E.g., parseDigit('7') < 10 checks for valid decimal digits.
-func parseDigit(d rune) byte {
-	switch {
-	case d >= '0' && d <= '9':
-		return byte(d) - '0'
-
-	case d >= 'a' && d <= 'f':
-		return byte(d) - 'a' + 10
-
-	case d >= 'A' && d <= 'F':
-		return byte(d) - 'A' + 10
-
-	default:
-		return 0xff
-	}
 }

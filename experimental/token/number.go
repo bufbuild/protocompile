@@ -34,16 +34,19 @@ func (n NumberToken) Token() Token {
 
 // Base returns this number's base.
 func (n NumberToken) Base() byte {
-	switch n.Prefix().Text() {
-	case "0b", "0B":
-		return 2
-	case "0", "0o", "0O":
-		return 8
-	case "0x", "0X":
-		return 16
-	default:
+	if n.Raw() == nil {
 		return 10
 	}
+	return n.Raw().Base
+}
+
+// ExpBase returns this number's exponent base, if this number has an exponent;
+// returns 1 if it has no exponent.
+func (n NumberToken) ExpBase() int {
+	if n.Raw() == nil {
+		return 1
+	}
+	return max(1, int(n.Raw().ExpBase))
 }
 
 // Prefix returns this number's base prefix (e.g. 0x).

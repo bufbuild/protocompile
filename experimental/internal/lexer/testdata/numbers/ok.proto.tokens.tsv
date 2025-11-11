@@ -1,0 +1,26 @@
+#		kind		keyword		offsets		linecol		text
+0		Number		Unknown		000:001		001:001		"0"		num:0/8/1		pre:"0"
+1		Space		Unknown		001:002		001:002		"\n"
+2		Number		Unknown		002:006		002:001		"1234"		num:1234/10/1
+3		Space		Unknown		006:007		002:005		"\n"
+4		Number		Unknown		007:011		003:001		"0741"		num:481/8/1		pre:"0"
+5		Space		Unknown		011:012		003:005		"\n"
+6		Number		Unknown		012:020		004:001		"0x0f6DB2"		num:1011122/16/1		pre:"0x"
+7		Space		Unknown		020:021		004:009		"\n"
+8		Number		Unknown		021:023		005:001		"1."		num:1/10/1
+9		Space		Unknown		023:024		005:003		"\n"
+10		Number		Unknown		024:027		006:001		"0.0"		num:0/10/1
+11		Space		Unknown		027:028		006:004		"\n"
+12		Number		Unknown		028:032		007:001		".123"		num:0.123/10/1
+13		Space		Unknown		032:033		007:005		"\n"
+14		Number		Unknown		033:040		008:001		"555.555"		num:555.555/10/1
+15		Space		Unknown		040:041		008:008		"\n"
+16		Number		Unknown		041:050		009:001		"1.234e-12"		num:1.234e-12/10/10
+17		Space		Unknown		050:051		009:010		"\n"
+18		Number		Unknown		051:058		010:001		".953e20"		num:95300000000000000000/10/10
+19		Space		Unknown		058:059		010:008		"\n"
+20		Number		Unknown		059:064		011:001		"5E+40"		num:49999999999999999998328134650992575643648/10/10
+21		Space		Unknown		064:065		011:006		"\n"
+22		Number		Unknown		065:070		012:001		"1p100"		num:2535301200456458802993406410752/10/2
+23		Space		Unknown		070:071		012:006		"\n"
+24		Number		Unknown		071:081		013:001		"0x1.fffp10"		num:2047.75/16/2		pre:"0x"
