@@ -23,11 +23,11 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
-	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -89,7 +89,7 @@ type evalArgs struct {
 	isArrayElement bool
 
 	// A span for whatever caused the above field to be selected.
-	annotation report.Spanner
+	annotation source.Spanner
 
 	textFormat   bool         // Whether we're inside of a message literal.
 	allowMax     bool         // Whether the max keyword is to be honored.
@@ -676,11 +676,11 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 		copied.rawField = Ref[Member]{}
 
 		var exprCount int
-		slot := message.insert(field)
+		slot := message.slot(field)
 		if slot.IsZero() {
 			copied.target = Value{}
 		} else {
-			value := id.Wrap(e.File, *slot)
+			value := slot.Value()
 
 			switch {
 			case field.IsRepeated():
@@ -721,7 +721,7 @@ func (e *evaluator) evalMessage(args evalArgs, expr ast.ExprDict) Value {
 			if slot.IsZero() {
 				// Make sure to pick up a freshly allocated value, if this
 				// was the first iteration.
-				*slot = v.ID()
+				slot.Insert(v)
 			}
 		}
 	}
@@ -1197,8 +1197,8 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 type errTypeCheck struct {
 	want, got any
 
-	expr       report.Spanner
-	annotation report.Spanner
+	expr       source.Spanner
+	annotation source.Spanner
 
 	wantRepeated, gotRepeated bool
 }

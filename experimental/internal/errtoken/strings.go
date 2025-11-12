@@ -23,6 +23,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -59,7 +60,7 @@ func (e ImpureString) Diagnose(d *report.Diagnostic) {
 // InvalidEscape diagnoses an invalid escape sequence within a string
 // literal.
 type InvalidEscape struct {
-	Span report.Span // The span of the offending escape within a literal.
+	Span source.Span // The span of the offending escape within a literal.
 }
 
 // Diagnose implements [report.Diagnose].

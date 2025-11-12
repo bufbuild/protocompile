@@ -17,7 +17,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
@@ -141,12 +141,12 @@ func (e ExprAny) AsField() ExprField {
 	return id.Wrap(e.Context(), id.ID[ExprField](e.ID().Value()))
 }
 
-// Span implements [report.Spanner].
-func (e ExprAny) Span() report.Span {
+// Span implements [source.Spanner].
+func (e ExprAny) Span() source.Span {
 	// At most one of the below will produce a non-nil type, and that will be
-	// the span selected by report.Join. If all of them are nil, this produces
+	// the span selected by source.Join. If all of them are nil, this produces
 	// the nil span.
-	return report.Join(
+	return source.Join(
 		e.AsLiteral(),
 		e.AsPath(),
 		e.AsPrefixed(),
@@ -160,7 +160,7 @@ func (e ExprAny) Span() report.Span {
 // ExprError represents an unrecoverable parsing error in an expression context.
 type ExprError id.Node[ExprError, *File, *rawExprError]
 
-type rawExprError report.Span
+type rawExprError source.Span
 
 // AsAny type-erases this expression value.
 //
@@ -173,13 +173,13 @@ func (e ExprError) AsAny() ExprAny {
 	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindError, id.ID[ExprAny](e.ID())))
 }
 
-// Span implements [report.Spanner].
-func (e ExprError) Span() report.Span {
+// Span implements [source.Spanner].
+func (e ExprError) Span() source.Span {
 	if e.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Span(*e.Raw())
+	return source.Span(*e.Raw())
 }
 
 func (ExprKind) DecodeDynID(lo, hi int32) ExprKind {

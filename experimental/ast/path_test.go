@@ -24,7 +24,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
@@ -32,7 +32,7 @@ import (
 func TestNaturalSplit(t *testing.T) {
 	t.Parallel()
 
-	f := report.NewFile("test.proto", "a.b./*idk*/(a.b.c )/*x*/.d")
+	f := source.NewFile("test.proto", "a.b./*idk*/(a.b.c )/*x*/.d")
 
 	// Manually lex the Path above.
 	s := &token.Stream{File: f}
@@ -54,7 +54,7 @@ func TestNaturalSplit(t *testing.T) {
 		s.Push(1, token.Punct),   // 14 .
 		s.Push(1, token.Ident),   // 15 d
 	}
-	c := ast.New(s)
+	c := ast.New("test.proto", s)
 
 	token.Fuse(tokens[5], tokens[12])
 
@@ -105,7 +105,7 @@ func TestNaturalSplit(t *testing.T) {
 func TestSyntheticSplit(t *testing.T) {
 	t.Parallel()
 
-	f := report.NewFile("test.proto", "a.b.(a.b.c).d")
+	f := source.NewFile("test.proto", "a.b.(a.b.c).d")
 
 	// Manually build this path: a.b.(a.b.c).d
 	s := &token.Stream{File: f}
@@ -114,7 +114,7 @@ func TestSyntheticSplit(t *testing.T) {
 	b := s.NewIdent("b")
 	c := s.NewIdent("c")
 	d := s.NewIdent("d")
-	ctx := ast.New(s)
+	ctx := ast.New("test.proto", s)
 	inner := ctx.Nodes().NewPath(
 		ctx.Nodes().NewPathComponent(token.Zero, a),
 		ctx.Nodes().NewPathComponent(p, b),

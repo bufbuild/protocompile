@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -70,7 +71,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 					}
 				}
 
-				tokens := report.Join(next, prevSeparator)
+				tokens := source.Join(next, prevSeparator)
 				p.Error(errUnexpected{
 					what:  tokens,
 					where: taxa.Classify(next).After(),

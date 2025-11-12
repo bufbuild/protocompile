@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -268,7 +269,7 @@ func populateOptionTargets(file *File, _ *report.Report) {
 }
 
 func validateOptionTargets(f *File, r *report.Report) {
-	validateOptionTargetsInValue(f.Options(), report.Span{}, OptionTargetFile, r)
+	validateOptionTargetsInValue(f.Options(), source.Span{}, OptionTargetFile, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
 		tyTarget, memberTarget := OptionTargetMessage, OptionTargetField
@@ -289,7 +290,7 @@ func validateOptionTargets(f *File, r *report.Report) {
 	}
 }
 
-func validateOptionTargetsInValue(m MessageValue, decl report.Span, target OptionTarget, r *report.Report) {
+func validateOptionTargetsInValue(m MessageValue, decl source.Span, target OptionTarget, r *report.Report) {
 	if m.IsZero() {
 		return
 	}
@@ -391,7 +392,7 @@ func (r optionRef) resolve() {
 	current := id.Wrap(r.File, *r.raw)
 	field := current.Field()
 	var path ast.Path
-	var raw *id.ID[Value]
+	var raw slot
 	for pc := range r.def.Path.Components {
 		// If this is the first iteration, use the *Options value as the current
 		// message.
@@ -408,14 +409,15 @@ func (r optionRef) resolve() {
 			pc.AsIdent().Keyword().IsPseudoOption()
 		if pseudo {
 			// Check if this is a pseudo-option.
+			m := current.AsMessage()
 			switch pc.AsIdent().Keyword() {
 			case keyword.Default:
 				field = r.target
-				raw = &current.AsMessage().Raw().pseudo.defaultValue
+				raw = slot{m, &m.Raw().pseudo.defaultValue}
 
 			case keyword.JsonName:
 				field = r.builtins().JSONName
-				raw = &current.AsMessage().Raw().pseudo.jsonName
+				raw = slot{m, &current.AsMessage().Raw().pseudo.jsonName}
 			}
 		} else if extn := pc.AsExtension(); !extn.IsZero() {
 			sym := symbolRef{
@@ -523,10 +525,10 @@ func (r optionRef) resolve() {
 		// 2. The current field is of message type and this is not the last
 		//    component.
 		if !pseudo {
-			raw = parent.insert(field)
+			raw = parent.slot(field)
 		}
 		if !raw.IsZero() {
-			value := id.Wrap(r.File, *raw)
+			value := raw.Value()
 			switch {
 			case field.IsRepeated():
 				break // Handled below.
@@ -598,7 +600,7 @@ func (r optionRef) resolve() {
 		value.Raw().optionPaths = append(value.Raw().optionPaths, path.ID())
 		value.Raw().exprs = append(value.Raw().exprs, ast.ExprPath{Path: path}.AsAny().ID())
 
-		*raw = value.ID()
+		raw.Insert(value)
 		current = value
 	}
 
@@ -616,18 +618,18 @@ func (r optionRef) resolve() {
 	}
 
 	if !raw.IsZero() {
-		args.target = id.Wrap(r.File, *raw)
+		args.target = raw.Value()
 	}
 
 	v := evaluator.eval(args)
-	if !v.IsZero() {
-		*raw = v.ID()
+	if raw.IsZero() && !v.IsZero() {
+		raw.Insert(v)
 	}
 }
 
 type errSetMultipleTimes struct {
 	member        any
-	first, second report.Spanner
+	first, second source.Spanner
 	root          bool
 }
 
@@ -635,7 +637,7 @@ func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
 	var what any
 	var name FullName
 	var note string
-	var def report.Spanner
+	var def source.Spanner
 	switch member := e.member.(type) {
 	case Member:
 		if !member.IsExtension() && e.root {
@@ -668,7 +670,7 @@ func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
 }
 
 type errOptionMustBeMessage struct {
-	selector, prev, spec report.Spanner
+	selector, prev, spec source.Spanner
 	got, gotName         any
 }
 

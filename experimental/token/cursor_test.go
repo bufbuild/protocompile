@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -28,7 +28,7 @@ func TestCursor(t *testing.T) {
 
 	// Create a token tree.
 	s := &token.Stream{
-		File: report.NewFile("test", "abc(def(x), ghi)"),
+		File: source.NewFile("test", "abc(def(x), ghi)"),
 	}
 
 	abc := s.Push(3, token.Ident)

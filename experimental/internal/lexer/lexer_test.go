@@ -23,6 +23,8 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/internal/lexer"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/golden"
@@ -45,7 +47,7 @@ func TestLexer(t *testing.T) {
 		text = unescapeTestCase(text)
 
 		r := &report.Report{Options: report.Options{Tracing: 10}}
-		file := report.NewFile(path, text)
+		file := source.NewFile(path, text)
 		lex := lexer.Lexer{
 			OnKeyword: func(k keyword.Keyword) lexer.OnKeyword {
 				switch k {
@@ -96,7 +98,7 @@ func TestLexer(t *testing.T) {
 			count++
 
 			sp := tok.Span()
-			start := stream.Location(sp.Start, report.TermWidth)
+			start := stream.Location(sp.Start, length.TermWidth)
 			fmt.Fprintf(
 				&tsv, "%v\t\t%v\t\t%#v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
 				int32(tok.ID())-1,

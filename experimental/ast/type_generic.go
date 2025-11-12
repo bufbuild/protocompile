@@ -19,7 +19,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -99,13 +99,13 @@ func (t TypeGeneric) Args() TypeList {
 	}
 }
 
-// Span implements [report.Spanner].
-func (t TypeGeneric) Span() report.Span {
+// Span implements [source.Spanner].
+func (t TypeGeneric) Span() source.Span {
 	if t.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(t.Path(), t.Args())
+	return source.Join(t.Path(), t.Args())
 }
 
 // TypeList is a [Commas] over a list of types surrounded by some kind of brackets.
@@ -118,7 +118,7 @@ type TypeList struct {
 
 var (
 	_ Commas[TypeAny] = TypeList{}
-	_ report.Spanner  = TypeList{}
+	_ source.Spanner  = TypeList{}
 )
 
 type rawTypeList struct {
@@ -190,16 +190,16 @@ func (d TypeList) InsertComma(n int, ty TypeAny, comma token.Token) {
 	d.raw.args = slices.Insert(d.raw.args, n, withComma[id.Dyn[TypeAny, TypeKind]]{ty.ID(), comma.ID()})
 }
 
-// Span implements [report.Spanner].
-func (d TypeList) Span() report.Span {
+// Span implements [source.Spanner].
+func (d TypeList) Span() source.Span {
 	switch {
 	case d.IsZero():
-		return report.Span{}
+		return source.Span{}
 	case !d.Brackets().IsZero():
 		return d.Brackets().Span()
 	case d.Len() == 0:
-		return report.Span{}
+		return source.Span{}
 	default:
-		return report.Join(d.At(0), d.At(d.Len()-1))
+		return source.Join(d.At(0), d.At(d.Len()-1))
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -60,11 +61,11 @@ var lex = lexer.Lexer{
 // parsing succeeded without errors.
 //
 // Parse will freeze the stream in ctx when it is done.
-func Parse(source *report.File, r *report.Report) (file *ast.File, ok bool) {
+func Parse(path string, source *source.File, r *report.Report) (file *ast.File, ok bool) {
 	prior := len(r.Diagnostics)
 
 	r.SaveOptions(func() {
-		if source.Path() == "google/protobuf/descriptor.proto" {
+		if path == "google/protobuf/descriptor.proto" {
 			// descriptor.proto contains required fields, which we warn against.
 			// However, that would cause literally every project ever to have
 			// warnings, and in general, any warnings we add should not ding
@@ -72,7 +73,7 @@ func Parse(source *report.File, r *report.Report) (file *ast.File, ok bool) {
 			r.SuppressWarnings = true
 		}
 
-		file = ast.New(lex.Lex(source, r))
+		file = ast.New(path, lex.Lex(source, r))
 		parse(file, r)
 
 		defer file.Stream().Freeze()

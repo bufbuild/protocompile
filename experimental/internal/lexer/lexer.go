@@ -21,6 +21,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
@@ -77,7 +78,7 @@ type Lexer struct {
 }
 
 // Lex runs lexical analysis on file and returns a new token stream as a result.
-func (l *Lexer) Lex(file *report.File, r *report.Report) *token.Stream {
+func (l *Lexer) Lex(file *source.File, r *report.Report) *token.Stream {
 	stream := &token.Stream{File: file}
 	loop(&lexer{Lexer: l, Stream: stream, Report: r})
 	return stream
@@ -179,7 +180,7 @@ func (l *lexer) seekEOF() string {
 	return rest
 }
 
-func (l *lexer) spanFrom(start int) report.Span {
+func (l *lexer) spanFrom(start int) source.Span {
 	return l.Span(start, l.cursor)
 }
 

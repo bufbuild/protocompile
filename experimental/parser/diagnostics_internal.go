@@ -24,6 +24,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -34,13 +35,13 @@ import (
 // know how to handle.
 type errUnexpected struct {
 	// The unexpected thing (may be a token or AST node).
-	what report.Spanner
+	what source.Spanner
 
 	// The context we're in. Should be format-able with %v.
 	where taxa.Place
 	// Useful when where is an "after" position: if non-nil, this will be
 	// highlighted as "previous where.Object is here"
-	prev report.Spanner
+	prev source.Spanner
 
 	// What we wanted vs. what we got. Got can be used to customize what gets
 	// shown, but if it's not set, we call describe(what) to get a user-visible
@@ -120,7 +121,7 @@ func (e errUnexpected) Diagnose(d *report.Diagnostic) {
 // errMoreThanOne is used to diagnose the occurrence of some construct more
 // than one time, when it is expected to occur at most once.
 type errMoreThanOne struct {
-	first, second report.Spanner
+	first, second source.Spanner
 	what          taxa.Noun
 }
 
@@ -141,7 +142,7 @@ func (e errMoreThanOne) Diagnose(d *report.Diagnostic) {
 // does not permit them.
 type errHasOptions struct {
 	what interface {
-		report.Spanner
+		source.Spanner
 		Options() ast.CompactOptions
 	}
 }
@@ -168,7 +169,7 @@ func (e errHasSignature) Diagnose(d *report.Diagnostic) {
 // errBadNest diagnoses bad nesting: parent should not contain child.
 type errBadNest struct {
 	parent       classified
-	child        report.Spanner
+	child        source.Spanner
 	validParents taxa.Set
 }
 
@@ -209,7 +210,7 @@ func (e errBadNest) Diagnose(d *report.Diagnostic) {
 //nolint:govet // Irrelevant alignment padding lint.
 type errRequiresEdition struct {
 	edition syntax.Syntax
-	node    report.Spanner
+	node    source.Spanner
 	what    any
 	decl    ast.DeclSyntax
 
@@ -301,7 +302,7 @@ type justified struct {
 //
 // See the comments on doJustify* for details on the different cases this
 // function handles.
-func justify(stream *token.Stream, span report.Span, message string, edits ...justified) report.DiagnosticOption {
+func justify(stream *token.Stream, span source.Span, message string, edits ...justified) report.DiagnosticOption {
 	for i := range edits {
 		switch edits[i].justify {
 		case justifyBetween:
@@ -337,7 +338,7 @@ func justify(stream *token.Stream, span report.Span, message string, edits ...ju
 // [foo = 5].
 //
 // Of course, all of these operations are performed symmetrically.
-func doJustifyBetween(span report.Span, e *report.Edit) {
+func doJustifyBetween(span source.Span, e *report.Edit) {
 	text := span.File.Text()
 
 	// Helpers which returns the number of bytes of the space before or
@@ -430,7 +431,7 @@ func doJustifyBetween(span report.Span, e *report.Edit) {
 // can result in comments getting deleted; avoiding this is probably not
 // worth it. E.g. `{x/*f*/ = y}` becomes `{x: y}`, because the deleted region
 // is expanded from "=" into "/*f*/ =".
-func doJustifyLeft(stream *token.Stream, span report.Span, e *report.Edit) {
+func doJustifyLeft(stream *token.Stream, span source.Span, e *report.Edit) {
 	wasDelete := e.IsDeletion()
 
 	// Get the token at the start of the span.
@@ -453,7 +454,7 @@ func doJustifyLeft(stream *token.Stream, span report.Span, e *report.Edit) {
 }
 
 // doJustifyRight is the mirror image of doJustifyLeft.
-func doJustifyRight(stream *token.Stream, span report.Span, e *report.Edit) {
+func doJustifyRight(stream *token.Stream, span source.Span, e *report.Edit) {
 	wasDelete := e.IsDeletion()
 
 	// Get the token at the end of the span.

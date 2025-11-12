@@ -12,4 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package parser
+// Package length provides various length that can be used for configuring
+// the behavior of line/column calculations.
+package length
+
+//go:generate go run ../../../internal/enum unit.yaml

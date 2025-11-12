@@ -145,8 +145,8 @@ func TestIR(t *testing.T) {
 
 		var files source.Opener = source.NewMap(maps.Collect(iterx.Map1To2(
 			slices.Values(test.Files),
-			func(f File) (string, string) {
-				return f.Path, f.Text
+			func(f File) (string, *source.File) {
+				return f.Path, source.NewFile(f.Path, f.Text)
 			},
 		)))
 

@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -52,7 +53,7 @@ func legalizeCompactOptions(p *parser, opts ast.CompactOptions) {
 // We can't perform type-checking yet, so all we can really do here
 // is check that the path is ok for an option. Legalizing the value cannot
 // happen until type-checking in IR construction.
-func legalizeOptionEntry(p *parser, opt ast.Option, decl report.Span) {
+func legalizeOptionEntry(p *parser, opt ast.Option, decl source.Span) {
 	if opt.Path.IsZero() {
 		p.Errorf("missing %v path", taxa.Option).Apply(
 			report.Snippet(decl),
@@ -78,7 +79,7 @@ func legalizeOptionEntry(p *parser, opt ast.Option, decl report.Span) {
 }
 
 // legalizeValue conservatively legalizes a def's value.
-func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.ExprAny, where taxa.Place) {
+func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.ExprAny, where taxa.Place) {
 	// TODO: Some diagnostics emitted by this function must be suppressed by type
 	// checking, which generates more precise diagnostics.
 

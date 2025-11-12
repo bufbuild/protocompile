@@ -22,6 +22,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
@@ -123,7 +124,7 @@ type stringContent struct {
 	rune rune
 
 	isRawByte bool
-	escape    report.Span
+	escape    source.Span
 }
 
 // lexStringContent lexes a single logical rune's worth of content for a quoted
@@ -158,7 +159,7 @@ func lexStringContent(l *lexer) (sc stringContent) {
 			report.Snippet(nl),
 			report.Helpf("consider splitting this into adjacent string literals; Protobuf will automatically concatenate them"),
 		)
-	case report.NonPrint(r):
+	case unicodex.NonPrint(r):
 		// Warn if the user has a non-printable character in their string that isn't
 		// ASCII whitespace.
 		var escape string

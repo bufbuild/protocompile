@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -318,7 +319,7 @@ func (e errDuplicates) Diagnose(d *report.Diagnostic) {
 			"...also declared here"))
 	}
 
-	spans := make(map[report.Span]struct{})
+	spans := make(map[source.Span]struct{})
 	for i := range e.refs[2:] {
 		s := e.symbol(i + 2)
 		next := s.Kind().noun()

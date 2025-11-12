@@ -21,8 +21,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	compilerpb "github.com/bufbuild/protocompile/internal/gen/buf/compiler/v1alpha1"
@@ -60,8 +60,8 @@ func ToProto(f *ast.File, options ToProtoOptions) proto.Message {
 type protoEncoder struct {
 	ToProtoOptions
 
-	stack    []report.Spanner
-	stackMap map[report.Spanner]struct{}
+	stack    []source.Spanner
+	stackMap map[source.Spanner]struct{}
 }
 
 // checkCycle panics if v is visited cyclically.
@@ -69,12 +69,12 @@ type protoEncoder struct {
 // Should be called like this, so that on function exit the entry is popped:
 //
 //	defer c.checkCycle(v)()
-func (c *protoEncoder) checkCycle(v report.Spanner) func() {
+func (c *protoEncoder) checkCycle(v source.Spanner) func() {
 	// By default, we just perform a linear search, because inserting into
 	// a map is extremely slow. However, if the stack gets tall enough, we
 	// switch to using the map to avoid going quadratic.
 	if len(c.stack) > 32 {
-		c.stackMap = make(map[report.Spanner]struct{})
+		c.stackMap = make(map[source.Spanner]struct{})
 		for _, v := range c.stack {
 			c.stackMap[v] = struct{}{}
 		}
@@ -116,7 +116,7 @@ func (c *protoEncoder) file(file *ast.File) *compilerpb.File {
 	return proto
 }
 
-func (c *protoEncoder) span(s report.Spanner) *compilerpb.Span {
+func (c *protoEncoder) span(s source.Spanner) *compilerpb.Span {
 	if c.OmitSpans || s == nil {
 		return nil
 	}

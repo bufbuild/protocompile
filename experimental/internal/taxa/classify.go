@@ -18,7 +18,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -41,7 +41,7 @@ func IsFloatText(digits string) bool {
 }
 
 // Classify attempts to classify node for use in a diagnostic.
-func Classify(node report.Spanner) Noun {
+func Classify(node source.Spanner) Noun {
 	// This is a giant type switch on every AST and token type in the compiler.
 	switch node := node.(type) {
 	case token.Token:

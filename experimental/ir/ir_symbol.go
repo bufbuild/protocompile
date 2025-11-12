@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -168,7 +169,7 @@ func (s Symbol) Visible(in *File) bool {
 
 // Definition returns a span for the definition site of this symbol;
 // specifically, this is (typically) just an identifier.
-func (s Symbol) Definition() report.Span {
+func (s Symbol) Definition() source.Span {
 	switch s.Kind() {
 	case SymbolKindPackage:
 		return s.Context().AST().Package().Span()
@@ -189,7 +190,7 @@ func (s Symbol) Definition() report.Span {
 		return s.AsMethod().AST().Name().Span()
 	}
 
-	return report.Span{}
+	return source.Span{}
 }
 
 // noun returns a [taxa.Noun] for diagnostic use.

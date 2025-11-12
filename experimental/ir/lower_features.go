@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -412,7 +413,7 @@ type errEditionTooOld struct {
 	intro syntax.Syntax
 
 	what  any
-	where report.Spanner
+	where source.Spanner
 }
 
 func (e errEditionTooOld) Diagnose(d *report.Diagnostic) {
@@ -438,7 +439,7 @@ type errEditionTooNew struct {
 	warning             string
 
 	what  any
-	where report.Spanner
+	where source.Spanner
 }
 
 func (e errEditionTooNew) Diagnose(d *report.Diagnostic) {

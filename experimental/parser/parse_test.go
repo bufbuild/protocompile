@@ -20,6 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/golden"
 	"github.com/bufbuild/protocompile/internal/prototest"
 )
@@ -43,7 +44,7 @@ func TestParse(t *testing.T) {
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
 		errs := &report.Report{Options: report.Options{Tracing: 10}}
-		file, _ := Parse(report.NewFile(path, text), errs)
+		file, _ := Parse(path, source.NewFile(path, text), errs)
 
 		errs.Canonicalize()
 		stderr, _, _ := report.Renderer{

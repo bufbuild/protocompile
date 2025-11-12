@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -57,7 +58,7 @@ func (h hunk) bold(ss *styleSheet) string {
 }
 
 // hunkDiff computes edit hunks for a diff.
-func hunkDiff(span Span, edits []Edit) (Span, []hunk) {
+func hunkDiff(span source.Span, edits []Edit) (source.Span, []hunk) {
 	out := make([]hunk, 0, len(edits)*3+1)
 	var prev int
 	span, edits = offsetsForDiffing(span, edits)
@@ -77,7 +78,7 @@ func hunkDiff(span Span, edits []Edit) (Span, []hunk) {
 // edit.
 //
 // Each slice will contain one or more lines that should be displayed together.
-func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
+func unifiedDiff(span source.Span, edits []Edit) (source.Span, []hunk) {
 	// Sort the edits such that they are ordered by starting offset.
 	span, edits = offsetsForDiffing(span, edits)
 	src := span.Text()
@@ -155,7 +156,7 @@ func unifiedDiff(span Span, edits []Edit) (Span, []hunk) {
 // offsetsForDiffing pre-calculates information needed for diffing:
 // the line-snapped span, and edits which are adjusted to conform to that
 // span.
-func offsetsForDiffing(span Span, edits []Edit) (Span, []Edit) {
+func offsetsForDiffing(span source.Span, edits []Edit) (source.Span, []Edit) {
 	edits = slices.Clone(edits)
 	var start, end int
 	for i := range edits {

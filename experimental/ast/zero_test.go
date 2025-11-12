@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -72,7 +72,7 @@ func TestZero(t *testing.T) {
 
 // testZero validates that the zero value of some Spanner produces the
 // zero span.
-func testZero[Node report.Spanner](t *testing.T) {
+func testZero[Node source.Spanner](t *testing.T) {
 	t.Helper()
 	var z Node
 
