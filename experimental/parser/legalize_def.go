@@ -21,6 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
@@ -145,7 +146,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
 	if hasValue {
 		p.Error(errUnexpected{
-			what:  report.Join(def.Equals(), def.Value()),
+			what:  source.Join(def.Equals(), def.Value()),
 			where: what.In(),
 			got:   taxa.Classify(def.Value()),
 		})
@@ -300,7 +301,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
 	if hasValue {
 		p.Error(errUnexpected{
-			what:  report.Join(def.Equals(), def.Value()),
+			what:  source.Join(def.Equals(), def.Value()),
 			where: taxa.Method.In(),
 			got:   taxa.Classify(def.Value()),
 		})
@@ -327,7 +328,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 
 		if sig.Outputs().Span().IsZero() {
 			def.MarkCorrupt()
-			var after report.Spanner
+			var after source.Spanner
 			var expected taxa.Noun
 			switch {
 			case !sig.Returns().IsZero():

@@ -58,6 +58,6 @@ func (a AST) Execute(t *incremental.Task) (*ast.File, error) {
 		return nil, r[0].Fatal
 	}
 
-	file, _ := parser.Parse(r[0].Value, t.Report())
+	file, _ := parser.Parse(a.Path, r[0].Value, t.Report())
 	return file, nil
 }

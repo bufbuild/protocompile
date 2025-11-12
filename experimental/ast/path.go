@@ -20,7 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -145,11 +145,11 @@ func (p Path) IsIdents(idents ...string) bool {
 	return false
 }
 
-// report.Span implements [report.Spanner].
-func (p Path) Span() report.Span {
+// source.Span implements [source.Spanner].
+func (p Path) Span() source.Span {
 	// No need to check for zero here, if p is zero both start and end will be
 	// zero tokens.
-	return report.Join(
+	return source.Join(
 		id.Wrap(p.Context().Stream(), p.raw.start),
 		id.Wrap(p.Context().Stream(), p.raw.end),
 	)
@@ -555,9 +555,9 @@ func (p PathComponent) AsIdent() token.Token {
 	return token.Zero
 }
 
-// Span implements [report.Spanner].
-func (p PathComponent) Span() report.Span {
-	return report.Join(p.Separator(), p.Name())
+// Span implements [source.Spanner].
+func (p PathComponent) Span() source.Span {
+	return source.Join(p.Separator(), p.Name())
 }
 
 func (p PathID) synthRange() (start, end int) {

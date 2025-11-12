@@ -16,7 +16,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -92,11 +92,11 @@ func (t TypePrefixed) SetType(ty TypeAny) {
 	t.Raw().ty = ty.ID()
 }
 
-// Span implements [report.Spanner].
-func (t TypePrefixed) Span() report.Span {
+// Span implements [source.Spanner].
+func (t TypePrefixed) Span() source.Span {
 	if t.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(t.PrefixToken(), t.Type())
+	return source.Join(t.PrefixToken(), t.Type())
 }

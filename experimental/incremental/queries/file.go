@@ -34,7 +34,7 @@ type File struct {
 	ReportError bool
 }
 
-var _ incremental.Query[*report.File] = File{}
+var _ incremental.Query[*source.File] = File{}
 
 // Key implements [incremental.Query].
 //
@@ -48,14 +48,14 @@ func (f File) Key() any {
 }
 
 // Execute implements [incremental.Query].
-func (f File) Execute(t *incremental.Task) (*report.File, error) {
+func (f File) Execute(t *incremental.Task) (*source.File, error) {
 	if !f.ReportError {
-		text, err := f.Open(f.Path)
+		file, err := f.Open(f.Path)
 
 		if err != nil {
 			return nil, err
 		}
-		return report.NewFile(f.Path, text), nil
+		return file, nil
 	}
 
 	f.ReportError = false

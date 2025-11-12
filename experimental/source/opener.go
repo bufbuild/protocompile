@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package source provides standard queries and interfaces for accessing the
-// contents of source files.
 package source
 
 import (
@@ -22,7 +20,7 @@ import (
 	"io/fs"
 	"strings"
 
-	"github.com/bufbuild/protocompile/wellknownimports"
+	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 )
 
 // Opener is a mechanism for opening files.
@@ -32,13 +30,12 @@ import (
 type Opener interface {
 	// Open opens a file, potentially returning an error.
 	//
-	// The result should be a string, because the syntactic analysis framework
-	// wants strings as inputs so that providing the contents of a file as a Go
-	// string minimizes copies down the line.
+	// Note that the path of the returned file need not he path; this path should
+	// *only* be used for diagnostics.
 	//
 	// A return value of [fs.ErrNotExist] is given special treatment by some
 	// Opener adapters, such as the [Openers] type.
-	Open(path string) (string, error)
+	Open(path string) (*File, error)
 }
 
 // Map implements [Opener] via lookup of a built-in map. This map is not
@@ -47,55 +44,66 @@ type Opener interface {
 // queries, which breaks query caching.
 //
 // Missing entries result in [fs.ErrNotExist].
-type Map struct {
-	table map[string]string
-}
+type Map cmpx.MapWrapper[string, *File]
 
 // NewMap creates a new [Map] wrapping the given map.
 //
 // If passed nil, this will update the map to be an empty non-nil map.
-func NewMap(m map[string]string) *Map {
+func NewMap(m map[string]*File) Map {
 	if m == nil {
-		m = map[string]string{}
+		m = make(map[string]*File)
 	}
-	return &Map{m}
+	return Map(cmpx.NewMapWrapper(m))
 }
 
 // Get returns the map this [Map] wraps. This can be used to modify the map.
 //
 // Never returns nil.
-func (m *Map) Get() map[string]string {
-	return m.table
+func (m Map) Get() map[string]*File {
+	return cmpx.MapWrapper[string, *File](m).Get()
+}
+
+// Add adds a new file to this map.
+func (m Map) Add(path, text string) {
+	m.Get()[path] = NewFile(path, text)
 }
 
 // Open implements [Opener].
-func (m *Map) Open(path string) (string, error) {
-	text, ok := m.Get()[path]
+func (m Map) Open(path string) (*File, error) {
+	file, ok := m.Get()[path]
 	if !ok {
-		return "", fs.ErrNotExist
+		return nil, fs.ErrNotExist
 	}
-	return text, nil
+	return file, nil
 }
 
 // FS wraps an [fs.FS] to give it an [Opener] interface.
 type FS struct {
 	fs.FS
+
+	// If not nil, paths are passed to this function before being forwarded
+	// to fs.
+	PathMapper func(string) string
 }
 
 // Open implements [Opener].
-func (fs *FS) Open(path string) (string, error) {
+func (fs *FS) Open(path string) (*File, error) {
+	if fs.PathMapper != nil {
+		path = fs.PathMapper(path)
+	}
+
 	file, err := fs.FS.Open(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer file.Close()
 
 	var buf strings.Builder
 	_, err = io.Copy(&buf, file)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return buf.String(), nil
+	return NewFile(path, buf.String()), nil
 }
 
 // Openers wraps a sequence of [Opener]s.
@@ -105,21 +113,13 @@ func (fs *FS) Open(path string) (string, error) {
 type Openers []Opener
 
 // Open implements [Opener].
-func (o *Openers) Open(path string) (string, error) {
+func (o *Openers) Open(path string) (*File, error) {
 	for _, opener := range *o {
-		text, err := opener.Open(path)
+		file, err := opener.Open(path)
 		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		return text, err
+		return file, err
 	}
-	return "", fs.ErrNotExist
+	return nil, fs.ErrNotExist
 }
-
-// WKTs returns an opener that yields protocompile's built-in WKT sources.
-func WKTs() Opener {
-	// Ensure that all openers returned by this function compare equal.
-	return &wkts
-}
-
-var wkts = FS{FS: wellknownimports.FS()}

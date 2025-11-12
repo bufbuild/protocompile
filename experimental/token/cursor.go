@@ -19,7 +19,7 @@ import (
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -291,9 +291,9 @@ func (c *Cursor) RestSkippable() iter.Seq[Token] {
 // If it is a token, this will return that token, too.
 //
 // Returns [Zero] for a synthetic cursor.
-func (c *Cursor) SeekToEnd() (Token, report.Span) {
+func (c *Cursor) SeekToEnd() (Token, source.Span) {
 	if c == nil || c.stream != nil {
-		return Zero, report.Span{}
+		return Zero, source.Span{}
 	}
 
 	// Seek to the end.

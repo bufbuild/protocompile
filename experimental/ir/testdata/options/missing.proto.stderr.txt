@@ -12,7 +12,7 @@ error: expected singular message, found scalar type `string`
     |         |
     |         found scalar type `string`
     |
-   ::: google/protobuf/descriptor.proto:504:12
+   ::: <built-in>/google/protobuf/descriptor.proto:504:12
     |
 504 |   optional string go_package = 11;
     |            ------ type specified here
@@ -31,7 +31,7 @@ error: expected singular message, found scalar type `bool`
     |             |
     |             found scalar type `bool`
     |
-   ::: google/protobuf/descriptor.proto:611:12
+   ::: <built-in>/google/protobuf/descriptor.proto:611:12
     |
 611 |   optional bool deprecated = 3 [default = false];
     |            ---- type specified here
@@ -52,7 +52,7 @@ error: expected singular message, found scalar type `bool`
     |                                              |
     |                                              field selector requires singular message
     |
-   ::: google/protobuf/descriptor.proto:743:12
+   ::: <built-in>/google/protobuf/descriptor.proto:743:12
     |
 743 |   optional bool lazy = 5 [default = false];
     |            ---- type specified here
@@ -87,7 +87,7 @@ error: expected singular message, found scalar type `bool`
     |             |
     |             found scalar type `bool`
     |
-   ::: google/protobuf/descriptor.proto:859:12
+   ::: <built-in>/google/protobuf/descriptor.proto:859:12
     |
 859 |   optional bool deprecated = 3 [default = false];
     |            ---- type specified here
@@ -108,7 +108,7 @@ error: expected singular message, found scalar type `bool`
     |                                            |
     |                                            field selector requires singular message
     |
-   ::: google/protobuf/descriptor.proto:889:12
+   ::: <built-in>/google/protobuf/descriptor.proto:889:12
     |
 889 |   optional bool deprecated = 1 [default = false];
     |            ---- type specified here

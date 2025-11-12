@@ -16,8 +16,8 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -76,10 +76,10 @@ func (e ExprArray) Elements() Commas[ExprAny] {
 	}
 }
 
-// Span implements [report.Spanner].
-func (e ExprArray) Span() report.Span {
+// Span implements [source.Spanner].
+func (e ExprArray) Span() source.Span {
 	if e.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	return e.Brackets().Span()

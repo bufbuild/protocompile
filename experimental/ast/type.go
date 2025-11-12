@@ -19,7 +19,7 @@ import (
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
@@ -120,12 +120,12 @@ func (t TypeAny) RemovePrefixes() TypeAny {
 	return t
 }
 
-// report.Span implements [report.Spanner].
-func (t TypeAny) Span() report.Span {
+// source.Span implements [source.Spanner].
+func (t TypeAny) Span() source.Span {
 	// At most one of the below will produce a non-zero type, and that will be
-	// the span selected by report.Join. If all of them are zero, this produces
+	// the span selected by source.Join. If all of them are zero, this produces
 	// the zero span.
-	return report.Join(
+	return source.Join(
 		t.AsPath(),
 		t.AsPrefixed(),
 		t.AsGeneric(),
@@ -138,7 +138,7 @@ func (t TypeAny) Span() report.Span {
 // not represent a "type error" as in "type-checking failure".
 type TypeError id.Node[TypeError, *File, *rawTypeError]
 
-type rawTypeError report.Span
+type rawTypeError source.Span
 
 // AsAny type-erases this type value.
 //
@@ -151,13 +151,13 @@ func (t TypeError) AsAny() TypeAny {
 	return id.WrapDyn(t.Context(), id.NewDyn(TypeKindError, id.ID[TypeAny](t.ID())))
 }
 
-// Span implements [report.Spanner].
-func (t TypeError) Span() report.Span {
+// Span implements [source.Spanner].
+func (t TypeError) Span() source.Span {
 	if t.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Span(*t.Raw())
+	return source.Span(*t.Raw())
 }
 
 func (TypeKind) DecodeDynID(lo, hi int32) TypeKind {

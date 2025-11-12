@@ -21,7 +21,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 )
 
 // NumberToken provides access to detailed information about a [Number].
@@ -47,9 +47,9 @@ func (n NumberToken) Base() byte {
 }
 
 // Prefix returns this number's base prefix (e.g. 0x).
-func (n NumberToken) Prefix() report.Span {
+func (n NumberToken) Prefix() source.Span {
 	if n.Raw() == nil {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	span := n.Token().Span()
@@ -59,9 +59,9 @@ func (n NumberToken) Prefix() report.Span {
 
 // Suffix returns an arbitrary suffix attached to this number (the suffix will
 // have no whitespace before the end of the digits).
-func (n NumberToken) Suffix() report.Span {
+func (n NumberToken) Suffix() source.Span {
 	if n.Raw() == nil {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	span := n.Token().Span()

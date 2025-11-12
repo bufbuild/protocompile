@@ -16,7 +16,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/arena"
 )
 
@@ -122,12 +122,12 @@ func (d DeclAny) AsRange() DeclRange {
 	return id.Wrap(d.Context(), id.ID[DeclRange](d.ID().Value()))
 }
 
-// Span implements [report.Spanner].
-func (d DeclAny) Span() report.Span {
+// Span implements [source.Spanner].
+func (d DeclAny) Span() source.Span {
 	// At most one of the below will produce a non-zero decl, and that will be
-	// the span selected by report.Join. If all of them are zero, this produces
+	// the span selected by source.Join. If all of them are zero, this produces
 	// the zero span.
-	return report.Join(
+	return source.Join(
 		d.AsEmpty(),
 		d.AsSyntax(),
 		d.AsPackage(),

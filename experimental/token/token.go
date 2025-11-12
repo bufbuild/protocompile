@@ -21,7 +21,7 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
@@ -174,9 +174,9 @@ func (t Token) Text() string {
 }
 
 // Span implements [Spanner].
-func (t Token) Span() report.Span {
+func (t Token) Span() source.Span {
 	if t.IsZero() || t.IsSynthetic() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	var a, b int
@@ -192,9 +192,9 @@ func (t Token) Span() report.Span {
 }
 
 // LeafSpan returns the span that this token would have if it was a leaf token.
-func (t Token) LeafSpan() report.Span {
+func (t Token) LeafSpan() source.Span {
 	if t.IsZero() || t.IsSynthetic() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	return t.Context().Span(t.offsets())

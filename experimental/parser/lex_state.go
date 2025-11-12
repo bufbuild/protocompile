@@ -19,6 +19,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
 )
@@ -107,7 +108,7 @@ func (l *lexer) SeekEOF() string {
 	return rest
 }
 
-func (l *lexer) SpanFrom(start int) report.Span {
+func (l *lexer) SpanFrom(start int) source.Span {
 	return l.Span(start, l.cursor)
 }
 

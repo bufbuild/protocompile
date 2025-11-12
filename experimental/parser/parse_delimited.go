@@ -21,12 +21,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // delimited is a mechanism for parsing a punctuation-delimited list.
-type delimited[T report.Spanner] struct {
+type delimited[T source.Spanner] struct {
 	p *parser
 	c *token.Cursor
 
@@ -117,9 +118,9 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				want = d.delimNouns()
 			}
 
-			what := report.Spanner(first)
+			what := source.Spanner(first)
 			if !last.IsZero() {
-				what = report.Join(first, last)
+				what = source.Join(first, last)
 			}
 
 			badPrefix = true
@@ -203,7 +204,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 	switch {
 	case d.exhaust && !d.c.Done():
 		d.p.Error(errUnexpected{
-			what:  report.JoinSeq(d.c.Rest()),
+			what:  source.JoinSeq(d.c.Rest()),
 			where: d.in.In(),
 			want:  d.what.AsSet(),
 			got:   "tokens",

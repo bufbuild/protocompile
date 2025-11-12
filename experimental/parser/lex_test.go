@@ -23,6 +23,8 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/golden"
 )
@@ -44,7 +46,7 @@ func TestLexer(t *testing.T) {
 		text = unescapeTestCase(text)
 
 		errs := &report.Report{Options: report.Options{Tracing: 10}}
-		ctx := ast.New(report.NewFile(path, text))
+		ctx := ast.New(path, source.NewFile(path, text))
 		lex(ctx.Stream(), errs)
 
 		stderr, _, _ := report.Renderer{
@@ -61,7 +63,7 @@ func TestLexer(t *testing.T) {
 			count++
 
 			sp := tok.Span()
-			start := ctx.Stream().Location(sp.Start, report.TermWidth)
+			start := ctx.Stream().Location(sp.Start, length.TermWidth)
 			fmt.Fprintf(
 				&tsv, "%v\t\t%v\t\t%#v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
 				int32(tok.ID())-1,

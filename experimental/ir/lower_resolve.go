@@ -25,6 +25,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
@@ -234,7 +235,7 @@ type symbolRef struct {
 	*report.Report
 
 	scope, name FullName
-	span        report.Spanner
+	span        source.Spanner
 
 	skipIfNot, accept func(SymbolKind) bool
 	want              taxa.Noun

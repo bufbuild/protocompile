@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -41,7 +41,7 @@ func TestLeafTokens(t *testing.T) {
 	assert := assert.New(t)
 
 	s := &token.Stream{
-		File: report.NewFile("test", "abc def ghi"),
+		File: source.NewFile("test", "abc def ghi"),
 	}
 
 	abc := s.Push(3, token.Ident)
@@ -80,7 +80,7 @@ func TestTreeTokens(t *testing.T) {
 	assert := assert.New(t)
 
 	s := &token.Stream{
-		File: report.NewFile("test", "abc(def(x), message)"),
+		File: source.NewFile("test", "abc(def(x), message)"),
 	}
 
 	_ = s.Push(3, token.Ident)

@@ -16,7 +16,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -52,10 +52,10 @@ func (d DeclEmpty) Semicolon() token.Token {
 	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
-// Span implements [report.Spanner].
-func (d DeclEmpty) Span() report.Span {
+// Span implements [source.Spanner].
+func (d DeclEmpty) Span() source.Span {
 	if d.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	return d.Semicolon().Span()
