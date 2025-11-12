@@ -71,9 +71,9 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 		err.what = span
 		err.got = taxa.EOF
 
-		if _, c, ok := end.Keyword().OpenClose(); ok {
+		if _, c, _ := end.Keyword().Brackets(); c != keyword.Unknown {
 			// Special case for closing braces.
-			err.got = "`" + c + "`"
+			err.got = "`" + c.String() + "`"
 		} else if !end.IsZero() {
 			err.got = taxa.Classify(end)
 		}

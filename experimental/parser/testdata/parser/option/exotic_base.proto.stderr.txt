@@ -3,7 +3,7 @@ error: unsupported base for integer literal
   help: use a hexadecimal literal instead
    |
 19 | - option x = 0b1100101;
-19 | + option x = 0x1p+07;
+19 | + option x = 0x65;
    |
    = note: Protobuf does not support binary literals
 
@@ -12,7 +12,7 @@ error: unsupported base for integer literal
   help: use a hexadecimal literal instead
    |
 20 | - option x = 0B1010101;
-20 | + option x = 0x1p+06;
+20 | + option x = 0x55;
    |
    = note: Protobuf does not support binary literals
 
@@ -34,16 +34,18 @@ error: unsupported base for integer literal
    |
    = note: octal literals are prefixed with `0`, not `0o`
 
-error: unexpected characters in floating-point literal
+error: unsupported base for floating-point literal
   --> testdata/parser/option/exotic_base.proto:24:12
    |
 24 | option x = 0x10203.4;
    |            ^^^^^^^^^
+   = note: Protobuf does not support hexadecimal floating-point literals
 
-error: unexpected characters in floating-point literal
+error: unsupported base for floating-point literal
   --> testdata/parser/option/exotic_base.proto:25:12
    |
 25 | option x = 0X12.ffP10;
    |            ^^^^^^^^^^
+   = note: Protobuf does not support hexadecimal floating-point literals
 
 encountered 6 errors

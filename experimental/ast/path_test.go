@@ -32,10 +32,10 @@ import (
 func TestNaturalSplit(t *testing.T) {
 	t.Parallel()
 
-	c := ast.New(report.NewFile("test.proto", "a.b./*idk*/(a.b.c )/*x*/.d"))
+	f := report.NewFile("test.proto", "a.b./*idk*/(a.b.c )/*x*/.d")
 
 	// Manually lex the Path above.
-	s := c.Stream()
+	s := &token.Stream{File: f}
 	tokens := []token.Token{
 		s.Push(1, token.Ident),   //  0 a
 		s.Push(1, token.Punct),   //  1 .
@@ -54,6 +54,7 @@ func TestNaturalSplit(t *testing.T) {
 		s.Push(1, token.Punct),   // 14 .
 		s.Push(1, token.Ident),   // 15 d
 	}
+	c := ast.New(s)
 
 	token.Fuse(tokens[5], tokens[12])
 
@@ -104,15 +105,16 @@ func TestNaturalSplit(t *testing.T) {
 func TestSyntheticSplit(t *testing.T) {
 	t.Parallel()
 
-	ctx := ast.New(report.NewFile("test.proto", "a.b.(a.b.c).d"))
+	f := report.NewFile("test.proto", "a.b.(a.b.c).d")
 
 	// Manually build this path: a.b.(a.b.c).d
-	s := ctx.Stream()
+	s := &token.Stream{File: f}
 	p := s.NewPunct(".")
 	a := s.NewIdent("a")
 	b := s.NewIdent("b")
 	c := s.NewIdent("c")
 	d := s.NewIdent("d")
+	ctx := ast.New(s)
 	inner := ctx.Nodes().NewPath(
 		ctx.Nodes().NewPathComponent(token.Zero, a),
 		ctx.Nodes().NewPathComponent(p, b),

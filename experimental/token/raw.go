@@ -189,7 +189,12 @@ func (t synth) Keyword() keyword.Keyword {
 	if !slicesx.Among(t.kind, Ident, Punct) {
 		return keyword.Unknown
 	}
-	return keyword.Lookup(t.text)
+
+	kw := keyword.Lookup(t.text)
+	if !t.IsLeaf() {
+		_, _, kw = kw.Brackets()
+	}
+	return kw
 }
 
 // IsLeaf checks whether this is a leaf token.

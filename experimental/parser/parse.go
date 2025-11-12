@@ -16,11 +16,43 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/lexer"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
+
+// lex is a combined lexer for Protobuf and CEL.
+var lex = lexer.Lexer{
+	OnKeyword: func(k keyword.Keyword) lexer.OnKeyword {
+		switch k {
+		case keyword.Comment:
+			return lexer.LineComment
+		case keyword.LComment, keyword.RComment:
+			return lexer.BlockComment
+		case keyword.LParen, keyword.LBracket, keyword.LBrace,
+			keyword.RParen, keyword.RBracket, keyword.RBrace:
+			return lexer.BracketKeyword
+		default:
+			if k.IsProtobuf() || k.IsCEL() {
+				return lexer.KeepKeyword
+			}
+			return lexer.DiscardKeyword
+		}
+	},
+
+	NumberCanStartWithDot: true,
+	OldStyleOctal:         true,
+	RequireASCIIIdent:     true,
+	EscapeExtended:        true,
+	EscapeAsk:             true,
+	EscapeOctal:           true,
+	EscapePartialX:        true,
+	EscapeUppercaseX:      true,
+	EscapeOldStyleUnicode: true,
+}
 
 // Parse lexes and parses the Protobuf file tracked by ctx.
 //
@@ -28,27 +60,26 @@ import (
 // parsing succeeded without errors.
 //
 // Parse will freeze the stream in ctx when it is done.
-func Parse(source *report.File, errs *report.Report) (file *ast.File, ok bool) {
-	prior := len(errs.Diagnostics)
-	file = ast.New(source)
+func Parse(source *report.File, r *report.Report) (file *ast.File, ok bool) {
+	prior := len(r.Diagnostics)
 
-	errs.SaveOptions(func() {
+	r.SaveOptions(func() {
 		if source.Path() == "google/protobuf/descriptor.proto" {
 			// descriptor.proto contains required fields, which we warn against.
 			// However, that would cause literally every project ever to have
 			// warnings, and in general, any warnings we add should not ding
 			// the worst WKT file of them all.
-			errs.SuppressWarnings = true
+			r.SuppressWarnings = true
 		}
 
-		lex(file.Stream(), errs)
-		parse(file, errs)
+		file = ast.New(lex.Lex(source, r))
+		parse(file, r)
 
 		defer file.Stream().Freeze()
 	})
 
 	ok = true
-	for _, d := range errs.Diagnostics[prior:] {
+	for _, d := range r.Diagnostics[prior:] {
 		if d.Level() >= report.Error {
 			ok = false
 			break

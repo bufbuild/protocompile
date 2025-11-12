@@ -37,7 +37,11 @@ func (n NumberToken) Base() byte {
 	if n.Raw() == nil {
 		return 10
 	}
-	return n.Raw().Base
+	base := n.Raw().Base
+	if base == 0 {
+		return 10
+	}
+	return base
 }
 
 // ExpBase returns this number's exponent base, if this number has an exponent;
@@ -102,7 +106,7 @@ func (n NumberToken) Int() (v uint64, exact bool) {
 	switch {
 	case n.Raw().Big != nil:
 		v, acc := n.Raw().Big.Uint64()
-		return v, acc == big.Exact
+		return v, acc == big.Exact && n.Raw().Big.IsInt()
 	case n.Raw().IsFloat:
 		f := math.Float64frombits(n.Raw().Word)
 		n := uint64(f)

@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
@@ -63,13 +62,16 @@ func lexNumber(l *lexer) token.Token {
 		base = 16
 	default:
 		if l.OldStyleOctal && strings.HasPrefix(digits, "0") {
-			prefix = digits[:1]
-			base = 8
-			legacyOctal = true
-		} else {
-			prefix = ""
-			base = 10
+			if strings.ContainsAny(digits, "123456789") {
+				prefix = digits[:1]
+				base = 8
+				legacyOctal = true
+				break
+			}
 		}
+
+		prefix = ""
+		base = 10
 	}
 
 	if base != 10 {
@@ -93,36 +95,30 @@ func lexNumber(l *lexer) token.Token {
 
 	// Peel a suffix off of digits consisting of characters not in the
 	// desired base.
-	var suffix int
-suffixLoop:
-	for digits != "" {
-		r, n := utf8.DecodeLastRuneInString(digits)
-		if strings.ContainsRune("_.", r) {
-			break
-		}
-
-		// This check is a little janky. It will not split e.g. 1.1e1e1 correctly.
-		base := base
-		switch expBase {
-		case 2:
-			base = 10
-			if strings.ContainsRune("+-pP", r) {
-				break suffixLoop
-			}
-		case 10:
-			base = 10
-			if strings.ContainsRune("+-eE", r) {
-				break suffixLoop
-			}
-		}
-
-		if _, ok := unicodex.Digit(r, base); ok {
-			break
-		}
-
-		suffix += n
-		digits = digits[:len(digits)-n]
+	haystack := digits
+	suffixBase := base
+	switch expBase {
+	case 2:
+		suffixBase = 10
+		haystack = haystack[strings.IndexAny(digits, "pP")+1:]
+	case 10:
+		suffixBase = 10
+		haystack = haystack[strings.IndexAny(digits, "eE")+1:]
 	}
+
+	suffixIdx := strings.IndexFunc(haystack, func(r rune) bool {
+		if strings.ContainsRune("_.+-", r) {
+			return false
+		}
+		_, ok := unicodex.Digit(r, suffixBase)
+		return !ok
+	})
+
+	var suffix int
+	if suffixIdx != -1 {
+		suffix = len(haystack) - suffixIdx
+	}
+	digits = digits[:len(digits)-suffix]
 
 	if prefix != "" {
 		token.MutateMeta[tokenmeta.Number](tok).Prefix = uint32(len(prefix))

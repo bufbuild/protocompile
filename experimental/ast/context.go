@@ -52,11 +52,8 @@ type File struct {
 type withContext = id.HasContext[*File]
 
 // New creates a fresh context for a file.
-func New(file *report.File) *File {
-	f := new(File)
-	f.stream = &token.Stream{
-		File: file,
-	}
+func New(stream *token.Stream) *File {
+	f := &File{stream: stream}
 	_ = f.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.
 
 	return f

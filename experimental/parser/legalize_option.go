@@ -318,11 +318,12 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 			if what == taxa.Int {
 				switch base {
 				case 2:
+					v, _ := n.Value().Int(nil)
 					d.Apply(
 						report.SuggestEdits(value, "use a hexadecimal literal instead", report.Edit{
 							Start:   0,
 							End:     len(value.Text()),
-							Replace: fmt.Sprintf("%#.0x%s", n.Value(), n.Suffix().Text()),
+							Replace: fmt.Sprintf("%#.0x%s", v, n.Suffix().Text()),
 						}),
 						report.Notef("Protobuf does not support binary literals"),
 					)
@@ -349,7 +350,7 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 
 			d.Apply(
 				report.Snippet(value),
-				report.Notef("Protobuf does not support %s %s", name, what),
+				report.Notef("Protobuf does not support %s %ss", name, what),
 			)
 			return
 		}

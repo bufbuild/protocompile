@@ -29,24 +29,24 @@ import (
 // ImpureString diagnoses a string literal that probably should not contain
 // escapes or concatenation.
 type ImpureString struct {
-	lit   token.Token
-	where taxa.Place
+	Token token.Token
+	Where taxa.Place
 }
 
 // Diagnose implements [report.Diagnose].
 func (e ImpureString) Diagnose(d *report.Diagnostic) {
-	text := e.lit.AsString().Text()
-	quote := e.lit.Text()[0]
+	text := e.Token.AsString().Text()
+	quote := e.Token.Text()[0]
 	d.Apply(
-		report.Message("non-canonical string literal %s", e.where.String()),
-		report.Snippet(e.lit),
-		report.SuggestEdits(e.lit, "replace it with a canonical string", report.Edit{
-			Start: 0, End: e.lit.Span().Len(),
+		report.Message("non-canonical string literal %s", e.Where.String()),
+		report.Snippet(e.Token),
+		report.SuggestEdits(e.Token, "replace it with a canonical string", report.Edit{
+			Start: 0, End: e.Token.Span().Len(),
 			Replace: fmt.Sprintf("%c%v%c", quote, text, quote),
 		}),
 	)
 
-	if !e.lit.IsLeaf() {
+	if !e.Token.IsLeaf() {
 		d.Apply(
 			report.Notef(
 				"Protobuf implicitly concatenates adjacent %ss, like C or Python; this can lead to surprising behavior",

@@ -20,6 +20,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -218,7 +219,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 				),
 			)
 		} else if str := lit.AsString(); !str.IsZero() && !str.IsPure() {
-			p.Warn(errImpureString{lit.Token, in.In()})
+			p.Warn(errtoken.ImpureString{Token: lit.Token, Where: in.In()})
 		}
 	}
 
@@ -310,7 +311,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 			if !lit.IsPure() {
 				// Only warn for cases where the import is alphanumeric.
 				if isOrdinaryFilePath.MatchString(lit.Text()) {
-					p.Warn(errImpureString{lit.Token(), in.In()})
+					p.Warn(errtoken.ImpureString{Token: lit.Token(), Where: in.In()})
 				}
 			}
 			break
