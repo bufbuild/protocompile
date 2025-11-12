@@ -55,7 +55,7 @@ func (t *nybbles[N]) get(key string) (prefix string, found int) {
 	}
 
 	var n int
-	for i := 0; i < len(key); i++ {
+	for i := range len(key) {
 		b := key[i]
 		lo, hi := b&0xf, b>>4
 
@@ -88,7 +88,7 @@ func (t *nybbles[N]) insert(key string) int {
 	}
 
 	n := 0
-	for i := 0; i < len(key); i++ {
+	for i := range len(key) {
 		b := key[i]
 		lo, hi := b&0xf, b>>4
 

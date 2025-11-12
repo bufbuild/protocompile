@@ -18,8 +18,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bufbuild/protocompile/internal/trie"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/internal/trie"
 )
 
 func TestTrie(t *testing.T) {
