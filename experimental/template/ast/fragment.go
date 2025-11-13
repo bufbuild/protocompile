@@ -1,0 +1,51 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ast
+
+import (
+	"github.com/bufbuild/protocompile/experimental/id"
+	"github.com/bufbuild/protocompile/experimental/seq"
+)
+
+// Fragment is a template fragment, consisting of a list of [Tags] and other
+// book-keeping information.
+type Fragment id.Node[Fragment, *File, *rawFragment]
+
+// FragmentArgs is arguments for [Nodes.NewFragment].
+type FragmentArgs struct {
+	IndentDelta int
+}
+
+type rawFragment struct {
+	tags   id.DynSeq[TagAny, TagKind, *File]
+	indent int
+}
+
+// Indent returns the indentation level delta for this fragment.
+func (f Fragment) IndentDelta() int {
+	if f.IsZero() {
+		return 0
+	}
+	return f.Raw().indent
+}
+
+// Tags returns a [seq.Inserter] over the tags in this fragment.
+func (f Fragment) Tags() seq.Inserter[TagAny] {
+	var tags *id.DynSeq[TagAny, TagKind, *File]
+	if !f.IsZero() {
+		tags = &f.Raw().tags
+	}
+	return tags.Inserter(f.Context())
+}
