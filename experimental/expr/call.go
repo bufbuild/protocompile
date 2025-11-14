@@ -12,48 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package expr
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
-	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
-// ExprCall is a function call/indexing expression, consisting of an expression
+// Call is a function call/indexing expression, consisting of an expression
 // followed by bracketed [Params].
 //
 // # Grammar
 //
-//	ExprCall := Expr (`(` Params `)` | `[` Params `]`)
-type ExprCall id.Node[ExprCall, *File, *rawExprCall]
+//	Call := Expr (`(` Params `)` | `[` Params `]` | `{` Params `}`)
+type Call id.Node[Call, *Context, *rawCall]
 
-type rawExprCall struct {
-	callee id.Dyn[ExprAny, ExprKind]
+// CallArgs is arguments for [Nodes.NewCall].
+type CallArgs struct {
+	Callee Expr
+	Args   Params
+}
+
+type rawCall struct {
+	callee id.Dyn[Expr, Kind]
 	args   id.ID[Params]
 }
 
 // AsAny type-erases this type value.
 //
-// See [ExprAny] for more information.
-func (e ExprCall) AsAny() ExprAny {
+// See [Expr] for more information.
+func (e Call) AsAny() Expr {
 	if e.IsZero() {
-		return ExprAny{}
+		return Expr{}
 	}
-	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindCall, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(KindCall, id.ID[Expr](e.ID())))
 }
 
 // Callee returns the expression's callee.
-func (e ExprCall) Callee() ExprAny {
+func (e Call) Callee() Expr {
 	if e.IsZero() {
-		return ExprAny{}
+		return Expr{}
 	}
 	return id.WrapDyn(e.Context(), e.Raw().callee)
 }
 
 // Args returns the expression's arguments.
-func (e ExprCall) Args() Params {
+func (e Call) Args() Params {
 	if e.IsZero() {
 		return Params{}
 	}
@@ -61,21 +66,11 @@ func (e ExprCall) Args() Params {
 }
 
 // Brackets returns the brackets for this call.
-func (e ExprCall) Brackets() token.Token {
+func (e Call) Brackets() token.Token {
 	return e.Args().Brackets()
 }
 
-// IsCall returns whether this is a function call expression.
-func (e ExprCall) IsCall() bool {
-	return e.Args().Brackets().Keyword() == keyword.Parens
-}
-
-// IsIndex returns whether this is a indexing expression.
-func (e ExprCall) IsIndex() bool {
-	return e.Args().Brackets().Keyword() == keyword.Brackets
-}
-
 // Span implements [source.Spanner].
-func (e ExprCall) Span() source.Span {
+func (e Call) Span() source.Span {
 	return source.Join(e.Callee(), e.Args())
 }

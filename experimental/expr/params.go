@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package expr
 
 import (
 	"slices"
@@ -29,22 +29,22 @@ import (
 //
 //	Params := (Param `,`)* Param?
 //	Param := Expr (`:` Expr)? (`if` Expr)
-type Params id.Node[Params, *File, *rawParams]
+type Params id.Node[Params, *Context, *rawParams]
 
 // Param is a parameter in a [Params].
 type Param struct {
 	// The name for this parameter. In a map context, this would be the key;
 	// in a function parameter context, this would be the argument name.
-	Name ExprAny
+	Name Expr
 
 	Colon token.Token
 	// The expression for this parameter. In a map context, this would be the value;
 	// in a function parameter context, this would be the argument type.
-	Expr ExprAny
+	Expr Expr
 
 	If token.Token
 	// A condition for the parameter; not allowed in all productions.
-	Cond ExprAny
+	Cond Expr
 }
 
 // ParamsArgs is arguments for [Nodes.NewParams].
@@ -58,8 +58,8 @@ type rawParams struct {
 }
 
 type rawParam struct {
-	name, ty, cond             id.ID[ExprAny]
-	nameKind, tyKind, condKind ExprKind
+	name, ty, cond             id.ID[Expr]
+	nameKind, tyKind, condKind Kind
 	colon, if_, comma          token.ID
 }
 

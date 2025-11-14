@@ -58,7 +58,6 @@
 
   - {name: Returns, string: returns}
   - {name: To, string: to}
-  - {name: In, string: in}
 
   - {name: Repeated, string: repeated}
   - {name: Optional, string: optional}
@@ -91,6 +90,21 @@
   - {name: Map, string: map}
   - {name: Max, string: max}
 
+  - {name: Return, string: return}
+  - {name: Break, string: break}
+  - {name: Continue, string: continue}
+  - {name: If, string: if}
+  - {name: Else, string: else}
+  - {name: For, string: for}
+  - {name: In, string: in}
+  - {name: Switch, string: switch}
+  - {name: Case, string: case}
+  - {name: Func, string: func}
+
+  - {name: And, string: and}
+  - {name: Or, string: or}
+  - {name: Not, string: not}
+  
   # Pseudo-option names.
 
   - {name: Default, string: default}
@@ -110,6 +124,16 @@
   - {name: Percent, string: "%"}
   - {name: Bang, string: "!"}
   - {name: Ask, string: "?"}
+
+  - {name: ColonEq, string: ":="}
+  - {name: PlusEq, string: "+="}
+  - {name: MinusEq, string: "-="}
+  - {name: StarEq, string: "*="}
+  - {name: SlashEq, string: "/="}
+  - {name: PercentEq, string: "%="}
+
+  - {name: Range, string: ".."}
+  - {name: RangeEq, string: "..="}
 
   - {name: "Less", string: "<"}
   - {name: "Greater", string: ">"}

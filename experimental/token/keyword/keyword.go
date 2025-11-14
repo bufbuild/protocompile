@@ -47,7 +47,6 @@ const (
 	RPC
 	Returns
 	To
-	In
 	Repeated
 	Optional
 	Required
@@ -76,6 +75,19 @@ const (
 	Null
 	Map
 	Max
+	Return
+	Break
+	Continue
+	If
+	Else
+	For
+	In
+	Switch
+	Case
+	Func
+	And
+	Or
+	Not
 	Default
 	JsonName
 	Semi
@@ -90,6 +102,14 @@ const (
 	Percent
 	Bang
 	Ask
+	ColonEq
+	PlusEq
+	MinusEq
+	StarEq
+	SlashEq
+	PercentEq
+	Range
+	RangeEq
 	Less
 	Greater
 	LessEq
@@ -130,7 +150,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 74; i++ {
+		for i := 0; i < 94; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -158,7 +178,6 @@ var _table_Keyword_String = [...]string{
 	RPC:        "rpc",
 	Returns:    "returns",
 	To:         "to",
-	In:         "in",
 	Repeated:   "repeated",
 	Optional:   "optional",
 	Required:   "required",
@@ -187,6 +206,19 @@ var _table_Keyword_String = [...]string{
 	Null:       "null",
 	Map:        "map",
 	Max:        "max",
+	Return:     "return",
+	Break:      "break",
+	Continue:   "continue",
+	If:         "if",
+	Else:       "else",
+	For:        "for",
+	In:         "in",
+	Switch:     "switch",
+	Case:       "case",
+	Func:       "func",
+	And:        "and",
+	Or:         "or",
+	Not:        "not",
 	Default:    "default",
 	JsonName:   "json_name",
 	Semi:       ";",
@@ -201,6 +233,14 @@ var _table_Keyword_String = [...]string{
 	Percent:    "%",
 	Bang:       "!",
 	Ask:        "?",
+	ColonEq:    ":=",
+	PlusEq:     "+=",
+	MinusEq:    "-=",
+	StarEq:     "*=",
+	SlashEq:    "/=",
+	PercentEq:  "%=",
+	Range:      "..",
+	RangeEq:    "..=",
 	Less:       "<",
 	Greater:    ">",
 	LessEq:     "<=",
@@ -235,7 +275,6 @@ var _table_Keyword_GoString = [...]string{
 	RPC:        "RPC",
 	Returns:    "Returns",
 	To:         "To",
-	In:         "In",
 	Repeated:   "Repeated",
 	Optional:   "Optional",
 	Required:   "Required",
@@ -264,6 +303,19 @@ var _table_Keyword_GoString = [...]string{
 	Null:       "Null",
 	Map:        "Map",
 	Max:        "Max",
+	Return:     "Return",
+	Break:      "Break",
+	Continue:   "Continue",
+	If:         "If",
+	Else:       "Else",
+	For:        "For",
+	In:         "In",
+	Switch:     "Switch",
+	Case:       "Case",
+	Func:       "Func",
+	And:        "And",
+	Or:         "Or",
+	Not:        "Not",
 	Default:    "Default",
 	JsonName:   "JsonName",
 	Semi:       "Semi",
@@ -278,6 +330,14 @@ var _table_Keyword_GoString = [...]string{
 	Percent:    "Percent",
 	Bang:       "Bang",
 	Ask:        "Ask",
+	ColonEq:    "ColonEq",
+	PlusEq:     "PlusEq",
+	MinusEq:    "MinusEq",
+	StarEq:     "StarEq",
+	SlashEq:    "SlashEq",
+	PercentEq:  "PercentEq",
+	Range:      "Range",
+	RangeEq:    "RangeEq",
 	Less:       "Less",
 	Greater:    "Greater",
 	LessEq:     "LessEq",
@@ -312,7 +372,6 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"rpc":        RPC,
 	"returns":    Returns,
 	"to":         To,
-	"in":         In,
 	"repeated":   Repeated,
 	"optional":   Optional,
 	"required":   Required,
@@ -341,6 +400,19 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"null":       Null,
 	"map":        Map,
 	"max":        Max,
+	"return":     Return,
+	"break":      Break,
+	"continue":   Continue,
+	"if":         If,
+	"else":       Else,
+	"for":        For,
+	"in":         In,
+	"switch":     Switch,
+	"case":       Case,
+	"func":       Func,
+	"and":        And,
+	"or":         Or,
+	"not":        Not,
 	"default":    Default,
 	"json_name":  JsonName,
 	";":          Semi,
@@ -355,6 +427,14 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"%":          Percent,
 	"!":          Bang,
 	"?":          Ask,
+	":=":         ColonEq,
+	"+=":         PlusEq,
+	"-=":         MinusEq,
+	"*=":         StarEq,
+	"/=":         SlashEq,
+	"%=":         PercentEq,
+	"..":         Range,
+	"..=":        RangeEq,
 	"<":          Less,
 	">":          Greater,
 	"<=":         LessEq,

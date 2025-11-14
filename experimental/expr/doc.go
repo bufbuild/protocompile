@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package ast provides an abstract syntax tree implementation for the Buf
-// Template Language.
+// Package expr provides an abstract syntax tree implementation for an
+// expression language shared by various parts of the compiler.
 //
 // # Node Types
 //
@@ -39,8 +39,8 @@
 //
 // Virtually all AST nodes in this library are "pointer-like" types, in that
 // although they are not Go pointers, they do refer to something stored in a
-// [File] somewhere. Internally, they contain a pointer to a [File] and
-// a pointer to the compressed node representation inside the [File]. This is
+// [Context] somewhere. Internally, they contain a pointer to a [Context] and
+// a pointer to the compressed node representation inside the [Context]. This is
 // done so that we can avoid spending an extra eight or twelve bytes per
 // node-at-rest, and to minimize GC churn by avoiding pointer cycles in the
 // in-memory representation of the AST.
@@ -48,6 +48,6 @@
 // All pointer-like types have a bool-returning IsZero method, which checks for
 // the zero value. Pointer-like types should generally be passed by value, not
 // by pointer; all of them have value receivers.
-package ast
+package expr
 
-//go:generate go run github.com/bufbuild/protocompile/internal/enum enums.yaml
+//go:generate go run github.com/bufbuild/protocompile/internal/enum kind.yaml

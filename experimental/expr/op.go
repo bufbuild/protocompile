@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package expr
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
@@ -21,7 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
-// ExprOp is an operator expression, consisting of one or two expressions and
+// Op is an operator expression, consisting of one or two expressions and
 // an operator. This subsumes all of the operator expressions in the grammar,
 // including property, assignment, and range expressions.
 //
@@ -39,7 +39,7 @@ import (
 //	or
 //	and
 //	== != < > <= >=
-//	.. ..=
+//	.. ..= to
 //	+ -
 //	* / %
 //	- not (unary)
@@ -47,52 +47,58 @@ import (
 //
 // Note that ExprCall has higher precedence than ., so -x.f() will group as
 // -((x.f)()).
-type ExprOp id.Node[ExprOp, *File, *rawExprOp]
+type Op id.Node[Op, *Context, *rawOp]
 
-type rawExprOp struct {
-	left, right id.Dyn[ExprAny, ExprKind]
+// OpArgs is arguments for [Nodes.NewOp].
+type OpArgs struct {
+	Left, Right Expr
+	Op          token.Token
+}
+
+type rawOp struct {
+	left, right id.Dyn[Expr, Kind]
 	op          token.ID
 }
 
 // AsAny type-erases this type value.
 //
-// See [ExprAny] for more information.
-func (e ExprOp) AsAny() ExprAny {
+// See [Expr] for more information.
+func (e Op) AsAny() Expr {
 	if e.IsZero() {
-		return ExprAny{}
+		return Expr{}
 	}
-	return id.WrapDyn(e.Context(), id.NewDyn(ExprKindOp, id.ID[ExprAny](e.ID())))
+	return id.WrapDyn(e.Context(), id.NewDyn(KindOp, id.ID[Expr](e.ID())))
 }
 
 // Left returns the left-hand side of this expression. Unary operators do
 // not have a left-hand side.
-func (e ExprOp) Left() ExprAny {
+func (e Op) Left() Expr {
 	if e.IsZero() {
-		return ExprAny{}
+		return Expr{}
 	}
 	return id.WrapDyn(e.Context(), e.Raw().left)
 }
 
 // Right returns the right-hand side of this expression.
-func (e ExprOp) Right() ExprAny {
+func (e Op) Right() Expr {
 	if e.IsZero() {
-		return ExprAny{}
+		return Expr{}
 	}
 	return id.WrapDyn(e.Context(), e.Raw().right)
 }
 
 // IsUnary returns whether this is an unary operation.
-func (e ExprOp) IsUnary() bool {
+func (e Op) IsUnary() bool {
 	return e.Left().IsZero() && !e.Right().IsZero()
 }
 
 // Operator returns this expression's operator.
-func (e ExprOp) Operator() keyword.Keyword {
+func (e Op) Operator() keyword.Keyword {
 	return e.OperatorToken().Keyword()
 }
 
 // OperatorToken returns the token for this expression's operator.
-func (e ExprOp) OperatorToken() token.Token {
+func (e Op) OperatorToken() token.Token {
 	if e.IsZero() {
 		return token.Zero
 	}
@@ -100,6 +106,6 @@ func (e ExprOp) OperatorToken() token.Token {
 }
 
 // Span implements [source.Spanner].
-func (e ExprOp) Span() source.Span {
+func (e Op) Span() source.Span {
 	return source.Join(e.Left(), e.OperatorToken(), e.Right())
 }

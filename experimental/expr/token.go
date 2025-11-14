@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ast
+package expr
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// ExprToken is an expression corresponding to a single token: a string, a
+// Token is an expression corresponding to a single token: a string, a
 // number, or an identifier.
 //
 // # Grammar
 //
-//	ExprToken := token.Number | token.String
-type ExprToken struct {
-	File *File
+//	Token := token.Number | token.String | token.Ident
+type Token struct {
+	ExprContext *Context
 	// The token backing this expression. Must be [token.String], [token.Number],
 	// or [token.Ident].
 	token.Token
@@ -34,22 +34,22 @@ type ExprToken struct {
 
 // Context returns this token's context.
 //
-// This returns a [File] rather than a [token.Stream], which would otherwise
-// be returned because ExprLiteral embeds [token.Token].
-func (e ExprToken) Context() *File {
-	return e.File
+// This returns a [Context] rather than a [token.Stream], which would otherwise
+// be returned because Token embeds [token.Token].
+func (e Token) Context() *Context {
+	return e.ExprContext
 }
 
 // AsAny type-erases this type value.
 //
-// See [ExprAny] for more information.
-func (e ExprToken) AsAny() ExprAny {
+// See [Expr] for more information.
+func (e Token) AsAny() Expr {
 	if e.IsZero() {
-		return ExprAny{}
+		return Expr{}
 	}
 
 	return id.WrapDyn(
-		e.File,
-		id.NewDyn(ExprKindToken, id.ID[ExprAny](e.ID())),
+		e.Context(),
+		id.NewDyn(KindToken, id.ID[Expr](e.ID())),
 	)
 }
