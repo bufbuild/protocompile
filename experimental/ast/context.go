@@ -56,9 +56,9 @@ type withContext = id.HasContext[*File]
 //
 // path is the semantic import path of this file, which may not be the same as
 // file.Path, which is used for diagnostics.
-func New(path string, file *source.File) *File {
+func New(path string, stream *token.Stream) *File {
 	f := &File{
-		stream: &token.Stream{File: file},
+		stream: stream,
 		path:   path,
 	}
 	_ = f.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.

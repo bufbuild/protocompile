@@ -384,15 +384,22 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 		proto := &compilerpb.Expr_Literal{
 			Span: c.span(expr),
 		}
-		if v, exact := expr.Token.AsNumber().Int(); exact {
-			proto.Value = &compilerpb.Expr_Literal_IntValue{IntValue: v}
-		} else if v, exact := expr.Token.AsNumber().Float(); exact {
-			proto.Value = &compilerpb.Expr_Literal_FloatValue{FloatValue: v}
-		} else if v := expr.Token.AsString(); !v.IsZero() {
-			proto.Value = &compilerpb.Expr_Literal_StringValue{StringValue: v.Text()}
-		} else {
+		switch expr.Kind() {
+		case token.Number:
+			if v, exact := expr.Token.AsNumber().Int(); exact {
+				proto.Value = &compilerpb.Expr_Literal_IntValue{IntValue: v}
+			} else {
+				v, _ := expr.Token.AsNumber().Float()
+				proto.Value = &compilerpb.Expr_Literal_FloatValue{FloatValue: v}
+			}
+
+		case token.String:
+			proto.Value = &compilerpb.Expr_Literal_StringValue{StringValue: expr.AsString().Text()}
+
+		default:
 			panic(fmt.Sprintf("protocompile/ast: ExprLiteral contains neither string nor int: %v", expr.Token))
 		}
+
 		return &compilerpb.Expr{Expr: &compilerpb.Expr_Literal_{Literal: proto}}
 
 	case ast.ExprKindPath:

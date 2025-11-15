@@ -1,0 +1,13 @@
+error: unterminated string literal
+  --> testdata/strings/unclosed2.proto:1:1
+   |
+ 1 | '\'
+   | ^^^ expected to be terminated by `'`
+   |
+  help: this string appears to end in an escaped quote
+   |
+ 1 | - '\'
+ 1 | + '\\''
+   |
+
+encountered 1 error

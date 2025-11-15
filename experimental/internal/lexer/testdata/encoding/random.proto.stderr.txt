@@ -1,0 +1,6 @@
+error: input appears to be a binary file
+ --> testdata/encoding/random.proto
+   = note: non-UTF-8 byte occurs at offset 5 (0x5)
+   = note: Protobuf files must be UTF-8 encoded
+
+encountered 1 error

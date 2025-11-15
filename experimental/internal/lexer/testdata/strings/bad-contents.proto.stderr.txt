@@ -1,0 +1,80 @@
+error: unescaped newlines are not permitted in string literals
+  --> testdata/strings/bad-contents.proto:1:13
+   |
+ 1 | "this string
+   |             ^
+   = help: consider splitting this into adjacent string literals; Protobuf will
+           automatically concatenate them
+
+error: unescaped newlines are not permitted in string literals
+  --> testdata/strings/bad-contents.proto:3:2
+   |
+ 3 | "
+   |  ^
+   = help: consider splitting this into adjacent string literals; Protobuf will
+           automatically concatenate them
+
+error: unescaped newlines are not permitted in string literals
+  --> testdata/strings/bad-contents.proto:6:32
+   |
+ 6 |     "this is an indented string
+   |                                ^
+   = help: consider splitting this into adjacent string literals; Protobuf will
+           automatically concatenate them
+
+error: unescaped NUL bytes are not permitted in string literals
+  --> testdata/strings/bad-contents.proto:9:30
+   |
+ 9 | "this string contains a nul: <U+0000>"
+   |                              ^^^^^^^^
+  help: replace it with `\0` or `\x00`
+   |
+ 9 | - "this string contains a nul: <U+0000>"
+ 9 | + "this string contains a nul: \0"
+   |
+
+error: unescaped NUL bytes are not permitted in string literals
+  --> testdata/strings/bad-contents.proto:10:29
+   |
+10 | "this string contains a nul <U+0000> in the middle"
+   |                             ^^^^^^^^
+  help: replace it with `\0` or `\x00`
+   |
+10 | - "this string contains a nul <U+0000> in the middle"
+10 | + "this string contains a nul \0 in the middle"
+   |
+
+error: unescaped NUL bytes are not permitted in string literals
+  --> testdata/strings/bad-contents.proto:11:2
+   |
+11 | "<U+0000>"
+   |  ^^^^^^^^
+  help: replace it with `\0` or `\x00`
+   |
+11 | - "<U+0000>"
+11 | + "\0"
+   |
+
+warning: non-printable character in string literal
+  --> testdata/strings/bad-contents.proto:13:57
+   |
+13 | "this string contains some other non-graphic character: <U+0001>"
+   |                                                         ^^^^^^^^
+  help: consider escaping it
+   |
+13 | - "this string contains some other non-graphic character: <U+0001>"
+13 | + "this string contains some other non-graphic character: \x01"
+   |
+
+warning: non-printable character in string literal
+  --> testdata/strings/bad-contents.proto:14:39
+   |
+14 | "this is graphic but non-ASCII space: <U+00A0>"
+   |                                       ^^^^^^^^
+  help: consider escaping it
+   |
+14 | - "this is graphic but non-ASCII space: <U+00A0>"
+14 | + "this is graphic but non-ASCII space: \u00a0"
+   |
+
+encountered 6 errors and 2 warnings

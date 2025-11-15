@@ -8,7 +8,7 @@ decls:
 - def:
     kind: KIND_OPTION
     name.components: [{ ident: "x" }]
-    value.literal.float_value: 42.4
+    value.literal.float_value: 42.3984375
 - def:
     kind: KIND_OPTION
     name.components: [{ ident: "x" }]
@@ -94,7 +94,8 @@ decls:
     name.components: [{ ident: "x" }]
     value.dict.entries:
     - { key.path.components: [{ ident: "x" }], value.literal.int_value: 0 }
-    - { key.path.components: [{ ident: "x" }], value.literal.float_value: 42.4 }
+    - key.path.components: [{ ident: "x" }]
+      value.literal.float_value: 42.3984375
     - key.path.components: [{ ident: "x" }]
       value.path.components: [{ ident: "inf" }]
     - key.path.components: [{ ident: "x" }]

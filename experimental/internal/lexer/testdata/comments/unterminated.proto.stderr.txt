@@ -1,0 +1,7 @@
+error: encountered unmatched `/*` delimiter
+  --> testdata/comments/unterminated.proto:1:1
+   |
+ 1 | /*
+   | ^^ expected a closing `*/`
+
+encountered 1 error

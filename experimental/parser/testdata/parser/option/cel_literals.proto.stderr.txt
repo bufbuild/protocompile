@@ -1,3 +1,9 @@
+error: invalid digit in decimal integer literal
+  --> testdata/parser/option/cel_literals.proto:21:14
+   |
+21 | option x = 42i32;
+   |              ^ expected `0` to `9`
+
 error: unrecognized prefix for string literal
   --> testdata/parser/option/cel_literals.proto:24:8
   help: delete it
@@ -14,13 +20,11 @@ error: unrecognized prefix for string literal
 25 | +     b: """x""",
    |
 
-error: unrecognized prefix for string literal
-  --> testdata/parser/option/cel_literals.proto:26:8
-  help: delete it
+error: unexpected string literal in message expression
+  --> testdata/parser/option/cel_literals.proto:26:10
    |
-26 | -     b: bR'''x''',
-26 | +     b: '''x''',
-   |
+26 |     b: bR'''x''',
+   |          ^^^^^^^ expected message field value
 
 error: unrecognized prefix for string literal
   --> testdata/parser/option/cel_literals.proto:29:8
@@ -54,4 +58,4 @@ error: implicitly-concatenated string has incompatible prefix
    |        |
    |        must match this prefix
 
-encountered 7 errors
+encountered 8 errors

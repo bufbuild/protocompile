@@ -18,8 +18,3 @@
 package keyword
 
 //go:generate go run github.com/bufbuild/protocompile/internal/enum keyword.yaml
-
-// pseudo option names ([default = "..."] and [json_name = "..."]).
-func (k Keyword) IsPseudoOption() bool {
-	return k == Default || k == JsonName
-}

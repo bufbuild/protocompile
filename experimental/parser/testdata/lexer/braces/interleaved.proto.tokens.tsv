@@ -1,8 +1,0 @@
-#		kind		keyword		offsets		linecol		text
-0		Punct		Braces		000:009		001:001		"{"		close:Token(4)
-1		Space		Unknown		001:006		001:002		"\n    "
-2		Punct		Brackets		006:007		002:005		"["
-3		Space		Unknown		007:008		002:006		"\n"
-4		Punct		Braces		000:009		001:001		"}"		open:Token(0)
-5		Space		Unknown		009:014		003:002		"\n    "
-6		Punct		Brackets		014:015		004:005		"]"

@@ -14,19 +14,63 @@
 
 package keyword
 
-// OpenClose returns the open and close brackets for the four bracket
-// keywords: [Parens], [Brackets], and [Braces].
-func (k Keyword) OpenClose() (string, string, bool) {
-	switch k {
-	case Parens:
-		return "(", ")", true
-	case Brackets:
-		return "[", "]", true
-	case Braces:
-		return "{", "}", true
-	default:
-		return "", "", false
+import "github.com/bufbuild/protocompile/internal/trie"
+
+var kwTrie = func() *trie.Trie[Keyword] {
+	trie := new(trie.Trie[Keyword])
+	for kw := range All() {
+		if !kw.IsBrackets() {
+			trie.Insert(kw.String(), kw)
+		}
 	}
+	return trie
+}()
+
+// Prefix returns the longest prefix of text which matches any of the keywords
+// that can be returned by [Lookup].
+func Prefix(text string) Keyword {
+	_, kw := kwTrie.Get(text)
+	return kw
+}
+
+// Brackets returns the open and close brackets if k is a bracket keyword.
+func (k Keyword) Brackets() (left, right, joined Keyword) {
+	if int(k) >= len(braces) {
+		return Unknown, Unknown, Unknown
+	}
+	return braces[k][0], braces[k][1], braces[k][2]
+}
+
+// IsValid returns whether this is a valid keyword value (not including
+// [Unknown]).
+func (k Keyword) IsValid() bool {
+	return k.properties()&valid != 0
+}
+
+// IsProtobuf returns whether this keyword is used in Protobuf.
+func (k Keyword) IsProtobuf() bool {
+	return k.properties()&protobuf != 0
+}
+
+// IsCEL returns whether this keyword is used in CEL.
+func (k Keyword) IsCEL() bool {
+	return k.properties()&cel != 0
+}
+
+// IsPunctuation returns whether this keyword is punctuation (i.e., not a word).
+func (k Keyword) IsPunctuation() bool {
+	return k.properties()&punct != 0
+}
+
+// IsReservedWord returns whether this keyword is a known reserved word (i.e.,
+// not punctuation).
+func (k Keyword) IsReservedWord() bool {
+	return k.properties()&word != 0
+}
+
+// IsBrackets returns whether this is "paired brackets" keyword.
+func (k Keyword) IsBrackets() bool {
+	return k.properties()&brackets != 0
 }
 
 // IsModifier returns whether this keyword is any kind of modifier.
@@ -37,37 +81,32 @@ func (k Keyword) IsModifier() bool {
 		k.IsMethodTypeModifier()
 }
 
-// IsFieldTypeModifier returns whether this is a modifier for a field type.
+// IsFieldTypeModifier returns whether this is a modifier for a field type
+// in Protobuf.
 func (k Keyword) IsFieldTypeModifier() bool {
-	switch k {
-	case Optional, Required, Repeated:
-		return true
-	default:
-		return false
-	}
+	return k.properties()&modField != 0
 }
 
-// IsTypeModifier returns whether this is a modifier for a type declaration.
+// IsTypeModifier returns whether this is a modifier for a type declaration
+// in Protobuf.
 func (k Keyword) IsTypeModifier() bool {
-	switch k {
-	case Export, Local:
-		return true
-	default:
-		return false
-	}
+	return k.properties()&modType != 0
 }
 
-// IsImportModifier returns whether this is a modifier for an import declaration.
+// IsImportModifier returns whether this is a modifier for an import declaration
+// in Protobuf.
 func (k Keyword) IsImportModifier() bool {
-	switch k {
-	case Public, Weak, Option:
-		return true
-	default:
-		return false
-	}
+	return k.properties()&modImport != 0
 }
 
-// IsMethodTypeModifier returns whether this is a modifier for a method declaration.
+// IsMethodTypeModifier returns whether this is a modifier for a method
+// declaration in Protobuf.
 func (k Keyword) IsMethodTypeModifier() bool {
-	return k == Stream
+	return k.properties()&modMethodType != 0
+}
+
+// IsPseudoOption returns whether this is a Protobuf pseudo-option name
+// ([default = "..."] and [json_name = "..."]).
+func (k Keyword) IsPseudoOption() bool {
+	return k.properties()&pseudoOption != 0
 }

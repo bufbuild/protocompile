@@ -129,6 +129,21 @@ func (s Span) Span() Span {
 	return s
 }
 
+// Range slices this span along the given byte indices.
+//
+// Unlike slicing into a string, out-of-bounds indices are snapped to the
+// boundaries of the string, and negative indices are taken from the back of
+// the span. For example, s.RuneRange(-2, -1) is the final rune of the span
+// (or an empty span, if s is empty).
+func (s Span) Range(i, j int) Span {
+	i = idxToByteOffset(s.Text(), i)
+	j = idxToByteOffset(s.Text(), j)
+	if i > j {
+		i, j = j, i
+	}
+	return s.File.Span(i+s.Start, j+s.Start)
+}
+
 // RuneRange slices this span along the given rune indices.
 //
 // For example, s.RuneRange(0, 2) returns at most the first two runes of the
@@ -210,6 +225,26 @@ func GetSpan(s Spanner) Span {
 		return Span{}
 	}
 	return s.Span()
+}
+
+// idxToByteOffset converts a byte index into s into a byte offset.
+//
+// If i is negative, this produces the index of the -ith byte from the end of
+// the string.
+//
+// If i > len(s) or i < -len(s), returns len(s) or 0, respectively; i is always
+// valid to index into s with.
+func idxToByteOffset(s string, i int) int {
+	switch {
+	case i > len(s):
+		return len(s)
+	case i < -len(s):
+		return 0
+	case i < 0:
+		return len(s) + i
+	default:
+		return i
+	}
 }
 
 // runeIdxToByteOffset converts a rune index into s into a byte offset.
