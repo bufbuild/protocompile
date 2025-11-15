@@ -40,7 +40,7 @@
 38		Space		Unknown		695:696		021:012		" "
 39		Punct		Eq		696:697		021:013		"="
 40		Space		Unknown		697:698		021:014		" "
-41		Number		Unknown		698:699		021:015		"1"		num:1/10/1
+41		Number		Unknown		698:699		021:015		"1"		int:1/10/1
 42		Punct		Semi		699:700		021:016		";"
 43		Space		Unknown		700:705		021:017		"\n    "
 44		Ident		String		705:711		022:005		"string"
@@ -49,7 +49,7 @@
 47		Space		Unknown		713:714		022:013		" "
 48		Punct		Eq		714:715		022:014		"="
 49		Space		Unknown		715:716		022:015		" "
-50		Number		Unknown		716:717		022:016		"2"		num:2/10/1
+50		Number		Unknown		716:717		022:016		"2"		int:2/10/1
 51		Space		Unknown		717:718		022:017		" "
 52		Punct		Brackets		718:783		022:018		"["		close:Token(73)
 53		Space		Unknown		719:728		022:019		"\n        "
@@ -63,7 +63,7 @@
 61		Space		Unknown		745:746		023:026		" "
 62		Punct		Eq		746:747		023:027		"="
 63		Space		Unknown		747:748		023:028		" "
-64		Number		Unknown		748:752		023:029		"0xff"		num:255/16/1		pre:"0x"
+64		Number		Unknown		748:752		023:029		"0xff"		int:255/16/1		pre:"0x"
 65		Punct		Comma		752:753		023:033		","
 66		Space		Unknown		753:762		023:034		"\n        "
 67		Ident		Unknown		762:766		024:009		"blah"

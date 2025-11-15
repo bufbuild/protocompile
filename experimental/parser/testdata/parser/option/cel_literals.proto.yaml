@@ -19,7 +19,9 @@ decls:
     value.dict.entries:
     - { key.path.components: [{ ident: "r" }], value.literal.string_value: "x" }
     - { key.path.components: [{ ident: "b" }], value.literal.string_value: "x" }
-    - { key.path.components: [{ ident: "b" }], value.literal.string_value: "x" }
+    - key.path.components: [{ ident: "b" }]
+      value.path.components: [{ ident: "bR" }]
+    - value.literal.string_value: "x"
     - { key.path.components: [{ ident: "w" }], value.literal.string_value: "x" }
     - { key.path.components: [{ ident: "k" }], value.literal.string_value: "x" }
     - { key.path.components: [{ ident: "j" }], value.literal.string_value: "" }

@@ -18,6 +18,7 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
@@ -44,6 +45,17 @@ func (n NumberToken) Base() byte {
 	return base
 }
 
+// IsLegacyOctal returns whether this is a C-style octal literal, such as 0777,
+// as opposed to a modern octal literal like 0o777.
+func (n NumberToken) IsLegacyOctal() bool {
+	if n.Base() != 8 {
+		return false
+	}
+
+	text := n.Token().Text()
+	return !strings.HasPrefix(text, "0o") && !strings.HasPrefix(text, "0O")
+}
+
 // ExpBase returns this number's exponent base, if this number has an exponent;
 // returns 1 if it has no exponent.
 func (n NumberToken) ExpBase() int {
@@ -55,7 +67,7 @@ func (n NumberToken) ExpBase() int {
 
 // Prefix returns this number's base prefix (e.g. 0x).
 func (n NumberToken) Prefix() source.Span {
-	if n.Raw() == nil {
+	if n.Raw() == nil || n.Raw().Prefix == 0 {
 		return source.Span{}
 	}
 
@@ -67,13 +79,44 @@ func (n NumberToken) Prefix() source.Span {
 // Suffix returns an arbitrary suffix attached to this number (the suffix will
 // have no whitespace before the end of the digits).
 func (n NumberToken) Suffix() source.Span {
-	if n.Raw() == nil {
+	if n.Raw() == nil || n.Raw().Prefix == 0 {
 		return source.Span{}
 	}
 
 	span := n.Token().Span()
-	span.Start = span.End + int(n.Raw().Suffix)
+	span.Start = span.End - int(n.Raw().Suffix)
 	return span
+}
+
+// Mantissa returns the mantissa digits for this literal, i.e., everything
+// between the prefix and the (possibly empty) exponent.
+//
+// For example, for 0x123.456p-789, this will be 123.456.
+func (n NumberToken) Mantissa() source.Span {
+	span := n.Token().Span()
+	if n.Raw() == nil {
+		return span
+	}
+
+	start := int(n.Raw().Prefix)
+	end := span.Len() - int(n.Raw().Suffix) - int(n.Raw().Exp)
+	return span.Range(start, end)
+}
+
+// Exponent returns the exponent digits for this literal, i.e., everything
+// after the exponent letter. Returns the zero span if there is no exponent.
+//
+// For example, for 0x123.456p-789, this will be -789.
+func (n NumberToken) Exponent() source.Span {
+	if n.Raw() == nil || n.Raw().Exp == 0 {
+		return source.Span{}
+	}
+
+	span := n.Token().Span()
+	end := span.Len() - int(n.Raw().Suffix)
+	start := end - int(n.Raw().Exp) + 1 // Skip the exponent letter.
+
+	return span.Range(start, end)
 }
 
 // IsFloat returns whether this token can only be used as a float literal (even

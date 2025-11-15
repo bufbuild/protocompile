@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/golden"
 )
 
@@ -63,6 +64,17 @@ func TestLexer(t *testing.T) {
 						return lexer.KeepKeyword
 					}
 					return lexer.DiscardKeyword
+				}
+			},
+
+			IsAffix: func(affix string, kind token.Kind, suffix bool) bool {
+				switch kind {
+				case token.Number:
+					return suffix && slicesx.Among(affix, "u", "U")
+				case token.String:
+					return !suffix && slicesx.Among(affix, "r", "b", "rb")
+				default:
+					return false
 				}
 			},
 
@@ -111,11 +123,10 @@ func TestLexer(t *testing.T) {
 			switch tok.Kind() {
 			case token.Number:
 				n := tok.AsNumber()
-				v := n.Value()
-				if v.IsInt() {
-					fmt.Fprintf(&tsv, "\t\tnum:%.0f", n.Value())
+				if n.IsFloat() {
+					fmt.Fprintf(&tsv, "\t\tfp:%g", n.Value())
 				} else {
-					fmt.Fprintf(&tsv, "\t\tnum:%g", n.Value())
+					fmt.Fprintf(&tsv, "\t\tint:%.0f", n.Value())
 				}
 				fmt.Fprintf(&tsv, "/%v/%v", n.Base(), n.ExpBase())
 

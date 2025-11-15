@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // lex is a combined lexer for Protobuf and CEL.
@@ -41,6 +42,17 @@ var lex = lexer.Lexer{
 				return lexer.KeepKeyword
 			}
 			return lexer.DiscardKeyword
+		}
+	},
+
+	IsAffix: func(affix string, kind token.Kind, suffix bool) bool {
+		switch kind {
+		case token.Number:
+			return suffix && slicesx.Among(affix, "u", "U")
+		case token.String:
+			return !suffix && slicesx.Among(affix, "r", "b", "rb")
+		default:
+			return false
 		}
 	},
 

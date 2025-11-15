@@ -175,9 +175,11 @@ func loop(l *lexer) {
 				continue
 			}
 
-			// Figure out if we should be doing a raw string instead.
+			// Figure out if we should be doing a prefixed string instead.
 			next := l.peek()
-			if len(rawIdent) <= 2 && unicodex.IsASCIIIdent(rawIdent) && (next == '"' || next == '\'') {
+			if next == '"' || next == '\'' &&
+				// Check to see if we like this prefix.
+				l.IsAffix != nil && l.IsAffix(rawIdent, token.String, false) {
 				l.cursor -= len(rawIdent)
 				lexString(l, rawIdent)
 				continue

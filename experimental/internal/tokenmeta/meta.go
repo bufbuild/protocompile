@@ -35,8 +35,10 @@ type Number struct {
 	// The prefix is the base prefix; the suffix is any identifier
 	// characters that follow the last digit.
 	Prefix, Suffix uint32
-	IsFloat        bool
-	ThousandsSep   bool
+
+	Exp          uint32 // Length of the exponent measured from the e.
+	IsFloat      bool
+	ThousandsSep bool
 
 	Base, ExpBase byte
 

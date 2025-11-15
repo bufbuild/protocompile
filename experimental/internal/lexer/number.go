@@ -23,9 +23,9 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
@@ -34,6 +34,10 @@ import (
 var (
 	decFloat = fpRegexp("0-9", "eEpP")
 	hexFloat = fpRegexp("0-9a-fA-F", "pP")
+
+	// e and E are conspicuously missing here; this is so that 01e1 is treated
+	// as a decimal float.
+	treatAsOctal = regexp.MustCompile("^[0-9a-dfA-DF_]+$")
 )
 
 // lexNumber lexes a number starting at the current cursor.
@@ -61,13 +65,11 @@ func lexNumber(l *lexer) token.Token {
 		digits = digits[2:]
 		base = 16
 	default:
-		if l.OldStyleOctal && strings.HasPrefix(digits, "0") {
-			if strings.ContainsAny(digits, "123456789") {
-				prefix = digits[:1]
-				base = 8
-				legacyOctal = true
-				break
-			}
+		if l.OldStyleOctal && strings.HasPrefix(digits, "0") && treatAsOctal.MatchString(digits) {
+			prefix = digits[:1]
+			base = 8
+			legacyOctal = true
+			break
 		}
 
 		prefix = ""
@@ -80,15 +82,14 @@ func lexNumber(l *lexer) token.Token {
 
 	isFloat := taxa.IsFloatText(digits)
 	expBase := 1
+	expIdx := -1
 	if isFloat {
-		switch {
-		case base != 16 && strings.ContainsAny(digits, "eE"):
-			expBase = 10
-		case strings.ContainsAny(digits, "pP"):
+		if expIdx = strings.IndexAny(digits, "pP"); expIdx != -1 {
 			expBase = 2
+		} else if expIdx = strings.IndexAny(digits, "eE"); expIdx != -1 {
+			expBase = 10
 		}
 	}
-
 	if expBase != 1 {
 		token.MutateMeta[tokenmeta.Number](tok).ExpBase = byte(expBase)
 	}
@@ -97,13 +98,9 @@ func lexNumber(l *lexer) token.Token {
 	// desired base.
 	haystack := digits
 	suffixBase := base
-	switch expBase {
-	case 2:
+	if expIdx != -1 {
 		suffixBase = 10
-		haystack = haystack[strings.IndexAny(digits, "pP")+1:]
-	case 10:
-		suffixBase = 10
-		haystack = haystack[strings.IndexAny(digits, "eE")+1:]
+		haystack = haystack[expIdx+1:]
 	}
 
 	suffixIdx := strings.IndexFunc(haystack, func(r rune) bool {
@@ -114,17 +111,33 @@ func lexNumber(l *lexer) token.Token {
 		return !ok
 	})
 
-	var suffix int
+	var suffix string
 	if suffixIdx != -1 {
-		suffix = len(haystack) - suffixIdx
+		suffix = haystack[suffixIdx:]
+
+		// Check to see if we like this suffix.
+		if l.IsAffix != nil && l.IsAffix(suffix, token.Number, true) {
+			digits = digits[:len(digits)-len(suffix)]
+		} else {
+			suffix = ""
+		}
 	}
-	digits = digits[:len(digits)-suffix]
 
 	if prefix != "" {
 		token.MutateMeta[tokenmeta.Number](tok).Prefix = uint32(len(prefix))
 	}
-	if suffix != 0 {
-		token.MutateMeta[tokenmeta.Number](tok).Prefix = uint32(suffix)
+	if suffix != "" {
+		token.MutateMeta[tokenmeta.Number](tok).Suffix = uint32(len(suffix))
+	}
+	if expIdx != -1 {
+		// Example: 123e456suffix, want len("e456").
+		//   len(digits) = 13
+		//   expIdx      = 3
+		//   suffix      = 6
+		//
+		// -> 13 - 6 - 3 = 13 - 9 = 4
+		offset := len(digits) - expIdx - len(suffix)
+		token.MutateMeta[tokenmeta.Number](tok).Exp = uint32(offset)
 	}
 
 	result, ok := parseInt(digits, base)
@@ -136,50 +149,96 @@ func lexNumber(l *lexer) token.Token {
 
 		v := l.scratchFloat
 		meta := token.MutateMeta[tokenmeta.Number](tok)
-		if legacyOctal {
+
+		// Convert legacyOctal values that are *not* pure integers into decimal
+		// floats.
+		if legacyOctal && !treatAsOctal.MatchString(digits) {
 			base = 10
+			meta.Base = 10
 			meta.Prefix = 0
 		}
-		meta.Base = base
-		meta.IsFloat = true
+		meta.IsFloat = strings.ContainsAny(digits, ".-") // Positive exponents are not necessarily floats.
+		meta.ThousandsSep = strings.Contains(digits, "_")
+
+		// Wrapper over big.Float.Parse that ensures we never round. big.Float
+		// does not have a parse mode that uses maximum precision for that
+		// input, so we infer the correct precision from the size of the
+		// mantissa and exponent.
+		parse := func(v *big.Float, digits string) (*big.Float, error) {
+			n := tok.AsNumber()
+			mant := n.Mantissa().Text()
+			exp := n.Exponent().Text()
+
+			// Convert digits into binary digits. Note that digits in base b
+			// is log_b(n). Note that, per the log base change formula:
+			//
+			// log_2(n) = log_b(n)/log_b(2)
+			// log_b(2) = log_2(2)/log_2(b) = 1/log_2(b)
+			//
+			// Thus, we want to multiply by log_2(b), which we precompute in
+			// a table.
+			prec := float64(len(mant)) * log2Table[base-1]
+			// If there is an exponent, add it to the precision.
+			if exp != "" {
+				// Convert to the right base and add it to prec.
+				exp, _ := strconv.ParseInt(exp, 0, 64)
+				prec += math.Abs(float64(exp)) * log2Table[expBase-1]
+			}
+
+			v.SetPrec(uint(math.Ceil(prec)))
+			_, _, err := v.Parse(digits, 0)
+			return v, err
+		}
 
 		var err error
-		if base == 16 && hexFloat.MatchString(digits) {
+		switch base {
+		case 10:
+			match := decFloat.FindStringSubmatch(digits)
+			if match == nil {
+				goto fail
+			}
+
+			if expBase != 2 {
+				v, err = parse(v, digits)
+				break
+			}
+
+			v, err = parse(v, match[1])
+			exp, err := strconv.ParseInt(match[3], 10, 64)
+			if err != nil {
+				exp = math.MaxInt
+			}
+			exp += int64(v.MantExp(nil))
+			v.SetMantExp(v, int(exp))
+
+		case 16:
+			if !hexFloat.MatchString(digits) {
+				goto fail
+			}
+
 			l.scratch = l.scratch[:0]
 			l.scratch = append(l.scratch, "0x"...)
 			l.scratch = append(l.scratch, digits...)
 			digits := unsafex.StringAlias(l.scratch)
-			v, _, err = v.Parse(digits, 0)
-		} else if match := decFloat.FindStringSubmatch(digits); match != nil {
-			if match[2] == "p" || match[2] == "P" {
-				v, _, err = v.Parse(match[1], 0)
 
-				exp, err := strconv.ParseInt(match[3], 10, 64)
-				if err != nil {
-					exp = math.MaxInt
-				}
-				exp += int64(v.MantExp(nil))
-				v.SetMantExp(v, int(exp))
-			} else {
-				v, _, err = v.Parse(digits, 0)
-			}
-		} else {
-			l.Error(errInvalidNumber{Token: tok})
-			meta.SyntaxError = true
-			return tok
+			v, err = parse(v, digits)
+
+		default:
+			goto fail
 		}
 
 		if err != nil {
-			l.Error(errInvalidNumber{Token: tok})
-			meta.SyntaxError = true
-		} else {
-			// We want this to overflow to Infinity as needed, which ParseFloat
-			// will do for us. Otherwise it will ties-to-even as the
-			// protobuf.com spec requires.
-			//
-			// ParseFloat itself says it "returns the nearest floating-point
-			// number rounded using IEEE754 unbiased rounding", which is just a
-			// weird, non-standard way to say "ties-to-even".
+			goto fail
+		}
+
+		// We want this to overflow to Infinity as needed, which ParseFloat
+		// will do for us. Otherwise it will ties-to-even as the
+		// protobuf.com spec requires.
+		//
+		// ParseFloat itself says it "returns the nearest floating-point
+		// number rounded using IEEE754 unbiased rounding", which is just a
+		// weird, non-standard way to say "ties-to-even".
+		if meta.IsFloat {
 			f64, acc := v.Float64()
 			if acc != big.Exact {
 				meta.Big = v
@@ -188,7 +247,17 @@ func lexNumber(l *lexer) token.Token {
 				meta.Word = math.Float64bits(f64)
 				l.scratchFloat.SetUint64(0)
 			}
+		} else {
+			u64, acc := v.Uint64()
+			if acc != big.Exact {
+				meta.Big = v
+				l.scratchFloat = nil
+			} else {
+				meta.Word = uint64(u64)
+				l.scratchFloat.SetUint64(0)
+			}
 		}
+		return tok
 
 	case result.big != nil:
 		token.MutateMeta[tokenmeta.Number](tok).Big = result.big
@@ -206,6 +275,11 @@ func lexNumber(l *lexer) token.Token {
 		token.MutateMeta[tokenmeta.Number](tok).ThousandsSep = true
 	}
 
+	return tok
+
+fail:
+	l.Error(errtoken.InvalidNumber{Token: tok})
+	token.MutateMeta[tokenmeta.Number](tok).SyntaxError = true
 	return tok
 }
 
@@ -238,23 +312,6 @@ func lexRawNumber(l *lexer) token.Token {
 	// the parser pick up bad numbers into number literals.
 	digits := l.Text()[start:l.cursor]
 	return l.push(len(digits), token.Number)
-}
-
-// errInvalidNumber diagnoses a numeric literal with invalid syntax.
-type errInvalidNumber struct {
-	Token token.Token // The offending number token.
-}
-
-// Diagnose implements [report.Diagnose].
-func (e errInvalidNumber) Diagnose(d *report.Diagnostic) {
-	d.Apply(
-		report.Message("unexpected characters in %s", taxa.Classify(e.Token)),
-		report.Snippet(e.Token),
-	)
-
-	// TODO: This is a pretty terrible diagnostic. We should at least add a note
-	// specifying the correct syntax. For example, there should be a way to tell
-	// that the invalid character is an out-of-range digit.
 }
 
 // fpRegexp constructs a regexp for a float with the given digits and exponent

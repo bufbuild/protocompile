@@ -15,11 +15,19 @@
 package lexer
 
 import (
+	"math"
 	"math/big"
 	"math/bits"
 
 	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
+
+var log2Table = func() (logs [16]float64) {
+	for i := range logs {
+		logs[i] = math.Log2(float64(i + 1))
+	}
+	return logs
+}()
 
 type parseIntResult struct {
 	small        uint64

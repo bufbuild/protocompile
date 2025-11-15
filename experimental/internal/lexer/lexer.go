@@ -59,6 +59,9 @@ type Lexer struct {
 	// How to handle a known keyword when encountered by the lexer.
 	OnKeyword func(keyword.Keyword) OnKeyword
 
+	// Used for validating prefixes and suffixes of strings and numbers.
+	IsAffix func(affix string, kind token.Kind, suffix bool) bool
+
 	// If true, a dot immediately followed by a digit is taken to begin a
 	// digit.
 	NumberCanStartWithDot bool
