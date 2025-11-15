@@ -78,7 +78,7 @@ func (t *nybbles[N]) get(key string) (prefix string, found int) {
 	return prefix, found
 }
 
-// Insert adds a new key to the trie; returns the index to insert the
+// insert adds a new key to the trie; returns the index to insert the
 // corresponding value at.
 //
 // Returns -1 if the trie becomes full and needs to have its index grown.
