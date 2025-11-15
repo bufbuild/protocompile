@@ -253,7 +253,7 @@ func lexNumber(l *lexer) token.Token {
 				meta.Big = v
 				l.scratchFloat = nil
 			} else {
-				meta.Word = uint64(u64)
+				meta.Word = u64
 				l.scratchFloat.SetUint64(0)
 			}
 		}
