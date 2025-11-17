@@ -28,7 +28,7 @@ func TestLocation(t *testing.T) {
 
 	file := source.NewFile(
 		"test",
-		"foo\nbar\ncat: 🐈‍⬛\n",
+		"foo\nbar\ncat: 🐈‍⬛\ntail",
 	)
 
 	tests := []struct {
@@ -54,6 +54,11 @@ func TestLocation(t *testing.T) {
 		{loc: source.Location{23, 3, 10}, unit: length.UTF16},
 		{loc: source.Location{23, 3, 9}, unit: length.Runes},
 		{loc: source.Location{23, 3, 8}, unit: length.TermWidth},
+		{loc: source.Location{24, 4, 1}, unit: length.UTF16},
+		{loc: source.Location{27, 4, 4}, unit: length.UTF16},
+		{loc: source.Location{28, 4, 5}, unit: length.UTF16},
+		{loc: source.Location{28, 4, 5}, unit: length.Runes},
+		{loc: source.Location{28, 4, 5}, unit: length.Bytes},
 	}
 
 	for _, test := range tests {
