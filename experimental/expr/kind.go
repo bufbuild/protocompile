@@ -27,6 +27,7 @@ type Kind int8
 
 const (
 	KindInvalid Kind = iota
+	KindError
 	KindToken
 	KindRecord
 	KindOp
@@ -57,6 +58,7 @@ func (v Kind) GoString() string {
 
 var _table_Kind_String = [...]string{
 	KindInvalid: "KindInvalid",
+	KindError:   "KindError",
 	KindToken:   "KindToken",
 	KindRecord:  "KindRecord",
 	KindOp:      "KindOp",
@@ -71,6 +73,7 @@ var _table_Kind_String = [...]string{
 
 var _table_Kind_GoString = [...]string{
 	KindInvalid: "KindInvalid",
+	KindError:   "KindError",
 	KindToken:   "KindToken",
 	KindRecord:  "KindRecord",
 	KindOp:      "KindOp",
