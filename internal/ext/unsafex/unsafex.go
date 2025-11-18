@@ -152,3 +152,18 @@ func BytesAlias[S ~[]B, B ~byte](data string) []B {
 		len(data),
 	)
 }
+
+// NoEscape makes a copy of a pointer which is hidden from the compiler's
+// escape analysis. If the return value of this function appears to escape, the
+// compiler will *not* treat its input as escaping, potentially allowing stack
+// promotion of values which escape. This function is essentially the opposite
+// of runtime.KeepAlive.
+//
+// This is only safe when the return value does not actually escape to the heap,
+// but only appears to, such as by being passed to a virtual call which does not
+// actually result in a heap escape.
+func NoEscape[P ~*E, E any](p P) P {
+	// Xoring the address with zero is a reliable way to hide a pointer from
+	// the compiler.
+	return P(unsafe.Pointer(uintptr(unsafe.Pointer(p)) ^ 0))
+}

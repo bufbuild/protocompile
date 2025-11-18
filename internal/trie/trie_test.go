@@ -15,11 +15,13 @@
 package trie_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/trie"
 )
 
@@ -29,17 +31,17 @@ func TestTrie(t *testing.T) {
 	tests := []struct {
 		data []string
 		keys []string
-		want []int
+		want [][]int
 	}{
 		{
 			data: []string{"fo", "foo", "ba", "bar", "baz"},
 			keys: []string{"fo", "foo", "ba", "bar", "baz"},
-			want: []int{1, 2, 3, 4, 5},
+			want: [][]int{{0}, {0, 1}, {2}, {2, 3}, {2, 4}},
 		},
 		{
 			data: []string{"fo", "foo", "ba", "bar", "baz"},
 			keys: []string{"f", "fooo", "barr", "bazr", "baar"},
-			want: []int{0, 2, 4, 5, 3},
+			want: [][]int{nil, {0, 1}, {2, 3}, {2, 4}, {2}},
 		},
 	}
 
@@ -49,13 +51,12 @@ func TestTrie(t *testing.T) {
 
 			trie := new(trie.Trie[int])
 			for i, s := range test.data {
-				trie.Insert(s, i+1)
+				trie.Insert(s, i)
 			}
 			t.Log(trie.Dump())
 
 			for i, key := range test.keys {
-				_, v := trie.Get(key)
-				assert.Equal(t, test.want[i], v, "#%d", i)
+				assert.Equal(t, test.want[i], slices.Collect(iterx.Right(trie.Prefixes(key))), "#%d", i)
 			}
 		})
 	}
@@ -72,7 +73,8 @@ func TestHammerTrie(t *testing.T) {
 	t.Log(trie.Dump())
 
 	for i := range 1000 {
-		_, v := trie.Get(strings.Repeat("a", i))
-		assert.Equal(t, i+1, v)
+		k := strings.Repeat("a", i)
+		_, v := trie.Get(k)
+		assert.Equal(t, i+1, v, len(k))
 	}
 }
