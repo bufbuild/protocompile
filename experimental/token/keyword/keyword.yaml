@@ -24,6 +24,7 @@
     - kind: go-string
     - kind: from-string
       name: Lookup
+      skip: [Parens, Brackets, Braces, Angles, BlockComment]
       docs: |
         Lookup looks up a keyword by name.
 
@@ -134,6 +135,13 @@
 
   - {name: Range, string: ".."}
   - {name: RangeEq, string: "..="}
+  
+  - {name: LParen, string: "("}
+  - {name: RParen, string: ")"}
+  - {name: LBracket, string: "["}
+  - {name: RBracket, string: "]"}
+  - {name: LBrace, string: "{"}
+  - {name: RBrace, string: "}"}
 
   - {name: "Less", string: "<"}
   - {name: "Greater", string: ">"}
@@ -142,12 +150,18 @@
   - {name: "EqEq", string: "=="}
   - {name: "BangEq", string: "!="}
 
+  - {name: "Comment", string: "//"}
+  - {name: "LComment", string: "/*"}
+  - {name: "RComment", string: "*/"}
+
   - {name: "AndAnd", string: "&&"}
   - {name: "OrOr", string: "||"}
 
   # These three must be declared together, since this is used for layout
   # compression in token.nat.
-  - {name: Parens, string: "(...)", from: ["(", ")"]}
-  - {name: Brackets, string: "[...]", from: ["[", "]"]}
-  - {name: Braces, string: "{...}", from: ["{", "}"]}
-  - {name: Angles, string: "<...>", from: []}
+  - {name: Parens, string: "(...)"}
+  - {name: Brackets, string: "[...]"}
+  - {name: Braces, string: "{...}"}
+  - {name: Angles, string: "<...>"}
+
+  - {name: BlockComment, string: "/*...*/"}

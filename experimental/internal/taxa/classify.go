@@ -33,7 +33,7 @@ func IsFloat(tok token.Token) bool {
 // IsFloatText checks whether or not the given number text is intended to be
 // a floating-point literal.
 func IsFloatText(digits string) bool {
-	needle := ".Ee"
+	needle := ".EePp"
 	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
 		needle = ".Pp"
 	}

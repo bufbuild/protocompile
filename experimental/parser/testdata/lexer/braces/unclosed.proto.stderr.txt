@@ -1,7 +1,0 @@
-error: encountered unmatched `(` delimiter
-  --> testdata/lexer/braces/unclosed.proto:1:1
-   |
- 1 | (
-   | ^ expected a closing `)`
-
-encountered 1 error
