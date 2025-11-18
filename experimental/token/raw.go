@@ -114,7 +114,7 @@ func (t nat) Keyword() keyword.Keyword {
 	if t.IsLeaf() {
 		return keyword.Keyword(t.metadata >> keywordShift)
 	}
-	if t.Kind() != Punct {
+	if t.Kind() != Keyword {
 		return keyword.Unknown
 	}
 	return keyword.Parens + keyword.Keyword((t.metadata&treeKwMask)>>keywordShift)
@@ -186,7 +186,7 @@ type synth struct {
 
 // Keyword returns the keyword for this token, if it is an identifier.
 func (t synth) Keyword() keyword.Keyword {
-	if !slicesx.Among(t.kind, Ident, Punct) {
+	if !slicesx.Among(t.kind, Ident, Keyword) {
 		return keyword.Unknown
 	}
 

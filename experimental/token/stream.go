@@ -178,7 +178,7 @@ func (s *Stream) Push(length int, kind Kind) Token {
 	}
 
 	var kw keyword.Keyword
-	if slicesx.Among(kind, Ident, Punct) {
+	if slicesx.Among(kind, Ident, Keyword) {
 		kw = keyword.Lookup(s.Text()[prevEnd:end])
 	}
 
@@ -202,7 +202,7 @@ func (s *Stream) NewIdent(name string) Token {
 func (s *Stream) NewPunct(text string) Token {
 	return s.newSynth(synth{
 		text: text,
-		kind: Punct,
+		kind: Keyword,
 	})
 }
 

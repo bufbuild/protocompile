@@ -39,8 +39,11 @@ const (
 	// it as an identifier.
 	DiscardKeyword OnKeyword = iota
 
-	// Accept the keyword as a keyword token.
-	KeepKeyword
+	// Accept the keyword as a [token.Keyword].
+	HardKeyword
+	// Accept the keyword as a [token.Ident]. The keyword must be a reserved
+	// word, otherwise behaves like HardKeyword.
+	SoftKeyword
 
 	// Accept the keyword, and treat it as an open brace. It must be one of
 	// the open brace keywords.

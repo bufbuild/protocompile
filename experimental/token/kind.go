@@ -31,7 +31,7 @@ const (
 	Ident                    // An identifier.
 	String                   // A string token. May be a non-leaf for non-contiguous quoted strings.
 	Number                   // A run of digits that is some kind of number.
-	Punct                    // Some punctuation. May be a non-leaf for delimiters like {}.
+	Keyword                  // Some punctuation. May be a non-leaf for delimiters like {}.
 )
 
 // String implements [fmt.Stringer].
@@ -57,7 +57,7 @@ var _table_Kind_String = [...]string{
 	Ident:        "Ident",
 	String:       "String",
 	Number:       "Number",
-	Punct:        "Punct",
+	Keyword:      "Punct",
 }
 
 var _table_Kind_GoString = [...]string{
@@ -67,6 +67,6 @@ var _table_Kind_GoString = [...]string{
 	Ident:        "Ident",
 	String:       "String",
 	Number:       "Number",
-	Punct:        "Punct",
+	Keyword:      "Punct",
 }
 var _ iter.Seq[int] // Mark iter as used.

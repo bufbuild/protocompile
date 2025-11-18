@@ -68,7 +68,7 @@ lexer:
 			case DiscardKeyword:
 				continue keyword
 
-			case KeepKeyword, BracketKeyword:
+			case HardKeyword, SoftKeyword, BracketKeyword:
 				word := kw.String()
 				if l.NumberCanStartWithDot && kw == keyword.Dot {
 					next, _ := stringsx.Rune(l.rest()[len(word):], 0)
@@ -77,8 +77,8 @@ lexer:
 					}
 				}
 
-				kind := token.Punct
-				if kw.IsReservedWord() {
+				kind := token.Keyword
+				if kw.IsReservedWord() && what == SoftKeyword {
 					kind = token.Ident
 					// If this is a reserved word, the rune after it must not be
 					// an XID continue.

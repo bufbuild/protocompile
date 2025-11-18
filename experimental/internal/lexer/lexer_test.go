@@ -61,7 +61,7 @@ func TestLexer(t *testing.T) {
 					return lexer.BracketKeyword
 				default:
 					if k.IsProtobuf() || k.IsCEL() {
-						return lexer.KeepKeyword
+						return lexer.SoftKeyword
 					}
 					return lexer.DiscardKeyword
 				}

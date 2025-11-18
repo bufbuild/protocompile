@@ -61,7 +61,7 @@ func Classify(node source.Spanner) Noun {
 				return Float
 			}
 			return Int
-		case token.Punct:
+		case token.Keyword:
 			return Noun(node.Keyword())
 		default:
 			return Unrecognized
