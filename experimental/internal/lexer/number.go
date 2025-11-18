@@ -65,7 +65,9 @@ func lexNumber(l *lexer) token.Token {
 		digits = digits[2:]
 		base = 16
 	default:
-		if l.OldStyleOctal && strings.HasPrefix(digits, "0") && treatAsOctal.MatchString(digits) {
+		if l.OldStyleOctal &&
+			len(digits) >= 2 && digits[0] == '0' && // Note: `0` is not octal.
+			treatAsOctal.MatchString(digits) { // Float-likes are not octal.
 			prefix = digits[:1]
 			base = 8
 			legacyOctal = true
