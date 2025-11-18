@@ -18,6 +18,7 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -444,9 +445,9 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			case ":": // Allow colons, which is usually a mistake.
 				p.Errorf("unexpected `:` in compact option").Apply(
 					report.Snippet(eq),
-					justify(p.File().Stream(), eq.Span(), "replace this with an `=`", justified{
-						report.Edit{Start: 0, End: 1, Replace: "="},
-						justifyBetween,
+					just.Justify(p.File().Stream(), eq.Span(), "replace this with an `=`", just.Edit{
+						Edit: report.Edit{Start: 0, End: 1, Replace: "="},
+						Kind: just.Between,
 					}),
 					report.Notef("top-level `option` assignment uses `=`, not `:`"),
 				)

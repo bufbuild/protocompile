@@ -19,6 +19,7 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -143,13 +144,13 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				want:  d.delimNouns(),
 			}).Apply(
 				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
-				justify(
+				just.Justify(
 					d.p.File().Stream(),
 					v.Span(),
 					fmt.Sprintf("add a `%s` here", d.delims[latest]),
-					justified{
-						report.Edit{Replace: d.delims[latest].String()},
-						justifyLeft,
+					just.Edit{
+						Edit: report.Edit{Replace: d.delims[latest].String()},
+						Kind: just.Left,
 					},
 				),
 			)

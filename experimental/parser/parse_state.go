@@ -17,6 +17,7 @@ package parser
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -45,7 +46,7 @@ type punctParser struct {
 	c      *token.Cursor
 	want   keyword.Keyword
 	where  taxa.Place
-	insert int // One of the justify* values.
+	insert just.Kind
 }
 
 // parse attempts to unconditionally parse some punctuation.
@@ -98,7 +99,7 @@ func parseEquals(p *parser, c *token.Cursor, in taxa.Noun) (token.Token, report.
 		parser: p, c: c,
 		want:   keyword.Assign,
 		where:  in.In(),
-		insert: justifyBetween,
+		insert: just.Between,
 	}.parse()
 }
 
@@ -110,6 +111,6 @@ func parseSemi(p *parser, c *token.Cursor, after taxa.Noun) (token.Token, report
 		parser: p, c: c,
 		want:   keyword.Semi,
 		where:  after.After(),
-		insert: justifyLeft,
+		insert: just.Left,
 	}.parse()
 }

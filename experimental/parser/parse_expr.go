@@ -16,6 +16,7 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token"
@@ -51,9 +52,9 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 			case keyword.Assign: // Allow equals signs, which are usually a mistake.
 				p.Errorf("unexpected `=` in expression").Apply(
 					report.Snippet(next),
-					justify(p.File().Stream(), next.Span(), "replace this with an `:`", justified{
-						report.Edit{Start: 0, End: 1, Replace: ":"},
-						justifyLeft,
+					just.Justify(p.File().Stream(), next.Span(), "replace this with an `:`", just.Edit{
+						Edit: report.Edit{Start: 0, End: 1, Replace: ":"},
+						Kind: just.Left,
 					}),
 					report.Notef("a %s use `=`, not `:`, for setting fields", taxa.Dict),
 				)

@@ -18,6 +18,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -118,9 +119,9 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			p.Errorf("multiple modifiers on %v type", taxa.Field).Apply(
 				report.Snippet(ty.PrefixToken()),
 				report.Snippetf(mod.PrefixToken(), "previous one is here"),
-				justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-					justify: justifyRight,
+				just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+					Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+					Kind: just.Right,
 				}),
 			)
 		} else {
@@ -134,9 +135,9 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 					want: expected,
 				}).Apply(
 					report.Snippetf(oneof, "within this %s", taxa.Oneof),
-					justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-						justify: justifyRight,
+					just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+						Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+						Kind: just.Right,
 					}),
 					report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
 				)
@@ -163,9 +164,9 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 							what: ty.PrefixToken(),
 							want: expected,
 						}).Apply(
-							justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-								justify: justifyRight,
+							just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+								Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								Kind: just.Right,
 							}),
 							report.Helpf("required fields are only permitted in %s; even then, their use is strongly discouraged",
 								syntax.Proto2),
@@ -178,9 +179,9 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 							what: ty.PrefixToken(),
 							want: expected,
 						}).Apply(
-							justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-								justify: justifyRight,
+							just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+								Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								Kind: just.Right,
 							}),
 							report.Helpf(
 								"in %s, the presence behavior of a singular field "+

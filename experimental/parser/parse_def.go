@@ -16,6 +16,7 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -304,7 +305,7 @@ func (defValue) parse(p *defParser) source.Span {
 		parser: p.parser, c: p.c,
 		want:   keyword.Assign,
 		where:  taxa.Def.In(),
-		insert: justifyBetween,
+		insert: just.Between,
 	}.parse()
 	if err != nil {
 		p.Error(err)
