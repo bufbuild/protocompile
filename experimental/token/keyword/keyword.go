@@ -30,7 +30,7 @@ import (
 type Keyword byte
 
 const (
-	Unknown      Keyword = iota // unknown
+	Unknown      Keyword = iota // Zero value, not a real keyword.
 	Syntax                      // syntax
 	Edition                     // edition
 	Import                      // import
@@ -108,17 +108,19 @@ const (
 	Amp                         // &
 	Pipe                        // |
 	Xor                         // ^
+	Shl                         // <<
+	Shr                         // >>
 	Bang                        // !
 	Ask                         // ?
 	And2                        // &&
 	Or2                         // ||
 	Assign                      // =
-	AssignNew                   // :=
-	AssignAdd                   // +=
-	AssignSub                   // -=
-	AssignMul                   // *=
-	AssignDiv                   // /=
-	AssignRem                   // %=
+	NewAssign                   // :=
+	AddAssign                   // +=
+	SubAssign                   // -=
+	MulAssign                   // *=
+	DivAssign                   // /=
+	RemAssign                   // %=
 	AmpAssign                   // &=
 	PipeAssign                  // |=
 	XorAssign                   // ^=
@@ -174,7 +176,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 116; i++ {
+		for i := 0; i < 118; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -261,17 +263,19 @@ var _table_Keyword_String = [...]string{
 	Amp:          "&",
 	Pipe:         "|",
 	Xor:          "^",
+	Shl:          "<<",
+	Shr:          ">>",
 	Bang:         "!",
 	Ask:          "?",
 	And2:         "&&",
 	Or2:          "||",
 	Assign:       "=",
-	AssignNew:    ":=",
-	AssignAdd:    "+=",
-	AssignSub:    "-=",
-	AssignMul:    "*=",
-	AssignDiv:    "/=",
-	AssignRem:    "%=",
+	NewAssign:    ":=",
+	AddAssign:    "+=",
+	SubAssign:    "-=",
+	MulAssign:    "*=",
+	DivAssign:    "/=",
+	RemAssign:    "%=",
 	AmpAssign:    "&=",
 	PipeAssign:   "|=",
 	XorAssign:    "^=",
@@ -380,17 +384,19 @@ var _table_Keyword_GoString = [...]string{
 	Amp:          "Amp",
 	Pipe:         "Pipe",
 	Xor:          "Xor",
+	Shl:          "Shl",
+	Shr:          "Shr",
 	Bang:         "Bang",
 	Ask:          "Ask",
 	And2:         "And2",
 	Or2:          "Or2",
 	Assign:       "Assign",
-	AssignNew:    "NewAssign",
-	AssignAdd:    "AddAssign",
-	AssignSub:    "SubAssign",
-	AssignMul:    "MulAssign",
-	AssignDiv:    "DivAssign",
-	AssignRem:    "RemAssign",
+	NewAssign:    "NewAssign",
+	AddAssign:    "AddAssign",
+	SubAssign:    "SubAssign",
+	MulAssign:    "MulAssign",
+	DivAssign:    "DivAssign",
+	RemAssign:    "RemAssign",
 	AmpAssign:    "AmpAssign",
 	PipeAssign:   "PipeAssign",
 	XorAssign:    "XorAssign",
@@ -499,17 +505,19 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"&":          Amp,
 	"|":          Pipe,
 	"^":          Xor,
+	"<<":         Shl,
+	">>":         Shr,
 	"!":          Bang,
 	"?":          Ask,
 	"&&":         And2,
 	"||":         Or2,
 	"=":          Assign,
-	":=":         AssignNew,
-	"+=":         AssignAdd,
-	"-=":         AssignSub,
-	"*=":         AssignMul,
-	"/=":         AssignDiv,
-	"%=":         AssignRem,
+	":=":         NewAssign,
+	"+=":         AddAssign,
+	"-=":         SubAssign,
+	"*=":         MulAssign,
+	"/=":         DivAssign,
+	"%=":         RemAssign,
 	"&=":         AmpAssign,
 	"|=":         PipeAssign,
 	"^=":         XorAssign,
