@@ -1,0 +1,5 @@
+error: input appears to be encoded with UTF-16
+ --> testdata/encoding/utf16be.proto
+   = note: Protobuf files must be UTF-8 encoded
+
+encountered 1 error

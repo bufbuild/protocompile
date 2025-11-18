@@ -20,8 +20,8 @@ decls:
 - def:
     kind: KIND_OPTION
     name.components: [{ ident: "x" }]
-    value.literal.int_value: 0
+    value.literal.float_value: 66051.25
 - def:
     kind: KIND_OPTION
     name.components: [{ ident: "x" }]
-    value.literal.int_value: 0
+    value.literal.int_value: 19452
