@@ -16,6 +16,7 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -94,11 +95,11 @@ func (p *defParser) parse() ast.DeclDef {
 			// moving this follower before the previous one.
 
 			f := defFollowers[lastFollower]
-			p.Error(errUnexpected{
-				what:  next,
-				where: f.what(p).After(),
-				prev:  f.prev(p),
-				got:   defFollowers[idx].what(p),
+			p.Error(errtoken.Unexpected{
+				What:  next,
+				Where: f.what(p).After(),
+				Prev:  f.prev(p),
+				Got:   defFollowers[idx].what(p),
 			})
 		case idx == lastFollower:
 			f := defFollowers[lastFollower]

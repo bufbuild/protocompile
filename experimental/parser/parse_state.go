@@ -17,6 +17,7 @@ package parser
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -63,29 +64,29 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 	}
 
 	wanted := taxa.Noun(p.want).AsSet()
-	err := errUnexpected{
-		what:  next,
-		where: p.where,
-		want:  wanted,
+	err := errtoken.Unexpected{
+		What:  next,
+		Where: p.where,
+		Want:  wanted,
 	}
 	if next.IsZero() {
 		end, span := p.c.SeekToEnd()
-		err.what = span
-		err.got = taxa.EOF
+		err.What = span
+		err.Got = taxa.EOF
 
 		if _, c, _ := end.Keyword().Brackets(); c != keyword.Unknown {
 			// Special case for closing braces.
-			err.got = "`" + c.String() + "`"
+			err.Got = "`" + c.String() + "`"
 		} else if !end.IsZero() {
-			err.got = taxa.Classify(end)
+			err.Got = taxa.Classify(end)
 		}
 	}
 
 	if p.insert != 0 {
-		err.stream = p.File().Stream()
-		err.insert = p.want.String()
-		err.insertAt = err.what.Span().Start
-		err.insertJustify = p.insert
+		err.Stream = p.File().Stream()
+		err.Insert = p.want.String()
+		err.InsertAt = err.What.Span().Start
+		err.InsertJustify = p.insert
 	}
 
 	return token.Zero, err

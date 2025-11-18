@@ -15,8 +15,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/just"
@@ -26,93 +24,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
-
-// errUnexpected is a low-level parser error for when we hit a token we don't
-// know how to handle.
-type errUnexpected struct {
-	// The unexpected thing (may be a token or AST node).
-	what source.Spanner
-
-	// The context we're in. Should be format-able with %v.
-	where taxa.Place
-	// Useful when where is an "after" position: if non-nil, this will be
-	// highlighted as "previous where.Object is here"
-	prev source.Spanner
-
-	// What we wanted vs. what we got. Got can be used to customize what gets
-	// shown, but if it's not set, we call describe(what) to get a user-visible
-	// description.
-	want taxa.Set
-	// If set and want is empty, the snippet will repeat the "unexpected foo"
-	// text under the snippet.
-	repeatUnexpected bool
-	got              any
-
-	// If nonempty, inserting this text will be suggested at the given offset.
-	insert        string
-	insertAt      int
-	insertJustify just.Kind
-	stream        *token.Stream
-}
-
-// errUnexpectedEOF is a helper for constructing EOF diagnostics that need to
-// provide *no* suggestions. This is used in places where any suggestion we
-// could provide would be nonsensical.
-func errUnexpectedEOF(c *token.Cursor, where taxa.Place) errUnexpected {
-	tok, span := c.Clone().SeekToEnd()
-	if tok.IsZero() {
-		return errUnexpected{
-			what:  span,
-			where: where,
-			got:   taxa.EOF,
-		}
-	}
-	return errUnexpected{what: tok, where: where}
-}
-
-func (e errUnexpected) Diagnose(d *report.Diagnostic) {
-	got := e.got
-	if got == nil {
-		got = taxa.Classify(e.what)
-		if got == taxa.Unknown {
-			got = "tokens"
-		}
-	}
-
-	var message string
-	if e.where.Subject() == taxa.Unknown {
-		message = fmt.Sprintf("unexpected %v", got)
-	} else {
-		message = fmt.Sprintf("unexpected %v %v", got, e.where)
-	}
-
-	what := e.what.Span()
-	snippet := report.Snippet(what)
-	if e.want.Len() > 0 {
-		snippet = report.Snippetf(what, "expected %v", e.want.Join("or"))
-	} else if e.repeatUnexpected {
-		snippet = report.Snippetf(what, "%v", message)
-	}
-
-	d.Apply(
-		report.Message("%v", message),
-		snippet,
-		report.Snippetf(e.prev, "previous %v is here", e.where.Subject()),
-	)
-
-	if e.insert != "" {
-		want, _ := iterx.First(e.want.All())
-		d.Apply(just.Justify(
-			e.stream,
-			what,
-			fmt.Sprintf("consider inserting a %v", want),
-			just.Edit{
-				Edit: report.Edit{Replace: e.insert},
-				Kind: e.insertJustify,
-			},
-		))
-	}
-}
 
 // errMoreThanOne is used to diagnose the occurrence of some construct more
 // than one time, when it is expected to occur at most once.

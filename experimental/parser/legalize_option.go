@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -103,9 +104,9 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 		array := value.AsArray().Elements()
 		switch {
 		case parent.IsZero() && where.Subject() == taxa.OptionValue:
-			err := p.Error(errUnexpected{
-				what:  value,
-				where: where,
+			err := p.Error(errtoken.Unexpected{
+				What:  value,
+				Where: where,
 			}).Apply(
 				report.Notef("%ss can only appear inside of %ss", taxa.Array, taxa.Dict),
 			)
@@ -216,10 +217,10 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 						break
 					}
 
-					p.Error(errUnexpected{
-						what:  kv.Key(),
-						where: taxa.DictField.In(),
-						want:  want,
+					p.Error(errtoken.Unexpected{
+						What:  kv.Key(),
+						Where: taxa.DictField.In(),
+						Want:  want,
 					})
 					break
 				}
@@ -238,10 +239,10 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 				}
 			default:
 				if !kv.Key().IsZero() {
-					p.Error(errUnexpected{
-						what:  kv.Key(),
-						where: taxa.DictField.In(),
-						want:  want,
+					p.Error(errtoken.Unexpected{
+						What:  kv.Key(),
+						Where: taxa.DictField.In(),
+						Want:  want,
 					})
 				}
 			}
@@ -258,10 +259,10 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 					if e.Kind() == ast.ExprKindDict {
 						continue
 					}
-					p.Error(errUnexpected{
-						what:  e,
-						where: taxa.Array.In(),
-						want:  taxa.Dict.AsSet(),
+					p.Error(errtoken.Unexpected{
+						What:  e,
+						Where: taxa.Array.In(),
+						Want:  taxa.Dict.AsSet(),
 					}).Apply(
 						report.Snippetf(kv.Key(), "because this %s is missing a `:`", taxa.DictField),
 						report.Notef(
@@ -276,7 +277,7 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 			legalizeValue(p, decl, kv.AsAny(), kv.Value(), where)
 		}
 	default:
-		p.Error(errUnexpected{what: value, where: where})
+		p.Error(errtoken.Unexpected{What: value, Where: where})
 	}
 }
 

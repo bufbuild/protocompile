@@ -16,6 +16,7 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -215,10 +216,10 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		for expr, comma := range elems.iter {
 			field := expr.AsField()
 			if field.IsZero() {
-				p.Error(errUnexpected{
-					what:  expr,
-					where: in.In(),
-					want:  taxa.DictField.AsSet(),
+				p.Error(errtoken.Unexpected{
+					What:  expr,
+					Where: in.In(),
+					Want:  taxa.DictField.AsSet(),
 				})
 
 				field = p.NewExprField(ast.ExprFieldArgs{Value: expr})
@@ -237,10 +238,10 @@ func parseExprSolo(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 		return dict.AsAny()
 
 	default:
-		p.Error(errUnexpected{
-			what:  next,
-			where: where,
-			want:  taxa.Expr.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  next,
+			Where: where,
+			Want:  taxa.Expr.AsSet(),
 		})
 
 		return ast.ExprAny{}
@@ -253,14 +254,14 @@ func peekTokenExpr(p *parser, c *token.Cursor) token.Token {
 	next := c.Peek()
 	if next.IsZero() {
 		token, span := c.SeekToEnd()
-		err := errUnexpected{
-			what:  span,
-			where: taxa.Expr.In(),
-			want:  taxa.Expr.AsSet(),
-			got:   taxa.EOF,
+		err := errtoken.Unexpected{
+			What:  span,
+			Where: taxa.Expr.In(),
+			Want:  taxa.Expr.AsSet(),
+			Got:   taxa.EOF,
 		}
 		if !token.IsZero() {
-			err.got = taxa.Classify(token)
+			err.Got = taxa.Classify(token)
 		}
 
 		p.Error(err)

@@ -19,6 +19,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -39,7 +40,7 @@ import (
 func parsePath(p *parser, c *token.Cursor) ast.Path {
 	start := c.Peek()
 	if !canStartPath(start) {
-		p.Error(errUnexpected{what: start, want: startsPath})
+		p.Error(errtoken.Unexpected{What: start, Want: startsPath})
 		return ast.Path{}
 	}
 
@@ -72,11 +73,11 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 				}
 
 				tokens := source.Join(next, prevSeparator)
-				p.Error(errUnexpected{
-					what:  tokens,
-					where: taxa.Classify(next).After(),
-					want:  taxa.NewSet(taxa.Ident, taxa.Noun(keyword.Parens)),
-					got:   "tokens",
+				p.Error(errtoken.Unexpected{
+					What:  tokens,
+					Where: taxa.Classify(next).After(),
+					Want:  taxa.NewSet(taxa.Ident, taxa.Noun(keyword.Parens)),
+					Got:   "tokens",
 				})
 			} else {
 				prevSeparator = c.Next()
@@ -110,9 +111,9 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			contents := next.Children()
 			parsePath(p, contents)
 			if tok := contents.Peek(); !tok.IsZero() {
-				p.Error(errUnexpected{
-					what:  start,
-					where: taxa.ExtensionName.After(),
+				p.Error(errtoken.Unexpected{
+					What:  start,
+					Where: taxa.ExtensionName.After(),
 				})
 			}
 
@@ -131,10 +132,10 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			// This means we found something like foo.1 or bar."xyz" or bar.[...].
 			// TODO: Do smarter recovery here. Generally speaking it's likely we should *not*
 			// consume this token.
-			p.Error(errUnexpected{
-				what:  next,
-				where: taxa.QualifiedName.After(),
-				want:  taxa.NewSet(taxa.Ident, taxa.Noun(keyword.Parens)),
+			p.Error(errtoken.Unexpected{
+				What:  next,
+				Where: taxa.QualifiedName.After(),
+				Want:  taxa.NewSet(taxa.Ident, taxa.Noun(keyword.Parens)),
 			}).Apply(report.SuggestEdits(
 				prevSeparator,
 				fmt.Sprintf("delete the extra `%s`", prevSeparator.Text()),

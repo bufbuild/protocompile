@@ -18,6 +18,7 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
@@ -54,17 +55,17 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	switch len(unexpected) {
 	case 0:
 	case 1:
-		p.Error(errUnexpected{
-			what:  unexpected[0],
-			where: in.In(),
-			want:  startsDecl,
+		p.Error(errtoken.Unexpected{
+			What:  unexpected[0],
+			Where: in.In(),
+			Want:  startsDecl,
 		})
 	case 2:
-		p.Error(errUnexpected{
-			what:  source.JoinSeq(slices.Values(unexpected)),
-			where: in.In(),
-			want:  startsDecl,
-			got:   "tokens",
+		p.Error(errtoken.Unexpected{
+			What:  source.JoinSeq(slices.Values(unexpected)),
+			Where: in.In(),
+			Want:  startsDecl,
+			Got:   "tokens",
 		})
 	}
 
@@ -129,7 +130,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if c.Done() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, in.In()))
+			p.Error(errtoken.UnexpectedEOF(c, in.In()))
 		} else {
 			eq, err := parseEquals(p, c, in)
 			args.Equals = eq
@@ -183,7 +184,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if c.Done() && path.IsZero() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, in.In()))
+			p.Error(errtoken.UnexpectedEOF(c, in.In()))
 		} else {
 			args.Options = tryParseOptions(p, c, in)
 
@@ -241,7 +242,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if args.ImportPath.IsZero() && c.Done() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, in.In()))
+			p.Error(errtoken.UnexpectedEOF(c, in.In()))
 		} else {
 			semi, err := parseSemi(p, c, in)
 			args.Semicolon = semi
@@ -455,10 +456,10 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			case "=":
 				c.Next()
 			default:
-				p.Error(errUnexpected{
-					what:  eq,
-					want:  taxa.Noun(keyword.Assign).AsSet(),
-					where: taxa.CompactOptions.In(),
+				p.Error(errtoken.Unexpected{
+					What:  eq,
+					Want:  taxa.Noun(keyword.Assign).AsSet(),
+					Where: taxa.CompactOptions.In(),
 				})
 				eq = token.Zero
 			}
