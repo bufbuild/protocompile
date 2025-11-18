@@ -113,7 +113,7 @@ func parseExprInfix(p *parser, c *token.Cursor, where taxa.Place, lhs ast.ExprAn
 			return p.NewExprRange(ast.ExprRangeArgs{
 				Start: lhs,
 				To:    c.Next(),
-				End:   parseExprInfix(p, c, taxa.KeywordTo.After(), ast.ExprAny{}, prec),
+				End:   parseExprInfix(p, c, taxa.Noun(keyword.To).After(), ast.ExprAny{}, prec),
 			}).AsAny()
 		}
 
@@ -136,7 +136,7 @@ func parseExprPrefix(p *parser, c *token.Cursor, where taxa.Place) ast.ExprAny {
 
 	case next.Keyword() == keyword.Minus:
 		c.Next()
-		inner := parseExprPrefix(p, c, taxa.Minus.After())
+		inner := parseExprPrefix(p, c, taxa.Noun(keyword.Minus).After())
 		return p.NewExprPrefixed(ast.ExprPrefixedArgs{
 			Prefix: next,
 			Expr:   inner,

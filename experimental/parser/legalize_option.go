@@ -168,21 +168,20 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 		if dict.Braces().Keyword() == keyword.Angles {
 			var err *report.Diagnostic
 			if parent.IsZero() {
-				err = p.Errorf("cannot use %s for %s here", taxa.Angles, taxa.Dict)
+				err = p.Errorf("cannot use `<...>` for %s here", taxa.Dict)
 			} else {
-				err = p.Warnf("using %s for %s is not recommended", taxa.Angles, taxa.Dict)
+				err = p.Warnf("using `<...>` for %s is not recommended", taxa.Dict)
 			}
 
 			err.Apply(
 				report.Snippet(value),
 				report.SuggestEdits(
-					dict,
-					fmt.Sprintf("use %s instead", taxa.Braces),
+					dict, "use `{...}` instead",
 					report.Edit{Start: 0, End: 1, Replace: "{"},
 					report.Edit{Start: dict.Span().Len() - 1, End: dict.Span().Len(), Replace: "}"},
 				),
-				report.Notef("%s are only permitted for sub-messages within a %s, but as top-level option values", taxa.Angles, taxa.Dict),
-				report.Helpf("%s %ss are an obscure feature and not recommended", taxa.Angles, taxa.Dict),
+				report.Notef("`<...>` are only permitted for sub-messages within a %s, but as top-level option values", taxa.Dict),
+				report.Helpf("`<...>` %ss are an obscure feature and not recommended", taxa.Dict),
 			)
 		}
 
@@ -197,11 +196,10 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 				first, _ := iterx.First(path.Components)
 				if !first.AsExtension().IsZero() {
 					// TODO: move this into ir/lower_eval.go
-					p.Errorf("cannot name extension field using %s in %s", taxa.Parens, taxa.Dict).Apply(
-						report.Snippetf(path, "expected this to be wrapped in %s instead", taxa.Brackets),
+					p.Errorf("cannot name extension field using `(...)` in %s", taxa.Dict).Apply(
+						report.Snippetf(path, "expected this to be wrapped in `[...]` instead"),
 						report.SuggestEdits(
-							path,
-							fmt.Sprintf("replace the %s with %s", taxa.Parens, taxa.Brackets),
+							path, "replace the `(...)` with `[...]`",
 							report.Edit{Start: 0, End: 1, Replace: "["},
 							report.Edit{Start: path.Span().Len() - 1, End: path.Span().Len(), Replace: "]"},
 						),
@@ -265,13 +263,10 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 						where: taxa.Array.In(),
 						want:  taxa.Dict.AsSet(),
 					}).Apply(
-						report.Snippetf(kv.Key(),
-							"because this %s is missing a %s",
-							taxa.DictField, taxa.Colon),
+						report.Snippetf(kv.Key(), "because this %s is missing a `:`", taxa.DictField),
 						report.Notef(
-							"the %s can be omitted in a %s, but only if the value is a %s or a %s of them",
-							taxa.Colon, taxa.DictField,
-							taxa.Dict, taxa.Array),
+							"the `:` can be omitted in a %s, but only if the value is a %s or a %s of them",
+							taxa.DictField, taxa.Dict, taxa.Array),
 					)
 
 					break // Only diagnose the first one.

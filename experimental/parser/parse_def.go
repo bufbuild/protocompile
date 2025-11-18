@@ -224,13 +224,13 @@ func (defOutputs) parse(p *defParser) source.Span {
 	list, err := punctParser{
 		parser: p.parser, c: p.c,
 		want:  keyword.Parens,
-		where: taxa.KeywordReturns.After(),
+		where: taxa.Noun(keyword.Returns).After(),
 	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
 		// we parse a single type w/o parens and diagnose it later.
-		ty = parseType(p.parser, p.c, taxa.KeywordReturns.After())
+		ty = parseType(p.parser, p.c, taxa.Noun(keyword.Returns).After())
 	} else if err != nil {
 		p.Error(err)
 		return source.Span{}

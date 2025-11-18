@@ -75,7 +75,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 				p.Error(errUnexpected{
 					what:  tokens,
 					where: taxa.Classify(next).After(),
-					want:  taxa.NewSet(taxa.Ident, taxa.Parens),
+					want:  taxa.NewSet(taxa.Ident, taxa.Noun(keyword.Parens)),
 					got:   "tokens",
 				})
 			} else {
@@ -134,7 +134,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 			p.Error(errUnexpected{
 				what:  next,
 				where: taxa.QualifiedName.After(),
-				want:  taxa.NewSet(taxa.Ident, taxa.Parens),
+				want:  taxa.NewSet(taxa.Ident, taxa.Noun(keyword.Parens)),
 			}).Apply(report.SuggestEdits(
 				prevSeparator,
 				fmt.Sprintf("delete the extra `%s`", prevSeparator.Text()),

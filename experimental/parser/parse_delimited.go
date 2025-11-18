@@ -225,7 +225,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 func (d delimited[T]) delimNouns() taxa.Set {
 	var set taxa.Set
 	for _, delim := range d.delims {
-		set = set.With(taxa.Keyword(delim))
+		set = set.With(taxa.Noun(delim))
 	}
 	return set
 }

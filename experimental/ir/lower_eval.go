@@ -483,11 +483,11 @@ validate:
 		)
 
 		if hasBrackets && !member.IsExtension() {
-			d.Apply(report.Notef("%s must only be used when referencing extensions or concrete `Any` types", taxa.Brackets))
+			d.Apply(report.Notef("`[...]` must only be used when referencing extensions or concrete `Any` types"))
 		}
 
 		if !hasBrackets && member.IsExtension() {
-			d.Apply(report.Notef("extension names must be surrounded by %s", taxa.Brackets))
+			d.Apply(report.Notef("extension names must be surrounded by `[...]`"))
 		}
 
 		if wrongPath {
@@ -1001,24 +1001,23 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				return messageSetNumberMax, ok
 			}
 		} else {
-			e.Errorf("%s outside of range end", taxa.PredeclaredMax).Apply(
+			e.Errorf("`max` outside of range end").Apply(
 				report.Snippet(expr),
 				report.Notef(
-					"the special %s expression can only be used at the end of a range",
-					taxa.PredeclaredMax),
+					"the special `max` expression can only be used at the end of a range"),
 			)
 			return 0, false
 		}
 
 		if !neg.IsZero() {
-			e.Errorf("negated %s", taxa.PredeclaredMax).Apply(
+			e.Errorf("negated `max`").Apply(
 				report.Snippet(neg),
-				report.Notef("the special %s expression may not be negated", taxa.PredeclaredMax),
+				report.Notef("the special `max` expression may not be negated"),
 			)
 		}
 
 		if !scalar.IsNumber() {
-			e.Error(args.mismatch(taxa.PredeclaredMax))
+			e.Error(args.mismatch(taxa.Noun(keyword.Max)))
 			return 0, false
 		}
 

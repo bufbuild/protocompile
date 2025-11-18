@@ -456,7 +456,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			default:
 				p.Error(errUnexpected{
 					what:  eq,
-					want:  taxa.Equals.AsSet(),
+					want:  taxa.Noun(keyword.Eq).AsSet(),
 					where: taxa.CompactOptions.In(),
 				})
 				eq = token.Zero

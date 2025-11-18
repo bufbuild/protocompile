@@ -72,7 +72,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	switch {
 	case def.Name().IsZero():
 		def.MarkCorrupt()
-		kw := taxa.Keyword(def.Keyword())
+		kw := taxa.Noun(def.Keyword())
 		p.Errorf("missing name %v", kw.After()).Apply(
 			report.Snippet(def),
 		)
@@ -82,7 +82,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 
 	case def.Name().AsIdent().IsZero():
 		def.MarkCorrupt()
-		kw := taxa.Keyword(def.Keyword())
+		kw := taxa.Noun(def.Keyword())
 
 		err := errUnexpected{
 			what:  def.Name(),
@@ -320,7 +320,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		if sig.Inputs().Span().IsZero() {
 			def.MarkCorrupt()
 			p.Errorf("missing %v in %v", taxa.MethodIns, taxa.Method).Apply(
-				report.Snippetf(def.Name(), "expected %s after this", taxa.Parens),
+				report.Snippetf(def.Name(), "expected %s after this", taxa.Noun(keyword.Parens)),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Inputs(), taxa.MethodIns)
@@ -333,7 +333,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 			switch {
 			case !sig.Returns().IsZero():
 				after = sig.Returns()
-				expected = taxa.Parens
+				expected = taxa.Noun(keyword.Parens)
 			case !sig.Inputs().IsZero():
 				after = sig.Inputs()
 				expected = taxa.ReturnsParens
@@ -365,8 +365,8 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 	if options := def.Options(); !options.IsZero() {
 		p.Error(errHasOptions{def}).Apply(
 			report.Notef(
-				"service method options are applied using %v; declarations in the %v following the method definition",
-				taxa.KeywordOption, taxa.Braces,
+				"service method options are applied using `option`; declarations " +
+					"in the `{...}` following the method definition",
 			),
 			// TODO: Generate a suggestion for this.
 		)

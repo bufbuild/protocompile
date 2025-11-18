@@ -65,13 +65,13 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 
 		if pc.Separator().Keyword() == keyword.Slash {
 			if !opts.AllowSlash {
-				p.Errorf("unexpected %s in path %s", taxa.Slash, where).Apply(
-					report.Snippetf(pc.Separator(), "help: replace this with a %s", taxa.Dot),
+				p.Errorf("unexpected `/` in path %s", where).Apply(
+					report.Snippetf(pc.Separator(), "help: replace this with a `.`"),
 				)
 				ok = false
 				continue
 			} else if !slash.IsZero() {
-				p.Errorf("type URL can only contain a single %s", taxa.Slash).Apply(
+				p.Errorf("type URL can only contain a single `/`").Apply(
 					report.Snippet(pc.Separator()),
 					report.Snippetf(slash, "first one is here"),
 				)

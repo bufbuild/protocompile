@@ -57,7 +57,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 	var isList, isInMethod bool
 	switch where.Subject() {
 	case taxa.MethodIns, taxa.MethodOuts,
-		taxa.KeywordReturns: // Used when parsing the invalid `returns foo.Bar` production.
+		taxa.Noun(keyword.Returns): // Used when parsing the invalid `returns foo.Bar` production.
 		isInMethod = true
 		fallthrough
 	case taxa.TypeParams:

@@ -61,7 +61,7 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 		return p.c.Next(), nil
 	}
 
-	wanted := taxa.NewSet(taxa.Keyword(p.want))
+	wanted := taxa.Noun(p.want).AsSet()
 	err := errUnexpected{
 		what:  next,
 		where: p.where,

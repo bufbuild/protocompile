@@ -51,7 +51,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 				p.Error(errMoreThanOne{
 					first:  mod.PrefixToken(),
 					second: prefixed.PrefixToken(),
-					what:   taxa.KeywordStream,
+					what:   taxa.Noun(keyword.Stream),
 				})
 			default:
 				mod = prefixed
@@ -86,13 +86,13 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 		switch p.syntax {
 		case syntax.Proto2:
 			expected = taxa.NewSet(
-				taxa.KeywordRequired, taxa.KeywordOptional, taxa.KeywordRepeated)
+				taxa.Noun(keyword.Required), taxa.Noun(keyword.Optional), taxa.Noun(keyword.Repeated))
 		case syntax.Proto3:
 			expected = taxa.NewSet(
-				taxa.TypePath, taxa.KeywordOptional, taxa.KeywordRepeated)
+				taxa.TypePath, taxa.Noun(keyword.Optional), taxa.Noun(keyword.Repeated))
 		default:
 			expected = taxa.NewSet(
-				taxa.TypePath, taxa.KeywordRepeated)
+				taxa.TypePath, taxa.Noun(keyword.Repeated))
 		}
 	}
 
@@ -185,8 +185,8 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 							report.Helpf(
 								"in %s, the presence behavior of a singular field "+
 									"is controlled with `[feature.field_presence = ...]`, with "+
-									"the default being equivalent to %s %s",
-								taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
+									"the default being equivalent to a %s `optional` field",
+								taxa.EditionMode, syntax.Proto2),
 							report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
 						)
 					}
@@ -228,7 +228,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 		ty := ty.AsGeneric()
 		switch {
 		case ty.Path().AsPredeclared() != predeclared.Map:
-			p.Errorf("generic types other than %s are not supported", taxa.PredeclaredMap).Apply(
+			p.Errorf("generic types other than `map` are not supported").Apply(
 				report.Snippet(ty.Path()),
 			)
 		case !oneof.IsZero():
