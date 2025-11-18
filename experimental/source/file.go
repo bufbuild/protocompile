@@ -224,9 +224,7 @@ func inverseLocation(f *File, line, column int, units length.Unit) int {
 				break
 			}
 		}
-		if column > 0 {
-			offset += column
-		}
+		offset += column
 	case length.Bytes:
 		offset = column - 1
 	case length.UTF16:
