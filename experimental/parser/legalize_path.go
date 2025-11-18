@@ -63,7 +63,7 @@ func legalizePath(p *parser, where taxa.Place, path ast.Path, opts pathOptions) 
 			continue
 		}
 
-		if pc.Separator().Keyword() == keyword.Slash {
+		if pc.Separator().Keyword() == keyword.Div {
 			if !opts.AllowSlash {
 				p.Errorf("unexpected `/` in path %s", where).Apply(
 					report.Snippetf(pc.Separator(), "help: replace this with a `.`"),

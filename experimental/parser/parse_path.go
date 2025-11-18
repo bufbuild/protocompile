@@ -44,7 +44,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 	}
 
 	var prevSeparator token.Token
-	if slicesx.Among(start.Keyword(), keyword.Dot, keyword.Slash) {
+	if slicesx.Among(start.Keyword(), keyword.Dot, keyword.Div) {
 		prevSeparator = c.Next()
 	}
 
@@ -55,7 +55,7 @@ func parsePath(p *parser, c *token.Cursor) ast.Path {
 		first := start == next
 
 		switch {
-		case slicesx.Among(next.Keyword(), keyword.Dot, keyword.Slash):
+		case slicesx.Among(next.Keyword(), keyword.Dot, keyword.Div):
 			if !prevSeparator.IsZero() {
 				// This is a double dot, so something like foo..bar, ..foo, or
 				// foo.. We diagnose it and move on -- Path.Components is robust

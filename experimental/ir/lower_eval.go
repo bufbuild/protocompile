@@ -254,7 +254,7 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 
 		inner := expr.Expr()
 		switch expr.Prefix() {
-		case keyword.Minus:
+		case keyword.Sub:
 			// Special handling to ensure that negative literals work correctly.
 			if !inner.AsLiteral().IsZero() {
 				return e.evalLiteral(args, inner.AsLiteral(), expr)

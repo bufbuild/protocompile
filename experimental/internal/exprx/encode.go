@@ -236,19 +236,19 @@ func (c *protoEncoder) op(e expr.Op) *exprpb.Op {
 
 	var op exprpb.Op_Kind
 	switch e.Operator() {
-	case keyword.Eq:
+	case keyword.Assign:
 		op = exprpb.Op_ASSIGN
-	case keyword.ColonEq:
+	case keyword.AssignNew:
 		op = exprpb.Op_ASSIGN_NEW
-	case keyword.PlusEq:
+	case keyword.AssignAdd:
 		op = exprpb.Op_ASSIGN_ADD
-	case keyword.MinusEq:
+	case keyword.AssignSub:
 		op = exprpb.Op_ASSIGN_SUB
-	case keyword.StarEq:
+	case keyword.AssignMul:
 		op = exprpb.Op_ASSIGN_MUL
-	case keyword.SlashEq:
+	case keyword.AssignDiv:
 		op = exprpb.Op_ASSIGN_DIV
-	case keyword.PercentEq:
+	case keyword.AssignRem:
 		op = exprpb.Op_ASSIGN_REM
 
 	case keyword.Comma:
@@ -260,17 +260,17 @@ func (c *protoEncoder) op(e expr.Op) *exprpb.Op {
 	case keyword.Not:
 		op = exprpb.Op_NOT
 
-	case keyword.EqEq:
+	case keyword.Eq:
 		op = exprpb.Op_EQ
-	case keyword.BangEq:
+	case keyword.Ne:
 		op = exprpb.Op_NE
-	case keyword.Less:
+	case keyword.Lt:
 		op = exprpb.Op_LT
-	case keyword.Greater:
+	case keyword.Gt:
 		op = exprpb.Op_GT
-	case keyword.LessEq:
+	case keyword.Le:
 		op = exprpb.Op_LE
-	case keyword.GreaterEq:
+	case keyword.Ge:
 		op = exprpb.Op_GE
 
 	case keyword.Range:
@@ -278,15 +278,15 @@ func (c *protoEncoder) op(e expr.Op) *exprpb.Op {
 	case keyword.RangeEq:
 		op = exprpb.Op_RANGE_EQ
 
-	case keyword.Plus:
+	case keyword.Add:
 		op = exprpb.Op_ADD
-	case keyword.Minus:
+	case keyword.Sub:
 		op = exprpb.Op_SUB
-	case keyword.Star:
+	case keyword.Mul:
 		op = exprpb.Op_MUL
-	case keyword.Slash:
+	case keyword.Div:
 		op = exprpb.Op_DIV
-	case keyword.Percent:
+	case keyword.Rem:
 		op = exprpb.Op_REM
 
 	case keyword.Dot:

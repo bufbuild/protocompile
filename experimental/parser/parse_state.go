@@ -96,7 +96,7 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 func parseEquals(p *parser, c *token.Cursor, in taxa.Noun) (token.Token, report.Diagnose) {
 	return punctParser{
 		parser: p, c: c,
-		want:   keyword.Eq,
+		want:   keyword.Assign,
 		where:  in.In(),
 		insert: justifyBetween,
 	}.parse()

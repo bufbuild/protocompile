@@ -225,7 +225,7 @@ func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.Ex
 				}
 
 				slashIdx, _ := iterx.Find(path.Components, func(pc ast.PathComponent) bool {
-					return pc.Separator().Keyword() == keyword.Slash
+					return pc.Separator().Keyword() == keyword.Div
 				})
 				if slashIdx != -1 {
 					legalizePath(p, taxa.TypeURL.In(), path, pathOptions{AllowSlash: true})

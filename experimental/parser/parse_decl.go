@@ -208,7 +208,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			break
 		}
 		// This is definitely a field.
-		if next.Keyword() == keyword.Eq {
+		if next.Keyword() == keyword.Assign {
 			break
 		}
 
@@ -252,7 +252,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		return p.NewDeclImport(args).AsAny()
 
 	case keyword.Reserved, keyword.Extensions:
-		if next.Keyword() == keyword.Eq {
+		if next.Keyword() == keyword.Assign {
 			// If whatever follows the path is an =, we're going to assume this
 			// is trying to be a field.
 			break
@@ -456,7 +456,7 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			default:
 				p.Error(errUnexpected{
 					what:  eq,
-					want:  taxa.Noun(keyword.Eq).AsSet(),
+					want:  taxa.Noun(keyword.Assign).AsSet(),
 					where: taxa.CompactOptions.In(),
 				})
 				eq = token.Zero
