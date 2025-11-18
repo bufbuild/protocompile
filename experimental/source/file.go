@@ -150,6 +150,9 @@ func (f *File) Line(line int) string {
 // line is expected to be 1-indexed.
 func (f *File) LineOffsets(line int) (start, end int) {
 	lines := f.lines()
+	if len(lines) == line {
+		return lines[line-1], len(f.Text())
+	}
 	return lines[line-1], lines[line]
 }
 
@@ -221,6 +224,7 @@ func inverseLocation(f *File, line, column int, units length.Unit) int {
 				break
 			}
 		}
+		offset += column
 	case length.Bytes:
 		offset = column - 1
 	case length.UTF16:
@@ -230,6 +234,9 @@ func inverseLocation(f *File, line, column int, units length.Unit) int {
 			if column <= 0 {
 				break
 			}
+		}
+		if column > 0 {
+			offset += column
 		}
 	case length.TermWidth:
 		panic("protocompile/source: passed TermWidth to File.InvertLocation")
