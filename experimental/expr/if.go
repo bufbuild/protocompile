@@ -41,7 +41,7 @@ type rawIf struct {
 	elseT, ifT token.ID
 	cond       id.Dyn[Expr, Kind]
 	block      id.ID[Block]
-	else_      id.ID[If]
+	else_      id.ID[If] //nolint:revive
 }
 
 // AsAny type-erases this type value.

@@ -60,7 +60,7 @@ type rawParams struct {
 type rawParam struct {
 	name, ty, cond             id.ID[Expr]
 	nameKind, tyKind, condKind Kind
-	colon, if_, comma          token.ID
+	colon, if_, comma          token.ID //nolint:revive
 }
 
 // Brackets returns the token tree for the brackets wrapping the argument list.

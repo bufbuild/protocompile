@@ -165,5 +165,5 @@ func BytesAlias[S ~[]B, B ~byte](data string) []B {
 func NoEscape[P ~*E, E any](p P) P {
 	// Xoring the address with zero is a reliable way to hide a pointer from
 	// the compiler.
-	return P(unsafe.Pointer(uintptr(unsafe.Pointer(p)) ^ 0))
+	return P(unsafe.Pointer(uintptr(unsafe.Pointer(p)) ^ 0)) //nolint:staticcheck
 }

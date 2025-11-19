@@ -52,10 +52,10 @@ type CaseArgs struct {
 }
 
 type rawSwitch struct {
-	kw     token.ID
-	arg    id.Dyn[Expr, Kind]
-	braces token.ID
 	cases  id.Seq[Case, *Context, *rawCase]
+	arg    id.Dyn[Expr, Kind]
+	kw     token.ID
+	braces token.ID
 }
 
 type rawCase struct {

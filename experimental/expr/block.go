@@ -21,13 +21,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
-// Block is a block of expressions evaluated one after the other, wrapped in
-// braces. Within a block, expressions must be separated by semicolons or
-// newlines.
-//
-// # Grammar
-//
-// Block := `{` (Expr (`;` | `\n`))* Expr? `}`
+// Block := `{` (Expr (`;` | `\n`))* Expr? `}`.
 type Block id.Node[Block, *Context, *rawBlock]
 
 // BlockArgs is arguments for [Nodes.NewBlock].
