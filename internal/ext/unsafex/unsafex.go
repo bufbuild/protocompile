@@ -162,6 +162,8 @@ func BytesAlias[S ~[]B, B ~byte](data string) []B {
 // This is only safe when the return value does not actually escape to the heap,
 // but only appears to, such as by being passed to a virtual call which does not
 // actually result in a heap escape.
+//
+//go:nosplit
 func NoEscape[P ~*E, E any](p P) P {
 	// Xoring the address with zero is a reliable way to hide a pointer from
 	// the compiler.
