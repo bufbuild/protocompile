@@ -164,8 +164,10 @@ func BytesAlias[S ~[]B, B ~byte](data string) []B {
 // actually result in a heap escape.
 //
 //go:nosplit
-func NoEscape[P ~*E, E any](p P) P {
+func NoEscape[P ~*E, E any](ptr P) P {
+	p := unsafe.Pointer(ptr)
 	// Xoring the address with zero is a reliable way to hide a pointer from
 	// the compiler.
-	return P(unsafe.Pointer(uintptr(unsafe.Pointer(p)) ^ 0)) //nolint:staticcheck
+	p = unsafe.Pointer(uintptr(p) ^ 0) //nolint:staticcheck
+	return P(p)
 }

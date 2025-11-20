@@ -75,7 +75,9 @@ install: ## Install all binaries
 
 .PHONY: lint
 lint: $(BIN)/golangci-lint ## Lint Go
-	$(GO) vet ./... ./internal/benchmarks/...
+	@# golanci-lint already catches unsafe.Pointer misuse, and can be silenced
+	@# when it has false positives, unlike go vet, which cannot.
+	$(GO) vet  -unsafeptr=false ./... ./internal/benchmarks/...
 	$(BIN)/golangci-lint run
 	cd internal/benchmarks && $(BIN)/golangci-lint run
 
