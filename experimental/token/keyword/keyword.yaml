@@ -152,17 +152,17 @@
 
   # Assignment operators.
   - {name: Assign, string: "="}
-  - {name: NewAssign, string: ":="}
-  - {name: AddAssign, string: "+="}
-  - {name: SubAssign, string: "-="}
-  - {name: MulAssign, string: "*="}
-  - {name: DivAssign, string: "/="}
-  - {name: RemAssign, string: "%="}
-  - {name: AmpAssign, string: "&="}
-  - {name: PipeAssign, string: "|="}
-  - {name: XorAssign, string: "^="}
-  - {name: ShlAssign, string: "<<="}
-  - {name: ShrAssign, string: ">>="}
+  - {name: AssignNew, string: ":="}
+  - {name: AssignAdd, string: "+="}
+  - {name: AssignSub, string: "-="}
+  - {name: AssignMul, string: "*="}
+  - {name: AssignDiv, string: "/="}
+  - {name: AssignRem, string: "%="}
+  - {name: AssignAmp, string: "&="}
+  - {name: AssignPipe, string: "|="}
+  - {name: AssignXor, string: "^="}
+  - {name: AssignShl, string: "<<="}
+  - {name: AssignShr, string: ">>="}
 
   # Rust-style range operators.
   - {name: Range, string: ".."}

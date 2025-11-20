@@ -242,7 +242,7 @@ func (n *Nodes) panicIfNotOurs(that ...any) {
 		}
 
 		panic(fmt.Sprintf(
-			"template/ast: attempt to mix different contexts: %q vs %q",
+			"protocompile/expr: attempt to mix different contexts: %q vs %q",
 			n.stream.Path(),
 			path,
 		))

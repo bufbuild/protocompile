@@ -38,8 +38,8 @@ func Prefix(text string) Keyword {
 	return kw
 }
 
-// Prefixes returns an iterator over the prefixes of text that match any of
-// the keywords that can be returned by [Lookup], in ascending order of length.
+// Prefix returns an iterator over the keywords that can be returned by [Lookup]
+// which are prefixes of text, in ascending order of length.
 func Prefixes(text string) iter.Seq[Keyword] {
 	return iterx.Right(kwTrie.Prefixes(text))
 }

@@ -115,17 +115,17 @@ const (
 	And2                        // &&
 	Or2                         // ||
 	Assign                      // =
-	NewAssign                   // :=
-	AddAssign                   // +=
-	SubAssign                   // -=
-	MulAssign                   // *=
-	DivAssign                   // /=
-	RemAssign                   // %=
-	AmpAssign                   // &=
-	PipeAssign                  // |=
-	XorAssign                   // ^=
-	ShlAssign                   // <<=
-	ShrAssign                   // >>=
+	AssignNew                   // :=
+	AssignAdd                   // +=
+	AssignSub                   // -=
+	AssignMul                   // *=
+	AssignDiv                   // /=
+	AssignRem                   // %=
+	AssignAmp                   // &=
+	AssignPipe                  // |=
+	AssignXor                   // ^=
+	AssignShl                   // <<=
+	AssignShr                   // >>=
 	Range                       // ..
 	RangeEq                     // ..=
 	LParen                      // (
@@ -270,17 +270,17 @@ var _table_Keyword_String = [...]string{
 	And2:         "&&",
 	Or2:          "||",
 	Assign:       "=",
-	NewAssign:    ":=",
-	AddAssign:    "+=",
-	SubAssign:    "-=",
-	MulAssign:    "*=",
-	DivAssign:    "/=",
-	RemAssign:    "%=",
-	AmpAssign:    "&=",
-	PipeAssign:   "|=",
-	XorAssign:    "^=",
-	ShlAssign:    "<<=",
-	ShrAssign:    ">>=",
+	AssignNew:    ":=",
+	AssignAdd:    "+=",
+	AssignSub:    "-=",
+	AssignMul:    "*=",
+	AssignDiv:    "/=",
+	AssignRem:    "%=",
+	AssignAmp:    "&=",
+	AssignPipe:   "|=",
+	AssignXor:    "^=",
+	AssignShl:    "<<=",
+	AssignShr:    ">>=",
 	Range:        "..",
 	RangeEq:      "..=",
 	LParen:       "(",
@@ -391,17 +391,17 @@ var _table_Keyword_GoString = [...]string{
 	And2:         "And2",
 	Or2:          "Or2",
 	Assign:       "Assign",
-	NewAssign:    "NewAssign",
-	AddAssign:    "AddAssign",
-	SubAssign:    "SubAssign",
-	MulAssign:    "MulAssign",
-	DivAssign:    "DivAssign",
-	RemAssign:    "RemAssign",
-	AmpAssign:    "AmpAssign",
-	PipeAssign:   "PipeAssign",
-	XorAssign:    "XorAssign",
-	ShlAssign:    "ShlAssign",
-	ShrAssign:    "ShrAssign",
+	AssignNew:    "AssignNew",
+	AssignAdd:    "AssignAdd",
+	AssignSub:    "AssignSub",
+	AssignMul:    "AssignMul",
+	AssignDiv:    "AssignDiv",
+	AssignRem:    "AssignRem",
+	AssignAmp:    "AssignAmp",
+	AssignPipe:   "AssignPipe",
+	AssignXor:    "AssignXor",
+	AssignShl:    "AssignShl",
+	AssignShr:    "AssignShr",
 	Range:        "Range",
 	RangeEq:      "RangeEq",
 	LParen:       "LParen",
@@ -512,17 +512,17 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"&&":         And2,
 	"||":         Or2,
 	"=":          Assign,
-	":=":         NewAssign,
-	"+=":         AddAssign,
-	"-=":         SubAssign,
-	"*=":         MulAssign,
-	"/=":         DivAssign,
-	"%=":         RemAssign,
-	"&=":         AmpAssign,
-	"|=":         PipeAssign,
-	"^=":         XorAssign,
-	"<<=":        ShlAssign,
-	">>=":        ShrAssign,
+	":=":         AssignNew,
+	"+=":         AssignAdd,
+	"-=":         AssignSub,
+	"*=":         AssignMul,
+	"/=":         AssignDiv,
+	"%=":         AssignRem,
+	"&=":         AssignAmp,
+	"|=":         AssignPipe,
+	"^=":         AssignXor,
+	"<<=":        AssignShl,
+	">>=":        AssignShr,
 	"..":         Range,
 	"..=":        RangeEq,
 	"(":          LParen,

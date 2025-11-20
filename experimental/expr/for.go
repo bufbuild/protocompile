@@ -38,10 +38,11 @@ type ForArgs struct {
 }
 
 type rawFor struct {
-	forT, inT token.ID
-	vars      id.ID[Params]
-	iter      id.Dyn[Expr, Kind]
-	block     id.ID[Block]
+	iter  id.Dyn[Expr, Kind]
+	forT  token.ID
+	inT   token.ID
+	vars  id.ID[Params]
+	block id.ID[Block]
 }
 
 // AsAny type-erases this type value.

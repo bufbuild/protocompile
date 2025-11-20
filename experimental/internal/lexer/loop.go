@@ -47,7 +47,6 @@ func loop(l *lexer) {
 	// rune in the source file to determine what action to take.
 	mp := l.mustProgress()
 
-lexer:
 	for !l.done() {
 		mp.check()
 		start := l.cursor
@@ -62,90 +61,96 @@ lexer:
 			continue
 		}
 
-	keyword: // Find the next valid keyword.
-		for kw := range keyword.Prefixes(l.rest()) {
-			switch what := l.OnKeyword(kw); what {
-			case DiscardKeyword:
-				continue keyword
-
-			case HardKeyword, SoftKeyword, BracketKeyword:
-				word := kw.String()
-				if l.NumberCanStartWithDot && kw == keyword.Dot {
-					next, _ := stringsx.Rune(l.rest()[len(word):], 0)
-					if unicode.IsDigit(next) {
-						break
-					}
-				}
-
-				kind := token.Keyword
-				if kw.IsReservedWord() && what == SoftKeyword {
-					kind = token.Ident
-					// If this is a reserved word, the rune after it must not be
-					// an XID continue.
-					next, _ := stringsx.Rune(l.rest()[len(word):], 0)
-					if unicodex.IsXIDContinue(next) {
-						break
-					}
-				}
-
-				l.cursor += len(word)
-				tok := l.push(len(word), kind)
-
-				if what == BracketKeyword {
-					l.braces = append(l.braces, tok.ID())
-				}
-				continue lexer
-
-			case LineComment:
-				word := kw.String()
-				l.cursor += len(word)
-
-				var text string
-				if comment, ok := l.seekInclusive("\n"); ok {
-					text = comment
-				} else {
-					text = l.seekEOF()
-				}
-				l.push(len(word)+len(text), token.Comment)
-				continue lexer
-
-			case BlockComment:
-				word := kw.String()
-				l.cursor += len(word)
-
-				// Block comment. Seek to the next "*/". Protobuf comments
-				// unfortunately do not nest, and allowing them to nest can't
-				// be done in a backwards-compatible manner. We acknowledge that
-				// this behavior is user-hostile.
-				//
-				// If we encounter no "*/", seek EOF and emit a diagnostic. Trying
-				// to lex a partial comment is hopeless.
-				_, end, fused := kw.Brackets()
-				if kw == end {
-					// The user definitely thought nested comments were allowed. :/
-					tok := l.push(len(end.String()), token.Unrecognized)
-					l.Error(errtoken.Unmatched{Span: tok.Span(), Keyword: kw}).Apply(
-						report.Notef("nested `%s` comments are not supported", fused),
-					)
-					continue lexer
-				}
-
-				var text string
-				if comment, ok := l.seekInclusive(end.String()); ok {
-					text = comment
-				} else {
-					// Create a span for the /*, that's what we're gonna highlight.
-					l.Error(errtoken.Unmatched{
-						Span:    l.spanFrom(l.cursor - len(word)),
-						Keyword: kw,
-					})
-					text = l.seekEOF()
-				}
-				l.push(len(word)+len(text), token.Comment)
-
-				continue lexer
+		// Find the next valid keyword.
+		var what OnKeyword
+		var kw keyword.Keyword
+		for k := range keyword.Prefixes(l.rest()) {
+			n := l.OnKeyword(k)
+			if n != DiscardKeyword {
+				kw = k
+				what = n
 			}
-			break
+		}
+
+		switch what {
+		case SoftKeyword, HardKeyword, BracketKeyword:
+			word := kw.String()
+			if l.NumberCanStartWithDot && kw == keyword.Dot {
+				next, _ := stringsx.Rune(l.rest(), len(word))
+				if unicode.IsDigit(next) {
+					break
+				}
+			}
+
+			kind := token.Keyword
+			if kw.IsReservedWord() {
+				if what == SoftKeyword {
+					kind = token.Ident
+				}
+				// If this is a reserved word, the rune after it must not be
+				// an XID continue.
+				next, _ := stringsx.Rune(l.rest(), len(word))
+				if unicodex.IsXIDContinue(next) {
+					break
+				}
+			}
+
+			l.cursor += len(word)
+			tok := l.push(len(word), kind)
+
+			if what == BracketKeyword {
+				l.braces = append(l.braces, tok.ID())
+			}
+			continue
+
+		case LineComment:
+			word := kw.String()
+			l.cursor += len(word)
+
+			var text string
+			if comment, ok := l.seekInclusive("\n"); ok {
+				text = comment
+			} else {
+				text = l.seekEOF()
+			}
+			l.push(len(word)+len(text), token.Comment)
+			continue
+
+		case BlockComment:
+			word := kw.String()
+			l.cursor += len(word)
+
+			// Block comment. Seek to the next "*/". Protobuf comments
+			// unfortunately do not nest, and allowing them to nest can't
+			// be done in a backwards-compatible manner. We acknowledge that
+			// this behavior is user-hostile.
+			//
+			// If we encounter no "*/", seek EOF and emit a diagnostic. Trying
+			// to lex a partial comment is hopeless.
+			_, end, fused := kw.Brackets()
+			if kw == end {
+				// The user definitely thought nested comments were allowed. :/
+				tok := l.push(len(end.String()), token.Unrecognized)
+				l.Error(errtoken.Unmatched{Span: tok.Span(), Keyword: kw}).Apply(
+					report.Notef("nested `%s` comments are not supported", fused),
+				)
+				continue
+			}
+
+			var text string
+			if comment, ok := l.seekInclusive(end.String()); ok {
+				text = comment
+			} else {
+				// Create a span for the /*, that's what we're gonna highlight.
+				l.Error(errtoken.Unmatched{
+					Span:    l.spanFrom(l.cursor - len(word)),
+					Keyword: kw,
+				})
+				text = l.seekEOF()
+			}
+			l.push(len(word)+len(text), token.Comment)
+
+			continue
 		}
 
 		r := l.pop()
