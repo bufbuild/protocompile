@@ -45,13 +45,11 @@ type nybbles[N uint8 | uint16 | uint32 | uint64] struct {
 	hasValue []uint
 }
 
-// Get returns the index corresponding to the longest prefix of key present
-// in the trie. The match is exact when len(key) == len(prefix).
-//
-// If no key in the trie is a prefix of key, returns "", -1.
-func (t *nybbles[N]) get(key string) (prefix string, found int) {
-	if t.hi == nil {
-		return "", -1
+// search walks the trie along the path given by the
+// given key, yielding prefixes and indices for each node visited.
+func (t *nybbles[N]) search(key string, yield func(string, int) bool) {
+	if t.has(0) && !yield("", 0) {
+		return
 	}
 
 	var n int
@@ -69,13 +67,10 @@ func (t *nybbles[N]) get(key string) (prefix string, found int) {
 		}
 		n = int(t.lo[m][lo])
 
-		if t.has(n) {
-			prefix = key[:i+1]
-			found = n
+		if t.has(n) && !yield(key[:i+1], n) {
+			return
 		}
 	}
-
-	return prefix, found
 }
 
 // insert adds a new key to the trie; returns the index to insert the

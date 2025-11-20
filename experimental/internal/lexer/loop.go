@@ -61,14 +61,21 @@ func loop(l *lexer) {
 		}
 
 		// Find the next valid keyword.
-		kw := keyword.Prefix(l.rest())
-		switch what := l.OnKeyword(kw); what {
-		case DiscardKeyword:
+		var what OnKeyword
+		var kw keyword.Keyword
+		for k := range keyword.Prefixes(l.rest()) {
+			n := l.OnKeyword(k)
+			if n != DiscardKeyword {
+				kw = k
+				what = n
+			}
+		}
 
+		switch what {
 		case KeepKeyword, BracketKeyword:
 			word := kw.String()
 			if l.NumberCanStartWithDot && kw == keyword.Dot {
-				next, _ := stringsx.Rune(l.rest()[len(word):], 0)
+				next, _ := stringsx.Rune(l.rest(), len(word))
 				if unicode.IsDigit(next) {
 					break
 				}
@@ -79,7 +86,7 @@ func loop(l *lexer) {
 				kind = token.Ident
 				// If this is a reserved word, the rune after it must not be
 				// an XID continue.
-				next, _ := stringsx.Rune(l.rest()[len(word):], 0)
+				next, _ := stringsx.Rune(l.rest(), len(word))
 				if unicodex.IsXIDContinue(next) {
 					break
 				}

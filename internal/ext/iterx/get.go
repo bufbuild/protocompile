@@ -20,18 +20,36 @@ import (
 
 // First retrieves the first element of an iterator.
 func First[T any](seq iter.Seq[T]) (v T, ok bool) {
-	for x := range seq {
-		return x, true
+	for v = range seq {
+		ok = true
+		break
 	}
-	return v, false
+	return v, ok
+}
+
+// First retrieves the first element a two-element iterator.
+func First2[K, V any](seq iter.Seq2[K, V]) (k K, v V, ok bool) {
+	for k, v = range seq {
+		ok = true
+		break
+	}
+	return k, v, ok
 }
 
 // Last retrieves the last element of an iterator.
 func Last[T any](seq iter.Seq[T]) (v T, ok bool) {
-	for x := range seq {
-		v, ok = x, true
+	for v = range seq {
+		ok = true
 	}
 	return v, ok
+}
+
+// Last retrieves the last element of a two-element iterator.
+func Last2[K, V any](seq iter.Seq2[K, V]) (k K, v V, ok bool) {
+	for k, v = range seq {
+		ok = true
+	}
+	return k, v, ok
 }
 
 // OnlyOne retrieves the only element of an iterator.
