@@ -71,7 +71,7 @@ type Lexer struct {
 	//
 	// EmitNewline is called for each newline appearing in the input text, with
 	// non-skippable, non-newline tokens before and after it. If the function
-	// returns true, that newline is treated as as a keyword; otherwise, it is
+	// returns true, that newline is treated as a keyword; otherwise, it is
 	// treated as a space.
 	EmitNewline func(before, after token.Token) bool
 

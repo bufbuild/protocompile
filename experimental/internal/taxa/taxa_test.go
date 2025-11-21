@@ -26,6 +26,8 @@ import (
 )
 
 func TestMax(t *testing.T) {
+	t.Parallel()
+
 	for kw := range keyword.All() {
 		require.Less(t, taxa.Noun(kw), taxa.Unrecognized)
 	}

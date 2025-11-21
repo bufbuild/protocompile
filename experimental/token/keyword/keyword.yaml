@@ -36,6 +36,7 @@
 
     - kind: all
       name: All
+      skip: [Unknown]
       docs: |
         All returns an iterator over all distinct [Keyword] values.
 
@@ -102,13 +103,33 @@
   - {name: Return, string: return}
   - {name: Break, string: break}
   - {name: Continue, string: continue}
+  - {name: Yield, string: yield}
+
+  - {name: Defer, string: defer}
+  - {name: Try, string: try}
+  - {name: Catch, string: catch}
+
   - {name: If, string: if}
+  - {name: Unless, string: unless}
   - {name: Else, string: else}
+
+  - {name: Loop, string: loop}
+  - {name: While, string: while}
+  - {name: Do, string: do}
   - {name: For, string: for}
   - {name: In, string: in}
+
   - {name: Switch, string: switch}
+  - {name: Match, string: match}
   - {name: Case, string: case}
+
+  - {name: As, string: as}
   - {name: Func, string: func}
+  - {name: Const, string: const}
+  - {name: Let, string: let}
+  - {name: Var, string: var}
+  - {name: Type, string: type}
+  - {name: Extern, string: extern}
 
   - {name: And, string: and}
   - {name: Or, string: or}
@@ -126,7 +147,7 @@
   - {name: Dot, string: "."}
   - {name: Colon, string: ":"}
   
-  - {name: Newline, string: "\n", doc: "\\n"}
+  - {name: Newline, string: "\n", docs: "\\n"}
 
   - {name: At, string: "@"}
   - {name: Hash, string: "#"}
@@ -146,11 +167,13 @@
   - {name: Shr, string: ">>"}
 
   - {name: Bang, string: "!"}
+  - {name: Bangs, string: "!!"} 
   - {name: Ask, string: "?"}
+  - {name: Asks, string: "??"}
 
   # C-style and/or.
-  - {name: "And2", string: "&&"}
-  - {name: "Or2", string: "||"}
+  - {name: "Amps", string: "&&"}
+  - {name: "Pipes", string: "||"}
 
   # Assignment operators.
   - {name: Assign, string: "="}

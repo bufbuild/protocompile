@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//nolint:tagliatelle
 package lexer_test
 
 import (
@@ -23,6 +24,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert/yaml"
+	"github.com/stretchr/testify/require"
+
 	"github.com/bufbuild/protocompile/experimental/internal/lexer"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -30,8 +34,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/golden"
-	"github.com/stretchr/testify/assert/yaml"
-	"github.com/stretchr/testify/require"
 )
 
 // Config is configuration settable in a text via //% comments.
@@ -134,15 +136,15 @@ func TestLexer(t *testing.T) {
 				case token.Number:
 					if suffix {
 						return slices.Contains(config.Suffixes.Numbers, affix)
-					} else {
-						return slices.Contains(config.Prefixes.Numbers, affix)
 					}
+					return slices.Contains(config.Prefixes.Numbers, affix)
+
 				case token.String:
 					if suffix {
 						return slices.Contains(config.Suffixes.Strings, affix)
-					} else {
-						return slices.Contains(config.Prefixes.Strings, affix)
 					}
+					return slices.Contains(config.Prefixes.Strings, affix)
+
 				default:
 					return false
 				}
