@@ -1,11 +1,11 @@
 error: encountered unmatched `[` delimiter
-  --> testdata/braces/interleaved.proto:2:5
+  --> testdata/braces/interleaved.proto:6:5
    |
- 2 |     [
+ 6 |     [
    |     ^ expected a closing `]`
- 3 | }
+ 7 | }
    | - closed by this instead
- 4 |     ]
+ 8 |     ]
    |     - help: perhaps it was meant to match this?
 
 encountered 1 error

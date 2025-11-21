@@ -1,0 +1,18 @@
+//% keywords:
+//%   hard: ["(", ")", ",", "+", "=", ";"]
+//%   line_comment: ["//"]
+//%
+//% emit_newline:
+//%   not_after: ["(", ",", "+", "=", ";"]
+//%   not_before: [")", "+", "="]
+
+x = 1;
+y = x +
+    z
+y = x
+    + z
+y = (
+    x + z,
+    x,
+    z
+)

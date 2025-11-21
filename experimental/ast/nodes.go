@@ -36,7 +36,7 @@ func (n *Nodes) File() *File {
 // NewPathComponent returns a new path component with the given separator and
 // name.
 //
-// sep must be a [token.Punct] whose value is either '.' or '/'. name must be
+// sep must be a [token.Keyword] whose value is either '.' or '/'. name must be
 // a [token.Ident]. This function will panic if either condition does not
 // hold.
 //
@@ -44,7 +44,7 @@ func (n *Nodes) File() *File {
 func (n *Nodes) NewPathComponent(separator, name token.Token) PathComponent {
 	n.panicIfNotOurs(separator, name)
 	if !separator.IsZero() {
-		if separator.Kind() != token.Punct || (separator.Text() != "." && separator.Text() != "/") {
+		if separator.Kind() != token.Keyword || (separator.Text() != "." && separator.Text() != "/") {
 			panic(fmt.Sprintf("protocompile/ast: passed non '.' or '/' separator to NewPathComponent: %s", separator))
 		}
 	}
@@ -64,7 +64,7 @@ func (n *Nodes) NewPathComponent(separator, name token.Token) PathComponent {
 func (n *Nodes) NewExtensionComponent(separator token.Token, path Path) PathComponent {
 	n.panicIfNotOurs(separator, path)
 	if !separator.IsZero() {
-		if separator.Kind() != token.Punct || (separator.Text() != "." && separator.Text() != "/") {
+		if separator.Kind() != token.Keyword || (separator.Text() != "." && separator.Text() != "/") {
 			panic(fmt.Sprintf("protocompile/ast: passed non '.' or '/' separator to NewPathComponent: %s", separator))
 		}
 	}

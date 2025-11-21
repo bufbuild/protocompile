@@ -27,7 +27,7 @@ import (
 //
 // A zero Set is empty and ready to use.
 type Set struct {
-	bits [(total + 63) / 64]uint64
+	bits [(taxaCount + 1 + 63) / 64]uint64
 }
 
 // NewSet returns a new [Set] with the given values set.
@@ -48,7 +48,7 @@ func (s Set) Len() int {
 
 // Has checks whether w is present in this set.
 func (s Set) Has(w Noun) bool {
-	if w >= Noun(total) {
+	if w >= Noun(taxaCount) {
 		return false
 	}
 
@@ -61,7 +61,7 @@ func (s Set) Has(w Noun) bool {
 // Panics if any value is not one of the constants in this package.
 func (s Set) With(subjects ...Noun) Set {
 	for _, v := range subjects {
-		if v >= Noun(total) {
+		if v >= Noun(taxaCount) {
 			panic(fmt.Sprintf("internal/what: inserted invalid value %d", v))
 		}
 

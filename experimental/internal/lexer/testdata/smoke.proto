@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//% keywords:
+//%   soft: [syntax, package, message, int64, string]
+//%   hard: ["=", ".", ";", ","]
+//%   bracket: ["(", ")", "[", "]", "{", "}"]
+//%   line_comment: ["//"]
 syntax = "proto3";
 
 package foo.bar;

@@ -27,13 +27,13 @@
   - name: Comment
     docs: "A single comment."
   - name: Ident
-    docs: "An identifier."
+    docs: "An identifier, which may be a soft keyword."
   - name: String
     docs: "A string token. May be a non-leaf for non-contiguous quoted strings."
   - name: Number
     docs: "A run of digits that is some kind of number."
-  - name: Punct
-    docs: "Some punctuation. May be a non-leaf for delimiters like {}."
+  - name: Keyword
+    docs: "A hard keyword. May be a non-leaf for delimiters like {}."
   # - name: Reserved
   # DO NOT ADD MORE TOKEN KINDS: ONLY THREE BITS ARE AVAILABLE
   # TO STORE THEM.

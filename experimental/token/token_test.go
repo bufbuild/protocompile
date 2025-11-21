@@ -84,16 +84,16 @@ func TestTreeTokens(t *testing.T) {
 	}
 
 	_ = s.Push(3, token.Ident)
-	open := s.Push(1, token.Punct)
+	open := s.Push(1, token.Keyword)
 	def := s.Push(3, token.Ident)
-	open2 := s.Push(1, token.Punct)
+	open2 := s.Push(1, token.Keyword)
 	x := s.Push(1, token.Ident)
-	close2 := s.Push(1, token.Punct)
+	close2 := s.Push(1, token.Keyword)
 	token.Fuse(open2, close2)
-	comma := s.Push(1, token.Punct)
+	comma := s.Push(1, token.Keyword)
 	s.Push(1, token.Space)
 	message := s.Push(7, token.Ident)
-	close := s.Push(1, token.Punct) //nolint:revive,predeclared
+	close := s.Push(1, token.Keyword) //nolint:revive,predeclared
 	token.Fuse(open, close)
 
 	assert.False(open.IsLeaf())
@@ -101,10 +101,10 @@ func TestTreeTokens(t *testing.T) {
 	assert.False(close.IsLeaf())
 	assert.False(close2.IsLeaf())
 
-	assert.Equal(token.Punct, open.Kind())
-	assert.Equal(token.Punct, close.Kind())
-	assert.Equal(token.Punct, open2.Kind())
-	assert.Equal(token.Punct, close2.Kind())
+	assert.Equal(token.Keyword, open.Kind())
+	assert.Equal(token.Keyword, close.Kind())
+	assert.Equal(token.Keyword, open2.Kind())
+	assert.Equal(token.Keyword, close2.Kind())
 
 	start, end := open2.StartEnd()
 	tokenEq(t, start, open2)

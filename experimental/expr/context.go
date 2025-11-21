@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/bufbuild/protocompile/experimental/id"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
@@ -62,6 +63,11 @@ func (c *Context) Nodes() *Nodes {
 // File returns the [File] that this Nodes adds nodes to.
 func (n *Nodes) Context() *Context {
 	return (*Context)(n)
+}
+
+// NewError constructs a new [Error] at the given span in this context.
+func (n *Nodes) NewError(span source.Span) Error {
+	return id.Wrap(n.Context(), id.ID[Error](n.Context().errors.NewCompressed(rawError{span})))
 }
 
 // NewBlock constructs a new [Block] in this context.
@@ -166,6 +172,7 @@ type arenas struct {
 	calls    arena.Arena[rawCall]
 	cases    arena.Arena[rawCase]
 	controls arena.Arena[rawControl]
+	errors   arena.Arena[rawError]
 	fors     arena.Arena[rawFor]
 	funcs    arena.Arena[rawFunc]
 	ifs      arena.Arena[rawIf]
@@ -185,6 +192,8 @@ func (c *Context) FromID(id uint64, want any) any {
 		return c.cases.Deref(arena.Pointer[rawCase](id))
 	case **rawControl:
 		return c.controls.Deref(arena.Pointer[rawControl](id))
+	case **rawError:
+		return c.errors.Deref(arena.Pointer[rawError](id))
 	case **rawFor:
 		return c.fors.Deref(arena.Pointer[rawFor](id))
 	case **rawFunc:

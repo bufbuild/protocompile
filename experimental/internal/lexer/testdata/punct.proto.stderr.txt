@@ -1,31 +1,31 @@
 error: unrecognized token
-  --> testdata/punct.proto:2:3
+  --> testdata/punct.proto:5:3
    |
- 2 | ! @ # $ % ^ & * + _
+ 5 | ! @ # $ % ^ & * + _
    |   ^
 
 error: unrecognized token
-  --> testdata/punct.proto:2:5
+  --> testdata/punct.proto:5:5
    |
- 2 | ! @ # $ % ^ & * + _
+ 5 | ! @ # $ % ^ & * + _
    |     ^
 
 error: unrecognized token
-  --> testdata/punct.proto:2:7
+  --> testdata/punct.proto:5:7
    |
- 2 | ! @ # $ % ^ & * + _
+ 5 | ! @ # $ % ^ & * + _
    |       ^
 
 error: unrecognized token
-  --> testdata/punct.proto:2:11
+  --> testdata/punct.proto:5:9
    |
- 2 | ! @ # $ % ^ & * + _
-   |           ^
+ 5 | ! @ # $ % ^ & * + _
+   |         ^
 
 error: unrecognized token
-  --> testdata/punct.proto:2:13
+  --> testdata/punct.proto:5:13
    |
- 2 | ! @ # $ % ^ & * + _
+ 5 | ! @ # $ % ^ & * + _
    |             ^
 
 encountered 5 errors

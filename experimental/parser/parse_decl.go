@@ -18,6 +18,8 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -53,17 +55,17 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 	switch len(unexpected) {
 	case 0:
 	case 1:
-		p.Error(errUnexpected{
-			what:  unexpected[0],
-			where: in.In(),
-			want:  startsDecl,
+		p.Error(errtoken.Unexpected{
+			What:  unexpected[0],
+			Where: in.In(),
+			Want:  startsDecl,
 		})
 	case 2:
-		p.Error(errUnexpected{
-			what:  source.JoinSeq(slices.Values(unexpected)),
-			where: in.In(),
-			want:  startsDecl,
-			got:   "tokens",
+		p.Error(errtoken.Unexpected{
+			What:  source.JoinSeq(slices.Values(unexpected)),
+			Where: in.In(),
+			Want:  startsDecl,
+			Got:   "tokens",
 		})
 	}
 
@@ -128,7 +130,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if c.Done() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, in.In()))
+			p.Error(errtoken.UnexpectedEOF(c, in.In()))
 		} else {
 			eq, err := parseEquals(p, c, in)
 			args.Equals = eq
@@ -182,7 +184,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if c.Done() && path.IsZero() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, in.In()))
+			p.Error(errtoken.UnexpectedEOF(c, in.In()))
 		} else {
 			args.Options = tryParseOptions(p, c, in)
 
@@ -208,7 +210,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 			break
 		}
 		// This is definitely a field.
-		if next.Keyword() == keyword.Eq {
+		if next.Keyword() == keyword.Assign {
 			break
 		}
 
@@ -240,7 +242,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		if args.ImportPath.IsZero() && c.Done() {
 			// If we see an EOF at this point, suggestions from the next
 			// few stanzas will be garbage.
-			p.Error(errUnexpectedEOF(c, in.In()))
+			p.Error(errtoken.UnexpectedEOF(c, in.In()))
 		} else {
 			semi, err := parseSemi(p, c, in)
 			args.Semicolon = semi
@@ -252,7 +254,7 @@ func parseDecl(p *parser, c *token.Cursor, in taxa.Noun) ast.DeclAny {
 		return p.NewDeclImport(args).AsAny()
 
 	case keyword.Reserved, keyword.Extensions:
-		if next.Keyword() == keyword.Eq {
+		if next.Keyword() == keyword.Assign {
 			// If whatever follows the path is an =, we're going to assume this
 			// is trying to be a field.
 			break
@@ -444,9 +446,9 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			case ":": // Allow colons, which is usually a mistake.
 				p.Errorf("unexpected `:` in compact option").Apply(
 					report.Snippet(eq),
-					justify(p.File().Stream(), eq.Span(), "replace this with an `=`", justified{
-						report.Edit{Start: 0, End: 1, Replace: "="},
-						justifyBetween,
+					just.Justify(p.File().Stream(), eq.Span(), "replace this with an `=`", just.Edit{
+						Edit: report.Edit{Start: 0, End: 1, Replace: "="},
+						Kind: just.Between,
 					}),
 					report.Notef("top-level `option` assignment uses `=`, not `:`"),
 				)
@@ -454,10 +456,10 @@ func parseOptions(p *parser, brackets token.Token, _ taxa.Noun) ast.CompactOptio
 			case "=":
 				c.Next()
 			default:
-				p.Error(errUnexpected{
-					what:  eq,
-					want:  taxa.Equals.AsSet(),
-					where: taxa.CompactOptions.In(),
+				p.Error(errtoken.Unexpected{
+					What:  eq,
+					Want:  taxa.Noun(keyword.Assign).AsSet(),
+					Where: taxa.CompactOptions.In(),
 				})
 				eq = token.Zero
 			}

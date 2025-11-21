@@ -410,7 +410,7 @@ func (c *protoEncoder) expr(expr ast.ExprAny) *compilerpb.Expr {
 		expr := expr.AsPrefixed()
 
 		var prefix compilerpb.Expr_Prefixed_Prefix
-		if expr.Prefix() == keyword.Minus {
+		if expr.Prefix() == keyword.Sub {
 			prefix = compilerpb.Expr_Prefixed_PREFIX_MINUS
 		}
 

@@ -1,43 +1,57 @@
 #		kind		keyword		offsets		linecol		text
-0		Punct		Braces		000:002		001:001		"{"		close:Token(1)
-1		Punct		Braces		000:002		001:001		"}"		open:Token(0)
-2		Space		Unknown		002:003		001:003		" "
-3		Punct		Brackets		003:005		001:004		"["		close:Token(4)
-4		Punct		Brackets		003:005		001:004		"]"		open:Token(3)
-5		Space		Unknown		005:006		001:006		" "
-6		Punct		Parens		006:008		001:007		"("		close:Token(7)
-7		Punct		Parens		006:008		001:007		")"		open:Token(6)
-8		Space		Unknown		008:009		001:009		" "
-9		Punct		Less		009:010		001:010		"<"
-10		Punct		Greater		010:011		001:011		">"
-11		Space		Unknown		011:012		001:012		"\n"
-12		Punct		Braces		012:076		002:001		"{"		close:Token(26)
-13		Space		Unknown		013:018		002:002		"\n    "
-14		Punct		Braces		018:074		003:005		"{"		close:Token(24)
-15		Space		Unknown		019:028		003:006		"\n        "
-16		Punct		Brackets		028:068		004:009		"["		close:Token(22)
-17		Space		Unknown		029:042		004:010		"\n            "
-18		Punct		Less		042:043		005:013		"<"
-19		Space		Unknown		043:057		005:014		"\n\n            "
-20		Punct		Greater		057:058		007:013		">"
-21		Space		Unknown		058:067		007:014		"\n        "
-22		Punct		Brackets		028:068		004:009		"]"		open:Token(16)
-23		Space		Unknown		068:073		008:010		"\n    "
-24		Punct		Braces		018:074		003:005		"}"		open:Token(14)
-25		Space		Unknown		074:075		009:006		"\n"
-26		Punct		Braces		012:076		002:001		"}"		open:Token(12)
-27		Space		Unknown		076:077		010:002		"\n"
-28		Punct		Less		077:078		011:001		"<"
-29		Punct		Less		078:079		011:002		"<"
-30		Punct		Less		079:080		011:003		"<"
-31		Punct		Less		080:081		011:004		"<"
-32		Punct		Parens		081:087		011:005		"("		close:Token(37)
-33		Punct		Parens		082:086		011:006		"("		close:Token(36)
-34		Punct		Parens		083:085		011:007		"("		close:Token(35)
-35		Punct		Parens		083:085		011:007		")"		open:Token(34)
-36		Punct		Parens		082:086		011:006		")"		open:Token(33)
-37		Punct		Parens		081:087		011:005		")"		open:Token(32)
-38		Punct		Greater		087:088		011:011		">"
-39		Punct		Greater		088:089		011:012		">"
-40		Punct		Greater		089:090		011:013		">"
-41		Punct		Greater		090:091		011:014		">"
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:069		002:001		"//%   bracket: [\"(\", \")\", \"[\", \"]\", \"{\", \"}\", \"<\", \">\"]"
+3		Space		Unknown		069:070		002:056		"\n"
+4		Comment		Comment		070:096		003:001		"//%   line_comment: [\"//\"]"
+5		Space		Unknown		096:097		003:027		"\n"
+6		Space		Unknown		097:098		004:001		"\n"
+7		Keyword		Braces		098:100		005:001		"{"		close:Token(8)
+8		Keyword		Braces		098:100		005:001		"}"		open:Token(7)
+9		Space		Unknown		100:101		005:003		" "
+10		Keyword		Brackets		101:103		005:004		"["		close:Token(11)
+11		Keyword		Brackets		101:103		005:004		"]"		open:Token(10)
+12		Space		Unknown		103:104		005:006		" "
+13		Keyword		Parens		104:106		005:007		"("		close:Token(14)
+14		Keyword		Parens		104:106		005:007		")"		open:Token(13)
+15		Space		Unknown		106:107		005:009		" "
+16		Keyword		Angles		107:109		005:010		"<"		close:Token(17)
+17		Keyword		Angles		107:109		005:010		">"		open:Token(16)
+18		Space		Unknown		109:110		005:012		"\n"
+19		Keyword		Braces		110:174		006:001		"{"		close:Token(40)
+20		Space		Unknown		111:112		006:002		"\n"
+21		Space		Unknown		112:116		007:001		"    "
+22		Keyword		Braces		116:172		007:005		"{"		close:Token(38)
+23		Space		Unknown		117:118		007:006		"\n"
+24		Space		Unknown		118:126		008:001		"        "
+25		Keyword		Brackets		126:166		008:009		"["		close:Token(35)
+26		Space		Unknown		127:128		008:010		"\n"
+27		Space		Unknown		128:140		009:001		"            "
+28		Keyword		Angles		140:156		009:013		"<"		close:Token(32)
+29		Space		Unknown		141:142		009:014		"\n"
+30		Space		Unknown		142:143		010:001		"\n"
+31		Space		Unknown		143:155		011:001		"            "
+32		Keyword		Angles		140:156		009:013		">"		open:Token(28)
+33		Space		Unknown		156:157		011:014		"\n"
+34		Space		Unknown		157:165		012:001		"        "
+35		Keyword		Brackets		126:166		008:009		"]"		open:Token(25)
+36		Space		Unknown		166:167		012:010		"\n"
+37		Space		Unknown		167:171		013:001		"    "
+38		Keyword		Braces		116:172		007:005		"}"		open:Token(22)
+39		Space		Unknown		172:173		013:006		"\n"
+40		Keyword		Braces		110:174		006:001		"}"		open:Token(19)
+41		Space		Unknown		174:175		014:002		"\n"
+42		Keyword		Angles		175:189		015:001		"<"		close:Token(55)
+43		Keyword		Angles		176:188		015:002		"<"		close:Token(54)
+44		Keyword		Angles		177:187		015:003		"<"		close:Token(53)
+45		Keyword		Angles		178:186		015:004		"<"		close:Token(52)
+46		Keyword		Parens		179:185		015:005		"("		close:Token(51)
+47		Keyword		Parens		180:184		015:006		"("		close:Token(50)
+48		Keyword		Parens		181:183		015:007		"("		close:Token(49)
+49		Keyword		Parens		181:183		015:007		")"		open:Token(48)
+50		Keyword		Parens		180:184		015:006		")"		open:Token(47)
+51		Keyword		Parens		179:185		015:005		")"		open:Token(46)
+52		Keyword		Angles		178:186		015:004		">"		open:Token(45)
+53		Keyword		Angles		177:187		015:003		">"		open:Token(44)
+54		Keyword		Angles		176:188		015:002		">"		open:Token(43)
+55		Keyword		Angles		175:189		015:001		">"		open:Token(42)

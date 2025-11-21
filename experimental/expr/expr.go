@@ -34,6 +34,17 @@ import (
 // Expr appears in places you might expect to see a "Type" node.
 type Expr id.DynNode[Expr, Kind, *Context]
 
+// AsError converts an Expr into an [Error], if that is its concrete type.
+//
+// Otherwise, returns zero.
+func (e Expr) AsError() Error {
+	if e.Kind() != KindError {
+		return Error{}
+	}
+
+	return id.Wrap(e.Context(), id.ID[Error](e.ID().Value()))
+}
+
 // AsBlock converts an Expr into a [Block], if that is its concrete type.
 //
 // Otherwise, returns zero.

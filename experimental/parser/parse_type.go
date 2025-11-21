@@ -57,7 +57,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 	var isList, isInMethod bool
 	switch where.Subject() {
 	case taxa.MethodIns, taxa.MethodOuts,
-		taxa.KeywordReturns: // Used when parsing the invalid `returns foo.Bar` production.
+		taxa.Noun(keyword.Returns): // Used when parsing the invalid `returns foo.Bar` production.
 		isInMethod = true
 		fallthrough
 	case taxa.TypeParams:
@@ -176,7 +176,7 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 
 	// Next, look for some angle brackets. We need to do this before draining
 	// mods, because angle brackets bind more tightly than modifiers.
-	if angles := c.Peek(); angles.Keyword() == keyword.Less {
+	if angles := c.Peek(); angles.Keyword() == keyword.Lt {
 		c.Next() // Consume the angle brackets.
 		generic := p.NewTypeGeneric(ast.TypeGenericArgs{
 			Path:          tyPath,
@@ -198,13 +198,13 @@ func parseTypeImpl(p *parser, c *token.Cursor, where taxa.Place, pathAfter bool)
 			start: canStartPath,
 			stop: func(t token.Token) bool {
 				kw := t.Keyword()
-				return kw == keyword.Greater ||
-					kw == keyword.Eq // Heuristic for stopping reasonably early in the case of map<K, V m = 1;
+				return kw == keyword.Gt ||
+					kw == keyword.Assign // Heuristic for stopping reasonably early in the case of map<K, V m = 1;
 			},
 		}.appendTo(generic.Args())
 
 		// Need to fuse the angle brackets, because the lexer won't do it.
-		if c.Peek().Keyword() == keyword.Greater {
+		if c.Peek().Keyword() == keyword.Gt {
 			token.Fuse(angles, c.Next())
 		}
 

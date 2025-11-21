@@ -38,20 +38,20 @@ func TestNaturalSplit(t *testing.T) {
 	s := &token.Stream{File: f}
 	tokens := []token.Token{
 		s.Push(1, token.Ident),   //  0 a
-		s.Push(1, token.Punct),   //  1 .
+		s.Push(1, token.Keyword), //  1 .
 		s.Push(1, token.Ident),   //  2 b
-		s.Push(1, token.Punct),   //  3 .
+		s.Push(1, token.Keyword), //  3 .
 		s.Push(7, token.Comment), //  4 /*idk*/
-		s.Push(1, token.Punct),   //  5 (
+		s.Push(1, token.Keyword), //  5 (
 		s.Push(1, token.Ident),   //  6 a
-		s.Push(1, token.Punct),   //  7 .
+		s.Push(1, token.Keyword), //  7 .
 		s.Push(1, token.Ident),   //  8 b
-		s.Push(1, token.Punct),   //  9 .
+		s.Push(1, token.Keyword), //  9 .
 		s.Push(1, token.Ident),   // 10 c
 		s.Push(1, token.Space),   // 11
-		s.Push(1, token.Punct),   // 12 )
+		s.Push(1, token.Keyword), // 12 )
 		s.Push(5, token.Comment), // 13 /*x*/
-		s.Push(1, token.Punct),   // 14 .
+		s.Push(1, token.Keyword), // 14 .
 		s.Push(1, token.Ident),   // 15 d
 	}
 	c := ast.New("test.proto", s)

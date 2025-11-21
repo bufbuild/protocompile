@@ -18,6 +18,8 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
@@ -51,7 +53,7 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 				p.Error(errMoreThanOne{
 					first:  mod.PrefixToken(),
 					second: prefixed.PrefixToken(),
-					what:   taxa.KeywordStream,
+					what:   taxa.Noun(keyword.Stream),
 				})
 			default:
 				mod = prefixed
@@ -71,10 +73,10 @@ func legalizeMethodParams(p *parser, list ast.TypeList, what taxa.Noun) {
 		ty = prefixed.Type()
 		fallthrough
 	default:
-		p.Error(errUnexpected{
-			what:  ty,
-			where: what.In(),
-			want:  taxa.NewSet(taxa.MessageType),
+		p.Error(errtoken.Unexpected{
+			What:  ty,
+			Where: what.In(),
+			Want:  taxa.NewSet(taxa.MessageType),
 		})
 	}
 }
@@ -86,22 +88,22 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 		switch p.syntax {
 		case syntax.Proto2:
 			expected = taxa.NewSet(
-				taxa.KeywordRequired, taxa.KeywordOptional, taxa.KeywordRepeated)
+				taxa.Noun(keyword.Required), taxa.Noun(keyword.Optional), taxa.Noun(keyword.Repeated))
 		case syntax.Proto3:
 			expected = taxa.NewSet(
-				taxa.TypePath, taxa.KeywordOptional, taxa.KeywordRepeated)
+				taxa.TypePath, taxa.Noun(keyword.Optional), taxa.Noun(keyword.Repeated))
 		default:
 			expected = taxa.NewSet(
-				taxa.TypePath, taxa.KeywordRepeated)
+				taxa.TypePath, taxa.Noun(keyword.Repeated))
 		}
 	}
 
 	switch ty.Kind() {
 	case ast.TypeKindPath:
 		if topLevel && p.syntax == syntax.Proto2 && oneof.IsZero() {
-			p.Error(errUnexpected{
-				what: ty,
-				want: expected,
+			p.Error(errtoken.Unexpected{
+				What: ty,
+				Want: expected,
 			}).Apply(
 				report.SuggestEdits(ty, "use the `optional` modifier", report.Edit{
 					Replace: "optional ",
@@ -118,9 +120,9 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			p.Errorf("multiple modifiers on %v type", taxa.Field).Apply(
 				report.Snippet(ty.PrefixToken()),
 				report.Snippetf(mod.PrefixToken(), "previous one is here"),
-				justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-					Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-					justify: justifyRight,
+				just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+					Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+					Kind: just.Right,
 				}),
 			)
 		} else {
@@ -129,14 +131,14 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			}
 
 			if !oneof.IsZero() {
-				d := p.Error(errUnexpected{
-					what: ty.PrefixToken(),
-					want: expected,
+				d := p.Error(errtoken.Unexpected{
+					What: ty.PrefixToken(),
+					Want: expected,
 				}).Apply(
 					report.Snippetf(oneof, "within this %s", taxa.Oneof),
-					justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-						Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-						justify: justifyRight,
+					just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+						Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+						Kind: just.Right,
 					}),
 					report.Notef("fields defined as part of a %s may not have modifiers applied to them", taxa.Oneof),
 				)
@@ -159,13 +161,13 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 									"already in-use; doing so is a wire protocol break"),
 						)
 					default:
-						p.Error(errUnexpected{
-							what: ty.PrefixToken(),
-							want: expected,
+						p.Error(errtoken.Unexpected{
+							What: ty.PrefixToken(),
+							Want: expected,
 						}).Apply(
-							justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-								justify: justifyRight,
+							just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+								Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								Kind: just.Right,
 							}),
 							report.Helpf("required fields are only permitted in %s; even then, their use is strongly discouraged",
 								syntax.Proto2),
@@ -174,19 +176,19 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 
 				case keyword.Optional:
 					if p.syntax.IsEdition() {
-						p.Error(errUnexpected{
-							what: ty.PrefixToken(),
-							want: expected,
+						p.Error(errtoken.Unexpected{
+							What: ty.PrefixToken(),
+							Want: expected,
 						}).Apply(
-							justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", justified{
-								Edit:    report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
-								justify: justifyRight,
+							just.Justify(p.File().Stream(), ty.PrefixToken().Span(), "delete it", just.Edit{
+								Edit: report.Edit{Start: 0, End: ty.PrefixToken().Span().Len()},
+								Kind: just.Right,
 							}),
 							report.Helpf(
 								"in %s, the presence behavior of a singular field "+
 									"is controlled with `[feature.field_presence = ...]`, with "+
-									"the default being equivalent to %s %s",
-								taxa.EditionMode, syntax.Proto2, taxa.KeywordOptional),
+									"the default being equivalent to a %s `optional` field",
+								taxa.EditionMode, syntax.Proto2),
 							report.Helpf("see <https://protobuf.com/docs/language-spec#field-presence>"),
 						)
 					}
@@ -217,10 +219,10 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 		case ast.TypeKindPath, ast.TypeKindPrefixed:
 			legalizeFieldType(p, what, inner, false, mod, oneof)
 		default:
-			p.Error(errUnexpected{
-				what:  inner,
-				where: taxa.Classify(ty.PrefixToken()).After(),
-				want:  taxa.TypePath.AsSet(),
+			p.Error(errtoken.Unexpected{
+				What:  inner,
+				Where: taxa.Classify(ty.PrefixToken()).After(),
+				Want:  taxa.TypePath.AsSet(),
 			})
 		}
 
@@ -228,7 +230,7 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 		ty := ty.AsGeneric()
 		switch {
 		case ty.Path().AsPredeclared() != predeclared.Map:
-			p.Errorf("generic types other than %s are not supported", taxa.PredeclaredMap).Apply(
+			p.Errorf("generic types other than `map` are not supported").Apply(
 				report.Snippet(ty.Path()),
 			)
 		case !oneof.IsZero():
@@ -250,15 +252,15 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			case ast.TypeKindPath:
 				legalizeFieldType(p, what, k, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
-				p.Error(errUnexpected{
-					what:  k.AsPrefixed().PrefixToken(),
-					where: taxa.MapKey.In(),
+				p.Error(errtoken.Unexpected{
+					What:  k.AsPrefixed().PrefixToken(),
+					Where: taxa.MapKey.In(),
 				})
 			default:
-				p.Error(errUnexpected{
-					what:  k,
-					where: taxa.MapKey.In(),
-					want:  taxa.TypePath.AsSet(),
+				p.Error(errtoken.Unexpected{
+					What:  k,
+					Where: taxa.MapKey.In(),
+					Want:  taxa.TypePath.AsSet(),
 				})
 			}
 
@@ -266,15 +268,15 @@ func legalizeFieldType(p *parser, what taxa.Noun, ty ast.TypeAny, topLevel bool,
 			case ast.TypeKindPath:
 				legalizeFieldType(p, what, v, false, ast.TypePrefixed{}, oneof)
 			case ast.TypeKindPrefixed:
-				p.Error(errUnexpected{
-					what:  v.AsPrefixed().PrefixToken(),
-					where: taxa.MapValue.In(),
+				p.Error(errtoken.Unexpected{
+					What:  v.AsPrefixed().PrefixToken(),
+					Where: taxa.MapValue.In(),
 				})
 			default:
-				p.Error(errUnexpected{
-					what:  v,
-					where: taxa.MapValue.In(),
-					want:  taxa.TypePath.AsSet(),
+				p.Error(errtoken.Unexpected{
+					What:  v,
+					Where: taxa.MapValue.In(),
+					Want:  taxa.TypePath.AsSet(),
 				})
 			}
 		}

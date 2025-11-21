@@ -101,6 +101,24 @@ func (t nat) Kind() Kind {
 	return Kind(t.metadata & kindMask)
 }
 
+// WithKind returns a copy with the given kind.
+func (t nat) WithKind(k Kind) nat {
+	t.metadata &^= kindMask
+	t.metadata |= int32(k)
+	return t
+}
+
+// WithKeyword returns a copy with the given keyword.
+func (t nat) WithKeyword(kw keyword.Keyword) nat {
+	if !t.IsLeaf() {
+		return t
+	}
+
+	t.metadata &^= 0xff << keywordShift
+	t.metadata |= int32(kw) << keywordShift
+	return t
+}
+
 // Offset returns the offset from this token to its matching open/close, if any.
 func (t nat) Offset() int {
 	if t.metadata&isTreeMask == 0 {
@@ -111,10 +129,14 @@ func (t nat) Offset() int {
 
 // Keyword returns the keyword for this token, if it is an identifier.
 func (t nat) Keyword() keyword.Keyword {
+	if !slicesx.Among(t.Kind(), Ident, Keyword, Comment) {
+		return keyword.Unknown
+	}
+
 	if t.IsLeaf() {
 		return keyword.Keyword(t.metadata >> keywordShift)
 	}
-	if t.Kind() != Punct {
+	if t.Kind() != Keyword {
 		return keyword.Unknown
 	}
 	return keyword.Parens + keyword.Keyword((t.metadata&treeKwMask)>>keywordShift)
@@ -186,7 +208,7 @@ type synth struct {
 
 // Keyword returns the keyword for this token, if it is an identifier.
 func (t synth) Keyword() keyword.Keyword {
-	if !slicesx.Among(t.kind, Ident, Punct) {
+	if !slicesx.Among(t.kind, Ident, Keyword, Comment) {
 		return keyword.Unknown
 	}
 

@@ -1,4 +1,4 @@
-// Copyright 2020-2024 Buf Technologies, Inc.
+// Copyright 2020-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,8 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//% keywords:
-//%   soft: [syntax]
-//%   hard: ["=", ";"]
-//%   line_comment: ["//"]
-syntax = "$x{ff}";
+package keyword_test
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+)
+
+func TestValid(t *testing.T) {
+	t.Parallel()
+
+	for kw := range keyword.All() {
+		assert.True(t, kw.IsValid(), "%#v", kw)
+	}
+}

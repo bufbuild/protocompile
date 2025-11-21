@@ -463,7 +463,7 @@ func (r optionRef) resolve() {
 					report.Snippetf(pc, "this field is not a %s", taxa.Extension),
 					report.Snippetf(field.AST().Name(), "field declared inside of `%s` here", field.Parent().FullName()),
 					report.Helpf("%s syntax should only be used with %ss", taxa.CustomOption, taxa.Extension),
-					report.SuggestEdits(pc.Name(), fmt.Sprintf("replace %s with a field name", taxa.Parens), report.Edit{
+					report.SuggestEdits(pc.Name(), "replace `(...)` with a field name", report.Edit{
 						Start: 0, End: pc.Name().Span().Len(),
 						Replace: field.Name(),
 					}),

@@ -39,7 +39,7 @@ var lex = lexer.Lexer{
 			return lexer.BracketKeyword
 		default:
 			if k.IsProtobuf() || k.IsCEL() {
-				return lexer.KeepKeyword
+				return lexer.SoftKeyword
 			}
 			return lexer.DiscardKeyword
 		}

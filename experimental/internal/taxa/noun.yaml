@@ -14,16 +14,17 @@
 
 - name: Noun
   type: int
-  total: total
+  total: nounCount
   docs: |
     Noun is a syntactic or semantic element within the grammar that can be
     referred to within a diagnostic.
+
+    All [keyword.Keyword] values can be safely cast to [taxa.Noun].
   methods:
   - kind: string
   - kind: go-string
-  values:
-  - {name: Unknown, string: "<unknown>"}
-  - {name: Unrecognized, string: "unrecognized token"}
+  values: 
+  - {name: Unrecognized, string: "unrecognized token", expr: "keywordCount + iota + 1"}
   - {name: TopLevel, string: "file scope"}
   - {name: EOF, string: "end-of-file"}
 
@@ -102,48 +103,4 @@
   - {name: Int, string: "integer literal"}
   - {name: Number, string: "number literal"}
 
-  - {name: Semi, string: "`;`"}
-  - {name: Comma, string: "`,`"}
-  - {name: Slash, string: "`/`"}
-  - {name: Colon, string: "`:`"}
-  - {name: Equals, string: "`=`"}
-  - {name: Minus, string: "`-`"}
-  - {name: Dot, string: "`.`"}
-
-  - {name: Parens, string: "`(...)`"}
-  - {name: Brackets, string: "`[...]`"}
-  - {name: Braces, string: "`{...}`"}
-  - {name: Angles, string: "`<...>`"}
-
   - {name: ReturnsParens, string: "`returns (...)`"}
-
-  - {name: KeywordSyntax, string: "`syntax`"}
-  - {name: KeywordEdition, string: "`edition`"}
-  - {name: KeywordImport, string: "`import`"}
-  - {name: KeywordWeak, string: "`weak`"}
-  - {name: KeywordPublic, string: "`public`"}
-  - {name: KeywordPackage, string: "`package`"}
-
-  - {name: KeywordOption, string: "`option`"}
-  - {name: KeywordMessage, string: "`message`"}
-  - {name: KeywordEnum, string: "`enum`"}
-  - {name: KeywordService, string: "`service`"}
-  - {name: KeywordExtend, string: "`extend`"}
-  - {name: KeywordOneof, string: "`oneof`"}
-
-  - {name: KeywordExtensions, string: "`extensions`"}
-  - {name: KeywordReserved, string: "`reserved`"}
-  - {name: KeywordTo, string: "`to`"}
-  - {name: KeywordRPC, string: "`rpc`"}
-  - {name: KeywordReturns, string: "`returns`"}
-
-  - {name: KeywordOptional, string: "`optional`"}
-  - {name: KeywordRepeated, string: "`repeated`"}
-  - {name: KeywordRequired, string: "`required`"}
-  - {name: KeywordGroup, string: "`group`"}
-  - {name: KeywordStream, string: "`stream`"}
-  - {name: KeywordExport, string: "`export`"}
-  - {name: KeywordLocal, string: "`local`"}
-
-  - {name: PredeclaredMap, string: "`map`"}
-  - {name: PredeclaredMax, string: "`max`"}

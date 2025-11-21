@@ -55,6 +55,7 @@ type Enum struct {
 	Values  []Value  `yaml:"values"`
 
 	UseMapsForLookup bool `yaml:"use_maps_for_lookup"`
+	DocIsString      bool `yaml:"doc_is_string"`
 }
 
 func (e *Enum) Init() {
@@ -71,7 +72,7 @@ type Value struct {
 	Name    string   `yaml:"name"`   // The name of the value.
 	Alias   string   `yaml:"alias"`  // Another value this value aliases, if any.
 	String_ string   `yaml:"string"` // The string representation of this value.
-	Docs    string   `yaml:"docs"`   // Documentation for the value.
+	Docs_   string   `yaml:"docs"`   // Documentation for the value.
 	From    []string `yaml:"from"`   // Names for use in from-string instead of String_.
 	Expr    string   `yaml:"expr"`   // The Go expression to use for this value.
 
@@ -81,7 +82,7 @@ type Value struct {
 
 func (v Value) HasSuffixDocs() bool {
 	next, ok := slicesx.Get(v.Parent.Values, v.Idx+1)
-	return v.Docs != "" && !strings.Contains(v.Docs, "\n") && (!ok || next.Docs != "")
+	return v.Docs() != "" && !strings.Contains(v.Docs(), "\n") && (!ok || next.Docs() != "")
 }
 
 func (v Value) String() string {
@@ -89,6 +90,16 @@ func (v Value) String() string {
 		return v.Name
 	}
 	return v.String_
+}
+
+func (v Value) Docs() string {
+	if v.Docs_ != "" {
+		return v.Docs_
+	}
+	if v.Parent.DocIsString {
+		return v.String_
+	}
+	return ""
 }
 
 type Method struct {

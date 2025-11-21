@@ -25,7 +25,6 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/tokenmeta"
 	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/unsafex"
 )
 
@@ -159,6 +158,14 @@ func (s *Stream) Freeze() {
 //
 // Panics if this stream is frozen.
 func (s *Stream) Push(length int, kind Kind) Token {
+	return s.PushKeyword(length, kind, keyword.Unknown)
+}
+
+// Push mints the next token referring to a piece of the input source, marking
+// it with the given keyword.
+//
+// Panics if this stream is frozen.
+func (s *Stream) PushKeyword(length int, kind Kind, kw keyword.Keyword) Token {
 	if s.frozen {
 		panic("protocompile/token: attempted to mutate frozen stream")
 	}
@@ -175,11 +182,6 @@ func (s *Stream) Push(length int, kind Kind) Token {
 	end := prevEnd + length
 	if end > len(s.Text()) {
 		panic(fmt.Sprintf("protocompile/token: Push() overflowed backing text: %d > %d", end, len(s.Text())))
-	}
-
-	var kw keyword.Keyword
-	if slicesx.Among(kind, Ident, Punct) {
-		kw = keyword.Lookup(s.Text()[prevEnd:end])
 	}
 
 	s.nats = append(s.nats, nat{
@@ -202,7 +204,7 @@ func (s *Stream) NewIdent(name string) Token {
 func (s *Stream) NewPunct(text string) Token {
 	return s.newSynth(synth{
 		text: text,
-		kind: Punct,
+		kind: Keyword,
 	})
 }
 

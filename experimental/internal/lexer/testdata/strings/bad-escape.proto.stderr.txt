@@ -1,43 +1,49 @@
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:1:2
+  --> testdata/strings/bad-escape.proto:10:2
    |
- 1 | "\k" "\x" "\9" "\u", "\U"
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
    |  ^^
 
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:1:7
+  --> testdata/strings/bad-escape.proto:10:7
    |
- 1 | "\k" "\x" "\9" "\u", "\U"
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
    |       ^^ `\x` must be followed by at least one hex digit
 
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:1:12
+  --> testdata/strings/bad-escape.proto:10:12
    |
- 1 | "\k" "\x" "\9" "\u", "\U"
-   |            ^^
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |            ^^ `\X` must be followed by at least one hex digit
 
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:1:17
+  --> testdata/strings/bad-escape.proto:10:17
    |
- 1 | "\k" "\x" "\9" "\u", "\U"
-   |                 ^^ `\u` must be followed by exactly 4 hex digits
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |                 ^^
 
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:1:23
+  --> testdata/strings/bad-escape.proto:10:22
    |
- 1 | "\k" "\x" "\9" "\u", "\U"
-   |                       ^^ `\U` must be followed by exactly 8 hex digits
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |                      ^^ `\u` must be followed by exactly 4 hex digits
 
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:2:2
+  --> testdata/strings/bad-escape.proto:10:27
    |
- 2 | "\u000" "\U0000000"
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |                           ^^ `\U` must be followed by exactly 8 hex digits
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:11:2
+   |
+11 | "\u000" "\U0000000"
    |  ^^^^^ `\u` must be followed by exactly 4 hex digits
 
 error: invalid escape sequence
-  --> testdata/strings/bad-escape.proto:2:10
+  --> testdata/strings/bad-escape.proto:11:10
    |
- 2 | "\u000" "\U0000000"
+11 | "\u000" "\U0000000"
    |          ^^^^^^^^^ `\U` must be followed by exactly 8 hex digits
 
-encountered 7 errors
+encountered 8 errors
