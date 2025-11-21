@@ -101,6 +101,13 @@ func (t nat) Kind() Kind {
 	return Kind(t.metadata & kindMask)
 }
 
+// WithKind returns a copy with the given kind
+func (t nat) WithKind(k Kind) nat {
+	t.metadata &^= kindMask
+	t.metadata |= int32(k)
+	return t
+}
+
 // Offset returns the offset from this token to its matching open/close, if any.
 func (t nat) Offset() int {
 	if t.metadata&isTreeMask == 0 {

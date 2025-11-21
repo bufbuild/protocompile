@@ -176,6 +176,21 @@ func (t Token) Text() string {
 	return t.Context().Text()[start:end]
 }
 
+// SetKind overwrites the kind of this token.
+//
+// Panics if the token's stream is frozen.
+func (t Token) SetKind(k Kind) {
+	if t.Context().frozen {
+		panic("protocompile/token: attempted to mutate frozen stream")
+	}
+
+	if raw := t.nat(); raw != nil {
+		*raw = raw.WithKind(k)
+	} else {
+		t.synth().kind = k
+	}
+}
+
 // Span implements [Spanner].
 func (t Token) Span() source.Span {
 	if t.IsZero() || t.IsSynthetic() {

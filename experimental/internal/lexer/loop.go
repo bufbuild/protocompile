@@ -49,16 +49,31 @@ func loop(l *lexer) {
 
 	for !l.done() {
 		mp.check()
-		start := l.cursor
-
 		if unicode.In(l.peek(), unicode.Pattern_White_Space) {
 			// Whitespace. Consume as much whitespace as possible and mint a
 			// whitespace token.
-			l.takeWhile(func(r rune) bool {
+			whitespace := l.takeWhile(func(r rune) bool {
 				return unicode.In(r, unicode.Pattern_White_Space)
 			})
-			l.push(l.cursor-start, token.Space)
-			continue
+			if l.EmitNewline == nil {
+				l.push(len(whitespace), token.Space)
+				continue
+			}
+
+			// If we care about newlines, chop the consumed whitespace into
+			// lines and emit the newlines as keywords. At the end, we will
+			// convert newlines that we want to eliminate into spaces.
+			for whitespace != "" {
+				before, after, newline := strings.Cut(whitespace, "\n")
+				if before != "" {
+					l.push(len(before), token.Space)
+				}
+				if newline {
+					l.keyword(1, token.Keyword, keyword.Newline)
+				}
+
+				whitespace = after
+			}
 		}
 
 		// Find the next valid keyword.
@@ -96,7 +111,7 @@ func loop(l *lexer) {
 			}
 
 			l.cursor += len(word)
-			tok := l.push(len(word), kind)
+			tok := l.keyword(len(word), kind, kw)
 
 			if what == BracketKeyword {
 				l.braces = append(l.braces, tok.ID())
@@ -113,7 +128,7 @@ func loop(l *lexer) {
 			} else {
 				text = l.seekEOF()
 			}
-			l.push(len(word)+len(text), token.Comment)
+			l.keyword(len(word)+len(text), token.Comment, kw)
 			continue
 
 		case BlockComment:
@@ -148,7 +163,7 @@ func loop(l *lexer) {
 				})
 				text = l.seekEOF()
 			}
-			l.push(len(word)+len(text), token.Comment)
+			l.keyword(len(word)+len(text), token.Comment, fused)
 
 			continue
 		}
@@ -217,6 +232,9 @@ func loop(l *lexer) {
 
 	// Perform implicit string concatenation.
 	fuseStrings(l)
+
+	// Eliminate any newline tokens that we don't actually need to have exist.
+	newlines(l)
 }
 
 // lexPrelude performs various file-prelude checks, such as size and encoding
@@ -454,4 +472,38 @@ func fuseStrings(l *lexer) {
 	}
 
 	concat(start, end)
+}
+
+// newlines suppresses newline keyword tokens according to l.EmitNewline.
+func newlines(l *lexer) {
+	if l.EmitNewline == nil {
+		return
+	}
+
+	var prev, next token.Token
+	cursor := l.Stream.Cursor()
+	for !cursor.Done() {
+		tok := cursor.Next()
+		if tok.Keyword() != keyword.Newline {
+			prev = tok
+			next = token.Zero
+			continue
+		}
+
+		// Fast forward to the next non-newline token.
+		if next.IsZero() {
+			cursor := cursor.Clone()
+			for !cursor.Done() {
+				if tok := cursor.Next(); tok.Keyword() != keyword.Newline {
+					next = tok
+					break
+				}
+			}
+		}
+
+		if !l.EmitNewline(prev, next) {
+			// Overwrite the type of this token.
+			tok.SetKind(token.Space)
+		}
+	}
 }

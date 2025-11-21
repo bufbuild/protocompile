@@ -104,7 +104,12 @@ func init() {
 			continue
 		}
 
-		_table_Noun_String[kw] = "`" + kw.String() + "`"
+		name := kw.String()
+		if kw == Newline {
+			name = "\\n" // Make sure the newline token is escaped.
+		}
+
+		_table_Noun_String[kw] = "`" + name + "`"
 		_table_Noun_GoString[kw] = kw.GoString()
 	}
 }

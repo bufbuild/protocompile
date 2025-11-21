@@ -125,6 +125,8 @@
   - {name: Comma, string: ","}
   - {name: Dot, string: "."}
   - {name: Colon, string: ":"}
+  
+  - {name: Newline, string: "\n", doc: "\\n"}
 
   - {name: At, string: "@"}
   - {name: Hash, string: "#"}

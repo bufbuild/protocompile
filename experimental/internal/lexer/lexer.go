@@ -65,6 +65,16 @@ type Lexer struct {
 	// Used for validating prefixes and suffixes of strings and numbers.
 	IsAffix func(affix string, kind token.Kind, suffix bool) bool
 
+	// EmitNewline indicates to the lexer that newlines should be emitted as
+	// keywords and specifies the conditions for doing so. This allows for
+	// using newlines as synthetic line endings.
+	//
+	// EmitNewline is called for each newline appearing in the input text, with
+	// non-skippable, non-newline tokens before and after it. If the function
+	// returns true, that newline is treated as as a keyword; otherwise, it is
+	// treated as a space.
+	EmitNewline func(before, after token.Token) bool
+
 	// If true, a dot immediately followed by a digit is taken to begin a
 	// digit.
 	NumberCanStartWithDot bool
@@ -107,6 +117,11 @@ type lexer struct {
 
 // push pushes a new token onto the stream the lexer is building.
 func (l *lexer) push(length int, kind token.Kind) token.Token {
+	return l.keyword(length, kind, keyword.Unknown)
+}
+
+// keyword pushes a new keyword token onto the stream the lexer is building.
+func (l *lexer) keyword(length int, kind token.Kind, kw keyword.Keyword) token.Token {
 	if l.badBytes > 0 {
 		l.count++
 		tok := l.Stream.Push(l.badBytes, token.Unrecognized)

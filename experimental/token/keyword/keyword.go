@@ -30,124 +30,127 @@ import (
 type Keyword byte
 
 const (
-	Unknown      Keyword = iota // Zero value, not a real keyword.
-	Syntax                      // syntax
-	Edition                     // edition
-	Import                      // import
-	Weak                        // weak
-	Public                      // public
-	Package                     // package
-	Message                     // message
-	Enum                        // enum
-	Service                     // service
-	Extend                      // extend
-	Option                      // option
-	Group                       // group
-	Oneof                       // oneof
-	Extensions                  // extensions
-	Reserved                    // reserved
-	RPC                         // rpc
-	Returns                     // returns
-	To                          // to
-	Repeated                    // repeated
-	Optional                    // optional
-	Required                    // required
-	Stream                      // stream
-	Export                      // export
-	Local                       // local
-	Int32                       // int32
-	Int64                       // int64
-	Uint32                      // uint32
-	Uint64                      // uint64
-	Sint32                      // sint32
-	Sint64                      // sint64
-	Fixed32                     // fixed32
-	Fixed64                     // fixed64
-	Sfixed32                    // sfixed32
-	Sfixed64                    // sfixed64
-	Float                       // float
-	Double                      // double
-	Bool                        // bool
-	String                      // string
-	Bytes                       // bytes
-	Inf                         // inf
-	NaN                         // nan
-	True                        // true
-	False                       // false
-	Null                        // null
-	Map                         // map
-	Max                         // max
-	Return                      // return
-	Break                       // break
-	Continue                    // continue
-	If                          // if
-	Else                        // else
-	For                         // for
-	In                          // in
-	Switch                      // switch
-	Case                        // case
-	Func                        // func
-	And                         // and
-	Or                          // or
-	Not                         // not
-	Default                     // default
-	JsonName                    // json_name
-	Semi                        // ;
-	Comma                       // ,
-	Dot                         // .
-	Colon                       // :
-	At                          // @
-	Hash                        // #
-	Dollar                      // $
-	Twiddle                     // ~
-	Add                         // +
-	Sub                         // -
-	Mul                         // *
-	Div                         // /
-	Rem                         // %
-	Amp                         // &
-	Pipe                        // |
-	Xor                         // ^
-	Shl                         // <<
-	Shr                         // >>
-	Bang                        // !
-	Ask                         // ?
-	And2                        // &&
-	Or2                         // ||
-	Assign                      // =
-	AssignNew                   // :=
-	AssignAdd                   // +=
-	AssignSub                   // -=
-	AssignMul                   // *=
-	AssignDiv                   // /=
-	AssignRem                   // %=
-	AssignAmp                   // &=
-	AssignPipe                  // |=
-	AssignXor                   // ^=
-	AssignShl                   // <<=
-	AssignShr                   // >>=
-	Range                       // ..
-	RangeEq                     // ..=
-	LParen                      // (
-	RParen                      // )
-	LBracket                    // [
-	RBracket                    // ]
-	LBrace                      // {
-	RBrace                      // }
-	Lt                          // <
-	Gt                          // >
-	Le                          // <=
-	Ge                          // >=
-	Eq                          // ==
-	Ne                          // !=
-	Comment                     // //
-	LComment                    // /*
-	RComment                    // */
-	Parens                      // (...) (fused)
-	Brackets                    // [...] (fused)
-	Braces                      // {...} (fused)
-	Angles                      // <...> (fused)
-	BlockComment                // /* ... */ (fused)
+	Unknown    Keyword = iota // Zero value, not a real keyword.
+	Syntax                    // syntax
+	Edition                   // edition
+	Import                    // import
+	Weak                      // weak
+	Public                    // public
+	Package                   // package
+	Message                   // message
+	Enum                      // enum
+	Service                   // service
+	Extend                    // extend
+	Option                    // option
+	Group                     // group
+	Oneof                     // oneof
+	Extensions                // extensions
+	Reserved                  // reserved
+	RPC                       // rpc
+	Returns                   // returns
+	To                        // to
+	Repeated                  // repeated
+	Optional                  // optional
+	Required                  // required
+	Stream                    // stream
+	Export                    // export
+	Local                     // local
+	Int32                     // int32
+	Int64                     // int64
+	Uint32                    // uint32
+	Uint64                    // uint64
+	Sint32                    // sint32
+	Sint64                    // sint64
+	Fixed32                   // fixed32
+	Fixed64                   // fixed64
+	Sfixed32                  // sfixed32
+	Sfixed64                  // sfixed64
+	Float                     // float
+	Double                    // double
+	Bool                      // bool
+	String                    // string
+	Bytes                     // bytes
+	Inf                       // inf
+	NaN                       // nan
+	True                      // true
+	False                     // false
+	Null                      // null
+	Map                       // map
+	Max                       // max
+	Return                    // return
+	Break                     // break
+	Continue                  // continue
+	If                        // if
+	Else                      // else
+	For                       // for
+	In                        // in
+	Switch                    // switch
+	Case                      // case
+	Func                      // func
+	And                       // and
+	Or                        // or
+	Not                       // not
+	Default                   // default
+	JsonName                  // json_name
+	Semi                      // ;
+	Comma                     // ,
+	Dot                       // .
+	Colon                     // :
+
+	//
+	Newline
+	At           // @
+	Hash         // #
+	Dollar       // $
+	Twiddle      // ~
+	Add          // +
+	Sub          // -
+	Mul          // *
+	Div          // /
+	Rem          // %
+	Amp          // &
+	Pipe         // |
+	Xor          // ^
+	Shl          // <<
+	Shr          // >>
+	Bang         // !
+	Ask          // ?
+	And2         // &&
+	Or2          // ||
+	Assign       // =
+	AssignNew    // :=
+	AssignAdd    // +=
+	AssignSub    // -=
+	AssignMul    // *=
+	AssignDiv    // /=
+	AssignRem    // %=
+	AssignAmp    // &=
+	AssignPipe   // |=
+	AssignXor    // ^=
+	AssignShl    // <<=
+	AssignShr    // >>=
+	Range        // ..
+	RangeEq      // ..=
+	LParen       // (
+	RParen       // )
+	LBracket     // [
+	RBracket     // ]
+	LBrace       // {
+	RBrace       // }
+	Lt           // <
+	Gt           // >
+	Le           // <=
+	Ge           // >=
+	Eq           // ==
+	Ne           // !=
+	Comment      // //
+	LComment     // /*
+	RComment     // */
+	Parens       // (...) (fused)
+	Brackets     // [...] (fused)
+	Braces       // {...} (fused)
+	Angles       // <...> (fused)
+	BlockComment // /* ... */ (fused)
 )
 
 // String implements [fmt.Stringer].
@@ -176,7 +179,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 118; i++ {
+		for i := 0; i < 119; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -251,6 +254,7 @@ var _table_Keyword_String = [...]string{
 	Comma:        ",",
 	Dot:          ".",
 	Colon:        ":",
+	Newline:      "\n",
 	At:           "@",
 	Hash:         "#",
 	Dollar:       "$",
@@ -372,6 +376,7 @@ var _table_Keyword_GoString = [...]string{
 	Comma:        "Comma",
 	Dot:          "Dot",
 	Colon:        "Colon",
+	Newline:      "Newline",
 	At:           "At",
 	Hash:         "Hash",
 	Dollar:       "Dollar",
@@ -493,6 +498,7 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	",":          Comma,
 	".":          Dot,
 	":":          Colon,
+	"\n":         Newline,
 	"@":          At,
 	"#":          Hash,
 	"$":          Dollar,
