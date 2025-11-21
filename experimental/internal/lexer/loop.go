@@ -55,24 +55,27 @@ func loop(l *lexer) {
 			whitespace := l.takeWhile(func(r rune) bool {
 				return unicode.In(r, unicode.Pattern_White_Space)
 			})
-			if l.EmitNewline == nil {
-				l.push(len(whitespace), token.Space)
-				continue
-			}
 
-			// If we care about newlines, chop the consumed whitespace into
-			// lines and emit the newlines as keywords. At the end, we will
-			// convert newlines that we want to eliminate into spaces.
-			for whitespace != "" {
-				before, after, newline := strings.Cut(whitespace, "\n")
-				if before != "" {
-					l.push(len(before), token.Space)
+			// Chop the consumed whitespace into lines and emit the newlines as
+			// keywords. At the end, we will convert newlines that we want to
+			// eliminate into spaces.
+			for {
+				var space string
+				var newline bool
+				space, whitespace, newline = strings.Cut(whitespace, "\n")
+				if space != "" {
+					l.push(len(space), token.Space)
 				}
-				if newline {
+				if !newline {
+					break
+				}
+
+				if l.EmitNewline == nil {
+					// No need to actually emit a keyword in this case.
+					l.push(1, token.Space)
+				} else {
 					l.keyword(1, token.Keyword, keyword.Newline)
 				}
-
-				whitespace = after
 			}
 		}
 
@@ -128,7 +131,20 @@ func loop(l *lexer) {
 			} else {
 				text = l.seekEOF()
 			}
+
+			var newline bool
+			text, newline = strings.CutSuffix(text, "\n")
+
 			l.keyword(len(word)+len(text), token.Comment, kw)
+			if newline {
+				if l.EmitNewline == nil {
+					// No need to actually emit a keyword in this case.
+					l.push(1, token.Space)
+				} else {
+					l.keyword(1, token.Keyword, keyword.Newline)
+				}
+			}
+
 			continue
 
 		case BlockComment:
@@ -490,16 +506,18 @@ func newlines(l *lexer, tree token.Token) {
 	}
 	end := next
 
+	needNext := true
 	for !cursor.Done() {
 		tok := cursor.Next()
 		if tok.Keyword() != keyword.Newline {
 			prev = tok
 			next = end
+			needNext = true
 			continue
 		}
 
 		// Fast forward to the next non-newline token.
-		if next != end {
+		if needNext {
 			cursor := cursor.Clone()
 			for !cursor.Done() {
 				if tok := cursor.Next(); tok.Keyword() != keyword.Newline {
@@ -507,6 +525,7 @@ func newlines(l *lexer, tree token.Token) {
 					break
 				}
 			}
+			needNext = false
 		}
 
 		if !l.EmitNewline(prev, next) {

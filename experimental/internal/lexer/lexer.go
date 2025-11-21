@@ -65,9 +65,9 @@ type Lexer struct {
 	// Used for validating prefixes and suffixes of strings and numbers.
 	IsAffix func(affix string, kind token.Kind, suffix bool) bool
 
-	// EmitNewline indicates to the lexer that newlines should be emitted as
-	// keywords and specifies the conditions for doing so. This allows for
-	// using newlines as synthetic line endings.
+	// EmitNewline indicates to the lexer that whitespace containing newlines
+	// should be emitted as keywords and specifies the conditions for doing so.
+	// This allows for using newlines as synthetic line endings.
 	//
 	// EmitNewline is called for each newline appearing in the input text, with
 	// non-skippable, non-newline tokens before and after it. If the function
