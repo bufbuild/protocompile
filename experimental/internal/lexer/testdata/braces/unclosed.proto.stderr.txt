@@ -1,7 +1,7 @@
 error: encountered unmatched `(` delimiter
-  --> testdata/braces/unclosed.proto:1:1
+  --> testdata/braces/unclosed.proto:5:1
    |
- 1 | (
+ 5 | (
    | ^ expected a closing `)`
 
 encountered 1 error

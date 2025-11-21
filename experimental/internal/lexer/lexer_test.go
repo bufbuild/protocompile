@@ -15,8 +15,10 @@
 package lexer_test
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,9 +29,79 @@ import (
 	"github.com/bufbuild/protocompile/experimental/source/length"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/golden"
+	"github.com/stretchr/testify/assert/yaml"
+	"github.com/stretchr/testify/require"
 )
+
+// Config is configuration settable in a text via //% comments.
+type Config struct {
+	Keywords struct {
+		Hard         []string `yaml:"hard"`
+		Soft         []string `yaml:"soft"`
+		Bracket      []string `yaml:"bracket"`
+		LineComment  []string `yaml:"line_comment"`
+		BlockComment []string `yaml:"block_comment"`
+
+		Map map[keyword.Keyword]lexer.OnKeyword `yaml:"-"`
+	} `yaml:"keywords"`
+
+	Prefixes struct {
+		Numbers []string `yaml:"numbers"`
+		Strings []string `yaml:"strings"`
+	} `yaml:"prefixes"`
+
+	Suffixes struct {
+		Numbers []string `yaml:"numbers"`
+		Strings []string `yaml:"strings"`
+	} `yaml:"suffixes"`
+
+	EmitNewline *struct {
+		NotAfter  []string `yaml:"not_after"`
+		NotBefore []string `yaml:"not_before"`
+	} `yaml:"emit_newline"`
+
+	NumberCanStartWithDot bool `yaml:"number_can_start_with_dot"`
+	OldStyleOctal         bool `yaml:"old_style_octal"`
+	RequireASCIIIdent     bool `yaml:"require_ascii_ident"`
+
+	Escapes struct {
+		Extended        bool `yaml:"extended"`
+		Ask             bool `yaml:"ask"`
+		Octal           bool `yaml:"octal"`
+		PartialX        bool `yaml:"partial_x"`
+		UppercaseX      bool `yaml:"uppercase_x"`
+		OldStyleUnicode bool `yaml:"old_style_unicode"`
+	}
+}
+
+func (c *Config) Parse(t *testing.T, text string) {
+	t.Helper()
+
+	config := new(bytes.Buffer)
+	for line := range strings.Lines(text) {
+		if line, ok := strings.CutPrefix(line, "//% "); ok {
+			config.WriteString(line)
+		}
+	}
+
+	err := yaml.Unmarshal(config.Bytes(), c)
+	require.NoError(t, err)
+
+	c.Keywords.Map = make(map[keyword.Keyword]lexer.OnKeyword)
+	addKeywords := func(what lexer.OnKeyword, names []string) {
+		for _, name := range names {
+			kw := keyword.Lookup(name)
+			require.NotEqual(t, keyword.Unknown, kw, "name: %s", name)
+			c.Keywords.Map[kw] = what
+		}
+	}
+	addKeywords(lexer.HardKeyword, c.Keywords.Hard)
+	addKeywords(lexer.SoftKeyword, c.Keywords.Soft)
+	addKeywords(lexer.BracketKeyword, c.Keywords.Bracket)
+	addKeywords(lexer.LineComment, c.Keywords.LineComment)
+	addKeywords(lexer.BlockComment, c.Keywords.BlockComment)
+}
 
 func TestLexer(t *testing.T) {
 	t.Parallel()
@@ -45,48 +117,53 @@ func TestLexer(t *testing.T) {
 	}
 
 	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
+		config := new(Config)
+		config.Parse(t, text)
+
 		text = unescapeTestCase(text)
 
 		r := &report.Report{Options: report.Options{Tracing: 10}}
 		file := source.NewFile(path, text)
 		lex := lexer.Lexer{
 			OnKeyword: func(k keyword.Keyword) lexer.OnKeyword {
-				switch k {
-				case keyword.Comment:
-					return lexer.LineComment
-				case keyword.LComment, keyword.RComment:
-					return lexer.BlockComment
-				case keyword.LParen, keyword.LBracket, keyword.LBrace,
-					keyword.RParen, keyword.RBracket, keyword.RBrace:
-					return lexer.BracketKeyword
-				default:
-					if k.IsProtobuf() || k.IsCEL() {
-						return lexer.SoftKeyword
-					}
-					return lexer.DiscardKeyword
-				}
+				return config.Keywords.Map[k]
 			},
 
 			IsAffix: func(affix string, kind token.Kind, suffix bool) bool {
 				switch kind {
 				case token.Number:
-					return suffix && slicesx.Among(affix, "u", "U")
+					if suffix {
+						return slices.Contains(config.Suffixes.Numbers, affix)
+					} else {
+						return slices.Contains(config.Prefixes.Numbers, affix)
+					}
 				case token.String:
-					return !suffix && slicesx.Among(affix, "r", "b", "rb")
+					if suffix {
+						return slices.Contains(config.Suffixes.Strings, affix)
+					} else {
+						return slices.Contains(config.Prefixes.Strings, affix)
+					}
 				default:
 					return false
 				}
 			},
 
-			NumberCanStartWithDot: true,
-			OldStyleOctal:         true,
-			RequireASCIIIdent:     true,
-			EscapeExtended:        true,
-			EscapeAsk:             true,
-			EscapeOctal:           true,
-			EscapePartialX:        true,
-			EscapeUppercaseX:      true,
-			EscapeOldStyleUnicode: true,
+			NumberCanStartWithDot: config.NumberCanStartWithDot,
+			OldStyleOctal:         config.OldStyleOctal,
+			RequireASCIIIdent:     config.RequireASCIIIdent,
+			EscapeExtended:        config.Escapes.Extended,
+			EscapeAsk:             config.Escapes.Ask,
+			EscapeOctal:           config.Escapes.Octal,
+			EscapePartialX:        config.Escapes.PartialX,
+			EscapeUppercaseX:      config.Escapes.UppercaseX,
+			EscapeOldStyleUnicode: config.Escapes.OldStyleUnicode,
+		}
+
+		if config.EmitNewline != nil {
+			lex.EmitNewline = func(before, after token.Token) bool {
+				return !slices.Contains(config.EmitNewline.NotAfter, before.LeafSpan().Text()) &&
+					!slices.Contains(config.EmitNewline.NotBefore, after.LeafSpan().Text())
+			}
 		}
 
 		stream := lex.Lex(file, r)

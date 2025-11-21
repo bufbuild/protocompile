@@ -234,7 +234,7 @@ func loop(l *lexer) {
 	fuseStrings(l)
 
 	// Eliminate any newline tokens that we don't actually need to have exist.
-	newlines(l)
+	newlines(l, token.Zero)
 }
 
 // lexPrelude performs various file-prelude checks, such as size and encoding
@@ -429,8 +429,8 @@ func fuseStrings(l *lexer) {
 			tok := id.Wrap(l.Stream, i)
 			if s := tok.AsString(); !s.IsZero() {
 				buf.WriteString(s.Text())
-				if i > start.ID() {
-					token.ClearMeta[tokenmeta.String](tok)
+				if s.Raw() != nil {
+					escapes = append(escapes, s.Raw().Escapes...)
 				}
 			}
 		}
@@ -475,23 +475,31 @@ func fuseStrings(l *lexer) {
 }
 
 // newlines suppresses newline keyword tokens according to l.EmitNewline.
-func newlines(l *lexer) {
+func newlines(l *lexer, tree token.Token) {
 	if l.EmitNewline == nil {
 		return
 	}
 
 	var prev, next token.Token
-	cursor := l.Stream.Cursor()
+	var cursor *token.Cursor
+	if tree.IsZero() {
+		cursor = l.Stream.Cursor()
+	} else {
+		cursor = tree.Children()
+		prev, next = tree.StartEnd()
+	}
+	end := next
+
 	for !cursor.Done() {
 		tok := cursor.Next()
 		if tok.Keyword() != keyword.Newline {
 			prev = tok
-			next = token.Zero
+			next = end
 			continue
 		}
 
 		// Fast forward to the next non-newline token.
-		if next.IsZero() {
+		if next != end {
 			cursor := cursor.Clone()
 			for !cursor.Done() {
 				if tok := cursor.Next(); tok.Keyword() != keyword.Newline {

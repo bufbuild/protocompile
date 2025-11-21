@@ -133,7 +133,7 @@ func (l *lexer) keyword(length int, kind token.Kind, kw keyword.Keyword) token.T
 	}
 
 	l.count++
-	return l.Stream.Push(length, kind)
+	return l.Stream.PushKeyword(length, kind, kw)
 }
 
 // rest returns the remaining unlexed text.

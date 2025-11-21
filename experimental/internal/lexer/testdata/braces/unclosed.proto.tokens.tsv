@@ -1,3 +1,7 @@
 #		kind		keyword		offsets		linecol		text
-0		Punct		Parens		000:001		001:001		"("		close:Token(1)
-1		Unrecognized		Unknown		000:001		001:001		""		open:Token(0)
+0		Comment		Comment		000:014		001:001		"//% keywords:\n"
+1		Comment		Comment		014:070		002:001		"//%   bracket: [\"(\", \")\", \"[\", \"]\", \"{\", \"}\", \"<\", \">\"]\n"
+2		Comment		Comment		070:097		003:001		"//%   line_comment: [\"//\"]\n"
+3		Space		Unknown		097:098		004:001		"\n"
+4		Keyword		Parens		098:099		005:001		"("		close:Token(5)
+5		Unrecognized		Unknown		098:099		005:001		""		open:Token(4)

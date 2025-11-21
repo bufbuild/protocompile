@@ -1,3 +1,6 @@
+//% keywords:
+//%   soft: [string, message]
+//%   line_comment: ["//"]
 a b c
 string message
 foo_bar fooBar

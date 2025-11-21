@@ -105,7 +105,7 @@ func init() {
 		}
 
 		name := kw.String()
-		if kw == Newline {
+		if kw == keyword.Newline {
 			name = "\\n" // Make sure the newline token is escaped.
 		}
 

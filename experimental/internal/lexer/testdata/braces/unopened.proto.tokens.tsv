@@ -1,2 +1,6 @@
 #		kind		keyword		offsets		linecol		text
-0		Punct		RParen		000:001		001:001		")"
+0		Comment		Comment		000:014		001:001		"//% keywords:\n"
+1		Comment		Comment		014:070		002:001		"//%   bracket: [\"(\", \")\", \"[\", \"]\", \"{\", \"}\", \"<\", \">\"]\n"
+2		Comment		Comment		070:097		003:001		"//%   line_comment: [\"//\"]\n"
+3		Space		Unknown		097:098		004:001		"\n"
+4		Keyword		RParen		098:099		005:001		")"

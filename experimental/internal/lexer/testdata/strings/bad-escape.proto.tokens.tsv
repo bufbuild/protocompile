@@ -1,15 +1,25 @@
 #		kind		keyword		offsets		linecol		text
-0		String		Unknown		000:019		001:001		"\"\\k\""		string:"\x00\x00\x00\x00"		close:Token(6)
-1		Space		Unknown		004:005		001:005		" "
-2		String		Unknown		005:009		001:006		"\"\\x\""		string:"\\x"
-3		Space		Unknown		009:010		001:010		" "
-4		String		Unknown		010:014		001:011		"\"\\9\""		string:"\\9"
-5		Space		Unknown		014:015		001:015		" "
-6		String		Unknown		000:019		001:001		"\"\\u\""		string:"\\u"		open:Token(0)
-7		Punct		Comma		019:020		001:020		","
-8		Space		Unknown		020:021		001:021		" "
-9		String		Unknown		021:045		001:022		"\"\\U\""		string:"\x00\x00\x00"		close:Token(13)
-10		Space		Unknown		025:026		001:026		"\n"
-11		String		Unknown		026:033		002:001		"\"\\u000\""		string:"\\u000"
-12		Space		Unknown		033:034		002:008		" "
-13		String		Unknown		021:045		001:022		"\"\\U0000000\""		string:"\\U0000000"		open:Token(9)
+0		Comment		Comment		000:014		001:001		"//% keywords:\n"
+1		Comment		Comment		014:041		002:001		"//%   line_comment: [\"//\"]\n"
+2		Comment		Comment		041:044		003:001		"//\n"
+3		Comment		Comment		044:057		004:001		"//% escapes:\n"
+4		Comment		Comment		057:080		005:001		"//%     extended: true\n"
+5		Comment		Comment		080:100		006:001		"//%     octal: true\n"
+6		Comment		Comment		100:124		007:001		"//%     partial_x: true\n"
+7		Comment		Comment		124:150		008:001		"//%     uppercase_x: true\n"
+8		Comment		Comment		150:182		009:001		"//%     old_style_unicode: true\n"
+9		String		Unknown		182:231		010:001		"\"\\k\""		string:"\x00\x00\x00\x00\x00\x00\x00\x00"		close:Token(23)
+10		Space		Unknown		186:187		010:005		" "
+11		String		Unknown		187:191		010:006		"\"\\x\""		string:"\x00"
+12		Space		Unknown		191:192		010:010		" "
+13		String		Unknown		192:196		010:011		"\"\\X\""		string:"\x00"
+14		Space		Unknown		196:197		010:015		" "
+15		String		Unknown		197:201		010:016		"\"\\9\""		string:"\x00"
+16		Space		Unknown		201:202		010:020		" "
+17		String		Unknown		202:206		010:021		"\"\\u\""		string:"\x00"
+18		Space		Unknown		206:207		010:025		" "
+19		String		Unknown		207:211		010:026		"\"\\U\""		string:"\x00"
+20		Space		Unknown		211:212		010:030		"\n"
+21		String		Unknown		212:219		011:001		"\"\\u000\""		string:"\x00"
+22		Space		Unknown		219:220		011:008		" "
+23		String		Unknown		182:231		010:001		"\"\\U0000000\""		string:"\x00"		open:Token(9)
