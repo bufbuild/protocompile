@@ -30,7 +30,7 @@ jobs:
           git config --global core.autocrlf false
           git config --global core.eol lf
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
       - name: Install Go
