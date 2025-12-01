@@ -39,8 +39,11 @@ const (
 	// it as an identifier.
 	DiscardKeyword OnKeyword = iota
 
-	// Accept the keyword as a keyword token.
-	KeepKeyword
+	// Accept the keyword as a [token.Keyword].
+	HardKeyword
+	// Accept the keyword as a [token.Ident]. The keyword must be a reserved
+	// word, otherwise behaves like HardKeyword.
+	SoftKeyword
 
 	// Accept the keyword, and treat it as an open brace. It must be one of
 	// the open brace keywords.
@@ -61,6 +64,16 @@ type Lexer struct {
 
 	// Used for validating prefixes and suffixes of strings and numbers.
 	IsAffix func(affix string, kind token.Kind, suffix bool) bool
+
+	// EmitNewline indicates to the lexer that whitespace containing newlines
+	// should be emitted as keywords and specifies the conditions for doing so.
+	// This allows for using newlines as synthetic line endings.
+	//
+	// EmitNewline is called for each newline appearing in the input text, with
+	// non-skippable, non-newline tokens before and after it. If the function
+	// returns true, that newline is treated as a keyword; otherwise, it is
+	// treated as a space.
+	EmitNewline func(before, after token.Token) bool
 
 	// If true, a dot immediately followed by a digit is taken to begin a
 	// digit.
@@ -104,6 +117,11 @@ type lexer struct {
 
 // push pushes a new token onto the stream the lexer is building.
 func (l *lexer) push(length int, kind token.Kind) token.Token {
+	return l.keyword(length, kind, keyword.Unknown)
+}
+
+// keyword pushes a new keyword token onto the stream the lexer is building.
+func (l *lexer) keyword(length int, kind token.Kind, kw keyword.Keyword) token.Token {
 	if l.badBytes > 0 {
 		l.count++
 		tok := l.Stream.Push(l.badBytes, token.Unrecognized)
@@ -115,7 +133,7 @@ func (l *lexer) push(length int, kind token.Kind) token.Token {
 	}
 
 	l.count++
-	return l.Stream.Push(length, kind)
+	return l.Stream.PushKeyword(length, kind, kw)
 }
 
 // rest returns the remaining unlexed text.

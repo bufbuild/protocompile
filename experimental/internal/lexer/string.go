@@ -55,7 +55,7 @@ func lexString(l *lexer, sigil string) {
 
 		cursor := l.cursor
 		sc := lexStringContent(l)
-		if !sc.escape.IsZero() {
+		if !sc.escape.IsZero() || escapes != nil {
 			if escapes == nil {
 				// If we saw our first escape, spill the string into the buffer
 				// up to just before the escape.
@@ -68,18 +68,12 @@ func lexString(l *lexer, sigil string) {
 			}
 			if sc.isRawByte {
 				escape.Byte = byte(sc.rune)
-			} else {
-				escape.Rune = sc.rune
-			}
-			escapes = append(escapes, escape)
-		}
-
-		if escapes != nil {
-			if sc.isRawByte {
 				buf.WriteByte(byte(sc.rune))
 			} else {
+				escape.Rune = sc.rune
 				buf.WriteRune(sc.rune)
 			}
+			escapes = append(escapes, escape)
 		}
 	}
 

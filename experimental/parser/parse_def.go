@@ -16,6 +16,8 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -93,11 +95,11 @@ func (p *defParser) parse() ast.DeclDef {
 			// moving this follower before the previous one.
 
 			f := defFollowers[lastFollower]
-			p.Error(errUnexpected{
-				what:  next,
-				where: f.what(p).After(),
-				prev:  f.prev(p),
-				got:   defFollowers[idx].what(p),
+			p.Error(errtoken.Unexpected{
+				What:  next,
+				Where: f.what(p).After(),
+				Prev:  f.prev(p),
+				Got:   defFollowers[idx].what(p),
 			})
 		case idx == lastFollower:
 			f := defFollowers[lastFollower]
@@ -224,13 +226,13 @@ func (defOutputs) parse(p *defParser) source.Span {
 	list, err := punctParser{
 		parser: p.parser, c: p.c,
 		want:  keyword.Parens,
-		where: taxa.KeywordReturns.After(),
+		where: taxa.Noun(keyword.Returns).After(),
 	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
 		// we parse a single type w/o parens and diagnose it later.
-		ty = parseType(p.parser, p.c, taxa.KeywordReturns.After())
+		ty = parseType(p.parser, p.c, taxa.Noun(keyword.Returns).After())
 	} else if err != nil {
 		p.Error(err)
 		return source.Span{}
@@ -281,7 +283,7 @@ func (defValue) canStart(p *defParser) bool {
 	// However, if we've already seen {}, [], or another value, we break
 	// instead, since this suggests we're peeking the next def.
 	switch {
-	case next.Keyword() == keyword.Eq:
+	case next.Keyword() == keyword.Assign:
 		return true
 	case canStartPath(next):
 		// If the next "expression" looks like a path, this likelier to be
@@ -302,9 +304,9 @@ func (defValue) canStart(p *defParser) bool {
 func (defValue) parse(p *defParser) source.Span {
 	eq, err := punctParser{
 		parser: p.parser, c: p.c,
-		want:   keyword.Eq,
+		want:   keyword.Assign,
 		where:  taxa.Def.In(),
-		insert: justifyBetween,
+		insert: just.Between,
 	}.parse()
 	if err != nil {
 		p.Error(err)

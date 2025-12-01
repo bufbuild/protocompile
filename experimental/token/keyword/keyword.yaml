@@ -15,13 +15,17 @@
 - name: Keyword
   type: byte
   docs: |
-    Keywords are special "grammar particles" recognized by Protobuf. These
-    include both the reserved words listed at
-    https://protobuf.com/docs/language-spec#identifiers-and-keywords, as well
-    as all valid punctuation.
+    Keywords are special "grammar particles" recognized by the compiler.
+    
+    These include both reserved words, including all identifiers with special
+    treatment [in Protobuf], as well as all valid punctuation.
+
+    [in Protobuf]: https://protobuf.com/docs/language-spec#identifiers-and-keywords
+  doc_is_string: true
   methods:
     - kind: string
     - kind: go-string
+
     - kind: from-string
       name: Lookup
       skip: [Parens, Brackets, Braces, Angles, BlockComment]
@@ -29,16 +33,19 @@
         Lookup looks up a keyword by name.
 
         If name does not name a keyword, returns [Unknown].
+
     - kind: all
       name: All
+      skip: [Unknown]
       docs: |
         All returns an iterator over all distinct [Keyword] values.
 
   values:
-  - {name: Unknown, string: unknown}
+  - {name: Unknown, string: unknown, docs: "Zero value, not a real keyword."}
 
-  # Keywords according to protobuf.com
+  ## Reserved words ##
 
+  # Protobuf-specific keywords.
   - {name: Syntax, string: syntax}
   - {name: Edition, string: edition}
   - {name: Import, string: import}
@@ -60,23 +67,24 @@
   - {name: Returns, string: returns}
   - {name: To, string: to}
 
-  - {name: Repeated, string: repeated}
   - {name: Optional, string: optional}
+  - {name: Repeated, string: repeated}
   - {name: Required, string: required}
   - {name: Stream, string: stream}
   - {name: Export, string: export}
   - {name: Local, string: local}
 
+  # Protobuf magic identifiers (i.e., predeclared names).
   - {name: Int32, string: int32}
   - {name: Int64, string: int64}
-  - {name: UInt32, string: uint32}
-  - {name: UInt64, string: uint64}
-  - {name: SInt32, string: sint32}
-  - {name: SInt64, string: sint64}
+  - {name: Uint32, string: uint32}
+  - {name: Uint64, string: uint64}
+  - {name: Sint32, string: sint32}
+  - {name: Sint64, string: sint64}
   - {name: Fixed32, string: fixed32}
   - {name: Fixed64, string: fixed64}
-  - {name: SFixed32, string: sfixed32}
-  - {name: SFixed64, string: sfixed64}
+  - {name: Sfixed32, string: sfixed32}
+  - {name: Sfixed64, string: sfixed64}
   - {name: Float, string: float}
   - {name: Double, string: double}
   - {name: Bool, string: bool}
@@ -84,58 +92,108 @@
   - {name: Bytes, string: bytes}
 
   - {name: Inf, string: inf}
-  - {name: NAN, string: nan}
+  - {name: NaN, string: nan, doc: "nan"}
   - {name: 'True', string: 'true'}
   - {name: 'False', string: 'false'}
   - {name: 'Null', string: 'null'}
   - {name: Map, string: map}
   - {name: Max, string: max}
 
+  # Expression keywords.
   - {name: Return, string: return}
   - {name: Break, string: break}
   - {name: Continue, string: continue}
+  - {name: Yield, string: yield}
+
+  - {name: Defer, string: defer}
+  - {name: Try, string: try}
+  - {name: Catch, string: catch}
+
   - {name: If, string: if}
+  - {name: Unless, string: unless}
   - {name: Else, string: else}
+
+  - {name: Loop, string: loop}
+  - {name: While, string: while}
+  - {name: Do, string: do}
   - {name: For, string: for}
   - {name: In, string: in}
+
   - {name: Switch, string: switch}
+  - {name: Match, string: match}
   - {name: Case, string: case}
+
+  - {name: As, string: as}
   - {name: Func, string: func}
+  - {name: Const, string: const}
+  - {name: Let, string: let}
+  - {name: Var, string: var}
+  - {name: Type, string: type}
+  - {name: Extern, string: extern}
 
   - {name: And, string: and}
   - {name: Or, string: or}
   - {name: Not, string: not}
   
-  # Pseudo-option names.
-
+  # Protobuf pseudo-option names.
   - {name: Default, string: default}
   - {name: JsonName, string: json_name}
 
-  # Punctuation.
+  ## Reserved words ##
   
+  # Generic particles.
   - {name: Semi, string: ";"}
   - {name: Comma, string: ","}
   - {name: Dot, string: "."}
   - {name: Colon, string: ":"}
-  - {name: Eq, string: "="}
-  - {name: Plus, string: "+"}
-  - {name: Minus, string: "-"}
-  - {name: Star, string: "*"}
-  - {name: Slash, string: "/"}
-  - {name: Percent, string: "%"}
+  
+  - {name: Newline, string: "\n", docs: "\\n"}
+
+  - {name: At, string: "@"}
+  - {name: Hash, string: "#"}
+  - {name: Dollar, string: "$"}
+  - {name: Twiddle, string: "~"}
+
+  # Arithmetic operators.
+  - {name: Add, string: "+"}
+  - {name: Sub, string: "-"}
+  - {name: Mul, string: "*"}
+  - {name: Div, string: "/"}
+  - {name: Rem, string: "%"}
+  - {name: Amp, string: "&"}
+  - {name: Pipe, string: "|"}
+  - {name: Xor, string: "^"}
+  - {name: Shl, string: "<<"}
+  - {name: Shr, string: ">>"}
+
   - {name: Bang, string: "!"}
+  - {name: Bangs, string: "!!"} 
   - {name: Ask, string: "?"}
+  - {name: Asks, string: "??"}
 
-  - {name: ColonEq, string: ":="}
-  - {name: PlusEq, string: "+="}
-  - {name: MinusEq, string: "-="}
-  - {name: StarEq, string: "*="}
-  - {name: SlashEq, string: "/="}
-  - {name: PercentEq, string: "%="}
+  # C-style and/or.
+  - {name: "Amps", string: "&&"}
+  - {name: "Pipes", string: "||"}
 
+  # Assignment operators.
+  - {name: Assign, string: "="}
+  - {name: AssignNew, string: ":="}
+  - {name: AssignAdd, string: "+="}
+  - {name: AssignSub, string: "-="}
+  - {name: AssignMul, string: "*="}
+  - {name: AssignDiv, string: "/="}
+  - {name: AssignRem, string: "%="}
+  - {name: AssignAmp, string: "&="}
+  - {name: AssignPipe, string: "|="}
+  - {name: AssignXor, string: "^="}
+  - {name: AssignShl, string: "<<="}
+  - {name: AssignShr, string: ">>="}
+
+  # Rust-style range operators.
   - {name: Range, string: ".."}
   - {name: RangeEq, string: "..="}
   
+  # Unfused brackets.
   - {name: LParen, string: "("}
   - {name: RParen, string: ")"}
   - {name: LBracket, string: "["}
@@ -143,25 +201,23 @@
   - {name: LBrace, string: "{"}
   - {name: RBrace, string: "}"}
 
-  - {name: "Less", string: "<"}
-  - {name: "Greater", string: ">"}
-  - {name: "LessEq", string: "<="}
-  - {name: "GreaterEq", string: ">="}
-  - {name: "EqEq", string: "=="}
-  - {name: "BangEq", string: "!="}
+  # Comparison operators.
+  - {name: "Lt", string: "<"}
+  - {name: "Gt", string: ">"}
+  - {name: "Le", string: "<="}
+  - {name: "Ge", string: ">="}
+  - {name: "Eq", string: "=="}
+  - {name: "Ne", string: "!="}
 
   - {name: "Comment", string: "//"}
   - {name: "LComment", string: "/*"}
   - {name: "RComment", string: "*/"}
 
-  - {name: "AndAnd", string: "&&"}
-  - {name: "OrOr", string: "||"}
-
+  # Fused brackets.
   # These three must be declared together, since this is used for layout
   # compression in token.nat.
-  - {name: Parens, string: "(...)"}
-  - {name: Brackets, string: "[...]"}
-  - {name: Braces, string: "{...}"}
-  - {name: Angles, string: "<...>"}
-
-  - {name: BlockComment, string: "/*...*/"}
+  - {name: Parens, string: "(...)", docs: "(...) (fused)"}
+  - {name: Brackets, string: "[...]", docs: "[...] (fused)"}
+  - {name: Braces, string: "{...}", docs: "{...} (fused)"}
+  - {name: Angles, string: "<...>", docs: "<...> (fused)"}
+  - {name: BlockComment, string: "/* ... */", docs: "/* ... */ (fused)"}

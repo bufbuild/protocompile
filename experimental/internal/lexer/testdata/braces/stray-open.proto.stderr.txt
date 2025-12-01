@@ -1,7 +1,7 @@
 error: encountered unmatched `[` delimiter
-  --> testdata/braces/stray-open.proto:2:5
+  --> testdata/braces/stray-open.proto:6:5
    |
- 2 |     [
+ 6 |     [
    |     ^ expected a closing `]`
 
 encountered 1 error

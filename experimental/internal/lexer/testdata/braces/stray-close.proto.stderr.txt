@@ -1,11 +1,11 @@
 error: encountered unmatched `{` delimiter
-  --> testdata/braces/stray-close.proto:1:1
+  --> testdata/braces/stray-close.proto:5:1
    |
- 1 | {
+ 5 | {
    | ^ expected a closing `}`
- 2 |     ]
+ 6 |     ]
    |     - closed by this instead
- 3 | }
+ 7 | }
    | - help: perhaps it was meant to match this?
 
 encountered 1 error

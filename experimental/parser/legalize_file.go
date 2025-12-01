@@ -146,10 +146,10 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	case ast.ExprKindInvalid:
 		return
 	default:
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		})
 		return
 	}
@@ -318,18 +318,18 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 			break
 		}
 
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		})
 		return
 
 	case ast.ExprKindPath:
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		}).Apply(
 			// TODO: potentially defer this diagnostic to later, when we can
 			// perform symbol lookup and figure out what the correct file to
@@ -352,10 +352,10 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		return
 
 	default:
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		})
 		return
 	}

@@ -1,3 +1,8 @@
+//% keywords:
+//%   line_comment: ["//"]
+//%
+//% number_can_start_with_dot: true
+//% old_style_octal: true
 1a
 0f
 0b02

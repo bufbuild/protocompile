@@ -46,18 +46,37 @@ func loop(l *lexer) {
 	// This is the main loop of the lexer. Each iteration will examine the next
 	// rune in the source file to determine what action to take.
 	mp := l.mustProgress()
+
 	for !l.done() {
 		mp.check()
-		start := l.cursor
-
 		if unicode.In(l.peek(), unicode.Pattern_White_Space) {
 			// Whitespace. Consume as much whitespace as possible and mint a
 			// whitespace token.
-			l.takeWhile(func(r rune) bool {
+			whitespace := l.takeWhile(func(r rune) bool {
 				return unicode.In(r, unicode.Pattern_White_Space)
 			})
-			l.push(l.cursor-start, token.Space)
-			continue
+
+			// Chop the consumed whitespace into lines and emit the newlines as
+			// keywords. At the end, we will convert newlines that we want to
+			// eliminate into spaces.
+			for {
+				var space string
+				var newline bool
+				space, whitespace, newline = strings.Cut(whitespace, "\n")
+				if space != "" {
+					l.push(len(space), token.Space)
+				}
+				if !newline {
+					break
+				}
+
+				if l.EmitNewline == nil {
+					// No need to actually emit a keyword in this case.
+					l.push(1, token.Space)
+				} else {
+					l.keyword(1, token.Keyword, keyword.Newline)
+				}
+			}
 		}
 
 		// Find the next valid keyword.
@@ -72,7 +91,7 @@ func loop(l *lexer) {
 		}
 
 		switch what {
-		case KeepKeyword, BracketKeyword:
+		case SoftKeyword, HardKeyword, BracketKeyword:
 			word := kw.String()
 			if l.NumberCanStartWithDot && kw == keyword.Dot {
 				next, _ := stringsx.Rune(l.rest(), len(word))
@@ -81,9 +100,11 @@ func loop(l *lexer) {
 				}
 			}
 
-			kind := token.Punct
+			kind := token.Keyword
 			if kw.IsReservedWord() {
-				kind = token.Ident
+				if what == SoftKeyword {
+					kind = token.Ident
+				}
 				// If this is a reserved word, the rune after it must not be
 				// an XID continue.
 				next, _ := stringsx.Rune(l.rest(), len(word))
@@ -93,7 +114,7 @@ func loop(l *lexer) {
 			}
 
 			l.cursor += len(word)
-			tok := l.push(len(word), kind)
+			tok := l.keyword(len(word), kind, kw)
 
 			if what == BracketKeyword {
 				l.braces = append(l.braces, tok.ID())
@@ -110,7 +131,20 @@ func loop(l *lexer) {
 			} else {
 				text = l.seekEOF()
 			}
-			l.push(len(word)+len(text), token.Comment)
+
+			var newline bool
+			text, newline = strings.CutSuffix(text, "\n")
+
+			l.keyword(len(word)+len(text), token.Comment, kw)
+			if newline {
+				if l.EmitNewline == nil {
+					// No need to actually emit a keyword in this case.
+					l.push(1, token.Space)
+				} else {
+					l.keyword(1, token.Keyword, keyword.Newline)
+				}
+			}
+
 			continue
 
 		case BlockComment:
@@ -145,7 +179,7 @@ func loop(l *lexer) {
 				})
 				text = l.seekEOF()
 			}
-			l.push(len(word)+len(text), token.Comment)
+			l.keyword(len(word)+len(text), token.Comment, fused)
 
 			continue
 		}
@@ -214,6 +248,9 @@ func loop(l *lexer) {
 
 	// Perform implicit string concatenation.
 	fuseStrings(l)
+
+	// Eliminate any newline tokens that we don't actually need to have exist.
+	newlines(l, token.Zero)
 }
 
 // lexPrelude performs various file-prelude checks, such as size and encoding
@@ -408,8 +445,8 @@ func fuseStrings(l *lexer) {
 			tok := id.Wrap(l.Stream, i)
 			if s := tok.AsString(); !s.IsZero() {
 				buf.WriteString(s.Text())
-				if i > start.ID() {
-					token.ClearMeta[tokenmeta.String](tok)
+				if s.Raw() != nil {
+					escapes = append(escapes, s.Raw().Escapes...)
 				}
 			}
 		}
@@ -451,4 +488,49 @@ func fuseStrings(l *lexer) {
 	}
 
 	concat(start, end)
+}
+
+// newlines suppresses newline keyword tokens according to l.EmitNewline.
+func newlines(l *lexer, tree token.Token) {
+	if l.EmitNewline == nil {
+		return
+	}
+
+	var prev, next token.Token
+	var cursor *token.Cursor
+	if tree.IsZero() {
+		cursor = l.Stream.Cursor()
+	} else {
+		cursor = tree.Children()
+		prev, next = tree.StartEnd()
+	}
+	end := next
+
+	needNext := true
+	for !cursor.Done() {
+		tok := cursor.Next()
+		if tok.Keyword() != keyword.Newline {
+			prev = tok
+			next = end
+			needNext = true
+			continue
+		}
+
+		// Fast forward to the next non-newline token.
+		if needNext {
+			cursor := cursor.Clone()
+			for !cursor.Done() {
+				if tok := cursor.Next(); tok.Keyword() != keyword.Newline {
+					next = tok
+					break
+				}
+			}
+			needNext = false
+		}
+
+		if !l.EmitNewline(prev, next) {
+			// Overwrite the type of this token.
+			tok.SetKind(token.Space)
+		}
+	}
 }

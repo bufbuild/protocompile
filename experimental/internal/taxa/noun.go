@@ -23,11 +23,12 @@ import (
 
 // Noun is a syntactic or semantic element within the grammar that can be
 // referred to within a diagnostic.
+//
+// All [keyword.Keyword] values can be safely cast to [taxa.Noun].
 type Noun int
 
 const (
-	Unknown Noun = iota
-	Unrecognized
+	Unrecognized Noun = keywordCount + iota + 1
 	TopLevel
 	EOF
 	SyntaxMode
@@ -92,45 +93,8 @@ const (
 	Float
 	Int
 	Number
-	Semi
-	Comma
-	Slash
-	Colon
-	Equals
-	Minus
-	Dot
-	Parens
-	Brackets
-	Braces
-	Angles
 	ReturnsParens
-	KeywordSyntax
-	KeywordEdition
-	KeywordImport
-	KeywordWeak
-	KeywordPublic
-	KeywordPackage
-	KeywordOption
-	KeywordMessage
-	KeywordEnum
-	KeywordService
-	KeywordExtend
-	KeywordOneof
-	KeywordExtensions
-	KeywordReserved
-	KeywordTo
-	KeywordRPC
-	KeywordReturns
-	KeywordOptional
-	KeywordRepeated
-	KeywordRequired
-	KeywordGroup
-	KeywordStream
-	KeywordExport
-	KeywordLocal
-	PredeclaredMap
-	PredeclaredMax
-	total int = iota
+	nounCount int = iota
 )
 
 // String implements [fmt.Stringer].
@@ -150,7 +114,6 @@ func (v Noun) GoString() string {
 }
 
 var _table_Noun_String = [...]string{
-	Unknown:            "<unknown>",
 	Unrecognized:       "unrecognized token",
 	TopLevel:           "file scope",
 	EOF:                "end-of-file",
@@ -216,150 +179,75 @@ var _table_Noun_String = [...]string{
 	Float:              "floating-point literal",
 	Int:                "integer literal",
 	Number:             "number literal",
-	Semi:               "`;`",
-	Comma:              "`,`",
-	Slash:              "`/`",
-	Colon:              "`:`",
-	Equals:             "`=`",
-	Minus:              "`-`",
-	Dot:                "`.`",
-	Parens:             "`(...)`",
-	Brackets:           "`[...]`",
-	Braces:             "`{...}`",
-	Angles:             "`<...>`",
 	ReturnsParens:      "`returns (...)`",
-	KeywordSyntax:      "`syntax`",
-	KeywordEdition:     "`edition`",
-	KeywordImport:      "`import`",
-	KeywordWeak:        "`weak`",
-	KeywordPublic:      "`public`",
-	KeywordPackage:     "`package`",
-	KeywordOption:      "`option`",
-	KeywordMessage:     "`message`",
-	KeywordEnum:        "`enum`",
-	KeywordService:     "`service`",
-	KeywordExtend:      "`extend`",
-	KeywordOneof:       "`oneof`",
-	KeywordExtensions:  "`extensions`",
-	KeywordReserved:    "`reserved`",
-	KeywordTo:          "`to`",
-	KeywordRPC:         "`rpc`",
-	KeywordReturns:     "`returns`",
-	KeywordOptional:    "`optional`",
-	KeywordRepeated:    "`repeated`",
-	KeywordRequired:    "`required`",
-	KeywordGroup:       "`group`",
-	KeywordStream:      "`stream`",
-	KeywordExport:      "`export`",
-	KeywordLocal:       "`local`",
-	PredeclaredMap:     "`map`",
-	PredeclaredMax:     "`max`",
 }
 
 var _table_Noun_GoString = [...]string{
-	Unknown:            "Unknown",
-	Unrecognized:       "Unrecognized",
-	TopLevel:           "TopLevel",
-	EOF:                "EOF",
-	SyntaxMode:         "SyntaxMode",
-	EditionMode:        "EditionMode",
-	Decl:               "Decl",
-	Empty:              "Empty",
-	Syntax:             "Syntax",
-	Edition:            "Edition",
-	Package:            "Package",
-	Import:             "Import",
-	Extensions:         "Extensions",
-	Reserved:           "Reserved",
-	Body:               "Body",
-	Def:                "Def",
-	Message:            "Message",
-	Enum:               "Enum",
-	Service:            "Service",
-	Extend:             "Extend",
-	Oneof:              "Oneof",
-	Group:              "Group",
-	Option:             "Option",
-	CustomOption:       "CustomOption",
-	FieldSelector:      "FieldSelector",
-	PseudoOption:       "PseudoOption",
-	Field:              "Field",
-	Extension:          "Extension",
-	EnumValue:          "EnumValue",
-	Method:             "Method",
-	CompactOptions:     "CompactOptions",
-	MethodIns:          "MethodIns",
-	MethodOuts:         "MethodOuts",
-	Signature:          "Signature",
-	FieldTag:           "FieldTag",
-	FieldNumber:        "FieldNumber",
-	MessageSetNumber:   "MessageSetNumber",
-	FieldName:          "FieldName",
-	OptionValue:        "OptionValue",
-	QualifiedName:      "QualifiedName",
-	FullyQualifiedName: "FullyQualifiedName",
-	ExtensionName:      "ExtensionName",
-	TypeURL:            "TypeURL",
-	Expr:               "Expr",
-	Range:              "Range",
-	Array:              "Array",
-	Dict:               "Dict",
-	DictField:          "DictField",
-	Type:               "Type",
-	TypePath:           "TypePath",
-	TypeParams:         "TypeParams",
-	TypePrefix:         "TypePrefix",
-	MessageType:        "MessageType",
-	MessageSet:         "MessageSet",
-	EnumType:           "EnumType",
-	ScalarType:         "ScalarType",
-	EntryType:          "EntryType",
-	MapKey:             "MapKey",
-	MapValue:           "MapValue",
-	Whitespace:         "Whitespace",
-	Comment:            "Comment",
-	Ident:              "Ident",
-	String:             "String",
-	Float:              "Float",
-	Int:                "Int",
-	Number:             "Number",
-	Semi:               "Semi",
-	Comma:              "Comma",
-	Slash:              "Slash",
-	Colon:              "Colon",
-	Equals:             "Equals",
-	Minus:              "Minus",
-	Dot:                "Dot",
-	Parens:             "Parens",
-	Brackets:           "Brackets",
-	Braces:             "Braces",
-	Angles:             "Angles",
-	ReturnsParens:      "ReturnsParens",
-	KeywordSyntax:      "KeywordSyntax",
-	KeywordEdition:     "KeywordEdition",
-	KeywordImport:      "KeywordImport",
-	KeywordWeak:        "KeywordWeak",
-	KeywordPublic:      "KeywordPublic",
-	KeywordPackage:     "KeywordPackage",
-	KeywordOption:      "KeywordOption",
-	KeywordMessage:     "KeywordMessage",
-	KeywordEnum:        "KeywordEnum",
-	KeywordService:     "KeywordService",
-	KeywordExtend:      "KeywordExtend",
-	KeywordOneof:       "KeywordOneof",
-	KeywordExtensions:  "KeywordExtensions",
-	KeywordReserved:    "KeywordReserved",
-	KeywordTo:          "KeywordTo",
-	KeywordRPC:         "KeywordRPC",
-	KeywordReturns:     "KeywordReturns",
-	KeywordOptional:    "KeywordOptional",
-	KeywordRepeated:    "KeywordRepeated",
-	KeywordRequired:    "KeywordRequired",
-	KeywordGroup:       "KeywordGroup",
-	KeywordStream:      "KeywordStream",
-	KeywordExport:      "KeywordExport",
-	KeywordLocal:       "KeywordLocal",
-	PredeclaredMap:     "PredeclaredMap",
-	PredeclaredMax:     "PredeclaredMax",
+	Unrecognized:       "taxa.Unrecognized",
+	TopLevel:           "taxa.TopLevel",
+	EOF:                "taxa.EOF",
+	SyntaxMode:         "taxa.SyntaxMode",
+	EditionMode:        "taxa.EditionMode",
+	Decl:               "taxa.Decl",
+	Empty:              "taxa.Empty",
+	Syntax:             "taxa.Syntax",
+	Edition:            "taxa.Edition",
+	Package:            "taxa.Package",
+	Import:             "taxa.Import",
+	Extensions:         "taxa.Extensions",
+	Reserved:           "taxa.Reserved",
+	Body:               "taxa.Body",
+	Def:                "taxa.Def",
+	Message:            "taxa.Message",
+	Enum:               "taxa.Enum",
+	Service:            "taxa.Service",
+	Extend:             "taxa.Extend",
+	Oneof:              "taxa.Oneof",
+	Group:              "taxa.Group",
+	Option:             "taxa.Option",
+	CustomOption:       "taxa.CustomOption",
+	FieldSelector:      "taxa.FieldSelector",
+	PseudoOption:       "taxa.PseudoOption",
+	Field:              "taxa.Field",
+	Extension:          "taxa.Extension",
+	EnumValue:          "taxa.EnumValue",
+	Method:             "taxa.Method",
+	CompactOptions:     "taxa.CompactOptions",
+	MethodIns:          "taxa.MethodIns",
+	MethodOuts:         "taxa.MethodOuts",
+	Signature:          "taxa.Signature",
+	FieldTag:           "taxa.FieldTag",
+	FieldNumber:        "taxa.FieldNumber",
+	MessageSetNumber:   "taxa.MessageSetNumber",
+	FieldName:          "taxa.FieldName",
+	OptionValue:        "taxa.OptionValue",
+	QualifiedName:      "taxa.QualifiedName",
+	FullyQualifiedName: "taxa.FullyQualifiedName",
+	ExtensionName:      "taxa.ExtensionName",
+	TypeURL:            "taxa.TypeURL",
+	Expr:               "taxa.Expr",
+	Range:              "taxa.Range",
+	Array:              "taxa.Array",
+	Dict:               "taxa.Dict",
+	DictField:          "taxa.DictField",
+	Type:               "taxa.Type",
+	TypePath:           "taxa.TypePath",
+	TypeParams:         "taxa.TypeParams",
+	TypePrefix:         "taxa.TypePrefix",
+	MessageType:        "taxa.MessageType",
+	MessageSet:         "taxa.MessageSet",
+	EnumType:           "taxa.EnumType",
+	ScalarType:         "taxa.ScalarType",
+	EntryType:          "taxa.EntryType",
+	MapKey:             "taxa.MapKey",
+	MapValue:           "taxa.MapValue",
+	Whitespace:         "taxa.Whitespace",
+	Comment:            "taxa.Comment",
+	Ident:              "taxa.Ident",
+	String:             "taxa.String",
+	Float:              "taxa.Float",
+	Int:                "taxa.Int",
+	Number:             "taxa.Number",
+	ReturnsParens:      "taxa.ReturnsParens",
 }
 var _ iter.Seq[int] // Mark iter as used.

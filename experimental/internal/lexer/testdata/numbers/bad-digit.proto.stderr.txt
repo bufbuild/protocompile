@@ -1,13 +1,13 @@
 error: invalid digit in decimal integer literal
-  --> testdata/numbers/bad-digit.proto:1:2
+  --> testdata/numbers/bad-digit.proto:6:2
    |
- 1 | 1a
+ 6 | 1a
    |  ^ expected `0` to `9`
 
 error: invalid digit in octal integer literal
-  --> testdata/numbers/bad-digit.proto:2:2
+  --> testdata/numbers/bad-digit.proto:7:2
    |
- 2 | 0f
+ 7 | 0f
    | -^ expected `0` to `7`
    | |
    | implies octal
@@ -16,25 +16,25 @@ error: invalid digit in octal integer literal
            octal
 
 error: invalid digit in binary integer literal
-  --> testdata/numbers/bad-digit.proto:3:4
+  --> testdata/numbers/bad-digit.proto:8:4
    |
- 3 | 0b02
+ 8 | 0b02
    | -- ^ expected `0` or `1`
    | |
    | implies binary
 
 error: invalid digit in octal integer literal
-  --> testdata/numbers/bad-digit.proto:4:4
+  --> testdata/numbers/bad-digit.proto:9:4
    |
- 4 | 0o08
+ 9 | 0o08
    | -- ^ expected `0` to `7`
    | |
    | implies octal
 
 error: invalid digit in octal integer literal
-  --> testdata/numbers/bad-digit.proto:5:2
+  --> testdata/numbers/bad-digit.proto:10:2
    |
- 5 | 08
+10 | 08
    | -^ expected `0` to `7`
    | |
    | implies octal
@@ -43,39 +43,39 @@ error: invalid digit in octal integer literal
            octal
 
 error: invalid digit in hexadecimal integer literal
-  --> testdata/numbers/bad-digit.proto:7:4
+  --> testdata/numbers/bad-digit.proto:12:4
    |
- 7 | 0x0G
+12 | 0x0G
    | -- ^ expected `0` to `9`, or `a` to `f`
    | |
    | implies hexadecimal
 
 error: invalid digit in hexadecimal floating-point literal
-  --> testdata/numbers/bad-digit.proto:8:5
+  --> testdata/numbers/bad-digit.proto:13:5
    |
- 8 | 0x1.zzz
+13 | 0x1.zzz
    | --  ^ expected `0` to `9`, or `a` to `f`
    | |
    | implies hexadecimal
 
 error: extra decimal point in floating-point literal
-  --> testdata/numbers/bad-digit.proto:10:4
+  --> testdata/numbers/bad-digit.proto:15:4
    |
-10 | 1.2.3e456
+15 | 1.2.3e456
    |  - ^
    |  |
    |  first one is here
 
 error: non-integer exponent in floating-point literal
-  --> testdata/numbers/bad-digit.proto:11:8
+  --> testdata/numbers/bad-digit.proto:16:8
    |
-11 | 1.23e4.56
+16 | 1.23e4.56
    |        ^^ fractional part given here
 
 error: non-integer exponent in floating-point literal
-  --> testdata/numbers/bad-digit.proto:12:9
+  --> testdata/numbers/bad-digit.proto:17:9
    |
-12 | 1.23e456.
+17 | 1.23e456.
    |         ^ fractional part given here
 
 encountered 10 errors

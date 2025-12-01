@@ -145,10 +145,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			if str := lit.AsString(); !str.IsZero() {
 				name := str.Text()
 				if in == taxa.Extensions {
-					p.Error(errUnexpected{
-						what:  expr,
-						where: in.In(),
-						want:  want,
+					p.Error(errtoken.Unexpected{
+						What:  expr,
+						Where: in.In(),
+						Want:  want,
 					})
 					break
 				}
@@ -198,10 +198,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			tags = append(tags, expr)
 
 		default:
-			p.Error(errUnexpected{
-				what:  expr,
-				where: in.In(),
-				want:  want,
+			p.Error(errtoken.Unexpected{
+				What:  expr,
+				Where: in.In(),
+				Want:  want,
 			})
 		}
 	}

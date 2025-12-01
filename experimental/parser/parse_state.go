@@ -17,6 +17,8 @@ package parser
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/source"
@@ -45,7 +47,7 @@ type punctParser struct {
 	c      *token.Cursor
 	want   keyword.Keyword
 	where  taxa.Place
-	insert int // One of the justify* values.
+	insert just.Kind
 }
 
 // parse attempts to unconditionally parse some punctuation.
@@ -61,30 +63,30 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 		return p.c.Next(), nil
 	}
 
-	wanted := taxa.NewSet(taxa.Keyword(p.want))
-	err := errUnexpected{
-		what:  next,
-		where: p.where,
-		want:  wanted,
+	wanted := taxa.Noun(p.want).AsSet()
+	err := errtoken.Unexpected{
+		What:  next,
+		Where: p.where,
+		Want:  wanted,
 	}
 	if next.IsZero() {
 		end, span := p.c.SeekToEnd()
-		err.what = span
-		err.got = taxa.EOF
+		err.What = span
+		err.Got = taxa.EOF
 
 		if _, c, _ := end.Keyword().Brackets(); c != keyword.Unknown {
 			// Special case for closing braces.
-			err.got = "`" + c.String() + "`"
+			err.Got = "`" + c.String() + "`"
 		} else if !end.IsZero() {
-			err.got = taxa.Classify(end)
+			err.Got = taxa.Classify(end)
 		}
 	}
 
 	if p.insert != 0 {
-		err.stream = p.File().Stream()
-		err.insert = p.want.String()
-		err.insertAt = err.what.Span().Start
-		err.insertJustify = p.insert
+		err.Stream = p.File().Stream()
+		err.Insert = p.want.String()
+		err.InsertAt = err.What.Span().Start
+		err.InsertJustify = p.insert
 	}
 
 	return token.Zero, err
@@ -96,9 +98,9 @@ func (p punctParser) parse() (token.Token, report.Diagnose) {
 func parseEquals(p *parser, c *token.Cursor, in taxa.Noun) (token.Token, report.Diagnose) {
 	return punctParser{
 		parser: p, c: c,
-		want:   keyword.Eq,
+		want:   keyword.Assign,
 		where:  in.In(),
-		insert: justifyBetween,
+		insert: just.Between,
 	}.parse()
 }
 
@@ -110,6 +112,6 @@ func parseSemi(p *parser, c *token.Cursor, after taxa.Noun) (token.Token, report
 		parser: p, c: c,
 		want:   keyword.Semi,
 		where:  after.After(),
-		insert: justifyLeft,
+		insert: just.Left,
 	}.parse()
 }

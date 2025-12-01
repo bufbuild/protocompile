@@ -21,117 +21,151 @@ import (
 	"iter"
 )
 
-// Keywords are special "grammar particles" recognized by Protobuf. These
-// include both the reserved words listed at
-// https://protobuf.com/docs/language-spec#identifiers-and-keywords, as well
-// as all valid punctuation.
+// Keywords are special "grammar particles" recognized by the compiler.
+//
+// These include both reserved words, including all identifiers with special
+// treatment [in Protobuf], as well as all valid punctuation.
+//
+// [in Protobuf]: https://protobuf.com/docs/language-spec#identifiers-and-keywords
 type Keyword byte
 
 const (
-	Unknown Keyword = iota
-	Syntax
-	Edition
-	Import
-	Weak
-	Public
-	Package
-	Message
-	Enum
-	Service
-	Extend
-	Option
-	Group
-	Oneof
-	Extensions
-	Reserved
-	RPC
-	Returns
-	To
-	Repeated
-	Optional
-	Required
-	Stream
-	Export
-	Local
-	Int32
-	Int64
-	UInt32
-	UInt64
-	SInt32
-	SInt64
-	Fixed32
-	Fixed64
-	SFixed32
-	SFixed64
-	Float
-	Double
-	Bool
-	String
-	Bytes
-	Inf
-	NAN
-	True
-	False
-	Null
-	Map
-	Max
-	Return
-	Break
-	Continue
-	If
-	Else
-	For
-	In
-	Switch
-	Case
-	Func
-	And
-	Or
-	Not
-	Default
-	JsonName
-	Semi
-	Comma
-	Dot
-	Colon
-	Eq
-	Plus
-	Minus
-	Star
-	Slash
-	Percent
-	Bang
-	Ask
-	ColonEq
-	PlusEq
-	MinusEq
-	StarEq
-	SlashEq
-	PercentEq
-	Range
-	RangeEq
-	LParen
-	RParen
-	LBracket
-	RBracket
-	LBrace
-	RBrace
-	Less
-	Greater
-	LessEq
-	GreaterEq
-	EqEq
-	BangEq
-	Comment
-	LComment
-	RComment
-	AndAnd
-	OrOr
-	Parens
-	Brackets
-	Braces
-	Angles
-	BlockComment
+	Unknown      Keyword = iota // Zero value, not a real keyword.
+	Syntax                      // syntax
+	Edition                     // edition
+	Import                      // import
+	Weak                        // weak
+	Public                      // public
+	Package                     // package
+	Message                     // message
+	Enum                        // enum
+	Service                     // service
+	Extend                      // extend
+	Option                      // option
+	Group                       // group
+	Oneof                       // oneof
+	Extensions                  // extensions
+	Reserved                    // reserved
+	RPC                         // rpc
+	Returns                     // returns
+	To                          // to
+	Optional                    // optional
+	Repeated                    // repeated
+	Required                    // required
+	Stream                      // stream
+	Export                      // export
+	Local                       // local
+	Int32                       // int32
+	Int64                       // int64
+	Uint32                      // uint32
+	Uint64                      // uint64
+	Sint32                      // sint32
+	Sint64                      // sint64
+	Fixed32                     // fixed32
+	Fixed64                     // fixed64
+	Sfixed32                    // sfixed32
+	Sfixed64                    // sfixed64
+	Float                       // float
+	Double                      // double
+	Bool                        // bool
+	String                      // string
+	Bytes                       // bytes
+	Inf                         // inf
+	NaN                         // nan
+	True                        // true
+	False                       // false
+	Null                        // null
+	Map                         // map
+	Max                         // max
+	Return                      // return
+	Break                       // break
+	Continue                    // continue
+	Yield                       // yield
+	Defer                       // defer
+	Try                         // try
+	Catch                       // catch
+	If                          // if
+	Unless                      // unless
+	Else                        // else
+	Loop                        // loop
+	While                       // while
+	Do                          // do
+	For                         // for
+	In                          // in
+	Switch                      // switch
+	Match                       // match
+	Case                        // case
+	As                          // as
+	Func                        // func
+	Const                       // const
+	Let                         // let
+	Var                         // var
+	Type                        // type
+	Extern                      // extern
+	And                         // and
+	Or                          // or
+	Not                         // not
+	Default                     // default
+	JsonName                    // json_name
+	Semi                        // ;
+	Comma                       // ,
+	Dot                         // .
+	Colon                       // :
+	Newline                     // \n
+	At                          // @
+	Hash                        // #
+	Dollar                      // $
+	Twiddle                     // ~
+	Add                         // +
+	Sub                         // -
+	Mul                         // *
+	Div                         // /
+	Rem                         // %
+	Amp                         // &
+	Pipe                        // |
+	Xor                         // ^
+	Shl                         // <<
+	Shr                         // >>
+	Bang                        // !
+	Bangs                       // !!
+	Ask                         // ?
+	Asks                        // ??
+	Amps                        // &&
+	Pipes                       // ||
+	Assign                      // =
+	AssignNew                   // :=
+	AssignAdd                   // +=
+	AssignSub                   // -=
+	AssignMul                   // *=
+	AssignDiv                   // /=
+	AssignRem                   // %=
+	AssignAmp                   // &=
+	AssignPipe                  // |=
+	AssignXor                   // ^=
+	AssignShl                   // <<=
+	AssignShr                   // >>=
+	Range                       // ..
+	RangeEq                     // ..=
+	LParen                      // (
+	RParen                      // )
+	LBracket                    // [
+	RBracket                    // ]
+	LBrace                      // {
+	RBrace                      // }
+	Lt                          // <
+	Gt                          // >
+	Le                          // <=
+	Ge                          // >=
+	Eq                          // ==
+	Ne                          // !=
+	Comment                     // //
+	LComment                    // /*
+	RComment                    // */
+	Parens                      // (...) (fused)
+	Brackets                    // [...] (fused)
+	Braces                      // {...} (fused)
+	Angles                      // <...> (fused)
+	BlockComment                // /* ... */ (fused)
 )
 
 // String implements [fmt.Stringer].
@@ -160,7 +194,7 @@ func Lookup(s string) Keyword {
 // All returns an iterator over all distinct [Keyword] values.
 func All() iter.Seq[Keyword] {
 	return func(yield func(Keyword) bool) {
-		for i := 0; i < 104; i++ {
+		for i := 1; i < 136; i++ {
 			if !yield(Keyword(i)) {
 				return
 			}
@@ -188,29 +222,29 @@ var _table_Keyword_String = [...]string{
 	RPC:          "rpc",
 	Returns:      "returns",
 	To:           "to",
-	Repeated:     "repeated",
 	Optional:     "optional",
+	Repeated:     "repeated",
 	Required:     "required",
 	Stream:       "stream",
 	Export:       "export",
 	Local:        "local",
 	Int32:        "int32",
 	Int64:        "int64",
-	UInt32:       "uint32",
-	UInt64:       "uint64",
-	SInt32:       "sint32",
-	SInt64:       "sint64",
+	Uint32:       "uint32",
+	Uint64:       "uint64",
+	Sint32:       "sint32",
+	Sint64:       "sint64",
 	Fixed32:      "fixed32",
 	Fixed64:      "fixed64",
-	SFixed32:     "sfixed32",
-	SFixed64:     "sfixed64",
+	Sfixed32:     "sfixed32",
+	Sfixed64:     "sfixed64",
 	Float:        "float",
 	Double:       "double",
 	Bool:         "bool",
 	String:       "string",
 	Bytes:        "bytes",
 	Inf:          "inf",
-	NAN:          "nan",
+	NaN:          "nan",
 	True:         "true",
 	False:        "false",
 	Null:         "null",
@@ -219,13 +253,28 @@ var _table_Keyword_String = [...]string{
 	Return:       "return",
 	Break:        "break",
 	Continue:     "continue",
+	Yield:        "yield",
+	Defer:        "defer",
+	Try:          "try",
+	Catch:        "catch",
 	If:           "if",
+	Unless:       "unless",
 	Else:         "else",
+	Loop:         "loop",
+	While:        "while",
+	Do:           "do",
 	For:          "for",
 	In:           "in",
 	Switch:       "switch",
+	Match:        "match",
 	Case:         "case",
+	As:           "as",
 	Func:         "func",
+	Const:        "const",
+	Let:          "let",
+	Var:          "var",
+	Type:         "type",
+	Extern:       "extern",
 	And:          "and",
 	Or:           "or",
 	Not:          "not",
@@ -235,20 +284,39 @@ var _table_Keyword_String = [...]string{
 	Comma:        ",",
 	Dot:          ".",
 	Colon:        ":",
-	Eq:           "=",
-	Plus:         "+",
-	Minus:        "-",
-	Star:         "*",
-	Slash:        "/",
-	Percent:      "%",
+	Newline:      "\n",
+	At:           "@",
+	Hash:         "#",
+	Dollar:       "$",
+	Twiddle:      "~",
+	Add:          "+",
+	Sub:          "-",
+	Mul:          "*",
+	Div:          "/",
+	Rem:          "%",
+	Amp:          "&",
+	Pipe:         "|",
+	Xor:          "^",
+	Shl:          "<<",
+	Shr:          ">>",
 	Bang:         "!",
+	Bangs:        "!!",
 	Ask:          "?",
-	ColonEq:      ":=",
-	PlusEq:       "+=",
-	MinusEq:      "-=",
-	StarEq:       "*=",
-	SlashEq:      "/=",
-	PercentEq:    "%=",
+	Asks:         "??",
+	Amps:         "&&",
+	Pipes:        "||",
+	Assign:       "=",
+	AssignNew:    ":=",
+	AssignAdd:    "+=",
+	AssignSub:    "-=",
+	AssignMul:    "*=",
+	AssignDiv:    "/=",
+	AssignRem:    "%=",
+	AssignAmp:    "&=",
+	AssignPipe:   "|=",
+	AssignXor:    "^=",
+	AssignShl:    "<<=",
+	AssignShr:    ">>=",
 	Range:        "..",
 	RangeEq:      "..=",
 	LParen:       "(",
@@ -257,129 +325,159 @@ var _table_Keyword_String = [...]string{
 	RBracket:     "]",
 	LBrace:       "{",
 	RBrace:       "}",
-	Less:         "<",
-	Greater:      ">",
-	LessEq:       "<=",
-	GreaterEq:    ">=",
-	EqEq:         "==",
-	BangEq:       "!=",
+	Lt:           "<",
+	Gt:           ">",
+	Le:           "<=",
+	Ge:           ">=",
+	Eq:           "==",
+	Ne:           "!=",
 	Comment:      "//",
 	LComment:     "/*",
 	RComment:     "*/",
-	AndAnd:       "&&",
-	OrOr:         "||",
 	Parens:       "(...)",
 	Brackets:     "[...]",
 	Braces:       "{...}",
 	Angles:       "<...>",
-	BlockComment: "/*...*/",
+	BlockComment: "/* ... */",
 }
 
 var _table_Keyword_GoString = [...]string{
-	Unknown:      "Unknown",
-	Syntax:       "Syntax",
-	Edition:      "Edition",
-	Import:       "Import",
-	Weak:         "Weak",
-	Public:       "Public",
-	Package:      "Package",
-	Message:      "Message",
-	Enum:         "Enum",
-	Service:      "Service",
-	Extend:       "Extend",
-	Option:       "Option",
-	Group:        "Group",
-	Oneof:        "Oneof",
-	Extensions:   "Extensions",
-	Reserved:     "Reserved",
-	RPC:          "RPC",
-	Returns:      "Returns",
-	To:           "To",
-	Repeated:     "Repeated",
-	Optional:     "Optional",
-	Required:     "Required",
-	Stream:       "Stream",
-	Export:       "Export",
-	Local:        "Local",
-	Int32:        "Int32",
-	Int64:        "Int64",
-	UInt32:       "UInt32",
-	UInt64:       "UInt64",
-	SInt32:       "SInt32",
-	SInt64:       "SInt64",
-	Fixed32:      "Fixed32",
-	Fixed64:      "Fixed64",
-	SFixed32:     "SFixed32",
-	SFixed64:     "SFixed64",
-	Float:        "Float",
-	Double:       "Double",
-	Bool:         "Bool",
-	String:       "String",
-	Bytes:        "Bytes",
-	Inf:          "Inf",
-	NAN:          "NAN",
-	True:         "True",
-	False:        "False",
-	Null:         "Null",
-	Map:          "Map",
-	Max:          "Max",
-	Return:       "Return",
-	Break:        "Break",
-	Continue:     "Continue",
-	If:           "If",
-	Else:         "Else",
-	For:          "For",
-	In:           "In",
-	Switch:       "Switch",
-	Case:         "Case",
-	Func:         "Func",
-	And:          "And",
-	Or:           "Or",
-	Not:          "Not",
-	Default:      "Default",
-	JsonName:     "JsonName",
-	Semi:         "Semi",
-	Comma:        "Comma",
-	Dot:          "Dot",
-	Colon:        "Colon",
-	Eq:           "Eq",
-	Plus:         "Plus",
-	Minus:        "Minus",
-	Star:         "Star",
-	Slash:        "Slash",
-	Percent:      "Percent",
-	Bang:         "Bang",
-	Ask:          "Ask",
-	ColonEq:      "ColonEq",
-	PlusEq:       "PlusEq",
-	MinusEq:      "MinusEq",
-	StarEq:       "StarEq",
-	SlashEq:      "SlashEq",
-	PercentEq:    "PercentEq",
-	Range:        "Range",
-	RangeEq:      "RangeEq",
-	LParen:       "LParen",
-	RParen:       "RParen",
-	LBracket:     "LBracket",
-	RBracket:     "RBracket",
-	LBrace:       "LBrace",
-	RBrace:       "RBrace",
-	Less:         "Less",
-	Greater:      "Greater",
-	LessEq:       "LessEq",
-	GreaterEq:    "GreaterEq",
-	EqEq:         "EqEq",
-	BangEq:       "BangEq",
-	Comment:      "Comment",
-	LComment:     "LComment",
-	RComment:     "RComment",
-	AndAnd:       "AndAnd",
-	OrOr:         "OrOr",
-	Parens:       "Parens",
-	Brackets:     "Brackets",
-	Braces:       "Braces",
-	Angles:       "Angles",
-	BlockComment: "BlockComment",
+	Unknown:      "keyword.Unknown",
+	Syntax:       "keyword.Syntax",
+	Edition:      "keyword.Edition",
+	Import:       "keyword.Import",
+	Weak:         "keyword.Weak",
+	Public:       "keyword.Public",
+	Package:      "keyword.Package",
+	Message:      "keyword.Message",
+	Enum:         "keyword.Enum",
+	Service:      "keyword.Service",
+	Extend:       "keyword.Extend",
+	Option:       "keyword.Option",
+	Group:        "keyword.Group",
+	Oneof:        "keyword.Oneof",
+	Extensions:   "keyword.Extensions",
+	Reserved:     "keyword.Reserved",
+	RPC:          "keyword.RPC",
+	Returns:      "keyword.Returns",
+	To:           "keyword.To",
+	Optional:     "keyword.Optional",
+	Repeated:     "keyword.Repeated",
+	Required:     "keyword.Required",
+	Stream:       "keyword.Stream",
+	Export:       "keyword.Export",
+	Local:        "keyword.Local",
+	Int32:        "keyword.Int32",
+	Int64:        "keyword.Int64",
+	Uint32:       "keyword.Uint32",
+	Uint64:       "keyword.Uint64",
+	Sint32:       "keyword.Sint32",
+	Sint64:       "keyword.Sint64",
+	Fixed32:      "keyword.Fixed32",
+	Fixed64:      "keyword.Fixed64",
+	Sfixed32:     "keyword.Sfixed32",
+	Sfixed64:     "keyword.Sfixed64",
+	Float:        "keyword.Float",
+	Double:       "keyword.Double",
+	Bool:         "keyword.Bool",
+	String:       "keyword.String",
+	Bytes:        "keyword.Bytes",
+	Inf:          "keyword.Inf",
+	NaN:          "keyword.NaN",
+	True:         "keyword.True",
+	False:        "keyword.False",
+	Null:         "keyword.Null",
+	Map:          "keyword.Map",
+	Max:          "keyword.Max",
+	Return:       "keyword.Return",
+	Break:        "keyword.Break",
+	Continue:     "keyword.Continue",
+	Yield:        "keyword.Yield",
+	Defer:        "keyword.Defer",
+	Try:          "keyword.Try",
+	Catch:        "keyword.Catch",
+	If:           "keyword.If",
+	Unless:       "keyword.Unless",
+	Else:         "keyword.Else",
+	Loop:         "keyword.Loop",
+	While:        "keyword.While",
+	Do:           "keyword.Do",
+	For:          "keyword.For",
+	In:           "keyword.In",
+	Switch:       "keyword.Switch",
+	Match:        "keyword.Match",
+	Case:         "keyword.Case",
+	As:           "keyword.As",
+	Func:         "keyword.Func",
+	Const:        "keyword.Const",
+	Let:          "keyword.Let",
+	Var:          "keyword.Var",
+	Type:         "keyword.Type",
+	Extern:       "keyword.Extern",
+	And:          "keyword.And",
+	Or:           "keyword.Or",
+	Not:          "keyword.Not",
+	Default:      "keyword.Default",
+	JsonName:     "keyword.JsonName",
+	Semi:         "keyword.Semi",
+	Comma:        "keyword.Comma",
+	Dot:          "keyword.Dot",
+	Colon:        "keyword.Colon",
+	Newline:      "keyword.Newline",
+	At:           "keyword.At",
+	Hash:         "keyword.Hash",
+	Dollar:       "keyword.Dollar",
+	Twiddle:      "keyword.Twiddle",
+	Add:          "keyword.Add",
+	Sub:          "keyword.Sub",
+	Mul:          "keyword.Mul",
+	Div:          "keyword.Div",
+	Rem:          "keyword.Rem",
+	Amp:          "keyword.Amp",
+	Pipe:         "keyword.Pipe",
+	Xor:          "keyword.Xor",
+	Shl:          "keyword.Shl",
+	Shr:          "keyword.Shr",
+	Bang:         "keyword.Bang",
+	Bangs:        "keyword.Bangs",
+	Ask:          "keyword.Ask",
+	Asks:         "keyword.Asks",
+	Amps:         "keyword.Amps",
+	Pipes:        "keyword.Pipes",
+	Assign:       "keyword.Assign",
+	AssignNew:    "keyword.AssignNew",
+	AssignAdd:    "keyword.AssignAdd",
+	AssignSub:    "keyword.AssignSub",
+	AssignMul:    "keyword.AssignMul",
+	AssignDiv:    "keyword.AssignDiv",
+	AssignRem:    "keyword.AssignRem",
+	AssignAmp:    "keyword.AssignAmp",
+	AssignPipe:   "keyword.AssignPipe",
+	AssignXor:    "keyword.AssignXor",
+	AssignShl:    "keyword.AssignShl",
+	AssignShr:    "keyword.AssignShr",
+	Range:        "keyword.Range",
+	RangeEq:      "keyword.RangeEq",
+	LParen:       "keyword.LParen",
+	RParen:       "keyword.RParen",
+	LBracket:     "keyword.LBracket",
+	RBracket:     "keyword.RBracket",
+	LBrace:       "keyword.LBrace",
+	RBrace:       "keyword.RBrace",
+	Lt:           "keyword.Lt",
+	Gt:           "keyword.Gt",
+	Le:           "keyword.Le",
+	Ge:           "keyword.Ge",
+	Eq:           "keyword.Eq",
+	Ne:           "keyword.Ne",
+	Comment:      "keyword.Comment",
+	LComment:     "keyword.LComment",
+	RComment:     "keyword.RComment",
+	Parens:       "keyword.Parens",
+	Brackets:     "keyword.Brackets",
+	Braces:       "keyword.Braces",
+	Angles:       "keyword.Angles",
+	BlockComment: "keyword.BlockComment",
 }
 
 var _table_Keyword_Lookup = map[string]Keyword{
@@ -402,29 +500,29 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"rpc":        RPC,
 	"returns":    Returns,
 	"to":         To,
-	"repeated":   Repeated,
 	"optional":   Optional,
+	"repeated":   Repeated,
 	"required":   Required,
 	"stream":     Stream,
 	"export":     Export,
 	"local":      Local,
 	"int32":      Int32,
 	"int64":      Int64,
-	"uint32":     UInt32,
-	"uint64":     UInt64,
-	"sint32":     SInt32,
-	"sint64":     SInt64,
+	"uint32":     Uint32,
+	"uint64":     Uint64,
+	"sint32":     Sint32,
+	"sint64":     Sint64,
 	"fixed32":    Fixed32,
 	"fixed64":    Fixed64,
-	"sfixed32":   SFixed32,
-	"sfixed64":   SFixed64,
+	"sfixed32":   Sfixed32,
+	"sfixed64":   Sfixed64,
 	"float":      Float,
 	"double":     Double,
 	"bool":       Bool,
 	"string":     String,
 	"bytes":      Bytes,
 	"inf":        Inf,
-	"nan":        NAN,
+	"nan":        NaN,
 	"true":       True,
 	"false":      False,
 	"null":       Null,
@@ -433,13 +531,28 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"return":     Return,
 	"break":      Break,
 	"continue":   Continue,
+	"yield":      Yield,
+	"defer":      Defer,
+	"try":        Try,
+	"catch":      Catch,
 	"if":         If,
+	"unless":     Unless,
 	"else":       Else,
+	"loop":       Loop,
+	"while":      While,
+	"do":         Do,
 	"for":        For,
 	"in":         In,
 	"switch":     Switch,
+	"match":      Match,
 	"case":       Case,
+	"as":         As,
 	"func":       Func,
+	"const":      Const,
+	"let":        Let,
+	"var":        Var,
+	"type":       Type,
+	"extern":     Extern,
 	"and":        And,
 	"or":         Or,
 	"not":        Not,
@@ -449,20 +562,39 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	",":          Comma,
 	".":          Dot,
 	":":          Colon,
-	"=":          Eq,
-	"+":          Plus,
-	"-":          Minus,
-	"*":          Star,
-	"/":          Slash,
-	"%":          Percent,
+	"\n":         Newline,
+	"@":          At,
+	"#":          Hash,
+	"$":          Dollar,
+	"~":          Twiddle,
+	"+":          Add,
+	"-":          Sub,
+	"*":          Mul,
+	"/":          Div,
+	"%":          Rem,
+	"&":          Amp,
+	"|":          Pipe,
+	"^":          Xor,
+	"<<":         Shl,
+	">>":         Shr,
 	"!":          Bang,
+	"!!":         Bangs,
 	"?":          Ask,
-	":=":         ColonEq,
-	"+=":         PlusEq,
-	"-=":         MinusEq,
-	"*=":         StarEq,
-	"/=":         SlashEq,
-	"%=":         PercentEq,
+	"??":         Asks,
+	"&&":         Amps,
+	"||":         Pipes,
+	"=":          Assign,
+	":=":         AssignNew,
+	"+=":         AssignAdd,
+	"-=":         AssignSub,
+	"*=":         AssignMul,
+	"/=":         AssignDiv,
+	"%=":         AssignRem,
+	"&=":         AssignAmp,
+	"|=":         AssignPipe,
+	"^=":         AssignXor,
+	"<<=":        AssignShl,
+	">>=":        AssignShr,
 	"..":         Range,
 	"..=":        RangeEq,
 	"(":          LParen,
@@ -471,16 +603,14 @@ var _table_Keyword_Lookup = map[string]Keyword{
 	"]":          RBracket,
 	"{":          LBrace,
 	"}":          RBrace,
-	"<":          Less,
-	">":          Greater,
-	"<=":         LessEq,
-	">=":         GreaterEq,
-	"==":         EqEq,
-	"!=":         BangEq,
+	"<":          Lt,
+	">":          Gt,
+	"<=":         Le,
+	">=":         Ge,
+	"==":         Eq,
+	"!=":         Ne,
 	"//":         Comment,
 	"/*":         LComment,
 	"*/":         RComment,
-	"&&":         AndAnd,
-	"||":         OrOr,
 }
 var _ iter.Seq[int] // Mark iter as used.
