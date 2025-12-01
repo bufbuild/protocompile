@@ -79,11 +79,11 @@ var _table_Kind_String = [...]string{
 }
 
 var _table_Kind_GoString = [...]string{
-	Unknown:  "Unknown",
-	Explicit: "Explicit",
-	Implicit: "Implicit",
-	Required: "Required",
-	Repeated: "Repeated",
-	Shared:   "Shared",
+	Unknown:  "presence.Unknown",
+	Explicit: "presence.Explicit",
+	Implicit: "presence.Implicit",
+	Required: "presence.Required",
+	Repeated: "presence.Repeated",
+	Shared:   "presence.Shared",
 }
 var _ iter.Seq[int] // Mark iter as used.

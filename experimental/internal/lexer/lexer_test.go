@@ -190,10 +190,11 @@ func TestLexer(t *testing.T) {
 
 			sp := tok.Span()
 			start := stream.Location(sp.Start, length.TermWidth)
+			_, kw, _ := strings.Cut(tok.Keyword().GoString(), ".")
 			fmt.Fprintf(
-				&tsv, "%v\t\t%v\t\t%#v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
+				&tsv, "%v\t\t%v\t\t%v\t\t%03d:%03d\t\t%03d:%03d\t\t%q",
 				int32(tok.ID())-1,
-				tok.Kind(), tok.Keyword(),
+				tok.Kind(), kw,
 				sp.Start, sp.End,
 				start.Line, start.Column,
 				tok.Text(),

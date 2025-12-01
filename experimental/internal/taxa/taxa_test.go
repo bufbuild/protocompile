@@ -28,9 +28,13 @@ import (
 func TestMax(t *testing.T) {
 	t.Parallel()
 
+	var maxKw keyword.Keyword
+
 	for kw := range keyword.All() {
-		require.Less(t, taxa.Noun(kw), taxa.Unrecognized)
+		maxKw = max(maxKw, kw)
 	}
+
+	require.Less(t, int(taxa.Noun(maxKw)), int(taxa.Unrecognized))
 }
 
 func TestSet(t *testing.T) {
@@ -50,6 +54,10 @@ func TestSet(t *testing.T) {
 		[]taxa.Noun{taxa.EOF, taxa.Decl, taxa.Message, taxa.Array, taxa.Comment},
 		slices.Collect(set.All()),
 	)
+
+	set = taxa.NewSet(taxa.Noun(keyword.Message), taxa.Message)
+	assert.Equal(t, taxa.NewSet(taxa.Noun(keyword.Message)), set.Keywords())
+	assert.Equal(t, taxa.NewSet(taxa.Message), set.NonKeywords())
 }
 
 func TestJoin(t *testing.T) {

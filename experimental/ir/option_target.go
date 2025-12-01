@@ -82,15 +82,15 @@ var _table_OptionTarget_String = [...]string{
 }
 
 var _table_OptionTarget_GoString = [...]string{
-	OptionTargetInvalid:   "OptionTargetInvalid",
-	OptionTargetFile:      "OptionTargetFile",
-	OptionTargetRange:     "OptionTargetRange",
-	OptionTargetMessage:   "OptionTargetMessage",
-	OptionTargetField:     "OptionTargetField",
-	OptionTargetOneof:     "OptionTargetOneof",
-	OptionTargetEnum:      "OptionTargetEnum",
-	OptionTargetEnumValue: "OptionTargetEnumValue",
-	OptionTargetService:   "OptionTargetService",
-	OptionTargetMethod:    "OptionTargetMethod",
+	OptionTargetInvalid:   "ir.OptionTargetInvalid",
+	OptionTargetFile:      "ir.OptionTargetFile",
+	OptionTargetRange:     "ir.OptionTargetRange",
+	OptionTargetMessage:   "ir.OptionTargetMessage",
+	OptionTargetField:     "ir.OptionTargetField",
+	OptionTargetOneof:     "ir.OptionTargetOneof",
+	OptionTargetEnum:      "ir.OptionTargetEnum",
+	OptionTargetEnumValue: "ir.OptionTargetEnumValue",
+	OptionTargetService:   "ir.OptionTargetService",
+	OptionTargetMethod:    "ir.OptionTargetMethod",
 }
 var _ iter.Seq[int] // Mark iter as used.

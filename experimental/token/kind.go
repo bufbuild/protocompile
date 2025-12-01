@@ -61,12 +61,12 @@ var _table_Kind_String = [...]string{
 }
 
 var _table_Kind_GoString = [...]string{
-	Unrecognized: "Unrecognized",
-	Space:        "Space",
-	Comment:      "Comment",
-	Ident:        "Ident",
-	String:       "String",
-	Number:       "Number",
-	Keyword:      "Keyword",
+	Unrecognized: "token.Unrecognized",
+	Space:        "token.Space",
+	Comment:      "token.Comment",
+	Ident:        "token.Ident",
+	String:       "token.String",
+	Number:       "token.Number",
+	Keyword:      "token.Keyword",
 }
 var _ iter.Seq[int] // Mark iter as used.

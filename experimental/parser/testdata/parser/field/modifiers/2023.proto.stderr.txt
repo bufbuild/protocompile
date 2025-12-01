@@ -27,7 +27,7 @@ error: unexpected `optional`
    |
    = help: in editions mode, the presence behavior of a singular field is
            controlled with `[feature.field_presence = ...]`, with the default
-           being equivalent to proto2 `optional`
+           being equivalent to a proto2 `optional` field
    = help: see <https://protobuf.com/docs/language-spec#field-presence>
 
 error: unexpected `required`

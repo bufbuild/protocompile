@@ -72,17 +72,17 @@ var _table_Kind_String = [...]string{
 }
 
 var _table_Kind_GoString = [...]string{
-	KindInvalid: "KindInvalid",
-	KindError:   "KindError",
-	KindToken:   "KindToken",
-	KindRecord:  "KindRecord",
-	KindOp:      "KindOp",
-	KindCall:    "KindCall",
-	KindBlock:   "KindBlock",
-	KindIf:      "KindIf",
-	KindFor:     "KindFor",
-	KindSwitch:  "KindSwitch",
-	KindControl: "KindControl",
-	KindFunc:    "KindFunc",
+	KindInvalid: "expr.KindInvalid",
+	KindError:   "expr.KindError",
+	KindToken:   "expr.KindToken",
+	KindRecord:  "expr.KindRecord",
+	KindOp:      "expr.KindOp",
+	KindCall:    "expr.KindCall",
+	KindBlock:   "expr.KindBlock",
+	KindIf:      "expr.KindIf",
+	KindFor:     "expr.KindFor",
+	KindSwitch:  "expr.KindSwitch",
+	KindControl: "expr.KindControl",
+	KindFunc:    "expr.KindFunc",
 }
 var _ iter.Seq[int] // Mark iter as used.

@@ -55,7 +55,7 @@ func lexString(l *lexer, sigil string) {
 
 		cursor := l.cursor
 		sc := lexStringContent(l)
-		if !sc.escape.IsZero() {
+		if !sc.escape.IsZero() || escapes != nil {
 			if escapes == nil {
 				// If we saw our first escape, spill the string into the buffer
 				// up to just before the escape.

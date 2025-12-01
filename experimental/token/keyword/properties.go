@@ -195,11 +195,11 @@ var properties = [...]property{
 	Eq: valid | punct,
 	Ne: valid | punct,
 
-	Parens:       valid | punct | protobuf | cel,
-	Brackets:     valid | punct | protobuf | cel,
-	Braces:       valid | punct | protobuf | cel,
-	Angles:       valid | punct | protobuf,
-	BlockComment: valid | punct | protobuf | cel,
+	Parens:       valid | punct | brackets | protobuf | cel,
+	Brackets:     valid | punct | brackets | protobuf | cel,
+	Braces:       valid | punct | brackets | protobuf | cel,
+	Angles:       valid | punct | brackets | protobuf,
+	BlockComment: valid | punct | brackets | protobuf | cel,
 }
 
 var braces = [...][3]Keyword{

@@ -98,6 +98,12 @@ func (e Unexpected) Diagnose(d *report.Diagnostic) {
 		report.Snippetf(e.Prev, "previous %v is here", e.Where.Subject()),
 	)
 
+	if tok, ok := e.What.(token.Token); ok {
+		d.Apply(
+			report.Debugf("token: %v, kind: %#v, keyword: %#v", tok.ID(), tok.Kind(), tok.Keyword()),
+		)
+	}
+
 	if e.Insert != "" {
 		want, _ := iterx.First(e.Want.All())
 		d.Apply(just.Justify(

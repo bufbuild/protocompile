@@ -92,7 +92,7 @@ func TestTreeTokens(t *testing.T) {
 	token.Fuse(open2, close2)
 	comma := s.Push(1, token.Keyword)
 	s.Push(1, token.Space)
-	message := s.Push(7, token.Ident)
+	message := s.PushKeyword(7, token.Ident, keyword.Message)
 	close := s.Push(1, token.Keyword) //nolint:revive,predeclared
 	token.Fuse(open, close)
 

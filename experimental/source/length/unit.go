@@ -75,9 +75,9 @@ var _table_Unit_String = [...]string{
 }
 
 var _table_Unit_GoString = [...]string{
-	Bytes:     "Bytes",
-	UTF16:     "UTF16",
-	Runes:     "Runes",
-	TermWidth: "TermWidth",
+	Bytes:     "length.Bytes",
+	UTF16:     "length.UTF16",
+	Runes:     "length.Runes",
+	TermWidth: "length.TermWidth",
 }
 var _ iter.Seq[int] // Mark iter as used.

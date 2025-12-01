@@ -67,8 +67,8 @@
   - {name: Returns, string: returns}
   - {name: To, string: to}
 
-  - {name: Repeated, string: repeated}
   - {name: Optional, string: optional}
+  - {name: Repeated, string: repeated}
   - {name: Required, string: required}
   - {name: Stream, string: stream}
   - {name: Export, string: export}
