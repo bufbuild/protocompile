@@ -74,7 +74,7 @@ func (e ExprAny) AsLiteral() ExprLiteral {
 }
 
 // AsPath converts a ExprAny into a ExprPath, if that is the type
-// it contains.q
+// it contains.
 //
 // Otherwise, returns zero.
 func (e ExprAny) AsPath() ExprPath {

@@ -1,0 +1,84 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//% descriptor: true
+//% source_code_info: true
+edition = "2023";
+
+// This is a leading comment for the package.
+package buf.test;
+// This is still a trailing comment for the package.
+
+// This is a leading comment for the java_package option source code info, but not the
+// top-level option source code info.
+option java_package = "build.buf.protocompile"; // Similarly, this is a trailing comment.
+option java_multiple_files = true;
+
+// This is a leading comment for the import source code info, but not for the corresponding
+// public import source code info.
+import public "google/protobuf/descriptor.proto"; // Same with this trailing comment.
+
+// This, as expected, is a leading comment for Foo.
+message /*this is thrown away*/ Foo {
+  // This is the TRAILING comment for Foo. (It is NOT
+  // a detached comment for baz.)
+
+  // This is a leading comment for baz.
+  string /*this is also thrown away*/ baz = 1;
+  // This is a trailing comment for baz.
+
+  // This is a leading comment for the reserved range.
+  reserved 2, 3 to 4,/*comments between expressions are dropped*/ 5 to 10; // This is a trailing comment for the reserved range.
+
+  // This is a leading comment for the reserved names declaration.
+  reserved foo, /*this gets dropped*/ bar; // This is a trailing comment for the reserved range.
+
+  repeated int32 options = 11 [
+    // Comments for option messages are dropped.
+    features.repeated_field_encoding = PACKED,
+    (c) = 15,
+    (c) = 16
+  ];
+
+  // This is also thrown away.
+}
+// This is NOT a trailing comment. It's also not considered
+// a detached comment for Bar. It is discarded.
+
+// This IS a detached comment for Bar.
+
+// This is also a detached comment for Bar.
+
+
+
+
+/*
+ * A leading block comment for Bar.
+ */
+message Bar {}
+
+// This is the leading comment for enum Baz.
+enum Baz { // This is a trailing comment for enum Baz.
+  BAZ_ONE = 0;
+} // This is NOT a trailing comment for Baz. It is discarded.
+
+// This is the leading comment for service FooService.
+service FooService { // This is a trailing comment for service FooService.
+  // Leading comment for method FooForBar.
+  rpc FooForBar(Bar) returns (Foo);
+} // This is NOT a trailing comment for FooService. It is discarded.
+
+extend google.protobuf.FieldOptions {
+  repeated int32 c = 1000;
+}

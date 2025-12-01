@@ -111,7 +111,7 @@ func (c *Cursor) Mark() CursorMark {
 // Panics if mark was not created using this cursor's Mark method.
 func (c *Cursor) Rewind(mark CursorMark) {
 	if c != mark.owner {
-		panic("protocompile/ast: rewound cursor using the wrong cursor's mark")
+		panic("protocompile/token: rewound cursor using the wrong cursor's mark")
 	}
 	c.idx = mark.idx
 	c.isBackwards = mark.isBackwards
