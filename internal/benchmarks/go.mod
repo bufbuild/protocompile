@@ -7,7 +7,7 @@ require (
 	github.com/igrmk/treemap/v2 v2.0.1
 	github.com/jhump/protoreflect v1.14.1 // MUST NOT be updated to v1.15 or higher
 	github.com/stretchr/testify v1.11.1
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 )
 
 require golang.org/x/sync v0.18.0
@@ -15,7 +15,6 @@ require golang.org/x/sync v0.18.0
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/net v0.44.0 // indirect
