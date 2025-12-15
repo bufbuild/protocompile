@@ -1,7 +1,7 @@
-buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.10-20250109164928-1da0de137947.1 h1:9hkMnVoImDlY7rTlAWIWXdkGUKOjf3YlyZeSbYT29uA=
-buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.10-20250109164928-1da0de137947.1/go.mod h1:/AouMCAeQ+kB7+RRFpdUlZe3503p18VoUNcU2AFqZXM=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20240920164238-5a7b106cbb87.1 h1:XdZDjy9+d96CZwVMuSr3qy+FJfu7IUza4QKSfwc2o9k=
-buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.10-20240920164238-5a7b106cbb87.1/go.mod h1:fUl8CEN/6ZAMk6bP8ahBJPUJw7rbp+j4x+wCcYi2IG4=
+buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.11-20250109164928-1da0de137947.1 h1:HwzzCRS4ZrEm1++rzSDxHnO0DOjiT1b8I/24e8a4exY=
+buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go v1.36.11-20250109164928-1da0de137947.1/go.mod h1:8PRKXhgNes29Tjrnv8KdZzg3I1QceOkzibW1QK7EXv0=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20240920164238-5a7b106cbb87.1 h1:5Hare6GmKrTUFXYxNwOrZyXtGTzKUMXTRHdNxQkewcE=
+buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20240920164238-5a7b106cbb87.1/go.mod h1:tvtbpgaVXZX4g6Pn+AnzFycuRK3MOz5HJfEGeEllXYM=
 github.com/bmatcuk/doublestar/v4 v4.9.1 h1:X8jg9rRZmJd4yRy7ZeNDRnM+T3ZfHv15JiBJ/avrEXE=
 github.com/bmatcuk/doublestar/v4 v4.9.1/go.mod h1:xBQ8jztBU6kakFMg+8WGxn0c6z1fTSPVIjEY1Wr7jzc=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
