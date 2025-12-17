@@ -104,7 +104,7 @@ func testZero[Node source.Spanner](t *testing.T) {
 					r = m.Call(nil)[0]
 				}
 
-				assert.Zero(t, r.Interface(), "non-zero return #%d %#v of %T.%s", i, r, z, m.Name)
+				assert.Zero(t, r.Interface(), "non-zero return %#d %#v of %T.%s", i, r, z, m.Name)
 			}
 		}
 	})
