@@ -21,10 +21,12 @@ import (
 	"slices"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/sync/semaphore"
 
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/internal"
 )
 
 // Executor is a caching executor for incremental queries.
@@ -41,6 +43,10 @@ type Executor struct {
 	tasks sync.Map // [any, *task]
 
 	sema *semaphore.Weighted
+
+	// The [time.Duration] to wait before running the GC when debug mode is on. See docs for
+	// [WithDebugEvict].
+	debugEvictWait time.Duration
 
 	counter atomic.Uint64 // Used for generating sequence IDs for Result.Unchanged.
 }
@@ -71,6 +77,17 @@ func WithParallelism(n int64) ExecutorOption {
 // executor.
 func WithReportOptions(options report.Options) ExecutorOption {
 	return func(e *Executor) { e.reportOptions = options }
+}
+
+// WithDebugEvict takes a [time.Duration] and configures debug mode for evictions in the
+// executor.
+//
+// If set and the compiler is built with the debug tag, when [Executor.EvictWithCleanup]
+// is called, all evicted keys will be tracked. Then after eviction, a Go routine will be
+// kicked off to sleep for the configured duration, force a GC run, and then print out all
+// pointers that have been evicted.
+func WithDebugEvict(wait time.Duration) ExecutorOption {
+	return func(e *Executor) { e.debugEvictWait = wait }
 }
 
 // Keys returns a snapshot of the keys of which queries are present (and
@@ -208,17 +225,35 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 
 	e.dirty.Lock()
 	defer e.dirty.Unlock()
+
+	var evicted []string
+	logEvictionDebug := internal.Debug && e.debugEvictWait > 0
 	for n := len(tasks); n > 0; n = len(tasks) {
 		next := tasks[n-1]
 		tasks = tasks[:n-1]
 
-		next.parents.Range(func(k, _ any) bool {
+		for k := range next.callers.Range {
 			tasks = append(tasks, k.(*task)) //nolint:errcheck
-			return true
-		})
+		}
 
 		// Remove the task from the map. Syncronized by the dirty lock.
-		e.tasks.Delete(next.query.Key())
+		t, _ := e.tasks.LoadAndDelete(next.query.Key())
+		if logEvictionDebug {
+			evicted = append(evicted, fmt.Sprintf("%p", t))
+		}
+
+		// Remove the task from the callers of its deps.
+		for k := range next.deps.Range {
+			k.(*task).callers.Delete(next) //nolint:errcheck
+		}
+	}
+
+	if evicted != nil && logEvictionDebug {
+		go func() {
+			time.Sleep(e.debugEvictWait)
+			runtime.GC()
+			internal.DebugLog([]any{"executor %p", e}, "EvictWithCleanup", "evicted %v", evicted)
+		}()
 	}
 
 	if cleanup != nil {
