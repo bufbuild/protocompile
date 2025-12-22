@@ -28,7 +28,6 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal"
-	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // Executor is a caching executor for incremental queries.
@@ -254,15 +253,16 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 		go func() {
 			time.Sleep(e.evictGCDeadline)
 			runtime.GC()
-			evicted = slices.Collect(iterx.Filter(slices.Values(evicted), func(e weak.Pointer[task]) bool {
-				return e.Value() != nil
-			}))
-			if len(evicted) > 0 {
+			evicted = slices.DeleteFunc(evicted, func(e weak.Pointer[task]) bool {
+				return e.Value() == nil
+			})
+			for _, e := range evicted {
 				internal.DebugLog(
 					[]any{"exec %p", e},
 					"EvictWithCleanup",
-					"failed to GC evicted keys: %v",
-					evicted,
+					"failed to GC evicted task %p: %v",
+					e.Value(),
+					e.Value().query.Key(),
 				)
 			}
 		}()
