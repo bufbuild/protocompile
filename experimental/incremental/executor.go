@@ -22,11 +22,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"weak"
 
 	"golang.org/x/sync/semaphore"
 
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/internal"
+	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
 
 // Executor is a caching executor for incremental queries.
@@ -46,7 +48,7 @@ type Executor struct {
 
 	// The [time.Duration] to wait before running the GC when debug mode is on. See docs for
 	// [WithDebugEvict].
-	debugEvictWait time.Duration
+	evictGCDeadline time.Duration
 
 	counter atomic.Uint64 // Used for generating sequence IDs for Result.Unchanged.
 }
@@ -83,11 +85,11 @@ func WithReportOptions(options report.Options) ExecutorOption {
 // executor.
 //
 // If set and the compiler is built with the debug tag, when [Executor.EvictWithCleanup]
-// is called, all evicted keys will be tracked. Then after eviction, a Go routine will be
+// is called, all evicted keys will be tracked. Then after eviction, a goroutine will be
 // kicked off to sleep for the configured duration, force a GC run, and then print out all
-// pointers that have been evicted.
+// pointers that should be evicted but have not been GC'd.
 func WithDebugEvict(wait time.Duration) ExecutorOption {
-	return func(e *Executor) { e.debugEvictWait = wait }
+	return func(e *Executor) { e.evictGCDeadline = wait }
 }
 
 // Keys returns a snapshot of the keys of which queries are present (and
@@ -226,8 +228,8 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 	e.dirty.Lock()
 	defer e.dirty.Unlock()
 
-	var evicted []string
-	logEvictionDebug := internal.Debug && e.debugEvictWait > 0
+	var evicted []weak.Pointer[task]
+	logEvictionDebug := internal.Debug && e.evictGCDeadline > 0
 	for n := len(tasks); n > 0; n = len(tasks) {
 		next := tasks[n-1]
 		tasks = tasks[:n-1]
@@ -239,7 +241,7 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 		// Remove the task from the map. Syncronized by the dirty lock.
 		t, _ := e.tasks.LoadAndDelete(next.query.Key())
 		if logEvictionDebug {
-			evicted = append(evicted, fmt.Sprintf("%p", t))
+			evicted = append(evicted, weak.Make(t.(*task))) //nolint:errcheck
 		}
 
 		// Remove the task from the callers of its deps.
@@ -248,11 +250,21 @@ func (e *Executor) EvictWithCleanup(keys []any, cleanup func()) {
 		}
 	}
 
-	if evicted != nil && logEvictionDebug {
+	if evicted != nil {
 		go func() {
-			time.Sleep(e.debugEvictWait)
+			time.Sleep(e.evictGCDeadline)
 			runtime.GC()
-			internal.DebugLog([]any{"executor %p", e}, "EvictWithCleanup", "evicted %v", evicted)
+			evicted = slices.Collect(iterx.Filter(slices.Values(evicted), func(e weak.Pointer[task]) bool {
+				return e.Value() != nil
+			}))
+			if len(evicted) > 0 {
+				internal.DebugLog(
+					[]any{"exec %p", e},
+					"EvictWithCleanup",
+					"failed to GC evicted keys: %v",
+					evicted,
+				)
+			}
 		}()
 	}
 
