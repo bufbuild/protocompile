@@ -336,6 +336,10 @@ func (m Member) Oneof() Oneof {
 
 // Options returns the options applied to this member.
 func (m Member) Options() MessageValue {
+	if m.IsZero() {
+		return MessageValue{}
+	}
+
 	return id.Wrap(m.Context(), m.Raw().options).AsMessage()
 }
 
@@ -587,12 +591,13 @@ func (o Oneof) Index() int {
 
 // Members returns this oneof's member fields.
 func (o Oneof) Members() seq.Indexer[Member] {
-	return seq.NewFixedSlice(
-		o.Raw().members,
-		func(_ int, p id.ID[Member]) Member {
-			return id.Wrap(o.Context(), p)
-		},
-	)
+	var members []id.ID[Member]
+	if !o.IsZero() {
+		members = o.Raw().members
+	}
+	return seq.NewFixedSlice(members, func(_ int, p id.ID[Member]) Member {
+		return id.Wrap(o.Context(), p)
+	})
 }
 
 // Parent returns the type that this oneof is declared within,.
@@ -715,6 +720,9 @@ type rawReservedName struct {
 
 // AST returns the expression that this name was evaluated from, if known.
 func (r ReservedName) AST() ast.ExprAny {
+	if r.IsZero() {
+		return ast.ExprAny{}
+	}
 	return r.raw.ast
 }
 

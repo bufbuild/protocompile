@@ -36,5 +36,8 @@ func GetImports(f *File) *Imports {
 }
 
 func (s Symbol) RawData() arena.Untyped {
+	if s.IsZero() {
+		return arena.Nil()
+	}
 	return s.Raw().data
 }

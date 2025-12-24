@@ -148,6 +148,9 @@ func (f *File) InternedPath() intern.ID {
 // google/protobuf/descriptor.proto, which is given special treatment in
 // the language.
 func (f *File) IsDescriptorProto() bool {
+	if f == nil {
+		return false
+	}
 	return f.InternedPath() == f.session.builtins.DescriptorFile
 }
 
@@ -176,7 +179,11 @@ func (f *File) InternedPackage() intern.ID {
 
 // Imports returns an indexer over the imports declared in this file.
 func (f *File) Imports() seq.Indexer[Import] {
-	return f.imports.Directs()
+	var imp imports
+	if f != nil {
+		imp = f.imports
+	}
+	return imp.Directs()
 }
 
 // TransitiveImports returns an indexer over the transitive imports for this
@@ -184,7 +191,11 @@ func (f *File) Imports() seq.Indexer[Import] {
 //
 // This function does not report whether those imports are weak or not.
 func (f *File) TransitiveImports() seq.Indexer[Import] {
-	return f.imports.Transitive()
+	var imp imports
+	if f != nil {
+		imp = f.imports
+	}
+	return imp.Transitive()
 }
 
 // ImportFor returns import metadata for a given file, if this file imports it.
@@ -199,8 +210,12 @@ func (f *File) ImportFor(that *File) Import {
 
 // Types returns the top level types of this file.
 func (f *File) Types() seq.Indexer[Type] {
+	var types []id.ID[Type]
+	if f != nil {
+		types = f.types[:f.topLevelTypesEnd]
+	}
 	return seq.NewFixedSlice(
-		f.types[:f.topLevelTypesEnd],
+		types,
 		func(_ int, p id.ID[Type]) Type {
 			return id.Wrap(f, p)
 		},
@@ -209,8 +224,12 @@ func (f *File) Types() seq.Indexer[Type] {
 
 // AllTypes returns all types defined in this file.
 func (f *File) AllTypes() seq.Indexer[Type] {
+	var types []id.ID[Type]
+	if f != nil {
+		types = f.types
+	}
 	return seq.NewFixedSlice(
-		f.types,
+		types,
 		func(_ int, p id.ID[Type]) Type {
 			return id.Wrap(f, p)
 		},
@@ -220,8 +239,12 @@ func (f *File) AllTypes() seq.Indexer[Type] {
 // Extensions returns the top level extensions defined in this file (i.e.,
 // the contents of any top-level `extends` blocks).
 func (f *File) Extensions() seq.Indexer[Member] {
+	var slice []id.ID[Member]
+	if f != nil {
+		slice = f.extns[:f.topLevelExtnsEnd]
+	}
 	return seq.NewFixedSlice(
-		f.extns[:f.topLevelExtnsEnd],
+		slice,
 		func(_ int, p id.ID[Member]) Member {
 			return id.Wrap(f, p)
 		},
@@ -230,8 +253,12 @@ func (f *File) Extensions() seq.Indexer[Member] {
 
 // AllExtensions returns all extensions defined in this file.
 func (f *File) AllExtensions() seq.Indexer[Member] {
+	var extns []id.ID[Member]
+	if f != nil {
+		extns = f.extns
+	}
 	return seq.NewFixedSlice(
-		f.extns,
+		extns,
 		func(_ int, p id.ID[Member]) Member {
 			return id.Wrap(f, p)
 		},
@@ -240,8 +267,12 @@ func (f *File) AllExtensions() seq.Indexer[Member] {
 
 // Extends returns the top level extend blocks in this file.
 func (f *File) Extends() seq.Indexer[Extend] {
+	var slice []id.ID[Extend]
+	if f != nil {
+		slice = f.extends[:f.topLevelExtendsEnd]
+	}
 	return seq.NewFixedSlice(
-		f.extends[:f.topLevelExtendsEnd],
+		slice,
 		func(_ int, p id.ID[Extend]) Extend {
 			return id.Wrap(f, p)
 		},
@@ -250,8 +281,12 @@ func (f *File) Extends() seq.Indexer[Extend] {
 
 // AllExtends returns all extend blocks in this file.
 func (f *File) AllExtends() seq.Indexer[Extend] {
+	var extends []id.ID[Extend]
+	if f != nil {
+		extends = f.extends
+	}
 	return seq.NewFixedSlice(
-		f.extends,
+		extends,
 		func(_ int, p id.ID[Extend]) Extend {
 			return id.Wrap(f, p)
 		},
@@ -261,8 +296,12 @@ func (f *File) AllExtends() seq.Indexer[Extend] {
 // AllMembers returns all fields defined in this file, including extensions
 // and enum values.
 func (f *File) AllMembers() iter.Seq[Member] {
+	var raw iter.Seq[*rawMember]
+	if f != nil {
+		raw = f.arenas.members.Values()
+	}
 	i := 0
-	return iterx.Map(f.arenas.members.Values(), func(raw *rawMember) Member {
+	return iterx.Map(raw, func(raw *rawMember) Member {
 		i++
 		return id.WrapRaw(f, id.ID[Member](i), raw)
 	})
@@ -270,8 +309,12 @@ func (f *File) AllMembers() iter.Seq[Member] {
 
 // Services returns all services defined in this file.
 func (f *File) Services() seq.Indexer[Service] {
+	var services []id.ID[Service]
+	if f != nil {
+		services = f.services
+	}
 	return seq.NewFixedSlice(
-		f.services,
+		services,
 		func(_ int, p id.ID[Service]) Service {
 			return id.Wrap(f, p)
 		},
@@ -280,11 +323,18 @@ func (f *File) Services() seq.Indexer[Service] {
 
 // Options returns the top level options applied to this file.
 func (f *File) Options() MessageValue {
-	return id.Wrap(f, f.options).AsMessage()
+	var options id.ID[Value]
+	if f != nil {
+		options = f.options
+	}
+	return id.Wrap(f, options).AsMessage()
 }
 
 // FeatureSet returns the Editions features associated with this file.
 func (f *File) FeatureSet() FeatureSet {
+	if f == nil {
+		return FeatureSet{}
+	}
 	return id.Wrap(f, f.features)
 }
 
@@ -308,8 +358,12 @@ func (f *File) Deprecated() Value {
 // imported by the file. The symbols are returned in an arbitrary but fixed
 // order.
 func (f *File) Symbols() seq.Indexer[Symbol] {
+	var symbols []Ref[Symbol]
+	if f != nil {
+		symbols = f.imported
+	}
 	return seq.NewFixedSlice(
-		f.imported,
+		symbols,
 		func(_ int, r Ref[Symbol]) Symbol {
 			return GetRef(f, r)
 		},
