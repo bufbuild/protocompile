@@ -5,9 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/bufbuild/protocompile/experimental/id"
 	"github.com/bufbuild/protocompile/experimental/ir"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestZero(t *testing.T) {
