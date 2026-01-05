@@ -571,7 +571,13 @@ func (e Element) AST() ast.ExprAny {
 // this element, e.g.
 //
 //	key := e.Value().MessageKeys().At(e.ValueNodeIndex())
+//
+// If the element is empty, this returns -1.
 func (e Element) ValueNodeIndex() int {
+	if e.IsZero() {
+		return -1
+	}
+
 	// We do O(log n) work here, because this function doesn't get called except
 	// for diagnostics.
 
