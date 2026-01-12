@@ -13,7 +13,7 @@ file:
     - name: "i2"
       number: 2
       label: LABEL_OPTIONAL
-      type: TYPE_INT32
+      type: TYPE_UINT32
       default_value: "4294967295"
       json_name: "i2"
     - name: "i3"
@@ -24,7 +24,7 @@ file:
     - name: "i4"
       number: 4
       label: LABEL_OPTIONAL
-      type: TYPE_INT32
+      type: TYPE_UINT32
       json_name: "i4"
     - name: "i5"
       number: 5
