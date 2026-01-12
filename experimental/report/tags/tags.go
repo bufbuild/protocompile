@@ -20,4 +20,9 @@ import _ "github.com/bufbuild/protocompile/experimental/report" // Imported for 
 const (
 	// UnusedImport is the tag for an unused import diagnostic.
 	UnusedImport = "protobuf:unused_import"
+
+	// UnknownSymbol is the tag for a diagnostic where a symbol cannot be found
+	// in the current scope. This may indicate a missing import or a reference
+	// to a non-existent symbol.
+	UnknownSymbol = "protobuf:unknown_symbol"
 )
