@@ -305,7 +305,6 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 	if sym.IsZero() {
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Tag(tags.UnknownSymbol),
-			report.InFile(r.File.Path()),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Helpf("the full name of this scope is `%s`", r.scope),
 		)
@@ -323,7 +322,6 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 		// Complain if we found the "wrong" type.
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
 			report.Tag(tags.UnknownSymbol),
-			report.InFile(r.File.Path()),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Snippetf(sym.Definition(),
 				"found possibly related symbol `%s`", sym.FullName()),
