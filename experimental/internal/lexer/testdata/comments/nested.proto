@@ -1,0 +1,8 @@
+//% keywords:
+//%   line_comment: ["//"]
+//%   block_comment: ["/*", "*/"]
+
+/*
+    Nesting
+    /* is not allowed */
+*/

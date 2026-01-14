@@ -1,0 +1,11 @@
+//% keywords:
+//%   line_comment: ["//"]
+//
+//% escapes:
+//%     extended: true
+//%     octal: true
+//%     partial_x: true
+//%     uppercase_x: true
+//%     old_style_unicode: true
+"\k" "\x" "\X" "\9" "\u" "\U"
+"\u000" "\U0000000"

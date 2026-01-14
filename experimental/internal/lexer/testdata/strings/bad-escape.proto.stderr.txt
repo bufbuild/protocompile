@@ -1,0 +1,49 @@
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:10:2
+   |
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |  ^^
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:10:7
+   |
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |       ^^ `\x` must be followed by at least one hex digit
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:10:12
+   |
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |            ^^ `\X` must be followed by at least one hex digit
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:10:17
+   |
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |                 ^^
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:10:22
+   |
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |                      ^^ `\u` must be followed by exactly 4 hex digits
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:10:27
+   |
+10 | "\k" "\x" "\X" "\9" "\u" "\U"
+   |                           ^^ `\U` must be followed by exactly 8 hex digits
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:11:2
+   |
+11 | "\u000" "\U0000000"
+   |  ^^^^^ `\u` must be followed by exactly 4 hex digits
+
+error: invalid escape sequence
+  --> testdata/strings/bad-escape.proto:11:10
+   |
+11 | "\u000" "\U0000000"
+   |          ^^^^^^^^^ `\U` must be followed by exactly 8 hex digits
+
+encountered 8 errors

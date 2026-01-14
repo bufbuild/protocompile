@@ -18,11 +18,10 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
 // IsFloat checks whether or not tok is intended to be a floating-point literal.
@@ -33,7 +32,7 @@ func IsFloat(tok token.Token) bool {
 // IsFloatText checks whether or not the given number text is intended to be
 // a floating-point literal.
 func IsFloatText(digits string) bool {
-	needle := ".Ee"
+	needle := ".EePp"
 	if strings.HasPrefix(digits, "0x") || strings.HasPrefix(digits, "0X") {
 		needle = ".Pp"
 	}
@@ -41,18 +40,39 @@ func IsFloatText(digits string) bool {
 }
 
 // Classify attempts to classify node for use in a diagnostic.
-func Classify(node report.Spanner) Noun {
+func Classify(node source.Spanner) Noun {
 	// This is a giant type switch on every AST and token type in the compiler.
 	switch node := node.(type) {
 	case token.Token:
-		return classifyToken(node)
+		switch node.Kind() {
+		case token.Space:
+			return Whitespace
+		case token.Comment:
+			return Comment
+		case token.Ident:
+			if kw := node.Keyword(); kw != keyword.Unknown {
+				return Noun(kw)
+			}
+			return Ident
+		case token.String:
+			return String
+		case token.Number:
+			if node.AsNumber().IsFloat() {
+				return Float
+			}
+			return Int
+		case token.Keyword:
+			return Noun(node.Keyword())
+		default:
+			return Unrecognized
+		}
 
 	case *ast.File:
 		return TopLevel
 	case ast.Path:
 		if first, ok := iterx.OnlyOne(node.Components); ok && first.Separator().IsZero() {
 			if id := first.AsIdent(); !id.IsZero() {
-				return classifyToken(id)
+				return Classify(id)
 			}
 			if !first.AsExtension().IsZero() {
 				return ExtensionName
@@ -221,100 +241,4 @@ func Classify(node report.Spanner) Noun {
 	}
 
 	return Unknown
-}
-
-func classifyToken(tok token.Token) Noun {
-	switch tok.Kind() {
-	case token.Space:
-		return Whitespace
-	case token.Comment:
-		return Comment
-	case token.Ident:
-		if kw := Keyword(tok.Keyword()); kw != Unknown {
-			return kw
-		}
-		return Ident
-	case token.String:
-		return String
-	case token.Number:
-		if IsFloat(tok) {
-			return Float
-		}
-		return Int
-	case token.Punct:
-		return Keyword(tok.Keyword())
-	default:
-		return Unrecognized
-	}
-}
-
-// Keyword maps a keyword to its [Noun], if it has one.
-func Keyword(kw keyword.Keyword) Noun {
-	n, _ := slicesx.Get(kwToNoun, kw)
-	return n
-}
-
-var kwToNoun = []Noun{
-	keyword.Syntax:     KeywordSyntax,
-	keyword.Edition:    KeywordEdition,
-	keyword.Import:     KeywordImport,
-	keyword.Weak:       KeywordWeak,
-	keyword.Public:     KeywordPublic,
-	keyword.Package:    KeywordPackage,
-	keyword.Message:    KeywordMessage,
-	keyword.Enum:       KeywordEnum,
-	keyword.Service:    KeywordService,
-	keyword.Extend:     KeywordExtend,
-	keyword.Option:     KeywordOption,
-	keyword.Group:      KeywordGroup,
-	keyword.Oneof:      KeywordOneof,
-	keyword.Extensions: KeywordExtensions,
-	keyword.Reserved:   KeywordReserved,
-	keyword.RPC:        KeywordRPC,
-	keyword.Returns:    KeywordReturns,
-	keyword.To:         KeywordTo,
-	keyword.Repeated:   KeywordRepeated,
-	keyword.Optional:   KeywordOptional,
-	keyword.Required:   KeywordRequired,
-	keyword.Stream:     KeywordStream,
-	keyword.Export:     KeywordExport,
-	keyword.Local:      KeywordLocal,
-
-	// TODO: Give these taxa if it turns out they wind up in diagnostics.
-	keyword.Int32:    Unknown,
-	keyword.Int64:    Unknown,
-	keyword.UInt32:   Unknown,
-	keyword.UInt64:   Unknown,
-	keyword.SInt32:   Unknown,
-	keyword.SInt64:   Unknown,
-	keyword.Fixed32:  Unknown,
-	keyword.Fixed64:  Unknown,
-	keyword.SFixed32: Unknown,
-	keyword.SFixed64: Unknown,
-	keyword.Float:    Unknown,
-	keyword.Double:   Unknown,
-	keyword.Bool:     Unknown,
-	keyword.String:   Unknown,
-	keyword.Bytes:    Unknown,
-	keyword.Inf:      Unknown,
-	keyword.NAN:      Unknown,
-	keyword.True:     Unknown,
-	keyword.False:    Unknown,
-
-	keyword.Map:      Unknown,
-	keyword.Max:      Unknown,
-	keyword.Default:  Unknown,
-	keyword.JsonName: Unknown,
-
-	keyword.Semi:     Semi,
-	keyword.Comma:    Comma,
-	keyword.Dot:      Dot,
-	keyword.Slash:    Slash,
-	keyword.Colon:    Colon,
-	keyword.Eq:       Equals,
-	keyword.Minus:    Minus,
-	keyword.Parens:   Parens,
-	keyword.Brackets: Brackets,
-	keyword.Braces:   Braces,
-	keyword.Angles:   Angles,
 }

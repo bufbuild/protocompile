@@ -1,0 +1,31 @@
+error: unrecognized token
+  --> testdata/idents/non-ascii.proto:5:7
+   |
+ 5 | kitty_🐈<U+200D>⬛
+   |       ^^^^^^^^^^^^
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/idents/non-ascii.proto:6:1
+   |
+ 6 | 黑猫
+   | ^^^^
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/idents/non-ascii.proto:7:1
+   |
+ 7 | काली बिल्ली
+   | ^^^^
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/idents/non-ascii.proto:7:6
+   |
+ 7 | काली बिल्ली
+   |      ^^^^^
+
+error: non-ASCII identifiers are not allowed
+  --> testdata/idents/non-ascii.proto:8:1
+   |
+ 8 | 黑猫_suffix
+   | ^^^^^^^^^^^
+
+encountered 5 errors

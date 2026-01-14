@@ -1,7 +1,0 @@
-error: unterminated string literal
-  --> testdata/lexer/strings/unclosed1.proto:1:1
-   |
- 1 | """
-   | ^^^ expected to be terminated by `"""`
-
-encountered 1 error

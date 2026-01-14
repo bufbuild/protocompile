@@ -1,9 +1,0 @@
-#		kind		keyword		offsets		linecol		text
-0		Comment		Unknown		000:024		001:001		"// Single line comment.\n"
-1		Comment		Unknown		024:045		002:001		"//go:style-intrinsic\n"
-2		Comment		Unknown		045:072		003:001		"/*\n    Multiline comment\n*/"
-3		Space		Unknown		072:074		005:003		"\n\n"
-4		Comment		Unknown		074:077		007:001		"//\n"
-5		Comment		Unknown		077:081		008:001		"/**/"
-6		Space		Unknown		081:082		008:005		" "
-7		Comment		Unknown		082:091		008:006		"// Empty\n"

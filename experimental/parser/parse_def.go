@@ -16,9 +16,12 @@ package parser
 
 import (
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
@@ -46,10 +49,10 @@ type defFollower interface {
 	// canStart returns whether this follower can be parsed next.
 	canStart(*defParser) bool
 	// parse parses this follower and returns its span; returns nil on failure.
-	parse(*defParser) report.Span
+	parse(*defParser) source.Span
 	// prev returns the span of the first value parsed for this follower, or nil
 	// if it has not been parsed yet.
-	prev(*defParser) report.Span
+	prev(*defParser) source.Span
 }
 
 var defFollowers = []defFollower{
@@ -92,11 +95,11 @@ func (p *defParser) parse() ast.DeclDef {
 			// moving this follower before the previous one.
 
 			f := defFollowers[lastFollower]
-			p.Error(errUnexpected{
-				what:  next,
-				where: f.what(p).After(),
-				prev:  f.prev(p),
-				got:   defFollowers[idx].what(p),
+			p.Error(errtoken.Unexpected{
+				What:  next,
+				Where: f.what(p).After(),
+				Prev:  f.prev(p),
+				Got:   defFollowers[idx].what(p),
 			})
 		case idx == lastFollower:
 			f := defFollowers[lastFollower]
@@ -192,10 +195,10 @@ type defInputs struct{}
 func (defInputs) what(*defParser) taxa.Noun  { return taxa.MethodIns }
 func (defInputs) canStart(p *defParser) bool { return p.c.Peek().Keyword() == keyword.Parens }
 
-func (defInputs) parse(p *defParser) report.Span {
+func (defInputs) parse(p *defParser) source.Span {
 	next := p.c.Next()
 	if next.IsLeaf() {
-		return report.Span{} // Diagnosed by the lexer.
+		return source.Span{} // Diagnosed by the lexer.
 	}
 
 	if p.inputs.IsZero() {
@@ -204,14 +207,14 @@ func (defInputs) parse(p *defParser) report.Span {
 	return next.Span()
 }
 
-func (defInputs) prev(p *defParser) report.Span { return p.inputs.Span() }
+func (defInputs) prev(p *defParser) source.Span { return p.inputs.Span() }
 
 type defOutputs struct{}
 
 func (defOutputs) what(*defParser) taxa.Noun  { return taxa.MethodOuts }
 func (defOutputs) canStart(p *defParser) bool { return p.c.Peek().Keyword() == keyword.Returns }
 
-func (defOutputs) parse(p *defParser) report.Span {
+func (defOutputs) parse(p *defParser) source.Span {
 	// Note that the inputs and outputs of a method are parsed
 	// separately, so foo(bar) and foo returns (bar) are both possible.
 	returns := p.c.Next()
@@ -223,16 +226,16 @@ func (defOutputs) parse(p *defParser) report.Span {
 	list, err := punctParser{
 		parser: p.parser, c: p.c,
 		want:  keyword.Parens,
-		where: taxa.KeywordReturns.After(),
+		where: taxa.Noun(keyword.Returns).After(),
 	}.parse()
 	if list.IsZero() && canStartPath(p.c.Peek()) {
 		// Suppose the user writes `returns my.Response`. This is
 		// invalid but reasonable so we want to diagnose it. To do this,
 		// we parse a single type w/o parens and diagnose it later.
-		ty = parseType(p.parser, p.c, taxa.KeywordReturns.After())
+		ty = parseType(p.parser, p.c, taxa.Noun(keyword.Returns).After())
 	} else if err != nil {
 		p.Error(err)
-		return report.Span{}
+		return source.Span{}
 	}
 
 	if p.outputs.IsZero() && p.outputTy.IsZero() {
@@ -244,16 +247,16 @@ func (defOutputs) parse(p *defParser) report.Span {
 	}
 
 	if !list.IsZero() {
-		return report.Join(returns, list)
+		return source.Join(returns, list)
 	}
-	return report.Join(returns, ty)
+	return source.Join(returns, ty)
 }
 
-func (defOutputs) prev(p *defParser) report.Span {
+func (defOutputs) prev(p *defParser) source.Span {
 	if !p.outputTy.IsZero() {
-		return report.Join(p.args.Returns, p.outputTy)
+		return source.Join(p.args.Returns, p.outputTy)
 	}
-	return report.Join(p.args.Returns, p.outputs)
+	return source.Join(p.args.Returns, p.outputs)
 }
 
 type defValue struct{}
@@ -280,7 +283,7 @@ func (defValue) canStart(p *defParser) bool {
 	// However, if we've already seen {}, [], or another value, we break
 	// instead, since this suggests we're peeking the next def.
 	switch {
-	case next.Keyword() == keyword.Eq:
+	case next.Keyword() == keyword.Assign:
 		return true
 	case canStartPath(next):
 		// If the next "expression" looks like a path, this likelier to be
@@ -298,12 +301,12 @@ func (defValue) canStart(p *defParser) bool {
 	}
 }
 
-func (defValue) parse(p *defParser) report.Span {
+func (defValue) parse(p *defParser) source.Span {
 	eq, err := punctParser{
 		parser: p.parser, c: p.c,
-		want:   keyword.Eq,
+		want:   keyword.Assign,
 		where:  taxa.Def.In(),
-		insert: justifyBetween,
+		insert: just.Between,
 	}.parse()
 	if err != nil {
 		p.Error(err)
@@ -311,21 +314,21 @@ func (defValue) parse(p *defParser) report.Span {
 
 	expr := parseExpr(p.parser, p.c, taxa.Def.In())
 	if expr.IsZero() {
-		return report.Span{} // parseExpr already generated diagnostics.
+		return source.Span{} // parseExpr already generated diagnostics.
 	}
 
 	if p.args.Value.IsZero() {
 		p.args.Equals = eq
 		p.args.Value = expr
 	}
-	return report.Join(eq, expr)
+	return source.Join(eq, expr)
 }
 
-func (defValue) prev(p *defParser) report.Span {
+func (defValue) prev(p *defParser) source.Span {
 	if p.args.Value.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
-	return report.Join(p.args.Equals, p.args.Value)
+	return source.Join(p.args.Equals, p.args.Value)
 }
 
 type defOptions struct{}
@@ -333,10 +336,10 @@ type defOptions struct{}
 func (defOptions) what(*defParser) taxa.Noun  { return taxa.CompactOptions }
 func (defOptions) canStart(p *defParser) bool { return canStartOptions(p.c.Peek()) }
 
-func (defOptions) parse(p *defParser) report.Span {
+func (defOptions) parse(p *defParser) source.Span {
 	next := p.c.Next()
 	if next.IsLeaf() {
-		return report.Span{} // Diagnosed by the lexer.
+		return source.Span{} // Diagnosed by the lexer.
 	}
 
 	if p.args.Options.IsZero() {
@@ -345,17 +348,17 @@ func (defOptions) parse(p *defParser) report.Span {
 	return next.Span()
 }
 
-func (defOptions) prev(p *defParser) report.Span { return p.args.Options.Span() }
+func (defOptions) prev(p *defParser) source.Span { return p.args.Options.Span() }
 
 type defBody struct{}
 
 func (defBody) what(*defParser) taxa.Noun  { return taxa.Body }
 func (defBody) canStart(p *defParser) bool { return canStartBody(p.c.Peek()) }
 
-func (defBody) parse(p *defParser) report.Span {
+func (defBody) parse(p *defParser) source.Span {
 	next := p.c.Next()
 	if next.IsLeaf() {
-		return report.Span{} // Diagnosed by the lexer.
+		return source.Span{} // Diagnosed by the lexer.
 	}
 
 	if p.braces.IsZero() {
@@ -364,4 +367,4 @@ func (defBody) parse(p *defParser) report.Span {
 	return next.Span()
 }
 
-func (defBody) prev(p *defParser) report.Span { return p.braces.Span() }
+func (defBody) prev(p *defParser) source.Span { return p.braces.Span() }

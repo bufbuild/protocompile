@@ -200,14 +200,21 @@ func (i *imports) MarkUsed(file *File) {
 
 // DescriptorProto returns the file for descriptor.proto.
 func (i *imports) DescriptorProto() *File {
+	if i == nil {
+		return nil
+	}
 	imported, _ := slicesx.Last(i.files)
 	return imported.file
 }
 
 // Directs returns an indexer over the Directs imports.
 func (i *imports) Directs() seq.Indexer[Import] {
+	var slice []imported
+	if i != nil {
+		slice = i.files[:i.importEnd]
+	}
 	return seq.NewFixedSlice(
-		i.files[:i.importEnd],
+		slice,
 		func(j int, imported imported) Import {
 			n := uint32(j)
 			public := n < i.publicEnd
@@ -231,8 +238,12 @@ func (i *imports) Directs() seq.Indexer[Import] {
 //
 // This function does not report whether those imports are weak, option, or used.
 func (i *imports) Transitive() seq.Indexer[Import] {
+	var slice []imported
+	if i != nil {
+		slice = i.files[:max(0, len(i.files)-1)] // Exclude the implicit descriptor.proto
+	}
 	return seq.NewFixedSlice(
-		i.files[:max(0, len(i.files)-1)], // Exclude the implicit descriptor.proto.
+		slice,
 		func(j int, imported imported) Import {
 			n := uint32(j)
 			return Import{

@@ -1,0 +1,9 @@
+#		kind		keyword		offsets		linecol		text
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:069		002:001		"//%   bracket: [\"(\", \")\", \"[\", \"]\", \"{\", \"}\", \"<\", \">\"]"
+3		Space		Unknown		069:070		002:056		"\n"
+4		Comment		Comment		070:096		003:001		"//%   line_comment: [\"//\"]"
+5		Space		Unknown		096:097		003:027		"\n"
+6		Space		Unknown		097:098		004:001		"\n"
+7		Keyword		RParen		098:099		005:001		")"

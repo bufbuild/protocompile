@@ -292,10 +292,10 @@ func (dg *descGenerator) message(ty Type, mdp *descriptorpb.DescriptorProto) {
 var predeclaredToFDPType = []descriptorpb.FieldDescriptorProto_Type{
 	predeclared.Int32:  descriptorpb.FieldDescriptorProto_TYPE_INT32,
 	predeclared.Int64:  descriptorpb.FieldDescriptorProto_TYPE_INT64,
-	predeclared.UInt32: descriptorpb.FieldDescriptorProto_TYPE_INT32,
-	predeclared.UInt64: descriptorpb.FieldDescriptorProto_TYPE_INT64,
-	predeclared.SInt32: descriptorpb.FieldDescriptorProto_TYPE_INT32,
-	predeclared.SInt64: descriptorpb.FieldDescriptorProto_TYPE_INT64,
+	predeclared.UInt32: descriptorpb.FieldDescriptorProto_TYPE_UINT32,
+	predeclared.UInt64: descriptorpb.FieldDescriptorProto_TYPE_UINT64,
+	predeclared.SInt32: descriptorpb.FieldDescriptorProto_TYPE_SINT32,
+	predeclared.SInt64: descriptorpb.FieldDescriptorProto_TYPE_SINT64,
 
 	predeclared.Fixed32:  descriptorpb.FieldDescriptorProto_TYPE_FIXED32,
 	predeclared.Fixed64:  descriptorpb.FieldDescriptorProto_TYPE_FIXED64,

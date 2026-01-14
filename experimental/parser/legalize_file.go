@@ -21,9 +21,11 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/erredition"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -145,10 +147,10 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 	case ast.ExprKindInvalid:
 		return
 	default:
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		})
 		return
 	}
@@ -219,7 +221,7 @@ func legalizeSyntax(p *parser, parent classified, idx int, first *ast.DeclSyntax
 				),
 			)
 		} else if str := lit.AsString(); !str.IsZero() && !str.IsPure() {
-			p.Warn(errImpureString{lit.Token, in.In()})
+			p.Warn(errtoken.ImpureString{Token: lit.Token, Where: in.In()})
 		}
 	}
 
@@ -311,24 +313,24 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 			if !lit.IsPure() {
 				// Only warn for cases where the import is alphanumeric.
 				if isOrdinaryFilePath.MatchString(lit.Text()) {
-					p.Warn(errImpureString{lit.Token(), in.In()})
+					p.Warn(errtoken.ImpureString{Token: lit.Token(), Where: in.In()})
 				}
 			}
 			break
 		}
 
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		})
 		return
 
 	case ast.ExprKindPath:
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		}).Apply(
 			// TODO: potentially defer this diagnostic to later, when we can
 			// perform symbol lookup and figure out what the correct file to
@@ -351,10 +353,10 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		return
 
 	default:
-		p.Error(errUnexpected{
-			what:  expr,
-			where: in.In(),
-			want:  taxa.String.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  expr,
+			Where: in.In(),
+			Want:  taxa.String.AsSet(),
 		})
 		return
 	}
@@ -364,7 +366,7 @@ func legalizeImport(p *parser, parent classified, decl ast.DeclImport) {
 		if i > 0 {
 			p.Errorf("unexpected `%s` modifier in %s", mod.Text(), in).Apply(
 				report.Snippet(mod),
-				report.Snippetf(report.Join(
+				report.Snippetf(source.Join(
 					decl.KeywordToken(),
 					decl.ModifierTokens().At(0),
 				), "already modified here"),

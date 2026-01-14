@@ -1,0 +1,11 @@
+error: encountered unmatched `[` delimiter
+  --> testdata/braces/interleaved.proto:6:5
+   |
+ 6 |     [
+   |     ^ expected a closing `]`
+ 7 | }
+   | - closed by this instead
+ 8 |     ]
+   |     - help: perhaps it was meant to match this?
+
+encountered 1 error

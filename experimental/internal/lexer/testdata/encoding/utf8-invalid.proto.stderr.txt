@@ -1,0 +1,9 @@
+error: input appears to be encoded with UTF-8, but found invalid byte
+  --> testdata/encoding/utf8-invalid.proto:19:11
+   |
+19 | syntax = "<FF>";
+   |           ^^^^
+   = note: non-UTF-8 byte occurs at offset 701 (0x2bd)
+   = note: Protobuf files must be UTF-8 encoded
+
+encountered 1 error

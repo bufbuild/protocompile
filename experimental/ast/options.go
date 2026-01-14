@@ -16,8 +16,8 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -42,9 +42,9 @@ type Option struct {
 	Value  ExprAny
 }
 
-// Span implements [report.Spanner].
-func (o Option) Span() report.Span {
-	return report.Join(o.Path, o.Equals, o.Value)
+// Span implements [source.Spanner].
+func (o Option) Span() source.Span {
+	return source.Join(o.Path, o.Equals, o.Value)
 }
 
 type rawOption struct {
@@ -87,10 +87,10 @@ func (o CompactOptions) Entries() Commas[Option] {
 	}
 }
 
-// Span implements [report.Spanner].
-func (o CompactOptions) Span() report.Span {
+// Span implements [source.Spanner].
+func (o CompactOptions) Span() source.Span {
 	if o.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	return o.Brackets().Span()

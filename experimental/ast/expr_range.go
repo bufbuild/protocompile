@@ -16,7 +16,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -78,12 +78,12 @@ func (e ExprRange) Keyword() token.Token {
 	return id.Wrap(e.Context().Stream(), e.Raw().to)
 }
 
-// Span implements [report.Spanner].
-func (e ExprRange) Span() report.Span {
+// Span implements [source.Spanner].
+func (e ExprRange) Span() source.Span {
 	if e.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	lo, hi := e.Bounds()
-	return report.Join(lo, e.Keyword(), hi)
+	return source.Join(lo, e.Keyword(), hi)
 }

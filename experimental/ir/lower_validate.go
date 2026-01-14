@@ -33,6 +33,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
@@ -395,8 +396,8 @@ func validateExtensionDeclarations(ty Type, r *report.Report) {
 	// Now, walk through each grouping of extensions and match up their
 	// declarations.
 	for options, ranges := range options {
-		rangeSpan := func() report.Span {
-			return report.JoinSeq(iterx.Map(slices.Values(ranges), func(r ReservedRange) report.Span {
+		rangeSpan := func() source.Span {
+			return source.JoinSeq(iterx.Map(slices.Values(ranges), func(r ReservedRange) source.Span {
 				return r.AST().Span()
 			}))
 		}
@@ -726,7 +727,7 @@ func validatePresence(m Member, r *report.Report) {
 func validatePacked(m Member, r *report.Report) {
 	builtins := m.Context().builtins()
 
-	validate := func(span report.Span) {
+	validate := func(span source.Span) {
 		switch {
 		case m.IsSingular() || m.IsMap():
 			r.Errorf("expected repeated field, found singular field").Apply(

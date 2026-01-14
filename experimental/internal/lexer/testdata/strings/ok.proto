@@ -1,0 +1,23 @@
+//% keywords:
+//%   line_comment: ["//"]
+//
+//% escapes:
+//%     extended: true
+//%     ask: true
+//%     octal: true
+//%     partial_x: true
+//%     uppercase_x: true
+//%     old_style_unicode: true
+""
+''
+"foo"
+'bar'
+"A string with \"nested quotes\" in it"
+'Another with \'nested quotes\' inside'
+"Some whitespace:\n\r\t\v"
+'Hex escaped bytes: \x01\x2\X03\X4'
+'A string with a literal back-slash \\ in it'
+"A string that has a NULL character in hex: \x00"
+"Another with a NULL in octal: \00"
+"A unicode right arrow can use unicode escape \u2192 or not →\?"
+'Long unicode escape can represent emojis \U0001F389 but isn\'t necessary 🎉'

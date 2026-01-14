@@ -27,6 +27,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -88,7 +89,7 @@ type evalArgs struct {
 	isArrayElement bool
 
 	// A span for whatever caused the above field to be selected.
-	annotation report.Spanner
+	annotation source.Spanner
 
 	textFormat   bool         // Whether we're inside of a message literal.
 	allowMax     bool         // Whether the max keyword is to be honored.
@@ -253,7 +254,7 @@ func (e *evaluator) evalBits(args evalArgs) (rawValueBits, bool) {
 
 		inner := expr.Expr()
 		switch expr.Prefix() {
-		case keyword.Minus:
+		case keyword.Sub:
 			// Special handling to ensure that negative literals work correctly.
 			if !inner.AsLiteral().IsZero() {
 				return e.evalLiteral(args, inner.AsLiteral(), expr)
@@ -482,11 +483,11 @@ validate:
 		)
 
 		if hasBrackets && !member.IsExtension() {
-			d.Apply(report.Notef("%s must only be used when referencing extensions or concrete `Any` types", taxa.Brackets))
+			d.Apply(report.Notef("`[...]` must only be used when referencing extensions or concrete `Any` types"))
 		}
 
 		if !hasBrackets && member.IsExtension() {
-			d.Apply(report.Notef("extension names must be surrounded by %s", taxa.Brackets))
+			d.Apply(report.Notef("extension names must be surrounded by `[...]`"))
 		}
 
 		if wrongPath {
@@ -1000,24 +1001,23 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 				return messageSetNumberMax, ok
 			}
 		} else {
-			e.Errorf("%s outside of range end", taxa.PredeclaredMax).Apply(
+			e.Errorf("`max` outside of range end").Apply(
 				report.Snippet(expr),
 				report.Notef(
-					"the special %s expression can only be used at the end of a range",
-					taxa.PredeclaredMax),
+					"the special `max` expression can only be used at the end of a range"),
 			)
 			return 0, false
 		}
 
 		if !neg.IsZero() {
-			e.Errorf("negated %s", taxa.PredeclaredMax).Apply(
+			e.Errorf("negated `max`").Apply(
 				report.Snippet(neg),
-				report.Notef("the special %s expression may not be negated", taxa.PredeclaredMax),
+				report.Notef("the special `max` expression may not be negated"),
 			)
 		}
 
 		if !scalar.IsNumber() {
-			e.Error(args.mismatch(taxa.PredeclaredMax))
+			e.Error(args.mismatch(taxa.Noun(keyword.Max)))
 			return 0, false
 		}
 
@@ -1196,8 +1196,8 @@ func (e *evaluator) evalPath(args evalArgs, expr ast.Path, neg ast.ExprPrefixed)
 type errTypeCheck struct {
 	want, got any
 
-	expr       report.Spanner
-	annotation report.Spanner
+	expr       source.Spanner
+	annotation source.Spanner
 
 	wantRepeated, gotRepeated bool
 }

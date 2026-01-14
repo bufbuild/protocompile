@@ -1,0 +1,36 @@
+#		kind		keyword		offsets		linecol		text
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:040		002:001		"//%   line_comment: [\"//\"]"
+3		Space		Unknown		040:041		002:027		"\n"
+4		Comment		Comment		041:044		003:001		"//%"
+5		Space		Unknown		044:045		003:004		"\n"
+6		Comment		Comment		045:080		004:001		"//% number_can_start_with_dot: true"
+7		Space		Unknown		080:081		004:036		"\n"
+8		Comment		Comment		081:106		005:001		"//% old_style_octal: true"
+9		Space		Unknown		106:107		005:026		"\n"
+10		Number		Unknown		107:108		006:001		"0"		int:0/10/1
+11		Space		Unknown		108:109		006:002		"\n"
+12		Number		Unknown		109:113		007:001		"1234"		int:1234/10/1
+13		Space		Unknown		113:114		007:005		"\n"
+14		Number		Unknown		114:118		008:001		"0741"		int:481/8/1		pre:"0"
+15		Space		Unknown		118:119		008:005		"\n"
+16		Number		Unknown		119:127		009:001		"0x0f6DB2"		int:1011122/16/1		pre:"0x"
+17		Space		Unknown		127:128		009:009		"\n"
+18		Number		Unknown		128:130		010:001		"1."		fp:1/10/1
+19		Space		Unknown		130:131		010:003		"\n"
+20		Number		Unknown		131:134		011:001		"0.0"		fp:0/10/1
+21		Space		Unknown		134:135		011:004		"\n"
+22		Number		Unknown		135:139		012:001		".123"		fp:0.1230010986328125/10/1
+23		Space		Unknown		139:140		012:005		"\n"
+24		Number		Unknown		140:147		013:001		"555.555"		fp:555.5549926757812/10/1
+25		Space		Unknown		147:148		013:008		"\n"
+26		Number		Unknown		148:157		014:001		"1.234e-12"		fp:1.234e-12/10/10
+27		Space		Unknown		157:158		014:010		"\n"
+28		Number		Unknown		158:165		015:001		".953e20"		fp:9.53e+19/10/10
+29		Space		Unknown		165:166		015:008		"\n"
+30		Number		Unknown		166:171		016:001		"5E+40"		int:50000000000000000000000000000000000000000/10/10
+31		Space		Unknown		171:172		016:006		"\n"
+32		Number		Unknown		172:177		017:001		"1p100"		int:2535301200456458802993406410752/10/2
+33		Space		Unknown		177:178		017:006		"\n"
+34		Number		Unknown		178:188		018:001		"0x1.fffp10"		fp:2047.75/16/2		pre:"0x"

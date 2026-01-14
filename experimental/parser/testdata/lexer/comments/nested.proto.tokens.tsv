@@ -1,4 +1,0 @@
-#		kind		keyword		offsets		linecol		text
-0		Comment		Unknown		000:039		001:001		"/*\n    Nesting\n    /* is not allowed */"
-1		Space		Unknown		039:040		003:025		"\n"
-2		Unrecognized		Unknown		040:042		004:001		"*/"

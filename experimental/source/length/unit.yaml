@@ -1,0 +1,39 @@
+# Copyright 2020-2024 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http:#www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Unit
+  type: int
+  docs: |
+    Unit represents units of measurement for the length of a string.
+
+    The most commonly used [Unit] in protocompile is [TermWidth], which
+    approximates columns in a terminal emulator. This takes into account the
+    Unicode width of runes, and tabstops. The rune A is one column wide, the rune
+    貓 is two columns wide, and the multi-rune emoji presentation sequence 🐈‍⬛ is
+    also two columns wide.
+
+    Other units of length can be used to cope with the needs of other rendering
+    contexts, such as the Language Server Protocol.
+  methods:
+  - kind: string
+  - kind: go-string
+  - kind: all
+    name: Units
+    docs: |
+      Units returns an iterator over all of the [Unit]s
+  values:
+  - {name: Bytes, docs: "The length in UTF-8 code units (bytes)."}
+  - {name: UTF16, docs: "The length in UTF-16 code units (uint16s)."}
+  - {name: Runes, docs: "The length in UTF-32 code units (runes)."}
+  - {name: TermWidth, docs: "The length in approximate terminal columns."}

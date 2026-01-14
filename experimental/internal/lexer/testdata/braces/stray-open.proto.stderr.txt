@@ -1,0 +1,7 @@
+error: encountered unmatched `[` delimiter
+  --> testdata/braces/stray-open.proto:6:5
+   |
+ 6 |     [
+   |     ^ expected a closing `]`
+
+encountered 1 error

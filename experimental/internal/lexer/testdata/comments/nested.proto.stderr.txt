@@ -1,0 +1,9 @@
+error: encountered unmatched `*/` delimiter
+  --> testdata/comments/nested.proto:8:1
+   |
+ 8 | */
+   | ^^ expected a closing `/*`
+   |
+   = note: nested `/* ... */` comments are not supported
+
+encountered 1 error

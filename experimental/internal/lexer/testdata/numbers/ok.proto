@@ -1,0 +1,18 @@
+//% keywords:
+//%   line_comment: ["//"]
+//%
+//% number_can_start_with_dot: true
+//% old_style_octal: true
+0
+1234
+0741
+0x0f6DB2
+1.
+0.0
+.123
+555.555
+1.234e-12
+.953e20
+5E+40
+1p100
+0x1.fffp10

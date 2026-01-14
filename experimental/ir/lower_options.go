@@ -23,6 +23,7 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/intern"
@@ -268,7 +269,7 @@ func populateOptionTargets(file *File, _ *report.Report) {
 }
 
 func validateOptionTargets(f *File, r *report.Report) {
-	validateOptionTargetsInValue(f.Options(), report.Span{}, OptionTargetFile, r)
+	validateOptionTargetsInValue(f.Options(), source.Span{}, OptionTargetFile, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
 		tyTarget, memberTarget := OptionTargetMessage, OptionTargetField
@@ -289,7 +290,7 @@ func validateOptionTargets(f *File, r *report.Report) {
 	}
 }
 
-func validateOptionTargetsInValue(m MessageValue, decl report.Span, target OptionTarget, r *report.Report) {
+func validateOptionTargetsInValue(m MessageValue, decl source.Span, target OptionTarget, r *report.Report) {
 	if m.IsZero() {
 		return
 	}
@@ -463,7 +464,7 @@ func (r optionRef) resolve() {
 					report.Snippetf(pc, "this field is not a %s", taxa.Extension),
 					report.Snippetf(field.AST().Name(), "field declared inside of `%s` here", field.Parent().FullName()),
 					report.Helpf("%s syntax should only be used with %ss", taxa.CustomOption, taxa.Extension),
-					report.SuggestEdits(pc.Name(), fmt.Sprintf("replace %s with a field name", taxa.Parens), report.Edit{
+					report.SuggestEdits(pc.Name(), "replace `(...)` with a field name", report.Edit{
 						Start: 0, End: pc.Name().Span().Len(),
 						Replace: field.Name(),
 					}),
@@ -629,7 +630,7 @@ func (r optionRef) resolve() {
 
 type errSetMultipleTimes struct {
 	member        any
-	first, second report.Spanner
+	first, second source.Spanner
 	root          bool
 }
 
@@ -637,7 +638,7 @@ func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
 	var what any
 	var name FullName
 	var note string
-	var def report.Spanner
+	var def source.Spanner
 	switch member := e.member.(type) {
 	case Member:
 		if !member.IsExtension() && e.root {
@@ -670,7 +671,7 @@ func (e errSetMultipleTimes) Diagnose(d *report.Diagnostic) {
 }
 
 type errOptionMustBeMessage struct {
-	selector, prev, spec report.Spanner
+	selector, prev, spec source.Spanner
 	got, gotName         any
 }
 

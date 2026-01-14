@@ -1,0 +1,20 @@
+#		kind		keyword		offsets		linecol		text
+0		String		Unknown		000:282		001:001		"\"this string\ncontains a newline\""		string:"this string\ncontains a newline\nthis is an indented string\n    that contains a newlinethis string contains a nul: \x00this string contains a nul \x00 in the middle\x00this string contains some other non-graphic character: \x01this is graphic but non-ASCII space: \u00a0"		close:Token(18)
+1		Space		Unknown		032:033		002:020		"\n"
+2		String		Unknown		033:036		003:001		"\"\n\""		string:"\n"
+3		Space		Unknown		036:037		004:002		"\n"
+4		Space		Unknown		037:038		005:001		"\n"
+5		Space		Unknown		038:042		006:001		"    "
+6		String		Unknown		042:098		006:005		"\"this is an indented string\n    that contains a newline\""		string:"this is an indented string\n    that contains a newline"
+7		Space		Unknown		098:099		007:029		"\n"
+8		Space		Unknown		099:100		008:001		"\n"
+9		String		Unknown		100:131		009:001		"\"this string contains a nul: \x00\""		string:"this string contains a nul: \x00"
+10		Space		Unknown		131:132		009:031		"\n"
+11		String		Unknown		132:176		010:001		"\"this string contains a nul \x00 in the middle\""		string:"this string contains a nul \x00 in the middle"
+12		Space		Unknown		176:177		010:044		"\n"
+13		String		Unknown		177:180		011:001		"\"\x00\""		string:"\x00"
+14		Space		Unknown		180:181		011:003		"\n"
+15		Space		Unknown		181:182		012:001		"\n"
+16		String		Unknown		182:240		013:001		"\"this string contains some other non-graphic character: \x01\""		string:"this string contains some other non-graphic character: \x01"
+17		Space		Unknown		240:241		013:058		"\n"
+18		String		Unknown		000:282		001:001		"\"this is graphic but non-ASCII space: \u00a0\""		string:"this is graphic but non-ASCII space: \u00a0"		open:Token(0)

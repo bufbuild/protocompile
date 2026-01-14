@@ -1,0 +1,12 @@
+//% keywords:
+//%   line_comment: ["//"]
+//%   block_comment: ["/*", "*/"]
+
+// Single line comment.
+//go:style-intrinsic
+/*
+    Multiline comment
+*/
+
+//
+/**/ // Empty

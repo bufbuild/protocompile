@@ -17,6 +17,7 @@ package report
 import (
 	"fmt"
 
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 )
 
@@ -99,14 +100,14 @@ type DiagnosticOption interface {
 // Primary returns this diagnostic's primary span, if it has one.
 //
 // If it doesn't have one, it returns the zero span.
-func (d *Diagnostic) Primary() Span {
+func (d *Diagnostic) Primary() source.Span {
 	for _, annotation := range d.snippets {
 		if annotation.primary {
 			return annotation.Span
 		}
 	}
 
-	return Span{}
+	return source.Span{}
 }
 
 // Level returns this diagnostic's level.
@@ -124,10 +125,19 @@ func (d *Diagnostic) Tag() string {
 	return d.tag
 }
 
-// InFile returns the path of the file set using [InFile]. This path can be used if this
-// diagnostic does not have a primary span to mention the given file and/or no annotations.
-func (d *Diagnostic) InFile() string {
-	return d.inFile
+// File returns the path of the file this diagnostic is associated with.
+//
+// It returns the value set by [InFile] if present, otherwise it returns
+// the path from the primary span. Returns empty string if neither is available.
+func (d *Diagnostic) File() string {
+	if d.inFile != "" {
+		return d.inFile
+	}
+	span := d.Primary()
+	if span.File != nil {
+		return span.File.Path()
+	}
+	return ""
 }
 
 // Notes returns this diagnostic's notes, set using [Notef].
@@ -190,7 +200,7 @@ func InFile(path string) DiagnosticOption {
 // differently from the others.
 //
 // If at is nil or returns the zero span, the returned DiagnosticOption is a no-op.
-func Snippet(at Spanner) DiagnosticOption {
+func Snippet(at source.Spanner) DiagnosticOption {
 	return Snippetf(at, "")
 }
 
@@ -203,9 +213,9 @@ func Snippet(at Spanner) DiagnosticOption {
 // differently from the others.
 //
 // If at is nil or returns the zero span, the returned DiagnosticOption is a no-op.
-func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
+func Snippetf(at source.Spanner, format string, args ...any) DiagnosticOption {
 	return snippet{
-		Span:    getSpan(at),
+		Span:    source.GetSpan(at),
 		message: fmt.Sprintf(format, args...),
 	}
 }
@@ -216,8 +226,8 @@ func Snippetf(at Spanner, format string, args ...any) DiagnosticOption {
 // A snippet with suggestions will be displayed separately from other snippets.
 // The message associated with the snippet will be prefixed with "help:" when
 // rendered.
-func SuggestEdits(at Spanner, message string, edits ...Edit) DiagnosticOption {
-	span := getSpan(at)
+func SuggestEdits(at source.Spanner, message string, edits ...Edit) DiagnosticOption {
+	span := source.GetSpan(at)
 	text := span.Text()
 	for _, edit := range edits {
 		// Force a bounds check here to make it easier to debug, instead of
@@ -237,10 +247,10 @@ func SuggestEdits(at Spanner, message string, edits ...Edit) DiagnosticOption {
 // negative or greater than the length of the span).
 //
 // This will widen the span for the suggestion to fit the edits.
-func SuggestEditsWithWidening(at Spanner, message string, edits ...Edit) DiagnosticOption {
-	span := getSpan(at)
+func SuggestEditsWithWidening(at source.Spanner, message string, edits ...Edit) DiagnosticOption {
+	span := source.GetSpan(at)
 	start := span.Start
-	span = JoinSeq(slicesx.Map(edits, func(e Edit) Span {
+	span = source.JoinSeq(slicesx.Map(edits, func(e Edit) source.Span {
 		return span.File.Span(e.Start+start, e.End+start)
 	}))
 	delta := start - span.Start
@@ -282,7 +292,7 @@ var PageBreak pageBreak
 // line under some code.
 type snippet struct {
 	// The span for this annotation.
-	Span
+	source.Span
 
 	// A message to show under this snippet.
 	//

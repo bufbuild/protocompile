@@ -28,10 +28,10 @@ const (
 	Unrecognized Kind = iota // Unrecognized garbage in the input file.
 	Space                    // Non-comment contiguous whitespace.
 	Comment                  // A single comment.
-	Ident                    // An identifier.
+	Ident                    // An identifier, which may be a soft keyword.
 	String                   // A string token. May be a non-leaf for non-contiguous quoted strings.
 	Number                   // A run of digits that is some kind of number.
-	Punct                    // Some punctuation. May be a non-leaf for delimiters like {}.
+	Keyword                  // A hard keyword. May be a non-leaf for delimiters like {}.
 )
 
 // String implements [fmt.Stringer].
@@ -57,16 +57,16 @@ var _table_Kind_String = [...]string{
 	Ident:        "Ident",
 	String:       "String",
 	Number:       "Number",
-	Punct:        "Punct",
+	Keyword:      "Keyword",
 }
 
 var _table_Kind_GoString = [...]string{
-	Unrecognized: "Unrecognized",
-	Space:        "Space",
-	Comment:      "Comment",
-	Ident:        "Ident",
-	String:       "String",
-	Number:       "Number",
-	Punct:        "Punct",
+	Unrecognized: "token.Unrecognized",
+	Space:        "token.Space",
+	Comment:      "token.Comment",
+	Ident:        "token.Ident",
+	String:       "token.String",
+	Number:       "token.Number",
+	Keyword:      "token.Keyword",
 }
 var _ iter.Seq[int] // Mark iter as used.

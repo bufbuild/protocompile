@@ -1,0 +1,11 @@
+#		kind		keyword		offsets		linecol		text
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:040		002:001		"//%   line_comment: [\"//\"]"
+3		Space		Unknown		040:041		002:027		"\n"
+4		Comment		Comment		041:074		003:001		"//%   block_comment: [\"/*\", \"*/\"]"
+5		Space		Unknown		074:075		003:034		"\n"
+6		Space		Unknown		075:076		004:001		"\n"
+7		Comment		BlockComment		076:115		005:001		"/*\n    Nesting\n    /* is not allowed */"
+8		Space		Unknown		115:116		007:025		"\n"
+9		Unrecognized		Unknown		116:118		008:001		"*/"

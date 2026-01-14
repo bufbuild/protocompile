@@ -21,7 +21,7 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
@@ -94,11 +94,14 @@ func (t Token) Kind() Kind {
 	return t.synth().kind
 }
 
-// Keyword returns the [keyword.Keyword] corresponding to this token's textual
-// value.
+// Keyword returns a [keyword.Keyword] indicating that this token has special
+// meaning in the grammar.
 //
-// This is intended to be used for simplifying parsing, instead of comparing
-// [Token.Text] to a literal string value.
+// Both a [Keyword] and an [Ident] may produce keyword values; the former
+// are called hard keywords; the latter soft keywords. Soft keywords are meant
+// to be useable as identifiers by a parser unless they happen to be in the
+// right place for their keyword value to matter; hard keywords are rejected
+// when used as identifiers.
 func (t Token) Keyword() keyword.Keyword {
 	switch {
 	case t.IsZero():
@@ -173,10 +176,25 @@ func (t Token) Text() string {
 	return t.Context().Text()[start:end]
 }
 
+// SetKind overwrites the kind of this token.
+//
+// Panics if the token's stream is frozen.
+func (t Token) SetKind(k Kind) {
+	if t.Context().frozen {
+		panic("protocompile/token: attempted to mutate frozen stream")
+	}
+
+	if raw := t.nat(); raw != nil {
+		*raw = raw.WithKind(k)
+	} else {
+		t.synth().kind = k
+	}
+}
+
 // Span implements [Spanner].
-func (t Token) Span() report.Span {
+func (t Token) Span() source.Span {
 	if t.IsZero() || t.IsSynthetic() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	var a, b int
@@ -192,9 +210,9 @@ func (t Token) Span() report.Span {
 }
 
 // LeafSpan returns the span that this token would have if it was a leaf token.
-func (t Token) LeafSpan() report.Span {
+func (t Token) LeafSpan() source.Span {
 	if t.IsZero() || t.IsSynthetic() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	return t.Context().Span(t.offsets())

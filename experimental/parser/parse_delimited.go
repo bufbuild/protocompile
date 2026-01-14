@@ -19,14 +19,17 @@ import (
 	"slices"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
+	"github.com/bufbuild/protocompile/experimental/internal/just"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
 // delimited is a mechanism for parsing a punctuation-delimited list.
-type delimited[T report.Spanner] struct {
+type delimited[T source.Spanner] struct {
 	p *parser
 	c *token.Cursor
 
@@ -78,11 +81,11 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		_ = d.c.Next()
 		latest = idx
 
-		d.p.Error(errUnexpected{
-			what:  next,
-			where: d.in.In(),
-			want:  d.what.AsSet(),
-			got:   fmt.Sprintf("leading `%s`", next.Text()),
+		d.p.Error(errtoken.Unexpected{
+			What:  next,
+			Where: d.in.In(),
+			Want:  d.what.AsSet(),
+			Got:   fmt.Sprintf("leading `%s`", next.Text()),
 		}).Apply(report.SuggestEdits(
 			next.Span(),
 			fmt.Sprintf("delete this `%s`", next.Text()),
@@ -117,16 +120,16 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 				want = d.delimNouns()
 			}
 
-			what := report.Spanner(first)
+			what := source.Spanner(first)
 			if !last.IsZero() {
-				what = report.Join(first, last)
+				what = source.Join(first, last)
 			}
 
 			badPrefix = true
-			d.p.Error(errUnexpected{
-				what:  what,
-				where: d.in.In(),
-				want:  want,
+			d.p.Error(errtoken.Unexpected{
+				What:  what,
+				Where: d.in.In(),
+				Want:  want,
 			})
 		}
 
@@ -136,19 +139,19 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 		}
 
 		if !badPrefix && needDelim && delim.IsZero() {
-			d.p.Error(errUnexpected{
-				what:  v,
-				where: d.in.In(),
-				want:  d.delimNouns(),
+			d.p.Error(errtoken.Unexpected{
+				What:  v,
+				Where: d.in.In(),
+				Want:  d.delimNouns(),
 			}).Apply(
 				report.Snippetf(v.Span().Rune(0), "note: assuming a missing `%s` here", d.delims[latest]),
-				justify(
+				just.Justify(
 					d.p.File().Stream(),
 					v.Span(),
 					fmt.Sprintf("add a `%s` here", d.delims[latest]),
-					justified{
-						report.Edit{Replace: d.delims[latest].String()},
-						justifyLeft,
+					just.Edit{
+						Edit: report.Edit{Replace: d.delims[latest].String()},
+						Kind: just.Left,
 					},
 				),
 			)
@@ -171,11 +174,11 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 			}
 
 			// Diagnose all extra delimiters after the first.
-			d.p.Error(errUnexpected{
-				what:  next,
-				where: d.in.In(),
-				want:  d.what.AsSet(),
-				got:   fmt.Sprintf("extra `%s`", next.Text()),
+			d.p.Error(errtoken.Unexpected{
+				What:  next,
+				Where: d.in.In(),
+				Want:  d.what.AsSet(),
+				Got:   fmt.Sprintf("extra `%s`", next.Text()),
 			}).Apply(
 				report.Snippetf(delim, "first delimiter is here"),
 				report.SuggestEdits(
@@ -202,17 +205,17 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 
 	switch {
 	case d.exhaust && !d.c.Done():
-		d.p.Error(errUnexpected{
-			what:  report.JoinSeq(d.c.Rest()),
-			where: d.in.In(),
-			want:  d.what.AsSet(),
-			got:   "tokens",
+		d.p.Error(errtoken.Unexpected{
+			What:  source.JoinSeq(d.c.Rest()),
+			Where: d.in.In(),
+			Want:  d.what.AsSet(),
+			Got:   "tokens",
 		})
 	case !d.trailing && !delim.IsZero():
-		d.p.Error(errUnexpected{
-			what:  delim,
-			where: d.in.In(),
-			got:   fmt.Sprintf("trailing `%s`", delim.Text()),
+		d.p.Error(errtoken.Unexpected{
+			What:  delim,
+			Where: d.in.In(),
+			Got:   fmt.Sprintf("trailing `%s`", delim.Text()),
 		}).Apply(report.SuggestEdits(
 			delim.Span(),
 			fmt.Sprintf("delete this `%s`", delim.Text()),
@@ -224,7 +227,7 @@ func (d delimited[T]) iter(yield func(value T, delim token.Token) bool) {
 func (d delimited[T]) delimNouns() taxa.Set {
 	var set taxa.Set
 	for _, delim := range d.delims {
-		set = set.With(taxa.Keyword(delim))
+		set = set.With(taxa.Noun(delim))
 	}
 	return set
 }

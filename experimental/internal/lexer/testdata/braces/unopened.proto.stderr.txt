@@ -1,0 +1,7 @@
+error: encountered unmatched `)` delimiter
+  --> testdata/braces/unopened.proto:5:1
+   |
+ 5 | )
+   | ^ expected a closing `(`
+
+encountered 1 error

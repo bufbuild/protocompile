@@ -1,0 +1,31 @@
+error: unrecognized token
+  --> testdata/punct.proto:5:3
+   |
+ 5 | ! @ # $ % ^ & * + _
+   |   ^
+
+error: unrecognized token
+  --> testdata/punct.proto:5:5
+   |
+ 5 | ! @ # $ % ^ & * + _
+   |     ^
+
+error: unrecognized token
+  --> testdata/punct.proto:5:7
+   |
+ 5 | ! @ # $ % ^ & * + _
+   |       ^
+
+error: unrecognized token
+  --> testdata/punct.proto:5:9
+   |
+ 5 | ! @ # $ % ^ & * + _
+   |         ^
+
+error: unrecognized token
+  --> testdata/punct.proto:5:13
+   |
+ 5 | ! @ # $ % ^ & * + _
+   |             ^
+
+encountered 5 errors

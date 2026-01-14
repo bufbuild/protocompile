@@ -1,0 +1,14 @@
+#		kind		keyword		offsets		linecol		text
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:069		002:001		"//%   bracket: [\"(\", \")\", \"[\", \"]\", \"{\", \"}\", \"<\", \">\"]"
+3		Space		Unknown		069:070		002:056		"\n"
+4		Comment		Comment		070:096		003:001		"//%   line_comment: [\"//\"]"
+5		Space		Unknown		096:097		003:027		"\n"
+6		Space		Unknown		097:098		004:001		"\n"
+7		Keyword		Braces		098:107		005:001		"{"		close:Token(12)
+8		Space		Unknown		099:100		005:002		"\n"
+9		Space		Unknown		100:104		006:001		"    "
+10		Keyword		RBracket		104:105		006:005		"]"
+11		Space		Unknown		105:106		006:006		"\n"
+12		Keyword		Braces		098:107		005:001		"}"		open:Token(7)

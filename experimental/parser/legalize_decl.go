@@ -20,12 +20,14 @@ import (
 	"unicode"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
 	"github.com/bufbuild/protocompile/internal/ext/stringsx"
+	"github.com/bufbuild/protocompile/internal/ext/unicodex"
 )
 
 // legalizeDecl legalizes a declaration.
@@ -143,10 +145,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			if str := lit.AsString(); !str.IsZero() {
 				name := str.Text()
 				if in == taxa.Extensions {
-					p.Error(errUnexpected{
-						what:  expr,
-						where: in.In(),
-						want:  want,
+					p.Error(errtoken.Unexpected{
+						What:  expr,
+						Where: in.In(),
+						Want:  want,
 					})
 					break
 				}
@@ -159,7 +161,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 					)
 
 					// Only suggest unquoting if it's already an identifier.
-					if isASCIIIdent(name) {
+					if unicodex.IsASCIIIdent(name) {
 						err.Apply(report.SuggestEdits(
 							lit, "replace this with an identifier",
 							report.Edit{
@@ -172,7 +174,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 					break
 				}
 
-				if !isASCIIIdent(name) {
+				if !unicodex.IsASCIIIdent(name) {
 					field := taxa.Field
 					if parent.what == taxa.Enum {
 						field = taxa.EnumValue
@@ -184,7 +186,7 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 				}
 
 				if !str.IsPure() {
-					p.Warn(errImpureString{lit.Token, in.In()})
+					p.Warn(errtoken.ImpureString{Token: lit.Token, Where: in.In()})
 				}
 
 				break
@@ -196,10 +198,10 @@ func legalizeRange(p *parser, parent classified, decl ast.DeclRange) {
 			tags = append(tags, expr)
 
 		default:
-			p.Error(errUnexpected{
-				what:  expr,
-				where: in.In(),
-				want:  want,
+			p.Error(errtoken.Unexpected{
+				What:  expr,
+				Where: in.In(),
+				Want:  want,
 			})
 		}
 	}

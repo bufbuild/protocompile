@@ -16,8 +16,8 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -127,16 +127,16 @@ func (d DeclRange) Semicolon() token.Token {
 	return id.Wrap(d.Context().Stream(), d.Raw().semi)
 }
 
-// Span implements [report.Spanner].
-func (d DeclRange) Span() report.Span {
+// Span implements [source.Spanner].
+func (d DeclRange) Span() source.Span {
 	r := d.Ranges()
 	switch {
 	case d.IsZero():
-		return report.Span{}
+		return source.Span{}
 	case r.Len() == 0:
-		return report.Join(d.KeywordToken(), d.Semicolon(), d.Options())
+		return source.Join(d.KeywordToken(), d.Semicolon(), d.Options())
 	default:
-		return report.Join(
+		return source.Join(
 			d.KeywordToken(), d.Semicolon(), d.Options(),
 			r.At(0),
 			r.At(r.Len()-1),

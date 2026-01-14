@@ -200,7 +200,7 @@ func (t Type) AllowsAlias() bool {
 // IsAny returns whether this is the type google.protobuf.Any, which gets special
 // treatment in the language.
 func (t Type) IsAny() bool {
-	return t.InternedFullName() == t.Context().session.builtins.AnyPath
+	return !t.IsZero() && t.InternedFullName() == t.Context().session.builtins.AnyPath
 }
 
 // IsExported returns whether this type is exported for the purposes of
@@ -454,7 +454,10 @@ func (t Type) Extensions() seq.Indexer[Member] {
 //
 // This does not include reserved field names; see [Type.ReservedNames].
 func (t Type) AllRanges() seq.Indexer[ReservedRange] {
-	slice := t.Raw().ranges
+	var slice []id.ID[ReservedRange]
+	if !t.IsZero() {
+		slice = t.Raw().ranges
+	}
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
 		return id.Wrap(t.Context(), p)
 	})
@@ -464,7 +467,10 @@ func (t Type) AllRanges() seq.Indexer[ReservedRange] {
 //
 // This does not include reserved field names; see [Type.ReservedNames].
 func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
-	slice := t.Raw().ranges[:t.Raw().rangesExtnStart]
+	var slice []id.ID[ReservedRange]
+	if !t.IsZero() {
+		slice = t.Raw().ranges[:t.Raw().rangesExtnStart]
+	}
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
 		return id.Wrap(t.Context(), p)
 	})
@@ -472,7 +478,10 @@ func (t Type) ReservedRanges() seq.Indexer[ReservedRange] {
 
 // ExtensionRanges returns the extension ranges declared in this type.
 func (t Type) ExtensionRanges() seq.Indexer[ReservedRange] {
-	slice := t.Raw().ranges[t.Raw().rangesExtnStart:]
+	var slice []id.ID[ReservedRange]
+	if !t.IsZero() {
+		slice = t.Raw().ranges[t.Raw().rangesExtnStart:]
+	}
 	return seq.NewFixedSlice(slice, func(_ int, p id.ID[ReservedRange]) ReservedRange {
 		return id.Wrap(t.Context(), p)
 	})
@@ -480,8 +489,12 @@ func (t Type) ExtensionRanges() seq.Indexer[ReservedRange] {
 
 // ReservedNames returns the reserved named declared in this type.
 func (t Type) ReservedNames() seq.Indexer[ReservedName] {
+	var slice []rawReservedName
+	if !t.IsZero() {
+		slice = t.Raw().reservedNames
+	}
 	return seq.NewFixedSlice(
-		t.Raw().reservedNames,
+		slice,
 		func(i int, _ rawReservedName) ReservedName {
 			return ReservedName{id.WrapContext(t.Context()), &t.Raw().reservedNames[i]}
 		},
@@ -524,8 +537,12 @@ func (t Type) OccupiedRanges() iter.Seq2[[2]int32, seq.Indexer[TagRange]] {
 
 // Oneofs returns the options applied to this type.
 func (t Type) Oneofs() seq.Indexer[Oneof] {
+	var oneofs []id.ID[Oneof]
+	if !t.IsZero() {
+		oneofs = t.Raw().oneofs
+	}
 	return seq.NewFixedSlice(
-		t.Raw().oneofs,
+		oneofs,
 		func(_ int, p id.ID[Oneof]) Oneof {
 			return id.Wrap(t.Context(), p)
 		},
@@ -534,8 +551,12 @@ func (t Type) Oneofs() seq.Indexer[Oneof] {
 
 // Extends returns the options applied to this type.
 func (t Type) Extends() seq.Indexer[Extend] {
+	var extends []id.ID[Extend]
+	if !t.IsZero() {
+		extends = t.Raw().extends
+	}
 	return seq.NewFixedSlice(
-		t.Raw().extends,
+		extends,
 		func(_ int, p id.ID[Extend]) Extend {
 			return id.Wrap(t.Context(), p)
 		},
@@ -544,6 +565,9 @@ func (t Type) Extends() seq.Indexer[Extend] {
 
 // Options returns the options applied to this type.
 func (t Type) Options() MessageValue {
+	if t.IsZero() {
+		return MessageValue{}
+	}
 	return id.Wrap(t.Context(), t.Raw().options).AsMessage()
 }
 

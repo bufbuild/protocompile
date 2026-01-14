@@ -24,7 +24,7 @@ import (
 
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/internal/astx"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 )
@@ -32,28 +32,29 @@ import (
 func TestNaturalSplit(t *testing.T) {
 	t.Parallel()
 
-	c := ast.New(report.NewFile("test.proto", "a.b./*idk*/(a.b.c )/*x*/.d"))
+	f := source.NewFile("test.proto", "a.b./*idk*/(a.b.c )/*x*/.d")
 
 	// Manually lex the Path above.
-	s := c.Stream()
+	s := &token.Stream{File: f}
 	tokens := []token.Token{
 		s.Push(1, token.Ident),   //  0 a
-		s.Push(1, token.Punct),   //  1 .
+		s.Push(1, token.Keyword), //  1 .
 		s.Push(1, token.Ident),   //  2 b
-		s.Push(1, token.Punct),   //  3 .
+		s.Push(1, token.Keyword), //  3 .
 		s.Push(7, token.Comment), //  4 /*idk*/
-		s.Push(1, token.Punct),   //  5 (
+		s.Push(1, token.Keyword), //  5 (
 		s.Push(1, token.Ident),   //  6 a
-		s.Push(1, token.Punct),   //  7 .
+		s.Push(1, token.Keyword), //  7 .
 		s.Push(1, token.Ident),   //  8 b
-		s.Push(1, token.Punct),   //  9 .
+		s.Push(1, token.Keyword), //  9 .
 		s.Push(1, token.Ident),   // 10 c
 		s.Push(1, token.Space),   // 11
-		s.Push(1, token.Punct),   // 12 )
+		s.Push(1, token.Keyword), // 12 )
 		s.Push(5, token.Comment), // 13 /*x*/
-		s.Push(1, token.Punct),   // 14 .
+		s.Push(1, token.Keyword), // 14 .
 		s.Push(1, token.Ident),   // 15 d
 	}
+	c := ast.New("test.proto", s)
 
 	token.Fuse(tokens[5], tokens[12])
 
@@ -104,15 +105,16 @@ func TestNaturalSplit(t *testing.T) {
 func TestSyntheticSplit(t *testing.T) {
 	t.Parallel()
 
-	ctx := ast.New(report.NewFile("test.proto", "a.b.(a.b.c).d"))
+	f := source.NewFile("test.proto", "a.b.(a.b.c).d")
 
 	// Manually build this path: a.b.(a.b.c).d
-	s := ctx.Stream()
+	s := &token.Stream{File: f}
 	p := s.NewPunct(".")
 	a := s.NewIdent("a")
 	b := s.NewIdent("b")
 	c := s.NewIdent("c")
 	d := s.NewIdent("d")
+	ctx := ast.New("test.proto", s)
 	inner := ctx.Nodes().NewPath(
 		ctx.Nodes().NewPathComponent(token.Zero, a),
 		ctx.Nodes().NewPathComponent(p, b),

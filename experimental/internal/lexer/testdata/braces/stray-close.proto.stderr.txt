@@ -1,0 +1,11 @@
+error: encountered unmatched `{` delimiter
+  --> testdata/braces/stray-close.proto:5:1
+   |
+ 5 | {
+   | ^ expected a closing `}`
+ 6 |     ]
+   |     - closed by this instead
+ 7 | }
+   | - help: perhaps it was meant to match this?
+
+encountered 1 error

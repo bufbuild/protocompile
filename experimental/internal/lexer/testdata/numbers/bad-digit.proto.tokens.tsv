@@ -1,0 +1,33 @@
+#		kind		keyword		offsets		linecol		text
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:040		002:001		"//%   line_comment: [\"//\"]"
+3		Space		Unknown		040:041		002:027		"\n"
+4		Comment		Comment		041:044		003:001		"//%"
+5		Space		Unknown		044:045		003:004		"\n"
+6		Comment		Comment		045:080		004:001		"//% number_can_start_with_dot: true"
+7		Space		Unknown		080:081		004:036		"\n"
+8		Comment		Comment		081:106		005:001		"//% old_style_octal: true"
+9		Space		Unknown		106:107		005:026		"\n"
+10		Number		Unknown		107:109		006:001		"1a"		int:0/10/1
+11		Space		Unknown		109:110		006:003		"\n"
+12		Number		Unknown		110:112		007:001		"0f"		int:0/8/1		pre:"0"
+13		Space		Unknown		112:113		007:003		"\n"
+14		Number		Unknown		113:117		008:001		"0b02"		int:0/2/1		pre:"0b"
+15		Space		Unknown		117:118		008:005		"\n"
+16		Number		Unknown		118:122		009:001		"0o08"		int:0/8/1		pre:"0o"
+17		Space		Unknown		122:123		009:005		"\n"
+18		Number		Unknown		123:125		010:001		"08"		int:0/8/1		pre:"0"
+19		Space		Unknown		125:126		010:003		"\n"
+20		Number		Unknown		126:130		011:001		"08.9"		fp:8.900390625/10/1
+21		Space		Unknown		130:131		011:005		"\n"
+22		Number		Unknown		131:135		012:001		"0x0G"		int:0/16/1		pre:"0x"
+23		Space		Unknown		135:136		012:005		"\n"
+24		Number		Unknown		136:143		013:001		"0x1.zzz"		fp:0/16/1		pre:"0x"
+25		Space		Unknown		143:144		013:008		"\n"
+26		Space		Unknown		144:145		014:001		"\n"
+27		Number		Unknown		145:154		015:001		"1.2.3e456"		fp:0/10/10
+28		Space		Unknown		154:155		015:010		"\n"
+29		Number		Unknown		155:164		016:001		"1.23e4.56"		fp:0/10/10
+30		Space		Unknown		164:165		016:010		"\n"
+31		Number		Unknown		165:174		017:001		"1.23e456."		fp:0/10/10

@@ -1,0 +1,13 @@
+//% keywords:
+//%   soft: [string, message]
+//%   line_comment: ["//"]
+a b c
+string message
+foo_bar fooBar
+_ __ ____
+__snake__
+SCREAMING
+abcdefghijklmnopqrstuvwxyz
+ABCDEFGHIJKLMNOPQRSTUVWXYZ
+_0123456789
+_0_

@@ -22,12 +22,14 @@ import (
 	"strings"
 )
 
+const setWords = (taxaCount + 1 + 63) / 64
+
 // Set is a set of [Noun] values, implicitly ordered by the [Noun] values'
 // intrinsic order.
 //
 // A zero Set is empty and ready to use.
 type Set struct {
-	bits [(total + 63) / 64]uint64
+	bits [setWords]uint64
 }
 
 // NewSet returns a new [Set] with the given values set.
@@ -48,7 +50,7 @@ func (s Set) Len() int {
 
 // Has checks whether w is present in this set.
 func (s Set) Has(w Noun) bool {
-	if w >= Noun(total) {
+	if w >= Noun(taxaCount) {
 		return false
 	}
 
@@ -61,7 +63,7 @@ func (s Set) Has(w Noun) bool {
 // Panics if any value is not one of the constants in this package.
 func (s Set) With(subjects ...Noun) Set {
 	for _, v := range subjects {
-		if v >= Noun(total) {
+		if v >= Noun(taxaCount) {
 			panic(fmt.Sprintf("internal/what: inserted invalid value %d", v))
 		}
 
@@ -70,13 +72,69 @@ func (s Set) With(subjects ...Noun) Set {
 	return s
 }
 
+// Keywords returns the subset of s consisting only of the keywords.
+func (s Set) Keywords() Set {
+	for i, bits := range s.NonKeywords().bits {
+		s.bits[i] &^= bits
+	}
+	return s
+}
+
+// NonKeywords returns the subset of s consisting only of the non-keywords.
+func (s Set) NonKeywords() Set {
+	for bits := keywordCount; bits > 0; bits -= 64 {
+		mask := uint64(1<<bits) - 1
+		s.bits[(keywordCount-bits)/64] &^= mask
+	}
+	return s
+}
+
+// String implements [fmt.Stringer].
+func (s Set) String() string {
+	buf := new(strings.Builder)
+	buf.WriteString("taxa.Set{")
+
+	first := true
+	for bit := range s.setBits() {
+		if !first {
+			buf.WriteString(", ")
+		}
+		first = false
+		buf.WriteString(Noun(bit).GoString())
+	}
+
+	buf.WriteString("}")
+	return buf.String()
+}
+
+// String implements [fmt.GoStringer].
+func (s Set) GoString() string {
+	return s.String()
+}
+
 // All returns an iterator over the elements in the set.
 func (s Set) All() iter.Seq[Noun] {
 	return func(yield func(Noun) bool) {
+		// First loop over non-keywords, then the keywords.
+		for bit := range s.NonKeywords().setBits() {
+			if !yield(Noun(bit)) {
+				return
+			}
+		}
+		for bit := range s.Keywords().setBits() {
+			if !yield(Noun(bit)) {
+				return
+			}
+		}
+	}
+}
+
+func (s Set) setBits() iter.Seq[int] {
+	return func(yield func(int) bool) {
 		for i, word := range s.bits {
 			next := i * 64
 			for word != 0 {
-				if word&1 == 1 && !yield(Noun(next)) {
+				if word&1 == 1 && !yield(next) {
 					return
 				}
 

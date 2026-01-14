@@ -18,8 +18,8 @@ import (
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/internal/arena"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -38,6 +38,7 @@ import (
 type File struct {
 	_      unsafex.NoCopy
 	stream *token.Stream
+	path   string
 
 	decls   decls
 	types   types
@@ -52,10 +53,13 @@ type File struct {
 type withContext = id.HasContext[*File]
 
 // New creates a fresh context for a file.
-func New(file *report.File) *File {
-	f := new(File)
-	f.stream = &token.Stream{
-		File: file,
+//
+// path is the semantic import path of this file, which may not be the same as
+// file.Path, which is used for diagnostics.
+func New(path string, stream *token.Stream) *File {
+	f := &File{
+		stream: stream,
+		path:   path,
 	}
 	_ = f.Nodes().NewDeclBody(token.Zero) // This is the rawBody for the whole file.
 
@@ -92,6 +96,14 @@ func (f *File) Imports() iter.Seq[DeclImport] {
 	})
 }
 
+// Path returns the semantic import path of this file.
+func (f *File) Path() string {
+	if f == nil {
+		return ""
+	}
+	return f.path
+}
+
 // Decls returns all of the top-level declarations in this file.
 func (f *File) Decls() seq.Inserter[DeclAny] {
 	return id.Wrap(f, id.ID[DeclBody](1)).Decls()
@@ -112,7 +124,7 @@ func (f *File) Nodes() *Nodes {
 }
 
 // Stream returns the underlying token stream.
-func (f *File) Span() report.Span {
+func (f *File) Span() source.Span {
 	return id.Wrap(f, id.ID[DeclBody](1)).Span()
 }
 

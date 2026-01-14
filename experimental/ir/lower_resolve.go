@@ -24,7 +24,9 @@ import (
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/ir/presence"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/report/tags"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -235,7 +237,7 @@ type symbolRef struct {
 	*report.Report
 
 	scope, name FullName
-	span        report.Spanner
+	span        source.Spanner
 
 	skipIfNot, accept func(SymbolKind) bool
 	want              taxa.Noun
@@ -306,6 +308,7 @@ func (r symbolRef) resolve() Symbol {
 func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Diagnostic {
 	if sym.IsZero() {
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
+			report.Tag(tags.UnknownSymbol),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Helpf("the full name of this scope is `%s`", r.scope),
 		)
@@ -322,6 +325,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 	case expectedName != "":
 		// Complain if we found the "wrong" type.
 		return r.Errorf("cannot find `%s` in this scope", r.name).Apply(
+			report.Tag(tags.UnknownSymbol),
 			report.Snippetf(r.span, "not found in this scope"),
 			report.Snippetf(sym.Definition(),
 				"found possibly related symbol `%s`", sym.FullName()),

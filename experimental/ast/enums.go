@@ -159,14 +159,14 @@ var _table_DeclKind_String = [...]string{
 }
 
 var _table_DeclKind_GoString = [...]string{
-	DeclKindInvalid: "DeclKindInvalid",
-	DeclKindEmpty:   "DeclKindEmpty",
-	DeclKindSyntax:  "DeclKindSyntax",
-	DeclKindPackage: "DeclKindPackage",
-	DeclKindImport:  "DeclKindImport",
-	DeclKindDef:     "DeclKindDef",
-	DeclKindBody:    "DeclKindBody",
-	DeclKindRange:   "DeclKindRange",
+	DeclKindInvalid: "ast.DeclKindInvalid",
+	DeclKindEmpty:   "ast.DeclKindEmpty",
+	DeclKindSyntax:  "ast.DeclKindSyntax",
+	DeclKindPackage: "ast.DeclKindPackage",
+	DeclKindImport:  "ast.DeclKindImport",
+	DeclKindDef:     "ast.DeclKindDef",
+	DeclKindBody:    "ast.DeclKindBody",
+	DeclKindRange:   "ast.DeclKindRange",
 }
 
 var _table_DefKind_String = [...]string{
@@ -184,17 +184,17 @@ var _table_DefKind_String = [...]string{
 }
 
 var _table_DefKind_GoString = [...]string{
-	DefKindInvalid:   "DefKindInvalid",
-	DefKindMessage:   "DefKindMessage",
-	DefKindEnum:      "DefKindEnum",
-	DefKindService:   "DefKindService",
-	DefKindExtend:    "DefKindExtend",
-	DefKindField:     "DefKindField",
-	DefKindOneof:     "DefKindOneof",
-	DefKindGroup:     "DefKindGroup",
-	DefKindEnumValue: "DefKindEnumValue",
-	DefKindMethod:    "DefKindMethod",
-	DefKindOption:    "DefKindOption",
+	DefKindInvalid:   "ast.DefKindInvalid",
+	DefKindMessage:   "ast.DefKindMessage",
+	DefKindEnum:      "ast.DefKindEnum",
+	DefKindService:   "ast.DefKindService",
+	DefKindExtend:    "ast.DefKindExtend",
+	DefKindField:     "ast.DefKindField",
+	DefKindOneof:     "ast.DefKindOneof",
+	DefKindGroup:     "ast.DefKindGroup",
+	DefKindEnumValue: "ast.DefKindEnumValue",
+	DefKindMethod:    "ast.DefKindMethod",
+	DefKindOption:    "ast.DefKindOption",
 }
 
 var _table_ExprKind_String = [...]string{
@@ -210,15 +210,15 @@ var _table_ExprKind_String = [...]string{
 }
 
 var _table_ExprKind_GoString = [...]string{
-	ExprKindInvalid:  "ExprKindInvalid",
-	ExprKindError:    "ExprKindError",
-	ExprKindLiteral:  "ExprKindLiteral",
-	ExprKindPrefixed: "ExprKindPrefixed",
-	ExprKindPath:     "ExprKindPath",
-	ExprKindRange:    "ExprKindRange",
-	ExprKindArray:    "ExprKindArray",
-	ExprKindDict:     "ExprKindDict",
-	ExprKindField:    "ExprKindField",
+	ExprKindInvalid:  "ast.ExprKindInvalid",
+	ExprKindError:    "ast.ExprKindError",
+	ExprKindLiteral:  "ast.ExprKindLiteral",
+	ExprKindPrefixed: "ast.ExprKindPrefixed",
+	ExprKindPath:     "ast.ExprKindPath",
+	ExprKindRange:    "ast.ExprKindRange",
+	ExprKindArray:    "ast.ExprKindArray",
+	ExprKindDict:     "ast.ExprKindDict",
+	ExprKindField:    "ast.ExprKindField",
 }
 
 var _table_TypeKind_String = [...]string{
@@ -230,10 +230,10 @@ var _table_TypeKind_String = [...]string{
 }
 
 var _table_TypeKind_GoString = [...]string{
-	TypeKindInvalid:  "TypeKindInvalid",
-	TypeKindError:    "TypeKindError",
-	TypeKindPath:     "TypeKindPath",
-	TypeKindPrefixed: "TypeKindPrefixed",
-	TypeKindGeneric:  "TypeKindGeneric",
+	TypeKindInvalid:  "ast.TypeKindInvalid",
+	TypeKindError:    "ast.TypeKindError",
+	TypeKindPath:     "ast.TypeKindPath",
+	TypeKindPrefixed: "ast.TypeKindPrefixed",
+	TypeKindGeneric:  "ast.TypeKindGeneric",
 }
 var _ iter.Seq[int] // Mark iter as used.

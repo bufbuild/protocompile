@@ -86,18 +86,18 @@ var _table_Syntax_String = map[Syntax]string{
 }
 
 var _table_Syntax_GoString = map[Syntax]string{
-	Unknown:          "Unknown",
-	Proto2:           "Proto2",
-	Proto3:           "Proto3",
-	Edition2023:      "Edition2023",
-	Edition2024:      "Edition2024",
-	EditionLegacy:    "EditionLegacy",
-	EditionTest1:     "EditionTest1",
-	EditionTest2:     "EditionTest2",
-	EditionTest99997: "EditionTest99997",
-	EditionTest99998: "EditionTest99998",
-	EditionTest99999: "EditionTest99999",
-	EditionMax:       "EditionMax",
+	Unknown:          "syntax.Unknown",
+	Proto2:           "syntax.Proto2",
+	Proto3:           "syntax.Proto3",
+	Edition2023:      "syntax.Edition2023",
+	Edition2024:      "syntax.Edition2024",
+	EditionLegacy:    "syntax.EditionLegacy",
+	EditionTest1:     "syntax.EditionTest1",
+	EditionTest2:     "syntax.EditionTest2",
+	EditionTest99997: "syntax.EditionTest99997",
+	EditionTest99998: "syntax.EditionTest99998",
+	EditionTest99999: "syntax.EditionTest99999",
+	EditionMax:       "syntax.EditionMax",
 }
 
 var _table_Syntax_Lookup = map[string]Syntax{

@@ -16,7 +16,7 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -83,11 +83,11 @@ func (e ExprPrefixed) SetExpr(expr ExprAny) {
 	e.Raw().expr = expr.ID()
 }
 
-// report.Span implements [report.Spanner].
-func (e ExprPrefixed) Span() report.Span {
+// source.Span implements [source.Spanner].
+func (e ExprPrefixed) Span() source.Span {
 	if e.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(e.PrefixToken(), e.Expr())
+	return source.Join(e.PrefixToken(), e.Expr())
 }

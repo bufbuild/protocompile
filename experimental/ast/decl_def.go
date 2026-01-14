@@ -18,7 +18,7 @@ import (
 	"iter"
 
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
@@ -191,8 +191,8 @@ func (d DeclDef) Name() Path {
 // Stem returns a span that contains both this definition's type and name.
 //
 // For e.g. a message, this is the "message Foo" part.
-func (d DeclDef) Stem() report.Span {
-	return report.Join(d.Type(), d.Name())
+func (d DeclDef) Stem() source.Span {
+	return source.Join(d.Type(), d.Name())
 }
 
 // Signature returns this definition's type signature, if it has one.
@@ -514,13 +514,13 @@ func (d DeclDef) Classify() DefKind {
 	return DefKindField
 }
 
-// Span implements [report.Spanner].
-func (d DeclDef) Span() report.Span {
+// Span implements [source.Spanner].
+func (d DeclDef) Span() source.Span {
 	if d.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(
+	return source.Join(
 		d.Type(),
 		d.Name(),
 		d.Signature(),
@@ -579,13 +579,13 @@ func (s Signature) Outputs() TypeList {
 	}
 }
 
-// Span implemented [report.Spanner].
-func (s Signature) Span() report.Span {
+// Span implemented [source.Spanner].
+func (s Signature) Span() source.Span {
 	if s.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(s.Inputs(), s.Returns(), s.Outputs())
+	return source.Join(s.Inputs(), s.Returns(), s.Outputs())
 }
 
 // Def is the return type of [DeclDef.Classify].
@@ -596,7 +596,7 @@ func (s Signature) Span() report.Span {
 // A [DeclDef] can't be mutated through a Def; instead, you will need to mutate
 // the general structure instead.
 type Def interface {
-	report.Spanner
+	source.Spanner
 
 	isDef()
 }
@@ -613,7 +613,7 @@ type DefMessage struct {
 }
 
 func (DefMessage) isDef()              {}
-func (d DefMessage) Span() report.Span { return d.Decl.Span() }
+func (d DefMessage) Span() source.Span { return d.Decl.Span() }
 func (d DefMessage) Context() *File    { return d.Decl.Context() }
 
 // DefEnum is a [DeclDef] projected into an enum definition.
@@ -628,7 +628,7 @@ type DefEnum struct {
 }
 
 func (DefEnum) isDef()              {}
-func (d DefEnum) Span() report.Span { return d.Decl.Span() }
+func (d DefEnum) Span() source.Span { return d.Decl.Span() }
 func (d DefEnum) Context() *File    { return d.Decl.Context() }
 
 // DefService is a [DeclDef] projected into a service definition.
@@ -643,7 +643,7 @@ type DefService struct {
 }
 
 func (DefService) isDef()              {}
-func (d DefService) Span() report.Span { return d.Decl.Span() }
+func (d DefService) Span() source.Span { return d.Decl.Span() }
 func (d DefService) Context() *File    { return d.Decl.Context() }
 
 // DefExtend is a [DeclDef] projected into an extension definition.
@@ -658,7 +658,7 @@ type DefExtend struct {
 }
 
 func (DefExtend) isDef()              {}
-func (d DefExtend) Span() report.Span { return d.Decl.Span() }
+func (d DefExtend) Span() source.Span { return d.Decl.Span() }
 func (d DefExtend) Context() *File    { return d.Decl.Context() }
 
 // DefField is a [DeclDef] projected into a field definition.
@@ -676,7 +676,7 @@ type DefField struct {
 }
 
 func (DefField) isDef()              {}
-func (d DefField) Span() report.Span { return d.Decl.Span() }
+func (d DefField) Span() source.Span { return d.Decl.Span() }
 func (d DefField) Context() *File    { return d.Decl.Context() }
 
 // DefEnumValue is a [DeclDef] projected into an enum value definition.
@@ -693,7 +693,7 @@ type DefEnumValue struct {
 }
 
 func (DefEnumValue) isDef()              {}
-func (d DefEnumValue) Span() report.Span { return d.Decl.Span() }
+func (d DefEnumValue) Span() source.Span { return d.Decl.Span() }
 func (d DefEnumValue) Context() *File    { return d.Decl.Context() }
 
 // DefEnumValue is a [DeclDef] projected into a oneof definition.
@@ -708,7 +708,7 @@ type DefOneof struct {
 }
 
 func (DefOneof) isDef()              {}
-func (d DefOneof) Span() report.Span { return d.Decl.Span() }
+func (d DefOneof) Span() source.Span { return d.Decl.Span() }
 func (d DefOneof) Context() *File    { return d.Decl.Context() }
 
 // DefGroup is a [DeclDef] projected into a group definition.
@@ -726,7 +726,7 @@ type DefGroup struct {
 }
 
 func (DefGroup) isDef()              {}
-func (d DefGroup) Span() report.Span { return d.Decl.Span() }
+func (d DefGroup) Span() source.Span { return d.Decl.Span() }
 func (d DefGroup) Context() *File    { return d.Decl.Context() }
 
 // DefMethod is a [DeclDef] projected into a method definition.
@@ -742,7 +742,7 @@ type DefMethod struct {
 }
 
 func (DefMethod) isDef()              {}
-func (d DefMethod) Span() report.Span { return d.Decl.Span() }
+func (d DefMethod) Span() source.Span { return d.Decl.Span() }
 func (d DefMethod) Context() *File    { return d.Decl.Context() }
 
 // DefOption is a [DeclDef] projected into a method definition.
@@ -761,5 +761,5 @@ type DefOption struct {
 }
 
 func (DefOption) isDef()              {}
-func (d DefOption) Span() report.Span { return d.Decl.Span() }
+func (d DefOption) Span() source.Span { return d.Decl.Span() }
 func (d DefOption) Context() *File    { return d.Decl.Context() }

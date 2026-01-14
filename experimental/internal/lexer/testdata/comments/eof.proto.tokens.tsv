@@ -1,0 +1,7 @@
+#		kind		keyword		offsets		linecol		text
+0		Comment		Comment		000:013		001:001		"//% keywords:"
+1		Space		Unknown		013:014		001:014		"\n"
+2		Comment		Comment		014:040		002:001		"//%   line_comment: [\"//\"]"
+3		Space		Unknown		040:041		002:027		"\n"
+4		Space		Unknown		041:042		003:001		"\n"
+5		Comment		Comment		042:084		004:001		"// This comment does not end in a newline."

@@ -19,9 +19,11 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
@@ -52,7 +54,7 @@ func legalizeCompactOptions(p *parser, opts ast.CompactOptions) {
 // We can't perform type-checking yet, so all we can really do here
 // is check that the path is ok for an option. Legalizing the value cannot
 // happen until type-checking in IR construction.
-func legalizeOptionEntry(p *parser, opt ast.Option, decl report.Span) {
+func legalizeOptionEntry(p *parser, opt ast.Option, decl source.Span) {
 	if opt.Path.IsZero() {
 		p.Errorf("missing %v path", taxa.Option).Apply(
 			report.Snippet(decl),
@@ -78,7 +80,7 @@ func legalizeOptionEntry(p *parser, opt ast.Option, decl report.Span) {
 }
 
 // legalizeValue conservatively legalizes a def's value.
-func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.ExprAny, where taxa.Place) {
+func legalizeValue(p *parser, decl source.Span, parent ast.ExprAny, value ast.ExprAny, where taxa.Place) {
 	// TODO: Some diagnostics emitted by this function must be suppressed by type
 	// checking, which generates more precise diagnostics.
 
@@ -102,9 +104,9 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 		array := value.AsArray().Elements()
 		switch {
 		case parent.IsZero() && where.Subject() == taxa.OptionValue:
-			err := p.Error(errUnexpected{
-				what:  value,
-				where: where,
+			err := p.Error(errtoken.Unexpected{
+				What:  value,
+				Where: where,
 			}).Apply(
 				report.Notef("%ss can only appear inside of %ss", taxa.Array, taxa.Dict),
 			)
@@ -167,21 +169,20 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 		if dict.Braces().Keyword() == keyword.Angles {
 			var err *report.Diagnostic
 			if parent.IsZero() {
-				err = p.Errorf("cannot use %s for %s here", taxa.Angles, taxa.Dict)
+				err = p.Errorf("cannot use `<...>` for %s here", taxa.Dict)
 			} else {
-				err = p.Warnf("using %s for %s is not recommended", taxa.Angles, taxa.Dict)
+				err = p.Warnf("using `<...>` for %s is not recommended", taxa.Dict)
 			}
 
 			err.Apply(
 				report.Snippet(value),
 				report.SuggestEdits(
-					dict,
-					fmt.Sprintf("use %s instead", taxa.Braces),
+					dict, "use `{...}` instead",
 					report.Edit{Start: 0, End: 1, Replace: "{"},
 					report.Edit{Start: dict.Span().Len() - 1, End: dict.Span().Len(), Replace: "}"},
 				),
-				report.Notef("%s are only permitted for sub-messages within a %s, but as top-level option values", taxa.Angles, taxa.Dict),
-				report.Helpf("%s %ss are an obscure feature and not recommended", taxa.Angles, taxa.Dict),
+				report.Notef("`<...>` are only permitted for sub-messages within a %s, but as top-level option values", taxa.Dict),
+				report.Helpf("`<...>` %ss are an obscure feature and not recommended", taxa.Dict),
 			)
 		}
 
@@ -196,11 +197,10 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 				first, _ := iterx.First(path.Components)
 				if !first.AsExtension().IsZero() {
 					// TODO: move this into ir/lower_eval.go
-					p.Errorf("cannot name extension field using %s in %s", taxa.Parens, taxa.Dict).Apply(
-						report.Snippetf(path, "expected this to be wrapped in %s instead", taxa.Brackets),
+					p.Errorf("cannot name extension field using `(...)` in %s", taxa.Dict).Apply(
+						report.Snippetf(path, "expected this to be wrapped in `[...]` instead"),
 						report.SuggestEdits(
-							path,
-							fmt.Sprintf("replace the %s with %s", taxa.Parens, taxa.Brackets),
+							path, "replace the `(...)` with `[...]`",
 							report.Edit{Start: 0, End: 1, Replace: "["},
 							report.Edit{Start: path.Span().Len() - 1, End: path.Span().Len(), Replace: "]"},
 						),
@@ -217,16 +217,16 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 						break
 					}
 
-					p.Error(errUnexpected{
-						what:  kv.Key(),
-						where: taxa.DictField.In(),
-						want:  want,
+					p.Error(errtoken.Unexpected{
+						What:  kv.Key(),
+						Where: taxa.DictField.In(),
+						Want:  want,
 					})
 					break
 				}
 
 				slashIdx, _ := iterx.Find(path.Components, func(pc ast.PathComponent) bool {
-					return pc.Separator().Keyword() == keyword.Slash
+					return pc.Separator().Keyword() == keyword.Div
 				})
 				if slashIdx != -1 {
 					legalizePath(p, taxa.TypeURL.In(), path, pathOptions{AllowSlash: true})
@@ -239,10 +239,10 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 				}
 			default:
 				if !kv.Key().IsZero() {
-					p.Error(errUnexpected{
-						what:  kv.Key(),
-						where: taxa.DictField.In(),
-						want:  want,
+					p.Error(errtoken.Unexpected{
+						What:  kv.Key(),
+						Where: taxa.DictField.In(),
+						Want:  want,
 					})
 				}
 			}
@@ -259,18 +259,15 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 					if e.Kind() == ast.ExprKindDict {
 						continue
 					}
-					p.Error(errUnexpected{
-						what:  e,
-						where: taxa.Array.In(),
-						want:  taxa.Dict.AsSet(),
+					p.Error(errtoken.Unexpected{
+						What:  e,
+						Where: taxa.Array.In(),
+						Want:  taxa.Dict.AsSet(),
 					}).Apply(
-						report.Snippetf(kv.Key(),
-							"because this %s is missing a %s",
-							taxa.DictField, taxa.Colon),
+						report.Snippetf(kv.Key(), "because this %s is missing a `:`", taxa.DictField),
 						report.Notef(
-							"the %s can be omitted in a %s, but only if the value is a %s or a %s of them",
-							taxa.Colon, taxa.DictField,
-							taxa.Dict, taxa.Array),
+							"the `:` can be omitted in a %s, but only if the value is a %s or a %s of them",
+							taxa.DictField, taxa.Dict, taxa.Array),
 					)
 
 					break // Only diagnose the first one.
@@ -280,7 +277,7 @@ func legalizeValue(p *parser, decl report.Span, parent ast.ExprAny, value ast.Ex
 			legalizeValue(p, decl, kv.AsAny(), kv.Value(), where)
 		}
 	default:
-		p.Error(errUnexpected{what: value, where: where})
+		p.Error(errtoken.Unexpected{What: value, Where: where})
 	}
 }
 
@@ -318,11 +315,12 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 			if what == taxa.Int {
 				switch base {
 				case 2:
+					v, _ := n.Value().Int(nil)
 					d.Apply(
 						report.SuggestEdits(value, "use a hexadecimal literal instead", report.Edit{
 							Start:   0,
 							End:     len(value.Text()),
-							Replace: fmt.Sprintf("%#.0x%s", n.Value(), n.Suffix().Text()),
+							Replace: fmt.Sprintf("%#.0x%s", v, n.Suffix().Text()),
 						}),
 						report.Notef("Protobuf does not support binary literals"),
 					)
@@ -349,7 +347,7 @@ func legalizeLiteral(p *parser, value ast.ExprLiteral) {
 
 			d.Apply(
 				report.Snippet(value),
-				report.Notef("Protobuf does not support %s %s", name, what),
+				report.Notef("Protobuf does not support %s %ss", name, what),
 			)
 			return
 		}

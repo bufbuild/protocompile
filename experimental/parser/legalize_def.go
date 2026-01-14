@@ -20,8 +20,10 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/internal/erredition"
+	"github.com/bufbuild/protocompile/experimental/internal/errtoken"
 	"github.com/bufbuild/protocompile/experimental/internal/taxa"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token/keyword"
 )
 
@@ -72,7 +74,7 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 	switch {
 	case def.Name().IsZero():
 		def.MarkCorrupt()
-		kw := taxa.Keyword(def.Keyword())
+		kw := taxa.Noun(def.Keyword())
 		p.Errorf("missing name %v", kw.After()).Apply(
 			report.Snippet(def),
 		)
@@ -82,12 +84,12 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 
 	case def.Name().AsIdent().IsZero():
 		def.MarkCorrupt()
-		kw := taxa.Keyword(def.Keyword())
+		kw := taxa.Noun(def.Keyword())
 
-		err := errUnexpected{
-			what:  def.Name(),
-			where: kw.After(),
-			want:  taxa.Ident.AsSet(),
+		err := errtoken.Unexpected{
+			What:  def.Name(),
+			Where: kw.After(),
+			Want:  taxa.Ident.AsSet(),
 		}
 		// Look for a separator, and use that instead. We can't "just" pick out
 		// the first separator, because def.Name might be a one-component
@@ -97,11 +99,11 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 				return true
 			}
 
-			err = errUnexpected{
-				what:  pc.Separator(),
-				where: taxa.Ident.In(),
+			err = errtoken.Unexpected{
+				What:  pc.Separator(),
+				Where: taxa.Ident.In(),
 
-				repeatUnexpected: true,
+				RepeatUnexpected: true,
 			}
 			return false
 		})
@@ -147,10 +149,10 @@ func legalizeTypeDefLike(p *parser, what taxa.Noun, def ast.DeclDef) {
 
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
 	if hasValue {
-		p.Error(errUnexpected{
-			what:  report.Join(def.Equals(), def.Value()),
-			where: what.In(),
-			got:   taxa.Classify(def.Value()),
+		p.Error(errtoken.Unexpected{
+			What:  source.Join(def.Equals(), def.Value()),
+			Where: what.In(),
+			Got:   taxa.Classify(def.Value()),
 		})
 	}
 
@@ -181,10 +183,10 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 		)
 	} else if def.Name().AsIdent().IsZero() {
 		def.MarkCorrupt()
-		p.Error(errUnexpected{
-			what:  def.Name(),
-			where: what.In(),
-			want:  taxa.Ident.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  def.Name(),
+			Where: what.In(),
+			Want:  taxa.Ident.AsSet(),
 		})
 	}
 	tag := taxa.FieldTag
@@ -244,9 +246,9 @@ func legalizeFieldLike(p *parser, what taxa.Noun, def ast.DeclDef, parent classi
 
 	case taxa.Field, taxa.EnumValue:
 		if body := def.Body(); !body.IsZero() {
-			p.Error(errUnexpected{
-				what:  body,
-				where: what.In(),
+			p.Error(errtoken.Unexpected{
+				What:  body,
+				Where: what.In(),
 			})
 		}
 	}
@@ -271,9 +273,9 @@ func legalizeOption(p *parser, def ast.DeclDef) {
 	}
 
 	if body := def.Body(); !body.IsZero() {
-		p.Error(errUnexpected{
-			what:  body,
-			where: taxa.Option.In(),
+		p.Error(errtoken.Unexpected{
+			What:  body,
+			Where: taxa.Option.In(),
 		})
 	}
 
@@ -293,19 +295,19 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		)
 	} else if def.Name().AsIdent().IsZero() {
 		def.MarkCorrupt()
-		p.Error(errUnexpected{
-			what:  def.Name(),
-			where: taxa.Method.In(),
-			want:  taxa.Ident.AsSet(),
+		p.Error(errtoken.Unexpected{
+			What:  def.Name(),
+			Where: taxa.Method.In(),
+			Want:  taxa.Ident.AsSet(),
 		})
 	}
 
 	hasValue := !def.Equals().IsZero() || !def.Value().IsZero()
 	if hasValue {
-		p.Error(errUnexpected{
-			what:  report.Join(def.Equals(), def.Value()),
-			where: taxa.Method.In(),
-			got:   taxa.Classify(def.Value()),
+		p.Error(errtoken.Unexpected{
+			What:  source.Join(def.Equals(), def.Value()),
+			Where: taxa.Method.In(),
+			Got:   taxa.Classify(def.Value()),
 		})
 	}
 
@@ -322,7 +324,7 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 		if sig.Inputs().Span().IsZero() {
 			def.MarkCorrupt()
 			p.Errorf("missing %v in %v", taxa.MethodIns, taxa.Method).Apply(
-				report.Snippetf(def.Name(), "expected %s after this", taxa.Parens),
+				report.Snippetf(def.Name(), "expected %s after this", taxa.Noun(keyword.Parens)),
 			)
 		} else {
 			legalizeMethodParams(p, sig.Inputs(), taxa.MethodIns)
@@ -330,12 +332,12 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 
 		if sig.Outputs().Span().IsZero() {
 			def.MarkCorrupt()
-			var after report.Spanner
+			var after source.Spanner
 			var expected taxa.Noun
 			switch {
 			case !sig.Returns().IsZero():
 				after = sig.Returns()
-				expected = taxa.Parens
+				expected = taxa.Noun(keyword.Parens)
 			case !sig.Inputs().IsZero():
 				after = sig.Inputs()
 				expected = taxa.ReturnsParens
@@ -367,8 +369,8 @@ func legalizeMethod(p *parser, def ast.DeclDef) {
 	if options := def.Options(); !options.IsZero() {
 		p.Error(errHasOptions{def}).Apply(
 			report.Notef(
-				"service method options are applied using %v; declarations in the %v following the method definition",
-				taxa.KeywordOption, taxa.Braces,
+				"service method options are applied using `option`; declarations " +
+					"in the `{...}` following the method definition",
 			),
 			// TODO: Generate a suggestion for this.
 		)

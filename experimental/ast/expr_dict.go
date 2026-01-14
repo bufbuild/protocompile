@@ -16,8 +16,8 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -80,10 +80,10 @@ func (e ExprDict) Elements() Commas[ExprField] {
 	}
 }
 
-// Span implements [report.Spanner].
-func (e ExprDict) Span() report.Span {
+// Span implements [source.Spanner].
+func (e ExprDict) Span() source.Span {
 	if e.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
 	return e.Braces().Span()
@@ -172,11 +172,11 @@ func (e ExprField) SetValue(expr ExprAny) {
 	e.Raw().value = expr.ID()
 }
 
-// Span implements [report.Spanner].
-func (e ExprField) Span() report.Span {
+// Span implements [source.Spanner].
+func (e ExprField) Span() source.Span {
 	if e.IsZero() {
-		return report.Span{}
+		return source.Span{}
 	}
 
-	return report.Join(e.Key(), e.Colon(), e.Value())
+	return source.Join(e.Key(), e.Colon(), e.Value())
 }

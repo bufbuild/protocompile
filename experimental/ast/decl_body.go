@@ -16,8 +16,8 @@ package ast
 
 import (
 	"github.com/bufbuild/protocompile/experimental/id"
-	"github.com/bufbuild/protocompile/experimental/report"
 	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -39,7 +39,7 @@ type DeclBody id.Node[DeclBody, *File, *rawDeclBody]
 //
 // [File], [DeclBody], and [DeclDef] all implement this interface.
 type HasBody interface {
-	report.Spanner
+	source.Spanner
 
 	Body() DeclBody
 }
@@ -73,18 +73,18 @@ func (d DeclBody) Braces() token.Token {
 	return id.Wrap(d.Context().Stream(), d.Raw().braces)
 }
 
-// Span implements [report.Spanner].
-func (d DeclBody) Span() report.Span {
+// Span implements [source.Spanner].
+func (d DeclBody) Span() source.Span {
 	decls := d.Decls()
 	switch {
 	case d.IsZero():
-		return report.Span{}
+		return source.Span{}
 	case !d.Braces().IsZero():
 		return d.Braces().Span()
 	case decls.Len() == 0:
-		return report.Span{}
+		return source.Span{}
 	default:
-		return report.Join(decls.At(0), decls.At(decls.Len()-1))
+		return source.Join(decls.At(0), decls.At(decls.Len()-1))
 	}
 }
 

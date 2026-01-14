@@ -21,33 +21,49 @@
 // represents "everything" the parser stack pushes around.
 package taxa
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+)
 
 //go:generate go run github.com/bufbuild/protocompile/internal/enum noun.yaml
 
+const (
+	keywordCount = 135 // Verified by a unit test.
+	taxaCount    = nounCount + keywordCount
+)
+
+const Unknown Noun = 0
+
 // In is a shorthand for the "in" preposition.
-func (s Noun) In() Place {
-	return Place{s, "in"}
+func (n Noun) In() Place {
+	return Place{n, "in"}
 }
 
 // After is a shorthand for the "after" preposition.
-func (s Noun) After() Place {
-	return Place{s, "after"}
+func (n Noun) After() Place {
+	return Place{n, "after"}
 }
 
 // Without is a shorthand for the "without" preposition.
-func (s Noun) Without() Place {
-	return Place{s, "without"}
+func (n Noun) Without() Place {
+	return Place{n, "without"}
 }
 
 // On is a shorthand for the "on" preposition.
-func (s Noun) On() Place {
-	return Place{s, "on"}
+func (n Noun) On() Place {
+	return Place{n, "on"}
 }
 
 // AsSet returns a singleton set containing this What.
-func (s Noun) AsSet() Set {
-	return NewSet(s)
+func (n Noun) AsSet() Set {
+	return NewSet(n)
+}
+
+// IsKeyword returns whether this is a wrapped [keyword.Keyword] value.
+func (n Noun) IsKeyword() bool {
+	return n > 0 && n < keywordCount
 }
 
 // Place is a location within the grammar that can be referred to within a
@@ -76,4 +92,24 @@ func (p Place) String() string {
 // This exists to get pretty output out of the assert package.
 func (p Place) GoString() string {
 	return fmt.Sprintf("{%#v, %#v}", p.subject, p.preposition)
+}
+
+func init() {
+	// Fill out the string tables for Noun with their keyword values.
+	_table_Noun_String[Unknown] = "<unknown>"
+	_table_Noun_GoString[Unknown] = "taxa.Unknown"
+
+	for kw := range keyword.All() {
+		if kw == keyword.Unknown {
+			continue
+		}
+
+		name := kw.String()
+		if kw == keyword.Newline {
+			name = "\\n" // Make sure the newline token is escaped.
+		}
+
+		_table_Noun_String[kw] = "`" + name + "`"
+		_table_Noun_GoString[kw] = kw.GoString()
+	}
 }

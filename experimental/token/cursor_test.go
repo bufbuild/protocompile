@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 	"github.com/bufbuild/protocompile/experimental/token"
 )
 
@@ -28,20 +28,20 @@ func TestCursor(t *testing.T) {
 
 	// Create a token tree.
 	s := &token.Stream{
-		File: report.NewFile("test", "abc(def(x), ghi)"),
+		File: source.NewFile("test", "abc(def(x), ghi)"),
 	}
 
 	abc := s.Push(3, token.Ident)
-	open := s.Push(1, token.Punct)
+	open := s.Push(1, token.Keyword)
 	def := s.Push(3, token.Ident)
-	open2 := s.Push(1, token.Punct)
+	open2 := s.Push(1, token.Keyword)
 	x := s.Push(1, token.Ident)
-	close2 := s.Push(1, token.Punct)
+	close2 := s.Push(1, token.Keyword)
 	token.Fuse(open2, close2)
-	comma := s.Push(1, token.Punct)
+	comma := s.Push(1, token.Keyword)
 	space := s.Push(1, token.Space)
 	ghi := s.Push(3, token.Ident)
-	close := s.Push(1, token.Punct) //nolint:revive,predeclared
+	close := s.Push(1, token.Keyword) //nolint:revive,predeclared
 	token.Fuse(open, close)
 
 	// Cursor at root.

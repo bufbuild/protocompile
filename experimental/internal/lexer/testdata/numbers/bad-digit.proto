@@ -1,0 +1,17 @@
+//% keywords:
+//%   line_comment: ["//"]
+//%
+//% number_can_start_with_dot: true
+//% old_style_octal: true
+1a
+0f
+0b02
+0o08
+08
+08.9
+0x0G
+0x1.zzz
+
+1.2.3e456
+1.23e4.56
+1.23e456.
