@@ -1,10 +1,3 @@
-error: sorry, Edition 2024 is not fully implemented
-  --> export.proto:1:11
-   |
- 1 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
-
 warning: redundant visibility modifier
   --> export.proto:8:3
    |
@@ -27,13 +20,6 @@ warning: redundant visibility modifier
  4 | option features.default_symbol_visibility = EXPORT_ALL;
    |                                             ---------- this implies it
 
-error: sorry, Edition 2024 is not fully implemented
-  --> local.proto:1:11
-   |
- 1 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
-
 warning: redundant visibility modifier
   --> local.proto:9:3
    |
@@ -55,13 +41,6 @@ warning: redundant visibility modifier
    |
  4 | option features.default_symbol_visibility = LOCAL_ALL;
    |                                             --------- this implies it
-
-error: sorry, Edition 2024 is not fully implemented
-  --> main.proto:1:11
-   |
- 1 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
 
 error: found unexported message type `test.export.L`
   --> main.proto:12:3
@@ -208,13 +187,6 @@ error: found unexported message type `test.strict.N.L`
  9 |   local message L {}
    |   ----- marked as local here
 
-error: sorry, Edition 2024 is not fully implemented
-  --> strict.proto:1:11
-   |
- 1 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
-
 error: message type `test.strict.N` does not reserve all field numbers
   --> strict.proto:8:3
    |
@@ -257,13 +229,6 @@ warning: redundant visibility modifier
  4 | option features.default_symbol_visibility = STRICT;
    |                                             ------ this implies it
 
-error: sorry, Edition 2024 is not fully implemented
-  --> top_level.proto:1:11
-   |
- 1 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
-
 warning: redundant visibility modifier
   --> top_level.proto:9:3
    |
@@ -286,4 +251,4 @@ warning: redundant visibility modifier
  4 | option features.default_symbol_visibility = EXPORT_TOP_LEVEL;
    |                                             ---------------- this implies it
 
-encountered 19 errors and 8 warnings
+encountered 14 errors and 8 warnings

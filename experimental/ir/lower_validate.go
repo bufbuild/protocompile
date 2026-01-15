@@ -1064,7 +1064,7 @@ func validateVisibility(ty Type, r *report.Report) {
 		impliedExport = false
 	}
 
-	var why report.Span
+	var why source.Span
 	if feature.IsDefault() {
 		why = ty.Context().AST().Syntax().Value().Span()
 	} else {

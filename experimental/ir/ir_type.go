@@ -506,6 +506,9 @@ func (t Type) ReservedNames() seq.Indexer[ReservedName] {
 //
 // This range is inclusive.
 func (t Type) AbsoluteRange() (start, end int32) {
+	if t.IsZero() {
+		return 0, 0
+	}
 	switch {
 	case t.IsEnum():
 		return math.MinInt32, math.MaxInt32

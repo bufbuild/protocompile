@@ -20,12 +20,13 @@ import (
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
 	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/source"
 )
 
-// TooNew diagnoses an edition that is too old for the feature used.
+// TooOld diagnoses an edition that is too old for the feature used.
 type TooOld struct {
 	What    any
-	Where   report.Spanner
+	Where   source.Spanner
 	Decl    ast.DeclSyntax
 	Current syntax.Syntax
 	Intro   syntax.Syntax
@@ -58,7 +59,7 @@ type TooNew struct {
 	DeprecatedReason, RemovedReason string
 
 	What  any
-	Where report.Spanner
+	Where source.Spanner
 }
 
 // Diagnose implements [report.Diagnoser].

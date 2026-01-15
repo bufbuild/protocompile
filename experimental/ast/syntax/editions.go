@@ -21,7 +21,7 @@ import (
 
 // LatestImplementedEdition is the most recent edition that the compiler
 // implements.
-const LatestImplementedEdition = Edition2023
+const LatestImplementedEdition = Edition2024
 
 // All returns an iterator over all known [Syntax] values.
 func All() iter.Seq[Syntax] {
@@ -49,7 +49,7 @@ func (s Syntax) IsEdition() bool {
 // IsSupported returns whether this syntax is fully supported.
 func (s Syntax) IsSupported() bool {
 	switch s {
-	case Proto2, Proto3, Edition2023:
+	case Proto2, Proto3, Edition2023, Edition2024:
 		return true
 	default:
 		return false

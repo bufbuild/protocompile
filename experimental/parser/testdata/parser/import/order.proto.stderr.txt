@@ -1,10 +1,3 @@
-error: sorry, Edition 2024 is not fully implemented
-  --> testdata/parser/import/order.proto:15:11
-   |
-15 | edition = "2024";
-   |           ^^^^^^
-   = help: Edition 2024 will be implemented in a future release
-
 error: `import weak` is not supported in Edition 2024
   --> testdata/parser/import/order.proto:21:8
    |
@@ -26,4 +19,4 @@ error: import after `import option`
    | ^^^^^^^^^^^^^^^^^^^^^
    = help: `import option`s must be the last imports in a file
 
-encountered 3 errors
+encountered 2 errors

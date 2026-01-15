@@ -343,7 +343,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 					option = m
 				}
 			}
-			span := report.Join(decl.KeywordToken(), option)
+			span := source.Join(decl.KeywordToken(), option)
 
 			// This symbol is only visible in option position.
 			return r.Errorf("`%s` is only imported for use in options", r.name).Apply(
@@ -376,7 +376,7 @@ func (r symbolRef) diagnoseLookup(sym Symbol, expectedName FullName) *report.Dia
 				if !local.IsZero() {
 					d.Apply(report.Snippetf(local, "marked as local here"))
 				} else {
-					var span report.Span
+					var span source.Span
 					// Otherwise, see if this was set due to a feature.
 					if key := ty.Context().builtins().FeatureVisibility; !key.IsZero() {
 						feature := ty.FeatureSet().Lookup(key)

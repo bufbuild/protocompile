@@ -6,9 +6,9 @@ error: option `deprecated` set multiple times
  25 |     option deprecated = true;
     |            ^^^^^^^^^^ ... also set here
     |
-   ::: google/protobuf/descriptor.proto:614:17
+   ::: <built-in>/google/protobuf/descriptor.proto:617:17
     |
-614 |   optional bool deprecated = 3 [default = false];
+617 |   optional bool deprecated = 3 [default = false];
     |                 ---------- not a repeated field
     |
     = note: a non-`repeated` option may be set at most once
