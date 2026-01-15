@@ -27,7 +27,7 @@ import (
 )
 
 // TestDualCompiler_ParseFilesMessageComments tests message comment parsing.
-// Migrated from: compiler_test.go::TestParseFilesMessageComments
+// Migrated from: compiler_test.go::TestParseFilesMessageComments.
 func TestDualCompiler_ParseFilesMessageComments(t *testing.T) {
 	t.Parallel()
 
@@ -73,7 +73,7 @@ func TestDualCompiler_ParseFilesMessageComments(t *testing.T) {
 }
 
 // TestDualCompiler_ParseFilesWithImportsNoImportPath tests parsing files with imports.
-// Migrated from: compiler_test.go::TestParseFilesWithImportsNoImportPath
+// Migrated from: compiler_test.go::TestParseFilesWithImportsNoImportPath.
 func TestDualCompiler_ParseFilesWithImportsNoImportPath(t *testing.T) {
 	t.Parallel()
 
@@ -111,7 +111,7 @@ func TestDualCompiler_ParseFilesWithImportsNoImportPath(t *testing.T) {
 }
 
 // TestDualCompiler_ParseCommentsBeforeDot tests comment parsing before dots.
-// Migrated from: compiler_test.go::TestParseCommentsBeforeDot
+// Migrated from: compiler_test.go::TestParseCommentsBeforeDot.
 func TestDualCompiler_ParseCommentsBeforeDot(t *testing.T) {
 	t.Parallel()
 
@@ -155,7 +155,7 @@ message Foo {
 }
 
 // TestDualCompiler_ParseCustomOptions tests parsing custom options.
-// Migrated from: compiler_test.go::TestParseCustomOptions
+// Migrated from: compiler_test.go::TestParseCustomOptions.
 func TestDualCompiler_ParseCustomOptions(t *testing.T) {
 	t.Parallel()
 

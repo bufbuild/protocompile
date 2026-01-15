@@ -117,8 +117,8 @@ func RunWithBothCompilersIf(
 
 // SetupOldCompiler creates a CompilerInterface for the old compiler with standard test configuration.
 // The returned compiler will:
-// - Use a SourceResolver with ImportPaths set to internal/testdata
-// - Include standard imports (WKTs)
+//   - Use a SourceResolver with ImportPaths set to internal/testdata
+//   - Include standard imports (WKTs).
 func SetupOldCompiler(t *testing.T) CompilerInterface {
 	t.Helper()
 	resolver := protocompile.WithStandardImports(&protocompile.SourceResolver{
@@ -147,8 +147,8 @@ func SetupOldCompilerWithOptions(t *testing.T, opts []CompilerOption) CompilerIn
 
 // SetupNewCompiler creates a CompilerInterface for the new compiler with standard test configuration.
 // The returned compiler will:
-// - Use a SourceResolver with ImportPaths set to internal/testdata
-// - Include WKTs via source.WKTs()
+//   - Use a SourceResolver with ImportPaths set to internal/testdata
+//   - Include WKTs via source.WKTs().
 func SetupNewCompiler(t *testing.T) CompilerInterface {
 	t.Helper()
 	resolver := &protocompile.SourceResolver{
