@@ -199,6 +199,24 @@ func validateFileOptions(f *File, r *report.Report) {
 		)
 	}
 
+	javaMultipleFiles := f.Options().Field(builtins.JavaMultipleFiles)
+	if !javaMultipleFiles.IsZero() && f.Syntax() >= syntax.Edition2024 {
+		want := "YES"
+		if b, _ := javaMultipleFiles.AsBool(); !b {
+			want = "NO"
+		}
+
+		r.Error(erredition.TooNew{
+			Current:          f.Syntax(),
+			Decl:             f.AST().Syntax(),
+			Deprecated:       syntax.Edition2023,
+			Removed:          syntax.Edition2024,
+			RemovedReason:    "`java_multiple_files` has been replaced with `features.(pb.java).nest_in_file_class`",
+			What:             javaMultipleFiles.Field().Name(),
+			Where:            javaMultipleFiles.KeyAST(),
+		}).Apply(javaMultipleFiles.suggestEdit("features.(pb.java).nest_in_file_class", want, "replace with `features.(pb.java).nest_in_file_class`"))
+	}
+
 	optimize := f.Options().Field(builtins.OptimizeFor)
 	if v, _ := optimize.AsInt(); v != 3 { // google.protobuf.FileOptions.LITE_RUNTIME
 		for imp := range seq.Values(f.Imports()) {

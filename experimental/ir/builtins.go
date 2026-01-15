@@ -44,6 +44,7 @@ type builtins struct {
 	MethodOptions    Member
 
 	JavaUTF8             Member
+	JavaMultipleFiles    Member
 	OptimizeFor          Member
 	MapEntry             Member
 	Packed               Member
@@ -115,18 +116,19 @@ type builtinIDs struct {
 	ServiceOptions   intern.ID `intern:"google.protobuf.ServiceDescriptorProto.options"`
 	MethodOptions    intern.ID `intern:"google.protobuf.MethodDescriptorProto.options"`
 
-	JavaUTF8       intern.ID `intern:"google.protobuf.FileOptions.java_string_check_utf8"`
-	OptimizeFor    intern.ID `intern:"google.protobuf.FileOptions.optimize_for"`
-	MapEntry       intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
-	MessageSet     intern.ID `intern:"google.protobuf.MessageOptions.message_set_wire_format"`
-	Packed         intern.ID `intern:"google.protobuf.FieldOptions.packed"`
-	OptionTargets  intern.ID `intern:"google.protobuf.FieldOptions.targets"`
-	CType          intern.ID `intern:"google.protobuf.FieldOptions.ctype"`
-	JSType         intern.ID `intern:"google.protobuf.FieldOptions.jstype"`
-	Lazy           intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
-	UnverifiedLazy intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
-	AllowAlias     intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
-	JSONName       intern.ID `intern:"google.protobuf.FieldDescriptorProto.json_name"`
+	JavaUTF8          intern.ID `intern:"google.protobuf.FileOptions.java_string_check_utf8"`
+	JavaMultipleFiles intern.ID `intern:"google.protobuf.FileOptions.java_multiple_files"`
+	OptimizeFor       intern.ID `intern:"google.protobuf.FileOptions.optimize_for"`
+	MapEntry          intern.ID `intern:"google.protobuf.MessageOptions.map_entry"`
+	MessageSet        intern.ID `intern:"google.protobuf.MessageOptions.message_set_wire_format"`
+	Packed            intern.ID `intern:"google.protobuf.FieldOptions.packed"`
+	OptionTargets     intern.ID `intern:"google.protobuf.FieldOptions.targets"`
+	CType             intern.ID `intern:"google.protobuf.FieldOptions.ctype"`
+	JSType            intern.ID `intern:"google.protobuf.FieldOptions.jstype"`
+	Lazy              intern.ID `intern:"google.protobuf.FieldOptions.lazy"`
+	UnverifiedLazy    intern.ID `intern:"google.protobuf.FieldOptions.unverified_lazy"`
+	AllowAlias        intern.ID `intern:"google.protobuf.EnumOptions.allow_alias"`
+	JSONName          intern.ID `intern:"google.protobuf.FieldDescriptorProto.json_name"`
 
 	ExtnDecls        intern.ID `intern:"google.protobuf.ExtensionRangeOptions.declaration"`
 	ExtnVerification intern.ID `intern:"google.protobuf.ExtensionRangeOptions.verification"`
