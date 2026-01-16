@@ -1,0 +1,129 @@
+tables:
+  "testdata/editions/naming_style_2024_bad.proto":
+    symbols:
+    - fqn: "Buf.Test"
+      kind: KIND_PACKAGE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+    - fqn: "Buf.Test.my_message"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 1
+      visible: true
+    - fqn: "Buf.Test.LegacyStyleMessage"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 3
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
+    - fqn: "Buf.Test.LegacyStyleMessage.bad_nested"
+      kind: KIND_MESSAGE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 4
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 1 } } }
+    - fqn: "Buf.Test.my_enum"
+      kind: KIND_ENUM
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 2
+      visible: true
+    - fqn: "Buf.Test.my_message.myField"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 1
+      visible: true
+    - fqn: "Buf.Test.my_message.AnotherField"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 2
+      visible: true
+    - fqn: "Buf.Test.my_message.field_1"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 3
+      visible: true
+    - fqn: "Buf.Test.my_message._field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 4
+      visible: true
+    - fqn: "Buf.Test.my_message.field_"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 5
+      visible: true
+    - fqn: "Buf.Test.my_message.field__name"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 6
+      visible: true
+    - fqn: "Buf.Test.my_message.choice_a"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 7
+      visible: true
+    - fqn: "Buf.Test.LegacyStyleMessage._allowed"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 13
+      visible: true
+    - fqn: "Buf.Test.LegacyStyleMessage.BadField"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 14
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 1 } } }
+    - fqn: "Buf.Test.LegacyStyleMessage.bad_nested._bad_field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 15
+      visible: true
+    - fqn: "Buf.Test.LegacyStyleMessage.bad_nested._another_field"
+      kind: KIND_FIELD
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 16
+      visible: true
+      options.message.fields:
+        "features": { message.fields: { "enforce_naming_style": { i32: 2 } } }
+    - fqn: "Buf.Test.unspecified"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 8
+      visible: true
+    - fqn: "Buf.Test.valueOne"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 9
+      visible: true
+    - fqn: "Buf.Test._VALUE"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 10
+      visible: true
+    - fqn: "Buf.Test.VALUE_"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 11
+      visible: true
+    - fqn: "Buf.Test.VALUE_1"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 12
+      visible: true
+    - fqn: "Buf.Test.my_message.TestChoice"
+      kind: KIND_ONEOF
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 1
+      visible: true
+    - fqn: "Buf.Test.My_Service"
+      kind: 9
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 1
+      visible: true
+    - fqn: "Buf.Test.My_Service.test_method"
+      kind: 10
+      file: "testdata/editions/naming_style_2024_bad.proto"
+      index: 1
+      visible: true

@@ -88,6 +88,7 @@ type builtins struct {
 	FeatureEnum       Member
 	FeatureJSON       Member
 	FeatureVisibility Member `builtin:"optional"`
+	FeatureNamingStyle Member `builtin:"optional"`
 
 	FileFeatures      Member
 	MessageFeatures   Member
@@ -174,7 +175,8 @@ type builtinIDs struct {
 	FeatureGroup      intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
 	FeatureEnum       intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
 	FeatureJSON       intern.ID `intern:"google.protobuf.FeatureSet.json_format"`
-	FeatureVisibility intern.ID `intern:"google.protobuf.FeatureSet.default_symbol_visibility"`
+	FeatureVisibility  intern.ID `intern:"google.protobuf.FeatureSet.default_symbol_visibility"`
+	FeatureNamingStyle intern.ID `intern:"google.protobuf.FeatureSet.enforce_naming_style"`
 
 	FileFeatures      intern.ID `intern:"google.protobuf.FileOptions.features"`
 	MessageFeatures   intern.ID `intern:"google.protobuf.MessageOptions.features"`

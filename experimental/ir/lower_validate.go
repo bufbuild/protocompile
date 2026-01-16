@@ -66,6 +66,7 @@ func diagnoseUnusedImports(f *File, r *report.Report) {
 // whole IR being constructed properly.
 func validateConstraints(f *File, r *report.Report) {
 	validateFileOptions(f, r)
+	validateNamingStyle(f, r)
 
 	for ty := range seq.Values(f.AllTypes()) {
 		validateReservedNames(ty, r)
@@ -207,13 +208,13 @@ func validateFileOptions(f *File, r *report.Report) {
 		}
 
 		r.Error(erredition.TooNew{
-			Current:          f.Syntax(),
-			Decl:             f.AST().Syntax(),
-			Deprecated:       syntax.Edition2023,
-			Removed:          syntax.Edition2024,
-			RemovedReason:    "`java_multiple_files` has been replaced with `features.(pb.java).nest_in_file_class`",
-			What:             javaMultipleFiles.Field().Name(),
-			Where:            javaMultipleFiles.KeyAST(),
+			Current:       f.Syntax(),
+			Decl:          f.AST().Syntax(),
+			Deprecated:    syntax.Edition2023,
+			Removed:       syntax.Edition2024,
+			RemovedReason: "`java_multiple_files` has been replaced with `features.(pb.java).nest_in_file_class`",
+			What:          javaMultipleFiles.Field().Name(),
+			Where:         javaMultipleFiles.KeyAST(),
 		}).Apply(javaMultipleFiles.suggestEdit("features.(pb.java).nest_in_file_class", want, "replace with `features.(pb.java).nest_in_file_class`"))
 	}
 
@@ -1204,6 +1205,220 @@ func validateVisibility(ty Type, r *report.Report) {
 		d.Apply(report.Helpf("protoc erroneously accepts this code due to a bug: it only " +
 			"checks that there is exactly one reserved range"))
 	}
+}
+
+func validateNamingStyle(f *File, r *report.Report) {
+	key := f.builtins().FeatureNamingStyle
+	if key.IsZero() {
+		return // Feature doesn't exist (pre-2024)
+	}
+
+	// Helper to check if STYLE2024 is enabled at a given scope.
+	isStyle2024 := func(featureSet FeatureSet) bool {
+		feature := featureSet.Lookup(key)
+		value, _ := feature.Value().AsInt()
+		return value == 1 // STYLE2024
+	}
+
+	// Validate package name (file-level scope).
+	if isStyle2024(f.FeatureSet()) {
+		pkg := f.Package()
+		if pkg != "" && !isValidPackageName(string(pkg)) {
+			r.Errorf("package name should be lower_snake_case").Apply(
+				report.Snippetf(f.AST().Package().Path(), "this name violates STYLE2024"),
+				report.Helpf("STYLE2024 requires package names to be lower_snake_case or dot.delimited.lower_snake_case"),
+			)
+		}
+	}
+
+	// Validate all services in the file.
+	for svc := range seq.Values(f.Services()) {
+		name := svc.Name()
+		// PascalCase required for services.
+		if isStyle2024(svc.FeatureSet()) && !isPascalCase(name) {
+			r.Errorf("service name should be PascalCase").Apply(
+				report.Snippetf(svc.AST().Name(), "this name violates STYLE2024"),
+				report.Helpf("STYLE2024 requires service names to be PascalCase (e.g., MyService)"),
+			)
+		}
+
+		// Validate RPC method names.
+		for method := range seq.Values(svc.Methods()) {
+			if method.IsZero() || !isStyle2024(method.FeatureSet()) {
+				continue
+			}
+			methodName := method.Name()
+			if !isPascalCase(methodName) {
+				r.Errorf("RPC method name should be PascalCase").Apply(
+					report.Snippetf(method.AST().Name(), "this name violates STYLE2024"),
+					report.Helpf("STYLE2024 requires RPC method names to be PascalCase (e.g., GetMessage)"),
+				)
+			}
+		}
+	}
+
+	// Validate naming conventions based on type.
+	for ty := range seq.Values(f.AllTypes()) {
+		name := ty.Name()
+		switch {
+		case ty.IsMessage():
+			// PascalCase required for messages.
+			if isStyle2024(ty.FeatureSet()) && !isPascalCase(name) {
+				r.Errorf("%s name should be PascalCase", ty.noun()).Apply(
+					report.Snippetf(ty.AST().Name(), "this name violates STYLE2024"),
+					report.Helpf("STYLE2024 requires message names to be PascalCase (e.g., MyMessage)"),
+				)
+			}
+
+			// Validate field names (check at field level).
+			for field := range seq.Values(ty.Members()) {
+				if field.IsZero() || field.IsGroup() || !isStyle2024(field.FeatureSet()) {
+					continue
+				}
+				fieldName := field.Name()
+				if !isSnakeCase(fieldName) {
+					r.Errorf("field name should be snake_case").Apply(
+						report.Snippetf(field.AST().Name(), "this name violates STYLE2024"),
+						report.Helpf("STYLE2024 requires field names to be snake_case (e.g., my_field)"),
+					)
+				}
+			}
+
+			// Validate oneof names (check at oneof level).
+			for oneof := range seq.Values(ty.Oneofs()) {
+				if oneof.IsZero() || !isStyle2024(oneof.FeatureSet()) {
+					continue
+				}
+				oneofName := oneof.Name()
+				if !isSnakeCase(oneofName) {
+					r.Errorf("oneof name should be snake_case").Apply(
+						report.Snippetf(oneof.AST().Name(), "this name violates STYLE2024"),
+						report.Helpf("STYLE2024 requires oneof names to be snake_case (e.g., my_choice)"),
+					)
+				}
+			}
+		case ty.IsEnum():
+			// PascalCase required for enums.
+			if isStyle2024(ty.FeatureSet()) && !isPascalCase(name) {
+				r.Errorf("%s name should be PascalCase", ty.noun()).Apply(
+					report.Snippetf(ty.AST().Name(), "this name violates STYLE2024"),
+					report.Helpf("STYLE2024 requires enum names to be PascalCase (e.g., MyEnum)"),
+				)
+			}
+
+			// Validate enum value names (check at value level).
+			for value := range seq.Values(ty.Members()) {
+				if value.IsZero() || !isStyle2024(value.FeatureSet()) {
+					continue
+				}
+				valueName := value.Name()
+				if !isScreamingSnakeCase(valueName) {
+					r.Errorf("enum value name should be SCREAMING_SNAKE_CASE").Apply(
+						report.Snippetf(value.AST().Name(), "this name violates STYLE2024"),
+						report.Helpf("STYLE2024 requires enum value names to be SCREAMING_SNAKE_CASE (e.g., MY_VALUE)"),
+					)
+				}
+			}
+		}
+	}
+}
+
+// isPascalCase checks if a name is in PascalCase format.
+func isPascalCase(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Must start with uppercase letter.
+	if !unicode.IsUpper(rune(name[0])) {
+		return false
+	}
+	// Should not contain underscores.
+	if strings.Contains(name, "_") {
+		return false
+	}
+	// All characters should be letters or digits.
+	for _, r := range name {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
+
+// isSnakeCase checks if a name is in snake_case format.
+func isSnakeCase(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Must start with lowercase letter.
+	if !unicode.IsLower(rune(name[0])) {
+		return false
+	}
+	// Should not have leading underscore.
+	if strings.HasPrefix(name, "_") {
+		return false
+	}
+	// Should only contain lowercase letters, digits, and underscores.
+	for i, r := range name {
+		if !unicode.IsLower(r) && !unicode.IsDigit(r) && r != '_' {
+			return false
+		}
+		// Underscore must be followed by a letter (not a digit or another underscore).
+		if r == '_' && i+1 < len(name) {
+			next := rune(name[i+1])
+			if !unicode.IsLower(next) {
+				return false
+			}
+		}
+	}
+	// Should not have consecutive underscores or end with underscore.
+	if strings.Contains(name, "__") || strings.HasSuffix(name, "_") {
+		return false
+	}
+	return true
+}
+
+// isScreamingSnakeCase checks if a name is in SCREAMING_SNAKE_CASE format.
+func isScreamingSnakeCase(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Should only contain uppercase letters, digits, and underscores.
+	for i, r := range name {
+		if !unicode.IsUpper(r) && !unicode.IsDigit(r) && r != '_' {
+			return false
+		}
+		// Underscore must be followed by a letter (not a digit or another underscore).
+		if r == '_' && i+1 < len(name) {
+			next := rune(name[i+1])
+			if !unicode.IsUpper(next) {
+				return false
+			}
+		}
+	}
+	// Should not have consecutive underscores or start/end with underscore.
+	if strings.Contains(name, "__") || strings.HasPrefix(name, "_") || strings.HasSuffix(name, "_") {
+		return false
+	}
+	return true
+}
+
+// isValidPackageName checks if a package name is in lower_snake_case or dot.delimited.lower_snake_case format.
+func isValidPackageName(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	// Split on dots and validate each component.
+	for part := range strings.SplitSeq(name, ".") {
+		if len(part) == 0 {
+			return false
+		}
+		// Each part should be lower_snake_case.
+		if !isSnakeCase(part) {
+			return false
+		}
+	}
+	return true
 }
 
 // errNotUTF8 diagnoses a non-UTF8 value.

@@ -1,0 +1,9 @@
+error: field name should be snake_case
+  --> testdata/editions/naming_style_2024_ok.proto:24:9
+   |
+24 |   int32 Another_Field = 2;
+   |         ^^^^^^^^^^^^^ this name violates STYLE2024
+   |
+   = help: STYLE2024 requires field names to be snake_case (e.g., my_field)
+
+encountered 1 error
