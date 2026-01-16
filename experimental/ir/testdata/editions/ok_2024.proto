@@ -34,3 +34,9 @@ option features.(pb.go).api_level = API_OPEN;
 message MyMessage {
   option features.(pb.java).nest_in_file_class = YES;
 }
+
+enum MyEnum {
+  option features.(pb.java).large_enum = true;
+  MY_ENUM_UNSPECIFIED = 0;
+  MY_ENUM_VALUE = 1;
+}

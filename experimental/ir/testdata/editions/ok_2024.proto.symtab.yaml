@@ -42,6 +42,41 @@ tables:
         value: "YES"
         explicit: true
       - { extn: "pb.go", name: "api_level", value: "API_OPEN" }
+    - fqn: "buf.test.MyEnum"
+      kind: KIND_ENUM
+      file: "testdata/editions/ok_2024.proto"
+      index: 2
+      visible: true
+      options.message.fields:
+        "features":
+          message.extns:
+            "pb.java": { message.fields: { "large_enum": { bool: true } } }
+      features:
+      - { extn: "pb.java", name: "large_enum", value: "true", explicit: true }
+      - { extn: "pb.cpp", name: "enum_name_uses_string_view", value: "false" }
+      - { extn: "pb.go", name: "legacy_unmarshal_json_enum", value: "false" }
+      - extn: "pb.go"
+        name: "strip_enum_prefix"
+        value: "STRIP_ENUM_PREFIX_KEEP"
+      - { extn: "pb.java", name: "nest_in_file_class", value: "NO" }
+    - fqn: "buf.test.MY_ENUM_UNSPECIFIED"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/ok_2024.proto"
+      index: 1
+      visible: true
+      features:
+      - extn: "pb.go"
+        name: "strip_enum_prefix"
+        value: "STRIP_ENUM_PREFIX_KEEP"
+    - fqn: "buf.test.MY_ENUM_VALUE"
+      kind: KIND_ENUM_VALUE
+      file: "testdata/editions/ok_2024.proto"
+      index: 2
+      visible: true
+      features:
+      - extn: "pb.go"
+        name: "strip_enum_prefix"
+        value: "STRIP_ENUM_PREFIX_KEEP"
     options.message.fields:
       "features":
         message:

@@ -243,6 +243,12 @@ file:
   - "google/protobuf/go_features.proto"
   message_type:
   - { name: "MyMessage", options.features.$unknown: "1001: {5: 2}" }
+  enum_type:
+  - name: "MyEnum"
+    value:
+    - { name: "MY_ENUM_UNSPECIFIED", number: 0 }
+    - { name: "MY_ENUM_VALUE", number: 1 }
+    options.features.$unknown: "1001: {3: 1}"
   options:
     java_outer_classname: "BarBaz"
     features:
