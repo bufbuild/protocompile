@@ -79,15 +79,15 @@ type builtins struct {
 	EditionSupportWarning    Member
 	EditionSupportRemoved    Member
 
-	FeatureSet        Type
-	FeaturePresence   Member
-	FeatureEnumType   Member
-	FeaturePacked     Member
-	FeatureUTF8       Member
-	FeatureGroup      Member
-	FeatureEnum       Member
-	FeatureJSON       Member
-	FeatureVisibility Member `builtin:"optional"`
+	FeatureSet         Type
+	FeaturePresence    Member
+	FeatureEnumType    Member
+	FeaturePacked      Member
+	FeatureUTF8        Member
+	FeatureGroup       Member
+	FeatureEnum        Member
+	FeatureJSON        Member
+	FeatureVisibility  Member `builtin:"optional"`
 	FeatureNamingStyle Member `builtin:"optional"`
 
 	FileFeatures      Member
@@ -167,14 +167,14 @@ type builtinIDs struct {
 	EditionSupportWarning    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.deprecation_warning"`
 	EditionSupportRemoved    intern.ID `intern:"google.protobuf.FieldOptions.FeatureSupport.edition_removed"`
 
-	FeatureSet        intern.ID `intern:"google.protobuf.FeatureSet"`
-	FeaturePresence   intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`
-	FeatureEnumType   intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
-	FeaturePacked     intern.ID `intern:"google.protobuf.FeatureSet.repeated_field_encoding"`
-	FeatureUTF8       intern.ID `intern:"google.protobuf.FeatureSet.utf8_validation"`
-	FeatureGroup      intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
-	FeatureEnum       intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
-	FeatureJSON       intern.ID `intern:"google.protobuf.FeatureSet.json_format"`
+	FeatureSet         intern.ID `intern:"google.protobuf.FeatureSet"`
+	FeaturePresence    intern.ID `intern:"google.protobuf.FeatureSet.field_presence"`
+	FeatureEnumType    intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
+	FeaturePacked      intern.ID `intern:"google.protobuf.FeatureSet.repeated_field_encoding"`
+	FeatureUTF8        intern.ID `intern:"google.protobuf.FeatureSet.utf8_validation"`
+	FeatureGroup       intern.ID `intern:"google.protobuf.FeatureSet.message_encoding"`
+	FeatureEnum        intern.ID `intern:"google.protobuf.FeatureSet.enum_type"`
+	FeatureJSON        intern.ID `intern:"google.protobuf.FeatureSet.json_format"`
 	FeatureVisibility  intern.ID `intern:"google.protobuf.FeatureSet.default_symbol_visibility"`
 	FeatureNamingStyle intern.ID `intern:"google.protobuf.FeatureSet.enforce_naming_style"`
 
