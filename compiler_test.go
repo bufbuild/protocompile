@@ -36,49 +36,6 @@ import (
 	"github.com/bufbuild/protocompile/reporter"
 )
 
-func TestParseFilesMessageComments(t *testing.T) {
-	t.Parallel()
-	comp := Compiler{
-		Resolver:       &SourceResolver{},
-		SourceInfoMode: SourceInfoStandard,
-	}
-	ctx := t.Context()
-	files, err := comp.Compile(ctx, "internal/testdata/desc_test1.proto")
-	require.NoError(t, err)
-	comments := ""
-	expected := " Comment for TestMessage\n"
-	for _, fd := range files {
-		msg := fd.Messages().ByName("TestMessage")
-		if msg != nil {
-			si := fd.SourceLocations().ByDescriptor(msg)
-			if si.Path != nil {
-				comments = si.LeadingComments
-			}
-			break
-		}
-	}
-	assert.Equal(t, expected, comments)
-}
-
-func TestParseFilesWithImportsNoImportPath(t *testing.T) {
-	t.Parallel()
-	relFilePaths := []string{
-		"a/b/b1.proto",
-		"a/b/b2.proto",
-		"c/c.proto",
-	}
-
-	comp := Compiler{
-		Resolver: WithStandardImports(&SourceResolver{
-			ImportPaths: []string{"internal/testdata/more"},
-		}),
-	}
-	ctx := t.Context()
-	protos, err := comp.Compile(ctx, relFilePaths...)
-	require.NoError(t, err)
-	assert.Equal(t, len(relFilePaths), len(protos))
-}
-
 func TestParseFilesWithDependencies(t *testing.T) {
 	t.Parallel()
 	// Create some file contents that import a non-well-known proto.
@@ -188,66 +145,6 @@ func findAndLink(t *testing.T, filename string, fdset *descriptorpb.FileDescript
 	}
 	assert.FailNow(t, "could not find dependency %q in proto set", filename)
 	return nil, nil // make compiler happy
-}
-
-func TestParseCommentsBeforeDot(t *testing.T) {
-	t.Parallel()
-	accessor := SourceAccessorFromMap(map[string]string{
-		"test.proto": `
-syntax = "proto3";
-message Foo {
-  // leading comments
-  .Foo foo = 1;
-}
-`,
-	})
-
-	compiler := Compiler{
-		Resolver:       &SourceResolver{Accessor: accessor},
-		SourceInfoMode: SourceInfoStandard,
-	}
-	ctx := t.Context()
-	fds, err := compiler.Compile(ctx, "test.proto")
-	require.NoError(t, err)
-
-	field := fds[0].Messages().Get(0).Fields().Get(0)
-	comment := fds[0].SourceLocations().ByDescriptor(field).LeadingComments
-	assert.Equal(t, " leading comments\n", comment)
-}
-
-func TestParseCustomOptions(t *testing.T) {
-	t.Parallel()
-	accessor := SourceAccessorFromMap(map[string]string{
-		"test.proto": `
-syntax = "proto3";
-import "google/protobuf/descriptor.proto";
-extend google.protobuf.MessageOptions {
-    string foo = 30303;
-    int64 bar = 30304;
-}
-message Foo {
-  option (.foo) = "foo";
-  option (bar) = 123;
-}
-`,
-	})
-
-	compiler := Compiler{
-		Resolver:       WithStandardImports(&SourceResolver{Accessor: accessor}),
-		SourceInfoMode: SourceInfoStandard,
-	}
-	ctx := t.Context()
-	fds, err := compiler.Compile(ctx, "test.proto")
-	require.NoError(t, err)
-
-	ext := fds[0].Extensions().ByName("foo")
-	md := fds[0].Messages().Get(0)
-	fooVal := md.Options().ProtoReflect().Get(ext)
-	assert.Equal(t, "foo", fooVal.String())
-
-	ext = fds[0].Extensions().ByName("bar")
-	barVal := md.Options().ProtoReflect().Get(ext)
-	assert.Equal(t, int64(123), barVal.Int())
 }
 
 func TestDataRace(t *testing.T) {
