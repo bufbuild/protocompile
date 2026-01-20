@@ -972,7 +972,7 @@ func (dg *descGenerator) addSourceLocation(span source.Span, checkForComments ..
 								str += strings.TrimPrefix(line, "/*")
 							case strings.HasPrefix(strings.TrimSpace(line), "*"):
 								// We check the line with all spaces trimmed because of leading whitespace.
-								str += strings.TrimPrefix(strings.TrimLeftFunc(line, func(r rune) bool { return unicode.IsSpace(r) }), "*")
+								str += strings.TrimPrefix(strings.TrimLeftFunc(line, unicode.IsSpace), "*")
 							case strings.HasSuffix(line, "*/"):
 								str += strings.TrimSuffix(line, "*/")
 							}
@@ -1239,10 +1239,10 @@ func (ct *commentTracker) closeParagraph() {
 }
 
 // newLinesBetween counts the number of \n characters between the end of [token.Token] a
-// and the start of b, up to max.
+// and the start of b, up to the limit.
 //
 // The final rune of a is included in this count, since comments may end in a \n rune.
-func (ct *commentTracker) newLinesBetween(a, b token.Token, max int) int {
+func (ct *commentTracker) newLinesBetween(a, b token.Token, limit int) int {
 	end := a.LeafSpan().End
 	if end != 0 {
 		// Account for the final rune of a
@@ -1253,7 +1253,7 @@ func (ct *commentTracker) newLinesBetween(a, b token.Token, max int) int {
 	between := ct.currentCursor.Context().Text()[end:start]
 
 	var total int
-	for total < max {
+	for total < limit {
 		var found bool
 		_, between, found = strings.Cut(between, "\n")
 		if !found {
@@ -1281,7 +1281,6 @@ func (ct *commentTracker) setDetached(detached []paragraph, t token.Token) {
 	ct.mutateComment(t, func(raw *comments) {
 		raw.detached = detached
 	})
-
 }
 
 func (ct *commentTracker) mutateComment(t token.Token, cb func(*comments)) {
