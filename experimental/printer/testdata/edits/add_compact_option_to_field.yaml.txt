@@ -1,0 +1,7 @@
+syntax = "proto3";
+package test;
+message Person {
+  string name = 1 [deprecated = true];
+  int32 age = 2 [deprecated = true];
+  repeated string emails = 3;
+}

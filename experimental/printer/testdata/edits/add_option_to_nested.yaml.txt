@@ -1,0 +1,10 @@
+syntax = "proto3";
+package test;
+message Outer {
+  option deprecated = true;
+  string outer_field = 1;
+  message Inner {
+    option deprecated = true;
+    string inner_field = 1;
+  }
+}

@@ -1,0 +1,377 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package printer_test
+
+import (
+	"fmt"
+	"strings"
+	"testing"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/bufbuild/protocompile/experimental/ast"
+	"github.com/bufbuild/protocompile/experimental/parser"
+	"github.com/bufbuild/protocompile/experimental/printer"
+	"github.com/bufbuild/protocompile/experimental/report"
+	"github.com/bufbuild/protocompile/experimental/seq"
+	"github.com/bufbuild/protocompile/experimental/source"
+	"github.com/bufbuild/protocompile/experimental/token"
+	"github.com/bufbuild/protocompile/experimental/token/keyword"
+	"github.com/bufbuild/protocompile/internal/golden"
+)
+
+func TestPrinter(t *testing.T) {
+	t.Parallel()
+
+	corpus := golden.Corpus{
+		Root:       "testdata",
+		Extensions: []string{"yaml"},
+		Outputs: []golden.Output{
+			{Extension: "txt"},
+		},
+	}
+
+	corpus.Run(t, func(t *testing.T, path, text string, outputs []string) {
+		var testCase struct {
+			Source string `yaml:"source"`
+			Indent string `yaml:"indent"`
+			Edits  []Edit `yaml:"edits"`
+		}
+
+		if err := yaml.Unmarshal([]byte(text), &testCase); err != nil {
+			t.Fatalf("failed to parse test case %q: %v", path, err)
+		}
+
+		if testCase.Source == "" {
+			t.Fatalf("test case %q missing 'source' field", path)
+		}
+
+		protoSource := testCase.Source
+
+		// Parse the source
+		errs := &report.Report{}
+		file, _ := parser.Parse(path, source.NewFile(path, protoSource), errs)
+
+		// Check for actual errors (Level ordering: ICE=1, Error=2, Warning=3, Remark=4)
+		// We only fail on actual errors, not warnings
+		for _, d := range errs.Diagnostics {
+			if d.Level() == report.Error || d.Level() == report.ICE {
+				stderr, _, _ := report.Renderer{}.RenderString(errs)
+				t.Fatalf("failed to parse source in %q:\n%s", path, stderr)
+			}
+		}
+
+		// Apply edits if any
+		for _, edit := range testCase.Edits {
+			if err := applyEdit(file, edit); err != nil {
+				t.Fatalf("failed to apply edit in %q: %v", path, err)
+			}
+		}
+
+		// Set up printer options
+		opts := printer.Options{}
+		if testCase.Indent != "" {
+			opts.Indent = testCase.Indent
+		}
+
+		outputs[0] = printer.PrintFile(file, opts)
+	})
+}
+
+// Edit represents an edit to apply to the AST.
+type Edit struct {
+	Kind   string `yaml:"kind"`   // "add_option", "add_compact_option"
+	Target string `yaml:"target"` // Target path (e.g., "M" or "M.Inner" or "M.field_name")
+	Option string `yaml:"option"` // Option name (e.g., "deprecated")
+	Value  string `yaml:"value"`  // Option value (e.g., "true")
+}
+
+// applyEdit applies an edit to the file.
+func applyEdit(file *ast.File, edit Edit) error {
+	switch edit.Kind {
+	case "add_option":
+		return addOptionToMessage(file, edit.Target, edit.Option, edit.Value)
+	case "add_compact_option":
+		return addCompactOption(file, edit.Target, edit.Option, edit.Value)
+	default:
+		return fmt.Errorf("unknown edit kind: %s", edit.Kind)
+	}
+}
+
+// findMessageBody finds a message body by path (e.g., "M" or "M.Inner").
+func findMessageBody(file *ast.File, targetPath string) ast.DeclBody {
+	parts := strings.Split(targetPath, ".")
+
+	var searchDecls func(decls seq.Indexer[ast.DeclAny], depth int) ast.DeclBody
+	searchDecls = func(decls seq.Indexer[ast.DeclAny], depth int) ast.DeclBody {
+		if depth >= len(parts) {
+			return ast.DeclBody{}
+		}
+
+		for decl := range seq.Values(decls) {
+			def := decl.AsDef()
+			if def.IsZero() {
+				continue
+			}
+			if def.Classify() != ast.DefKindMessage {
+				continue
+			}
+
+			msg := def.AsMessage()
+			if msg.Name.Text() != parts[depth] {
+				continue
+			}
+
+			// Found matching message at this level
+			if depth == len(parts)-1 {
+				return msg.Body
+			}
+
+			// Need to go deeper
+			if !msg.Body.IsZero() {
+				if result := searchDecls(msg.Body.Decls(), depth+1); !result.IsZero() {
+					return result
+				}
+			}
+		}
+		return ast.DeclBody{}
+	}
+
+	return searchDecls(file.Decls(), 0)
+}
+
+// findFieldDef finds a field definition by path (e.g., "M.field_name" or "M.Inner.field_name").
+func findFieldDef(file *ast.File, targetPath string) ast.DeclDef {
+	parts := strings.Split(targetPath, ".")
+	if len(parts) < 2 {
+		return ast.DeclDef{}
+	}
+
+	// Find the containing message
+	msgPath := strings.Join(parts[:len(parts)-1], ".")
+	fieldName := parts[len(parts)-1]
+
+	msgBody := findMessageBody(file, msgPath)
+	if msgBody.IsZero() {
+		return ast.DeclDef{}
+	}
+
+	// Find the field in the message
+	for decl := range seq.Values(msgBody.Decls()) {
+		def := decl.AsDef()
+		if def.IsZero() {
+			continue
+		}
+		if def.Classify() != ast.DefKindField {
+			continue
+		}
+		if def.Name().AsIdent().Text() == fieldName {
+			return def
+		}
+	}
+
+	return ast.DeclDef{}
+}
+
+// findEnumBody finds an enum body by path (e.g., "Status" or "M.Status").
+func findEnumBody(file *ast.File, targetPath string) ast.DeclBody {
+	parts := strings.Split(targetPath, ".")
+
+	var searchDecls func(decls seq.Indexer[ast.DeclAny], depth int) ast.DeclBody
+	searchDecls = func(decls seq.Indexer[ast.DeclAny], depth int) ast.DeclBody {
+		if depth >= len(parts) {
+			return ast.DeclBody{}
+		}
+
+		for decl := range seq.Values(decls) {
+			def := decl.AsDef()
+			if def.IsZero() {
+				continue
+			}
+
+			// Check for enum at final level
+			if depth == len(parts)-1 && def.Classify() == ast.DefKindEnum {
+				enum := def.AsEnum()
+				if enum.Name.Text() == parts[depth] {
+					return enum.Body
+				}
+			}
+
+			// Check for message to recurse into
+			if def.Classify() == ast.DefKindMessage {
+				msg := def.AsMessage()
+				if msg.Name.Text() == parts[depth] && !msg.Body.IsZero() {
+					if result := searchDecls(msg.Body.Decls(), depth+1); !result.IsZero() {
+						return result
+					}
+				}
+			}
+		}
+		return ast.DeclBody{}
+	}
+
+	return searchDecls(file.Decls(), 0)
+}
+
+// findEnumValueDef finds an enum value definition by path (e.g., "Status.UNKNOWN").
+func findEnumValueDef(file *ast.File, targetPath string) ast.DeclDef {
+	parts := strings.Split(targetPath, ".")
+	if len(parts) < 2 {
+		return ast.DeclDef{}
+	}
+
+	// Find the containing enum
+	enumPath := strings.Join(parts[:len(parts)-1], ".")
+	valueName := parts[len(parts)-1]
+
+	enumBody := findEnumBody(file, enumPath)
+	if enumBody.IsZero() {
+		return ast.DeclDef{}
+	}
+
+	// Find the value in the enum
+	for decl := range seq.Values(enumBody.Decls()) {
+		def := decl.AsDef()
+		if def.IsZero() {
+			continue
+		}
+		if def.Classify() != ast.DefKindEnumValue {
+			continue
+		}
+		if def.Name().AsIdent().Text() == valueName {
+			return def
+		}
+	}
+
+	return ast.DeclDef{}
+}
+
+// addOptionToMessage adds an option declaration to a message.
+func addOptionToMessage(file *ast.File, targetPath, optionName, optionValue string) error {
+	stream := file.Stream()
+	nodes := file.Nodes()
+
+	msgBody := findMessageBody(file, targetPath)
+	if msgBody.IsZero() {
+		return fmt.Errorf("message %q not found", targetPath)
+	}
+
+	// Create the option declaration
+	optionDecl := createOptionDecl(stream, nodes, optionName, optionValue)
+
+	// Find the right position to insert (after existing options, before fields)
+	insertPos := 0
+	for i := range msgBody.Decls().Len() {
+		decl := msgBody.Decls().At(i)
+		def := decl.AsDef()
+		if def.IsZero() {
+			continue
+		}
+		if def.Classify() == ast.DefKindOption {
+			insertPos = i + 1
+		} else {
+			break
+		}
+	}
+
+	msgBody.Decls().Insert(insertPos, optionDecl.AsAny())
+	return nil
+}
+
+// addCompactOption adds a compact option to a field or enum value.
+func addCompactOption(file *ast.File, targetPath, optionName, optionValue string) error {
+	stream := file.Stream()
+	nodes := file.Nodes()
+
+	// Try to find as a field first
+	fieldDef := findFieldDef(file, targetPath)
+	if !fieldDef.IsZero() {
+		return addCompactOptionToDef(stream, nodes, fieldDef, optionName, optionValue)
+	}
+
+	// Try to find as an enum value
+	enumValueDef := findEnumValueDef(file, targetPath)
+	if !enumValueDef.IsZero() {
+		return addCompactOptionToDef(stream, nodes, enumValueDef, optionName, optionValue)
+	}
+
+	return fmt.Errorf("target %q not found", targetPath)
+}
+
+// addCompactOptionToDef adds a compact option to a definition (field or enum value).
+func addCompactOptionToDef(stream *token.Stream, nodes *ast.Nodes, def ast.DeclDef, optionName, optionValue string) error {
+	// Create the option entry
+	nameIdent := stream.NewIdent(optionName)
+	equals := stream.NewPunct(keyword.Assign.String())
+	valueIdent := stream.NewIdent(optionValue)
+
+	optionNamePath := nodes.NewPath(
+		nodes.NewPathComponent(token.Zero, nameIdent),
+	)
+
+	optionValueExpr := ast.ExprPath{
+		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, valueIdent)),
+	}
+
+	// Get or create compact options
+	options := def.Options()
+	if options.IsZero() {
+		// Create new compact options with fused brackets
+		openBracket := stream.NewPunct(keyword.LBracket.String())
+		closeBracket := stream.NewPunct(keyword.RBracket.String())
+		stream.NewFused(openBracket, closeBracket)
+		options = nodes.NewCompactOptions(openBracket)
+		def.SetOptions(options)
+	}
+
+	// Add the option
+	opt := ast.Option{
+		Path:   optionNamePath,
+		Equals: equals,
+		Value:  optionValueExpr.AsAny(),
+	}
+	seq.Append(options.Entries(), opt)
+
+	return nil
+}
+
+// createOptionDecl creates an option declaration.
+func createOptionDecl(stream *token.Stream, nodes *ast.Nodes, optionName, optionValue string) ast.DeclDef {
+	optionKw := stream.NewIdent(keyword.Option.String())
+	nameIdent := stream.NewIdent(optionName)
+	equals := stream.NewPunct(keyword.Assign.String())
+	valueIdent := stream.NewIdent(optionValue)
+	semi := stream.NewPunct(keyword.Semi.String())
+
+	optionType := ast.TypePath{
+		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, optionKw)),
+	}
+
+	optionNamePath := nodes.NewPath(
+		nodes.NewPathComponent(token.Zero, nameIdent),
+	)
+
+	optionValuePath := ast.ExprPath{
+		Path: nodes.NewPath(nodes.NewPathComponent(token.Zero, valueIdent)),
+	}
+
+	return nodes.NewDeclDef(ast.DeclDefArgs{
+		Type:      optionType.AsAny(),
+		Name:      optionNamePath,
+		Equals:    equals,
+		Value:     optionValuePath.AsAny(),
+		Semicolon: semi,
+	})
+}
