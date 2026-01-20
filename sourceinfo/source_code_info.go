@@ -386,6 +386,16 @@ func generateSourceCodeInfoForMessage(opts OptionIndex, sci *sourceCodeInfo, n a
 					reservedNameIndex++
 				}
 			}
+			// For editions, reserved names are identifiers.
+			if len(child.Identifiers) > 0 {
+				resPath := path
+				resPath = append(resPath, internal.MessageReservedNamesTag)
+				sci.newLocWithComments(child, resPath)
+				for _, rn := range child.Identifiers {
+					sci.newLoc(rn, append(resPath, reservedNameIndex))
+					reservedNameIndex++
+				}
+			}
 			if len(child.Ranges) > 0 {
 				resPath := path
 				resPath = append(resPath, internal.MessageReservedRangesTag)
