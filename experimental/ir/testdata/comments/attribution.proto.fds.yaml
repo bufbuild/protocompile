@@ -104,7 +104,7 @@ file:
   - { path: [4, 0, 2, 1, 8], span: [46, 30, 51, 3] }
   - { path: [4, 0, 2, 1, 8, 21, 3], span: [48, 4, 45] }
   - { path: [4, 0, 2, 1, 8, 1000, 0], span: [49, 4, 12] }
-  - { path: [4, 0, 2, 1, 8, 1000, 1], span: [49, 4, 50, 12] }
+  - { path: [4, 0, 2, 1, 8, 1000, 1], span: [50, 4, 12] }
   - path: [4, 1]
     span: [68, 0, 14]
     leading_comments: "\n A leading block comment for Bar.\n/"
