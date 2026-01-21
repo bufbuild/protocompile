@@ -5,7 +5,7 @@ go 1.24.0
 require (
 	github.com/bufbuild/buf v1.62.1
 	github.com/golangci/golangci-lint v1.64.8
-	golang.org/x/tools v0.40.0
+	golang.org/x/tools v0.41.0
 )
 
 require (
@@ -188,9 +188,9 @@ require (
 	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
-	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
