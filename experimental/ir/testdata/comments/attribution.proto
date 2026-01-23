@@ -34,6 +34,10 @@ message /*this is thrown away*/ Foo {
   // This is the TRAILING comment for Foo. (It is NOT
   // a detached comment for baz.)
 
+  // Leading comment for message option
+  option (a) = 10;
+  option (a) = 20; // Trailing comment for the second message option
+
   // This is a leading comment for baz.
   string /*this is also thrown away*/ baz = 1;
   // This is a trailing comment for baz.
@@ -81,4 +85,8 @@ service FooService { // This is a trailing comment for service FooService.
 
 extend google.protobuf.FieldOptions {
   repeated int32 c = 1000;
+}
+
+extend google.protobuf.MessageOptions {
+  repeated int32 a = 1000;
 }

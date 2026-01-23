@@ -130,7 +130,7 @@ file:
     leading_comments: " Leading comment for method FooForBar.\n"
   - { path: [6, 0, 2, 0, 1], span: [78, 6, 15] }
   - { path: [6, 0, 2, 0, 2], span: [78, 16, 19] }
-  - { path: [6, 0, 2, 0, 2, 3], span: [78, 30, 33] }
+  - { path: [6, 0, 2, 0, 3], span: [78, 30, 33] }
   - { path: [7], span: [81, 0, 83, 1] }
   - { path: [7, 0, 2], span: [81, 7, 35] }
   - { path: [7, 0, 4], span: [82, 2, 10] }
