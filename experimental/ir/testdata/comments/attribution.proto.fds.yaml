@@ -19,6 +19,7 @@ file:
       options:
         features.repeated_field_encoding: PACKED
         $unknown: "1000: {`0f10`}"
+    options.$unknown: "1000: {`0a14`}"
     reserved_range:
     - { start: 2, end: 3 }
     - { start: 3, end: 5 }
@@ -41,9 +42,15 @@ file:
     type: TYPE_INT32
     extendee: ".google.protobuf.FieldOptions"
     json_name: "c"
+  - name: "a"
+    number: 1000
+    label: LABEL_REPEATED
+    type: TYPE_INT32
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "a"
   options: { java_package: "build.buf.protocompile", java_multiple_files: true }
   source_code_info.location:
-  - span: [16, 0, 83, 1]
+  - span: [16, 0, 91, 1]
   - path: [12]
     span: [16, 0, 17]
     leading_comments: "% descriptor: true\n% source_code_info: true\n"
@@ -66,77 +73,92 @@ file:
     trailing_comments: " Same with this trailing comment."
   - { path: [10, 0], span: [29, 7, 13] }
   - path: [4, 0]
-    span: [32, 0, 54, 1]
+    span: [32, 0, 58, 1]
     leading_comments: " This, as expected, is a leading comment for Foo.\n"
     trailing_comments: " This is the TRAILING comment for Foo. (It is NOT\n a detached comment for baz.)\n"
   - { path: [4, 0, 1], span: [32, 32, 35] }
-  - { path: [4, 0, 2, 0, 5], span: [37, 2, 8] }
+  - path: [4, 0, 7, 1000, 0]
+    span: [37, 2, 18]
+    leading_comments: " Leading comment for message option\n"
+  - { path: [4, 0, 7], span: [37, 2, 18] }
+  - path: [4, 0, 7, 1000, 1]
+    span: [38, 2, 18]
+    trailing_comments: " Trailing comment for the second message option"
+  - { path: [4, 0, 7], span: [38, 2, 18] }
+  - { path: [4, 0, 2, 0, 5], span: [41, 2, 8] }
   - path: [4, 0, 2, 0]
-    span: [37, 2, 46]
+    span: [41, 2, 46]
     leading_comments: " This is a leading comment for baz.\n"
     trailing_comments: " This is a trailing comment for baz.\n"
-  - { path: [4, 0, 2, 0, 1], span: [37, 38, 41] }
-  - { path: [4, 0, 2, 0, 3], span: [37, 44, 45] }
+  - { path: [4, 0, 2, 0, 1], span: [41, 38, 41] }
+  - { path: [4, 0, 2, 0, 3], span: [41, 44, 45] }
   - path: [4, 0, 9]
-    span: [41, 2, 74]
+    span: [45, 2, 74]
     leading_comments: " This is a leading comment for the reserved range.\n"
     trailing_comments: " This is a trailing comment for the reserved range."
-  - { path: [4, 0, 9, 0], span: [41, 11, 12] }
-  - { path: [4, 0, 9, 0, 2], span: [41, 11, 12] }
-  - { path: [4, 0, 9, 0, 1], span: [41, 11, 12] }
-  - { path: [4, 0, 9, 1, 1], span: [41, 14, 15] }
-  - { path: [4, 0, 9, 1], span: [41, 14, 20] }
-  - { path: [4, 0, 9, 1, 2], span: [41, 19, 20] }
-  - { path: [4, 0, 9, 2, 1], span: [41, 66, 67] }
-  - { path: [4, 0, 9, 2], span: [41, 66, 73] }
-  - { path: [4, 0, 9, 2, 2], span: [41, 71, 73] }
+  - { path: [4, 0, 9, 0], span: [45, 11, 12] }
+  - { path: [4, 0, 9, 0, 1], span: [45, 11, 12] }
+  - { path: [4, 0, 9, 0, 2], span: [45, 11, 12] }
+  - { path: [4, 0, 9, 1, 1], span: [45, 14, 15] }
+  - { path: [4, 0, 9, 1], span: [45, 14, 20] }
+  - { path: [4, 0, 9, 1, 2], span: [45, 19, 20] }
+  - { path: [4, 0, 9, 2, 1], span: [45, 66, 67] }
+  - { path: [4, 0, 9, 2], span: [45, 66, 73] }
+  - { path: [4, 0, 9, 2, 2], span: [45, 71, 73] }
   - path: [4, 0, 10]
-    span: [44, 2, 42]
+    span: [48, 2, 42]
     leading_comments: " This is a leading comment for the reserved names declaration.\n"
     trailing_comments: " This is a trailing comment for the reserved range."
-  - { path: [4, 0, 10, 0], span: [44, 11, 14] }
-  - { path: [4, 0, 10, 1], span: [44, 38, 41] }
-  - { path: [4, 0, 2, 1, 4], span: [46, 2, 10] }
-  - { path: [4, 0, 2, 1], span: [46, 2, 51, 4] }
-  - { path: [4, 0, 2, 1, 5], span: [46, 11, 16] }
-  - { path: [4, 0, 2, 1, 1], span: [46, 17, 24] }
-  - { path: [4, 0, 2, 1, 3], span: [46, 27, 29] }
-  - { path: [4, 0, 2, 1, 8], span: [46, 30, 51, 3] }
-  - { path: [4, 0, 2, 1, 8, 21, 3], span: [48, 4, 45] }
-  - { path: [4, 0, 2, 1, 8, 1000, 0], span: [49, 4, 12] }
-  - { path: [4, 0, 2, 1, 8, 1000, 1], span: [50, 4, 12] }
+  - { path: [4, 0, 10, 0], span: [48, 11, 14] }
+  - { path: [4, 0, 10, 1], span: [48, 38, 41] }
+  - { path: [4, 0, 2, 1, 4], span: [50, 2, 10] }
+  - { path: [4, 0, 2, 1], span: [50, 2, 55, 4] }
+  - { path: [4, 0, 2, 1, 5], span: [50, 11, 16] }
+  - { path: [4, 0, 2, 1, 1], span: [50, 17, 24] }
+  - { path: [4, 0, 2, 1, 3], span: [50, 27, 29] }
+  - { path: [4, 0, 2, 1, 8], span: [50, 30, 55, 3] }
+  - { path: [4, 0, 2, 1, 8, 21, 3], span: [52, 4, 45] }
+  - { path: [4, 0, 2, 1, 8, 1000, 0], span: [53, 4, 12] }
+  - { path: [4, 0, 2, 1, 8, 1000, 1], span: [54, 4, 12] }
   - path: [4, 1]
-    span: [68, 0, 14]
+    span: [72, 0, 14]
     leading_comments: "\n A leading block comment for Bar.\n/"
     leading_detached_comments:
     - " This IS a detached comment for Bar.\n"
     - " This is also a detached comment for Bar.\n"
-  - { path: [4, 1, 1], span: [68, 8, 11] }
+  - { path: [4, 1, 1], span: [72, 8, 11] }
   - path: [5, 0]
-    span: [71, 0, 73, 1]
+    span: [75, 0, 77, 1]
     leading_comments: " This is the leading comment for enum Baz.\n"
     trailing_comments: " This is a trailing comment for enum Baz."
-  - { path: [5, 0, 1], span: [71, 5, 8] }
-  - { path: [5, 0, 2, 0, 1], span: [72, 2, 9] }
-  - { path: [5, 0, 2, 0], span: [72, 2, 14] }
-  - { path: [5, 0, 2, 0, 2], span: [72, 12, 13] }
+  - { path: [5, 0, 1], span: [75, 5, 8] }
+  - { path: [5, 0, 2, 0, 1], span: [76, 2, 9] }
+  - { path: [5, 0, 2, 0], span: [76, 2, 14] }
+  - { path: [5, 0, 2, 0, 2], span: [76, 12, 13] }
   - path: [6, 0]
-    span: [76, 0, 79, 1]
+    span: [80, 0, 83, 1]
     leading_comments: " This is the leading comment for service FooService.\n"
     trailing_comments: " This is a trailing comment for service FooService."
-  - { path: [6, 0, 1], span: [76, 8, 18] }
+  - { path: [6, 0, 1], span: [80, 8, 18] }
   - path: [6, 0, 2, 0]
-    span: [78, 2, 35]
+    span: [82, 2, 35]
     leading_comments: " Leading comment for method FooForBar.\n"
-  - { path: [6, 0, 2, 0, 1], span: [78, 6, 15] }
-  - { path: [6, 0, 2, 0, 2], span: [78, 16, 19] }
-  - { path: [6, 0, 2, 0, 3], span: [78, 30, 33] }
-  - { path: [7], span: [81, 0, 83, 1] }
-  - { path: [7, 0, 2], span: [81, 7, 35] }
-  - { path: [7, 0, 4], span: [82, 2, 10] }
-  - { path: [7, 0], span: [82, 2, 26] }
-  - { path: [7, 0, 5], span: [82, 11, 16] }
-  - { path: [7, 0, 1], span: [82, 17, 18] }
-  - { path: [7, 0, 3], span: [82, 21, 25] }
+  - { path: [6, 0, 2, 0, 1], span: [82, 6, 15] }
+  - { path: [6, 0, 2, 0, 2], span: [82, 16, 19] }
+  - { path: [6, 0, 2, 0, 3], span: [82, 30, 33] }
+  - { path: [7], span: [85, 0, 87, 1] }
+  - { path: [7, 0, 2], span: [85, 7, 35] }
+  - { path: [7, 0, 4], span: [86, 2, 10] }
+  - { path: [7, 0], span: [86, 2, 26] }
+  - { path: [7, 0, 5], span: [86, 11, 16] }
+  - { path: [7, 0, 1], span: [86, 17, 18] }
+  - { path: [7, 0, 3], span: [86, 21, 25] }
+  - { path: [7], span: [89, 0, 91, 1] }
+  - { path: [7, 1, 2], span: [89, 7, 37] }
+  - { path: [7, 1, 4], span: [90, 2, 10] }
+  - { path: [7, 1], span: [90, 2, 26] }
+  - { path: [7, 1, 5], span: [90, 11, 16] }
+  - { path: [7, 1, 1], span: [90, 17, 18] }
+  - { path: [7, 1, 3], span: [90, 21, 25] }
   syntax: "editions"
   edition: EDITION_2023
