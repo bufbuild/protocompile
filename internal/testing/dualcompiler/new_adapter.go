@@ -24,7 +24,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/bufbuild/protocompile/experimental/descriptor"
+	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
@@ -161,9 +161,9 @@ func (f *newCompiledFile) FileDescriptor() (protoreflect.FileDescriptor, error) 
 
 // FileDescriptorProto implements CompiledFile.
 func (f *newCompiledFile) FileDescriptorProto() (*descriptorpb.FileDescriptorProto, error) {
-	data, err := descriptor.DescriptorProtoBytes(
+	data, err := fdp.DescriptorProtoBytes(
 		f.file,
-		descriptor.IncludeSourceCodeInfo(f.includeSourceCodeInfo),
+		fdp.IncludeSourceCodeInfo(f.includeSourceCodeInfo),
 	)
 	if err != nil {
 		return nil, err

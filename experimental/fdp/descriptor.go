@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package descriptor provides functionality for lowering the IR to a FileDescriptorSet.
-package descriptor
+// Package fdp provides functionality for lowering the IR to a FileDescriptorSet.
+package fdp
 
 import (
-	"github.com/bufbuild/protocompile/experimental/ir"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/bufbuild/protocompile/experimental/ir"
 )
 
 // DescriptorSetBytes generates a FileDescriptorSet for the given files, and returns the

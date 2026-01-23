@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package descriptor
+package fdp
 
 import (
 	"math"
@@ -22,6 +22,9 @@ import (
 	"unicode"
 
 	descriptorv1 "buf.build/gen/go/bufbuild/protodescriptor/protocolbuffers/go/buf/descriptor/v1"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
+
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
@@ -35,8 +38,6 @@ import (
 	"github.com/bufbuild/protocompile/internal/ext/cmpx"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
 	"github.com/bufbuild/protocompile/internal/ext/slicesx"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type generator struct {
@@ -1010,7 +1011,7 @@ func (g *generator) addSourceLocation(
 			return str
 		}
 
-		// Comments are merged across the the provided [token.ID]s.
+		// Comments are merged across the provided [token.ID]s.
 		for _, id := range checkForComments {
 			comments, ok := g.commentTracker.donated[id]
 			if ok {

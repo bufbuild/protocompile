@@ -32,7 +32,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bufbuild/protocompile/experimental/ast/predeclared"
-	"github.com/bufbuild/protocompile/experimental/descriptor"
+	"github.com/bufbuild/protocompile/experimental/fdp"
 	"github.com/bufbuild/protocompile/experimental/incremental"
 	"github.com/bufbuild/protocompile/experimental/incremental/queries"
 	"github.com/bufbuild/protocompile/experimental/ir"
@@ -203,9 +203,9 @@ func TestIR(t *testing.T) {
 		irs = slices.DeleteFunc(irs, func(f *ir.File) bool { return f == nil })
 
 		if test.Descriptor {
-			bytes, err := descriptor.DescriptorSetBytes(irs,
-				descriptor.IncludeSourceCodeInfo(test.SourceCodeInfo),
-				descriptor.ExcludeFiles((*ir.File).IsDescriptorProto),
+			bytes, err := fdp.DescriptorSetBytes(irs,
+				fdp.IncludeSourceCodeInfo(test.SourceCodeInfo),
+				fdp.ExcludeFiles((*ir.File).IsDescriptorProto),
 			)
 			require.NoError(t, err)
 
