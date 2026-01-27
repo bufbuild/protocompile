@@ -21,9 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bufbuild/protocompile/experimental/ast/syntax"
-	"github.com/bufbuild/protocompile/internal/editions"
 	"github.com/bufbuild/protocompile/internal/ext/iterx"
-	"github.com/bufbuild/protocompile/internal/ext/mapsx"
 )
 
 func TestEditions(t *testing.T) {
@@ -34,8 +32,7 @@ func TestEditions(t *testing.T) {
 		[]syntax.Syntax{syntax.Edition2023, syntax.Edition2024},
 		slices.Collect(syntax.Editions()),
 	)
-	assert.Equal(t,
-		mapsx.KeySet(editions.SupportedEditions),
-		mapsx.CollectSet(iterx.Strings(iterx.Filter(syntax.Editions(), syntax.Syntax.IsSupported))),
-	)
+	// Verify all editions report as supported
+	supported := slices.Collect(iterx.Filter(syntax.Editions(), syntax.Syntax.IsSupported))
+	assert.Equal(t, []syntax.Syntax{syntax.Edition2023, syntax.Edition2024}, supported)
 }

@@ -1,15 +1,25 @@
-warning: `import weak` is deprecated
-  --> testdata/parser/import/ok.proto:20:1
+warning: `import weak` is deprecated in "proto2"
+  --> testdata/parser/import/ok.proto:20:8
    |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+19 | import "foo.proto";
 20 | import weak "weak.proto";
-   | ^^^^^^^^^^^
+   |        ^^^^
+   = help: deprecated since "proto2", to be removed in Edition 2024
    = help: `import weak` is not implemented correctly in most Protobuf
            implementations
 
-error: `import option` requires Edition 2024 or later
-  --> testdata/parser/import/ok.proto:22:1
+error: `import option` is not supported in "proto2"
+  --> testdata/parser/import/ok.proto:22:8
    |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+21 | import public "public.proto";
 22 | import option "option.proto";
-   | ^^^^^^^^^^^^^
+   |        ^^^^^^
+   = help: `import option` requires at least Edition 2024
 
 encountered 1 error and 1 warning

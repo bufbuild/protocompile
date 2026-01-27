@@ -1,0 +1,108 @@
+file:
+- name: "testdata/editions/naming_style_2024_ok.proto"
+  package: "buf.test"
+  message_type:
+  - name: "MyMessage"
+    field:
+    - name: "a_field"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "aField"
+    - name: "Another_Field"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "AnotherField"
+    - name: "field_v1"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "fieldV1"
+    - name: "field_version2"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "fieldVersion2"
+    - name: "option_a"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      oneof_index: 0
+      json_name: "optionA"
+    - name: "option_b"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      oneof_index: 0
+      json_name: "optionB"
+    oneof_decl: [{ name: "my_choice" }]
+  - name: "bad_message_but_ok"
+    field:
+    - name: "BadField"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "BadField"
+    - name: "field_1"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "field1"
+    - name: "_underscore"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "Underscore"
+    - name: "opt_a"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      oneof_index: 0
+      json_name: "optA"
+    nested_type:
+    - name: "nested_message"
+      field:
+      - name: "AnyName"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "AnyName"
+    - name: "GoodNested"
+      field:
+      - name: "good_field"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "goodField"
+      options.features.enforce_naming_style: STYLE2024
+    oneof_decl: [{ name: "BadChoice" }]
+    options.features.enforce_naming_style: STYLE_LEGACY
+  enum_type:
+  - name: "MyEnum"
+    value:
+    - { name: "MY_ENUM_UNSPECIFIED", number: 0 }
+    - { name: "MY_ENUM_VALUE_ONE", number: 1 }
+    - { name: "MY_ENUM_VALUE_TWO", number: 2 }
+    - { name: "MY_ENUM_V1", number: 3 }
+  - name: "bad_enum"
+    value:
+    - { name: "unspecified", number: 0 }
+    - { name: "valueOne", number: 1 }
+    - { name: "_VALUE", number: 2 }
+    options.features.enforce_naming_style: STYLE_LEGACY
+  service:
+  - name: "MyService"
+    method:
+    - name: "GetMessage"
+      input_type: "buf.test.MyMessage"
+      output_type: "buf.test.MyMessage"
+      client_streaming: false
+      server_streaming: false
+    - name: "ListMessages"
+      input_type: "buf.test.MyMessage"
+      output_type: "buf.test.MyMessage"
+      client_streaming: false
+      server_streaming: false
+  syntax: "editions"
+  edition: EDITION_2024

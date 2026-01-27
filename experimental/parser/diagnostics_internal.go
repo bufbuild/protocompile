@@ -112,44 +112,6 @@ func (e errBadNest) Diagnose(d *report.Diagnostic) {
 	}
 }
 
-// errRequiresEdition diagnoses that a certain edition is required for a feature.
-//
-//nolint:govet // Irrelevant alignment padding lint.
-type errRequiresEdition struct {
-	edition syntax.Syntax
-	node    source.Spanner
-	what    any
-	decl    ast.DeclSyntax
-
-	// If set, this will report that the feature is not implemented instead.
-	unimplemented bool
-}
-
-func (e errRequiresEdition) Diagnose(d *report.Diagnostic) {
-	what := e.what
-	if what == nil {
-		what = taxa.Classify(e.node)
-	}
-
-	if e.unimplemented {
-		d.Apply(
-			report.Message("sorry, %s is not implemented yet", what),
-			report.Snippet(e.node),
-			report.Helpf("%s is part of Edition %s, which will be implemented in a future release", what, e.edition),
-		)
-		return
-	}
-
-	d.Apply(
-		report.Message("%s requires Edition %s or later", what, e.edition),
-		report.Snippet(e.node),
-	)
-
-	if !e.decl.IsZero() {
-		report.Snippetf(e.decl.Value(), "%s specified here", e.decl.Keyword())
-	}
-}
-
 // errUnexpectedMod diagnoses a modifier placed in the wrong position.
 type errUnexpectedMod struct {
 	mod   token.Token

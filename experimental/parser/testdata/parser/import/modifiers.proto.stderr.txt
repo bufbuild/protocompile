@@ -14,11 +14,16 @@ error: unexpected `option` modifier in import
    |  |
    |  already modified here
 
-warning: `import weak` is deprecated
-  --> testdata/parser/import/modifiers.proto:21:1
+warning: `import weak` is deprecated in "proto2"
+  --> testdata/parser/import/modifiers.proto:21:8
    |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+20 | import public option "foo.proto";
 21 | import weak option "foo.proto";
-   | ^^^^^^^^^^^
+   |        ^^^^
+   = help: deprecated since "proto2", to be removed in Edition 2024
    = help: `import weak` is not implemented correctly in most Protobuf
            implementations
 
@@ -30,11 +35,16 @@ error: unexpected `option` modifier in import
    |  |
    |  already modified here
 
-error: `import option` requires Edition 2024 or later
-  --> testdata/parser/import/modifiers.proto:22:1
+error: `import option` is not supported in "proto2"
+  --> testdata/parser/import/modifiers.proto:22:8
    |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+21 | import weak option "foo.proto";
 22 | import option weak public "foo.proto";
-   | ^^^^^^^^^^^^^
+   |        ^^^^^^
+   = help: `import option` requires at least Edition 2024
 
 error: unexpected `weak` modifier in import
   --> testdata/parser/import/modifiers.proto:22:15
@@ -52,11 +62,25 @@ error: unexpected `public` modifier in import
    |  |
    |  already modified here
 
-warning: `import weak` is deprecated
+error: import after `import option`
   --> testdata/parser/import/modifiers.proto:23:1
    |
+22 | import option weak public "foo.proto";
+   | -------------------------------------- previous `import option` here
 23 | import weak weak "foo.proto";
-   | ^^^^^^^^^^^
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `import option`s must be the last imports in a file
+
+warning: `import weak` is deprecated in "proto2"
+  --> testdata/parser/import/modifiers.proto:23:8
+   |
+15 | syntax = "proto2";
+   |          -------- syntax specified here
+...
+22 | import option weak public "foo.proto";
+23 | import weak weak "foo.proto";
+   |        ^^^^
+   = help: deprecated since "proto2", to be removed in Edition 2024
    = help: `import weak` is not implemented correctly in most Protobuf
            implementations
 
@@ -67,6 +91,16 @@ error: unexpected `weak` modifier in import
    | ----------- ^^^^
    |  |
    |  already modified here
+
+error: import after `import option`
+  --> testdata/parser/import/modifiers.proto:24:1
+   |
+22 | import option weak public "foo.proto";
+   | -------------------------------------- previous `import option` here
+23 | import weak weak "foo.proto";
+24 | import export "foo.proto";
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   = help: `import option`s must be the last imports in a file
 
 error: unexpected `export` modifier in import
   --> testdata/parser/import/modifiers.proto:24:8
@@ -80,4 +114,4 @@ error: unexpected `export` modifier in import
    |
    = help: `export` only applies to a type definition
 
-encountered 8 errors and 2 warnings
+encountered 10 errors and 2 warnings

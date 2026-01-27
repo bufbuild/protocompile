@@ -365,7 +365,7 @@ func validateOptionTargetsInValue(m MessageValue, decl source.Span, target Optio
 	}
 }
 
-// symbolRef is all of the information necessary to resolve an option reference.
+// optionRef is all of the information necessary to resolve an option reference.
 type optionRef struct {
 	*File
 	*report.Report
@@ -432,6 +432,7 @@ func (r optionRef) resolve() {
 				want:   taxa.Extension,
 
 				allowScalars:  false,
+				allowOption:   true,
 				suggestImport: true,
 			}.resolve()
 
@@ -504,7 +505,7 @@ func (r optionRef) resolve() {
 				ids.MessageFeatures, ids.FieldFeatures, ids.OneofFeatures,
 				ids.EnumFeatures, ids.EnumValueFeatures:
 				if syn := r.Syntax(); !syn.IsEdition() {
-					r.Errorf("`features` cannot be set in %s", prettyEdition(syn)).Apply(
+					r.Errorf("`features` cannot be set in %s", syn.Name()).Apply(
 						report.Snippet(pc),
 						report.Snippetf(r.AST().Syntax().Value(), "syntax specified here"),
 					)

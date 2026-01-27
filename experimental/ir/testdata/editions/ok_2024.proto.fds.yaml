@@ -1,0 +1,264 @@
+file:
+- name: "google/protobuf/go_features.proto"
+  package: "pb"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "GoFeatures"
+    field:
+    - name: "legacy_unmarshal_json_enum"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "legacyUnmarshalJsonEnum"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_ENUM, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "true" }
+        - { edition: EDITION_PROTO3, value: "false" }
+        feature_support:
+          edition_introduced: EDITION_2023
+          edition_deprecated: EDITION_2023
+          deprecation_warning: "The legacy UnmarshalJSON API is deprecated and will be removed in a future edition."
+    - name: "api_level"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.GoFeatures.APILevel"
+      json_name: "apiLevel"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_MESSAGE, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "API_LEVEL_UNSPECIFIED" }
+        - { edition: EDITION_2024, value: "API_OPAQUE" }
+        feature_support.edition_introduced: EDITION_2023
+    - name: "strip_enum_prefix"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.GoFeatures.StripEnumPrefix"
+      json_name: "stripEnumPrefix"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_ENUM, TARGET_TYPE_ENUM_ENTRY, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "STRIP_ENUM_PREFIX_KEEP" }
+        feature_support.edition_introduced: EDITION_2024
+    enum_type:
+    - name: "APILevel"
+      value:
+      - { name: "API_LEVEL_UNSPECIFIED", number: 0 }
+      - { name: "API_OPEN", number: 1 }
+      - { name: "API_HYBRID", number: 2 }
+      - { name: "API_OPAQUE", number: 3 }
+    - name: "StripEnumPrefix"
+      value:
+      - { name: "STRIP_ENUM_PREFIX_UNSPECIFIED", number: 0 }
+      - { name: "STRIP_ENUM_PREFIX_KEEP", number: 1 }
+      - { name: "STRIP_ENUM_PREFIX_GENERATE_BOTH", number: 2 }
+      - { name: "STRIP_ENUM_PREFIX_STRIP", number: 3 }
+  extension:
+  - name: "go"
+    number: 1002
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".pb.GoFeatures"
+    extendee: ".google.protobuf.FeatureSet"
+    json_name: "go"
+  options.go_package: "google.golang.org/protobuf/types/gofeaturespb"
+  syntax: "proto2"
+- name: "google/protobuf/java_features.proto"
+  package: "pb"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "JavaFeatures"
+    field:
+    - name: "legacy_closed_enum"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "legacyClosedEnum"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "true" }
+        - { edition: EDITION_PROTO3, value: "false" }
+        feature_support:
+          edition_introduced: EDITION_2023
+          edition_deprecated: EDITION_2023
+          deprecation_warning: "The legacy closed enum behavior in Java is deprecated and is scheduled to be removed in edition 2025.  See http://protobuf.dev/programming-guides/enum/#java for more information."
+    - name: "utf8_validation"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.JavaFeatures.Utf8Validation"
+      json_name: "utf8Validation"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
+        edition_defaults: [{ edition: EDITION_LEGACY, value: "DEFAULT" }]
+        feature_support:
+          edition_introduced: EDITION_2023
+          edition_deprecated: EDITION_2024
+          deprecation_warning: "The Java-specific utf8 validation feature is deprecated and is scheduled to be removed in edition 2025.  Utf8 validation behavior should use the global cross-language utf8_validation feature."
+    - name: "large_enum"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "largeEnum"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_ENUM, TARGET_TYPE_FILE]
+        edition_defaults: [{ edition: EDITION_LEGACY, value: "false" }]
+        feature_support.edition_introduced: EDITION_2024
+    - name: "use_old_outer_classname_default"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "useOldOuterClassnameDefault"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "true" }
+        - { edition: EDITION_2024, value: "false" }
+        feature_support:
+          edition_introduced: EDITION_2024
+          edition_removed: EDITION_2024
+    - name: "nest_in_file_class"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.JavaFeatures.NestInFileClassFeature.NestInFileClass"
+      json_name: "nestInFileClass"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_MESSAGE, TARGET_TYPE_ENUM, TARGET_TYPE_SERVICE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "LEGACY" }
+        - { edition: EDITION_2024, value: "NO" }
+        feature_support.edition_introduced: EDITION_2024
+    nested_type:
+    - name: "NestInFileClassFeature"
+      enum_type:
+      - name: "NestInFileClass"
+        value:
+        - { name: "NEST_IN_FILE_CLASS_UNKNOWN", number: 0 }
+        - { name: "NO", number: 1 }
+        - { name: "YES", number: 2 }
+        - name: "LEGACY"
+          number: 3
+          options.feature_support:
+            edition_introduced: EDITION_2024
+            edition_removed: EDITION_2024
+      reserved_range: [{ start: 1, end: 536870912 }]
+    enum_type:
+    - name: "Utf8Validation"
+      value:
+      - { name: "UTF8_VALIDATION_UNKNOWN", number: 0 }
+      - { name: "DEFAULT", number: 1 }
+      - { name: "VERIFY", number: 2 }
+    reserved_range: [{ start: 6, end: 7 }]
+  extension:
+  - name: "java"
+    number: 1001
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".pb.JavaFeatures"
+    extendee: ".google.protobuf.FeatureSet"
+    json_name: "java"
+  options:
+    java_package: "com.google.protobuf"
+    java_outer_classname: "JavaFeaturesProto"
+  syntax: "proto2"
+- name: "google/protobuf/cpp_features.proto"
+  package: "pb"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "CppFeatures"
+    field:
+    - name: "legacy_closed_enum"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "legacyClosedEnum"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "true" }
+        - { edition: EDITION_PROTO3, value: "false" }
+        feature_support:
+          edition_introduced: EDITION_2023
+          edition_deprecated: EDITION_2023
+          deprecation_warning: "The legacy closed enum behavior in C++ is deprecated and is scheduled to be removed in edition 2025.  See http://protobuf.dev/programming-guides/enum/#cpp for more information"
+    - name: "string_type"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_ENUM
+      type_name: ".pb.CppFeatures.StringType"
+      json_name: "stringType"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_FIELD, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "STRING" }
+        - { edition: EDITION_2024, value: "VIEW" }
+        feature_support.edition_introduced: EDITION_2023
+    - name: "enum_name_uses_string_view"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_BOOL
+      json_name: "enumNameUsesStringView"
+      options:
+        retention: RETENTION_RUNTIME
+        targets: [TARGET_TYPE_ENUM, TARGET_TYPE_FILE]
+        edition_defaults:
+        - { edition: EDITION_LEGACY, value: "false" }
+        - { edition: EDITION_2024, value: "true" }
+        feature_support.edition_introduced: EDITION_2024
+    enum_type:
+    - name: "StringType"
+      value:
+      - { name: "STRING_TYPE_UNKNOWN", number: 0 }
+      - { name: "VIEW", number: 1 }
+      - { name: "CORD", number: 2 }
+      - { name: "STRING", number: 3 }
+  extension:
+  - name: "cpp"
+    number: 1000
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".pb.CppFeatures"
+    extendee: ".google.protobuf.FeatureSet"
+    json_name: "cpp"
+  syntax: "proto2"
+- name: "testdata/editions/ok_2024.proto"
+  package: "buf.test"
+  option_dependency:
+  - "google/protobuf/cpp_features.proto"
+  - "google/protobuf/java_features.proto"
+  - "google/protobuf/go_features.proto"
+  message_type:
+  - { name: "MyMessage", options.features.$unknown: "1001: {5: 2}" }
+  enum_type:
+  - name: "MyEnum"
+    value:
+    - { name: "MY_ENUM_UNSPECIFIED", number: 0 }
+    - { name: "MY_ENUM_VALUE", number: 1 }
+    options.features.$unknown: "1001: {3: 1}"
+  options:
+    java_outer_classname: "BarBaz"
+    features:
+      enforce_naming_style: STYLE_LEGACY
+      default_symbol_visibility: EXPORT_ALL
+      (pb.go): { api_level: API_OPEN }
+      $unknown: |
+        1000: {
+          2: 3
+          3: 0
+        }
+  syntax: "editions"
+  edition: EDITION_2024

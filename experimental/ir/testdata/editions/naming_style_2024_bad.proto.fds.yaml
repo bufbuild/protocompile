@@ -1,0 +1,90 @@
+file:
+- name: "testdata/editions/naming_style_2024_bad.proto"
+  package: "Buf.Test"
+  message_type:
+  - name: "my_message"
+    field:
+    - name: "myField"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "myField"
+    - name: "AnotherField"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "AnotherField"
+    - name: "field_1"
+      number: 3
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "field1"
+    - name: "_field"
+      number: 4
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "Field"
+    - name: "field_"
+      number: 5
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "field"
+    - name: "field__name"
+      number: 6
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "fieldName"
+    - name: "choice_a"
+      number: 7
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      oneof_index: 0
+      json_name: "choiceA"
+    oneof_decl: [{ name: "TestChoice" }]
+  - name: "LegacyStyleMessage"
+    field:
+    - name: "_allowed"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "Allowed"
+    - name: "BadField"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "BadField"
+      options.features.enforce_naming_style: STYLE2024
+    nested_type:
+    - name: "bad_nested"
+      field:
+      - name: "_bad_field"
+        number: 1
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "BadField"
+      - name: "_another_field"
+        number: 2
+        label: LABEL_OPTIONAL
+        type: TYPE_STRING
+        json_name: "AnotherField"
+        options.features.enforce_naming_style: STYLE_LEGACY
+      options.features.enforce_naming_style: STYLE2024
+    options.features.enforce_naming_style: STYLE_LEGACY
+  enum_type:
+  - name: "my_enum"
+    value:
+    - { name: "unspecified", number: 0 }
+    - { name: "valueOne", number: 1 }
+    - { name: "_VALUE", number: 2 }
+    - { name: "VALUE_", number: 3 }
+    - { name: "VALUE_1", number: 4 }
+  service:
+  - name: "My_Service"
+    method:
+    - name: "test_method"
+      input_type: "Buf.Test.my_message"
+      output_type: "Buf.Test.my_message"
+      client_streaming: false
+      server_streaming: false
+  syntax: "editions"
+  edition: EDITION_2024

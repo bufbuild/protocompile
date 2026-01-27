@@ -1,8 +1,14 @@
-warning: `import weak` is deprecated
-  --> main.proto:6:1
+warning: `import weak` is deprecated in "proto2"
+  --> main.proto:6:8
    |
+ 1 | syntax = "proto2";
+   |          -------- syntax specified here
+ 2 | package buf.test;
+...
+ 5 | import public "b.proto";
  6 | import weak "c.proto";
-   | ^^^^^^^^^^^
+   |        ^^^^
+   = help: deprecated since "proto2", to be removed in Edition 2024
    = help: `import weak` is not implemented correctly in most Protobuf
            implementations
 

@@ -1,0 +1,22 @@
+file:
+- name: "testdata/editions/naming_style_legacy.proto"
+  package: "buf.test"
+  message_type:
+  - name: "my_message"
+    field:
+    - name: "myField"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_STRING
+      json_name: "myField"
+    - name: "AnotherField"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "AnotherField"
+  enum_type:
+  - name: "my_enum"
+    value: [{ name: "unspecified", number: 0 }, { name: "valueOne", number: 1 }]
+  options.features.enforce_naming_style: STYLE_LEGACY
+  syntax: "editions"
+  edition: EDITION_2024

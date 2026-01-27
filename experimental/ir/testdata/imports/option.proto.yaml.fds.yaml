@@ -1,0 +1,58 @@
+file:
+- name: "option.proto"
+  package: "buf.test"
+  dependency: ["google/protobuf/descriptor.proto"]
+  message_type:
+  - name: "Foo"
+    field:
+    - name: "x"
+      number: 1
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "x"
+  extension:
+  - name: "e"
+    number: 10001
+    label: LABEL_OPTIONAL
+    type: TYPE_MESSAGE
+    type_name: ".buf.test.Foo"
+    extendee: ".google.protobuf.MessageOptions"
+    json_name: "e"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main.proto"
+  package: "buf.test"
+  option_dependency: ["option.proto"]
+  message_type:
+  - name: "Bar"
+    field:
+    - name: "y"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_MESSAGE
+      type_name: ".buf.test.Foo"
+      json_name: "y"
+    options.$unknown: "10001: {1: 1}"
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "public.proto"
+  package: "buf.test"
+  dependency: ["option.proto"]
+  public_dependency: [0]
+  syntax: "editions"
+  edition: EDITION_2024
+- name: "main2.proto"
+  package: "buf.test"
+  dependency: ["public.proto"]
+  option_dependency: ["option.proto"]
+  message_type:
+  - name: "Bar"
+    field:
+    - name: "y"
+      number: 2
+      label: LABEL_OPTIONAL
+      type: TYPE_INT32
+      json_name: "y"
+    options.$unknown: "10001: {1: 1}"
+  syntax: "editions"
+  edition: EDITION_2024

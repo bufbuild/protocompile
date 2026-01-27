@@ -1,0 +1,42 @@
+// Copyright 2020-2025 Buf Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//% descriptor: true
+//% symtab: true
+edition = "2024";
+
+package buf.test;
+
+import option "google/protobuf/cpp_features.proto";
+import option "google/protobuf/java_features.proto";
+import option "google/protobuf/go_features.proto";
+
+// If previously relying on edition 2023 default java_outer_classname.
+option java_outer_classname = "BarBaz"; // or BarBazOuterClass
+
+option features.(pb.cpp).string_type = STRING;
+option features.enforce_naming_style = STYLE_LEGACY;
+option features.default_symbol_visibility = EXPORT_ALL;
+option features.(pb.cpp).enum_name_uses_string_view = false;
+option features.(pb.go).api_level = API_OPEN;
+
+message MyMessage {
+  option features.(pb.java).nest_in_file_class = YES;
+}
+
+enum MyEnum {
+  option features.(pb.java).large_enum = true;
+  MY_ENUM_UNSPECIFIED = 0;
+  MY_ENUM_VALUE = 1;
+}
