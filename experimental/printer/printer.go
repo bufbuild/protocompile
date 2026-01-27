@@ -15,8 +15,6 @@
 package printer
 
 import (
-	"strings"
-
 	"github.com/bufbuild/protocompile/experimental/ast"
 	"github.com/bufbuild/protocompile/experimental/dom"
 	"github.com/bufbuild/protocompile/experimental/seq"
@@ -26,13 +24,9 @@ import (
 )
 
 // PrintFile renders an AST file to protobuf source text.
-//
-// This is the recommended way to print files. It preserves original formatting
-// including whitespace, comments, and blank lines. Synthetic (programmatically
-// created) nodes are formatted with standard spacing.
 func PrintFile(file *ast.File, opts Options) string {
 	opts = opts.withDefaults()
-	output := dom.Render(opts.domOptions(), func(push dom.Sink) {
+	return dom.Render(opts.domOptions(), func(push dom.Sink) {
 		p := &printer{
 			push:   push,
 			opts:   opts,
@@ -40,8 +34,6 @@ func PrintFile(file *ast.File, opts Options) string {
 		}
 		p.printFile(file)
 	})
-	// Strip trailing whitespace from the output.
-	return strings.TrimRight(output, " \t\n\r")
 }
 
 // Print renders a single declaration to protobuf source text.
@@ -287,11 +279,11 @@ func (p *printer) emitOpen(open token.Token) {
 }
 
 // emitClose prints a close token and advances the parent cursor.
-func (p *printer) emitClose(close token.Token, open token.Token) {
-	p.push(dom.Text(close.Text()))
-	p.lastTok = close
+func (p *printer) emitClose(closeToken token.Token, openToken token.Token) {
+	p.push(dom.Text(closeToken.Text()))
+	p.lastTok = closeToken
 	// Advance parent cursor past the whole fused pair
-	if p.cursor != nil && !open.IsSynthetic() {
+	if p.cursor != nil && !openToken.IsSynthetic() {
 		p.cursor.NextSkippable()
 	}
 }
